@@ -1,0 +1,13 @@
+{
+  "name": "nodevision",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "cytoscape": "^3.19.2"
+  }
+}
