@@ -1,3 +1,13 @@
+# Ignore the Notebook directory
 Notebook/
+
+# Ignore node_modules directory
 node_modules/
+
+# Ignore environment variables file
 .env
+
+# Ignore generated files in the public directory
+public/GeneratedNodes.js
+public/GeneratedRegions.js
+public/GeneratedEdges.js
