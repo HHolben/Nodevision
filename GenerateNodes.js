@@ -16,6 +16,9 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
   return arrayOfFiles;
 }
 
+
+
+
 // Function to generate nodes from files
 function generateNodesFromFiles(dirPath) {
   const allFiles = getAllFiles(dirPath);
@@ -28,9 +31,8 @@ function generateNodesFromFiles(dirPath) {
 
       return {
         data: {
-          id: label,
+          id: relativePath,
           label: label,
-          region: region,
           link: relativePath,
           soundLocation: '/path/to/sound_location.mp3',
           imageUrl: '/path/to/image/index.png'
