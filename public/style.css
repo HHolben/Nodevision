@@ -9,9 +9,19 @@ body, html {
   background-color: #f0f0f0;
 }
 
-#cy {
-  width: 90%;
-  height: 90%;
-  background-color: #fff;
-}
 
+#cy {
+  width: 75%;
+  height: 95%;
+  float: left;
+  border: 1px solid #ddd;
+}
+#info-panel {
+  width: 24%;
+  height: 95%;
+  float: right;
+  border: 1px solid #ddd;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}

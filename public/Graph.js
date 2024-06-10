@@ -61,4 +61,67 @@ document.addEventListener('DOMContentLoaded', function() {
       padding: 10
     }
   });
+
+
+
+  let selectedElement = null;
+
+  // Function to update the info panel
+  function updateInfoPanel(element) {
+    const infoPanel = document.getElementById('element-info');
+    let infoHTML = '';
+
+    if (element.isNode()) {
+      infoHTML = `<strong>Node:</strong> ${element.data('label')}<br>`;
+      infoHTML += `<strong>ID:</strong> ${element.id()}<br>`;
+      if (element.isParent()) {
+        infoHTML += `<strong>Type:</strong> Region<br>`;
+      } else {
+        infoHTML += `<strong>Type:</strong> Node<br>`;
+      }
+    } else if (element.isEdge()) {
+      infoHTML = `<strong>Edge:</strong> ${element.id()}<br>`;
+      infoHTML += `<strong>Source:</strong> ${element.source().id()}<br>`;
+      infoHTML += `<strong>Target:</strong> ${element.target().id()}<br>`;
+      infoHTML += `<strong>Type:</strong> ${element.data('type') || 'Edge'}<br>`;
+    }
+
+    infoPanel.innerHTML = infoHTML;
+    selectedElement = element;
+  }
+
+  // Event listeners for selecting nodes, edges, and regions
+  cy.on('click', 'node, edge', function(evt) {
+    var element = evt.target;
+    updateInfoPanel(element);
+  });
+
+  cy.on('tap', function(event){
+    if(event.target === cy){
+      document.getElementById('element-info').innerHTML = 'Click on a node, edge, or region to see details.';
+      selectedElement = null;
+    }
+  });
+
+  // Add event listeners to buttons
+  document.getElementById('open-button').addEventListener('click', function() {
+    if (selectedElement && selectedElement.isNode() && !selectedElement.isParent()) {
+      const nodeId = selectedElement.id();
+      // Assuming nodeId is the file name with extension
+      window.open(`Notebook/${nodeId}`, '_blank');
+    }
+  });
+
+  document.getElementById('edit-button').addEventListener('click', function() {
+    if (selectedElement) {
+      // Implement edit functionality here
+      alert('Edit functionality not implemented yet.');
+    }
+  });
+
+  document.getElementById('new-button').addEventListener('click', function() {
+    // Implement new functionality here
+    alert('New functionality not implemented yet.');
+  });
 });
+
