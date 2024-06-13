@@ -108,8 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedElement && selectedElement.isNode() && !selectedElement.isParent()) {
       const nodeId = selectedElement.id();
       // Assuming nodeId is the file name with extension
-      window.open(`Notebook/${nodeId}`, '_blank');
-    }
+      window.open(`http://localhost:${8000}/${nodeId}`, '_blank');
+        }
   });
 
   document.getElementById('edit-button').addEventListener('click', function() {
