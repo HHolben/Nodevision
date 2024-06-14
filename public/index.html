@@ -16,6 +16,10 @@
   <script src="Graph.js" defer></script>
 </head>
 <body>
+  <!-- Button to navigate to SettingsPage.html -->
+  <button onclick="navigateToSettings()">Settings Page</button>
+  <br>
+
   <div id="cy"></div>
   <div id="info-panel">
     <h3>Selected Element Info</h3>
@@ -29,5 +33,12 @@
       <button id="open-button" class="info-button">Open</button>
     </div>
   </div>
+
+  <!-- Script to navigate to SettingsPage.html -->
+  <script>
+    function navigateToSettings() {
+      window.location.href = 'SettingsPage.html';
+    }
+  </script>
 </body>
 </html>

@@ -1,0 +1,33 @@
+{
+    "node": {
+      "background-color": "#66ccff",
+      "label": "data(label)",
+      "text-valign": "center",
+      "color": "#000",
+      "text-outline-width": 2,
+      "text-outline-color": "#fff"
+    },
+    "parentNode": {
+      "background-color": "#d3d3d3",
+      "border-color": "#000",
+      "border-width": 2,
+      "padding": "10px"
+    },
+    "edgeDirect": {
+      "line-color": "#337AB7",
+      "target-arrow-color": "#337AB7",
+      "target-arrow-shape": "triangle",
+      "target-arrow-fill": "filled",
+      "width": 4,
+      "curve-style": "bezier"
+    },
+    "edgeIndirect": {
+      "line-color": "#F0AD4E",
+      "target-arrow-color": "#F0AD4E",
+      "target-arrow-shape": "vee",
+      "target-arrow-fill": "filled",
+      "width": 2,
+      "curve-style": "bezier"
+    }
+  }
+  

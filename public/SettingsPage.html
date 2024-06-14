@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nodevision Settings</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('GraphStyles.json')
+        .then(response => response.json())
+        .then(styles => {
+          // Populate the form with current styles
+          document.getElementById('node-bg-color').value = styles.node['background-color'];
+          document.getElementById('node-label-color').value = styles.node['color'];
+          document.getElementById('parent-node-bg-color').value = styles.parentNode['background-color'];
+          document.getElementById('direct-edge-color').value = styles.edgeDirect['line-color'];
+          document.getElementById('indirect-edge-color').value = styles.edgeIndirect['line-color'];
+        })
+        .catch(error => console.error('Error fetching styles:', error));
+
+      document.getElementById('save-button').addEventListener('click', function() {
+        const newStyles = {
+          node: {
+            'background-color': document.getElementById('node-bg-color').value,
+            'label': 'data(label)',
+            'text-valign': 'center',
+            'color': document.getElementById('node-label-color').value,
+            'text-outline-width': 2,
+            'text-outline-color': '#fff'
+          },
+          parentNode: {
+            'background-color': document.getElementById('parent-node-bg-color').value,
+            'border-color': '#000',
+            'border-width': 2,
+            'padding': '10px'
+          },
+          edgeDirect: {
+            'line-color': document.getElementById('direct-edge-color').value,
+            'target-arrow-color': document.getElementById('direct-edge-color').value,
+            'target-arrow-shape': 'triangle',
+            'target-arrow-fill': 'filled',
+            'width': 4,
+            'curve-style': 'bezier'
+          },
+          edgeIndirect: {
+            'line-color': document.getElementById('indirect-edge-color').value,
+            'target-arrow-color': document.getElementById('indirect-edge-color').value,
+            'target-arrow-shape': 'vee',
+            'target-arrow-fill': 'filled',
+            'width': 2,
+            'curve-style': 'bezier'
+          }
+        };
+
+        fetch('/save-styles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newStyles),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Styles saved successfully!');
+          } else {
+            alert('Failed to save styles.');
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          alert('Failed to save styles.');
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Nodevision Settings</h1>
+  <form>
+    <label for="node-bg-color">Node Background Color:</label>
+    <input type="color" id="node-bg-color" name="node-bg-color"><br><br>
+    <label for="node-label-color">Node Label Color:</label>
+    <input type="color" id="node-label-color" name="node-label-color"><br><br>
+    <label for="parent-node-bg-color">Parent Node Background Color:</label>
+    <input type="color" id="parent-node-bg-color" name="parent-node-bg-color"><br><br>
+    <label for="direct-edge-color">Direct Edge Color:</label>
+    <input type="color" id="direct-edge-color" name="direct-edge-color"><br><br>
+    <label for="indirect-edge-color">Indirect Edge Color:</label>
+    <input type="color" id="indirect-edge-color" name="indirect-edge-color"><br><br>
+    <button type="button" id="save-button">Save</button>
+  </form>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings Page</title>
+</head>
+<body>
+  <h1>Settings Page</h1>
+  
+  <form id="settings-form">
+    <label for="new-styles">Enter new styles:</label><br>
+    <textarea id="new-styles" name="new-styles" rows="4" cols="50"></textarea><br><br>
+    <button type="submit">Update Graph Styles</button>
+  </form>
+
+  <script>
+    document.getElementById('settings-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const newStyles = document.getElementById('new-styles').value;
+
+      fetch('/updateGraphStyles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ styles: newStyles })
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('Graph styles updated successfully.');
+        } else {
+          alert('Failed to update graph styles.');
+        }
+      })
+      .catch(error => {
+        console.error('Error updating graph styles:', error);
+        alert('Failed to update graph styles.');
+      });
+    });
+  </script>
+</body>
+</html>
