@@ -62,8 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-
-
   let selectedElement = null;
 
   // Function to update the info panel
@@ -108,8 +106,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedElement && selectedElement.isNode() && !selectedElement.isParent()) {
       const nodeId = selectedElement.id();
       // Assuming nodeId is the file name with extension
-      window.open(`http://localhost:${8000}/${nodeId}`, '_blank');
-        }
+      window.open(`http://localhost:8000/${nodeId}`, '_blank');
+    }
   });
 
   document.getElementById('edit-button').addEventListener('click', function() {
@@ -120,8 +118,54 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   document.getElementById('new-button').addEventListener('click', function() {
-    // Implement new functionality here
-    alert('New functionality not implemented yet.');
+    // Create the dialog box
+    const dialogBox = document.createElement('div');
+    dialogBox.setAttribute('id', 'dialog-box');
+    dialogBox.innerHTML = `
+      <label for="fileName">Name:</label>
+      <input type="text" id="fileName" name="fileName"><br><br>
+      <label for="fileType">Type:</label>
+      <select id="fileType" name="fileType">
+        <option value="file">File</option>
+        <option value="directory">Directory</option>
+      </select><br><br>
+      <button id="create-button">Create</button>
+      <button id="cancel-button">Cancel</button>
+    `;
+    document.body.appendChild(dialogBox);
+
+    document.getElementById('create-button').addEventListener('click', function() {
+      const name = document.getElementById('fileName').value;
+      const type = document.getElementById('fileType').value;
+      if (name) {
+        fetch('/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name, type }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Created successfully!');
+          } else {
+            alert('Failed to create.');
+          }
+          document.body.removeChild(dialogBox);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          alert('Failed to create.');
+          document.body.removeChild(dialogBox);
+        });
+      } else {
+        alert('Name is required');
+      }
+    });
+
+    document.getElementById('cancel-button').addEventListener('click', function() {
+      document.body.removeChild(dialogBox);
+    });
   });
 });
-

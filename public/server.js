@@ -1,24 +1,45 @@
 const express = require('express');
 const path = require('path');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-
+const fs = require('fs');
 const app = express();
-const port = 3000;
+const port = process.env.NODE_PORT || 3000;
 
-// Serve static files from the public directory
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Middleware to parse JSON bodies
+app.use(express.json());
 
-// Proxy requests for PHP files to the PHP built-in server
-app.use('/Notebook', createProxyMiddleware({
-  target: 'http://localhost:8000', // URL of the PHP server
-  changeOrigin: true
-}));
+// Serve static files from the Notebook directory
+app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
 
+// Serve the main index.html file
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Endpoint to handle creation of new files or directories
+app.post('/create', (req, res) => {
+  const { name, type } = req.body;
+  const fullPath = path.join(__dirname, 'Notebook', name);
+
+  if (type === 'file') {
+    fs.writeFile(fullPath, '', (err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Failed to create file.' });
+      }
+      return res.status(200).json({ success: true, message: 'File created successfully.' });
+    });
+  } else if (type === 'directory') {
+    fs.mkdir(fullPath, (err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Failed to create directory.' });
+      }
+      return res.status(200).json({ success: true, message: 'Directory created successfully.' });
+    });
+  } else {
+    return res.status(400).json({ success: false, message: 'Invalid type.' });
+  }
+});
+
+// Start the server
 app.listen(port, () => {
-  console.log(`Node.js server is running at http://localhost:${port}`);
-  console.log(`PHP server should be running at http://localhost:8000`);
+  console.log(`Server is running at http://localhost:${port}`);
 });

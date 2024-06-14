@@ -1,2 +1,2 @@
 # Nodevision
-A digital notebook system
+A graph theory inspired digital notebook system made with love and chatGPT.
