@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to update the info panel
   function updateInfoPanel(element) {
     const infoPanel = document.getElementById('element-info');
+    const iframe = document.getElementById('content-frame');
     let infoHTML = '';
 
     if (element.isNode()) {
@@ -74,14 +75,17 @@ document.addEventListener('DOMContentLoaded', function() {
       infoHTML += `<strong>ID:</strong> ${element.id()}<br>`;
       if (element.isParent()) {
         infoHTML += `<strong>Type:</strong> Region<br>`;
+        iframe.src = ''; // Clear the iframe for regions
       } else {
         infoHTML += `<strong>Type:</strong> Node<br>`;
+        iframe.src = `http://localhost:8000/${element.id()}`;
       }
     } else if (element.isEdge()) {
       infoHTML = `<strong>Edge:</strong> ${element.id()}<br>`;
       infoHTML += `<strong>Source:</strong> ${element.source().id()}<br>`;
       infoHTML += `<strong>Target:</strong> ${element.target().id()}<br>`;
       infoHTML += `<strong>Type:</strong> ${element.data('type') || 'Edge'}<br>`;
+      iframe.src = ''; // Clear the iframe for edges
     }
 
     infoPanel.innerHTML = infoHTML;
@@ -97,6 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
   cy.on('tap', function(event){
     if(event.target === cy){
       document.getElementById('element-info').innerHTML = 'Click on a node, edge, or region to see details.';
+      document.getElementById('content-frame').src = ''; // Clear the iframe when clicking on the background
       selectedElement = null;
     }
   });
@@ -124,11 +129,8 @@ document.addEventListener('DOMContentLoaded', function() {
     dialogBox.innerHTML = `
       <label for="fileName">Name:</label>
       <input type="text" id="fileName" name="fileName"><br><br>
-      <label for="fileType">Type:</label>
-      <select id="fileType" name="fileType">
-        <option value="file">File</option>
-        <option value="directory">Directory</option>
-      </select><br><br>
+      <label for="fileContent">Content:</label><br>
+      <textarea id="fileContent" name="fileContent" rows="10" cols="30"><!DOCTYPE html><html><head><title>New Page</title></head><body><h1>New Page</h1></body></html></textarea><br><br>
       <button id="create-button">Create</button>
       <button id="cancel-button">Cancel</button>
     `;
@@ -136,14 +138,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('create-button').addEventListener('click', function() {
       const name = document.getElementById('fileName').value;
-      const type = document.getElementById('fileType').value;
-      if (name) {
+      const content = document.getElementById('fileContent').value;
+      if (name && selectedElement && selectedElement.isParent()) {
+        const regionId = selectedElement.id();
         fetch('/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ name, type }),
+          body: JSON.stringify({ name, content, regionId }),
         })
         .then(response => response.json())
         .then(data => {
@@ -160,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
           document.body.removeChild(dialogBox);
         });
       } else {
-        alert('Name is required');
+        alert('Name is required and you must select a region.');
       }
     });
 
