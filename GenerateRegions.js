@@ -45,7 +45,7 @@ function generateRegions(dir, parent = null, relativeDir = '') {
 
 const regions = generateRegions(notebookDir);
 
-const regionsOutput = `// GeneratedRegions.js\nconst regions = ${JSON.stringify(regions, null, 2)};\n`;
+const regionsOutput = `// GeneratedRegions.js\nconst regions = [\n${regions.map(region => JSON.stringify(region)).join(',\n')}\n];\n`;
 
 fs.writeFileSync(generatedRegionsPath, regionsOutput, 'utf8');
 console.log(`Generated regions have been written to ${generatedRegionsPath}`);

@@ -70,7 +70,7 @@ function generateEdgesFromFiles(dirPath, validNodeIds) {
 // Main function to write edges to file
 function writeEdgesToFile(dirPath, outputFilePath, validNodeIds) {
   const edges = generateEdgesFromFiles(dirPath, validNodeIds);
-  const edgesFileContent = `var edges = ${JSON.stringify(edges, null, 2)};\n`;
+  const edgesFileContent = 'var edges = [\n' + edges.map(edge => JSON.stringify(edge)).join(',\n') + '\n];';
 
   fs.writeFileSync(outputFilePath, edgesFileContent, 'utf8');
   console.log(`Generated edges have been written to ${outputFilePath}`);

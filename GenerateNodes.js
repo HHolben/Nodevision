@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const cheerio = require('cheerio'); // Assuming you'll use Cheerio to parse HTML files
 
 // Function to recursively get all files in a directory
 function getAllFiles(dirPath, arrayOfFiles = []) {
@@ -16,8 +17,15 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
   return arrayOfFiles;
 }
 
+// Function to extract image URL from HTML file using Cheerio
+function extractImageUrlFromHtml(filePath) {
+  const fileContent = fs.readFileSync(filePath, 'utf8');
+  const $ = cheerio.load(fileContent);
+  const imgElement = $('img').first(); // Select the first <img> element
+  const imageUrl = imgElement.attr('src'); // Get the src attribute of the image
 
-
+  return imageUrl;
+}
 
 // Function to generate nodes from files
 function generateNodesFromFiles(dirPath) {
@@ -29,13 +37,16 @@ function generateNodesFromFiles(dirPath) {
       const label = path.basename(file);
       const region = path.dirname(relativePath).split(path.sep).join(' > ');
 
+      const imageUrl = extractImageUrlFromHtml(file);
+      const fullImageUrl = imageUrl ? `http://localhost:8000/${path.join(path.dirname(relativePath), imageUrl)}` : 'http://localhost:3000/DefaultNodeImage.png'; // Get the full image URL
+
       return {
         data: {
           id: relativePath,
           label: label,
           link: relativePath,
           soundLocation: '/path/to/sound_location.mp3',
-          imageUrl: '/path/to/image/index.png'
+          imageUrl: fullImageUrl // Set the image URL
         }
       };
     });
@@ -46,7 +57,7 @@ function generateNodesFromFiles(dirPath) {
 // Main function to write nodes to file
 function writeNodesToFile(dirPath, outputFilePath) {
   const nodes = generateNodesFromFiles(dirPath);
-  const nodesFileContent = `var nodes = ${JSON.stringify(nodes, null, 2)};`;
+  const nodesFileContent = 'var nodes = [\n' + nodes.map(node => JSON.stringify(node)).join(',\n') + '\n];';
 
   fs.writeFileSync(outputFilePath, nodesFileContent, 'utf8');
   console.log(`Generated nodes have been written to ${outputFilePath}`);
