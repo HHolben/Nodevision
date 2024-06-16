@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
       // Merge nodes and regions into one elements array
       var elements = [...regions, ...nodes, ...edges];
 
-      console.log(elements);
 
       var cy = cytoscape({
         container: document.getElementById('cy'),
