@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Maximum regions to display
+let MaximumRegionsDisplayed = 100; // Default value, can be adjusted via index.html
+
 const notebookDir = path.join(__dirname, 'Notebook');
 const generatedRegionsPath = path.join(__dirname, 'public', 'GeneratedRegions.js');
 
@@ -43,7 +46,7 @@ function generateRegions(dir, parent = null, relativeDir = '') {
   return regions;
 }
 
-const regions = generateRegions(notebookDir);
+const regions = generateRegions(notebookDir).slice(0, MaximumRegionsDisplayed); // Limit the number of regions
 
 const regionsOutput = `// GeneratedRegions.js\nconst regions = [\n${regions.map(region => JSON.stringify(region)).join(',\n')}\n];\n`;
 

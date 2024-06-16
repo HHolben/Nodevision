@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio'); // Assuming you'll use Cheerio to parse HTML files
 
+// Maximum nodes to display
+let MaximumNodesDisplayed = 100; // Default value, can be adjusted via index.html
+
 // Function to recursively get all files in a directory
 function getAllFiles(dirPath, arrayOfFiles = []) {
   const files = fs.readdirSync(dirPath);
@@ -32,6 +35,7 @@ function generateNodesFromFiles(dirPath) {
   const allFiles = getAllFiles(dirPath);
   const nodes = allFiles
     .filter(file => ['.html', '.php', '.js', '.py'].includes(path.extname(file)))
+    .slice(0, MaximumNodesDisplayed) // Limit the number of nodes
     .map(file => {
       const relativePath = path.relative(dirPath, file);
       const label = path.basename(file);
@@ -45,7 +49,7 @@ function generateNodesFromFiles(dirPath) {
           id: relativePath,
           label: label,
           link: relativePath,
-          soundLocation: '/path/to/sound_location.mp3',
+          //soundLocation: '/path/to/sound_location.mp3',
           imageUrl: fullImageUrl // Set the image URL
         }
       };
@@ -69,3 +73,9 @@ const outputFilePath = path.join(__dirname, 'public', 'GeneratedNodes.js');
 
 // Generate and write nodes to file
 writeNodesToFile(notebookDir, outputFilePath);
+
+// Function to set the maximum nodes displayed value from an external source
+function setMaximumNodesDisplayed(value) {
+  MaximumNodesDisplayed = value;
+  console.log(`MaximumNodesDisplayed set to ${MaximumNodesDisplayed}`);
+}

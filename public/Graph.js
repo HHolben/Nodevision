@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selector: 'node',
             style: {
               ...styles.node,
-              'background-image': 'data(imageUrl)', // Set the background image to the imageUrl data attribute
+              //'background-image': 'data(imageUrl)', // Set the background image to the imageUrl data attribute
               'background-fit': 'cover', // Adjust background image to cover the node
               'background-clip': 'node' // Clip the image to the node shape
             }

@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio');
 
+// Maximum edges to display
+let MaximumEdgesDisplayed = 100; // Default value, can be adjusted via index.html
+
 // Function to recursively get all files in a directory
 function getAllFiles(dirPath, arrayOfFiles = []) {
   const files = fs.readdirSync(dirPath);
@@ -64,13 +67,13 @@ function generateEdgesFromFiles(dirPath, validNodeIds) {
       edges = edges.concat(newEdges);
     });
 
-  return edges;
+  return edges.slice(0, MaximumEdgesDisplayed); // Limit the number of edges
 }
 
 // Main function to write edges to file
 function writeEdgesToFile(dirPath, outputFilePath, validNodeIds) {
   const edges = generateEdgesFromFiles(dirPath, validNodeIds);
-  const edgesFileContent = 'var edges = [\n' + edges.map(edge => JSON.stringify(edge)).join(',\n') + '\n];';
+  const edgesFileContent = `var edges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\n`;
 
   fs.writeFileSync(outputFilePath, edgesFileContent, 'utf8');
   console.log(`Generated edges have been written to ${outputFilePath}`);
