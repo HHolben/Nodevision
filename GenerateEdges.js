@@ -3,7 +3,7 @@ const path = require('path');
 const cheerio = require('cheerio');
 
 // Maximum edges to display
-let MaximumEdgesDisplayed = 100; // Default value, can be adjusted via index.html
+let MaximumEdgesDisplayed = 10; // Default value, can be adjusted via index.html
 
 // Function to recursively get all files in a directory
 function getAllFiles(dirPath, arrayOfFiles = []) {

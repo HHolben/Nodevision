@@ -1,0 +1,18 @@
+[
+    {
+      "id": "infoPanel",
+      "title": "Element Information",
+      "contentUrl": ""
+    },
+    {
+      "id": "additionalWindow1",
+      "title": "Additional Window 1",
+      "contentUrl": "http://example.com/content1"
+    },
+    {
+      "id": "additionalWindow2",
+      "title": "Additional Window 2",
+      "contentUrl": "http://example.com/content2"
+    }
+  ]
+  
