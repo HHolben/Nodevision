@@ -159,6 +159,28 @@ body {
             overflow: hidden;
         }
     </style>
+
+
+  <!-- Include the Cytoscape.js library -->
+  <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+
+  <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+  <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+  <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
+  <!--<script src="https://unpkg.com/cytoscape-elk/cytoscape-elk.js"></script>-->
+
+
+  
+<script src="GeneratedNodes.js" defer></script>
+<script src="GeneratedEdges.js" defer></script>
+<script src="GeneratedRegions.js" defer></script>
+<script src="Graph.js" defer></script>
+
 </head>
 <body>
 
@@ -195,7 +217,21 @@ body {
       <a href="#" onclick="runScript('View Script 2')">Script 2</a>
     </div>
   </div>
+
+
+  <div class="dropdown">
+    <button class="dropbtn">Settings</button>
+    <div class="dropdown-content">
+      <a href="#" onclick="runScript('Settings Script 1')">Script 1</a>
+      <a href="#" onclick="runScript('Settings Script 2')">Script 2</a>
+    </div>
+  </div>
+
 </div>
+
+
+
+
 
 <br>
 
@@ -207,8 +243,22 @@ body {
 <div class="container-wrapper">
     <div class="container container-left">
         <p>Left Container</p>
-    </div>
+
+
+
+
+
+
+        <div id="content">
+          <div id="cy"></div>
+         </div>
+
+
+    </div><!--End of div class="container container-left"-->
+
     <div class="divider" id="divider"></div>
+
+
     <div class="container container-right">
         <p>Right Container</p>
     </div>
