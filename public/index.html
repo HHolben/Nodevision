@@ -51,6 +51,7 @@
           display: flex;
           width: 90%;
           flex-grow: 1; /* Ensure content stretches vertically */
+
       }
       #cy {
           flex: 1;
@@ -60,6 +61,7 @@
       }
       #info-panel {
           width: 300px;
+          height:100%;
       }
       #content-frame-container {
           height: 100%; /* Ensure container takes full height */
@@ -219,7 +221,7 @@
       <div id="info-panel">
           <h3>Selected Element Info</h3>
           <div id="content-frame-container">
-              <iframe id="content-frame"></iframe>
+              <iframe id="content-frame" style="height:100%;"></iframe>
           </div>
       </div>
   </div>
