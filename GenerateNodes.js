@@ -33,6 +33,8 @@ function extractImageUrlFromHtml(filePath) {
 // Function to generate nodes from files
 function generateNodesFromFiles(dirPath) {
   const allFiles = getAllFiles(dirPath);
+  let index = 0; // Initialize index counter
+
   const nodes = allFiles
     .filter(file => ['.html', '.php', '.js', '.py'].includes(path.extname(file)))
     .slice(0, MaximumNodesDisplayed) // Limit the number of nodes
@@ -44,19 +46,24 @@ function generateNodesFromFiles(dirPath) {
       const imageUrl = extractImageUrlFromHtml(file);
       const fullImageUrl = imageUrl ? `http://localhost:8000/${path.join(path.dirname(relativePath), imageUrl)}` : 'http://localhost:3000/DefaultNodeImage.png'; // Get the full image URL
 
-      return {
+      const node = {
         data: {
           id: relativePath,
           label: label,
           link: relativePath,
           //soundLocation: '/path/to/sound_location.mp3',
-          imageUrl: fullImageUrl // Set the image URL
+          imageUrl: fullImageUrl, // Set the image URL
+          IndexNumber: index // Assign the index number
         }
       };
+
+      index++; // Increment index for the next node
+      return node;
     });
 
   return nodes;
 }
+
 
 // Main function to write nodes to file
 function writeNodesToFile(dirPath, outputFilePath) {
