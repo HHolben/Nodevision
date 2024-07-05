@@ -4,253 +4,130 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nodevision Index</title>
+    <link rel="stylesheet" href="NodeViewContainerStyles.css">
+    <link rel="stylesheet" href="ToolbarStyles.css">
+    <link rel="stylesheet" href="GraphStyles.css">
     <style>
-      html, body {
-          height: 100%; /* Ensure full height */
-          margin: 0;
-          padding: 0;
-          font-family: Arial, sans-serif;
-          background-color: #ffffff;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-      }
-      .container-wrapper {
-          display: flex;
-          flex: 1;
-          overflow: hidden;
-          height: 100%; /* Fill height of body */
-      }
-      .container {
-          flex-grow: 1;
-          padding: 10px;
-          overflow: auto;
-          height: 100%; /* Fill height of .container-wrapper */
-          display: flex;
-          flex-direction: column;
-      }
-      .container-left {
-          background-color: #f0f0f0;
-          border-right: 2px solid #ddd;
-      }
-      .container-right {
-          background-color: #fff;
-          border-left: 2px solid #ddd;
-          height: 100%; /* Fill height of .container-wrapper */
-          display: flex;
-          flex-direction: column;
-      }
-      .divider {
-          width: 5px;
-          background-color: #ddd;
-          cursor: ew-resize;
-          position: relative;
-          z-index: 1;
-      }
-      #content {
-          display: flex;
-          width: 90%;
-          flex-grow: 1; /* Ensure content stretches vertically */
+        html, body {
+            height: 100%; /* Ensure full height */
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+    </style>
+    <!-- Include Libraries: -->
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+    <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
+    <!-- <script src="https://unpkg.com/cytoscape-elk/cytoscape-elk.js"></script> -->
 
-      }
-      #cy {
-          flex: 1;
-          height: 600px;
-          border: 1px solid #ccc;
-          margin-right: 20px;
-      }
-      #info-panel {
-          width: 300px;
-          height:100%;
-      }
-      #content-frame-container {
-          height: 95%; /* Ensure container takes full height */
-          flex-grow: 1; /* Ensure it stretches vertically */
-      }
-      #content-frame {
-          width: 100%; /* Take full width of container */
-          height: 100%; /* Take full height of container */
-          border: none; /* Optional: Removes iframe border */
-      }
-      .toolbar {
-          background-color: #333;
-          overflow: hidden;
-      }
-      .toolbar a {
-          float: left;
-          display: block;
-          color: white;
-          text-align: center;
-          padding: 14px 20px;
-          text-decoration: none;
-      }
-      .toolbar a:hover {
-          background-color: #555;
-      }
-      .dropdown {
-          float: left;
-          overflow: hidden;
-      }
-      .dropdown .dropbtn {
-          font-size: 16px;
-          border: none;
-          outline: none;
-          color: white;
-          background-color: inherit;
-          margin: 0;
-          padding: 14px 20px;
-          text-decoration: none;
-          display: block;
-          cursor: pointer;
-          position: relative;
-          display: inline-block;
-      }
-      .dropdown-content {
-          display: none;
-          position: absolute;
-          background-color: #f9f9f9;
-          min-width: 160px;
-          z-index: 1;
-      }
-      .dropdown-content a {
-          color: black;
-          padding: 12px 16px;
-          text-decoration: none;
-          display: block;
-          text-align: left;
-      }
-      .dropdown-content a:hover {
-          background-color: #ddd;
-      }
-      .dropdown:hover .dropdown-content {
-          display: block;
-      }
-  </style>
-
-  <!-- Include the Cytoscape.js library -->
-  <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-
-  <script type="text/javascript" async
-    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
-  </script>
-
-  <script src="https://unpkg.com/layout-base/layout-base.js"></script>
-  <script src="https://unpkg.com/cose-base/cose-base.js"></script>
-  <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
-  <!--<script src="https://unpkg.com/cytoscape-elk/cytoscape-elk.js"></script>-->
-
-
-  
-<script src="GeneratedNodes.js" defer></script>
-<script src="GeneratedEdges.js" defer></script>
-<script src="GeneratedRegions.js" defer></script>
-<script src="Graph.js" defer></script>
-
+    <!-- Include Nodevision Scripts -->
+    <script src="GeneratedNodes.js" defer></script>
+    <script src="GeneratedEdges.js" defer></script>
+    <script src="GeneratedRegions.js" defer></script>
+    <script src="Graph.js" defer></script>
 </head>
+
 <body>
-
-
-
-
-
-
-
-
-
-
-<div class="toolbar">
-  <div class="dropdown">
-    <button class="dropbtn">File</button>
-    <div class="dropdown-content">
-      <a href="#" onclick="runScript('NewNotebookPageInitializer.js')">New File</a>
-      <a href="#" onclick="runScript('File Script 2')">Script 2</a>
-    </div>
-  </div>
+    <div class="toolbar">
+        <div class="dropdown">
+            <button class="dropbtn">File</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="runScript('NewNotebookPageInitializer.js')">New File</a>
+                <br>
+                <a href="#" onclick="runScript('File Script 2')">Script 2</a>
+            </div>
+        </div>
   
-  <div class="dropdown">
-    <button class="dropbtn">Edit</button>
-    <div class="dropdown-content">
-      <a href="#" onclick="runScript('Edit Script 1')">Script 1</a>
-      <a href="#" onclick="runScript('Edit Script 2')">Script 2</a>
-    </div>
-  </div>
+        <div class="dropdown">
+            <button class="dropbtn">Edit</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="runScript('Edit Script 1')">Script 1</a>
+                <br>
+                <a href="#" onclick="runScript('Edit Script 2')">Script 2</a>
+            </div>
+        </div>
   
-  <div class="dropdown">
-    <button class="dropbtn">View</button>
-    <div class="dropdown-content">
-      <a href="#" onclick="runScript('View Script 1')">Script 1</a>
-      <a href="#" onclick="runScript('View Script 2')">Script 2</a>
+        <div class="dropdown">
+            <button class="dropbtn">View</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="runScript('View Script 1')">Script 1</a>
+                <br>
+                <a href="#" onclick="runScript('View Script 2')">Script 2</a>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="dropbtn">Settings</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="runScript('Settings Script 1')">Script 1</a>
+                <br>
+                <a href="#" onclick="runScript('Settings Script 2')">Script 2</a>
+            </div>
+        </div>
     </div>
-  </div>
 
-
-  <div class="dropdown">
-    <button class="dropbtn">Settings</button>
-    <div class="dropdown-content">
-      <a href="#" onclick="runScript('Settings Script 1')">Script 1</a>
-      <a href="#" onclick="runScript('Settings Script 2')">Script 2</a>
+    <div class="container-wrapper">
+        <div class="container container-left">
+            <div id="content">
+                <div id="cy"></div>
+            </div>
+        </div>
+        <div class="divider" id="divider"></div>
+        <div class="container container-right">
+            <div id="info-panel">
+                <div id="content-frame-container">
+                    <iframe id="content-frame" style="height: 95%;"></iframe>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-</div>
+    <script>
+        const divider = document.getElementById('divider');
+        const containerLeft = divider.previousElementSibling;
+        const containerRight = divider.nextElementSibling;
+        const contentFrame = document.getElementById('content-frame');
+        let isResizing = false;
 
+        divider.addEventListener('mousedown', function (e) {
+            isResizing = true;
+            contentFrame.style.pointerEvents = 'none'; // Disable pointer events on iframe
+        });
 
+        document.addEventListener('mousemove', function (e) {
+            if (!isResizing) return;
+            let offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
+            containerLeft.style.width = `calc(100% - ${offsetRight}px)`;
+            containerRight.style.width = `${offsetRight}px`;
 
+            // Adjust iframe width as well
+            let iframeWidth = containerRight.offsetWidth;
+            contentFrame.style.width = `${iframeWidth}px`;
+        });
 
+        document.addEventListener('mouseup', function (e) {
+            isResizing = false;
+            contentFrame.style.pointerEvents = 'auto'; // Re-enable pointer events on iframe
+        });
 
-<br>
-
-<br>
-
-</br>
-
-
-<div class="container-wrapper">
-  <div class="container container-left">
-      <div id="content">
-          <div id="cy"></div>
-      </div>
-  </div>
-
-  <div class="divider" id="divider"></div>
-
-  <div class="container container-right">
-      <div id="info-panel">
-          <div id="content-frame-container">
-              <iframe id="content-frame" style="height:s 95%;"></iframe>
-          </div>
-      </div>
-  </div>
-</div>
-
-<script>
-  const divider = document.getElementById('divider');
-  const containerLeft = divider.previousElementSibling;
-  const containerRight = divider.nextElementSibling;
-
-  let isResizing = false;
-
-  divider.addEventListener('mousedown', function (e) {
-      isResizing = true;
-  });
-
-  document.addEventListener('mousemove', function (e) {
-      if (!isResizing) return;
-
-      let offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
-      containerLeft.style.width = `calc(100% - ${offsetRight}px)`;
-      containerRight.style.width = `${offsetRight}px`;
-
-      // Adjust iframe width as well
-      let iframeWidth = containerRight.offsetWidth; // Adjust according to your layout
-      document.getElementById('content-frame').style.width = `${iframeWidth}px`;
-  });
-
-  document.addEventListener('mouseup', function (e) {
-      isResizing = false;
-  });
-</script>
+        function runScript(scriptName) {
+            try {
+                const script = document.createElement('script');
+                script.src = scriptName;
+                document.body.appendChild(script);
+            } catch (error) {
+                console.error(`Error running script ${scriptName}:`, error);
+            }
+        }
+    </script>
 
 </body>
 </html>
