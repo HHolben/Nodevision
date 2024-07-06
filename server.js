@@ -14,11 +14,29 @@ const port = 3000;
 app.use(bodyParser.json());
 
 
+
+
 // Endpoint to handle requests from NewNotebookPageInitializer.js
-app.post('/initialize', (req, res) => {
-    console.log('Initialize endpoint hit');
-    res.send('Request received and processed');
+app.post('/initialize', async (req, res) => {
+  const { htmlContent } = req.body;
+  const filePath = path.join(__dirname, 'Notebook', 'new-notebook-page.html');
+
+  try {
+      await fs.writeFile(filePath, htmlContent);
+      console.log(`HTML file "${filePath}" has been successfully created!`);
+      res.send('HTML file has been created successfully');
+  } catch (error) {
+      console.error('Error writing HTML file:', error);
+      res.status(500).send('Error creating HTML file');
+  }
 });
+
+
+
+
+
+
+
 
 
 
@@ -97,6 +115,15 @@ function runScript(script) {
 
     // Serve static files from the public directory with correct MIME types
     app.use(express.static('public'));
+
+
+    
+
+
+
+
+
+    
 
     // Ensure JavaScript files have the correct MIME type
     app.get('/GeneratedNodes.js', (req, res) => {
