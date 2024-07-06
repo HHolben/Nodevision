@@ -13,6 +13,16 @@ const port = 3000;
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 
+
+// Endpoint to handle requests from NewNotebookPageInitializer.js
+app.post('/initialize', (req, res) => {
+    console.log('Initialize endpoint hit');
+    res.send('Request received and processed');
+});
+
+
+
+
 // POST endpoint to generate the file
 app.post('/generate', (req, res) => {
   // Generate the HTML content (for demonstration purposes)
