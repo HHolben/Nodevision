@@ -12,6 +12,7 @@
         align-items: center;
         height: 100vh;
         margin: 0;
+        background-color: #e0e0e0;
     }
 
     .box {
@@ -21,32 +22,38 @@
         background-color: #f0f0f0;
         position: absolute;
         cursor: default; /* Default cursor for the entire box */
-        overflow: auto;
+        overflow: hidden;
         box-sizing: border-box;
     }
 
-    .box-content {
-        padding: 10px;
+    .fullscreen-button, .close-button {
+        position: absolute;
+        top: 10px;
     }
 
     .fullscreen-button {
-        position: absolute;
         right: 10px;
-        top: 10px;
     }
 
     .close-button {
-        position: absolute;
-        top: 10px;
         left: 10px;
     }
 
+    .box-content {
+        position: relative;
+        padding: 10px;
+        height: calc(100% - 40px); /* Adjusted to account for buttons */
+        box-sizing: border-box;
+    }
+
     .resize-handle {
-        width: 10px;
-        height: 10px;
+        width: 15px;
+        height: 15px;
         background-color: #333;
         position: absolute;
         cursor: se-resize;
+        bottom: 0;
+        right: 0;
     }
 
     .drag-bar {
@@ -87,12 +94,16 @@
         var originalHeight = 0;
         var originalX = 0;
         var originalY = 0;
+        var mouseX = 0;
+        var mouseY = 0;
 
         resizeHandle.addEventListener('mousedown', function(e) {
             e.preventDefault();
             isResizing = true;
             originalWidth = element.offsetWidth;
             originalHeight = element.offsetHeight;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
             document.addEventListener('mousemove', resize);
             document.addEventListener('mouseup', stopResize);
         });
@@ -100,16 +111,20 @@
         dragBar.addEventListener('mousedown', function(e) {
             e.preventDefault();
             isDragging = true;
-            originalX = e.clientX;
-            originalY = e.clientY;
+            originalX = element.offsetLeft;
+            originalY = element.offsetTop;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', stopDrag);
         });
 
         function resize(e) {
             if (isResizing) {
-                element.style.width = (originalWidth + e.clientX - resizeHandle.getBoundingClientRect().left) + 'px';
-                element.style.height = (originalHeight + e.clientY - resizeHandle.getBoundingClientRect().top) + 'px';
+                var width = originalWidth + (e.clientX - mouseX);
+                var height = originalHeight + (e.clientY - mouseY);
+                element.style.width = width + 'px';
+                element.style.height = height + 'px';
             }
         }
 
@@ -121,12 +136,10 @@
 
         function drag(e) {
             if (isDragging) {
-                var deltaX = e.clientX - originalX;
-                var deltaY = e.clientY - originalY;
-                element.style.top = (element.offsetTop + deltaY) + 'px';
-                element.style.left = (element.offsetLeft + deltaX) + 'px';
-                originalX = e.clientX;
-                originalY = e.clientY;
+                var deltaX = e.clientX - mouseX;
+                var deltaY = e.clientY - mouseY;
+                element.style.top = (originalY + deltaY) + 'px';
+                element.style.left = (originalX + deltaX) + 'px';
             }
         }
 
