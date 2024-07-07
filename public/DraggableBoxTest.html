@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resizable and Draggable Element</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .box {
+        width: 300px;
+        height: 200px;
+        border: 2px solid #333;
+        background-color: #f0f0f0;
+        position: absolute;
+        cursor: default; /* Default cursor for the entire box */
+        overflow: auto;
+        box-sizing: border-box;
+    }
+
+    .box-content {
+        padding: 10px;
+    }
+
+    .fullscreen-button {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+    }
+
+    .close-button {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+    }
+
+    .resize-handle {
+        width: 10px;
+        height: 10px;
+        background-color: #333;
+        position: absolute;
+        cursor: se-resize;
+    }
+
+    .drag-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #ddd;
+        cursor: move;
+    }
+</style>
+</head>
+<body>
+
+<div id="draggableBox" class="box">
+    <div class="drag-bar"></div>
+    <div class="box-content">
+        <div class="fullscreen-button">
+            <button onclick="toggleFullscreen()">Full Screen</button>
+        </div>
+        <div class="close-button">
+            <button onclick="closeBox()">Close</button>
+        </div>
+        <h2>Resizable and Draggable Box</h2>
+        <p>This box can be resized and dragged.</p>
+    </div>
+    <div class="resize-handle"></div>
+</div>
+
+<script>
+    // Make the box draggable and resizable
+    makeResizableAndDraggable(document.getElementById("draggableBox"));
+
+    function makeResizableAndDraggable(element) {
+        var resizeHandle = element.querySelector('.resize-handle');
+        var dragBar = element.querySelector('.drag-bar');
+        var isResizing = false;
+        var isDragging = false;
+        var originalWidth = 0;
+        var originalHeight = 0;
+        var originalX = 0;
+        var originalY = 0;
+
+        resizeHandle.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            isResizing = true;
+            originalWidth = element.offsetWidth;
+            originalHeight = element.offsetHeight;
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        });
+
+        dragBar.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            isDragging = true;
+            originalX = e.clientX;
+            originalY = e.clientY;
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        });
+
+        function resize(e) {
+            if (isResizing) {
+                element.style.width = (originalWidth + e.clientX - resizeHandle.getBoundingClientRect().left) + 'px';
+                element.style.height = (originalHeight + e.clientY - resizeHandle.getBoundingClientRect().top) + 'px';
+            }
+        }
+
+        function stopResize() {
+            isResizing = false;
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                var deltaX = e.clientX - originalX;
+                var deltaY = e.clientY - originalY;
+                element.style.top = (element.offsetTop + deltaY) + 'px';
+                element.style.left = (element.offsetLeft + deltaX) + 'px';
+                originalX = e.clientX;
+                originalY = e.clientY;
+            }
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+    }
+
+    // Toggle fullscreen mode
+    function toggleFullscreen() {
+        var elem = document.getElementById("draggableBox");
+        elem.classList.toggle("fullscreen");
+        if (elem.classList.contains("fullscreen")) {
+            elem.style.width = "100%";
+            elem.style.height = "100%";
+            elem.style.top = "0";
+            elem.style.left = "0";
+            elem.querySelector('.fullscreen-button button').textContent = "Exit Full Screen";
+        } else {
+            elem.style.width = "300px";
+            elem.style.height = "200px";
+            elem.style.top = "";
+            elem.style.left = "";
+            elem.querySelector('.fullscreen-button button').textContent = "Full Screen";
+        }
+    }
+
+    // Close the box
+    function closeBox() {
+        var elem = document.getElementById("draggableBox");
+        elem.style.display = "none";
+    }
+</script>
+
+</body>
+</html>
