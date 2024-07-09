@@ -66,114 +66,139 @@
 </head>
 <body>
 
-<div id="draggableBox" class="box">
-    <div class="drag-bar"></div>
-    <div class="box-content">
-        <div class="fullscreen-button">
-            <button onclick="toggleFullscreen()">Full Screen</button>
-        </div>
-        <div class="close-button">
-            <button onclick="closeBox()">Close</button>
-        </div>
-        <h2>Resizable and Draggable Box</h2>
-        <p>This box can be resized and dragged.</p>
-    </div>
-    <div class="resize-handle"></div>
-</div>
-
 <script>
-    // Make the box draggable and resizable
-    makeResizableAndDraggable(document.getElementById("draggableBox"));
+    class DraggableBox {
+        constructor(id, heading, content, script) {
+            this.id = id;
+            this.heading = heading;
+            this.content = content;
+            this.script = script;
+            this.createElement();
+            this.makeResizableAndDraggable();
+        }
 
-    function makeResizableAndDraggable(element) {
-        var resizeHandle = element.querySelector('.resize-handle');
-        var dragBar = element.querySelector('.drag-bar');
-        var isResizing = false;
-        var isDragging = false;
-        var originalWidth = 0;
-        var originalHeight = 0;
-        var originalX = 0;
-        var originalY = 0;
-        var mouseX = 0;
-        var mouseY = 0;
+        createElement() {
+            const box = document.createElement('div');
+            box.id = this.id;
+            box.className = 'box';
+            box.innerHTML = `
+                <div class="drag-bar"></div>
+                <div class="box-content">
+                    <div class="fullscreen-button">
+                        <button onclick="${this.id}.toggleFullscreen()">Full Screen</button>
+                    </div>
+                    <div class="close-button">
+                        <button onclick="${this.id}.closeBox()">Close</button>
+                    </div>
+                    <h2>${this.heading}</h2>
+                    <p>${this.content}</p>
+                </div>
+                <div class="resize-handle"></div>
+            `;
+            document.body.appendChild(box);
+        }
 
-        resizeHandle.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            isResizing = true;
-            originalWidth = element.offsetWidth;
-            originalHeight = element.offsetHeight;
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            document.addEventListener('mousemove', resize);
-            document.addEventListener('mouseup', stopResize);
-        });
+        makeResizableAndDraggable() {
+            const element = document.getElementById(this.id);
+            const resizeHandle = element.querySelector('.resize-handle');
+            const dragBar = element.querySelector('.drag-bar');
+            let isResizing = false;
+            let isDragging = false;
+            let originalWidth = 0;
+            let originalHeight = 0;
+            let originalX = 0;
+            let originalY = 0;
+            let mouseX = 0;
+            let mouseY = 0;
 
-        dragBar.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            isDragging = true;
-            originalX = element.offsetLeft;
-            originalY = element.offsetTop;
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', stopDrag);
-        });
+            resizeHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isResizing = true;
+                originalWidth = element.offsetWidth;
+                originalHeight = element.offsetHeight;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', stopResize);
+            });
 
-        function resize(e) {
-            if (isResizing) {
-                var width = originalWidth + (e.clientX - mouseX);
-                var height = originalHeight + (e.clientY - mouseY);
-                element.style.width = width + 'px';
-                element.style.height = height + 'px';
+            dragBar.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isDragging = true;
+                originalX = element.offsetLeft;
+                originalY = element.offsetTop;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDrag);
+            });
+
+            const resize = (e) => {
+                if (isResizing) {
+                    const width = originalWidth + (e.clientX - mouseX);
+                    const height = originalHeight + (e.clientY - mouseY);
+                    element.style.width = width + 'px';
+                    element.style.height = height + 'px';
+                }
+            }
+
+            const stopResize = () => {
+                isResizing = false;
+                document.removeEventListener('mousemove', resize);
+                document.removeEventListener('mouseup', stopResize);
+            }
+
+            const drag = (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - mouseX;
+                    const deltaY = e.clientY - mouseY;
+                    element.style.top = (originalY + deltaY) + 'px';
+                    element.style.left = (originalX + deltaX) + 'px';
+                }
+            }
+
+            const stopDrag = () => {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', stopDrag);
             }
         }
 
-        function stopResize() {
-            isResizing = false;
-            document.removeEventListener('mousemove', resize);
-            document.removeEventListener('mouseup', stopResize);
-        }
-
-        function drag(e) {
-            if (isDragging) {
-                var deltaX = e.clientX - mouseX;
-                var deltaY = e.clientY - mouseY;
-                element.style.top = (originalY + deltaY) + 'px';
-                element.style.left = (originalX + deltaX) + 'px';
+        toggleFullscreen() {
+            const elem = document.getElementById(this.id);
+            elem.classList.toggle("fullscreen");
+            if (elem.classList.contains("fullscreen")) {
+                elem.style.width = "100%";
+                elem.style.height = "100%";
+                elem.style.top = "0";
+                elem.style.left = "0";
+                elem.querySelector('.fullscreen-button button').textContent = "Exit Full Screen";
+            } else {
+                elem.style.width = "300px";
+                elem.style.height = "200px";
+                elem.style.top = "";
+                elem.style.left = "";
+                elem.querySelector('.fullscreen-button button').textContent = "Full Screen";
             }
         }
 
-        function stopDrag() {
-            isDragging = false;
-            document.removeEventListener('mousemove', drag);
-            document.removeEventListener('mouseup', stopDrag);
+        closeBox() {
+            const elem = document.getElementById(this.id);
+            elem.style.display = "none";
         }
     }
 
-    // Toggle fullscreen mode
-    function toggleFullscreen() {
-        var elem = document.getElementById("draggableBox");
-        elem.classList.toggle("fullscreen");
-        if (elem.classList.contains("fullscreen")) {
-            elem.style.width = "100%";
-            elem.style.height = "100%";
-            elem.style.top = "0";
-            elem.style.left = "0";
-            elem.querySelector('.fullscreen-button button').textContent = "Exit Full Screen";
-        } else {
-            elem.style.width = "300px";
-            elem.style.height = "200px";
-            elem.style.top = "";
-            elem.style.left = "";
-            elem.querySelector('.fullscreen-button button').textContent = "Full Screen";
-        }
-    }
+    // Define your boxes here
+    const boxes = [
+        { id: 'box1', heading: 'Box 1', content: 'Content for Box 1', script: '' },
+        { id: 'box2', heading: 'Box 2', content: 'Content for Box 2', script: '' },
+        { id: 'box3', heading: 'Box 3', content: 'Content for Box 3', script: '' },
+    ];
 
-    // Close the box
-    function closeBox() {
-        var elem = document.getElementById("draggableBox");
-        elem.style.display = "none";
-    }
+    // Create instances of DraggableBox
+    boxes.forEach(box => {
+        window[box.id] = new DraggableBox(box.id, box.heading, box.content, box.script);
+    });
 </script>
 
 </body>
