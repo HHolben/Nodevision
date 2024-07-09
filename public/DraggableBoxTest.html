@@ -13,6 +13,7 @@
         height: 100vh;
         margin: 0;
         background-color: #e0e0e0;
+        position: relative;
     }
 
     .box {
@@ -68,6 +69,8 @@
 
 <script>
     class DraggableBox {
+        static zIndexCounter = 1000;
+
         constructor(id, heading, content, script) {
             this.id = id;
             this.heading = heading;
@@ -75,12 +78,14 @@
             this.script = script;
             this.createElement();
             this.makeResizableAndDraggable();
+            this.setEventListeners();
         }
 
         createElement() {
             const box = document.createElement('div');
             box.id = this.id;
             box.className = 'box';
+            box.style.zIndex = DraggableBox.zIndexCounter++;
             box.innerHTML = `
                 <div class="drag-bar"></div>
                 <div class="box-content">
@@ -111,6 +116,10 @@
             let mouseX = 0;
             let mouseY = 0;
 
+            const bringToFront = () => {
+                element.style.zIndex = DraggableBox.zIndexCounter++;
+            };
+
             resizeHandle.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 isResizing = true;
@@ -120,6 +129,7 @@
                 mouseY = e.clientY;
                 document.addEventListener('mousemove', resize);
                 document.addEventListener('mouseup', stopResize);
+                bringToFront();
             });
 
             dragBar.addEventListener('mousedown', (e) => {
@@ -131,6 +141,7 @@
                 mouseY = e.clientY;
                 document.addEventListener('mousemove', drag);
                 document.addEventListener('mouseup', stopDrag);
+                bringToFront();
             });
 
             const resize = (e) => {
@@ -164,6 +175,13 @@
             }
         }
 
+        setEventListeners() {
+            const element = document.getElementById(this.id);
+            element.addEventListener('mousedown', () => {
+                element.style.zIndex = DraggableBox.zIndexCounter++;
+            });
+        }
+
         toggleFullscreen() {
             const elem = document.getElementById(this.id);
             elem.classList.toggle("fullscreen");
@@ -180,6 +198,7 @@
                 elem.style.left = "";
                 elem.querySelector('.fullscreen-button button').textContent = "Full Screen";
             }
+            elem.style.zIndex = DraggableBox.zIndexCounter++;
         }
 
         closeBox() {
