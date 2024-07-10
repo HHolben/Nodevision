@@ -36,3 +36,5 @@ function initializeNewNotebookPage() {
         console.error('Error:', error);
     });
 }
+
+initializeNewNotebookPage();
