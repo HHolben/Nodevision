@@ -144,7 +144,11 @@
         },
         {
             heading: "New Node",
-            content: "This box will initialize a new notebook page.",
+            content: `
+                <label for="fileNameInput">File Name:</label>
+                <input type="text" id="fileNameInput" placeholder="Enter file name">
+                <button onclick="initializeNewNotebookPage()">Run Script</button>
+            `,
             script: "NewNotebookPageInitializer.js",
             ToolbarCategory: "File"
         }
