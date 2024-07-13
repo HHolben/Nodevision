@@ -35,6 +35,9 @@ app.post('/initialize', async (req, res) => {
         await fs.writeFile(filePath, htmlContent);
         console.log(`HTML file "${filePath}" has been successfully created!`);
 
+
+
+
         // Run RegenerateGraph.js after the new node is created
         await runScript('RegenerateGraph.js');
 

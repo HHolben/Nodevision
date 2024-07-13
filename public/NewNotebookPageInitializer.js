@@ -35,6 +35,51 @@ function initializeNewNotebookPage() {
     .catch(error => {
         console.error('Error:', error);
     });
+    
 }
 
+
+
+        // New node to add
+        var newNode = {
+            "data": {
+              "id": "Bob.html",
+              "label": "Bob.html",
+              "link": "Bob.html",
+              "imageUrl": "http://localhost:3000/DefaultNodeImage.png",
+              "IndexNumber": 1
+            }
+          };
+          
+        
+
+        
 initializeNewNotebookPage();
+
+ReadNodes();
+
+ // Adding the new node to the array
+ elements.push(newNode);
+
+
+ /*
+elements = [...regions, ...nodes, ...edges];
+
+ 
+          
+
+  // Fetch styles from GraphStyles.json
+  fetch('GraphStyles.json')
+    .then(response => response.json())
+    .then(styles => {
+      // Merge nodes and regions into one elements array
+      var elements = [...regions, ...nodes, ...edges];
+
+      // Call the function to create the Cytoscape graph
+      createCytoscapeGraph(elements, styles);
+    })
+    .catch(error => console.error('Error fetching styles:', error));
+*/
+
+console.log(nodes);
+        

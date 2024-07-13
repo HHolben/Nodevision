@@ -84,8 +84,8 @@ const nodesFilePath = path.join(__dirname, 'public', 'GeneratedNodes.js');
 let nodes;
 try {
   const nodesFileContent = fs.readFileSync(nodesFilePath, 'utf8');
-  const nodesScript = nodesFileContent.substring(nodesFileContent.indexOf('=') + 1).trim();
-  nodes = JSON.parse(nodesScript.replace(/;\s*$/, ''));
+  const nodesScript = nodesFileContent.substring(nodesFileContent.indexOf('['), nodesFileContent.lastIndexOf(']') + 1);
+  nodes = JSON.parse(nodesScript);
 } catch (error) {
   console.error('Error loading or parsing nodes:', error);
   process.exit(1);
