@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cytoscape.js Example</title>
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+    <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
+
+
+<style>
+        #cy {
+            width: 600px;
+            height: 400px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<div id="cy"></div>
+<button id="addNodeBtn">Add Node</button>
+
+<script>
+    // Initialize Cytoscape.js
+    const cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: [
+            { data: { id: 'a' } },
+            { data: { id: 'b' } },
+            { data: { source: 'a', target: 'b' } }
+        ],
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'background-color': '#666',
+                    'label': 'data(id)'
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 3,
+                    'line-color': '#ccc'
+                }
+            }
+        ],
+        layout: {
+            name: 'grid',
+            rows: 1
+        }
+    });
+
+    let nodeCount = 2; // Initial node count
+
+    // Button to add a new node
+    document.getElementById('addNodeBtn').addEventListener('click', function() {
+        nodeCount++;
+        const newNodeId = `node${nodeCount}`;
+        
+        // Add new node to the graph
+        cy.add([
+            { data: { id: newNodeId } }
+        ]);
+
+        // Optionally, add an edge from the last node to the new node
+        const lastNodeId = `node${nodeCount - 1}`;
+        cy.add([
+            { data: { source: lastNodeId, target: newNodeId } }
+        ]);
+    });
+</script>
+
+</body>
+</html>
