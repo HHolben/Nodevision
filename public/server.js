@@ -47,6 +47,44 @@ app.post('/updateGraphStyles', express.json(), async (req, res) => {
     }
 });
 
+
+
+
+
+// Endpoint to get file content
+app.get('/api/file', (req, res) => {
+    const filePath = req.query.path;
+    if (!filePath) {
+        return res.status(400).send('File path is required');
+    }
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).send('Error reading file');
+        }
+        res.send({ content: data });
+    });
+});
+
+// Endpoint to save file content
+app.post('/api/save', (req, res) => {
+    const filePath = req.body.path;
+    const content = req.body.content;
+
+    if (!filePath || !content) {
+        return res.status(400).send('File path and content are required');
+    }
+
+    fs.writeFile(filePath, content, 'utf8', (err) => {
+        if (err) {
+            return res.status(500).send('Error saving file');
+        }
+        res.send('File saved successfully');
+    });
+});
+
+
+
 // Import RegenerateGraph.js to handle script execution and file serving
 const regenerateGraph = require('./RegenerateGraph');
 app.use(regenerateGraph);
