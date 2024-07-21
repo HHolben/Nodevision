@@ -152,8 +152,22 @@
             `,
             script: "NewNotebookPageInitializer.js",
             ToolbarCategory: "File"
+        },
+        {
+            heading: "Edit Code",
+            content: `
+
+            
+            
+
+            <iframe src="CodeEditor.html"></iframe> 
+            `,
+            script: "NewNotebookPageInitializer.js",
+            ToolbarCategory: "Edit"
         }
     ];
+
+    var CodeEditorFilePath;
 
         function createToolbar() {
             const toolbar = document.querySelector('.toolbar');
