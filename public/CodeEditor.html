@@ -26,7 +26,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
     <script>
         // Path to the file to be edited
-        var CodeEditorFilePath = 'Notebook/Beta.html'; // Change this to your file path
+        const CodeEditorFilePath = 'Notebook/Beta.html'; // Change this to your file path
+        
+        
         // Load Monaco Editor
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs' }});
         require(['vs/editor/editor.main'], function() {
@@ -36,12 +38,20 @@
                 theme: 'vs-dark'
             });
 
+
+            console.log(CodeEditorFilePath);
             // Fetch file content
             fetch(`/api/file?path=${CodeEditorFilePath}`)
+           
                 .then(response => response.json())
                 .then(data => {
                     editor.setValue(data.content);
+                    console.log(response);
+
+
                 });
+
+
 
             // Save file content
             document.getElementById('saveButton').addEventListener('click', () => {
