@@ -1,5 +1,11 @@
+import { boxes } from './main.js';
+
 function createToolbar() {
     const toolbar = document.querySelector('.toolbar');
+    if (!toolbar) {
+        console.error('Toolbar element not found');
+        return;
+    }
     const categories = {};
 
     boxes.forEach(box => {
