@@ -1,5 +1,5 @@
 import { createToolbar } from './createToolbar.js';
-import { createBox, bringToFront, toggleFullscreen, closeBox, runScript } from './boxManipulation.js';
+import { bringToFront, toggleFullscreen, closeBox, runScript } from './boxManipulation.js';
 import { makeResizableAndDraggable } from './resizeAndDrag.js';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -40,15 +40,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
     createToolbar();
 });
-
-
-export const boxes = [
-    {
-        heading: "Resizable and Draggable Box",
-        content: "This box can be resized and dragged.",
-        script: "exampleScript.js",
-        ToolbarCategory: "File"
-    },
-    // Add other boxes
-];
-

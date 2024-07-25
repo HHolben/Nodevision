@@ -1,4 +1,5 @@
-import { boxes } from './main.js';
+import { boxes } from './DefineToolbarElements.js';
+import { createBox } from './boxManipulation.js';
 
 function createToolbar() {
     const toolbar = document.querySelector('.toolbar');

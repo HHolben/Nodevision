@@ -1,4 +1,6 @@
-function makeResizableAndDraggable(element) {
+// resizeAndDrag.js
+
+export function makeResizableAndDraggable(element) {
     let isResizing = false;
     let isDragging = false;
     let originalWidth = 0;
@@ -65,4 +67,8 @@ function makeResizableAndDraggable(element) {
     }
 }
 
-export { makeResizableAndDraggable };
+function bringToFront(element) {
+    const boxes = document.querySelectorAll('.box');
+    boxes.forEach(box => box.style.zIndex = '1');
+    element.style.zIndex = '2';
+}
