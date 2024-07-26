@@ -1,6 +1,3 @@
-import { makeResizableAndDraggable } from './resizeAndDrag.js';
-
-// Function to create a new box and add it to the DOM
 export function createBox(box) {
     const boxContainer = document.createElement('div');
     boxContainer.className = 'box';
@@ -8,58 +5,118 @@ export function createBox(box) {
         <div class="drag-bar"></div>
         <div class="box-content">
             <div class="fullscreen-button">
-                <button class="fullscreen-btn">Full Screen</button>
+                <button onclick="toggleFullscreen(this)">Full Screen</button>
             </div>
             <div class="close-button">
-                <button class="close-btn">Close</button>
+                <button onclick="closeBox(this)">Close</button>
             </div>
             <h2>${box.heading}</h2>
             <p>${box.content}</p>
-            <button class="run-script-btn">Run Script</button>
+            <button onclick="runScript('${box.script}')">Run Script</button>
         </div>
         <div class="resize-handle"></div>
     `;
     document.body.appendChild(boxContainer);
     makeResizableAndDraggable(boxContainer);
-
-    // Add event listeners to buttons
-    boxContainer.querySelector('.fullscreen-btn').addEventListener('click', () => toggleFullscreen(boxContainer));
-    boxContainer.querySelector('.close-btn').addEventListener('click', () => closeBox(boxContainer));
-    boxContainer.querySelector('.run-script-btn').addEventListener('click', () => runScript(box.script));
 }
 
-// Function to bring a box to the front
+export function makeResizableAndDraggable(element) {
+    let isResizing = false;
+    let isDragging = false;
+    let originalWidth = 0;
+    let originalHeight = 0;
+    let originalX = 0;
+    let originalY = 0;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    const resizeHandle = element.querySelector('.resize-handle');
+    const dragBar = element.querySelector('.drag-bar');
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        isResizing = true;
+        originalWidth = element.offsetWidth;
+        originalHeight = element.offsetHeight;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', stopResize);
+    });
+
+    dragBar.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        isDragging = true;
+        originalX = element.offsetLeft;
+        originalY = element.offsetTop;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        bringToFront(element);
+    });
+
+    function resize(e) {
+        if (isResizing) {
+            const width = originalWidth + (e.clientX - mouseX);
+            const height = originalHeight + (e.clientY - mouseY);
+            element.style.width = width + 'px';
+            element.style.height = height + 'px';
+        }
+    }
+
+    function stopResize() {
+        isResizing = false;
+        document.removeEventListener('mousemove', resize);
+        document.removeEventListener('mouseup', stopResize);
+    }
+
+    function drag(e) {
+        if (isDragging) {
+            const deltaX = e.clientX - mouseX;
+            const deltaY = e.clientY - mouseY;
+            element.style.top = (originalY + deltaY) + 'px';
+            element.style.left = (originalX + deltaX) + 'px';
+        }
+    }
+
+    function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+}
+
 export function bringToFront(element) {
     const boxes = document.querySelectorAll('.box');
     boxes.forEach(box => box.style.zIndex = '1');
     element.style.zIndex = '2';
 }
 
-// Function to toggle fullscreen mode for a box
-export function toggleFullscreen(box) {
+export function toggleFullscreen(button) {
+    const box = button.closest('.box');
     box.classList.toggle('fullscreen');
     if (box.classList.contains('fullscreen')) {
         box.style.width = '100%';
         box.style.height = '100%';
         box.style.top = '0';
         box.style.left = '0';
-        box.querySelector('.fullscreen-btn').textContent = 'Exit Full Screen';
+        button.textContent = 'Exit Full Screen';
     } else {
         box.style.width = '300px';
         box.style.height = '200px';
         box.style.top = '';
         box.style.left = '';
-        box.querySelector('.fullscreen-btn').textContent = 'Full Screen';
+        button.textContent = 'Full Screen';
     }
     bringToFront(box);
 }
 
-// Function to close a box
-export function closeBox(box) {
+export function closeBox(button) {
+    const box = button.closest('.box');
     box.remove();
 }
 
-// Function to run a script associated with the box
 export function runScript(scriptName) {
     try {
         const script = document.createElement('script');
