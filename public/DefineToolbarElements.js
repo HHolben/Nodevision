@@ -2,18 +2,6 @@
 
 export const boxes = [
     {
-        heading: "Resizable and Draggable Box",
-        content: "This box can be resized and dragged.",
-        script: "exampleScript.js",
-        ToolbarCategory: "File"
-    },
-    {
-        heading: "Another Box",
-        content: "This is another example box.",
-        script: "anotherScript.js",
-        ToolbarCategory: "Edit"
-    },
-    {
         heading: "New Node",
         content: `
             <label for="fileNameInput">File Name:</label>
@@ -27,8 +15,16 @@ export const boxes = [
         content: `
             <iframe src="CodeEditor.html"></iframe>
         `,
-        script: "NewNotebookPageInitializer.js",
+        script: `SendToCodeEditorPage.js`,
         ToolbarCategory: "Edit"
+    },
+    {
+        heading: "Settings",
+        content: `
+            <iframe src="SettingsPage.html"></iframe>
+        `,
+        script: `SendToCodeSettingsPage.js`,
+        ToolbarCategory: "Settings"
     }
 ];
 

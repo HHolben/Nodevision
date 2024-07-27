@@ -1,11 +1,16 @@
 const express = require('express');
 const path = require('path');
+const favicon = require('serve-favicon');
 const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const { exec } = require('child_process');
 
 const app = express();
 const port = 3000;
+
+// Serve favicon
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
