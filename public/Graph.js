@@ -46,7 +46,6 @@ function createCytoscapeGraph(elements, styles) {
       padding: 10
     }
   });
-
   let selectedElement = null;
 
   // Function to update the info panel
@@ -79,7 +78,6 @@ function createCytoscapeGraph(elements, styles) {
       infoHTML += `<strong>Type:</strong> ${element.data('type') || 'Edge'}<br>`;
       iframe.src = ''; // Clear the iframe for edges
     }
-
     infoPanel.innerHTML = infoHTML;
     selectedElement = element;
   }
@@ -96,71 +94,5 @@ function createCytoscapeGraph(elements, styles) {
       document.getElementById('content-frame').src = ''; // Clear the iframe when clicking on the background
       selectedElement = null;
     }
-  });
-
-  // Add event listeners to buttons
-  document.getElementById('open-button').addEventListener('click', function() {
-    if (selectedElement && selectedElement.isNode() && !selectedElement.isParent()) {
-      const nodeId = selectedElement.id();
-      // Assuming nodeId is the file name with extension
-      window.open(`http://localhost:8000/${nodeId}`, '_blank');
-    }
-  });
-
-  document.getElementById('edit-button').addEventListener('click', function() {
-    if (selectedElement) {
-      // Implement edit functionality here
-      alert('Edit functionality not implemented yet.');
-    }
-  });
-
-  document.getElementById('new-button').addEventListener('click', function() {
-    // Create the dialog box
-    const dialogBox = document.createElement('div');
-    dialogBox.setAttribute('id', 'dialog-box');
-    dialogBox.innerHTML = `
-      <label for="fileName">Name:</label>
-      <input type="text" id="fileName" name="fileName"><br><br>
-      <label for="fileContent">Content:</label><br>
-      <textarea id="fileContent" name="fileContent" rows="10" cols="30"><!DOCTYPE html><html><head><title>New Page</title></head><body><h1>New Page</h1></body></html></textarea><br><br>
-      <button id="create-button">Create</button>
-      <button id="cancel-button">Cancel</button>
-    `;
-    document.body.appendChild(dialogBox);
-
-    document.getElementById('create-button').addEventListener('click', function() {
-      const name = document.getElementById('fileName').value;
-      const content = document.getElementById('fileContent').value;
-      if (name && selectedElement && selectedElement.isParent()) {
-        const regionId = selectedElement.id();
-        fetch('/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name, content, regionId }),
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Created successfully!');
-          } else {
-            alert('Failed to create.');
-          }
-          document.body.removeChild(dialogBox);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          alert('Failed to create.');
-          document.body.removeChild(dialogBox);
-        });
-      } else {
-        alert('Name is required and you must select a region.');
-      }
-    });
-
-    document.getElementById('cancel-button').addEventListener('click', function() {
-      document.body.removeChild(dialogBox);
-    });
   });
 }
