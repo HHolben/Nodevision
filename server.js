@@ -4,7 +4,6 @@ const favicon = require('serve-favicon');
 const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const { exec } = require('child_process');
-
 const app = express();
 const port = 3000;
 
@@ -94,7 +93,6 @@ app.post('/api/save', async (req, res) => {
 
 const regenerateGraph = require('./RegenerateGraph');
 app.use(regenerateGraph);
-
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });

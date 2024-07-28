@@ -21,9 +21,11 @@ background-color: #ffffff;
   margin-right: 20px;
 }
 #info-panel {
-  width: 300px;
+  width: 100%;
+  height: 100%;
 }
 #content-frame-container {
-  resize: both;
   overflow: auto;
+  height: 100%;
+
 }
