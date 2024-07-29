@@ -25,10 +25,18 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
     <script>
-        // Path to the file to be edited
-        var CodeEditorFilePath = 'Notebook/Beta.html'; // Change this to your file path
-        
-        
+        function getQueryParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+    
+        // Get the activeNode from the URL parameters
+        const activeNode = getQueryParameter('activeNode');
+        console.log('ActiveNode:', activeNode); // Log ActiveNode to check its value
+    
+        // Construct the file path based on the activeNode
+        const CodeEditorFilePath = `Notebook/${activeNode}`; // Ensure the path is correct and does not have redundant extensions
+    
         // Load Monaco Editor
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs' }});
         require(['vs/editor/editor.main'], function() {
@@ -37,22 +45,23 @@
                 language: 'javascript',
                 theme: 'vs-dark'
             });
-
-
-            console.log(CodeEditorFilePath);
-            // Fetch file content
-            fetch(`/api/file?path=${CodeEditorFilePath}`)
-           
-                .then(response => response.json())
+    
+            // Fetch file content based on the constructed file path
+            fetch(`/api/file?path=${encodeURIComponent(CodeEditorFilePath)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     editor.setValue(data.content);
-                    console.log(response);
-
-
+                    console.log('File content loaded:', data.content);
+                })
+                .catch(error => {
+                    console.error('Error fetching file content:', error);
                 });
-
-
-
+    
             // Save file content
             document.getElementById('saveButton').addEventListener('click', () => {
                 const content = editor.getValue();
@@ -66,6 +75,9 @@
                 .then(response => response.text())
                 .then(data => {
                     alert(data);
+                })
+                .catch(error => {
+                    console.error('Error saving file content:', error);
                 });
             });
         });

@@ -13,7 +13,7 @@ export const boxes = [
     {
         heading: "Edit Code",
         content: `
-            <iframe src="CodeEditor.html"></iframe>
+            <iframe src="CodeEditor.html?activeNode=ActiveNode"></iframe>
         `,
         script: `SendToCodeEditorPage.js`,
         ToolbarCategory: "Edit"

@@ -1,10 +1,10 @@
+// Ensure DOM is fully loaded before executing Graph.js
 document.addEventListener('DOMContentLoaded', function() {
-  // Assuming GeneratedNodes.js, GeneratedEdges.js, and GeneratedRegions.js define `nodes`, `edges`, and `regions` respectively
-
   // Fetch styles from GraphStyles.json
   fetch('GraphStyles.json')
     .then(response => response.json())
     .then(styles => {
+      // Assuming GeneratedNodes.js, GeneratedEdges.js, and GeneratedRegions.js define `nodes`, `edges`, and `regions` respectively
       // Merge nodes and regions into one elements array
       var elements = [...regions, ...nodes, ...edges];
 
@@ -23,9 +23,8 @@ function createCytoscapeGraph(elements, styles) {
         selector: 'node',
         style: {
           ...styles.node,
-          //'background-image': 'data(imageUrl)', // Set the background image to the imageUrl data attribute
-          'background-fit': 'cover', // Adjust background image to cover the node
-          'background-clip': 'node' // Clip the image to the node shape
+          'background-fit': 'cover',
+          'background-clip': 'node'
         }
       },
       {
@@ -42,21 +41,28 @@ function createCytoscapeGraph(elements, styles) {
       }
     ],
     layout: {
-      name: 'cose', // You can use other layouts like grid, circle, etc.
+      name: 'cose',
       padding: 10
     }
   });
+
   let selectedElement = null;
 
-  // Function to update the info panel
   function updateInfoPanel(element) {
     const infoPanel = document.getElementById('element-info');
+    if (!infoPanel) {
+      console.error('Info panel element not found.');
+      return;
+    }
+
     const iframe = document.getElementById('content-frame');
     let infoHTML = '';
 
     if (element.isNode()) {
       infoHTML = `<strong>Node:</strong> ${element.data('label')}<br>`;
-      infoHTML += `<strong>ID:</strong> ${element.id()}<br>`;
+      window.ActiveNode = element.id(); // Set ActiveNode on window object
+      infoHTML += `<strong>ID:</strong> ${window.ActiveNode}<br>`;
+      console.log('ActiveNode set to:', window.ActiveNode);
       if (element.isParent()) {
         infoHTML += `<strong>Type:</strong> Region<br>`;
         iframe.src = ''; // Clear the iframe for regions

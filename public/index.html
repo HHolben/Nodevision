@@ -11,15 +11,13 @@
     <link rel="stylesheet" href="LayoutStyles.css">
     <link rel="stylesheet" href="style.css">
 
-
     <!-- Existing scripts and styles -->
-    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
-    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
-    <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js" defer></script>
+    <script type="text/javascript" defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script src="https://unpkg.com/layout-base/layout-base.js" defer></script>
+    <script src="https://unpkg.com/cose-base/cose-base.js" defer></script>
+    <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" defer></script>
 
     <!-- Include Nodevision Scripts -->
     <script src="GeneratedNodes.js" defer></script>
@@ -33,26 +31,42 @@
     <script type="module" src="resizeAndDrag.js" defer></script>
     <script type="module" src="main.js" defer></script>
 
+</head>
+<body>
+    <a href="CodeEditor.html?activeNode=ActiveNode">Edit Code</a>
+    <button id="editCodeButton">Edit Code</button>
+    <script>
+        // Example setting ActiveNode
+        window.ActiveNode = ActiveNode; // This would be dynamically set in your application
+    
+        document.getElementById('editCodeButton').addEventListener('click', function() {
+            if (window.ActiveNode !== undefined) {
+                const url = `CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;
+                window.location.href = url;
+            } else {
+                console.error('ActiveNode is not defined.');
+            }
+        });
+        </script>
 
 
 
-    </head>
-    <body>
-        <div class="toolbar"></div>
-        <div class="container-wrapper">
-            <div class="container container-left">
-                <div id="content">
-                    <div id="cy"></div>
-                </div>
+    <div class="toolbar"></div>
+    <div class="container-wrapper">
+        <div class="container container-left">
+            <div id="content">
+                <div id="cy"></div>
             </div>
-            <div class="divider" id="divider"></div>
-            <div class="container container-right">
-                <div id="info-panel">
-                    <div id="content-frame-container">
-                        <iframe id="content-frame" width="100%" height="100%" style="height: 95%;"></iframe>
-                    </div>
+        </div>
+        <div class="divider" id="divider"></div>
+        <div class="container container-right">
+            <div id="element-info"></div>
+            <div id="info-panel">
+                <div id="content-frame-container">
+                    <iframe id="content-frame" width="100%" height="100%" style="height: 95%;"></iframe>
                 </div>
             </div>
         </div>
-    </body>
+    </div>
+</body>
 </html>
