@@ -32,16 +32,12 @@
     <script type="module" src="main.js" defer></script>
 </head>
 <body>
-    <!-- Link to edit code with dynamic ActiveNode -->
-    <a id="editCodeLink" href="#">Edit Code</a>
+    <!-- Button to edit code with dynamic ActiveNode -->
     <button id="editCodeButton">Edit Code</button>
 
     <script>
         // Set ActiveNode dynamically, for example based on some logic in your app
         window.ActiveNode = 'defaultNode'; // This should be set dynamically
-
-        // Update the link with the ActiveNode value
-        document.getElementById('editCodeLink').href = `CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;
 
         // Handle button click to navigate to the code editor
         document.getElementById('editCodeButton').addEventListener('click', function() {
