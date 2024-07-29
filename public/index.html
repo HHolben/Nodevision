@@ -30,15 +30,20 @@
     <script type="module" src="boxManipulation.js" defer></script>
     <script type="module" src="resizeAndDrag.js" defer></script>
     <script type="module" src="main.js" defer></script>
-
 </head>
 <body>
-    <a href="CodeEditor.html?activeNode=ActiveNode">Edit Code</a>
+    <!-- Link to edit code with dynamic ActiveNode -->
+    <a id="editCodeLink" href="#">Edit Code</a>
     <button id="editCodeButton">Edit Code</button>
+
     <script>
-        // Example setting ActiveNode
-        window.ActiveNode = ActiveNode; // This would be dynamically set in your application
-    
+        // Set ActiveNode dynamically, for example based on some logic in your app
+        window.ActiveNode = 'defaultNode'; // This should be set dynamically
+
+        // Update the link with the ActiveNode value
+        document.getElementById('editCodeLink').href = `CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;
+
+        // Handle button click to navigate to the code editor
         document.getElementById('editCodeButton').addEventListener('click', function() {
             if (window.ActiveNode !== undefined) {
                 const url = `CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;
@@ -47,9 +52,7 @@
                 console.error('ActiveNode is not defined.');
             }
         });
-        </script>
-
-
+    </script>
 
     <div class="toolbar"></div>
     <div class="container-wrapper">
