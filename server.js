@@ -10,9 +10,9 @@ const port = 3000;
 // Serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
-
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/vendor', express.static(path.join(__dirname, 'node_modules')));
 
 function runScript(script) {
     return new Promise((resolve, reject) => {
