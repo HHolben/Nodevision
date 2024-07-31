@@ -17,6 +17,7 @@
     "http-proxy-middleware": "^3.0.0",
     "layout-base": "^2.0.1",
     "mathjax": "^3.2.2",
+    "monaco-editor": "^0.50.0",
     "requirejs": "^2.3.7",
     "serve-favicon": "^2.5.0"
   }
