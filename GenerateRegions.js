@@ -7,14 +7,14 @@ let MaximumRegionsDisplayed = 100; // Default value, can be adjusted via index.h
 const notebookDir = path.join(__dirname, 'Notebook');
 const generatedRegionsPath = path.join(__dirname, 'public', 'GeneratedRegions.js');
 
-function generateRegions(dir, parent = null, relativeDir = '') {
+// Function to generate regions (directories) only
+function generateRegions(dir, parent = null) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const regions = [];
 
   entries.forEach(entry => {
-    const currentPath = path.join(relativeDir, entry.name);
-
     if (entry.isDirectory()) {
+      const currentPath = path.join(path.relative(notebookDir, dir), entry.name); // Relative path from the Notebook directory
       const region = {
         data: {
           id: currentPath,
@@ -28,25 +28,16 @@ function generateRegions(dir, parent = null, relativeDir = '') {
 
       regions.push(region);
       const subDir = path.join(dir, entry.name);
-      regions.push(...generateRegions(subDir, currentPath, currentPath));
-
-    } else if (entry.isFile() && ['.html', '.php', '.js', '.py'].includes(path.extname(entry.name))) {
-      const fileNode = {
-        data: {
-          id: currentPath,
-          label: entry.name,
-          parent: parent
-        }
-      };
-
-      regions.push(fileNode);
+      // Recursively add subdirectories
+      regions.push(...generateRegions(subDir, currentPath));
     }
   });
 
   return regions;
 }
 
-const regions = generateRegions(notebookDir).slice(0, MaximumRegionsDisplayed); // Limit the number of regions
+// Generate regions and limit the number of regions
+const regions = generateRegions(notebookDir).slice(0, MaximumRegionsDisplayed);
 
 const regionsOutput = `// GeneratedRegions.js\nconst regions = [\n${regions.map(region => JSON.stringify(region)).join(',\n')}\n];\n`;
 

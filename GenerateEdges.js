@@ -5,19 +5,17 @@ const cheerio = require('cheerio');
 // Maximum edges to display
 let MaximumEdgesDisplayed = 10; // Default value, can be adjusted via index.html
 
-// Function to recursively get all files in a directory
-function getAllFiles(dirPath, arrayOfFiles = []) {
-  const files = fs.readdirSync(dirPath);
-
-  files.forEach(file => {
-    if (fs.statSync(path.join(dirPath, file)).isDirectory()) {
-      arrayOfFiles = getAllFiles(path.join(dirPath, file), arrayOfFiles);
-    } else {
-      arrayOfFiles.push(path.join(dirPath, file));
-    }
-  });
-
-  return arrayOfFiles;
+// Function to get top-level files
+function getTopLevelFiles(dirPath) {
+  try {
+    const files = fs.readdirSync(dirPath, { withFileTypes: true });
+    return files
+      .filter(file => !file.isDirectory())
+      .map(file => path.join(dirPath, file.name));
+  } catch (error) {
+    console.error(`Error reading directory ${dirPath}:`, error);
+    return [];
+  }
 }
 
 // Function to extract edges from HTML files
@@ -34,8 +32,6 @@ function extractEdgesFromHTML(filePath, validNodeIds) {
       const sourceId = source.replace(/\\/g, '/');
       const targetId = target.replace(/\\/g, '/');
 
-      console.log(`Processing link: source=${sourceId}, target=${targetId}`); // Debugging log
-
       if (validNodeIds.has(targetId)) {
         const edgeId = `${sourceId}_${index}`;
         edges.push({
@@ -45,9 +41,6 @@ function extractEdgesFromHTML(filePath, validNodeIds) {
             target: targetId
           }
         });
-        console.log(`Edge added: ${edgeId}`); // Debugging log
-      } else {
-        console.log(`Target node not found: ${targetId}`); // Debugging log
       }
     }
   });
@@ -55,24 +48,24 @@ function extractEdgesFromHTML(filePath, validNodeIds) {
   return edges;
 }
 
-// Function to generate edges from files
-function generateEdgesFromFiles(dirPath, validNodeIds) {
-  const allFiles = getAllFiles(dirPath);
+// Function to generate edges from top-level files
+function generateEdgesFromTopLevelFiles(dirPath, validNodeIds) {
+  const topLevelFiles = getTopLevelFiles(dirPath);
   let edges = [];
 
-  allFiles
+  topLevelFiles
     .filter(file => ['.html', '.php', '.js', '.py'].includes(path.extname(file)))
     .forEach(file => {
       const newEdges = extractEdgesFromHTML(file, validNodeIds);
       edges = edges.concat(newEdges);
     });
 
-  return edges.slice(0, MaximumEdgesDisplayed); // Limit the number of edges
+  return edges.slice(0, MaximumEdgesDisplayed);
 }
 
 // Main function to write edges to file
 function writeEdgesToFile(dirPath, outputFilePath, validNodeIds) {
-  const edges = generateEdgesFromFiles(dirPath, validNodeIds);
+  const edges = generateEdgesFromTopLevelFiles(dirPath, validNodeIds);
   const edgesFileContent = `var edges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\n`;
 
   fs.writeFileSync(outputFilePath, edgesFileContent, 'utf8');
