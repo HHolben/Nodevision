@@ -10,25 +10,19 @@ const generatedRegionsPath = path.join(__dirname, 'public', 'GeneratedRegions.js
 // Path to the default region image
 const defaultRegionImage = 'http://localhost:3000/DefaultRegionImage.png';
 
-function generateRegions(dir, parent = null, relativeDir = '') {
+function generateRegions(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const regions = [];
 
   entries.forEach(entry => {
-    const currentPath = path.join(relativeDir, entry.name);
-
     if (entry.isDirectory()) {
       const region = {
         data: {
-          id: currentPath,
+          id: entry.name,
           label: entry.name,
           imageUrl: defaultRegionImage // Add the default region image
         }
       };
-
-      if (parent) {
-        region.data.parent = parent;
-      }
 
       regions.push(region);
     }

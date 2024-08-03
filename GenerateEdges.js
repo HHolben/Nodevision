@@ -5,20 +5,11 @@ const cheerio = require('cheerio');
 // Maximum edges to display
 let MaximumEdgesDisplayed = 10; // Default value, can be adjusted via index.html
 
-// Function to get top-level files
-function getTopLevelFiles(dirPath) {
-  try {
-    const files = fs.readdirSync(dirPath, { withFileTypes: true });
-    return files
-      .filter(file => !file.isDirectory())
-      .map(file => path.join(dirPath, file.name));
-  } catch (error) {
-    console.error(`Error reading directory ${dirPath}:`, error);
-    return [];
-  }
-}
+const notebookDir = path.join(__dirname, 'Notebook');
+const generatedEdgesPath = path.join(__dirname, 'public', 'GeneratedEdges.js');
 
-// Function to extract edges from HTML files
+const allowedExtensions = ['.html', '.php', '.js', '.py'];
+
 function extractEdgesFromHTML(filePath, validNodeIds) {
   const htmlContent = fs.readFileSync(filePath, 'utf8');
   const $ = cheerio.load(htmlContent);
@@ -48,28 +39,19 @@ function extractEdgesFromHTML(filePath, validNodeIds) {
   return edges;
 }
 
-// Function to generate edges from top-level files
-function generateEdgesFromTopLevelFiles(dirPath, validNodeIds) {
-  const topLevelFiles = getTopLevelFiles(dirPath);
+function generateEdges(dir, validNodeIds) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
   let edges = [];
 
-  topLevelFiles
-    .filter(file => ['.html', '.php', '.js', '.py'].includes(path.extname(file)))
-    .forEach(file => {
-      const newEdges = extractEdgesFromHTML(file, validNodeIds);
+  entries.forEach(entry => {
+    if (entry.isFile() && allowedExtensions.includes(path.extname(entry.name))) {
+      const filePath = path.join(dir, entry.name);
+      const newEdges = extractEdgesFromHTML(filePath, validNodeIds);
       edges = edges.concat(newEdges);
-    });
+    }
+  });
 
-  return edges.slice(0, MaximumEdgesDisplayed);
-}
-
-// Main function to write edges to file
-function writeEdgesToFile(dirPath, outputFilePath, validNodeIds) {
-  const edges = generateEdgesFromTopLevelFiles(dirPath, validNodeIds);
-  const edgesFileContent = `var edges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\n`;
-
-  fs.writeFileSync(outputFilePath, edgesFileContent, 'utf8');
-  console.log(`Generated edges have been written to ${outputFilePath}`);
+  return edges.slice(0, MaximumEdgesDisplayed); // Limit the number of edges
 }
 
 // Load nodes from GeneratedNodes.js
@@ -91,9 +73,8 @@ if (!nodes || !Array.isArray(nodes)) {
 
 const validNodeIds = new Set(nodes.map(node => node.data.id));
 
-// Paths
-const notebookDir = path.join(__dirname, 'Notebook');
-const outputFilePath = path.join(__dirname, 'public', 'GeneratedEdges.js');
+const edges = generateEdges(notebookDir, validNodeIds);
+const edgesOutput = `// GeneratedEdges.js\nconst edges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\n`;
 
-// Generate and write edges to file
-writeEdgesToFile(notebookDir, outputFilePath, validNodeIds);
+fs.writeFileSync(generatedEdgesPath, edgesOutput, 'utf8');
+console.log(`Generated edges have been written to ${generatedEdgesPath}`);
