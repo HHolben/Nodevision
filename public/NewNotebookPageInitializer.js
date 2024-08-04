@@ -32,26 +32,32 @@ function initializeNewNotebookPage() {
     .then(data => {
         console.log(data);
 
-        // New node to add
-        var newNode = {
-            "data": {
-              "id": fileName,
-              "label": fileName,
-              "link": fileName,
-              "imageUrl": "http://localhost:3000/DefaultNodeImage.png",
-              "IndexNumber": elements.length + 1
-            }
-        };
+        // Ensure Cytoscape is ready before adding the new node
+        if (window.cy) {
+            // New node to add
+            const newNode = {
+                group: 'nodes',
+                data: {
+                    id: fileName,
+                    label: fileName,
+                    link: fileName,
+                    imageUrl: "http://localhost:3000/DefaultNodeImage.png",
+                    IndexNumber: Date.now() // Use a unique value or increment
+                }
+            };
 
-        // Adding the new node to the array
-        elements.push(newNode);
-
-        // Update Cytoscape graph with the new node
-        createCytoscapeGraph(elements, styles);
+            // Add the new node to the Cytoscape instance
+            window.cy.add(newNode);
+            window.cy.layout({ name: 'cose' }).run(); // Optional: re-run layout to accommodate new nodes
+            console.log('Node added to graph.');
+        } else {
+            console.error('Cytoscape instance not found.');
+        }
     })
     .catch(error => {
         console.error('Error:', error);
     });
 }
 
+// Call the function
 initializeNewNotebookPage();

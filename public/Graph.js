@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function createCytoscapeGraph(elements, styles) {
-  const cy = cytoscape({
+  // Define cy as a global variable
+  window.cy = cytoscape({
     container: document.getElementById('cy'),
     elements: elements,
     style: [
@@ -113,49 +114,27 @@ function createCytoscapeGraph(elements, styles) {
           }
         }));
         
-        cy.remove(regionElement);
-        cy.add([
+        window.cy.remove(regionElement);
+        window.cy.add([
           { group: 'nodes', data: { id: regionId, label: regionElement.data('label'), type: 'region' } },
           ...newElements
         ]);
 
-        cy.layout({ name: 'cose' }).run();
+        window.cy.layout({ name: 'cose' }).run();
       })
       .catch(error => console.error('Error expanding region:', error));
   }
 
-  cy.on('click', 'node, edge', function(evt) {
+  window.cy.on('click', 'node, edge', function(evt) {
     var element = evt.target;
     updateInfoPanel(element);
   });
 
-  cy.on('tap', function(event){
-    if(event.target === cy){
+  window.cy.on('tap', function(event){
+    if(event.target === window.cy){
       document.getElementById('element-info').innerHTML = 'Click on a node, edge, or region to see details.';
       document.getElementById('content-frame').src = ''; // Clear the iframe when clicking on the background
       selectedElement = null;
     }
   });
 }
-
-// Express route to fetch sub-nodes for a given region
-app.get('/api/getSubNodes', async (req, res) => {
-  const regionPath = req.query.path;
-  if (!regionPath) {
-    return res.status(400).send('Region path is required');
-  }
-
-  const dirPath = path.join(__dirname, 'Notebook', regionPath);
-  try {
-    const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
-    const subNodes = entries.map(entry => ({
-      id: path.join(regionPath, entry.name),
-      label: entry.name,
-      isDirectory: entry.isDirectory()
-    }));
-    res.json(subNodes);
-  } catch (error) {
-    console.error('Error reading directory:', error);
-    res.status(500).send('Error reading directory');
-  }
-});

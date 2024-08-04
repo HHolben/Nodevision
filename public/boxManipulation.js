@@ -62,6 +62,12 @@ export function closeBox(box) {
 // Function to run a script associated with the box
 export function runScript(scriptName) {
     try {
+        // Check if the script is already added
+        if (document.querySelector(`script[src="${scriptName}"]`)) {
+            console.warn(`Script ${scriptName} is already loaded.`);
+            return;
+        }
+
         const script = document.createElement('script');
         script.src = scriptName;
         document.body.appendChild(script);
