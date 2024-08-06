@@ -73,20 +73,43 @@ app.get('/api/file', async (req, res) => {
     }
 });
 
+app.get('/api/getSubNodes', async (req, res) => {
+    const regionPath = req.query.path;
+    if (!regionPath) {
+        return res.status(400).send('Region path is required');
+    }
+
+    const dirPath = path.join(__dirname, 'Notebook', regionPath);
+
+    // Log the constructed directory path for debugging
+    console.log(`Reading directory at path: ${dirPath}`);
+
+    try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        const subNodes = entries.map(entry => ({
+            id: path.join(regionPath, entry.name),
+            label: entry.name,
+            isDirectory: entry.isDirectory()
+        }));
+        res.json(subNodes);
+    } catch (error) {
+        console.error('Error reading directory:', error);
+        console.error(`Failed to read directory at path: ${dirPath}`);
+        res.status(500).send('Error reading directory');
+    }
+});
+
 app.post('/api/save', async (req, res) => {
     const { path: filePath, content } = req.body;
 
-    if (!filePath || !content)
-    {
+    if (!filePath || !content) {
         return res.status(400).send('File path and content are required');
     }
 
-    try
-    {
+    try {
         await fs.writeFile(filePath, content, 'utf8');
         res.send('File saved successfully');
-    }
-    catch (err) {
+    } catch (err) {
         res.status(500).send('Error saving file');
     }
 });

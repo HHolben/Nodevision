@@ -113,6 +113,8 @@ function createCytoscapeGraph(elements, styles) {
             imageUrl: node.isDirectory ? 'DefaultRegionImage.png' : 'DefaultNodeImage.png'
           }
         }));
+
+        console.log(newElements);
         
         window.cy.remove(regionElement);
         window.cy.add([
