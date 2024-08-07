@@ -9,8 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function createCytoscapeGraph(elements, styles) {
-  // Define cy as a global variable
-  window.cy = cytoscape({
+  const cy = cytoscape({
     container: document.getElementById('cy'),
     elements: elements,
     style: [
@@ -71,6 +70,9 @@ function createCytoscapeGraph(elements, styles) {
         infoHTML += `<strong>Type:</strong> Region<br>`;
         iframe.src = ''; // Clear the iframe for regions
         infoHTML += `<button id="expand-btn">Expand</button>`;
+        if (element.isParent()) {
+          infoHTML += `<button id="collapse-btn">Collapse</button>`;
+        }
       } else {
         infoHTML += `<strong>Type:</strong> Node<br>`;
         iframe.src = `http://localhost:8000/${element.id()}`;
@@ -96,6 +98,12 @@ function createCytoscapeGraph(elements, styles) {
       document.getElementById('expand-btn').addEventListener('click', () => {
         expandRegion(element);
       });
+
+      if (element.isParent()) {
+        document.getElementById('collapse-btn').addEventListener('click', () => {
+          collapseRegion(element);
+        });
+      }
     }
   }
 
@@ -114,29 +122,46 @@ function createCytoscapeGraph(elements, styles) {
           }
         }));
 
-        console.log(newElements);
-        
-        window.cy.remove(regionElement);
-        window.cy.add([
+        cy.remove(regionElement);
+        cy.add([
           { group: 'nodes', data: { id: regionId, label: regionElement.data('label'), type: 'region' } },
           ...newElements
         ]);
 
-        window.cy.layout({ name: 'cose' }).run();
+        cy.layout({ name: 'cose' }).run();
       })
       .catch(error => console.error('Error expanding region:', error));
   }
 
-  window.cy.on('click', 'node, edge', function(evt) {
+  function collapseRegion(regionElement) {
+    const regionId = regionElement.id();
+    const children = cy.nodes(`[parent="${regionId}"]`);
+    cy.remove(children);
+
+    cy.add({
+      group: 'nodes',
+      data: {
+        id: regionId,
+        label: regionElement.data('label'),
+        type: 'region',
+        imageUrl: 'DefaultRegionImage.png'
+      }
+    });
+
+    cy.layout({ name: 'cose' }).run();
+  }
+
+  cy.on('click', 'node, edge', function(evt) {
     var element = evt.target;
     updateInfoPanel(element);
   });
 
-  window.cy.on('tap', function(event){
-    if(event.target === window.cy){
+  cy.on('tap', function(event){
+    if(event.target === cy){
       document.getElementById('element-info').innerHTML = 'Click on a node, edge, or region to see details.';
       document.getElementById('content-frame').src = ''; // Clear the iframe when clicking on the background
       selectedElement = null;
     }
   });
 }
+	
