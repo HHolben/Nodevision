@@ -107,6 +107,10 @@ function createCytoscapeGraph(elements, styles) {
     }
   }
 
+  
+
+
+
   function expandRegion(regionElement) {
     const regionId = regionElement.id();
     fetch(`/api/getSubNodes?path=${regionId}`)
@@ -118,20 +122,23 @@ function createCytoscapeGraph(elements, styles) {
             label: node.label,
             parent: regionId,
             type: node.isDirectory ? 'region' : 'node',
-            imageUrl: node.isDirectory ? 'DefaultRegionImage.png' : 'DefaultNodeImage.png'
+            imageUrl: node.isDirectory ? (node.imageUrl === 'DefaultRegionImage.png' ? 'DefaultRegionImage.png' : `/Notebook/${node.id}/.directory`) : node.imageUrl
           }
         }));
-
+        
         cy.remove(regionElement);
         cy.add([
-          { group: 'nodes', data: { id: regionId, label: regionElement.data('label'), type: 'region' } },
+          { group: 'nodes', data: { id: regionId, label: regionElement.data('label'), type: 'region', imageUrl: regionElement.data('imageUrl') } },
           ...newElements
         ]);
-
+  
         cy.layout({ name: 'cose' }).run();
       })
       .catch(error => console.error('Error expanding region:', error));
   }
+
+  
+  
 
   function collapseRegion(regionElement) {
     const regionId = regionElement.id();

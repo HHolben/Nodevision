@@ -8,42 +8,51 @@ const notebookDir = path.join(__dirname, 'Notebook');
 const generatedRegionsPath = path.join(__dirname, 'public', 'GeneratedRegions.js');
 
 function generateRegions(dir, parent = null, relativeDir = '') {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  const regions = [];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const regions = [];
 
-  entries.forEach(entry => {
-    const currentPath = path.join(relativeDir, entry.name);
+    entries.forEach(entry => {
+        const currentPath = path.join(relativeDir, entry.name);
+        const fullPath = path.join(dir, entry.name);
 
-    if (entry.isDirectory()) {
-      const region = {
-        data: {
-          id: currentPath,
-          label: entry.name,
-          type: 'region',
-          imageUrl: 'http://localhost:3000/DefaultRegionImage.png' // Adding image URL for regions
+        if (entry.isDirectory()) {
+            // Check if directory.png exists in this directory
+            let imageUrl = 'http://localhost:3000/DefaultRegionImage.png';
+            const customImagePath = path.join(fullPath, 'directory.png');
+
+            if (fs.existsSync(customImagePath)) {
+                imageUrl = `http://localhost:3000/Notebook/${currentPath}/directory.png`;
+            }
+
+            const region = {
+                data: {
+                    id: currentPath,
+                    label: entry.name,
+                    type: 'region',
+                    imageUrl: imageUrl // Use the found image URL or default
+                }
+            };
+
+            if (parent) {
+                region.data.parent = parent;
+            }
+
+            regions.push(region);
+        } else if (entry.isFile() && ['.html', '.php', '.js', '.py'].includes(path.extname(entry.name))) {
+            const fileNode = {
+                data: {
+                    id: currentPath,
+                    label: entry.name,
+                    parent: parent,
+                    type: 'node' // Explicitly marking as node
+                }
+            };
+
+            regions.push(fileNode);
         }
-      };
+    });
 
-      if (parent) {
-        region.data.parent = parent;
-      }
-
-      regions.push(region);
-    } else if (entry.isFile() && ['.html', '.php', '.js', '.py'].includes(path.extname(entry.name))) {
-      const fileNode = {
-        data: {
-          id: currentPath,
-          label: entry.name,
-          parent: parent,
-          type: 'node' // Explicitly marking as node
-        }
-      };
-
-      regions.push(fileNode);
-    }
-  });
-
-  return regions;
+    return regions;
 }
 
 // Generate only the regions and nodes directly under the Notebook directory
