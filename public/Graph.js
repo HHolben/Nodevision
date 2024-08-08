@@ -107,38 +107,72 @@ function createCytoscapeGraph(elements, styles) {
     }
   }
 
-  
-
-
+  function fetchImageFromNode(nodeId, fallbackImageUrl) {
+    return fetch(`/api/file?path=${nodeId}`)
+      .then(response => response.json())
+      .then(data => {
+        const fileContent = data.content;
+        const imgTagMatch = fileContent.match(/<img\s+src=['"]([^'"]+)['"]/i);
+        if (imgTagMatch) {
+          return imgTagMatch[1]; // Return the first image found in the file
+        }
+        return fallbackImageUrl; // Use the default image if no image is found
+      })
+      .catch(() => fallbackImageUrl);
+  }
 
   function expandRegion(regionElement) {
     const regionId = regionElement.id();
     fetch(`/api/getSubNodes?path=${regionId}`)
       .then(response => response.json())
       .then(subNodes => {
-        const newElements = subNodes.map(node => ({
-          data: {
-            id: node.id,
-            label: node.label,
-            parent: regionId,
-            type: node.isDirectory ? 'region' : 'node',
-            imageUrl: node.isDirectory ? (node.imageUrl === 'DefaultRegionImage.png' ? 'DefaultRegionImage.png' : `/Notebook/${node.id}/directory.png`) : node.imageUrl
+        const newElementsPromises = subNodes.map(node => {
+          if (!node.isDirectory && /\.(html|php|js|py)$/.test(node.id)) {
+            return fetchImageFromNode(node.id, 'DefaultNodeImage.png').then(imageUrl => ({
+              data: {
+                id: node.id,
+                label: node.label,
+                parent: regionId,
+                type: 'node',
+                imageUrl: imageUrl
+              }
+            }));
+          } else {
+            const imageUrl = node.isDirectory 
+              ? `/Notebook/${node.id}/directory.png`
+              : node.imageUrl;
+
+            return fetch(imageUrl, { method: 'HEAD' })
+              .then(response => {
+                if (!response.ok) {
+                  return 'DefaultRegionImage.png'; // Fallback to DefaultRegionImage.png
+                }
+                return imageUrl;
+              })
+              .then(imageUrl => ({
+                data: {
+                  id: node.id,
+                  label: node.label,
+                  parent: regionId,
+                  type: node.isDirectory ? 'region' : 'node',
+                  imageUrl: imageUrl
+                }
+              }));
           }
-        }));
-        
-        cy.remove(regionElement);
-        cy.add([
-          { group: 'nodes', data: { id: regionId, label: regionElement.data('label'), type: 'region', imageUrl: regionElement.data('imageUrl') } },
-          ...newElements
-        ]);
+        });
+
+        Promise.all(newElementsPromises).then(newElements => {
+          cy.remove(regionElement);
+          cy.add([
+            { group: 'nodes', data: { id: regionId, label: regionElement.data('label'), type: 'region', imageUrl: regionElement.data('imageUrl') || 'DefaultRegionImage.png' } },
+            ...newElements
+          ]);
   
-        cy.layout({ name: 'cose' }).run();
+          cy.layout({ name: 'cose' }).run();
+        });
       })
       .catch(error => console.error('Error expanding region:', error));
   }
-
-  
-  
 
   function collapseRegion(regionElement) {
     const regionId = regionElement.id();
@@ -151,7 +185,7 @@ function createCytoscapeGraph(elements, styles) {
         id: regionId,
         label: regionElement.data('label'),
         type: 'region',
-        imageUrl: 'DefaultRegionImage.png'
+        imageUrl: regionElement.data('imageUrl') || 'DefaultRegionImage.png'
       }
     });
 
@@ -171,4 +205,3 @@ function createCytoscapeGraph(elements, styles) {
     }
   });
 }
-	
