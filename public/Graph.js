@@ -122,7 +122,7 @@ function createCytoscapeGraph(elements, styles) {
             label: node.label,
             parent: regionId,
             type: node.isDirectory ? 'region' : 'node',
-            imageUrl: node.isDirectory ? (node.imageUrl === 'DefaultRegionImage.png' ? 'DefaultRegionImage.png' : `/Notebook/${node.id}/.directory`) : node.imageUrl
+            imageUrl: node.isDirectory ? (node.imageUrl === 'DefaultRegionImage.png' ? 'DefaultRegionImage.png' : `/Notebook/${node.id}/directory.png`) : node.imageUrl
           }
         }));
         

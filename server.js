@@ -77,7 +77,7 @@ app.get('/api/file', async (req, res) => {
 app.get('/api/getSubNodes', async (req, res) => {
     const regionPath = req.query.path;
     if (!regionPath) {
-      return res.status(400).send('Region path is required');
+        return res.status(400).send('Region path is required');
     }
   
     const dirPath = path.join(__dirname, 'Notebook', regionPath);
@@ -86,56 +86,55 @@ app.get('/api/getSubNodes', async (req, res) => {
     console.log(`Reading directory at path: ${dirPath}`);
    
     try {
-        console.log(dirPath);
-      const entries = await fs.readdir(dirPath, { withFileTypes: true });
-      const subNodes = entries.map(entry => ({
-        id: path.join(regionPath, entry.name),
-        label: entry.name,
-        isDirectory: entry.isDirectory(),
-        imageUrl: entry.isDirectory() ? 'DefaultRegionImage.png' : 'DefaultNodeImage.png'
-      }));
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        const subNodes = await Promise.all(entries.map(async entry => {
+            const nodePath = path.join(regionPath, entry.name);
+            let imageUrl = entry.isDirectory() 
+                ? 'http://localhost:3000/DefaultRegionImage.png' 
+                : 'http://localhost:3000/DefaultNodeImage.png';
 
-      // Check for .directory image file in the current directory
-      const directoryImage = entries.find(entry => entry.isFile() && entry.name === 'directory.png');
-      if (directoryImage) {
-        console.log(directoryImage);
-        subNodes.forEach(node => {
-          if (node.isDirectory) {
-            node.imageUrl = 'http://localhost:8000/Notebook/HenryDavidHolbenJournalAndNotebookTestVersionDoNotUse/directory.png';
-          }
-        });
-      }
-      else{
-        console.log("not found");
-      }
+            // Check for directory.png in the current directory
+            if (entry.isDirectory()) {
+                const directoryImagePath = path.join(dirPath, entry.name, 'directory.png');
+                const directoryImageExists = await fs.stat(directoryImagePath).then(() => true).catch(() => false);
+                if (directoryImageExists) {
+                    imageUrl = `http://localhost:3000/Notebook/${nodePath}/directory.png`;
+                }
+            }
 
-      res.json(subNodes);
+            return {
+                id: nodePath,
+                label: entry.name,
+                isDirectory: entry.isDirectory(),
+                imageUrl: imageUrl
+            };
+        }));
+
+        res.json(subNodes);
     } catch (error) {
-      console.error('Error reading directory:', error);
-      res.status(500).send('Error reading directory');
+        console.error('Error reading directory:', error);
+        res.status(500).send('Error reading directory');
     }
 });
 
 app.post('/api/save', async (req, res) => {
     const { path: filePath, content } = req.body;
 
-    if (!filePath || !content)
-    {
+    if (!filePath || !content) {
         return res.status(400).send('File path and content are required');
     }
 
-    try
-    {
+    try {
         await fs.writeFile(filePath, content, 'utf8');
         res.send('File saved successfully');
-    }
-    catch (err) {
+    } catch (err) {
         res.status(500).send('Error saving file');
     }
 });
 
 const regenerateGraph = require('./RegenerateGraph');
 app.use(regenerateGraph);
+
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });
