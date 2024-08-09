@@ -121,58 +121,83 @@ function createCytoscapeGraph(elements, styles) {
       .catch(() => fallbackImageUrl);
   }
 
+
+  
+
+
+
+
+
+
+
+
+
+
+
   function expandRegion(regionElement) {
     const regionId = regionElement.id();
     fetch(`/api/getSubNodes?path=${regionId}`)
       .then(response => response.json())
       .then(subNodes => {
-        const newElementsPromises = subNodes.map(node => {
-          if (!node.isDirectory && /\.(html|php|js|py)$/.test(node.id)) {
-            return fetchImageFromNode(node.id, 'DefaultNodeImage.png').then(imageUrl => ({
-              data: {
-                id: node.id,
-                label: node.label,
-                parent: regionId,
-                type: 'node',
-                imageUrl: imageUrl
-              }
-            }));
-          } else {
-            const imageUrl = node.isDirectory 
-              ? `/Notebook/${node.id}/directory.png`
-              : node.imageUrl;
-
-            return fetch(imageUrl, { method: 'HEAD' })
-              .then(response => {
-                if (!response.ok) {
-                  return 'DefaultRegionImage.png'; // Fallback to DefaultRegionImage.png
-                }
-                return imageUrl;
-              })
-              .then(imageUrl => ({
-                data: {
-                  id: node.id,
-                  label: node.label,
-                  parent: regionId,
-                  type: node.isDirectory ? 'region' : 'node',
-                  imageUrl: imageUrl
-                }
-              }));
+        const newElements = subNodes.map(node => ({
+          group: 'nodes',
+          data: {
+            id: node.id,
+            label: node.label,
+            parent: regionId, // Ensures all nodes and subregions are children of the current region
+            type: node.isDirectory ? 'region' : 'node',
+            imageUrl: node.imageUrl
+          }
+        }));
+        
+        // Remove the original region node to replace it with a compound node
+        cy.remove(regionElement);
+  
+        // Re-add the parent region as a compound node
+        cy.add({
+          group: 'nodes',
+          data: {
+            id: regionId,
+            label: regionElement.data('label'),
+            type: 'region',
+            imageUrl: regionElement.data('imageUrl'),
+            parent: regionElement.data('parent') // Keep the parent of the current region if it has one
           }
         });
-
-        Promise.all(newElementsPromises).then(newElements => {
-          cy.remove(regionElement);
-          cy.add([
-            { group: 'nodes', data: { id: regionId, label: regionElement.data('label'), type: 'region', imageUrl: regionElement.data('imageUrl') || 'DefaultRegionImage.png' } },
-            ...newElements
-          ]);
   
-          cy.layout({ name: 'cose' }).run();
-        });
+        // Add the subnodes within the compound node
+        cy.add(newElements);
+        
+        // Update layout to fit the new structure
+        cy.layout({ name: 'cose' }).run();
       })
       .catch(error => console.error('Error expanding region:', error));
   }
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   function collapseRegion(regionElement) {
     const regionId = regionElement.id();
