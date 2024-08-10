@@ -2,11 +2,15 @@ const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
 const bodyParser = require('body-parser');
-const fs = require('fs').promises;
+const fs = require('fs').promises; // For async operations
+const syncFs = require('fs'); // For synchronous operations
 const { exec } = require('child_process');
-const cheerio = require('cheerio'); // Add this line to parse HTML
+const cheerio = require('cheerio');
 const app = express();
 const port = 3000;
+
+
+const { generateAllNodes } = require('./GenerateAllNodes'); // Import the generateAllNodes function
 
 // Serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -141,9 +145,6 @@ app.get('/api/getSubNodes', async (req, res) => {
     }
 });
 
-
-
-
 app.post('/api/save', async (req, res) => {
     const { path: filePath, content } = req.body;
 
@@ -161,6 +162,25 @@ app.post('/api/save', async (req, res) => {
 
 const regenerateGraph = require('./RegenerateGraph');
 app.use(regenerateGraph);
+
+
+// Use the RegenerateGraph.js script
+app.get('/api/regenerateAllNodes', async (req, res) => {
+    const generateAllNodes = require('./GenerateAllNodes.js').generateAllNodes;
+    const notebookDir = path.join(__dirname, 'Notebook');
+    const generatedAllNodesPath = path.join(__dirname, 'public', 'AllNodes.js');
+
+    try {
+        const allNodes = generateAllNodes(notebookDir);
+        const allNodesOutput = `// AllNodes.js\nconst allNodes = [\n${allNodes.map(node => JSON.stringify(node)).join(',\n')}\n];\n`;
+        syncFs.writeFileSync(generatedAllNodesPath, allNodesOutput, 'utf8');
+        console.log(`Generated all nodes have been written to ${generatedAllNodesPath}`);
+        res.status(200).send('All nodes have been regenerated successfully.');
+    } catch (error) {
+        console.error('Error regenerating nodes:', error);
+        res.status(500).send('Error regenerating nodes.');
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
