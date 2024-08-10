@@ -9,6 +9,8 @@ const cheerio = require('cheerio');
 const app = express();
 const port = 3000;
 
+const allowedExtensions = ['.html', '.php', '.js', '.py'];
+
 
 const { generateAllNodes } = require('./GenerateAllNodes'); // Import the generateAllNodes function
 
@@ -103,7 +105,60 @@ async function getFirstImageUrl(filePath) {
         console.error(`Error reading file for images: ${error}`);
         return null;
     }
-}
+}app.get('/api/getSubNodes', async (req, res) => {
+    const regionPath = req.query.path;
+    if (!regionPath) {
+        return res.status(400).send('Region path is required');
+    }
+
+    const dirPath = path.join(__dirname, 'Notebook', regionPath);
+
+    try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        const subNodes = await Promise.all(entries.map(async entry => {
+            let imageUrl = 'DefaultNodeImage.png'; // Default image for nodes
+            const fileExtension = path.extname(entry.name).toLowerCase();
+
+            if (entry.isDirectory()) {
+                const directoryImage = path.join(dirPath, entry.name, 'directory.png');
+                try {
+                    await fs.access(directoryImage);
+                    imageUrl = `Notebook/${regionPath}/${entry.name}/directory.png`;
+                } catch {
+                    imageUrl = 'DefaultRegionImage.png';
+                }
+                return {
+                    id: path.join(regionPath, entry.name),
+                    label: entry.name,
+                    isDirectory: true,
+                    imageUrl: imageUrl
+                };
+            } else if (allowedExtensions.includes(fileExtension)) {
+                const filePath = path.join(dirPath, entry.name);
+                const firstImage = await getFirstImageUrl(filePath);
+                imageUrl = firstImage ? firstImage : 'DefaultNodeImage.png';
+                return {
+                    id: path.join(regionPath, entry.name),
+                    label: entry.name,
+                    isDirectory: false,
+                    imageUrl: imageUrl
+                };
+            } else {
+                return null; // Skip non-allowed file types
+            }
+        }));
+
+        // Filter out null values (non-allowed file types)
+        const filteredSubNodes = subNodes.filter(node => node !== null);
+
+        res.json(filteredSubNodes);
+    } catch (error) {
+        console.error('Error reading directory:', error);
+        res.status(500).send('Error reading directory');
+    }
+});
+
+
 
 app.get('/api/getSubNodes', async (req, res) => {
     const regionPath = req.query.path;
@@ -117,6 +172,8 @@ app.get('/api/getSubNodes', async (req, res) => {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
         const subNodes = await Promise.all(entries.map(async entry => {
             let imageUrl = 'DefaultNodeImage.png'; // Default image for nodes
+            const fileExtension = path.extname(entry.name).toLowerCase();
+
             if (entry.isDirectory()) {
                 const directoryImage = path.join(dirPath, entry.name, 'directory.png');
                 try {
@@ -125,25 +182,43 @@ app.get('/api/getSubNodes', async (req, res) => {
                 } catch {
                     imageUrl = 'DefaultRegionImage.png';
                 }
-            } else if (/\.(html|php|js|py)$/.test(entry.name)) {
+                return {
+                    id: path.join(regionPath, entry.name),
+                    label: entry.name,
+                    isDirectory: true,
+                    imageUrl: imageUrl
+                };
+            } else if (allowedExtensions.includes(fileExtension)) {
                 const filePath = path.join(dirPath, entry.name);
                 const firstImage = await getFirstImageUrl(filePath);
                 imageUrl = firstImage ? firstImage : 'DefaultNodeImage.png';
+                return {
+                    id: path.join(regionPath, entry.name),
+                    label: entry.name,
+                    isDirectory: false,
+                    imageUrl: imageUrl
+                };
+            } else {
+                return null; // Skip non-allowed file types
             }
-            return {
-                id: path.join(regionPath, entry.name),
-                label: entry.name,
-                isDirectory: entry.isDirectory(),
-                imageUrl: imageUrl
-            };
         }));
 
-        res.json(subNodes);
+        // Filter out null values (non-allowed file types)
+        const filteredSubNodes = subNodes.filter(node => node !== null);
+
+        res.json(filteredSubNodes);
     } catch (error) {
         console.error('Error reading directory:', error);
         res.status(500).send('Error reading directory');
     }
 });
+
+
+
+
+
+
+
 
 app.post('/api/save', async (req, res) => {
     const { path: filePath, content } = req.body;
