@@ -17,23 +17,26 @@ function createCytoscapeGraph(elements, styles) {
         selector: 'node[imageUrl]',
         style: {
           'background-image': 'data(imageUrl)',
-          'background-fit': 'cover',
+          'background-fit': 'contain',
           'background-clip': 'node',
-          'width': '50px',
-          'height': '50px',
-          'label': 'data(label)'
+          'width': '80px',
+          'height': '80px',
+          'label': 'data(label)',
+          'shape': 'circle'
+
         }
       },
       {
         selector: 'node[type="region"]',
         style: {
           'background-image': 'data(imageUrl)',
-          'background-fit': 'cover',
+          'background-fit': 'contain',
           'background-clip': 'node',
           'width': '50px',
           'height': '50px',
           'label': 'data(label)',
-          'background-color': '#f0f0f0'
+          'background-color': '#f0f0f0',
+          'shape': 'roundrectangle'
         }
       },
       {
