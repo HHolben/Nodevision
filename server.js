@@ -6,6 +6,7 @@ const fs = require('fs').promises; // For async operations
 const syncFs = require('fs'); // For synchronous operations
 const { exec } = require('child_process');
 const cheerio = require('cheerio');
+const { generateEdges } = require('./GenerateEdges'); // Import the new script
 const app = express();
 const port = 3000;
 
@@ -216,7 +217,15 @@ app.get('/api/getSubNodes', async (req, res) => {
 
 
 
-
+app.post('/generateEdges', async (req, res) => {
+    try {
+        await generateEdges();
+        res.status(200).send('Edges generated successfully');
+    } catch (error) {
+        console.error('Error generating edges:', error);
+        res.status(500).send('Failed to generate edges');
+    }
+});
 
 
 
