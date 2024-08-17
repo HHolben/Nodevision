@@ -18,6 +18,13 @@ export const boxes = [
         ToolbarCategory: "Edit"
     },
     {
+        heading: "WYSIWYG Editor",
+        content: `
+        `,
+        script: `SendToWYSIWYGeditorPage.js`,
+        ToolbarCategory: "Edit"
+    },
+    {
         heading: "Settings",
         content: `
             <iframe src="SettingsPage.html"></iframe>
