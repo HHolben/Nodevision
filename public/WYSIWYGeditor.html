@@ -49,16 +49,18 @@
         theme: 'snow'
     });
 
-    // Function to load content from the server
+    // Function to load content from the server and extract only the content inside <body>
     function loadContent() {
         const params = new URLSearchParams(window.location.search);
         const filepath = params.get('filepath');
         
         if (filepath) {
-            fetch(`/api/file?filepath=${encodeURIComponent(filepath)}`)
+            fetch(`/api/file?activeNode=${encodeURIComponent(filepath)}`)
                 .then(response => response.text())
                 .then(data => {
-                    quill.clipboard.dangerouslyPasteHTML(data);
+                    // Extract the content within the <body> tags
+                    const bodyContent = extractBodyContent(data);
+                    quill.clipboard.dangerouslyPasteHTML(bodyContent);
                 })
                 .catch(error => {
                     console.error('Error loading content:', error);
@@ -66,7 +68,11 @@
         }
     }
 
-
+    // Function to extract content inside the <body> tags
+    function extractBodyContent(html) {
+        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        return bodyMatch ? bodyMatch[1] : html;  // If <body> is found, return its content; otherwise, return full HTML
+    }
 
     // Function to save the edited content back to the server
     function saveContent() {
