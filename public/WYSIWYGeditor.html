@@ -17,9 +17,14 @@
             width: 100%;
             height: 10%;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start; /* Aligns controls to the left */
+            align-items: center;
             padding: 10px;
             background-color: darkred;
+        }
+
+        #controls button, #controls select {
+            margin-right: 10px; /* Add space between button and dropdown */
         }
 
         #editor {
@@ -27,7 +32,7 @@
             border: 1px solid #ccc;
             padding: 10px;
             box-sizing: border-box;
-            margin: auto;
+            margin: 20px auto; /* Add vertical space between toolbar and editor */
             background-color: white;
             min-height: 80%;
         }
@@ -53,8 +58,7 @@
         console.log('ActiveNode:', activeNode); // Log ActiveNode to check its value
 
         // Construct the file path based on the activeNode
-        const filePath = `Notebook/${activeNode}`; // Ensure the path is correct and does not
-        // Ensure the path is correct and does not have redundant extensions
+        const filePath = `Notebook/${activeNode}`;
 
         // Function to fetch and display file contents
         function loadFileContents() {
@@ -106,6 +110,7 @@
 </head>
 <body>
     <div id="controls">
+        <button id="saveButton" onclick="saveFileContents()">Save</button>
         <select id="styleDropdown" onchange="applyStyle(this.value)">
             <option value="p">Paragraph</option>
             <option value="h1">Heading 1</option>
@@ -114,7 +119,6 @@
             <option value="i">Italic</option>
             <option value="blockquote">Blockquote</option>
         </select>
-        <button id="saveButton" onclick="saveFileContents()">Save</button>
     </div>
 
     <!-- WYSIWYG editor area -->
