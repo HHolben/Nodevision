@@ -30,29 +30,47 @@
         <script type="module" src="boxManipulation.js" defer></script>
         <script type="module" src="resizeAndDrag.js" defer></script>
         <script type="module" src="main.js" defer></script>
+
     </head>
     <body>
         <script>
-        // Set ActiveNode dynamically, for example based on some logic in your app
-        window.ActiveNode = 'defaultNode'; // This should be set dynamically
+            document.addEventListener('DOMContentLoaded', function () {
+                // Set ActiveNode dynamically
+                window.ActiveNode = 'defaultNode'; // Set dynamically
 
-        // Handle button click to navigate to the code editor
-        document.getElementById('editCodeButton').addEventListener('click', function() {
-            if (window.ActiveNode !== undefined) {
-                const url = `CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;
-                window.location.href = url;
-            } else {
-                console.error('ActiveNode is not defined.');
-            }
-        });
+                // Search functionality
+                document.getElementById('searchButton').addEventListener('click', async function() {
+                    const searchQuery = document.getElementById('searchBar').value;
+
+                    if (searchQuery.trim() !== '') {
+                        try {
+                            const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+                            const result = await response.json();
+                            
+                            let resultList = '';
+                            result.files.forEach(file => {
+                                resultList += `<li><a href="/Notebook/${file}" target="_blank">${file}</a></li>`;
+                            });
+                            document.getElementById('searchResults').innerHTML = `<ul>${resultList}</ul>`;
+                        } catch (error) {
+                            console.error('Error fetching search results:', error);
+                        }
+                    }
+                });
+            });
         </script>
 
-        <div class="toolbar"></div>
+        <div class="toolbar">
+            <input type="text" id="searchBar" placeholder="Search for files...">
+            <button id="searchButton">Search</button>
+            <div id="searchResults"></div>
+        </div>
+
         <div class="container-wrapper">
             <div class="container container-left">
-            <div id="content">
-                <div id="cy"></div>
-            </div>
+                <div id="content">
+                    <div id="cy"></div>
+                </div>
             </div>
             <div class="divider" id="divider"></div>
             <div class="container container-right">
