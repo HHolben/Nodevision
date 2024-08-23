@@ -24,6 +24,8 @@
         <script src="GeneratedEdges.js" defer></script>
         <script src="GeneratedRegions.js" defer></script>
         <script src="Graph.js" defer></script>
+        <script src="AllNodes.js" defer></script> <!-- Add this line -->
+
 
         <!-- Include smaller scripts -->
         <script type="module" src="createToolbar.js" defer></script>
@@ -38,25 +40,29 @@
                 // Set ActiveNode dynamically
                 window.ActiveNode = 'defaultNode'; // Set dynamically
 
-                // Search functionality
-                document.getElementById('searchButton').addEventListener('click', async function() {
-                    const searchQuery = document.getElementById('searchBar').value;
+  // Event listener for search button
+  document.getElementById('searchButton').addEventListener('click', function() {
+        const searchQuery = document.getElementById('searchBar').value.toLowerCase();
 
-                    if (searchQuery.trim() !== '') {
-                        try {
-                            const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
-                            const result = await response.json();
-                            
-                            let resultList = '';
-                            result.files.forEach(file => {
-                                resultList += `<li><a href="/Notebook/${file}" target="_blank">${file}</a></li>`;
-                            });
-                            document.getElementById('searchResults').innerHTML = `<ul>${resultList}</ul>`;
-                        } catch (error) {
-                            console.error('Error fetching search results:', error);
-                        }
-                    }
-                });
+        // Assuming the 'AllNodes' constant is globally accessible
+        if (searchQuery.trim() !== '') {
+            const searchResults = nodes.filter(node => 
+                node.data.id.toLowerCase().includes(searchQuery) || 
+                node.data.label.toLowerCase().includes(searchQuery)
+            );
+
+            // Display the search results
+            let resultList = '';
+            searchResults.forEach(file => {
+                resultList += `<li><a href="${file.data.link}" target="_blank">${file.data.label}</a></li>`;
+            });
+
+            document.getElementById('searchResults').innerHTML = `<ul>${resultList}</ul>`;
+        }
+    });
+
+
+    
             });
         </script>
 

@@ -78,7 +78,7 @@ function generateNodesFromFiles(dirPath) {
 // Main function to write nodes to file
 function writeNodesToFile(dirPath, outputFilePath) {
   try {
-    const nodes = generateNodesFromFiles(dirPath);
+    const AllNodes = generateNodesFromFiles(dirPath);
     const nodesFileContent = 'var nodes;\n\nfunction ReadNodes() {\n  nodes = [\n' + nodes.map(node => '    ' + JSON.stringify(node)).join(',\n') + '\n  ];\n}\n\nReadNodes();';
 
     fs.writeFileSync(outputFilePath, nodesFileContent, 'utf8');
