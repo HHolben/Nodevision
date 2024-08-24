@@ -47,7 +47,7 @@ function generateNodesFromFiles(dirPath) {
   const allFiles = getAllFiles(dirPath);
   let index = 0; // Initialize index counter
 
-  const nodes = allFiles
+  const AllNodes = allFiles
     .filter(file => NODE_EXTENSIONS.includes(path.extname(file)))
     .map(file => {
       const relativePath = path.relative(dirPath, file);
@@ -72,14 +72,14 @@ function generateNodesFromFiles(dirPath) {
       return node;
     });
 
-  return nodes;
+  return AllNodes;
 }
 
 // Main function to write nodes to file
 function writeNodesToFile(dirPath, outputFilePath) {
   try {
     const AllNodes = generateNodesFromFiles(dirPath);
-    const nodesFileContent = 'var nodes;\n\nfunction ReadNodes() {\n  nodes = [\n' + nodes.map(node => '    ' + JSON.stringify(node)).join(',\n') + '\n  ];\n}\n\nReadNodes();';
+    const nodesFileContent = 'var AllNodes;\n\nfunction ReadNodes() {\n  AllNodes = [\n' + AllNodes.map(node => '    ' + JSON.stringify(node)).join(',\n') + '\n  ];\n}\n\nReadNodes();';
 
     fs.writeFileSync(outputFilePath, nodesFileContent, 'utf8');
     console.log(`Generated nodes have been written to ${outputFilePath}`);
