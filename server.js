@@ -6,15 +6,13 @@ const fs = require('fs').promises; // For async operations
 const syncFs = require('fs'); // For synchronous operations
 const { exec } = require('child_process');
 const cheerio = require('cheerio');
+const multer = require('multer');
 const { generateEdges } = require('./GenerateEdges'); // Import the new script
 const app = express();
 const port = 3000;
 
-
-
-
 const allowedExtensions = ['.html', '.php', '.js', '.py'];
-
+const notebookDir = path.join(__dirname, 'Notebook'); // Define notebookDir
 
 const { generateAllNodes } = require('./GenerateAllNodes'); // Import the generateAllNodes function
 
@@ -69,6 +67,29 @@ app.post('/updateGraphStyles', async (req, res) => {
         console.error('Error updating GraphStyles.js:', error);
         res.status(500).send('Failed to update graph styles.');
     }
+});
+
+
+// Update storage destination to save in 'Notebook' directory
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, 'Notebook'));  // Save to Notebook directory
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));  // Use unique filename
+    }
+});
+
+const upload = multer({ storage: storage });
+
+
+
+app.post('/upload-image', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    const filePath = `/Notebook/${req.file.filename}`;  // Return path for serving
+    res.json({ success: true, message: 'Image uploaded successfully', filePath });
 });
 
 
@@ -130,61 +151,9 @@ async function getFirstImageUrl(filePath) {
         console.error(`Error reading file for images: ${error}`);
         return null;
     }
-}app.get('/api/getSubNodes', async (req, res) => {
-    const regionPath = req.query.path;
-    if (!regionPath) {
-        return res.status(400).send('Region path is required');
-    }
+}
 
-    const dirPath = path.join(__dirname, 'Notebook', regionPath);
-
-    try {
-        const entries = await fs.readdir(dirPath, { withFileTypes: true });
-        const subNodes = await Promise.all(entries.map(async entry => {
-            let imageUrl = 'DefaultNodeImage.png'; // Default image for nodes
-            const fileExtension = path.extname(entry.name).toLowerCase();
-
-            if (entry.isDirectory()) {
-                const directoryImage = path.join(dirPath, entry.name, 'directory.png');
-                try {
-                    await fs.access(directoryImage);
-                    imageUrl = `Notebook/${regionPath}/${entry.name}/directory.png`;
-                } catch {
-                    imageUrl = 'DefaultRegionImage.png';
-                }
-                return {
-                    id: path.join(regionPath, entry.name),
-                    label: entry.name,
-                    isDirectory: true,
-                    imageUrl: imageUrl
-                };
-            } else if (allowedExtensions.includes(fileExtension)) {
-                const filePath = path.join(dirPath, entry.name);
-                const firstImage = await getFirstImageUrl(filePath);
-                imageUrl = firstImage ? firstImage : 'DefaultNodeImage.png';
-                return {
-                    id: path.join(regionPath, entry.name),
-                    label: entry.name,
-                    isDirectory: false,
-                    imageUrl: imageUrl
-                };
-            } else {
-                return null; // Skip non-allowed file types
-            }
-        }));
-
-        // Filter out null values (non-allowed file types)
-        const filteredSubNodes = subNodes.filter(node => node !== null);
-
-        res.json(filteredSubNodes);
-    } catch (error) {
-        console.error('Error reading directory:', error);
-        res.status(500).send('Error reading directory');
-    }
-});
-
-
-
+// Single instance of getSubNodes API
 app.get('/api/getSubNodes', async (req, res) => {
     const regionPath = req.query.path;
     if (!regionPath) {
@@ -238,9 +207,6 @@ app.get('/api/getSubNodes', async (req, res) => {
     }
 });
 
-
-
-
 app.post('/generateEdges', async (req, res) => {
     try {
         await generateEdges();
@@ -250,8 +216,6 @@ app.post('/generateEdges', async (req, res) => {
         res.status(500).send('Failed to generate edges');
     }
 });
-
-
 
 app.post('/api/save', async (req, res) => {
     const { path: filePath, content } = req.body;
@@ -271,25 +235,22 @@ app.post('/api/save', async (req, res) => {
 const regenerateGraph = require('./RegenerateGraph');
 app.use(regenerateGraph);
 
-
 // Use the RegenerateGraph.js script
 app.get('/api/regenerateAllNodes', async (req, res) => {
     const generateAllNodes = require('./GenerateAllNodes.js').generateAllNodes;
-    const notebookDir = path.join(__dirname, 'Notebook');
     const generatedAllNodesPath = path.join(__dirname, 'public', 'AllNodes.js');
 
     try {
         const allNodes = generateAllNodes(notebookDir);
-        const allNodesOutput = `// AllNodes.js\nconst allNodes = [\n${allNodes.map(node => JSON.stringify(node)).join(',\n')}\n];\n`;
-        syncFs.writeFileSync(generatedAllNodesPath, allNodesOutput, 'utf8');
-        console.log(`Generated all nodes have been written to ${generatedAllNodesPath}`);
-        res.status(200).send('All nodes have been regenerated successfully.');
-    } catch (error) {
-        console.error('Error regenerating nodes:', error);
-        res.status(500).send('Error regenerating nodes.');
+        const allNodesOutput = `// AllNodes.js\nconst allNodes = [\n${allNodes.map(node => JSON.stringify(node, null, 2)).join(',\n')}\n];`;
+        await fs.writeFile(generatedAllNodesPath, allNodesOutput, 'utf8');
+        res.status(200).send('All nodes regenerated successfully.');
+    } catch (err) {
+        console.error('Error generating all nodes:', err);
+        res.status(500).send('Failed to regenerate all nodes.');
     }
 });
 
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+    console.log(`Server running at http://localhost:${port}`);
 });

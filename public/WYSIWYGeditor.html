@@ -17,14 +17,14 @@
             width: 100%;
             height: 10%;
             display: flex;
-            justify-content: flex-start; /* Aligns controls to the left */
+            justify-content: flex-start;
             align-items: center;
             padding: 10px;
             background-color: darkred;
         }
 
         #controls button, #controls select {
-            margin-right: 10px; /* Add space between button and dropdown */
+            margin-right: 10px;
         }
 
         #editor {
@@ -32,7 +32,7 @@
             border: 1px solid #ccc;
             padding: 10px;
             box-sizing: border-box;
-            margin: 20px auto; /* Add vertical space between toolbar and editor */
+            margin: 20px auto;
             background-color: white;
             min-height: 80%;
         }
@@ -43,6 +43,23 @@
 
         #styleDropdown {
             margin-right: 10px;
+        }
+
+        #fileUpload {
+            display: none;
+        }
+
+        /* Message display */
+        #message {
+            color: green;
+            margin: 10px auto;
+            text-align: center;
+        }
+
+        #errorMessage {
+            color: red;
+            margin: 10px auto;
+            text-align: center;
         }
     </style>
 
@@ -55,14 +72,21 @@
 
         // Get the activeNode from the URL parameters
         const activeNode = getQueryParameter('activeNode');
-        console.log('ActiveNode:', activeNode); // Log ActiveNode to check its value
+        console.log('ActiveNode:', activeNode);
 
         // Construct the file path based on the activeNode
-        const filePath = `Notebook/${activeNode}`;
+        let filePath = '';
+        if (activeNode) {
+            filePath = `Notebook/${activeNode}`;
+        } else {
+            console.error('No activeNode provided');
+            document.getElementById('errorMessage').textContent = 'Error: No activeNode provided.';
+        }
 
         // Function to fetch and display file contents
         function loadFileContents() {
-            // Fetch file content based on the constructed file path
+            if (!filePath) return;
+            
             fetch(`/api/file?path=${encodeURIComponent(filePath)}`)
                 .then(response => {
                     if (!response.ok) {
@@ -71,11 +95,12 @@
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('editor').innerHTML = data.content; // Display content in the WYSIWYG editor
+                    document.getElementById('editor').innerHTML = data.content;
                     console.log('File content loaded:', data.content);
                 })
                 .catch(error => {
                     console.error('Error fetching file content:', error);
+                    document.getElementById('errorMessage').textContent = 'Error fetching file content: ' + error.message;
                 });
         }
 
@@ -91,10 +116,13 @@
             })
             .then(response => response.text())
             .then(data => {
-                alert(data); // Notify user of the save
+                const saveMessage = document.getElementById('message');
+                saveMessage.textContent = 'File saved successfully!';
+                setTimeout(() => saveMessage.textContent = '', 3000);  // Clear after 3 seconds
             })
             .catch(error => {
                 console.error('Error saving file content:', error);
+                document.getElementById('errorMessage').textContent = 'Error saving file content: ' + error.message;
             });
         }
 
@@ -103,9 +131,74 @@
             document.execCommand('formatBlock', false, tag);
         }
 
+        // Function to trigger file input click
+        function triggerFileInput() {
+            document.getElementById('fileUpload').click();  // Open file dialog
+        }
+
+ 
+        
+
+
+
+        function uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    fetch('/upload-image', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Image uploaded successfully:', data.message);
+        } else {
+            console.error('Error uploading image:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error uploading image:', error);
+    });
+}
+
+
+
+
+
+        // Event listener to handle the file upload
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('fileUpload').addEventListener('change', function (event) {
+                const file = event.target.files[0]; // Get the selected file
+                if (file) {
+                    uploadImage(file); // Upload and insert the image
+                }
+            });
+        });
+
         window.onload = function() {
-            loadFileContents(); // Load the file contents when the page loads
+            loadFileContents();
         };
+
+
+
+        function insertImage() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (file) {
+                // Assuming you are manually placing the image in the right folder
+                const filePath = `/uploads/${file.name}`; // Use the image folder path
+                
+                // Create an img tag with the file path
+                const imgTag = `<img src="${filePath}" alt="Image" style="max-width:100%;">`;
+                
+                // Insert the img tag into the editor
+                document.getElementById('editor').innerHTML += imgTag;
+            } else {
+                alert('Please select an image file');
+            }
+        }
     </script>
 </head>
 <body>
@@ -119,7 +212,13 @@
             <option value="i">Italic</option>
             <option value="blockquote">Blockquote</option>
         </select>
+        <button onclick="triggerFileInput()">Insert Image</button> <!-- Button to trigger file input -->
+        <input type="file" id="fileUpload" accept="image/*"> <!-- Hidden file input for image upload -->
     </div>
+
+    <!-- Message area -->
+    <div id="message"></div>
+    <div id="errorMessage"></div>
 
     <!-- WYSIWYG editor area -->
     <div id="editor" contenteditable="true">

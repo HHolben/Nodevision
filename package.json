@@ -18,6 +18,7 @@
     "layout-base": "^2.0.1",
     "mathjax": "^3.2.2",
     "monaco-editor": "^0.50.0",
+    "multer": "^1.4.5-lts.1",
     "requirejs": "^2.3.7",
     "serve-favicon": "^2.5.0"
   }
