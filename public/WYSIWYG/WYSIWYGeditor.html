@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSIWYG Editor</title>
+    <link rel="stylesheet" href="WYSIWYGstyles.css"> <!-- Reference to external CSS -->
+    <script src="editor.js" defer></script> <!-- Main editor functionality -->
+    <script src="imageUpload.js" defer></script> <!-- Image upload functionality -->
+
+
+
+
+</head>
+<body>
+    <div id="controls">
+        <button id="saveButton" onclick="saveFileContents()">Save</button>
+        <select id="styleDropdown" onchange="applyStyle(this.value)">
+            <option value="p">Paragraph</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+            <option value="i">Italic</option>
+            <option value="blockquote">Blockquote</option>
+        </select>
+        <button onclick="triggerFileInput()">Insert Image</button> <!-- Button to trigger file input -->
+        <input type="file" id="fileUpload" accept="image/*"> <!-- Hidden file input for image upload -->
+    </div>
+
+    <!-- Message area -->
+    <div id="message"></div>
+    <div id="errorMessage"></div>
+
+    <!-- WYSIWYG editor area -->
+    <div id="editor" contenteditable="true">
+        <!-- File contents will be loaded here -->
+    </div>
+</body>
+</html>

@@ -1,5 +1,3 @@
-
-
 // Endpoint to save file content
 app.post('/api/save', (req, res) => {
     const filePath = req.body.path;

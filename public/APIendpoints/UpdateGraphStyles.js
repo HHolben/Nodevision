@@ -1,4 +1,3 @@
-
 // Endpoint to handle updates to GraphStyles.js
 app.post('/updateGraphStyles', express.json(), async (req, res) => {
     const newStyles = req.body.styles; // Assuming the request body contains new styles

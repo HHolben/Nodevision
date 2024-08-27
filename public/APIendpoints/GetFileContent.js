@@ -1,5 +1,3 @@
-
-
 // Endpoint to get file content
 app.get('/api/file', (req, res) => {
     const filePath = req.query.path;
