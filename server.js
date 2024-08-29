@@ -11,6 +11,12 @@ const { generateEdges } = require('./GenerateEdges'); // Import the new script
 const app = express();
 const port = 3000;
 
+
+// Increase the request body limit for JSON and urlencoded data
+app.use(bodyParser.json({ limit: '10mb' }));  // or any other size you prefer
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
+
 const allowedExtensions = ['.html', '.php', '.js', '.py'];
 const notebookDir = path.join(__dirname, 'Notebook'); // Define notebookDir
 
