@@ -10,9 +10,9 @@ function uploadImage(file) {
     .then(data => {
         if (data.success) {
             const filePath = data.filePath; // Use the file path returned by the server
-            const imgTag = `<img src="${filePath}" alt="Image" style="max-width:100%;">`;
-            document.getElementById('editor').innerHTML += imgTag;
-            console.log('Image uploaded and inserted successfully:', data.message);
+            const linkTag = `<a href="${filePath}" target="_blank">View Uploaded Image</a>`;
+            //document.getElementById('editor').innerHTML += linkTag;
+            console.log('Image uploaded and link inserted successfully:', data.message);
         } else {
             document.getElementById('errorMessage').textContent = `Error uploading image: ${data.message}`;
             console.error('Error uploading image:', data.message);
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('fileUpload').addEventListener('change', function (event) {
         const file = event.target.files[0]; // Get the selected file
         if (file) {
-            uploadImage(file); // Upload and insert the image
+            uploadImage(file); // Upload and insert the link
         }
     });
 });
