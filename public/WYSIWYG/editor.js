@@ -130,8 +130,8 @@ document.getElementById('fileUpload').addEventListener('change', function(event)
         const editorUrl = `http://localhost:8000/${editorRelativePath}`;
         console.log('Editor URL:', editorUrl);
         
-        // Create the img tag with the correct relative path for the editor
-        const imgTag = `<img src="${editorUrl}" alt="${file.name}" width="500" height="333">`;
+        // Create the img tag with the CSS class for styling
+        const imgTag = `<img src="${editorUrl}" alt="${file.name}" class="editor-img">`;
 
         // Insert the image tag into the editor's content
         const editor = document.getElementById('editor');
@@ -170,8 +170,3 @@ document.getElementById('fileUpload').addEventListener('change', function(event)
         console.log('Final Webpage Relative Image Path:', finalWebpageRelativePath);
     }
 });
-
-// Load the file contents when the page is loaded
-window.onload = function() {
-    loadFileContents();
-};
