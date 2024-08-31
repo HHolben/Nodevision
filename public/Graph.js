@@ -203,7 +203,17 @@ function createCytoscapeGraph(elements, styles) {
       cy.add(newElements);
       
       // Update layout to fit the new structure
-      cy.layout({ name: 'cose' }).run();
+      cy.layout({
+        name: 'concentric',  // Change to any other layout type
+        concentric: function(node) {
+          return node.degree(); // Sort nodes by degree
+        },
+        levelWidth: function(nodes) {
+          return 10; // Determines the spacing between levels
+        },
+        animate: true
+      }).run();
+      
     } catch (error) {
       console.error('Error expanding region:', error);
     }
@@ -224,6 +234,5 @@ function createCytoscapeGraph(elements, styles) {
       }
     });
 
-    cy.layout({ name: 'cose' }).run();
   }
 }
