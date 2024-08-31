@@ -115,60 +115,61 @@ function triggerFileInput() {
     document.getElementById('fileUpload').click();  // Programmatically click the file input
 }
 
-// Function to handle image file selection and insertion with relative URL
+// Function to handle image file selection and insertion with different relative URLs
 document.getElementById('fileUpload').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
-        // Assume we can get the full file path of the image file and the HTML file being edited
-        const htmlFilePath = filePath;  // Path of the currently active HTML file (e.g., Notebook/activeNode)
+        // Assume the image is uploaded to a directory accessible from localhost:8000
         const imagePath = `Notebook/${file.name}`;  // Construct the image path based on the file's name
+        
+        // Get the relative path for the editor and the final webpage
+        const editorRelativePath = getRelativePath(filePath, `./${file.name}`);
+        const finalWebpageRelativePath = getRelativePath(filePath, imagePath);
 
-        // Get the relative path from the HTML file to the image file
-        const relativeImagePath = getRelativePath(htmlFilePath, imagePath);
-        console.log('Relative Image Path:', relativeImagePath);
-
-        // Create the img tag with the correct relative path
-        const imgTag = `<img src="${relativeImagePath}" alt="${file.name}" width="500" height="333">`;
+        // Construct the URL for the editor (localhost:8000)
+        const editorUrl = `http://localhost:8000/${editorRelativePath}`;
+        console.log('Editor URL:', editorUrl);
+        
+        // Create the img tag with the correct relative path for the editor
+        const imgTag = `<img src="${editorUrl}" alt="${file.name}" width="500" height="333">`;
 
         // Insert the image tag into the editor's content
-        insertHtmlIntoEditor(imgTag);
-    }
-});
+        const editor = document.getElementById('editor');
+        editor.focus();  // Ensure the editor is focused
 
-// Function to insert HTML into the editor
-function insertHtmlIntoEditor(html) {
-    const editor = document.getElementById('editor');
-    editor.focus();  // Ensure the editor is focused
+        if (window.getSelection) {
+            const sel = window.getSelection();
+            if (sel.getRangeAt && sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
 
-    if (window.getSelection) {
-        const sel = window.getSelection();
-        if (sel.getRangeAt && sel.rangeCount) {
-            const range = sel.getRangeAt(0);
-            range.deleteContents();
+                // Create a DocumentFragment to insert the HTML content
+                const frag = document.createDocumentFragment();
+                const div = document.createElement('div');
+                div.innerHTML = imgTag;
+                let node;
+                let lastNode;
+                while ((node = div.firstChild)) {
+                    lastNode = frag.appendChild(node);
+                }
 
-            // Create a DocumentFragment to insert the HTML content
-            const frag = document.createDocumentFragment();
-            const div = document.createElement('div');
-            div.innerHTML = html;
-            let node;
-            let lastNode;
-            while ((node = div.firstChild)) {
-                lastNode = frag.appendChild(node);
-            }
+                range.insertNode(frag);
 
-            range.insertNode(frag);
-
-            // Set the cursor after the inserted content
-            if (lastNode) {
-                const newRange = document.createRange();
-                newRange.setStartAfter(lastNode);
-                newRange.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
+                // Set the cursor after the inserted content
+                if (lastNode) {
+                    const newRange = document.createRange();
+                    newRange.setStartAfter(lastNode);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                }
             }
         }
+
+        // Optionally, you could also save the final webpage relative path for future reference
+        console.log('Final Webpage Relative Image Path:', finalWebpageRelativePath);
     }
-}
+});
 
 // Load the file contents when the page is loaded
 window.onload = function() {

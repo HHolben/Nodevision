@@ -30,6 +30,15 @@ body, html {
     min-height: 80%;
 }
 
+
+.editor img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Ensure images are displayed as block elements */
+    margin: 10px 0; /* Add margin if necessary */
+}
+
+
 [contenteditable="true"] {
     outline: none;
 }
