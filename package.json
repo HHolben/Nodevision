@@ -20,6 +20,10 @@
     "monaco-editor": "^0.50.0",
     "multer": "^1.4.5-lts.1",
     "requirejs": "^2.3.7",
-    "serve-favicon": "^2.5.0"
+    "serve-favicon": "^2.5.0",
+    "three": "^0.168.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.2"
   }
 }
