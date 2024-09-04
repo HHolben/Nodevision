@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<!--Based on code from: https://www.tutorialspoint.com/threejs/threejs_hello_cube_app.htm-->
+<!-- Based on code from: https://www.tutorialspoint.com/threejs/threejs_hello_cube_app.htm -->
 <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -27,6 +27,7 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script> <!-- Loader for GLTF models -->
 </head>
 <body>
     <div id="container"></div>
@@ -152,32 +153,16 @@
         const axesHelper = new THREE.AxesHelper(20);
         scene.add(axesHelper);
 
-        const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
-        const plane = new THREE.Mesh(
-            planeGeometry,
-            new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-        );
-        plane.rotateX(-Math.PI / 2);
-        plane.position.y = -1.75;
-        plane.receiveShadow = true;
-        scene.add(plane);
-
-        const geometry = new THREE.BoxGeometry(2, 2, 2);
-        const matArray = [
-            new THREE.MeshPhongMaterial({ color: 0xff8b8b }),
-            new THREE.MeshPhongMaterial({ color: 0xf5ffa2 }),
-            new THREE.MeshPhongMaterial({ color: 0xb5dccd }),
-            new THREE.MeshPhongMaterial({ color: 0xaaffa2 }),
-            new THREE.MeshPhongMaterial({ color: 0x9fd1ff }),
-            new THREE.MeshPhongMaterial({ color: 0xffaef7 }),
-        ];
-        const cube = new THREE.Mesh(geometry, matArray);
-        cube.position.set(0, 0.5, 0);
-        cube.rotateX(Math.PI / 6);
-        cube.castShadow = true;
-        cube.receiveShadow = true;
-        camera.lookAt(cube.position);
-        scene.add(cube);
+        // Load a 3D model (GLTF/GLB)
+        const loader = new THREE.GLTFLoader();
+        loader.load('SampleModel.glb', (gltf) => {  // Replace 'your_model.glb' with your actual model file
+            const model = gltf.scene;
+            model.position.set(0, 0, 0);
+            scene.add(model);
+            renderer.render(scene, camera);
+        }, undefined, (error) => {
+            console.error('Error loading the model:', error);
+        });
 
         window.addEventListener('resize', () => {
             width = window.innerWidth;
@@ -190,7 +175,6 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            // Removed controls.update() because it's not defined in CustomControls
             renderer.render(scene, camera);
         }
 
