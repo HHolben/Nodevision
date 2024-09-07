@@ -5,18 +5,29 @@ const { exec } = require('child_process');
 const app = express();
 
 // Function to run a script and return a promise
-function runScript(script) {
-    return new Promise((resolve, reject) => {
-        exec(`node ${script}`, (err, stdout, stderr) => {
-            if (err) {
-                console.error(`Error running ${script}: ${stderr}`);
-                reject(err);
-                return;
-            }
-            console.log(`${script} output: ${stdout}`);
-            resolve();
-        });
-    });
+function runScript(scriptName) {
+    try {
+        // If the script is already loaded, call its corresponding function
+        if (scriptName === 'NewNotebookPageInitializer.js' && window.initializeNewNotebookPage) {
+            console.log('Running already-loaded script function.');
+            window.initializeNewNotebookPage();
+            return;
+        }
+
+        // Otherwise, load the script
+        if (!document.querySelector(`script[src="${scriptName}"]`)) {
+            const script = document.createElement('script');
+            script.src = scriptName;
+            script.onload = () => {
+                if (window.initializeNewNotebookPage) {
+                    window.initializeNewNotebookPage();
+                }
+            };
+            document.body.appendChild(script);
+        }
+    } catch (error) {
+        console.error(`Error running script ${scriptName}:`, error);
+    }
 }
 
 // Run GenerateNodes.js, GenerateEdges.js, and GenerateRegions.js in sequence

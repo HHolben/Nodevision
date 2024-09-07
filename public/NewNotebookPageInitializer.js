@@ -1,10 +1,15 @@
-function initializeNewNotebookPage() {
-    const fileName = document.getElementById('fileNameInput').value;
+window.initializeNewNotebookPage = function() {
+    console.log('Initializing new notebook page...');
+
+        const fileName = document.getElementById('fileNameInput').value;
 
     if (!fileName) {
         alert('Please enter a file name.');
         return;
     }
+
+
+
 
     const newHtmlContent = `
         <!DOCTYPE html>

@@ -62,15 +62,32 @@ export function closeBox(box) {
 // Function to run a script associated with the box
 export function runScript(scriptName) {
     try {
-        // Check if the script is already added
+        // Check if the script is already loaded
         if (document.querySelector(`script[src="${scriptName}"]`)) {
             console.warn(`Script ${scriptName} is already loaded.`);
+
+            // Re-execute the associated function if the script is already loaded
+            if (scriptName === 'NewNotebookPageInitializer.js' && window.initializeNewNotebookPage) {
+                console.log('Re-running initializeNewNotebookPage function.');
+                window.initializeNewNotebookPage(); // Call the function again
+            }
             return;
         }
 
+        // Otherwise, load the script for the first time
         const script = document.createElement('script');
         script.src = scriptName;
+
+        // Add a listener to run the initialization function once the script is loaded
+        script.onload = () => {
+            if (scriptName === 'NewNotebookPageInitializer.js' && window.initializeNewNotebookPage) {
+                console.log('Running initializeNewNotebookPage for the first time.');
+                window.initializeNewNotebookPage(); // Call the function once the script is loaded
+            }
+        };
+
         document.body.appendChild(script);
+
     } catch (error) {
         console.error(`Error running script ${scriptName}:`, error);
     }
