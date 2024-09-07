@@ -1,15 +1,14 @@
+const selectedRegion = window.ActiveNode || null;
+
 window.initializeNewNotebookPage = function() {
     console.log('Initializing new notebook page...');
 
-        const fileName = document.getElementById('fileNameInput').value;
+    const fileName = document.getElementById('fileNameInput').value;
 
     if (!fileName) {
         alert('Please enter a file name.');
         return;
     }
-
-
-
 
     const newHtmlContent = `
         <!DOCTYPE html>
@@ -51,6 +50,16 @@ window.initializeNewNotebookPage = function() {
                 }
             };
 
+            // Check if a region is selected and add the new node inside the selected region
+            if (selectedRegion) {
+                console.log(`Adding new node inside region: ${selectedRegion}`);
+
+                // Add the node as a child of the selected region
+                newNode.data.parent = selectedRegion;
+            } else {
+                console.log('No region selected, adding new node to the root level.');
+            }
+
             // Add the new node to the Cytoscape instance
             window.cy.add(newNode);
             window.cy.layout({ name: 'cose' }).run(); // Optional: re-run layout to accommodate new nodes
@@ -58,11 +67,12 @@ window.initializeNewNotebookPage = function() {
         } else {
             console.error('Cytoscape instance not found.');
         }
+
+        // Clear the selected region after the node is added
+        selectedRegion = null;
+
     })
     .catch(error => {
         console.error('Error:', error);
     });
 }
-
-// Call the function
-initializeNewNotebookPage();
