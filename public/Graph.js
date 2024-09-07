@@ -42,8 +42,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
+let cyInitialized = false;
+
 function createCytoscapeGraph(elements, styles) {
-  const cy = cytoscape({
+  window.cy = cytoscape({
     container: document.getElementById('cy'),
     elements: elements,
     style: [
@@ -86,17 +88,18 @@ function createCytoscapeGraph(elements, styles) {
   });
 
   // Node and edge interactions
-  cy.on('click', 'node, edge', function(evt) {
+  window.cy.on('click', 'node, edge', function(evt) {
     const element = evt.target;
     updateInfoPanel(element);
   });
 
-  cy.on('tap', function(event) {
-    if (event.target === cy) {
+  window.cy.on('tap', function(event) {
+    if (event.target === window.cy) {
       document.getElementById('element-info').innerHTML = 'Click on a node, edge, or region to see details.';
       document.getElementById('content-frame').src = ''; // Clear the iframe when clicking on the background
     }
   });
+
 
   async function fetchImageFromNode(nodeId, fallbackImageUrl) {
     try {
