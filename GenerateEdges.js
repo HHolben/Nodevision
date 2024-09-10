@@ -1,79 +1,66 @@
 const fs = require('fs').promises;
 const path = require('path');
-const cheerio = require('cheerio');
+const cytoscape = require('cytoscape');
 
-const notebookDir = path.join(__dirname, 'Notebook');
-const generatedEdgesPath = path.join(__dirname, 'public', 'AllEdges.js');
-
-// Function to get all files with allowed extensions
-async function getAllFiles(dirPath, allowedExtensions, arrayOfFiles = []) {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-    for (const entry of entries) {
-        const fullPath = path.join(dirPath, entry.name);
-        if (entry.isDirectory()) {
-            arrayOfFiles = await getAllFiles(fullPath, allowedExtensions, arrayOfFiles);
-        } else if (allowedExtensions.includes(path.extname(entry.name))) {
-            arrayOfFiles.push(fullPath);
-        }
-    }
-
-    return arrayOfFiles;
-}
-
-// Function to parse a file and extract links
-async function extractLinksFromFile(filePath) {
-    const fileContent = await fs.readFile(filePath, 'utf8');
-    const $ = cheerio.load(fileContent);
-
-    const links = [];
-    $('a[href], script[src], link[href]').each((_, element) => {
-        const srcOrHref = $(element).attr('href') || $(element).attr('src');
-        if (srcOrHref) {
-            links.push(srcOrHref);
-        }
+async function generateEdges() {
+    // Create a new Cytoscape instance
+    const cy = cytoscape({
+        elements: [],  // Initialize with empty elements
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'background-color': '#666',
+                    'label': 'data(id)'
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'curve-style': 'bezier',
+                    'target-arrow-shape': 'triangle',
+                    'target-arrow-color': '#333',
+                    'line-color': '#333',
+                    'width': 2
+                }
+            }
+        ]
     });
 
-    return links;
-}
+    // Load the current graph data
+    const graphData = await fs.readFile(path.join(__dirname, 'GeneratedEdges.js'), 'utf8');
+    const graph = JSON.parse(graphData);
+    cy.json(graph);
 
-// Function to generate edges
-async function generateEdges() {
-    const allowedExtensions = ['.html', '.php', '.js', '.py'];
-    const files = await getAllFiles(notebookDir, allowedExtensions);
-    const edges = [];
+    // Iterate over nodes and add edges based on links found in files
+    for (const node of cy.nodes()) {
+        const filePath = path.join(__dirname, 'Notebook', node.id());
+        const fileContent = await fs.readFile(filePath, 'utf8');
 
-    for (const file of files) {
-        const fileLinks = await extractLinksFromFile(file);
-        for (const link of fileLinks) {
-            // Resolve the link relative to the current file's directory
-            const targetFile = path.resolve(path.dirname(file), link);
+        // Extract links from file content
+        const linkRegex = /href\s*=\s*['"]([^'"]+)['"]/gi;
+        let match;
+        while ((match = linkRegex.exec(fileContent)) !== null) {
+            const link = match[1];
+            const linkPath = path.join(path.dirname(filePath), link);
+            const linkNodeId = path.relative(__dirname, linkPath);
 
-            // Log for debugging
-            console.log(`Checking link: ${link}`);
-            console.log(`Resolved to: ${targetFile}`);
-
-            // Check if the resolved target exists and is within the allowed files
-            if (files.includes(targetFile)) {
-                const relativeSource = path.relative(notebookDir, file);
-                const relativeTarget = path.relative(notebookDir, targetFile);
-                edges.push({
+            if (cy.getElementById(linkNodeId).length > 0) {
+                cy.add({
+                    group: 'edges',
                     data: {
-                        source: relativeSource,
-                        target: relativeTarget
+                        id: `edge-${node.id()}-${linkNodeId}`,
+                        source: node.id(),
+                        target: linkNodeId
                     }
                 });
-            } else {
-                console.log(`Target file does not exist or is not allowed: ${targetFile}`);
             }
         }
     }
 
-    const edgesOutput = `// AllEdges.js\nconst allEdges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\n`;
-
-    await fs.writeFile(generatedEdgesPath, edgesOutput, 'utf8');
-    console.log(`Generated edges have been written to ${generatedEdgesPath}`);
+    // Save the updated graph data
+    const updatedGraphData = cy.json();
+    await fs.writeFile(path.join(__dirname, 'GeneratedEdges.js'), JSON.stringify(updatedGraphData), 'utf8');
 }
 
-// Export the function for external use
 module.exports = { generateEdges };

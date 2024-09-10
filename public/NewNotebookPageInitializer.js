@@ -1,4 +1,7 @@
-const selectedRegion = window.ActiveNode || null;
+
+
+    const selectedRegion = window.ActiveNode || null;
+
 
 window.initializeNewNotebookPage = function() {
     console.log('Initializing new notebook page...');
