@@ -63,7 +63,6 @@ export function closeBox(box) {
 export function runScript(scriptName) {
     try {
         // Check if the script is already loaded
-        /*
         if (document.querySelector(`script[src="${scriptName}"]`)) {
             console.warn(`Script ${scriptName} is already loaded.`);
 
@@ -74,7 +73,7 @@ export function runScript(scriptName) {
             }
             return;
         }
-*/
+
         // Otherwise, load the script for the first time
         const script = document.createElement('script');
         script.src = scriptName;

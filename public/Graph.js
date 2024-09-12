@@ -3,10 +3,7 @@ async function generateEdgesForLinks() {
 
   for (let nodeId of allNodeIds) {
     try {
-      const response = await fetch(`/api/file?path=Notebook/${nodeId}`);
-      console.log("Node ID:");
-      console.log(nodeId);
-      console.log(`/api/file?path=Notebook/${nodeId}`);
+      const response = await fetch(`/api/file?path=${nodeId}`);
       const data = await response.json();
       const fileContent = data.content;
       const links = extractHyperlinks(fileContent);

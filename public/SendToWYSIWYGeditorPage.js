@@ -4,9 +4,7 @@
         // Construct the URL with the current ActiveNode value
         const url = `WYSIWYG/WYSIWYGeditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;
         // Redirect to the constructed URL
-    //    window.location.href = url;
-            // Open the constructed URL in a new browser window
-    window.open(url, '_blank');
+        window.location.href = url;
     } else {
         console.error('ActiveNode is not defined.');
     }

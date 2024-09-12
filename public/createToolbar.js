@@ -1,34 +1,5 @@
 import { boxes } from './DefineToolbarElements.js';
-
 import { createBox } from './boxManipulation.js';
-
-boxes.forEach(box => {
-    const toolbarCategory = document.getElementById(box.ToolbarCategory);
-
-    if (toolbarCategory) {
-        const button = document.createElement('button');
-        button.innerHTML = box.heading;
-        toolbarCategory.appendChild(button);
-
-        button.addEventListener('click', () => {
-            createBox(box);
-
-            // Check if the clicked item is "New Region"
-            if (box.heading === "New Region") {
-                window.createNewRegion(); // Trigger the New Region creation script
-            }
-
-            if (box.heading === "Delete Node or Directory") {
-                window.deleteNodeOrDirectory();  // Trigger the delete function
-            }
-        });
-    }
-});
-
-
-
-
-
 
 function createToolbar() {
     const toolbar = document.querySelector('.toolbar');
