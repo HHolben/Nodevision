@@ -3,63 +3,46 @@ const path = require('path');
 const favicon = require('serve-favicon');
 const bodyParser = require('body-parser');
 const fs = require('fs').promises; // For async operations
-const syncFs = require('fs'); // For synchronous operations
-const { exec } = require('child_process');
-const cheerio = require('cheerio');
 const multer = require('multer');
-const { generateEdges } = require('./GenerateEdges'); // Import the new script
+const cheerio = require('cheerio');
+const regenerateGraph = require('./RegenerateGraph'); // Import the regenerateGraph function
+const { generateEdges } = require('./GenerateEdges');
+const { generateAllNodes } = require('./GenerateAllNodes');
 const app = express();
 const port = 3000;
 
-
 // Increase the request body limit for JSON and urlencoded data
-app.use(bodyParser.json({ limit: '10mb' }));  // or any other size you prefer
+app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-
 
 const allowedExtensions = ['.html', '.php', '.js', '.py'];
 const notebookDir = path.join(__dirname, 'Notebook'); // Define notebookDir
 
-const { generateAllNodes } = require('./GenerateAllNodes'); // Import the generateAllNodes function
-
 // Serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
-app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/vendor', express.static(path.join(__dirname, 'node_modules')));
 app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
 
-function runScript(script) {
-    return new Promise((resolve, reject) => {
-        exec(`node ${script}`, (err, stdout, stderr) => {
-            if (err) {
-                console.error(`Error running ${script}: ${stderr}`);
-                reject(err);
-                return;
-            }
-            console.log(`${script} output: ${stdout}`);
-            resolve();
-        });
-    });
-}
-
+// Endpoint to initialize HTML file and regenerate graph
 app.post('/initialize', async (req, res) => {
     const { htmlContent, fileName } = req.body;
     const filePath = path.join(__dirname, 'Notebook', fileName);
 
     try {
-        await fs.mkdir(path.join(__dirname, 'Notebook'), { recursive: true });
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
         await fs.writeFile(filePath, htmlContent);
-        console.log(`HTML file "${filePath}" has been successfully created!`);
-        await runScript('RegenerateGraph.js');
-        res.send('HTML file has been created successfully and graph regenerated.');
+        console.log(`HTML file "${filePath}" created successfully!`);
+        await regenerateGraph(); // Call regenerateGraph directly
+        res.send('HTML file created successfully and graph regenerated.');
     } catch (error) {
-        console.error('Error writing HTML file:', error);
-        res.status(500).send('Error creating HTML file');
+        console.error('Error creating HTML file:', error);
+        res.status(500).send('Error creating HTML file.');
     }
 });
 
+// Endpoint to update graph styles
 app.post('/updateGraphStyles', async (req, res) => {
     const newStyles = req.body.styles;
     const stylesFilePath = path.join(__dirname, 'public', 'GraphStyles.js');
@@ -75,7 +58,6 @@ app.post('/updateGraphStyles', async (req, res) => {
     }
 });
 
-
 // Update storage destination to save in 'Notebook' directory
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -88,8 +70,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-
-
+// Endpoint to upload images
 app.post('/upload-image', upload.single('image'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, message: 'No file uploaded' });
@@ -97,8 +78,6 @@ app.post('/upload-image', upload.single('image'), (req, res) => {
     const filePath = `/Notebook/${req.file.filename}`;  // Return path for serving
     res.json({ success: true, message: 'Image uploaded successfully', filePath });
 });
-
-
 
 // Search API endpoint
 app.get('/api/search', async (req, res) => {
@@ -119,6 +98,7 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
+// Endpoint to read file content
 app.get('/api/file', async (req, res) => {
     const filePath = req.query.path;
     if (!filePath) {
@@ -133,7 +113,7 @@ app.get('/api/file', async (req, res) => {
     }
 });
 
-// New function to extract the first image URL from the file content
+// Function to extract the first image URL from the file content
 async function getFirstImageUrl(filePath) {
     try {
         const fileContent = await fs.readFile(filePath, 'utf8');
@@ -159,7 +139,7 @@ async function getFirstImageUrl(filePath) {
     }
 }
 
-// Single instance of getSubNodes API
+// Endpoint to get sub-nodes
 app.get('/api/getSubNodes', async (req, res) => {
     const regionPath = req.query.path;
     if (!regionPath) {
@@ -213,6 +193,7 @@ app.get('/api/getSubNodes', async (req, res) => {
     }
 });
 
+// Endpoint to generate edges
 app.post('/generateEdges', async (req, res) => {
     try {
         await generateEdges();
@@ -223,6 +204,7 @@ app.post('/generateEdges', async (req, res) => {
     }
 });
 
+// Endpoint to save file content
 app.post('/api/save', async (req, res) => {
     const { path: filePath, content } = req.body;
 
@@ -238,17 +220,12 @@ app.post('/api/save', async (req, res) => {
     }
 });
 
-const regenerateGraph = require('./RegenerateGraph');
-app.use(regenerateGraph);
-
-// Use the RegenerateGraph.js script
+// Endpoint to regenerate all nodes
 app.get('/api/regenerateAllNodes', async (req, res) => {
-    const generateAllNodes = require('./GenerateAllNodes.js').generateAllNodes;
-    const generatedAllNodesPath = path.join(__dirname, 'public', 'AllNodes.js');
-
     try {
         const allNodes = generateAllNodes(notebookDir);
         const allNodesOutput = `// AllNodes.js\nconst allNodes = [\n${allNodes.map(node => JSON.stringify(node, null, 2)).join(',\n')}\n];`;
+        const generatedAllNodesPath = path.join(__dirname, 'public', 'AllNodes.js');
         await fs.writeFile(generatedAllNodesPath, allNodesOutput, 'utf8');
         res.status(200).send('All nodes regenerated successfully.');
     } catch (err) {

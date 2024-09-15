@@ -92,6 +92,49 @@ function saveFileContents() {
     });
 }
 
+// Function to convert CSV to HTML table
+function csvToEditableTable(csvString) {
+    const rows = csvString.split('\n');
+    let tableHTML = '<table border="1">';  // Create a table with borders
+
+    rows.forEach(row => {
+        const columns = row.split(',');
+        tableHTML += '<tr>';  // Start a new row
+        columns.forEach(column => {
+            // Initially, each cell will be a text input for the user to edit
+            tableHTML += `<td><input type="text" value="${column.trim()}" /></td>`;
+        });
+        tableHTML += '</tr>';  // End the row
+    });
+
+    tableHTML += '</table>';
+    return tableHTML;
+}
+
+// Function to insert the table into the editor
+function insertEditableTable() {
+    const editor = document.getElementById('editor');
+    const csvString = "A,B,C\nD,E,F\nG,H,I";  // Example CSV data for the table
+    
+    // Generate the HTML for an editable table
+    const tableHTML = csvToEditableTable(csvString);
+    
+    const range = window.getSelection().getRangeAt(0);
+    const tableNode = document.createElement('div');
+    tableNode.innerHTML = tableHTML;
+    range.insertNode(tableNode);
+
+    // Move the cursor after the table
+    range.setStartAfter(tableNode);
+    range.setEndAfter(tableNode);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+}
+
+// Add event listener for table insertion
+document.getElementById('insertTable').addEventListener('click', insertEditableTable);
+
+
 // Utility function to calculate relative paths between two locations
 function getRelativePath(from, to) {
     const fromParts = from.split('/');
@@ -169,4 +212,46 @@ document.getElementById('fileUpload').addEventListener('change', function(event)
         // Optionally, you could also save the final webpage relative path for future reference
         console.log('Final Webpage Relative Image Path:', finalWebpageRelativePath);
     }
+});function uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    return fetch('/upload-image', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const filePath = data.filePath; // Use the file path returned by the server
+            const linkTag = `<a href="${filePath}" target="_blank">View Uploaded Image</a>`;
+            //document.getElementById('editor').innerHTML += linkTag;
+            console.log('Image uploaded and link inserted successfully:', data.message);
+        } else {
+            document.getElementById('errorMessage').textContent = `Error uploading image: ${data.message}`;
+            console.error('Error uploading image:', data.message);
+        }
+    })
+    .catch(error => {
+        document.getElementById('errorMessage').textContent = `Upload failed: ${error}`;
+        console.error('Error uploading image:', error);
+    });
+}
+
+
+
+// Event listener to handle the file upload
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('fileUpload').addEventListener('change', function (event) {
+        const file = event.target.files[0]; // Get the selected file
+        if (file) {
+            uploadImage(file); // Upload and insert the link
+        }
+    });
 });
+
+window.onload = function() {
+    loadFileContents();
+};
+
+

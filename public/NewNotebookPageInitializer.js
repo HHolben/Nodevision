@@ -1,8 +1,10 @@
-const selectedRegion = window.ActiveNode || null;
+
 
 window.initializeNewNotebookPage = function() {
     console.log('Initializing new notebook page...');
 
+
+    
     const fileName = document.getElementById('fileNameInput').value;
 
     if (!fileName) {
@@ -76,3 +78,17 @@ window.initializeNewNotebookPage = function() {
         console.error('Error:', error);
     });
 }
+
+
+// Ensure selectedRegion is defined from the active Cytoscape graph
+const selectedRegion = window.ActiveNode || null;
+
+if (!selectedRegion) {
+  console.error('No region selected. Cannot add node.');
+  return;
+}
+
+// Proceed with the node initialization logic
+initializeNewNotebookPage(selectedRegion);
+
+
