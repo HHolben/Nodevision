@@ -24,13 +24,22 @@ window.initializeNewNotebookPage = function() {
         </html>
     `;
 
+    const selectedRegion = window.ActiveNode || ''; // Default to root if no region is selected
+
+    // Construct the file path, adding the node inside the selected region (subdirectory)
+    const filePath = selectedRegion 
+        ? `${selectedRegion}/${fileName}.html`  // Inside the selected subdirectory
+        : `${fileName}.html`;                   // In the root directory if no region selected
+
+    console.log(`Saving file to: ${filePath}`);
+
     // Send a POST request to the server to save the new file
     fetch('/initialize', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ htmlContent: newHtmlContent, fileName: fileName })
+        body: JSON.stringify({ htmlContent: newHtmlContent, fileName: filePath }) // Save in the correct path
     })
     .then(response => response.text())
     .then(data => {
@@ -38,23 +47,15 @@ window.initializeNewNotebookPage = function() {
 
         // Ensure Cytoscape is ready before adding the new node
         if (window.cy) {
-            const selectedRegion = window.ActiveNode; // Use ActiveNode to track the selected region
-
-            if (!selectedRegion) {
-                console.error('No region selected. Cannot add node.');
-                return;
-            }
-
-            // Define the new node
             const newNode = {
                 group: 'nodes',
                 data: {
-                    id: fileName, // Unique ID for the node (same as file name)
+                    id: filePath, // Unique ID for the node (file path is the ID)
                     label: fileName, // Label for the node
-                    link: fileName, // Link to the newly created file
+                    link: filePath, // Link to the newly created file
                     imageUrl: "http://localhost:3000/DefaultNodeImage.png", // Default image for nodes
                     IndexNumber: Date.now(), // Unique index number (or use any other unique value)
-                    parent: selectedRegion // Add the new node as a child of the selected region
+                    parent: selectedRegion // Add the new node as a child of the selected region (subdirectory)
                 }
             };
 
@@ -72,12 +73,3 @@ window.initializeNewNotebookPage = function() {
         console.error('Error:', error);
     });
 };
-
-// Ensure selectedRegion (ActiveNode) is defined and trigger initialization
-const selectedRegion = window.ActiveNode || null;
-
-if (!selectedRegion) {
-    console.error('No region selected. Cannot add node.');
-} else {
-    initializeNewNotebookPage();
-}
