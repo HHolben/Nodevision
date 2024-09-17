@@ -3,7 +3,7 @@ body, html {
     padding: 0;
     width: 100%;
     height: 100%;
-    background-color: dimgrey;
+    background-color: rgb(255, 253, 205);
 }
 
 #controls {
@@ -13,7 +13,7 @@ body, html {
     justify-content: flex-start;
     align-items: center;
     padding: 10px;
-    background-color: darkred;
+    background-color: rgb(255, 153, 0);
 }
 
 #controls button, #controls select {
