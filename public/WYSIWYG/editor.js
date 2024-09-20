@@ -240,6 +240,160 @@ document.getElementById('fileUpload').addEventListener('change', function(event)
 
 
 
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('insertMusicSheet').addEventListener('click', function() {
+        insertMusicSheet();
+    });
+
+    document.getElementById('addNoteButton').addEventListener('click', function() {
+        addNoteToMusicSheet();
+    });
+
+    document.getElementById('editor').addEventListener('click', function(event) {
+        const target = event.target;
+
+        if (target.classList.contains('musicSheet')) {
+            showEditToolbar();
+            selectMusicSheet(target);
+        } else {
+            hideEditToolbar();
+        }
+    });
+});
+
+// Function to insert a music sheet div and initialize its MusicXML structure
+function insertMusicSheet() {
+    const editor = document.getElementById('editor');
+    const musicSheetDiv = document.createElement('div');
+    musicSheetDiv.classList.add('musicSheet');
+    musicSheetDiv.contentEditable = "false"; // Make it non-editable
+    musicSheetDiv.innerHTML = '🎼 Sheet Music';
+
+    // Initialize an empty MusicXML structure for this music sheet
+    const musicXML = `
+        <score-partwise version="3.1">
+            <part id="P1">
+                <measure number="1">
+                </measure>
+            </part>
+        </score-partwise>
+    `;
+
+    // Store the XML structure inside the div for later manipulation
+    musicSheetDiv.dataset.musicXML = musicXML;
+
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(musicSheetDiv);
+    }
+}
+
+// Function to show the Edit Toolbar
+function showEditToolbar() {
+    document.getElementById('editToolbar').style.display = 'block';
+}
+
+// Function to hide the Edit Toolbar
+function hideEditToolbar() {
+    document.getElementById('editToolbar').style.display = 'none';
+}
+
+// Function to select a music sheet div
+let selectedMusicSheet = null;
+function selectMusicSheet(musicSheetDiv) {
+    selectedMusicSheet = musicSheetDiv;
+}
+
+// Function to add a note to the selected music sheet
+function addNoteToMusicSheet() {
+    if (selectedMusicSheet) {
+        const noteType = document.getElementById('noteType').value;
+        const newNoteXML = getMusicXMLForNoteType(noteType);
+
+        // Update the MusicXML structure for the selected music sheet
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(selectedMusicSheet.dataset.musicXML, 'text/xml');
+
+        const measure = xmlDoc.querySelector('measure');
+        const noteElement = parser.parseFromString(newNoteXML, 'text/xml').querySelector('note');
+        measure.appendChild(noteElement);
+
+        // Serialize and store the updated MusicXML back to the div
+        const serializer = new XMLSerializer();
+        selectedMusicSheet.dataset.musicXML = serializer.serializeToString(xmlDoc);
+
+        // Render the note visually (just as text for now)
+        const noteVisual = document.createElement('span');
+        noteVisual.classList.add('note');
+        noteVisual.textContent = getVisualRepresentationForNoteType(noteType);
+        selectedMusicSheet.appendChild(noteVisual);
+    }
+}
+
+// Function to get MusicXML structure for a specific note type
+function getMusicXMLForNoteType(noteType) {
+    switch (noteType) {
+        case 'quarter':
+            return `
+                <note>
+                    <pitch>
+                        <step>C</step>
+                        <octave>4</octave>
+                    </pitch>
+                    <duration>1</duration>
+                    <type>quarter</type>
+                </note>
+            `;
+        case 'half':
+            return `
+                <note>
+                    <pitch>
+                        <step>C</step>
+                        <octave>4</octave>
+                    </pitch>
+                    <duration>2</duration>
+                    <type>half</type>
+                </note>
+            `;
+        case 'whole':
+            return `
+                <note>
+                    <pitch>
+                        <step>C</step>
+                        <octave>4</octave>
+                    </pitch>
+                    <duration>4</duration>
+                    <type>whole</type>
+                </note>
+            `;
+        default:
+            return '';
+    }
+}
+
+// Function to get visual representation for a note
+function getVisualRepresentationForNoteType(noteType) {
+    switch (noteType) {
+        case 'quarter':
+            return '♩';
+        case 'half':
+            return '♪';
+        case 'whole':
+            return '𝅝';
+        default:
+            return '';
+    }
+}
+
+
+
+
+
+
+
+
 // Event listener to handle the file upload
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('fileUpload').addEventListener('change', function (event) {

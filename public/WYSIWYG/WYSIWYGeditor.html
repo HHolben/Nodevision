@@ -7,10 +7,6 @@
     <link rel="stylesheet" href="WYSIWYGstyles.css"> <!-- Reference to external CSS -->
     <script src="editor.js" defer></script> <!-- Main editor functionality -->
     <script src="imageUpload.js" defer></script> <!-- Image upload functionality -->
-
-
-
-
 </head>
 <body>
     <div id="controls">
@@ -23,11 +19,20 @@
             <option value="i">Italic</option>
             <option value="blockquote">Blockquote</option>
         </select>
-        <button onclick="triggerFileInput()">Insert Image</button> <!-- Button to trigger file input -->
-        <input type="file" id="fileUpload" accept="image/*"> <!-- Hidden file input for image upload -->
+        <button onclick="triggerFileInput()">Insert Image</button>
+        <input type="file" id="fileUpload" accept="image/*">
         <button id="insertTable">Insert Table</button>
+        <button id="insertMusicSheet">Insert Music Sheet</button> <!-- New button to insert music sheet -->
+    </div>
 
-   
+    <!-- Edit Toolbar for Sheet Music, hidden by default -->
+    <div id="editToolbar" style="display: none;">
+        <select id="noteType">
+            <option value="quarter">Quarter Note</option>
+            <option value="half">Half Note</option>
+            <option value="whole">Whole Note</option>
+        </select>
+        <button id="addNoteButton">Add Note</button>
     </div>
 
     <!-- Message area -->
