@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WYSIWYG Editor</title>
-    <link rel="stylesheet" href="WYSIWYGstyles.css"> <!-- Reference to external CSS -->
-    <script src="editor.js" defer></script> <!-- Main editor functionality -->
-    <script src="imageUpload.js" defer></script> <!-- Image upload functionality -->
+    <link rel="stylesheet" href="WYSIWYGstyles.css">
+    <script src="editor.js" defer></script>
+    <script src="imageUpload.js" defer></script>
+    <script src="https://unpkg.com/vexflow/releases/vexflow-min.js" defer></script>
+
+    <script src="/node_modules/vexflow/releases/vexflow-min.js"></script> <!-- Local VexFlow -->
 </head>
 <body>
     <div id="controls">
@@ -22,26 +25,89 @@
         <button onclick="triggerFileInput()">Insert Image</button>
         <input type="file" id="fileUpload" accept="image/*">
         <button id="insertTable">Insert Table</button>
-        <button id="insertMusicSheet">Insert Music Sheet</button> <!-- New button to insert music sheet -->
+        <button id="insertMusicSheet">Insert Music Sheet</button> <!-- Button for music sheet -->
     </div>
 
-    <!-- Edit Toolbar for Sheet Music, hidden by default -->
-    <div id="editToolbar" style="display: none;">
-        <select id="noteType">
-            <option value="quarter">Quarter Note</option>
-            <option value="half">Half Note</option>
-            <option value="whole">Whole Note</option>
-        </select>
-        <button id="addNoteButton">Add Note</button>
-    </div>
-
-    <!-- Message area -->
-    <div id="message"></div>
-    <div id="errorMessage"></div>
-
-    <!-- WYSIWYG editor area -->
+    <!-- Editor area -->
     <div id="editor" contenteditable="true">
-        <!-- File contents will be loaded here -->
     </div>
+
+    <script type="module">
+        // VexFlow and editor functionality here...
+
+        // Function to insert a blank music sheet
+        document.getElementById('insertMusicSheet').addEventListener('click', function () {
+            const musicSheetContainer = document.createElement('div');
+            musicSheetContainer.classList.add('music-sheet-container');
+            musicSheetContainer.style.border = "1px solid black";
+            musicSheetContainer.style.margin = "20px 0";
+
+            const musicSheet = document.createElement('div');
+            musicSheet.id = `music-sheet-${Date.now()}`;
+            musicSheet.style.height = "200px";
+            musicSheetContainer.appendChild(musicSheet);
+
+            document.getElementById('editor').appendChild(musicSheetContainer);
+
+            drawMusicStaff(musicSheet.id);
+        });
+
+        // Function to draw an empty music staff using VexFlow
+        function drawMusicStaff(elementId) {
+            const VF = Vex.Flow;
+            const div = document.getElementById(elementId);
+            const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
+
+            renderer.resize(500, 200);
+            const context = renderer.getContext();
+            const stave = new VF.Stave(10, 40, 400);
+            stave.addClef("treble").setContext(context).draw();
+
+            // Event listener for adding notes on click
+            div.addEventListener('click', function (event) {
+                const rect = div.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                const note = getNoteFromY(y);
+                if (note) {
+                    addNoteToStaff(note, stave, context);
+                }
+            });
+        }
+
+        function getNoteFromY(y) {
+            const noteMapping = [
+                { yRange: [40, 50], note: 'B4' },
+                { yRange: [51, 60], note: 'A4' },
+                { yRange: [61, 70], note: 'G4' },
+                { yRange: [71, 80], note: 'F4' },
+                { yRange: [81, 90], note: 'E4' },
+                { yRange: [91, 100], note: 'D4' },
+                { yRange: [101, 110], note: 'C4' },
+            ];
+
+            for (const mapping of noteMapping) {
+                if (y >= mapping.yRange[0] && y <= mapping.yRange[1]) {
+                    return mapping.note;
+                }
+            }
+            return null;
+        }
+
+        function addNoteToStaff(note, stave, context) {
+            const notes = [
+                new Vex.Flow.StaveNote({
+                    keys: [note], duration: "q"
+                })
+            ];
+
+            const voice = new Vex.Flow.Voice({ num_beats: 4, beat_value: 4 });
+            voice.addTickables(notes);
+            new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 400);
+            voice.draw(context, stave);
+        }
+
+    </script>
 </body>
 </html>

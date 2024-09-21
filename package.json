@@ -21,7 +21,8 @@
     "multer": "^1.4.5-lts.1",
     "requirejs": "^2.3.7",
     "serve-favicon": "^2.5.0",
-    "three": "^0.168.0"
+    "three": "^0.168.0",
+    "vexflow": "^4.2.5"
   },
   "devDependencies": {
     "vite": "^5.4.2"
