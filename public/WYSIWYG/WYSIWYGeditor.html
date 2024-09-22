@@ -8,35 +8,120 @@
     <script src="editor.js" defer></script>
     <script src="imageUpload.js" defer></script>
     <script src="https://unpkg.com/vexflow/releases/vexflow-min.js" defer></script>
-
     <script src="/node_modules/vexflow/releases/vexflow-min.js"></script> <!-- Local VexFlow -->
 </head>
 <body>
-    <div id="controls">
-        <button id="saveButton" onclick="saveFileContents()">Save</button>
-        <select id="styleDropdown" onchange="applyStyle(this.value)">
-            <option value="p">Paragraph</option>
-            <option value="h1">Heading 1</option>
-            <option value="h2">Heading 2</option>
-            <option value="h3">Heading 3</option>
-            <option value="i">Italic</option>
-            <option value="blockquote">Blockquote</option>
-        </select>
-        <button onclick="triggerFileInput()">Insert Image</button>
-        <input type="file" id="fileUpload" accept="image/*">
-        <button id="insertTable">Insert Table</button>
-        <button id="insertMusicSheet">Insert Music Sheet</button> <!-- Button for music sheet -->
-    </div>
+    <!-- Main Toolbar -->
+    <div id="main-toolbar"></div>
+    
+    <!-- Sub-toolbar container -->
+    <div id="sub-toolbar"></div>
 
     <!-- Editor area -->
-    <div id="editor" contenteditable="true">
-    </div>
+    <div id="editor" contenteditable="true"></div>
 
     <script type="module">
-        // VexFlow and editor functionality here...
+        // JSON object describing the toolbar
 
-        // Function to insert a blank music sheet
-        document.getElementById('insertMusicSheet').addEventListener('click', function () {
+        
+
+        const toolbarData = {
+    categories: [
+        {
+            name: "File",
+            options: [
+                { name: "Save", action: "saveFileContents()", icon: "saveIcon.png" },
+                { name: "Exit", action: "exitEditor()", icon: "exitIcon.png" }
+            ]
+        },
+        {
+            name: "Insert",
+            options: [
+                { name: "Image", action: "uploadImage()", icon: "imageIcon.png" },
+                { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
+                { name: "Music Sheet", action: "insertMusicSheet()", icon: "MusicSheetIcon.png" },
+                { name: "Insert Table", action: "insertTable()", icon: "SpreadsheetIcon.png" }
+            ]
+        },
+        {
+            name: "Edit",
+            options: [
+                { name: "Text Edit", action: "editText()", icon: "textEditIcon.png" },
+                { name: "Image Edit", action: "editImage()", icon: "imageEditIcon.png" },
+                { name: "3D Model Edit", action: "edit3DModel()", icon: "3DmodelEditIcon.png" },
+                { name: "Music Sheet Edit", action: "editMusicSheet()", icon: "MusicSheetEditIcon.png" },
+                { name: "Change Text Style", action: "showStyleDropdown()", icon: "styleIcon.png" }
+            ]
+        },
+        {
+            name: "Styles",
+            options: [] // Styles can be added here
+        }
+    ]
+};
+
+
+        // Function to create the toolbar
+        function createToolbar() {
+            const mainToolbar = document.getElementById('main-toolbar');
+            toolbarData.categories.forEach(category => {
+                const categoryButton = document.createElement('button');
+                categoryButton.textContent = category.name;
+                categoryButton.onclick = () => handleCategoryClick(category);
+                mainToolbar.appendChild(categoryButton);
+            });
+        }
+
+// Function to handle category button click and create sub-toolbar
+function handleCategoryClick(category) {
+    const subToolbar = document.getElementById('sub-toolbar');
+    subToolbar.innerHTML = ''; // Clear previous sub-toolbar
+
+    // Create options for the sub-toolbar
+    category.options.forEach(option => {
+        const optionButton = document.createElement('button');
+        optionButton.classList.add('toolbar-button');
+        optionButton.onclick = () => {
+            eval(option.action);
+        };
+
+        // Add the button text
+        const buttonText = document.createElement('span');
+        buttonText.textContent = option.name;
+        optionButton.appendChild(buttonText);
+
+        // Add the icon below the button text
+        if (option.icon) {
+            const icon = document.createElement('img');
+            icon.src = option.icon;
+            icon.alt = option.name + " icon";
+            icon.classList.add('toolbar-icon');
+            optionButton.appendChild(icon);
+        }
+
+        subToolbar.appendChild(optionButton);
+    });
+
+    // Show sub-toolbar
+    subToolbar.style.display = 'block';
+}
+
+        // Functions for toolbar actions
+       
+        function exitEditor() {
+            console.log("Exiting editor.");
+            // Implement exit functionality here
+        }
+
+        
+
+        function insert3DModel() {
+            console.log("Inserting 3D Model...");
+            // Implement 3D model insert functionality here
+        }
+
+        function insertMusicSheet() {
+            console.log("Inserting Music Sheet...");
             const musicSheetContainer = document.createElement('div');
             musicSheetContainer.classList.add('music-sheet-container');
             musicSheetContainer.style.border = "1px solid black";
@@ -48,9 +133,51 @@
             musicSheetContainer.appendChild(musicSheet);
 
             document.getElementById('editor').appendChild(musicSheetContainer);
-
             drawMusicStaff(musicSheet.id);
-        });
+        }
+
+        function insertTable() {
+            const table = document.createElement('table');
+            table.style.borderCollapse = "collapse";
+            for (let i = 0; i < 3; i++) { // Example: 3 rows
+                const row = table.insertRow();
+                for (let j = 0; j < 3; j++) { // Example: 3 columns
+                    const cell = row.insertCell();
+                    cell.style.border = "1px solid black";
+                    cell.textContent = "Cell";
+                }
+            }
+            document.getElementById('editor').appendChild(table);
+        }
+
+
+        function showStyleDropdown() {
+            const subToolbar = document.getElementById('sub-toolbar');
+            subToolbar.innerHTML = ''; // Clear previous sub-toolbar
+
+            const styleDropdown = document.createElement('select');
+            styleDropdown.id = "styleDropdown";
+            styleDropdown.onchange = function() {
+                applyStyle(this.value);
+            };
+            styleDropdown.innerHTML = `
+                <option value="p">Paragraph</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
+                <option value="h3">Heading 3</option>
+                <option value="i">Italic</option>
+                <option value="blockquote">Blockquote</option>
+            `;
+            subToolbar.appendChild(styleDropdown);
+        }
+
+        function applyStyle(style) {
+            document.execCommand('formatBlock', false, style);
+        }
+
+        function triggerFileInput() {
+            document.getElementById('fileUpload').click();
+        }
 
         // Function to draw an empty music staff using VexFlow
         function drawMusicStaff(elementId) {
@@ -84,7 +211,7 @@
                 { yRange: [71, 80], note: 'F4' },
                 { yRange: [81, 90], note: 'E4' },
                 { yRange: [91, 100], note: 'D4' },
-                { yRange: [101, 110], note: 'C4' },
+                { yRange: [101, 110], note: 'C4' }
             ];
 
             for (const mapping of noteMapping) {
@@ -108,6 +235,8 @@
             voice.draw(context, stave);
         }
 
+        // Initialize toolbar on page load
+        createToolbar();
     </script>
 </body>
 </html>

@@ -6,18 +6,71 @@ body, html {
     background-color: rgb(255, 253, 205);
 }
 
-#controls {
+
+
+#main-toolbar
+{
+    background-color: rgb(66, 32, 219);
     width: 100%;
-    height: 10%;
+    height: 5%;
     display: flex;
     justify-content: flex-start;
     align-items: center;
     padding: 10px;
-    background-color: rgb(255, 153, 0);
+
 }
 
-#controls button, #controls select {
+
+#main-toolbar button, #main-toolbar select {
     margin-right: 10px;
+}
+
+/* Style for individual toolbar buttons */
+.toolbar-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 80px;
+    height: 80px;
+}
+
+/* Style for the button text */
+.toolbar-button span {
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+/* Style for the icon */
+.toolbar-icon {
+    width: 24px;
+    height: 24px;
+}
+
+/* Hover effect for buttons */
+.toolbar-button:hover {
+    background-color: #ddd;
+}
+
+
+
+
+
+#sub-toolbar
+{
+    background-color: rgb(255, 153, 0);
+    width: 100%;
+    height: 5%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px;
 }
 
 #editor {
