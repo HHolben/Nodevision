@@ -38,9 +38,31 @@
             name: "Insert",
             options: [
                 { name: "Image", action: "uploadImage()", icon: "imageIcon.png" },
+                { name: "Video", action: "uploadVmage()", icon: "videoIcon.png" },
                 { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
                 { name: "Music Sheet", action: "insertMusicSheet()", icon: "MusicSheetIcon.png" },
-                { name: "Insert Table", action: "insertTable()", icon: "SpreadsheetIcon.png" }
+                { name: "Table", action: "insertTable()", icon: "SpreadsheetIcon.png" },
+                { name: "Ordered List", action: "insertOL()", icon: "NumberedList.png" },
+                { name: "Unordered List", action: "insertUL()", icon: "BulletPoints.png" },
+                { name: "JS Canvas", action: "insertJScanvas()", icon: "CanvasIcon.png" },
+                { name: "IFRAME", action: "insertIFRAME()", icon: "IFRAMEicon.png" },
+                { name: "Tab", action: "insertTab()", icon: "TabIcon.png" },
+                { name: "Link", action: "insertLink()", icon: "LinkIcon.png" },
+                { name: "Blockquote", action: "insertBlockquote()", icon: "BlockquotationIcon.png" },
+                { name: "Quotation", action: "insertQuote()", icon: "QuotationIcon.png" },
+                { name: "Abbreviation", action: "insertAbbreviation()", icon: "AbbreviationIcon.png" },
+                { name: "Address", action: "insertAddress()", icon: "AddressIcon.png" },
+                { name: "Bi-Directional Override", action: "insertBDO()", icon: "BDOIcon.png" },
+                { name: "Footer", action: "insertFooter()", icon: "FooterIcon.png" },
+                { name: "Comment", action: "insertComment()", icon: "CommentIcon.png" }
+
+
+
+
+
+
+
+
             ]
         },
         {
@@ -134,6 +156,42 @@ function handleCategoryClick(category) {
 
             document.getElementById('editor').appendChild(musicSheetContainer);
             drawMusicStaff(musicSheet.id);
+        }
+
+        function insertLink() {
+            const url = prompt("Enter the URL:");
+            const text = document.getSelection().toString() || prompt("Enter the link text:");
+            const linkElement = `<a href="${url}" target="_blank">${text}</a>`;
+            document.execCommand('insertHTML', false, linkElement);
+        }
+
+        function insertTab() {
+            document.execCommand('insertHTML', false, '&emsp;');
+        }
+
+        function insertQuote() {
+            const text = document.getSelection().toString() || prompt("Enter the quote text:");
+            const quoteElement = `<q>${text}</q>`;
+            document.execCommand('insertHTML', false, quoteElement);
+        }
+
+        function insertAbbreviation() {
+            const abbreviation = prompt("Enter the abbreviation:");
+            const title = prompt("Enter the full form (title):");
+            const abbrElement = `<abbr title="${title}">${abbreviation}</abbr>`;
+            document.execCommand('insertHTML', false, abbrElement);
+        }
+
+        function insertAddress() {
+            const address = prompt("Enter the address:");
+            const addressElement = `<address>${address}</address>`;
+            document.execCommand('insertHTML', false, addressElement);
+        }
+
+        function insertBlockquote() {
+            const text = document.getSelection().toString() || prompt("Enter the blockquote text:");
+            const blockquoteElement = `<blockquote>${text}</blockquote>`;
+            document.execCommand('insertHTML', false, blockquoteElement);
         }
 
         function insertTable() {
@@ -234,6 +292,28 @@ function handleCategoryClick(category) {
             new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 400);
             voice.draw(context, stave);
         }
+
+
+        function insertOL() {
+            const ol = document.createElement('ol');
+            for (let i = 0; i < 3; i++) {
+                const li = document.createElement('li');
+                li.textContent = "Ordered item " + (i + 1);
+                ol.appendChild(li);
+            }
+            document.getElementById('editor').appendChild(ol);
+        }
+
+        function insertUL() {
+            const ul = document.createElement('ul');
+            for (let i = 0; i < 3; i++) {
+                const li = document.createElement('li');
+                li.textContent = "Unordered item " + (i + 1);
+                ul.appendChild(li);
+            }
+            document.getElementById('editor').appendChild(ul);
+        }
+
 
         // Initialize toolbar on page load
         createToolbar();
