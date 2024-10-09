@@ -1,26 +1,30 @@
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
-// Load GeneratedNodes.js
+// Path to the GeneratedNodes.js file
 const nodesPath = path.join(__dirname, 'public', 'GeneratedNodes.js');
 
-// Function to load nodes from GeneratedNodes.js
-function loadNodes() {
-    try {
-        return require(nodesPath); // Dynamically require the file
-    } catch (error) {
-        console.error("Error loading nodes:", error);
-        return null;
+// Attempt to load nodes
+let nodes;
+try {
+    nodes = require(nodesPath);  // Load nodes directly as an array
+    if (nodes && nodes.length > 0) {
+        console.log(`${nodes.length} nodes loaded successfully.`);
+    } else {
+        console.error("No nodes were loaded from GeneratedNodes.js");
+        process.exit(1);
     }
+} catch (error) {
+    console.error("Error loading nodes:", error);
+    process.exit(1);
 }
 
 // Function to fetch the file content of a node
 function fetchFileContent(filepath) {
-    const fullPath = path.join(__dirname, 'Notebook', filepath); // Full path to the file
     try {
-        return fs.readFileSync(fullPath, 'utf-8'); // Read the file content
+        return fs.readFileSync(filepath, 'utf-8');
     } catch (err) {
-        console.error(`Error reading file ${fullPath}:`, err);
+        console.error(`Error reading file ${filepath}:`, err);
         return null;
     }
 }
@@ -34,47 +38,26 @@ function extractHyperlinks(htmlContent) {
     }).filter(Boolean); // Filter out nulls
 }
 
-// Function to extract file references from JS, PHP, or Python content
-function extractFileReferences(scriptContent) {
-    const importStatements = scriptContent.match(/(import|require|include)\(["'](.*?)["']\)/g) || [];
-    return importStatements.map(statement => {
-        const match = statement.match(/["'](.*?)["']/);
-        return match ? match[1] : null;
-    }).filter(Boolean); // Filter out nulls
-}
-
-// Function to process each node and extract links or references
-function processNodes(nodes) {
+// Log links in Cytoscape.js format
+function logLinksForCytoscape() {
     nodes.forEach(node => {
-        const nodeId = node.data.id; // Filepath of the node
-        const fileContent = fetchFileContent(nodeId); // Get the file content
+        const nodeId = path.join(__dirname, node.data.link);  // Construct the full path for the node
+        const fileContent = fetchFileContent(nodeId);  // Fetch the file content
 
         if (!fileContent) {
-            console.log(`No content found for node: ${nodeId}`);
+            console.log(`No content found for node: ${node.data.id}`);
             return;
         }
 
-        // Extract references based on file type
-        if (nodeId.endsWith('.html')) {
-            const hyperlinks = extractHyperlinks(fileContent); // Extract hyperlinks from HTML files
-            console.log(`Links found in ${nodeId}:`, hyperlinks);
-        } else if (nodeId.endsWith('.js') || nodeId.endsWith('.php') || nodeId.endsWith('.py')) {
-            const fileRefs = extractFileReferences(fileContent); // Extract imports/requires from JS/PHP/Python files
-            console.log(`File references found in ${nodeId}:`, fileRefs);
-        } else {
-            console.log(`Unsupported file type for node: ${nodeId}`);
-        }
+        const hyperlinks = extractHyperlinks(fileContent);  // Extract hyperlinks
+        hyperlinks.forEach(link => {
+            const targetNode = nodes.find(n => path.basename(n.data.link) === link);  // Find matching node by filename
+            if (targetNode) {
+                console.log(`{ "data": { "id": "${node.data.id}_to_${targetNode.data.id}", "source": "${node.data.id}", "target": "${targetNode.data.id}" } }`);
+            }
+        });
     });
 }
 
-// Main function to load and process nodes
-function main() {
-    const nodes = loadNodes(); // Load nodes from GeneratedNodes.js
-    if (!nodes || nodes.length === 0) {
-        console.log("No nodes were loaded. Please check if GeneratedNodes.js contains nodes.");
-        return;
-    }
-    processNodes(nodes); // Process nodes and extract links
-}
-
-main();
+// Call the function to log links in Cytoscape.js format
+logLinksForCytoscape();
