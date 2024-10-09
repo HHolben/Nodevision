@@ -1,25 +1,29 @@
-const path = require('path');  // Path module to handle directory paths
-const fs = require('fs');      // Filesystem module
+const fs = require('fs');
+const path = require('path');
 
-// Construct the correct path to the GeneratedNodes.js file
+// Path to the GeneratedNodes.js file
 const nodesPath = path.join(__dirname, 'public', 'GeneratedNodes.js');
 
+// Path to the output file for edges
+const generatedEdgesPath = path.join(__dirname, 'public', 'GeneratedEdges.js');
+
+// Attempt to load nodes
 let nodes;
 try {
-    if (fs.existsSync(nodesPath)) {
-        // Read the file content and evaluate it to load the nodes
-        const fileContent = fs.readFileSync(nodesPath, 'utf-8');
-        nodes = eval(fileContent);  // Use eval to parse the content (only if safe and trusted!)
-        console.log("Nodes loaded successfully.");
+    nodes = require(nodesPath);  // Load nodes directly as an array
+    if (nodes && nodes.length > 0) {
+        console.log(`${nodes.length} nodes loaded successfully.`);
     } else {
-        console.error(`The file ${nodesPath} does not exist.`);
+        console.error("No nodes were loaded from GeneratedNodes.js");
+        process.exit(1);
     }
 } catch (error) {
     console.error("Error loading nodes:", error);
+    process.exit(1);
 }
 
-// Function to fetch the file content of a node (using Node.js fs module)
-async function fetchFileContent(filepath) {
+// Function to fetch the file content of a node
+function fetchFileContent(filepath) {
     try {
         return fs.readFileSync(filepath, 'utf-8');
     } catch (err) {
@@ -37,75 +41,49 @@ function extractHyperlinks(htmlContent) {
     }).filter(Boolean); // Filter out nulls
 }
 
-// Function to extract file references from JS, PHP, or Python content
-function extractFileReferences(scriptContent) {
-    const importStatements = scriptContent.match(/(import|require)\(["'](.*?)["']\)/g) || [];
-    return importStatements.map(statement => {
-        const match = statement.match(/["'](.*?)["']/);
-        return match ? match[1] : null;
-    }).filter(Boolean); // Filter out nulls
-}
+// Array to store the edges
+const edges = [];
 
-// Function to generate edges between existing nodes and write them to a file
-async function generateEdgesAndWriteToFile(nodes, outputPath) {
-    let edges = []; // Array to store edges
-
-    // Iterate over each node to check for references to other nodes
-    for (const node of nodes) {
-        const nodeId = node.id; // Node ID corresponds to the file path
-        const fileContent = await fetchFileContent(nodeId); // Fetch content of the corresponding file
+// Function to generate edges in Cytoscape.js format
+function generateEdgesForCytoscape() {
+    nodes.forEach(node => {
+        const nodeId = path.join(__dirname, node.data.link);  // Construct the full path for the node
+        const fileContent = fetchFileContent(nodeId);  // Fetch the file content
 
         if (!fileContent) {
-            console.log(`No content found for node: ${nodeId}`);
-            continue;
+            console.log(`No content found for node: ${node.data.id}`);
+            return;
         }
 
-        let references = [];
-
-        // Extract references based on file type
-        if (nodeId.endsWith('.html')) {
-            references = extractHyperlinks(fileContent); // Extract hyperlinks from HTML files
-        } else if (nodeId.endsWith('.js') || nodeId.endsWith('.php') || nodeId.endsWith('.py')) {
-            references = extractFileReferences(fileContent); // Extract imports/requires from JS/PHP/Python
-        }
-
-        // For each reference, check if there's a matching node and create an edge entry
-        references.forEach(reference => {
-            const targetNode = nodes.find(n => n.id === reference); // Check if the reference corresponds to another node
-
+        const hyperlinks = extractHyperlinks(fileContent);  // Extract hyperlinks
+        hyperlinks.forEach(link => {
+            const targetNode = nodes.find(n => path.basename(n.data.link) === link);  // Find matching node by filename
             if (targetNode) {
                 const edge = {
-                    id: `${nodeId}_to_${targetNode.id}`,
-                    source: nodeId,
-                    target: targetNode.id,
+                    data: {
+                        id: `${node.data.id}_to_${targetNode.data.id}`,
+                        source: node.data.id,
+                        target: targetNode.data.id
+                    }
                 };
-
-                edges.push(edge);
-                console.log(`Edge added: ${nodeId} -> ${targetNode.id}`);
+                edges.push(edge);  // Add the edge to the array
             }
         });
-    }
+    });
 
-    // Write the edges array to a file
-    const edgeFileContent = `
-const edges = ${JSON.stringify(edges, null, 4)};
-export default edges;
-`;
-    fs.writeFileSync(outputPath, edgeFileContent, 'utf8');
-    console.log(`Edges written to ${outputPath}`);
-}
-
-// Main function
-async function main() {
-    const outputPath = path.join(__dirname, 'GeneratedEdges.js'); // Output path for the edges file
-
-    if (nodes) {
-        await generateEdgesAndWriteToFile(nodes, outputPath);
+    if (edges.length > 0) {
+        console.log(`${edges.length} edges generated successfully.`);
     } else {
-        console.error("No nodes were loaded. Edge generation skipped.");
+        console.log("No edges generated.");
     }
 }
 
-main().catch(err => {
-    console.error('Error generating edges:', err);
-});
+// Call the function to generate edges
+generateEdgesForCytoscape();
+
+// Generate the output for GeneratedEdges.js
+const edgesOutput = `// GeneratedEdges.js\nconst edges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\nmodule.exports = edges;\n`;
+
+// Write the edges to the output file
+fs.writeFileSync(generatedEdgesPath, edgesOutput, 'utf8');
+console.log(`Generated edges have been written to ${generatedEdgesPath}`);
