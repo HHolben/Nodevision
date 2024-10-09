@@ -1,5 +1,9 @@
 async function generateEdgesForLinks() {
   const allNodeIds = cy.nodes().map(node => node.id());
+  console.log(nodes);
+
+  console.log(edges);
+
 
   for (let nodeId of allNodeIds) {
     try {
@@ -16,7 +20,6 @@ async function generateEdgesForLinks() {
               id: `${nodeId}->${link}`,
               source: nodeId,
               target: link,
-              type: 'link'
             }
           });
         }
@@ -25,7 +28,7 @@ async function generateEdgesForLinks() {
       console.error('Error fetching file content:', error);
     }
   }
-
+cy.add(edges);
   // Update the layout once after all edges are added
   cy.layout({ name: 'cose' }).run();
 }
@@ -201,6 +204,7 @@ function createCytoscapeGraph(elements, styles) {
           parent: regionElement.data('parent') // Keep the parent of the current region if it has one
         }
       });
+
   
       // Add the subnodes within the compound node
       cy.add(newElements);

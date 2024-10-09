@@ -82,7 +82,7 @@ function generateEdgesForCytoscape() {
 generateEdgesForCytoscape();
 
 // Generate the output for GeneratedEdges.js
-const edgesOutput = `// GeneratedEdges.js\nconst edges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\nmodule.exports = edges;\n`;
+const edgesOutput = `// GeneratedEdges.js\nconst edges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\n`;
 
 // Write the edges to the output file
 fs.writeFileSync(generatedEdgesPath, edgesOutput, 'utf8');
