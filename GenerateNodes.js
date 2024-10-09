@@ -28,7 +28,9 @@ function generateNodes(dir) {
 }
 
 const nodes = generateNodes(notebookDir);
-const nodesOutput = `// GeneratedNodes.js\nconst nodes = [\n${nodes.map(node => JSON.stringify(node)).join(',\n')}\n];\n`;
+
+// Add module.exports so that GeneratedNodes.js can be imported
+const nodesOutput = `// GeneratedNodes.js\nconst nodes = [\n${nodes.map(node => JSON.stringify(node)).join(',\n')}\n];\n\nmodule.exports = nodes;`;
 
 fs.writeFileSync(generatedNodesPath, nodesOutput, 'utf8');
 console.log(`Generated nodes have been written to ${generatedNodesPath}`);

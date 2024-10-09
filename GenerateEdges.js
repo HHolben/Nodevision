@@ -1,91 +1,111 @@
-const fs = require('fs').promises;
-const path = require('path');
-const cheerio = require('cheerio');
+const path = require('path');  // Path module to handle directory paths
+const fs = require('fs');      // Filesystem module
 
-const notebookDir = path.join(__dirname, 'Notebook');
-const generatedEdgesPath = path.join(__dirname, 'public', 'AllEdges.js');
+// Construct the correct path to the GeneratedNodes.js file
+const nodesPath = path.join(__dirname, 'public', 'GeneratedNodes.js');
 
-// Function to get all files with allowed extensions
-async function getAllFiles(dirPath, allowedExtensions, arrayOfFiles = []) {
-    try {
-        const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-        for (const entry of entries) {
-            const fullPath = path.join(dirPath, entry.name);
-            if (entry.isDirectory()) {
-                arrayOfFiles = await getAllFiles(fullPath, allowedExtensions, arrayOfFiles);
-            } else if (allowedExtensions.includes(path.extname(entry.name))) {
-                arrayOfFiles.push(fullPath);
-            }
-        }
-    } catch (err) {
-        console.error(`Error reading directory ${dirPath}:`, err);
+let nodes;
+try {
+    if (fs.existsSync(nodesPath)) {
+        // Read the file content and evaluate it to load the nodes
+        const fileContent = fs.readFileSync(nodesPath, 'utf-8');
+        nodes = eval(fileContent);  // Use eval to parse the content (only if safe and trusted!)
+        console.log("Nodes loaded successfully.");
+    } else {
+        console.error(`The file ${nodesPath} does not exist.`);
     }
-    return arrayOfFiles;
+} catch (error) {
+    console.error("Error loading nodes:", error);
 }
 
-// Function to parse a file and extract links
-async function extractLinksFromFile(filePath) {
+// Function to fetch the file content of a node (using Node.js fs module)
+async function fetchFileContent(filepath) {
     try {
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        const $ = cheerio.load(fileContent);
+        return fs.readFileSync(filepath, 'utf-8');
+    } catch (err) {
+        console.error(`Error reading file ${filepath}:`, err);
+        return null;
+    }
+}
 
-        const links = [];
-        $('a[href], script[src], link[href]').each((_, element) => {
-            const srcOrHref = $(element).attr('href') || $(element).attr('src');
-            if (srcOrHref) {
-                links.push(srcOrHref);
+// Function to extract hyperlinks from HTML content
+function extractHyperlinks(htmlContent) {
+    const anchorTags = htmlContent.match(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi) || [];
+    return anchorTags.map(tag => {
+        const match = tag.match(/href=(["'])(.*?)\1/);
+        return match ? match[2] : null;
+    }).filter(Boolean); // Filter out nulls
+}
+
+// Function to extract file references from JS, PHP, or Python content
+function extractFileReferences(scriptContent) {
+    const importStatements = scriptContent.match(/(import|require)\(["'](.*?)["']\)/g) || [];
+    return importStatements.map(statement => {
+        const match = statement.match(/["'](.*?)["']/);
+        return match ? match[1] : null;
+    }).filter(Boolean); // Filter out nulls
+}
+
+// Function to generate edges between existing nodes and write them to a file
+async function generateEdgesAndWriteToFile(nodes, outputPath) {
+    let edges = []; // Array to store edges
+
+    // Iterate over each node to check for references to other nodes
+    for (const node of nodes) {
+        const nodeId = node.id; // Node ID corresponds to the file path
+        const fileContent = await fetchFileContent(nodeId); // Fetch content of the corresponding file
+
+        if (!fileContent) {
+            console.log(`No content found for node: ${nodeId}`);
+            continue;
+        }
+
+        let references = [];
+
+        // Extract references based on file type
+        if (nodeId.endsWith('.html')) {
+            references = extractHyperlinks(fileContent); // Extract hyperlinks from HTML files
+        } else if (nodeId.endsWith('.js') || nodeId.endsWith('.php') || nodeId.endsWith('.py')) {
+            references = extractFileReferences(fileContent); // Extract imports/requires from JS/PHP/Python
+        }
+
+        // For each reference, check if there's a matching node and create an edge entry
+        references.forEach(reference => {
+            const targetNode = nodes.find(n => n.id === reference); // Check if the reference corresponds to another node
+
+            if (targetNode) {
+                const edge = {
+                    id: `${nodeId}_to_${targetNode.id}`,
+                    source: nodeId,
+                    target: targetNode.id,
+                };
+
+                edges.push(edge);
+                console.log(`Edge added: ${nodeId} -> ${targetNode.id}`);
             }
         });
+    }
 
-        return links;
-    } catch (err) {
-        console.error(`Error reading or parsing file ${filePath}:`, err);
-        return [];
+    // Write the edges array to a file
+    const edgeFileContent = `
+const edges = ${JSON.stringify(edges, null, 4)};
+export default edges;
+`;
+    fs.writeFileSync(outputPath, edgeFileContent, 'utf8');
+    console.log(`Edges written to ${outputPath}`);
+}
+
+// Main function
+async function main() {
+    const outputPath = path.join(__dirname, 'GeneratedEdges.js'); // Output path for the edges file
+
+    if (nodes) {
+        await generateEdgesAndWriteToFile(nodes, outputPath);
+    } else {
+        console.error("No nodes were loaded. Edge generation skipped.");
     }
 }
 
-// Function to generate edges
-async function generateEdges() {
-    try {
-        const allowedExtensions = ['.html', '.php', '.js', '.py'];
-        const files = await getAllFiles(notebookDir, allowedExtensions);
-        const edges = [];
-
-        for (const file of files) {
-            const fileLinks = await extractLinksFromFile(file);
-            for (const link of fileLinks) {
-                // Resolve the link relative to the current file's directory
-                const targetFile = path.resolve(path.dirname(file), link);
-
-                // Log for debugging
-                console.log(`Checking link: ${link}`);
-                console.log(`Resolved to: ${targetFile}`);
-
-                // Check if the resolved target exists and is within the allowed files
-                if (files.includes(targetFile)) {
-                    const relativeSource = path.relative(notebookDir, file);
-                    const relativeTarget = path.relative(notebookDir, targetFile);
-                    edges.push({
-                        data: {
-                            source: relativeSource,
-                            target: relativeTarget
-                        }
-                    });
-                } else {
-                    console.log(`Target file does not exist or is not allowed: ${targetFile}`);
-                }
-            }
-        }
-
-        const edgesOutput = `// AllEdges.js\nconst allEdges = [\n${edges.map(edge => JSON.stringify(edge)).join(',\n')}\n];\n`;
-
-        await fs.writeFile(generatedEdgesPath, edgesOutput, 'utf8');
-        console.log(`Generated edges have been written to ${generatedEdgesPath}`);
-    } catch (err) {
-        console.error('Error generating edges:', err);
-    }
-}
-
-// Export the function for external use
-module.exports = { generateEdges };
+main().catch(err => {
+    console.error('Error generating edges:', err);
+});
