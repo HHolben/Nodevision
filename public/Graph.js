@@ -206,8 +206,9 @@ function createCytoscapeGraph(elements, styles) {
         // Detect incoming edges to the region node
         const incomingEdges = cy.edges().filter(edge => edge.target().id() === regionId);
 
-        // Log incoming edges for debugging
-        console.log(`Incoming edges to region node ${regionId}:`, incomingEdges);
+        // Log IDs of source nodes that have edges pointing to the region node
+        const sourceNodeIds = incomingEdges.map(edge => edge.source().id());
+        console.log(`Nodes with edges pointing to region node ${regionId}:`, sourceNodeIds);
 
         // Remove the original region node
         cy.remove(regionElement);
@@ -246,6 +247,18 @@ function createCytoscapeGraph(elements, styles) {
         hideLoadingIndicator();
     }
 }
+
+// Dummy functions for loading indicator
+function showLoadingIndicator() {
+    // Implement your loading indicator logic here
+    console.log("Loading...");
+}
+
+function hideLoadingIndicator() {
+    // Implement your logic to hide the loading indicator here
+    console.log("Loading complete.");
+}
+
 
 // Dummy functions for loading indicator
 function showLoadingIndicator() {
