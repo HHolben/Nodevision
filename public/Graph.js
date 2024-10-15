@@ -174,12 +174,21 @@ function createCytoscapeGraph(elements, styles) {
     }
   }
 
-  async function expandRegion(regionElement) {
+
+
+
+
+  
+  async function expandRegion(regionElement) 
+  {
     const regionId = regionElement.id();
-    try {
+    try 
+    {
       const response = await fetch(`/api/getSubNodes?path=${regionId}`);
       const subNodes = await response.json();
-      const newElements = subNodes.map(node => ({
+      const newElements = subNodes.map(node => 
+        (
+          {
         group: 'nodes',
         data: {
           id: node.id,
@@ -188,7 +197,9 @@ function createCytoscapeGraph(elements, styles) {
           type: node.isDirectory ? 'region' : 'node',
           imageUrl: node.imageUrl
         }
-      }));
+      }
+      )
+      );
       
       // Remove the original region node to replace it with a compound node
       cy.remove(regionElement);
@@ -224,6 +235,10 @@ function createCytoscapeGraph(elements, styles) {
     } catch (error) {
       console.error('Error expanding region:', error);
     }
+
+
+
+    
   }
 
   async function collapseRegion(regionElement) {

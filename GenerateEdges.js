@@ -46,6 +46,8 @@ const edges = [];
 
 // Function to generate edges in Cytoscape.js format
 function generateEdgesForCytoscape() {
+    const folderNodes = new Set(); // To track folder nodes created
+
     nodes.forEach(node => {
         const nodeId = path.join(__dirname, node.data.link);  // Construct the full path for the node
         const fileContent = fetchFileContent(nodeId);  // Fetch the file content
@@ -56,8 +58,41 @@ function generateEdgesForCytoscape() {
         }
 
         const hyperlinks = extractHyperlinks(fileContent);  // Extract hyperlinks
+        console.log(hyperlinks);
+        
         hyperlinks.forEach(link => {
-            const targetNode = nodes.find(n => path.basename(n.data.link) === link);  // Find matching node by filename
+            // Check if the link is an external URL
+            const isExternalLink = /^https?:\/\//i.test(link);
+            if (isExternalLink) {
+                console.log(`Ignoring external link: ${link}`);
+                return; // Skip this link
+            }
+
+            // Check if the link is a folder path
+            const isFolderPath = link.includes('/');
+            let targetNode;
+
+            if (isFolderPath) {
+                // Extract folder name (assuming the last part of the path is the folder)
+                const folderName = link.split('/')[0]; // Get the first part as folder
+                targetNode = {
+                    data: {
+                        id: folderName, // Use folder name as ID
+                        link: folderName // Store folder name or path if needed
+                    }
+                };
+
+                // Check if the folder node already exists
+                if (!folderNodes.has(folderName)) {
+                    folderNodes.add(folderName);
+                    nodes.push(targetNode); // Add folder node to nodes array
+                    console.log(`Folder node created: ${folderName}`);
+                }
+            } else {
+                // If it's a file, find the corresponding node
+                targetNode = nodes.find(n => path.basename(n.data.link) === link);
+            }
+
             if (targetNode) {
                 const edge = {
                     data: {
@@ -77,6 +112,8 @@ function generateEdgesForCytoscape() {
         console.log("No edges generated.");
     }
 }
+
+
 
 // Call the function to generate edges
 generateEdgesForCytoscape();
