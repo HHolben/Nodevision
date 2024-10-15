@@ -178,68 +178,86 @@ function createCytoscapeGraph(elements, styles) {
 
 
 
-  
-  async function expandRegion(regionElement) 
-  {
+  async function expandRegion(regionElement) {
     const regionId = regionElement.id();
-    try 
-    {
-      const response = await fetch(`/api/getSubNodes?path=${regionId}`);
-      const subNodes = await response.json();
-      const newElements = subNodes.map(node => 
-        (
-          {
-        group: 'nodes',
-        data: {
-          id: node.id,
-          label: node.label,
-          parent: regionId, // Ensures all nodes and subregions are children of the current region
-          type: node.isDirectory ? 'region' : 'node',
-          imageUrl: node.imageUrl
-        }
-      }
-      )
-      );
-      
-      // Remove the original region node to replace it with a compound node
-      cy.remove(regionElement);
-  
-      // Re-add the parent region as a compound node
-      cy.add({
-        group: 'nodes',
-        data: {
-          id: regionId,
-          label: regionElement.data('label'),
-          type: 'region',
-          imageUrl: regionElement.data('imageUrl'),
-          parent: regionElement.data('parent') // Keep the parent of the current region if it has one
-        }
-      });
+    try {
+        // Show loading indicator
+        showLoadingIndicator();
 
-  
-      // Add the subnodes within the compound node
-      cy.add(newElements);
-      
-      // Update layout to fit the new structure
-      cy.layout({
-        name: 'concentric',  // Change to any other layout type
-        concentric: function(node) {
-          return node.degree(); // Sort nodes by degree
-        },
-        levelWidth: function(nodes) {
-          return 10; // Determines the spacing between levels
-        },
-        animate: true
-      }).run();
-      
+        // Fetch subnodes
+        const response = await fetch(`/api/getSubNodes?path=${regionId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const subNodes = await response.json();
+        const newElements = subNodes.map(node => ({
+            group: 'nodes',
+            data: {
+                id: node.id,
+                label: node.label,
+                parent: regionId, // Ensures all nodes and subregions are children of the current region
+                type: node.isDirectory ? 'region' : 'node',
+                imageUrl: node.imageUrl
+            }
+        }));
+
+        // Detect incoming edges to the region node
+        const incomingEdges = cy.edges().filter(edge => edge.target().id() === regionId);
+
+        // Log incoming edges for debugging
+        console.log(`Incoming edges to region node ${regionId}:`, incomingEdges);
+
+        // Remove the original region node
+        cy.remove(regionElement);
+
+        // Add the parent region as a compound node
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: regionId,
+                label: regionElement.data('label'),
+                type: 'region',
+                imageUrl: regionElement.data('imageUrl'),
+                parent: regionElement.data('parent') // Keep the parent of the current region if it has one
+            }
+        });
+
+        // Add the subnodes within the compound node
+        cy.add(newElements);
+
+        // Update layout to fit the new structure
+        cy.layout({
+            name: 'concentric',  // Change to any other layout type
+            concentric: function(node) {
+                return node.degree(); // Sort nodes by degree
+            },
+            levelWidth: function(nodes) {
+                return 10; // Determines the spacing between levels
+            },
+            animate: true
+        }).run();
+
     } catch (error) {
-      console.error('Error expanding region:', error);
+        console.error('Error expanding region:', error);
+    } finally {
+        // Hide loading indicator
+        hideLoadingIndicator();
     }
+}
 
+// Dummy functions for loading indicator
+function showLoadingIndicator() {
+    // Implement your loading indicator logic here
+    console.log("Loading...");
+}
 
+function hideLoadingIndicator() {
+    // Implement your logic to hide the loading indicator here
+    console.log("Loading complete.");
+}
 
-    
-  }
 
   async function collapseRegion(regionElement) {
     const regionId = regionElement.id();
