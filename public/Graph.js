@@ -48,7 +48,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 let cyInitialized = false;
 
 function createCytoscapeGraph(elements, styles) {
+  window.originalEdges = {};
   window.cy = cytoscape({
+    
     container: document.getElementById('cy'),
     elements: elements,
     style: [
@@ -101,8 +103,23 @@ function createCytoscapeGraph(elements, styles) {
       document.getElementById('element-info').innerHTML = 'Click on a node, edge, or region to see details.';
       document.getElementById('content-frame').src = ''; // Clear the iframe when clicking on the background
     }
+
+
+
+
+
+
+
   });
 
+
+
+
+
+
+
+
+  
 
   async function fetchImageFromNode(nodeId, fallbackImageUrl) {
     try {
@@ -166,6 +183,12 @@ function createCytoscapeGraph(elements, styles) {
         expandRegion(element);
       });
 
+
+
+
+
+      
+
       if (element.isParent()) {
         document.getElementById('collapse-btn').addEventListener('click', () => {
           collapseRegion(element);
@@ -209,6 +232,23 @@ function createCytoscapeGraph(elements, styles) {
         // Log IDs of source nodes that have edges pointing to the region node
         const sourceNodeIds = incomingEdges.map(edge => edge.source().id());
         console.log(`Nodes with edges pointing to region node ${regionId}:`, sourceNodeIds);
+
+
+        const storedEdges = window.originalEdges[regionId] || [];
+storedEdges.forEach(edge => {
+    const newTarget = findNewTarget(edge.target, subNodes); // Function to find the new target in the subNodes
+    if (newTarget) {
+        cy.add({
+            group: 'edges',
+            data: {
+                id: `${edge.source}->${newTarget}`,
+                source: edge.source,
+                target: newTarget
+            }
+        });
+    }
+});
+
 
         // Remove the original region node
         cy.remove(regionElement);
@@ -286,6 +326,21 @@ function hideLoadingIndicator() {
         imageUrl: regionElement.data('imageUrl') || 'DefaultRegionImage.png'
       }
     });
+
+
+    cy.remove(cy.edges().filter(edge => edge.source().id() === regionId || edge.target().id() === regionId));
+
+const originalEdges = window.originalEdges[regionId] || [];
+originalEdges.forEach(edge => {
+    cy.add({
+        group: 'edges',
+        data: {
+            id: `${edge.source}->${edge.target}`,
+            source: edge.source,
+            target: edge.target
+        }
+    });
+});
 
   }
 }

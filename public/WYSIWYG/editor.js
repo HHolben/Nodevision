@@ -261,6 +261,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Function to insert a music sheet div and initialize its MusicXML structure
 function insertMusicSheet() {
     const editor = document.getElementById('editor');

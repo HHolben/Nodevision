@@ -51,6 +51,17 @@
         {
             name: "Insert",
             options: [
+                { name: "Heading 1", action: "InsertHeading1()", icon: "h1Icon.png"},
+                { name: "Heading 2", action: "InsertHeading2()", icon: "h2Icon.png"},
+                { name: "Heading 3", action: "InsertHeading3()", icon: "h3Icon.png"},
+                { name: "Heading 4", action: "InsertHeading4()", icon: "h4Icon.png"},
+                { name: "Heading 5", action: "InsertHeading()5", icon: "h5con.png"},
+                { name: "Heading 6", action: "InsertHeading6()", icon: "h6Icon.png"},
+
+
+
+
+
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
                 { name: "Video", action: "insertVideo()", icon: "videoIcon.png" },
                 { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
@@ -180,7 +191,46 @@ function handleCategoryClick(category) {
         }
 
         function insertTab() {
-            document.execCommand('insertHTML', false, '&emsp;');
+            document.execCommand('insertHTML', false, '\t');
+        }
+
+        function InsertHeading1()
+        {
+            const h1Element = `<h1>Heading 1</h1>`;
+            document.execCommand('insertHTML', false, h1Element);
+            
+        }
+        function InsertHeading2()
+        {
+            const h2Element = `<h2>Heading 2</h2>`;
+            document.execCommand('insertHTML', false, h2Element);
+            
+        }
+
+
+        function InsertHeading3()
+        {
+            const h3Element = `<h3>Heading 3</h3>`;
+            document.execCommand('insertHTML', false, h3Element);
+            
+        }
+        function InsertHeading4()
+        {
+            const h4Element = `<h4>Heading 4</h4>`;
+            document.execCommand('insertHTML', false, h4Element);
+            
+        }
+        function InsertHeading5()
+        {
+            const h5Element = `<h5>Heading 1</h5>`;
+            document.execCommand('insertHTML', false, h5Element);
+            
+        }
+        function InsertHeading6()
+        {
+            const h6Element = `<h6>Heading 1</h6>`;
+            document.execCommand('insertHTML', false, h6Element);
+            
         }
 
         function insertQuote() {
@@ -189,6 +239,8 @@ function handleCategoryClick(category) {
             document.execCommand('insertHTML', false, quoteElement);
         }
 
+
+        
         function insertAbbreviation() {
             const abbreviation = prompt("Enter the abbreviation:");
             const title = prompt("Enter the full form (title):");
