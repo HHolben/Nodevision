@@ -45,7 +45,9 @@
             name: "File",
             options: [
                 { name: "Save", action: "saveFileContents()", icon: "SaveIcon.png" },
-                { name: "Exit", action: "exitEditor()", icon: "ExitIcon.png" }
+                { name: "Exit", action: "exitEditor()", icon: "ExitIcon.png" },
+                { name: "View Deployment", action: "ViewDeployment()", icon: "ViewDeploymentIcon.png" }
+
             ]
         },
         {
@@ -106,6 +108,28 @@
         }
     ]
 };
+
+
+
+function ViewDeployment() {
+    // Get the current URL
+    const currentUrl = window.location.href;
+
+    // Use URLSearchParams to extract the activeNode parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeNode = urlParams.get('activeNode');
+
+    if (activeNode) {
+        // Construct the deployment URL
+        const deploymentUrl = `http://localhost:8000/${activeNode}`;
+
+        // Open the URL in a new window or tab
+        window.open(deploymentUrl, "_blank");
+    } else {
+        alert("No active node specified in the URL.");
+    }
+}
+
 
 
         // Function to create the toolbar
@@ -191,7 +215,7 @@ function handleCategoryClick(category) {
         }
 
         function insertTab() {
-            document.execCommand('insertHTML', false, '\t');
+            document.execCommand('insertHTML', false, '&#9');
         }
 
         function InsertHeading1()
