@@ -4,6 +4,18 @@ function getQueryParameter(name) {
     return urlParams.get(name);
 }
 
+
+//for clicking away from drop downs
+document.addEventListener('click', function(event) {
+    const dropdowns = document.querySelectorAll('.dropdown-menu');
+    dropdowns.forEach(dropdown => {
+        if (!dropdown.contains(event.target) && !dropdown.previousSibling.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+});
+
+
 // Get the activeNode from the URL parameters
 const activeNode = getQueryParameter('activeNode');
 console.log('ActiveNode:', activeNode);
