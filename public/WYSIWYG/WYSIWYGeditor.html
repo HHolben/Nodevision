@@ -61,9 +61,6 @@
                 { name: "Heading 6", action: "InsertHeading6()", icon: "h6Icon.png"},
 
 
-
-
-
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
                 { name: "Video", action: "insertVideo()", icon: "videoIcon.png" },
                 { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
@@ -143,8 +140,10 @@ function ViewDeployment() {
             });
         }
 
-// Function to handle category button click and create sub-toolbar
-function handleCategoryClick(category) {
+
+        
+
+        function handleCategoryClick(category) {
     const subToolbar = document.getElementById('sub-toolbar');
     subToolbar.innerHTML = ''; // Clear previous sub-toolbar
 
@@ -155,6 +154,9 @@ function handleCategoryClick(category) {
             eval(option.action); // Consider refactoring this
         };
 
+        // Set the button title for hover text
+        optionButton.title = option.name;
+
         // Create the icon element
         if (option.icon) {
             const icon = document.createElement('img');
@@ -163,11 +165,6 @@ function handleCategoryClick(category) {
             icon.classList.add('toolbar-icon'); // Ensure the icon class is applied
             optionButton.appendChild(icon); // Append icon first
         }
-
-        // Add the button text
-        const buttonText = document.createElement('span');
-        buttonText.textContent = option.name;
-        optionButton.appendChild(buttonText); // Append text after the icon
 
         subToolbar.appendChild(optionButton);
     });
