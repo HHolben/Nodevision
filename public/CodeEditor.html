@@ -45,9 +45,10 @@
                 language: 'javascript',
                 theme: 'vs-dark'
             });
+
     
             // Fetch file content based on the constructed file path
-            fetch(`/api/file?path=${encodeURIComponent(CodeEditorFilePath)}`)
+            fetch(`/api/fileCodeContent?path=${encodeURIComponent(CodeEditorFilePath)}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');

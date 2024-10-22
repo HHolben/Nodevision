@@ -33,7 +33,7 @@ if (activeNode) {
 function loadFileContents() {
     if (!filePath) return;
     
-    fetch(`/api/file?path=${encodeURIComponent(filePath)}`)
+    fetch(`/api/fileCodeContent?path=${encodeURIComponent(filePath)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
