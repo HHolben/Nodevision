@@ -102,16 +102,36 @@ app.get('/api/search', async (req, res) => {
 app.get('/api/file', async (req, res) => {
     const filePath = req.query.path;
     if (!filePath) {
-        return res.status(400).send('File path is required');
+        return res.status(400).json({ error: 'File path is required' });
     }
 
+    const fullPath = path.join(__dirname, 'Notebook', filePath);
+
     try {
-        const data = await fs.readFile(filePath, 'utf8');
-        res.send({ content: data });
+        const stat = await fs.stat(fullPath);
+
+        if (stat.isDirectory()) {
+            // Return a 400 error if the requested path is a directory
+            return res.status(400).json({ error: `The path ${filePath} is a directory, not a file` });
+        }
+
+        const data = await fs.readFile(fullPath, 'utf8');
+        res.json({ content: data });
     } catch (err) {
-        res.status(500).send('Error reading file');
+        console.error(`Error reading file ${filePath}:`, err);
+
+        // Return a structured error response
+        if (err.code === 'ENOENT') {
+            // File not found
+            res.status(404).json({ error: `File ${filePath} not found` });
+        } else {
+            // Other server error
+            res.status(500).json({ error: 'Internal server error' });
+        }
     }
 });
+
+
 
 // Function to extract the first image URL from the file content
 async function getFirstImageUrl(filePath) {

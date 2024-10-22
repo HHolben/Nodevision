@@ -200,55 +200,77 @@ function createCytoscapeGraph(elements, styles) {
 
 
 
+  // Function to extract hyperlinks from HTML content
+function extractHyperlinks(htmlContent) {
+  // Regular expression to match anchor tags with href attributes
+  const anchorTags = htmlContent.match(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi) || [];
+  return anchorTags.map(tag => {
+      const match = tag.match(/href=(["'])(.*?)\1/);
+      return match ? match[2] : null;
+  }).filter(Boolean); // Filter out nulls
+}
 
+
+
+
+
+
+  
   async function expandRegion(regionElement) {
     const regionId = regionElement.id();
     try {
         // Show loading indicator
         showLoadingIndicator();
 
-        // Fetch subnodes
+        // Fetch sub-nodes for the region
         const response = await fetch(`/api/getSubNodes?path=${regionId}`);
-        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
         const subNodes = await response.json();
+
+        // Map sub-nodes to Cytoscape.js node format
         const newElements = subNodes.map(node => ({
             group: 'nodes',
             data: {
                 id: node.id,
                 label: node.label,
-                parent: regionId, // Ensures all nodes and subregions are children of the current region
+                parent: regionId,
                 type: node.isDirectory ? 'region' : 'node',
                 imageUrl: node.imageUrl
             }
         }));
 
-        // Detect incoming edges to the region node
-        const incomingEdges = cy.edges().filter(edge => edge.target().id() === regionId);
+        // Store the original edges connected to the region before expansion
+        window.originalEdges = window.originalEdges || {};
+        window.originalEdges[regionId] = cy.edges().filter(edge => edge.target().id() === regionId).map(edge => ({
+            source: edge.source().id(),
+            target: edge.target().id()
+        }));
 
-        // Log IDs of source nodes that have edges pointing to the region node
-        const sourceNodeIds = incomingEdges.map(edge => edge.source().id());
-        console.log(`Nodes with edges pointing to region node ${regionId}:`, sourceNodeIds);
+        // Fetch hyperlinks from the file content of each original source node
+        const originalEdges = window.originalEdges[regionId];
+        const sourceNodeLinksMap = {};
 
+        for (let edge of originalEdges) {
+            try {
+                const fileResponse = await fetch(`/api/file?path=${edge.source}`);
+                
+                // Check if the response is JSON
+                const contentType = fileResponse.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    console.warn(`The response for node ${edge.source} is not in JSON format.`);
+                    continue; // Skip processing this file
+                }
 
-        const storedEdges = window.originalEdges[regionId] || [];
-storedEdges.forEach(edge => {
-    const newTarget = findNewTarget(edge.target, subNodes); // Function to find the new target in the subNodes
-    if (newTarget) {
-        cy.add({
-            group: 'edges',
-            data: {
-                id: `${edge.source}->${newTarget}`,
-                source: edge.source,
-                target: newTarget
+                const fileData = await fileResponse.json();
+                const fileContent = fileData.content;
+                const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
+                sourceNodeLinksMap[edge.source] = links;
+            } catch (error) {
+                console.error(`Error fetching file content for node ${edge.source}:`, error);
             }
-        });
-    }
-});
-
+        }
 
         // Remove the original region node
         cy.remove(regionElement);
@@ -261,23 +283,37 @@ storedEdges.forEach(edge => {
                 label: regionElement.data('label'),
                 type: 'region',
                 imageUrl: regionElement.data('imageUrl'),
-                parent: regionElement.data('parent') // Keep the parent of the current region if it has one
+                parent: regionElement.data('parent')
             }
         });
 
-        // Add the subnodes within the compound node
+        // Add the sub-nodes within the compound node
         cy.add(newElements);
 
-        // Update layout to fit the new structure
+        // Replace the original edges with edges that match the actual hyperlinks
+        originalEdges.forEach(edge => {
+            const links = sourceNodeLinksMap[edge.source] || [];
+            subNodes.forEach(subNode => {
+                if (links.includes(subNode.id)) {
+                    // Only add an edge if the sub-node's ID is in the list of links
+                    cy.add({
+                        group: 'edges',
+                        data: {
+                            id: `${edge.source}->${subNode.id}`,
+                            source: edge.source,
+                            target: subNode.id
+                        }
+                    });
+                }
+            });
+        });
+
+        // Update the layout to fit the new structure
         cy.layout({
-            name: 'concentric',  // Change to any other layout type
-            concentric: function(node) {
-                return node.degree(); // Sort nodes by degree
-            },
-            levelWidth: function(nodes) {
-                return 10; // Determines the spacing between levels
-            },
-            animate: true
+            name: 'cose',
+            animate: true,
+            fit: true,
+            padding: 30
         }).run();
 
     } catch (error) {
@@ -287,6 +323,7 @@ storedEdges.forEach(edge => {
         hideLoadingIndicator();
     }
 }
+
 
 // Dummy functions for loading indicator
 function showLoadingIndicator() {
