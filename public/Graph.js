@@ -35,7 +35,7 @@ async function generateEdgesForLinks() {
             cy.add({
               group: 'edges',
               data: {
-                id: `${nodeId}->${link}`,
+                id: `${nodeId}_to_${link}`,
                 source: nodeId,
                 target: link,
               }
