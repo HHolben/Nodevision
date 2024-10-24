@@ -1,3 +1,16 @@
+  // Function to extract hyperlinks from HTML content
+  function extractHyperlinks(htmlContent) {
+    // Regular expression to match anchor tags with href attributes
+    const anchorTags = htmlContent.match(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi) || [];
+    return anchorTags.map(tag => {
+        const match = tag.match(/href=(["'])(.*?)\1/);
+        return match ? match[2] : null;
+    }).filter(Boolean); // Filter out nulls
+  }
+  
+  
+
+
 async function generateEdgesForLinks() {
   const allNodeIds = cy.nodes().map(node => node.id());
   console.log(nodes);
@@ -5,25 +18,31 @@ async function generateEdgesForLinks() {
   console.log(edges);
 
 
-  for (let nodeId of allNodeIds) {
-    try {
-      const response = await fetch(`/api/file?path=${nodeId}`);
-      const data = await response.json();
-      const fileContent = data.content;
-      const links = extractHyperlinks(fileContent);
+   // Define valid extensions
+   const validExtensions = ['.php', '.html', '.js', '.ipyn'];
 
-      links.forEach(link => {
-        if (allNodeIds.includes(link)) {
-          cy.add({
-            group: 'edges',
-            data: {
-              id: `${nodeId}->${link}`,
-              source: nodeId,
-              target: link,
-            }
-          });
-        }
-      });
+   for (let nodeId of allNodeIds) {
+       try {
+           if (nodeId !== "defaultNode" && validExtensions.some(ext => nodeId.endsWith(ext))) {
+
+        const response = await fetch(`/api/file?path=${nodeId}`);
+        const data = await response.json();
+        const fileContent = data.content;
+        const links = extractHyperlinks(fileContent);
+
+        links.forEach(link => {
+          if (allNodeIds.includes(link)) {
+            cy.add({
+              group: 'edges',
+              data: {
+                id: `${nodeId}->${link}`,
+                source: nodeId,
+                target: link,
+              }
+            });
+          }
+        });
+      }
     } catch (error) {
       console.error('Error fetching file content:', error);
     }
@@ -118,7 +137,6 @@ function createCytoscapeGraph(elements, styles) {
 
 
 
-
   
 
   async function fetchImageFromNode(nodeId, fallbackImageUrl) {
@@ -199,16 +217,6 @@ function createCytoscapeGraph(elements, styles) {
 
 
 
-
-  // Function to extract hyperlinks from HTML content
-function extractHyperlinks(htmlContent) {
-  // Regular expression to match anchor tags with href attributes
-  const anchorTags = htmlContent.match(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi) || [];
-  return anchorTags.map(tag => {
-      const match = tag.match(/href=(["'])(.*?)\1/);
-      return match ? match[2] : null;
-  }).filter(Boolean); // Filter out nulls
-}
 
 
 
