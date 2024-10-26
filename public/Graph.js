@@ -218,6 +218,34 @@ function createCytoscapeGraph(elements, styles) {
 
 
 
+// Function to resolve relative links based on the current file's path
+function resolveLinkPath(basePath, link) {
+  // If the link is already an absolute path, return it directly
+  if (!link.startsWith("../")) {
+      return link;
+  }
+
+  // Split the base path into its components
+  const basePathParts = basePath.split("/");
+  basePathParts.pop(); // Remove the last part, which is the current file name
+
+  // Split the relative link into its components
+  const linkParts = link.split("/");
+
+  // Process each part of the relative link
+  for (let part of linkParts) {
+      if (part === "..") {
+          // Move up one directory in the base path
+          basePathParts.pop();
+      } else {
+          // Add the current part of the link to the path
+          basePathParts.push(part);
+      }
+  }
+
+  // Join the parts to form the resolved path
+  return basePathParts.join("/");
+}
 
 
 
@@ -256,30 +284,57 @@ function createCytoscapeGraph(elements, styles) {
             target: edge.target().id()
         }));
 
-        // Fetch hyperlinks from the file content of each original source node
-        const originalEdges = window.originalEdges[regionId];
-        const sourceNodeLinksMap = {};
 
-        for (let edge of originalEdges) {
-            try {
-                const fileResponse = await fetch(`/api/file?path=${edge.source}`);
-                
-                // Check if the response is JSON
-                const contentType = fileResponse.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    console.warn(`The response for node ${edge.source} is not in JSON format.`);
-                    continue; // Skip processing this file
-                }
 
-                const fileData = await fileResponse.json();
-                const fileContent = fileData.content;
-                const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
-                sourceNodeLinksMap[edge.source] = links;
-            } catch (error) {
-                console.error(`Error fetching file content for node ${edge.source}:`, error);
-            }
+
+
+
+
+
+
+// Fetch hyperlinks from the file content of each original source node
+const originalEdges = window.originalEdges[regionId];
+const sourceNodeLinksMap = {};
+
+for (let edge of originalEdges) {
+    try {
+        const fileResponse = await fetch(`/api/file?path=${edge.source}`);
+        
+        // Check if the response is JSON
+        const contentType = fileResponse.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            console.warn(`The response for node ${edge.source} is not in JSON format.`);
+            continue; // Skip processing this file
         }
 
+        const fileData = await fileResponse.json();
+        const fileContent = fileData.content;
+        const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
+        sourceNodeLinksMap[edge.source] = links;
+
+        // Log each individual link
+        for (let link of links) {
+            console.log(`Source: ${edge.source} Link: ${link}`);
+
+
+
+
+
+          }
+
+    } catch (error) {
+        console.error(`Error fetching file content for node ${edge.source}:`, error);
+    }
+}
+
+
+
+
+
+
+
+
+        
         // Remove the original region node
         cy.remove(regionElement);
 
@@ -298,6 +353,74 @@ function createCytoscapeGraph(elements, styles) {
         // Add the sub-nodes within the compound node
         cy.add(newElements);
 
+
+            for (let element of newElements) {
+                console.log(`Added Sub-Node: ${JSON.stringify(element)}`);
+            }
+
+
+
+
+
+
+
+        
+
+// Fetch and log URLs from the content of each newElement, resolving relative links
+for (let element of newElements) {
+  try {
+      // Check if the file extension is one of the allowed types
+      const fileId = element.data.id;
+      const allowedExtensions = ['html', 'php', 'js', 'ipyn'];
+      const fileExtension = fileId.split('.').pop().toLowerCase();
+
+      if (!allowedExtensions.includes(fileExtension)) {
+          console.warn(`Skipping file ${fileId} as it is not an allowed type.`);
+          continue; // Skip this file if it doesn't have the allowed extension
+      }
+
+      const fileResponse = await fetch(`/api/file?path=${fileId}`);
+      
+      // Check if the response is JSON
+      const contentType = fileResponse.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+          console.warn(`The response for node ${fileId} is not in JSON format.`);
+          continue; // Skip processing this file
+      }
+
+      const fileData = await fileResponse.json();
+      const fileContent = fileData.content;
+      const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
+
+      // Log each individual link found in the file, resolving relative paths
+      for (let link of links) {
+          const resolvedLink = resolveLinkPath(fileId, link);
+          console.log(`Node: ${fileId} Link: ${resolvedLink}`);
+          cy.add({
+            group: 'edges',
+            data: {
+                id: `${fileId}->${resolvedLink}`,
+                source: fileId,
+                target: resolvedLink
+
+
+            }})
+      }
+  } catch (error) {
+      console.error(`Error fetching file content for node ${element.data.id}:`, error);
+  }
+}
+
+
+        
+
+
+
+
+
+
+
+
         // Replace the original edges with edges that match the actual hyperlinks
         originalEdges.forEach(edge => {
             const links = sourceNodeLinksMap[edge.source] || [];
@@ -310,11 +433,25 @@ function createCytoscapeGraph(elements, styles) {
                             id: `${edge.source}->${subNode.id}`,
                             source: edge.source,
                             target: subNode.id
+
+
                         }
                     });
+
+
+                    console.log("Adding Edge: "+edge.source+"->"+subNode.id);
                 }
             });
+
+
         });
+
+
+
+
+
+
+
 
         // Update the layout to fit the new structure
         cy.layout({
@@ -331,6 +468,25 @@ function createCytoscapeGraph(elements, styles) {
         hideLoadingIndicator();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Dummy functions for loading indicator
