@@ -8,8 +8,34 @@
     }).filter(Boolean); // Filter out nulls
   }
   
-  
+  function combineURLs(baseURL, additionalPath) {
+    // Remove everything after the last "/" in baseURL
+    let basePath = baseURL.substring(0, baseURL.lastIndexOf('/') + 1);
+    
+    // Combine basePath with additionalPath, handling "/../"
+    const baseSegments = basePath.split('/').filter(Boolean);
+    const additionalSegments = additionalPath.split('/');
 
+    additionalSegments.forEach(segment => {
+        if (segment === "..") {
+            // Go up one directory, so remove the last segment from baseSegments
+            baseSegments.pop();
+        } else if (segment !== "." && segment !== "") {
+            // Add valid segments to the base
+            baseSegments.push(segment);
+        }
+    });
+
+    // Rebuild the full URL
+    return baseSegments.join('/');
+}
+
+// Usage
+const baseURL = "http://example.com/path/to/directory/";
+const additionalPath = "../another/path";
+const result = combineURLs(baseURL, additionalPath);
+
+console.log(result);
 
 async function generateEdgesForLinks() {
   const allNodeIds = cy.nodes().map(node => node.id());
@@ -225,6 +251,9 @@ function resolveLinkPath(basePath, link) {
       return link;
   }
 
+  const result = combineURLs(basePath, link);
+  console.log(result);
+
   // Split the base path into its components
   const basePathParts = basePath.split("/");
   basePathParts.pop(); // Remove the last part, which is the current file name
@@ -394,7 +423,10 @@ for (let element of newElements) {
 
       // Log each individual link found in the file, resolving relative paths
       for (let link of links) {
-          const resolvedLink = resolveLinkPath(fileId, link);
+          const resolvedLink = combineURLs(fileId, link);
+          console.log(resolvedLink);
+          
+        
           console.log(`Node: ${fileId} Link: ${resolvedLink}`);
           cy.add({
             group: 'edges',
