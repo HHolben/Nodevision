@@ -9,33 +9,46 @@
   }
   
   function combineURLs(baseURL, additionalPath) {
-    // Remove everything after the last "/" in baseURL
+    // Remove everything after the last "/" in baseURL to get the base directory path
     let basePath = baseURL.substring(0, baseURL.lastIndexOf('/') + 1);
-    
-    // Combine basePath with additionalPath, handling "/../"
     const baseSegments = basePath.split('/').filter(Boolean);
     const additionalSegments = additionalPath.split('/');
 
+    // Build the combined URL path by handling relative path segments ("../" and "./")
     additionalSegments.forEach(segment => {
         if (segment === "..") {
-            // Go up one directory, so remove the last segment from baseSegments
-            baseSegments.pop();
+            baseSegments.pop(); // Go up one directory level
         } else if (segment !== "." && segment !== "") {
-            // Add valid segments to the base
-            baseSegments.push(segment);
+            baseSegments.push(segment); // Add valid segments
         }
     });
 
-    // Rebuild the full URL
-    return baseSegments.join('/');
+    // Construct the final combined path
+    let resolvedPath = baseSegments.join('/');
+
+    // Check if this resolved path exists as a node in Cytoscape
+    if (!cy.getElementById(resolvedPath).length) {
+        // If not found, iteratively search upwards for the nearest loaded directory node
+        while (baseSegments.length > 0) {
+            // Move up to the next higher directory level
+            baseSegments.pop();
+            const parentPath = baseSegments.join('/');
+            
+            // Check if this parent path exists in the graph as a collapsed region
+            const parentNode = cy.getElementById(parentPath);
+            if (parentNode && parentNode.data('type') === 'region') {
+                return parentPath; // Return the path to the nearest collapsed region
+            }
+        }
+
+        // If no parent region is found, fallback to the base URL itself
+        return baseURL;
+    }
+
+    return resolvedPath; // Return the resolved path if found as a node
 }
 
-// Usage
-const baseURL = "http://example.com/path/to/directory/";
-const additionalPath = "../another/path";
-const result = combineURLs(baseURL, additionalPath);
 
-console.log(result);
 
 async function generateEdgesForLinks() {
   const allNodeIds = cy.nodes().map(node => node.id());
