@@ -1,4 +1,63 @@
-  // Function to extract hyperlinks from HTML content
+//Function to add a node to the graph
+function AddNode(node)
+{
+  const newElements = subNodes.map(node => (
+  {
+    group: 'nodes',
+      data: 
+      {
+        id: node.id,
+        label: node.label,
+        parent: regionId,
+        type: node.isDirectory ? 'region' : 'node',
+        imageUrl: node.imageUrl
+      }
+    }));
+
+  // Add the sub-nodes within the compound node
+  cy.add(newElements);
+
+}
+  
+    // Function to add an edge to the graph
+    function AddEdgeToGraph(nodeId, link)
+    {
+      cy.add({
+        group: 'edges',
+        data: 
+        {
+          id: `${nodeId}_to_${link}`,
+          source: nodeId,
+          target: link,
+        }
+    });
+    console.log("Adding Edge: "+`${fileId}->${resolvedLink}`);
+
+  }
+  
+  
+  //Function to add a region  to the graph as compound node
+  function AddRegionToGraph(regionElement)
+  {
+    const regionId = regionElement.id();
+
+    cy.add({
+    group: 'nodes',
+    data: {
+        id: regionId,
+        label: regionElement.data('label'),
+        type: 'region',
+        imageUrl: regionElement.data('imageUrl'),
+        parent: regionElement.data('parent')
+        }
+});
+  }
+  
+  
+
+
+
+    // Function to extract hyperlinks from HTML content
   function extractHyperlinks(htmlContent) {
     // Regular expression to match anchor tags with href attributes
     const anchorTags = htmlContent.match(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi) || [];
@@ -71,14 +130,8 @@ async function generateEdgesForLinks() {
 
         links.forEach(link => {
           if (allNodeIds.includes(link)) {
-            cy.add({
-              group: 'edges',
-              data: {
-                id: `${nodeId}_to_${link}`,
-                source: nodeId,
-                target: link,
-              }
-            });
+            AddEdgeToGraph(nodeId, link);
+
           }
         });
       }
@@ -86,6 +139,8 @@ async function generateEdgesForLinks() {
       console.error('Error fetching file content:', error);
     }
   }
+
+  
 cy.add(edges);
   // Update the layout once after all edges are added
   cy.layout({ name: 'cose' }).run();
@@ -324,8 +379,8 @@ function resolveLinkPath(basePath, link) {
         window.originalEdges[regionId] = cy.edges().filter(edge => edge.target().id() === regionId).map(edge => ({
             source: edge.source().id(),
             target: edge.target().id()
-        }));
 
+        }));
 
 
 
@@ -381,19 +436,14 @@ for (let edge of originalEdges) {
         cy.remove(regionElement);
 
         // Add the parent region as a compound node
-        cy.add({
-            group: 'nodes',
-            data: {
-                id: regionId,
-                label: regionElement.data('label'),
-                type: 'region',
-                imageUrl: regionElement.data('imageUrl'),
-                parent: regionElement.data('parent')
-            }
-        });
+        AddRegionToGraph(regionElement);
 
         // Add the sub-nodes within the compound node
         cy.add(newElements);
+
+
+
+
 
 
             for (let element of newElements) {
@@ -437,19 +487,9 @@ for (let element of newElements) {
       // Log each individual link found in the file, resolving relative paths
       for (let link of links) {
           const resolvedLink = combineURLs(fileId, link);
-          console.log(resolvedLink);
           
         
-          console.log(`Node: ${fileId} Link: ${resolvedLink}`);
-          cy.add({
-            group: 'edges',
-            data: {
-                id: `${fileId}->${resolvedLink}`,
-                source: fileId,
-                target: resolvedLink
-
-
-            }})
+          AddEdgeToGraph(fileId, resolvedLink);
       }
   } catch (error) {
       console.error(`Error fetching file content for node ${element.data.id}:`, error);
@@ -565,6 +605,9 @@ function hideLoadingIndicator() {
 
     cy.remove(cy.getElementById(regionId));
 
+
+
+    
 
     cy.add({
       group: 'nodes',
