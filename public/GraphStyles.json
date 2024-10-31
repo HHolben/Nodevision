@@ -7,7 +7,7 @@
       "text-outline-width": 2,
       "text-outline-color": "#fff",
       "width": "80px",
-      "height": "80px'" 
+      "height": "80px"
 
     },
     "parentNode": {
@@ -31,6 +31,16 @@
       "target-arrow-fill": "filled",
       "width": 2,
       "curve-style": "bezier"
-    }
-  }
+    },
   
+  
+"edge": {
+  "curve-style": "unbundled-bezier",      
+  "control-point-distances": [20, -20],   
+  "control-point-weights": [0.25, 0.75], 
+  "width": 3,
+  "line-color": "#007eff",
+  "target-arrow-color": "#007eff",
+  "target-arrow-shape": "triangle"
+}
+}

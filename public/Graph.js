@@ -52,8 +52,42 @@ function AddNode(node)
         }
 });
   }
+
+
+
+  async function fetchStyles(jsonUrl) {
+    try {
+        const response = await fetch(jsonUrl);
+        console.log(response);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching styles:', error);
+        return null;
+    }
+}
+
+
+
+
   
   
+  function applyBezierEdgeStyles(cy) {
+    cy.style()
+        .selector('edge')
+        .style({
+            'curve-style': 'unbundled-bezier',      // Set to unbundled bezier curve
+            'control-point-distances': [20, -20],   // Distance of control points from midpoint
+            'control-point-weights': [0.25, 0.75], // Positions of control points on the edge
+            'width': 3,
+            'line-color': '#ccc',
+            'target-arrow-color': '#ccc',
+            'target-arrow-shape': 'triangle'
+        })
+        .update();  // Apply the updated styles immediately
+}
+
+
 
 
 
@@ -349,7 +383,8 @@ function resolveLinkPath(basePath, link) {
 
 
   
-  async function expandRegion(regionElement) {
+  async function expandRegion(regionElement) 
+  {
     const regionId = regionElement.id();
     try {
         // Show loading indicator
@@ -357,7 +392,8 @@ function resolveLinkPath(basePath, link) {
 
         // Fetch sub-nodes for the region
         const response = await fetch(`/api/getSubNodes?path=${regionId}`);
-        if (!response.ok) {
+        if (!response.ok) 
+        {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const subNodes = await response.json();
@@ -600,6 +636,12 @@ function hideLoadingIndicator() {
 
   async function collapseRegion(regionElement) {
     const regionId = regionElement.id();
+    console.log(regionId);
+const lastSlashIndex = regionId.lastIndexOf('/');
+const parentNodeId = lastSlashIndex !== -1 ? regionId.substring(0, lastSlashIndex) : regionId;
+
+console.log(parentNodeId);
+
     const children = cy.nodes(`[parent="${regionId}"]`);
     cy.remove(children);
 
@@ -614,6 +656,7 @@ function hideLoadingIndicator() {
       data: {
         id: regionId,
         label: regionElement.data('label'),
+        parent: parentNodeId, // Specify the parent node ID here
         type: 'region',
         imageUrl: regionElement.data('imageUrl') || 'DefaultRegionImage.png'
       }
@@ -647,3 +690,7 @@ cy.fit();
 
   }
 }
+
+
+
+fetchStyles("./GraphStyles.js");
