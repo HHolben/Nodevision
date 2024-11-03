@@ -38,7 +38,11 @@ function extractHyperlinks(htmlContent) {
     return anchorTags.map(tag => {
         const match = tag.match(/href=(["'])(.*?)\1/);
         return match ? match[2] : null;
+        
     }).filter(Boolean); // Filter out nulls
+
+
+    
 }
 
 // Array to store the edges
@@ -58,8 +62,10 @@ function generateEdgesForCytoscape() {
         }
 
         const hyperlinks = extractHyperlinks(fileContent);  // Extract hyperlinks
-        console.log(hyperlinks);
+        console.log("Extracted Links:", hyperlinks);
         
+
+
         hyperlinks.forEach(link => {
             // Check if the link is an external URL
             const isExternalLink = /^https?:\/\//i.test(link);

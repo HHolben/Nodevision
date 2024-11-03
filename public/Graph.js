@@ -17,7 +17,8 @@ function AddNode(node)
   // Add the sub-nodes within the compound node
   cy.add(newElements);
 
-}
+}//Ends AddNode Function
+
   
     // Function to add an edge to the graph
     function AddEdgeToGraph(nodeId, link)
@@ -31,9 +32,9 @@ function AddNode(node)
           target: link,
         }
     });
-    console.log("Adding Edge: "+`${fileId}->${resolvedLink}`);
+    console.log("Adding Edge: "+`${nodeId}->${link}`);
 
-  }
+  }// Ends AddEdgeToGraph()
   
   
   //Function to add a region  to the graph as compound node
@@ -51,18 +52,18 @@ function AddNode(node)
         parent: regionElement.data('parent')
         }
 });
-  }
+  }//Ends AddRegionToGraph()
 
 
 
   async function fetchStyles(jsonUrl) {
     try {
         const response = await fetch(jsonUrl);
-        console.log(response);
+       // //console.log(response);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return await response.json();
     } catch (error) {
-        console.error('Error fetching styles:', error);
+      //  console.error('Error fetching styles:', error);
         return null;
     }
 }
@@ -145,39 +146,42 @@ function AddNode(node)
 
 async function generateEdgesForLinks() {
   const allNodeIds = cy.nodes().map(node => node.id());
-  console.log(nodes);
-
-  console.log(edges);
 
 
    // Define valid extensions
    const validExtensions = ['.php', '.html', '.js', '.ipyn'];
 
-   for (let nodeId of allNodeIds) {
-       try {
-           if (nodeId !== "defaultNode" && validExtensions.some(ext => nodeId.endsWith(ext))) {
+    for (let nodeId of allNodeIds) 
+    {
+       try 
+       {
 
-        const response = await fetch(`/api/file?path=${nodeId}`);
-        const data = await response.json();
-        const fileContent = data.content;
-        const links = extractHyperlinks(fileContent);
+          if (nodeId !== "defaultNode" && validExtensions.some(ext => nodeId.endsWith(ext))) 
+          {
 
-        links.forEach(link => {
-          if (allNodeIds.includes(link)) {
-            AddEdgeToGraph(nodeId, link);
+            const response = await fetch(`/api/file?path=${nodeId}`);
+            const data = await response.json();
+            const fileContent = data.content;
+            const links = extractHyperlinks(fileContent);
+            // //console.log("Extracted Links:", links);
 
+            links.forEach(link => 
+            {
+              if (allNodeIds.includes(link)) 
+              {
+                AddEdgeToGraph(nodeId, link);
+              }
+            });
           }
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching file content:', error);
+        }
+        catch (error) 
+        {
+          console.error('Error fetching file content:', error);
+        }
     }
-  }
 
   
 cy.add(edges);
-  // Update the layout once after all edges are added
-  cy.layout({ name: 'cose' }).run();
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -267,17 +271,6 @@ function createCytoscapeGraph(elements, styles) {
 
   
 
-  async function fetchImageFromNode(nodeId, fallbackImageUrl) {
-    try {
-      const response = await fetch(`/api/file?path=${nodeId}`);
-      const data = await response.json();
-      const fileContent = data.content;
-      const imgTagMatch = fileContent.match(/<img\s+src=['"]([^'"]+)['"]/i);
-      return imgTagMatch ? imgTagMatch[1] : fallbackImageUrl;
-    } catch {
-      return fallbackImageUrl;
-    }
-  }
   
   function updateInfoPanel(element) {
     const infoPanel = document.getElementById('element-info');
@@ -293,7 +286,7 @@ function createCytoscapeGraph(elements, styles) {
       infoHTML = `<strong>Node:</strong> ${element.data('label')}<br>`;
       window.ActiveNode = element.id();
       infoHTML += `<strong>ID:</strong> ${window.ActiveNode}<br>`;
-      console.log('ActiveNode set to:', window.ActiveNode);
+      ////console.log('ActiveNode set to:', window.ActiveNode);
 
       if (element.data('type') === 'region') {
         infoHTML += `<strong>Type:</strong> Region<br>`;
@@ -354,7 +347,7 @@ function resolveLinkPath(basePath, link) {
   }
 
   const result = combineURLs(basePath, link);
-  console.log(result);
+ // //console.log(result);
 
   // Split the base path into its components
   const basePathParts = basePath.split("/");
@@ -418,56 +411,38 @@ function resolveLinkPath(basePath, link) {
 
         }));
 
+      // Fetch hyperlinks from the file content of each original source node
+      const originalEdges = window.originalEdges[regionId];
+      const sourceNodeLinksMap = {};
 
+      for (let edge of originalEdges) {
+        try
+        {
+          const fileResponse = await fetch(`/api/file?path=${edge.source}`);
+          // Check if the response is JSON
+          const contentType = fileResponse.headers.get("content-type");
 
-
-
-
-
-
-// Fetch hyperlinks from the file content of each original source node
-const originalEdges = window.originalEdges[regionId];
-const sourceNodeLinksMap = {};
-
-for (let edge of originalEdges) {
-    try {
-        const fileResponse = await fetch(`/api/file?path=${edge.source}`);
-        
-        // Check if the response is JSON
-        const contentType = fileResponse.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
+          if (!contentType || !contentType.includes("application/json")) 
+          {
             console.warn(`The response for node ${edge.source} is not in JSON format.`);
             continue; // Skip processing this file
-        }
-
-        const fileData = await fileResponse.json();
-        const fileContent = fileData.content;
-        const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
-        sourceNodeLinksMap[edge.source] = links;
-
-        // Log each individual link
-        for (let link of links) {
-            console.log(`Source: ${edge.source} Link: ${link}`);
-
-
-
-
-
           }
 
-    } catch (error) {
-        console.error(`Error fetching file content for node ${edge.source}:`, error);
-    }
-}
+          const fileData = await fileResponse.json();
+          const fileContent = fileData.content;
+          const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
+          ////console.log("Extracted Links:", links);
+
+          sourceNodeLinksMap[edge.source] = links;
 
 
-
-
-
-
-
-
+        } 
         
+        catch (error) {
+        console.error(`Error fetching file content for node ${edge.source}:`, error);
+      }
+}
+       
         // Remove the original region node
         cy.remove(regionElement);
 
@@ -476,23 +451,6 @@ for (let edge of originalEdges) {
 
         // Add the sub-nodes within the compound node
         cy.add(newElements);
-
-
-
-
-
-
-            for (let element of newElements) {
-                console.log(`Added Sub-Node: ${JSON.stringify(element)}`);
-            }
-
-
-
-
-
-
-
-        
 
 // Fetch and log URLs from the content of each newElement, resolving relative links
 for (let element of newElements) {
@@ -519,6 +477,8 @@ for (let element of newElements) {
       const fileData = await fileResponse.json();
       const fileContent = fileData.content;
       const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
+      //console.log("Extracted Links:", links);
+
 
       // Log each individual link found in the file, resolving relative paths
       for (let link of links) {
@@ -545,42 +505,46 @@ for (let element of newElements) {
         // Replace the original edges with edges that match the actual hyperlinks
         originalEdges.forEach(edge => {
             const links = sourceNodeLinksMap[edge.source] || [];
-            subNodes.forEach(subNode => {
+            subNodes.forEach(subNode => 
+              {
                 if (links.includes(subNode.id)) {
-                    // Only add an edge if the sub-node's ID is in the list of links
-                    cy.add({
-                        group: 'edges',
-                        data: {
-                            id: `${edge.source}->${subNode.id}`,
-                            source: edge.source,
-                            target: subNode.id
 
 
-                        }
-                    });
 
 
-                    console.log("Adding Edge: "+edge.source+"->"+subNode.id);
+
+                  const nodeId =edge.source;
+                  
+                 const link=subNode.id;
+
+                  AddEdgeToGraph(nodeId, link);
+
+
+
+
                 }
+
+                
             });
 
 
         });
 
-
-
-
-
-
-
-
-        // Update the layout to fit the new structure
         cy.layout({
-            name: 'cose',
-            animate: true,
-            fit: true,
-            padding: 30
+          name: 'concentric', // 'cose' is a force-directed layout that can compact nodes
+          animate: true, // Animate the layout process
+          fit: true, // Adjust the viewport to fit the new layout
+          padding: 30, // Add some padding around the edges
+          nodeRepulsion: 8000, // Adjust node repulsion for more compact layout
+          idealEdgeLength: 50 // Control the ideal length of edges to make them shorter
         }).run();
+
+        cy.fit();
+
+
+
+
+
 
     } catch (error) {
         console.error('Error expanding region:', error);
@@ -613,34 +577,34 @@ for (let element of newElements) {
 // Dummy functions for loading indicator
 function showLoadingIndicator() {
     // Implement your loading indicator logic here
-    console.log("Loading...");
+    //console.log("Loading...");
 }
 
 function hideLoadingIndicator() {
     // Implement your logic to hide the loading indicator here
-    console.log("Loading complete.");
+    //console.log("Loading complete.");
 }
 
 
 // Dummy functions for loading indicator
 function showLoadingIndicator() {
     // Implement your loading indicator logic here
-    console.log("Loading...");
+    //console.log("Loading...");
 }
 
 function hideLoadingIndicator() {
     // Implement your logic to hide the loading indicator here
-    console.log("Loading complete.");
+    //console.log("Loading complete.");
 }
 
 
   async function collapseRegion(regionElement) {
     const regionId = regionElement.id();
-    console.log(regionId);
+    //console.log(regionId);
 const lastSlashIndex = regionId.lastIndexOf('/');
 const parentNodeId = lastSlashIndex !== -1 ? regionId.substring(0, lastSlashIndex) : regionId;
 
-console.log(parentNodeId);
+//console.log(parentNodeId);
 
     const children = cy.nodes(`[parent="${regionId}"]`);
     cy.remove(children);
@@ -667,14 +631,20 @@ console.log(parentNodeId);
 
 const originalEdges = window.originalEdges[regionId] || [];
 originalEdges.forEach(edge => {
-    cy.add({
-        group: 'edges',
-        data: {
-            id: `${edge.source}->${edge.target}`,
-            source: edge.source,
-            target: edge.target
-        }
-    });
+
+
+
+
+
+
+
+
+  AddEdgeToGraph(edge.source, edge.target)
+
+
+
+  
+   
 });
 cy.layout({
   name: 'cose', // 'cose' is a force-directed layout that can compact nodes
