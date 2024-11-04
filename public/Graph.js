@@ -413,6 +413,7 @@ function resolveLinkPath(basePath, link) {
 
       // Fetch hyperlinks from the file content of each original source node
       const originalEdges = window.originalEdges[regionId];
+      console.log(originalEdges);
       const sourceNodeLinksMap = {};
 
       for (let edge of originalEdges) {
@@ -451,10 +452,13 @@ function resolveLinkPath(basePath, link) {
 
         // Add the sub-nodes within the compound node
         cy.add(newElements);
+        console.log(newElements);
+
 
 // Fetch and log URLs from the content of each newElement, resolving relative links
 for (let element of newElements) {
   try {
+
       // Check if the file extension is one of the allowed types
       const fileId = element.data.id;
       const allowedExtensions = ['html', 'php', 'js', 'ipyn'];
@@ -477,14 +481,14 @@ for (let element of newElements) {
       const fileData = await fileResponse.json();
       const fileContent = fileData.content;
       const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
-      //console.log("Extracted Links:", links);
 
 
       // Log each individual link found in the file, resolving relative paths
       for (let link of links) {
           const resolvedLink = combineURLs(fileId, link);
           
-        
+          console.log("Resolved Links:", resolvedLink);
+
           AddEdgeToGraph(fileId, resolvedLink);
       }
   } catch (error) {

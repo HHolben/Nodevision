@@ -28,11 +28,36 @@ function createToolbar() {
         dropdownContent.className = 'dropdown-content';
 
         categories[category].forEach(box => {
-            const link = document.createElement('a');
-            link.href = '#';
-            link.textContent = box.heading;
-            link.addEventListener('click', () => createBox(box));
-            dropdownContent.appendChild(link);
+            if (box.type === 'toggle') {
+                const toggleLabel = document.createElement('label');
+                toggleLabel.textContent = 'Graph / File View';
+                
+                const toggleSwitch = document.createElement('input');
+                toggleSwitch.type = 'checkbox';
+                toggleSwitch.addEventListener('change', () => {
+                    if (toggleSwitch.checked) {
+                        // Switch to GraphViewMode
+                        console.log('Switched to GraphViewMode');
+
+
+                        
+                        // Implement the logic to change the view here
+                    } else {
+                        // Switch to FileViewMode
+                        console.log('Switched to FileViewMode');
+                        // Implement the logic to change the view here
+                    }
+                });
+
+                toggleLabel.appendChild(toggleSwitch);
+                dropdownContent.appendChild(toggleLabel);
+            } else {
+                const link = document.createElement('a');
+                link.href = '#';
+                link.textContent = box.heading;
+                link.addEventListener('click', () => createBox(box));
+                dropdownContent.appendChild(link);
+            }
         });
 
         dropdown.appendChild(dropdownContent);

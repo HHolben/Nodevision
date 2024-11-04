@@ -31,6 +31,11 @@ export const boxes = [
         `,
         script: `SendToCodeSettingsPage.js`,
         ToolbarCategory: "Settings"
+    },
+    {
+        ToolbarCategory: 'Settings',
+        heading: 'Toggle View Mode',
+        type: 'toggle', // New type to identify toggle items
     }
 ];
 
