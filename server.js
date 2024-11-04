@@ -98,6 +98,47 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
+
+// Endpoint to get directory structure for FileView mode
+app.get('/api/files', async (req, res) => {
+    async function readDirectory(dir) {
+        const result = [];
+        const entries = await fs.readdir(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                result.push({
+                    name: entry.name,
+                    path: path.relative(notebookDir, fullPath),
+                    isDirectory: true,
+                    contents: await readDirectory(fullPath)
+                });
+            } else if (allowedExtensions.includes(path.extname(entry.name))) {
+                result.push({
+                    name: entry.name,
+                    path: path.relative(notebookDir, fullPath),
+                    isDirectory: false
+                });
+            }
+        }
+        return result;
+    }
+
+    try {
+        const structure = await readDirectory(notebookDir);
+        res.json(structure); // Ensure JSON response on success
+    } catch (error) {
+        console.error('Error reading directory structure:', error);
+        // Ensure JSON format even in error
+        res.status(500).json({ error: 'Error reading directory structure' });
+    }
+});
+
+
+
+
+
 // Endpoint to read file content
 app.get('/api/file', async (req, res) => {
     const filePath = req.query.path;

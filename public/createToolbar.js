@@ -39,12 +39,12 @@ function createToolbar() {
                     const fileViewContainer = document.getElementById('file-view');
 
                     if (toggleSwitch.checked) {
-                        // Switch to GraphViewMode
+                        // Show Graph View
                         cyContainer.style.display = 'block';
                         fileViewContainer.style.display = 'none';
                         console.log('Switched to GraphViewMode');
                     } else {
-                        // Switch to FileViewMode
+                        // Show File View
                         cyContainer.style.display = 'none';
                         fileViewContainer.style.display = 'block';
                         console.log('Switched to FileViewMode');
@@ -68,26 +68,48 @@ function createToolbar() {
     }
 }
 
-// Function to load files into File View container
+// Load files and directories into File View container
 async function loadFileView() {
     const fileViewContainer = document.getElementById('file-view');
     fileViewContainer.innerHTML = '<p>Loading files...</p>';
 
     try {
-        const response = await fetch('/api/files'); // Endpoint to get file data
-        const files = await response.json();
+        const response = await fetch('/api/files');
 
-        let fileList = '<ul>';
-        files.forEach(file => {
-            fileList += `<li>${file}</li>`;
-        });
-        fileList += '</ul>';
-
-        fileViewContainer.innerHTML = fileList;
+        // Log the entire response for debugging
+        console.log("Response Status:", response.status);
+        console.log("Response Headers:", response.headers);
+        
+        // Check the Content-Type and log the response body for inspection
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const directoryStructure = await response.json(); // Parse JSON if content-type is correct
+            fileViewContainer.innerHTML = renderDirectoryStructure(directoryStructure);
+        } else {
+            const textResponse = await response.text(); // Capture non-JSON response
+            console.error("Unexpected response body:", textResponse);
+            throw new Error("Response is not JSON");
+        }
     } catch (error) {
         fileViewContainer.innerHTML = '<p>Error loading files</p>';
         console.error('Error fetching file data:', error);
     }
+}
+
+
+
+// Helper function to render directory structure
+function renderDirectoryStructure(files) {
+    let html = '<ul>';
+    files.forEach(file => {
+        if (file.isDirectory) {
+            html += `<li>${file.name}<ul>${renderDirectoryStructure(file.contents)}</ul></li>`;
+        } else {
+            html += `<li><a href="/Notebook/${file.path}" target="_blank">${file.name}</a></li>`;
+        }
+    });
+    html += '</ul>';
+    return html;
 }
 
 export { createToolbar };
