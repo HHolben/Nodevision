@@ -29,3 +29,42 @@ background-color: #ffffff;
   height: 100%;
 
 }
+
+/* style.css */
+
+.directory-name {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.nested {
+  padding-left: 15px;
+}
+
+.file a {
+  text-decoration: none;
+  color: #333;
+}
+
+
+/* style.css */
+
+.directory-button, .file-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-weight: bold;
+  text-align: left;
+  padding: 5px;
+  width: 100%;
+}
+
+.directory-button:hover, .file-button:hover {
+  text-decoration: underline;
+}
+
+.nested {
+  padding-left: 15px;
+  list-style-type: none;
+}

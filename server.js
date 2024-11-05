@@ -101,6 +101,8 @@ app.get('/api/search', async (req, res) => {
 
 // Endpoint to get directory structure for FileView mode
 app.get('/api/files', async (req, res) => {
+    const dir = req.query.path ? path.join(notebookDir, req.query.path) : notebookDir;
+
     async function readDirectory(dir) {
         const result = [];
         const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -111,8 +113,7 @@ app.get('/api/files', async (req, res) => {
                 result.push({
                     name: entry.name,
                     path: path.relative(notebookDir, fullPath),
-                    isDirectory: true,
-                    contents: await readDirectory(fullPath)
+                    isDirectory: true
                 });
             } else if (allowedExtensions.includes(path.extname(entry.name))) {
                 result.push({
@@ -126,14 +127,14 @@ app.get('/api/files', async (req, res) => {
     }
 
     try {
-        const structure = await readDirectory(notebookDir);
-        res.json(structure); // Ensure JSON response on success
+        const structure = await readDirectory(dir);
+        res.json(structure);
     } catch (error) {
         console.error('Error reading directory structure:', error);
-        // Ensure JSON format even in error
         res.status(500).json({ error: 'Error reading directory structure' });
     }
 });
+
 
 
 

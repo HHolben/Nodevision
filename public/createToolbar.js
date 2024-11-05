@@ -75,21 +75,8 @@ async function loadFileView() {
 
     try {
         const response = await fetch('/api/files');
-
-        // Log the entire response for debugging
-        console.log("Response Status:", response.status);
-        console.log("Response Headers:", response.headers);
-        
-        // Check the Content-Type and log the response body for inspection
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-            const directoryStructure = await response.json(); // Parse JSON if content-type is correct
-            fileViewContainer.innerHTML = renderDirectoryStructure(directoryStructure);
-        } else {
-            const textResponse = await response.text(); // Capture non-JSON response
-            console.error("Unexpected response body:", textResponse);
-            throw new Error("Response is not JSON");
-        }
+        const directoryStructure = await response.json();
+        fileViewContainer.innerHTML = renderDirectoryStructure(directoryStructure, true);
     } catch (error) {
         fileViewContainer.innerHTML = '<p>Error loading files</p>';
         console.error('Error fetching file data:', error);
@@ -98,18 +85,102 @@ async function loadFileView() {
 
 
 
+
 // Helper function to render directory structure
-function renderDirectoryStructure(files) {
-    let html = '<ul>';
+function renderDirectoryStructure(files, isRoot = false) {
+    const container = document.createElement('ul');
+
     files.forEach(file => {
+        const listItem = document.createElement('li');
+        listItem.className = file.isDirectory ? 'directory' : 'file';
+
         if (file.isDirectory) {
-            html += `<li>${file.name}<ul>${renderDirectoryStructure(file.contents)}</ul></li>`;
+            // Create a button for the directory
+            const directoryButton = document.createElement('button');
+            directoryButton.className = 'directory-button';
+            directoryButton.textContent = file.name;
+
+            // Assign ID based on the path relative to the /Notebook directory
+            const relativePath = file.path.replace('/Notebook/', '');
+            directoryButton.id = relativePath; // Set the ID
+
+            // Attach click event listener to toggle directory expansion
+            directoryButton.addEventListener('click', toggleDirectory);
+
+            // Nested list container for subdirectories
+            const nestedList = document.createElement('ul');
+            nestedList.className = 'nested';
+            nestedList.style.display = 'none'; // Initially hidden
+            nestedList.setAttribute('data-path', file.path);
+
+            listItem.appendChild(directoryButton);
+            listItem.appendChild(nestedList);
         } else {
-            html += `<li><a href="/Notebook/${file.path}" target="_blank">${file.name}</a></li>`;
+            // Create a button for the file that opens it in a new tab
+            const fileButton = document.createElement('button');
+
+
+            // Assign ID based on the path relative to the /Notebook directory
+            const relativePath = file.path.replace('/Notebook/', '');
+            fileButton.id = relativePath; // Set the ID
+
+            
+
+            fileButton.onclick="alert('Hello world!')";
+                //window.open(`/Notebook/${file.path}`, '_blank');
+            
+
+
+                fileButton.className = 'file-button';
+                fileButton.textContent = file.name;
+
+            listItem.appendChild(fileButton);
         }
+
+        container.appendChild(listItem);
     });
-    html += '</ul>';
-    return html;
+
+    return container.outerHTML;
 }
+
+
+
+
+
+// Toggle visibility of nested directories
+async function toggleDirectory(event) {
+    const directoryButton = event.target;
+    const directoryElement = directoryButton.nextElementSibling; // Get the nested <ul> element
+    const path = directoryElement.getAttribute('data-path');
+
+    // Toggle display between block and none
+    if (directoryElement.style.display === 'none') {
+        directoryElement.style.display = 'block';
+
+        // Only fetch and load if not already loaded
+        if (!directoryElement.hasAttribute('data-loaded')) {
+            try {
+                const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+                const subDirectoryStructure = await response.json();
+                
+                // Render and insert the HTML for subdirectories
+                directoryElement.innerHTML = renderDirectoryStructure(subDirectoryStructure);
+                
+                // Mark as loaded to avoid fetching again
+                directoryElement.setAttribute('data-loaded', 'true');
+            } catch (error) {
+                console.error('Error fetching subdirectory data:', error);
+            }
+        }
+    } else {
+        // Collapse the directory if already expanded
+        directoryElement.style.display = 'none';
+    }
+}
+
+
+
+
+window.toggleDirectory = toggleDirectory;
 
 export { createToolbar };
