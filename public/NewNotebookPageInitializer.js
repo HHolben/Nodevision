@@ -9,6 +9,33 @@ window.initializeNewNotebookPage = function() {
     }
 
     // HTML content for the new notebook page
+      // Get UTC date components
+      const now = new Date();
+      const year = now.getUTCFullYear();
+      const monthIndex = now.getUTCMonth(); // 0-indexed month
+      const date = String(now.getUTCDate()).padStart(2, '0');
+
+       // Array of month names
+       const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    // Format date and time
+    const monthName = months[monthIndex]; // Get the full month name
+
+
+      // Get UTC time components
+      const hours = String(now.getUTCHours()).padStart(2, '0');
+      const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+      
+
+      // Format date and time
+      const dateString = `${date} ${monthName} ${year}`;
+      const timeString = `${hours}:${minutes}:${seconds} UTC`;
+
+    
     const newHtmlContent = `
         <!DOCTYPE html>
         <html lang="en">
@@ -18,8 +45,9 @@ window.initializeNewNotebookPage = function() {
             <title>${fileName}</title>
         </head>
         <body>
-            <h1>This is a new notebook page named ${fileName}!</h1>
-            <p>This page was created by NewNotebookPageInitializer.js</p>
+            <h1>${fileName}</h1>
+            <h2>${dateString}</h2>
+            <h3>${timeString}</h3>
         </body>
         </html>
     `;

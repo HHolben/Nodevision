@@ -51,19 +51,19 @@ function loadFileContents() {
 }
 
 function formatHtml(html) {
-    let indentLevel = 0;
+    let indentLevel = 0;  // Start with no indentation
     const formatted = html
-        .replace(/></g, '>\n<')  // Add line break between tags
+        .replace(/></g, '>\n<')  // Add a line break between tags
         .split('\n')  // Split into lines
         .map(line => {
             line = line.trim();  // Trim whitespace from each line
             
             // Decrease indent level for closing tags
             if (line.startsWith('</')) {
-                indentLevel = Math.max(indentLevel - 1, 0);
+                indentLevel = Math.max(indentLevel - 2, 0);
             }
 
-            // Apply tabs for indentation
+            // Apply the appropriate number of tabs for indentation
             const indentedLine = '\t'.repeat(indentLevel) + line;
 
             // Increase indent level for opening tags (except self-closing tags)
@@ -76,8 +76,9 @@ function formatHtml(html) {
         .filter(line => line !== '')  // Remove empty lines caused by multiple newlines
         .join('\n');  // Join the lines back together
 
-    return formatted.trim();  // Trim to remove extra space
+    return formatted;  // Return the final formatted HTML
 }
+
 
 // Function to save file contents with formatted HTML
 function saveFileContents() {
