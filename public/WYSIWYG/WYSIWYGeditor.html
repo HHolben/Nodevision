@@ -46,7 +46,9 @@
             options: [
                 { name: "Save", action: "saveFileContents()", icon: "SaveIcon.png" },
                 { name: "Exit", action: "exitEditor()", icon: "ExitIcon.png" },
-                { name: "View Deployment", action: "ViewDeployment()", icon: "ViewDeploymentIcon.png" }
+                { name: "View PHP Deployment", action: "ViewDeploymentPHP()", icon: "ViewDeploymentIconPHP.png" },
+                { name: "View Nodevision Deployment", action: "ViewDeploymentNodevision()", icon: "ViewDeploymentNodevisionIcon.png" }
+
 
             ]
         },
@@ -108,7 +110,26 @@
 
 
 
-function ViewDeployment() {
+function ViewDeploymentPHP() {
+    // Get the current URL
+    const currentUrl = window.location.href;
+
+    // Use URLSearchParams to extract the activeNode parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeNode = urlParams.get('activeNode');
+
+    if (activeNode) {
+        // Construct the  URL
+        const deploymentUrl = `http://localhost:8000/${activeNode}`;
+
+        // Open the URL in a new window or tab
+        window.open(deploymentUrl, "_blank");
+    } else {
+        alert("No active node specified in the URL.");
+    }
+}
+
+function ViewDeploymentNodevision() {
     // Get the current URL
     const currentUrl = window.location.href;
 
@@ -118,7 +139,7 @@ function ViewDeployment() {
 
     if (activeNode) {
         // Construct the deployment URL
-        const deploymentUrl = `http://localhost:8000/${activeNode}`;
+        const deploymentUrl = `http://localhost:3000/${activeNode}/Notebook`;
 
         // Open the URL in a new window or tab
         window.open(deploymentUrl, "_blank");
@@ -126,6 +147,8 @@ function ViewDeployment() {
         alert("No active node specified in the URL.");
     }
 }
+
+
 
 
 
