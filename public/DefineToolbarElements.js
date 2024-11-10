@@ -36,6 +36,11 @@ export const boxes = [
         ToolbarCategory: 'Settings',
         heading: 'Toggle View Mode',
         type: 'toggle', // New type to identify toggle items
+    },
+    {
+        ToolbarCategory: 'Settings',
+        heading: 'Toggle Page Preview Mode',
+        type: 'toggle', // New type to identify toggle items
     }
 ];
 

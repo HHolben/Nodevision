@@ -297,7 +297,9 @@ function createCytoscapeGraph(elements, styles) {
         }
       } else {
         infoHTML += `<strong>Type:</strong> Node<br>`;
-        iframe.src = `http://localhost:8000/${element.id()}`;
+        //var SelectedServerPath=`localhost:8000`;
+        var SelectedServerPath=`localhost:3000/Notebook`;
+        iframe.src =`http://${SelectedServerPath}/${element.id()}`;
         iframe.onload = function() {
           const scale = 0.5; // Adjust the scale factor as needed
           const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
