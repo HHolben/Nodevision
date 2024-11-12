@@ -61,6 +61,8 @@
                 { name: "Heading 4", action: "InsertHeading4()", icon: "h4Icon.png"},
                 { name: "Heading 5", action: "InsertHeading5()", icon: "h5Icon.png"},
                 { name: "Heading 6", action: "InsertHeading6()", icon: "h6Icon.png"},
+                { name: "Italics", action: "Italics()", icon: "ItalicsIcon.png"},
+                { name: "Bold", action: "Embolden()", icon: "BoldIcon.png"},
 
 
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
@@ -276,6 +278,18 @@ function ViewDeploymentNodevision() {
             document.execCommand('insertHTML', false, h6Element);
             
         }
+
+        function Italics() {
+            const ItalicizedElement = `<i>italics</i>`;
+            document.execCommand('insertHTML', false, ItalicizedElement);
+        }
+
+        function Embolden()
+        {
+            const BoldElement = `<b>bold text</b>`;
+            document.execCommand('insertHTML', false, BoldElement);
+        }
+
 
         function insertQuote() {
             const text = document.getSelection().toString() || prompt("Enter the quote text:");
