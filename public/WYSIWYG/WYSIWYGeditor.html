@@ -63,6 +63,8 @@
                 { name: "Heading 6", action: "InsertHeading6()", icon: "h6Icon.png"},
                 { name: "Italics", action: "Italics()", icon: "ItalicsIcon.png"},
                 { name: "Bold", action: "Embolden()", icon: "BoldIcon.png"},
+                { name: "Underline", action: "Underline()", icon: "UnderlineIcon.png"},
+                { name: "Strikethrough", action: "Strikethrough()", icon: "StrikethroughIcon.png"},
 
 
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
@@ -288,6 +290,18 @@ function ViewDeploymentNodevision() {
         {
             const BoldElement = `<b>bold text</b>`;
             document.execCommand('insertHTML', false, BoldElement);
+        }
+
+        function Underline()
+        {
+            const UnderlinedElement = `<ins>underlined</ins>`;
+            document.execCommand('insertHTML', false, UnderlinedElement);
+        }
+
+        function Strikethrough()
+        {
+            const StrikethroughElement = `<del>strikethrough</del>`;
+            document.execCommand('insertHTML', false, StrikethroughElement);
         }
 
 
