@@ -25,11 +25,7 @@
         }
         
         
-        @media print {
-        .sensitive {
-            display: none;
-        }
-    }
+       
         
         </style>
         
@@ -232,6 +228,12 @@ function ViewDeploymentNodevision() {
     window.open("../CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;");
 }
 
+function editImage()
+{
+    window.open("ImageEditor.html");
+
+}
+
         function insert3DModel() {
             console.log("Inserting 3D Model...");
             // Implement 3D model insert functionality here
@@ -330,7 +332,11 @@ function ViewDeploymentNodevision() {
         function InsertSensitive() {
             const text = document.getSelection().toString() || prompt("Enter the sensitive text:");
             
-            var SensitiveElement = `<div class="sensitive" style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; margin: 10px 0;" onload="this.innerHTML='Content hidden for privacy';">${text}</div>`;
+            var SensitiveElement = `<style>@media print {
+        .sensitive {
+            display: none;
+        }</style>
+    <div class="sensitive" style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; margin: 10px 0;" onload="this.innerHTML='Content hidden for privacy';">${text}</div>`;
 
             document.execCommand('insertHTML', false, SensitiveElement);
         }

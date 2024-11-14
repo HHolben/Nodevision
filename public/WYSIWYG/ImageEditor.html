@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Image Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #image-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid black;
+            max-width: 100%;
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .control-button {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Image Editor</h1>
+    
+    <!-- Image Selection and Display -->
+    <div>
+        <input type="file" id="fileInput" accept="image/jpeg" />
+        <button onclick="loadImage()">Load Image</button>
+    </div>
+
+    <div id="image-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!-- Edit Controls -->
+    <div class="controls">
+        <button class="control-button" onclick="rotateImage()">Rotate 90°</button>
+        <button class="control-button" onclick="applyFilter()">Apply Grayscale Filter</button>
+        <button class="control-button" onclick="downloadImage()">Download Edited Image</button>
+    </div>
+
+    <script>
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let img = new Image();
+        
+        let currentImageData = null;
+
+        function loadImage() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        };
+
+        function rotateImage() {
+            const width = canvas.width;
+            const height = canvas.height;
+            canvas.width = height;
+            canvas.height = width;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(90 * Math.PI / 180);  // Rotate 90 degrees
+            ctx.drawImage(img, -width / 2, -height / 2);
+            ctx.restore();
+        }
+
+        function applyFilter() {
+            let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                let avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                data[i] = avg;       // Red
+                data[i + 1] = avg;   // Green
+                data[i + 2] = avg;   // Blue
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/jpeg');
+            link.download = 'edited-image.jpg';
+            link.click();
+        }
+
+    </script>
+</body>
+</html>
