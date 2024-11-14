@@ -9,20 +9,32 @@
     <script src="imageUpload.js" defer></script>
     <script src="https://unpkg.com/vexflow/releases/vexflow-min.js" defer></script>
     <script src="/node_modules/vexflow/releases/vexflow-min.js"></script> <!-- Local VexFlow -->
+    <script src="AddNewCursor.js"></script> <!-- Local VexFlow -->
+
+
+
+
 
     <style>
-.toolbar-button {
-    display: flex; /* Use flexbox for layout */
-    align-items: center; /* Center items vertically */
-    border: none; /* Remove default button border */
-    background: transparent; /* Background color */
-    cursor: pointer; /* Change cursor on hover */
-}
-
-
-
+        .toolbar-button {
+        display: flex; /* Use flexbox for layout */
+        align-items: center; /* Center items vertically */
+        border: none; /* Remove default button border */
+        background: transparent; /* Background color */
+        cursor: pointer; /* Change cursor on hover */
+        }
         
-    </style>
+        
+        @media print {
+        .sensitive {
+            display: none;
+        }
+    }
+        
+        </style>
+        
+
+
 </head>
 <body>
     <!-- Main Toolbar -->
@@ -47,7 +59,9 @@
                 { name: "Save", action: "saveFileContents()", icon: "SaveIcon.png" },
                 { name: "Exit", action: "exitEditor()", icon: "ExitIcon.png" },
                 { name: "View PHP Deployment", action: "ViewDeploymentPHP()", icon: "ViewDeploymentIconPHP.png" },
-                { name: "View Nodevision Deployment", action: "ViewDeploymentNodevision()", icon: "ViewDeploymentNodevisionIcon.png" }
+                { name: "View Nodevision Deployment", action: "ViewDeploymentNodevision()", icon: "ViewDeploymentNodevisionIcon.png" },
+                { name: "Open Code Editor", action: "OpenCodeEditor()", icon: "CodeEditor.png" },
+
 
 
             ]
@@ -65,6 +79,8 @@
                 { name: "Bold", action: "Embolden()", icon: "BoldIcon.png"},
                 { name: "Underline", action: "Underline()", icon: "UnderlineIcon.png"},
                 { name: "Strikethrough", action: "Strikethrough()", icon: "StrikethroughIcon.png"},
+                
+                { name: "Insert Sensitive", action:"InsertSensitive()", icon: "InsertSensitiveIcon.png"},
 
 
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
@@ -111,6 +127,7 @@
         }
     ]
 };
+
 
 
 
@@ -208,7 +225,12 @@ function ViewDeploymentNodevision() {
             // Implement exit functionality here
         }
 
-        
+
+        function OpenCodeEditor()
+{
+    
+    window.open("../CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;");
+}
 
         function insert3DModel() {
             console.log("Inserting 3D Model...");
@@ -304,6 +326,14 @@ function ViewDeploymentNodevision() {
             document.execCommand('insertHTML', false, StrikethroughElement);
         }
 
+
+        function InsertSensitive() {
+            const text = document.getSelection().toString() || prompt("Enter the sensitive text:");
+            
+            var SensitiveElement = `<div class="sensitive" style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; margin: 10px 0;" onload="this.innerHTML='Content hidden for privacy';">${text}</div>`;
+
+            document.execCommand('insertHTML', false, SensitiveElement);
+        }
 
         function insertQuote() {
             const text = document.getSelection().toString() || prompt("Enter the quote text:");

@@ -29,6 +29,12 @@ if (activeNode) {
     document.getElementById('errorMessage').textContent = 'Error: No activeNode provided.';
 }
 
+
+
+
+
+
+
 // Function to load file contents
 function loadFileContents() {
     if (!filePath) return;
@@ -78,6 +84,8 @@ function formatHtml(html) {
 
     return formatted;  // Return the final formatted HTML
 }
+
+
 
 
 // Function to save file contents with formatted HTML
