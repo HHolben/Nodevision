@@ -33,6 +33,7 @@
     <div>
         <input type="file" id="fileInput" accept="image/jpeg" />
         <button onclick="loadImage()">Load Image</button>
+        <button onclick="openSelectedImage()">Open Selected Image</button>
     </div>
 
     <div id="image-container">
@@ -52,7 +53,9 @@
         let img = new Image();
         
         let currentImageData = null;
+        let selectedImage = null;  // Variable to store the selected image from the page
 
+        // Function to load an image from a file input
         function loadImage() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
@@ -60,11 +63,38 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     img.src = event.target.result;
+                    selectedImage = img;  // Save the selected image to be used in the editor
                 };
                 reader.readAsDataURL(file);
             }
         }
 
+        // Function to open the selected image (using GET request for URL-based image)
+        function openSelectedImage() {
+            if (selectedImage && selectedImage.src) {
+                const imageUrl = selectedImage.src;  // Get the image URL from the selected image
+
+                // Check if the selected image is a valid URL
+                fetch(imageUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch the image.');
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        img.src = url;  // Set the image source to the blob URL
+                    })
+                    .catch(error => {
+                        alert('Error loading image: ' + error);
+                    });
+            } else {
+                alert('No image selected.');
+            }
+        }
+
+        // Handle when the image is loaded into the canvas
         img.onload = function() {
             canvas.width = img.width;
             canvas.height = img.height;
@@ -72,6 +102,7 @@
             currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         };
 
+        // Rotate the image 90 degrees
         function rotateImage() {
             const width = canvas.width;
             const height = canvas.height;
@@ -85,6 +116,7 @@
             ctx.restore();
         }
 
+        // Apply a grayscale filter to the image
         function applyFilter() {
             let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             let data = imageData.data;
@@ -97,13 +129,13 @@
             ctx.putImageData(imageData, 0, 0);
         }
 
+        // Download the edited image
         function downloadImage() {
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/jpeg');
             link.download = 'edited-image.jpg';
             link.click();
         }
-
     </script>
 </body>
 </html>

@@ -26,7 +26,11 @@
         
         
        
-        
+                /* Style for selected image */
+                .selected {
+            border: 3px solid #007BFF; /* Highlight selected image with a blue border */
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* Optional: adds a subtle glow effect */
+        }
         </style>
         
 
@@ -42,10 +46,32 @@
     <!-- Editor area -->
     <div id="editor" contenteditable="true"></div>
 
-    <script type="module">
-        // JSON object describing the toolbar
 
-        
+    <script type="module">
+        let selectedImage = null;  // Global variable to hold the selected image
+
+        // Function to handle image click event
+        function handleImageClick(event) {
+            const img = event.target;
+
+            // If the clicked target is an image
+            if (img.tagName.toLowerCase() === 'img') {
+                // Deselect previously selected image
+                if (selectedImage) {
+                    selectedImage.classList.remove('selected');
+                }
+
+                // Select the clicked image
+                selectedImage = img;
+                selectedImage.classList.add('selected');  // Add a class to visually highlight the selected image
+
+                console.log("Selected image:", selectedImage.src);  // You can use selectedImage.src or any other property
+            }
+        }
+
+        // Attach the event listener to all images in the editor
+        document.getElementById('editor').addEventListener('click', handleImageClick);
+
 
         const toolbarData = {
     categories: [
@@ -77,8 +103,9 @@
                 { name: "Strikethrough", action: "Strikethrough()", icon: "StrikethroughIcon.png"},
                 
                 { name: "Insert Sensitive", action:"InsertSensitive()", icon: "InsertSensitiveIcon.png"},
+                { name: "Insert Collapsible", action:"InsertCollapsible()", icon: "InsertCollapsibleIcon.png"},
 
-
+                
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
                 { name: "Video", action: "insertVideo()", icon: "videoIcon.png" },
                 { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
@@ -224,13 +251,20 @@ function ViewDeploymentNodevision() {
 
         function OpenCodeEditor()
 {
-    
-    window.open("../CodeEditor.html?activeNode=${encodeURIComponent(window.ActiveNode)}`;");
+    var activeNode = new URLSearchParams(window.location.search).get('activeNode');
+
+    window.open("../CodeEditor.html?activeNode="+activeNode);
 }
 
 function editImage()
 {
-    window.open("ImageEditor.html");
+   
+   console.log("Selected Image:"+selectedImage);
+    window.open("ImageEditor.html?selectedImage="+selectedImage
+    );
+
+
+
 
 }
 
@@ -340,6 +374,16 @@ function editImage()
 
             document.execCommand('insertHTML', false, SensitiveElement);
         }
+
+        function InsertCollapsible() {
+            
+            var SensitiveElement = ` <button type="button" style="background-color:#777;color:white;cursor:pointer;width:100%;border:none;text-align:left;outline:none;font-size:15px" onclick="this.classList.toggle('active');var content=this.nextElementSibling;content.style.display=content.style.display==='block'?'none':'block';this.style.backgroundColor=this.classList.contains('active')?'#555':'#777';">Open/Close Collapsible</button><section style="padding:0 18px;display:none;overflow:hidden;background-color:#f1f1f1;">COLLAPSABLE TEXT HERE.</section>`;
+
+            document.execCommand('insertHTML', false, SensitiveElement);
+        }
+      
+
+
 
         function insertQuote() {
             const text = document.getSelection().toString() || prompt("Enter the quote text:");
