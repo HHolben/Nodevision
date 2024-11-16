@@ -32,7 +32,6 @@ function AddNode(node)
           target: link,
         }
     });
-    console.log("Adding Edge: "+`${nodeId}->${link}`);
 
   }// Ends AddEdgeToGraph()
   
@@ -55,15 +54,12 @@ function AddNode(node)
   }//Ends AddRegionToGraph()
 
 
-
   async function fetchStyles(jsonUrl) {
     try {
         const response = await fetch(jsonUrl);
-       // //console.log(response);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return await response.json();
     } catch (error) {
-      //  console.error('Error fetching styles:', error);
         return null;
     }
 }
@@ -93,7 +89,8 @@ function AddNode(node)
 
 
     // Function to extract hyperlinks from HTML content
-  function extractHyperlinks(htmlContent) {
+  function extractHyperlinks(htmlContent) 
+  {
     // Regular expression to match anchor tags with href attributes
     const anchorTags = htmlContent.match(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi) || [];
     return anchorTags.map(tag => {
@@ -124,7 +121,6 @@ async function generateEdgesForLinks() {
             const data = await response.json();
             const fileContent = data.content;
             const links = extractHyperlinks(fileContent);
-            // //console.log("Extracted Links:", links);
 
             links.forEach(link => 
             {
@@ -145,6 +141,9 @@ async function generateEdgesForLinks() {
 cy.add(edges);
 }
 
+
+function initializeTheGraphStyles()
+{
 document.addEventListener('DOMContentLoaded', async function() {
   try {
     const response = await fetch('GraphStyles.json');
@@ -157,10 +156,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
-let cyInitialized = false;
+}
 
 function createCytoscapeGraph(elements, styles) {
   window.originalEdges = {};
+  window.truncatedEdges = {};
   window.cy = cytoscape({
     
     container: document.getElementById('cy'),
@@ -233,9 +233,11 @@ function createCytoscapeGraph(elements, styles) {
   
 
   
-  function updateInfoPanel(element) {
+  function updateInfoPanel(element)
+  {
     const infoPanel = document.getElementById('element-info');
-    if (!infoPanel) {
+    if (!infoPanel)
+    {
       console.error('Info panel element not found.');
       return;
     }
@@ -243,11 +245,11 @@ function createCytoscapeGraph(elements, styles) {
     const iframe = document.getElementById('content-frame');
     let infoHTML = '';
 
-    if (element.isNode()) {
+    if (element.isNode())
+    {
       infoHTML = `<strong>Node:</strong> ${element.data('label')}<br>`;
       window.ActiveNode = element.id();
       infoHTML += `<strong>ID:</strong> ${window.ActiveNode}<br>`;
-      ////console.log('ActiveNode set to:', window.ActiveNode);
 
       if (element.data('type') === 'region') {
         infoHTML += `<strong>Type:</strong> Region<br>`;
@@ -258,7 +260,6 @@ function createCytoscapeGraph(elements, styles) {
         }
       } else {
         infoHTML += `<strong>Type:</strong> Node<br>`;
-        //var SelectedServerPath=`localhost:8000`;
         var SelectedServerPath=`localhost:3000/Notebook`;
         iframe.src =`http://${SelectedServerPath}/${element.id()}`;
         iframe.onload = function() {
@@ -282,7 +283,10 @@ function createCytoscapeGraph(elements, styles) {
 
     if (element.data('type') === 'region') {
       document.getElementById('expand-btn').addEventListener('click', () => {
+        console.log("Edges before: "+cy.edges.id);
         expandRegion(element);
+        console.log("Edges after: "+cy.edges);
+
       });
 
 
@@ -302,45 +306,14 @@ function createCytoscapeGraph(elements, styles) {
 
 
 
-// Function to resolve relative links based on the current file's path
-function resolveLinkPath(basePath, link) {
-  // If the link is already an absolute path, return it directly
-  if (!link.startsWith("../")) {
-      return link;
-  }
-
-  const result = combineURLs(basePath, link);
- // //console.log(result);
-
-  // Split the base path into its components
-  const basePathParts = basePath.split("/");
-  basePathParts.pop(); // Remove the last part, which is the current file name
-
-  // Split the relative link into its components
-  const linkParts = link.split("/");
-
-  // Process each part of the relative link
-  for (let part of linkParts) {
-      if (part === "..") {
-          // Move up one directory in the base path
-          basePathParts.pop();
-      } else {
-          // Add the current part of the link to the path
-          basePathParts.push(part);
-      }
-  }
-
-  // Join the parts to form the resolved path
-  return basePathParts.join("/");
-}
-
-
-
 
 
   
   async function expandRegion(regionElement) 
   {
+
+
+    
     const regionId = regionElement.id();
     try {
         // Show loading indicator
@@ -368,6 +341,7 @@ function resolveLinkPath(basePath, link) {
 
         // Store the original edges connected to the region before expansion
         window.originalEdges = window.originalEdges || {};
+        window.truncatedEdges = window.truncatedEdges || {};
         window.originalEdges[regionId] = cy.edges().filter(edge => edge.target().id() === regionId).map(edge => ({
             source: edge.source().id(),
             target: edge.target().id()
@@ -395,7 +369,6 @@ function resolveLinkPath(basePath, link) {
           const fileData = await fileResponse.json();
           const fileContent = fileData.content;
           const links = extractHyperlinks(fileContent); // Function to extract hyperlinks from file content
-          ////console.log("Extracted Links:", links);
 
           sourceNodeLinksMap[edge.source] = links;
 
@@ -415,7 +388,6 @@ function resolveLinkPath(basePath, link) {
 
         // Add the sub-nodes within the compound node
         cy.add(newElements);
-        console.log(newElements);
 
 
 // Fetch and log URLs from the content of each newElement, resolving relative links
@@ -450,7 +422,6 @@ for (let element of newElements) {
       for (let link of links) {
           const resolvedLink = combineURLs(fileId, link);
           
-          console.log("Resolved Links:", resolvedLink);
 
           AddEdgeToGraph(fileId, resolvedLink);
       }
@@ -483,6 +454,7 @@ for (let element of newElements) {
                   const nodeId =edge.source;
                   
                  const link=subNode.id;
+
 
                   AddEdgeToGraph(nodeId, link);
 
@@ -520,12 +492,6 @@ for (let element of newElements) {
         hideLoadingIndicator();
     }
 }
-
-
-
-
-
-
 
 
 
@@ -626,7 +592,16 @@ cy.layout({
 cy.fit();
 
   }
+
+
+
 }
+
+
+
+initializeTheGraphStyles();
+
+
 
 
 
