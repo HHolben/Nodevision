@@ -7,9 +7,12 @@
     <link rel="stylesheet" href="WYSIWYGstyles.css">
     <script src="editor.js" defer></script>
     <script src="imageUpload.js" defer></script>
+
+
     <script src="https://unpkg.com/vexflow/releases/vexflow-min.js" defer></script>
     <script src="/node_modules/vexflow/releases/vexflow-min.js"></script> <!-- Local VexFlow -->
     <script src="AddNewCursor.js"></script> <!-- Local VexFlow -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 
 
@@ -109,6 +112,7 @@
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
                 { name: "Video", action: "insertVideo()", icon: "videoIcon.png" },
                 { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
+                {name: "Insert LaTeX Equation", action: "insertLatexEquation()", icon: "EquationIcon.png"},
                 { name: "Music Sheet", action: "insertMusicSheet()", icon: "MusicSheetIcon.png" },
                 { name: "Table", action: "insertTable()", icon: "SpreadsheetIcon.png" },
                 { name: "Ordered List", action: "insertOL()", icon: "NumberedList.png" },
@@ -272,6 +276,17 @@ function editImage()
             console.log("Inserting 3D Model...");
             // Implement 3D model insert functionality here
         }
+
+
+        function insertLatexEquation() {
+    const latex = prompt("Enter your LaTeX equation (without $$ symbols):");
+    if (latex) {
+        const latexElement = `<span class="latex-math" contenteditable="false" data-latex="${latex}">\\(${latex}\\)</span>`;
+        document.execCommand('insertHTML', false, latexElement);
+        MathJax.typeset();
+    }
+}
+
 
         function insertMusicSheet() {
             console.log("Inserting Music Sheet...");

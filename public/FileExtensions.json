@@ -1,0 +1,8 @@
+{
+    "validExtensions": [
+        ".html",
+        ".php",
+        ".js",
+        ".ipynb"
+    ]
+}
