@@ -4,8 +4,15 @@ export const boxes = [
     {
         heading: "New Node",
         content: `
-            <label for="fileNameInput">File Name:</label>
-            <input type="text" id="fileNameInput" placeholder="Enter file name">
+        <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="text" id="fileNameInput" placeholder="Enter file name">
+        <select id="fileExtension" name="FileExtension">
+            <option value=".html">.html</option>
+            <option value=".php">.php</option>
+            <option value=".js">.js</option>
+            <option value=".ipynb">.ipynb</option>
+        </select>
+    </div>
         `,
         script: "NewNotebookPageInitializer.js",
         ToolbarCategory: "File"
@@ -45,4 +52,3 @@ export const boxes = [
 ];
 
 // Additional constants or helper functions can be added here
-

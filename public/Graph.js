@@ -151,7 +151,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const elements = [...regions, ...nodes];
     createCytoscapeGraph(elements, styles);
     await generateEdgesForLinks();
-  } catch (error) {
+  } 
+  
+  catch (error) {
     console.error('Error during graph initialization:', error);
   }
 });

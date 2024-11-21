@@ -2,6 +2,7 @@ window.initializeNewNotebookPage = function() {
     console.log('Initializing new notebook page...');
 
     const fileName = document.getElementById('fileNameInput').value;
+    const fileExtension = document.getElementById('fileExtension').value; // Get selected file extension
 
     if (!fileName) {
         alert('Please enter a file name.');
@@ -9,55 +10,95 @@ window.initializeNewNotebookPage = function() {
     }
 
     // HTML content for the new notebook page
-      // Get UTC date components
-      const now = new Date();
-      const year = now.getUTCFullYear();
-      const monthIndex = now.getUTCMonth(); // 0-indexed month
-      const date = String(now.getUTCDate()).padStart(2, '0');
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const monthIndex = now.getUTCMonth(); // 0-indexed month
+    const date = String(now.getUTCDate()).padStart(2, '0');
 
-       // Array of month names
-       const months = [
+    const months = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
 
-    // Format date and time
     const monthName = months[monthIndex]; // Get the full month name
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(now.getUTCSeconds()).padStart(2, '0');
 
+    const dateString = `${date} ${monthName} ${year}`;
+    const timeString = `${hours}:${minutes}:${seconds} UTC`;
 
-      // Get UTC time components
-      const hours = String(now.getUTCHours()).padStart(2, '0');
-      const minutes = String(now.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(now.getUTCSeconds()).padStart(2, '0');
-      
+    let newHtmlContent = ''; // Initialize the content variable
 
-      // Format date and time
-      const dateString = `${date} ${monthName} ${year}`;
-      const timeString = `${hours}:${minutes}:${seconds} UTC`;
+    // Define content based on file extension
+    switch (fileExtension) {
+        case '.html':
+            newHtmlContent = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>${fileName}</title>
+                </head>
+                <body>
+                    <h1>${fileName}</h1>
+                    <h2>${dateString}</h2>
+                    <h3>${timeString}</h3>
+                </body>
+                </html>
+            `;
+            break;
 
-    
-    const newHtmlContent = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${fileName}</title>
-        </head>
-        <body>
-            <h1>${fileName}</h1>
-            <h2>${dateString}</h2>
-            <h3>${timeString}</h3>
-        </body>
-        </html>
-    `;
+        case '.php':
+            newHtmlContent = `
+                <?php
+                echo '<h1>${fileName}</h1>';
+                echo '<h2>${dateString}</h2>';
+                echo '<h3>${timeString}</h3>';
+                ?>
+            `;
+            break;
+
+        case '.js':
+            newHtmlContent = `
+                // ${fileName} JavaScript File
+                console.log('File Name: ${fileName}');
+                console.log('Date: ${dateString}');
+                console.log('Time: ${timeString}');
+            `;
+            break;
+
+        case '.ipynb':
+            newHtmlContent = `
+                {
+                    "cells": [
+                        {
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": [
+                                "# ${fileName}",
+                                "### Date: ${dateString}",
+                                "### Time: ${timeString}"
+                            ]
+                        }
+                    ],
+                    "metadata": {},
+                    "nbformat": 4,
+                    "nbformat_minor": 5
+                }
+            `;
+            break;
+
+        default:
+            alert('Unsupported file extension selected.');
+            return;
+    }
 
     const selectedRegion = window.ActiveNode || ''; // Default to root if no region is selected
-
-    // Construct the file path, adding the node inside the selected region (subdirectory)
     const filePath = selectedRegion 
-        ? `${selectedRegion}/${fileName}.html`  // Inside the selected subdirectory
-        : `${fileName}.html`;                   // In the root directory if no region selected
+        ? `${selectedRegion}/${fileName}${fileExtension}` 
+        : `${fileName}${fileExtension}`;  // Adjust file path based on the extension
 
     console.log(`Saving file to: ${filePath}`);
 
