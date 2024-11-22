@@ -18,6 +18,13 @@ export const boxes = [
         ToolbarCategory: "File"
     },
     {
+        heading: "Export Graph",
+        content: `
+        `,
+        script: `ExportGraph.js`,
+        ToolbarCategory: "File"
+    },
+    {
         heading: "Edit Code",
         content: `
         `,
