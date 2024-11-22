@@ -14,6 +14,25 @@
         <!-- Existing scripts and styles -->
         <script src="vendor/cytoscape/dist/cytoscape.min.js" defer></script>
         <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script type="text/javascript">
+            MathJax = {
+                tex: {
+                    inlineMath: [['\\(', '\\)']],  // Enable inline math
+                    displayMath: [['$$', '$$']]    // Enable display math (if needed)
+                },
+                options: {
+                    renderActions: {
+                        100: [function (doc) {
+                            doc.find('span.latex-math').each(function (node) {
+                                node.setAttribute('data-latex', node.textContent);
+                            });
+                        }]
+                    }
+                },
+                loader: {load: ['[tex]/amsmath']}
+            };
+        </script>
+        
         <script src="vendor/layout-base/layout-base.js" defer></script>
         <script src="vendor/cose-base/cose-base.js" defer></script>
         <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>

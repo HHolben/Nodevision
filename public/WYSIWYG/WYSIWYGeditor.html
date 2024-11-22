@@ -28,6 +28,26 @@
         }
         
         
+
+        .latex-math {
+    display: inline-block;  /* Make it inline for proper flow */
+    margin: 5px 0;          /* Add spacing for clarity */
+    padding: 0 5px;         /* Add padding around the LaTeX equation */
+    background-color: #f0f0f0; /* Light background to differentiate */
+    border-radius: 4px;     /* Rounded corners */
+    cursor: pointer;       /* Indicate interactivity */
+    user-select: text;      /* Allow selection of text */
+}
+
+/* Ensure MathJax-rendered content can also be selected */
+.latex-math span, .latex-math svg {
+    user-select: text;      /* Allow selection of MathJax content */
+    cursor: text;           /* Make it clear that the content can be selected */
+}
+
+
+
+
        
                 /* Style for selected image */
                 .selected {
@@ -74,6 +94,21 @@
 
         // Attach the event listener to all images in the editor
         document.getElementById('editor').addEventListener('click', handleImageClick);
+
+
+        //handle math item click
+
+        document.addEventListener('click', function (event) {
+    if (event.target.classList.contains('latex-math')) {
+        const currentLatex = event.target.getAttribute('data-latex');
+        const newLatex = prompt("Edit your LaTeX equation:", currentLatex);
+        if (newLatex) {
+            event.target.setAttribute('data-latex', newLatex);
+            event.target.innerHTML = `\\(${newLatex}\\)`; // Update inner HTML for rendering
+            MathJax.typeset(); // Re-render the equation
+        }
+    }
+});
 
 
         const toolbarData = {
@@ -214,6 +249,8 @@ function ViewDeploymentNodevision() {
 
         
 
+        
+
         function handleCategoryClick(category) {
     const subToolbar = document.getElementById('sub-toolbar');
     subToolbar.innerHTML = ''; // Clear previous sub-toolbar
@@ -277,15 +314,25 @@ function editImage()
             // Implement 3D model insert functionality here
         }
 
-
         function insertLatexEquation() {
     const latex = prompt("Enter your LaTeX equation (without $$ symbols):");
     if (latex) {
-        const latexElement = `<span class="latex-math" contenteditable="false" data-latex="${latex}">\\(${latex}\\)</span>`;
-        document.execCommand('insertHTML', false, latexElement);
-        MathJax.typeset();
+        // Create a span to wrap the LaTeX equation
+        const latexElement = document.createElement('span');
+        latexElement.classList.add('latex-math');
+        latexElement.setAttribute('data-latex', latex);
+        
+        // Insert the LaTeX markup as a placeholder for MathJax to render
+        latexElement.innerHTML = `\\(${latex}\\)`;  // Inline MathJax
+
+        // Append the element to the editor
+        document.execCommand('insertHTML', false, latexElement.outerHTML);
+
+        // Use MathJax to render the LaTeX immediately after it's inserted
+        MathJax.typeset();  // Re-render all math expressions
     }
 }
+
 
 
         function insertMusicSheet() {
