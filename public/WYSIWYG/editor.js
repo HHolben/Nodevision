@@ -449,3 +449,198 @@ window.onload = function() {
 };
 
 
+function insertMusicSheet() {
+    console.log("Inserting Music Sheet...");
+    const musicSheetContainer = document.createElement('div');
+    musicSheetContainer.classList.add('music-sheet-container');
+    musicSheetContainer.style.border = "1px solid black";
+    musicSheetContainer.style.margin = "20px 0";
+
+    const musicSheet = document.createElement('div');
+    musicSheet.id = `music-sheet-${Date.now()}`;
+    musicSheet.style.height = "200px";
+    musicSheetContainer.appendChild(musicSheet);
+
+    document.getElementById('editor').appendChild(musicSheetContainer);
+    drawMusicStaff(musicSheet.id);
+}
+
+function insertLink() {
+    const url = prompt("Enter the URL:");
+    const text = document.getSelection().toString() || prompt("Enter the link text:");
+    const linkElement = `<a href="${url}" target="_blank">${text}</a>`;
+    document.execCommand('insertHTML', false, linkElement);
+}
+
+function insertTab() {
+    document.execCommand('insertHTML', false, '&#9');
+}
+
+function InsertHeading1()
+{
+    const h1Element = `<h1>Heading 1</h1>`;
+    document.execCommand('insertHTML', false, h1Element);
+    
+}
+function InsertHeading2()
+{
+    const h2Element = `<h2>Heading 2</h2>`;
+    document.execCommand('insertHTML', false, h2Element);
+    
+}
+
+
+function InsertHeading3()
+{
+    const h3Element = `<h3>Heading 3</h3>`;
+    document.execCommand('insertHTML', false, h3Element);
+    
+}
+function InsertHeading4()
+{
+    const h4Element = `<h4>Heading 4</h4>`;
+    document.execCommand('insertHTML', false, h4Element);
+    
+}
+function InsertHeading5()
+{
+    const h5Element = `<h5>Heading 5</h5>`;
+    document.execCommand('insertHTML', false, h5Element);
+    
+}
+function InsertHeading6()
+{
+    const h6Element = `<h6>Heading 6</h6>`;
+    document.execCommand('insertHTML', false, h6Element);
+    
+}
+
+
+function insertOL() {
+    /*
+    const ol = document.createElement('ol');
+    for (let i = 0; i < 3; i++) {
+        const li = document.createElement('li');
+        li.textContent = "Ordered item " + (i + 1);
+        ol.appendChild(li);
+    }
+    //document.getElementById('editor').appendChild(ol);
+*/
+    const ol = `<ol><li>Unordered Thing<li></ol>`;
+    document.execCommand('insertHTML', false, ol);
+
+}
+
+function insertUL() {
+    const ul = document.createElement('ul');
+    for (let i = 0; i < 3; i++) {
+        const li = document.createElement('li');
+        li.textContent = "Unordered item " + (i + 1);
+        ul.appendChild(li);
+    }
+    document.getElementById('editor').appendChild(ul);
+}
+
+
+function Italics() {
+    const ItalicizedElement = `<i>italics</i>`;
+    document.execCommand('insertHTML', false, ItalicizedElement);
+}
+
+function Embolden()
+{
+    const BoldElement = `<b>bold text</b>`;
+    document.execCommand('insertHTML', false, BoldElement);
+}
+
+function Underline()
+{
+    const UnderlinedElement = `<ins>underlined</ins>`;
+    document.execCommand('insertHTML', false, UnderlinedElement);
+}
+
+function Strikethrough()
+{
+    const StrikethroughElement = `<del>strikethrough</del>`;
+    document.execCommand('insertHTML', false, StrikethroughElement);
+}
+
+
+function InsertSensitive() {
+    const text = document.getSelection().toString() || prompt("Enter the sensitive text:");
+    
+    var SensitiveElement = `<style>@media print {
+.sensitive {
+    display: none;
+}</style>
+<div class="sensitive" style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; margin: 10px 0;" onload="this.innerHTML='Content hidden for privacy';">${text}</div>`;
+
+    document.execCommand('insertHTML', false, SensitiveElement);
+}
+
+function InsertCollapsible() {
+    
+    var SensitiveElement = ` <button type="button" style="background-color:#777;color:white;cursor:pointer;width:100%;border:none;text-align:left;outline:none;font-size:15px" onclick="this.classList.toggle('active');var content=this.nextElementSibling;content.style.display=content.style.display==='block'?'none':'block';this.style.backgroundColor=this.classList.contains('active')?'#555':'#777';">Open/Close Collapsible</button><section style="padding:0 18px;display:none;overflow:hidden;background-color:#f1f1f1;">COLLAPSABLE TEXT HERE.</section>`;
+
+    document.execCommand('insertHTML', false, SensitiveElement);
+}
+
+
+
+
+function insertQuote() {
+    const text = document.getSelection().toString() || prompt("Enter the quote text:");
+    const quoteElement = `<q>${text}</q>`;
+    document.execCommand('insertHTML', false, quoteElement);
+}
+
+
+
+function insertAbbreviation() {
+    const abbreviation = prompt("Enter the abbreviation:");
+    const title = prompt("Enter the full form (title):");
+    const abbrElement = `<abbr title="${title}">${abbreviation}</abbr>`;
+    document.execCommand('insertHTML', false, abbrElement);
+}
+
+function insertAddress() {
+    const address = prompt("Enter the address:");
+    const addressElement = `<address>${address}</address>`;
+    document.execCommand('insertHTML', false, addressElement);
+}
+
+function insertBlockquote() {
+    const text = document.getSelection().toString() || prompt("Enter the blockquote text:");
+    const blockquoteElement = `<blockquote>${text}</blockquote>`;
+    document.execCommand('insertHTML', false, blockquoteElement);
+}
+
+function insertTable() {
+    const table = document.createElement('table');
+    table.style.borderCollapse = "collapse";
+    for (let i = 0; i < 3; i++) { // Example: 3 rows
+        const row = table.insertRow();
+        for (let j = 0; j < 3; j++) { // Example: 3 columns
+            const cell = row.insertCell();
+            cell.style.border = "1px solid black";
+            cell.textContent = "Cell";
+        }
+    }
+    document.getElementById('editor').appendChild(table);
+}
+
+
+// Video function
+function insertVideo() {
+    const videoFile = prompt("Enter the name of the video file (with extension):");
+    if (videoFile) {
+        const videoElement = `
+            <video controls width="600">
+                <source src="/${videoFile}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>`;
+        document.execCommand('insertHTML', false, videoElement);
+    } else {
+        alert("Video file name is required.");
+    }
+}

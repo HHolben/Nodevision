@@ -42,6 +42,27 @@ app.post('/initialize', async (req, res) => {
     }
 });
 
+// Endpoint to create a new directory within the Notebook directory
+app.post('/api/create-directory', async (req, res) => {
+    const { folderName, parentPath } = req.body;
+
+    if (!folderName || typeof folderName !== 'string') {
+        return res.status(400).json({ error: 'A valid folder name is required.' });
+    }
+
+    const newDirPath = path.join(notebookDir, parentPath || '', folderName);
+
+    try {
+        // Create the new directory, ensuring any intermediate directories are created
+        await fs.mkdir(newDirPath, { recursive: true });
+        res.status(200).json({ message: `Directory "${folderName}" created successfully at "${path.relative(notebookDir, newDirPath)}".` });
+    } catch (error) {
+        console.error('Error creating directory:', error);
+        res.status(500).json({ error: 'Failed to create directory.' });
+    }
+});
+
+
 // Endpoint to update graph styles
 app.post('/updateGraphStyles', async (req, res) => {
     const newStyles = req.body.styles;

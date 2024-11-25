@@ -18,6 +18,12 @@ export const boxes = [
         ToolbarCategory: "File"
     },
     {
+        heading: "New Directory",
+        content: `<input type="text" id="DirectoryNameInput" placeholder="Enter file name">`,
+        script: "NewDirectoryInitializer.js",
+        ToolbarCategory: "File"
+    },
+    {
         heading: "Export Graph",
         content: `
         `,
