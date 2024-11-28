@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaTeX Editor</title>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+    <title>Equation to LaTeX Editor</title>
+    <script src="https://unpkg.com/mathlive/dist/mathlive.min.js" defer></script>
+    <link rel="stylesheet" href="https://unpkg.com/mathlive/dist/mathlive.core.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,11 +15,21 @@
         .editor-container {
             margin-top: 20px;
         }
-        textarea {
-            width: 100%;
-            height: 100px;
-            font-family: monospace;
+        .toolbar {
+            margin-bottom: 20px;
+        }
+        .toolbar button {
+            padding: 10px 15px;
             font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .toolbar button:hover {
+            background-color: #0056b3;
         }
         .output {
             margin-top: 20px;
@@ -28,22 +39,78 @@
             background-color: #f9f9f9;
             min-height: 50px;
         }
-        button {
-            margin-top: 10px;
-            padding: 10px 15px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
+        .math-editor {
+            border: 1px solid #ddd;
             border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
+            padding: 10px;
+            font-size: 18px;
+            min-height: 50px;
+            background-color: #ffffff;
         }
     </style>
 </head>
 <body>
-    <h1>LaTeX Math Editor</h1>
+    <h1>Equation to LaTeX Editor</h1>
+
+    <div class="toolbar">
+        <!-- Optional toolbar for quick editing -->
+        <button onclick="insertSymbol('\\frac{}{ }')">Fraction</button>
+        <button onclick="insertSymbol('\\sqrt{}')">Square Root</button>
+        <button onclick="insertSymbol('\\pi')">Pi</button>
+        <button onclick="insertSymbol('\\pm')">±</button> <!-- New button -->
+    </div>
+    <div class="editor-container">
+        <!-- WYSIWYG Equation editor -->
+        <math-field id="math-editor" class="math-editor" virtual-keyboard-mode="manual"></math-field>
+    </div>
+
+    <button onclick="generateLatex()">Generate LaTeX</button>
+
+    <div class="output" id="latex-output">
+        <!-- LaTeX code output -->
+    </div>
+
+    <script>
+        // Insert symbols into the math editor
+        function insertSymbol(symbol) {
+            const mathEditor = document.getElementById('math-editor');
+            mathEditor.insert(symbol);
+        }
+
+        // Generate LaTeX code from the equation editor
+        function generateLatex() {
+            const mathEditor = document.getElementById('math-editor');
+            const latexOutput = document.getElementById('latex-output');
+
+            // Get the LaTeX code from the editor
+            const latex = mathEditor.getValue();
+
+            // Display the LaTeX code in the output section
+            latexOutput.textContent = latex;
+        }
+
+        // Load LaTeX from URL and populate the editor and output
+        function loadLatexFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const latex = urlParams.get('latex'); // Get the 'latex' parameter
+
+            if (latex) {
+                const decodedLatex = decodeURIComponent(latex);
+
+                // Populate the math editor with the decoded LaTeX
+                const mathEditor = document.getElementById('math-editor');
+                mathEditor.setValue(decodedLatex);
+
+                // Populate the LaTeX output field
+                const latexOutput = document.getElementById('latex-output');
+                latexOutput.textContent = decodedLatex;
+            }
+        }
+
+        // Load LaTeX on page load
+        window.onload = function() {
+            loadLatexFromUrl();
+        };
+    </script>
 </body>
 </html>
