@@ -19,6 +19,25 @@
 
 
     <style>
+
+#timestampDialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+#timestampDialog button {
+  margin: 5px;
+}
+
+
+
         .toolbar-button {
         display: flex; /* Use flexbox for layout */
         align-items: center; /* Center items vertically */
@@ -70,7 +89,26 @@
     <div id="editor" contenteditable="true"></div>
 
 
+    <div id="timestampDialog" style="display: none;">
+        <h3>Select Timestamp Type</h3>
+        <button id="localTimeBtn">Local Time</button>
+        <button id="utcTimeBtn">UTC Time</button>
+        <button id="cancelBtn">Cancel</button>
+      </div>
+      
+
     <script type="module">
+        
+        
+        
+        import { createBox } from '../../boxManipulation.js';
+
+        
+        
+        
+        
+        
+        
         let selectedImage = null;  // Global variable to hold the selected image
 
         // Function to handle image click event
@@ -143,7 +181,10 @@
                 { name: "Insert Sensitive", action:"InsertSensitive()", icon: "InsertSensitiveIcon.png"},
                 { name: "Insert Collapsible", action:"InsertCollapsible()", icon: "InsertCollapsibleIcon.png"},
 
-                
+
+                { name: "Timestamp", action: "insertTimestamp()", icon: "TimestampIcon.png" },
+
+                { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
                 { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
                 { name: "Video", action: "insertVideo()", icon: "videoIcon.png" },
                 { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
@@ -199,6 +240,41 @@
 
 
 
+// Function to toggle the visibility of the dialog
+function toggleDialog(visible) {
+    const dialog = document.getElementById('timestampDialog');
+    dialog.style.display = visible ? 'block' : 'none';
+}
+
+// Function to insert a timestamp
+function insertTimestamp(isUTC) {
+    const now = new Date();
+    const timestamp = isUTC ? now.toISOString() : now.toLocaleString();
+
+    // Create a timestamp element (you can customize this)
+    const timestampElement = `<time datetime="${isUTC ? now.toISOString() : now.toLocaleString()}">${timestamp}</time>`;
+    
+    // Insert into the editor at the current cursor position
+    document.execCommand('insertHTML', false, timestampElement);
+
+    // Hide the dialog after inserting
+    toggleDialog(false);
+}
+
+
+
+// Event listeners for the dialog buttons
+document.getElementById('localTimeBtn').addEventListener('click', function () {
+    insertTimestamp(false); // Insert local time
+});
+
+document.getElementById('utcTimeBtn').addEventListener('click', function () {
+    insertTimestamp(true); // Insert UTC time
+});
+
+document.getElementById('cancelBtn').addEventListener('click', function () {
+    toggleDialog(false); // Close the dialog without action
+});
 
 
 function ViewDeploymentPHP() {

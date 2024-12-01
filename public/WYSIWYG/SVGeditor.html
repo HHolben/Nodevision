@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #toolbar {
+            display: flex;
+            justify-content: space-around;
+            background: #f4f4f4;
+            padding: 10px;
+        }
+        #editor {
+            flex: 1;
+            background: #f9f9f9;
+            border: 1px solid #ccc;
+            position: relative;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .tool-button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .tool-button:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <button class="tool-button" onclick="startDrawing('rect')">Rectangle</button>
+        <button class="tool-button" onclick="startDrawing('circle')">Circle</button>
+        <button class="tool-button" onclick="clearSVG()">Clear</button>
+        <button class="tool-button" onclick="saveSVG()">Save</button>
+    </div>
+    <div id="editor">
+        <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let fileName = urlParams.get('file'); // Get the 'file' parameter from the URL
+        const svgCanvas = document.getElementById('svgCanvas');
+        let currentTool = null;
+        let drawing = false;
+        let startX, startY, newElement;
+
+        if (!fileName) {
+            promptFileName(); // Prompt for a new file name if none is provided
+        } else {
+            loadSVG(fileName);
+        }
+
+        function startDrawing(tool) {
+            currentTool = tool;
+        }
+
+        svgCanvas.addEventListener('mousedown', (e) => {
+            if (!currentTool) return;
+
+            drawing = true;
+            startX = e.offsetX;
+            startY = e.offsetY;
+
+            if (currentTool === 'rect') {
+                newElement = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                newElement.setAttribute('x', startX);
+                newElement.setAttribute('y', startY);
+                newElement.setAttribute('width', 0);
+                newElement.setAttribute('height', 0);
+                newElement.setAttribute('fill', 'rgba(0, 128, 255, 0.5)');
+                newElement.setAttribute('stroke', '#007bff');
+                svgCanvas.appendChild(newElement);
+            } else if (currentTool === 'circle') {
+                newElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                newElement.setAttribute('cx', startX);
+                newElement.setAttribute('cy', startY);
+                newElement.setAttribute('r', 0);
+                newElement.setAttribute('fill', 'rgba(0, 255, 128, 0.5)');
+                newElement.setAttribute('stroke', '#28a745');
+                svgCanvas.appendChild(newElement);
+            }
+        });
+
+        svgCanvas.addEventListener('mousemove', (e) => {
+            if (!drawing || !newElement) return;
+
+            const currentX = e.offsetX;
+            const currentY = e.offsetY;
+
+            if (currentTool === 'rect') {
+                const width = Math.abs(currentX - startX);
+                const height = Math.abs(currentY - startY);
+                newElement.setAttribute('width', width);
+                newElement.setAttribute('height', height);
+                newElement.setAttribute('x', Math.min(currentX, startX));
+                newElement.setAttribute('y', Math.min(currentY, startY));
+            } else if (currentTool === 'circle') {
+                const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                newElement.setAttribute('r', radius);
+            }
+        });
+
+        svgCanvas.addEventListener('mouseup', () => {
+            drawing = false;
+            newElement = null;
+        });
+
+        function clearSVG() {
+            svgCanvas.innerHTML = '';
+        }
+
+        function saveSVG() {
+            if (!fileName) {
+                alert('No file name specified!');
+                promptFileName();
+                return;
+            }
+
+            const svgContent = svgCanvas.outerHTML;
+
+            fetch('/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: `Notebook/${fileName}`,
+                    content: svgContent,
+                }),
+            })
+            .then(response => response.text())
+            .then(data => alert('File saved successfully!'))
+            .catch(err => alert('Error saving file: ' + err));
+        }
+
+        function promptFileName() {
+            const userFileName = prompt('Please enter a name for the new file (including .svg):', 'newFile.svg');
+            if (userFileName) {
+                fileName = userFileName;
+                alert(`File name set to: ${fileName}`);
+            } else {
+                alert('A file name is required to proceed.');
+            }
+        }
+
+        async function loadSVG(fileName) {
+            try {
+                const response = await fetch(`/api/file?path=${fileName}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load file: ${response.statusText}`);
+                }
+                const data = await response.json();
+                svgCanvas.innerHTML = data.content;
+            } catch (err) {
+                alert('Error loading SVG file: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
