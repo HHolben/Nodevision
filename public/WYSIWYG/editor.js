@@ -472,6 +472,18 @@ function insertLink() {
     document.execCommand('insertHTML', false, linkElement);
 }
 
+
+function insertIFRAME()
+{
+    const url = prompt("Enter the URL:");
+    const text = document.getSelection().toString() || prompt("Enter the title:");
+    const iFrameElement = `<iframe src="${url}" title=${text}</a>`;
+    document.execCommand('insertHTML', false, iFrameElement);
+}
+
+
+
+
 function insertTab() {
     document.execCommand('insertHTML', false, '&#9');
 }

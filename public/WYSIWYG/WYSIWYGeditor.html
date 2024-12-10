@@ -13,7 +13,7 @@
     <script src="/node_modules/vexflow/releases/vexflow-min.js"></script> <!-- Local VexFlow -->
     <script src="AddNewCursor.js"></script> <!-- Local VexFlow -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
+    <script src="3DmodelAdderScript.js"></script>
 
 
 
@@ -184,8 +184,7 @@
 
                 { name: "Timestamp", action: "insertTimestamp()", icon: "TimestampIcon.png" },
 
-                { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
-                { name: "Image", action: "uploadImage()", icon: "ImageIcon.png" },
+                { name: "VectorGraphic", action: "newVectorGraphic()", icon: "ImageIcon.png" },
                 { name: "Video", action: "insertVideo()", icon: "videoIcon.png" },
                 { name: "3D Model", action: "insert3DModel()", icon: "3Dmodel.png" },
                 {name: "Insert LaTeX Equation", action: "insertLatexEquation()", icon: "EquationIcon.png"},
@@ -392,10 +391,12 @@ function editImage()
 
 }
 
-        function insert3DModel() {
-            console.log("Inserting 3D Model...");
-            // Implement 3D model insert functionality here
-        }
+           
+
+
+
+
+
 
         function insertLatexEquation() {
     const latex = prompt("Enter your LaTeX equation (without $$ symbols):");

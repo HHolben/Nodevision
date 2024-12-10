@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raster Image Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            align-items: center;
+        }
+        #toolbar {
+            display: flex;
+            justify-content: space-around;
+            background: #f4f4f4;
+            padding: 10px;
+            width: 100%;
+        }
+        #canvas-container {
+            position: relative;
+            width: 80%;
+            height: 60%;
+        }
+        canvas {
+            display: block;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+        .tool-button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .tool-button:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toolbar">
+        <button class="tool-button" onclick="loadImage()">Upload Image</button>
+        <button class="tool-button" onclick="clearCanvas()">Clear</button>
+        <button class="tool-button" onclick="saveImage()">Save</button>
+        <button class="tool-button" onclick="startDrawing()">Draw</button>
+        <button class="tool-button" onclick="stopDrawing()">Stop Drawing</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="imageCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let img = new Image();
+        let lastX = 0, lastY = 0;
+        let fileName = 'edited-image.jpg';
+
+        // Set canvas dimensions based on image size
+        function resizeCanvas() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+        }
+
+        // Load image from file input
+        function loadImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg, image/png';
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        img.onload = function() {
+                            resizeCanvas();
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            input.click();
+        }
+
+        // Start drawing mode
+        function startDrawing() {
+            isDrawing = true;
+        }
+
+        // Stop drawing mode
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        // Handle mouse events for drawing
+        canvas.addEventListener('mousedown', (e) => {
+            if (isDrawing) {
+                lastX = e.offsetX;
+                lastY = e.offsetY;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+
+            const currentX = e.offsetX;
+            const currentY = e.offsetY;
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            lastX = currentX;
+            lastY = currentY;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+            }
+        });
+
+        canvas.addEventListener('mouseout', () => {
+            if (isDrawing) {
+                isDrawing = false;
+            }
+        });
+
+        // Clear the canvas
+        function clearCanvas() {
+            if (img.src) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0); // redraw the image
+            }
+        }
+
+        // Save the edited image as a JPEG
+        function saveImage() {
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = fileName;
+            link.click();
+        }
+    </script>
+</body>
+</html>

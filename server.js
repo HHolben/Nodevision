@@ -5,7 +5,6 @@ const bodyParser = require('body-parser');
 const fs = require('fs').promises; // For async operations
 const multer = require('multer');
 const cheerio = require('cheerio');
-const regenerateGraph = require('./RegenerateGraph'); // Import the regenerateGraph function
 const { generateEdges } = require('./GenerateEdges');
 const { generateAllNodes } = require('./GenerateAllNodes');
 const app = express();
@@ -34,8 +33,10 @@ app.post('/initialize', async (req, res) => {
         await fs.mkdir(path.dirname(filePath), { recursive: true });
         await fs.writeFile(filePath, htmlContent);
         console.log(`HTML file "${filePath}" created successfully!`);
-        await regenerateGraph(); // Call regenerateGraph directly
-        res.send('HTML file created successfully and graph regenerated.');
+
+
+
+
     } catch (error) {
         console.error('Error creating HTML file:', error);
         res.status(500).send('Error creating HTML file.');
