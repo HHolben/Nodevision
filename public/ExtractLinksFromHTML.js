@@ -10,3 +10,32 @@
       }).filter(Boolean); // Filter out nulls
     }
     
+
+
+
+
+// Function to fetch hyperlinks for each new element and add edges
+
+function extractNodeLinks(newElements) 
+{
+  newElements.forEach(element => {
+  const fileId = element.data.id;
+        fetch(`/api/file?path=${fileId}`)
+          .then(fileResponse => {
+            if (!fileResponse.ok) {
+              throw new Error(`HTTP error fetching file for node ${fileId}: ${fileResponse.status}`);
+            }
+            return fileResponse.json();
+          })
+          .then(fileData => {
+            const fileContent = fileData.content;
+            const links = extractHyperlinks(fileContent);
+            links.forEach(link => {
+              AddEdgeToGraph(fileId, link);
+            });
+          })
+          .catch(error => {
+            console.error(`Error fetching file content for node ${fileId}:`, error);
+          });
+      });
+    }
