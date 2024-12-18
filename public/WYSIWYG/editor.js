@@ -656,3 +656,109 @@ function insertVideo() {
         alert("Video file name is required.");
     }
 }
+
+function newVectorGraphic() {
+    // Prompt the user for a name for the SVG file
+    const svgName = prompt("Enter a name for the SVG file (without extension):");
+
+    if (!svgName) {
+        alert("No name provided. SVG creation canceled.");
+        return;
+    }
+
+    // Create a simple SVG graphic (this could be more complex depending on user input)
+    const svgContent = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="80" stroke="black" stroke-width="3" fill="yellow" />
+            <text x="50%" y="50%" text-anchor="middle" stroke="black" stroke-width="1px" dy=".3em">${svgName}</text>
+        </svg>
+    `;
+
+    // Create an img element to insert the SVG
+    const imgElement = document.createElement('img');
+    imgElement.src = 'data:image/svg+xml;base64,' + btoa(svgContent); // Encode the SVG to base64 for image source
+    imgElement.alt = svgName;
+
+    // Insert the SVG as an image into the editor area
+    const editor = document.getElementById('editor');
+    editor.appendChild(imgElement);
+
+    // Optionally, you could trigger an event or log the creation
+    console.log(`SVG created and inserted with name: ${svgName}`);
+
+
+
+}
+
+
+let selectedImage = null;  // Global variable to hold the selected image
+
+// Function to handle image click event
+function handleImageClick(event) {
+    const img = event.target;
+
+    // If the clicked target is an image
+    if (img.tagName.toLowerCase() === 'img') {
+        // Deselect previously selected image
+        if (selectedImage) {
+            selectedImage.classList.remove('selected');
+        }
+
+        // Select the clicked image
+        selectedImage = img;
+        selectedImage.classList.add('selected');  // Add a class to visually highlight the selected image
+
+        console.log("Selected image:", selectedImage.src);  // You can use selectedImage.src or any other property
+    }
+}
+
+// Attach the event listener to all images in the editor
+document.getElementById('editor').addEventListener('click', handleImageClick);
+
+// Function to handle copy (Ctrl+C) and cut (Ctrl+X) for selected images
+function handleKeyboardEvents(event) {
+    // Check if an image is selected
+    if (!selectedImage) return;
+
+    // Handle Ctrl+C (copy) and Ctrl+X (cut) events
+    if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'x')) {
+        if (event.key === 'x') {
+            // Handle cut: Remove the selected image from the editor
+            document.execCommand('delete');  // Delete the selected image from the editor
+        }
+
+        // Use the Clipboard API to copy the selected image
+        copyImageToClipboard(selectedImage);
+
+        // Optionally remove the selection class (for UI feedback)
+        selectedImage.classList.remove('selected');
+        selectedImage = null;  // Deselect image after copying or cutting
+    }
+}
+
+// Function to copy image to clipboard
+async function copyImageToClipboard(img) {
+    try {
+        const imgBlob = await fetch(img.src).then(res => res.blob());  // Get the image as a Blob
+        const clipboardItem = new ClipboardItem({ 'image/png': imgBlob });  // Create a ClipboardItem with the image
+        await navigator.clipboard.write([clipboardItem]);  // Write to clipboard
+        console.log("Image copied to clipboard.");
+    } catch (error) {
+        console.error("Failed to copy image to clipboard:", error);
+    }
+}
+
+// Add event listener for keyboard controls (Ctrl+C and Ctrl+X)
+document.addEventListener('keydown', handleKeyboardEvents);
+
+// Optional: prevent the default behavior of the copy and cut commands for text (this ensures custom image behavior)
+document.addEventListener('copy', (event) => {
+    if (selectedImage) {
+        event.preventDefault();  // Prevent default copy behavior
+    }
+});
+document.addEventListener('cut', (event) => {
+    if (selectedImage) {
+        event.preventDefault();  // Prevent default cut behavior
+    }
+});
