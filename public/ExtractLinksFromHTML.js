@@ -16,26 +16,35 @@
 
 // Function to fetch hyperlinks for each new element and add edges
 
-function extractNodeLinks(newElements) 
-{
+function extractNodeLinks(newElements) {
   newElements.forEach(element => {
-  const fileId = element.data.id;
-        fetch(`/api/file?path=${fileId}`)
-          .then(fileResponse => {
-            if (!fileResponse.ok) {
-              throw new Error(`HTTP error fetching file for node ${fileId}: ${fileResponse.status}`);
-            }
-            return fileResponse.json();
-          })
-          .then(fileData => {
-            const fileContent = fileData.content;
-            const links = extractHyperlinks(fileContent);
-            links.forEach(link => {
-              AddEdgeToGraph(fileId, link);
-            });
-          })
-          .catch(error => {
-            console.error(`Error fetching file content for node ${fileId}:`, error);
-          });
-      });
+    const fileId = element.data.id;
+
+    // Skip directories
+    if (element.data.type === 'region') {
+      console.log(`Skipping directory node: ${fileId}`);
+      return;
     }
+
+    const encodedPath = encodeURIComponent(fileId);
+
+    console.log(`Fetching file content for node: ${fileId}`);
+    fetch(`/api/file?path=${encodedPath}`)
+      .then(fileResponse => {
+        if (!fileResponse.ok) {
+          throw new Error(`HTTP error fetching file for node ${fileId}: ${fileResponse.status}`);
+        }
+        return fileResponse.json();
+      })
+      .then(fileData => {
+        const fileContent = fileData.content || '';
+        const links = extractHyperlinks(fileContent);
+        links.forEach(link => {
+          AddEdgeToGraph(fileId, link);
+        });
+      })
+      .catch(error => {
+        console.error(`Error fetching file content for node ${fileId}:`, error);
+      });
+  });
+}

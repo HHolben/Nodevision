@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WYSIWYG Editor</title>
     <link rel="stylesheet" href="WYSIWYGstyles.css">
+    <link rel="stylesheet" href="ScrollableElementStyles.css">
+
     <script src="editor.js" defer></script>
     <script src="imageUpload.js" defer></script>
 
@@ -14,9 +16,6 @@
     <script src="AddNewCursor.js"></script> <!-- Local VexFlow -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="3DmodelAdderScript.js"></script>
-
-
-
 
     <style>
 
@@ -79,15 +78,16 @@
 
 </head>
 <body>
-    <!-- Main Toolbar -->
-    <div id="main-toolbar"></div>
     
-    <!-- Sub-toolbar container -->
-    <div id="sub-toolbar"></div>
-
-    <!-- Editor area -->
-    <div id="editor" contenteditable="true"></div>
-
+        <!-- Main Toolbar -->
+        <div id="main-toolbar"></div>
+    
+        <!-- Sub-toolbar container -->
+        <div id="sub-toolbar"></div>
+    <div id=ScrollableElementStyles>
+        <!-- Editor area -->
+        <div id="editor" contenteditable="true"></div>
+    </div>
 
     <div id="timestampDialog" style="display: none;">
         <h3>Select Timestamp Type</h3>

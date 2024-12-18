@@ -17,8 +17,8 @@
         <script type="text/javascript">
             MathJax = {
                 tex: {
-                    inlineMath: [['\\(', '\\)']],  // Enable inline math
-                    displayMath: [['$$', '$$']]    // Enable display math (if needed)
+                    inlineMath: [["\\(", "\\)"]],  // Enable inline math
+                    displayMath: [["$$", "$$"]]    // Enable display math (if needed)
                 },
                 options: {
                     renderActions: {
@@ -52,10 +52,8 @@
         <script src="GraphExpandRegion.js" defer></script>
         <script src="GraphCollapseRegion.js" defer></script>
 
-
         <script src="Graph.js" defer></script>
         <script src="AllNodes.js" defer></script> <!-- Add this line -->
-
 
         <!-- Include smaller scripts -->
         <script type="module" src="createToolbar.js" defer></script>
@@ -65,97 +63,44 @@
 
     </head>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     <body>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 // Set ActiveNode dynamically
                 window.ActiveNode = 'defaultNode'; // Set dynamically
 
-                document.getElementById('searchButton').addEventListener('click', function() {
-  const searchQuery = document.getElementById('searchBar').value.toLowerCase();
-  const searchResultsDiv = document.getElementById('searchResults');
-  if (searchQuery.trim() !== '') {
-    const searchResults = cy.nodes().filter(node =>
-      node.data('id').toLowerCase().includes(searchQuery) ||
-      node.data('label').toLowerCase().includes(searchQuery)
-    );
+                const searchButton = document.getElementById('searchButton');
+                const searchBar = document.getElementById('searchBar');
+                const searchResultsDiv = document.getElementById('searchResults');
 
-    let resultList = '';
-    searchResults.forEach(file => {
-      resultList += `<li><a href="${file.data('id')}" target="_blank">${file.data('label')}</a></li>`;
-    });
-    searchResultsDiv.innerHTML = `<ul>${resultList}</ul>`;
-    searchResultsDiv.style.display = searchResults.length ? 'block' : 'none';
-  } else {
-    searchResultsDiv.style.display = 'none';
-  }
-});
+                searchButton.addEventListener('click', function () {
+                    const searchQuery = searchBar.value.toLowerCase();
+                    searchResultsDiv.style.display = 'none'; // Default hidden
 
+                    if (searchQuery.trim() !== '') {
+                        const searchResults = cy.nodes().filter(node =>
+                            node.data('id').toLowerCase().includes(searchQuery) ||
+                            node.data('label').toLowerCase().includes(searchQuery)
+                        );
 
-  // Event listener for search button
-  document.getElementById('searchButton').addEventListener('click', function() {
-        const searchQuery = document.getElementById('searchBar').value.toLowerCase();
+                        if (searchResults.length > 0) {
+                            const resultList = searchResults.map(node =>
+                                `<li><a href="#" onclick="cy.center(cy.getElementById('${node.data('id')}'))">${node.data('label')}</a></li>`
+                            ).join('');
 
-        // Assuming the 'AllNodes' constant is globally accessible
-        if (searchQuery.trim() !== '') {
-            const searchResults = nodes.filter(node => 
-                node.data.id.toLowerCase().includes(searchQuery) || 
-                node.data.label.toLowerCase().includes(searchQuery)
-            );
-
-            // Display the search results
-            let resultList = '';
-            searchResults.forEach(file => {
-                resultList += `<li><a href="${file.data.link}" target="_blank">${file.data.label}</a></li>`;
+                            searchResultsDiv.innerHTML = `<ul>${resultList}</ul>`;
+                            searchResultsDiv.style.display = 'block';
+                        }
+                    }
+                });
             });
-
-            document.getElementById('searchResults').innerHTML = `<ul>${resultList}</ul>`;
-        }
-    });
-
-
-    
-            });
-
-
-
-
-
-
-
-
-
-
-
-            
         </script>
 
         <div class="toolbar">
             <input type="text" id="searchBar" placeholder="Search for files...">
             <button id="searchButton">Search</button>
-            <div id="searchResults"></div>
+            <div id="searchResults" style="display: none;"></div>
         </div>
-
-
-
-
-
-
 
         <div class="container-wrapper">
             <div class="container container-left">
@@ -176,9 +121,5 @@
                 </div>
             </div>
         </div>
-
-        
-
-        
     </body>
 </html>
