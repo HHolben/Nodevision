@@ -218,6 +218,10 @@
             options: [
                 { name: "Text Edit", action: "editText()", icon: "textEditIcon.png" },
                 { name: "Image Edit", action: "editImage()", icon: "imageEditIcon.png" },
+                { name: "SVG Edit", action: "editSVG()", icon: "svgEditIcon.png" },
+
+
+                
                 { name: "3D Model Edit", action: "edit3DModel()", icon: "3DmodelEditIcon.png" },
                 { name: "Music Sheet Edit", action: "editMusicSheet()", icon: "MusicSheetEditIcon.png" },
                 { name: "Change Text Style", action: "showStyleDropdown()", icon: "styleIcon.png" },
@@ -391,7 +395,28 @@ function editImage()
 
 }
 
-           
+function editSVG() {
+    console.log("Selected Image:", selectedImage);
+
+    if (selectedImage) {
+        const svgContent = selectedImage.src;  // Assuming the selected image has a valid source (either path or base64)
+
+        // Check if the SVG is a Base64 encoded string
+        if (svgContent.startsWith('data:image/svg+xml;base64,')) {
+            // Directly pass the base64 encoded SVG content
+            const encodedSVG = encodeURIComponent(svgContent);
+            window.open(`SVGeditor.html?svgdata=${encodedSVG}`);
+        } else {
+            // In case you want to use a file path (or URL) for the SVG
+            const filePath = selectedImage.src;  // Use the path as a file URL (you might need to modify this logic based on your structure)
+            window.open(`SVGeditor.html?svgdata=${encodeURIComponent(filePath)}`);
+        }
+    } else {
+        alert('No image selected!');
+    }
+}
+
+              
 
 
 

@@ -41,6 +41,10 @@
         .tool-button:hover {
             background: #e0e0e0;
         }
+        .selected {
+            stroke: #FF6347;  /* Highlight with a red stroke when selected */
+            stroke-width: 3px;
+        }
     </style>
 </head>
 <body>
@@ -57,15 +61,22 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         let fileName = urlParams.get('file'); // Get the 'file' parameter from the URL
+        let svgData = urlParams.get('svgdata'); // Get the 'svgdata' parameter (base64 encoded SVG data)
         const svgCanvas = document.getElementById('svgCanvas');
         let currentTool = null;
         let drawing = false;
         let startX, startY, newElement;
+        let selectedElement = null;  // The currently selected SVG element
+        let copiedElement = null;    // The copied element for pasting
 
         if (!fileName) {
             promptFileName(); // Prompt for a new file name if none is provided
         } else {
             loadSVG(fileName);
+        }
+
+        if (svgData) {
+            loadSVGData(svgData); // If SVG data URL is provided, load it
         }
 
         function startDrawing(tool) {
@@ -74,6 +85,22 @@
 
         svgCanvas.addEventListener('mousedown', (e) => {
             if (!currentTool) return;
+
+            const clickedElement = e.target;
+
+            if (clickedElement !== svgCanvas) {
+                // If clicked element is an SVG element, toggle selection
+                if (clickedElement !== selectedElement) {
+                    // Deselect previous element
+                    if (selectedElement) {
+                        selectedElement.classList.remove('selected');
+                    }
+                    // Select the new element
+                    selectedElement = clickedElement;
+                    selectedElement.classList.add('selected');
+                }
+                return;
+            }
 
             drawing = true;
             startX = e.offsetX;
@@ -123,10 +150,12 @@
             newElement = null;
         });
 
+        // Clear the canvas
         function clearSVG() {
             svgCanvas.innerHTML = '';
         }
 
+        // Save the SVG content
         function saveSVG() {
             if (!fileName) {
                 alert('No file name specified!');
@@ -149,6 +178,7 @@
             .catch(err => alert('Error saving file: ' + err));
         }
 
+        // Prompt the user for a file name
         function promptFileName() {
             const userFileName = prompt('Please enter a name for the new file (including .svg):', 'newFile.svg');
             if (userFileName) {
@@ -159,6 +189,7 @@
             }
         }
 
+        // Load an existing SVG file
         async function loadSVG(fileName) {
             try {
                 const response = await fetch(`/api/file?path=${fileName}`);
@@ -171,6 +202,57 @@
                 alert('Error loading SVG file: ' + err.message);
             }
         }
+
+        // Load SVG data (base64 encoded) into the canvas
+        function loadSVGData(svgData) {
+            try {
+                // Decode the base64-encoded SVG string
+                const decodedSVG = atob(svgData.split(',')[1]);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(decodedSVG, 'image/svg+xml');
+                const svgElement = doc.querySelector('svg');
+                svgCanvas.innerHTML = svgElement.outerHTML;
+                alert('SVG data loaded successfully!');
+            } catch (err) {
+                alert('Error loading SVG data: ' + err.message);
+            }
+        }
+
+        // Copy the selected element to clipboard
+        function copyElement() {
+            if (!selectedElement) return;
+            copiedElement = selectedElement.cloneNode(true);
+            console.log("Element copied:", copiedElement);
+        }
+
+        // Cut the selected element
+        function cutElement() {
+            if (!selectedElement) return;
+            copiedElement = selectedElement.cloneNode(true);
+            svgCanvas.removeChild(selectedElement); // Remove the selected element from the canvas
+            console.log("Element cut:", copiedElement);
+        }
+
+        // Paste the copied element back into the canvas
+        function pasteElement() {
+            if (!copiedElement) return;
+            const pastedElement = copiedElement.cloneNode(true);
+            svgCanvas.appendChild(pastedElement);
+            console.log("Element pasted:", pastedElement);
+        }
+
+        // Handle keyboard events for copy, cut, and paste
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'c') {
+                    copyElement();
+                } else if (e.key === 'x') {
+                    cutElement();
+                } else if (e.key === 'v') {
+                    pasteElement();
+                }
+            }
+        });
     </script>
 </body>
 </html>
