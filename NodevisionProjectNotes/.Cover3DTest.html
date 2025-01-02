@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Object Viewer</title>
+  <style>
+    body { margin: 0; }
+    canvas { display: block; }
+  </style>
+<script>
+    // Node information
+    var .Cover3DTest = [];
+  
+
+var Node =
+{
+        name: '.Cover3DTest',
+        fileLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.Cover3DTest.html',
+        SoundLocation: '/path/to/sound_location.mp3',
+          SoundLocation: '/path/to/sound_location.mp3',
+          position: { x: 0, y: 0, z: 0 },
+        imageLocation: '/path/to/image/.Cover3DTest.png'
+    };
+
+    // Edge information (to be filled in later)
+    var .Cover3DTest = [];
+ 
+
+ 
+    var .Cover3DTest = [];
+var Edges = [
+            { 
+                Name: 'PreviousPage', 
+                DestinationNodeLocation: '/Not/Specified', 
+                Tags: 'TableOfContentsRelated', 
+                ImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.PreviousPageSymbol.png', 
+                HoverImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.PreviousPageSymbolHighlighted.png', 
+                ClickingImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.PreviousPageSymbolClicked.png', 
+                HoverSoundLocation: '/path/to/previous_page_hover_sound.mp3',
+                ClickSoundLocation: '/path/to/previous_page_click_sound.mp3',
+                MapDescription: 'is the subsequent page following' 
+            },
+            { 
+                Name: 'NextPage', 
+                DestinationNodeLocation: '/Not/Specified', 
+                Tags: 'TableOfContentsRelated', 
+                ImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.NextPageSymbol.png', 
+                HoverImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.NextPageSymbolHighlighted.png', 
+                ClickingImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.NextPageSymbolClicked.png', 
+                HoverSoundLocation: '/path/to/next_page_hover_sound.mp3',
+                ClickSoundLocation: '/path/to/next_page_click_sound.mp3',
+                MapDescription: 'is the page proceeding' 
+            },
+            { 
+                Name: 'TableOfContents', 
+                DestinationNodeLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/Part0Preliminaries/TableOfContents/TableOfContents.html', 
+                Tags: 'TableOfContentsRelated', 
+                ImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.TableOfContentsSymbol.png', 
+                HoverImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.TableOfContentsSymbolHighlighted.png', 
+                ClickingImageLocation: '/var/www/html/HenryDavidHolbenJournalAndNotebook/.TableOfContentsSymbolClicked.png', 
+                HoverSoundLocation: '/path/to/table_of_contents_hover_sound.mp3',
+                ClickSoundLocation: '/path/to/table_of_contents_click_sound.mp3',
+                MapDescription: 'is accessible from' 
+            }        // Add more edge nodes as needed
+    ];
+
+<body>
+
+
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@<version>/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@<version>/examples/jsm/"
+    }
+  }
+<script>
+    // Set up the scene, camera, and renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Load the 3D model
+    const loader = new THREE.GLTFLoader();
+    loader.load('/HenryNotebook.glb', (gltf) => {
+      const model = gltf.scene;
+      scene.add(model);
+    });
+
+    // Set camera position
+    camera.position.z = 5;
+
+    // Render loop
+    const animate = () => {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    };
+
+    animate();
+<script src = "http://localhost/HenryDavidHolbenJournalAndNotebook/.UniversalFooterContent.js"></script>
+
+  </body>
+</html>
