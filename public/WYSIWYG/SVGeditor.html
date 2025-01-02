@@ -53,6 +53,9 @@
         <button class="tool-button" onclick="startDrawing('circle')">Circle</button>
         <button class="tool-button" onclick="clearSVG()">Clear</button>
         <button class="tool-button" onclick="saveSVG()">Save</button>
+        <button class="tool-button" onclick="copyElement()">copy to clipboard</button>
+        <button class="tool-button" onclick="downloadSVG()">Download</button>
+
     </div>
     <div id="editor">
         <svg id="svgCanvas" xmlns="http://www.w3.org/2000/svg"></svg>
@@ -155,6 +158,39 @@
             svgCanvas.innerHTML = '';
         }
 
+
+        function downloadSVG() {
+    // Ensure fileName is set properly, either from URL params or the prompt
+    const name = fileName || prompt("Enter a file name for download:", "download.svg");
+
+    // Get the current SVG content
+    const svgContent = svgCanvas.outerHTML;
+
+    // Create a Blob from the SVG content
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+
+    // Create a link element
+    const link = document.createElement('a');
+    
+    // Set the download attribute with the determined file name
+    link.download = name;
+    
+    // Create an object URL for the Blob and set it as the href of the link
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    
+    // Programmatically trigger a click event on the link
+    link.click();
+
+    // Clean up: revoke the object URL after the download
+    URL.revokeObjectURL(url);
+
+    // Optionally, show a success notification
+    alert('SVG file downloaded successfully!');
+}
+
+
+
         // Save the SVG content
         function saveSVG() {
             if (!fileName) {
@@ -188,6 +224,25 @@
                 alert('A file name is required to proceed.');
             }
         }
+
+
+        function copyElement() {
+    if (!selectedElement) {
+        alert('No element selected to copy.');
+        return;
+    }
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(selectedElement);
+    navigator.clipboard.writeText(svgString)
+        .then(() => {
+            alert('Element copied to clipboard!');
+            console.log("Element copied:", svgString);
+        })
+        .catch(err => {
+            alert('Failed to copy element: ' + err);
+        });
+}
+
 
         // Load an existing SVG file
         async function loadSVG(fileName) {
