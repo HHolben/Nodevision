@@ -7,7 +7,7 @@ const multer = require('multer');
 const cheerio = require('cheerio');
 const { generateEdges } = require('./GenerateEdges');
 const { generateAllNodes } = require('./GenerateAllNodes');
-const { generateNodes } = require('./GenerateNodes');
+//const { generateNodes } = require('./GenerateNodes');
 
 const SerialPort = require('serialport');
 const Avrgirl = require('avrgirl-arduino');
