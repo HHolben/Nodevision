@@ -1,26 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
-    <link rel="stylesheet" href="/styles.css"> <!-- Optional: Include a stylesheet -->
-</head>
-<body>
-    <header>
-        <h1>Welcome, User!</h1>
-    </header>
-    <nav>
-        <ul>
-            <li><a href="/profile">Profile</a></li>
-            <li><a href="/api/files">My Files</a></li>
-            <li><a href="/api/arduino/ports">Arduino Tools</a></li>
-            <li><a href="/logout">Logout</a></li>
-        </ul>
-    </nav>
-    <main>
-        <p>You have successfully logged in. Use the navigation menu to explore the application.</p>
-    </main>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nodevision Index</title>
+        <link rel="stylesheet" href="NodeViewContainerStyles.css">
+        <link rel="stylesheet" href="ToolbarStyles.css">
+        <link rel="stylesheet" href="GraphStyles.css">
+        <link rel="stylesheet" href="MainStyles.css">
+        <link rel="stylesheet" href="LayoutStyles.css">
+        <link rel="stylesheet" href="style.css">
 
-</body>
+        <!-- Existing scripts and styles -->
+        <script src="vendor/cytoscape/dist/cytoscape.min.js" defer></script>
+        <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script type="text/javascript">
+            MathJax = {
+                tex: {
+                    inlineMath: [["\\(", "\\)"]],  // Enable inline math
+                    displayMath: [["$$", "$$"]]    // Enable display math (if needed)
+                },
+                options: {
+                    renderActions: {
+                        100: [function (doc) {
+                            doc.find('span.latex-math').each(function (node) {
+                                node.setAttribute('data-latex', node.textContent);
+                            });
+                        }]
+                    }
+                },
+                loader: {load: ['[tex]/amsmath']}
+            };
+        </script>
+        
+        <script src="vendor/layout-base/layout-base.js" defer></script>
+        <script src="vendor/cose-base/cose-base.js" defer></script>
+        <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
+        <script src="vendor/requirejs/require.js" defer></script>
+
+        <!-- Include Nodevision Scripts -->
+        <script src="CombineURLs.js" defer></script>
+        <script src="GeneratedNodes.js" defer></script>
+        <script src="GeneratedEdges.js" defer></script>
+        <script src="GeneratedRegions.js" defer></script>
+
+        <script src="GraphAddElements.js" defer></script>
+        <script src="GraphGetStyles.js" defer></script>
+        <script src="ExtractLinksFromHTML.js" defer></script>
+        <script src="GraphAddEdges.js" defer></script>
+        <script src="InfoPanel.js" defer></script>
+        <script src="GraphExpandRegion.js" defer></script>
+        <script src="GraphCollapseRegion.js" defer></script>
+
+        <script src="Graph.js" defer></script>
+        <script src="AllNodes.js" defer></script> <!-- Add this line -->
+
+        <!-- Include smaller scripts -->
+        <script type="module" src="createToolbar.js" defer></script>
+        <script type="module" src="boxManipulation.js" defer></script>
+        <script type="module" src="resizeAndDrag.js" defer></script>
+        <script type="module" src="main.js" defer></script>
+
+    </head>
+
+    <body>
+
+        <nav>
+            <ul>
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/api/files">My Files</a></li>
+                <li><a href="/api/arduino/ports">Arduino Tools</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Set ActiveNode dynamically
+                window.ActiveNode = 'defaultNode'; // Set dynamically
+
+                const searchButton = document.getElementById('searchButton');
+                const searchBar = document.getElementById('searchBar');
+                const searchResultsDiv = document.getElementById('searchResults');
+
+                searchButton.addEventListener('click', function () {
+                    const searchQuery = searchBar.value.toLowerCase();
+                    searchResultsDiv.style.display = 'none'; // Default hidden
+
+                    if (searchQuery.trim() !== '') {
+                        const searchResults = cy.nodes().filter(node =>
+                            node.data('id').toLowerCase().includes(searchQuery) ||
+                            node.data('label').toLowerCase().includes(searchQuery)
+                        );
+
+                        if (searchResults.length > 0) {
+                            const resultList = searchResults.map(node =>
+                                `<li><a href="#" onclick="cy.center(cy.getElementById('${node.data('id')}'))">${node.data('label')}</a></li>`
+                            ).join('');
+
+                            searchResultsDiv.innerHTML = `<ul>${resultList}</ul>`;
+                            searchResultsDiv.style.display = 'block';
+                        }
+                    }
+                });
+            });
+        </script>
+
+        <div class="toolbar">
+            <input type="text" id="searchBar" placeholder="Search for files...">
+            <button id="searchButton">Search</button>
+            <div id="searchResults" style="display: none;"></div>
+        </div>
+
+        <div class="container-wrapper">
+            <div class="container container-left">
+                <div id="content">
+                    <div id="cy"></div> <!-- Cytoscape container -->
+                    <div id="file-view" style="display: none;"> <!-- File View container -->
+                        <!-- Files will be dynamically loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="divider" id="divider"></div>
+            <div class="container container-right">
+                <div id="element-info"></div>
+                <div id="info-panel">
+                    <div id="content-frame-container">
+                        <iframe id="content-frame" width="100%" height="100%" style="height: 95%;"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
 </html>
+

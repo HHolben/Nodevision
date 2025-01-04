@@ -10,11 +10,20 @@ const cheerio = require('cheerio');
 const SerialPort = require('serialport');
 const Avrgirl = require('avrgirl-arduino'); 
 
+
+//set up a database
+const PouchDB = require('pouchdb');
+const db = new PouchDB('users'); // Creates a local database named 'users' 
+
+
 // These libraries are for setting up passport.js. This is for user authentication: https://www.keycloak.org/securing-apps/nodejs-adapter
 const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const MemoryStore = require('memorystore')(session);
+
+
+
 
 const app = express();
 const port = 3000;
@@ -37,6 +46,86 @@ passport.use(
         return done(null, user);
     })
 );
+
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
+// Hash the password
+const hashPassword = async (password) => {
+    return await bcrypt.hash(password, saltRounds);
+};
+
+// Verify the password
+const verifyPassword = async (password, hash) => {
+    return await bcrypt.compare(password, hash);
+};
+
+
+const registerUser = async (username, password) => {
+    try {
+        // Check if the user already exists
+        const existingUser = await db.get(username).catch(() => null);
+        if (existingUser) {
+            console.log('User already exists!');
+            return;
+        }
+
+        // Hash the password
+        const hashedPassword = await hashPassword(password);
+
+        // Store user in the database
+        const newUser = {
+            _id: username, // Use the username as the document ID
+            password: hashedPassword, // Store the hashed password
+        };
+
+        await db.put(newUser);
+        console.log('User registered successfully!');
+    } catch (error) {
+        console.error('Error registering user:', error);
+    }
+};
+
+
+const authenticateUser = async (username, password) => {
+    try {
+        // Retrieve the user document
+        const user = await db.get(username);
+
+        // Verify the password
+        const isMatch = await verifyPassword(password, user.password);
+        if (isMatch) {
+            console.log('Authentication successful!');
+        } else {
+            console.log('Invalid password!');
+        }
+    } catch (error) {
+        if (error.status === 404) {
+            console.log('User not found!');
+        } else {
+            console.error('Error authenticating user:', error);
+        }
+    }
+};
+
+
+(async () => {
+    await registerUser('john_doe', 'my_secure_password');
+    await authenticateUser('john_doe', 'my_secure_password'); // Authentication successful!
+    await authenticateUser('john_doe', 'wrong_password');     // Invalid password!
+})();
+
+
+const remoteDb = new PouchDB('http://username:password@remote-host.com/users');
+db.sync(remoteDb).on('complete', () => {
+    console.log('Sync completed!');
+}).on('error', (err) => {
+    console.error('Sync error:', err);
+});
+
+
+
+
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) => {

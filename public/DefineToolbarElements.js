@@ -61,7 +61,14 @@ export const boxes = [
         ToolbarCategory: 'Settings',
         heading: 'Toggle Page Preview Mode',
         type: 'toggle', // New type to identify toggle items
+    },
+    {
+        ToolbarCategory: 'User',
+        heading: 'Logout',
+        content: "<h1>Log out user?</hl><h2><a href=login.html>Logout</a></h2>",
+        script:"SendToLoginPage.js"
     }
+
 ];
 
 // Additional constants or helper functions can be added here

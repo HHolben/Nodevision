@@ -16,3 +16,13 @@ public/AllNodes.js
 # Ignore Monaco Editor and Require.js libraries
 public/monaco-editor/
 public/libs/
+
+
+#Ignore database files
+000028.log
+000029.ldb
+CURRENT
+LOCK
+LOG
+LOG.old
+MANIFEST-000026
