@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="ScrollableElementStyles.css">
 
     <script src="editor.js" defer></script>
+    <script src="InsertTabs.js" defer></script>
     <script src="imageUpload.js" defer></script>
 
 
@@ -35,8 +36,6 @@
   margin: 5px;
 }
 
-
-
         .toolbar-button {
         display: flex; /* Use flexbox for layout */
         align-items: center; /* Center items vertically */
@@ -63,18 +62,12 @@
     cursor: text;           /* Make it clear that the content can be selected */
 }
 
-
-
-
-       
                 /* Style for selected image */
                 .selected {
             border: 3px solid #007BFF; /* Highlight selected image with a blue border */
             box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* Optional: adds a subtle glow effect */
         }
         </style>
-        
-
 
 </head>
 <body>
@@ -96,19 +89,14 @@
         <button id="cancelBtn">Cancel</button>
       </div>
       
-
     <script type="module">
         
+        import { createBox } from '../../boxManipulation.js';     
         
         
-        import { createBox } from '../../boxManipulation.js';
 
-        
-        
-        
-        
-        
-        
+
+
         let selectedImage = null;  // Global variable to hold the selected image
 
         // Function to handle image click event
@@ -149,6 +137,8 @@
 });
 
 
+
+
         const toolbarData = {
     categories: [
         {
@@ -159,9 +149,6 @@
                 { name: "View PHP Deployment", action: "ViewDeploymentPHP()", icon: "ViewDeploymentIconPHP.png" },
                 { name: "View Nodevision Deployment", action: "ViewDeploymentNodevision()", icon: "ViewDeploymentNodevisionIcon.png" },
                 { name: "Open Code Editor", action: "OpenCodeEditor()", icon: "CodeEditor.png" },
-
-
-
             ]
         },
         {
@@ -177,7 +164,7 @@
                 { name: "Bold", action: "Embolden()", icon: "BoldIcon.png"},
                 { name: "Underline", action: "Underline()", icon: "UnderlineIcon.png"},
                 { name: "Strikethrough", action: "Strikethrough()", icon: "StrikethroughIcon.png"},
-                
+                { name: "Tab", action: "InsertTab()", icon:  "TabIcon.png"},
                 { name: "Insert Sensitive", action:"InsertSensitive()", icon: "InsertSensitiveIcon.png"},
                 { name: "Insert Collapsible", action:"InsertCollapsible()", icon: "InsertCollapsibleIcon.png"},
 
@@ -194,7 +181,6 @@
                 { name: "Unordered List", action: "insertUL()", icon: "BulletPoints.png" },
                 { name: "JS Canvas", action: "insertJScanvas()", icon: "CanvasIcon.png" },
                 { name: "IFRAME", action: "insertIFRAME()", icon: "IFRAMEicon.png" },
-                { name: "Tab", action: "insertTab()", icon: "TabIcon.png" },
                 { name: "Link", action: "insertLink()", icon: "LinkIcon.png" },
                 { name: "Blockquote", action: "insertBlockquote()", icon: "BlockquoteIcon.png" },
                 { name: "Quotation", action: "insertQuote()", icon: "QuotationIcon.png" },
@@ -225,14 +211,6 @@
                 { name: "InsertTimeInput", action: "InsertTimeInput())", icon: "TimeInputIcon.png" },
                 { name: "InsertUrlInput", action: "InsertUrlInput())", icon: "UrlInputIcon.png" },
                 { name: "InsertWeekInput", action: "InsertWeekInput())", icon: "WeekInputIcon.png" }
-
-
-
-
-
-
-
-
             ]
         },
         {
@@ -242,16 +220,10 @@
                 { name: "Image Edit", action: "editImage()", icon: "imageEditIcon.png" },
                 { name: "SVG Edit", action: "editSVG()", icon: "svgEditIcon.png" },
 
-
-                
                 { name: "3D Model Edit", action: "edit3DModel()", icon: "3DmodelEditIcon.png" },
                 { name: "Music Sheet Edit", action: "editMusicSheet()", icon: "MusicSheetEditIcon.png" },
                 { name: "Change Text Style", action: "showStyleDropdown()", icon: "styleIcon.png" },
-                { name: "Show Math Editor", action: "showMathEditor()", icon: "MathEditor.png" }
-
-
-
-                
+                { name: "Show Math Editor", action: "showMathEditor()", icon: "MathEditor.png" } 
             ]
         },
         {
@@ -260,10 +232,6 @@
         }
     ]
 };
-
-
-
-
 
 // Function to toggle the visibility of the dialog
 function toggleDialog(visible) {
@@ -285,8 +253,6 @@ function insertTimestamp(isUTC) {
     // Hide the dialog after inserting
     toggleDialog(false);
 }
-
-
 
 // Event listeners for the dialog buttons
 document.getElementById('localTimeBtn').addEventListener('click', function () {
@@ -339,10 +305,6 @@ function ViewDeploymentNodevision() {
         alert("No active node specified in the URL.");
     }
 }
-
-
-
-
         // Function to create the toolbar
         function createToolbar() {
             const mainToolbar = document.getElementById('main-toolbar');
@@ -353,11 +315,6 @@ function ViewDeploymentNodevision() {
                 mainToolbar.appendChild(categoryButton);
             });
         }
-
-
-        
-
-        
 
         function handleCategoryClick(category) {
     const subToolbar = document.getElementById('sub-toolbar');
@@ -412,9 +369,6 @@ function editImage()
     window.open("ImageEditor.html?selectedImage="+selectedImage
     );
 
-
-
-
 }
 
 function editSVG() {
@@ -437,15 +391,8 @@ function editSVG() {
         alert('No image selected!');
     }
 }
-
-              
-
-
-
-
-
-
-        function insertLatexEquation() {
+    
+function insertLatexEquation() {
     const latex = prompt("Enter your LaTeX equation (without $$ symbols):");
     if (latex) {
         // Create a span to wrap the LaTeX equation
@@ -463,23 +410,6 @@ function editSVG() {
         MathJax.typeset();  // Re-render all math expressions
     }
 }
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
 
         function showStyleDropdown() {
             const subToolbar = document.getElementById('sub-toolbar');
@@ -501,15 +431,10 @@ function editSVG() {
             subToolbar.appendChild(styleDropdown);
         }
 
-
-
-
         function showMathEditor() {
             const subToolbar = document.getElementById('sub-toolbar');
             subToolbar.innerHTML = 
             `
-            
-            
             <p>Edit your math expression below. The rendered output will update automatically.</p>
             <div class="editor-container">
                 <textarea id="latex-input">
@@ -544,19 +469,6 @@ function editSVG() {
     };
 
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         function applyStyle(style) {
             document.execCommand('formatBlock', false, style);
@@ -621,8 +533,6 @@ function editSVG() {
             new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 400);
             voice.draw(context, stave);
         }
-
-
 
         // Initialize toolbar on page load
         createToolbar();

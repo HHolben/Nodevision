@@ -484,10 +484,6 @@ function insertIFRAME()
 
 
 
-function insertTab() {
-    document.execCommand('insertHTML', false, '&#9');
-}
-
 function InsertHeading1()
 {
     const h1Element = `<h1>Heading 1</h1>`;
@@ -576,6 +572,12 @@ function Strikethrough()
     const StrikethroughElement = `<del>strikethrough</del>`;
     document.execCommand('insertHTML', false, StrikethroughElement);
 }
+
+
+
+
+                
+
 
 
 function InsertSensitive() {
