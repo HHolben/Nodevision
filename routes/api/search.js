@@ -1,15 +1,14 @@
-// Search API endpoint
-app.get('/api/search', async (req, res) => {
+const express = require('express');
+const fs = require('fs').promises;
+const path = require('path');
+const router = express.Router();
+
+router.get('/api/search', async (req, res) => {
     const searchQuery = req.query.q.toLowerCase();  // Get the search query from the client
 
     try {
-        // Read the list of files in the Notebook directory
-        const files = await fs.readdir(notebookDir);
-
-        // Filter files that match the search query (case-insensitive)
+        const files = await fs.readdir(path.join(__dirname, '../../Notebook'));
         const matchedFiles = files.filter(file => file.toLowerCase().includes(searchQuery));
-
-        // Return the matching files
         res.json({ files: matchedFiles });
     } catch (error) {
         console.error('Error reading files from Notebook directory:', error);
@@ -17,3 +16,4 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
+module.exports = router;

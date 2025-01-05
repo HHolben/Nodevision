@@ -19,10 +19,4 @@ public/libs/
 
 
 #Ignore database files
-000028.log
-000029.ldb
-CURRENT
-LOCK
-LOG
-LOG.old
-MANIFEST-000026
+users/

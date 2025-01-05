@@ -1,0 +1,89 @@
+const express = require('express');
+const fs = require('fs').promises;
+const path = require('path');
+const cheerio = require('cheerio');
+const router = express.Router();
+
+// Allowed file extensions
+const allowedExtensions = ['.html', '.php', '.js', '.py'];
+const notebookDir = path.join(__dirname, '../../Notebook'); // Define notebookDir relative to Nodevision
+
+// Function to extract the first image URL from the file content
+async function getFirstImageUrl(filePath) {
+    try {
+        const fileContent = await fs.readFile(filePath, 'utf8');
+        const $ = cheerio.load(fileContent);
+        const firstImageSrc = $('img').first().attr('src');
+
+        if (firstImageSrc) {
+            if (firstImageSrc.startsWith('http') || firstImageSrc.startsWith('//')) {
+                return firstImageSrc;
+            } else {
+                const imagePath = path.join(path.dirname(filePath), firstImageSrc);
+                const resolvedImagePath = path.relative(notebookDir, imagePath);
+                return resolvedImagePath.split(path.sep).join('/');
+            }
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error reading file for images: ${error}`);
+        return null;
+    }
+}
+
+// Endpoint to get sub-nodes
+router.get('/getSubNodes', async (req, res) => {
+    const regionPath = req.query.path;
+    if (!regionPath) {
+        return res.status(400).send('Region path is required');
+    }
+
+    const dirPath = path.join(notebookDir, regionPath);
+
+    try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        const subNodes = await Promise.all(entries.map(async entry => {
+            let imageUrl = 'DefaultNodeImage.png'; // Default image for nodes
+            const fileExtension = path.extname(entry.name).toLowerCase();
+
+            if (entry.isDirectory()) {
+                const directoryImage = path.join(dirPath, entry.name, 'directory.png');
+                try {
+                    await fs.access(directoryImage);
+                    imageUrl = `Notebook/${regionPath}/${entry.name}/directory.png`;
+                } catch {
+                    imageUrl = 'DefaultRegionImage.png';
+                }
+                return {
+                    id: path.join(regionPath, entry.name),
+                    label: entry.name,
+                    isDirectory: true,
+                    imageUrl: imageUrl
+                };
+            } else if (allowedExtensions.includes(fileExtension)) {
+                const filePath = path.join(dirPath, entry.name);
+                const firstImage = await getFirstImageUrl(filePath);
+                imageUrl = firstImage ? firstImage : 'DefaultNodeImage.png';
+                return {
+                    id: path.join(regionPath, entry.name),
+                    label: entry.name,
+                    isDirectory: false,
+                    imageUrl: imageUrl
+                };
+            } else {
+                return null; // Skip non-allowed file types
+            }
+        }));
+
+        // Filter out null values (non-allowed file types)
+        const filteredSubNodes = subNodes.filter(node => node !== null);
+
+        res.json(filteredSubNodes);
+    } catch (error) {
+        console.error('Error reading directory:', error);
+        res.status(500).send('Error reading directory');
+    }
+});
+
+module.exports = router;
