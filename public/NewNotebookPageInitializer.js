@@ -1,15 +1,16 @@
 window.initializeNewNotebookPage = function() {
     console.log('Initializing new notebook page...');
 
+    // Get values from the input fields
     const fileName = document.getElementById('fileNameInput').value;
-    const fileExtension = document.getElementById('fileExtension').value; // Get selected file extension
+    const fileExtension = document.getElementById('fileExtension').value;
 
     if (!fileName) {
         alert('Please enter a file name.');
         return;
     }
 
-    // HTML content for the new notebook page
+    // Date and time formatting
     const now = new Date();
     const year = now.getUTCFullYear();
     const monthIndex = now.getUTCMonth(); // 0-indexed month
@@ -20,7 +21,7 @@ window.initializeNewNotebookPage = function() {
         "July", "August", "September", "October", "November", "December"
     ];
 
-    const monthName = months[monthIndex]; // Get the full month name
+    const monthName = months[monthIndex];
     const hours = String(now.getUTCHours()).padStart(2, '0');
     const minutes = String(now.getUTCMinutes()).padStart(2, '0');
     const seconds = String(now.getUTCSeconds()).padStart(2, '0');
@@ -51,6 +52,7 @@ window.initializeNewNotebookPage = function() {
             break;
 
         case '.php':
+            // Fixed PHP string interpolation using echo
             newHtmlContent = `
                 <?php
                 echo '<h1>${fileName}</h1>';
@@ -61,6 +63,7 @@ window.initializeNewNotebookPage = function() {
             break;
 
         case '.js':
+            // Fixed JavaScript string interpolation by using template literals in comments
             newHtmlContent = `
                 // ${fileName} JavaScript File
                 console.log('File Name: ${fileName}');
@@ -70,6 +73,7 @@ window.initializeNewNotebookPage = function() {
             break;
 
         case '.ipynb':
+            // Ensure JSON-like structure for notebook
             newHtmlContent = `
                 {
                     "cells": [
@@ -95,20 +99,21 @@ window.initializeNewNotebookPage = function() {
             return;
     }
 
-    const selectedRegion = window.ActiveNode || ''; // Default to root if no region is selected
+    // Get selected region or set root if not selected
+    const selectedRegion = window.ActiveNode || '';
     const filePath = selectedRegion 
         ? `${selectedRegion}/${fileName}${fileExtension}` 
-        : `${fileName}${fileExtension}`;  // Adjust file path based on the extension
+        : `${fileName}${fileExtension}`;  // Adjust file path
 
     console.log(`Saving file to: ${filePath}`);
 
     // Send a POST request to the server to save the new file
-    fetch('/initialize', {
+    fetch('/api/initialize', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ htmlContent: newHtmlContent, fileName: filePath }) // Save in the correct path
+        body: JSON.stringify({ htmlContent: newHtmlContent, fileName: filePath })
     })
     .then(response => response.text())
     .then(data => {
@@ -141,4 +146,10 @@ window.initializeNewNotebookPage = function() {
     .catch(error => {
         console.error('Error:', error);
     });
+
+    // Log final details
+    console.log('File name:', fileName);
+    console.log('File extension:', fileExtension);
+    console.log('Generated file path:', filePath);
+    console.log('Generated content:', newHtmlContent);
 };

@@ -629,6 +629,15 @@ function insertBlockquote() {
     document.execCommand('insertHTML', false, blockquoteElement);
 }
 
+function InsertCodeElement() {
+    const CodeElement = `<code>print("Hello, World!")</code>`;
+    document.execCommand('insertHTML', false, CodeElement);
+}
+
+
+
+
+
 function insertTable() {
     const table = document.createElement('table');
     table.style.borderCollapse = "collapse";
@@ -764,3 +773,6 @@ document.addEventListener('cut', (event) => {
         event.preventDefault();  // Prevent default cut behavior
     }
 });
+
+
+

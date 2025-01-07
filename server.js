@@ -19,16 +19,20 @@ const LocalStrategy = require('passport-local').Strategy;
 const MemoryStore = require('memorystore')(session);
 
 // Import routes
-const apiRoutes = require('./routes/api');
-const initializeRoute = require('./routes/api/initialize');
+const initializeRoute = require('./routes/api/initialize');//used for creating new files
 const initializeRoutes = require('./routes/api/initializeRoutes'); // Import initialize route
 const fileRoutes = require('./routes/api/files');
+const folderRoutes = require('./routes/api/folderRoutes');
 const arduinoRoutes = require('./routes/api/arduinoRoutes');
 const fileSaveRoutes = require('./routes/api/fileSaveRoutes');
 const regenerateNodesRoutes = require('./routes/api/regenerateNodesRoutes'); // Import new route
 const generateEdgesRoutes = require('./routes/api/generateEdgesRoutes'); // Import new route
 const getSubNodesRoutes = require('./routes/api/getSubNodesRoutes'); // Import new route
 const fileCodeContentRoutes = require('./routes/api/fileCodeContentRoutes'); // Import new route
+const fileSearchRoutes = require('./routes/api/search'); // Import search route
+const graphStylesRoutes = require('./routes/api/graphStyles'); // Import search route
+const uploadImageRoutes = require('./routes/api/uploadImage'); // Import search route
+
 
 // Middleware
 app.use(express.json());
@@ -36,16 +40,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // Routes
-app.use('/api', initializeRoute);
+app.use('/api', initializeRoute);//use for creating new files
 app.use('/api', initializeRoutes); // Add initialize route
 app.use('/api/files', fileRoutes);       // File routes (e.g. /api/files)
+app.use('/api/folderRoutes', folderRoutes);       // Folder routes (e.g. /api/folderRoutes)
 app.use('/api/arduino', arduinoRoutes);  // Arduino routes (e.g. /api/arduino/ports, /api/arduino/upload)
 app.use('/api', fileSaveRoutes); // Use the file save routes under '/api'
 app.use('/api', regenerateNodesRoutes);  // Add this route for regenerating nodes
 app.use('/api', generateEdgesRoutes);  // Add this route for generating edges
 app.use('/api', getSubNodesRoutes);  // Add this route for getting sub-nodes
 app.use('/api', fileCodeContentRoutes); // Add route for file code content
-
+app.use('/api', fileSearchRoutes); // Add route for file code content
+app.use('/api', graphStylesRoutes); // Add route for file code content
+app.use('/api', uploadImageRoutes); // Add route for file code content
 
 //We need to use the endpoints stored in the routes folder
 
@@ -199,8 +206,9 @@ app.get('/logout', (req, res) => {
 });
 
 // Increase the request body limit for JSON and urlencoded data
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
 
 const allowedExtensions = ['.html', '.php', '.js', '.py'];
 const notebookDir = path.join(__dirname, 'Notebook'); // Define notebookDir
