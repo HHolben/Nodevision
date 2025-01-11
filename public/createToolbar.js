@@ -1,12 +1,19 @@
+// Import dependencies
 import { boxes } from './DefineToolbarElements.js';
 import { createBox } from './boxManipulation.js';
 
-function createToolbar() {
-    const toolbar = document.querySelector('.toolbar');
-    if (!toolbar) {
-        console.error('Toolbar element not found');
+/**
+ * Creates a toolbar in the specified container.
+ * @param {string} containerSelector - The CSS selector for the toolbar container.
+ * @param {function} [onToggleView] - Optional callback function for handling toggle view changes.
+ */
+export function createToolbar(toolbarSelector = '.toolbar') {
+    const toolbarContainer = document.querySelector(toolbarSelector);
+    if (!toolbarContainer) {
+        console.error(`Container not found for selector: ${toolbarSelector}`);
         return;
     }
+
     const categories = {};
 
     boxes.forEach(box => {
@@ -19,6 +26,7 @@ function createToolbar() {
     for (const category in categories) {
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
+
         const button = document.createElement('button');
         button.className = 'dropbtn';
         button.textContent = category;
@@ -31,7 +39,7 @@ function createToolbar() {
             if (box.type === 'toggle') {
                 const toggleLabel = document.createElement('label');
                 toggleLabel.textContent = 'Graph / File View';
-                
+
                 const toggleSwitch = document.createElement('input');
                 toggleSwitch.type = 'checkbox';
                 toggleSwitch.addEventListener('change', () => {
@@ -39,16 +47,14 @@ function createToolbar() {
                     const fileViewContainer = document.getElementById('file-view');
 
                     if (toggleSwitch.checked) {
-                        // Show Graph View
                         cyContainer.style.display = 'block';
                         fileViewContainer.style.display = 'none';
                         console.log('Switched to GraphViewMode');
                     } else {
-                        // Show File View
                         cyContainer.style.display = 'none';
                         fileViewContainer.style.display = 'block';
                         console.log('Switched to FileViewMode');
-                        loadFileView(); // Load files into File View
+                        if (onToggleView) onToggleView();
                     }
                 });
 
@@ -64,13 +70,21 @@ function createToolbar() {
         });
 
         dropdown.appendChild(dropdownContent);
-        toolbar.appendChild(dropdown);
+        toolbarContainer.appendChild(dropdown);
     }
 }
 
-// Load files and directories into File View container
-async function loadFileView() {
-    const fileViewContainer = document.getElementById('file-view');
+/**
+ * Fetches and displays the file view in the specified container.
+ * @param {string} fileViewSelector - The CSS selector for the file view container.
+ */
+export async function loadFileView(fileViewSelector) {
+    const fileViewContainer = document.querySelector(fileViewSelector);
+    if (!fileViewContainer) {
+        console.error(`File view container not found for selector: ${fileViewSelector}`);
+        return;
+    }
+
     fileViewContainer.innerHTML = '<p>Loading files...</p>';
 
     try {
@@ -83,10 +97,12 @@ async function loadFileView() {
     }
 }
 
-
-
-
-// Helper function to render directory structure
+/**
+ * Renders a directory structure as an HTML list.
+ * @param {Array} files - The directory structure to render.
+ * @param {boolean} [isRoot=false] - Whether this is the root directory.
+ * @returns {string} - The rendered HTML.
+ */
 function renderDirectoryStructure(files, isRoot = false) {
     const container = document.createElement('ul');
 
@@ -95,44 +111,30 @@ function renderDirectoryStructure(files, isRoot = false) {
         listItem.className = file.isDirectory ? 'directory' : 'file';
 
         if (file.isDirectory) {
-            // Create a button for the directory
             const directoryButton = document.createElement('button');
             directoryButton.className = 'directory-button';
             directoryButton.textContent = file.name;
 
-            // Assign ID based on the path relative to the /Notebook directory
             const relativePath = file.path.replace('/Notebook/', '');
-            directoryButton.id = relativePath; // Set the ID
+            directoryButton.id = relativePath;
 
-            // Attach click event listener to toggle directory expansion
             directoryButton.addEventListener('click', toggleDirectory);
 
-            // Nested list container for subdirectories
             const nestedList = document.createElement('ul');
             nestedList.className = 'nested';
-            nestedList.style.display = 'none'; // Initially hidden
+            nestedList.style.display = 'none';
             nestedList.setAttribute('data-path', file.path);
 
             listItem.appendChild(directoryButton);
             listItem.appendChild(nestedList);
         } else {
-            // Create a button for the file that opens it in a new tab
             const fileButton = document.createElement('button');
 
-
-            // Assign ID based on the path relative to the /Notebook directory
             const relativePath = file.path.replace('/Notebook/', '');
-            fileButton.id = relativePath; // Set the ID
+            fileButton.id = relativePath;
 
-            
-
-            fileButton.onclick="alert('Hello world!')";
-                //window.open(`/Notebook/${file.path}`, '_blank');
-            
-
-
-                fileButton.className = 'file-button';
-                fileButton.textContent = file.name;
+            fileButton.className = 'file-button';
+            fileButton.textContent = file.name;
 
             listItem.appendChild(fileButton);
         }
@@ -143,44 +145,29 @@ function renderDirectoryStructure(files, isRoot = false) {
     return container.outerHTML;
 }
 
-
-
-
-
-// Toggle visibility of nested directories
+/**
+ * Toggles the visibility of a directory's nested contents.
+ * @param {Event} event - The click event.
+ */
 async function toggleDirectory(event) {
     const directoryButton = event.target;
-    const directoryElement = directoryButton.nextElementSibling; // Get the nested <ul> element
+    const directoryElement = directoryButton.nextElementSibling;
     const path = directoryElement.getAttribute('data-path');
 
-    // Toggle display between block and none
     if (directoryElement.style.display === 'none') {
         directoryElement.style.display = 'block';
 
-        // Only fetch and load if not already loaded
         if (!directoryElement.hasAttribute('data-loaded')) {
             try {
                 const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
                 const subDirectoryStructure = await response.json();
-                
-                // Render and insert the HTML for subdirectories
                 directoryElement.innerHTML = renderDirectoryStructure(subDirectoryStructure);
-                
-                // Mark as loaded to avoid fetching again
                 directoryElement.setAttribute('data-loaded', 'true');
             } catch (error) {
                 console.error('Error fetching subdirectory data:', error);
             }
         }
     } else {
-        // Collapse the directory if already expanded
         directoryElement.style.display = 'none';
     }
 }
-
-
-
-
-window.toggleDirectory = toggleDirectory;
-
-export { createToolbar };

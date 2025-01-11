@@ -38,5 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    createToolbar();
+    // Pass the toolbar selector explicitly
+    createToolbar('.toolbar');
 });
