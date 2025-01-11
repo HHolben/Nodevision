@@ -1,15 +1,7 @@
 // NewDirectoryInitializer.js
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Locate the Directory Name input field and initialize button dynamically
-    const directoryNameInput = document.getElementById('DirectoryNameInput');
-    const createDirectoryButton = document.createElement('button');
-    createDirectoryButton.id = 'createDirectoryButton';
-    createDirectoryButton.textContent = 'Create Directory';
-    directoryNameInput.insertAdjacentElement('afterend', createDirectoryButton);
-
     // Handle button click event to create a new directory
-    createDirectoryButton.addEventListener('click', async () => {
+    async function createDirectoryButton(directoryNameInput)
+    {
         const directoryName = directoryNameInput.value.trim();
         const parentPath = ''; // Optionally provide a parent path, if applicable
 
@@ -20,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Make the API request to create a new directory
-            const response = await fetch('/api/create-directory', {
+            const response = await fetch('/api/folderRoutes/create-directory', {
+
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -43,5 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error creating directory:', error);
             alert('An unexpected error occurred. Please try again.');
         }
-    });
-});
+    }
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Locate the Directory Name input field and initialize button dynamically
+    const directoryNameInput = document.getElementById('DirectoryNameInput');
+    const createDirectoryButton = document.createElement('button');
+    createDirectoryButton.id = 'createDirectoryButton';
+    createDirectoryButton.textContent = 'Create Directory';
+    directoryNameInput.insertAdjacentElement('afterend', createDirectoryButton);
+
+    createDirectoryButton(directoryNameInput);
+
+})

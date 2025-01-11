@@ -19,7 +19,7 @@ export const boxes = [
     },
     {
         heading: "New Directory",
-        content: `<input type="text" id="DirectoryNameInput" placeholder="Enter file name">`,
+        content: `<input type="text" id="DirectoryNameInput" placeholder="Enter folder name">`,
         script: "NewDirectoryInitializer.js",
         ToolbarCategory: "File"
     },
