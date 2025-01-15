@@ -9,8 +9,8 @@ const app = express();
 const port = 3000;
 
 //set up a database
-const PouchDB = require('pouchdb');
-const db = new PouchDB('users'); // Creates a local database named 'users' 
+//const PouchDB = require('pouchdb');
+//const db = new PouchDB('users'); // Creates a local database named 'users' 
 
 // These libraries are for setting up passport.js. This is for user authentication: https://www.keycloak.org/securing-apps/nodejs-adapter
 const session = require('express-session');
@@ -23,7 +23,7 @@ const initializeRoute = require('./routes/api/initialize');//used for creating n
 const initializeRoutes = require('./routes/api/initializeRoutes'); // Import initialize route
 const fileRoutes = require('./routes/api/files');
 const folderRoutes = require('./routes/api/folderRoutes');
-const arduinoRoutes = require('./routes/api/arduinoRoutes');
+//const arduinoRoutes = require('./routes/api/arduinoRoutes');
 const fileSaveRoutes = require('./routes/api/fileSaveRoutes');
 const regenerateNodesRoutes = require('./routes/api/regenerateNodesRoutes'); // Import new route
 const generateEdgesRoutes = require('./routes/api/generateEdgesRoutes'); // Import new route
@@ -44,7 +44,7 @@ app.use('/api', initializeRoute);//use for creating new files
 app.use('/api', initializeRoutes); // Add initialize route
 app.use('/api/files', fileRoutes);       // File routes (e.g. /api/files)
 app.use('/api/folderRoutes', folderRoutes);       // Folder routes (e.g. /api/folderRoutes)
-app.use('/api/arduino', arduinoRoutes);  // Arduino routes (e.g. /api/arduino/ports, /api/arduino/upload)
+//app.use('/api/arduino', arduinoRoutes);  // Arduino routes (e.g. /api/arduino/ports, /api/arduino/upload)
 app.use('/api', fileSaveRoutes); // Use the file save routes under '/api'
 app.use('/api', regenerateNodesRoutes);  // Add this route for regenerating nodes
 app.use('/api', generateEdgesRoutes);  // Add this route for generating edges
@@ -57,12 +57,12 @@ app.use('/api', uploadImageRoutes); // Add route for file code content
 //We need to use the endpoints stored in the routes folder
 
 // Dummy user store for demonstration (replace with a database in production)
-const users = [
-    { id: 1, username: 'admin', password: 'password' } // Example user
-];
+//const users = [
+    //{ id: 1, username: 'admin', password: 'password' } // Example user
+//];
 
 // Configure Passport.js
-passport.use(
+/*passport.use(
     new LocalStrategy((username, password, done) => {
         const user = users.find(
             (u) => u.username === username && u.password === password
@@ -182,7 +182,7 @@ app.post('/login', (req, res, next) => {
         });
     })(req, res, next);
 });
-
+*/
 // Serve index.html for authenticated users
 app.get('/index', ensureAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
