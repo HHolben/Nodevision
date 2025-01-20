@@ -1,62 +1,46 @@
-const express = require('express');//simplifies back-end development: https://www.geeksforgeeks.org/getting-started-with-express-js/
+const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
 const bodyParser = require('body-parser');
-const fs = require('fs').promises; // For async operations
+const fs = require('fs').promises;
 const multer = require('multer');
 const cheerio = require('cheerio');
+const { exec } = require('child_process'); // Add this line
 const app = express();
 const port = 3000;
 
-//set up a database
-//const PouchDB = require('pouchdb');
-//const db = new PouchDB('users'); // Creates a local database named 'users' 
-
-// These libraries are for setting up passport.js. This is for user authentication: https://www.keycloak.org/securing-apps/nodejs-adapter
-const session = require('express-session');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-const MemoryStore = require('memorystore')(session);
-
-// Import routes
-const initializeRoute = require('./routes/api/initialize');//used for creating new files
-const initializeRoutes = require('./routes/api/initializeRoutes'); // Import initialize route
-const fileRoutes = require('./routes/api/files');
-const folderRoutes = require('./routes/api/folderRoutes');
-//const arduinoRoutes = require('./routes/api/arduinoRoutes');
-const fileSaveRoutes = require('./routes/api/fileSaveRoutes');
-const regenerateNodesRoutes = require('./routes/api/regenerateNodesRoutes'); // Import new route
-const generateEdgesRoutes = require('./routes/api/generateEdgesRoutes'); // Import new route
-const getSubNodesRoutes = require('./routes/api/getSubNodesRoutes'); // Import new route
-const fileCodeContentRoutes = require('./routes/api/fileCodeContentRoutes'); // Import new route
-const fileSearchRoutes = require('./routes/api/search'); // Import search route
-const graphStylesRoutes = require('./routes/api/graphStyles'); // Import search route
-const uploadImageRoutes = require('./routes/api/uploadImage'); // Import search route
-
-
-// Middleware
+// Middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Routes
+// Serve static files (for your HTML page and assets)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// POST route to handle the request submission from the frontend
+app.post('/send-request', (req, res) => {
+    const { endpoint, command } = req.body;
+  
+    if (!endpoint || !command) {
+      return res.status(400).json({ error: 'Endpoint and command are required' });
+    }
+  
+    // Construct the command to execute the sendRequest.js script
+    const commandToRun = `node ${path.join(__dirname, 'sendRequest.js')} ${endpoint} "${command}"`;
+  
+    // Execute the command using exec
+    exec(commandToRun, (error, stdout, stderr) => {
+      if (error) {
+        return res.status(500).json({ error: stderr || error.message });
+      }
+  
+      // Send back the response from the executed script
+      res.json({ response: stdout });
+    });
+  });
+  
 
 
-
-
-app.use('/api', initializeRoute);//use for creating new files
-app.use('/api', initializeRoutes); // Add initialize route
-app.use('/api', fileRoutes);       // File routes (e.g. /api/files)
-app.use('/api/folderRoutes', folderRoutes);       // Folder routes (e.g. /api/folderRoutes)
-//app.use('/api/arduino', arduinoRoutes);  // Arduino routes (e.g. /api/arduino/ports, /api/arduino/upload)
-app.use('/api', fileSaveRoutes); // Use the file save routes under '/api'
-app.use('/api', regenerateNodesRoutes);  // Add this route for regenerating nodes
-app.use('/api', generateEdgesRoutes);  // Add this route for generating edges
-app.use('/api', getSubNodesRoutes);  // Add this route for getting sub-nodes
-app.use('/api', fileCodeContentRoutes); // Add route for file code content
-app.use('/api', fileSearchRoutes); // Add route for file code content
-app.use('/api', graphStylesRoutes); // Add route for file code content
-app.use('/api', uploadImageRoutes); // Add route for file code content
 
 //We need to use the endpoints stored in the routes folder
 
@@ -187,80 +171,98 @@ app.post('/login', (req, res, next) => {
     })(req, res, next);
 });
 */
-// Serve index.html for authenticated users
-app.get('/index', ensureAuthenticated, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+
+// New route for /api/endpoint1
+app.post('/api/endpoint1', (req, res) => {
+  const { command } = req.body;
+
+  if (!command) {
+    return res.status(400).json({ error: 'Command is required' });
+  }
+
+  console.log(`Received command at /api/endpoint1: ${command}`);
+
+  // Check if the command is "ping"
+  if (command.toLowerCase() === 'ping') {
+    return res.json({ message: 'pong' });
+  }
+
+  // If command is something else, return a default message
+  res.json({ message: 'Command received on endpoint1', receivedCommand: command });
 });
 
-// Middleware to check authentication
-function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return next();
-    res.redirect('/login');
-}
+// Import routes
+const initializeRoute = require('./routes/api/initialize');
+const initializeRoutes = require('./routes/api/initializeRoutes');
+const fileRoutes = require('./routes/api/files');
+const folderRoutes = require('./routes/api/folderRoutes');
+const fileSaveRoutes = require('./routes/api/fileSaveRoutes');
+const regenerateNodesRoutes = require('./routes/api/regenerateNodesRoutes');
+const generateEdgesRoutes = require('./routes/api/generateEdgesRoutes');
+const getSubNodesRoutes = require('./routes/api/getSubNodesRoutes');
+const fileCodeContentRoutes = require('./routes/api/fileCodeContentRoutes');
+const fileSearchRoutes = require('./routes/api/search');
+const graphStylesRoutes = require('./routes/api/graphStyles');
+const uploadImageRoutes = require('./routes/api/uploadImage');
 
-app.get('/profile', (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.redirect('/login');
-    }
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/logout', (req, res) => {
-    req.logout(() => res.redirect('/'));
-});
-
-// Increase the request body limit for JSON and urlencoded data
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
-
-const allowedExtensions = ['.html', '.php', '.js', '.py'];
-const notebookDir = path.join(__dirname, 'Notebook'); // Define notebookDir
+// Routes
+app.use('/api', initializeRoute);
+app.use('/api', initializeRoutes);
+app.use('/api', fileRoutes);
+app.use('/api/folderRoutes', folderRoutes);
+app.use('/api', fileSaveRoutes);
+app.use('/api', regenerateNodesRoutes);
+app.use('/api', generateEdgesRoutes);
+app.use('/api', getSubNodesRoutes);
+app.use('/api', fileCodeContentRoutes);
+app.use('/api', fileSearchRoutes);
+app.use('/api', graphStylesRoutes);
+app.use('/api', uploadImageRoutes);
 
 // Serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
+// Serve static files from 'public' and 'Notebook' directories
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/vendor', express.static(path.join(__dirname, 'node_modules')));
 app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
 
 // Update storage destination to save in 'Notebook' directory
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, 'Notebook'));  // Save to Notebook directory
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));  // Use unique filename
-    }
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, 'Notebook'));
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
 });
 
 const upload = multer({ storage: storage });
 
 // Function to extract the first image URL from the file content
 async function getFirstImageUrl(filePath) {
-    try {
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        const $ = cheerio.load(fileContent);
-        const firstImageSrc = $('img').first().attr('src');
+  try {
+    const fileContent = await fs.readFile(filePath, 'utf8');
+    const $ = cheerio.load(fileContent);
+    const firstImageSrc = $('img').first().attr('src');
 
-        if (firstImageSrc) {
-            if (firstImageSrc.startsWith('http') || firstImageSrc.startsWith('//')) {
-                return firstImageSrc;
-            } else {
-                const imagePath = path.join(path.dirname(filePath), firstImageSrc);
-                const resolvedImagePath = path.relative(path.join(__dirname, 'public'), imagePath);
-                return resolvedImagePath.split(path.sep).join('/');
-            }
-        }
- else {
-            return null;
-        }
-    } catch (error) {
-        console.error(`Error reading file for images: ${error}`);
-        return null;
+    if (firstImageSrc) {
+      if (firstImageSrc.startsWith('http') || firstImageSrc.startsWith('//')) {
+        return firstImageSrc;
+      } else {
+        const imagePath = path.join(path.dirname(filePath), firstImageSrc);
+        const resolvedImagePath = path.relative(path.join(__dirname, 'public'), imagePath);
+        return resolvedImagePath.split(path.sep).join('/');
+      }
+    } else {
+      return null;
     }
+  } catch (error) {
+    console.error(`Error reading file for images: ${error}`);
+    return null;
+  }
 }
 
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });

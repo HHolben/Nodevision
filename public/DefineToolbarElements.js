@@ -75,4 +75,11 @@ export const boxes = [
         content: `<h1>Log out user?</h1><h2><a href="login.html">Logout</a></h2>`,
         script: "SendToLoginPage.js",
     },
+    {
+        ToolbarCategory: 'View',
+        heading: 'API Terminal',
+        content: `<input type="text" id="APIterminalInput" placeholder="Enter command">
+            `,
+        script: "SendToLoginPage.js",
+    },
 ];

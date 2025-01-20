@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Sender</title>
+</head>
+<body>
+  <h1>Send Request</h1>
+
+  <form id="requestForm">
+    <label for="endpoint">Select Endpoint:</label>
+    <select id="endpoint" name="endpoint">
+      <option value="/api/endpoint1">/api/endpoint1</option>
+      <option value="/api/endpoint2">/api/endpoint2</option>
+      <!-- Add more endpoints as needed -->
+    </select>
+
+    <br>
+
+    <label for="command">Enter Command:</label>
+    <input type="text" id="command" name="command" required>
+
+    <br><br>
+
+    <button type="submit">Send Request</button>
+  </form>
+
+  <h2>Response:</h2>
+  <pre id="response"></pre>
+
+  <script>
+    // Handle form submission
+    document.getElementById('requestForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Get form data
+      const endpoint = document.getElementById('endpoint').value;
+      const command = document.getElementById('command').value;
+
+      // Send the request to the server
+      const responseElement = document.getElementById('response');
+
+      try {
+        const response = await fetch('/send-request', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ endpoint, command }),
+        });
+
+        const data = await response.json();
+        responseElement.textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        responseElement.textContent = 'Error: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
