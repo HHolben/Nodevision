@@ -40,9 +40,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // Routes
+
+
+
+
 app.use('/api', initializeRoute);//use for creating new files
 app.use('/api', initializeRoutes); // Add initialize route
-app.use('/api/files', fileRoutes);       // File routes (e.g. /api/files)
+app.use('/api', fileRoutes);       // File routes (e.g. /api/files)
 app.use('/api/folderRoutes', folderRoutes);       // Folder routes (e.g. /api/folderRoutes)
 //app.use('/api/arduino', arduinoRoutes);  // Arduino routes (e.g. /api/arduino/ports, /api/arduino/upload)
 app.use('/api', fileSaveRoutes); // Use the file save routes under '/api'

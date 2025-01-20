@@ -7,7 +7,7 @@ import { createBox } from './boxManipulation.js';
  * @param {string} containerSelector - The CSS selector for the toolbar container.
  * @param {function} [onToggleView] - Optional callback function for handling toggle view changes.
  */
-export function createToolbar(toolbarSelector = '.toolbar') {
+export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () => {}) {
     const toolbarContainer = document.querySelector(toolbarSelector);
     if (!toolbarContainer) {
         console.error(`Container not found for selector: ${toolbarSelector}`);
@@ -54,7 +54,8 @@ export function createToolbar(toolbarSelector = '.toolbar') {
                         cyContainer.style.display = 'none';
                         fileViewContainer.style.display = 'block';
                         console.log('Switched to FileViewMode');
-                        if (onToggleView) onToggleView();
+                        // Ensure onToggleView is called
+                        if (onToggleView) onToggleView();  // This will now always be defined
                     }
                 });
 
@@ -74,6 +75,7 @@ export function createToolbar(toolbarSelector = '.toolbar') {
     }
 }
 
+
 /**
  * Fetches and displays the file view in the specified container.
  * @param {string} fileViewSelector - The CSS selector for the file view container.
@@ -90,6 +92,7 @@ export async function loadFileView(fileViewSelector) {
     try {
         const response = await fetch('/api/files');
         const directoryStructure = await response.json();
+        console.log('Directory Structure:', directoryStructure);  // Debug log
         fileViewContainer.innerHTML = renderDirectoryStructure(directoryStructure, true);
     } catch (error) {
         fileViewContainer.innerHTML = '<p>Error loading files</p>';
@@ -105,6 +108,7 @@ export async function loadFileView(fileViewSelector) {
  */
 function renderDirectoryStructure(files, isRoot = false) {
     const container = document.createElement('ul');
+    console.log('Rendering directory structure:', files);  // Debug log
 
     files.forEach(file => {
         const listItem = document.createElement('li');
@@ -129,10 +133,8 @@ function renderDirectoryStructure(files, isRoot = false) {
             listItem.appendChild(nestedList);
         } else {
             const fileButton = document.createElement('button');
-
             const relativePath = file.path.replace('/Notebook/', '');
             fileButton.id = relativePath;
-
             fileButton.className = 'file-button';
             fileButton.textContent = file.name;
 
@@ -144,6 +146,7 @@ function renderDirectoryStructure(files, isRoot = false) {
 
     return container.outerHTML;
 }
+
 
 /**
  * Toggles the visibility of a directory's nested contents.

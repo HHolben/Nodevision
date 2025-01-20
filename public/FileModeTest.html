@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File View Mode Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 5px 0;
+        }
+
+        a {
+            text-decoration: none;
+            color: blue;
+            cursor: pointer;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>File View Mode Test</h1>
+    <div id="file-view"></div>
+
+    <script>
+        // Fetch and display files and directories
+        function fetchDirectoryContents(directoryPath = '') {
+            fetch(`/api/files?path=${encodeURIComponent(directoryPath)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Error fetching files: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayFiles(data, directoryPath);
+                })
+                .catch(error => {
+                    console.error('Error fetching directory contents:', error);
+                });
+        }
+
+        // Display files and directories in the UI
+        function displayFiles(files, currentPath) {
+            const fileView = document.getElementById('file-view');
+            fileView.innerHTML = '';
+
+            const ul = document.createElement('ul');
+
+            if (currentPath) {
+                const parentPath = currentPath.split('/').slice(0, -1).join('/');
+                const li = document.createElement('li');
+                const link = document.createElement('a');
+                link.textContent = '.. (Parent Directory)';
+                link.onclick = () => fetchDirectoryContents(parentPath);
+                li.appendChild(link);
+                ul.appendChild(li);
+            }
+
+            files.forEach(item => {
+                const li = document.createElement('li');
+                const link = document.createElement('a');
+
+                link.textContent = item.name;
+                link.onclick = () => {
+                    if (item.isDirectory) {
+                        fetchDirectoryContents(item.path);
+                    } else {
+                        alert(`File selected: ${item.path}`);
+                    }
+                };
+
+                li.appendChild(link);
+                ul.appendChild(li);
+            });
+
+            fileView.appendChild(ul);
+        }
+
+        // Initialize view with root directory
+        fetchDirectoryContents();
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{
+    "node": {
+      "background-color": "#66ccff",
+      "label": "data(label)",
+      "text-valign": "center",
+      "color": "#000",
+      "text-outline-width": 2,
+      "text-outline-color": "#fff",
+      "width": "80px",
+      "height": "80px"
+
+    },
+    "parentNode": {
+      "background-color": "#d3d3d3",
+      "border-color": "#000",
+      "border-width": 2,
+      "padding": "10px"
+    },
+    "edgeDirect": {
+      "line-color": "#337AB7",
+      "target-arrow-color": "#337AB7",
+      "target-arrow-shape": "triangle",
+      "target-arrow-fill": "filled",
+      "width": 4,
+      "curve-style": "bezier"
+    },
+    "edgeIndirect": {
+      "line-color": "#F0AD4E",
+      "target-arrow-color": "#F0AD4E",
+      "target-arrow-shape": "vee",
+      "target-arrow-fill": "filled",
+      "width": 2,
+      "curve-style": "bezier"
+    },
+  
+  
+"edge": {
+  "curve-style": "unbundled-bezier",      
+  "control-point-distances": [20, -20],   
+  "control-point-weights": [0.25, 0.75], 
+  "width": 3,
+  "line-color": "#007eff",
+  "target-arrow-color": "#007eff",
+  "target-arrow-shape": "triangle"
+}
+}
