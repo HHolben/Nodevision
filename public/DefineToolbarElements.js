@@ -70,16 +70,15 @@ export const boxes = [
         }, // Example toggle callback
     },
     {
+        ToolbarCategory: 'View',
+        heading: 'API Terminal',
+        content: ` <iframe src="TerminalInterfaceTest.html"></iframe> `,
+        script: "SendToLoginPage.js"
+    },
+    {
         ToolbarCategory: 'User',
         heading: 'Logout',
         content: `<h1>Log out user?</h1><h2><a href="login.html">Logout</a></h2>`,
-        script: "SendToLoginPage.js",
-    },
-    {
-        ToolbarCategory: 'View',
-        heading: 'API Terminal',
-        content: `<input type="text" id="APIterminalInput" placeholder="Enter command">
-            `,
         script: "SendToLoginPage.js",
     },
 ];
