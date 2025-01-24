@@ -26,6 +26,9 @@
     <button type="submit">Send Request</button>
   </form>
 
+  <h2>Request Details:</h2>
+  <pre id="requestDetails"></pre>
+
   <h2>Response:</h2>
   <pre id="response"></pre>
 
@@ -38,16 +41,27 @@
       const endpoint = document.getElementById('endpoint').value;
       const command = document.getElementById('command').value;
 
+      // Display the request details
+      const requestDetailsElement = document.getElementById('requestDetails');
+      const requestDetails = {
+        method: 'POST',
+        url: '/send-request',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: { endpoint, command },
+      };
+
+      requestDetailsElement.textContent = JSON.stringify(requestDetails, null, 2);
+
       // Send the request to the server
       const responseElement = document.getElementById('response');
 
       try {
         const response = await fetch('/send-request', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ endpoint, command }),
+          headers: requestDetails.headers,
+          body: JSON.stringify(requestDetails.body),
         });
 
         const data = await response.json();

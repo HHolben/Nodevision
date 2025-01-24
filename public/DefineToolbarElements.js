@@ -72,7 +72,7 @@ export const boxes = [
     {
         ToolbarCategory: 'View',
         heading: 'API Terminal',
-        content: ` <iframe src="TerminalInterfaceTest.html"></iframe> `,
+        content: ` <iframe src="TerminalInterfaceTest.html" width="100%" height="300"></iframe> `,
         script: "SendToLoginPage.js"
     },
     {
