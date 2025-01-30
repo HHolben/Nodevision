@@ -2,7 +2,8 @@ const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
 const bodyParser = require('body-parser');
-const fs = require('fs').promises;
+const fs = require('fs'); // Use fs for synchronous file checks
+const fsPromises = require('fs').promises; // Still using fs.promises for async operations
 const multer = require('multer');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
@@ -40,7 +41,7 @@ const upload = multer({
 // Function to extract the first image URL from the file content
 async function getFirstImageUrl(filePath) {
   try {
-    const fileContent = await fs.readFile(filePath, 'utf8');
+    const fileContent = await fsPromises.readFile(filePath, 'utf8');
     const $ = cheerio.load(fileContent);
     const firstImageSrc = $('img').first().attr('src');
 
@@ -61,70 +62,43 @@ async function getFirstImageUrl(filePath) {
   }
 }
 
-// POST route for /send-request
-app.post('/send-request', (req, res) => {
-  const { endpoint, command } = req.body;
+// Dynamically load routes from JSON
+async function loadRoutes() {
+  try {
+    const data = await fsPromises.readFile(path.join(__dirname, 'routes.json'), 'utf8');
+    const { routes } = JSON.parse(data);
 
-  if (!endpoint || !command) {
-    return res.status(400).json({ error: 'Endpoint and command are required' });
+    routes.forEach(({ name, path: routePath }) => {
+      const absoluteRoutePath = path.resolve(__dirname, routePath);
+      
+      console.log(`Attempting to load route: ${name} from ${routePath}`); // Debugging
+    
+      if (fs.existsSync(absoluteRoutePath)) {
+        try {
+          const route = require(absoluteRoutePath);
+          app.use('/api', route);
+          console.log(`✅ Loaded route: ${name} from ${routePath}`);
+        } catch (err) {
+          console.error(`❌ Error requiring route ${name} from ${routePath}:`, err);
+        }
+      } else {
+        console.error(`❌ Route file not found: ${absoluteRoutePath}`);
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error loading routes:', error.message);
   }
+}
 
-  const commandToRun = `node ${path.join(__dirname, 'sendRequest.js')} ${endpoint} "${command}"`;
+// Call loadRoutes to initialize routes
+loadRoutes();
 
-  exec(commandToRun, (error, stdout, stderr) => {
-    if (error) {
-      return res.status(500).json({ error: stderr || error.message });
-    }
 
-    res.json({ response: stdout });
-  });
-});
 
-// POST route for /api/endpoint1
-app.post('/api/endpoint1', (req, res) => {
-  const { command } = req.body;
-
-  if (!command) {
-    return res.status(400).json({ error: 'Command is required' });
-  }
-
-  console.log(`Received command at /api/endpoint1: ${command}`);
-
-  if (command.toLowerCase() === 'ping') {
-    return res.json({ message: 'pong' });
-  }
-
-  res.json({ message: 'Command received on endpoint1', receivedCommand: command });
-});
-
-// Routes
-const initializeRoute = require('./routes/api/initialize');
-const initializeRoutes = require('./routes/api/initializeRoutes');
-const fileRoutes = require('./routes/api/files');
-const folderRoutes = require('./routes/api/folderRoutes');
-const fileSaveRoutes = require('./routes/api/fileSaveRoutes');
-const regenerateNodesRoutes = require('./routes/api/regenerateNodesRoutes');
-const generateEdgesRoutes = require('./routes/api/generateEdgesRoutes');
-const getSubNodesRoutes = require('./routes/api/getSubNodesRoutes');
-const fileCodeContentRoutes = require('./routes/api/fileCodeContentRoutes');
-const fileSearchRoutes = require('./routes/api/search');
-const graphStylesRoutes = require('./routes/api/graphStyles');
-const uploadImageRoutes = require('./routes/api/uploadImage');
-
-// Use routes
-app.use('/api', initializeRoute);
-app.use('/api', initializeRoutes);
-app.use('/api', fileRoutes);
-app.use('/api/folderRoutes', folderRoutes);
-app.use('/api', fileSaveRoutes);
-app.use('/api', regenerateNodesRoutes);
-app.use('/api', generateEdgesRoutes);
-app.use('/api', getSubNodesRoutes);
-app.use('/api', fileCodeContentRoutes);
-app.use('/api', fileSearchRoutes);
-app.use('/api', graphStylesRoutes);
-app.use('/api', uploadImageRoutes);
-
+// Server setup
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
+module.exports = app;

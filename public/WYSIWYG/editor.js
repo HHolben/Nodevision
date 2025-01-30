@@ -702,6 +702,55 @@ function newVectorGraphic() {
 }
 
 
+InsertQRCodeElement()
+{
+    function generateQRCode() {
+        const url = document.getElementById("urlInput").value;
+        if (url) {
+            // Generate QR code
+            QRCode.toDataURL(url, { errorCorrectionLevel: 'H' }, function (err, url) {
+                if (err) {
+                    alert("Failed to generate QR code.");
+                    return;
+                }
+
+                // Display QR code
+                const qrCodeDiv = document.getElementById("qrCode");
+                qrCodeDiv.innerHTML = `<img src="${url}" alt="QR Code" />`;
+
+                // Enable the copy button
+                const copyButton = document.getElementById("copyButton");
+                copyButton.disabled = false;
+                copyButton.dataset.qrUrl = url;
+            });
+        } else {
+            alert("Please enter a URL.");
+        }
+    }
+
+    function copyQRCode() {
+        const copyButton = document.getElementById("copyButton");
+        const qrUrl = copyButton.dataset.qrUrl;
+
+        // Create a temporary input to copy the URL
+        const tempInput = document.createElement("input");
+        tempInput.value = qrUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+
+        // Alert the user
+        alert("QR code URL copied to clipboard!");
+    }
+
+    generateQRCode();
+    copyQRCode();
+    document.execCommand('insertHTML', false, addressElement);
+
+}
+
+
 let selectedImage = null;  // Global variable to hold the selected image
 
 // Function to handle image click event
