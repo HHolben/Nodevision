@@ -94,6 +94,10 @@ async function loadRoutes() {
 // Call loadRoutes to initialize routes
 loadRoutes();
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'Server is running' });
+});
 
 
 // Server setup
