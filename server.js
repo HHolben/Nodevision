@@ -77,7 +77,7 @@ async function loadRoutes() {
         try {
           const route = require(absoluteRoutePath);
           app.use('/api', route);
-          console.log(`✅ Loaded route: ${name} from ${routePath}`);
+          console.log(`✅ Loaded route: ${route} from ${absoluteRoutePath}`);
         } catch (err) {
           console.error(`❌ Error requiring route ${name} from ${routePath}:`, err);
         }
@@ -94,10 +94,6 @@ async function loadRoutes() {
 // Call loadRoutes to initialize routes
 loadRoutes();
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'Server is running' });
-});
 
 
 // Server setup

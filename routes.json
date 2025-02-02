@@ -4,8 +4,8 @@
     { "name": "initializeRoutes", "path": "./routes/api/initializeRoutes.js" },
     { "name": "fileRoutes", "path": "./routes/api/files.js" },
     { "name": "folderRoutes", "path": "./routes/api/folderRoutes.js" },
-    { "name": "fileSaveRoutes", "path": "routes/api/fileSaveRoutes.js" },
-    { "name": "regenerateNodesRoutes", "path": "./routes/api/regenerateNodesRoutes.js"},
+    { "name": "fileSaveRoutes", "path": "./routes/api/fileSaveRoutes.js" },
+    { "name": "regenerateNodesRoutes", "path": "./routes/api/regenerateNodesRoutes.js" },
     { "name": "generateEdgesRoutes", "path": "./routes/api/generateEdgesRoutes.js" },
     { "name": "getSubNodesRoutes", "path": "./routes/api/getSubNodesRoutes.js" },
     { "name": "fileCodeContentRoutes", "path": "./routes/api/fileCodeContentRoutes.js" },
@@ -13,6 +13,7 @@
     { "name": "graphStylesRoutes", "path": "./routes/api/graphStyles.js" },
     { "name": "uploadImageRoutes", "path": "./routes/api/uploadImage.js" },
     { "name": "sendRequest", "path": "./routes/api/sendRequest.js" },
-    { "name": "endpoint1Route", "path": "./routes/api/endpoint1.js" }
+    { "name": "health", "path": "./routes/api/health.js" },
+    { "name": "getRoutes", "path": "./routes/api/getRoutes.js" }
   ]
 }
