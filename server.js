@@ -1,15 +1,18 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
 const bodyParser = require('body-parser');
-const fs = require('fs'); // Use fs for synchronous file checks
-const fsPromises = require('fs').promises; // Still using fs.promises for async operations
+const fs = require('fs'); // For synchronous file checks
+const fsPromises = require('fs').promises; // For async operations
 const multer = require('multer');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // Use port from .env or default to 3000
 
 // Middleware setup (configure body size limits first)
 app.use(express.json({ limit: '50mb' }));
@@ -35,7 +38,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // Set a file size limit (50 MB)
+  limits: { fileSize: 50 * 1024 * 1024 } // File size limit (50 MB)
 });
 
 // Function to extract the first image URL from the file content
@@ -77,7 +80,7 @@ async function loadRoutes() {
         try {
           const route = require(absoluteRoutePath);
           app.use('/api', route);
-          console.log(`✅ Loaded route: ${route} from ${absoluteRoutePath}`);
+          console.log(`✅ Loaded route: ${name} from ${absoluteRoutePath}`);
         } catch (err) {
           console.error(`❌ Error requiring route ${name} from ${routePath}:`, err);
         }
@@ -93,8 +96,6 @@ async function loadRoutes() {
 
 // Call loadRoutes to initialize routes
 loadRoutes();
-
-
 
 // Server setup
 app.listen(port, () => {

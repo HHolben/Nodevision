@@ -11,9 +11,7 @@
   <form id="requestForm">
     <label for="endpoint">Select Endpoint:</label>
     <select id="endpoint" name="endpoint">
-      <option value="/api/endpoint1">/endpoint1</option>
-      <option value="/api/endpoint2">/api/endpoint2</option>
-      <!-- Add more endpoints as needed -->
+      <option value="" disabled selected>Loading...</option>
     </select>
 
     <br>
@@ -33,6 +31,30 @@
   <pre id="response"></pre>
 
   <script>
+    // Fetch API routes from the server and populate the dropdown
+    async function loadRoutes() {
+      try {
+        const response = await fetch('/api/routes');
+        const data = await response.json();
+        
+        const endpointSelect = document.getElementById('endpoint');
+        endpointSelect.innerHTML = ''; // Clear existing options
+        
+        data.routes.forEach(route => {
+          const option = document.createElement('option');
+          option.value = route.startsWith('/') ? `/api${route}` : `/api/${route}`;
+          option.textContent = route;
+          endpointSelect.appendChild(option);
+        });
+
+      } catch (error) {
+        console.error('Error loading routes:', error);
+      }
+    }
+
+    // Load routes when the page loads
+    window.addEventListener('DOMContentLoaded', loadRoutes);
+
     // Handle form submission
     document.getElementById('requestForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -41,15 +63,15 @@
       const endpoint = document.getElementById('endpoint').value;
       const command = document.getElementById('command').value;
 
-      // Display the request details
+      // Correct the request details preview
       const requestDetailsElement = document.getElementById('requestDetails');
       const requestDetails = {
         method: 'POST',
-        url: '/send-request',
+        url: endpoint, // Use selected endpoint dynamically
         headers: {
           'Content-Type': 'application/json',
         },
-        body: { endpoint, command },
+        body: JSON.stringify({ command }), // Send only command
       };
 
       requestDetailsElement.textContent = JSON.stringify(requestDetails, null, 2);
@@ -58,10 +80,10 @@
       const responseElement = document.getElementById('response');
 
       try {
-        const response = await fetch('/send-request', {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: requestDetails.headers,
-          body: JSON.stringify(requestDetails.body),
+          body: requestDetails.body,
         });
 
         const data = await response.json();
