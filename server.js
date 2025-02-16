@@ -102,7 +102,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve the 3D world page at the root
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', '3DSWorld.html'));
+    res.sendFile(path.join(__dirname, 'public', '3DWorld.html'));
 });
 
 
