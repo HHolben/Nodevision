@@ -100,9 +100,32 @@ loadRoutes();
 // Serve static files from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve the 3D world page at the root
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', '3DWorld.html'));
+app.post('/api/load-world', async (req, res) => {
+  const { worldPath } = req.body;
+  if (!worldPath) {
+      return res.status(400).json({ error: "No world path provided" });
+  }
+
+  const filePath = path.join(__dirname, 'Notebook', worldPath);
+  
+  try {
+      // Read the HTML file
+      const fileContent = await fsPromises.readFile(filePath, 'utf8');
+      
+      // Extract world definition from the HTML file
+      const $ = cheerio.load(fileContent);
+      const worldScript = $('script[type="application/json"]').html();
+      
+      if (!worldScript) {
+          return res.status(400).json({ error: "No world definition found in file" });
+      }
+
+      const worldDefinition = JSON.parse(worldScript);
+      res.json({ worldDefinition });
+  } catch (error) {
+      console.error("Error loading world:", error);
+      res.status(500).json({ error: "Error loading world" });
+  }
 });
 
 

@@ -36,9 +36,19 @@
 </head>
 <body>
   <canvas id="three-canvas"></canvas>
-  <div id="pause-menu">
-    <h2>Game Paused</h2>
+  <div id="pause-menu" style="display: none;">
+    <h2>Paused</h2>
+    
+    <label for="world-url">World URL:</label>
+    <input type="text" id="world-url" placeholder="Enter world path (e.g., test_world.html)">
+    
+    <button id="load-world-btn">Load World</button>
     <button id="resume-btn">Resume</button>
+</div>
+
+  
+
+
   </div>
 </body>
 </html>

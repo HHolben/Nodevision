@@ -76,3 +76,30 @@ document.getElementById("resume-btn").addEventListener("click", () => {
   document.getElementById("pause-menu").style.display = "none";
   document.body.requestPointerLock();
 });
+
+document.getElementById("load-world-btn").addEventListener("click", () => {
+  const worldPath = document.getElementById("world-url").value.trim();
+  
+  if (!worldPath) {
+      alert("Please enter a valid world path.");
+      return;
+  }
+
+  // Send request to load new world
+  fetch("/api/load-world", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ worldPath })
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.error) {
+          alert("Failed to load world: " + data.error);
+      } else {
+          loadWorld(data.worldDefinition);
+          alert("World loaded successfully!");
+      }
+  })
+  .catch(error => console.error("Error loading world:", error));
+});
+
