@@ -97,6 +97,16 @@ async function loadRoutes() {
 // Call loadRoutes to initialize routes
 loadRoutes();
 
+// Serve static files from the "public" folder
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve the 3D world page at the root
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', '3DSWorld.html'));
+});
+
+
+
 // Server setup
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

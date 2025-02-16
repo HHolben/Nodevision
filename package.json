@@ -41,6 +41,7 @@
     "vexflow": "^4.2.5"
   },
   "devDependencies": {
+    "nodemon": "^3.1.9",
     "vite": "^5.4.2"
   }
 }
