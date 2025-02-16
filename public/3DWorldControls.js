@@ -1,4 +1,5 @@
-const keys = { w: false, a: false, s: false, d: false, space: false, q: false };
+// Define the keys object with "j" for jump (instead of "space")
+const keys = { w: false, a: false, s: false, d: false, j: false, q: false };
 let isPaused = false;
 let yaw = 0, pitch = 0;
 const mouseSensitivity = 0.0015;
@@ -15,9 +16,29 @@ document.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement) {
     targetYaw -= event.movementX * mouseSensitivity;
     targetPitch -= event.movementY * mouseSensitivity;
-    targetPitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, targetPitch));
+    targetPitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, targetPitch)); // Prevent flipping
   }
 });
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (!isPaused) {
+    // Smoothly update yaw and pitch
+    yaw += (targetYaw - yaw);
+    pitch += (targetPitch - pitch);
+    
+    // Apply yaw to the player's body (rotate left/right)
+    player.rotation.y = yaw;
+    
+    // Apply pitch to the camera only (rotate up/down)
+    camera.rotation.x = pitch;
+    
+    updatePlayerMovement();
+  }
+  renderer.render(scene, camera);
+}
+
+animate();
 
 function togglePause() {
   isPaused = !isPaused;
@@ -25,13 +46,29 @@ function togglePause() {
   document.getElementById("pause-menu").style.display = isPaused ? "block" : "none";
 }
 
+// Single keydown handler
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") togglePause();
-  if (event.key in keys) keys[event.key] = true;
+  if (event.key === "Escape") {
+    togglePause();
+  } else {
+    // Use lowercase for consistent key mapping
+    const key = event.key.toLowerCase();
+    if (key in keys) {
+      // Prevent default behavior for the jump key ("j")
+      if (key === "j") {
+        event.preventDefault();
+      }
+      keys[key] = true;
+    }
+  }
 });
 
+// Single keyup handler
 document.addEventListener("keyup", (event) => {
-  if (event.key in keys) keys[event.key] = false;
+  const key = event.key.toLowerCase();
+  if (key in keys) {
+    keys[key] = false;
+  }
 });
 
 document.getElementById("resume-btn").addEventListener("click", () => {

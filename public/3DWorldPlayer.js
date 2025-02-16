@@ -1,58 +1,76 @@
+// Create the player avatar
 const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
 const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const player = new THREE.Mesh(playerGeometry, playerMaterial);
-player.position.y = 1;
+
+// Define heights
+const standingHeight = 1.0;
+const crouchHeight = 0.5;
+let baseHeight = standingHeight;  // current base height for the player
+
+// Set the player's initial position
+player.position.y = baseHeight;
 scene.add(player);
 
+// Attach the camera to the player (first-person perspective)
+player.add(camera);
+// Position the camera at eye level (adjust as needed)
+camera.position.set(0, 1.5, 0);
+
 const speed = 0.1;
-const jumpStrength = 0.2;
+const jumpStrength = 0.3;  // Increased jump strength for better visibility
 let velocityY = 0;
+let jumpOffset = 0;
 let isJumping = false;
 let isCrouching = false;
 
-function updatePlayerMovement(keys) {
-  // Convert movement direction to camera-relative motion
-  const direction = new THREE.Vector3();
-  camera.getWorldDirection(direction);
-  direction.y = 0;
-  direction.normalize();
-
-  const right = new THREE.Vector3();
-  right.crossVectors(camera.up, direction).normalize();
-
-  if (keys.w) player.position.addScaledVector(direction, speed);
-  if (keys.s) player.position.addScaledVector(direction, -speed);
+// We'll now use "J" for jump instead of space.
+function updatePlayerMovement() {
+  if (isPaused) return;
+  
+  // Movement: Calculate forward and right vectors based on player's orientation
+  const forward = new THREE.Vector3(0, 0, -1);
+  forward.applyQuaternion(player.quaternion);
+  
+  const right = new THREE.Vector3(1, 0, 0);
+  right.applyQuaternion(player.quaternion);
+  
+  if (keys.w) player.position.addScaledVector(forward, speed);
+  if (keys.s) player.position.addScaledVector(forward, -speed);
   if (keys.a) player.position.addScaledVector(right, -speed);
   if (keys.d) player.position.addScaledVector(right, speed);
-
-  // Jumping
-  if (keys.space && !isJumping) {
+  
+  // Jump logic using the "J" key
+  if (keys.j && !isJumping && !isCrouching) {
     velocityY = jumpStrength;
     isJumping = true;
+    // Optionally log for debugging:
+    // console.log("Jump initiated!");
   }
-  player.position.y += velocityY;
-  velocityY -= 0.01;
-  if (player.position.y <= 1) {
-    player.position.y = 1;
-    velocityY = 0;
-    isJumping = false;
+  
+  if (isJumping) {
+    jumpOffset += velocityY;
+    velocityY -= 0.02;  // Gravity effect
+    if (jumpOffset <= 0) {
+      jumpOffset = 0;
+      velocityY = 0;
+      isJumping = false;
+    }
   }
-
-  // Crouching
-  if (keys.q) {
+  
+  // Crouch logic using the "Q" key (unchanged)
+  if (keys.q && !isJumping) {
     if (!isCrouching) {
-      player.scale.y = 0.5;
-      player.position.y -= 0.5;
       isCrouching = true;
+      baseHeight = crouchHeight;
     }
   } else {
     if (isCrouching) {
-      player.scale.y = 1;
-      player.position.y += 0.5;
       isCrouching = false;
+      baseHeight = standingHeight;
     }
   }
-
-  // Camera follows player
-  camera.position.set(player.position.x, player.position.y + 1.5, player.position.z);
+  
+  // Update the player's vertical position based on the base height and jump offset
+  player.position.y = baseHeight + jumpOffset;
 }
