@@ -24,12 +24,14 @@ function generateRegions(dir, parent = null, relativeDir = '') {
                 imageUrl = `http://localhost:3000/Notebook/${currentPath}/directory.png`;
             }
 
+            // Create a region node with the expanded flag set to false by default
             const region = {
                 data: {
                     id: currentPath,
                     label: entry.name,
                     type: 'region',
-                    imageUrl: imageUrl // Use the found image URL or default
+                    imageUrl: imageUrl, // Use the found image URL or default
+                    expanded: false    // Mark region as collapsed by default
                 }
             };
 
@@ -56,7 +58,9 @@ function generateRegions(dir, parent = null, relativeDir = '') {
 }
 
 // Generate only the regions and nodes directly under the Notebook directory
-const regions = generateRegions(notebookDir).filter(region => region.data.type === 'region').slice(0, MaximumRegionsDisplayed);
+const regions = generateRegions(notebookDir)
+  .filter(region => region.data.type === 'region')
+  .slice(0, MaximumRegionsDisplayed);
 
 const regionsOutput = `// GeneratedRegions.js\nconst regions = [\n${regions.map(region => JSON.stringify(region)).join(',\n')}\n];\n`;
 
