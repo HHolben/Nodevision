@@ -1,17 +1,37 @@
-
+var iframe = document.getElementById('content-frame');
 
   
   function updateInfoPanel(element)
   {
+
+
+    if(element.id==null)
+    {
+     console.log("selected "+ element);
+
+
+     var SelectedServerPath=`localhost:3000/Notebook`;
+     iframe.src =`http://${SelectedServerPath}/${element}`;
+     iframe.onload = function() {
+       const scale = 0.5; // Adjust the scale factor as needed
+       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+       const styleElement = iframeDoc.createElement('style');
+       styleElement.innerHTML = `body { transform: scale(${scale}); transform-origin: 0 0; width: ${100 / scale}%; height: ${100 / scale}%; }`;
+       iframeDoc.head.appendChild(styleElement);
+     };
+
+    }
+
     console.log("updating info panel for "+ element.id());
     const infoPanel = document.getElementById('element-info');
+    
     if (!infoPanel)
     {
       console.error('Info panel element not found.');
       return;
     }
 
-    const iframe = document.getElementById('content-frame');
+    iframe = document.getElementById('content-frame');
     let infoHTML = '';
 
     if (element.isNode())

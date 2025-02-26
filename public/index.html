@@ -114,6 +114,8 @@
     
     window.updateFilePreview = function(filePath, fileName) {
   console.log("Updating preview for:", filePath);
+
+
   const contentFrame = document.getElementById('content-frame');
   const elementInfo = document.getElementById('element-info');
   // Optionally update the info panel with the file's name or other details.
@@ -183,7 +185,9 @@
           if (item.isDirectory) {
             window.fetchDirectoryContents(item.path);
           } else {
-            alert(`File selected: ${item.path}`);
+
+            updateInfoPanel(item.path);
+
           }
         });
         li.appendChild(link);

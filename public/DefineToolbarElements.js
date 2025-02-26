@@ -60,6 +60,15 @@ export const boxes = [
             // Recalculate layout
             if (window.cy) {
                 initializeTheGraphStyles();
+                        // Update the graph layout with animation and fitting options.
+        cy.layout({
+            name: 'cose', // Force-directed layout
+            animate: true,
+            fit: true,
+            padding: 30,
+            nodeRepulsion: 8000,
+            idealEdgeLength: 50,
+          }).run();
 
              
             }
