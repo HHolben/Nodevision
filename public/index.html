@@ -151,51 +151,56 @@
 
     
     function displayFiles(files, currentPath) {
-      const fileListElem = document.getElementById('file-list');
-      fileListElem.innerHTML = '';
+  const fileListElem = document.getElementById('file-list');
+  fileListElem.innerHTML = '';
 
-      const ul = document.createElement('ul');
-      ul.style.listStyleType = 'none';
-      ul.style.padding = '0';
+  const ul = document.createElement('ul');
+  ul.style.listStyleType = 'none';
+  ul.style.padding = '0';
 
-      // Add link for parent directory if not at the root.
-      if (currentPath) {
-        const parentPath = currentPath.split('/').slice(0, -1).join('/');
-        const li = document.createElement('li');
-        const link = document.createElement('a');
-        link.href = '#';
-        link.innerHTML = `<span class="icon">📁</span> .. (Parent Directory)`;
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          window.fetchDirectoryContents(parentPath);
-        });
-        li.appendChild(link);
-        ul.appendChild(li);
+  // Only add a parent directory link if we're not in the root (Notebook) directory.
+  if (currentPath && currentPath.trim() !== "") {
+    // Compute the parent directory by removing the last segment.
+    const parts = currentPath.split('/');
+    parts.pop(); // Remove current folder.
+    const parentPath = parts.join('/'); // May be empty, which means Notebook root.
+    const li = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = '#';
+    link.innerHTML = `<span class="icon">📁</span> .. (Parent Directory)`;
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.fetchDirectoryContents(parentPath);
+    });
+    li.appendChild(link);
+    ul.appendChild(li);
+  }
+
+  // Create entries for each file/directory.
+  files.forEach(item => {
+    const li = document.createElement('li');
+    li.style.margin = '5px 0';
+    const link = document.createElement('a');
+    link.href = '#';
+    const icon = item.isDirectory ? '📁' : '📄';
+    link.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (item.isDirectory) {
+        window.fetchDirectoryContents(item.path);
+      } else {
+        // For files, call updateInfoPanel with the file path.
+        updateInfoPanel(item.path);
       }
+    });
+    li.appendChild(link);
+    ul.appendChild(li);
+  });
 
-      files.forEach(item => {
-        const li = document.createElement('li');
-        li.style.margin = '5px 0';
-        const link = document.createElement('a');
-        link.href = '#';
-        const icon = item.isDirectory ? '📁' : '📄';
-        link.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (item.isDirectory) {
-            window.fetchDirectoryContents(item.path);
-          } else {
+  fileListElem.appendChild(ul);
+}
 
-            updateInfoPanel(item.path);
 
-          }
-        });
-        li.appendChild(link);
-        ul.appendChild(li);
-      });
-
-      fileListElem.appendChild(ul);
-    }
   </script>
 <script>
 
