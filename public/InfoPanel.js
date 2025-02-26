@@ -3,6 +3,7 @@
   
   function updateInfoPanel(element)
   {
+    console.log("updating info panel for "+ element.id());
     const infoPanel = document.getElementById('element-info');
     if (!infoPanel)
     {

@@ -1,96 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File View Mode Test</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        li {
-            margin: 5px 0;
-        }
-
-        a {
-            text-decoration: none;
-            color: blue;
-            cursor: pointer;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File Explorer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+    }
+    #container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    li:last-child {
+      border-bottom: none;
+    }
+    a {
+      text-decoration: none;
+      color: #007bff;
+      display: flex;
+      align-items: center;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .icon {
+      margin-right: 8px;
+    }
+    #loading {
+      text-align: center;
+      margin-top: 20px;
+      display: none;
+    }
+    #error {
+      color: red;
+      margin: 10px 0;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-    <h1>File View Mode Test</h1>
+  <div id="container">
+    <h1>File Explorer</h1>
+    <div id="error"></div>
     <div id="file-view"></div>
+    <div id="loading">Loading...</div>
+  </div>
 
-    <script>
-        // Fetch and display files and directories
-        function fetchDirectoryContents(directoryPath = '') {
-            fetch(`/api/files?path=${encodeURIComponent(directoryPath)}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Error fetching files: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    displayFiles(data, directoryPath);
-                })
-                .catch(error => {
-                    console.error('Error fetching directory contents:', error);
-                });
+  <script>
+    // Expose the file view function globally.
+    window.fetchDirectoryContents = async function(directoryPath = '') {
+      console.log('fetchDirectoryContents called with:', directoryPath);
+      
+      const loadingElem = document.getElementById('loading');
+      const errorElem = document.getElementById('error');
+      const fileListElem = document.getElementById('file-list');
+      
+      if (!loadingElem || !errorElem || !fileListElem) {
+        console.error('One or more file view container elements are missing.');
+        return;
+      }
+      
+      // Show loading indicator and clear previous content.
+      loadingElem.style.display = 'block';
+      errorElem.textContent = '';
+      fileListElem.innerHTML = '';
+      
+      try {
+        const response = await fetch(`/api/files?path=${encodeURIComponent(directoryPath)}`);
+        if (!response.ok) {
+          throw new Error(`Error fetching files: ${response.statusText}`);
         }
-
-        // Display files and directories in the UI
-        function displayFiles(files, currentPath) {
-            const fileView = document.getElementById('file-view');
-            fileView.innerHTML = '';
-
-            const ul = document.createElement('ul');
-
-            if (currentPath) {
-                const parentPath = currentPath.split('/').slice(0, -1).join('/');
-                const li = document.createElement('li');
-                const link = document.createElement('a');
-                link.textContent = '.. (Parent Directory)';
-                link.onclick = () => fetchDirectoryContents(parentPath);
-                li.appendChild(link);
-                ul.appendChild(li);
-            }
-
-            files.forEach(item => {
-                const li = document.createElement('li');
-                const link = document.createElement('a');
-
-                link.textContent = item.name;
-                link.onclick = () => {
-                    if (item.isDirectory) {
-                        fetchDirectoryContents(item.path);
-                    } else {
-                        alert(`File selected: ${item.path}`);
-                    }
-                };
-
-                li.appendChild(link);
-                ul.appendChild(li);
-            });
-
-            fileView.appendChild(ul);
-        }
-
-        // Initialize view with root directory
-        fetchDirectoryContents();
-    </script>
+        const data = await response.json();
+        console.log('Fetched data:', data);
+        displayFiles(data, directoryPath);
+      } catch (error) {
+        console.error('Error fetching files:', error);
+        errorElem.textContent = 'Could not load directory contents. Please try again.';
+      } finally {
+        loadingElem.style.display = 'none';
+      }
+    };
+  
+    function displayFiles(files, currentPath) {
+      console.log('Displaying files for path:', currentPath, files);
+      const fileListElem = document.getElementById('file-list');
+      fileListElem.innerHTML = '';
+  
+      const ul = document.createElement('ul');
+      ul.style.listStyleType = 'none';
+      ul.style.padding = '0';
+  
+      // Add a parent directory link if we're not at the root.
+      if (currentPath) {
+        const parentPath = currentPath.split('/').slice(0, -1).join('/');
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = '#';
+        link.innerHTML = `<span class="icon">📁</span> .. (Parent Directory)`;
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.fetchDirectoryContents(parentPath);
+        });
+        li.appendChild(link);
+        ul.appendChild(li);
+      }
+  
+      files.forEach(item => {
+        const li = document.createElement('li');
+        li.style.margin = '5px 0';
+        const link = document.createElement('a');
+        link.href = '#';
+        const icon = item.isDirectory ? '📁' : '📄';
+        link.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (item.isDirectory) {
+            window.fetchDirectoryContents(item.path);
+          } else {
+            alert(`File selected: ${item.path}`);
+          }
+        });
+        li.appendChild(link);
+        ul.appendChild(li);
+      });
+      fileListElem.appendChild(ul);
+    }
+  </script>
+  
 </body>
 </html>

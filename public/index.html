@@ -1,137 +1,273 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nodevision Index</title>
-        <link rel="stylesheet" href="NodeViewContainerStyles.css">
-        <link rel="stylesheet" href="ToolbarStyles.css">
-        <link rel="stylesheet" href="GraphStyles.css">
-        <link rel="stylesheet" href="MainStyles.css">
-        <link rel="stylesheet" href="LayoutStyles.css">
-        <link rel="stylesheet" href="style.css">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nodevision</title>
 
-        <!-- Existing scripts and styles -->
-        <script src="vendor/cytoscape/dist/cytoscape.min.js" defer></script>
-        <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-        <script type="text/javascript">
-            MathJax = {
-                tex: {
-                    inlineMath: [["\\(", "\\)"]],  // Enable inline math
-                    displayMath: [["$$", "$$"]]    // Enable display math (if needed)
-                },
-                options: {
-                    renderActions: {
-                        100: [function (doc) {
-                            doc.find('span.latex-math').each(function (node) {
-                                node.setAttribute('data-latex', node.textContent);
-                            });
-                        }]
-                    }
-                },
-                loader: {load: ['[tex]/amsmath']}
-            };
-        </script>
-        
-        <script src="vendor/layout-base/layout-base.js" defer></script>
-        <script src="vendor/cose-base/cose-base.js" defer></script>
-        <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
-        <script src="vendor/requirejs/require.js" defer></script>
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="MainStyles.css">
+  <link rel="stylesheet" href="LayoutStyles.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="GraphStyles.css">
+  <link rel="stylesheet" href="ToolbarStyles.css">
+  <link rel="stylesheet" href="NodeViewContainerStyles.css">
 
-        <!-- Include Nodevision Scripts -->
-        <script src="CombineURLs.js" defer></script>
-        <script src="GeneratedNodes.js" defer></script>
-        <script src="GeneratedEdges.js" defer></script>
-        <script src="GeneratedRegions.js" defer></script>
+  <!-- Vendor and Core Libraries -->
+  <script src="vendor/cytoscape/dist/cytoscape.min.js" defer></script>
+  <script src="vendor/layout-base/layout-base.js" defer></script>
+  <script src="vendor/cose-base/cose-base.js" defer></script>
+  <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
+  <script src="vendor/requirejs/require.js" defer></script>
 
-        <script src="GraphAddElements.js" defer></script>
-        <script src="GraphGetStyles.js" defer></script>
-        <script src="ExtractLinksFromHTML.js" defer></script>
-        <script src="GraphAddEdges.js" defer></script>
-        <script src="InfoPanel.js" defer></script>
-        <script src="GraphExpandRegion.js" defer></script>
-        <script src="GraphCollapseRegion.js" defer></script>
-
-        <script src="Graph.js" defer></script>
-        <script src="AllNodes.js" defer></script> <!-- Add this line -->
-
-        <!-- Include smaller scripts -->
-        <script type="module" src="createToolbar.js" defer></script>
-        <script type="module" src="boxManipulation.js" defer></script>
-        <script type="module" src="resizeAndDrag.js" defer></script>
-        <script type="module" src="main.js" defer></script>
-
-    </head>
-
-    <body>
-
-        <nav>
-            <ul>
-                <li><a href="/profile">Profile</a></li>
-                <li><a href="/api/files">My Files</a></li>
-                <li><a href="/api/arduino/ports">Arduino Tools</a></li>
-                <li><a href="/logout">Logout</a></li>
-            </ul>
-        </nav>
-
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                // Set ActiveNode dynamically
-                window.ActiveNode = 'defaultNode'; // Set dynamically
-
-                const searchButton = document.getElementById('searchButton');
-                const searchBar = document.getElementById('searchBar');
-                const searchResultsDiv = document.getElementById('searchResults');
-
-                searchButton.addEventListener('click', function () {
-                    const searchQuery = searchBar.value.toLowerCase();
-                    searchResultsDiv.style.display = 'none'; // Default hidden
-
-                    if (searchQuery.trim() !== '') {
-                        const searchResults = cy.nodes().filter(node =>
-                            node.data('id').toLowerCase().includes(searchQuery) ||
-                            node.data('label').toLowerCase().includes(searchQuery)
-                        );
-
-                        if (searchResults.length > 0) {
-                            const resultList = searchResults.map(node =>
-                                `<li><a href="#" onclick="cy.center(cy.getElementById('${node.data('id')}'))">${node.data('label')}</a></li>`
-                            ).join('');
-
-                            searchResultsDiv.innerHTML = `<ul>${resultList}</ul>`;
-                            searchResultsDiv.style.display = 'block';
-                        }
-                    }
-                });
+  <!-- MathJax (if needed) -->
+  <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  <script type="text/javascript">
+    MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["$$", "$$"]]
+      },
+      options: {
+        renderActions: {
+          100: [function (doc) {
+            doc.find('span.latex-math').each(function (node) {
+              node.setAttribute('data-latex', node.textContent);
             });
-        </script>
+          }]
+        }
+      },
+      loader: { load: ['[tex]/amsmath'] }
+    };
+  </script>
 
-        <div class="toolbar">
-            <input type="text" id="searchBar" placeholder="Search for files...">
-            <button id="searchButton">Search</button>
-            <div id="searchResults" style="display: none;"></div>
-        </div>
+  <!-- Nodevision Scripts -->
+  <script src="CombineURLs.js" defer></script>
+  <script src="GeneratedNodes.js" defer></script>
+  <script src="GeneratedEdges.js" defer></script>
+  <script src="GeneratedRegions.js" defer></script>
+  <script src="GraphAddElements.js" defer></script>
+  <script src="GraphGetStyles.js" defer></script>
+  <script src="ExtractLinksFromHTML.js" defer></script>
+  <script src="GraphAddEdges.js" defer></script>
+  <script src="InfoPanel.js" defer></script>
+  <script src="GraphExpandRegion.js" defer></script>
+  <script src="GraphCollapseRegion.js" defer></script>
+  <script src="Graph.js" defer></script>
+  <script src="AllNodes.js" defer></script>
 
-        <div class="container-wrapper">
-            <div class="container container-left">
-                <div id="content">
-                    <div id="cy"></div> <!-- Cytoscape container -->
-                    <div id="file-view" style="display: none;"> <!-- File View container -->
-                        <!-- Files will be dynamically loaded here -->
-                    </div>
-                </div>
-            </div>
-            <div class="divider" id="divider"></div>
-            <div class="container container-right">
-                <div id="element-info"></div>
-                <div id="info-panel">
-                    <div id="content-frame-container">
-                        <iframe id="content-frame" width="100%" height="100%" style="height: 95%;"></iframe>
-                    </div>
-                </div>
-            </div>
+  <!-- Toolbar & Other Modules -->
+  <script type="module" src="createToolbar.js" defer></script>
+  <script type="module" src="boxManipulation.js" defer></script>
+  <script type="module" src="resizeAndDrag.js" defer></script>
+  <script type="module" src="main.js" defer></script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <ul>
+      <li><a href="/profile">Profile</a></li>
+      <li><a href="/api/files">My Files</a></li>
+      <li><a href="/api/arduino/ports">Arduino Tools</a></li>
+      <li><a href="/logout">Logout</a></li>
+    </ul>
+  </nav>
+
+  <!-- Toolbar (Restored) -->
+  <div class="toolbar" id="toolbar">
+    <!-- Your search bar remains here -->
+    <input type="text" id="searchBar" placeholder="Search for files...">
+    <button id="searchButton" aria-label="Search Files">Search</button>
+    <div id="searchResults" style="display: none;"></div>
+    <!-- Other toolbar elements (buttons, toggles) will be generated by createToolbar.js using DefineToolbarElements.js -->
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="container-wrapper">
+    <div class="container container-left">
+      <div id="content">
+        <!-- Graph/Cytoscape container -->
+        <div id="cy" style="display: block;"></div>
+        <!-- File View container (hidden by default) -->
+        <div id="file-view" style="display: none; padding: 10px;">
+          <div id="error" style="text-align: center; color: red;"></div>
+          <div id="loading" style="text-align: center; display: none;">Loading...</div>
+          <div id="file-list"></div>
         </div>
-    </body>
+      </div>
+    </div>
+    <div class="divider" id="divider"></div>
+    <div class="container container-right">
+      <div id="element-info"></div>
+      <div id="info-panel">
+        <div id="content-frame-container">
+          <iframe id="content-frame" width="100%" height="100%" style="height: 95%;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File View Functionality -->
+  <script>
+    // Expose file view functions to the global scope for toolbar callbacks.
+
+    
+    window.updateFilePreview = function(filePath, fileName) {
+  console.log("Updating preview for:", filePath);
+  const contentFrame = document.getElementById('content-frame');
+  const elementInfo = document.getElementById('element-info');
+  // Optionally update the info panel with the file's name or other details.
+  elementInfo.innerText = fileName;
+  contentFrame.src = filePath;
+};
+
+
+    window.fetchDirectoryContents = async function(directoryPath = '') {
+      console.log("Fetching directory contents for:", directoryPath);
+      const loadingElem = document.getElementById('loading');
+      const errorElem = document.getElementById('error');
+      const fileListElem = document.getElementById('file-list');
+
+      loadingElem.style.display = 'block';
+      errorElem.textContent = '';
+      fileListElem.innerHTML = '';
+
+      try {
+        const response = await fetch(`/api/files?path=${encodeURIComponent(directoryPath)}`);
+        if (!response.ok) {
+          throw new Error(`Error fetching files: ${response.statusText}`);
+        }
+        const data = await response.json();
+        displayFiles(data, directoryPath);
+      } catch (error) {
+        console.error('Error fetching files:', error);
+        errorElem.textContent = 'Could not load directory contents. Please try again.';
+      } finally {
+        loadingElem.style.display = 'none';
+      }
+    };
+
+    
+    function displayFiles(files, currentPath) {
+      const fileListElem = document.getElementById('file-list');
+      fileListElem.innerHTML = '';
+
+      const ul = document.createElement('ul');
+      ul.style.listStyleType = 'none';
+      ul.style.padding = '0';
+
+      // Add link for parent directory if not at the root.
+      if (currentPath) {
+        const parentPath = currentPath.split('/').slice(0, -1).join('/');
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = '#';
+        link.innerHTML = `<span class="icon">📁</span> .. (Parent Directory)`;
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.fetchDirectoryContents(parentPath);
+        });
+        li.appendChild(link);
+        ul.appendChild(li);
+      }
+
+      files.forEach(item => {
+        const li = document.createElement('li');
+        li.style.margin = '5px 0';
+        const link = document.createElement('a');
+        link.href = '#';
+        const icon = item.isDirectory ? '📁' : '📄';
+        link.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (item.isDirectory) {
+            window.fetchDirectoryContents(item.path);
+          } else {
+            alert(`File selected: ${item.path}`);
+          }
+        });
+        li.appendChild(link);
+        ul.appendChild(li);
+      });
+
+      fileListElem.appendChild(ul);
+    }
+  </script>
+<script>
+
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    // Force file view display for testing
+    const cyContainer = document.getElementById('cy');
+    const fileViewContainer = document.getElementById('file-view');
+
+    // Hide the graph container and show the file view container.
+    cyContainer.style.display = 'none';
+    fileViewContainer.style.display = 'block';
+
+    // Call the file view function to load the files/folders.
+    if (typeof window.fetchDirectoryContents === 'function') {
+      window.fetchDirectoryContents();
+    } else {
+      console.error("fetchDirectoryContents is not defined.");
+    }
+  });
+</script>
+
+  <!-- Example Toolbar Toggle Callback -->
+  <script>
+    // This function would be triggered by your toolbar's "Toggle View Mode" item.
+    // For example, if your toggle button is switched, it calls this callback.
+    function toggleFileView(state) {
+      console.log("Toggle File View, state:", state);
+      const cyContainer = document.getElementById('cy');
+      const fileViewContainer = document.getElementById('file-view');
+
+      
+      if (state) {
+        // Show graph view.
+        cyContainer.style.display = 'block';
+        fileViewContainer.style.display = 'none';
+      } else {
+        // Show file view.
+        cyContainer.style.display = 'none';
+        fileViewContainer.style.display = 'block';
+        // Load file view content (starting at the root or your desired directory).
+        window.fetchDirectoryContents();
+      }
+    }
+  </script>
+
+  <!-- Existing Search Functionality -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      window.ActiveNode = 'defaultNode';
+      const searchButton = document.getElementById('searchButton');
+      const searchBar = document.getElementById('searchBar');
+      const searchResultsDiv = document.getElementById('searchResults');
+
+      searchButton.addEventListener('click', function () {
+        const searchQuery = searchBar.value.toLowerCase().trim();
+        searchResultsDiv.style.display = 'none';
+
+        if (searchQuery !== '') {
+          if (typeof cy !== 'undefined') {
+            const searchResults = cy.nodes().filter(node =>
+              node.data('id').toLowerCase().includes(searchQuery) ||
+              node.data('label').toLowerCase().includes(searchQuery)
+            );
+
+            if (searchResults.length > 0) {
+              const resultList = searchResults.map(node =>
+                `<li><a href="#" onclick="cy.center(cy.getElementById('${node.data('id')}'))">${node.data('label')}</a></li>`
+              ).join('');
+              searchResultsDiv.innerHTML = `<ul>${resultList}</ul>`;
+              searchResultsDiv.style.display = 'block';
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
 </html>
-

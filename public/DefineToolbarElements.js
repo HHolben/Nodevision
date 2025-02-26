@@ -50,17 +50,35 @@ export const boxes = [
         heading: 'Toggle View Mode',
         type: 'toggle',
         callback: (state) => {
-            const cyContainer = document.getElementById('cy');
-            const fileViewContainer = document.getElementById('file-view');
-            if (state) {
-                cyContainer.style.display = 'block';
-                fileViewContainer.style.display = 'none';
-            } else {
-                cyContainer.style.display = 'none';
-                fileViewContainer.style.display = 'block';
+          console.log("Toggle View Mode callback fired. State:", state);
+          const cyContainer = document.getElementById('cy');
+          const fileViewContainer = document.getElementById('file-view');
+          if (state) {
+            // Show graph view.
+            cyContainer.style.display = 'block';
+            fileViewContainer.style.display = 'none';
+            // Recalculate layout
+            if (window.cy) {
+                initializeTheGraphStyles();
+
+             
             }
-        }, // Custom callback for the toggle behavior
-    },
+          } else {
+            // Show file view.
+            cyContainer.style.display = 'none';
+            fileViewContainer.style.display = 'block';
+            if (typeof window.fetchDirectoryContents === 'function') {
+              window.fetchDirectoryContents();
+            } else {
+              console.error("window.fetchDirectoryContents is not defined.");
+            }
+          }
+        },
+      },
+      
+      
+      
+      
     {
         ToolbarCategory: 'Settings',
         heading: 'Toggle Page Preview Mode',

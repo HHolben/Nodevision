@@ -47,7 +47,7 @@ function createCytoscapeGraph(elements, styles)
 
   // Node and edge interactions
   window.cy.on('click', 'node, edge', function(evt) {
-    const element = evt.target;
+    element() = evt.target;
     updateInfoPanel(element);
   });
 
