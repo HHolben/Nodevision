@@ -19,6 +19,8 @@ var iframe = document.getElementById('content-frame');
        styleElement.innerHTML = `body { transform: scale(${scale}); transform-origin: 0 0; width: ${100 / scale}%; height: ${100 / scale}%; }`;
        iframeDoc.head.appendChild(styleElement);
      };
+     
+     window.ActiveNode =`${element}`;
 
     }
 
