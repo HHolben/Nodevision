@@ -160,10 +160,9 @@
 
   // Only add a parent directory link if we're not in the root (Notebook) directory.
   if (currentPath && currentPath.trim() !== "") {
-    // Compute the parent directory by removing the last segment.
     const parts = currentPath.split('/');
     parts.pop(); // Remove current folder.
-    const parentPath = parts.join('/'); // May be empty, which means Notebook root.
+    const parentPath = parts.join('/');
     const li = document.createElement('li');
     const link = document.createElement('a');
     link.href = '#';
@@ -172,11 +171,18 @@
       e.preventDefault();
       window.fetchDirectoryContents(parentPath);
     });
+    // Allow drop on the parent directory link.
+    link.addEventListener('dragover', (e) => { e.preventDefault(); });
+    link.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const sourcePath = e.dataTransfer.getData("text/plain");
+      // Move source into parentPath.
+      moveFileOrDirectory(sourcePath, parentPath, currentPath);
+    });
     li.appendChild(link);
     ul.appendChild(li);
   }
 
-  // Create entries for each file/directory.
   files.forEach(item => {
     const li = document.createElement('li');
     li.style.margin = '5px 0';
@@ -184,15 +190,35 @@
     link.href = '#';
     const icon = item.isDirectory ? '📁' : '📄';
     link.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
+    
+    // Make the item draggable.
+    link.setAttribute('draggable', true);
+    link.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData("text/plain", item.path);
+    });
+    
+    // If the item is a directory, allow drops on it.
+    if (item.isDirectory) {
+      link.addEventListener('dragover', (e) => { e.preventDefault(); });
+      link.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const sourcePath = e.dataTransfer.getData("text/plain");
+        const destinationPath = item.path;
+        // Trigger the move from sourcePath to destinationPath.
+        moveFileOrDirectory(sourcePath, destinationPath, currentPath);
+      });
+    }
+
+    // Click behavior: if directory, navigate into it; if file, update the preview.
     link.addEventListener('click', (e) => {
       e.preventDefault();
       if (item.isDirectory) {
         window.fetchDirectoryContents(item.path);
       } else {
-        // For files, call updateInfoPanel with the file path.
         updateInfoPanel(item.path);
       }
     });
+    
     li.appendChild(link);
     ul.appendChild(li);
   });
@@ -200,6 +226,30 @@
   fileListElem.appendChild(ul);
 }
 
+
+function moveFileOrDirectory(sourcePath, destinationPath, currentPath) {
+  console.log(`Moving "${sourcePath}" to "${destinationPath}"`);
+  fetch(`/api/move`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source: sourcePath, destination: destinationPath })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Move operation failed.');
+    }
+    return response.json();
+  })
+  .then(result => {
+    console.log('Move successful:', result);
+    // Refresh the current directory view to reflect the move.
+    window.fetchDirectoryContents(currentPath);
+  })
+  .catch(error => {
+    console.error('Error moving file or directory:', error);
+    alert('Error moving file or directory.');
+  });
+}
 
   </script>
 <script>

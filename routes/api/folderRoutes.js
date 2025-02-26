@@ -73,4 +73,32 @@ router.get('/files', async (req, res) => {
     }
 });
 
+
+// Endpoint to move a file or directory within the Notebook
+router.post('/move', async (req, res) => {
+    const { source, destination } = req.body;
+    
+    if (!source || !destination) {
+      return res.status(400).json({ error: 'Source and destination are required.' });
+    }
+    
+    // Compute the full paths relative to the Notebook directory.
+    const sourceFullPath = path.join(notebookDir, source);
+    // The destination is the directory into which the item should be moved.
+    // We use the basename of the source to preserve the name.
+    const destinationFullPath = path.join(notebookDir, destination, path.basename(source));
+    
+    try {
+      await fs.rename(sourceFullPath, destinationFullPath);
+      res.status(200).json({
+        message: `Moved "${source}" to "${destination}".`
+      });
+    } catch (error) {
+      console.error('Error moving file or directory:', error);
+      res.status(500).json({ error: 'Failed to move file or directory.' });
+    }
+  });
+  
+
+
 module.exports = router;
