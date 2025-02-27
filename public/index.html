@@ -158,30 +158,29 @@
   ul.style.listStyleType = 'none';
   ul.style.padding = '0';
 
-  // Only add a parent directory link if we're not in the root (Notebook) directory.
-  if (currentPath && currentPath.trim() !== "") {
-    const parts = currentPath.split('/');
-    parts.pop(); // Remove current folder.
-    const parentPath = parts.join('/');
-    const li = document.createElement('li');
-    const link = document.createElement('a');
-    link.href = '#';
-    link.innerHTML = `<span class="icon">📁</span> .. (Parent Directory)`;
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.fetchDirectoryContents(parentPath);
-    });
-    // Allow drop on the parent directory link.
-    link.addEventListener('dragover', (e) => { e.preventDefault(); });
-    link.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const sourcePath = e.dataTransfer.getData("text/plain");
-      // Move source into parentPath.
-      moveFileOrDirectory(sourcePath, parentPath, currentPath);
-    });
-    li.appendChild(link);
-    ul.appendChild(li);
-  }
+// Only add a parent directory link if we're not in the root (Notebook) directory.
+if (currentPath && currentPath.trim() !== "") {
+  const parts = currentPath.split('/');
+  parts.pop(); // Remove the current folder.
+  const parentPath = parts.join('/'); // This will be "" if the parent is the Notebook root.
+  const li = document.createElement('li');
+  const link = document.createElement('a');
+  link.href = '#';
+  link.innerHTML = `<span class="icon">📁</span> .. (Parent Directory)`;
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.fetchDirectoryContents(parentPath);
+  });
+  // Allow drop on the parent directory link.
+  link.addEventListener('dragover', (e) => { e.preventDefault(); });
+  link.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const sourcePath = e.dataTransfer.getData("text/plain");
+    moveFileOrDirectory(sourcePath, parentPath, currentPath);
+  });
+  li.appendChild(link);
+  ul.appendChild(li);
+}
 
   files.forEach(item => {
     const li = document.createElement('li');
