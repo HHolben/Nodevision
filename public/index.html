@@ -22,25 +22,9 @@
 
   <!-- MathJax (if needed) -->
   <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-  <script type="text/javascript">
-    MathJax = {
-      tex: {
-        inlineMath: [["\\(", "\\)"]],
-        displayMath: [["$$", "$$"]]
-      },
-      options: {
-        renderActions: {
-          100: [function (doc) {
-            doc.find('span.latex-math').each(function (node) {
-              node.setAttribute('data-latex', node.textContent);
-            });
-          }]
-        }
-      },
-      loader: { load: ['[tex]/amsmath'] }
-    };
-  </script>
+
   <!-- Nodevision Scripts -->
+  <script src="NodevisionIncludeMathjax.js" defer></script>
   <script src="CombineURLs.js" defer></script>
   <script src="GeneratedNodes.js" defer></script>
   <script src="GeneratedEdges.js" defer></script>
