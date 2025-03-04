@@ -115,8 +115,9 @@ function loadFileContents() {
 
     // Attach save button event listener.
     document.getElementById('saveButton').addEventListener('click', () => {
-        saveFileContents(activeNode);
+        console.log("saving: "+ filePath);
+        saveFileContents(filePath);
     });
 
-    console.log("WYSIWYG editing mode activated for:", activeNode);
+    console.log("WYSIWYG editing mode activated for:", filePath);
 })();
