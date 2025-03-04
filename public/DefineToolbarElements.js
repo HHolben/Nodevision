@@ -59,18 +59,16 @@ export const boxes = [
             fileViewContainer.style.display = 'none';
             // Recalculate layout
             if (window.cy) {
-                initializeTheGraphStyles();
-                        // Update the graph layout with animation and fitting options.
-        cy.layout({
-            name: 'cose', // Force-directed layout
-            animate: true,
-            fit: true,
-            padding: 30,
-            nodeRepulsion: 8000,
-            idealEdgeLength: 50,
-          }).run();
-
-             
+              initializeTheGraphStyles();
+              // Update the graph layout with animation and fitting options.
+              cy.layout({
+                name: 'cose', // Force-directed layout
+                animate: true,
+                fit: true,
+                padding: 30,
+                nodeRepulsion: 8000,
+                idealEdgeLength: 50,
+              }).run();
             }
           } else {
             // Show file view.
@@ -83,25 +81,47 @@ export const boxes = [
             }
           }
         },
-      },
-      
-      
-      
-      
+    },
     {
         ToolbarCategory: 'Settings',
         heading: 'Toggle Page Preview Mode',
         type: 'toggle',
         callback: (state) => {
             console.log(state ? 'Preview Mode Enabled' : 'Preview Mode Disabled');
-        }, // Example toggle callback
+        },
+    },
+    // New "View" category options for switching between view modes
+    {
+        ToolbarCategory: 'View',
+        heading: 'Viewing',
+        content: ``,
+        script: "SwitchToViewing.js",
     },
     {
         ToolbarCategory: 'View',
-        heading: 'API Terminal',
-        content: ` <iframe src="TerminalInterfaceTest.html" width="100%" height="300"></iframe> `,
-        script: "SendToLoginPage.js"
+        heading: 'WYSIWYG Editing',
+        content: ``,
+        script: "SwitchToWYSIWYGediting.js",
     },
+    {
+        ToolbarCategory: 'View',
+        heading: '3D World Viewing',
+        content: ``,
+        script: "SwitchTo3DWorldViewing.js",
+    },
+    {
+        ToolbarCategory: 'View',
+        heading: '3D World Editing',
+        content: ``,
+        script: "SwitchTo3DWorldEditing.js",
+    },
+    {
+        ToolbarCategory: 'View',
+        heading: 'Code Editing',
+        content: ``,
+        script: "SwitchToCodeEditing.js",
+    },
+    // You may choose to remove or reposition the API Terminal option as needed.
     {
         ToolbarCategory: 'User',
         heading: 'Logout',
