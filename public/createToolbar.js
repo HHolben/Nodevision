@@ -4,7 +4,7 @@ import { createBox } from './boxManipulation.js';
 
 /**
  * Creates a toolbar in the specified container.
- * @param {string} containerSelector - The CSS selector for the toolbar container.
+ * @param {string} toolbarSelector - The CSS selector for the toolbar container.
  * @param {function} [onToggleView] - Optional callback function for handling toggle view changes.
  */
 export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () => {}) {
@@ -14,6 +14,7 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         return;
     }
 
+    // Build initial categories from boxes.
     const categories = {};
 
     boxes.forEach(box => {
@@ -23,6 +24,34 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         categories[box.ToolbarCategory].push(box);
     });
 
+    // --- Mode-Specific Items ---
+    // If the current mode is WYSIWYG, add a "Save Changes" item under the File category.
+    if (window.currentMode === 'WYSIWYG') {
+        if (!categories['File']) {
+            categories['File'] = [];
+        }
+        const saveChangesItem = {
+            heading: 'Save Changes',
+            content: '',
+            // Instead of a script, we define a custom action callback.
+            customAction: () => {
+                console.log("Save Changes clicked from toolbar.");
+                // Trigger the save functionality (for example, simulate a click on the save button)
+                const saveButton = document.getElementById('saveButton');
+                if (saveButton) {
+                    saveButton.click();
+                } else {
+                    console.error('Save button not found.');
+                }
+            }
+        };
+        categories['File'].push(saveChangesItem);
+    }
+
+    // Clear any existing toolbar content.
+    toolbarContainer.innerHTML = '';
+
+    // Create toolbar dropdowns for each category.
     for (const category in categories) {
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
@@ -36,38 +65,18 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         dropdownContent.className = 'dropdown-content';
 
         categories[category].forEach(box => {
-            if (box.type === 'toggle') {
-                const toggleLabel = document.createElement('label');
-                toggleLabel.textContent = 'Graph / File View';
-
-                const toggleSwitch = document.createElement('input');
-                toggleSwitch.type = 'checkbox';
-                toggleSwitch.addEventListener('change', () => {
-                    const cyContainer = document.getElementById('cy');
-                    const fileViewContainer = document.getElementById('file-view');
-
-                    if (toggleSwitch.checked) {
-                        cyContainer.style.display = 'block';
-                        fileViewContainer.style.display = 'none';
-                        console.log('Switched to GraphViewMode');
-                    } else {
-                        cyContainer.style.display = 'none';
-                        fileViewContainer.style.display = 'block';
-                        console.log('Switched to FileViewMode');
-                        // Ensure onToggleView is called
-                        if (onToggleView) onToggleView();  // This will now always be defined
-                    }
-                });
-
-                toggleLabel.appendChild(toggleSwitch);
-                dropdownContent.appendChild(toggleLabel);
-            } else {
-                const link = document.createElement('a');
-                link.href = '#';
-                link.textContent = box.heading;
+            const link = document.createElement('a');
+            link.href = '#';
+            link.textContent = box.heading;
+            // If the box defines a customAction, use it; otherwise, use the script property via createBox.
+            if (box.customAction) {
+                link.addEventListener('click', () => box.customAction());
+            } else if (box.script) {
                 link.addEventListener('click', () => createBox(box));
-                dropdownContent.appendChild(link);
+            } else {
+                link.addEventListener('click', () => createBox(box));
             }
+            dropdownContent.appendChild(link);
         });
 
         dropdown.appendChild(dropdownContent);
@@ -146,7 +155,6 @@ function renderDirectoryStructure(files, isRoot = false) {
 
     return container.outerHTML;
 }
-
 
 /**
  * Toggles the visibility of a directory's nested contents.
