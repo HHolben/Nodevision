@@ -21,12 +21,11 @@ function formatHtml(html) {
 
             return indentedLine;
         })
-        .filter(line => line !== '')  // Remove empty lines caused by multiple newlines
+        .filter(line => line !== '')  // Remove empty lines
         .join('\n');  // Join the lines back together
 
     return formatted;  // Return the final formatted HTML
 }
-
 
 // Expose the save function on the window so the toolbar can access it.
 window.saveWYSIWYGFile = function(filePath) {
@@ -51,8 +50,6 @@ window.saveWYSIWYGFile = function(filePath) {
             'Error saving file content: ' + error.message;
     });
 };
-
-
 
 function updateWYSIWYGToolbar(filePath) {
     const toolbarContainer = document.querySelector('.toolbar');
@@ -81,28 +78,11 @@ function updateWYSIWYGToolbar(filePath) {
         toolbarContainer.appendChild(fileDropdown);
     }
     
-    // Now add the "Save changes" button to the dropdown.
-    const dropdownContent = fileDropdown.querySelector('.dropdown-content');
-    
-    // Check if the Save changes item already exists (to avoid duplicates).
-    if (!dropdownContent.querySelector('a[data-action="save-changes"]')) {
-        const saveLink = document.createElement('a');
-        saveLink.href = '#';
-        saveLink.textContent = 'Save changes';
-        saveLink.setAttribute('data-action', 'save-changes');
-        saveLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Call the exposed save function.
-            window.saveWYSIWYGFile(filePath);
-        });
-        dropdownContent.appendChild(saveLink);
-    }
+
 }
 
-
-
 (function () {
-    // Determine active node and filePath as before.
+    // Determine active node and filePath.
     let activeNode = window.ActiveNode;
     if (!activeNode) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -115,9 +95,19 @@ function updateWYSIWYGToolbar(filePath) {
     }
 
     let filePath = `Notebook/${activeNode}`;
+    window.currentActiveFilePath = filePath;
+
     if (!filePath) {
         console.error('No activeNode provided');
         document.getElementById('errorMessage').textContent = 'Error: No activeNode provided.';
+    }
+
+    // Set the mode to WYSIWYG Editing using the centralized state manager.
+    if (window.AppState && typeof window.AppState.setMode === 'function') {
+        window.AppState.setMode('WYSIWYG Editing');
+    } else {
+        // Fallback to legacy global if AppState isn't defined.
+        window.currentMode = 'WYSIWYG Editing';
     }
 
     // Define the right-plane container for the editor.
@@ -137,7 +127,7 @@ function updateWYSIWYGToolbar(filePath) {
     `;
     rightPlane.innerHTML = editorHTML;
 
-    // Function to load file contents remains unchanged.
+    // Function to load file contents.
     function loadFileContents() {
         if (!filePath) return;
         
@@ -157,8 +147,6 @@ function updateWYSIWYGToolbar(filePath) {
                 document.getElementById('errorMessage').textContent = 'Error fetching file content: ' + error.message;
             });
     }
-
-    // Expose or define formatHtml as needed (omitted here for brevity).
 
     // Load the file contents.
     loadFileContents();

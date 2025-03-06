@@ -14,39 +14,23 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         return;
     }
 
+    // Use centralized mode management from AppState
+    const currentMode = window.AppState.getMode();
+
     // Build initial categories from boxes.
     const categories = {};
 
     boxes.forEach(box => {
+        // If the box defines modes and the current mode is not included, skip it.
+        if (box.modes && !box.modes.includes(currentMode)) {
+            return;
+        }
+
         if (!categories[box.ToolbarCategory]) {
             categories[box.ToolbarCategory] = [];
         }
         categories[box.ToolbarCategory].push(box);
     });
-
-    // --- Mode-Specific Items ---
-    // If the current mode is WYSIWYG, add a "Save Changes" item under the File category.
-    if (window.currentMode === 'WYSIWYG') {
-        if (!categories['File']) {
-            categories['File'] = [];
-        }
-        const saveChangesItem = {
-            heading: 'Save Changes',
-            content: '',
-            // Instead of a script, we define a custom action callback.
-            customAction: () => {
-                console.log("Save Changes clicked from toolbar.");
-                // Trigger the save functionality (for example, simulate a click on the save button)
-                const saveButton = document.getElementById('saveButton');
-                if (saveButton) {
-                    saveButton.click();
-                } else {
-                    console.error('Save button not found.');
-                }
-            }
-        };
-        categories['File'].push(saveChangesItem);
-    }
 
     // Clear any existing toolbar content.
     toolbarContainer.innerHTML = '';
@@ -55,6 +39,7 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
     for (const category in categories) {
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
+        dropdown.setAttribute('data-category', category);
 
         const button = document.createElement('button');
         button.className = 'dropbtn';
@@ -68,13 +53,22 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
             const link = document.createElement('a');
             link.href = '#';
             link.textContent = box.heading;
-            // If the box defines a customAction, use it; otherwise, use the script property via createBox.
-            if (box.customAction) {
-                link.addEventListener('click', () => box.customAction());
+            if (box.callback) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    box.callback();
+                });
             } else if (box.script) {
-                link.addEventListener('click', () => createBox(box));
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    // Use createBox or a similar function to load the script.
+                    createBox(box);
+                });
             } else {
-                link.addEventListener('click', () => createBox(box));
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    createBox(box);
+                });
             }
             dropdownContent.appendChild(link);
         });
@@ -83,7 +77,6 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         toolbarContainer.appendChild(dropdown);
     }
 }
-
 
 /**
  * Fetches and displays the file view in the specified container.
@@ -182,3 +175,11 @@ async function toggleDirectory(event) {
         directoryElement.style.display = 'none';
     }
 }
+
+// Immediately render the toolbar on load.
+createToolbar();
+
+// Subscribe to mode changes to automatically refresh the toolbar when mode updates.
+window.AppState.subscribe(() => {
+    createToolbar();
+});

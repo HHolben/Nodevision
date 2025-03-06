@@ -1,4 +1,5 @@
 export const boxes = [
+    // Always visible items:
     {
         heading: "New Node",
         content: `
@@ -14,6 +15,7 @@ export const boxes = [
         `,
         script: "NewNotebookPageInitializer.js",
         ToolbarCategory: "File",
+        // No "modes" property means always visible.
     },
     {
         heading: "New Directory",
@@ -24,25 +26,25 @@ export const boxes = [
     {
         heading: "Export Graph",
         content: ``,
-        script: `ExportGraph.js`,
+        script: "ExportGraph.js",
         ToolbarCategory: "File",
     },
     {
         heading: "Edit Code",
         content: ``,
-        script: `SendToCodeEditorPage.js`,
+        script: "SendToCodeEditorPage.js",
         ToolbarCategory: "Edit",
     },
     {
         heading: "WYSIWYG Editor",
         content: ``,
-        script: `SendToWYSIWYGeditorPage.js`,
+        script: "SendToWYSIWYGeditorPage.js",
         ToolbarCategory: "Edit",
     },
     {
         heading: "Settings",
         content: `<iframe src="SettingsPage.html"></iframe>`,
-        script: `SendToCodeSettingsPage.js`,
+        script: "SendToCodeSettingsPage.js",
         ToolbarCategory: "Settings",
     },
     {
@@ -57,12 +59,10 @@ export const boxes = [
             // Show graph view.
             cyContainer.style.display = 'block';
             fileViewContainer.style.display = 'none';
-            // Recalculate layout
             if (window.cy) {
               initializeTheGraphStyles();
-              // Update the graph layout with animation and fitting options.
               cy.layout({
-                name: 'cose', // Force-directed layout
+                name: 'cose',
                 animate: true,
                 fit: true,
                 padding: 30,
@@ -90,7 +90,7 @@ export const boxes = [
             console.log(state ? 'Preview Mode Enabled' : 'Preview Mode Disabled');
         },
     },
-    // New "View" category options for switching between view modes
+    // View category options (always visible)
     {
         ToolbarCategory: 'View',
         heading: 'Viewing',
@@ -121,11 +121,31 @@ export const boxes = [
         content: ``,
         script: "SwitchToCodeEditing.js",
     },
-    // You may choose to remove or reposition the API Terminal option as needed.
+    // Items under "User"
     {
         ToolbarCategory: 'User',
         heading: 'Logout',
         content: `<h1>Log out user?</h1><h2><a href="login.html">Logout</a></h2>`,
         script: "SendToLoginPage.js",
     },
+    // Items that appear only in WYSIWYG Editing mode:
+    {
+        ToolbarCategory: 'File',
+        heading: 'Save File',
+        content: ``,
+        // We could either use a script reference or define a callback inline.
+        // For example, if you have an exposed function "saveWYSIWYGFile", you might do:
+        callback: () => {
+            // Retrieve filePath from a global or from AppState.
+            const filePath = window.currentActiveFilePath;
+            if (filePath && typeof window.saveWYSIWYGFile === 'function') {
+                window.saveWYSIWYGFile(filePath);
+            } else {
+                console.error("Cannot save: filePath or saveWYSIWYGFile is missing.");
+            }
+        },
+        // This item should only appear when in WYSIWYG editing mode.
+        modes: ["WYSIWYG Editing"]
+    },
+
 ];
