@@ -14,68 +14,124 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         return;
     }
 
-    // Use centralized mode management from AppState
-    const currentMode = window.AppState.getMode();
+    // Retrieve current mode from centralized state.
+    const currentMode = window.AppState ? window.AppState.getMode() : window.currentMode;
 
-    // Build initial categories from boxes.
-    const categories = {};
+    // Separate direct items from grouped items.
+    const directItems = [];
+    const groupedItems = {};
 
     boxes.forEach(box => {
-        // If the box defines modes and the current mode is not included, skip it.
+        // Skip if the box defines modes and current mode is not included.
         if (box.modes && !box.modes.includes(currentMode)) {
             return;
         }
-
-        if (!categories[box.ToolbarCategory]) {
-            categories[box.ToolbarCategory] = [];
+        // If the box is marked for direct rendering, store it in directItems.
+        if (box.direct) {
+            directItems.push(box);
+        } else {
+            const category = box.ToolbarCategory || 'Misc';
+            if (!groupedItems[category]) {
+                groupedItems[category] = [];
+            }
+            groupedItems[category].push(box);
         }
-        categories[box.ToolbarCategory].push(box);
     });
 
-    // Clear any existing toolbar content.
+    // Clear existing toolbar content.
     toolbarContainer.innerHTML = '';
 
-    // Create toolbar dropdowns for each category.
-    for (const category in categories) {
-        const dropdown = document.createElement('div');
-        dropdown.className = 'dropdown';
-        dropdown.setAttribute('data-category', category);
+    // Define the desired order for grouped categories.
+    const groupOrder = ['File', 'Edit', 'Settings', 'View', 'User'];
 
-        const button = document.createElement('button');
-        button.className = 'dropbtn';
-        button.textContent = category;
-        dropdown.appendChild(button);
+    // Render grouped items in the specified order.
+    groupOrder.forEach(category => {
+        if (groupedItems[category]) {
+            const dropdown = document.createElement('div');
+            dropdown.className = 'dropdown';
+            dropdown.setAttribute('data-category', category);
 
-        const dropdownContent = document.createElement('div');
-        dropdownContent.className = 'dropdown-content';
+            const button = document.createElement('button');
+            button.className = 'dropbtn';
+            button.textContent = category;
+            dropdown.appendChild(button);
 
-        categories[category].forEach(box => {
-            const link = document.createElement('a');
-            link.href = '#';
-            link.textContent = box.heading;
-            if (box.callback) {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    box.callback();
-                });
-            } else if (box.script) {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    // Use createBox or a similar function to load the script.
-                    createBox(box);
-                });
-            } else {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    createBox(box);
-                });
+            const dropdownContent = document.createElement('div');
+            dropdownContent.className = 'dropdown-content';
+
+            groupedItems[category].forEach(box => {
+                const link = document.createElement('a');
+                link.href = '#';
+                link.textContent = box.heading;
+
+                // Use customAction if defined; else callback; else script via createBox.
+                if (box.customAction) {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        box.customAction();
+                    });
+                } else if (box.callback) {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        box.callback();
+                    });
+                } else if (box.script) {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        createBox(box);
+                    });
+                } else {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        createBox(box);
+                    });
+                }
+                dropdownContent.appendChild(link);
+            });
+
+            dropdown.appendChild(dropdownContent);
+            toolbarContainer.appendChild(dropdown);
+
+            // After rendering the "View" category, insert any direct items with category "Search"
+            if (category === 'View') {
+                directItems
+                    .filter(box => (box.ToolbarCategory === 'Search'))
+                    .forEach(box => {
+                        const directElement = document.createElement('div');
+                        directElement.className = 'toolbar-direct-item';
+                        directElement.innerHTML = box.content;
+                        toolbarContainer.appendChild(directElement);
+                        if (box.script) {
+                            const scriptEl = document.createElement('script');
+                            scriptEl.src = box.script;
+                            toolbarContainer.appendChild(scriptEl);
+                        }
+                    });
             }
-            dropdownContent.appendChild(link);
-        });
+        }
+    });
 
-        dropdown.appendChild(dropdownContent);
-        toolbarContainer.appendChild(dropdown);
-    }
+    // If any direct items remain that weren't rendered (for categories other than "Search"), append them.
+    directItems
+        .filter(box => box.ToolbarCategory !== 'Search')
+        .forEach(box => {
+            const directElement = document.createElement('div');
+            directElement.className = 'toolbar-direct-item';
+            directElement.innerHTML = box.content;
+            toolbarContainer.appendChild(directElement);
+            if (box.script) {
+                const scriptEl = document.createElement('script');
+                scriptEl.src = box.script;
+                toolbarContainer.appendChild(scriptEl);
+            }
+        });
+}
+
+// Subscribe to mode changes so the toolbar re-renders automatically.
+if (window.AppState && typeof window.AppState.subscribe === 'function') {
+    window.AppState.subscribe(() => {
+        createToolbar();
+    });
 }
 
 /**
@@ -175,11 +231,3 @@ async function toggleDirectory(event) {
         directoryElement.style.display = 'none';
     }
 }
-
-// Immediately render the toolbar on load.
-createToolbar();
-
-// Subscribe to mode changes to automatically refresh the toolbar when mode updates.
-window.AppState.subscribe(() => {
-    createToolbar();
-});
