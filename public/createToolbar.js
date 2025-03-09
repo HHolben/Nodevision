@@ -3,6 +3,41 @@ import { boxes } from './DefineToolbarElements.js';
 import { createBox } from './boxManipulation.js';
 
 /**
+ * Displays a sub-toolbar underneath the main toolbar with Insert options.
+ */
+function showInsertSubToolbar() {
+    // Check if a sub-toolbar already exists.
+    let subToolbar = document.getElementById('sub-toolbar');
+    if (!subToolbar) {
+        subToolbar = document.createElement('div');
+        subToolbar.id = 'sub-toolbar';
+        subToolbar.className = 'sub-toolbar';
+        // Insert the sub-toolbar after the main toolbar container.
+        const toolbarContainer = document.querySelector('.toolbar');
+        toolbarContainer.parentNode.insertBefore(subToolbar, toolbarContainer.nextSibling);
+    }
+    // Toggle visibility: if already visible, hide it.
+    if (subToolbar.style.display === 'block') {
+        subToolbar.style.display = 'none';
+        return;
+    }
+    subToolbar.style.display = 'block';
+
+    // For this example, we simply insert a button for "Insert Text".
+    subToolbar.innerHTML = `
+        <button id="insert-text-btn">Insert Text</button>
+        <!-- Additional insert options could be added here -->
+    `;
+
+    // Attach event listener for "Insert Text".
+    document.getElementById('insert-text-btn').addEventListener('click', () => {
+        console.log("Insert Text clicked");
+        // Insert your logic to add text at the desired location.
+        // For example, you might open a prompt or insert HTML into an editor.
+    });
+}
+
+/**
  * Creates a toolbar in the specified container.
  * @param {string} toolbarSelector - The CSS selector for the toolbar container.
  * @param {function} [onToggleView] - Optional callback function for handling toggle view changes.
@@ -42,7 +77,7 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
     toolbarContainer.innerHTML = '';
 
     // Define the desired order for grouped categories.
-    const groupOrder = ['File', 'Edit', 'Settings', 'View', 'User'];
+    const groupOrder = ['File', 'Edit', 'Insert', 'Settings', 'View', 'User'];
 
     // Render grouped items in the specified order.
     groupOrder.forEach(category => {
@@ -64,8 +99,14 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
                 link.href = '#';
                 link.textContent = box.heading;
 
-                // Use customAction if defined; else callback; else script via createBox.
-                if (box.customAction) {
+                // For the "Insert" category, override the click event.
+                if (category === 'Insert') {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        // For now, simply show the sub-toolbar with Insert options.
+                        showInsertSubToolbar();
+                    });
+                } else if (box.customAction) {
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
                         box.customAction();

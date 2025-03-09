@@ -156,4 +156,15 @@ export const boxes = [
         },
         modes: ["WYSIWYG Editing"]
     },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Insert Text',
+        callback: () => {
+            // This callback will be overridden by our toolbar code for "Insert"
+            // which now shows the sub-toolbar.
+            // (Alternatively, you could call showInsertSubToolbar() here.)
+        },
+        modes: ["WYSIWYG Editing"]
+    }
+    
 ];
