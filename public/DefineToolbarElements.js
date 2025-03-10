@@ -231,9 +231,92 @@ export const boxes = [
     },
         modes: ["WYSIWYG Editing"]
     },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'OrderedList',
+        insertGroup: 'text',
+        callback: () => { console.log('Insert ordered list');             
+        const ol = `<ol><li>Ordered Thing<li></ol>`;
+        document.execCommand('insertHTML', false, ol);
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'UnorderedList',
+        insertGroup: 'text',
+        callback: () => { console.log('Insert table');             
+        const ul = `<ul><li>Unordered Thing<li></ul>`;
+        document.execCommand('insertHTML', false, ul);
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Italics',
+        insertGroup: 'text',
+        callback: () => { console.log('Insert Italics');             
+        const ItalicizedElement = `<i>italics</i>`;
+        document.execCommand('insertHTML', false, ItalicizedElement);
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Bold',
+        insertGroup: 'text',
+        callback: () => { console.log('Insert Italics');             
+        const BoldElement = `<b>bold text</b>`;
+        document.execCommand('insertHTML', false, BoldElement);
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Underline',
+        insertGroup: 'text',
+        callback: () => { console.log('Insert Italics');             
+        const UnderlinedElement = `<ins>underlined</ins>`;
+        document.execCommand('insertHTML', false, UnderlinedElement);
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Strikethrough',
+        insertGroup: 'text',
+        callback: () => { console.log('Insert Strikethrough');             
+        const StrikethroughElement = `<del>strikethrough</del>`;
+        document.execCommand('insertHTML', false, StrikethroughElement);
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Insert Sensitive',
+        insertGroup: 'text',
+        callback: () => { console.log('Insert Strikethrough');             
+        const text = document.getSelection().toString() || prompt("Enter the sensitive text:");
+        
+        var SensitiveElement = `<style>@media print {
+    .sensitive {
+        display: none;
+    }</style>
+    <div class="sensitive" style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; margin: 10px 0;" onload="this.innerHTML='Content hidden for privacy';">${text}</div>`;
+    document.execCommand('insertHTML', false, SensitiveElement);
+
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    
+   
     
     
 
+    
+    
+              
 
 
     
