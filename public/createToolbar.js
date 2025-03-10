@@ -3,37 +3,47 @@ import { boxes } from './DefineToolbarElements.js';
 import { createBox } from './boxManipulation.js';
 
 /**
- * Displays a sub-toolbar underneath the main toolbar with Insert options.
+ * Toggles the visibility of the Insert sub-toolbar.
+ * @param {Array} insertItems - Array of boxes with ToolbarCategory 'Insert'
  */
-function showInsertSubToolbar() {
-    // Check if a sub-toolbar already exists.
+function toggleInsertSubToolbar(insertItems) {
     let subToolbar = document.getElementById('sub-toolbar');
+    // If sub-toolbar exists and is visible, hide it.
+    if (subToolbar && subToolbar.style.display === 'block') {
+        subToolbar.style.display = 'none';
+        return;
+    }
+    // If it doesn't exist, create it.
     if (!subToolbar) {
         subToolbar = document.createElement('div');
         subToolbar.id = 'sub-toolbar';
         subToolbar.className = 'sub-toolbar';
-        // Insert the sub-toolbar after the main toolbar container.
+        // Insert the sub-toolbar after the main toolbar.
         const toolbarContainer = document.querySelector('.toolbar');
         toolbarContainer.parentNode.insertBefore(subToolbar, toolbarContainer.nextSibling);
     }
-    // Toggle visibility: if already visible, hide it.
-    if (subToolbar.style.display === 'block') {
-        subToolbar.style.display = 'none';
-        return;
-    }
+    // Clear any previous content.
+    subToolbar.innerHTML = '';
     subToolbar.style.display = 'block';
 
-    // For this example, we simply insert a button for "Insert Text".
-    subToolbar.innerHTML = `
-        <button id="insert-text-btn">Insert Text</button>
-        <!-- Additional insert options could be added here -->
-    `;
-
-    // Attach event listener for "Insert Text".
-    document.getElementById('insert-text-btn').addEventListener('click', () => {
-        console.log("Insert Text clicked");
-        // Insert your logic to add text at the desired location.
-        // For example, you might open a prompt or insert HTML into an editor.
+    // For each insert option, create a button.
+    insertItems.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'insert-option-btn';
+        btn.textContent = item.heading;
+        // Use callback if provided; else, if script is defined, use createBox.
+        if (item.callback) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                item.callback();
+            });
+        } else if (item.script) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                createBox(item);
+            });
+        }
+        subToolbar.appendChild(btn);
     });
 }
 
@@ -61,7 +71,7 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         if (box.modes && !box.modes.includes(currentMode)) {
             return;
         }
-        // If the box is marked for direct rendering, store it in directItems.
+        // If marked for direct rendering, push to directItems.
         if (box.direct) {
             directItems.push(box);
         } else {
@@ -76,12 +86,26 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
     // Clear existing toolbar content.
     toolbarContainer.innerHTML = '';
 
-    // Define the desired order for grouped categories.
+    // Define desired order for grouped categories.
     const groupOrder = ['File', 'Edit', 'Insert', 'Settings', 'View', 'User'];
 
-    // Render grouped items in the specified order.
     groupOrder.forEach(category => {
-        if (groupedItems[category]) {
+        // Special handling for the Insert category.
+        if (category === 'Insert') {
+            // Only render the Insert button if there are insert items.
+            if (groupedItems['Insert'] && groupedItems['Insert'].length > 0) {
+                const insertBtn = document.createElement('button');
+                insertBtn.className = 'insert-btn';
+                insertBtn.textContent = 'Insert';
+                // Clicking toggles the sub-toolbar built from the insert items.
+                insertBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    toggleInsertSubToolbar(groupedItems['Insert']);
+                });
+                toolbarContainer.appendChild(insertBtn);
+            }
+        } else if (groupedItems[category]) {
+            // Render other categories as dropdowns.
             const dropdown = document.createElement('div');
             dropdown.className = 'dropdown';
             dropdown.setAttribute('data-category', category);
@@ -99,14 +123,7 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
                 link.href = '#';
                 link.textContent = box.heading;
 
-                // For the "Insert" category, override the click event.
-                if (category === 'Insert') {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        // For now, simply show the sub-toolbar with Insert options.
-                        showInsertSubToolbar();
-                    });
-                } else if (box.customAction) {
+                if (box.customAction) {
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
                         box.customAction();
@@ -133,7 +150,7 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
             dropdown.appendChild(dropdownContent);
             toolbarContainer.appendChild(dropdown);
 
-            // After rendering the "View" category, insert any direct items with category "Search"
+            // After rendering the "View" category, insert any direct items with category "Search".
             if (category === 'View') {
                 directItems
                     .filter(box => (box.ToolbarCategory === 'Search'))
@@ -152,7 +169,7 @@ export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () =>
         }
     });
 
-    // If any direct items remain that weren't rendered (for categories other than "Search"), append them.
+    // Append any remaining direct items (excluding "Search").
     directItems
         .filter(box => box.ToolbarCategory !== 'Search')
         .forEach(box => {

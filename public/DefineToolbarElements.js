@@ -165,6 +165,50 @@ export const boxes = [
             // (Alternatively, you could call showInsertSubToolbar() here.)
         },
         modes: ["WYSIWYG Editing"]
-    }
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'h1',
+        callback: () => { console.log('Insert h1'); const h1Element = `<h1>Heading 1</h1>`;
+        document.execCommand('insertHTML', false, h1Element);},
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'h2',
+        callback: () => { console.log('Insert h2'); const h2Element = `<h2>Heading 2</h2>`;
+        document.execCommand('insertHTML', false, h2Element); },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'h3',
+        callback: () => { console.log('Insert h1'); const h3Element = `<h3>Heading 3</h3>`;
+        document.execCommand('insertHTML', false, h3Element);},
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'h4',
+        callback: () => { console.log('Insert h2'); const h4Element = `<h4>Heading 4</h4>`;
+        document.execCommand('insertHTML', false, h4Element); },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'h5',
+        callback: () => { console.log('Insert h5'); const h5Element = `<h5>Heading 5</h5>`;
+        document.execCommand('insertHTML', false, h5Element);},
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'h6',
+        callback: () => { console.log('Insert h6'); const h6Element = `<h6>Heading 2</h6>`;
+        document.execCommand('insertHTML', false, h6Element); },
+        modes: ["WYSIWYG Editing"]
+    },
+    
     
 ];
+

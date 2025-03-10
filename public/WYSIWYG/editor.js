@@ -481,7 +481,7 @@ function insertIFRAME()
     document.execCommand('insertHTML', false, iFrameElement);
 }
 
-
+//I am getting the following functions into the index.html page
 
 
 function InsertHeading1()
