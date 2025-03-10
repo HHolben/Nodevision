@@ -169,13 +169,14 @@ export const boxes = [
     {
         ToolbarCategory: 'Insert',
         heading: 'h1',
-        callback: () => { console.log('Insert h1'); const h1Element = `<h1>Heading 1</h1>`;
-        document.execCommand('insertHTML', false, h1Element);},
+        insertGroup: 'text',
+        callback: () => { document.execCommand('insertHTML', false, '<h1>Heading 1</h1>'); },
         modes: ["WYSIWYG Editing"]
-    },
+    },    
     {
         ToolbarCategory: 'Insert',
         heading: 'h2',
+        insertGroup: 'text',
         callback: () => { console.log('Insert h2'); const h2Element = `<h2>Heading 2</h2>`;
         document.execCommand('insertHTML', false, h2Element); },
         modes: ["WYSIWYG Editing"]
@@ -183,6 +184,7 @@ export const boxes = [
     {
         ToolbarCategory: 'Insert',
         heading: 'h3',
+        insertGroup: 'text',
         callback: () => { console.log('Insert h1'); const h3Element = `<h3>Heading 3</h3>`;
         document.execCommand('insertHTML', false, h3Element);},
         modes: ["WYSIWYG Editing"]
@@ -190,6 +192,7 @@ export const boxes = [
     {
         ToolbarCategory: 'Insert',
         heading: 'h4',
+        insertGroup: 'text',
         callback: () => { console.log('Insert h2'); const h4Element = `<h4>Heading 4</h4>`;
         document.execCommand('insertHTML', false, h4Element); },
         modes: ["WYSIWYG Editing"]
@@ -197,6 +200,7 @@ export const boxes = [
     {
         ToolbarCategory: 'Insert',
         heading: 'h5',
+        insertGroup: 'text',
         callback: () => { console.log('Insert h5'); const h5Element = `<h5>Heading 5</h5>`;
         document.execCommand('insertHTML', false, h5Element);},
         modes: ["WYSIWYG Editing"]
@@ -204,11 +208,34 @@ export const boxes = [
     {
         ToolbarCategory: 'Insert',
         heading: 'h6',
+        insertGroup: 'text',
         callback: () => { console.log('Insert h6'); const h6Element = `<h6>Heading 2</h6>`;
         document.execCommand('insertHTML', false, h6Element); },
         modes: ["WYSIWYG Editing"]
     },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'table',
+        insertGroup: 'table',
+        callback: () => { console.log('Insert table');         const table = document.createElement('table');
+        table.style.borderCollapse = "collapse";
+        for (let i = 0; i < 3; i++) { // Example: 3 rows
+            const row = table.insertRow();
+            for (let j = 0; j < 3; j++) { // Example: 3 columns
+                const cell = row.insertCell();
+                cell.style.border = "1px solid black";
+                cell.textContent = "Cell";
+            }
+        }
+        document.getElementById('editor').appendChild(table);
+    },
+        modes: ["WYSIWYG Editing"]
+    },
     
+    
+
+
+
     
 ];
 
