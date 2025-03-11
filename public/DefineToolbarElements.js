@@ -54,6 +54,7 @@ export const boxes = [
             console.log("Toggle View Mode callback fired. State:", state);
             const cyContainer = document.getElementById('cy');
             const fileViewContainer = document.getElementById('file-view');
+            
             if (state) {
                 // Show graph view.
                 cyContainer.style.display = 'block';
@@ -309,6 +310,24 @@ export const boxes = [
         },
         modes: ["WYSIWYG Editing"]
     },
+  
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Insert Blank SVG Drawing',
+        insertGroup: 'image',
+        callback: () => {
+            console.log("Inserting Blank SVG Drawing");
+    
+            // Create a blank SVG element
+            const svgElement = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid black;">
+                <rect width="100%" height="100%" fill="white"/>
+            </svg>`;
+    
+            // Insert the SVG into the content
+            document.execCommand('insertHTML', false, svgElement);
+        },
+        modes: ["WYSIWYG Editing"]
+    }
     
    
     
