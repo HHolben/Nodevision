@@ -46,3 +46,8 @@
     background-color: #ddd;
     cursor: move;
 }
+
+
+.selected {
+    outline: 2px solid blue;
+}

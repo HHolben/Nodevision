@@ -129,26 +129,29 @@ function updateWYSIWYGToolbar(filePath) {
     `;
     rightPlane.innerHTML = editorHTML;
 
-    // Function to load file contents.
-    function loadFileContents() {
-        if (!filePath) return;
-        
-        fetch(`/api/fileCodeContent?path=${encodeURIComponent(filePath)}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('editor').innerHTML = data.content;
-                console.log('File content loaded:', data.content);
-            })
-            .catch(error => {
-                console.error('Error fetching file content:', error);
-                document.getElementById('errorMessage').textContent = 'Error fetching file content: ' + error.message;
-            });
-    }
+// Function to load file contents.
+function loadFileContents() {
+    if (!filePath) return;
+    
+    fetch(`/api/fileCodeContent?path=${encodeURIComponent(filePath)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const editor = document.getElementById('editor');
+            editor.innerHTML = data.content;
+            console.log('File content loaded:', data.content);
+            // Reattach the image selection event listener after content is loaded.
+            editor.addEventListener('click', handleImageClick);
+        })
+        .catch(error => {
+            console.error('Error fetching file content:', error);
+            document.getElementById('errorMessage').textContent = 'Error fetching file content: ' + error.message;
+        });
+}
 
     // Load the file contents.
     loadFileContents();
@@ -182,4 +185,71 @@ function onTabKeyPressed(event) {
         inputField.addEventListener('keydown', onTabKeyPressed);
 
 
-        
+   // Global variable to hold the selected image.
+let selectedImage = null;
+
+// Function to handle image click event.
+function handleImageClick(event) {
+    const img = event.target;
+    // Only proceed if the clicked element is an image or SVG.
+    if (img.tagName.toLowerCase() === 'img' || img.tagName.toLowerCase() === 'svg') {
+        // Deselect any previously selected image.
+        if (selectedImage) {
+            selectedImage.classList.remove('selected');
+        }
+        // Select the clicked image.
+        selectedImage = img;
+        selectedImage.classList.add('selected');  // This class should be defined in your CSS (e.g. outline: 2px solid blue).
+        console.log("Selected image:", selectedImage.src || "SVG Element");
+    }
+}
+
+// Keyboard event handler for copying/cutting.
+function handleKeyboardEvents(event) {
+    if (!selectedImage) return;
+    if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'x')) {
+        event.preventDefault();
+        if (event.key === 'x') {
+            document.execCommand('delete');
+        }
+        copyImageToClipboard(selectedImage);
+        selectedImage.classList.remove('selected');
+        selectedImage = null;
+    }
+}
+
+// Function to copy image to clipboard.
+async function copyImageToClipboard(img) {
+    try {
+        if (img.tagName.toLowerCase() === 'img' && img.src) {
+            const imgBlob = await fetch(img.src).then(res => res.blob());
+            const clipboardItem = new ClipboardItem({ 'image/png': imgBlob });
+            await navigator.clipboard.write([clipboardItem]);
+            console.log("Image copied to clipboard.");
+        } else if (img.tagName.toLowerCase() === 'svg') {
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(img);
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const clipboardItem = new ClipboardItem({ 'image/svg+xml': blob });
+            await navigator.clipboard.write([clipboardItem]);
+            console.log("SVG copied to clipboard.");
+        }
+    } catch (error) {
+        console.error("Failed to copy image to clipboard:", error);
+    }
+}
+
+// Attach keyboard events to the document.
+document.addEventListener('keydown', handleKeyboardEvents);
+
+// (Optional) Prevent default copy/cut if an image is selected.
+document.addEventListener('copy', (event) => {
+    if (selectedImage) {
+        event.preventDefault();
+    }
+});
+document.addEventListener('cut', (event) => {
+    if (selectedImage) {
+        event.preventDefault();
+    }
+});
