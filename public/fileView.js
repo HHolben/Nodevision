@@ -78,11 +78,20 @@ window.updateFilePreview = function(filePath, fileName) {
       const icon = item.isDirectory ? '📁' : '📄';
       link.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
       
-      // Make the item draggable.
-      link.setAttribute('draggable', true);
-      link.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData("text/plain", item.path);
-      });
+      function onImageDragStart(event) {
+        // For images, set the drag data.
+        event.dataTransfer.setData("text/html", event.target.outerHTML);
+        // Optionally add a class for visual feedback.
+        event.target.classList.add('dragging');
+    }
+    
+    document.addEventListener('dragstart', function(event) {
+        if (event.target.tagName.toLowerCase() === 'img' ||
+            event.target.tagName.toLowerCase() === 'svg') {
+            onImageDragStart(event);
+        }
+    });
+    
       
       // If the item is a directory, allow drops on it.
       if (item.isDirectory) {

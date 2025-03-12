@@ -327,10 +327,18 @@ export const boxes = [
             document.execCommand('insertHTML', false, svgElement);
         },
         modes: ["WYSIWYG Editing"]
-    }
-    
-   
-    
+    },
+    {
+        ToolbarCategory: 'Edit',
+        heading: 'Edit RASTER',
+        callback: () => {
+          // Show the sub-toolbar for RASTER image editing
+          showEditRasterSubToolbar();
+        },
+        // Optionally, restrict this to modes where it’s appropriate (e.g., WYSIWYG Editing)
+        modes: ["WYSIWYG Editing"]
+      }
+      
     
 
     

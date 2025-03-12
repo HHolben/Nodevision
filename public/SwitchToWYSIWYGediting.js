@@ -178,30 +178,125 @@ inputField.addEventListener('keydown', onTabKeyPressed);
 // Global variable to hold the selected image.
 let selectedImage = null;
 
-// Function to handle image click event.
+// Modify your handleImageClick so that for images, we enable HTML5 dragging:
 function handleImageClick(event) {
-    // Try to detect an <img> element.
     let img = (event.target.tagName.toLowerCase() === 'img') ? event.target : null;
-    // If not, try to find the closest <svg> ancestor.
     if (!img) {
         img = event.target.closest('svg');
     }
     if (img) {
-        // Deselect any previously selected image.
         if (selectedImage) {
             selectedImage.classList.remove('selected');
         }
-        // Select the clicked image or SVG.
         selectedImage = img;
-        selectedImage.classList.add('selected');  // Ensure your CSS defines .selected (e.g., outline: 2px solid blue)
-        console.log("Selected image:", selectedImage.tagName.toLowerCase() === 'img' ? selectedImage.src : "SVG Element");
-        
-        // If it's a raster image (<img>), add the "Edit RASTER" button.
-        if (img.tagName.toLowerCase() === 'img') {
-            addEditRasterToolbarItem();
+        selectedImage.classList.add('selected');
+
+        // Set draggable attribute if not already set.
+        if (!img.getAttribute('draggable')) {
+            img.setAttribute('draggable', 'true');
         }
     }
 }
+
+// Global variable to store the dragged image.
+let draggedImage = null;
+
+function handleImageClick(event) {
+    let img = (event.target.tagName.toLowerCase() === 'img') ? event.target : null;
+    if (!img) {
+        img = event.target.closest('svg');
+    }
+    if (img) {
+        if (selectedImage) {
+            selectedImage.classList.remove('selected');
+        }
+        selectedImage = img;
+        selectedImage.classList.add('selected');
+        // Ensure the image is draggable.
+        if (!img.getAttribute('draggable')) {
+            img.setAttribute('draggable', 'true');
+        }
+    }
+}
+
+function onImageDragStart(event) {
+    console.log("Drag started", event.target);
+    // Store the dragged element.
+    draggedImage = event.target;
+    // Force a move operation.
+    event.dataTransfer.effectAllowed = 'move';
+    // Set both text/html and text/plain to ensure compatibility.
+    event.dataTransfer.setData("text/html", event.target.outerHTML);
+    event.dataTransfer.setData("text/plain", event.target.outerHTML);
+    // Prevent default behavior.
+    event.stopPropagation();
+    // Add visual cue.
+    event.target.classList.add('dragging');
+}
+
+document.addEventListener('dragstart', function(event) {
+    const target = event.target;
+    if (target.tagName.toLowerCase() === 'img' || target.tagName.toLowerCase() === 'svg') {
+        onImageDragStart(event);
+    }
+});
+
+const editorElement = document.getElementById('editor');
+
+editorElement.addEventListener('dragover', function(event) {
+    event.preventDefault();
+    // Force move as drop effect.
+    event.dataTransfer.dropEffect = 'move';
+});
+
+editorElement.addEventListener('drop', function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log("Drop event fired on editor");
+    
+    // Retrieve the dragged HTML.
+    const imageHTML = event.dataTransfer.getData("text/html");
+    if (!imageHTML) return;
+    
+    // Create a temporary container to parse the HTML.
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = imageHTML;
+    const imageNode = tempDiv.firstChild;
+    
+    // Use the Selection and Range API to insert the image inline.
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+        editorElement.appendChild(imageNode);
+    } else {
+        const range = sel.getRangeAt(0);
+        range.insertNode(imageNode);
+        // Move caret after the inserted node.
+        range.setStartAfter(imageNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+    
+    // Remove the original dragged image if it still exists.
+    if (draggedImage && draggedImage.parentNode) {
+        draggedImage.parentNode.removeChild(draggedImage);
+        draggedImage = null;
+    }
+});
+
+document.addEventListener('dragend', function(event) {
+    // Remove the dragging class.
+    if (event.target.classList.contains('dragging')) {
+        event.target.classList.remove('dragging');
+    }
+    // In case the drop handler didn't run (or didn't remove the element), remove it here if dropEffect is move.
+    if (event.dataTransfer.dropEffect === 'move' && draggedImage && draggedImage.parentNode) {
+        draggedImage.parentNode.removeChild(draggedImage);
+    }
+    draggedImage = null;
+});
+
+
 
 // Function to add the "Edit RASTER" toolbar item to the Edit category.
 function addEditRasterToolbarItem() {
@@ -333,13 +428,105 @@ document.addEventListener('cut', (event) => {
 // Initialize image selection, dragging, and keyboard handling.
 function initImageHandling() {
     const editorElement = document.getElementById('editor');
-    if (editorElement) {
-        editorElement.addEventListener('click', handleImageClick);
-    } else {
-        console.error("Editor element not found");
-    }
-    enableDragging();
+
+    editorElement.addEventListener('dragover', function(event) {
+        // Allow drop by preventing default.
+        event.preventDefault();
+        // Optionally, set a drop effect.
+        event.dataTransfer.dropEffect = 'move';
+    });
+    
+    editorElement.addEventListener('drop', function(event) {
+        event.preventDefault();
+        // Debug log to ensure drop fires
+        console.log("Drop event fired on editor");
+        
+        const imageHTML = event.dataTransfer.getData("text/html");
+        if (!imageHTML) return;
+        
+        // Create a temporary container to parse the HTML.
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = imageHTML;
+        const imageNode = tempDiv.firstChild;
+        
+        // Use the Selection and Range API to insert the image inline.
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) {
+            // Fallback: append at the end.
+            editorElement.appendChild(imageNode);
+        } else {
+            const range = sel.getRangeAt(0);
+            // Insert node at the caret.
+            range.insertNode(imageNode);
+            // Move caret after the inserted node.
+            range.setStartAfter(imageNode);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+        
+        // Clear the selected image variable.
+        selectedImage = null;
+    });
+    
+    
 }
+
+function showEditRasterSubToolbar() {
+    // Look for an existing sub-toolbar. If one exists, toggle its display.
+    let subToolbar = document.getElementById('edit-raster-sub-toolbar');
+    if (!subToolbar) {
+        subToolbar = document.createElement('div');
+        subToolbar.id = 'edit-raster-sub-toolbar';
+        subToolbar.className = 'sub-toolbar';
+        // Insert the sub-toolbar immediately below the main toolbar.
+        const toolbarContainer = document.querySelector('.toolbar');
+        toolbarContainer.parentNode.insertBefore(subToolbar, toolbarContainer.nextSibling);
+    }
+    // Toggle display: if already visible, hide it.
+    if (subToolbar.style.display === 'block') {
+        subToolbar.style.display = 'none';
+        return;
+    }
+    subToolbar.style.display = 'block';
+    subToolbar.innerHTML = ''; // Clear previous items
+
+    // Create a Scale button
+    const scaleBtn = document.createElement('button');
+    scaleBtn.textContent = 'Scale';
+    scaleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const scale = prompt("Enter scale factor (e.g. 1.5 for 150%)", "1");
+        if (scale && selectedImage && selectedImage.tagName.toLowerCase() === 'img') {
+            // Apply scaling via CSS transform.
+            selectedImage.style.transform = `scale(${scale})`;
+        }
+    });
+    subToolbar.appendChild(scaleBtn);
+
+    // Create a Crop button (basic example)
+    const cropBtn = document.createElement('button');
+    cropBtn.textContent = 'Crop';
+    cropBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // For cropping, you might open a modal or switch to a cropping tool.
+        alert("Crop functionality is not implemented yet.");
+    });
+    subToolbar.appendChild(cropBtn);
+
+    // Create a Draw button
+    const drawBtn = document.createElement('button');
+    drawBtn.textContent = 'Draw';
+    drawBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // For drawing, you could initialize a simple canvas overlay for freehand drawing.
+        alert("Draw functionality is not implemented yet.");
+    });
+    subToolbar.appendChild(drawBtn);
+}
+
+
+
 function loadFileContents() {
     if (!filePath) return;
     

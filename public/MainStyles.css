@@ -58,3 +58,11 @@
     background-color: #f0f0f0;
     border: 1px solid #ccc;
 }
+#editor {
+    position: relative;
+}
+
+#editor img, #editor svg {
+    display: inline;
+    position: static; /* Ensure no overriding absolute positioning */
+}
