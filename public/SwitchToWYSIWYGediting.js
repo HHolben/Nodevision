@@ -509,9 +509,9 @@ function showEditRasterSubToolbar() {
     cropBtn.textContent = 'Crop';
     cropBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        // For cropping, you might open a modal or switch to a cropping tool.
-        alert("Crop functionality is not implemented yet.");
+        cropImage();
     });
+    
     subToolbar.appendChild(cropBtn);
 
     // Create a Draw button
@@ -525,6 +525,129 @@ function showEditRasterSubToolbar() {
     subToolbar.appendChild(drawBtn);
 }
 
+function cropImage() {
+    if (!selectedImage || selectedImage.tagName.toLowerCase() !== 'img') {
+        alert("No raster image selected for cropping.");
+        return;
+    }
+
+    // Create a modal overlay for cropping
+    const modal = document.createElement('div');
+    modal.id = 'crop-modal';
+    Object.assign(modal.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: '1000'
+    });
+
+    // Modal content container
+    const modalContent = document.createElement('div');
+    Object.assign(modalContent.style, {
+        backgroundColor: 'white',
+        padding: '10px',
+        position: 'relative'
+    });
+
+    // Create a canvas to display the image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.src = selectedImage.src;
+    img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+    };
+
+    // Variables for crop selection
+    let cropping = false;
+    let startX, startY, endX, endY;
+
+    canvas.style.cursor = 'crosshair';
+
+    // Mouse down: begin selection
+    canvas.addEventListener('mousedown', function(e) {
+        cropping = true;
+        const rect = canvas.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        endX = startX;
+        endY = startY;
+    });
+
+    // Mouse move: update selection rectangle
+    canvas.addEventListener('mousemove', function(e) {
+        if (!cropping) return;
+        const rect = canvas.getBoundingClientRect();
+        endX = e.clientX - rect.left;
+        endY = e.clientY - rect.top;
+        // Redraw image and draw selection rectangle
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        const x = Math.min(startX, endX);
+        const y = Math.min(startY, endY);
+        const w = Math.abs(endX - startX);
+        const h = Math.abs(endY - startY);
+        ctx.strokeRect(x, y, w, h);
+    });
+
+    // Mouse up: finalize selection
+    canvas.addEventListener('mouseup', function(e) {
+        cropping = false;
+    });
+
+    // Crop confirmation button
+    const cropBtn = document.createElement('button');
+    cropBtn.textContent = 'Crop';
+    cropBtn.addEventListener('click', function() {
+        // Calculate selection rectangle
+        const x = Math.min(startX, endX);
+        const y = Math.min(startY, endY);
+        const w = Math.abs(endX - startX);
+        const h = Math.abs(endY - startY);
+        if (w === 0 || h === 0) {
+            alert("Please select a crop area.");
+            return;
+        }
+        // Create a new canvas to store cropped image
+        const croppedCanvas = document.createElement('canvas');
+        const croppedCtx = croppedCanvas.getContext('2d');
+        croppedCanvas.width = w;
+        croppedCanvas.height = h;
+        croppedCtx.drawImage(canvas, x, y, w, h, 0, 0, w, h);
+        // Update the selected image with the cropped data
+        selectedImage.src = croppedCanvas.toDataURL();
+        // Remove the modal
+        document.body.removeChild(modal);
+    });
+
+    // Cancel button to close the modal without cropping
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.marginLeft = '10px';
+    cancelBtn.addEventListener('click', function() {
+        document.body.removeChild(modal);
+    });
+
+    // Append elements
+    modalContent.appendChild(canvas);
+    const btnContainer = document.createElement('div');
+    btnContainer.style.marginTop = '10px';
+    btnContainer.appendChild(cropBtn);
+    btnContainer.appendChild(cancelBtn);
+    modalContent.appendChild(btnContainer);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
 
 
 function loadFileContents() {
