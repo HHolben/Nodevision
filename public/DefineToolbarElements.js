@@ -329,6 +329,150 @@ export const boxes = [
         modes: ["WYSIWYG Editing"]
     },
     {
+        ToolbarCategory: 'Insert',
+        heading: 'Insert Video',
+        insertGroup: 'video',
+        callback: () => {    
+            const videoFile = prompt("Enter the name of the video file (with extension):");
+        if (videoFile) {
+            const videoElement = `
+                <video controls width="600">
+                    <source src="/${videoFile}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>`;
+            document.execCommand('insertHTML', false, videoElement);
+        } else {
+            alert("Video file name is required.");
+        }
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Insert CSV as table',
+        insertGroup: 'table',
+        callback: () => {
+          const csvLink = prompt("Enter the relative link to the CSV file (include .csv extension):");
+          if (!csvLink) return;
+          
+          // Create a unique ID for the table container
+          const uniqueId = 'csv-table-' + Date.now();
+          // Prepare the HTML container for the table
+          const containerHTML = `<div id="${uniqueId}" class="csv-table-container">Loading CSV data...</div>`;
+          
+          // Insert the container into the WYSIWYG editor using execCommand
+          document.execCommand('insertHTML', false, containerHTML);
+          
+          // Create and inject a script that fetches the CSV file and populates the container
+          const scriptContent = `
+            (function() {
+              function parseCSV(text) {
+                return text.split('\\n').map(row => row.split(','));
+              }
+              fetch('${csvLink}')
+                .then(response => {
+                  if (!response.ok) throw new Error('Network response was not ok');
+                  return response.text();
+                })
+                .then(text => {
+                  const data = parseCSV(text);
+                  const container = document.getElementById('${uniqueId}');
+                  if (container) {
+                    let tableHtml = '<table border="1" style="border-collapse: collapse;">';
+                    data.forEach((row, rowIndex) => {
+                      tableHtml += '<tr>';
+                      row.forEach(cell => {
+                        tableHtml += rowIndex === 0 ? '<th style="padding: 4px;">' + cell.trim() + '</th>' 
+                                                    : '<td style="padding: 4px;">' + cell.trim() + '</td>';
+                      });
+                      tableHtml += '</tr>';
+                    });
+                    tableHtml += '</table>';
+                    container.innerHTML = tableHtml;
+                  }
+                })
+                .catch(err => {
+                  const container = document.getElementById('${uniqueId}');
+                  if (container) {
+                    container.innerHTML = 'Error loading CSV file: ' + err;
+                  }
+                });
+            })();
+          `;
+          
+          const scriptEl = document.createElement('script');
+          scriptEl.type = 'text/javascript';
+          scriptEl.text = scriptContent;
+          document.body.appendChild(scriptEl);
+        },
+        modes: ["WYSIWYG Editing"]
+      },
+      
+
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Insert QRcode',
+        insertGroup: 'image',
+        callback: () => {    
+            function generateQRCode() {
+                const url = document.getElementById("urlInput").value;
+                if (url) {
+                    // Generate QR code
+                    QRCode.toDataURL(url, { errorCorrectionLevel: 'H' }, function (err, url) {
+                        if (err) {
+                            alert("Failed to generate QR code.");
+                            return;
+                        }
+        
+                        // Display QR code
+                        const qrCodeDiv = document.getElementById("qrCode");
+                        qrCodeDiv.innerHTML = `<img src="${url}" alt="QR Code" />`;
+        
+                        // Enable the copy button
+                        const copyButton = document.getElementById("copyButton");
+                        copyButton.disabled = false;
+                        copyButton.dataset.qrUrl = url;
+                    });
+                } else {
+                    alert("Please enter a URL.");
+                }
+            }
+        
+            function copyQRCode() {
+                const copyButton = document.getElementById("copyButton");
+                const qrUrl = copyButton.dataset.qrUrl;
+        
+                // Create a temporary input to copy the URL
+                const tempInput = document.createElement("input");
+                tempInput.value = qrUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInput);
+        
+                // Alert the user
+                alert("QR code URL copied to clipboard!");
+            }
+        
+            generateQRCode();
+            copyQRCode();
+            document.execCommand('insertHTML', false, addressElement);
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+    {
         ToolbarCategory: 'Edit',
         heading: 'Edit RASTER',
         callback: () => {
@@ -342,6 +486,10 @@ export const boxes = [
     
 
     
+
+
+
+      
     
               
 

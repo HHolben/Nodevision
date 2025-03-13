@@ -705,7 +705,8 @@ function newVectorGraphic() {
 InsertQRCodeElement()
 {
     function generateQRCode() {
-        const url = document.getElementById("urlInput").value;
+        const urlInput = prompt("Enter the URL:");
+        const url = document.getElementById(urlInput).value;
         if (url) {
             // Generate QR code
             QRCode.toDataURL(url, { errorCorrectionLevel: 'H' }, function (err, url) {
