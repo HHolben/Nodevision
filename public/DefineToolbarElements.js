@@ -347,68 +347,80 @@ export const boxes = [
         },
         modes: ["WYSIWYG Editing"]
     },
+
+   
+
     {
         ToolbarCategory: 'Insert',
         heading: 'Insert CSV as table',
         insertGroup: 'table',
-        callback: () => {
-          const csvLink = prompt("Enter the relative link to the CSV file (include .csv extension):");
-          if (!csvLink) return;
-          
-          // Create a unique ID for the table container
-          const uniqueId = 'csv-table-' + Date.now();
-          // Prepare the HTML container for the table
-          const containerHTML = `<div id="${uniqueId}" class="csv-table-container">Loading CSV data...</div>`;
-          
-          // Insert the container into the WYSIWYG editor using execCommand
-          document.execCommand('insertHTML', false, containerHTML);
-          
-          // Create and inject a script that fetches the CSV file and populates the container
-          const scriptContent = `
-            (function() {
-              function parseCSV(text) {
-                return text.split('\\n').map(row => row.split(','));
-              }
-              fetch('${csvLink}')
-                .then(response => {
-                  if (!response.ok) throw new Error('Network response was not ok');
-                  return response.text();
-                })
-                .then(text => {
-                  const data = parseCSV(text);
-                  const container = document.getElementById('${uniqueId}');
-                  if (container) {
-                    let tableHtml = '<table border="1" style="border-collapse: collapse;">';
-                    data.forEach((row, rowIndex) => {
-                      tableHtml += '<tr>';
-                      row.forEach(cell => {
-                        tableHtml += rowIndex === 0 ? '<th style="padding: 4px;">' + cell.trim() + '</th>' 
-                                                    : '<td style="padding: 4px;">' + cell.trim() + '</td>';
-                      });
-                      tableHtml += '</tr>';
-                    });
-                    tableHtml += '</table>';
-                    container.innerHTML = tableHtml;
-                  }
-                })
-                .catch(err => {
-                  const container = document.getElementById('${uniqueId}');
-                  if (container) {
-                    container.innerHTML = 'Error loading CSV file: ' + err;
-                  }
-                });
-            })();
-          `;
-          
-          const scriptEl = document.createElement('script');
-          scriptEl.type = 'text/javascript';
-          scriptEl.text = scriptContent;
-          document.body.appendChild(scriptEl);
+        callback: () => {    
+            const CSVfile = prompt("Enter the relative path of the CSV file (with extension):");
+            if (CSVfile) {
+                const CSVtableElement = `
+                    <table id="${CSVfile}">
+                    <thead></thead>
+                    <tbody></tbody>
+                    </table>
+                
+                    <script>
+                    (function loadCsv() {
+                        fetch('${CSVfile}')
+                            .then(response => response.text())
+                            .then(data => {
+                                // Split the CSV text into rows and cells
+                                const rows = data.split("\\n").map(row => row.split(","));
+    
+                                const table = document.getElementById("${CSVfile}");
+                                const thead = table.querySelector("thead");
+                                const tbody = table.querySelector("tbody");
+    
+                                thead.innerHTML = "";
+                                tbody.innerHTML = "";
+    
+                                // Check if there is at least one row
+                                if (rows.length > 0) {
+                                    // Create header row from the first row of the CSV
+                                    const headerRow = document.createElement("tr");
+                                    rows[0].forEach(headerText => {
+                                        const th = document.createElement("th");
+                                        th.textContent = headerText.trim();
+                                        headerRow.appendChild(th);
+                                    });
+                                    thead.appendChild(headerRow);
+                                }
+    
+                                // Create table rows for the rest of the CSV data
+                                rows.slice(1).forEach(row => {
+                                    if (row.length === 1 && row[0].trim() === "") return;
+                                    const tr = document.createElement("tr");
+                                    row.forEach(cellText => {
+                                        const td = document.createElement("td");
+                                        td.textContent = cellText.trim();
+                                        tr.appendChild(td);
+                                    });
+                                    tbody.appendChild(tr);
+                                });
+                            })
+                            .catch(error => {
+                                console.error("Error fetching or parsing the CSV file:", error);
+                                document.getElementById("${CSVfile}").innerHTML = "Error loading CSV file.";
+                            });
+    
+                        // Refresh CSV data every 5 seconds
+                        setTimeout(loadCsv, 5000);
+                    })();
+                    </script>
+                `;
+    
+                document.execCommand('insertHTML', false, CSVtableElement);
+            } else {
+                alert("CSV filename (relative path) is required.");
+            }
         },
         modes: ["WYSIWYG Editing"]
-      },
-      
-
+    },
+    
     {
         ToolbarCategory: 'Insert',
         heading: 'Insert QRcode',
