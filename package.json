@@ -40,6 +40,7 @@
     "requirejs": "^2.3.7",
     "serialport": "^12.0.0",
     "serve-favicon": "^2.5.0",
+    "socket.io": "^4.8.1",
     "three": "^0.168.0",
     "vexflow": "^4.2.5"
   },

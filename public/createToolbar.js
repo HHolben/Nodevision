@@ -6,7 +6,7 @@ import { createBox } from './boxManipulation.js';
  * Displays a sub-toolbar underneath the main toolbar with insert options for a given type.
  * The sub-toolbar is built from items in boxes that have:
  *    ToolbarCategory === 'Insert' and insertGroup === insertType.
- * @param {string} insertType - One of "text", "image", "video", "table", "sheet music"
+ * @param {string} insertType - One of "text", "image", "video", "table", "sheet music", "remote"
  */
 function showInsertSubToolbar(insertType) {
     // Look for an existing sub-toolbar.

@@ -17,6 +17,68 @@ export const boxes = [
         ToolbarCategory: "File"
     },
     {
+        ToolbarCategory: 'File',
+        heading: 'Save File',
+        content: ``,
+        callback: () => {
+            const filePath = window.currentActiveFilePath;
+            if (filePath && typeof window.saveWYSIWYGFile === 'function') {
+                window.saveWYSIWYGFile(filePath);
+            } else {
+                console.error("Cannot save: filePath or saveWYSIWYGFile is missing.");
+            }
+        }
+    },
+    {
+        ToolbarCategory: 'File',
+        heading: 'View Nodevision Deployment',
+        content: ``,
+        callback: () => {
+            
+    // Get the current URL
+    const currentUrl = window.location.href;
+
+    // Use URLSearchParams to extract the activeNode parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeNode = urlParams.get('activeNode');
+
+    if (activeNode) {
+        // Construct the  URL
+        const deploymentUrl = `http://localhost:3000/${activeNode}`;
+
+        // Open the URL in a new window or tab
+        window.open(deploymentUrl, "_blank");
+    } else {
+        alert("No active node specified in the URL.");
+    }
+        }
+        },
+    {
+        ToolbarCategory: 'File',
+        heading: 'View PHP Deployment',
+        content: ``,
+        callback: () => {
+            
+    // Get the current URL
+    const currentUrl = window.location.href;
+
+    // Use URLSearchParams to extract the activeNode parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeNode = urlParams.get('activeNode');
+
+    if (activeNode) {
+        // Construct the  URL
+        const deploymentUrl = `http://localhost:8000/${activeNode}`;
+
+        // Open the URL in a new window or tab
+        window.open(deploymentUrl, "_blank");
+    } else {
+        alert("No active node specified in the URL.");
+    }
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    {
         heading: "New Directory",
         content: ``,
         script: "NewDirectoryInitializer.js",
@@ -347,7 +409,66 @@ export const boxes = [
         },
         modes: ["WYSIWYG Editing"]
     },
-
+    {
+        ToolbarCategory: 'Insert',
+        heading: 'Serial Monitor',
+        insertGroup: 'text',
+        callback: () => {
+            console.log('Insert Serial Monitor');  
+    
+            // Define the HTML structure
+            const SerialMonitorElement = `
+                <div id="serial-monitor-container" 
+                     style="background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); max-width: 500px; margin: auto; margin-top: 20px;">
+                    
+                    <form id="serial-config-form">
+                        <label for="serial-port" style="font-weight: bold;">Port:</label>
+                        <input type="text" id="serial-port" placeholder="/dev/ttyUSB0" 
+                               style="margin-top: 5px; padding: 8px; font-size: 16px; width: 100%;">
+    
+                        <label for="baud-rate" style="font-weight: bold;">Baud Rate:</label>
+                        <input type="number" id="baud-rate" placeholder="9600" 
+                               style="margin-top: 5px; padding: 8px; font-size: 16px; width: 100%;">
+    
+                        <button type="submit" 
+                                style="margin-top: 5px; padding: 8px; font-size: 16px; width: 100%; background: #007bff; color: white; border: none; cursor: pointer;"
+                                onmouseover="this.style.background='#0056b3'" 
+                                onmouseout="this.style.background='#007bff'">
+                            Update
+                        </button>
+                    </form>
+    
+                    <pre id="serial-output" 
+                         style="background: black; color: #0f0; padding: 10px; height: 200px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;">
+    <!-- Serial content will be displayed here -->
+                    </pre>
+                </div>
+            `;
+    
+            // Insert the element into the page
+            document.execCommand('insertHTML', false, SerialMonitorElement);
+    
+            // Attach event listener AFTER the HTML is inserted
+            setTimeout(() => {
+                const form = document.getElementById('serial-config-form');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const port = document.getElementById('serial-port').value;
+                        const baudRate = document.getElementById('baud-rate').value;
+                        const output = document.getElementById('serial-output');
+    
+                        output.textContent += `\nPort set to: ${port}, Baud Rate set to: ${baudRate}`;
+                        output.scrollTop = output.scrollHeight;
+                    });
+                } else {
+                    console.error('Serial Monitor form not found.');
+                }
+            }, 100); // Small delay to ensure it's in the DOM
+        },
+        modes: ["WYSIWYG Editing"]
+    },
+    
    
 
     {
@@ -473,14 +594,9 @@ export const boxes = [
         modes: ["WYSIWYG Editing"]
     },
 
-
-
-
-
-
-
-
-
+    
+    
+    
 
 
 
