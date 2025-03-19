@@ -1,4 +1,4 @@
-import { toolbarCallbacks } from './toolbarCallbacks.js';
+import { toolbarCallbacks } from './ToolbarCallbacks/toolbarCallbacks.js';
 
 /**
  * Loads and merges toolbar configuration from multiple JSON files.
@@ -6,23 +6,25 @@ import { toolbarCallbacks } from './toolbarCallbacks.js';
  * @returns {Promise<Array>} - A promise that resolves with the merged toolbar items.
  */
 export async function loadToolbarElements(configUrls = [
-  'fileToolbar.json',
-  'editToolbar.json',
-  'settingsToolbar.json',
-  'viewToolbar.json',
-  'searchToolbar.json',
-  'userToolbar.json',
-  'insertToolbar.json'
+  'ToolbarJSONfiles/fileToolbar.json',
+  'ToolbarJSONfiles/editToolbar.json',
+  'ToolbarJSONfiles/settingsToolbar.json',
+  'ToolbarJSONfiles/viewToolbar.json',
+  'ToolbarJSONfiles/searchToolbar.json',
+  'ToolbarJSONfiles/userToolbar.json',
+  'ToolbarJSONfiles/insertToolbar.json'
 ]) {
   try {
     // Fetch all configuration files concurrently.
     const responses = await Promise.all(
-      configUrls.map(url => fetch(url).then(response => {
-        if (!response.ok) {
-          throw new Error(`Error loading ${url}: ${response.statusText}`);
-        }
-        return response.json();
-      }))
+      configUrls.map(url =>
+        fetch(url).then(response => {
+          if (!response.ok) {
+            throw new Error(`Error loading ${url}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+      )
     );
 
     // Merge arrays from each JSON file into a single array.
