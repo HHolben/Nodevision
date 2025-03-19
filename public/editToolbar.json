@@ -1,0 +1,20 @@
+[
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Edit Code",
+    "content": "",
+    "script": "SendToCodeEditorPage.js"
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "WYSIWYG Editor",
+    "content": "",
+    "script": "SendToWYSIWYGeditorPage.js"
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Edit RASTER",
+    "callbackKey": "editRASTER",
+    "modes": ["WYSIWYG Editing"]
+  }
+]

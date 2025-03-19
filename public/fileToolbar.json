@@ -1,0 +1,28 @@
+[
+  {
+    "ToolbarCategory": "File",
+    "heading": "View PHP Deployment",
+    "content": "",
+    "callbackKey": "viewPHPDeployment",
+    "modes": ["WYSIWYG Editing"]
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "New Directory",
+    "content": "",
+    "script": "NewDirectoryInitializer.js"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Export Graph",
+    "content": "",
+    "script": "ExportGraph.js"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Save File",
+    "content": "",
+    "callbackKey": "saveFile",
+    "modes": ["WYSIWYG Editing"]
+  }
+]

@@ -1,0 +1,10 @@
+[
+    {
+      "direct": true,
+      "ToolbarCategory": "Search",
+      "heading": "Search",
+      "content": "<div style=\"display: flex; align-items: center; gap: 8px;\"><input type=\"text\" id=\"searchBar\" placeholder=\"Search nodes\"><button id=\"searchButton\">Search</button></div><div id=\"searchResults\" style=\"display: none; position: absolute; background: white; border: 1px solid #ccc; padding: 5px;\"></div>",
+      "script": "search.js"
+    }
+  ]
+  

@@ -1,0 +1,33 @@
+[
+    {
+      "ToolbarCategory": "View",
+      "heading": "Viewing",
+      "content": "",
+      "script": "SwitchToViewing.js"
+    },
+    {
+      "ToolbarCategory": "View",
+      "heading": "WYSIWYG Editing",
+      "content": "",
+      "script": "SwitchToWYSIWYGediting.js"
+    },
+    {
+      "ToolbarCategory": "View",
+      "heading": "3D World Viewing",
+      "content": "",
+      "script": "SwitchTo3DWorldViewing.js"
+    },
+    {
+      "ToolbarCategory": "View",
+      "heading": "3D World Editing",
+      "content": "",
+      "script": "SwitchTo3DWorldEditing.js"
+    },
+    {
+      "ToolbarCategory": "View",
+      "heading": "Code Editing",
+      "content": "",
+      "script": "SwitchToCodeEditing.js"
+    }
+  ]
+  

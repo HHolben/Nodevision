@@ -1,0 +1,20 @@
+[
+  {
+    "ToolbarCategory": "Settings",
+    "heading": "Settings",
+    "content": "<iframe src=\"SettingsPage.html\"></iframe>",
+    "script": "SendToCodeSettingsPage.js"
+  },
+  {
+    "ToolbarCategory": "Settings",
+    "heading": "Toggle View Mode",
+    "type": "toggle",
+    "callbackKey": "toggleViewMode"
+  },
+  {
+    "ToolbarCategory": "Settings",
+    "heading": "Toggle Page Preview Mode",
+    "type": "toggle",
+    "callbackKey": "togglePagePreviewMode"
+  }
+]

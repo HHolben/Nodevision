@@ -1,14 +1,17 @@
 // Import dependencies
-import { boxes } from './DefineToolbarElements.js';
+import { loadToolbarElements } from './DefineToolbarElements.js';
 import { createBox } from './boxManipulation.js';
 
 /**
  * Displays a sub-toolbar underneath the main toolbar with insert options for a given type.
- * The sub-toolbar is built from items in boxes that have:
- *    ToolbarCategory === 'Insert' and insertGroup === insertType.
+ * The sub-toolbar is built from items in the dynamically loaded toolbar configuration
+ * that have: ToolbarCategory === 'Insert' and insertGroup === insertType.
  * @param {string} insertType - One of "text", "image", "video", "table", "sheet music", "remote"
  */
 function showInsertSubToolbar(insertType) {
+    // Use the globally stored toolbar boxes.
+    const boxes = window.loadedToolbarBoxes || [];
+    
     // Look for an existing sub-toolbar.
     let subToolbar = document.getElementById('sub-toolbar');
     if (!subToolbar) {
@@ -60,12 +63,17 @@ function showInsertSubToolbar(insertType) {
  * @param {string} toolbarSelector - The CSS selector for the toolbar container.
  * @param {function} [onToggleView] - Optional callback function.
  */
-export function createToolbar(toolbarSelector = '.toolbar', onToggleView = () => {}) {
+export async function createToolbar(toolbarSelector = '.toolbar', onToggleView = () => {}) {
     const toolbarContainer = document.querySelector(toolbarSelector);
     if (!toolbarContainer) {
         console.error(`Container not found for selector: ${toolbarSelector}`);
         return;
     }
+
+    // Load toolbar configuration from external JSON
+    const boxes = await loadToolbarElements();
+    // Save the loaded boxes globally so that helper functions can access them.
+    window.loadedToolbarBoxes = boxes;
 
     // Retrieve current mode from centralized state.
     const currentMode = window.AppState ? window.AppState.getMode() : window.currentMode;
