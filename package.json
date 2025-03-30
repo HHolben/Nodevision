@@ -22,7 +22,6 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "fs": "^0.0.1-security",
     "http-proxy-middleware": "^3.0.0",
     "keycloak-js": "^26.0.7",
     "layout-base": "^2.0.1",
