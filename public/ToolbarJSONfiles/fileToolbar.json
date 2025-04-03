@@ -1,11 +1,7 @@
 [
-  {
-    "ToolbarCategory": "File",
-    "heading": "View PHP Deployment",
-    "content": "",
-    "callbackKey": "viewPHPDeployment",
-    "modes": ["WYSIWYG Editing"]
-  },
+
+
+
   {
     "ToolbarCategory": "File",
     "heading": "New Directory",
@@ -24,5 +20,17 @@
     "content": "",
     "callbackKey": "saveFile",
     "modes": ["WYSIWYG Editing"]
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "View PHP Deployment",
+    "content": "",
+    "callbackKey": "viewPHPdeployment"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "View Nodevision Deployment",
+    "content": "",
+    "callbackKey": "viewNodevisionDeployment"
   }
 ]

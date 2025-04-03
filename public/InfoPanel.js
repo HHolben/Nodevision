@@ -20,7 +20,8 @@ function updateInfoPanel(element) {
       infoHTML = `<strong>Node:</strong> ${element.data('label')}<br>`;
       window.ActiveNode = element.id();
       infoHTML += `<strong>ID:</strong> ${window.ActiveNode}<br>`;
-      
+
+
       // Check if this is a special "region" type node.
       if (element.data('type') === 'region') {
         infoHTML += `<strong>Type:</strong> Region<br>`;

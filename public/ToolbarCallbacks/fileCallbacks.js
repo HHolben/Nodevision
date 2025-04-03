@@ -9,20 +9,18 @@ export const fileCallbacks = {
     }
   },
   viewNodevisionDeployment: () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const activeNode = urlParams.get('activeNode');
+    const activeNode = window.ActiveNode;
     if (activeNode) {
-      const deploymentUrl = `http://localhost:3000/${activeNode}`;
+      const deploymentUrl = `http://localhost:3000/Notebook/${activeNode}`;
       window.open(deploymentUrl, "_blank");
     } else {
       alert("No active node specified in the URL.");
     }
   },
-  viewPHPDeployment: () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const activeNode = urlParams.get('activeNode');
+  viewPHPdeployment: () => {
+    const activeNode = window.ActiveNode;
     if (activeNode) {
-      const deploymentUrl = `http://localhost:8000/${activeNode}`;
+      const deploymentUrl = `http://localhost:8000/Notebook/${activeNode}`;
       window.open(deploymentUrl, "_blank");
     } else {
       alert("No active node specified in the URL.");

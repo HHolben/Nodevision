@@ -1,7 +1,7 @@
 // SwitchToGraphView.js
 
 (function() {
-  // Get the DOM elements for the graph and file views.
+  // Grab the containers for the graph view and file view.
   const cyContainer = document.getElementById("cy");
   const fileViewContainer = document.getElementById("file-view");
 
@@ -10,7 +10,7 @@
     return;
   }
 
-  // Immediately switch to the Graph View.
+  // Immediately switch to Graph View.
   fileViewContainer.style.display = "none";
   cyContainer.style.display = "block";
 
@@ -36,7 +36,7 @@
         }
       }));
 
-      // Create edges based on the file links.
+      // Create edges based on file links.
       const edges = [];
       files.forEach(file => {
         if (file.links && Array.isArray(file.links)) {
@@ -60,9 +60,6 @@
 
       // Initialize Cytoscape.
       window.cyInstance = cytoscape({
-
-
-        
         container: cyContainer,
         elements: elements,
         style: [
@@ -93,12 +90,49 @@
         }
       });
 
-      window.cyInstance.on('click', 'node, edge', function(evt) {
-        updateInfoPanel(evt.target);
+      // Update NodevisionDB once after initializing the graph.
+      updateGraphDatabase();
+
+      // Listen for graph changes: add, remove, and move events.
+      window.cyInstance.on('add remove data drag free', () => {
+        updateGraphDatabase();
       });
-      
+
+      // When a node or edge is clicked, update the info panel.
+      window.cyInstance.on('click', 'node, edge', function(evt) {
+        if (typeof updateInfoPanel === 'function') {
+          updateInfoPanel(evt.target);
+        }
+      });
     })
     .catch(err => console.error("Error fetching files:", err));
+
+  /**
+   * Gathers the current graph state and sends it to the backend to update NodevisionDB.
+   */
+  function updateGraphDatabase() {
+    if (!window.cyInstance) return;
+
+    // Get the current graph data.
+    const graphData = window.cyInstance.json().elements;
+
+    // Post the updated graph data to the backend.
+    fetch('/api/updateGraph', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ elements: graphData })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(result => {
+        console.log("Graph database updated successfully:", result);
+      })
+      .catch(err => console.error("Failed to update graph database:", err));
+  }
 })();
-
-
