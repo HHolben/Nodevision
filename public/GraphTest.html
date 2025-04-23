@@ -185,9 +185,8 @@
       // Dummy implementations for hyperlink extraction and adding edges.
       async function generateEdgesForLinks() {
         const allNodeIds = cy.nodes().map(node => node.id());
-        const validExtensions = ['.php', '.html', '.js', '.ipyn'];
         for (let nodeId of allNodeIds) {
-          if (nodeId !== "defaultNode" && validExtensions.some(ext => nodeId.endsWith(ext))) {
+          if (nodeId !== "defaultNode") {
             try {
               const response = await fetch(`/api/file?path=${nodeId}`);
               const data = await response.json();

@@ -2,7 +2,6 @@ const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
 const router = express.Router();
-const allowedExtensions = ['.html', '.js', '.css']; // Define your allowed extensions here
 
 // Base directory for the Notebook
 const notebookBasePath = path.resolve(__dirname, '../../Notebook');
@@ -20,7 +19,7 @@ async function readDirectory(dir) {
                 path: path.relative(notebookBasePath, fullPath),
                 isDirectory: true,
             });
-        } else if (allowedExtensions.includes(path.extname(entry.name))) {
+        } else {
             result.push({
                 name: entry.name,
                 path: path.relative(notebookBasePath, fullPath),

@@ -5,7 +5,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const cheerio = require('cheerio');
 
-const allowedExtensions = ['.html', '.php', '.js', '.py'];
 const notebookDir = path.join(__dirname, '../../Notebook');
 
 // Recursively get all allowed files in the Notebook directory.
@@ -18,9 +17,8 @@ async function getAllFiles(dir) {
       const subFiles = await getAllFiles(fullPath);
       files = files.concat(subFiles);
     } else {
-      if (allowedExtensions.includes(path.extname(entry.name).toLowerCase())) {
         files.push(fullPath);
-      }
+      
     }
   }
   return files;

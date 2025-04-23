@@ -13,6 +13,12 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "CSV Editing",
+    "content": "",
+    "script": "SwitchToCSVediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "3D World Viewing",
     "content": "",
     "script": "SwitchTo3DWorldViewing.js"

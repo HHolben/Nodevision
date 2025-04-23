@@ -3,14 +3,13 @@ const path = require('path');
 
 const notebookDir = path.join(__dirname, 'Notebook');
 const generatedNodesPath = path.join(__dirname, 'public', 'GeneratedNodes.js');
-const allowedExtensions = ['.html', '.php', '.js', '.py'];
 
 function generateNodes(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const nodes = [];
 
   entries.forEach(entry => {
-    if (entry.isFile() && allowedExtensions.includes(path.extname(entry.name))) {
+    if (entry.isFile()) {
       const node = {
         data: {
           id: entry.name,

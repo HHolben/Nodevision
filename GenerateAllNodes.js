@@ -4,7 +4,6 @@ const cheerio = require('cheerio'); // Assuming you'll use Cheerio to parse HTML
 
 // Constants
 const DEFAULT_IMAGE_URL = 'http://localhost:3000/DefaultNodeImage.png';
-const NODE_EXTENSIONS = ['.html', '.php', '.js', '.py'];
 
 
 // Function to recursively get all files in a directory
@@ -48,7 +47,6 @@ function generateNodesFromFiles(dirPath) {
   let index = 0; // Initialize index counter
 
   const AllNodes = allFiles
-    .filter(file => NODE_EXTENSIONS.includes(path.extname(file)))
     .map(file => {
       const relativePath = path.relative(dirPath, file);
       const label = path.basename(file);

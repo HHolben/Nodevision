@@ -35,7 +35,7 @@
         console.log('ActiveNode:', activeNode); // Log ActiveNode to check its value
     
         // Construct the file path based on the activeNode
-        const CodeEditorFilePath = `Notebook/${activeNode}`; // Ensure the path is correct and does not have redundant extensions
+        const CodeEditorFilePath = `Notebook/${activeNode}`; // Ensure the path is correct
     
         // Load Monaco Editor
         require.config({ paths: { 'vs': 'monaco-editor/min/vs' }});

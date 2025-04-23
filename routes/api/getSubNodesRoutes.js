@@ -4,8 +4,6 @@ const path = require('path');
 const cheerio = require('cheerio');
 const router = express.Router();
 
-// Allowed file extensions
-const allowedExtensions = ['.html', '.php', '.js', '.py'];
 const notebookDir = path.join(__dirname, '../../Notebook'); // Define notebookDir relative to Nodevision
 
 // Function to extract the first image URL from the file content
@@ -61,7 +59,7 @@ router.get('/getSubNodes', async (req, res) => {
                     isDirectory: true,
                     imageUrl: imageUrl
                 };
-            } else if (allowedExtensions.includes(fileExtension)) {
+            } else{
                 const filePath = path.join(dirPath, entry.name);
                 const firstImage = await getFirstImageUrl(filePath);
                 imageUrl = firstImage ? firstImage : 'DefaultNodeImage.png';
@@ -71,9 +69,7 @@ router.get('/getSubNodes', async (req, res) => {
                     isDirectory: false,
                     imageUrl: imageUrl
                 };
-            } else {
-                return null; // Skip non-allowed file types
-            }
+            } 
         }));
 
         // Filter out null values (non-allowed file types)

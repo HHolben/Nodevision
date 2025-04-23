@@ -3,6 +3,7 @@
         ".html",
         ".php",
         ".js",
-        ".ipynb"
+        ".ipynb",
+        ".csv"
     ]
 }

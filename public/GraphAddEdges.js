@@ -2,15 +2,13 @@ async function generateEdgesForLinks() {
     const allNodeIds = cy.nodes().map(node => node.id());
   
   
-     // Define valid extensions
-     const validExtensions = ['.php', '.html', '.js', '.ipyn'];
   
       for (let nodeId of allNodeIds) 
       {
          try 
          {
   
-            if (nodeId !== "defaultNode" && validExtensions.some(ext => nodeId.endsWith(ext))) 
+            if (nodeId !== "defaultNode") 
             {
   
               const response = await fetch(`/api/file?path=${nodeId}`);
