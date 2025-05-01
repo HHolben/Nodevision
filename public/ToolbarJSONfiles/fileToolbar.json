@@ -1,7 +1,12 @@
 [
 
 
-
+  {
+    "ToolbarCategory": "File",
+    "heading": "New File",
+    "content": "",
+    "script": "NewNotebookPageInitializer.js"
+  },
   {
     "ToolbarCategory": "File",
     "heading": "New Directory",

@@ -1,168 +1,117 @@
 /**
  * SwitchToCSVediting.js
- * Enables an Excel-like CSV editing mode within Nodevision.
- *
- * Loads a CSV file into an editable HTML table, allows in-browser edits,
- * and saves changes back to the server in CSV format.
+ * Fetches a CSV file and renders it as a table of text inputs for easy editing.
  */
+(function() {
+  // Determine active node and file path
+  let activeNode = window.ActiveNode;
+  if (!activeNode) {
+    const params = new URLSearchParams(window.location.search);
+    activeNode = params.get('activeNode');
+  }
+  if (!activeNode) {
+    console.error('SwitchToCSVediting: No activeNode specified');
+    return;
+  }
+  if (!activeNode.toLowerCase().endsWith('.csv')) {
+    activeNode += '.csv';
+  }
+  const filePath = `Notebook/${activeNode}`;
+  window.currentActiveFilePath = filePath;
 
-// Utility: parse CSV string into 2D array
-function parseCSV(csvText) {
-    const rows = csvText.trim().split(/\r?\n/);
-    return rows.map(row => row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/));
+  // Switch application mode
+  if (window.AppState && typeof AppState.setMode === 'function') {
+    AppState.setMode('CSV Editing');
+  } else {
+    window.currentMode = 'CSV Editing';
   }
-  
-  // Utility: serialize 2D array into CSV string
-  function serializeCSV(data) {
-    return data.map(row =>
-      row.map(cell => {
-        // Escape quotes
-        const safe = String(cell).replace(/"/g, '""');
-        // Wrap in quotes if contains comma or quote or newline
-        return /[",\n]/.test(safe) ? `"${safe}"` : safe;
-      }).join(',')
-    ).join('\n');
+
+  // Locate the info panel container
+  const infoPanel = document.getElementById('content-frame-container');
+  if (!infoPanel) {
+    console.error("SwitchToCSVediting: '#content-frame-container' not found.");
+    return;
   }
-  
-  // Build editable table from data array
-  function buildTable(data) {
-    const table = document.createElement('table');
-    table.id = 'csv-editor-table';
-    table.style.width = '100%';
-    table.style.borderCollapse = 'collapse';
-  
-    data.forEach((row, rowIndex) => {
-      const tr = document.createElement('tr');
-      row.forEach((cell, colIndex) => {
-        const td = document.createElement(rowIndex === 0 ? 'th' : 'td');
-        td.contentEditable = 'true';
-        td.textContent = cell;
-        td.style.border = '1px solid #ccc';
-        td.style.padding = '4px';
-        tr.appendChild(td);
-      });
-      table.appendChild(tr);
-    });
-    return table;
-  }
-  
-  // Expose save function on window for toolbar access
-  window.saveCSVFile = function(filePath) {
-    const table = document.getElementById('csv-editor-table');
-    if (!table) return;
-    const data = Array.from(table.rows).map(tr =>
-      Array.from(tr.cells).map(cell => cell.textContent)
-    );
-    const csv = serializeCSV(data);
-  
-    fetch('/api/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, content: csv })
-    })
-    .then(res => res.text())
-    .then(msg => {
-      const status = document.getElementById('csv-message');
-      status.textContent = 'CSV saved successfully!';
-      setTimeout(() => status.textContent = '', 3000);
-    })
-    .catch(err => {
-      console.error('Error saving CSV:', err);
-      document.getElementById('csv-error').textContent = 'Error saving CSV: ' + err.message;
-    });
-  };
-  
-  // Add "File > Save CSV" to toolbar
-  function updateCSVToolbar(filePath) {
-    const toolbar = document.querySelector('.toolbar');
-    if (!toolbar) return;
-  
-    let fileDropdown = toolbar.querySelector('.dropdown[data-category="File"]');
-    if (!fileDropdown) {
-      fileDropdown = document.createElement('div');
-      fileDropdown.className = 'dropdown';
-      fileDropdown.setAttribute('data-category', 'File');
-  
-      const btn = document.createElement('button');
-      btn.className = 'dropbtn';
-      btn.textContent = 'File';
-      fileDropdown.appendChild(btn);
-  
-      const content = document.createElement('div');
-      content.className = 'dropdown-content';
-      fileDropdown.appendChild(content);
-      toolbar.appendChild(fileDropdown);
-    }
-  
-    const saveItem = document.createElement('button');
-    saveItem.textContent = 'Save CSV';
-    saveItem.addEventListener('click', e => {
-      e.preventDefault();
-      window.saveCSVFile(filePath);
-    });
-    fileDropdown.querySelector('.dropdown-content').appendChild(saveItem);
-  }
-  
-  // Main IIFE: initialize CSV editing mode
-  (function() {
-    // Determine active node / file path
-    let activeNode = window.ActiveNode;
-    if (!activeNode) {
-      const params = new URLSearchParams(window.location.search);
-      activeNode = params.get('activeNode');
-    }
-    if (!activeNode) return console.error('No activeNode specified for CSV editing');
-  
-    const filePath = `Notebook/${activeNode}`;
-    window.currentActiveFilePath = filePath;
-  
-    // Switch mode
-    if (window.AppState && typeof AppState.setMode === 'function') {
-      AppState.setMode('CSV Editing');
-    } else {
-      window.currentMode = 'CSV Editing';
-    }
-  
-    // Prepare container
-    const container = document.getElementById('content-frame-container');
-    if (!container) return console.error("#content-frame-container not found");
-  
-    container.innerHTML = `
-      <div id="csv-editor-wrapper">
-        <p id="csv-message"></p>
-        <p id="csv-error" style="color:red"></p>
-      </div>
-    `;
-  
-    // Load CSV contents
-    fetch(`/api/fileCSVContent?path=${encodeURIComponent(filePath)}`)
-      .then(res => { if (!res.ok) throw new Error('Network error'); return res.text(); })
-      .then(csvText => {
-        const data = parseCSV(csvText);
-        const table = buildTable(data);
-        document.getElementById('csv-editor-wrapper').appendChild(table);
-        updateCSVToolbar(filePath);
+
+  // Render CSV into table of text inputs
+  function renderCSV(path, container) {
+    fetch(`/api/fileCSVContent?path=${encodeURIComponent(path)}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      })
+      .then(text => {
+        const rows = text.trim().split(/\r?\n/).map(r => r.split(/,(?=(?:[^"]*"[^"]*")*[^\"]*$)/));
+        // build HTML
+        let html = '<table style="border-collapse:collapse;width:100%;">';
+        // header
+        html += '<thead><tr>';
+        rows[0].forEach((hdr, i) => {
+          html += `<th style="border:1px solid #ccc;padding:4px"><input type=\"text\" value=\"${hdr.replace(/"/g,'&quot;')}\" data-row=\"0\" data-col=\"${i}\" style=\"width:100%;box-sizing:border-box;padding:2px\"></th>`;
+        });
+        html += '</tr></thead><tbody>';
+        // body
+        rows.slice(1).forEach((row, ri) => {
+          html += '<tr>';
+          row.forEach((cell, ci) => {
+            const escaped = cell.replace(/"/g,'&quot;');
+            html += `<td style="border:1px solid #ccc;padding:0"><input type=\"text\" value=\"${escaped}\" data-row=\"${ri+1}\" data-col=\"${ci}\" style=\"width:100%;box-sizing:border-box;padding:2px\"></td>`;
+          });
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+
+        container.innerHTML = html;
+        addSaveButton(path, container);
       })
       .catch(err => {
-        console.error('Error loading CSV:', err);
-        document.getElementById('csv-error').textContent = 'Error loading CSV: ' + err.message;
+        console.error('SwitchToCSVediting: Error loading CSV:', err);
+        container.innerHTML = `<p style="color:red">Error loading CSV: ${err.message}</p>`;
       });
-  })();
-  
-  // Keyboard navigation: Enter moves down a cell
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && e.target.tagName.toLowerCase() === 'td') {
-      e.preventDefault();
-      const cell = e.target;
-      const row = cell.parentElement;
-      const table = row.parentElement;
-      const colIndex = Array.prototype.indexOf.call(row.cells, cell);
-      const rowIndex = Array.prototype.indexOf.call(table.rows, row);
-      // Move to next row, same column
-      const nextRow = table.rows[rowIndex + 1];
-      if (nextRow) {
-        nextRow.cells[colIndex].focus();
-      }
-    }
-  });
-  
+  }
+
+  // Add Save CSV toolbar button
+  function addSaveButton(path, container) {
+    if (document.getElementById('save-csv-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'save-csv-btn';
+    btn.textContent = 'Save CSV';
+    btn.style.margin = '8px';
+    btn.addEventListener('click', () => saveCSV(path, container));
+    container.insertAdjacentElement('beforebegin', btn);
+  }
+
+  // Gather inputs and serialize to CSV
+  function saveCSV(path, container) {
+    const inputs = Array.from(container.querySelectorAll('input[type=text]'));
+    // determine max row/col
+    let maxRow = 0, maxCol = 0;
+    inputs.forEach(inp => {
+      const r = parseInt(inp.dataset.row);
+      const c = parseInt(inp.dataset.col);
+      if (r > maxRow) maxRow = r;
+      if (c > maxCol) maxCol = c;
+    });
+    // build 2D array
+    const data = Array.from({ length: maxRow+1 }, () => Array(maxCol+1).fill(''));
+    inputs.forEach(inp => {
+      data[parseInt(inp.dataset.row)][parseInt(inp.dataset.col)] = inp.value;
+    });
+    // serialize
+    const csv = data.map(row => row.map(cell => {
+      const s = cell.replace(/"/g,'""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    }).join(',')).join('\n');
+
+    fetch('/api/save', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ path, content: csv })
+    })
+    .then(res => res.ok ? res.text() : Promise.reject(res.statusText))
+    .then(() => alert('CSV saved successfully!'))
+    .catch(err => alert('Error saving CSV: ' + err));
+  }
+
+  // Kick off render
+  renderCSV(filePath, infoPanel);
+})();
