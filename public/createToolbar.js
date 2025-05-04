@@ -4,29 +4,20 @@ import { createBox } from './boxManipulation.js';
 
 /**
  * Displays a sub-toolbar underneath the main toolbar with insert options for a given type.
- * The sub-toolbar is built from items in the dynamically loaded toolbar configuration
- * that have: ToolbarCategory === 'Insert' and insertGroup === insertType.
- * @param {string} insertType - One of "text", "image", "video", "table", "sheet music", "remote"
  */
 function showInsertSubToolbar(insertType) {
-    // Use the globally stored toolbar boxes.
     const boxes = window.loadedToolbarBoxes || [];
-    
-    // Look for an existing sub-toolbar.
     let subToolbar = document.getElementById('sub-toolbar');
     if (!subToolbar) {
         subToolbar = document.createElement('div');
         subToolbar.id = 'sub-toolbar';
         subToolbar.className = 'sub-toolbar';
-        // Insert the sub-toolbar immediately below the main toolbar.
         const toolbarContainer = document.querySelector('.toolbar');
         toolbarContainer.parentNode.insertBefore(subToolbar, toolbarContainer.nextSibling);
     }
-    // Clear previous content and show sub-toolbar.
     subToolbar.innerHTML = '';
     subToolbar.style.display = 'block';
 
-    // Filter the insert items for the selected insertType.
     const insertItems = boxes.filter(box =>
         box.ToolbarCategory === 'Insert' &&
         box.insertGroup === insertType &&
@@ -38,21 +29,30 @@ function showInsertSubToolbar(insertType) {
         return;
     }
 
-    // For each insert item in this group, create a button.
     insertItems.forEach(item => {
         const btn = document.createElement('button');
         btn.className = 'insert-option-btn';
-        btn.textContent = item.heading;
+
+        if (item.icon || item.save) {
+            const img = document.createElement('img');
+            img.src = item.icon || item.save;
+            img.alt = item.heading;
+            img.className = 'insert-option-icon';
+            btn.appendChild(img);
+            btn.title = item.heading;
+        } else if (item.iconClass) {
+            const iconEl = document.createElement('i');
+            iconEl.className = `${item.iconClass} insert-option-icon`;
+            btn.appendChild(iconEl);
+            btn.title = item.heading;
+        } else {
+            btn.textContent = item.heading;
+        }
+
         if (item.callback) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                item.callback();
-            });
+            btn.addEventListener('click', e => { e.preventDefault(); item.callback(); });
         } else if (item.script) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                createBox(item);
-            });
+            btn.addEventListener('click', e => { e.preventDefault(); createBox(item); });
         }
         subToolbar.appendChild(btn);
     });
@@ -60,93 +60,63 @@ function showInsertSubToolbar(insertType) {
 
 /**
  * Creates the main toolbar in the specified container.
- * @param {string} toolbarSelector - The CSS selector for the toolbar container.
- * @param {function} [onToggleView] - Optional callback function.
  */
-export async function createToolbar(toolbarSelector = '.toolbar', onToggleView = () => {}) {
+export async function createToolbar(toolbarSelector = '.toolbar') {
     const toolbarContainer = document.querySelector(toolbarSelector);
     if (!toolbarContainer) {
         console.error(`Container not found for selector: ${toolbarSelector}`);
         return;
     }
 
-    // Load toolbar configuration from external JSON
     const boxes = await loadToolbarElements();
-    // Save the loaded boxes globally so that helper functions can access them.
     window.loadedToolbarBoxes = boxes;
-
-    // Retrieve current mode from centralized state.
     const currentMode = window.AppState ? window.AppState.getMode() : window.currentMode;
 
-    // Separate direct items from grouped items.
     const directItems = [];
     const groupedItems = {};
-
     boxes.forEach(box => {
-        // Skip if modes are defined and current mode is not included.
-        if (box.modes && !box.modes.includes(currentMode)) {
-            return;
-        }
-        if (box.direct) {
-            directItems.push(box);
-        } else {
+        if (box.modes && !box.modes.includes(currentMode)) return;
+        if (box.direct) directItems.push(box);
+        else {
             const category = box.ToolbarCategory || 'Misc';
-            if (!groupedItems[category]) {
-                groupedItems[category] = [];
-            }
-            groupedItems[category].push(box);
+            (groupedItems[category] = groupedItems[category] || []).push(box);
         }
     });
 
-    // Clear existing toolbar content.
     toolbarContainer.innerHTML = '';
-
-    // Define the desired order for grouped categories.
-    const groupOrder = ['File', 'Edit', 'Insert', 'Settings', 'View', 'User'];
+    const groupOrder = ['File','Edit','Insert','Settings','View','User'];
 
     groupOrder.forEach(category => {
-        if (category === 'Insert') {
-            // Instead of rendering individual insert items, create a single "Insert" dropdown.
-            if (groupedItems['Insert'] && groupedItems['Insert'].length > 0) {
-                const dropdown = document.createElement('div');
-                dropdown.className = 'dropdown insert-dropdown';
-                dropdown.setAttribute('data-category', 'Insert');
+        if (category === 'Insert' && groupedItems['Insert']?.length) {
+            const dropdown = document.createElement('div');
+            dropdown.className = 'dropdown insert-dropdown';
+            dropdown.setAttribute('data-category', 'Insert');
 
-                const button = document.createElement('button');
-                button.className = 'dropbtn';
-                button.textContent = 'Insert';
-                dropdown.appendChild(button);
+            const button = document.createElement('button');
+            button.className = 'dropbtn'; button.textContent = 'Insert';
+            dropdown.appendChild(button);
 
-                // Create a dropdown content that shows options for insert types.
-                const dropdownContent = document.createElement('div');
-                dropdownContent.className = 'dropdown-content';
+            const dropdownContent = document.createElement('div');
+            dropdownContent.className = 'dropdown-content';
 
-                // Define the insert type options.
-                const insertTypes = ['text', 'image', 'video', 'table', 'sheet music'];
-                insertTypes.forEach(type => {
-                    const option = document.createElement('a');
-                    option.href = '#';
-                    // Capitalize first letter for display.
-                    option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-                    // On click, show the sub-toolbar for that insert type.
-                    option.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        showInsertSubToolbar(type);
-                    });
-                    dropdownContent.appendChild(option);
-                });
-                dropdown.appendChild(dropdownContent);
-                toolbarContainer.appendChild(dropdown);
-            }
-        } else if (groupedItems[category]) {
-            // Render other categories as dropdowns.
+            const rawInsertGroups = groupedItems['Insert'].map(item => item.insertGroup);
+            const insertTypes = [...new Set(rawInsertGroups.filter(g => typeof g === 'string' && g.length))];
+            insertTypes.forEach(type => {
+                const option = document.createElement('a');
+                option.href = '#';
+                option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                option.addEventListener('click', e => { e.preventDefault(); showInsertSubToolbar(type); });
+                dropdownContent.appendChild(option);
+            });
+            dropdown.appendChild(dropdownContent);
+            toolbarContainer.appendChild(dropdown);
+        } else if (groupedItems[category]?.length) {
             const dropdown = document.createElement('div');
             dropdown.className = 'dropdown';
             dropdown.setAttribute('data-category', category);
 
             const button = document.createElement('button');
-            button.className = 'dropbtn';
-            button.textContent = category;
+            button.className = 'dropbtn'; button.textContent = category;
             dropdown.appendChild(button);
 
             const dropdownContent = document.createElement('div');
@@ -155,156 +125,114 @@ export async function createToolbar(toolbarSelector = '.toolbar', onToggleView =
             groupedItems[category].forEach(box => {
                 const link = document.createElement('a');
                 link.href = '#';
-                link.textContent = box.heading;
-                if (box.customAction) {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        box.customAction();
-                    });
-                } else if (box.callback) {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        box.callback();
-                    });
-                } else if (box.script) {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        createBox(box);
-                    });
+                if (box.icon || box.save) {
+                    const img = document.createElement('img');
+                    img.src = box.icon || box.save;
+                    img.alt = box.heading;
+                    img.className = 'toolbar-icon';
+                    link.appendChild(img);
+                    link.title = box.heading;
+                } else if (box.iconClass) {
+                    const i = document.createElement('i');
+                    i.className = `${box.iconClass} toolbar-icon`;
+                    link.appendChild(i);
+                    link.title = box.heading;
                 } else {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        createBox(box);
-                    });
+                    link.textContent = box.heading;
                 }
+
+                const handler = box.customAction || box.callback || (() => createBox(box));
+                link.addEventListener('click', e => { e.preventDefault(); handler(); });
                 dropdownContent.appendChild(link);
             });
             dropdown.appendChild(dropdownContent);
             toolbarContainer.appendChild(dropdown);
 
-            // After rendering the "View" category, insert direct items with category "Search".
             if (category === 'View') {
-                directItems
-                    .filter(box => box.ToolbarCategory === 'Search')
-                    .forEach(box => {
-                        const directElement = document.createElement('div');
-                        directElement.className = 'toolbar-direct-item';
-                        directElement.innerHTML = box.content;
-                        toolbarContainer.appendChild(directElement);
-                        if (box.script) {
-                            const scriptEl = document.createElement('script');
-                            scriptEl.src = box.script;
-                            toolbarContainer.appendChild(scriptEl);
-                        }
-                    });
+                directItems.filter(d => d.ToolbarCategory === 'Search').forEach(box => {
+                    const elem = document.createElement('div');
+                    elem.className = 'toolbar-direct-item'; elem.innerHTML = box.content;
+                    toolbarContainer.appendChild(elem);
+                    if (box.script) {
+                        const s = document.createElement('script'); s.src = box.script;
+                        toolbarContainer.appendChild(s);
+                    }
+                });
             }
         }
     });
 
-    // Append any remaining direct items (excluding those with category "Search").
-    directItems
-        .filter(box => box.ToolbarCategory !== 'Search')
-        .forEach(box => {
-            const directElement = document.createElement('div');
-            directElement.className = 'toolbar-direct-item';
-            directElement.innerHTML = box.content;
-            toolbarContainer.appendChild(directElement);
-            if (box.script) {
-                const scriptEl = document.createElement('script');
-                scriptEl.src = box.script;
-                toolbarContainer.appendChild(scriptEl);
-            }
-        });
-}
-
-// Subscribe to mode changes so the toolbar re-renders automatically.
-if (window.AppState && typeof window.AppState.subscribe === 'function') {
-    window.AppState.subscribe(() => {
-        createToolbar();
+    directItems.filter(d => d.ToolbarCategory !== 'Search').forEach(box => {
+        const elem = document.createElement('div');
+        elem.className = 'toolbar-direct-item'; elem.innerHTML = box.content;
+        toolbarContainer.appendChild(elem);
+        if (box.script) {
+            const s = document.createElement('script'); s.src = box.script;
+            toolbarContainer.appendChild(s);
+        }
     });
 }
 
+// Re-render on mode change
+if (window.AppState?.subscribe) window.AppState.subscribe(() => createToolbar());
+
 /**
- * Fetches and displays the file view in the specified container.
- * @param {string} fileViewSelector - The CSS selector for the file view container.
+ * Load and display file view
  */
-export async function loadFileView(fileViewSelector) {
-    const fileViewContainer = document.querySelector(fileViewSelector);
-    if (!fileViewContainer) {
-        console.error(`File view container not found for selector: ${fileViewSelector}`);
-        return;
-    }
-    fileViewContainer.innerHTML = '<p>Loading files...</p>';
+export async function loadFileView(selector) {
+    const container = document.querySelector(selector);
+    if (!container) { console.error(`Container not found: ${selector}`); return; }
+    container.innerHTML = '<p>Loading files...</p>';
     try {
-        const response = await fetch('/api/files');
-        const directoryStructure = await response.json();
-        console.log('Directory Structure:', directoryStructure);  // Debug log
-        fileViewContainer.innerHTML = renderDirectoryStructure(directoryStructure, true);
-    } catch (error) {
-        fileViewContainer.innerHTML = '<p>Error loading files</p>';
-        console.error('Error fetching file data:', error);
+        const resp = await fetch('/api/files');
+        const data = await resp.json();
+        container.innerHTML = renderDirectoryStructure(data, true);
+    } catch (e) {
+        container.innerHTML = '<p>Error loading files</p>';
+        console.error('Error fetching files:', e);
     }
 }
 
-/**
- * Renders a directory structure as an HTML list.
- * @param {Array} files - The directory structure to render.
- * @param {boolean} [isRoot=false] - Whether this is the root directory.
- * @returns {string} - The rendered HTML.
- */
 function renderDirectoryStructure(files, isRoot = false) {
-    const container = document.createElement('ul');
-    console.log('Rendering directory structure:', files);  // Debug log
+    const ul = document.createElement('ul');
     files.forEach(file => {
-        const listItem = document.createElement('li');
-        listItem.className = file.isDirectory ? 'directory' : 'file';
+        const li = document.createElement('li');
+        li.className = file.isDirectory ? 'directory' : 'file';
         if (file.isDirectory) {
-            const directoryButton = document.createElement('button');
-            directoryButton.className = 'directory-button';
-            directoryButton.textContent = file.name;
-            const relativePath = file.path.replace('/Notebook/', '');
-            directoryButton.id = relativePath;
-            directoryButton.addEventListener('click', toggleDirectory);
-            const nestedList = document.createElement('ul');
-            nestedList.className = 'nested';
-            nestedList.style.display = 'none';
-            nestedList.setAttribute('data-path', file.path);
-            listItem.appendChild(directoryButton);
-            listItem.appendChild(nestedList);
+            const btn = document.createElement('button');
+            btn.className = 'directory-button'; btn.textContent = file.name;
+            btn.id = file.path.replace('/Notebook/', '');
+            btn.addEventListener('click', toggleDirectory);
+            const nested = document.createElement('ul');
+            nested.className = 'nested'; nested.style.display = 'none';
+            nested.setAttribute('data-path', file.path);
+            li.append(btn, nested);
         } else {
-            const fileButton = document.createElement('button');
-            const relativePath = file.path.replace('/Notebook/', '');
-            fileButton.id = relativePath;
-            fileButton.className = 'file-button';
-            fileButton.textContent = file.name;
-            listItem.appendChild(fileButton);
+            const btn = document.createElement('button');
+            btn.className = 'file-button';
+            btn.id = file.path.replace('/Notebook/', ''); btn.textContent = file.name;
+            li.append(btn);
         }
-        container.appendChild(listItem);
+        ul.append(li);
     });
-    return container.outerHTML;
+    return ul.outerHTML;
 }
 
-/**
- * Toggles the visibility of a directory's nested contents.
- * @param {Event} event - The click event.
- */
-async function toggleDirectory(event) {
-    const directoryButton = event.target;
-    const directoryElement = directoryButton.nextElementSibling;
-    const path = directoryElement.getAttribute('data-path');
-    if (directoryElement.style.display === 'none') {
-        directoryElement.style.display = 'block';
-        if (!directoryElement.hasAttribute('data-loaded')) {
+async function toggleDirectory(evt) {
+    const btn = evt.target;
+    const nested = btn.nextElementSibling;
+    const path = nested.getAttribute('data-path');
+    if (nested.style.display === 'none') {
+        nested.style.display = 'block';
+        if (!nested.hasAttribute('data-loaded')) {
             try {
-                const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
-                const subDirectoryStructure = await response.json();
-                directoryElement.innerHTML = renderDirectoryStructure(subDirectoryStructure);
-                directoryElement.setAttribute('data-loaded', 'true');
-            } catch (error) {
-                console.error('Error fetching subdirectory data:', error);
-            }
+                const resp = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+                const data = await resp.json();
+                nested.innerHTML = renderDirectoryStructure(data);
+                nested.setAttribute('data-loaded', 'true');
+            } catch (e) { console.error('Error loading subdir:', e); }
         }
     } else {
-        directoryElement.style.display = 'none';
+        nested.style.display = 'none';
     }
 }

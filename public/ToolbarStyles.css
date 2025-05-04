@@ -60,3 +60,24 @@ label {
 input[type="checkbox"] {
     margin-left: 8px;
 }
+
+.sub-toolbar .insert-option-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  
+  .insert-option-btn .insert-option-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  /* optional hover effect */
+  .insert-option-btn:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+  

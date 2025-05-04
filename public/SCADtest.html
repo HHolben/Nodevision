@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SCAD File Viewer (ES Modules)</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+    #controls {
+      padding: 8px;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+    }
+    #viewerContainer {
+      flex: 1;
+      position: relative;
+    }
+    #viewerContainer canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label for="fileInput">Choose a .scad file: </label>
+    <input id="fileInput" type="file" accept=".scad" />
+  </div>
+  <div id="viewerContainer"></div>
+
+  <script type="module">
+    // Import the ES-module builds of Three.js and OpenJSCAD from CDNs
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';  // :contentReference[oaicite:0]{index=0} :contentReference[oaicite:1]{index=1}
+    import { Viewer, parseScadToCsg } from 'https://unpkg.com/@jscad/openjscad@2.3.0/dist/index.js?module';
+    // Once DOM is ready, set up file handling and viewer
+    document.addEventListener('DOMContentLoaded', () => {
+      const fileInput = document.getElementById('fileInput');
+      const container = document.getElementById('viewerContainer');
+
+      // Create the OpenJSCAD viewer (builds on Three.js)
+      const viewer = new Viewer(container, {
+        // you can pass optional Viewer settings here
+      });
+
+      // When the user selects a file, read and render it
+      fileInput.addEventListener('change', async event => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+          const scadText = await file.text();  // File.text() is a modern alternative to FileReader
+          const csg = await parseScadToCsg(scadText);  // parse SCAD to CSG geometry :contentReference[oaicite:3]{index=3}
+          viewer.setCsg(csg);  // render the model :contentReference[oaicite:4]{index=4}
+        } catch (err) {
+          console.error('Failed to load SCAD:', err);
+          alert('Error parsing SCAD file: ' + err.message);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

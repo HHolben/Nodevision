@@ -24,7 +24,9 @@
     "heading": "Save File",
     "content": "",
     "callbackKey": "saveFile",
-    "modes": ["WYSIWYG Editing"]
+    "modes": ["WYSIWYG Editing"],
+    "save": "icons/SaveIcon.png"
+
   },
   {
     "ToolbarCategory": "File",
