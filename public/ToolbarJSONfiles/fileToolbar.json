@@ -5,7 +5,7 @@
     "ToolbarCategory": "File",
     "heading": "New File",
     "content": "",
-    "script": "NewNotebookPageInitializer.js"
+    "script": "NewFilex.js"
   },
   {
     "ToolbarCategory": "File",

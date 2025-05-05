@@ -137,6 +137,13 @@
       "insertGroup": "image",
       "callbackKey": "insertQRcode",
       "modes": ["WYSIWYG Editing"]
-    }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert CSV Flash Cards",
+      "insertGroup": "table",
+      "callbackKey": "insertFlashCards",
+      "modes": ["WYSIWYG Editing"]
+    }    
   ]
   
