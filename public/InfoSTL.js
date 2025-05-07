@@ -20,6 +20,8 @@
   
       // Scene setup
       const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xffffff); // Set white background
+  
       const camera = new THREE.PerspectiveCamera(
         45,
         viewer.clientWidth / viewer.clientHeight,
@@ -48,10 +50,37 @@
       loader.load(
         `${serverBase}/${filename}`,
         geometry => {
-          const material = new THREE.MeshStandardMaterial({ color: 0x999999 });
-          const mesh = new THREE.Mesh(geometry, material);
+          // Create blue material for faces
+          const faceMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x0066ff,  // Blue color for faces
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1
+          });
+          
+          // Create mesh with blue material
+          const mesh = new THREE.Mesh(geometry, faceMaterial);
           geometry.center();
           scene.add(mesh);
+          
+          // Add yellow-orange edges
+          const edges = new THREE.EdgesGeometry(geometry);
+          const edgeMaterial = new THREE.LineBasicMaterial({ 
+            color: 0xffaa00  // Yellow-orange color for edges
+          });
+          const wireframe = new THREE.LineSegments(edges, edgeMaterial);
+          scene.add(wireframe);
+          
+          // Add green vertices (points)
+          const vertices = new THREE.Points(
+            geometry,
+            new THREE.PointsMaterial({ 
+              color: 0x00ff00,  // Green color for vertices
+              size: 2, 
+              sizeAttenuation: false
+            })
+          );
+          scene.add(vertices);
         },
         undefined,
         err => {
@@ -78,4 +107,3 @@
     // Expose renderSTL globally for InfoPanel.js
     window.renderSTL = renderSTL;
   })();
-  
