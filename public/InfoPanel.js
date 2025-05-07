@@ -72,6 +72,9 @@ function updateInfoPanel(element) {
   } else if (lower.endsWith('.scad')) {
     renderSCAD(filename, infoPanel, serverBase);
     return;
+  } else if (lower.endsWith('.stl')) {
+    renderSTL(filename, infoPanel, serverBase);
+    return;
     } else if (lower.endsWith('.xml')) {
     window.renderQTI(filename, infoPanel, serverBase);
     return;

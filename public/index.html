@@ -20,10 +20,31 @@
   <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
   <script src="vendor/requirejs/require.js" defer></script>
 
+
+<!-- Three.js core -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+
+
+<!--Orbit controls-->
+<script src="https://cdn.jsdelivr.net/npm/three-orbitcontrols@2.110.3/OrbitControls.min.js"></script>
+
+
+<!--CSG Bridge-->
+<script src="https://unpkg.com/three-csgmesh@2.1.0/dist/three-csgmesh.umd.js"></script>
+
+<!--SCAD Parser-->
+<script src="https://unpkg.com/jscad@1.1.0/csg.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+
+
   <!-- MathJax (if needed) -->
   <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 
   <!-- Nodevision Scripts -->
+  <script src="loadOzrbitControls.js" defer></script>
+
   <script src="NodevisionIncludeMathjax.js" defer></script>
   <script src="CombineURLs.js" defer></script>
   <script src="GeneratedNodes.js" defer></script>
@@ -33,7 +54,6 @@
   <script src="GraphGetStyles.js" defer></script>
   <script src="ExtractLinksFromHTML.js" defer></script>
   <script src="GraphAddEdges.js" defer></script>
-  <script src="InfoPanel.js" defer></script>
   <script src="GraphExpandRegion.js" defer></script>
   <script src="GraphCollapseRegion.js" defer></script>
   <script src="Graph.js" defer></script>
@@ -51,10 +71,15 @@
   <script src="InfoCSV.js"></script>
   <script src="InfoQTI.js"></script>
   <script src="InfoSCAD.js"></script>
+  <script src="InfoSTL.js"></script>
+
 
   <script src="InfoHTML.js"></script>
 
   <script src="fileView.js" defer></script>
+
+  <script src="InfoPanel.js" defer></script>
+
 
 </head>
 <body>
