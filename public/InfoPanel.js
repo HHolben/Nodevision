@@ -78,6 +78,9 @@ function updateInfoPanel(element) {
     } else if (lower.endsWith('.xml')) {
     window.renderQTI(filename, infoPanel, serverBase);
     return;
+  } else if (lower.endsWith('.mid')) {
+    window.renderMIDI(filename, infoPanel, serverBase);
+    return;
     } else {
     infoPanel.innerHTML = '<p>File: ' + filename + '</p>';
     renderHTML(filename, iframe, serverBase, 0.5);

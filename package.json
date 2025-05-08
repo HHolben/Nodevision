@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@serialport/parser-readline": "^13.0.0",
+    "@tonejs/midi": "^2.0.28",
     "avrgirl-arduino": "^5.0.1",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
