@@ -10,42 +10,48 @@
       "heading": "h1",
       "insertGroup": "text",
       "callbackKey": "insertH1",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/h1Icon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h2",
       "insertGroup": "text",
       "callbackKey": "insertH2",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/h2Icon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h3",
       "insertGroup": "text",
       "callbackKey": "insertH3",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/h3Icon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h4",
       "insertGroup": "text",
       "callbackKey": "insertH4",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/h4Icon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h5",
       "insertGroup": "text",
       "callbackKey": "insertH5",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/h5Icon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h6",
       "insertGroup": "text",
       "callbackKey": "insertH6",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/h6Icon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -59,63 +65,74 @@
       "heading": "OrderedList",
       "insertGroup": "text",
       "callbackKey": "insertOrderedList",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/NumberedList.png"
+
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "UnorderedList",
       "insertGroup": "text",
       "callbackKey": "insertUnorderedList",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/BulletPoints.png"
+
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Italics",
       "insertGroup": "text",
       "callbackKey": "insertItalics",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/ItalicsIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Bold",
       "insertGroup": "text",
       "callbackKey": "insertBold",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/BoldIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Underline",
       "insertGroup": "text",
       "callbackKey": "insertUnderline",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/UnderlineIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Strikethrough",
       "insertGroup": "text",
       "callbackKey": "insertStrikethrough",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/StrikethroughIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Sensitive",
       "insertGroup": "text",
       "callbackKey": "insertSensitive",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/InsertSensitiveIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Blank SVG Drawing",
       "insertGroup": "image",
       "callbackKey": "insertBlankSVG",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/ImageIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Video",
       "insertGroup": "video",
       "callbackKey": "insertVideo",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/videoIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -129,7 +146,8 @@
       "heading": "Insert CSV as table",
       "insertGroup": "table",
       "callbackKey": "insertCSV",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/SpreadsheetIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -150,7 +168,8 @@
       "heading": "Insert Hyperlink",
       "insertGroup": "text",
       "callbackKey": "insertLink",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/LinkIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -158,9 +177,55 @@
       "insertGroup": "text",
       "callbackKey": "insertIFRAME",
       "modes": ["WYSIWYG Editing"]
-    }           
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Collapsible",
+      "insertGroup": "text",
+      "callbackKey": "InsertCollapsible",
+      "modes": ["WYSIWYG Editing"]
+    },  
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Quote",
+      "insertGroup": "text",
+      "callbackKey": "insertQuote",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/QuotationIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Abbreviation",
+      "insertGroup": "text",
+      "callbackKey": "insertAbbreviation",
+      "modes": ["WYSIWYG Editing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Address",
+      "insertGroup": "text",
+      "callbackKey": "insertAddress",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/AddressIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Blockquote",
+      "insertGroup": "text",
+      "callbackKey": "insertBlockquote",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/BlockquoteIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Code Element",
+      "insertGroup": "text",
+      "callbackKey": "InsertCodeElement",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/CodeEditor.png"
+    }                         
   ]
   
 
 
-
+  

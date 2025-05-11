@@ -5,13 +5,15 @@
     "ToolbarCategory": "File",
     "heading": "New File",
     "content": "",
-    "script": "NewFilex.js"
+    "script": "NewFilex.js",
+    "icon": "icons/DefaultNodeImage.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "New Directory",
     "content": "",
-    "script": "NewDirectoryInitializer.js"
+    "script": "NewDirectoryInitializer.js",
+    "icon": "icons/DefaultRegionImage.png"
   },
   {
     "ToolbarCategory": "File",
@@ -25,19 +27,22 @@
     "content": "",
     "callbackKey": "saveFile",
     "modes": ["WYSIWYG Editing"],
-    "save": "icons/SaveIcon.png"
+    "icon": "icons/SaveIcon.png"
 
   },
   {
     "ToolbarCategory": "File",
     "heading": "View PHP Deployment",
     "content": "",
-    "callbackKey": "viewPHPdeployment"
+    "callbackKey": "viewPHPdeployment",
+    "icon": "icons/ViewDeploymentIconPHP.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "View Nodevision Deployment",
     "content": "",
-    "callbackKey": "viewNodevisionDeployment"
+    "callbackKey": "viewNodevisionDeployment",
+    "icon": "icons/ViewDeploymentNodevisionIcon.png"
+
   }
 ]

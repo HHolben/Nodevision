@@ -58,6 +58,55 @@ export const insertCallbacks = {
       <div class="sensitive" style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; margin: 10px 0;" onload="this.innerHTML='Content hidden for privacy';">${text}</div>`;
     document.execCommand('insertHTML', false, sensitiveElement);
   },
+
+
+
+
+InsertCollapsible() {
+    
+    var SensitiveElement = ` <button type="button" style="background-color:#777;color:white;cursor:pointer;width:100%;border:none;text-align:left;outline:none;font-size:15px" onclick="this.classList.toggle('active');var content=this.nextElementSibling;content.style.display=content.style.display==='block'?'none':'block';this.style.backgroundColor=this.classList.contains('active')?'#555':'#777';">Open/Close Collapsible</button><section style="padding:0 18px;display:none;overflow:hidden;background-color:#f1f1f1;">COLLAPSABLE TEXT HERE.</section>`;
+
+    document.execCommand('insertHTML', false, SensitiveElement);
+},
+
+
+
+
+insertQuote() {
+    const text = document.getSelection().toString() || prompt("Enter the quote text:");
+    const quoteElement = `<q>${text}</q>`;
+    document.execCommand('insertHTML', false, quoteElement);
+},
+
+
+
+insertAbbreviation() {
+    const abbreviation = prompt("Enter the abbreviation:");
+    const title = prompt("Enter the full form (title):");
+    const abbrElement = `<abbr title="${title}">${abbreviation}</abbr>`;
+    document.execCommand('insertHTML', false, abbrElement);
+},
+insertAddress() {
+    const address = prompt("Enter the address:");
+    const addressElement = `<address>${address}</address>`;
+    document.execCommand('insertHTML', false, addressElement);
+},
+
+insertBlockquote() {
+    const text = document.getSelection().toString() || prompt("Enter the blockquote text:");
+    const blockquoteElement = `<blockquote>${text}</blockquote>`;
+    document.execCommand('insertHTML', false, blockquoteElement);
+},
+
+InsertCodeElement() {
+    const CodeElement = `<code>print("Hello, World!")</code>`;
+    document.execCommand('insertHTML', false, CodeElement);
+},
+
+
+
+
+
   insertBlankSVG: () => {
     const svgElement = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid black;">
       <rect width="100%" height="100%" fill="white"/>
