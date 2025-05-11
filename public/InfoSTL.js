@@ -66,7 +66,7 @@
           // Add yellow-orange edges
           const edges = new THREE.EdgesGeometry(geometry);
           const edgeMaterial = new THREE.LineBasicMaterial({ 
-            color: 0xffaa00  // Yellow-orange color for edges
+            color: 0x00ff00,  // Green color for vertices
           });
           const wireframe = new THREE.LineSegments(edges, edgeMaterial);
           scene.add(wireframe);
@@ -75,7 +75,7 @@
           const vertices = new THREE.Points(
             geometry,
             new THREE.PointsMaterial({ 
-              color: 0x00ff00,  // Green color for vertices
+              color: 0xffaa00,  // Yellow-orange color for edges
               size: 2, 
               sizeAttenuation: false
             })

@@ -165,8 +165,83 @@ export const insertCallbacks = {
     }
   },
   insertQRcode: () => {
-    // ... existing QR code insertion ...
+      // Assumes a QRCode library is available.
+      const generateQRCode = () => {
+        const url = document.getElementById("urlInput")?.value;
+        if (url) {
+          QRCode.toDataURL(url, { errorCorrectionLevel: 'H' }, function (err, qrUrl) {
+            if (err) {
+              alert("Failed to generate QR code.");
+              return;
+            }
+            const qrCodeDiv = document.getElementById("qrCode");
+            qrCodeDiv.innerHTML = `<img src="${qrUrl}" alt="QR Code" />`;
+            const copyButton = document.getElementById("copyButton");
+            if (copyButton) {
+              copyButton.disabled = false;
+              copyButton.dataset.qrUrl = qrUrl;
+            }
+          });
+        } else {
+          alert("Please enter a URL.");
+        }
+      };
+      const copyQRCode = () => {
+        const copyButton = document.getElementById("copyButton");
+        const qrUrl = copyButton?.dataset.qrUrl;
+        if (qrUrl) {
+          const tempInput = document.createElement("input");
+          tempInput.value = qrUrl;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          document.execCommand("copy");
+          document.body.removeChild(tempInput);
+          alert("QR code URL copied to clipboard!");
+        }
+      };
+      const qrContainer = 
+        `<div id="qr-container">
+          <input type="text" id="urlInput" placeholder="Enter URL for QR Code" />
+          <button id="generateQR">Generate QR Code</button>
+          <div id="qrCode"></div>
+          <button id="copyButton" disabled>Copy QR Code URL</button>
+        </div>`
+      ;
+      document.execCommand('insertHTML', false, qrContainer);
+      setTimeout(() => {
+        const generateBtn = document.getElementById("generateQR");
+        const copyBtn = document.getElementById("copyButton");
+        if (generateBtn) {
+          generateBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            generateQRCode();
+          });
+        }
+        if (copyBtn) {
+          copyBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            copyQRCode();
+          });
+        }
+      }, 100);
+    },
+  
+   insertLink() {
+      const url = prompt("Enter the URL:");
+      const text = document.getSelection().toString() || prompt("Enter the link text:");
+      const linkElement = `<a href="${url}" target="_blank">${text}</a>`;
+      document.execCommand('insertHTML', false, linkElement);
   },
+
+insertIFRAME()
+{
+    const url = prompt("Enter the URL:");
+    const text = document.getSelection().toString() || prompt("Enter the title:");
+    const iFrameElement = `<iframe src="${url}" title=${text}</a>`;
+    document.execCommand('insertHTML', false, iFrameElement);
+},
+
+
   insertFlashCards: () => {
     const CSVfile = prompt("Enter the relative path of your CSV file (with extension):");
     if (!CSVfile) return alert("CSV filename (relative path) is required.");

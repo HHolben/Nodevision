@@ -233,7 +233,8 @@ document.getElementById('fileUpload').addEventListener('change', function(event)
         // Optionally, you could also save the final webpage relative path for future reference
         console.log('Final Webpage Relative Image Path:', finalWebpageRelativePath);
     }
-});function uploadImage(file) {
+});
+function uploadImage(file) {
     const formData = new FormData();
     formData.append('image', file);
 

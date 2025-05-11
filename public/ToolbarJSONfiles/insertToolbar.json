@@ -144,6 +144,23 @@
       "insertGroup": "table",
       "callbackKey": "insertFlashCards",
       "modes": ["WYSIWYG Editing"]
-    }    
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Hyperlink",
+      "insertGroup": "text",
+      "callbackKey": "insertLink",
+      "modes": ["WYSIWYG Editing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert IFRAME",
+      "insertGroup": "text",
+      "callbackKey": "insertIFRAME",
+      "modes": ["WYSIWYG Editing"]
+    }           
   ]
   
+
+
+
