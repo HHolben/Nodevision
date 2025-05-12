@@ -58,7 +58,8 @@
       "heading": "table",
       "insertGroup": "table",
       "callbackKey": "insertTable",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/SpreadsheetIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -146,15 +147,16 @@
       "heading": "Insert CSV as table",
       "insertGroup": "table",
       "callbackKey": "insertCSV",
-      "modes": ["WYSIWYG Editing"],
-      "icon": "icons/SpreadsheetIcon.png"
+      "modes": ["WYSIWYG Editing"]
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert QRcode",
       "insertGroup": "image",
       "callbackKey": "insertQRcode",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/QRcodeIcon.png"
+
     },
     {
       "ToolbarCategory": "Insert",

@@ -4,8 +4,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "New File",
-    "content": "",
-    "script": "NewFilex.js",
+    "callbackKey": "NewFile",
     "icon": "icons/DefaultNodeImage.png"
   },
   {

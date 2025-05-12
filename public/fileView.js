@@ -11,30 +11,34 @@ window.updateFilePreview = function(filePath, fileName) {
   };
   
   // Expose a function to fetch directory contents.
-  window.fetchDirectoryContents = async function(directoryPath = '') {
-    console.log("Fetching directory contents for:", directoryPath);
-    const loadingElem = document.getElementById('loading');
-    const errorElem = document.getElementById('error');
-    const fileListElem = document.getElementById('file-list');
+window.fetchDirectoryContents = async function(directoryPath = '') {
+  console.log("Fetching directory contents for:", directoryPath);
   
-    loadingElem.style.display = 'block';
-    errorElem.textContent = '';
-    fileListElem.innerHTML = '';
-  
-    try {
-      const response = await fetch(`/api/files?path=${encodeURIComponent(directoryPath)}`);
-      if (!response.ok) {
-        throw new Error(`Error fetching files: ${response.statusText}`);
-      }
-      const data = await response.json();
-      displayFiles(data, directoryPath);
-    } catch (error) {
-      console.error('Error fetching files:', error);
-      errorElem.textContent = 'Could not load directory contents. Please try again.';
-    } finally {
-      loadingElem.style.display = 'none';
+  // ✅ Save the current path globally
+  window.currentDirectoryPath = directoryPath;
+
+  const loadingElem = document.getElementById('loading');
+  const errorElem = document.getElementById('error');
+  const fileListElem = document.getElementById('file-list');
+
+  loadingElem.style.display = 'block';
+  errorElem.textContent = '';
+  fileListElem.innerHTML = '';
+
+  try {
+    const response = await fetch(`/api/files?path=${encodeURIComponent(directoryPath)}`);
+    if (!response.ok) {
+      throw new Error(`Error fetching files: ${response.statusText}`);
     }
-  };
+    const data = await response.json();
+    displayFiles(data, directoryPath);
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    errorElem.textContent = 'Could not load directory contents. Please try again.';
+  } finally {
+    loadingElem.style.display = 'none';
+  }
+};
   
   // Display the list of files and directories.
   function displayFiles(files, currentPath) {
