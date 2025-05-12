@@ -54,4 +54,26 @@ router.post('/create', async (req, res) => {
   }
 });
 
+// Endpoint to create a new directory
+router.post('/create-directory', async (req, res) => {
+  const { path: relativePath } = req.body;
+  if (!relativePath) {
+    return res.status(400).json({ error: 'Directory path is required' });
+  }
+
+  const targetPath = resolveNotebookPath(relativePath); // same helper you use for file creation
+
+  try {
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.mkdir(targetPath); // will throw if it already exists
+    res.json({ success: true, path: relativePath });
+  } catch (err) {
+    if (err.code === 'EEXIST') {
+      return res.status(409).json({ error: 'Directory already exists' });
+    }
+    console.error('Error creating directory:', err);
+    res.status(500).json({ error: 'Error creating directory' });
+  }
+});
+
 module.exports = router;

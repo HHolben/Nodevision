@@ -69,5 +69,47 @@ NewFile: async () => {
     } else {
       alert("No active node specified in the URL.");
     }
-  }
+  },
+  NewDirectory: async () => {
+    // 1. Grab the current directory from window (set by fetchDirectoryContents)
+    const parentPath = window.currentDirectoryPath || '';
+
+    // 2. Ask the user for the new folder’s name
+    const folderName = prompt("Enter the name of the new directory:");
+    if (!folderName) {
+      console.log("Directory creation cancelled.");
+      return;
+    }
+
+    console.log("→ Creating directory:", folderName, "in", parentPath);
+
+    try {
+      // 3. POST to your express route
+      const response = await fetch('/api/create-directory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderName, parentPath })
+      });
+
+      // 4. Parse whatever the server sends back
+      const text = await response.text();
+      let payload;
+      try { payload = JSON.parse(text); } catch { payload = text; }
+
+      console.log("← Response:", response.status, payload);
+
+      if (!response.ok) {
+        // If the server sends { error: "…" }, show that
+        const msg = payload && payload.error ? payload.error : payload;
+        throw new Error(`${response.status} – ${msg}`);
+      }
+
+      alert(`Directory "${folderName}" created.`);
+      // 5. Refresh the listing
+      window.fetchDirectoryContents(parentPath);
+    } catch (err) {
+      console.error('Failed to create directory:', err);
+      alert(`Failed to create directory: ${err.message}`);
+    }
+  },
 };
