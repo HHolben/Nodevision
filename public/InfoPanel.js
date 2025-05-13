@@ -78,6 +78,15 @@ function updateInfoPanel(element) {
     } else if (lower.endsWith('.xml')) {
     window.renderQTI(filename, infoPanel, serverBase);
     return;
+  } else if (lower.endsWith('.mp3')) {
+    window.InfoMP3(filename, infoPanel, serverBase);
+    return;
+  } else if (lower.endsWith('.mp4')) {
+    window.InfoMP4(filename, infoPanel, serverBase);
+    return;
+  } else if (lower.endsWith('.ttf')) {
+    window.getFontInfo(filename, infoPanel, serverBase);
+    return;
   } else if (lower.endsWith('.mid')) {
     window.renderMIDI(filename, infoPanel, serverBase);
     return;
