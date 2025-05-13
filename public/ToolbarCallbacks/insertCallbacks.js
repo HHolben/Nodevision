@@ -21,6 +21,9 @@ export const insertCallbacks = {
   insertH6: () => {
     document.execCommand('insertHTML', false, '<h6>Heading 6</h6>');
   },
+    insertParagraph: () => {
+    document.execCommand('insertHTML', false, '<p>new paragraph </p>');
+  },
   insertTable: () => {
     const table = document.createElement('table');
     table.style.borderCollapse = "collapse";

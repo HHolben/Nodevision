@@ -55,6 +55,15 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "heading": "paragraph",
+      "insertGroup": "text",
+      "callbackKey": "insertParagraph",
+      "modes": ["WYSIWYG Editing"]
+    },
+
+    
+    {
+      "ToolbarCategory": "Insert",
       "heading": "table",
       "insertGroup": "table",
       "callbackKey": "insertTable",

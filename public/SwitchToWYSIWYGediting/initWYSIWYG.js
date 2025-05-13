@@ -34,7 +34,7 @@
 
   container.innerHTML = '' +
     '<div id="ScrollableElementStyles">' +
-    '  <div id="editor" contenteditable="true"></div>' +
+    '  <div id="editor" contenteditable="true" word-wrap: break-word;"></div>' +
     '  <p id="message"></p>' +
     '  <p id="errorMessage" style="color:red;"></p>' +
     '</div>';
