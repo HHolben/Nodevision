@@ -1,0 +1,38 @@
+--- public/fileView.js
++++ public/fileView.js
+@@ function displayFiles(files, currentPath) {
+     files.forEach(item => {
+       const li = document.createElement('li');
+       li.style.margin = '5px 0';
+       const link = document.createElement('a');
+       link.href = '#';
++      // Make the link draggable and store its full path
++      link.setAttribute('draggable', 'true');
++      link.addEventListener('dragstart', (e) => {
++        e.dataTransfer.setData('text/plain', item.path);
++        e.dataTransfer.effectAllowed = 'move';
++        link.classList.add('dragging');
++      });
++
+       const icon = item.isDirectory ? '📁' : '📄';
+       link.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
+
+       // Drop target for directories (and parent .. link, above) will now get a real sourcePath...
+@@
+       // Click behavior: if directory, navigate; if file, preview.
+-      link.addEventListener('click', (e) => {
+-        e.preventDefault();
+-        if (item.isDirectory) {
+-          window.fetchDirectoryContents(item.path);
+-        } else {
+-          updateInfoPanel(item.path);
+-        }
+-      });
++      link.addEventListener('click', (e) => {
++        e.preventDefault();
++        if (item.isDirectory) {
++          window.fetchDirectoryContents(item.path);
++        } else {
++          window.updateFilePreview(item.path, item.name);
++        }
++      });

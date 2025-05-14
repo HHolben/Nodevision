@@ -21,14 +21,25 @@
 
     // Populate the right panel with the code IDE environment.
     // In index.html the right panel has a container with id "element-info"
-    const contentElement = document.getElementById('element-info');
-    if (!contentElement) {
-        console.error("Right panel container 'element-info' not found.");
-        return;
-    }
+const contentElement = document.getElementById('element-info');
+if (!contentElement) {
+  console.error("Right panel container 'element-info' not found.");
+  return;
+}
 
-    // Clear any existing content.
-    contentElement.innerHTML = '';
+// ── NEW: size the info panel to fill the viewport ───────────────────────
+// assume your toolbar sits at the top; grab its height:
+const toolbar = document.querySelector('.toolbar');
+const toolbarHeight = toolbar ? toolbar.offsetHeight : 0;
+
+// compute available height and apply it:
+const availableH = window.innerHeight - toolbarHeight;
+contentElement.style.height = availableH + 'px';
+contentElement.style.overflow = 'hidden';
+// ─────────────────────────────────────────────────────────────────────────
+
+ // Clear any existing content.
+contentElement.innerHTML = '';
 
     // Create a container for the Monaco Editor.
     const editorContainer = document.createElement('div');
