@@ -1,4 +1,4 @@
-// routes/api/fileSaveRoutes.js
+// Nodevision/routes/api/fileSaveRoutes.js
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
@@ -9,8 +9,19 @@ const NOTEBOOK_ROOT = path.resolve(__dirname, '../../Notebook');
 
 // Helper to sanitize and resolve user paths under NOTEBOOK_ROOT
 function resolveNotebookPath(relativePath) {
+  // Normalize slashes
+  let safeRelative = path.normalize(relativePath);
+
   // Prevent absolute paths or back-references
-  const safeRelative = relativePath.replace(/^\/*/, '').replace(/\.\.(\/|\\)/g, '');
+  safeRelative = safeRelative.replace(/^(\/*)/, '')              // strip leading slashes
+                             .replace(/\.\.(\/|\\)/g, '');       // strip any “..” segments
+
+  // Remove a leading "Notebook/" or "Notebook\"
+  const nbPrefix = `Notebook${path.sep}`;
+  if (safeRelative.startsWith(nbPrefix)) {
+    safeRelative = safeRelative.slice(nbPrefix.length);
+  }
+
   return path.join(NOTEBOOK_ROOT, safeRelative);
 }
 
@@ -23,8 +34,13 @@ router.post('/save', async (req, res) => {
 
   const filePath = resolveNotebookPath(relativePath);
   try {
+    // Ensure the directory tree exists
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+
+    // Write the file
     await fs.writeFile(filePath, content, 'utf8');
-    res.send({ success: true, path: relativePath });
+
+    res.json({ success: true, path: relativePath });
   } catch (err) {
     console.error('Error saving file:', err);
     res.status(500).send('Error saving file');
@@ -40,11 +56,9 @@ router.post('/create', async (req, res) => {
 
   const filePath = resolveNotebookPath(relativePath);
   try {
-    // Ensure directory exists
     await fs.mkdir(path.dirname(filePath), { recursive: true });
-    // Create the file with empty content if it doesn't already exist
     await fs.writeFile(filePath, '', { flag: 'wx' });
-    res.send({ success: true, path: relativePath });
+    res.json({ success: true, path: relativePath });
   } catch (err) {
     if (err.code === 'EEXIST') {
       return res.status(409).send('File already exists');
@@ -61,11 +75,12 @@ router.post('/create-directory', async (req, res) => {
     return res.status(400).json({ error: 'Directory path is required' });
   }
 
-  const targetPath = resolveNotebookPath(relativePath); // same helper you use for file creation
+  const targetPath = resolveNotebookPath(relativePath);
 
   try {
+    // Create parent dirs, then the target directory itself
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.mkdir(targetPath); // will throw if it already exists
+    await fs.mkdir(targetPath);
     res.json({ success: true, path: relativePath });
   } catch (err) {
     if (err.code === 'EEXIST') {
