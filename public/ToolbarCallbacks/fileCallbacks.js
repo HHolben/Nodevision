@@ -2,7 +2,8 @@
 export const fileCallbacks = {
   saveFile: () => {
     const filePath = window.currentActiveFilePath;
-    if (filePath && typeof window.saveWYSIWYGFile === 'function') {
+    if (filePath && typeof window.saveWYSIWYGFile === 'function') 
+      {
       window.saveWYSIWYGFile(filePath);
     } else {
       console.error("Cannot save: filePath or saveWYSIWYGFile is missing.");

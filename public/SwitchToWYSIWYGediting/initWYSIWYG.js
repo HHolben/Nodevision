@@ -54,4 +54,9 @@
   window.addEditRasterToolbarItem();
 
   console.log('WYSIWYG editing initialized for:', filePath);
+
+
+
+
+
 })();

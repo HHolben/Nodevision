@@ -60,4 +60,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ==== Initialize toolbar ====
   createToolbar('.toolbar');
+
 });
