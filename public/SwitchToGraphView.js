@@ -1,6 +1,10 @@
-(function () {
+// Nodevision/public/SwitchToGraphView.js
+
+(async function () {
   const cyContainer = document.getElementById("cy");
   const fileViewContainer = document.getElementById("file-view");
+
+  console.log("SwitchToGraphView.js loaded");
 
   if (!cyContainer || !fileViewContainer) {
     console.error("Graph or file view container not found.");
@@ -10,73 +14,71 @@
   // Switch view
   fileViewContainer.style.display = "none";
   cyContainer.style.display = "block";
+  console.log("Switched to graph view");
 
   // Destroy previous instance if needed
   if (window.cyInstance) {
     window.cyInstance.destroy();
     window.cyInstance = null;
+    console.log("Destroyed existing Cytoscape instance");
   }
 
-  // Fetch files and build graph
-  fetch('/api/files')
-    .then(res => res.json())
-    .then(data => {
-      const files = data.filter(item => !item.isDirectory);
-      const elements = buildElementsFromFiles(files);
-      initializeCytoscape(elements);
-    })
-    .catch(err => console.error("Error fetching files:", err));
+  try {
+    console.log("Loading graph data modules...");
+    const { generatedNodes } = await import("/data/GeneratedNodes.js");
+    const { generatedEdges } = await import("/data/GeneratedEdges.js");
+    console.log("Graph data modules loaded");
 
-  /**
-   * Builds Cytoscape elements (nodes & edges) from files.
-   */
-  function buildElementsFromFiles(files) {
-    const nodes = files.map(file => ({
-      data: {
-        id: file.path,         // Use path for unique ID
-        label: file.name,
-        path: file.path
-      }
-    }));
+    console.log("Filtering top-level nodes and edges...");
+    const topLevelNodes = generatedNodes.filter(node => !node.parent || node.parent.endsWith("_root"));
+    const topLevelNodeIds = new Set(topLevelNodes.map(node => node.id));
 
-    const edges = [];
+    const topLevelEdges = generatedEdges.filter(edge =>
+      topLevelNodeIds.has(edge.source) && topLevelNodeIds.has(edge.target)
+    );
 
-    files.forEach(file => {
-      if (Array.isArray(file.links)) {
-        file.links.forEach(linkPath => {
-          if (typeof linkPath === 'string') {
-            const targetFile = files.find(f => f.path === linkPath);
-            if (targetFile) {
-              edges.push({
-                data: {
-                  source: file.path,
-                  target: targetFile.path
-                }
-              });
-            }
-          }
-        });
-      }
-    });
+    console.log(`Top-level nodes: ${topLevelNodes.length}, edges: ${topLevelEdges.length}`);
 
-    return [...nodes, ...edges];
+    const elements = [
+      ...topLevelNodes.map(node => ({ data: node })),
+      ...topLevelEdges.map(edge => ({ data: edge }))
+    ];
+
+    console.log("Initializing Cytoscape with elements...");
+    initializeCytoscape(elements);
+  } catch (err) {
+    console.error("Failed to load graph data:", err);
   }
 
   /**
    * Initializes Cytoscape with elements and sets up events.
    */
   function initializeCytoscape(elements) {
+    console.log("Creating Cytoscape instance...");
     window.cyInstance = cytoscape({
       container: cyContainer,
       elements: elements,
       style: [
         {
+          selector: 'node[type="region"]',
+          style: {
+            'background-color': '#f0f0f0',
+            'shape': 'roundrectangle',
+            'label': 'data(label)',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'font-weight': 'bold',
+            'border-width': 2,
+            'border-color': '#ccc'
+          }
+        },
+        {
           selector: 'node',
           style: {
-            'content': 'data(label)',
+            'background-color': '#0074D9',
+            'label': 'data(label)',
             'text-valign': 'center',
             'color': '#fff',
-            'background-color': '#0074D9',
             'text-outline-width': 2,
             'text-outline-color': '#0074D9'
           }
@@ -92,13 +94,12 @@
         }
       ],
       layout: {
-        name: 'grid',
-        rows: 1
+        name: 'fcose',
+        animate: true
       }
     });
 
-    // Initial update
-    updateGraphDatabase();
+    console.log("Cytoscape instance created");
 
     // Graph change listeners (debounced)
     const debouncedUpdate = debounce(updateGraphDatabase, 500);

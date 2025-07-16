@@ -1,224 +1,31 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Nodevision Graph</title>
-    <!-- Load Cytoscape from a CDN -->
-    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      #cy {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Graph container -->
-    <div id="cy"></div>
-    <script>
-      // Initialize Cytoscape instance
-      var cy = cytoscape({
-        container: document.getElementById('cy'),
-        layout: { 
-          name: 'cose', 
-          animate: true, 
-          padding: 30, 
-          nodeRepulsion: 8000, 
-          idealEdgeLength: 50 
-        },
-        style: [
-          {
-            selector: 'node',
-            style: {
-              'background-color': '#0074D9',
-              'label': 'data(label)',
-              'text-valign': 'center',
-              'color': '#000',  // Changed text color to black
-              'width': 40,
-              'height': 40,
-              'shape': 'ellipse'
-            }
-          },
-          {
-            // Regions (directories) appear as compound nodes with a distinct style.
-            selector: 'node.region',
-            style: {
-              'background-color': '#FF851B',
-              'shape': 'rectangle',
-              'color': '#000'  // Ensuring region text is also black
-            }
-          },
-          {
-            selector: 'edge',
-            style: {
-              'width': 2,
-              'line-color': '#ccc',
-              'target-arrow-color': '#ccc',
-              'target-arrow-shape': 'triangle'
-            }
-          }
-        ],
-        elements: []
-      });
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nodevision Graph Viewer</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    #file-view {
+      display: none;
+    }
+    #cy {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="file-view"></div>
+  <div id="cy"></div>
 
-      
-      /* 
-        Nodevision Graph Creation Philosophy:
-        - The graph is built from existing files and directories in the Notebook.
-        - Nodes represent files (active or otherwise) and regions (directories).
-        - Edges capture relationships defined by file hyperlinks or internal references.
-        - Regions can be expanded (to show child nodes) or collapsed.
-      */
-
-
-      fetch('/api/generateEdges', { method: 'POST' })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Edges received:', data.edges); // Debugging
-        renderGraph(data.nodes, data.edges);
-    })
-    .catch(error => console.error('Error fetching edges:', error));
-
-    
-      // Load initial graph data from your backend via the getSubNodes endpoint.
-      async function loadGraph() {
-        try {
-          // Use a region path of "." to represent the Notebook root.
-          const response = await fetch('/api/getSubNodes?path=.');
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const subNodes = await response.json();
-          console.log('Sub-nodes loaded:', subNodes);
-
-          // Map the returned sub-nodes to Cytoscape node elements.
-          const nodeElements = subNodes.map(node => ({
-            group: 'nodes',
-            data: {
-              id: node.id,
-              label: node.label,
-              type: node.isDirectory ? 'region' : 'node',
-              imageUrl: node.imageUrl
-            }
-          }));
-          
-          cy.add(nodeElements);
-          cy.layout({ 
-            name: 'cose', 
-            animate: true, 
-            padding: 30, 
-            nodeRepulsion: 8000, 
-            idealEdgeLength: 50 
-          }).run();
-        } catch (error) {
-          console.error('Error loading sub-node data:', error);
-          // Fallback dummy data for testing
-          var sampleData = {
-            nodes: [
-              { data: { id: 'n1', label: 'Sample File 1', type: 'node' } },
-              { data: { id: 'n2', label: 'Sample Directory 1', type: 'region' } }
-            ],
-            edges: [
-              { data: { id: 'e1', source: 'n1', target: 'n2' } }
-            ]
-          };
-          console.log('Using fallback dummy data:', sampleData);
-          cy.add(sampleData.nodes);
-          cy.add(sampleData.edges);
-          cy.layout({ 
-            name: 'cose', 
-            animate: true, 
-            padding: 30, 
-            nodeRepulsion: 8000, 
-            idealEdgeLength: 50 
-          }).run();
-        }
-      }
-
-      // Expand a region node (directory) to reveal its child files and regions.
-      async function expandRegion(regionElement) {
-        const regionId = regionElement.id();
-        console.log('Expanding region:', regionId);
-        try {
-          // Call the getSubNodes endpoint for the selected region.
-          const response = await fetch(`/api/getSubNodes?path=${encodeURIComponent(regionId)}`);
-          const subNodes = await response.json();
-          const newElements = subNodes.map(node => ({
-            group: 'nodes',
-            data: {
-              id: node.id,
-              label: node.label,
-              parent: regionId,  // Set the region as the parent for compound structure.
-              type: node.isDirectory ? 'region' : 'node',
-              imageUrl: node.imageUrl
-            }
-          }));
-          regionElement.data('expanded', true);
-          regionElement.addClass('compound');
-          cy.add(newElements);
-          cy.layout({ 
-            name: 'cose', 
-            animate: true, 
-            padding: 30, 
-            nodeRepulsion: 8000, 
-            idealEdgeLength: 50 
-          }).run();
-        } catch (error) {
-          console.error('Error expanding region:', error);
-        }
-      }
-
-      // Handle node taps: expand regions when tapped.
-      cy.on('tap', 'node', function(evt) {
-        const node = evt.target;
-        if (node.data('type') === 'region' && !node.data('expanded')) {
-          expandRegion(node);
-        }
-      });
-
-      // Dummy implementations for hyperlink extraction and adding edges.
-      async function generateEdgesForLinks() {
-        const allNodeIds = cy.nodes().map(node => node.id());
-        for (let nodeId of allNodeIds) {
-          if (nodeId !== "defaultNode") {
-            try {
-              const response = await fetch(`/api/file?path=${nodeId}`);
-              const data = await response.json();
-              const fileContent = data.content;
-              const links = extractHyperlinks(fileContent);
-              links.forEach(link => {
-                if (allNodeIds.includes(link)) {
-                  AddEdgeToGraph(nodeId, link);
-                }
-              });
-            } catch (error) {
-              console.error('Error fetching file content:', error);
-            }
-          }
-        }
-      }
-
-      function extractHyperlinks(fileContent) {
-        // TODO: Implement your hyperlink extraction logic here.
-        return [];
-      }
-
-      function AddEdgeToGraph(sourceId, targetId) {
-        const edgeId = `edge-${sourceId}-${targetId}`;
-        cy.add({
-          group: 'edges',
-          data: { id: edgeId, source: sourceId, target: targetId }
-        });
-      }
-
-      // Load the initial graph on page load.
-      loadGraph();
-    </script>
-  </body>
+  <script type="module" src="/cytoscape-bundle.js"></script>
+<script type="module" src="/SwitchToGraphView.js"></script>
+</body>
 </html>

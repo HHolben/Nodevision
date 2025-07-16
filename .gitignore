@@ -12,6 +12,7 @@ public/GeneratedNodes.js
 public/GeneratedRegions.js
 public/GeneratedEdges.js
 public/AllNodes.js
+public/data
 
 # Ignore Monaco Editor and Require.js libraries
 public/monaco-editor/
