@@ -97,6 +97,15 @@ async function loadRoutes() {
 // Call loadRoutes to initialize routes
 loadRoutes();
 
+
+//List top-level Notebook entries
+app.get('/api/topLevelNodes', async (req, res) => {
+  const dir = path.join(__dirname, 'Notebook');
+  const entries = await fsPromises.readdir(dir);
+  res.json(entries);
+});
+
+
 // Serve static files from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -129,6 +138,22 @@ app.post('/api/load-world', async (req, res) => {
 });
 
 
+app.get('/api/list-directory', async (req, res) => {
+  const relPath = req.query.path || '';
+  const fullPath = path.join(__dirname, relPath);
+
+  try {
+    const entries = await fsPromises.readdir(fullPath, { withFileTypes: true });
+    const result = entries.map(entry => ({
+      name: entry.name,
+      fileType: entry.isDirectory() ? 'directory' : 'file'
+    }));
+    res.json(result);
+  } catch (err) {
+    console.error('Failed to list directory:', err);
+    res.status(500).json({ error: 'Failed to list directory', details: err.message });
+  }
+});
 
 // Server setup
 app.listen(port, () => {
