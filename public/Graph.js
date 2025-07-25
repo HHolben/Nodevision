@@ -1,23 +1,12 @@
 // Nodevision/public/Graph.js
 
-/**
- * Dynamically loads generated graph data and initializes Cytoscape graph.
- * Uses dynamic imports (Option B) to fetch GeneratedNodes.js and GeneratedEdges.js.
- */
-
-// Import Cytoscape and extensions
 import cytoscape from 'cytoscape';
 import fcose from 'cytoscape-fcose';
 import expandCollapse from 'cytoscape-expand-collapse';
 
-// Register extensions
 cytoscape.use(fcose);
 cytoscape.use(expandCollapse);
 
-/**
- * Creates and configures the Cytoscape instance with provided elements and styles.
- * @param {Array} elements - Combined array of node and edge elements.
- */
 function createCytoscapeGraph(elements) {
   window.originalEdges = {};
   window.truncatedEdges = {};
@@ -65,13 +54,11 @@ function createCytoscapeGraph(elements) {
     layout: { name: 'fcose', animate: true }
   });
 
-  // Node and edge click interactions
   window.cy.on('tap', 'node, edge', function(evt) {
     const element = evt.target;
     updateInfoPanel(element);
   });
 
-  // Click background to clear info panel
   window.cy.on('tap', function(event) {
     if (event.target === window.cy) {
       const infoEl = document.getElementById('element-info');
@@ -81,7 +68,6 @@ function createCytoscapeGraph(elements) {
     }
   });
 
-  // Setup expand-collapse API for compound (region) nodes
   const api = window.cy.expandCollapse({ undoable: true });
   window.cy.on('tap', 'node[type="region"]', function(evt) {
     const node = evt.target;
@@ -90,29 +76,69 @@ function createCytoscapeGraph(elements) {
   });
 }
 
-/**
- * Loads generatedNodes and generatedEdges dynamically and renders the graph.
- */
+// Utility to dynamically import all submodules for a given prefix
+async function importAllModules(directory, prefix, suffixes) {
+  const imports = [];
+  for (const suffix of suffixes) {
+    const path = `./${directory}/${prefix}${suffix}.js`;
+    try {
+      imports.push(import(path));
+    } catch (e) {
+      console.warn(`Skipped missing file: ${path}`);
+    }
+  }
+  return Promise.all(imports);
+}
+
 async function loadGeneratedDataAndRender() {
   try {
-    const [{ generatedNodes }, { generatedEdges }] = await Promise.all([
-      import('./data/GeneratedNodes.js'),
-      import('./data/GeneratedEdges.js')
-    ]);
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+    const symbols = ['Symbol'];
+
+    const nodeFiles = [...letters, ...symbols].map(c => `./data/nodes/${c}.js`);
+    const edgeOriginFiles = [...letters, ...symbols].map(c => `./data/edges/origin/${c}.js`);
+    const edgeDestFiles = [...letters, ...symbols].map(c => `./data/edges/dest/${c}.js`);
+
+    // Dynamically load all node modules
+    const nodeModules = await Promise.all(
+      nodeFiles.map(path => import(path).catch(() => null))
+    );
+
+    const edgeOriginModules = await Promise.all(
+      edgeOriginFiles.map(path => import(path).catch(() => null))
+    );
+
+    const edgeDestModules = await Promise.all(
+      edgeDestFiles.map(path => import(path).catch(() => null))
+    );
+
+    // Flatten and deduplicate edges
+    const generatedNodes = nodeModules.flatMap(mod => (mod?.generatedNodes || []));
+    const originEdges = edgeOriginModules.flatMap(mod => (mod?.generatedEdges || []));
+    const destEdges = edgeDestModules.flatMap(mod => (mod?.generatedEdges || []));
+
+    const edgeSet = new Set();
+    const uniqueEdges = [];
+
+    for (const edge of [...originEdges, ...destEdges]) {
+      const key = `${edge.source}->${edge.target}`;
+      if (!edgeSet.has(key)) {
+        edgeSet.add(key);
+        uniqueEdges.push(edge);
+      }
+    }
 
     const elements = [
       ...generatedNodes.map(n => ({ data: n, classes: n.type })),
-      ...generatedEdges.map(e => ({ data: e }))
+      ...uniqueEdges.map(e => ({ data: e }))
     ];
 
     createCytoscapeGraph(elements);
-
   } catch (err) {
     console.error('Error loading graph data:', err);
   }
 }
 
-// Kick off on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', loadGeneratedDataAndRender);
 } else {

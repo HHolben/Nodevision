@@ -5,9 +5,17 @@
   <title>Graph Test</title>
   <script src="https://unpkg.com/cytoscape@3.24.0/dist/cytoscape.min.js"></script>
   <style>
+    /* Retro 16-bit style for container */
+    body {
+      background: #f0e68c;
+      font-family: 'Press Start 2P', cursive;
+      margin: 0;
+    }
     #cy {
       width: 100vw;
       height: 100vh;
+      border: 4px solid #000;
+      box-shadow: inset 0 0 0 4px #555;
       display: block;
     }
   </style>
@@ -23,7 +31,7 @@
       elements: [],
       style: [
         {
-          selector: 'node[fileType = "file"]',
+          selector: 'node[fileType="file"]',
           style: {
             'shape': 'ellipse',
             'label': 'data(label)',
@@ -31,14 +39,11 @@
             'text-halign': 'center',
             'background-color': '#007bff',
             'color': '#fff',
-            'font-size': '10px',
-            'width': 'label',
-            'height': 'label',
-            'padding': '10px'
+            'font-size': '8px'
           }
         },
         {
-          selector: 'node[fileType = "directory"]',
+          selector: 'node[fileType="directory"]',
           style: {
             'shape': 'rectangle',
             'label': 'data(label)',
@@ -46,10 +51,17 @@
             'text-halign': 'center',
             'background-color': '#28a745',
             'color': '#fff',
-            'font-size': '10px',
-            'width': 'label',
-            'height': 'label',
-            'padding': '10px'
+            'font-size': '8px'
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 2,
+            'line-color': '#555',
+            'target-arrow-shape': 'triangle',
+            'target-arrow-color': '#555',
+            'curve-style': 'bezier'
           }
         },
         {
@@ -73,36 +85,69 @@
       }
     });
 
+    const expanded = new Set();
     const rootPath = 'Notebook';
-    const addNodesFromDirectory = async (dirPath, parentId = null) => {
-      const nodes = await listDirectory(dirPath);
 
+    async function addNodesFromDirectory(dirPath, parentId = null) {
+      // Load nodes in directory
+      const nodes = await listDirectory(dirPath);
       for (const node of nodes) {
         const nodeId = parentId ? `${parentId}/${node.name}` : node.name;
-        const cytoscapeNode = {
+        cy.add({
           data: {
             id: nodeId,
             label: node.name,
             fileType: node.fileType,
             ...(parentId && { parent: parentId })
           }
-        };
-        cy.add(cytoscapeNode);
+        });
+      }
 
-        if (node.fileType === 'directory') {
-          const dirNode = cy.getElementById(nodeId);
-          dirNode.on('tap', async () => {
-            if (!dirNode.data('expanded')) {
-              await addNodesFromDirectory(`${dirPath}/${node.name}`, nodeId);
-              dirNode.data('expanded', true);
-              cy.layout({ name: 'cose', animate: true }).run();
+      // Load link-based edges for this directory
+      try {
+        const res = await fetch(`/api/list-links?path=${encodeURIComponent(dirPath)}`);
+        if (res.ok) {
+          const links = await res.json(); // array of { source, target }
+          for (const { source, target } of links) {
+            // compute full IDs based on parent
+            const srcId = parentId ? `${parentId}/${source}` : source;
+            const tgtId = parentId ? `${parentId}/${target}` : target;
+            if (cy.getElementById(srcId).length && cy.getElementById(tgtId).length) {
+              cy.add({ data: { id: `${srcId}_${tgtId}`, source: srcId, target: tgtId } });
             }
-          });
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load link edges:', err);
+      }
+
+      cy.layout({ name: 'cose', animate: true }).run();
+    }
+
+    // Initial load
+    addNodesFromDirectory(rootPath);
+
+    // Double-click handler for expand/collapse
+    cy.on('tap', 'node[fileType="directory"]', async evt => {
+      const node = evt.target;
+      if (evt.originalEvent.detail === 2) {
+        const nodeId = node.id();
+        const dirPath = nodeId;
+        if (!expanded.has(nodeId)) {
+          await addNodesFromDirectory(`${rootPath}/${dirPath}`, nodeId);
+          expanded.add(nodeId);
+        } else {
+          // collapse: remove children and edges
+          const descendants = cy.nodes().filter(n => n.data('parent') === nodeId);
+          const descIds = new Set(descendants.map(n => n.id()));
+          cy.edges().filter(e => descIds.has(e.data('source')) || descIds.has(e.data('target')))
+            .forEach(e => cy.remove(e));
+          descendants.forEach(n => cy.remove(n));
+          expanded.delete(nodeId);
+          cy.layout({ name: 'cose', animate: true }).run();
         }
       }
-    };
-
-    addNodesFromDirectory(rootPath);
+    });
   </script>
 </body>
 </html>

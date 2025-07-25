@@ -104,6 +104,50 @@ app.get('/api/topLevelNodes', async (req, res) => {
   const entries = await fsPromises.readdir(dir);
   res.json(entries);
 });
+// List directory entries (files & folders)
+app.get('/api/list-directory', async (req, res) => {
+  const relPath = req.query.path || '';
+  const fullPath = path.join(__dirname, relPath);
+  try {
+    const entries = await fsPromises.readdir(fullPath, { withFileTypes: true });
+    const result = entries.map(entry => ({
+      name: entry.name,
+      fileType: entry.isDirectory() ? 'directory' : 'file'
+    }));
+    res.json(result);
+  } catch (err) {
+    console.error('Failed to list directory:', fullPath, err);
+    res.status(500).json({ error: 'Failed to list directory', details: err.message });
+  }
+});
+
+// List file-to-file links in a directory
+app.get('/api/list-links', async (req, res) => {
+  const relPath = req.query.path || '';
+  const dirFull = path.join(__dirname, relPath);
+  try {
+    const entries = await fsPromises.readdir(dirFull, { withFileTypes: true });
+    const links = [];
+    for (const entry of entries) {
+      if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (['.md', '.txt', '.html', '.js'].includes(ext)) {
+          const content = await fsPromises.readFile(path.join(dirFull, entry.name), 'utf8');
+          const regex = /\[\[([^\]]+)\]\]|\[.*?\]\((.*?)\)/g;
+          let match;
+          while ((match = regex.exec(content))) {
+            const target = match[1] || match[2];
+            if (target) links.push({ source: entry.name, target });
+          }
+        }
+      }
+    }
+    res.json(links);
+  } catch (err) {
+    console.error('Failed to list links for', dirFull, err);
+    res.status(500).json({ error: 'Failed to list links', details: err.message });
+  }
+});
 
 
 // Serve static files from the "public" folder

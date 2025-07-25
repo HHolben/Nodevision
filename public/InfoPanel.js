@@ -90,6 +90,9 @@ function updateInfoPanel(element) {
   } else if (lower.endsWith('.mid')) {
     window.renderMIDI(filename, infoPanel, serverBase);
     return;
+      } else if (lower.endsWith('.td.json')) {
+    window.InfoThingDescription(filename, infoPanel, serverBase);
+    return;
     } else {
     infoPanel.innerHTML = '<p>File: ' + filename + '</p>';
     renderHTML(filename, iframe, serverBase, 0.5);
