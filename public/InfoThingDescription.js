@@ -57,10 +57,25 @@ window.InfoThingDescription = async function(filename, container, serverBase) {
     button.onclick = () => downloadSketch(title);
     container.appendChild(button);
 
+    // Show raw TD JSON
+    const jsonBlock = document.createElement('details');
+    jsonBlock.innerHTML = `
+      <summary style="margin-top: 1em; cursor: pointer;">Show Thing Description JSON</summary>
+      <pre style="background:#f5f5f5; border:1px solid #ccc; padding:0.5em; overflow:auto;">${escapeHTML(JSON.stringify(td, null, 2))}</pre>
+    `;
+    container.appendChild(jsonBlock);
+
   } catch (err) {
     container.innerHTML = `<p style="color:red;">Failed to load Thing Description: ${err.message}</p>`;
   }
 };
+
+function escapeHTML(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 function downloadSketch(title) {
   const rows = document.querySelectorAll('tr');
