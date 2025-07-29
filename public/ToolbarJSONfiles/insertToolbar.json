@@ -60,7 +60,14 @@
       "callbackKey": "insertParagraph",
       "modes": ["WYSIWYG Editing"]
     },
-
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "DIV",
+      "insertGroup": "DIV",
+      "callbackKey": "insertDIV",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/InsertDivIcon.png"
+    },
     
     {
       "ToolbarCategory": "Insert",
