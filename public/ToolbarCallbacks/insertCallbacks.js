@@ -24,6 +24,40 @@ export const insertCallbacks = {
     insertParagraph: () => {
     document.execCommand('insertHTML', false, '<p>new paragraph </p>');
   },
+  insertDIV: () => {
+
+      const cols = parseInt(prompt("How many DIVs per row?", "3"), 10);
+      const rows = parseInt(prompt("How many rows?", "1"), 10);
+  
+      if (isNaN(cols) || isNaN(rows) || cols < 1 || rows < 1) {
+          alert("Please enter valid positive numbers for rows and columns.");
+          return;
+      }
+  
+      let gridHTML = `<div class="nv-grid" style="display: flex; flex-direction: column; gap: 10px;">`;
+  
+      for (let r = 1; r <= rows; r++) {
+          gridHTML += `<div class="nv-row" style="display: flex; gap: 10px;">`;
+          for (let c = 1; c <= cols; c++) {
+              gridHTML += `<div class="nv-cell" style="flex: 1; border: 1px dashed #ccc; min-height: 50px; padding: 5px;">Cell ${r}-${c}</div>`;
+          }
+          gridHTML += `</div>`;
+      }
+  
+      gridHTML += `</div>`;
+  
+      // Insert the generated grid at the caret position
+      document.execCommand('insertHTML', false, gridHTML);
+  
+  
+  const inputField = document.getElementById('editor');
+  
+  
+  
+  inputField.addEventListener('keydown', onInsertDIVShortcut);
+
+  }
+  ,
   insertTable: () => {
     const table = document.createElement('table');
     table.style.borderCollapse = "collapse";
