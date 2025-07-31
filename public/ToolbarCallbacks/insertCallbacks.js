@@ -24,6 +24,12 @@ export const insertCallbacks = {
     insertParagraph: () => {
     document.execCommand('insertHTML', false, '<p>new paragraph </p>');
   },
+      insertFooter: () => {
+    document.execCommand('insertHTML', false, '<footer>footer</footer>');
+  },
+      insertSuperscript: () => {
+    document.execCommand('insertHTML', false, '<sup>superscript</sup>');
+  },
   insertDIV: () => {
 
       const cols = parseInt(prompt("How many DIVs per row?", "3"), 10);
@@ -56,8 +62,8 @@ export const insertCallbacks = {
   
   inputField.addEventListener('keydown', onInsertDIVShortcut);
 
-  }
-  ,
+  },
+
   insertTable: () => {
     const table = document.createElement('table');
     table.style.borderCollapse = "collapse";

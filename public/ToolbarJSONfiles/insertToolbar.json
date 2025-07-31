@@ -53,6 +53,14 @@
       "modes": ["WYSIWYG Editing"],
       "icon": "icons/h6Icon.png"
     },
+        {
+      "ToolbarCategory": "Insert",
+      "heading": "DIV",
+      "insertGroup": "Layout",
+      "callbackKey": "insertDIV",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/InsertDivIcon.png"
+    },
     {
       "ToolbarCategory": "Insert",
       "heading": "paragraph",
@@ -60,13 +68,23 @@
       "callbackKey": "insertParagraph",
       "modes": ["WYSIWYG Editing"]
     },
-    {
+
+
+       {
       "ToolbarCategory": "Insert",
-      "heading": "DIV",
-      "insertGroup": "DIV",
-      "callbackKey": "insertDIV",
+      "heading": "Footer",
+      "insertGroup": "text",
+      "callbackKey": "insertFooter",
       "modes": ["WYSIWYG Editing"],
-      "icon": "icons/InsertDivIcon.png"
+      "icon": "icons/InsertFooterIcon.png"
+    },
+           {
+      "ToolbarCategory": "Insert",
+      "heading": "Superscript",
+      "insertGroup": "text",
+      "callbackKey": "insertSuperscript",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/InsertSuperscript.png"
     },
     
     {
