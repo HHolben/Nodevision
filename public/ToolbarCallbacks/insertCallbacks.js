@@ -102,17 +102,22 @@ insertFootnote: () => {
   // Get the next number
   const number = window.getNextFootnoteNumber ? window.getNextFootnoteNumber() : (window.footnoteCounter = (window.footnoteCounter || 0) + 1);
 
-  // Create the footnote in the footer
-  const id = `footnote-${number}`;
-  const li = document.createElement('li');
-  li.id = id;
-  li.textContent = note;
-  footnotesList.appendChild(li);
+  // Generate unique IDs for reference and footer item
+  const refId = `footnote-ref-${number}`;
+  const noteId = `footnote-${number}`;
 
-  // Insert a clickable superscript link at caret
-  const footnoteLink = `<sup><a href="#${id}">${number}</a></sup>`;
+  // Insert a superscript link with ID so backlink works
+  const footnoteLink = `<sup id="${refId}"><a href="#${noteId}" style="vertical-align: super;">${number}</a></sup>`;
   document.execCommand('insertHTML', false, footnoteLink);
-},
+
+  // Create the footnote in the footer, with a backlink
+  const li = document.createElement('li');
+  li.id = noteId;
+  li.innerHTML = `${note} <a href="#${refId}" style="text-decoration:none;">↩</a>`;
+  footnotesList.appendChild(li);
+}
+,
+
 
 
   insertTable: () => {
