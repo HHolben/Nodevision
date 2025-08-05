@@ -61,6 +61,16 @@
       "modes": ["WYSIWYG Editing"],
       "icon": "icons/InsertDivIcon.png"
     },
+        {
+      "ToolbarCategory": "Insert",
+      "heading": "Footnote",
+      "insertGroup": "text",
+      "callbackKey": "insertFootnote",
+      "modes": ["WYSIWYG Editing"],
+      "icon": "icons/insertFootnoteIcon.png"
+    },
+
+    
     {
       "ToolbarCategory": "Insert",
       "heading": "paragraph",

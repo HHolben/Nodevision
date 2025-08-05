@@ -1,4 +1,4 @@
-// insertCallbacks.js
+//Nodevision/public/ToolbarCallbacks/insertCallbacks.js
 export const insertCallbacks = {
   insertText: () => {
     console.log("Insert Text callback triggered.");
@@ -30,6 +30,7 @@ export const insertCallbacks = {
       insertSuperscript: () => {
     document.execCommand('insertHTML', false, '<sup>superscript</sup>');
   },
+  
   insertDIV: () => {
 
       const cols = parseInt(prompt("How many DIVs per row?", "3"), 10);
@@ -63,6 +64,56 @@ export const insertCallbacks = {
   inputField.addEventListener('keydown', onInsertDIVShortcut);
 
   },
+
+insertFootnote: () => {
+  const note = prompt("Enter the footnote text:");
+  if (!note) return;
+
+  const editor = document.getElementById('editor');
+
+  // Ensure <footer> exists
+  let footer = editor.querySelector('footer');
+  if (!footer) {
+    footer = document.createElement('footer');
+    footer.innerHTML = `<h3>Footnotes</h3><ol id="footnotes-list"></ol>`;
+    editor.appendChild(footer);
+  } else if (!footer.querySelector('#footnotes-list')) {
+    footer.innerHTML += `<h3>Footnotes</h3><ol id="footnotes-list"></ol>`;
+  }
+
+  const footnotesList = footer.querySelector('#footnotes-list');
+
+  // Insert script to manage footnote counter if it doesn't exist yet
+  if (!editor.querySelector('#footnote-counter-script')) {
+    const script = document.createElement('script');
+    script.id = 'footnote-counter-script';
+    script.textContent = `
+      if (!window.footnoteCounter) {
+        window.footnoteCounter = 0;
+      }
+      window.getNextFootnoteNumber = function() {
+        window.footnoteCounter++;
+        return window.footnoteCounter;
+      };
+    `;
+    editor.appendChild(script);
+  }
+
+  // Get the next number
+  const number = window.getNextFootnoteNumber ? window.getNextFootnoteNumber() : (window.footnoteCounter = (window.footnoteCounter || 0) + 1);
+
+  // Create the footnote in the footer
+  const id = `footnote-${number}`;
+  const li = document.createElement('li');
+  li.id = id;
+  li.textContent = note;
+  footnotesList.appendChild(li);
+
+  // Insert a clickable superscript link at caret
+  const footnoteLink = `<sup><a href="#${id}">${number}</a></sup>`;
+  document.execCommand('insertHTML', false, footnoteLink);
+},
+
 
   insertTable: () => {
     const table = document.createElement('table');
