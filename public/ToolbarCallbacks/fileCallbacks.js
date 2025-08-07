@@ -1,14 +1,41 @@
-// fileCallbacks.js
+// Nodevision/public/ToolbarCallbacks/fileCallbacks.js
 export const fileCallbacks = {
-  saveFile: () => {
-    const filePath = window.currentActiveFilePath;
-    if (filePath && typeof window.saveWYSIWYGFile === 'function') 
-      {
-      window.saveWYSIWYGFile(filePath);
-    } else {
-      console.error("Cannot save: filePath or saveWYSIWYGFile is missing.");
-    }
-  },
+saveFile: () => {
+  const filePath = window.currentActiveFilePath;
+
+  if (!filePath) {
+    console.error("Cannot save: filePath is missing.");
+    return;
+  }
+
+  // Prefer Monaco Editor if active
+  if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
+    const content = window.monacoEditor.getValue();
+    fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath, content: content })
+    })
+      .then(res => res.text())
+      .then(data => {
+        console.log('Code file saved successfully:', data);
+      })
+      .catch(err => {
+        console.error('Error saving code file:', err);
+      });
+    return;
+  }
+
+  // Otherwise, fallback to WYSIWYG save
+  if (typeof window.saveWYSIWYGFile === 'function') {
+    window.saveWYSIWYGFile(filePath);
+    return;
+  }
+
+  console.error("Cannot save: editor state not recognized.");
+},
+
+
 NewFile: async () => {
   const currentPath = window.currentDirectoryPath;
   if (!currentPath) {

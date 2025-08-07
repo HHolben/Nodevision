@@ -71,7 +71,7 @@ insertFootnote: () => {
 
   const editor = document.getElementById('editor');
 
-  // Ensure <footer> exists
+  // Ensure <footer> and <ol> exist
   let footer = editor.querySelector('footer');
   if (!footer) {
     footer = document.createElement('footer');
@@ -83,40 +83,61 @@ insertFootnote: () => {
 
   const footnotesList = footer.querySelector('#footnotes-list');
 
-  // Insert script to manage footnote counter if it doesn't exist yet
-  if (!editor.querySelector('#footnote-counter-script')) {
-    const script = document.createElement('script');
-    script.id = 'footnote-counter-script';
-    script.textContent = `
-      if (!window.footnoteCounter) {
-        window.footnoteCounter = 0;
-      }
-      window.getNextFootnoteNumber = function() {
-        window.footnoteCounter++;
-        return window.footnoteCounter;
-      };
-    `;
-    editor.appendChild(script);
+  // === TEMP ID placeholders ===
+  const tempId = Date.now();
+  const refId = `temp-ref-${tempId}`;
+  const noteId = `temp-note-${tempId}`;
+
+  // === 1. Insert footnote reference at caret ===
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    const span = document.createElement('span');
+    span.innerHTML = `<sup id="${refId}"><a href="#${noteId}" style="vertical-align: super;">?</a></sup>`;
+    range.deleteContents();
+    range.insertNode(span);
   }
 
-  // Get the next number
-  const number = window.getNextFootnoteNumber ? window.getNextFootnoteNumber() : (window.footnoteCounter = (window.footnoteCounter || 0) + 1);
-
-  // Generate unique IDs for reference and footer item
-  const refId = `footnote-ref-${number}`;
-  const noteId = `footnote-${number}`;
-
-  // Insert a superscript link with ID so backlink works
-  const footnoteLink = `<sup id="${refId}"><a href="#${noteId}" style="vertical-align: super;">${number}</a></sup>`;
-  document.execCommand('insertHTML', false, footnoteLink);
-
-  // Create the footnote in the footer, with a backlink
+  // === 2. Append new <li> for footnote ===
   const li = document.createElement('li');
   li.id = noteId;
   li.innerHTML = `${note} <a href="#${refId}" style="text-decoration:none;">↩</a>`;
   footnotesList.appendChild(li);
+
+  // === 3. Give the DOM a moment to process (safety) ===
+  setTimeout(() => {
+    // === 4. Get all <sup><a> footnote references in document order ===
+    const refs = Array.from(editor.querySelectorAll('sup > a[href^="#footnote-"], sup > a[href^="#temp-note-"]'));
+    const lis = Array.from(footnotesList.querySelectorAll('li'));
+
+    // Sort both by visual/top order
+    refs.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    lis.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+
+    refs.forEach((a, i) => {
+      const newNum = i + 1;
+      const newRefId = `footnote-ref-${newNum}`;
+      const newNoteId = `footnote-${newNum}`;
+
+      // Update reference (sup > a)
+      const sup = a.parentElement;
+      sup.id = newRefId;
+      a.href = `#${newNoteId}`;
+      a.textContent = newNum;
+
+      // Update note <li>
+      const li = lis[i];
+      li.id = newNoteId;
+      const back = li.querySelector('a[href^="#"]');
+      if (back) back.href = `#${newRefId}`;
+    });
+
+    // Optional: scroll to the new footnote
+    lis[refs.length - 1]?.scrollIntoView({ behavior: 'smooth' });
+  }, 0); // Short delay to ensure new elements are registered in DOM
 }
 ,
+
 
 
 

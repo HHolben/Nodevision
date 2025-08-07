@@ -1,3 +1,5 @@
+//Nodevision/public/SwitchToCodeEditing.js
+
 (function () {
     // Determine active node and filePath.
     let activeNode = window.ActiveNode;
@@ -116,28 +118,11 @@ contentElement.innerHTML = '';
         }
         // Add a "Save changes" button.
         const dropdownContent = fileDropdown.querySelector('.dropdown-content');
-        let saveBtn = dropdownContent.querySelector('#save-code-btn');
         if (!saveBtn) {
             saveBtn = document.createElement('button');
             saveBtn.id = 'save-code-btn';
             saveBtn.textContent = 'Save changes';
-            saveBtn.addEventListener('click', function () {
-                if (window.monacoEditor) {
-                    const content = window.monacoEditor.getValue();
-                    fetch('/api/save', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ path: filePath, content: content })
-                    })
-                        .then(response => response.text())
-                        .then(data => {
-                            console.log('File saved successfully!');
-                        })
-                        .catch(error => {
-                            console.error('Error saving file content:', error);
-                        });
-                }
-            });
+           
             dropdownContent.appendChild(saveBtn);
         }
     }

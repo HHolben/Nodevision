@@ -22,5 +22,11 @@
     "heading": "Edit Styles",
     "callbackKey": "editStyles",
     "modes": ["WYSIWYG Editing"]
-  }
+  },
+  {
+  "ToolbarCategory": "Edit",
+  "heading": "Indent File",
+  "callbackKey": "indentFile",
+  "modes": ["Code Editing"]
+}
 ]
