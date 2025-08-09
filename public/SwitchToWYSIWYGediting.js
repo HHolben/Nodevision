@@ -1,4 +1,5 @@
-;;(function() {
+//Nodevision/public/SwitchToWYSIWYGediting.js
+(function() {
   // compute the directory this script lives in
   const currentScript = document.currentScript.src;
   const basePath = currentScript.replace(/SwitchToWYSIWYGediting\.js$/, 'SwitchToWYSIWYGediting/');

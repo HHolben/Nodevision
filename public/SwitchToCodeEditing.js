@@ -54,7 +54,7 @@ contentElement.innerHTML = '';
     // Function to initialize Monaco Editor with the given content.
     function initializeMonaco(content) {
         // Configure RequireJS to load Monaco from the CDN.
-        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs' }});
+require.config({ paths: { 'vs': '/lib/monaco/vs' } });
         // Load the main module for the Monaco Editor.
         require(['vs/editor/editor.main'], function () {
             window.monacoEditor = monaco.editor.create(editorContainer, {

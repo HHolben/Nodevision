@@ -15,8 +15,8 @@ public/AllNodes.js
 public/data
 
 # Ignore Monaco Editor and Require.js libraries
-public/monaco-editor/
-public/libs/
+public/lib
+
 
 
 #Ignore database files
