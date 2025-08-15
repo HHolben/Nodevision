@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Oscilloscope</title>
+  <style>
+    body { background: black; margin: 0; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="scope"></canvas>
+  <script>
+    const canvas = document.getElementById('scope');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let data = [];
+    const maxPoints = 1000;
+
+    const ws = new WebSocket('ws://localhost:8081');
+    ws.onmessage = (event) => {
+      const point = JSON.parse(event.data);
+      data.push(point.value);
+      if (data.length > maxPoints) data.shift();
+    };
+
+    function draw() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = 'lime';
+      ctx.beginPath();
+      const scaleY = canvas.height / 1023;
+      for (let i = 0; i < data.length; i++) {
+        const x = (i / maxPoints) * canvas.width;
+        const y = canvas.height - data[i] * scaleY;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// SwitchTo3DWorldViewing.js
+// Nodevision/public/SwitchTo3DWorldViewing.js
 
 document.addEventListener('DOMContentLoaded', function() {
   const toolbarButton = document.getElementById('toolbar-3d-world-viewing');
@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
 
-  // Correct: Pass the function reference or wrap it
   toolbarButton.addEventListener('click', function(event) {
     event.preventDefault();
     switchTo3DWorldViewing();
@@ -20,6 +19,7 @@ function switchTo3DWorldViewing() {
     console.error("Content frame with ID 'content-frame' not found.");
     return;
   }
-  // Set the iframe's source to the 3D world HTML file
-  contentFrame.src = '3DWorldViewing.html';
+
+  // Add a VR mode query parameter so the page knows to load the 3D world
+  contentFrame.src = '3DWorldViewing.html?vr=1';
 }

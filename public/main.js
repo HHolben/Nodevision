@@ -1,4 +1,4 @@
-// public/main.js
+//Nodevision/public/main.js
 
 import { createToolbar } from './createToolbar.js';
 import { bringToFront, toggleFullscreen, closeBox, runScript } from './boxManipulation.js';
