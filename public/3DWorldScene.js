@@ -1,18 +1,27 @@
+//Nodevision/public/3DWorldScene.js
+const container = document.getElementById('content-frame-container'); // right pane
+const canvas = document.getElementById("three-canvas");
+
+// Use injected canvas and set renderer size to container
+const renderer = new THREE.WebGLRenderer({ canvas });
+renderer.setSize(container.clientWidth, container.clientHeight);
+
+// Camera
+const camera = new THREE.PerspectiveCamera(
+    75,
+    container.clientWidth / container.clientHeight,
+    0.1,
+    1000
+);
+
+// Scene
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("three-canvas") });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
 
-// Persistent objects (like the player) should be added separately, for example:
-// const player = createPlayer(); // (Assume this is done in another module)
-// scene.add(player);
-
-// Create a group for dynamic world objects
+// Persistent objects can go here
 const worldGroup = new THREE.Group();
 scene.add(worldGroup);
 
-// Add a ground plane to the world group
+// Ground plane
 const planeGeometry = new THREE.PlaneGeometry(50, 50);
 const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide });
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
@@ -23,19 +32,29 @@ worldGroup.add(plane);
 // Camera initial position
 camera.position.set(0, 2, 5);
 
+// Adjust renderer/camera on container resize
+window.addEventListener('resize', () => {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    renderer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+});
 
+// Render loop
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+animate();
 
-
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
+// Load world function
 function loadWorld(worldDefinition) {
-    // Clear previous world objects from worldGroup, but leave persistent objects intact.
     while (worldGroup.children.length > 0) {
         worldGroup.remove(worldGroup.children[0]);
     }
-    
-    // (Optional) Re-add the ground plane if you want it as part of every world:
+
+    // Re-add ground
     const planeGeometry = new THREE.PlaneGeometry(50, 50);
     const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
@@ -43,17 +62,11 @@ function loadWorld(worldDefinition) {
     plane.userData.isSolid = true;
     worldGroup.add(plane);
 
-    // Load objects from the worldDefinition into worldGroup
     worldDefinition.objects.forEach(obj => {
         let geometry;
-        if (obj.type === "box") {
-            geometry = new THREE.BoxGeometry(...obj.size);
-        } else if (obj.type === "sphere") {
-            geometry = new THREE.SphereGeometry(obj.size[0], 32, 32);
-        } else {
-            console.warn(`Unknown object type: ${obj.type}`);
-            return;
-        }
+        if (obj.type === "box") geometry = new THREE.BoxGeometry(...obj.size);
+        else if (obj.type === "sphere") geometry = new THREE.SphereGeometry(obj.size[0], 32, 32);
+        else return console.warn(`Unknown object type: ${obj.type}`);
 
         const material = new THREE.MeshBasicMaterial({ color: obj.color });
         const mesh = new THREE.Mesh(geometry, material);
@@ -61,13 +74,6 @@ function loadWorld(worldDefinition) {
         mesh.userData.isSolid = obj.isSolid || false;
         worldGroup.add(mesh);
     });
-    
+
     console.log("World updated!");
 }
-
-
-// Camera initial position
-camera.position.set(0, 2, 5);
-
-
-
