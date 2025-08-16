@@ -7,15 +7,15 @@
     infoPanel.appendChild(canvas);
     const ctx = canvas.getContext('2d');
 
-    let waveformData = [];
     let buffer = [];
     let amplitudeScale = 1.0;
     let timeScale = 1.0;
+    let verticalOffset = 0.0;     // NEW
+    let horizontalOffset = 0.0;   // NEW
     let showConnectors = true;
     let isPlaying = true;
     let audioEnabled = false;
 
-    // Audio context setup
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioCtx = new AudioContext();
     let audioSource;
@@ -26,15 +26,18 @@
     controls.innerHTML = `
       <label>Amplitude: <input type="range" min="0.1" max="5" value="${amplitudeScale}" step="0.1" id="ampScale"></label>
       <label>Time Scale: <input type="range" min="0.1" max="2" value="${timeScale}" step="0.1" id="timeScale"></label>
+      <label>Vertical Offset: <input type="range" min="-1" max="1" value="${verticalOffset}" step="0.05" id="vertOffset"></label>
+      <label>Horizontal Offset: <input type="range" min="-1" max="1" value="${horizontalOffset}" step="0.01" id="horizOffset"></label>
       <button id="toggleLines">Toggle Lines</button>
       <button id="pausePlay">Pause</button>
       <label>Audio: <input type="checkbox" id="toggleAudio"></label>
     `;
     infoPanel.appendChild(controls);
 
-    // Event handlers
     document.getElementById('ampScale').oninput = e => { amplitudeScale = parseFloat(e.target.value); };
     document.getElementById('timeScale').oninput = e => { timeScale = parseFloat(e.target.value); };
+    document.getElementById('vertOffset').oninput = e => { verticalOffset = parseFloat(e.target.value); };
+    document.getElementById('horizOffset').oninput = e => { horizontalOffset = parseFloat(e.target.value); };
     document.getElementById('toggleLines').onclick = () => { showConnectors = !showConnectors; };
     document.getElementById('pausePlay').onclick = e => { 
       isPlaying = !isPlaying; 
@@ -44,8 +47,8 @@
       audioEnabled = e.target.checked;
       if (audioEnabled && audioCtx.state === 'suspended') audioCtx.resume();
     };
+    
 
-    // Draw waveform
     function drawWaveform() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -56,12 +59,16 @@
       const plotHeight = canvas.height - marginTop - marginBottom;
 
       const visibleSamples = Math.floor(buffer.length * timeScale);
-      const visibleData = buffer.slice(-visibleSamples).map(v => v * amplitudeScale);
-      const maxVal = Math.max(...visibleData.concat(1023));
-      const minVal = Math.min(...visibleData.concat(0));
+      const visibleData = buffer.slice(-visibleSamples);
+
+      // compute min/max from raw data
+      const maxVal = Math.max(...visibleData.concat(1));
+      const minVal = Math.min(...visibleData.concat(-1));
+
+      // vertical scale (based on raw range)
       const scaleY = plotHeight / (maxVal - minVal);
 
-      // Grid lines
+      // Grid
       ctx.strokeStyle = '#222';
       ctx.lineWidth = 1;
       const yGridSteps = 10, xGridSteps = 10;
@@ -81,7 +88,7 @@
       }
 
       // Zero line
-      const zeroY = marginTop + plotHeight - ((0 - minVal) * scaleY);
+      const zeroY = marginTop + plotHeight - ((0 - minVal) * scaleY) + verticalOffset * plotHeight/2;
       ctx.strokeStyle = '#444';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -101,7 +108,7 @@
       ctx.lineTo(canvas.width - marginRight, marginTop + plotHeight);
       ctx.stroke();
 
-      // Axis labels
+      // Axis labels (raw amplitude values, not scaled)
       ctx.fillStyle = 'white';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'right';
@@ -109,36 +116,26 @@
       const ySteps = 5;
       for (let i = 0; i <= ySteps; i++) {
         const val = minVal + (i / ySteps) * (maxVal - minVal);
-        const y = marginTop + plotHeight - ((val - minVal) * scaleY);
-        ctx.fillText(val.toFixed(0), marginLeft - 8, y);
-        ctx.strokeStyle = '#888';
-        ctx.beginPath();
-        ctx.moveTo(marginLeft - 5, y);
-        ctx.lineTo(marginLeft, y);
-        ctx.stroke();
+        const y = marginTop + plotHeight - ((val - minVal) * scaleY) + verticalOffset * plotHeight/2;
+        ctx.fillText(val.toFixed(2), marginLeft - 8, y);
       }
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      const xStepsLabel = 10;
-      for (let i = 0; i <= xStepsLabel; i++) {
-        const idx = Math.floor((i / xStepsLabel) * visibleData.length);
-        const x = marginLeft + (idx / visibleData.length) * plotWidth;
+      for (let i = 0; i <= 10; i++) {
+        const idx = Math.floor((i / 10) * visibleData.length);
+        const x = marginLeft + (idx / visibleData.length) * plotWidth + horizontalOffset * plotWidth/2;
         ctx.fillText(idx, x, marginTop + plotHeight + 3);
-        ctx.strokeStyle = '#888';
-        ctx.beginPath();
-        ctx.moveTo(x, marginTop + plotHeight);
-        ctx.lineTo(x, marginTop + plotHeight + 5);
-        ctx.stroke();
       }
 
-      // Draw waveform
+      // Draw waveform with amplitude + offsets applied
       ctx.strokeStyle = 'lime';
       ctx.lineWidth = 2;
       ctx.beginPath();
       for (let i = 0; i < visibleData.length; i++) {
-        const x = marginLeft + (i / visibleData.length) * plotWidth;
-        const y = marginTop + plotHeight - ((visibleData[i] - minVal) * scaleY);
+        const x = marginLeft + (i / visibleData.length) * plotWidth + horizontalOffset * plotWidth/2;
+        const scaledVal = visibleData[i] * amplitudeScale;
+        const y = marginTop + plotHeight - ((scaledVal - minVal) * scaleY) + verticalOffset * plotHeight/2;
         if (showConnectors) {
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
@@ -158,43 +155,56 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Load waveform
+    // Try loading as WAV first
     fetch(`${serverBase}/${filename}`)
-      .then(res => res.text())
-      .then(text => {
-        waveformData = text
-          .split(/\r?\n/)
-          .map(l => parseFloat(l.trim()))
-          .filter(n => !isNaN(n));
-        buffer = waveformData.slice();
+      .then(res => res.arrayBuffer())
+      .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+      .then(audioBuffer => {
+        const channelData = audioBuffer.getChannelData(0);
+        buffer = Array.from(channelData);
 
-        // Animate waveform
         function animate() {
           if (isPlaying) {
             const first = buffer.shift();
             buffer.push(first);
           }
-
-          // Audio playback
-          if (audioEnabled && waveformData.length > 0) {
-            const audioBuffer = audioCtx.createBuffer(1, buffer.length, 44100);
-            const channel = audioBuffer.getChannelData(0);
-            for (let i = 0; i < buffer.length; i++) channel[i] = buffer[i] / 1023 * 2 - 1; // normalize
-            if (audioSource) audioSource.disconnect();
+          if (audioEnabled) {
+            if (audioSource) audioSource.stop();
             audioSource = audioCtx.createBufferSource();
             audioSource.buffer = audioBuffer;
             audioSource.connect(audioCtx.destination);
             audioSource.start();
           }
-
           drawWaveform();
           requestAnimationFrame(animate);
         }
         animate();
       })
       .catch(err => {
-        console.error('Error loading waveform file:', err);
-        infoPanel.innerHTML = '<p style="color:red;">Failed to load waveform file.</p>';
+        console.warn('WAV load failed, falling back to CSV:', err);
+
+        fetch(`${serverBase}/${filename}`)
+          .then(res => res.text())
+          .then(text => {
+            buffer = text
+              .split(/\r?\n/)
+              .map(l => parseFloat(l.trim()))
+              .filter(n => !isNaN(n));
+
+            function animate() {
+              if (isPlaying) {
+                const first = buffer.shift();
+                buffer.push(first);
+              }
+              drawWaveform();
+              requestAnimationFrame(animate);
+            }
+            animate();
+          })
+          .catch(err2 => {
+            console.error('Error loading CSV fallback:', err2);
+            infoPanel.innerHTML = '<p style="color:red;">Failed to load waveform file.</p>';
+          });
       });
   }
 
