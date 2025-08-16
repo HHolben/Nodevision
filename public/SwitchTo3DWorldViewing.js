@@ -1,25 +1,19 @@
 // Nodevision/public/SwitchTo3DWorldViewing.js
+(function () {
+  console.log("SwitchTo3DWorldViewing.js loaded");
 
-document.addEventListener('DOMContentLoaded', function() {
-  const toolbarButton = document.getElementById('toolbar-3d-world-viewing');
-  if (!toolbarButton) {
-    console.error("Toolbar button with ID 'toolbar-3d-world-viewing' not found.");
+  // Locate the right-pane container (same as other modes use)
+  const container = document.getElementById('content-frame-container');
+  if (!container) {
+    console.error("Right pane container not found.");
     return;
   }
 
-  toolbarButton.addEventListener('click', function(event) {
-    event.preventDefault();
-    switchTo3DWorldViewing();
-  });
-});
-
-function switchTo3DWorldViewing() {
-  const contentFrame = document.getElementById('content-frame');
-  if (!contentFrame) {
-    console.error("Content frame with ID 'content-frame' not found.");
-    return;
-  }
-
-  // Add a VR mode query parameter so the page knows to load the 3D world
-  contentFrame.src = '3DWorldViewing.html?vr=1';
-}
+  // Replace the contents with our 3D world iframe
+  container.innerHTML = `
+    <iframe 
+      src="/3DWorld.html" 
+      style="width: 100%; height: 100%; border: none;">
+    </iframe>
+  `;
+})();
