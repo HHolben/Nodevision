@@ -80,7 +80,12 @@ function displayFiles(files, currentPath) {
             if (item.isDirectory) {
                 window.fetchDirectoryContents(item.path);
             } else {
-          updateInfoPanel(item.path);
+                // --- NEW: store the selected file globally ---
+                window.selectedFilePath = item.path;
+                window.selectedFileName = item.name;
+
+                // Update the info panel as before
+                updateInfoPanel(item.path);
             }
         });
 

@@ -1,3 +1,4 @@
+//Nodevision/public/3DWorldControls.js
 // Define the keys object with "j" for jump (instead of "space")
 const keys = { w: false, a: false, s: false, d: false, j: false, q: false };
 let isPaused = false;
