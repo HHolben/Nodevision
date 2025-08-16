@@ -69,7 +69,11 @@ function updateInfoPanel(element) {
   if (lower.endsWith('.csv')) {
     renderCSV(filename, infoPanel, serverBase);
     return;
-  } else if (lower.endsWith('.scad')) {
+  } else if (lower.endsWith('.wav') || lower.endsWith('.wave.csv')) {
+    renderWAV(filename, infoPanel, serverBase);
+    return;
+  }
+else if (lower.endsWith('.scad')) {
     renderSCAD(filename, infoPanel, serverBase);
     return;
   } else if (lower.endsWith('.stl')) {

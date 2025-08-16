@@ -98,6 +98,60 @@ NewFile: async () => {
       alert("No active node specified in the URL.");
     }
   },
+  uploadToArduino: async () => {
+  const filePath = window.currentActiveFilePath;
+
+  if (!filePath) {
+    alert("Cannot upload: no active file.");
+    return;
+  }
+
+  // First, save the current file
+  let content = '';
+  if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
+    content = window.monacoEditor.getValue();
+  } else if (typeof window.saveWYSIWYGFile === 'function') {
+    alert("Please save WYSIWYG files manually before uploading to Arduino.");
+    return;
+  } else {
+    alert("Cannot determine editor content for upload.");
+    return;
+  }
+
+  try {
+    // Save to backend
+    await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath, content })
+    });
+
+    // Ask user for Arduino board and port
+    const fqbn = prompt("Enter Arduino board FQBN (e.g., arduino:avr:uno):", "arduino:avr:uno");
+    if (!fqbn) return;
+
+    const port = prompt("Enter Arduino serial port (e.g., /dev/ttyACM0):", "/dev/ttyACM0");
+    if (!port) return;
+
+    // Call backend upload endpoint
+    const response = await fetch('/api/upload-arduino', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath, fqbn, port })
+    });
+
+    const resultText = await response.text();
+    if (!response.ok) {
+      alert(`Arduino upload failed:\n${resultText}`);
+    } else {
+      alert(`Arduino upload successful:\n${resultText}`);
+    }
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert(`Error uploading to Arduino:\n${err.message}`);
+  }
+},
+
   NewDirectory: async () => {
     // 1. Grab the current directory from window (set by fetchDirectoryContents)
     const parentPath = window.currentDirectoryPath || '';

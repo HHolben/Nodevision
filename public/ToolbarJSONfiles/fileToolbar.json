@@ -42,5 +42,13 @@
     "callbackKey": "viewNodevisionDeployment",
     "icon": "icons/ViewDeploymentNodevisionIcon.png"
 
+  },
+    {
+    "ToolbarCategory": "File",
+    "heading": "Upload to Arduino",
+    "content": "",
+    "callbackKey": "uploadToArduino",
+    "modes": ["Code Editing"],
+    "icon": "icons/ArduinoUpload.png"
   }
 ]

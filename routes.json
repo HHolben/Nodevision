@@ -16,6 +16,8 @@
     { "name": "health", "path": "./routes/api/health.js" },
     { "name": "getRoutes", "path": "./routes/api/getRoutes.js" },
     { "name": "csv", "path": "./routes/api/csv.js" },
-    { "name": "serial", "path": "./routes/api/serial.js" }
+    { "name": "serial", "path": "./routes/api/serial.js" },
+    { "name": "Arduino Upload", "path": "./routes/arduinoUpload.js"}
+
   ]
 }
