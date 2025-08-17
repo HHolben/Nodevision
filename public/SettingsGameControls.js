@@ -1,5 +1,4 @@
 // Nodevision/public/SettingsGameControls.js
-
 (function() {
 
   // Poll every 50ms until the content frame exists
@@ -11,7 +10,7 @@
     }
   }, 50);
 
-  function initGamepadUI(container) {
+  async function initGamepadUI(container) {
     // Clear existing content
     container.innerHTML = "";
 
@@ -49,6 +48,13 @@
     const buttonsDiv = document.createElement("div");
     buttonsDiv.style.marginTop = "10px";
     ui.appendChild(buttonsDiv);
+
+    // --- Save Button ---
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = "Save Settings";
+    saveBtn.style.marginTop = "10px";
+    saveBtn.onclick = () => saveBindings();
+    ui.appendChild(saveBtn);
 
     container.appendChild(ui);
 
@@ -88,7 +94,6 @@
         btn.textContent = "Set";
         btn.onclick = () => {
           waitingForAction = action;
-          // Visual feedback instead of alert
           label.style.color = "#ff0";
         };
         row.appendChild(btn);
@@ -99,6 +104,18 @@
 
     renderBindings();
 
+    // --- Detect already-connected gamepads ---
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (let i = 0; i < gamepads.length; i++) {
+      if (gamepads[i]) {
+        gamepadIndex = gamepads[i].index;
+        statusDiv.textContent = `Gamepad connected: ${gamepads[i].id}`;
+        updateLoop();
+        break;
+      }
+    }
+
+    // --- Listen for gamepad connect/disconnect events ---
     window.addEventListener("gamepadconnected", (e) => {
       gamepadIndex = e.gamepad.index;
       statusDiv.textContent = `Gamepad connected: ${e.gamepad.id}`;
@@ -114,6 +131,7 @@
       }
     });
 
+    // --- Update loop for displaying axes/buttons & capturing bindings ---
     function updateLoop() {
       if (gamepadIndex === null) return;
 
@@ -138,7 +156,6 @@
           });
         }
 
-        // Update axes and buttons display
         axesDiv.textContent = gp.axes.map((a, i) => `Axis ${i}: ${a.toFixed(2)}`).join("\n");
         buttonsDiv.innerHTML = gp.buttons.map((b, i) =>
           `Button ${i}: ${b.pressed ? "<span style='color:#ff0'>[PRESSED]</span>" : ""}`
@@ -147,6 +164,41 @@
 
       requestAnimationFrame(updateLoop);
     }
+
+    // --- Load saved bindings (does not block gamepad detection) ---
+    try {
+      const res = await fetch("/api/load-gamepad-settings");
+      if (res.ok) {
+        const savedBindings = await res.json();
+        actions.forEach(a => {
+          if (savedBindings[a]) bindings[a] = savedBindings[a];
+        });
+        renderBindings();
+      } else {
+        console.warn("No saved gamepad settings found:", res.status);
+      }
+    } catch (err) {
+      console.warn("Error fetching saved gamepad settings:", err);
+    }
+
+    // --- Save bindings ---
+    function saveBindings() {
+      fetch("/api/save-gamepad-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bindings)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) alert("Gamepad settings saved successfully!");
+        else alert("Error saving settings: " + data.error);
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error saving settings. See console.");
+      });
+    }
+
   }
 
 })();

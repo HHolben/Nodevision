@@ -12,6 +12,12 @@ const fsPromises = require('fs').promises; // For async operations
 const multer = require('multer');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
+const userSettingsDir = path.join(__dirname, 'UserSettings');
+const gamepadSettingsFile = path.join(userSettingsDir, 'GameControllerSettings.json');
+
+// Ensure the UserSettings folder exists
+if (!fs.existsSync(userSettingsDir)) fs.mkdirSync(userSettingsDir, { recursive: true });
+
 
 const app = express();
 const port = process.env.PORT || 3000; // Use port from .env or default to 3000
@@ -154,6 +160,32 @@ app.get('/api/list-links', async (req, res) => {
 
 // Serve static files from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+// Load gamepad settings
+app.get('/api/load-gamepad-settings', async (req, res) => {
+  try {
+    if (!fs.existsSync(gamepadSettingsFile)) return res.json({});
+    const data = await fsPromises.readFile(gamepadSettingsFile, 'utf8');
+    const json = JSON.parse(data);
+    res.json(json);
+  } catch (err) {
+    console.error('Error reading gamepad settings:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save gamepad settings
+app.post('/api/save-gamepad-settings', async (req, res) => {
+  try {
+    await fsPromises.writeFile(gamepadSettingsFile, JSON.stringify(req.body, null, 2), 'utf8');
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving gamepad settings:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 app.post('/api/load-world', async (req, res) => {
   const { worldPath } = req.body;
