@@ -16,5 +16,11 @@
     "heading": "Toggle Page Preview Mode",
     "type": "toggle",
     "callbackKey": "togglePagePreviewMode"
-  }
+  },
+{
+  "ToolbarCategory": "Settings",
+  "heading": "Game Controls",
+  "script": "SettingsGameControls.js"
+}
+
 ]
