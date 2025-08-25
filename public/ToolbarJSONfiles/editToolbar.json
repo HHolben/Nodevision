@@ -17,16 +17,47 @@
     "callbackKey": "editRASTER",
     "modes": ["WYSIWYG Editing"]
   },
-    {
+  {
     "ToolbarCategory": "Edit",
     "heading": "Edit Styles",
     "callbackKey": "editStyles",
     "modes": ["WYSIWYG Editing"]
   },
   {
-  "ToolbarCategory": "Edit",
-  "heading": "Indent File",
-  "callbackKey": "indentFile",
-  "modes": ["Code Editing"]
-}
+    "ToolbarCategory": "Edit",
+    "heading": "Indent File",
+    "callbackKey": "indentFile",
+    "modes": ["Code Editing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "VR World Editor",
+    "content": "",
+    "script": "SendToVRWorldEditorPage.js",
+    "modes": ["3D World Viewing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Add Object",
+    "callbackKey": "addVRObject",
+    "modes": ["VR World Editing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Edit Terrain",
+    "callbackKey": "editTerrain",
+    "modes": ["VR World Editing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Lighting",
+    "callbackKey": "editLighting",
+    "modes": ["VR World Editing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Delete Object",
+    "callbackKey": "deleteVRObject",
+    "modes": ["VR World Editing"]
+  }
 ]

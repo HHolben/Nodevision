@@ -1,4 +1,4 @@
-// FILE: Nodevision/public/3DWorldCallibrateGamepad.js
+// FILE: Nodevision/public/VirtualWorldCallibrateGamepad.js
 
 let calibrationActive = false;
 let calibrationGamepadIndex = null;

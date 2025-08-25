@@ -1,3 +1,4 @@
+//Nodevision/public/VirtualWorldPlayer.js
 // Create the player avatar
 const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
 const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });

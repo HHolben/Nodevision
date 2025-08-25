@@ -19,15 +19,15 @@
   },
   {
     "ToolbarCategory": "View",
-    "heading": "3D World Viewing",
+    "heading": "Virtual World Viewing",
     "content": "",
-    "script": "SwitchTo3DWorldViewing.js"
+    "script": "SwitchToVirtualWorldViewing.js"
   },
   {
     "ToolbarCategory": "View",
-    "heading": "3D World Editing",
+    "heading": "Virtual World Editing",
     "content": "",
-    "script": "SwitchTo3DWorldEditing.js"
+    "script": "SwitchToVirtualWorldEditing.js"
   },
   {
     "ToolbarCategory": "View",

@@ -1,4 +1,4 @@
-//Nodevision/public/3DWorldScene.js
+//Nodevision/public/VirtualWorldScene.js
 const container = document.getElementById('content-frame-container'); // right pane
 const canvas = document.getElementById("three-canvas");
 
