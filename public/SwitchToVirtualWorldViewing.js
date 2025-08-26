@@ -24,30 +24,6 @@
   canvas.id = 'three-canvas';
   container.appendChild(canvas);
 
-  // === Toolbar (Hotbar) ===
-  const toolbar = document.createElement('div');
-  toolbar.id = 'vr-toolbar';
-  toolbar.innerHTML = `
-    <div id="hotbar">
-      <button id="vr-btn-cube">Cube</button>
-      <button id="vr-btn-sphere">Sphere</button>
-      <button id="vr-btn-delete">Delete</button>
-    </div>
-  `;
-  toolbar.style.cssText = `
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
-    background: rgba(0,0,0,0.6);
-    padding: 8px;
-    border-radius: 5px;
-    z-index: 100;
-  `;
-  container.appendChild(toolbar);
-
   // === Load Three.js if needed ===
   if (!document.querySelector('script[src*="three.min.js"]')) {
     const s = document.createElement('script');

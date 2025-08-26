@@ -269,7 +269,25 @@
       "callbackKey": "InsertCodeElement",
       "modes": ["WYSIWYG Editing"],
       "icon": "icons/CodeEditor.png"
-    }                         
+    },
+    {
+  "ToolbarCategory": "Insert",
+  "heading": "Insert Prism",
+  "insertGroup": "3D Objects",
+  "callbackKey": "insertPrism",
+  "modes": ["VR World Editing"],
+  "icon": "icons/PrismIcon.png"
+},     
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Insert STL",
+  "insertGroup": "3D Objects",
+  "callbackKey": "insertSTL",
+  "modes": ["VR World Editing"],
+  "icon": "icons/InsertSTLIcon.png"
+}
+
+                        
   ]
   
 

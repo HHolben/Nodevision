@@ -514,5 +514,104 @@ insertIFRAME()
         console.error('Error loading flash cards:', err);
         alert(`Error loading flash cards: ${err.message}`);
       });
+    },
+ insertPrism: () => {
+    console.log("Insert Prism callback fired.");
+
+    // Ensure VR world context exists
+    if (!window.VRWorldContext) {
+      alert("VR World context is not available.");
+      return;
+    }
+
+    const { scene, objects, THREE } = window.VRWorldContext;
+
+    // Create triangular prism by extruding a triangle shape
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0);
+    shape.lineTo(1, 0);
+    shape.lineTo(0.5, 1);
+    shape.lineTo(0, 0);
+
+    const extrudeSettings = { steps: 1, depth: 1, bevelEnabled: false };
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+    const material = new THREE.MeshStandardMaterial({ color: 0xff00ff });
+    const prism = new THREE.Mesh(geometry, material);
+
+    // Position prism in front of camera for visibility
+    prism.position.set(0, 0.5, -2);
+
+    // Add to scene + object tracking array
+    scene.add(prism);
+    if (objects) {
+      objects.push(prism);
+    }
+
+    console.log("Prism inserted into VR world scene.");
+  },
+insertSTL: () => {
+    console.log("Insert STL callback fired.");
+
+    if (!window.VRWorldContext) {
+      alert("VR World context is not available.");
+      return;
+    }
+
+    const { scene, objects, THREE } = window.VRWorldContext;
+
+    if (!THREE.STLLoader) {
+      alert("STLLoader is not available. Please ensure it's imported.");
+      return;
+    }
+
+    // Create a hidden file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.stl';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const contents = e.target.result;
+
+        const loader = new THREE.STLLoader();
+        const geometry = loader.parse(contents);
+
+        const material = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Scale for visibility
+        geometry.computeBoundingBox();
+        const bbox = geometry.boundingBox;
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim > 0) {
+          const scale = 1 / maxDim;
+          mesh.scale.set(scale, scale, scale);
+        }
+
+        mesh.position.set(0, 0.5, -2);
+
+        scene.add(mesh);
+        if (objects) objects.push(mesh);
+
+        console.log("STL model inserted into VR world scene.");
+        document.body.removeChild(input);
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Trigger the file picker
+    input.click();
   }
+
 };
