@@ -80,12 +80,21 @@ function displayFiles(files, currentPath) {
             if (item.isDirectory) {
                 window.fetchDirectoryContents(item.path);
             } else {
-                // --- NEW: store the selected file globally ---
+                // Store the selected file globally
                 window.selectedFilePath = item.path;
                 window.selectedFileName = item.name;
 
-                // Update the info panel as before
-                updateInfoPanel(item.path);
+                // --- NEW: load virtual world if in virtual world viewing mode ---
+                if (window.currentMode === "VirtualWorldViewing") {
+                    if (typeof window.loadVirtualWorld === "function") {
+                        window.loadVirtualWorld(item.path);
+                    } else {
+                        console.warn("Virtual world loader not defined.");
+                    }
+                } else {
+                    // Update info panel as before
+                    updateInfoPanel(item.path);
+                }
             }
         });
 
@@ -150,10 +159,10 @@ function moveFileOrDirectory(sourcePath, destinationPath, currentPath) {
 
 // Initialization: force file view for testing.
 document.addEventListener('DOMContentLoaded', () => {
-    const cyContainer      = document.getElementById('cy');
+    const cyContainer       = document.getElementById('cy');
     const fileViewContainer = document.getElementById('file-view');
 
-    cyContainer.style.display     = 'none';
+    cyContainer.style.display       = 'none';
     fileViewContainer.style.display = 'block';
 
     if (typeof window.fetchDirectoryContents === 'function') {

@@ -59,5 +59,23 @@
     "heading": "Delete Object",
     "callbackKey": "deleteVRObject",
     "modes": ["VR World Editing"]
+  },
+    {
+    "ToolbarCategory": "Edit",
+    "heading": "Add Cube",
+    "callbackKey": "vrAddCube",
+    "modes": ["VR World Editing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Add Sphere",
+    "callbackKey": "vrAddSphere",
+    "modes": ["VR World Editing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Delete Object",
+    "callbackKey": "vrDeleteObject",
+    "modes": ["VR World Editing"]
   }
 ]

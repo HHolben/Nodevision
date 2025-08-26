@@ -1,8 +1,9 @@
+// Nodevision/public/ToolbarCallbacks/editCallbacks.js
+
 export const editCallbacks = {
     editRASTER: () => {
         console.log("Edit RASTER callback fired.");
     },
-    
 
     editStyles: () => {
         console.log("Edit Styles callback fired.");
@@ -14,7 +15,6 @@ export const editCallbacks = {
             return;
         }
 
-        // Highlight selected element
         const previousOutline = selectedElement.style.outline;
         selectedElement.style.outline = "2px dashed red";
 
@@ -24,10 +24,9 @@ export const editCallbacks = {
             return;
         }
 
-        // Get computed styles for display
         const computedStyles = window.getComputedStyle(selectedElement);
         let inlineStyles = selectedElement.getAttribute("style") || "";
-        
+
         infoPanel.innerHTML = `
             <h2>Edit Styles</h2>
             <textarea id="style-editor" style="width: 100%; height: 150px;"></textarea>
@@ -39,7 +38,6 @@ export const editCallbacks = {
         const applyButton = document.getElementById("apply-styles");
         const cancelButton = document.getElementById("cancel-styles");
 
-        // Pre-fill textarea with inline styles (fall back to some common computed props)
         const commonProps = ["color", "background-color", "font-size", "margin", "padding", "border"];
         let styleText = inlineStyles;
         if (!inlineStyles) {
@@ -49,24 +47,20 @@ export const editCallbacks = {
         }
         styleEditor.value = styleText;
 
-        // Live preview as you type
         styleEditor.addEventListener("input", () => {
             mergeStyles(selectedElement, styleEditor.value);
         });
 
-        // Apply button commits changes
         applyButton.addEventListener("click", () => {
             mergeStyles(selectedElement, styleEditor.value);
-            selectedElement.style.outline = previousOutline; // remove highlight
+            selectedElement.style.outline = previousOutline;
         });
 
-        // Cancel button restores old styles
         cancelButton.addEventListener("click", () => {
             selectedElement.setAttribute("style", inlineStyles);
             selectedElement.style.outline = previousOutline;
         });
 
-        // Helper to merge styles without wiping all others
         function mergeStyles(element, newStyles) {
             const styleObj = {};
             newStyles.split(";").forEach(rule => {
@@ -78,18 +72,63 @@ export const editCallbacks = {
             }
         }
     },
-  indentFile: () => {
-    console.log("Indent File callback fired.");
 
-    if (window.monacoEditor) {
-      const editor = window.monacoEditor;
-      editor.getAction('editor.action.formatDocument').run()
-        .then(() => console.log("File successfully indented."))
-        .catch(err => console.error("Failed to indent file:", err));
-    } else {
-      alert("Monaco editor is not active.");
+    indentFile: () => {
+        console.log("Indent File callback fired.");
+
+        if (window.monacoEditor) {
+            const editor = window.monacoEditor;
+            editor.getAction('editor.action.formatDocument').run()
+                .then(() => console.log("File successfully indented."))
+                .catch(err => console.error("Failed to indent file:", err));
+        } else {
+            alert("Monaco editor is not active.");
+        }
+    },
+
+    // === New VR World Editing Callbacks ===
+    vrAddCube: () => {
+        if (!window.VRWorldContext) {
+            console.error("VR World context not found.");
+            return;
+        }
+        const { scene, objects, THREE } = window.VRWorldContext;
+        const geo = new THREE.BoxGeometry();
+        const mat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+        const cube = new THREE.Mesh(geo, mat);
+        cube.position.set(Math.random() * 4 - 2, 1, Math.random() * 4 - 2);
+        scene.add(cube);
+        objects.push(cube);
+        console.log("Cube added to VR world.");
+    },
+
+    vrAddSphere: () => {
+        if (!window.VRWorldContext) {
+            console.error("VR World context not found.");
+            return;
+        }
+        const { scene, objects, THREE } = window.VRWorldContext;
+        const geo = new THREE.SphereGeometry(0.5, 32, 32);
+        const mat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+        const sphere = new THREE.Mesh(geo, mat);
+        sphere.position.set(Math.random() * 4 - 2, 1, Math.random() * 4 - 2);
+        scene.add(sphere);
+        objects.push(sphere);
+        console.log("Sphere added to VR world.");
+    },
+
+    vrDeleteObject: () => {
+        if (!window.VRWorldContext) {
+            console.error("VR World context not found.");
+            return;
+        }
+        const { scene, objects } = window.VRWorldContext;
+        const obj = objects.pop();
+        if (obj) {
+            scene.remove(obj);
+            console.log("Object deleted from VR world.");
+        } else {
+            console.warn("No objects left to delete.");
+        }
     }
-  }
-
-
 };

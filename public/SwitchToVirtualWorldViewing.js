@@ -1,6 +1,15 @@
-//Nodevision/public/SwitchToVirtualWorldViewing.js
+// Nodevision/public/SwitchToVirtualWorldViewing.js
+// Nodevision/public/SwitchToVirtualWorldViewing.js
+
 (function () {
   console.log("SwitchToVirtualWorldViewing.js loaded");
+
+  // === Centralized mode state ===
+  if (window.AppState && typeof window.AppState.setMode === 'function') {
+    window.AppState.setMode('VR World Editing');
+  } else {
+    window.currentMode = 'VR World Editing';
+  }
 
   const container = document.getElementById('content-frame-container');
   if (!container) {
@@ -20,9 +29,9 @@
   toolbar.id = 'vr-toolbar';
   toolbar.innerHTML = `
     <div id="hotbar">
-      <button data-item="cube">Cube</button>
-      <button data-item="sphere">Sphere</button>
-      <button data-item="delete">Delete</button>
+      <button id="vr-btn-cube">Cube</button>
+      <button id="vr-btn-sphere">Sphere</button>
+      <button id="vr-btn-delete">Delete</button>
     </div>
   `;
   toolbar.style.cssText = `
@@ -53,20 +62,15 @@
       const res = await fetch('/api/load-gamepad-settings');
       const settings = await res.json();
 
-      // Build action → key map
       const actionKeyMap = {};
       if (settings && typeof settings === "object") {
         for (const [action, mapping] of Object.entries(settings)) {
-          if (mapping.keyboard) {
-            actionKeyMap[action] = false; // initialize state
-          }
+          if (mapping.keyboard) actionKeyMap[action] = false;
         }
       }
-
       return { settings, actionKeyMap };
     } catch (err) {
       console.error("Failed to load keyboard controls:", err);
-      // Fallback default actions
       return {
         settings: {
           "Move Forward": { keyboard: "w" },
@@ -116,29 +120,16 @@
 
       const objects = [];
 
-      // === Hotbar actions ===
-      document.querySelectorAll('#hotbar button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const item = btn.dataset.item;
-          if (item === "cube") {
-            const geo = new THREE.BoxGeometry();
-            const mat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-            const cube = new THREE.Mesh(geo, mat);
-            cube.position.set(Math.random()*4-2,1,Math.random()*4-2);
-            scene.add(cube);
-            objects.push(cube);
-          } else if (item === "sphere") {
-            const geo = new THREE.SphereGeometry(0.5, 32, 32);
-            const mat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-            const sphere = new THREE.Mesh(geo, mat);
-            sphere.position.set(Math.random()*4-2,1,Math.random()*4-2);
-            scene.add(sphere);
-            objects.push(sphere);
-          } else if (item === "delete") {
-            const obj = objects.pop();
-            if (obj) scene.remove(obj);
-          }
-        });
+      // 🔑 Expose VR world context globally for editCallbacks.js
+      window.VRWorldContext = { scene, objects, THREE };
+
+      // === Hook toolbar buttons to editCallbacks ===
+      import('/ToolbarCallbacks/editCallbacks.js').then(({ editCallbacks }) => {
+        document.getElementById('vr-btn-cube').onclick = editCallbacks.vrAddCube;
+        document.getElementById('vr-btn-sphere').onclick = editCallbacks.vrAddSphere;
+        document.getElementById('vr-btn-delete').onclick = editCallbacks.vrDeleteObject;
+      }).catch(err => {
+        console.error("Failed to load editCallbacks:", err);
       });
 
       // === Keyboard event listeners dynamically mapped ===
