@@ -1,4 +1,4 @@
-// === InfoPanel.js ===
+// Nodevision/public/InfoPanel.js
 var iframe = document.getElementById('content-frame');
 
 function updateInfoPanel(element) {

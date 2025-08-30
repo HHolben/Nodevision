@@ -84,17 +84,19 @@ function displayFiles(files, currentPath) {
                 window.selectedFilePath = item.path;
                 window.selectedFileName = item.name;
 
-                // --- NEW: load virtual world if in virtual world viewing mode ---
-                if (window.currentMode === "VirtualWorldViewing") {
-                    if (typeof window.loadVirtualWorld === "function") {
-                        window.loadVirtualWorld(item.path);
-                    } else {
-                        console.warn("Virtual world loader not defined.");
-                    }
-                } else {
-                    // Update info panel as before
-                    updateInfoPanel(item.path);
-                }
+
+                //update file click for virtual worlds
+if (window.currentMode === "VR World Editing") {  // <-- updated
+    if (typeof window.loadVirtualWorld === "function") {
+        window.loadVirtualWorld(item.path);
+    } else {
+        console.warn("Virtual world loader not defined.");
+    }
+} else {
+    // Update info panel as before
+    updateInfoPanel(item.path);
+}
+
             }
         });
 

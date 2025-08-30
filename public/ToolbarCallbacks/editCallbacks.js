@@ -72,6 +72,7 @@ export const editCallbacks = {
             }
         }
     },
+    
 
     indentFile: () => {
         console.log("Indent File callback fired.");
