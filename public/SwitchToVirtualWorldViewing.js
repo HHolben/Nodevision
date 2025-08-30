@@ -172,6 +172,55 @@ window.loadVirtualWorld = loadWorldFromFile;
       // 🔑 Expose VR world context globally
       window.VRWorldContext = { scene, objects, THREE, camera, renderer, loadWorldFromFile };
 
+
+      // 🔹 Debug: Load TestWorld.html directly into VR scene
+(async () => {
+    try {
+        const res = await fetch('/Notebook/TestWorld.html');
+        const text = await res.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, "text/html");
+        const scriptTag = doc.querySelector('script[type="application/json"]');
+        if (!scriptTag) {
+            console.warn('No world JSON script found in TestWorld.html');
+            return;
+        }
+
+        const worldData = JSON.parse(scriptTag.textContent.trim());
+        console.log('World objects JSON:', worldData.objects);
+
+        // Optional: put objects into the scene immediately
+        const { scene, THREE, objects } = window.VRWorldContext;
+        objects.forEach(obj => scene.remove(obj));
+        objects.length = 0;
+
+        for (const objDef of worldData.objects) {
+            let mesh;
+            if (objDef.type === "box") {
+                const geo = new THREE.BoxGeometry(...objDef.size);
+                const mat = new THREE.MeshStandardMaterial({ color: objDef.color || "#888888" });
+                mesh = new THREE.Mesh(geo, mat);
+            } else if (objDef.type === "sphere") {
+                const geo = new THREE.SphereGeometry(objDef.size[0], 32, 32);
+                const mat = new THREE.MeshStandardMaterial({ color: objDef.color || "#888888" });
+                mesh = new THREE.Mesh(geo, mat);
+            }
+
+            if (mesh) {
+                mesh.position.set(...objDef.position);
+                scene.add(mesh);
+                objects.push(mesh);
+            }
+        }
+
+        console.log(`Loaded ${objects.length} objects into VR scene.`);
+    } catch (err) {
+        console.error('Error loading TestWorld.html into VR scene:', err);
+    }
+})();
+
+
       // === Toolbar buttons for editing ===
       import('/ToolbarCallbacks/editCallbacks.js').then(({ editCallbacks }) => {
         const cubeBtn = document.getElementById('vr-btn-cube');
