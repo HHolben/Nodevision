@@ -73,6 +73,10 @@ function updateInfoPanel(element) {
     renderWAV(filename, infoPanel, serverBase);
     return;
   }
+  else if (lower.endsWith('.pdf')) {
+    renderPDF(filename, infoPanel, serverBase);
+    return;
+    }
 else if (lower.endsWith('.scad')) {
     renderSCAD(filename, infoPanel, serverBase);
     return;

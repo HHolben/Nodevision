@@ -1,3 +1,5 @@
+//Nodevision/public/InfoSTL.js
+
 (async () => {
     // Dynamically load OrbitControls
     await new Promise((resolve, reject) => {
