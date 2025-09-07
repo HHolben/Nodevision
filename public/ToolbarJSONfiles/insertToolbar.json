@@ -285,8 +285,13 @@
   "callbackKey": "insertSTL",
   "modes": ["VR World Editing"],
   "icon": "icons/InsertSTLIcon.png"
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Add Circle",
+  "callbackKey": "addCircle",
+  "modes": ["SVG Editing"]
 }
-
                         
   ]
   

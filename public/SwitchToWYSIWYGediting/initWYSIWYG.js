@@ -1,5 +1,5 @@
 
-// FILE: initWYSIWYG.js
+//Nodevision/public/SwitchToWYSIWYGediting/initWYSIWYG.js
 (function(){
   // Determine active node and filePath
   let activeNode = window.ActiveNode;

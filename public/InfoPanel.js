@@ -83,6 +83,9 @@ else if (lower.endsWith('.scad')) {
   } else if (lower.endsWith('.stl')) {
     renderSTL(filename, infoPanel, serverBase);
     return;
+      } else if (lower.endsWith('.svg')) {
+    window.InfoSVG(filename, infoPanel, serverBase);
+    return;
     } else if (lower.endsWith('.xml')) {
     window.renderQTI(filename, infoPanel, serverBase);
     return;

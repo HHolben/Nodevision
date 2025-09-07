@@ -50,5 +50,21 @@
     "callbackKey": "uploadToArduino",
     "modes": ["Code Editing"],
     "icon": "icons/ArduinoUpload.png"
-  }
+  },
+  {
+  "ToolbarCategory": "File",
+  "heading": "Edit SVG",
+  "content": "",
+  "callbackKey": "switchToSVGEditing",
+  "modes": ["SVG Editing"],
+  "icon": "icons/SVGIcon.png"
+},
+{
+  "ToolbarCategory": "File",
+  "heading": "Save SVG",
+  "content": "",
+  "callbackKey": "saveSVG",
+  "modes": ["SVG Editing"],
+  "icon": "icons/SaveIcon.png"
+}
 ]

@@ -131,5 +131,87 @@ export const editCallbacks = {
         } else {
             console.warn("No objects left to delete.");
         }
+    },
+// === SVG Editing Callbacks ===
+switchToSVGEditing: () => {
+    console.log("Switching to SVG Editing mode");
+    if (window.filePath && window.SwitchToSVGediting) {
+        window.SwitchToSVGediting(); // call the main switch script
+    } else {
+        console.error("SVG editing scripts not loaded or filePath not set");
     }
+},
+
+saveSVG: () => {
+    console.log("Saving SVG file");
+    if (window.filePath && window.saveSVG) {
+        window.saveSVG(window.filePath);
+    } else {
+        console.error("saveSVG function not available or filePath not set");
+    }
+},
+moveShape: () => {
+    console.log("Move Shape callback fired");
+
+    const waitForIframe = () => {
+        const iframe = document.getElementById("content-frame");
+        if (!iframe) {
+            // Retry after a short delay
+            setTimeout(waitForIframe, 100);
+            return;
+        }
+
+        // Now the iframe exists; wait for its content to load
+        const initSelection = () => {
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            const svg = doc.querySelector("svg");
+            if (!svg) {
+                console.error("SVG element not found in iframe");
+                return;
+            }
+
+            let selected = null;
+
+            const clearSelection = () => {
+                if (selected) {
+                    selected.style.stroke = null;
+                    selected.style.strokeWidth = null;
+                    selected.style.strokeDasharray = null;
+                    selected = null;
+                }
+            };
+
+            svg.addEventListener("mousedown", e => {
+                if (e.target === svg) {
+                    clearSelection();
+                    console.log("Selection cleared");
+                    return;
+                }
+
+                if (selected) clearSelection();
+                selected = e.target;
+                selected.style.stroke = "red";
+                selected.style.strokeWidth = "2";
+                selected.style.strokeDasharray = "4,2";
+
+                console.log("Shape selected:", selected.tagName);
+            });
+        };
+
+        if (iframe.contentDocument && iframe.contentDocument.readyState === "complete") {
+            initSelection();
+        } else {
+            iframe.onload = initSelection;
+        }
+    };
+
+    waitForIframe();
+    console.log("Waiting for SVG iframe to initialize selection...");
+}
+
+
+
+
+
+
 };

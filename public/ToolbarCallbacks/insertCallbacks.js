@@ -612,6 +612,37 @@ insertSTL: () => {
 
     // Trigger the file picker
     input.click();
-  }
+  },
+      addCircle: () => {
+        console.log("Insert Circle callback fired");
+
+        if (!window.SVGEditorContext) {
+            console.error("SVGEditorContext not found. Are you in SVG Editing mode?");
+            return;
+        }
+
+        const { svgRoot } = window.SVGEditorContext;
+        if (!svgRoot) {
+            console.error("SVG root element not available in SVGEditorContext");
+            return;
+        }
+
+        // Create a new circle element
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", "50");  // default x position
+        circle.setAttribute("cy", "50");  // default y position
+        circle.setAttribute("r", "25");   // default radius
+        circle.setAttribute("stroke", "black");
+        circle.setAttribute("stroke-width", "2");
+        circle.setAttribute("fill", "transparent");
+
+        svgRoot.appendChild(circle);
+        console.log("Circle added to SVG editor");
+
+        // Optionally, select the new circle for immediate manipulation
+        if (window.selectSVGElement) {
+            window.selectSVGElement(circle);
+        }
+    }
 
 };

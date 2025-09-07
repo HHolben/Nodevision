@@ -77,5 +77,13 @@
     "heading": "Delete Object",
     "callbackKey": "vrDeleteObject",
     "modes": ["VR World Editing"]
-  }
+  },
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Move Shape",
+  "callbackKey": "moveShape",
+  "modes": ["SVG Editing"]
+}
+
+
 ]

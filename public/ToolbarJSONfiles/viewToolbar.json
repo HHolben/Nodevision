@@ -19,6 +19,12 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "SVG Editing",
+    "content": "",
+    "script": "SwitchToSVGediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "Virtual World Viewing",
     "content": "",
     "script": "SwitchToVirtualWorldViewing.js"
