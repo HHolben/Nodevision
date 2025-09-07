@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Handwriting → Text (Nodevision)</title>
+  <link rel="stylesheet" href="styles/ocr.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Handwriting → Text</h1>
+    <p>Draw in the box below. Then click <b>Recognize</b> to convert handwriting into text (offline).</p>
+
+    <div class="toolbar">
+      <button id="penBtn">✍️ Pen</button>
+      <button id="eraserBtn">🧽 Eraser</button>
+      <input id="size" type="range" min="2" max="36" value="16">
+      <input id="threshold" type="range" min="0" max="255" value="180">
+      <button id="clearBtn">Clear</button>
+      <button id="recognizeBtn">Recognize</button>
+    </div>
+
+    <canvas id="pad" width="800" height="400"></canvas>
+
+    <div class="progress"><div id="bar"></div></div>
+
+    <textarea id="outText" placeholder="Recognized text will appear here…"></textarea>
+  </div>
+
+  <!-- Local Tesseract -->
+  <script src="tesseract/tesseract.min.js"></script>
+  <script src="scripts/ocr.js"></script>
+</body>
+</html>

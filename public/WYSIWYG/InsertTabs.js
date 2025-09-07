@@ -1,6 +1,6 @@
 function InsertTab()
 {
-    const Tab = `<span style="white-space: pre;">	</span>`;
+    const Tab = `<span style="white-space: pre;"></span>`;
     document.execCommand('insertHTML', false, Tab);
 }
 

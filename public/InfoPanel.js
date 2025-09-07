@@ -92,6 +92,9 @@ else if (lower.endsWith('.scad')) {
   } else if (lower.endsWith('.mp4')) {
     window.InfoMP4(filename, infoPanel, serverBase);
     return;
+  } else if (lower.endsWith('.odt')) {
+    window.InfoODT(filename, infoPanel, serverBase);
+    return;
   } else if (lower.endsWith('.ttf')) {
     window.getFontInfo(filename, infoPanel, serverBase);
     return;

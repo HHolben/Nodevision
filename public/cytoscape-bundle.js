@@ -210,7 +210,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 
       // declare texture unit for each texture atlas in the batch
       `.concat(i.map(function(u){return"uniform sampler2D uTexture".concat(u,";")}).join(`
-	`),`
+`),`
 
       uniform vec4 uBGColor;
       uniform float uZoom;
@@ -252,7 +252,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
         if(vVertType == `).concat(Fo,`) {
           // look up the texel from the texture unit
           `).concat(i.map(function(u){return"if(vAtlasId == ".concat(u,") outColor = texture(uTexture").concat(u,", vTexCoord);")}).join(`
-	else `),`
+else `),`
         } 
         else if(vVertType == `).concat(ko,`) {
           // mimics how canvas renderer uses context.globalCompositeOperation = 'destination-out';
