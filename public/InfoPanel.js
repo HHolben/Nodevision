@@ -92,6 +92,9 @@ else if (lower.endsWith('.scad')) {
     } else if (lower.endsWith('.xml')) {
     window.renderQTI(filename, infoPanel, serverBase);
     return;
+      } else if (lower.endsWith('.kml')) {
+    renderKML(filename, infoPanel, serverBase);
+    return;
   } else if (lower.endsWith('.mp3')) {
     window.InfoMP3(filename, infoPanel, serverBase);
     return;
@@ -128,4 +131,5 @@ function attachRegionButtons(element) {
 window.renderCSV = renderCSV;
 window.renderHTML = renderHTML;
 window.renderSCAD = renderSCAD;
+window.renderKML = renderKML;
 window.updateInfoPanel = updateInfoPanel;
