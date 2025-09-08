@@ -1,0 +1,19 @@
+{
+  "h1": "<h1>Heading Level 1</h1>",
+  "h2": "<h2>Heading Level 2</h2>",
+  "h3": "<h3>Heading Level 3</h3>",
+  "p": "<p>This is a sample paragraph with some <strong>bold</strong> and <em>italic</em> text.</p>",
+  "a": "<a href='#'>Sample Link</a>",
+  "button": "<button>Click Me</button>",
+  "input": "<input type='text' placeholder='Sample input' />",
+  "ul": "<ul><li>Item One</li><li>Item Two</li></ul>",
+  "ol": "<ol><li>First</li><li>Second</li></ol>",
+  "table": "<table><tr><th>Header</th><th>Value</th></tr><tr><td>A</td><td>1</td></tr></table>",
+  "img": "<img src='https://via.placeholder.com/100x60.png?text=Img' alt='Sample image' />",
+
+  ".card": "<div class='card'><h3>Card Title</h3><p>Card content goes here.</p></div>",
+  ".nav": "<ul class='nav'><li>Home</li><li>About</li><li>Contact</li></ul>",
+  ".btn-primary": "<button class='btn-primary'>Primary Button</button>",
+  ".container": "<div class='container'><p>Container block</p></div>",
+  ".hero": "<section class='hero'><h1>Hero Section</h1><p>Subtitle goes here</p></section>"
+}

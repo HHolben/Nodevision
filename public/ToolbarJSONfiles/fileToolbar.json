@@ -66,5 +66,13 @@
   "callbackKey": "saveSVG",
   "modes": ["SVG Editing"],
   "icon": "icons/SaveIcon.png"
+},
+{
+  "ToolbarCategory": "File",
+  "heading": "Download File",
+  "content": "",
+  "callbackKey": "downloadFile",
+  "icon": "icons/DownloadIcon.png"
 }
+
 ]

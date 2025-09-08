@@ -66,7 +66,10 @@ function updateInfoPanel(element) {
   iframe.src = '';
   var lower = filename.toLowerCase();
 
-  if (lower.endsWith('.csv')) {
+  if (lower.endsWith('.css')) {
+    window.InfoCSS(filename, infoPanel, serverBase);
+    return;
+  }else if (lower.endsWith('.csv')) {
     renderCSV(filename, infoPanel, serverBase);
     return;
   } else if (lower.endsWith('.wav') || lower.endsWith('.wave.csv')) {

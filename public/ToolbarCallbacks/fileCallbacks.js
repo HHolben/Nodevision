@@ -194,4 +194,39 @@ NewFile: async () => {
       alert(`Failed to create directory: ${err.message}`);
     }
   },
+downloadFile: async () => {
+  console.log("Downloading: "+ window.ActiveNode)
+  const filePath = window.ActiveNode;
+
+  if (!filePath) {
+    alert("No file selected to download.");
+    return;
+  }
+
+  try {
+    // Fetch the file content from the server
+    const response = await fetch(`/api/downloadFile?path=${encodeURIComponent(filePath)}`);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+
+    // Trigger download
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filePath.split("/").pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+
+    console.log(`Downloaded file: ${filePath}`);
+  } catch (err) {
+    console.error("Download error:", err);
+    alert(`Error downloading file:\n${err.message}`);
+  }
+}
+
+
 };
