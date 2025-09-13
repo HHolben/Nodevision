@@ -21,7 +21,7 @@ saveFile: () => {
     console.log("Saving SVG file using direct method");
     const svgContent = svgEditor.outerHTML;
     
-    fetch('/api/files/save', {
+    fetch('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: filePath, content: svgContent })

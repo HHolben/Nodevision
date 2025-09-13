@@ -1031,8 +1031,10 @@
   // Enhanced save function that actually saves to server
   function saveSVGToServer() {
     const svgContent = svgEditor.outerHTML;
+    console.log('Attempting to save SVG to:', filePath);
+    console.log('SVG content length:', svgContent.length);
     
-    fetch('/api/files/save', {
+    fetch('/api/save', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1042,17 +1044,27 @@
         content: svgContent
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      console.log('Save response status:', response.status);
+      console.log('Save response headers:', response.headers);
+      return response.json().catch(err => {
+        console.error('Failed to parse JSON response:', err);
+        return { error: 'Invalid response format' };
+      });
+    })
     .then(data => {
+      console.log('Save response data:', data);
       if (data.success) {
         document.getElementById('svg-message').textContent = 'SVG saved successfully!';
       } else {
-        document.getElementById('svg-error').textContent = 'Error saving SVG: ' + data.error;
+        document.getElementById('svg-error').textContent = 'Error saving SVG: ' + (data.error || 'Unknown error');
       }
     })
     .catch(error => {
       console.error('Save error:', error);
-      document.getElementById('svg-error').textContent = 'Network error while saving';
+      console.error('Full error details:', JSON.stringify(error));
+      console.error('Error stack:', error.stack);
+      document.getElementById('svg-error').textContent = 'Network error while saving: ' + error.message;
     });
   }
 

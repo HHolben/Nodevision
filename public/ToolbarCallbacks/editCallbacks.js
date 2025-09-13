@@ -159,7 +159,7 @@ saveSVG: () => {
         // Use the direct SVG editor approach
         const svgContent = svgEditor.outerHTML;
         
-        fetch('/api/files/save', {
+        fetch('/api/save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

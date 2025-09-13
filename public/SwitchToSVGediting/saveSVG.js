@@ -30,7 +30,7 @@ function saveSVG(filePath) {
   const svgData = new XMLSerializer().serializeToString(svg);
   
   // Actually save to server using the API
-  fetch('/api/files/save', {
+  fetch('/api/save', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
