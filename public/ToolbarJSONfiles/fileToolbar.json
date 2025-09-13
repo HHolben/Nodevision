@@ -63,7 +63,7 @@
   "ToolbarCategory": "File",
   "heading": "Save SVG",
   "content": "",
-  "callbackKey": "saveSVG",
+  "callbackKey": "saveFile",
   "modes": ["SVG Editing"],
   "icon": "icons/SaveIcon.png"
 },

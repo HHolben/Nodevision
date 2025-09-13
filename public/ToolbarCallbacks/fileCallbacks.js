@@ -1,10 +1,47 @@
 // Nodevision/public/ToolbarCallbacks/fileCallbacks.js
 export const fileCallbacks = {
 saveFile: () => {
-  const filePath = window.currentActiveFilePath;
+  const filePath = window.currentActiveFilePath || window.filePath;
 
   if (!filePath) {
     console.error("Cannot save: filePath is missing.");
+    return;
+  }
+
+  // Check if we're in SVG editing mode first
+  const svgEditor = document.getElementById("svg-editor");
+  if (svgEditor && window.currentSaveSVG && typeof window.currentSaveSVG === 'function') {
+    console.log("Saving SVG file using Publisher-style editor");
+    window.currentSaveSVG();
+    return;
+  }
+
+  // Check for legacy SVG editing mode
+  if (svgEditor) {
+    console.log("Saving SVG file using direct method");
+    const svgContent = svgEditor.outerHTML;
+    
+    fetch('/api/files/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath: filePath, content: svgContent })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        console.log('SVG file saved successfully:', filePath);
+        const messageEl = document.getElementById('svg-message');
+        if (messageEl) {
+          messageEl.textContent = 'SVG saved successfully!';
+          messageEl.style.color = 'green';
+        }
+      } else {
+        console.error('Error saving SVG:', data.error);
+      }
+    })
+    .catch(err => {
+      console.error('Error saving SVG file:', err);
+    });
     return;
   }
 
