@@ -20,7 +20,7 @@ if (!fs.existsSync(userSettingsDir)) fs.mkdirSync(userSettingsDir, { recursive: 
 
 
 const app = express();
-const port = process.env.PORT || 3000; // Use port from .env or default to 3000
+const port = process.env.PORT || 5000; // Use port from .env or default to 5000
 
 // Middleware setup (configure body size limits first)
 app.use(express.json({ limit: '50mb' }));
@@ -234,8 +234,8 @@ app.get('/api/list-directory', async (req, res) => {
 });
 
 // Server setup
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${port}`);
 });
 
 module.exports = app;
