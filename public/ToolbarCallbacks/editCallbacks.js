@@ -364,6 +364,128 @@ svgChangeStrokeWidth: () => {
     } else {
         document.getElementById('svg-message').textContent = 'No shape selected to change stroke width';
     }
+},
+
+// === Publisher-like Editing Callbacks ===
+svgCopy: () => {
+    console.log("SVG Copy callback fired");
+    const selectedElement = window.selectedSVGElement;
+    if (selectedElement) {
+        window.svgClipboard = selectedElement.cloneNode(true);
+        document.getElementById('svg-message').textContent = 'Element copied to clipboard';
+    } else {
+        document.getElementById('svg-message').textContent = 'No element selected to copy';
+    }
+},
+
+svgPaste: () => {
+    console.log("SVG Paste callback fired");
+    if (window.svgClipboard) {
+        const svgEditor = document.getElementById('svg-editor');
+        if (svgEditor) {
+            const clone = window.svgClipboard.cloneNode(true);
+            // Offset the pasted element
+            if (clone.tagName === 'rect') {
+                const x = parseFloat(clone.getAttribute('x') || 0) + 20;
+                const y = parseFloat(clone.getAttribute('y') || 0) + 20;
+                clone.setAttribute('x', x);
+                clone.setAttribute('y', y);
+            } else if (clone.tagName === 'circle') {
+                const cx = parseFloat(clone.getAttribute('cx') || 0) + 20;
+                const cy = parseFloat(clone.getAttribute('cy') || 0) + 20;
+                clone.setAttribute('cx', cx);
+                clone.setAttribute('cy', cy);
+            }
+            svgEditor.appendChild(clone);
+            window.selectedSVGElement = clone;
+            document.getElementById('svg-message').textContent = 'Element pasted';
+        }
+    } else {
+        document.getElementById('svg-message').textContent = 'No element in clipboard to paste';
+    }
+},
+
+svgAlignLeft: () => {
+    console.log("SVG Align Left callback fired");
+    const selectedElement = window.selectedSVGElement;
+    if (selectedElement) {
+        if (selectedElement.tagName === 'rect') {
+            selectedElement.setAttribute('x', 10);
+        } else if (selectedElement.tagName === 'circle' || selectedElement.tagName === 'ellipse') {
+            const r = parseFloat(selectedElement.getAttribute('r') || selectedElement.getAttribute('rx') || 20);
+            selectedElement.setAttribute('cx', 10 + r);
+        } else if (selectedElement.tagName === 'text') {
+            selectedElement.setAttribute('x', 10);
+        }
+        document.getElementById('svg-message').textContent = 'Element aligned to left';
+    } else {
+        document.getElementById('svg-message').textContent = 'No element selected to align';
+    }
+},
+
+svgAlignCenter: () => {
+    console.log("SVG Align Center callback fired");
+    const selectedElement = window.selectedSVGElement;
+    if (selectedElement) {
+        const centerX = 400; // Half of SVG width (800)
+        if (selectedElement.tagName === 'rect') {
+            const width = parseFloat(selectedElement.getAttribute('width') || 0);
+            selectedElement.setAttribute('x', centerX - width / 2);
+        } else if (selectedElement.tagName === 'circle' || selectedElement.tagName === 'ellipse') {
+            selectedElement.setAttribute('cx', centerX);
+        } else if (selectedElement.tagName === 'text') {
+            selectedElement.setAttribute('x', centerX);
+        }
+        document.getElementById('svg-message').textContent = 'Element aligned to center';
+    } else {
+        document.getElementById('svg-message').textContent = 'No element selected to align';
+    }
+},
+
+svgAlignRight: () => {
+    console.log("SVG Align Right callback fired");
+    const selectedElement = window.selectedSVGElement;
+    if (selectedElement) {
+        const rightX = 790; // SVG width (800) minus margin
+        if (selectedElement.tagName === 'rect') {
+            const width = parseFloat(selectedElement.getAttribute('width') || 0);
+            selectedElement.setAttribute('x', rightX - width);
+        } else if (selectedElement.tagName === 'circle' || selectedElement.tagName === 'ellipse') {
+            const r = parseFloat(selectedElement.getAttribute('r') || selectedElement.getAttribute('rx') || 20);
+            selectedElement.setAttribute('cx', rightX - r);
+        } else if (selectedElement.tagName === 'text') {
+            selectedElement.setAttribute('x', rightX);
+        }
+        document.getElementById('svg-message').textContent = 'Element aligned to right';
+    } else {
+        document.getElementById('svg-message').textContent = 'No element selected to align';
+    }
+},
+
+svgBringToFront: () => {
+    console.log("SVG Bring to Front callback fired");
+    const selectedElement = window.selectedSVGElement;
+    if (selectedElement && selectedElement.parentNode) {
+        selectedElement.parentNode.appendChild(selectedElement);
+        document.getElementById('svg-message').textContent = 'Element brought to front';
+    } else {
+        document.getElementById('svg-message').textContent = 'No element selected to bring to front';
+    }
+},
+
+svgSendToBack: () => {
+    console.log("SVG Send to Back callback fired");
+    const selectedElement = window.selectedSVGElement;
+    if (selectedElement && selectedElement.parentNode) {
+        const parent = selectedElement.parentNode;
+        const firstChild = parent.querySelector(':not(defs):not(#grid-overlay)');
+        if (firstChild) {
+            parent.insertBefore(selectedElement, firstChild);
+        }
+        document.getElementById('svg-message').textContent = 'Element sent to back';
+    } else {
+        document.getElementById('svg-message').textContent = 'No element selected to send to back';
+    }
 }
 
 

@@ -122,6 +122,50 @@
   "heading": "Change Stroke Width",
   "callbackKey": "svgChangeStrokeWidth",
   "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Copy",
+  "callbackKey": "svgCopy",
+  "modes": ["SVG Editing"],
+  "icon": "icons/CopyIcon.png"
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Paste",
+  "callbackKey": "svgPaste",
+  "modes": ["SVG Editing"],
+  "icon": "icons/PasteIcon.png"
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Align Left",
+  "callbackKey": "svgAlignLeft",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Align Center",
+  "callbackKey": "svgAlignCenter",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Align Right",
+  "callbackKey": "svgAlignRight",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Bring to Front",
+  "callbackKey": "svgBringToFront",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Send to Back",
+  "callbackKey": "svgSendToBack",
+  "modes": ["SVG Editing"]
 }
 
 
