@@ -80,8 +80,47 @@
   },
 {
   "ToolbarCategory": "Edit",
+  "heading": "Select Tool",
+  "callbackKey": "svgSelectTool",
+  "modes": ["SVG Editing"],
+  "icon": "icons/EditIcon.png"
+},
+{
+  "ToolbarCategory": "Edit",
   "heading": "Move Shape",
   "callbackKey": "moveShape",
+  "modes": ["SVG Editing"],
+  "icon": "icons/EditIcon.png"
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Delete Shape",
+  "callbackKey": "svgDeleteShape",
+  "modes": ["SVG Editing"],
+  "icon": "icons/ExitIcon.png"
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Duplicate Shape",
+  "callbackKey": "svgDuplicateShape",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Change Fill Color",
+  "callbackKey": "svgChangeFillColor",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Change Stroke Color",
+  "callbackKey": "svgChangeStrokeColor",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "Change Stroke Width",
+  "callbackKey": "svgChangeStrokeWidth",
   "modes": ["SVG Editing"]
 }
 

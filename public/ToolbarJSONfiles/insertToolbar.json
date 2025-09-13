@@ -287,9 +287,53 @@
   "icon": "icons/InsertSTLIcon.png"
 },
 {
-  "ToolbarCategory": "Edit",
-  "heading": "Add Circle",
-  "callbackKey": "addCircle",
+  "ToolbarCategory": "Insert",
+  "heading": "Rectangle",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertRectangle",
+  "modes": ["SVG Editing"],
+  "icon": "icons/DefaultNodeImage.png"
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Circle",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertCircle",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Ellipse",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertEllipse",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Line",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertLine",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Path",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertPath",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Text",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertText",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Polygon",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertPolygon",
   "modes": ["SVG Editing"]
 }
                         

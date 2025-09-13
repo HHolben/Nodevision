@@ -643,6 +643,155 @@ insertSTL: () => {
         if (window.selectSVGElement) {
             window.selectSVGElement(circle);
         }
+    },
+
+// === New Enhanced SVG Shape Insertion Callbacks ===
+svgInsertRectangle: () => {
+    console.log("Insert Rectangle callback fired");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
     }
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "20");
+    rect.setAttribute("y", "20");
+    rect.setAttribute("width", "80");
+    rect.setAttribute("height", "60");
+    rect.setAttribute("stroke", "black");
+    rect.setAttribute("stroke-width", "2");
+    rect.setAttribute("fill", "rgba(0, 128, 255, 0.3)");
+
+    svgEditor.appendChild(rect);
+    window.selectedSVGElement = rect;
+    document.getElementById('svg-message').textContent = 'Rectangle inserted';
+},
+
+svgInsertCircle: () => {
+    console.log("Insert Circle callback fired");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
+    }
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", "60");
+    circle.setAttribute("cy", "60");
+    circle.setAttribute("r", "30");
+    circle.setAttribute("stroke", "black");
+    circle.setAttribute("stroke-width", "2");
+    circle.setAttribute("fill", "rgba(255, 0, 128, 0.3)");
+
+    svgEditor.appendChild(circle);
+    window.selectedSVGElement = circle;
+    document.getElementById('svg-message').textContent = 'Circle inserted';
+},
+
+svgInsertEllipse: () => {
+    console.log("Insert Ellipse callback fired");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
+    }
+
+    const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    ellipse.setAttribute("cx", "80");
+    ellipse.setAttribute("cy", "50");
+    ellipse.setAttribute("rx", "60");
+    ellipse.setAttribute("ry", "30");
+    ellipse.setAttribute("stroke", "black");
+    ellipse.setAttribute("stroke-width", "2");
+    ellipse.setAttribute("fill", "rgba(0, 255, 128, 0.3)");
+
+    svgEditor.appendChild(ellipse);
+    window.selectedSVGElement = ellipse;
+    document.getElementById('svg-message').textContent = 'Ellipse inserted';
+},
+
+svgInsertLine: () => {
+    console.log("Insert Line callback fired");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
+    }
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", "20");
+    line.setAttribute("y1", "20");
+    line.setAttribute("x2", "120");
+    line.setAttribute("y2", "80");
+    line.setAttribute("stroke", "black");
+    line.setAttribute("stroke-width", "3");
+
+    svgEditor.appendChild(line);
+    window.selectedSVGElement = line;
+    document.getElementById('svg-message').textContent = 'Line inserted';
+},
+
+svgInsertPath: () => {
+    console.log("Insert Path callback fired");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
+    }
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M 20 20 Q 60 10 100 50 T 140 80");
+    path.setAttribute("stroke", "black");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("fill", "none");
+
+    svgEditor.appendChild(path);
+    window.selectedSVGElement = path;
+    document.getElementById('svg-message').textContent = 'Path inserted';
+},
+
+svgInsertText: () => {
+    console.log("Insert Text callback fired");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
+    }
+
+    const text = prompt('Enter text:', 'Sample Text');
+    if (!text) return;
+
+    const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    textElement.setAttribute("x", "20");
+    textElement.setAttribute("y", "40");
+    textElement.setAttribute("font-family", "Arial");
+    textElement.setAttribute("font-size", "16");
+    textElement.setAttribute("fill", "black");
+    textElement.textContent = text;
+
+    svgEditor.appendChild(textElement);
+    window.selectedSVGElement = textElement;
+    document.getElementById('svg-message').textContent = 'Text inserted';
+},
+
+svgInsertPolygon: () => {
+    console.log("Insert Polygon callback fired");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
+    }
+
+    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    polygon.setAttribute("points", "60,20 80,60 40,60");  // Triangle
+    polygon.setAttribute("stroke", "black");
+    polygon.setAttribute("stroke-width", "2");
+    polygon.setAttribute("fill", "rgba(255, 128, 0, 0.3)");
+
+    svgEditor.appendChild(polygon);
+    window.selectedSVGElement = polygon;
+    document.getElementById('svg-message').textContent = 'Polygon inserted';
+}
 
 };
