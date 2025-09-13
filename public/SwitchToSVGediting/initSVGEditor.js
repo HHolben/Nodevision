@@ -1061,5 +1061,18 @@
     window.initInsertCallbacks(svgEditor);
   }
 
+  // Hide the InfoSVG preview when entering editing mode
+  const infoPanel = document.getElementById('element-info');
+  if (infoPanel) {
+    // Clear any existing InfoSVG iframe
+    const existingIframe = infoPanel.querySelector('iframe');
+    if (existingIframe) {
+      infoPanel.innerHTML = '';
+    }
+  }
+
+  // Expose save function globally for shortcuts and toolbar
+  window.currentSaveSVG = saveSVGToServer;
+
   console.log('Enhanced SVG editing initialized for:', filePath);
 })();

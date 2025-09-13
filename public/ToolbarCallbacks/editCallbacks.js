@@ -143,11 +143,19 @@ switchToSVGEditing: () => {
 },
 
 saveSVG: () => {
-    console.log("Saving SVG file");
+    console.log("Saving SVG:", window.filePath);
+    
+    // Check if we're in the new direct SVG editing mode and use the global save function
+    if (window.currentSaveSVG && typeof window.currentSaveSVG === 'function') {
+        console.log("Saving SVG file:", window.filePath);
+        window.currentSaveSVG();
+        return;
+    }
     
     // Check if we're in the new direct SVG editing mode
     const svgEditor = document.getElementById('svg-editor');
     if (svgEditor && window.filePath) {
+        console.log("Saving SVG file:", window.filePath);
         // Use the direct SVG editor approach
         const svgContent = svgEditor.outerHTML;
         
@@ -186,9 +194,11 @@ saveSVG: () => {
             }
         });
     } else if (window.filePath && window.saveSVG) {
+        console.log("Saving SVG file:", window.filePath);
         // Fall back to the old iframe-based approach
         window.saveSVG(window.filePath);
     } else {
+        console.warn("No save function found for current mode.");
         console.error("No SVG editor found or filePath not set");
     }
 },
