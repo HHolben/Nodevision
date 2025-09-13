@@ -12,7 +12,6 @@
   // Map file types to their editor script bundles
   const scriptBundles = {
     html: [
-      'formatHtml.js',
       'saveWYSIWYGFile.js',
       'toolbar.js',
       'fileLoader.js',
