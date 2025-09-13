@@ -12,12 +12,13 @@ const fsPromises = require('fs').promises; // For async operations
 const multer = require('multer');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
 const userSettingsDir = path.join(__dirname, 'UserSettings');
 const gamepadSettingsFile = path.join(userSettingsDir, 'GameControllerSettings.json');
 
 // Ensure the UserSettings folder exists
 if (!fs.existsSync(userSettingsDir)) fs.mkdirSync(userSettingsDir, { recursive: true });
-
 
 const app = express();
 const port = process.env.PORT || 5000; // Use port from .env or default to 5000
@@ -26,9 +27,49 @@ const port = process.env.PORT || 5000; // Use port from .env or default to 5000
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Serve static files
+// Secure helper function to validate and normalize paths
+function validateAndNormalizePath(userPath, allowedBaseDir) {
+  if (!userPath) return allowedBaseDir;
+  
+  // Remove any null bytes and normalize path
+  const sanitized = userPath.replace(/\0/g, '').replace(/\\/g, '/');
+  const fullPath = path.resolve(allowedBaseDir, sanitized);
+  
+  // Ensure the resolved path is within the allowed directory
+  if (!fullPath.startsWith(allowedBaseDir)) {
+    throw new Error('Access denied: Path outside allowed directory');
+  }
+  
+  return fullPath;
+}
+
+// Set up reverse proxy for PHP server (assuming PHP runs on port 8080)
+const phpProxyOptions = {
+  target: 'http://localhost:8080',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/php': '', // Remove /php prefix when forwarding to PHP server
+  },
+  onError: (err, req, res) => {
+    console.error('PHP proxy error:', err.message);
+    res.status(503).json({ error: 'PHP server unavailable' });
+  }
+};
+
+// Apply PHP proxy middleware for /php/* routes
+app.use('/php', createProxyMiddleware(phpProxyOptions));
+
+// Serve static files with security restrictions
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/vendor', express.static(path.join(__dirname, 'node_modules')));
+
+// Restrict vendor access to only necessary client libraries (SECURITY FIX)
+app.use('/vendor/monaco-editor', express.static(path.join(__dirname, 'node_modules/monaco-editor')));
+app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules/three')));
+app.use('/vendor/cytoscape', express.static(path.join(__dirname, 'node_modules/cytoscape')));
+app.use('/vendor/mathjax', express.static(path.join(__dirname, 'node_modules/mathjax')));
+app.use('/vendor/vexflow', express.static(path.join(__dirname, 'node_modules/vexflow')));
+app.use('/vendor/tesseract.js', express.static(path.join(__dirname, 'node_modules/tesseract.js')));
+
 app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
 
 // Serve favicon
@@ -105,18 +146,20 @@ async function loadRoutes() {
 // Call loadRoutes to initialize routes
 loadRoutes();
 
-
 //List top-level Notebook entries
 app.get('/api/topLevelNodes', async (req, res) => {
   const dir = path.join(__dirname, 'Notebook');
   const entries = await fsPromises.readdir(dir);
   res.json(entries);
 });
-// List directory entries (files & folders)
+
+// List directory entries (files & folders) - SECURE VERSION (SECURITY FIX)
 app.get('/api/list-directory', async (req, res) => {
-  const relPath = req.query.path || '';
-  const fullPath = path.join(__dirname, relPath);
   try {
+    const relPath = req.query.path || '';
+    const notebookDir = path.join(__dirname, 'Notebook');
+    const fullPath = validateAndNormalizePath(relPath, notebookDir);
+    
     const entries = await fsPromises.readdir(fullPath, { withFileTypes: true });
     const result = entries.map(entry => ({
       name: entry.name,
@@ -124,16 +167,18 @@ app.get('/api/list-directory', async (req, res) => {
     }));
     res.json(result);
   } catch (err) {
-    console.error('Failed to list directory:', fullPath, err);
-    res.status(500).json({ error: 'Failed to list directory', details: err.message });
+    console.error('Failed to list directory:', err.message);
+    res.status(403).json({ error: 'Access denied or directory not found' });
   }
 });
 
-// List file-to-file links in a directory
+// List file-to-file links in a directory - SECURE VERSION (SECURITY FIX)
 app.get('/api/list-links', async (req, res) => {
-  const relPath = req.query.path || '';
-  const dirFull = path.join(__dirname, relPath);
   try {
+    const relPath = req.query.path || '';
+    const notebookDir = path.join(__dirname, 'Notebook');
+    const dirFull = validateAndNormalizePath(relPath, notebookDir);
+    
     const entries = await fsPromises.readdir(dirFull, { withFileTypes: true });
     const links = [];
     for (const entry of entries) {
@@ -152,15 +197,10 @@ app.get('/api/list-links', async (req, res) => {
     }
     res.json(links);
   } catch (err) {
-    console.error('Failed to list links for', dirFull, err);
-    res.status(500).json({ error: 'Failed to list links', details: err.message });
+    console.error('Failed to list links:', err.message);
+    res.status(403).json({ error: 'Access denied or directory not found' });
   }
 });
-
-
-// Serve static files from the "public" folder
-app.use(express.static(path.join(__dirname, 'public')));
-
 
 // Load gamepad settings
 app.get('/api/load-gamepad-settings', async (req, res) => {
@@ -186,56 +226,43 @@ app.post('/api/save-gamepad-settings', async (req, res) => {
   }
 });
 
-
 app.post('/api/load-world', async (req, res) => {
   const { worldPath } = req.body;
   if (!worldPath) {
       return res.status(400).json({ error: "No world path provided" });
   }
 
-  const filePath = path.join(__dirname, 'Notebook', worldPath);
-  
   try {
-      // Read the HTML file
-      const fileContent = await fsPromises.readFile(filePath, 'utf8');
-      
-      // Extract world definition from the HTML file
-      const $ = cheerio.load(fileContent);
-      const worldScript = $('script[type="application/json"]').html();
-      
-      if (!worldScript) {
-          return res.status(400).json({ error: "No world definition found in file" });
-      }
+    // Use secure path validation (SECURITY FIX)
+    const notebookDir = path.join(__dirname, 'Notebook');
+    const filePath = validateAndNormalizePath(worldPath, notebookDir);
+    
+    // Read the HTML file
+    const fileContent = await fsPromises.readFile(filePath, 'utf8');
+    
+    // Extract world definition from the HTML file
+    const $ = cheerio.load(fileContent);
+    const worldScript = $('script[type="application/json"]').html();
+    
+    if (!worldScript) {
+        return res.status(400).json({ error: "No world definition found in file" });
+    }
 
-      const worldDefinition = JSON.parse(worldScript);
-      res.json({ worldDefinition });
+    const worldDefinition = JSON.parse(worldScript);
+    res.json({ worldDefinition });
   } catch (error) {
       console.error("Error loading world:", error);
       res.status(500).json({ error: "Error loading world" });
   }
 });
 
-
-app.get('/api/list-directory', async (req, res) => {
-  const relPath = req.query.path || '';
-  const fullPath = path.join(__dirname, relPath);
-
-  try {
-    const entries = await fsPromises.readdir(fullPath, { withFileTypes: true });
-    const result = entries.map(entry => ({
-      name: entry.name,
-      fileType: entry.isDirectory() ? 'directory' : 'file'
-    }));
-    res.json(result);
-  } catch (err) {
-    console.error('Failed to list directory:', err);
-    res.status(500).json({ error: 'Failed to list directory', details: err.message });
-  }
-});
-
 // Server setup
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running at http://0.0.0.0:${port}`);
+  console.log(`🔒 Security improvements applied:`);
+  console.log(`  - Directory traversal vulnerabilities fixed`);
+  console.log(`  - Vendor directory access restricted to necessary libraries only`);
+  console.log(`  - PHP proxy available at /php/*`);
 });
 
 module.exports = app;
