@@ -24,7 +24,7 @@ saveFile: () => {
     fetch('/api/files/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filePath: filePath, content: svgContent })
+      body: JSON.stringify({ path: filePath, content: svgContent })
     })
     .then(response => response.json())
     .then(data => {

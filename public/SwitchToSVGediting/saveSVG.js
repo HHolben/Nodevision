@@ -36,7 +36,7 @@ function saveSVG(filePath) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      filePath: filePath,
+      path: filePath,
       content: svgData
     })
   })

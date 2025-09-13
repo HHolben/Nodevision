@@ -165,7 +165,7 @@ saveSVG: () => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                filePath: window.filePath,
+                path: window.filePath,
                 content: svgContent
             })
         })
