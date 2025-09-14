@@ -1,8 +1,8 @@
 //Nodevision/public/main.js
-
-import { createToolbar } from './createToolbar.js';
-import { bringToFront, toggleFullscreen, closeBox, runScript } from './boxManipulation.js';
-import { makeResizableAndDraggable } from './resizeAndDrag.js';
+// Dependencies available via window after respective files load
+// window.createToolbar from createToolbar.js  
+// window.bringToFront, window.toggleFullscreen, window.closeBox, window.runScript from boxManipulation.js
+// window.makeResizableAndDraggable from resizeAndDrag.js
 
 document.addEventListener('DOMContentLoaded', function() {
   // ==== Split‐pane resizing ====
@@ -37,13 +37,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fullscreen toggle
     if (btn.matches('.fullscreen-btn') && boxEl) {
-      toggleFullscreen(boxEl);
+      window.toggleFullscreen(boxEl);
       return;
     }
 
     // Close box
     if (btn.matches('.close-btn') && boxEl) {
-      closeBox(boxEl);
+      window.closeBox(boxEl);
       return;
     }
 
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btn.matches('.run-script-btn') && boxEl) {
       const scriptName = boxEl.dataset.script;
       if (scriptName) {
-        runScript(scriptName);
+        window.runScript(scriptName);
       } else {
         console.error('No script name found on box element.');
       }
@@ -59,6 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // ==== Initialize toolbar ====
-  createToolbar('.toolbar');
+  window.createToolbar('.toolbar');
 
 });

@@ -1,12 +1,9 @@
 // toolbarCallbacks.js
-import { fileCallbacks } from './fileCallbacks.js';
-import { editCallbacks } from './editCallbacks.js';
-import { settingsCallbacks } from './settingsCallbacks.js';
-import { insertCallbacks } from './insertCallbacks.js';
+// All callbacks are available via window after their respective files load
 
-export const toolbarCallbacks = {
-  ...fileCallbacks,
-  ...editCallbacks,
-  ...settingsCallbacks,
-  ...insertCallbacks
+window.toolbarCallbacks = {
+  ...window.fileCallbacks,
+  ...window.editCallbacks,
+  ...window.settingsCallbacks,
+  ...window.insertCallbacks
 };

@@ -1,5 +1,5 @@
 // Nodevision/public/ToolbarCallbacks/fileCallbacks.js
-export const fileCallbacks = {
+window.fileCallbacks = {
 saveFile: () => {
   const filePath = window.currentActiveFilePath || window.filePath;
 
@@ -42,6 +42,13 @@ saveFile: () => {
     .catch(err => {
       console.error('Error saving SVG file:', err);
     });
+    return;
+  }
+
+  // Check for raster editing mode
+  if (window.rasterCanvas && typeof window.saveRasterImage === 'function') {
+    console.log("Saving raster image file");
+    window.saveRasterImage(filePath);
     return;
   }
 

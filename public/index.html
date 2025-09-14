@@ -19,6 +19,7 @@
   <script src="vendor/layout-base/layout-base.js" defer></script>
   <script src="vendor/cose-base/cose-base.js" defer></script>
   <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
+  <script src="vendor/cytoscape-expand-collapse/cytoscape-expand-collapse.js" defer></script>
   <script src="vendor/requirejs/require.js" defer></script>
 <script src="/lib/monaco/vs/loader.js"></script>
 
@@ -49,7 +50,6 @@
 
 <!--Vexflow-->
 <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/vexflow@5.0.0/build/cjs/vexflow.js"></script>
 
   <!-- MathJax (if needed) -->
   <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
@@ -59,9 +59,6 @@
 
   <script src="NodevisionIncludeMathjax.js" defer></script>
   <script src="CombineURLs.js" defer></script>
-  <script src="GeneratedNodes.js" defer></script>
-  <script src="GeneratedEdges.js" defer></script>
-  <script src="GeneratedRegions.js" defer></script>
   <script src="GraphAddElements.js" defer></script>
   <script src="GraphGetStyles.js" defer></script>
   <script src="ExtractLinksFromHTML.js" defer></script>
@@ -71,11 +68,17 @@
   <script src="Graph.js" defer></script>
   <script src="AllNodes.js" defer></script>
 
-  <!-- Toolbar & Other Modules -->
-  <script type="module" src="createToolbar.js" defer></script>
-  <script type="module" src="boxManipulation.js" defer></script>
-  <script type="module" src="resizeAndDrag.js" defer></script>
-  <script type="module" src="main.js" defer></script>
+  <!-- Toolbar & Other Modules - Dependency Order -->
+  <script src="ToolbarCallbacks/fileCallbacks.js" defer></script>
+  <script src="ToolbarCallbacks/editCallbacks.js" defer></script>
+  <script src="ToolbarCallbacks/settingsCallbacks.js" defer></script>
+  <script src="ToolbarCallbacks/insertCallbacks.js" defer></script>
+  <script src="ToolbarCallbacks/toolbarCallbacks.js" defer></script>
+  <script src="DefineToolbarElements.js" defer></script>
+  <script src="resizeAndDrag.js" defer></script>
+  <script src="boxManipulation.js" defer></script>
+  <script src="createToolbar.js" defer></script>
+  <script src="main.js" defer></script>
   <script src="search.js" defer></script>
 
   <!-- Keyboard Shortcuts-->

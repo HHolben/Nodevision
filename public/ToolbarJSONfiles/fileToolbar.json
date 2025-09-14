@@ -24,7 +24,7 @@
     "heading": "Save File",
     "content": "",
     "callbackKey": "saveFile",
-    "modes": ["WYSIWYG Editing", "Code Editing"],
+    "modes": ["WYSIWYG Editing", "Code Editing", "Raster Editing"],
     "icon": "icons/SaveIcon.png"
 
   },

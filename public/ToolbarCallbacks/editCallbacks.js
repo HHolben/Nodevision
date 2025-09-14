@@ -1,6 +1,6 @@
 // Nodevision/public/ToolbarCallbacks/editCallbacks.js
 
-export const editCallbacks = {
+window.editCallbacks = {
     editRASTER: () => {
         console.log("Edit RASTER callback fired.");
     },

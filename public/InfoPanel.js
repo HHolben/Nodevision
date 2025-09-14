@@ -89,6 +89,9 @@ else if (lower.endsWith('.scad')) {
       } else if (lower.endsWith('.svg')) {
     window.InfoSVG(filename, infoPanel, serverBase);
     return;
+    } else if (lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.gif') || lower.endsWith('.bmp') || lower.endsWith('.webp')) {
+    renderRasterImage(filename, infoPanel, serverBase);
+    return;
     } else if (lower.endsWith('.xml')) {
     window.renderQTI(filename, infoPanel, serverBase);
     return;
@@ -127,9 +130,120 @@ function attachRegionButtons(element) {
   if (col) col.addEventListener('click', function() { collapseRegion(element); });
 }
 
+// Render raster images with edit option (SECURITY FIX: use DOM APIs instead of innerHTML)
+function renderRasterImage(filename, infoPanel, serverBase) {
+  const imagePath = `/Notebook/${filename}`;
+  
+  // Clear the info panel safely
+  infoPanel.innerHTML = '';
+  
+  // Create container using DOM APIs for security
+  const container = document.createElement('div');
+  container.style.padding = '10px';
+  
+  // Create title
+  const title = document.createElement('h3');
+  title.textContent = 'Raster Image';
+  
+  // Create file info
+  const fileInfo = document.createElement('p');
+  const fileLabel = document.createElement('strong');
+  fileLabel.textContent = 'File: ';
+  fileInfo.appendChild(fileLabel);
+  fileInfo.appendChild(document.createTextNode(filename)); // Safe: use createTextNode for user data
+  
+  // Create image container
+  const imageContainer = document.createElement('div');
+  imageContainer.style.margin = '10px 0';
+  
+  // Create image element
+  const img = document.createElement('img');
+  img.src = imagePath;
+  img.style.cssText = 'max-width: 100%; height: auto; border: 1px solid #ccc;';
+  
+  // Create error fallback
+  const errorDiv = document.createElement('div');
+  errorDiv.style.cssText = 'display: none; padding: 20px; background: #f5f5f5; border: 1px solid #ccc; text-align: center;';
+  
+  const errorMsg1 = document.createElement('p');
+  errorMsg1.textContent = 'Image preview not available';
+  
+  const errorMsg2 = document.createElement('p');
+  errorMsg2.style.cssText = 'font-size: 12px; color: #666;';
+  errorMsg2.textContent = filename; // Safe: use textContent for user data
+  
+  errorDiv.appendChild(errorMsg1);
+  errorDiv.appendChild(errorMsg2);
+  
+  // Handle image load error
+  img.onerror = function() {
+    img.style.display = 'none';
+    errorDiv.style.display = 'block';
+  };
+  
+  imageContainer.appendChild(img);
+  imageContainer.appendChild(errorDiv);
+  
+  // Create button container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.marginTop = '10px';
+  
+  // Create edit button
+  const editBtn = document.createElement('button');
+  editBtn.id = 'edit-raster-btn';
+  editBtn.style.cssText = 'background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 5px;';
+  editBtn.textContent = '✏️ Edit Image';
+  
+  // Create view button
+  const viewBtn = document.createElement('button');
+  viewBtn.id = 'view-raster-btn';
+  viewBtn.style.cssText = 'background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;';
+  viewBtn.textContent = '👁️ View Full Size';
+  
+  buttonContainer.appendChild(editBtn);
+  buttonContainer.appendChild(viewBtn);
+  
+  // Assemble the complete interface
+  container.appendChild(title);
+  container.appendChild(fileInfo);
+  container.appendChild(imageContainer);
+  container.appendChild(buttonContainer);
+  infoPanel.appendChild(container);
+  
+  // Bind edit button (FIX: Load scripts in-place without navigation)
+  editBtn.addEventListener('click', () => {
+    console.log('Switching to raster editing mode for:', filename);
+    
+    // Update URL without navigation to preserve scripts
+    const editUrl = `?path=${encodeURIComponent(filename)}`;
+    window.history.pushState({ editing: filename }, '', editUrl);
+    
+    // Set global file path for the raster editor
+    window.filePath = filename;
+    
+    // Load the raster editing script in-place
+    const script = document.createElement('script');
+    script.src = 'SwitchToRasterEditing.js';
+    script.defer = true;
+    script.onload = () => {
+      console.log('Raster editing scripts loaded successfully');
+    };
+    script.onerror = () => {
+      console.error('Failed to load raster editing scripts');
+    };
+    document.head.appendChild(script);
+  });
+  
+  // Bind view button
+  viewBtn.addEventListener('click', () => {
+    window.open(imagePath, '_blank');
+  });
+}
+
 // expose globally
 window.renderCSV = renderCSV;
 window.renderHTML = renderHTML;
 window.renderSCAD = renderSCAD;
 window.renderKML = renderKML;
+window.renderRasterImage = renderRasterImage;
 window.updateInfoPanel = updateInfoPanel;

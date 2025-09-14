@@ -1,7 +1,8 @@
-import { makeResizableAndDraggable } from './resizeAndDrag.js';
+// Dependencies available via window after respective files load  
+// window.makeResizableAndDraggable from resizeAndDrag.js
 
 // Function to create a new box and add it to the DOM
-export function createBox(box) {
+function createBox(box) {
     const boxContainer = document.createElement('div');
     boxContainer.className = 'box';
     boxContainer.innerHTML = `
@@ -20,7 +21,7 @@ export function createBox(box) {
         <div class="resize-handle"></div>
     `;
     document.body.appendChild(boxContainer);
-    makeResizableAndDraggable(boxContainer);
+    window.makeResizableAndDraggable(boxContainer);
 
     // Add event listeners to buttons
     boxContainer.querySelector('.fullscreen-btn').addEventListener('click', () => toggleFullscreen(boxContainer));
@@ -29,14 +30,14 @@ export function createBox(box) {
 }
 
 // Function to bring a box to the front
-export function bringToFront(element) {
+function bringToFront(element) {
     const boxes = document.querySelectorAll('.box');
     boxes.forEach(box => box.style.zIndex = '1');
     element.style.zIndex = '2';
 }
 
 // Function to toggle fullscreen mode for a box
-export function toggleFullscreen(box) {
+function toggleFullscreen(box) {
     box.classList.toggle('fullscreen');
     if (box.classList.contains('fullscreen')) {
         box.style.width = '100%';
@@ -55,12 +56,12 @@ export function toggleFullscreen(box) {
 }
 
 // Function to close a box
-export function closeBox(box) {
+function closeBox(box) {
     box.remove();
 }
 
 // Function to run a script associated with the box
-export function runScript(scriptName) {
+function runScript(scriptName) {
     try {
         // Check if the script is already loaded
         if (document.querySelector(`script[src="${scriptName}"]`)) {
@@ -92,3 +93,10 @@ export function runScript(scriptName) {
         console.error(`Error running script ${scriptName}:`, error);
     }
 }
+
+// Export functions globally
+window.createBox = createBox;
+window.bringToFront = bringToFront;
+window.toggleFullscreen = toggleFullscreen;
+window.closeBox = closeBox;
+window.runScript = runScript;

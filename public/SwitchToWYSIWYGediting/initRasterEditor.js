@@ -78,6 +78,11 @@
       window.initRasterToolbar();
     }
     
+    // Initialize layers system
+    if (typeof window.initializeLayers === 'function') {
+      window.initializeLayers();
+    }
+    
     console.log("Raster editor initialized successfully");
   }
   

@@ -1,6 +1,6 @@
 // resizeAndDrag.js
 
-export function makeResizableAndDraggable(element) {
+function makeResizableAndDraggable(element) {
     let isResizing = false;
     let isDragging = false;
     let originalWidth = 0;
@@ -72,3 +72,6 @@ function bringToFront(element) {
     boxes.forEach(box => box.style.zIndex = '1');
     element.style.zIndex = '2';
 }
+
+// Export function globally
+window.makeResizableAndDraggable = makeResizableAndDraggable;

@@ -1,5 +1,5 @@
 // settingsCallbacks.js
-export const settingsCallbacks = {
+window.settingsCallbacks = {
     toggleViewMode: (state) => {
       console.log("Toggle View Mode callback fired. State:", state);
       const cyContainer = document.getElementById('cy');

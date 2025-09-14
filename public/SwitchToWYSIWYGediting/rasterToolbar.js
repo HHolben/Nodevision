@@ -62,6 +62,28 @@
         
         <div class="toolbar-separator" style="width: 1px; height: 30px; background: #ccc; margin: 0 10px;"></div>
         
+        <!-- Image Filters -->
+        <div class="toolbar-group" style="display: flex; align-items: center; margin-right: 20px;">
+          <button id="filter-grayscale" class="toolbar-btn">⚫ Grayscale</button>
+          <button id="filter-brightness" class="toolbar-btn">☀️ Brightness</button>
+          <button id="filter-contrast" class="toolbar-btn">🌟 Contrast</button>
+          <button id="filter-reset" class="toolbar-btn">🔄 Reset Filters</button>
+        </div>
+        
+        <div class="toolbar-separator" style="width: 1px; height: 30px; background: #ccc; margin: 0 10px;"></div>
+        
+        <!-- Layers -->
+        <div class="toolbar-group" style="display: flex; align-items: center; margin-right: 20px;">
+          <label style="margin-right: 5px; font-size: 12px;">Layer:</label>
+          <select id="layer-select" style="margin-right: 5px; padding: 2px;">
+            <option value="0">Main Layer</option>
+          </select>
+          <button id="add-layer" class="toolbar-btn">➕</button>
+          <button id="delete-layer" class="toolbar-btn">➖</button>
+        </div>
+        
+        <div class="toolbar-separator" style="width: 1px; height: 30px; background: #ccc; margin: 0 10px;"></div>
+        
         <!-- Image Operations -->
         <div class="toolbar-group" style="display: flex; align-items: center;">
           <button id="clear-canvas" class="toolbar-btn">🗑️ Clear</button>
@@ -219,8 +241,220 @@
         document.getElementById('canvas-info').textContent = `${newWidth} x ${newHeight}px`;
       }
     });
+    
+    // Image filters
+    document.getElementById('filter-grayscale').addEventListener('click', () => {
+      applyImageFilter('grayscale');
+    });
+    
+    document.getElementById('filter-brightness').addEventListener('click', () => {
+      const amount = prompt('Enter brightness adjustment (-100 to 100):', '20');
+      if (amount !== null && !isNaN(amount)) {
+        applyImageFilter('brightness', parseInt(amount));
+      }
+    });
+    
+    document.getElementById('filter-contrast').addEventListener('click', () => {
+      const amount = prompt('Enter contrast adjustment (-100 to 100):', '20');
+      if (amount !== null && !isNaN(amount)) {
+        applyImageFilter('contrast', parseInt(amount));
+      }
+    });
+    
+    document.getElementById('filter-reset').addEventListener('click', () => {
+      if (confirm('Reset all filters? This will restore the original image.')) {
+        if (window.originalImage && window.rasterCtx) {
+          window.rasterCtx.clearRect(0, 0, window.rasterCanvas.width, window.rasterCanvas.height);
+          window.rasterCtx.drawImage(window.originalImage, 0, 0);
+        }
+      }
+    });
+    
+    // Layer management
+    document.getElementById('add-layer').addEventListener('click', () => {
+      addNewLayer();
+    });
+    
+    document.getElementById('delete-layer').addEventListener('click', () => {
+      deleteCurrentLayer();
+    });
+    
+    document.getElementById('layer-select').addEventListener('change', (e) => {
+      switchToLayer(parseInt(e.target.value));
+    });
   }
   
-  // Export function globally
+  // Image filter functions
+  function applyImageFilter(filterType, amount = 0) {
+    if (!window.rasterCanvas || !window.rasterCtx) return;
+    
+    const canvas = window.rasterCanvas;
+    const ctx = window.rasterCtx;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    switch(filterType) {
+      case 'grayscale':
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+          data[i] = gray;     // red
+          data[i + 1] = gray; // green
+          data[i + 2] = gray; // blue
+        }
+        break;
+        
+      case 'brightness':
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = Math.max(0, Math.min(255, data[i] + amount));     // red
+          data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + amount)); // green
+          data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + amount)); // blue
+        }
+        break;
+        
+      case 'contrast':
+        const factor = (259 * (amount + 255)) / (255 * (259 - amount));
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = Math.max(0, Math.min(255, factor * (data[i] - 128) + 128));     // red
+          data[i + 1] = Math.max(0, Math.min(255, factor * (data[i + 1] - 128) + 128)); // green
+          data[i + 2] = Math.max(0, Math.min(255, factor * (data[i + 2] - 128) + 128)); // blue
+        }
+        break;
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+    
+    // Update status
+    const statusEl = document.getElementById('raster-status');
+    if (statusEl) {
+      statusEl.querySelector('span').textContent = `Applied ${filterType} filter`;
+      setTimeout(() => {
+        statusEl.querySelector('span').textContent = 'Ready';
+      }, 2000);
+    }
+  }
+  
+  // Simple layer management system
+  let layerCount = 1;
+  let currentLayer = 0;
+  const layers = []; // Store layer data
+  
+  function initializeLayers() {
+    // Initialize with main layer
+    layers[0] = {
+      name: 'Main Layer',
+      canvas: window.rasterCanvas,
+      ctx: window.rasterCtx
+    };
+  }
+  
+  function addNewLayer() {
+    const layerName = prompt(`Enter name for new layer:`, `Layer ${layerCount + 1}`);
+    if (!layerName) return;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = window.rasterCanvas.width;
+    canvas.height = window.rasterCanvas.height;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.pointerEvents = 'none';
+    
+    // Add canvas to the canvas wrapper
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (wrapper) {
+      wrapper.appendChild(canvas);
+    }
+    
+    layers[layerCount] = {
+      name: layerName,
+      canvas: canvas,
+      ctx: canvas.getContext('2d'),
+      visible: true
+    };
+    
+    // Add to layer select
+    const select = document.getElementById('layer-select');
+    const option = document.createElement('option');
+    option.value = layerCount;
+    option.textContent = layerName;
+    select.appendChild(option);
+    
+    // Switch to new layer
+    select.value = layerCount;
+    switchToLayer(layerCount);
+    
+    layerCount++;
+  }
+  
+  function deleteCurrentLayer() {
+    if (currentLayer === 0) {
+      alert('Cannot delete the main layer');
+      return;
+    }
+    
+    if (!confirm(`Delete layer "${layers[currentLayer].name}"?`)) {
+      return;
+    }
+    
+    // Remove canvas from DOM
+    if (layers[currentLayer].canvas && layers[currentLayer].canvas.parentNode) {
+      layers[currentLayer].canvas.parentNode.removeChild(layers[currentLayer].canvas);
+    }
+    
+    // Remove from layers array
+    delete layers[currentLayer];
+    
+    // Remove from select
+    const select = document.getElementById('layer-select');
+    const option = select.querySelector(`option[value="${currentLayer}"]`);
+    if (option) {
+      option.remove();
+    }
+    
+    // Switch back to main layer
+    select.value = 0;
+    switchToLayer(0);
+  }
+  
+  function switchToLayer(layerIndex) {
+    if (!layers[layerIndex]) return;
+    
+    currentLayer = layerIndex;
+    
+    // Update global canvas references
+    window.rasterCanvas = layers[layerIndex].canvas;
+    window.rasterCtx = layers[layerIndex].ctx;
+    
+    // Update canvas pointer events - only current layer should be interactive
+    Object.keys(layers).forEach(index => {
+      if (layers[index] && layers[index].canvas) {
+        if (parseInt(index) === layerIndex) {
+          layers[index].canvas.style.pointerEvents = 'auto';
+          layers[index].canvas.style.zIndex = '10';
+        } else {
+          layers[index].canvas.style.pointerEvents = 'none';
+          layers[index].canvas.style.zIndex = '1';
+        }
+      }
+    });
+    
+    console.log(`Switched to layer: ${layers[layerIndex].name}`);
+    
+    // Update status
+    const statusEl = document.getElementById('raster-status');
+    if (statusEl) {
+      statusEl.querySelector('span').textContent = `Active: ${layers[layerIndex].name}`;
+      setTimeout(() => {
+        statusEl.querySelector('span').textContent = 'Ready';
+      }, 2000);
+    }
+  }
+  
+  // Export functions globally
   window.initRasterToolbar = initRasterToolbar;
+  window.applyImageFilter = applyImageFilter;
+  window.addNewLayer = addNewLayer;
+  window.deleteCurrentLayer = deleteCurrentLayer;
+  window.switchToLayer = switchToLayer;
+  window.initializeLayers = initializeLayers;
 })();

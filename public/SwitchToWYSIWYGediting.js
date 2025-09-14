@@ -22,49 +22,6 @@
       'editRasterToolbar.js',
       'initWYSIWYG.js'
     ],
-    // Raster image editing bundle
-    png: [
-      'loadRasterImage.js',
-      'initRasterEditor.js',
-      'saveRasterImage.js',
-      'rasterToolbar.js',
-      'rasterDrawing.js'
-    ],
-    jpg: [
-      'loadRasterImage.js',
-      'initRasterEditor.js',
-      'saveRasterImage.js',
-      'rasterToolbar.js',
-      'rasterDrawing.js'
-    ],
-    jpeg: [
-      'loadRasterImage.js',
-      'initRasterEditor.js',
-      'saveRasterImage.js',
-      'rasterToolbar.js',
-      'rasterDrawing.js'
-    ],
-    gif: [
-      'loadRasterImage.js',
-      'initRasterEditor.js',
-      'saveRasterImage.js',
-      'rasterToolbar.js',
-      'rasterDrawing.js'
-    ],
-    bmp: [
-      'loadRasterImage.js',
-      'initRasterEditor.js',
-      'saveRasterImage.js',
-      'rasterToolbar.js',
-      'rasterDrawing.js'
-    ],
-    webp: [
-      'loadRasterImage.js',
-      'initRasterEditor.js',
-      'saveRasterImage.js',
-      'rasterToolbar.js',
-      'rasterDrawing.js'
-    ],
     md: [
       'loadMarkdown.js',
       'saveMarkdown.js',

@@ -1,5 +1,5 @@
 //Nodevision/public/ToolbarCallbacks/insertCallbacks.js
-export const insertCallbacks = {
+window.insertCallbacks = {
   insertText: () => {
     console.log("Insert Text callback triggered.");
   },

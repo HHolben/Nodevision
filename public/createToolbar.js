@@ -1,6 +1,6 @@
-// Import dependencies
-import { loadToolbarElements } from './DefineToolbarElements.js';
-import { createBox } from './boxManipulation.js';
+// Dependencies available via window after respective files load
+// window.loadToolbarElements from DefineToolbarElements.js
+// window.createBox from boxManipulation.js
 
 /**
  * Displays a sub-toolbar underneath the main toolbar with insert options for a given type.
@@ -52,7 +52,7 @@ function showInsertSubToolbar(insertType) {
         if (item.callback) {
             btn.addEventListener('click', e => { e.preventDefault(); item.callback(); });
         } else if (item.script) {
-            btn.addEventListener('click', e => { e.preventDefault(); createBox(item); });
+            btn.addEventListener('click', e => { e.preventDefault(); window.createBox(item); });
         }
         subToolbar.appendChild(btn);
     });
@@ -61,14 +61,14 @@ function showInsertSubToolbar(insertType) {
 /**
  * Creates the main toolbar in the specified container.
  */
-export async function createToolbar(toolbarSelector = '.toolbar') {
+async function createToolbar(toolbarSelector = '.toolbar') {
     const toolbarContainer = document.querySelector(toolbarSelector);
     if (!toolbarContainer) {
         console.error(`Container not found for selector: ${toolbarSelector}`);
         return;
     }
 
-    const boxes = await loadToolbarElements();
+    const boxes = await window.loadToolbarElements();
     window.loadedToolbarBoxes = boxes;
     const currentMode = window.AppState ? window.AppState.getMode() : window.currentMode;
 
@@ -141,7 +141,7 @@ export async function createToolbar(toolbarSelector = '.toolbar') {
                     link.textContent = box.heading;
                 }
 
-                const handler = box.customAction || box.callback || (() => createBox(box));
+                const handler = box.customAction || box.callback || (() => window.createBox(box));
                 link.addEventListener('click', e => { e.preventDefault(); handler(); });
                 dropdownContent.appendChild(link);
             });
@@ -179,7 +179,7 @@ if (window.AppState?.subscribe) window.AppState.subscribe(() => createToolbar())
 /**
  * Load and display file view
  */
-export async function loadFileView(selector) {
+async function loadFileView(selector) {
     const container = document.querySelector(selector);
     if (!container) { console.error(`Container not found: ${selector}`); return; }
     container.innerHTML = '<p>Loading files...</p>';
@@ -236,3 +236,7 @@ async function toggleDirectory(evt) {
         nested.style.display = 'none';
     }
 }
+
+// Export functions globally
+window.createToolbar = createToolbar;
+window.loadFileView = loadFileView;

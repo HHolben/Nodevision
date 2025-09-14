@@ -37,11 +37,15 @@ function renderTTF(filename, infoPanel, serverBase) {
 }
 
 // Example usage in your InfoPanel.js:
-document.getElementById('fontSelect').addEventListener('change', e => {
-  const filename  = e.target.value;              // e.g. "fonts/MyFont.ttf"
-  const serverBase = '/api';                     // adjust to your server mounting
-  const infoPanel = document.getElementById('infoPanel');
-  renderTTF(filename, infoPanel, serverBase);
-});
+const fontSelect = document.getElementById('fontSelect');
+if (fontSelect) {
+  fontSelect.addEventListener('change', e => {
+    const filename  = e.target.value;              // e.g. "fonts/MyFont.ttf"
+    const serverBase = '/api';                     // adjust to your server mounting
+    const infoPanel = document.getElementById('infoPanel');
+    renderTTF(filename, infoPanel, serverBase);
+  });
+}
 
-export { renderTTF };
+// Export function globally
+window.renderTTF = renderTTF;

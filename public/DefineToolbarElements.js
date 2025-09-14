@@ -1,11 +1,11 @@
-import { toolbarCallbacks } from './ToolbarCallbacks/toolbarCallbacks.js';
+// toolbarCallbacks is available via window.toolbarCallbacks after toolbarCallbacks.js loads
 
 /**
  * Loads and merges toolbar configuration from multiple JSON files.
  * @param {Array<string>} configUrls - Array of JSON configuration file URLs.
  * @returns {Promise<Array>} - A promise that resolves with the merged toolbar items.
  */
-export async function loadToolbarElements(configUrls = [
+async function loadToolbarElements(configUrls = [
   'ToolbarJSONfiles/fileToolbar.json',
   'ToolbarJSONfiles/editToolbar.json',
   'ToolbarJSONfiles/settingsToolbar.json',
@@ -33,7 +33,7 @@ export async function loadToolbarElements(configUrls = [
     // Map callback keys to actual functions.
     const boxes = mergedData.map(item => {
       if (item.callbackKey) {
-        return { ...item, callback: toolbarCallbacks[item.callbackKey] };
+        return { ...item, callback: window.toolbarCallbacks[item.callbackKey] };
       }
       return item;
     });
@@ -44,3 +44,6 @@ export async function loadToolbarElements(configUrls = [
     return [];
   }
 }
+
+// Export function globally
+window.loadToolbarElements = loadToolbarElements;

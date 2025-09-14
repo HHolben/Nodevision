@@ -1,17 +1,17 @@
 // Nodevision/public/Graph.js
-
-import cytoscape from 'cytoscape';
-import fcose from 'cytoscape-fcose';
-import expandCollapse from 'cytoscape-expand-collapse';
-
-cytoscape.use(fcose);
-cytoscape.use(expandCollapse);
+// Dependencies available via window from loaded vendor scripts
+// Plugins auto-register themselves when loaded after cytoscape
 
 function createCytoscapeGraph(elements) {
+  // Guard against missing dependencies
+  if (!window.cytoscape || !window.cytoscape.prototype || typeof window.cytoscape.prototype.expandCollapse !== 'function') {
+    console.warn('Graph dependencies missing; skipping graph initialization');
+    return;
+  }
   window.originalEdges = {};
   window.truncatedEdges = {};
 
-  window.cy = cytoscape({
+  window.cy = window.cytoscape({
     container: document.getElementById('cy'),
     elements: elements,
     style: [
