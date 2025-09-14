@@ -324,6 +324,14 @@
 },
 {
   "ToolbarCategory": "Insert",
+  "heading": "Freehand",
+  "insertGroup": "shapes",
+  "callbackKey": "svgInsertFreehand",
+  "modes": ["SVG Editing"],
+  "icon": "icons/FreehandIcon.png"
+},
+{
+  "ToolbarCategory": "Insert",
   "heading": "Text",
   "insertGroup": "shapes",
   "callbackKey": "svgInsertText",

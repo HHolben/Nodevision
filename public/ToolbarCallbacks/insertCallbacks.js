@@ -750,6 +750,63 @@ svgInsertPath: () => {
     window.selectedSVGElement = path;
     document.getElementById('svg-message').textContent = 'Path inserted';
 },
+svgInsertFreehand: () => {
+    console.log("Freehand mode activated");
+    const svgEditor = document.getElementById('svg-editor');
+    if (!svgEditor) {
+        console.error("SVG editor not found. Are you in SVG Editing mode?");
+        return;
+    }
+
+    document.getElementById('svg-message').textContent = 'Freehand mode: click and drag to draw';
+
+    let drawing = false;
+    let path = null;
+
+    function getMousePosition(evt) {
+        const rect = svgEditor.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+
+    function startDraw(evt) {
+        drawing = true;
+        const pos = getMousePosition(evt);
+
+        // Create a new path on every new stroke
+        path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("stroke", "black");
+        path.setAttribute("stroke-width", "2");
+        path.setAttribute("fill", "none");
+        path.setAttribute("d", `M ${pos.x} ${pos.y}`);
+
+        svgEditor.appendChild(path);
+        window.selectedSVGElement = path;
+    }
+
+    function draw(evt) {
+        if (!drawing || !path) return;
+        const pos = getMousePosition(evt);
+        const d = path.getAttribute("d") + ` L ${pos.x} ${pos.y}`;
+        path.setAttribute("d", d);
+    }
+
+    function endDraw() {
+        drawing = false;
+        path = null; // Clear path so next stroke creates a new one
+    }
+
+    // Attach listeners once
+    svgEditor.addEventListener("mousedown", startDraw);
+    svgEditor.addEventListener("mousemove", draw);
+    svgEditor.addEventListener("mouseup", endDraw);
+    svgEditor.addEventListener("mouseleave", endDraw);
+},
+
+
+
 
 svgInsertText: () => {
     console.log("Insert Text callback fired");
