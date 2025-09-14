@@ -91,8 +91,6 @@ function formatHtml(html) {
 // Function to save file contents with formatted HTML
 function saveFileContents() {
     const editor = document.getElementById('editor');
-    const rawContent = editor.innerHTML;
-    const formattedContent = formatHtml(rawContent);
 
     fetch('/api/save', {
         method: 'POST',

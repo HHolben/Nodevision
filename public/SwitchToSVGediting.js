@@ -9,6 +9,9 @@
     const filePath = params.get('path') || '';
     const ext      = filePath.split('.').pop().toLowerCase();
 
+    // ✅ Expose globally for saveSVG and shortcut
+    window.filePath = filePath;
+
     // Map file types to their editor script bundles
     const scriptBundles = {
         svg: [
@@ -24,7 +27,7 @@
     // Determine which scripts to load
     const scripts = scriptBundles[ext] || fallbackScripts;
 
-    console.log('SwitchToSVGediting:', { ext, scripts });
+    console.log('SwitchToSVGediting:', { ext, scripts, filePath });
 
     function loadNext(i) {
         if (i >= scripts.length) return;
@@ -41,9 +44,12 @@
 
     // Initialize SVG editor context
     document.addEventListener('DOMContentLoaded', () => {
-        const svgRoot = document.getElementById('svg-editor-root');
+        // ✅ Allow both possible IDs: "svg-editor-root" or "svg-editor"
+        const svgRoot = document.getElementById('svg-editor') 
+                     || document.getElementById('svg-editor-root');
+
         if (!svgRoot) {
-            console.error('SVG root element not found. Add <svg id="svg-editor-root"></svg> in the panel.');
+            console.error('SVG root element not found. Add <svg id="svg-editor"></svg> or <svg id="svg-editor-root"></svg> in the panel.');
             return;
         }
 
@@ -58,13 +64,14 @@
 
     // Keyboard shortcut: Ctrl+S / Cmd+S
     document.addEventListener('keydown', function(e) {
-        if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) && e.keyCode === 83) {
+        const isMac = window.navigator.platform.match("Mac");
+        if ((isMac ? e.metaKey : e.ctrlKey) && e.keyCode === 83) {
             e.preventDefault();
             console.log("Saving SVG:", window.filePath);
-            if (window.saveSVG) {
+            if (typeof window.saveSVG === 'function' && window.filePath) {
                 window.saveSVG(window.filePath);
             } else {
-                console.error("saveSVG function not available.");
+                console.error("saveSVG function or filePath not available.");
             }
         }
     }, false);
