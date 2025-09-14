@@ -27,7 +27,7 @@ function resolveNotebookPath(relativePath) {
 
 // Endpoint to save file content
 router.post('/save', async (req, res) => {
-  const { path: relativePath, content } = req.body;
+  const { path: relativePath, content, encoding, mimeType } = req.body;
   if (!relativePath || typeof content !== 'string') {
     return res.status(400).send('File path and content are required');
   }
@@ -37,8 +37,17 @@ router.post('/save', async (req, res) => {
     // Ensure the directory tree exists
     await fs.mkdir(path.dirname(filePath), { recursive: true });
 
-    // Write the file
-    await fs.writeFile(filePath, content, 'utf8');
+    // Handle different encodings
+    if (encoding === 'base64') {
+      // For base64 image data, decode and write as binary
+      const buffer = Buffer.from(content, 'base64');
+      await fs.writeFile(filePath, buffer);
+      console.log(`Saved binary file: ${relativePath} (${mimeType || 'unknown type'})`);
+    } else {
+      // Default: write as UTF-8 text file
+      await fs.writeFile(filePath, content, 'utf8');
+      console.log(`Saved text file: ${relativePath}`);
+    }
 
     res.json({ success: true, path: relativePath });
   } catch (err) {

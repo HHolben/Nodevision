@@ -22,6 +22,49 @@
       'editRasterToolbar.js',
       'initWYSIWYG.js'
     ],
+    // Raster image editing bundle
+    png: [
+      'loadRasterImage.js',
+      'initRasterEditor.js',
+      'saveRasterImage.js',
+      'rasterToolbar.js',
+      'rasterDrawing.js'
+    ],
+    jpg: [
+      'loadRasterImage.js',
+      'initRasterEditor.js',
+      'saveRasterImage.js',
+      'rasterToolbar.js',
+      'rasterDrawing.js'
+    ],
+    jpeg: [
+      'loadRasterImage.js',
+      'initRasterEditor.js',
+      'saveRasterImage.js',
+      'rasterToolbar.js',
+      'rasterDrawing.js'
+    ],
+    gif: [
+      'loadRasterImage.js',
+      'initRasterEditor.js',
+      'saveRasterImage.js',
+      'rasterToolbar.js',
+      'rasterDrawing.js'
+    ],
+    bmp: [
+      'loadRasterImage.js',
+      'initRasterEditor.js',
+      'saveRasterImage.js',
+      'rasterToolbar.js',
+      'rasterDrawing.js'
+    ],
+    webp: [
+      'loadRasterImage.js',
+      'initRasterEditor.js',
+      'saveRasterImage.js',
+      'rasterToolbar.js',
+      'rasterDrawing.js'
+    ],
     md: [
       'loadMarkdown.js',
       'saveMarkdown.js',
@@ -69,7 +112,16 @@
     e.preventDefault();
     // Process the event here (such as click on submit button)
     console.log("Saving" + window.filePath);
-    saveWYSIWYGFile(window.filePath);
+    
+    // Guard check: prevent ReferenceError for raster images
+    if (typeof saveWYSIWYGFile === 'function') {
+      saveWYSIWYGFile(window.filePath);
+    } else if (typeof saveRasterImage === 'function' && window.rasterCanvas) {
+      // For raster image editing, use the raster save function
+      saveRasterImage(window.filePath);
+    } else {
+      console.warn('No appropriate save function available for current editor mode');
+    }
   }
 }, false);
 })();
