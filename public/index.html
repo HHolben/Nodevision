@@ -14,49 +14,41 @@
   <link rel="stylesheet" href="ToolbarStyles.css">
   <link rel="stylesheet" href="NodeViewContainerStyles.css">
 
-  <!-- Vendor and Core Libraries -->
+    <!-- Cytoscape & Layout Plugins -->
   <script src="vendor/cytoscape/dist/cytoscape.min.js" defer></script>
   <script src="vendor/layout-base/layout-base.js" defer></script>
   <script src="vendor/cose-base/cose-base.js" defer></script>
   <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
   <script src="vendor/cytoscape-expand-collapse/cytoscape-expand-collapse.js" defer></script>
-  <script src="vendor/requirejs/require.js" defer></script>
-<script src="/lib/monaco/vs/loader.js"></script>
-
 
   <!-- JSZip for ODT support -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Load Three.js and its helpers first -->
+<script src="vendor/three/three.min.js"></script>
+<script src="vendor/three/OrbitControls.js"></script>
+<script src="vendor/three/STLLoader.js"></script>
+
+<!-- Then load Monaco, deferred so it doesn't hijack define() early -->
+<script src="/lib/monaco/vs/loader.js" defer></script>
+
+<!-- THEN load RequireJS -->
+<script src="vendor/requirejs/require.js" defer></script>
 
 
+  <!-- CSG Bridge -->
+  <script src="https://unpkg.com/three-csgmesh@2.1.0/dist/three-csgmesh.umd.js"></script>
 
+  <!-- SCAD Parser -->
+  <script src="https://unpkg.com/jscad@1.1.0/csg.js"></script>
 
-<!-- Three.js core -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Vexflow -->
+  <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
 
-
-
-<!--Orbit controls-->
-<script src="https://cdn.jsdelivr.net/npm/three-orbitcontrols@2.110.3/OrbitControls.min.js"></script>
-
-
-<!--CSG Bridge-->
-<script src="https://unpkg.com/three-csgmesh@2.1.0/dist/three-csgmesh.umd.js"></script>
-
-<!--SCAD Parser-->
-<script src="https://unpkg.com/jscad@1.1.0/csg.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-
-
-<!--Vexflow-->
-<script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
-
-  <!-- MathJax (if needed) -->
+  <!-- MathJax -->
   <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 
-  <!-- Nodevision Scripts -->
-  <script src="loadOzrbitControls.js" defer></script>
-
+  <!-- Nodevision Core Scripts -->
   <script src="NodevisionIncludeMathjax.js" defer></script>
   <script src="CombineURLs.js" defer></script>
   <script src="GraphAddElements.js" defer></script>
@@ -68,7 +60,7 @@
   <script src="Graph.js" defer></script>
   <script src="AllNodes.js" defer></script>
 
-  <!-- Toolbar & Other Modules - Dependency Order -->
+  <!-- Toolbar & UI -->
   <script src="ToolbarCallbacks/fileCallbacks.js" defer></script>
   <script src="ToolbarCallbacks/editCallbacks.js" defer></script>
   <script src="ToolbarCallbacks/settingsCallbacks.js" defer></script>
@@ -81,37 +73,34 @@
   <script src="main.js" defer></script>
   <script src="search.js" defer></script>
 
-  <!-- Keyboard Shortcuts-->
+  <!-- Keyboard Shortcuts -->
   <script src="/KeyboardShortcuts/ShortcutSave.js"></script>
 
-  
-  <!-- File View Functionality -->
-  <script src="DefaultAppState.js"></script>
-  <script src="InfoCSS.js"></script>
-  <script src="InfoCSV.js"></script>
-  <script src="InfoWAV.js"></script>
-  <script src="InfoPDF.js"></script>
-  <script src="InfoQTI.js"></script>
-  <script src="InfoSCAD.js"></script>
-  <script src="InfoSTL.js"></script>
-  <script src="InfoSVG.js"></script>
-  <script src="InfoKML.js"></script>
-  <script src="InfoMIDI.js"></script>
-  <script src="InfoMP3.js"></script>
-  <script src="InfoMP4.js"></script>
-  <script src="InfoODT.js"></script>
-  <script src="InfoTTF.js"></script>
-  <script src="InfoThingDescription.js"></script>
+  <!-- File View & InfoPanel Scripts -->
+  <script src="DefaultAppState.js" defer></script>
+  <script src="InfoCSS.js" defer></script>
+  <script src="InfoCSV.js" defer></script>
+  <script src="InfoWAV.js" defer></script>
+  <script src="InfoPDF.js" defer></script>
+  <script src="InfoQTI.js" defer></script>
+  <script src="InfoSCAD.js" defer></script>
 
+  <!-- ⬇️ make sure InfoSTL loads AFTER Three.js -->
+  <script src="InfoSTL.js" defer></script>
 
+  <script src="InfoSVG.js" defer></script>
+  <script src="InfoKML.js" defer></script>
+  <script src="InfoMIDI.js" defer></script>
+  <script src="InfoMP3.js" defer></script>
+  <script src="InfoMP4.js" defer></script>
+  <script src="InfoODT.js" defer></script>
+  <script src="InfoTTF.js" defer></script>
+  <script src="InfoThingDescription.js" defer></script>
+  <script src="InfoHTML.js" defer></script>
 
-  <script src="InfoHTML.js"></script>
-
+  <!-- File View & Info Panel (load last) -->
   <script src="fileView.js" defer></script>
-
   <script src="InfoPanel.js" defer></script>
-
-
 
 </head>
 <body>

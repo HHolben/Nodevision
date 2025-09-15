@@ -45,7 +45,7 @@
     "serve-favicon": "^2.5.0",
     "socket.io": "^4.8.1",
     "tesseract.js": "^6.0.1",
-    "three": "^0.176.0",
+    "three": "^0.128.0",
     "vexflow": "^5.0.0",
     "ws": "^8.18.3"
   },
