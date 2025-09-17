@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "c-clang14", "php-8.2", "python-3.11"]
+modules = ["nodejs-20", "web", "c-clang14", "python-3.11", "php-8.2"]
 [agent]
 expertMode = true
 
@@ -46,5 +46,6 @@ localPort = 38417
 externalPort = 3000
 
 [deployment]
-deploymentTarget = "vm"
-run = ["npm", "run", "start-servers"]
+deploymentTarget = "autoscale"
+run = ["npm", "run", "start"]
+build = ["npm", "run", "build"]

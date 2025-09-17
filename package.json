@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start-servers": "node start-servers.js"
+    "dev": "concurrently -k -n NODE,PHP \"nodemon server.js\" \"php -S 0.0.0.0:8080 -t Notebook\"",
+    "start": "node start-servers.js",
+    "start-servers": "node start-servers.js",
+    "build": "echo 'No build process needed'"
   },
   "dependencies": {
     "@serialport/parser-readline": "^13.0.0",

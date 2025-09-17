@@ -7,7 +7,7 @@ const nodePort = config.nodePort;
 
 concurrently([
   { 
-    command: `php -S localhost:${phpPort} -t Notebook`, 
+    command: `php -S 0.0.0.0:${phpPort} -t Notebook`, 
     name: 'php', 
     prefixColor: 'green'
   },
