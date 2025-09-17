@@ -17,7 +17,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Backend Architecture
 - **Express.js Server**: RESTful API with middleware for authentication, file serving, and proxy capabilities
-- **Dual Server Setup**: Node.js server (port 5000) with PHP server proxy (port 8080) for hybrid content support
+- **Dual Server Setup**: Node.js server (port 3000) with PHP server proxy (port 8080) for hybrid content support
 - **Route Management**: JSON-driven route configuration system for modular API endpoint management
 - **File System Integration**: Direct filesystem operations for notebook content management with security validation
 - **Real-time Communication**: WebSocket support for live data streaming (oscilloscope functionality)

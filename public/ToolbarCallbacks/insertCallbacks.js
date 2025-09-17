@@ -325,7 +325,7 @@ InsertCodeElement() {
                 console.error("Error fetching or parsing the CSV file:", error);
                 document.getElementById("${CSVfile}").innerHTML = "Error loading CSV file.";
               });
-            setTimeout(loadCsv, 5000);
+            setTimeout(loadCsv, 3000);
           })();
         </script>
       `;

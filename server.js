@@ -23,7 +23,7 @@ const gamepadSettingsFile = path.join(userSettingsDir, 'GameControllerSettings.j
 if (!fs.existsSync(userSettingsDir)) fs.mkdirSync(userSettingsDir, { recursive: true });
 
 const app = express();
-const port = process.env.PORT || 5000; // Use port from .env or default to 5000
+const port = process.env.PORT || 3000; // Use port from .env or default to 3000
 
 // Middleware setup (configure body size limits first)
 app.use(express.json({ limit: '50mb' }));
