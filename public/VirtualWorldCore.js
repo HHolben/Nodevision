@@ -1,4 +1,5 @@
 // Nodevision/public/VirtualWorldCore.js
+// Purpose: TODO: Add description of module purpose
 export async function initVRWorld(container, options = {}) {
   const { mode = "viewing" } = options;
 

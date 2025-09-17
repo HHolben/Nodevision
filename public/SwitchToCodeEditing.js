@@ -1,4 +1,5 @@
 //Nodevision/public/SwitchToCodeEditing.js// Nodevision/public/SwitchToCodeEditing.js
+// Purpose: TODO: Add description of module purpose
 (function () {
     // Determine active node and filePath
     let activeNode = window.ActiveNode;

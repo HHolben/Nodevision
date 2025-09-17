@@ -1,3 +1,6 @@
+// public/CombineURLs.js
+// Purpose: TODO: Add description of module purpose
+
 function combineURLs(baseURL, additionalPath) 
 {
   // Remove everything after the last "/" in baseURL to get the base directory path

@@ -1,4 +1,5 @@
 // Nodevision/public/InfoKML.js
+// Purpose: TODO: Add description of module purpose
 window.renderKML = async function(filename, infoPanel, serverBase = '') {
   infoPanel.innerHTML = '';
 

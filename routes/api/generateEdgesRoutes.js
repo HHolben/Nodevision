@@ -1,9 +1,15 @@
 // routes/api/generateEdgesRoutes.js
-const express = require('express');
+// Purpose: TODO: Add description of module purpose
+import express from 'express';
 const router = express.Router();
-const fs = require('fs').promises;
-const path = require('path');
-const cheerio = require('cheerio');
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import * as cheerio from 'cheerio';
 
 const notebookDir = path.join(__dirname, '../../Notebook');
 
@@ -93,4 +99,4 @@ router.post('/generateEdges', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

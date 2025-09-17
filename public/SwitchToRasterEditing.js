@@ -1,4 +1,5 @@
 // Nodevision/public/SwitchToRasterEditing.js
+// Purpose: TODO: Add description of module purpose
 (function() {
     // Compute the directory this script lives in
     const currentScript = document.currentScript.src;

@@ -1,4 +1,5 @@
 // Nodevision/public/InfoCSS.js
+// Purpose: TODO: Add description of module purpose
 (async () => {
   async function InfoCSS(filePath, infoPanel) {
     infoPanel.innerHTML = ''; // clear previous content

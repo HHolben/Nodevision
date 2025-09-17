@@ -1,4 +1,5 @@
 // FILE: Nodevision/public/VirtualWorldCallibrateGamepad.js
+// Purpose: TODO: Add description of module purpose
 
 let calibrationActive = false;
 let calibrationGamepadIndex = null;

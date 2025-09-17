@@ -1,4 +1,5 @@
 // FILE: loadRasterImage.js
+// Purpose: TODO: Add description of module purpose
 // Load and display raster images for editing
 
 (function() {

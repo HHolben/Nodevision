@@ -1,3 +1,6 @@
+// public/InfoSCAD.js
+// Purpose: TODO: Add description of module purpose
+
 /**
  * InfoSCAD.js - Renders OpenSCAD files in the browser
  * Part of Nodevision project (https://github.com/HHolben/Nodevision)

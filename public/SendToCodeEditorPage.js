@@ -1,3 +1,6 @@
+// public/SendToCodeEditorPage.js
+// Purpose: TODO: Add description of module purpose
+
 //location.replace("CodeEditor.html");
 
 

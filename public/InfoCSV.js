@@ -1,4 +1,5 @@
 // === InfoCSV.js ===
+// Purpose: TODO: Add description of module purpose
 function renderCSV(filename, infoPanel, serverBase) {
     fetch(serverBase + '/' + filename)
       .then(response => response.text())

@@ -1,4 +1,5 @@
 // Nodevision/public/Graph.js
+// Purpose: TODO: Add description of module purpose
 // Dependencies available via window from loaded vendor scripts
 // Plugins auto-register themselves when loaded after cytoscape
 

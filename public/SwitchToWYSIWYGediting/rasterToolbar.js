@@ -1,4 +1,5 @@
 // FILE: rasterToolbar.js
+// Purpose: TODO: Add description of module purpose
 // Publisher-style toolbar for raster editing
 
 (function() {

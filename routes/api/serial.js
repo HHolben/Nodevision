@@ -1,9 +1,17 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const fsPromises = require('fs').promises;
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
+// routes/api/serial.js
+// Purpose: Serial port communication and Arduino integration
+
+import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import { SerialPort } from 'serialport';
+import { ReadlineParser } from '@serialport/parser-readline';
 
 const router = express.Router();
 
@@ -89,7 +97,7 @@ router.get('/serial-status', (req, res) => {
   res.json({ connected: isConnected });
 });
 
-module.exports = (io) => {
+export default (io) => {
   // Initialize serial connection with the passed Socket.IO instance.
   initializeSerialConnection(io);
 

@@ -1,7 +1,13 @@
 // Nodevision/routes/api/fileSaveRoutes.js
-const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+// Purpose: TODO: Add description of module purpose
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 // Change this to wherever your Notebook folder lives on disk
@@ -100,4 +106,4 @@ router.post('/create-directory', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

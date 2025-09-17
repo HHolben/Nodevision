@@ -1,4 +1,5 @@
 // DefaultAppState.js
+// Purpose: TODO: Add description of module purpose
 
 // Instead of just setting window.currentMode, we define a centralized state manager.
 window.AppState = {

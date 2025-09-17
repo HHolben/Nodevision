@@ -1,3 +1,6 @@
+// public/InfoThingDescription.js
+// Purpose: TODO: Add description of module purpose
+
 window.InfoThingDescription = async function(filename, container, serverBase) {
   container.innerHTML = `<h2>Thing Description</h2><p>Loading...</p>`;
 

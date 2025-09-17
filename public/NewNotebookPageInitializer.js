@@ -1,3 +1,6 @@
+// public/NewNotebookPageInitializer.js
+// Purpose: TODO: Add description of module purpose
+
 window.initializeNewNotebookPage = function() {
     console.log('Initializing new notebook page...');
   

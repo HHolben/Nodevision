@@ -1,4 +1,5 @@
 // InfoMP4.js
+// Purpose: TODO: Add description of module purpose
 (function(){
   function InfoMP4(fileUrl) {
     const container = document.createElement('div');

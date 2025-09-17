@@ -1,3 +1,6 @@
+// public/WYSIWYG/editor.js
+// Purpose: TODO: Add description of module purpose
+
 // Utility function to get query parameters
 function getQueryParameter(name) {
     const urlParams = new URLSearchParams(window.location.search);

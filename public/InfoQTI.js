@@ -1,4 +1,5 @@
 // === InfoQTI.js ===
+// Purpose: TODO: Add description of module purpose
 // Renders a QTI file into a Nodevision infoPanel with navigation and submission using Promises
 function renderQTI(filename, infoPanel, serverBase) {
     fetch(`${serverBase}/${filename}`)

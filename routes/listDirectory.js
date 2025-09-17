@@ -1,4 +1,5 @@
 //routes/listDirectory.js
+// Purpose: TODO: Add description of module purpose
 import { Router } from 'express';
 import { readdir, stat } from 'fs/promises';
 import path from 'path';

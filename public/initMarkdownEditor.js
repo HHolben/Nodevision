@@ -1,3 +1,6 @@
+// public/initMarkdownEditor.js
+// Purpose: TODO: Add description of module purpose
+
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Markdown from '@tiptap/extension-markdown';

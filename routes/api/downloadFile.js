@@ -1,7 +1,13 @@
 // Nodevision/routes/api/downloadFile.js
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
+// Purpose: TODO: Add description of module purpose
+import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 router.get('/download', (req, res) => {
@@ -22,4 +28,4 @@ router.get('/download', (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

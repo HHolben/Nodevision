@@ -1,3 +1,6 @@
+// public/SwitchToWYSIWYGediting/editRasterToolbar.js
+// Purpose: TODO: Add description of module purpose
+
 
 // FILE: editRasterToolbar.js
 (function(){

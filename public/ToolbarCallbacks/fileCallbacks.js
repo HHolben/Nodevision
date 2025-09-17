@@ -1,4 +1,5 @@
 // Nodevision/public/ToolbarCallbacks/fileCallbacks.js
+// Purpose: TODO: Add description of module purpose
 window.fileCallbacks = {
 saveFile: () => {
   const filePath = window.currentActiveFilePath || window.filePath;

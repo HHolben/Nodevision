@@ -1,4 +1,5 @@
 // Nodevision/public/SwitchToGraphView.js
+// Purpose: TODO: Add description of module purpose
 
 (async function () {
   const cyContainer = document.getElementById("cy");

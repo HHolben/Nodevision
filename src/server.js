@@ -1,3 +1,6 @@
+// src/server.js
+// Purpose: TODO: Add description of module purpose
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');

@@ -1,4 +1,5 @@
 // Nodevision/public/SwitchToVirtualWorldViewing.js
+// Purpose: TODO: Add description of module purpose
 
 (function () {
   console.log("SwitchToVirtualWorldViewing.js loaded");

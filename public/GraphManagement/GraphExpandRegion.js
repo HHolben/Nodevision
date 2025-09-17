@@ -1,3 +1,6 @@
+// public/GraphManagement/GraphExpandRegion.js
+// Purpose: TODO: Add description of module purpose
+
 // Dummy functions for loading indicator
 function showLoadingIndicator() {
     // Implement your loading indicator logic here

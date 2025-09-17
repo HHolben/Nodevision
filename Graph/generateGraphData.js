@@ -1,3 +1,6 @@
+// Graph/generateGraphData.js
+// Purpose: TODO: Add description of module purpose
+
 // Nodevision/scripts/GenerateGraphFiles.js
 import fs from 'fs/promises';
 import path from 'path';

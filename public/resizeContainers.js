@@ -1,3 +1,6 @@
+// public/resizeContainers.js
+// Purpose: TODO: Add description of module purpose
+
 document.addEventListener('DOMContentLoaded', () => {
     const divider = document.getElementById('divider');
     const containerLeft = divider.previousElementSibling;

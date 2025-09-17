@@ -1,4 +1,5 @@
 // Nodevision/public/SettingsGameControls.js
+// Purpose: TODO: Add description of module purpose
 (function() {
 
   // Poll every 50ms until the content frame exists

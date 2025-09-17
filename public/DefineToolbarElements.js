@@ -1,3 +1,6 @@
+// public/DefineToolbarElements.js
+// Purpose: TODO: Add description of module purpose
+
 // toolbarCallbacks is available via window.toolbarCallbacks after toolbarCallbacks.js loads
 
 /**

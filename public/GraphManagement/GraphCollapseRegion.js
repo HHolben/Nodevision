@@ -1,3 +1,6 @@
+// public/GraphManagement/GraphCollapseRegion.js
+// Purpose: TODO: Add description of module purpose
+
 
 async function collapseRegion(regionElement) {
     const regionId = regionElement.id();

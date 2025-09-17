@@ -1,4 +1,5 @@
 // === InfoHTML.js ===
+// Purpose: TODO: Add description of module purpose
 function renderHTML(path, iframe, serverBase, scale) {
     iframe.onload = null;
     iframe.onerror = () => {

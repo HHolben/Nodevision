@@ -1,7 +1,11 @@
 {
   "name": "nodevision",
   "version": "1.0.0",
+  "type": "module",
   "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "concurrently -k -n NODE,PHP \"nodemon server.js\" \"php -S 0.0.0.0:8080 -t Notebook\"",
     "start": "node start-servers.js",
@@ -41,7 +45,6 @@
     "passport": "^0.7.0",
     "passport-http-bearer": "^1.0.1",
     "passport-local": "^1.0.0",
-    "path": "^0.12.7",
     "pouchdb": "^9.0.0",
     "requirejs": "^2.3.7",
     "serialport": "^13.0.0",

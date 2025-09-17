@@ -1,3 +1,6 @@
+// FileModeTest2.js
+// Purpose: File mode testing and validation functionality
+
 const axios = require('axios');
 
 // Base URL of your server (adjust if necessary)

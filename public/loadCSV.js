@@ -1,4 +1,5 @@
 // loadCSV.js
+// Purpose: TODO: Add description of module purpose
 export async function loadCSV(filePath) {
   const res = await fetch(`/api/file?path=${encodeURIComponent(filePath)}`);
   if (!res.ok) throw new Error('Failed to load CSV: ' + res.statusText);

@@ -1,3 +1,6 @@
+// RegenerateGraph.js
+// Purpose: Refresh and rebuild the entire graph structure from current data
+
 const { exec } = require('child_process');
 const path = require('path');
 

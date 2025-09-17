@@ -1,3 +1,6 @@
+// GenerateRegions.js
+// Purpose: Create hierarchical regions for organizing graph nodes by directory
+
 const fs = require('fs');
 const path = require('path');
 

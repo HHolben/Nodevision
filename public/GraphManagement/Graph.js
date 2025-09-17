@@ -1,3 +1,6 @@
+// public/GraphManagement/Graph.js
+// Purpose: TODO: Add description of module purpose
+
 function createCytoscapeGraph(elements, styles) 
 {
   window.originalEdges = {};

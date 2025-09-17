@@ -1,3 +1,6 @@
+// public/SwitchToWYSIWYGediting/imageCropper.js
+// Purpose: TODO: Add description of module purpose
+
 
 
 // FILE: imageCropper.js

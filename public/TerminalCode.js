@@ -1,3 +1,6 @@
+// public/TerminalCode.js
+// Purpose: TODO: Add description of module purpose
+
 const http = require('http');
 const args = process.argv.slice(2);
 

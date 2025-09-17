@@ -1,3 +1,6 @@
+// public/InfoWAV.js
+// Purpose: TODO: Add description of module purpose
+
 (async () => {
   function renderWAV(filename, infoPanel, serverBase = '') {
     infoPanel.innerHTML = '';

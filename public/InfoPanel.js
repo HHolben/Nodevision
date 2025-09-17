@@ -1,4 +1,5 @@
 // Nodevision/public/InfoPanel.js
+// Purpose: TODO: Add description of module purpose
 var iframe = document.getElementById('content-frame');
 
 function updateInfoPanel(element) {

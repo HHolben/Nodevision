@@ -1,3 +1,6 @@
+// graph_builder.js
+// Purpose: Core graph construction logic and data structure management
+
 const fs = require('fs');
 const path = require('path');
 const NodevisionDB = require('nodevisiondb'); // Make sure this is installed

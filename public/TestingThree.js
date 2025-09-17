@@ -1,3 +1,6 @@
+// public/TestingThree.js
+// Purpose: TODO: Add description of module purpose
+
 function init() {
   const container = document.getElementById("stl-container");
   if (!container) {

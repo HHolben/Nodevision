@@ -1,7 +1,14 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs').promises;
-const { createObjectCsvWriter } = require('csv-writer');
+// routes/api/csv.js
+// Purpose: CSV file operations and data manipulation endpoints
+
+import express from 'express';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { createObjectCsvWriter } from 'csv-writer';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -47,4 +54,4 @@ async function fileExists(filePath) {
     }
 }
 
-module.exports = router;
+export default router;

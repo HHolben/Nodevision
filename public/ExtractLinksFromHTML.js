@@ -1,3 +1,6 @@
+// public/ExtractLinksFromHTML.js
+// Purpose: TODO: Add description of module purpose
+
 
     // Function to extract hyperlinks from HTML content
     function extractHyperlinks(htmlContent) 

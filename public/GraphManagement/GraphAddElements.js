@@ -1,3 +1,6 @@
+// public/GraphManagement/GraphAddElements.js
+// Purpose: TODO: Add description of module purpose
+
 //Function to add a node to the graph
 function AddNode(node)
 {

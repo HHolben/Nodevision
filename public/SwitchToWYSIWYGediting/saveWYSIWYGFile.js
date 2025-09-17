@@ -1,4 +1,5 @@
 // public/SwitchToWYSIWYGediting/saveWYSIWYGFile.js
+// Purpose: TODO: Add description of module purpose
 (function(){
   function showMessage(msg) {
     const el = document.getElementById('message');

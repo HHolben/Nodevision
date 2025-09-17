@@ -1,4 +1,5 @@
 // GraphAddElements.js
+// Purpose: TODO: Add description of module purpose
 
 /**
  * Function to add nodes (subNodes) to the graph.

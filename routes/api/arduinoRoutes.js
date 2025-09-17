@@ -1,3 +1,6 @@
+// routes/api/arduinoRoutes.js
+// Purpose: TODO: Add description of module purpose
+
 const express = require('express');
 const SerialPort = require('serialport');
 const Avrgirl = require('avrgirl-arduino');

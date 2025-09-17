@@ -1,7 +1,15 @@
-const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
-const cheerio = require('cheerio');
+// routes/api/getSubNodesRoutes.js
+// Purpose: Retrieve child nodes and hierarchical data
+
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import * as cheerio from 'cheerio';
 const router = express.Router();
 
 const notebookDir = path.join(__dirname, '../../Notebook'); // Define notebookDir relative to Nodevision
@@ -82,4 +90,4 @@ router.get('/getSubNodes', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

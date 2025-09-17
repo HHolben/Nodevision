@@ -1,4 +1,5 @@
 // Nodevision/public/SwitchToSVGediting/loadSVG.js
+// Purpose: TODO: Add description of module purpose
 console.log("loadSVG.js loaded");
 
 function loadSVG(filePath) {

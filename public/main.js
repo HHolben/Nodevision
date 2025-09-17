@@ -1,4 +1,5 @@
 //Nodevision/public/main.js
+// Purpose: TODO: Add description of module purpose
 // Dependencies available via window after respective files load
 // window.createToolbar from createToolbar.js  
 // window.bringToFront, window.toggleFullscreen, window.closeBox, window.runScript from boxManipulation.js

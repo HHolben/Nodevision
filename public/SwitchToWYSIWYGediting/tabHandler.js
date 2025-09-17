@@ -1,3 +1,6 @@
+// public/SwitchToWYSIWYGediting/tabHandler.js
+// Purpose: TODO: Add description of module purpose
+
 
 // FILE: tabHandler.js
 (function(){

@@ -1,4 +1,5 @@
 // GraphData.js
+// Purpose: TODO: Add description of module purpose
 
 // No import statements needed; directly access the global nodes and edges
 console.log(nodes); // Access nodes defined in GeneratedNodes.js

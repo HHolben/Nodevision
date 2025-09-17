@@ -1,4 +1,5 @@
 //Nodevision/public/SwitchToWYSIWYGediting.js
+// Purpose: TODO: Add description of module purpose
 (function() {
   // compute the directory this script lives in
   const currentScript = document.currentScript.src;

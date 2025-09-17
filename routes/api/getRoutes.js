@@ -1,6 +1,14 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
+// routes/api/getRoutes.js
+// Purpose: Route discovery and API endpoint listing
+
+import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import fs from 'node:fs';
 
 const router = express.Router();
 const routesFilePath = path.join(__dirname, '../../routes.json'); // Ensure correct path
@@ -22,4 +30,4 @@ router.get('/routes', (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

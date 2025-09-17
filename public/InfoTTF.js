@@ -1,4 +1,5 @@
 // === InfoTTF.js ===
+// Purpose: TODO: Add description of module purpose
 /**
  * Fetch and render TTF font metadata into an info panel.
  *

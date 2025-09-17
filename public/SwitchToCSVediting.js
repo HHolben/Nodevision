@@ -1,3 +1,6 @@
+// public/SwitchToCSVediting.js
+// Purpose: TODO: Add description of module purpose
+
 /**
  * SwitchToCSVediting.js
  * Fetches a CSV file and renders it as a table of text inputs for easy editing.

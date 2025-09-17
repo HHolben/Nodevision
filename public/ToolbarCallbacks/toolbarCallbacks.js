@@ -1,4 +1,5 @@
 // toolbarCallbacks.js
+// Purpose: TODO: Add description of module purpose
 // All callbacks are available via window after their respective files load
 
 window.toolbarCallbacks = {

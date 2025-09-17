@@ -1,4 +1,5 @@
 // FILE: saveRasterImage.js
+// Purpose: TODO: Add description of module purpose
 // Save edited raster images
 
 (function() {

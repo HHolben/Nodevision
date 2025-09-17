@@ -1,4 +1,5 @@
 // Nodevision/public/InfoODT.js
+// Purpose: TODO: Add description of module purpose
 
 // Requires: JSZip (add to index.html if not already included)
 // <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

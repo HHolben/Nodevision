@@ -1,4 +1,5 @@
 // FILE: imageHandling.js
+// Purpose: TODO: Add description of module purpose
 (function(){
     let draggedImage = null;
   

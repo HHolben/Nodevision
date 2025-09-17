@@ -1,3 +1,6 @@
+// public/WYSIWYG/3DmodelAdderScript.js
+// Purpose: TODO: Add description of module purpose
+
 function insert3DModel() {
     console.log("Inserting 3D Model...");
 

@@ -1,3 +1,6 @@
+// public/SwitchToWYSIWYGediting/clipboardHandler.js
+// Purpose: TODO: Add description of module purpose
+
 
 
 // FILE: clipboardHandler.js

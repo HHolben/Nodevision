@@ -1,8 +1,9 @@
 // routes/arduinoUpload.js
-const express = require('express');
-const path = require('path');
-const { exec } = require('child_process');
-const fs = require('fs');
+// Purpose: TODO: Add description of module purpose
+import express from 'express';
+import path from 'node:path';
+import { exec } from 'node:child_process';
+import fs from 'node:fs';
 
 const router = express.Router();
 
@@ -45,4 +46,4 @@ router.post('/upload-arduino', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

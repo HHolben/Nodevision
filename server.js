@@ -1,18 +1,20 @@
-//Nodevision/server.js
+// server.js
+// Purpose: Main Express server with dual Node.js/PHP setup, API routes, file serving, and graph-based content management
 
-// Load environment variables from .env file
-require('dotenv').config();
+import 'dotenv/config';
+import express from 'express';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import favicon from 'serve-favicon';
+import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import multer from 'multer';
+import * as cheerio from 'cheerio';
+import { exec } from 'node:child_process';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
-const express = require('express');
-const path = require('path');
-const favicon = require('serve-favicon');
-const bodyParser = require('body-parser');
-const fs = require('fs'); // For synchronous file checks
-const fsPromises = require('fs').promises; // For async operations
-const multer = require('multer');
-const cheerio = require('cheerio');
-const { exec } = require('child_process');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const userSettingsDir = path.join(__dirname, 'UserSettings');
 const gamepadSettingsFile = path.join(userSettingsDir, 'GameControllerSettings.json');
@@ -121,23 +123,24 @@ async function loadRoutes() {
     const data = await fsPromises.readFile(path.join(__dirname, 'routes.json'), 'utf8');
     const { routes } = JSON.parse(data);
 
-    routes.forEach(({ name, path: routePath }) => {
+    for (const { name, path: routePath } of routes) {
       const absoluteRoutePath = path.resolve(__dirname, routePath);
       
       console.log(`Attempting to load route: ${name} from ${routePath}`); // Debugging
     
       if (fs.existsSync(absoluteRoutePath)) {
         try {
-          const route = require(absoluteRoutePath);
+          const mod = await import(pathToFileURL(absoluteRoutePath).href);
+          const route = mod.default ?? mod;
           app.use('/api', route);
           console.log(`✅ Loaded route: ${name} from ${absoluteRoutePath}`);
         } catch (err) {
-          console.error(`❌ Error requiring route ${name} from ${routePath}:`, err);
+          console.error(`❌ Error importing route ${name} from ${routePath}:`, err);
         }
       } else {
         console.error(`❌ Route file not found: ${absoluteRoutePath}`);
       }
-    });
+    }
     
   } catch (error) {
     console.error('Error loading routes:', error.message);
@@ -266,4 +269,4 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`  - PHP proxy available at /php/*`);
 });
 
-module.exports = app;
+export default app;

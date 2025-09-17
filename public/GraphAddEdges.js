@@ -1,3 +1,6 @@
+// public/GraphAddEdges.js
+// Purpose: TODO: Add description of module purpose
+
 async function generateEdgesForLinks() {
     const allNodeIds = cy.nodes().map(node => node.id());
   

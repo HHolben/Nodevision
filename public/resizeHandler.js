@@ -1,3 +1,6 @@
+// public/resizeHandler.js
+// Purpose: TODO: Add description of module purpose
+
 document.addEventListener('DOMContentLoaded', function () {
     const divider = document.getElementById('divider');
     const containerLeft = document.querySelector('.container-left');

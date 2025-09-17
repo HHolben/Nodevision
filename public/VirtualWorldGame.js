@@ -1,4 +1,5 @@
 // Nodevision/public/VirtualWorldGame.js
+// Purpose: TODO: Add description of module purpose
 
 // --- Unified keys state ---
 const keys = { w: false, a: false, s: false, d: false, space: false, q: false };

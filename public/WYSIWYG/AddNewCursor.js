@@ -1,3 +1,6 @@
+// public/WYSIWYG/AddNewCursor.js
+// Purpose: TODO: Add description of module purpose
+
 
 // Keep track of multiple cursor positions
 let cursors = [];

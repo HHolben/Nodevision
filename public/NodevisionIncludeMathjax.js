@@ -1,3 +1,6 @@
+// public/NodevisionIncludeMathjax.js
+// Purpose: TODO: Add description of module purpose
+
 MathJax = {
     tex: {
       inlineMath: [["\\(", "\\)"]],

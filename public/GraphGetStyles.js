@@ -1,3 +1,6 @@
+// public/GraphGetStyles.js
+// Purpose: TODO: Add description of module purpose
+
 async function fetchStyles(jsonUrl) {
     try {
         const response = await fetch(jsonUrl);

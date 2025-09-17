@@ -1,3 +1,6 @@
+// GenerateNodes.js
+// Purpose: Generate individual node data for file system items
+
 const fs = require('fs');
 const path = require('path');
 

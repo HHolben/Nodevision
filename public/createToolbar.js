@@ -1,3 +1,6 @@
+// public/createToolbar.js
+// Purpose: TODO: Add description of module purpose
+
 // Dependencies available via window after respective files load
 // window.loadToolbarElements from DefineToolbarElements.js
 // window.createBox from boxManipulation.js

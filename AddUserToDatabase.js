@@ -1,3 +1,6 @@
+// AddUserToDatabase.js
+// Purpose: User account creation and database insertion operations
+
 const bcrypt = require('bcrypt');
 const PouchDB = require('pouchdb');
 const readline = require('readline');

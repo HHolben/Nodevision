@@ -1,3 +1,6 @@
+// routes/AuthorizationRoutes.js
+// Purpose: TODO: Add description of module purpose
+
 const express = require('express');
 const passport = require('passport');
 const path = require('path'); // Import path module

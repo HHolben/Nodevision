@@ -1,4 +1,5 @@
 // FILE: rasterDrawing.js
+// Purpose: TODO: Add description of module purpose
 // Canvas drawing functionality for raster editing
 
 (function() {

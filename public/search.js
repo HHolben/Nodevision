@@ -1,4 +1,5 @@
 // Nodevision/public/search.js
+// Purpose: TODO: Add description of module purpose
 
 document.addEventListener('DOMContentLoaded', function () {
     window.ActiveNode = 'defaultNode';

@@ -1,4 +1,5 @@
 // Nodevision/public/InfoSTL.js
+// Purpose: TODO: Add description of module purpose
 (function() {
   document.addEventListener("DOMContentLoaded", () => {
     // ... previous THREE checks ...

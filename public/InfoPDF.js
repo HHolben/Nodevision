@@ -1,4 +1,5 @@
 // Nodevision/public/InfoPDF.js
+// Purpose: TODO: Add description of module purpose
 
 (function () {
   /**

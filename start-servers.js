@@ -1,5 +1,8 @@
-const concurrently = require('concurrently');
-const fs = require('fs');
+// start-servers.js
+// Purpose: Launch dual server setup (Node.js + PHP) using concurrently with configuration from config.json
+
+import concurrently from 'concurrently';
+import fs from 'node:fs';
 
 const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 const phpPort = config.phpPort;

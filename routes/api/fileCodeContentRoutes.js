@@ -1,7 +1,13 @@
 // routes/api/fileCodeContentRoutes.js
-const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+// Purpose: TODO: Add description of module purpose
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 // Ensure the path is correctly resolved relative to the project root
@@ -28,4 +34,4 @@ router.get('/fileCodeContent', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

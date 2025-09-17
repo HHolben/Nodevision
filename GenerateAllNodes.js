@@ -1,4 +1,5 @@
 //Nodevision/GenerateAllNodes.js
+// Purpose: Generate comprehensive node data for graph visualization from file system
 const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio'); // Assuming you'll use Cheerio to parse HTML files

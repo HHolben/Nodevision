@@ -1,4 +1,5 @@
 // FILE: SwitchToViewing.js
+// Purpose: TODO: Add description of module purpose
 (function(){
     // Return to default view mode
     const container = document.getElementById('content-frame-container');

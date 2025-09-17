@@ -1,3 +1,6 @@
+// ReadUsersDatabase.js
+// Purpose: User authentication and database query operations
+
 const PouchDB = require('pouchdb');
 const db = new PouchDB('users');  // Initialize PouchDB database
 

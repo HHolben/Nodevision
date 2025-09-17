@@ -1,3 +1,6 @@
+// GenerateEdges.js
+// Purpose: Create edges and relationships between graph nodes based on file links
+
 const fs = require('fs');
 const path = require('path');
 

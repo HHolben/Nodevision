@@ -1,3 +1,6 @@
+// routes/api.js
+// Purpose: TODO: Add description of module purpose
+
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');

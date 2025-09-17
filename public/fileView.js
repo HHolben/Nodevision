@@ -1,4 +1,5 @@
 // Nodevision/public/fileView.js
+// Purpose: TODO: Add description of module purpose
 
 // Expose a function to update the preview pane.
 window.updateFilePreview = function(filePath, fileName) {

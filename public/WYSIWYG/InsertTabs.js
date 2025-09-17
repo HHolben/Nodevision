@@ -1,3 +1,6 @@
+// public/WYSIWYG/InsertTabs.js
+// Purpose: TODO: Add description of module purpose
+
 function InsertTab()
 {
     const Tab = `<span style="white-space: pre;"></span>`;

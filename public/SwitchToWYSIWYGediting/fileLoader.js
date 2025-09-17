@@ -1,4 +1,5 @@
 // FILE: fileLoader.js
+// Purpose: TODO: Add description of module purpose
 (function(){
     function loadFileContents(filePath, callback) {
       if (!filePath) return;

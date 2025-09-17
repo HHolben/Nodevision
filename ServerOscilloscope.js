@@ -1,4 +1,5 @@
 // ServerOscilloscope.js (CommonJS, safe startup without Arduino)
+// Purpose: Real-time data streaming and oscilloscope functionality
 
 const { SerialPort, ReadlineParser } = require('serialport');
 const { WebSocketServer } = require('ws');

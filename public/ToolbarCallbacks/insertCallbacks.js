@@ -1,4 +1,5 @@
 //Nodevision/public/ToolbarCallbacks/insertCallbacks.js
+// Purpose: TODO: Add description of module purpose
 window.insertCallbacks = {
   insertText: () => {
     console.log("Insert Text callback triggered.");

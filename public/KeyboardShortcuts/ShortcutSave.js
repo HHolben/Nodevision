@@ -1,3 +1,6 @@
+// public/KeyboardShortcuts/ShortcutSave.js
+// Purpose: TODO: Add description of module purpose
+
 (function() {
     // Global shortcut handler
     document.addEventListener("keydown", function(e) {

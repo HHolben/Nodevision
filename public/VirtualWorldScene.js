@@ -1,4 +1,5 @@
 //Nodevision/public/VirtualWorldScene.js
+// Purpose: TODO: Add description of module purpose
 const container = document.getElementById('content-frame-container'); // right pane
 const canvas = document.getElementById("three-canvas");
 

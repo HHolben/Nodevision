@@ -1,4 +1,5 @@
 //Nodevision/public/VirtualWorldPlayer.js
+// Purpose: TODO: Add description of module purpose
 // Create the player avatar
 const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
 const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });

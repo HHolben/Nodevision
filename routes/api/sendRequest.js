@@ -1,4 +1,7 @@
-const express = require('express');
+// routes/api/sendRequest.js
+// Purpose: Generic request proxy and forwarding
+
+import express from 'express';
 const router = express.Router();
 
 // Define the endpoint route for sendRequest
@@ -15,4 +18,4 @@ router.post('/', (req, res) => {
     res.json({ message: `Request to ${endpoint} with command ${command} was successful.` });
 });
 
-module.exports = router;
+export default router;

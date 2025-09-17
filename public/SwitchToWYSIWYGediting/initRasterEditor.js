@@ -1,4 +1,5 @@
 // FILE: initRasterEditor.js
+// Purpose: TODO: Add description of module purpose
 // Initialize the raster image editor with canvas and controls
 
 (function() {

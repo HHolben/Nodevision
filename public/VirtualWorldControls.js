@@ -1,4 +1,5 @@
 // Nodevision/public/VirtualWorldControls.js
+// Purpose: TODO: Add description of module purpose
 
 let controlBindings = {};
 

@@ -1,4 +1,5 @@
 // settingsCallbacks.js
+// Purpose: TODO: Add description of module purpose
 window.settingsCallbacks = {
     toggleViewMode: (state) => {
       console.log("Toggle View Mode callback fired. State:", state);

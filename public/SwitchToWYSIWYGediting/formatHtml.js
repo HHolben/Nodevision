@@ -1,4 +1,5 @@
 // FILE: formatHtml.js
+// Purpose: TODO: Add description of module purpose
 (function(){
   function formatHtml(html) {
     let indentLevel = 0;

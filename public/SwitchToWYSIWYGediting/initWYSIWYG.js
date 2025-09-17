@@ -1,3 +1,6 @@
+// public/SwitchToWYSIWYGediting/initWYSIWYG.js
+// Purpose: TODO: Add description of module purpose
+
 
 //Nodevision/public/SwitchToWYSIWYGediting/initWYSIWYG.js
 (function(){

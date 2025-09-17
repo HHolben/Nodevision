@@ -1,4 +1,5 @@
 // Nodevision/public/InfoSVG.js
+// Purpose: TODO: Add description of module purpose
 
 function InfoSVG(filename, infoPanel, serverBase) {
   console.log("InfoSVG: rendering " + filename);

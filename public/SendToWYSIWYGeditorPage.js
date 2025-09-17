@@ -1,3 +1,6 @@
+// public/SendToWYSIWYGeditorPage.js
+// Purpose: TODO: Add description of module purpose
+
 
     // Ensure that ActiveNode is set
     if (window.ActiveNode !== undefined) {

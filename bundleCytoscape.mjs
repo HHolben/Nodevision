@@ -1,4 +1,5 @@
 // bundleCytoscape.mjs
+// Purpose: Bundle and configure Cytoscape.js library for graph visualization
 import esbuild from 'esbuild';
 
 esbuild.build({

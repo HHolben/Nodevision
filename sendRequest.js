@@ -1,3 +1,6 @@
+// sendRequest.js
+// Purpose: HTTP request handling and API communication utilities
+
 const http = require('http');
 const args = process.argv.slice(2);
 

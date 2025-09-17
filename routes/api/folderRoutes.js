@@ -1,10 +1,18 @@
-const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+// routes/api/folderRoutes.js
+// Purpose: Folder creation and management operations
+
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 // Define the base directory for the Notebook
-tmp = path.resolve(__dirname, '../../Notebook'); // temporary ref
+const tmp = path.resolve(__dirname, '../../Notebook'); // temporary ref
 const notebookDir = tmp; // rename for clarity
 
 // Ensure the Notebook directory exists on startup
@@ -116,4 +124,4 @@ router.post('/move', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

@@ -1,6 +1,13 @@
-const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+// routes/api/files.js
+// Purpose: File and directory management API for notebook structure navigation
+
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // Base directory for the Notebook
@@ -76,4 +83,4 @@ router.get('/api/file', async (req, res) => {
 
 
 
-module.exports = router;
+export default router;

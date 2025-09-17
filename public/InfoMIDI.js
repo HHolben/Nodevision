@@ -1,4 +1,5 @@
 // === InfoMIDI.js ===
+// Purpose: TODO: Add description of module purpose
 // Browser version—no fs, uses fetch + DataView + VexFlow
 
 /**

@@ -1,3 +1,6 @@
+// public/initCSVEditor.js
+// Purpose: TODO: Add description of module purpose
+
 
 
 // initCSVEditor.js

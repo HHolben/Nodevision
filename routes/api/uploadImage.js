@@ -1,6 +1,14 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
+// routes/api/uploadImage.js
+// Purpose: Image upload and file handling operations
+
+import express from 'express';
+import multer from 'multer';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 // Storage settings for image upload
@@ -22,4 +30,4 @@ router.post('/upload-image', upload.single('image'), (req, res) => {
     res.json({ success: true, message: 'Image uploaded successfully', filePath });
 });
 
-module.exports = router;
+export default router;

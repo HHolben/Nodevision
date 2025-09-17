@@ -1,6 +1,14 @@
-const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+// routes/api/search.js
+// Purpose: Content search and indexing functionality
+
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 router.get('/api/search', async (req, res) => {
@@ -16,4 +24,4 @@ router.get('/api/search', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

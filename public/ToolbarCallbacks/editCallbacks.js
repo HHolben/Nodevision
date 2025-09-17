@@ -1,4 +1,5 @@
 // Nodevision/public/ToolbarCallbacks/editCallbacks.js
+// Purpose: TODO: Add description of module purpose
 
 window.editCallbacks = {
     editRASTER: () => {

@@ -1,4 +1,5 @@
 // Nodevision/public/InfoMP3.js
+// Purpose: TODO: Add description of module purpose
 // ---------------------------
 // Registers a handler for .mp3 files in Nodevision. When you click an MP3 node,
 // Nodevision should create a container div and call the exported `InfoMP3` function

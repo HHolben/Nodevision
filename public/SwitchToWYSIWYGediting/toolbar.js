@@ -1,4 +1,5 @@
 // FILE: toolbar.js
+// Purpose: TODO: Add description of module purpose
 (function(){
     function updateWYSIWYGToolbar(filePath) {
       const container = document.querySelector('.toolbar');

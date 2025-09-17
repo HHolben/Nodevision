@@ -1,3 +1,6 @@
+// public/WYSIWYG/imageUpload.js
+// Purpose: TODO: Add description of module purpose
+
 function uploadImage(file) {
     const formData = new FormData();
     formData.append('image', file);

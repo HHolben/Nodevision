@@ -1,6 +1,14 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs').promises;
+// routes/api/initialize.js
+// Purpose: Application initialization and setup endpoints
+
+import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import fs from 'node:fs/promises';
 const router = express.Router();
 
 router.post('/initialize', async (req, res) => {
@@ -18,4 +26,4 @@ router.post('/initialize', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;
