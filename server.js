@@ -33,14 +33,15 @@ function validateAndNormalizePath(userPath, allowedBaseDir) {
   
   // Remove any null bytes and normalize path
   const sanitized = userPath.replace(/\0/g, '').replace(/\\/g, '/');
-  const fullPath = path.resolve(allowedBaseDir, sanitized);
+  const resolved = path.resolve(allowedBaseDir, sanitized);
   
-  // Ensure the resolved path is within the allowed directory
-  if (!fullPath.startsWith(allowedBaseDir)) {
+  // Ensure the resolved path is within the allowed directory using proper relative path checking
+  const relative = path.relative(allowedBaseDir, resolved);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
     throw new Error('Access denied: Path outside allowed directory');
   }
   
-  return fullPath;
+  return resolved;
 }
 
 // Set up reverse proxy for PHP server (assuming PHP runs on port 8080)

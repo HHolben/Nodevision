@@ -12,7 +12,7 @@ concurrently([
     prefixColor: 'green'
   },
   { 
-    command: `node server.js`, 
+    command: `PORT=${nodePort} node server.js`, 
     name: 'node', 
     prefixColor: 'blue'
   }
