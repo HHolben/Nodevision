@@ -1,137 +1,14 @@
 <!DOCTYPE html>
-<!--Nodevision/public/index.html-->
-<!--This fil calls many other files to set up the main user interface of Nodevision. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nodevision</title>
-
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="MainStyles.css">
-  <link rel="stylesheet" href="LayoutStyles.css">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="GraphStyles.css">
-  <link rel="stylesheet" href="ToolbarStyles.css">
-  <link rel="stylesheet" href="NodeViewContainerStyles.css">
-
-  <!-- Vendor Libraries -->
-  <script src="vendor/cytoscape/dist/cytoscape.min.js" defer></script>
-  <script src="vendor/layout-base/layout-base.js" defer></script>
-  <script src="vendor/cose-base/cose-base.js" defer></script>
-  <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
-  <script src="vendor/cytoscape-expand-collapse/cytoscape-expand-collapse.js" defer></script>
-  <script src="vendor/requirejs/require.js" defer></script>
-  <script src="/lib/monaco/vs/loader.js"></script>
-
-  <!-- JSZip for ODT -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-  <!-- Three.js Core & OrbitControls -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three-orbitcontrols@2.110.3/OrbitControls.min.js"></script>
-  <script src="https://unpkg.com/three-csgmesh@2.1.0/dist/three-csgmesh.umd.js"></script>
-  <script src="https://unpkg.com/jscad@1.1.0/csg.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-
-  <!-- VexFlow -->
-  <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
-
-  <!-- MathJax -->
-  <script type="text/javascript" defer src="vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-
-  <!-- Nodevision Core Scripts (defer for non-module) -->
-  <script src="loadOzrbitControls.js" defer></script>
-  <script src="NodevisionIncludeMathjax.js" defer></script>
-  <script src="CombineURLs.js" defer></script>
-  <script src="GraphAddElements.js" defer></script>
-  <script src="GraphGetStyles.js" defer></script>
-  <script src="ExtractLinksFromHTML.js" defer></script>
-  <script src="GraphAddEdges.js" defer></script>
-  <script src="GraphExpandRegion.js" defer></script>
-  <script src="GraphCollapseRegion.js" defer></script>
-  <script src="Graph.js" defer></script>
-  <script src="AllNodes.js" defer></script>
-
-  <!-- Toolbar & Other Modules -->
-  <script src="ToolbarCallbacks/fileCallbacks.js" defer></script>
-  <script src="ToolbarCallbacks/editCallbacks.js" defer></script>
-  <script src="ToolbarCallbacks/settingsCallbacks.js" defer></script>
-  <script src="ToolbarCallbacks/insertCallbacks.js" defer></script>
-  <script src="ToolbarCallbacks/toolbarCallbacks.js" defer></script>
-  <script src="DefineToolbarElements.js" defer></script>
-  <script src="resizeAndDrag.js" defer></script>
-  <script src="boxManipulation.js" defer></script>
-  <script src="createToolbar.js" defer></script>
-  <script src="main.js" defer></script>
-  <script src="search.js" defer></script>
-
-  <!-- Keyboard Shortcuts -->
-  <script src="/KeyboardShortcuts/ShortcutSave.js" defer></script>
-
-  <!-- File View & Info Modules -->
- <script type="module">
-  import { displayFiles, fetchDirectoryContents } from './fileView.js';
-
-  const fileListElem = document.getElementById('file-list');
-  const loadingElem  = document.getElementById('loading');
-  const errorElem    = document.getElementById('error');
-
-  fetchDirectoryContents('', displayFiles, errorElem, loadingElem);
-</script>
-
-
-  <!-- Legacy file type renderers (optional) -->
-  <script src="DefaultAppState.js" defer></script>
-  <script src="InfoCSS.js" defer></script>
-  <script src="InfoCSV.js" defer></script>
-  <script src="InfoWAV.js" defer></script>
-  <script src="InfoPDF.js" defer></script>
-  <script src="InfoQTI.js" defer></script>
-  <script src="InfoSCAD.js" defer></script>
-  <script src="InfoSVG.js" defer></script>
-  <script src="InfoKML.js" defer></script>
-  <script src="InfoMIDI.js" defer></script>
-  <script src="InfoMP3.js" defer></script>
-  <script src="InfoMP4.js" defer></script>
-  <script src="InfoODT.js" defer></script>
-  <script src="InfoTTF.js" defer></script>
-  <script src="InfoThingDescription.js" defer></script>
-  <script src="InfoHTML.js" defer></script>
-
-  <!-- Module entry for InfoPanel -->
-  <script type="module" src="InfoPanel.js"></script>
-
-  <!-- fileView is now imported in the inline module above -->
+  <title>Nodevision Local Modules Example</title>
 </head>
-
 <body>
-  <!-- Toolbar -->
-  <div class="toolbar" id="toolbar">
-    <input type="text" id="searchBar" placeholder="Search for files...">
-    <button id="searchButton" aria-label="Search Files">Search</button>
-    <div id="searchResults" style="display: none;"></div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="container-wrapper">
-    <div class="container container-left">
-      <div id="content">
-        <div id="cy" style="display: block;"></div>
-        <div id="file-view" style="display: none; padding: 10px;">
-          <div id="error" style="text-align: center; color: red;"></div>
-          <div id="loading" style="text-align: center; display: none;">Loading...</div>
-          <div id="file-list"></div>
-        </div>
-      </div>
-    </div>
-    <div class="divider" id="divider"></div>
-    <div class="container container-right">
-      <div id="element-info"></div>
-      <div id="content-frame-container">
-        <iframe id="content-frame" width="100%" height="100%" style="height: 95%;"></iframe>
-      </div>
-    </div>
-  </div>
+<div class="toolbar"></div>
+  <div id="divider"></div>
+  <div id="content-frame"></div>
+  <!-- Only one module entry point -->
+  <script type="module" src="./main.js"></script>
 </body>
 </html>

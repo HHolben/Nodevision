@@ -1,9 +1,10 @@
-//Nodevision/public/main.js
-// Purpose: TODO: Add description of module purpose
-// Dependencies available via window after respective files load
-// window.createToolbar from createToolbar.js  
-// window.bringToFront, window.toggleFullscreen, window.closeBox, window.runScript from boxManipulation.js
-// window.makeResizableAndDraggable from resizeAndDrag.js
+// Nodevision/main.js
+//This script oversees the implemntation of the toolbar
+console.log("DOM loaded?", document.readyState);
+console.log("toolbar element:", document.querySelector(".toolbar"));
+
+import { createToolbar } from './createToolbar.js';
+import { bringToFront, toggleFullscreen, closeBox, runScript } from './boxManipulation.js';
 
 document.addEventListener('DOMContentLoaded', function() {
   // ==== Split‐pane resizing ====
@@ -38,13 +39,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fullscreen toggle
     if (btn.matches('.fullscreen-btn') && boxEl) {
-      window.toggleFullscreen(boxEl);
+      toggleFullscreen(boxEl);
       return;
     }
 
     // Close box
     if (btn.matches('.close-btn') && boxEl) {
-      window.closeBox(boxEl);
+      closeBox(boxEl);
       return;
     }
 
@@ -52,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btn.matches('.run-script-btn') && boxEl) {
       const scriptName = boxEl.dataset.script;
       if (scriptName) {
-        window.runScript(scriptName);
+        runScript(scriptName);
       } else {
         console.error('No script name found on box element.');
       }
@@ -60,6 +61,5 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // ==== Initialize toolbar ====
-  window.createToolbar('.toolbar');
-
+  createToolbar('.toolbar');
 });

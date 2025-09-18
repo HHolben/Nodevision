@@ -1,7 +1,8 @@
-// resizeAndDrag.js
+// Nodevision/public/resizeAndDrag.js
 // Purpose: TODO: Add description of module purpose
+// ES Module version of resizeAndDrag.js
 
-function makeResizableAndDraggable(element) {
+export function makeResizableAndDraggable(element) {
     let isResizing = false;
     let isDragging = false;
     let originalWidth = 0;
@@ -68,11 +69,9 @@ function makeResizableAndDraggable(element) {
     }
 }
 
-function bringToFront(element) {
+// You may also want to export bringToFront if used elsewhere:
+export function bringToFront(element) {
     const boxes = document.querySelectorAll('.box');
     boxes.forEach(box => box.style.zIndex = '1');
     element.style.zIndex = '2';
 }
-
-// Export function globally
-window.makeResizableAndDraggable = makeResizableAndDraggable;
