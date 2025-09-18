@@ -1,5 +1,5 @@
 // === InfoCSV.js ===
-// Purpose: TODO: Add description of module purpose
+// This file declares a function, renderCSV which imports CSV files from the server, then defines the html to be used to display the CSV files contents in the info pane
 function renderCSV(filename, infoPanel, serverBase) {
     fetch(serverBase + '/' + filename)
       .then(response => response.text())
