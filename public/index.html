@@ -1,14 +1,95 @@
 <!DOCTYPE html>
+<!--Nodevision/public/index.html-->
+<!--This file sets up the main page of the Nodevision user interface.-->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Nodevision Local Modules Example</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nodevision React ES Modules</title>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="MainStyles.css">
+  <link rel="stylesheet" href="LayoutStyles.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="GraphStyles.css">
+  <link rel="stylesheet" href="ToolbarStyles.css">
+  <link rel="stylesheet" href="NodeViewContainerStyles.css">
+
+  <!-- React (UMD) -->
+  <script src="vendor/react/react.development.js"></script>
+  <script src="vendor/react/react-dom.development.js"></script>
 </head>
-<body>
-<div class="toolbar"></div>
-  <div id="divider"></div>
-  <div id="content-frame"></div>
-  <!-- Only one module entry point -->
-  <script type="module" src="./main.js"></script>
+<body style="height:100%; margin:0;">
+
+  <div id="root" style="height:100%;"></div>
+
+  <script type="text/babel">
+    function App() {
+      React.useEffect(() => {
+        const divider = document.getElementById('divider');
+        const containerLeft = divider.previousElementSibling;
+        const containerRight = divider.nextElementSibling;
+        const contentFrame = document.getElementById('content-frame');
+        let isResizing = false;
+
+        const mouseMove = (e) => {
+          if (!isResizing) return;
+          const offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
+          containerLeft.style.width = `calc(100% - ${offsetRight}px)`;
+          containerRight.style.width = `${offsetRight}px`;
+          contentFrame.style.width = `${containerRight.offsetWidth}px`;
+        };
+
+        const mouseUp = () => {
+          isResizing = false;
+          contentFrame.style.pointerEvents = 'auto';
+        };
+
+        divider.addEventListener('mousedown', () => {
+          isResizing = true;
+          contentFrame.style.pointerEvents = 'none';
+        });
+        document.addEventListener('mousemove', mouseMove);
+        document.addEventListener('mouseup', mouseUp);
+
+        return () => {
+          document.removeEventListener('mousemove', mouseMove);
+          document.removeEventListener('mouseup', mouseUp);
+        };
+      }, []);
+
+      return (
+       <div className="container-wrapper" style={{ display: 'flex', height: '100%', width: '100%' }}>
+  {/* Left Pane */}
+  <div className="container container-left" style={{ width: '50%', backgroundColor: '#f9f9f9', height: '100%' }}>
+    <div id="content">
+      <div id="cy" style={{ display: 'block', height: '100%' }}></div>
+      <div id="file-view" style={{ display: 'none', padding: '10px' }}>
+        <div id="error" style={{ textAlign: 'center', color: 'red' }}></div>
+        <div id="loading" style={{ textAlign: 'center', display: 'none' }}>Loading...</div>
+        <div id="file-list"></div>
+      </div>
+    </div>
+  </div>
+
+  {/* Divider */}
+  <div className="divider" id="divider" style={{ width: '5px', backgroundColor: '#333', cursor: 'ew-resize', height: '100%' }}></div>
+
+  {/* Right Pane */}
+  <div className="container container-right" style={{ width: '50%', backgroundColor: '#e9e9e9', height: '100%' }}>
+    <div id="element-info"></div>
+    <div id="content-frame-container">
+      <iframe id="content-frame" width="100%" height="100%" style={{ height: '95%' }}></iframe>
+    </div>
+  </div>
+</div>
+
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
 </body>
 </html>
