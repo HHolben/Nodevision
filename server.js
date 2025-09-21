@@ -1,4 +1,4 @@
-// server.js
+// Nodevision/server.js
 // Purpose: Main Express server with dual Node.js/PHP setup, API routes, file serving, and graph-based content management
 
 import 'dotenv/config';
@@ -72,6 +72,8 @@ app.use('/vendor/cytoscape', express.static(path.join(__dirname, 'node_modules/c
 app.use('/vendor/mathjax', express.static(path.join(__dirname, 'node_modules/mathjax')));
 app.use('/vendor/vexflow', express.static(path.join(__dirname, 'node_modules/vexflow')));
 app.use('/vendor/tesseract.js', express.static(path.join(__dirname, 'node_modules/tesseract.js')));
+app.use('/vendor/babel', express.static(path.join(__dirname, 'public/vendor/babel')));
+app.use('/vendor/react', express.static(path.join(__dirname, 'public/vendor/react')));
 
 app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
 

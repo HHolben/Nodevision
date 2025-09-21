@@ -13,6 +13,7 @@
     "build": "echo 'No build process needed'"
   },
   "dependencies": {
+    "@babel/standalone": "^7.28.4",
     "@serialport/parser-readline": "^13.0.0",
     "@tonejs/midi": "^2.0.28",
     "avrgirl-arduino": "^5.0.1",
