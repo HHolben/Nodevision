@@ -46,6 +46,9 @@ async function loadToolbarElements(configUrls = [
     console.error('Failed to load toolbar configuration:', error);
     return [];
   }
+
+  console.log("Running loadToolbarElements definition at", new Error().stack);
+
 }
 
 // Export function globally

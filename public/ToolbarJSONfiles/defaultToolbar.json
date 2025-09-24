@@ -1,0 +1,37 @@
+[
+  {
+    "heading": "File",
+    "icon": "/icons/file.svg",
+    "callbackKey": "fileMenu"
+  },
+  {
+    "heading": "Edit",
+    "icon": "/icons/edit.svg",
+    "callbackKey": "editMenu"
+  },
+  {
+    "heading": "Terminal",
+    "icon": "/icons/terminal.svg",
+    "callbackKey": "openTerminal"
+  },
+    {
+    "heading": "View",
+    "icon": "/icons/terminal.svg",
+    "callbackKey": "openTerminal"
+  },
+    {
+    "heading": "Settings",
+    "icon": "/icons/terminal.svg",
+    "callbackKey": "openTerminal"
+  },
+  {
+    "heading": "Search",
+    "icon": "/icons/search.svg",
+    "callbackKey": "openSearch"
+  },
+  {
+    "heading": "User",
+    "icon": "/icons/user.svg",
+    "callbackKey": "userMenu"
+  }
+]

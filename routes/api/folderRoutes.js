@@ -1,5 +1,5 @@
 // routes/api/folderRoutes.js
-// Purpose: Folder creation and management operations
+// This file declares the backends for creation and management operations
 
 import express from 'express';
 import fs from 'node:fs/promises';
@@ -122,6 +122,25 @@ router.post('/move', async (req, res) => {
       console.error('Error moving file or directory:', error);
       res.status(500).json({ error: 'Failed to move file or directory.', details: error.message });
     }
+});
+
+
+// Define the base directory for Toolbar JSON files
+const toolbarDir = path.resolve(__dirname, '../../public/ToolbarJSONfiles');
+
+// Endpoint to list toolbar JSON files
+router.get('/toolbar-files', async (req, res) => {
+  try {
+    const entries = await fs.readdir(toolbarDir, { withFileTypes: true });
+    const jsonFiles = entries
+      .filter(entry => entry.isFile() && entry.name.endsWith('.json'))
+      .map(entry => entry.name);
+
+    res.json(jsonFiles);
+  } catch (err) {
+    console.error('Error listing toolbar JSON files:', err);
+    res.status(500).json({ error: 'Failed to list toolbar files' });
+  }
 });
 
 export default router;

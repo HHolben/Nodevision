@@ -13,6 +13,10 @@ import * as cheerio from 'cheerio';
 import { exec } from 'node:child_process';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
+import toolbarRoutes from "./routes/api/toolbarRoutes.js";
+
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -74,6 +78,11 @@ app.use('/vendor/vexflow', express.static(path.join(__dirname, 'node_modules/vex
 app.use('/vendor/tesseract.js', express.static(path.join(__dirname, 'node_modules/tesseract.js')));
 app.use('/vendor/babel', express.static(path.join(__dirname, 'public/vendor/babel')));
 app.use('/vendor/react', express.static(path.join(__dirname, 'public/vendor/react')));
+
+
+app.use("/api/toolbar", toolbarRoutes);
+
+
 
 app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
 

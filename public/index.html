@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nodevision - Toolbar Module Test</title>
 
+
+  
+
   <!-- Stylesheets -->
   <link rel="stylesheet" href="MainStyles.css">
   <link rel="stylesheet" href="LayoutStyles.css">
@@ -12,10 +15,6 @@
   <link rel="stylesheet" href="GraphStyles.css">
   <link rel="stylesheet" href="ToolbarStyles.css">
   <link rel="stylesheet" href="NodeViewContainerStyles.css">
-
-  <!-- (Optional) React 17 UMD if you need it later (not used by the module below) -->
-  <script src="vendor/react/react.development.js"></script>
-  <script src="vendor/react/react-dom.development.js"></script>
 </head>
 <body style="height:100%; margin:0; display:flex; flex-direction:column;">
 
@@ -25,39 +24,27 @@
 
   <!-- Main container (split panes) -->
   <div id="root" style="display:flex; height:calc(100% - 48px);">
-    <!-- Left pane (empty, to be injected dynamically) -->
+    <!-- Left pane -->
     <div class="container container-left" style="width:50%; height:100%;"></div>
 
     <!-- Divider -->
     <div class="divider" id="divider" style="width:5px; background-color:#333; cursor:ew-resize;"></div>
 
-    <!-- Right pane (empty, to be injected dynamically) -->
+    <!-- Right pane -->
     <div class="container container-right" style="width:50%; height:100%;"></div>
   </div>
 
-  <!-- Load toolbar module and initialize it (no JSX / no Babel needed) -->
+  <!-- Load toolbar module -->
 <script type="module">
-  import { createToolbar } from './createToolbar.mjs';
+import { createToolbar } from './createToolbar.mjs';
 
-  document.addEventListener("DOMContentLoaded", () => {
-    createToolbar(".toolbar")
-      .then(() => console.log("Toolbar populated"))
-      .catch(err => console.error("Toolbar init failed:", err));
-  });
-
-    // Wait for DOM ready and then create the toolbar.
-    document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", () => {
+  createToolbar("#global-toolbar");
+});
+</script>
 
 
-      try {
-        // createToolbar handles calling window.loadToolbarElements internally,
-        // so it's safe to call now; it will also set window.loadedToolbarBoxes.
-        await createToolbar('.toolbar');
-        console.log('Toolbar module: createToolbar called.');
-      } catch (err) {
-        console.error('Toolbar module initialization failed:', err);
-      }
-    });
-  </script>
+
+  
 </body>
 </html>
