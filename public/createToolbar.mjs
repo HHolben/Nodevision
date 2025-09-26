@@ -1,3 +1,6 @@
+//Nodevision/public/createToolbar.mjs
+//This file retrieves the toolbar json files and injects the html toolbar with its contents
+
 export async function createToolbar(toolbarSelector = "#global-toolbar") {
   const toolbar = document.querySelector(toolbarSelector);
   if (!toolbar) {
