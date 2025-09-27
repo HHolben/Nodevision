@@ -50,103 +50,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+<!--Load divider bar module-->
+<script type="module">
+import { makeGridResizable } from './gridResizer.mjs';
 
-
-<!--Load panel-->
-<script>
-function makeGridResizable(root) {
-  const dividers = root.querySelectorAll(".divider");
-  let isDragging = false;
-  let currentDivider = null;
-  let orientation = null;
-  let leftPane, rightPane, topPane, bottomPane;
-  let startX, startY, startLeftWidth, startRightWidth, startTopHeight, startBottomHeight;
-
-  dividers.forEach(divider => {
-    divider.addEventListener("mousedown", e => {
-      e.preventDefault();
-      isDragging = true;
-      currentDivider = divider;
-      orientation = divider.dataset.orientation;
-
-      const rect = root.getBoundingClientRect();
-
-      if (orientation === "vertical") {
-        leftPane = divider.previousElementSibling;
-        rightPane = divider.nextElementSibling;
-        startX = e.clientX;
-        startLeftWidth = leftPane.offsetWidth;
-        startRightWidth = rightPane.offsetWidth;
-      }
-
-      if (orientation === "horizontal") {
-        topPane = divider.previousElementSibling;
-        bottomPane = divider.nextElementSibling;
-        startY = e.clientY;
-        startTopHeight = topPane.offsetHeight;
-        startBottomHeight = bottomPane.offsetHeight;
-      }
-
-      // Optional: add overlay to capture mouse over iframes
-      const overlay = document.createElement("div");
-      overlay.id = "resize-overlay";
-      Object.assign(overlay.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100vw",
-        height: "100vh",
-        cursor: orientation === "vertical" ? "ew-resize" : "ns-resize",
-        zIndex: 9999,
-      });
-      document.body.appendChild(overlay);
-    });
-  });
-
-  document.addEventListener("mousemove", e => {
-    if (!isDragging) return;
-
-    if (orientation === "vertical") {
-      const deltaX = e.clientX - startX;
-      const newLeftWidth = startLeftWidth + deltaX;
-      const newRightWidth = startRightWidth - deltaX;
-      if (newLeftWidth > 50 && newRightWidth > 50) {
-        leftPane.style.width = newLeftWidth + "px";
-        rightPane.style.width = newRightWidth + "px";
-      }
-    }
-
-    if (orientation === "horizontal") {
-      const deltaY = e.clientY - startY;
-      const newTopHeight = startTopHeight + deltaY;
-      const newBottomHeight = startBottomHeight - deltaY;
-      if (newTopHeight > 50 && newBottomHeight > 50) {
-        topPane.style.height = newTopHeight + "px";
-        bottomPane.style.height = newBottomHeight + "px";
-      }
-    }
-  });
-
-  document.addEventListener("mouseup", () => {
-    if (!isDragging) return;
-    isDragging = false;
-    currentDivider = null;
-    orientation = null;
-
-    // Remove overlay
-    const overlay = document.getElementById("resize-overlay");
-    if (overlay) overlay.remove();
-  });
-}
-
-// Initialize
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("root");
-  makeGridResizable(root);
+  makeGridResizable(root, { minSize: 50 });
 });
-
-
 </script>
+
+
 
 
 
