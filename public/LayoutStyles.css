@@ -1,24 +1,86 @@
-/*Nodevision/public/LayoutStyles.css
-This stylesheet declares styles related to divider bars and panels*/
-#root {
+/* Nodevision/public/LayoutStyles.css
+   Styles for grid layout, divider bars, and panels */
+
+/* === Base grid system === */
+#grid {
   display: grid;
-  grid-template-columns: 1fr 5px 1fr;
-  grid-template-rows: 1fr 5px 1fr;
+  grid-template-columns: repeat(12, 1fr); /* flexible 12-col system */
+  grid-auto-rows: minmax(100px, auto);    /* rows expand to fit */
+  gap: 8px;
   height: 100vh;
   width: 100vw;
+  background: #e9e9e9;
+  position: relative; /* anchor for overlay */
 }
 
-.pane {
-  overflow: auto;
-  background-color: #f0f0f0;
+.cell {
+  border: 1px dashed #bbb;
+  position: relative;
+  min-height: 150px;
+  transition: border 0.2s, background-color 0.2s;
 }
 
-.divider[data-orientation="vertical"] {
-  background-color: #333;
-  cursor: ew-resize;
+/* Highlight when a floating panel is dragged over */
+.cell.highlight {
+  border: 2px solid #0078d7;
+  background: rgba(0, 120, 215, 0.1);
 }
 
-.divider[data-orientation="horizontal"] {
-  background-color: #333;
-  cursor: ns-resize;
+/* === Overlay for floating panels === */
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none; /* transparent to clicks by default */
+  z-index: 1000;
+}
+
+/* === Panel styles === */
+.panel {
+  background: #fff;
+  border: 1px solid #999;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Docked panels live inside grid cells */
+.panel.docked {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating panels sit above the grid */
+.panel.floating {
+  position: absolute;
+  top: 100px;
+  left: 100px;
+  width: 300px;
+  height: 200px;
+  pointer-events: auto; /* clickable despite overlay */
+}
+
+/* === Drag bar and resize handle === */
+.drag-bar {
+  background: linear-gradient(#555, #333);
+  color: white;
+  padding: 4px;
+  cursor: move;
+  user-select: none;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.2);
+}
+
+.resize-handle {
+  width: 12px;
+  height: 12px;
+  background: #666;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
 }

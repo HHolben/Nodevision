@@ -1,5 +1,8 @@
-//Nodevision/public/createToolbar.mjs
-//This file retrieves the toolbar json files and injects the html toolbar with its contents
+// Nodevision/public/createToolbar.mjs
+// This file retrieves the toolbar JSON files and injects the HTML toolbar with its contents
+// Nodevision/public/createToolbar.mjs
+import { createPanel } from './panelManager.mjs';
+
 export async function createToolbar(toolbarSelector = "#global-toolbar") {
   const toolbar = document.querySelector(toolbarSelector);
   if (!toolbar) {
@@ -7,20 +10,25 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
     return;
   }
 
+  console.log("Starting toolbar creation...");
   toolbar.innerHTML = "";
 
-  // Load the top-level defaultToolbar
   let defaultToolbar = [];
   try {
     const res = await fetch("/ToolbarJSONfiles/defaultToolbar.json");
     if (res.ok) {
       defaultToolbar = await res.json();
+      console.log("Loaded defaultToolbar.json:", defaultToolbar);
+    } else {
+      console.warn("defaultToolbar.json fetch returned non-OK:", res.status);
     }
   } catch (err) {
     console.error("Failed to load defaultToolbar.json:", err);
   }
 
   for (const top of defaultToolbar) {
+    console.log("Processing top-level toolbar item:", top.heading);
+
     const btnWrapper = document.createElement("div");
     btnWrapper.className = "toolbar-button";
     btnWrapper.style.position = "relative";
@@ -33,7 +41,6 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
     btn.style.backgroundColor = "#eee";
     btnWrapper.appendChild(btn);
 
-    // Attach icon if present
     if (top.icon) {
       const icon = document.createElement("img");
       icon.src = top.icon;
@@ -41,9 +48,10 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
       icon.style.width = "16px";
       icon.style.height = "16px";
       btn.prepend(icon);
+      console.log(`Added icon for ${top.heading}`);
     }
 
-    // Try to load a submenu JSON file for this heading
+    // Create dropdown container
     const dropdown = document.createElement("div");
     dropdown.className = "toolbar-dropdown";
     dropdown.style.position = "absolute";
@@ -55,13 +63,15 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
     dropdown.style.minWidth = "180px";
     dropdown.style.zIndex = "1000";
 
-    const jsonFile = `/ToolbarJSONfiles/${top.heading.toLowerCase()}Toolbar.json`;
     let submenuAttached = false;
+    const jsonFile = `/ToolbarJSONfiles/${top.heading.toLowerCase()}Toolbar.json`;
 
     try {
       const res = await fetch(jsonFile);
       if (res.ok) {
         const items = await res.json();
+        console.log(`Loaded submenu JSON for ${top.heading}:`, items);
+
         items.forEach(item => {
           const subBtn = document.createElement("button");
           subBtn.style.display = "flex";
@@ -87,13 +97,25 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
           text.textContent = item.heading;
           subBtn.appendChild(text);
 
-          if (item.script) {
-            subBtn.addEventListener("click", async () => {
-              console.log(`Clicked: ${item.heading}`);
-              try { await import(`./ToolbarJSONfiles/${item.script}`); }
-              catch(e){ console.error(e); }
-            });
-          }
+          // Submenu click handler
+          subBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log(`Sub-toolbar button clicked: ${item.heading}`);
+
+            if (item.panelTemplate) {
+              console.log(`Creating panel for submenu item: ${item.heading}`);
+              createPanel(item.panelTemplate);
+            }
+
+            if (item.script) {
+              try {
+                await import(`./ToolbarJSONfiles/${item.script}`);
+              } catch (err) {
+                console.error(err);
+              }
+            }
+          });
 
           dropdown.appendChild(subBtn);
         });
@@ -104,21 +126,27 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
           btnWrapper.addEventListener("mouseleave", () => dropdown.style.display = "none");
           submenuAttached = true;
         }
+      } else {
+        console.log(`No submenu JSON found for ${top.heading}: ${res.status}`);
       }
     } catch (err) {
-      console.warn(`No submenu JSON found for ${top.heading}`, err);
+      console.warn(`Error fetching submenu for ${top.heading}:`, err);
     }
 
-    // If no submenu, attach callbackKey directly
-    if (!submenuAttached && top.callbackKey) {
+    // Top-level button click handler
+    if (top.panelTemplate) {
+      btn.addEventListener("click", () => {
+        console.log(`Clicked top-level panel button: ${top.heading}`);
+        createPanel(top.panelTemplate);
+      });
+    } else if (!submenuAttached && top.callbackKey) {
       btn.addEventListener("click", () => {
         console.log(`Callback triggered: ${top.callbackKey}`);
-        // TODO: implement callback map if needed
       });
     }
 
     toolbar.appendChild(btnWrapper);
   }
 
-  console.log("Toolbar created with dropdowns where available, buttons otherwise");
+  console.log("Toolbar created successfully.");
 }

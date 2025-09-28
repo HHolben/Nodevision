@@ -41,12 +41,13 @@
     "content": "",
     "script": "SwitchToVirtualWorldEditing.js"
   },
-  {
-    "ToolbarCategory": "View",
-    "heading": "Code Editing",
-    "content": "",
-    "script": "SwitchToCodeEditing.js"
-  },
+{
+  "ToolbarCategory": "View",
+  "heading": "Code Editing",
+  "content": "",
+  "panelTemplate": "Code Editor"
+},
+
   {
     "ToolbarCategory": "View",
     "heading": "Graph View",
