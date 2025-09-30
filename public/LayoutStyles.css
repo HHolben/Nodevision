@@ -164,7 +164,27 @@
 
 /* Panel grid / workspace */
 #workspace { width: 100%; box-sizing: border-box; }
-.panel-row { display:flex; gap:8px; margin-bottom:8px; }
+.panel-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  flex: 1;
+  min-height: 50px;
+  position: relative; /* so dividers align well */
+}
+
+.row-divider {
+  height: 6px;
+  background: #666;
+  cursor: row-resize;
+  flex-shrink: 0;
+
+  /* make sure it's clickable */
+  z-index: 10;
+  position: relative;
+}
+
+
 .panel-cell { position: relative; }
 
 /* Panel visuals */

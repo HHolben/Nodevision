@@ -1,12 +1,13 @@
 <!DOCTYPE html>
+<!--Nodevision/public/index.html-->
+<!--This is the main web page of the Nodevision user interface.-->
+
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nodevision - Toolbar Module Test</title>
-
-
-  
 
   <!-- Stylesheets -->
   <link rel="stylesheet" href="MainStyles.css">
@@ -16,6 +17,7 @@
   <link rel="stylesheet" href="ToolbarStyles.css">
   <link rel="stylesheet" href="NodeViewContainerStyles.css">
 </head>
+
 <body style="height:100%; margin:0; display:flex; flex-direction:column;">
 
   <!-- Top toolbar placeholder -->
@@ -25,29 +27,7 @@
   <!-- Workspace for panels -->
   <div id="workspace"></div>
 
-  <!-- Load toolbar module -->
-<script type="module">
-import { createToolbar } from './createToolbar.mjs';
-
-document.addEventListener("DOMContentLoaded", () => {
-  createToolbar("#global-toolbar");
-});
-</script>
-
-<!--Load divider bar module-->
-<script type="module">
-import { makeGridResizable } from './gridResizer.mjs';
-
-document.addEventListener("DOMContentLoaded", () => {
-  const root = document.getElementById("root");
-  makeGridResizable(root, { minSize: 50 });
-});
-</script>
-
-
-
-
-
-  
+  <!-- Single entrypoint -->
+  <script type="module" src="./main.mjs"></script>
 </body>
 </html>

@@ -1,7 +1,8 @@
 // Nodevision/public/createToolbar.mjs
 // This file retrieves the toolbar JSON files and injects the HTML toolbar with its contents
 // Nodevision/public/createToolbar.mjs
-import { createPanel } from './panelManager.mjs';
+import { createPanel } from '/panels/panelManager.mjs';
+import { dockPanel } from '/panels/panelControls.mjs';  // << add this
 
 export async function createToolbar(toolbarSelector = "#global-toolbar") {
   const toolbar = document.querySelector(toolbarSelector);
