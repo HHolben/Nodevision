@@ -84,3 +84,96 @@
   right: 0;
   cursor: se-resize;
 }
+.panel-row {
+  display: flex;
+  width: 100%;
+}
+
+.panel-cell {
+  flex: 1;
+  border: 1px solid #ccc;
+  min-height: 200px;
+}
+
+.panel {
+  border: 1px solid #333;
+  margin: 4px;
+  background: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  background: #ddd;
+  padding: 2px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-controls button {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+.panel.maximized {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  margin: 0 !important;
+}
+
+.panel-row {
+  display: flex;
+  width: 100%;
+}
+
+.panel-cell {
+  flex: 1;
+  border: 1px solid #ccc;
+  min-height: 200px;
+}
+
+.panel {
+  border: 1px solid #333;
+  margin: 4px;
+  background: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  background: #ddd;
+  padding: 2px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-controls button {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+.panel.maximized {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  margin: 0 !important;
+}
+
+/* Panel grid / workspace */
+#workspace { width: 100%; box-sizing: border-box; }
+.panel-row { display:flex; gap:8px; margin-bottom:8px; }
+.panel-cell { position: relative; }
+
+/* Panel visuals */
+.panel { box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.panel.docked { /* fills cell by inline styles set by JS */ }
+.panel.floating { position:absolute; pointer-events:auto; }
+
+/* Header buttons small styling (if you prefer CSS instead of inline) */
+.panel-header button { font-size: 12px; }
+
+/* Resize handle is positioned by JS but you can tweak */
+.resize-handle { background:#777; border-radius:2px; }
