@@ -149,5 +149,26 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
     toolbar.appendChild(btnWrapper);
   }
 
+  // === FILE MANAGER PANEL HANDLER ===
+window.fileManagerPanelCount = window.fileManagerPanelCount || 0;
+
+function openNewFileManagerPanel(initialPath = '') {
+  window.fileManagerPanelCount += 1;
+  const panelId = `fileViewPanel_${window.fileManagerPanelCount}`;
+  
+  if (window.fileCallbacks && typeof window.fileCallbacks.openFileManager === 'function') {
+    window.fileCallbacks.openFileManager(panelId, initialPath);
+  }
+}
+
+// Example: attach to File -> Files menu item
+const fileMenuFilesItem = document.querySelector("[data-menu='Files']"); // or use your ID
+if (fileMenuFilesItem) {
+  fileMenuFilesItem.addEventListener('click', () => {
+    openNewFileManagerPanel(''); // '' = Notebook root
+  });
+}
+
+
   console.log("Toolbar created successfully.");
 }

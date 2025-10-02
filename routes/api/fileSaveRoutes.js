@@ -1,5 +1,5 @@
 // Nodevision/routes/api/fileSaveRoutes.js
-// Purpose: TODO: Add description of module purpose
+// This module declares the server routes needed to save files.
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -15,14 +15,13 @@ const NOTEBOOK_ROOT = path.resolve(__dirname, '../../Notebook');
 
 // Helper to sanitize and resolve user paths under NOTEBOOK_ROOT
 function resolveNotebookPath(relativePath) {
-  // Normalize slashes
   let safeRelative = path.normalize(relativePath);
 
   // Prevent absolute paths or back-references
   safeRelative = safeRelative.replace(/^(\/*)/, '')              // strip leading slashes
-                             .replace(/\.\.(\/|\\)/g, '');       // strip any “..” segments
+                             .replace(/\.\.(\/|\\)/g, '');       // strip “..” segments
 
-  // Remove a leading "Notebook/" or "Notebook\"
+  // Remove a leading "Notebook/"
   const nbPrefix = `Notebook${path.sep}`;
   if (safeRelative.startsWith(nbPrefix)) {
     safeRelative = safeRelative.slice(nbPrefix.length);
@@ -31,7 +30,9 @@ function resolveNotebookPath(relativePath) {
   return path.join(NOTEBOOK_ROOT, safeRelative);
 }
 
-// Endpoint to save file content
+/* ========= Existing routes ========= */
+
+// Save (update or overwrite file)
 router.post('/save', async (req, res) => {
   const { path: relativePath, content, encoding, mimeType } = req.body;
   if (!relativePath || typeof content !== 'string') {
@@ -40,17 +41,13 @@ router.post('/save', async (req, res) => {
 
   const filePath = resolveNotebookPath(relativePath);
   try {
-    // Ensure the directory tree exists
     await fs.mkdir(path.dirname(filePath), { recursive: true });
 
-    // Handle different encodings
     if (encoding === 'base64') {
-      // For base64 image data, decode and write as binary
       const buffer = Buffer.from(content, 'base64');
       await fs.writeFile(filePath, buffer);
       console.log(`Saved binary file: ${relativePath} (${mimeType || 'unknown type'})`);
     } else {
-      // Default: write as UTF-8 text file
       await fs.writeFile(filePath, content, 'utf8');
       console.log(`Saved text file: ${relativePath}`);
     }
@@ -62,12 +59,10 @@ router.post('/save', async (req, res) => {
   }
 });
 
-// Endpoint to create a new (empty) file
+// Create new file
 router.post('/create', async (req, res) => {
   const { path: relativePath } = req.body;
-  if (!relativePath) {
-    return res.status(400).send('File path is required');
-  }
+  if (!relativePath) return res.status(400).send('File path is required');
 
   const filePath = resolveNotebookPath(relativePath);
   try {
@@ -83,17 +78,13 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// Endpoint to create a new directory
+// Create new directory
 router.post('/create-directory', async (req, res) => {
   const { path: relativePath } = req.body;
-  if (!relativePath) {
-    return res.status(400).json({ error: 'Directory path is required' });
-  }
+  if (!relativePath) return res.status(400).json({ error: 'Directory path is required' });
 
   const targetPath = resolveNotebookPath(relativePath);
-
   try {
-    // Create parent dirs, then the target directory itself
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.mkdir(targetPath);
     res.json({ success: true, path: relativePath });
@@ -103,6 +94,89 @@ router.post('/create-directory', async (req, res) => {
     }
     console.error('Error creating directory:', err);
     res.status(500).json({ error: 'Error creating directory' });
+  }
+});
+
+/* ========= New CRUD routes ========= */
+
+// Delete file or directory
+router.post('/delete', async (req, res) => {
+  const { path: relativePath } = req.body;
+  if (!relativePath) return res.status(400).send('Path is required');
+
+  const targetPath = resolveNotebookPath(relativePath);
+  try {
+    const stat = await fs.stat(targetPath);
+    if (stat.isDirectory()) {
+      await fs.rm(targetPath, { recursive: true, force: true });
+    } else {
+      await fs.unlink(targetPath);
+    }
+    res.json({ success: true, path: relativePath });
+  } catch (err) {
+    console.error('Error deleting:', err);
+    res.status(500).send('Error deleting');
+  }
+});
+
+// Rename (or move)
+router.post('/rename', async (req, res) => {
+  const { oldPath, newPath } = req.body;
+  if (!oldPath || !newPath) return res.status(400).send('Both oldPath and newPath are required');
+
+  const src = resolveNotebookPath(oldPath);
+  const dest = resolveNotebookPath(newPath);
+
+  try {
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.rename(src, dest);
+    res.json({ success: true, oldPath, newPath });
+  } catch (err) {
+    console.error('Error renaming/moving:', err);
+    res.status(500).send('Error renaming/moving');
+  }
+});
+
+// Copy
+router.post('/copy', async (req, res) => {
+  const { source, destination } = req.body;
+  if (!source || !destination) return res.status(400).send('Both source and destination are required');
+
+  const src = resolveNotebookPath(source);
+  const dest = resolveNotebookPath(destination);
+
+  try {
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+
+    // If directory, copy recursively
+    const stat = await fs.stat(src);
+    if (stat.isDirectory()) {
+      await fs.cp(src, dest, { recursive: true, errorOnExist: false });
+    } else {
+      await fs.copyFile(src, dest);
+    }
+    res.json({ success: true, source, destination });
+  } catch (err) {
+    console.error('Error copying:', err);
+    res.status(500).send('Error copying');
+  }
+});
+
+// Cut (move to new location)
+router.post('/cut', async (req, res) => {
+  const { source, destination } = req.body;
+  if (!source || !destination) return res.status(400).send('Both source and destination are required');
+
+  const src = resolveNotebookPath(source);
+  const dest = resolveNotebookPath(destination);
+
+  try {
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.rename(src, dest); // move
+    res.json({ success: true, source, destination });
+  } catch (err) {
+    console.error('Error cutting/moving:', err);
+    res.status(500).send('Error cutting/moving');
   }
 });
 

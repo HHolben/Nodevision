@@ -1,5 +1,10 @@
 [
-
+  {
+    "ToolbarCategory": "File",
+    "heading": "File View",
+    "icon": "icons/DefaultNodeImage.png",
+    "panelTemplate": "fileViewPanel.json"
+  },
 
   {
     "ToolbarCategory": "File",
@@ -26,7 +31,6 @@
     "callbackKey": "saveFile",
     "modes": ["WYSIWYG Editing", "Code Editing", "Raster Editing"],
     "icon": "icons/SaveIcon.png"
-
   },
   {
     "ToolbarCategory": "File",
@@ -41,9 +45,8 @@
     "content": "",
     "callbackKey": "viewNodevisionDeployment",
     "icon": "icons/ViewDeploymentNodevisionIcon.png"
-
   },
-    {
+  {
     "ToolbarCategory": "File",
     "heading": "Upload to Arduino",
     "content": "",
@@ -52,27 +55,57 @@
     "icon": "icons/ArduinoUpload.png"
   },
   {
-  "ToolbarCategory": "File",
-  "heading": "Edit SVG",
-  "content": "",
-  "callbackKey": "switchToSVGEditing",
-  "modes": ["SVG Editing"],
-  "icon": "icons/SVGIcon.png"
-},
-{
-  "ToolbarCategory": "File",
-  "heading": "Save SVG",
-  "content": "",
-  "callbackKey": "saveFile",
-  "modes": ["SVG Editing"],
-  "icon": "icons/SaveIcon.png"
-},
-{
-  "ToolbarCategory": "File",
-  "heading": "Download File",
-  "content": "",
-  "callbackKey": "downloadFile",
-  "icon": "icons/DownloadIcon.png"
-}
+    "ToolbarCategory": "File",
+    "heading": "Edit SVG",
+    "content": "",
+    "callbackKey": "switchToSVGEditing",
+    "modes": ["SVG Editing"],
+    "icon": "icons/SVGIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Save SVG",
+    "content": "",
+    "callbackKey": "saveFile",
+    "modes": ["SVG Editing"],
+    "icon": "icons/SaveIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Download File",
+    "content": "",
+    "callbackKey": "downloadFile",
+    "icon": "icons/DownloadIcon.png"
+  },
 
+  {
+    "ToolbarCategory": "File",
+    "heading": "Delete File/Directory",
+    "callbackKey": "deleteFile",
+    "icon": "icons/DeleteIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Rename File/Directory",
+    "callbackKey": "renameFile",
+    "icon": "icons/RenameIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Copy File/Directory",
+    "callbackKey": "copyFile",
+    "icon": "icons/CopyIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Cut File/Directory",
+    "callbackKey": "cutFile",
+    "icon": "icons/CutIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Paste File/Directory",
+    "callbackKey": "pasteFile",
+    "icon": "icons/PasteIcon.png"
+  }
 ]
