@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nodevision Developer Help</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  ul { list-style-type: none; padding-left: 20px; }
+  .folder { cursor: pointer; font-weight: bold; }
+  .folder::before { content: "📂 "; }
+  .file::before { content: "📄 "; }
+  .nested { display: none; }
+  .active > .nested { display: block; }
+  #descriptionBox {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f9f9f9;
+  }
+</style>
+</head>
+<body>
+<h1>Developer Help — Nodevision File Reference</h1>
+<div id="fileTree"></div>
+<div id="descriptionBox">
+  <strong>File Description:</strong>
+  <p id="descText">Click a file to view its description.</p>
+</div>
+
+<script>
+// Example file list (replace with your JSON later)
+const flatNodes = [
+  { "path": "public/index.html", "type": "blob" },
+  { "path": "public/main.js", "type": "blob" },
+  { "path": "routes/api/csv.js", "type": "blob" },
+  { "path": "routes/api/files.js", "type": "blob" },
+  { "path": "src/server.js", "type": "blob" }
+];
+
+// Fetch file descriptions
+let fileDescriptions = {};
+fetch("fileDescriptions.json")
+  .then(r => r.json())
+  .then(data => {
+    fileDescriptions = data;
+    renderTree();
+  })
+  .catch(err => {
+    console.error("Could not load fileDescriptions.json", err);
+    renderTree();
+  });
+
+// Convert flat list into nested structure
+function buildTree(flatNodes) {
+  const root = [];
+  const map = {};
+  flatNodes.forEach(node => {
+    const parts = node.path.split('/');
+    let currentLevel = root;
+    parts.forEach((part, i) => {
+      const pathSoFar = parts.slice(0, i+1).join('/');
+      let existingNode = map[pathSoFar];
+      if (!existingNode) {
+        const newNode = {
+          path: part,
+          fullPath: pathSoFar,
+          type: (i === parts.length - 1) ? node.type : "tree",
+          children: []
+        };
+        currentLevel.push(newNode);
+        map[pathSoFar] = newNode;
+        existingNode = newNode;
+      }
+      currentLevel = existingNode.children;
+    });
+  });
+  return root;
+}
+
+// Recursive function to create HTML tree
+function createTreeHTML(nodes) {
+  const ul = document.createElement("ul");
+  nodes.forEach(node => {
+    const li = document.createElement("li");
+    if (node.type === "tree") {
+      li.classList.add("folder");
+      li.textContent = node.path;
+      if (node.children.length > 0) {
+        const childUl = createTreeHTML(node.children);
+        childUl.classList.add("nested");
+        li.appendChild(childUl);
+        li.addEventListener("click", function(e) {
+          e.stopPropagation();
+          this.classList.toggle("active");
+        });
+      }
+    } else {
+      li.classList.add("file");
+      li.textContent = node.path;
+      li.title = fileDescriptions[node.fullPath] || "No description available";
+      li.addEventListener("click", function(e) {
+        e.stopPropagation();
+        document.getElementById("descText").textContent =
+          fileDescriptions[node.fullPath] || "No description available.";
+      });
+    }
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
+// Render tree
+function renderTree() {
+  const nestedTree = buildTree(flatNodes);
+  document.getElementById("fileTree").appendChild(createTreeHTML(nestedTree));
+}
+</script>
+</body>
+</html>
