@@ -1,0 +1,64 @@
+{
+  "panels": [
+    {
+      "id": "InfoPanel",
+      "displayName": "Info Panel",
+      "description": "Displays information about directories, files, and links; can control active view panels.",
+      "states": ["Closed", "Loading", "Browsing", "Selecting", "Active", "Error"],
+      "properties": { "active": true, "duplicable": true, "selectable": true },
+      "dataFields": ["selectedItem", "currentDirectory"],
+      "behaviors": ["browseDirectory", "selectItem", "makeActive"],
+      "behaviorModule": "./infoPanel.mjs"
+    },
+    {
+      "id": "ViewPanel",
+      "displayName": "View Panel",
+      "description": "Displays file contents in various modes, can be active.",
+      "states": ["Closed", "Loading", "Displaying", "Displaying.Code", "Displaying.Rendered", "Displaying.GameWorld", "Active", "EditingProxy", "Error"],
+      "properties": { "active": true, "duplicable": true, "selectable": true },
+      "dataFields": ["fileName", "filePath", "renderMode"],
+      "behaviors": ["renderContent", "switchMode", "makeActive"],
+      "behaviorModule": "./viewPanel.mjs"
+    },
+    {
+      "id": "EditorPanel",
+      "displayName": "Editor Panel",
+      "description": "Allows file content editing; multiple editor instances can be open but only one active at a time.",
+      "states": ["Closed", "Loading", "Editing", "Active", "Saving", "Error"],
+      "properties": { "active": true, "duplicable": true, "selectable": true },
+      "dataFields": ["fileName", "filePath", "fileType"],
+      "behaviors": ["editContent", "saveFile", "switchActive"],
+      "behaviorModule": "./editorPanel.mjs"
+    },
+    {
+      "id": "ControlPanel",
+      "displayName": "Control Panel",
+      "description": "Manages system and user settings; only one instance.",
+      "states": ["Inactive", "Active", "Applying"],
+      "properties": { "active": false, "duplicable": false, "selectable": false },
+      "dataFields": [],
+      "behaviors": ["changeSetting"],
+      "behaviorModule": "./controlPanel.mjs"
+    },
+    {
+      "id": "ToolPanel",
+      "displayName": "Tool Panel",
+      "description": "Optional tool interface that can apply actions to Info or View panels.",
+      "states": ["Closed", "Active", "Processing", "Error"],
+      "properties": { "active": true, "duplicable": true, "selectable": true },
+      "dataFields": ["targetPanel"],
+      "behaviors": ["applyTool"],
+      "behaviorModule": "./toolPanel.mjs"
+    },
+    {
+      "id": "CompositePanel",
+      "displayName": "Composite Panel",
+      "description": "Panel that combines multiple panels or functionalities.",
+      "states": ["Closed", "Active"],
+      "properties": { "active": true, "duplicable": true, "selectable": true },
+      "dataFields": [],
+      "behaviors": ["combinePanels"],
+      "behaviorModule": "./compositePanel.mjs"
+    }
+  ]
+}
