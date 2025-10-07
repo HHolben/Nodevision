@@ -1,138 +1,85 @@
 // Nodevision/public/panels/panelFactory.mjs
-// Builds the DOM structure for panels and loads behavior/variables from panelDefinitions.json
+// Creates DOM structures for different panel types (e.g., InfoPanel, CodeEditor, GraphPanel)
 
-import { styleControlButton } from "./utils.mjs";
+export function createPanelDOM(templateName, instanceId, panelType = "GenericPanel", panelVars = {}) {
+  console.log(`createPanelDOM() called with templateName="${templateName}", panelType="${panelType}"`);
 
-/**
- * Load panel definitions from JSON
- */
-export async function loadPanelDefinitions() {
-  const response = await fetch("/panels/panelDefinitions.json");
-  if (!response.ok) throw new Error("Failed to load panel definitions");
-  return await response.json();
-}
-
-/**
- * Create a panel DOM element based on its template definition
- */
-export async function createPanelDOM(templateName, instanceId, extraVars = {}) {
-  const panelDefs = await loadPanelDefinitions();
-  const template = panelDefs.templates[templateName];
-
-  if (!template) {
-    console.warn(`Panel template "${templateName}" not found in panelDefinitions.json`);
-  }
-
-  // --- Panel container ---
+  // Create the panel container
   const panel = document.createElement("div");
-  panel.className = "panel docked";
-  panel.dataset.template = templateName;
-  panel.dataset.instanceId = instanceId;
+  panel.classList.add("panel");
+  panel.id = instanceId;
 
-  Object.assign(panel.style, {
-    position: "relative",
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    boxSizing: "border-box",
-    background: template?.appearance?.background || "#fff",
-    border: "1px solid #ccc",
-  });
-
-  // --- Header ---
+  // === Create header ===
   const header = document.createElement("div");
-  header.className = "panel-header";
-  Object.assign(header.style, {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "6px 8px",
-    background: template?.appearance?.headerBackground || "#333",
-    color: template?.appearance?.headerColor || "#fff",
-    cursor: "grab",
-    userSelect: "none",
-  });
+  header.classList.add("panel-header");
+  header.textContent = templateName;
 
-  const titleSpan = document.createElement("span");
-  titleSpan.textContent = template?.displayName
-    ? `${template.displayName} (${instanceId})`
-    : `${templateName} (${instanceId})`;
-  titleSpan.style.fontSize = "13px";
-
-  // --- Header controls ---
-  const controls = document.createElement("div");
-  controls.className = "panel-controls";
-  controls.style.display = "flex";
-  controls.style.gap = "6px";
-
+  // Control buttons
   const dockBtn = document.createElement("button");
-  dockBtn.className = "dock-btn";
-  dockBtn.title = "Dock / Undock";
-  dockBtn.textContent = "⇔";
-  styleControlButton(dockBtn);
+  dockBtn.textContent = "⤓";
+  dockBtn.classList.add("panel-dock-btn");
 
   const maxBtn = document.createElement("button");
-  maxBtn.className = "max-btn";
-  maxBtn.title = "Maximize / Restore";
   maxBtn.textContent = "⬜";
-  styleControlButton(maxBtn);
+  maxBtn.classList.add("panel-max-btn");
 
   const closeBtn = document.createElement("button");
-  closeBtn.className = "close-btn";
-  closeBtn.title = "Close";
-  closeBtn.textContent = "✕";
-  styleControlButton(closeBtn);
+  closeBtn.textContent = "✖";
+  closeBtn.classList.add("panel-close-btn");
 
-  controls.appendChild(dockBtn);
-  controls.appendChild(maxBtn);
-  controls.appendChild(closeBtn);
-  header.appendChild(titleSpan);
-  header.appendChild(controls);
+  header.appendChild(dockBtn);
+  header.appendChild(maxBtn);
+  header.appendChild(closeBtn);
 
-  // --- Content area ---
+  // === Create content area ===
   const content = document.createElement("div");
-  content.className = "panel-content";
-  Object.assign(content.style, {
-    padding: "8px",
-    flex: "1",
-    overflow: "auto",
-  });
+  content.classList.add("panel-content");
 
-  // Define default text before behavior module loads
-  content.textContent = `Loading content for "${templateName}" — instance ${instanceId}`;
+  // Different panel types can have different initial content
+  switch (panelType) {
+    case "InfoPanel":
+      content.innerHTML = `
+        <div class="info-panel">
+          <h3>Information Panel</h3>
+          <pre>${JSON.stringify(panelVars, null, 2)}</pre>
+        </div>`;
+      break;
 
-  // --- Resizer ---
+    case "CodeEditor":
+      content.innerHTML = `
+        <textarea class="code-editor" spellcheck="false">// Start typing code...</textarea>`;
+      break;
+
+    case "FileView":
+      content.innerHTML = `
+        <div class="file-view">
+          <p>Loading files from: ${panelVars.currentDirectory || "unknown directory"}</p>
+        </div>`;
+      break;
+
+    case "GraphPanel":
+      content.innerHTML = `
+        <div class="graph-panel">
+          <p>Graph visualization will appear here.</p>
+        </div>`;
+      break;
+
+    default:
+      content.innerHTML = `
+        <div class="generic-panel">
+          <p>Panel type: ${panelType}</p>
+          <pre>${JSON.stringify(panelVars, null, 2)}</pre>
+        </div>`;
+  }
+
+  // === Add resizer ===
   const resizer = document.createElement("div");
-  resizer.className = "resize-handle";
-  Object.assign(resizer.style, {
-    width: "12px",
-    height: "12px",
-    position: "absolute",
-    right: "2px",
-    bottom: "2px",
-    cursor: "se-resize",
-    background: "#777",
-    display: "none",
-  });
+  resizer.classList.add("panel-resizer");
 
-  // Append elements
+  // === Assemble the panel ===
   panel.appendChild(header);
   panel.appendChild(content);
   panel.appendChild(resizer);
 
-  // --- Apply variables and behavior ---
-  const mergedVars = { ...(template?.variables || {}), ...extraVars };
-  if (template?.behavior?.module) {
-    try {
-      const behaviorModule = await import(template.behavior.module);
-      if (behaviorModule && behaviorModule.initializePanel) {
-        behaviorModule.initializePanel(panel, mergedVars);
-      }
-    } catch (err) {
-      console.error(`Error loading behavior module for ${templateName}:`, err);
-    }
-  }
-
-  return { panel, header, dockBtn, maxBtn, closeBtn, resizer, content };
+  return { panel, header, dockBtn, maxBtn, closeBtn, resizer };
 }

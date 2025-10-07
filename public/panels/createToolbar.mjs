@@ -1,8 +1,7 @@
 // Nodevision/public/createToolbar.mjs
 // This file retrieves the toolbar JSON files and injects the HTML toolbar with its contents
-// Nodevision/public/createToolbar.mjs
 import { createPanel } from '/panels/panelManager.mjs';
-import { dockPanel } from '/panels/panelControls.mjs';  // << add this
+import { dockPanel } from '/panels/panelControls.mjs';
 
 export async function createToolbar(toolbarSelector = "#global-toolbar") {
   const toolbar = document.querySelector(toolbarSelector);
@@ -52,17 +51,19 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
       console.log(`Added icon for ${top.heading}`);
     }
 
-    // Create dropdown container
+    // === Dropdown menu setup ===
     const dropdown = document.createElement("div");
     dropdown.className = "toolbar-dropdown";
-    dropdown.style.position = "absolute";
-    dropdown.style.top = "100%";
-    dropdown.style.left = "0";
-    dropdown.style.backgroundColor = "#fff";
-    dropdown.style.border = "1px solid #333";
-    dropdown.style.display = "none";
-    dropdown.style.minWidth = "180px";
-    dropdown.style.zIndex = "1000";
+    Object.assign(dropdown.style, {
+      position: "absolute",
+      top: "100%",
+      left: "0",
+      backgroundColor: "#fff",
+      border: "1px solid #333",
+      display: "none",
+      minWidth: "180px",
+      zIndex: "1000"
+    });
 
     let submenuAttached = false;
     const jsonFile = `/ToolbarJSONfiles/${top.heading.toLowerCase()}Toolbar.json`;
@@ -98,23 +99,34 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
           text.textContent = item.heading;
           subBtn.appendChild(text);
 
-          // Submenu click handler
+          // === Submenu click handler ===
           subBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
             e.preventDefault();
             console.log(`Sub-toolbar button clicked: ${item.heading}`);
 
-            if (item.panelTemplate) {
-              console.log(`Creating panel for submenu item: ${item.heading}`);
-              createPanel(item.panelTemplate);
-            }
-
-            if (item.script) {
-              try {
-                await import(`./ToolbarJSONfiles/${item.script}`);
-              } catch (err) {
-                console.error(err);
+            try {
+              // (1) Create panel if defined
+              if (item.panelTemplateId || item.panelTemplate) {
+                const templateId = item.panelTemplateId || item.panelTemplate;
+                const instanceVars = item.defaultInstanceVars || {};
+                console.log(`Creating panel (${templateId}) with vars:`, instanceVars);
+                await createPanel(templateId, instanceVars);
               }
+
+              // (2) Run script if provided
+              if (item.script) {
+                console.log(`Importing script: ${item.script}`);
+                await import(`/ToolbarJSONfiles/${item.script}`);
+              }
+
+              // (3) Trigger callback if defined
+              if (item.callbackKey && window.fileCallbacks && typeof window.fileCallbacks[item.callbackKey] === "function") {
+                console.log(`Executing callback: ${item.callbackKey}`);
+                window.fileCallbacks[item.callbackKey]();
+              }
+            } catch (err) {
+              console.error("Error handling toolbar submenu item:", err);
             }
           });
 
@@ -134,41 +146,26 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
       console.warn(`Error fetching submenu for ${top.heading}:`, err);
     }
 
-    // Top-level button click handler
-    if (top.panelTemplate) {
-      btn.addEventListener("click", () => {
-        console.log(`Clicked top-level panel button: ${top.heading}`);
-        createPanel(top.panelTemplate);
-      });
-    } else if (!submenuAttached && top.callbackKey) {
-      btn.addEventListener("click", () => {
-        console.log(`Callback triggered: ${top.callbackKey}`);
-      });
-    }
+    // === Top-level button handler ===
+    btn.addEventListener("click", async () => {
+      try {
+        if (top.panelTemplateId || top.panelTemplate) {
+          const templateId = top.panelTemplateId || top.panelTemplate;
+          const instanceVars = top.defaultInstanceVars || {};
+          console.log(`Creating top-level panel: ${templateId}`, instanceVars);
+          await createPanel(templateId, instanceVars);
+        } else if (top.callbackKey && window.fileCallbacks?.[top.callbackKey]) {
+          window.fileCallbacks[top.callbackKey]();
+        } else {
+          console.log(`No panel or callback for ${top.heading}`);
+        }
+      } catch (err) {
+        console.error(`Error creating panel for ${top.heading}:`, err);
+      }
+    });
 
     toolbar.appendChild(btnWrapper);
   }
-
-  // === FILE MANAGER PANEL HANDLER ===
-window.fileManagerPanelCount = window.fileManagerPanelCount || 0;
-
-function openNewFileManagerPanel(initialPath = '') {
-  window.fileManagerPanelCount += 1;
-  const panelId = `fileViewPanel_${window.fileManagerPanelCount}`;
-  
-  if (window.fileCallbacks && typeof window.fileCallbacks.openFileManager === 'function') {
-    window.fileCallbacks.openFileManager(panelId, initialPath);
-  }
-}
-
-// Example: attach to File -> Files menu item
-const fileMenuFilesItem = document.querySelector("[data-menu='Files']"); // or use your ID
-if (fileMenuFilesItem) {
-  fileMenuFilesItem.addEventListener('click', () => {
-    openNewFileManagerPanel(''); // '' = Notebook root
-  });
-}
-
 
   console.log("Toolbar created successfully.");
 }

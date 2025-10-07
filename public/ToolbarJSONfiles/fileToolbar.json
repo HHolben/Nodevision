@@ -1,11 +1,43 @@
 [
   {
     "ToolbarCategory": "File",
+    "heading": "File Manager",
+    "icon": "icons/DefaultNodeImage.png",
+    "panelTemplateId": "InfoPanel",
+    "panelType": "InfoPanel",
+    "defaultInstanceVars": { "currentDirectory": "/Notebook", "selectedItem": null }
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "File View",
     "icon": "icons/DefaultNodeImage.png",
-    "panelTemplate": "fileViewPanel.json"
+    "panelTemplateId": "ViewPanel",
+    "panelType": "ViewPanel",
+    "defaultInstanceVars": { "filePath": "/Notebook/index.html", "renderMode": "Displaying.Rendered" }
   },
-
+  {
+    "ToolbarCategory": "File",
+    "heading": "Code Editor",
+    "icon": "icons/DefaultNodeImage.png",
+    "panelTemplateId": "EditorPanel",
+    "panelType": "EditorPanel",
+    "defaultInstanceVars": { "filePath": "/Notebook/index.html", "fileType": "html" }
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Control Panel",
+    "icon": "icons/SettingsIcon.png",
+    "panelTemplateId": "ControlPanel",
+    "panelType": "ControlPanel"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Tool Panel",
+    "icon": "icons/ToolIcon.png",
+    "panelTemplateId": "ToolPanel",
+    "panelType": "ToolPanel",
+    "defaultInstanceVars": { "targetPanel": "ViewPanel" }
+  },
   {
     "ToolbarCategory": "File",
     "heading": "New File",
@@ -21,35 +53,33 @@
   {
     "ToolbarCategory": "File",
     "heading": "Export Graph",
-    "content": "",
-    "script": "ExportGraph.js"
+    "script": "ExportGraph.js",
+    "icon": "icons/ExportGraph.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "Save File",
-    "content": "",
     "callbackKey": "saveFile",
     "modes": ["WYSIWYG Editing", "Code Editing", "Raster Editing"],
-    "icon": "icons/SaveIcon.png"
+    "icon": "icons/SaveIcon.png",
+    "panelTemplateId": "EditorPanel",
+    "panelType": "EditorPanel"
   },
   {
     "ToolbarCategory": "File",
     "heading": "View PHP Deployment",
-    "content": "",
     "callbackKey": "viewPHPdeployment",
     "icon": "icons/ViewDeploymentIconPHP.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "View Nodevision Deployment",
-    "content": "",
     "callbackKey": "viewNodevisionDeployment",
     "icon": "icons/ViewDeploymentNodevisionIcon.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "Upload to Arduino",
-    "content": "",
     "callbackKey": "uploadToArduino",
     "modes": ["Code Editing"],
     "icon": "icons/ArduinoUpload.png"
@@ -57,27 +87,28 @@
   {
     "ToolbarCategory": "File",
     "heading": "Edit SVG",
-    "content": "",
     "callbackKey": "switchToSVGEditing",
     "modes": ["SVG Editing"],
-    "icon": "icons/SVGIcon.png"
+    "icon": "icons/SVGIcon.png",
+    "panelTemplateId": "EditorPanel",
+    "panelType": "EditorPanel",
+    "defaultInstanceVars": { "fileType": "svg" }
   },
   {
     "ToolbarCategory": "File",
     "heading": "Save SVG",
-    "content": "",
     "callbackKey": "saveFile",
     "modes": ["SVG Editing"],
-    "icon": "icons/SaveIcon.png"
+    "icon": "icons/SaveIcon.png",
+    "panelTemplateId": "EditorPanel",
+    "panelType": "EditorPanel"
   },
   {
     "ToolbarCategory": "File",
     "heading": "Download File",
-    "content": "",
     "callbackKey": "downloadFile",
     "icon": "icons/DownloadIcon.png"
   },
-
   {
     "ToolbarCategory": "File",
     "heading": "Delete File/Directory",
