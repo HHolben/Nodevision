@@ -50,12 +50,16 @@ export function createPanelDOM(templateName, instanceId, panelType = "GenericPan
         <textarea class="code-editor" spellcheck="false">// Start typing code...</textarea>`;
       break;
 
-    case "FileView":
-      content.innerHTML = `
-        <div class="file-view">
-          <p>Loading files from: ${panelVars.currentDirectory || "unknown directory"}</p>
-        </div>`;
-      break;
+case "FileView":
+  content.innerHTML = `
+    <div class="file-view">
+      <p>Loading File Manager...</p>
+    </div>`;
+  import("/PanelInstances/InfoPanels/FileManager.mjs")
+    .then(mod => mod.createFileManagerPanel(content, panelVars))
+    .catch(err => console.error("Failed to initialize File Manager:", err));
+  break;
+
 
     case "GraphPanel":
       content.innerHTML = `

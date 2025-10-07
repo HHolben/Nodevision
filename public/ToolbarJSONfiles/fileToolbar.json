@@ -2,10 +2,9 @@
   {
     "ToolbarCategory": "File",
     "heading": "File Manager",
-    "icon": "icons/DefaultNodeImage.png",
-    "panelTemplateId": "InfoPanel",
-    "panelType": "InfoPanel",
-    "defaultInstanceVars": { "currentDirectory": "/Notebook", "selectedItem": null }
+    "icon": "icons/folder.png",
+    "panelTemplate": "fileManagerPanel.json",
+    "panelScript": "PanelInstances/InfoPanels/FileManager.mjs"
   },
   {
     "ToolbarCategory": "File",
