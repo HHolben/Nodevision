@@ -1,34 +1,56 @@
 // Nodevision/public/panels/panelManager.mjs
-// This file uses other modules to handle panel creation and manipulation.
+// Handles creating and managing panels dynamically
 
-import { ensureWorkspace, ensureTopRow, createCell } from "./workspace.mjs";
-import { createPanelDOM } from "./panelFactory.mjs";
-import { attachControlEvents } from "./panelControls.mjs";
-import { attachDragEvents } from "./panelDrag.mjs";
-import { attachResizeEvents } from "./panelResize.mjs";
+export async function createPanel(panelType, instanceVars = {}) {
+  try {
+    console.log(`createPanel(): Creating panel for type "${panelType}"`);
 
-let panelCounter = 0;
+    // If panelType is already a DOM element
+    if (panelType instanceof HTMLElement) {
+      document.querySelector("#panel-container")?.appendChild(panelType);
+      return panelType;
+    }
 
-export function createPanel(templateName = "Panel", panelType = "GenericPanel", panelVars = {}) {
-  const workspace = ensureWorkspace();
-  const topRow = ensureTopRow(workspace);
-  const cell = createCell(topRow);
+    // Create the panel container
+    const panel = document.createElement("div");
+    panel.classList.add("info-panel");
+    panel.dataset.type = panelType;
+    panel.style.border = "1px solid #999";
+    panel.style.margin = "4px";
+    panel.style.padding = "8px";
+    panel.style.background = "#fafafa";
 
-  const instanceId = `panel-${panelCounter++}`;
-  const result = createPanelDOM(templateName, instanceId, panelType, panelVars);
+    // Dynamic module path
+    const modulePath = `../PanelInstances/InfoPanels/${panelType}.mjs`;
+    console.log(`Loading panel module from: ${modulePath}`);
 
-  if (!result || !result.panel) {
-    console.error("createPanelDOM() did not return a valid DOM node:", result);
-    return null;
+    try {
+      const panelModule = await import(modulePath);
+
+      if (typeof panelModule.setupPanel === "function") {
+        // Pass the panel DOM element and vars to the module
+        await panelModule.setupPanel(panel, instanceVars);
+      } else {
+        panel.innerHTML = `<b>${panelType}</b> (no setupPanel() function found)`;
+        console.warn(`Module ${panelType} loaded, but no setupPanel() found.`);
+      }
+
+    } catch (importErr) {
+      console.warn(`Failed to import panel module at ${modulePath}:`, importErr);
+      panel.innerHTML = `Panel type: ${panelType}<br>No JS module found.`;
+    }
+
+    // Append panel to container
+    const container = document.querySelector("#panel-container");
+    if (container) container.appendChild(panel);
+    else document.body.appendChild(panel);
+
+    console.log(`Panel "${panelType}" created successfully.`);
+    return panel;
+
+  } catch (err) {
+    console.error("createPanel() failed:", err);
+    throw err;
   }
-
-  const { panel, header, dockBtn, maxBtn, closeBtn, resizer } = result;
-
-  cell.appendChild(panel);
-
-  attachControlEvents(panel, dockBtn, maxBtn, closeBtn);
-  attachDragEvents(panel, header);
-  attachResizeEvents(panel, resizer);
-
-  return panel;
 }
+

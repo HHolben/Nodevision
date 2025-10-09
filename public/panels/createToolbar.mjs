@@ -107,12 +107,27 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
 
             try {
               // (1) Create panel if defined
-              if (item.panelTemplateId || item.panelTemplate) {
-                const templateId = item.panelTemplateId || item.panelTemplate;
-                const instanceVars = item.defaultInstanceVars || {};
-                console.log(`Creating panel (${templateId}) with vars:`, instanceVars);
-                await createPanel(templateId, instanceVars);
-              }
+if (item.panelTemplateId || item.panelTemplate) {
+  const templateId = item.panelTemplateId || item.panelTemplate;
+  const instanceVars = item.defaultInstanceVars || {};
+
+  // 🔧 Derive or read the proper module name
+  // Option 1: If JSON defines it directly, use that
+  const moduleName = item.panelModule
+    // Option 2: otherwise, derive it from the filename
+    || templateId
+      .replace(".json", "")
+      .replace("Panel", "")
+      .replace("panel", "")
+      .replace(/^\w/, c => c.toUpperCase());
+
+  // Optional: allow specifying the type of panel
+  const panelType = item.panelType || "InfoPanel";
+
+  console.log(`Creating panel instance "${moduleName}" (type: ${panelType}) with vars:`, instanceVars);
+  await createPanel(moduleName, panelType, instanceVars);
+}
+
 
               // (2) Run script if provided
               if (item.script) {

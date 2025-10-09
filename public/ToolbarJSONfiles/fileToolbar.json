@@ -4,6 +4,7 @@
     "heading": "File Manager",
     "icon": "icons/folder.png",
     "panelTemplate": "fileManagerPanel.json",
+      "panelModule": "FileManager",
     "panelScript": "PanelInstances/InfoPanels/FileManager.mjs"
   },
   {
