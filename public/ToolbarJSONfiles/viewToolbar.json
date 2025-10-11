@@ -1,19 +1,56 @@
-{
-  "ToolbarCategory": "View",
-  "heading": "Workspace Tools",
-  "icon": "icons/Workspace.png",
-  "panelTemplateId": "WorkspacePanel",
-  "panelType": "ControlPanel",
-  "children": [
-    {
-      "heading": "Overview Map",
-      "icon": "icons/MapIcon.png",
-      "panelTemplateId": "MapPanel"
-    },
-    {
-      "heading": "Region Settings",
-      "icon": "icons/SettingsIcon.png",
-      "callbackKey": "openRegionSettings"
-    }
-  ]
-}
+[
+  {
+    "ToolbarCategory": "View",
+    "heading": "Viewing",
+    "content": "",
+    "script": "SwitchToViewing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "WYSIWYG Editing",
+    "content": "",
+    "script": "SwitchToWYSIWYGediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "CSV Editing",
+    "content": "",
+    "script": "SwitchToCSVediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "SVG Editing",
+    "content": "",
+    "script": "SwitchToSVGediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Raster Editing",
+    "content": "",
+    "script": "SwitchToRasterEditing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Viewing",
+    "content": "",
+    "script": "SwitchToVirtualWorldViewing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Editing",
+    "content": "",
+    "script": "SwitchToVirtualWorldEditing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Code Editing",
+    "content": "",
+    "script": "SwitchToCodeEditing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Graph View",
+    "content": "",
+    "script": "SwitchToGraphView.js"
+  }
+]
