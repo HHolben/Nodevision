@@ -1,11 +1,12 @@
 // Nodevision/public/createToolbar.mjs
-// Builds main toolbar and dynamic sub-toolbar (e.g., file operations when File Manager is opened)
+// Fully prebuilt, instant toolbar and dropdowns
 
 import { createPanel } from '/panels/panelManager.mjs';
 import { dockPanel } from '/panels/panelControls.mjs';
 
-const loadedToolbars = new Set();
 let subToolbarContainer = null;
+const toolbarDataCache = {}; // Preloaded JSON
+const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
 
 export async function createToolbar(toolbarSelector = "#global-toolbar") {
   const toolbar = document.querySelector(toolbarSelector);
@@ -16,40 +17,56 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
     return;
   }
 
-  console.log("Starting toolbar creation...");
   toolbar.innerHTML = "";
   if (subToolbarContainer) subToolbarContainer.innerHTML = "";
 
-  let defaultToolbar = [];
-  try {
-    const res = await fetch("/ToolbarJSONfiles/defaultToolbar.json");
-    if (res.ok) {
-      defaultToolbar = await res.json();
-      console.log("Loaded defaultToolbar.json:", defaultToolbar);
+  // 1️⃣ Preload all toolbar JSON
+  const jsonFiles = [
+    "/ToolbarJSONfiles/defaultToolbar.json",
+    "/ToolbarJSONfiles/fileToolbar.json",
+    "/ToolbarJSONfiles/editToolbar.json",
+    "/ToolbarJSONfiles/insertToolbar.json",
+    "/ToolbarJSONfiles/settingsToolbar.json",
+    "/ToolbarJSONfiles/viewToolbar.json",
+    "/ToolbarJSONfiles/searchToolbar.json",
+    "/ToolbarJSONfiles/userToolbar.json",
+  ];
+
+  await Promise.all(jsonFiles.map(async (file) => {
+    try {
+      const res = await fetch(file);
+      if (res.ok) {
+        toolbarDataCache[file.split("/").pop()] = await res.json();
+      }
+    } catch (err) {
+      console.warn("Failed to preload toolbar JSON:", file, err);
     }
-  } catch (err) {
-    console.error("Failed to load defaultToolbar.json:", err);
+  }));
+
+  // 2️⃣ Prebuild all dropdowns
+  for (const key in toolbarDataCache) {
+    const items = toolbarDataCache[key];
+    if (!Array.isArray(items)) continue;
+
+    items.forEach(item => {
+      const dropdown = buildDropdownFromItem(item);
+      if (dropdown) prebuiltDropdowns[item.heading] = dropdown;
+    });
   }
 
-  await buildToolbar(toolbar, defaultToolbar);
-  console.log("Toolbar created successfully.");
+  // 3️⃣ Build main toolbar
+  const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
+  buildToolbar(toolbar, defaultToolbar);
 }
 
-/**
- * Builds toolbar and dropdowns recursively
- */
-async function buildToolbar(container, items, parentHeading = null) {
+// Build toolbar recursively (used for main and sub-toolbar)
+function buildToolbar(container, items, parentHeading = null) {
   for (const item of items) {
-    // Skip items that have parentHeading (they belong in a sub-toolbar)
     if (item.parentHeading && !parentHeading) continue;
 
     const btnWrapper = document.createElement("div");
     btnWrapper.className = "toolbar-button";
-    Object.assign(btnWrapper.style, {
-      position: "relative",
-      display: "inline-block",
-      marginRight: "4px",
-    });
+    Object.assign(btnWrapper.style, { position: "relative", display: "inline-block", marginRight: "4px" });
 
     const btn = document.createElement("button");
     btn.textContent = item.heading;
@@ -65,7 +82,6 @@ async function buildToolbar(container, items, parentHeading = null) {
     });
     btnWrapper.appendChild(btn);
 
-    // Add icon if specified
     if (item.icon) {
       const icon = document.createElement("img");
       icon.src = item.icon;
@@ -74,32 +90,8 @@ async function buildToolbar(container, items, parentHeading = null) {
       btn.prepend(icon);
     }
 
-    // Load submenu from JSON if available
-    const normalizedHeading = item.heading?.toLowerCase() || "";
-    const jsonFile = `/ToolbarJSONfiles/${normalizedHeading}Toolbar.json`;
-
-    let dropdown = null;
-    try {
-      if (item.children && Array.isArray(item.children)) {
-        dropdown = await createSubToolbar(item.children, item.heading);
-      } else if (!loadedToolbars.has(normalizedHeading)) {
-        const res = await fetch(jsonFile);
-        if (res.ok) {
-          const subItems = await res.json();
-          if (Array.isArray(subItems) && subItems.length > 0) {
-            // Only include top-level items in dropdown (ignore parentHeading items)
-            const topItems = subItems.filter(i => !i.parentHeading);
-            if (topItems.length) {
-              loadedToolbars.add(normalizedHeading);
-              dropdown = await createSubToolbar(topItems, item.heading);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.warn(`Error fetching submenu for ${item.heading}:`, err);
-    }
-
+    // Attach prebuilt dropdown if exists
+    const dropdown = prebuiltDropdowns[item.heading];
     if (dropdown) {
       btnWrapper.appendChild(dropdown);
       let hoverTimeout;
@@ -113,43 +105,34 @@ async function buildToolbar(container, items, parentHeading = null) {
     }
 
     // Main click logic
-    btn.addEventListener("click", async (e) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      console.log(`Toolbar button clicked: ${item.heading}`);
 
-      try {
-        // (1) Create panel
-        if (item.panelTemplateId || item.panelTemplate) {
-          const templateId = item.panelTemplateId || item.panelTemplate;
-          const instanceVars = item.defaultInstanceVars || {};
-          const moduleName =
-            item.panelModule ||
-            templateId.replace(".json", "").replace("Panel", "").replace("panel", "").replace(/^\w/, (c) => c.toUpperCase());
-          const panelType = item.panelType || "InfoPanel";
-          await createPanel(moduleName, panelType, instanceVars);
-        }
+      // Panel creation
+      if (item.panelTemplateId || item.panelTemplate) {
+        const templateId = item.panelTemplateId || item.panelTemplate;
+        const instanceVars = item.defaultInstanceVars || {};
+        const moduleName =
+          item.panelModule ||
+          templateId.replace(".json", "").replace("Panel", "").replace("panel", "").replace(/^\w/, (c) => c.toUpperCase());
+        const panelType = item.panelType || "InfoPanel";
+        createPanel(moduleName, panelType, instanceVars);
+      }
 
-        // (2) Import script
-        if (item.script) {
-          await import(`/ToolbarJSONfiles/${item.script}`);
-        }
+      // Import script
+      if (item.script) import(`/ToolbarJSONfiles/${item.script}`);
 
-        // (3) Trigger callback
-        if (item.callbackKey && window.fileCallbacks?.[item.callbackKey]) {
-          window.fileCallbacks[item.callbackKey]();
-        }
+      // Callback
+      if (item.callbackKey && window.fileCallbacks?.[item.callbackKey]) {
+        window.fileCallbacks[item.callbackKey]();
+      }
 
-        // (4) Activate sub-toolbar for panel (like File Manager)
-        if (subToolbarContainer) {
-          await createSubToolbarForPanel(item.heading);
-        }
+      // Sub-toolbar
+      if (subToolbarContainer) showSubToolbar(item.heading);
 
-        // (5) Toggle dropdown if present
-        if (dropdown) {
-          dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-        }
-      } catch (err) {
-        console.error("Error handling toolbar item:", err);
+      // Toggle dropdown
+      if (dropdown) {
+        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
       }
     });
 
@@ -157,10 +140,16 @@ async function buildToolbar(container, items, parentHeading = null) {
   }
 }
 
-/**
- * Creates dropdown submenus
- */
-async function createSubToolbar(items, parentHeading) {
+// Build dropdown div from toolbar item (returns prebuilt div or null)
+function buildDropdownFromItem(item) {
+  const normalizedHeading = item.heading?.toLowerCase();
+  if (!normalizedHeading) return null;
+
+  const jsonName = `${normalizedHeading}Toolbar.json`;
+  const subItems = toolbarDataCache[jsonName] || [];
+  const topItems = subItems.filter(i => !i.parentHeading);
+  if (!topItems.length) return null;
+
   const dropdown = document.createElement("div");
   Object.assign(dropdown.style, {
     position: "absolute",
@@ -175,41 +164,25 @@ async function createSubToolbar(items, parentHeading) {
     padding: "4px",
   });
 
-  await buildToolbar(dropdown, items, parentHeading);
+  buildToolbar(dropdown, topItems);
   return dropdown;
 }
 
+// Show sub-toolbar for a panel
+function showSubToolbar(panelHeading) {
+  const items = toolbarDataCache["fileToolbar.json"] || [];
+  const panelItems = items.filter(i => i.parentHeading === panelHeading);
 
-/**
- * Populates the #sub-toolbar for a given panel
- */
-async function createSubToolbarForPanel(panelHeading) {
-  try {
-    const res = await fetch("/ToolbarJSONfiles/fileToolbar.json"); // Load all File items
-    if (!res.ok) return;
-
-    const items = await res.json();
-
-    // Only include items whose parentHeading matches the panel
-    const panelItems = items.filter(i => i.parentHeading === panelHeading);
-
-    if (!panelItems.length) {
-      subToolbarContainer.innerHTML = "";
-      subToolbarContainer.style.display = "none";
-      return;
-    }
-
+  if (!panelItems.length) {
     subToolbarContainer.innerHTML = "";
-
-    // Pass panelHeading so buildToolbar knows these are sub-toolbar items
-    await buildToolbar(subToolbarContainer, panelItems, panelHeading);
-
-    subToolbarContainer.style.display = "flex";
-    subToolbarContainer.style.borderTop = "1px solid #333";
-    subToolbarContainer.style.padding = "4px";
-    subToolbarContainer.style.backgroundColor = "#f5f5f5";
-  } catch (err) {
-    console.error("Error creating sub-toolbar:", err);
+    subToolbarContainer.style.display = "none";
+    return;
   }
-}
 
+  subToolbarContainer.innerHTML = "";
+  buildToolbar(subToolbarContainer, panelItems, panelHeading);
+  subToolbarContainer.style.display = "flex";
+  subToolbarContainer.style.borderTop = "1px solid #333";
+  subToolbarContainer.style.padding = "4px";
+  subToolbarContainer.style.backgroundColor = "#f5f5f5";
+}
