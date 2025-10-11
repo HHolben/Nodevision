@@ -40,6 +40,9 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
  */
 async function buildToolbar(container, items, parentHeading = null) {
   for (const item of items) {
+    // Skip items that have parentHeading (they belong in a sub-toolbar)
+    if (item.parentHeading && !parentHeading) continue;
+
     const btnWrapper = document.createElement("div");
     btnWrapper.className = "toolbar-button";
     Object.assign(btnWrapper.style, {
@@ -84,8 +87,12 @@ async function buildToolbar(container, items, parentHeading = null) {
         if (res.ok) {
           const subItems = await res.json();
           if (Array.isArray(subItems) && subItems.length > 0) {
-            loadedToolbars.add(normalizedHeading);
-            dropdown = await createSubToolbar(subItems, item.heading);
+            // Only include top-level items in dropdown (ignore parentHeading items)
+            const topItems = subItems.filter(i => !i.parentHeading);
+            if (topItems.length) {
+              loadedToolbars.add(normalizedHeading);
+              dropdown = await createSubToolbar(topItems, item.heading);
+            }
           }
         }
       }
@@ -105,7 +112,7 @@ async function buildToolbar(container, items, parentHeading = null) {
       });
     }
 
-    // === Main click logic ===
+    // Main click logic
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       console.log(`Toolbar button clicked: ${item.heading}`);
@@ -132,10 +139,9 @@ async function buildToolbar(container, items, parentHeading = null) {
           window.fileCallbacks[item.callbackKey]();
         }
 
-        // (4) === NEW: Activate sub-toolbar for File Manager ===
-        if (item.heading === "File Manager" && subToolbarContainer) {
-          console.log("Loading File Manager sub-toolbar...");
-          await createSubToolbarForFileManager();
+        // (4) Activate sub-toolbar for panel (like File Manager)
+        if (subToolbarContainer) {
+          await createSubToolbarForPanel(item.heading);
         }
 
         // (5) Toggle dropdown if present
@@ -173,33 +179,31 @@ async function createSubToolbar(items, parentHeading) {
   return dropdown;
 }
 
+
 /**
- * === NEW ===
- * Populates the #sub-toolbar when File Manager is opened
+ * Populates the #sub-toolbar for a given panel
  */
-async function createSubToolbarForFileManager() {
+async function createSubToolbarForPanel(panelHeading) {
   try {
-    const res = await fetch("/ToolbarJSONfiles/fileToolbar.json");
-    if (!res.ok) {
-      console.warn("Could not load fileToolbar.json");
-      return;
-    }
+    const res = await fetch("/ToolbarJSONfiles/fileToolbar.json"); // Load all File items
+    if (!res.ok) return;
 
     const items = await res.json();
-    if (!Array.isArray(items)) {
-      console.warn("Invalid sub-toolbar data");
+
+    // Only include items whose parentHeading matches the panel
+    const panelItems = items.filter(i => i.parentHeading === panelHeading);
+
+    if (!panelItems.length) {
+      subToolbarContainer.innerHTML = "";
+      subToolbarContainer.style.display = "none";
       return;
     }
 
-    // Filter operations that apply to File Manager (File category)
-    const fileOps = items.filter(
-      (i) =>
-        i.ToolbarCategory === "File" &&
-        !["File Manager", "File View", "Code Editor", "Control Panel", "Tool Panel"].includes(i.heading)
-    );
-
     subToolbarContainer.innerHTML = "";
-    await buildToolbar(subToolbarContainer, fileOps);
+
+    // Pass panelHeading so buildToolbar knows these are sub-toolbar items
+    await buildToolbar(subToolbarContainer, panelItems, panelHeading);
+
     subToolbarContainer.style.display = "flex";
     subToolbarContainer.style.borderTop = "1px solid #333";
     subToolbarContainer.style.padding = "4px";
@@ -208,3 +212,4 @@ async function createSubToolbarForFileManager() {
     console.error("Error creating sub-toolbar:", err);
   }
 }
+

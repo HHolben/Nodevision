@@ -4,7 +4,7 @@
     "heading": "File Manager",
     "icon": "icons/folder.png",
     "panelTemplate": "fileManagerPanel.json",
-      "panelModule": "FileManager",
+    "panelModule": "FileManager",
     "panelScript": "PanelInstances/InfoPanels/FileManager.mjs"
   },
   {
@@ -38,18 +38,57 @@
     "panelType": "ToolPanel",
     "defaultInstanceVars": { "targetPanel": "ViewPanel" }
   },
+
   {
     "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
     "heading": "New File",
     "callbackKey": "NewFile",
     "icon": "icons/DefaultNodeImage.png"
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
     "heading": "New Directory",
     "callbackKey": "NewDirectory",
     "icon": "icons/DefaultRegionImage.png"
   },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
+    "heading": "Delete File/Directory",
+    "callbackKey": "deleteFile",
+    "icon": "icons/DeleteIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
+    "heading": "Rename File/Directory",
+    "callbackKey": "renameFile",
+    "icon": "icons/RenameIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
+    "heading": "Copy File/Directory",
+    "callbackKey": "copyFile",
+    "icon": "icons/CopyIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
+    "heading": "Cut File/Directory",
+    "callbackKey": "cutFile",
+    "icon": "icons/CutIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
+    "heading": "Paste File/Directory",
+    "callbackKey": "pasteFile",
+    "icon": "icons/PasteIcon.png"
+  },
+
   {
     "ToolbarCategory": "File",
     "heading": "Export Graph",
@@ -108,35 +147,5 @@
     "heading": "Download File",
     "callbackKey": "downloadFile",
     "icon": "icons/DownloadIcon.png"
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Delete File/Directory",
-    "callbackKey": "deleteFile",
-    "icon": "icons/DeleteIcon.png"
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Rename File/Directory",
-    "callbackKey": "renameFile",
-    "icon": "icons/RenameIcon.png"
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Copy File/Directory",
-    "callbackKey": "copyFile",
-    "icon": "icons/CopyIcon.png"
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Cut File/Directory",
-    "callbackKey": "cutFile",
-    "icon": "icons/CutIcon.png"
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Paste File/Directory",
-    "callbackKey": "pasteFile",
-    "icon": "icons/PasteIcon.png"
   }
 ]
