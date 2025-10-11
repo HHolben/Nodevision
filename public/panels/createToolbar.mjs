@@ -97,6 +97,8 @@ function buildToolbar(container, items, parentHeading = null) {
       let hoverTimeout;
       btnWrapper.addEventListener("mouseenter", () => {
         clearTimeout(hoverTimeout);
+        // Hide other dropdowns
+        Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
         dropdown.style.display = "block";
       });
       btnWrapper.addEventListener("mouseleave", () => {
@@ -107,6 +109,9 @@ function buildToolbar(container, items, parentHeading = null) {
     // Main click logic
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
+
+      // Hide all other dropdowns immediately
+      Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
 
       // Panel creation
       if (item.panelTemplateId || item.panelTemplate) {
@@ -131,9 +136,7 @@ function buildToolbar(container, items, parentHeading = null) {
       if (subToolbarContainer) showSubToolbar(item.heading);
 
       // Toggle dropdown
-      if (dropdown) {
-        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-      }
+      if (dropdown) dropdown.style.display = "block"; // Always show instantly
     });
 
     container.appendChild(btnWrapper);
@@ -179,7 +182,10 @@ function showSubToolbar(panelHeading) {
     return;
   }
 
+  // Hide previous content first
   subToolbarContainer.innerHTML = "";
+  subToolbarContainer.style.display = "none";
+
   buildToolbar(subToolbarContainer, panelItems, panelHeading);
   subToolbarContainer.style.display = "flex";
   subToolbarContainer.style.borderTop = "1px solid #333";
