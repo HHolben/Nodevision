@@ -8,6 +8,38 @@ let subToolbarContainer = null;
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
 
+// === Global Nodevision State ===
+// Updated dynamically elsewhere (e.g. when opening a file or switching panels)
+window.NodevisionState = window.NodevisionState || {
+  activePanelType: null,   // e.g. "CodeEditor", "FileManager", etc.
+  fileIsDirty: false,      // true when file has unsaved changes
+  selectedFile: null,      // filename or null
+};
+
+// === Helper: Check if a toolbar item should be enabled ===
+function checkToolbarConditions(item, state) {
+  if (!item.conditions) return true;
+
+  // Check for matching panel types
+  if (item.conditions.activePanelType) {
+    const allowed = Array.isArray(item.conditions.activePanelType)
+      ? item.conditions.activePanelType
+      : [item.conditions.activePanelType];
+    if (!allowed.includes(state.activePanelType)) return false;
+  }
+
+  // Check file dirty state
+  if (item.conditions.fileIsDirty !== undefined) {
+    if (item.conditions.fileIsDirty !== state.fileIsDirty) return false;
+  }
+
+  // Check if a file must be selected
+  if (item.conditions.requiresFile && !state.selectedFile) return false;
+
+  // Add more custom conditions later (e.g., network connected, logged in)
+  return true;
+}
+
 export async function createToolbar(toolbarSelector = "#global-toolbar") {
   const toolbar = document.querySelector(toolbarSelector);
   subToolbarContainer = document.querySelector("#sub-toolbar");
@@ -59,8 +91,10 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
   buildToolbar(toolbar, defaultToolbar);
 }
 
-// Build toolbar recursively (used for main and sub-toolbar)
+// === Build toolbar recursively (used for main and sub-toolbar) ===
 function buildToolbar(container, items, parentHeading = null) {
+  const state = window.NodevisionState;
+
   for (const item of items) {
     if (item.parentHeading && !parentHeading) continue;
 
@@ -79,6 +113,7 @@ function buildToolbar(container, items, parentHeading = null) {
       display: "flex",
       alignItems: "center",
       gap: "6px",
+      opacity: "1.0",
     });
     btnWrapper.appendChild(btn);
 
@@ -90,14 +125,22 @@ function buildToolbar(container, items, parentHeading = null) {
       btn.prepend(icon);
     }
 
+    // 🧠 Apply state-based conditions
+    const enabled = checkToolbarConditions(item, state);
+    if (!enabled) {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+      btn.style.cursor = "not-allowed";
+    }
+
     // Attach prebuilt dropdown if exists
     const dropdown = prebuiltDropdowns[item.heading];
     if (dropdown) {
       btnWrapper.appendChild(dropdown);
       let hoverTimeout;
       btnWrapper.addEventListener("mouseenter", () => {
+        if (!enabled) return;
         clearTimeout(hoverTimeout);
-        // Hide other dropdowns
         Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
         dropdown.style.display = "block";
       });
@@ -106,11 +149,11 @@ function buildToolbar(container, items, parentHeading = null) {
       });
     }
 
-    // Main click logic
+    // === Click handler ===
     btn.addEventListener("click", (e) => {
+      if (!enabled) return; // prevent inactive items
       e.stopPropagation();
 
-      // Hide all other dropdowns immediately
       Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
 
       // Panel creation
@@ -135,15 +178,15 @@ function buildToolbar(container, items, parentHeading = null) {
       // Sub-toolbar
       if (subToolbarContainer) showSubToolbar(item.heading);
 
-      // Toggle dropdown
-      if (dropdown) dropdown.style.display = "block"; // Always show instantly
+      // Dropdown toggle
+      if (dropdown) dropdown.style.display = "block";
     });
 
     container.appendChild(btnWrapper);
   }
 }
 
-// Build dropdown div from toolbar item (returns prebuilt div or null)
+// === Build dropdown div from toolbar item (returns prebuilt div or null) ===
 function buildDropdownFromItem(item) {
   const normalizedHeading = item.heading?.toLowerCase();
   if (!normalizedHeading) return null;
@@ -171,7 +214,7 @@ function buildDropdownFromItem(item) {
   return dropdown;
 }
 
-// Show sub-toolbar for a panel
+// === Show sub-toolbar for a panel ===
 function showSubToolbar(panelHeading) {
   const items = toolbarDataCache["fileToolbar.json"] || [];
   const panelItems = items.filter(i => i.parentHeading === panelHeading);
@@ -182,7 +225,6 @@ function showSubToolbar(panelHeading) {
     return;
   }
 
-  // Hide previous content first
   subToolbarContainer.innerHTML = "";
   subToolbarContainer.style.display = "none";
 
@@ -191,4 +233,15 @@ function showSubToolbar(panelHeading) {
   subToolbarContainer.style.borderTop = "1px solid #333";
   subToolbarContainer.style.padding = "4px";
   subToolbarContainer.style.backgroundColor = "#f5f5f5";
+}
+
+// === Refresh toolbar dynamically when app state changes ===
+export function updateToolbarState(newState = {}) {
+  Object.assign(window.NodevisionState, newState);
+  const toolbar = document.querySelector("#global-toolbar");
+  if (toolbar) {
+    toolbar.innerHTML = "";
+    const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
+    buildToolbar(toolbar, defaultToolbar);
+  }
 }

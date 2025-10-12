@@ -99,10 +99,8 @@
     "ToolbarCategory": "File",
     "heading": "Save File",
     "callbackKey": "saveFile",
-    "modes": ["WYSIWYG Editing", "Code Editing", "Raster Editing"],
     "icon": "icons/SaveIcon.png",
-    "panelTemplateId": "EditorPanel",
-    "panelType": "EditorPanel"
+    "availability": ["fileOpen", "panelType:EditorPanel"]
   },
   {
     "ToolbarCategory": "File",
@@ -120,15 +118,15 @@
     "ToolbarCategory": "File",
     "heading": "Upload to Arduino",
     "callbackKey": "uploadToArduino",
-    "modes": ["Code Editing"],
-    "icon": "icons/ArduinoUpload.png"
+    "icon": "icons/ArduinoUpload.png",
+    "availability": ["panelType:EditorPanel", "mode:Code Editing"]
   },
   {
     "ToolbarCategory": "File",
     "heading": "Edit SVG",
     "callbackKey": "switchToSVGEditing",
-    "modes": ["SVG Editing"],
     "icon": "icons/SVGIcon.png",
+    "availability": ["panelType:EditorPanel", "fileType:svg"],
     "panelTemplateId": "EditorPanel",
     "panelType": "EditorPanel",
     "defaultInstanceVars": { "fileType": "svg" }
@@ -137,15 +135,14 @@
     "ToolbarCategory": "File",
     "heading": "Save SVG",
     "callbackKey": "saveFile",
-    "modes": ["SVG Editing"],
     "icon": "icons/SaveIcon.png",
-    "panelTemplateId": "EditorPanel",
-    "panelType": "EditorPanel"
+    "availability": ["panelType:EditorPanel", "fileType:svg"]
   },
   {
     "ToolbarCategory": "File",
     "heading": "Download File",
     "callbackKey": "downloadFile",
-    "icon": "icons/DownloadIcon.png"
+    "icon": "icons/DownloadIcon.png",
+    "availability": ["fileOpen"]
   }
 ]
