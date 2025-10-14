@@ -3,6 +3,12 @@
 
 import { createPanel } from '/panels/panelManager.mjs';
 import { dockPanel } from '/panels/panelControls.mjs';
+import { loadCallback } from "/callbackLoader.mjs";
+
+async function handleToolbarClick(category, key) {
+  const callback = await loadCallback(category.toLowerCase(), key);
+  callback();
+}
 
 let subToolbarContainer = null;
 const toolbarDataCache = {}; // Preloaded JSON
@@ -170,10 +176,11 @@ function buildToolbar(container, items, parentHeading = null) {
       // Import script
       if (item.script) import(`/ToolbarJSONfiles/${item.script}`);
 
-      // Callback
-      if (item.callbackKey && window.fileCallbacks?.[item.callbackKey]) {
-        window.fileCallbacks[item.callbackKey]();
-      }
+   // Dynamic callback loader (new system)
+if (item.callbackKey && item.ToolbarCategory) {
+  handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+}
+
 
       // Sub-toolbar
       if (subToolbarContainer) showSubToolbar(item.heading);

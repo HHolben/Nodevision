@@ -1,211 +1,277 @@
-// Nodevision/public/panels/panelFactory.mjs
-// Purpose: Central panel creation and content management for Nodevision
+// Nodevision/public/ToolbarCallbacks/fileCallbacks.js
+// Purpose: TODO: Add description of module purpose
+window.fileCallbacks = {
+saveFile: () => {
+  const filePath = window.currentActiveFilePath || window.filePath;
 
-import { styleControlButton } from "./utils.mjs";
-
-/**
- * Fetches directory contents from the server and passes them to a callback.
- */
-export async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
-  try {
-    if (loadingElem) loadingElem.style.display = "block";
-    const response = await fetch(`/Notebook/${path}`);
-    if (!response.ok) throw new Error(`Failed to fetch directory: ${response.status}`);
-    const data = await response.json();
-    callback(data);
-  } catch (err) {
-    console.error(err);
-    if (errorElem) errorElem.textContent = err.message;
-  } finally {
-    if (loadingElem) loadingElem.style.display = "none";
+  if (!filePath) {
+    console.error("Cannot save: filePath is missing.");
+    return;
   }
-}
 
-/**
- * Displays a list of files in a given container element.
- */
-function displayFiles(files, container, panelState) {
-  if (!container) return;
-  container.innerHTML = "";
+  // Check if we're in SVG editing mode first
+  const svgEditor = document.getElementById("svg-editor");
+  if (svgEditor && window.currentSaveSVG && typeof window.currentSaveSVG === 'function') {
+    console.log("Saving SVG file using Publisher-style editor");
+    window.currentSaveSVG();
+    return;
+  }
 
-  files.forEach(file => {
-    const row = document.createElement("div");
-    row.textContent = file.name;
-    row.className = file.type === "directory" ? "directory" : "file";
-    row.style.cursor = "pointer";
-
-    if (file.type === "directory") {
-      row.style.fontWeight = "bold";
-      row.addEventListener("click", () => {
-        panelState.currentDirectory = `${panelState.currentDirectory}/${file.name}`;
-        renderDirectory(panelState, container);
-      });
-    } else {
-      row.addEventListener("click", () => {
-        panelState.selectedFile = `${panelState.currentDirectory}/${file.name}`;
-        console.log("Selected file:", panelState.selectedFile);
-        if (typeof window.updateInfoPanel === "function") {
-          window.updateInfoPanel(panelState.selectedFile);
+  // Check for legacy SVG editing mode
+  if (svgEditor) {
+    console.log("Saving SVG file using direct method");
+    const svgContent = svgEditor.outerHTML;
+    
+    fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath, content: svgContent })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        console.log('SVG file saved successfully:', filePath);
+        const messageEl = document.getElementById('svg-message');
+        if (messageEl) {
+          messageEl.textContent = 'SVG saved successfully!';
+          messageEl.style.color = 'green';
         }
+      } else {
+        console.error('Error saving SVG:', data.error);
+      }
+    })
+    .catch(err => {
+      console.error('Error saving SVG file:', err);
+    });
+    return;
+  }
+
+  // Check for raster editing mode
+  if (window.rasterCanvas && typeof window.saveRasterImage === 'function') {
+    console.log("Saving raster image file");
+    window.saveRasterImage(filePath);
+    return;
+  }
+
+  // Prefer Monaco Editor if active
+  if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
+    const content = window.monacoEditor.getValue();
+    fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath, content: content })
+    })
+      .then(res => res.text())
+      .then(data => {
+        console.log('Code file saved successfully:', data);
+      })
+      .catch(err => {
+        console.error('Error saving code file:', err);
       });
+    return;
+  }
+
+  // Otherwise, fallback to WYSIWYG save
+  if (typeof window.saveWYSIWYGFile === 'function') {
+    window.saveWYSIWYGFile(filePath);
+    return;
+  }
+
+  console.error("Cannot save: editor state not recognized.");
+},
+
+
+NewFile: async () => {
+  const currentPath = window.currentDirectoryPath;
+  if (!currentPath) {
+    console.warn("No directory is currently selected.");
+    return;
+  }
+
+  const fileName = prompt("Enter the name of the new file (include extension):");
+  if (!fileName) {
+    console.log("File creation cancelled.");
+    return;
+  }
+
+  const relativePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+
+  try {
+    const response = await fetch('/api/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: relativePath })
+    });
+
+    // Read response body whether OK or not
+    const textOrJson = await response.text();
+    const payload = (() => {
+      try { return JSON.parse(textOrJson); }
+      catch { return textOrJson; }
+    })();
+
+    if (!response.ok) {
+      // include status and any body text
+      throw new Error(`(${response.status}) ${payload}`);
     }
 
-    container.appendChild(row);
-  });
-}
-
-/**
- * Renders the directory listing in a panel.
- */
-export async function renderDirectory(panelState, container) {
-  container.innerHTML = `<div class="loading">Loading files...</div>`;
-  try {
-    await fetchDirectoryContents(
-      panelState.currentDirectory || "",
-      files => displayFiles(files, container, panelState),
-      container,
-      container
-    );
+    console.log('File created successfully:', payload);
+    // refresh listing
+    window.fetchDirectoryContents(currentPath);
   } catch (err) {
-    container.innerHTML = `<div class="error">Failed to load directory: ${err.message}</div>`;
+    console.error('Failed to create file:', err);
+    alert(`Failed to create file: ${err.message}`);
   }
-}
+},
 
-/**
- * Builds panel content based on type.
- */
-export function buildPanelContent(type, container) {
-  container.innerHTML = ""; // clear first
 
-  if (type === "fileView") {
-    // ✅ Minimal test content
-    const p = document.createElement("p");
-    p.textContent = "test successful";
-    container.appendChild(p);
+  viewNodevisionDeployment: () => {
+    const activeNode = window.ActiveNode;
+    if (activeNode) {
+      const deploymentUrl = `http://localhost:3000/Notebook/${activeNode}`;
+      window.open(deploymentUrl, "_blank");
+    } else {
+      alert("No active node specified in the URL.");
+    }
+  },
+  viewPHPdeployment: () => {
+    const activeNode = window.ActiveNode;
+    if (activeNode) {
+      const deploymentUrl = `http://localhost:8000/Notebook/${activeNode}`;
+      window.open(deploymentUrl, "_blank");
+    } else {
+      alert("No active node specified in the URL.");
+    }
+  },
+  uploadToArduino: async () => {
+  const filePath = window.currentActiveFilePath;
+
+  if (!filePath) {
+    alert("Cannot upload: no active file.");
+    return;
+  }
+
+  // First, save the current file
+  let content = '';
+  if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
+    content = window.monacoEditor.getValue();
+  } else if (typeof window.saveWYSIWYGFile === 'function') {
+    alert("Please save WYSIWYG files manually before uploading to Arduino.");
+    return;
   } else {
-    const p = document.createElement("p");
-    p.textContent = `Default content for "${type}"`;
-    container.appendChild(p);
+    alert("Cannot determine editor content for upload.");
+    return;
+  }
+
+  try {
+    // Save to backend
+    await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath, content })
+    });
+
+    // Ask user for Arduino board and port
+    const fqbn = prompt("Enter Arduino board FQBN (e.g., arduino:avr:uno):", "arduino:avr:uno");
+    if (!fqbn) return;
+
+    const port = prompt("Enter Arduino serial port (e.g., /dev/ttyACM0):", "/dev/ttyACM0");
+    if (!port) return;
+
+    // Call backend upload endpoint
+    const response = await fetch('/api/upload-arduino', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: filePath, fqbn, port })
+    });
+
+    const resultText = await response.text();
+    if (!response.ok) {
+      alert(`Arduino upload failed:\n${resultText}`);
+    } else {
+      alert(`Arduino upload successful:\n${resultText}`);
+    }
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert(`Error uploading to Arduino:\n${err.message}`);
+  }
+},
+
+  NewDirectory: async () => {
+    // 1. Grab the current directory from window (set by fetchDirectoryContents)
+    const parentPath = window.currentDirectoryPath || '';
+
+    // 2. Ask the user for the new folder’s name
+    const folderName = prompt("Enter the name of the new directory:");
+    if (!folderName) {
+      console.log("Directory creation cancelled.");
+      return;
+    }
+
+    console.log("→ Creating directory:", folderName, "in", parentPath);
+
+    try {
+      // 3. POST to your express route
+      const response = await fetch('/api/create-directory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderName, parentPath })
+      });
+
+      // 4. Parse whatever the server sends back
+      const text = await response.text();
+      let payload;
+      try { payload = JSON.parse(text); } catch { payload = text; }
+
+      console.log("← Response:", response.status, payload);
+
+      if (!response.ok) {
+        // If the server sends { error: "…" }, show that
+        const msg = payload && payload.error ? payload.error : payload;
+        throw new Error(`${response.status} – ${msg}`);
+      }
+
+      alert(`Directory "${folderName}" created.`);
+      // 5. Refresh the listing
+      window.fetchDirectoryContents(parentPath);
+    } catch (err) {
+      console.error('Failed to create directory:', err);
+      alert(`Failed to create directory: ${err.message}`);
+    }
+  },
+downloadFile: async () => {
+  console.log("Downloading: "+ window.ActiveNode)
+  const filePath = window.ActiveNode;
+
+  if (!filePath) {
+    alert("No file selected to download.");
+    return;
+  }
+
+  try {
+    // Fetch the file content from the server
+    const response = await fetch(`/api/downloadFile?path=${encodeURIComponent(filePath)}`);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+
+    // Trigger download
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filePath.split("/").pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+
+    console.log(`Downloaded file: ${filePath}`);
+  } catch (err) {
+    console.error("Download error:", err);
+    alert(`Error downloading file:\n${err.message}`);
   }
 }
 
 
-/**
- * Creates the full DOM structure for a panel.
- */
-export function createPanelDOM(templateName, instanceId, initialPath = "") {
-  const panel = document.createElement("div");
-  panel.className = "panel docked";
-  panel.dataset.template = templateName;
-  panel.dataset.instanceId = instanceId;
-
-  Object.assign(panel.style, {
-    position: "relative",
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    boxSizing: "border-box",
-    background: "#fff",
-    border: "1px solid #ccc",
-  });
-
-  // Header
-  const header = document.createElement("div");
-  header.className = "panel-header";
-  Object.assign(header.style, {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "6px 8px",
-    background: "#333",
-    color: "#fff",
-    cursor: "grab",
-    userSelect: "none",
-  });
-
-  const titleSpan = document.createElement("span");
-  titleSpan.textContent = `${templateName} (${instanceId})`;
-  titleSpan.style.fontSize = "13px";
-
-  const controls = document.createElement("div");
-  controls.className = "panel-controls";
-  controls.style.display = "flex";
-  controls.style.gap = "6px";
-
-  // Control buttons
-  const dockBtn = document.createElement("button");
-  dockBtn.className = "dock-btn";
-  dockBtn.title = "Dock / Undock";
-  dockBtn.textContent = "⇔";
-  styleControlButton(dockBtn);
-
-  const maxBtn = document.createElement("button");
-  maxBtn.className = "max-btn";
-  maxBtn.title = "Maximize / Restore";
-  maxBtn.textContent = "⬜";
-  styleControlButton(maxBtn);
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "close-btn";
-  closeBtn.title = "Close";
-  closeBtn.textContent = "✕";
-  styleControlButton(closeBtn);
-
-  controls.appendChild(dockBtn);
-  controls.appendChild(maxBtn);
-  controls.appendChild(closeBtn);
-
-  header.appendChild(titleSpan);
-  header.appendChild(controls);
-
-  // Content area
-  const content = document.createElement("div");
-  content.className = "panel-content";
-  Object.assign(content.style, {
-    padding: "8px",
-    flex: "1",
-    overflow: "auto",
-  });
-
-  // Build content
-  buildPanelContent(templateName, content, initialPath);
-
-  // Resizer
-  const resizer = document.createElement("div");
-  resizer.className = "resize-handle";
-  Object.assign(resizer.style, {
-    width: "12px",
-    height: "12px",
-    position: "absolute",
-    right: "2px",
-    bottom: "2px",
-    cursor: "se-resize",
-    background: "#777",
-    display: "none",
-  });
-
-  // Assemble
-  panel.appendChild(header);
-  panel.appendChild(content);
-  panel.appendChild(resizer);
-
-  return { panel, header, dockBtn, maxBtn, closeBtn, resizer, content };
-}
-
-/**
- * Opens a file manager panel instance.
- */
-export function openFileManager(panelId, initialPath = "") {
-  let panel = document.getElementById(panelId);
-  if (!panel) {
-    const { panel: domPanel } = createPanelDOM("fileView", panelId, initialPath);
-    domPanel.id = panelId;
-    document.body.appendChild(domPanel);
-    panel = domPanel;
-  } else {
-    // Refresh existing panel
-    const content = panel.querySelector(".panel-content");
-    buildPanelContent("fileView", content, initialPath);
-  }
-}
+};
