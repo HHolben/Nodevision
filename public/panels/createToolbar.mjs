@@ -216,24 +216,42 @@ function buildDropdownFromItem(item) {
 
 // === Show sub-toolbar for a panel ===
 function showSubToolbar(panelHeading) {
-  const items = toolbarDataCache["fileToolbar.json"] || [];
-  const panelItems = items.filter(i => i.parentHeading === panelHeading);
+  if (!subToolbarContainer) return;
 
+  // Clear previous sub-toolbar immediately (removes perceived lag)
+  subToolbarContainer.innerHTML = "";
+  subToolbarContainer.style.display = "none";
+
+  // Look through *all* loaded toolbars for matching sub-items
+  let panelItems = [];
+  for (const key in toolbarDataCache) {
+    const set = toolbarDataCache[key];
+    if (!Array.isArray(set)) continue;
+    const matches = set.filter(i => i.parentHeading === panelHeading);
+    if (matches.length) {
+      panelItems = matches;
+      break; // stop at the first toolbar file that defines these
+    }
+  }
+
+  // If no sub-items found, hide container and return
   if (!panelItems.length) {
-    subToolbarContainer.innerHTML = "";
     subToolbarContainer.style.display = "none";
     return;
   }
 
-  subToolbarContainer.innerHTML = "";
-  subToolbarContainer.style.display = "none";
-
+  // Build new sub-toolbar instantly
   buildToolbar(subToolbarContainer, panelItems, panelHeading);
-  subToolbarContainer.style.display = "flex";
-  subToolbarContainer.style.borderTop = "1px solid #333";
-  subToolbarContainer.style.padding = "4px";
-  subToolbarContainer.style.backgroundColor = "#f5f5f5";
+
+  // Apply consistent style
+  Object.assign(subToolbarContainer.style, {
+    display: "flex",
+    borderTop: "1px solid #333",
+    padding: "4px",
+    backgroundColor: "#f5f5f5",
+  });
 }
+
 
 // === Refresh toolbar dynamically when app state changes ===
 export function updateToolbarState(newState = {}) {

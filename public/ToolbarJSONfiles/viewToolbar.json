@@ -52,5 +52,107 @@
     "heading": "Graph View",
     "content": "",
     "script": "SwitchToGraphView.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Viewing",
+    "content": "",
+    "script": "SwitchToViewing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "WYSIWYG Editing",
+    "content": "",
+    "script": "SwitchToWYSIWYGediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "CSV Editing",
+    "content": "",
+    "script": "SwitchToCSVediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "SVG Editing",
+    "content": "",
+    "script": "SwitchToSVGediting.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Raster Editing",
+    "content": "",
+    "script": "SwitchToRasterEditing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Viewing",
+    "content": "",
+    "script": "SwitchToVirtualWorldViewing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Editing",
+    "content": "",
+    "script": "SwitchToVirtualWorldEditing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Code Editing",
+    "content": "",
+    "script": "SwitchToCodeEditing.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Graph View",
+    "content": "",
+    "script": "SwitchToGraphView.js"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Layout Controls",
+    "content": "",
+    "icon": "icons/layoutControls.png"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Close Panel",
+    "icon": "icons/closePanel.png",
+    "callbackKey": "closePanel"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Fullscreen Panel",
+    "icon": "icons/fullscreenPanel.png",
+    "callbackKey": "fullscreenPanel"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Move Panel Left",
+    "icon": "icons/moveLeft.png",
+    "callbackKey": "movePanelLeft"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Move Panel Right",
+    "icon": "icons/moveRight.png",
+    "callbackKey": "movePanelRight"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Move Panel Up",
+    "icon": "icons/moveUp.png",
+    "callbackKey": "movePanelUp"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Move Panel Down",
+    "icon": "icons/moveDown.png",
+    "callbackKey": "movePanelDown"
   }
 ]
