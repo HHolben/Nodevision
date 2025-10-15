@@ -1,12 +1,10 @@
-// Nodevision/public/ToolbarCallbacks/file/NewFile.mjs
 export default async function NewFile() {
- let currentPath = window.currentDirectoryPath;
+  let currentPath = window.currentDirectoryPath;
 
-// Default to root Notebook folder if no directory is selected
-if (!currentPath || currentPath.trim() === "") {
-  currentPath = "";
-}
-
+  // Default to root Notebook folder if no directory is selected
+  if (!currentPath || currentPath.trim() === "") {
+    currentPath = "";
+  }
 
   const fileName = prompt("Enter the name of the new file (include extension):");
   if (!fileName) {
@@ -34,7 +32,10 @@ if (!currentPath || currentPath.trim() === "") {
     }
 
     console.log('File created successfully:', payload);
-    window.fetchDirectoryContents(currentPath);
+
+    // ✅ Immediately refresh File Manager after creation
+    await window.refreshFileManager(currentPath);
+
   } catch (err) {
     console.error('Failed to create file:', err);
     alert(`Failed to create file: ${err.message}`);

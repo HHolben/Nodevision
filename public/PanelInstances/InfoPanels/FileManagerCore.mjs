@@ -1,26 +1,28 @@
 // Nodevision/public/PanelInstances/InfoPanels/FileManagerCore.mjs
 // Core logic for enhanced File Manager panel with breadcrumbs, drag/drop, and back navigation
 
-// Fetch directory contents from the server
-// Fetch directory contents from the server
+// ------------------------------
+// Fetch directory contents
+// ------------------------------
 export async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
   try {
     if (loadingElem) loadingElem.style.display = "block";
 
-    const cleanPath = path.replace(/^\/+/, ''); // remove leading slashes
+    // Treat empty or null as root Notebook folder
+    const cleanPath = path?.replace(/^\/+/, '') ?? '';
     const response = await fetch(`/api/files?path=${encodeURIComponent(cleanPath)}`);
     if (!response.ok) throw new Error(`Failed to fetch directory: ${path}`);
 
     const data = await response.json();
     console.log("Fetched directory contents:", data);
 
-    // Call callback only if it's a function
     if (typeof callback === "function") {
-      callback(data, path);
+      callback(data, cleanPath);
     }
 
     // Update the global current path for toolbar callbacks
     window.currentDirectoryPath = cleanPath;
+
   } catch (err) {
     console.error(err);
     if (errorElem) errorElem.textContent = err.message;
@@ -29,35 +31,44 @@ export async function fetchDirectoryContents(path, callback, errorElem, loadingE
   }
 }
 
-
 // Make globally available
 window.fetchDirectoryContents = fetchDirectoryContents;
 
-// Generate breadcrumbs
+// ------------------------------
+// Breadcrumbs
+// ------------------------------
 function renderBreadcrumbs(currentPath) {
   const pathElem = document.getElementById("fm-path");
   pathElem.innerHTML = "";
 
   const segments = currentPath.split("/").filter(Boolean);
+
+  // Root breadcrumb
   const rootLink = document.createElement("a");
   rootLink.href = "#";
   rootLink.textContent = "Notebook";
-  rootLink.addEventListener("click", () => fetchDirectoryContents("", displayFiles, document.getElementById("error"), document.getElementById("loading")));
+  rootLink.addEventListener("click", () =>
+    fetchDirectoryContents("", displayFiles, document.getElementById("error"), document.getElementById("loading"))
+  );
   pathElem.appendChild(rootLink);
 
   let cumulativePath = "";
-  segments.forEach(seg => {
+  for (const seg of segments) {
     pathElem.appendChild(document.createTextNode(" / "));
     cumulativePath += "/" + seg;
     const link = document.createElement("a");
     link.href = "#";
     link.textContent = seg;
-    link.addEventListener("click", () => fetchDirectoryContents(cumulativePath, displayFiles, document.getElementById("error"), document.getElementById("loading")));
+    link.addEventListener("click", () =>
+      fetchDirectoryContents(cumulativePath, displayFiles, document.getElementById("error"), document.getElementById("loading"))
+    );
     pathElem.appendChild(link);
-  });
+  }
 }
 
-// Display files in the panel
+// ------------------------------
+// Display files in panel
+// ------------------------------
 export function displayFiles(files, currentPath) {
   const listElem = document.getElementById("file-list");
   if (!Array.isArray(files)) {
@@ -67,7 +78,7 @@ export function displayFiles(files, currentPath) {
 
   listElem.innerHTML = "";
 
-  // ".." entry to go up one level
+  // ".." entry — only if not at root
   if (currentPath !== "") {
     const li = document.createElement("li");
     const link = document.createElement("a");
@@ -78,7 +89,7 @@ export function displayFiles(files, currentPath) {
       const segments = currentPath.split("/").filter(Boolean);
       segments.pop();
       const newPath = segments.join("/");
-      fetchDirectoryContents(newPath, displayFiles, document.getElementById("error"), document.getElementById("loading"));
+      window.refreshFileManager(newPath);
     });
     li.appendChild(link);
     listElem.appendChild(li);
@@ -93,6 +104,7 @@ export function displayFiles(files, currentPath) {
     link.textContent = f.name;
     link.classList.add(f.isDirectory ? "folder" : "file");
 
+    // Drag & drop for files and directories
     if (!f.isDirectory) {
       link.draggable = true;
       link.addEventListener("dragstart", (e) => {
@@ -106,13 +118,14 @@ export function displayFiles(files, currentPath) {
         const destPath = currentPath + "/" + f.name;
         try {
           await moveFileOrDirectory(srcPath, destPath);
-          fetchDirectoryContents(currentPath, displayFiles, document.getElementById("error"), document.getElementById("loading"));
+          await window.refreshFileManager(currentPath);
         } catch (err) {
           console.error("Failed to move file:", err);
         }
       });
     }
 
+    // Click: open directory or file info
     link.addEventListener("click", async (e) => {
       e.preventDefault();
 
@@ -134,7 +147,9 @@ export function displayFiles(files, currentPath) {
   });
 }
 
-// Move files/directories on the server
+// ------------------------------
+// Move file/directory
+// ------------------------------
 export async function moveFileOrDirectory(src, dest) {
   const res = await fetch("/api/files/move", {
     method: "POST",
@@ -144,14 +159,22 @@ export async function moveFileOrDirectory(src, dest) {
   return res.json();
 }
 
-// Initialize File Manager panel
+// ------------------------------
+// Initialize panel
+// ------------------------------
 export function initFileView(initialPath = '') {
   const loadingElem = document.getElementById("loading");
   const errorElem = document.getElementById("error");
-  fetchDirectoryContents(initialPath, displayFiles, errorElem, loadingElem);
+
+  // Root = empty string internally
+  window.currentDirectoryPath = initialPath ?? "";
+
+  fetchDirectoryContents(window.currentDirectoryPath, displayFiles, errorElem, loadingElem);
 }
 
-// Create a new empty file in the current directory
+// ------------------------------
+// Create new file
+// ------------------------------
 export async function createNewFile(fileName, currentPath = '') {
   if (!fileName) throw new Error("File name is required");
 
@@ -169,10 +192,8 @@ export async function createNewFile(fileName, currentPath = '') {
     const result = await res.json();
     console.log("Created new file:", result);
 
-    // Refresh the current view
-    const loadingElem = document.getElementById("loading");
-    const errorElem = document.getElementById("error");
-    await fetchDirectoryContents(cleanPath, displayFiles, errorElem, loadingElem);
+    // Refresh view
+    await window.refreshFileManager(cleanPath);
 
     return result;
   } catch (err) {
@@ -180,3 +201,19 @@ export async function createNewFile(fileName, currentPath = '') {
     throw err;
   }
 }
+
+// ------------------------------
+// Global refresh helper
+// ------------------------------
+window.refreshFileManager = async function (path = '') {
+  try {
+    const effectivePath = path ?? window.currentDirectoryPath ?? '';
+    const loadingElem = document.getElementById("loading");
+    const errorElem = document.getElementById("error");
+
+    console.log("Refreshing File Manager view for:", effectivePath);
+    await fetchDirectoryContents(effectivePath, displayFiles, errorElem, loadingElem);
+  } catch (err) {
+    console.error("Failed to refresh File Manager:", err);
+  }
+};
