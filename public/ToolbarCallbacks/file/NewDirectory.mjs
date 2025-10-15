@@ -1,9 +1,11 @@
 // Nodevision/public/ToolbarCallbacks/file/NewDirectory.mjs
+//exports a function that allows the user to create new directories with the Nodevision/public/Notebook foldr
 export default async function NewDirectory() {
-  const parentPath = window.currentDirectoryPath;
-  if (!parentPath) {
-    console.warn("No directory is currently selected.");
-    return;
+  let parentPath = window.currentDirectoryPath;
+
+  // Default to Notebook root if none selected
+  if (!parentPath || parentPath.trim() === "") {
+    parentPath = "";
   }
 
   const folderName = prompt("Enter the name of the new directory:");
@@ -33,6 +35,7 @@ export default async function NewDirectory() {
 
     console.log('Directory created successfully:', payload);
 
+    // ✅ Refresh the file list
     if (typeof window.fetchDirectoryContents === "function") {
       window.fetchDirectoryContents(parentPath);
     } else {

@@ -1,10 +1,12 @@
 // Nodevision/public/ToolbarCallbacks/file/NewFile.mjs
 export default async function NewFile() {
-  const currentPath = window.currentDirectoryPath;
-  if (!currentPath) {
-    console.warn("No directory is currently selected.");
-    return;
-  }
+ let currentPath = window.currentDirectoryPath;
+
+// Default to root Notebook folder if no directory is selected
+if (!currentPath || currentPath.trim() === "") {
+  currentPath = "";
+}
+
 
   const fileName = prompt("Enter the name of the new file (include extension):");
   if (!fileName) {
