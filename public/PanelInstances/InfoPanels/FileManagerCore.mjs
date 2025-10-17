@@ -101,7 +101,18 @@ export function displayFiles(files, currentPath) {
     const li = document.createElement("li");
     const link = document.createElement("a");
     link.href = "#";
-    link.textContent = f.name;
+    if(f.isDirectory)
+    {
+    link.textContent = "📁  "+f.name;
+
+    }
+    else
+    {
+      
+    link.textContent = "🖹  "+f.name;
+
+
+    }
     link.classList.add(f.isDirectory ? "folder" : "file");
 
     // Drag & drop for files and directories
