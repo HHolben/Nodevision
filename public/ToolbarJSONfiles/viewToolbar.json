@@ -53,18 +53,7 @@
     "content": "",
     "script": "SwitchToGraphView.js"
   },
-  {
-    "ToolbarCategory": "View",
-    "heading": "Viewing",
-    "content": "",
-    "script": "SwitchToViewing.js"
-  },
-  {
-    "ToolbarCategory": "View",
-    "heading": "WYSIWYG Editing",
-    "content": "",
-    "script": "SwitchToWYSIWYGediting.js"
-  },
+
   {
     "ToolbarCategory": "View",
     "heading": "CSV Editing",
