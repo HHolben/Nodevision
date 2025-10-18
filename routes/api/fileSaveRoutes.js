@@ -99,25 +99,35 @@ router.post('/create-directory', async (req, res) => {
 
 /* ========= New CRUD routes ========= */
 
-// Delete file or directory
+// Move file or directory to Trash inside Notebook
 router.post('/delete', async (req, res) => {
   const { path: relativePath } = req.body;
   if (!relativePath) return res.status(400).send('Path is required');
 
   const targetPath = resolveNotebookPath(relativePath);
+  const trashDir = resolveNotebookPath('Trash'); // inside Notebook
+
   try {
-    const stat = await fs.stat(targetPath);
-    if (stat.isDirectory()) {
-      await fs.rm(targetPath, { recursive: true, force: true });
-    } else {
-      await fs.unlink(targetPath);
-    }
-    res.json({ success: true, path: relativePath });
+    // Ensure the trash folder exists
+    await fs.mkdir(trashDir, { recursive: true });
+
+    // Preserve folder structure in trash
+    const safeRelative = relativePath.replace(/^\/+/, ''); // remove leading slashes
+    const trashPath = path.join(trashDir, `${Date.now()}_${safeRelative}`);
+
+    // Make sure parent directories exist
+    await fs.mkdir(path.dirname(trashPath), { recursive: true });
+
+    // Move the file or directory
+    await fs.rename(targetPath, trashPath);
+
+    res.json({ success: true, originalPath: relativePath, trashedPath: trashPath });
   } catch (err) {
-    console.error('Error deleting:', err);
-    res.status(500).send('Error deleting');
+    console.error('Error moving to trash:', err);
+    res.status(500).send('Error moving to trash');
   }
 });
+
 
 // Rename (or move)
 router.post('/rename', async (req, res) => {
