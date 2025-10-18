@@ -57,7 +57,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Delete File/Directory",
-    "callbackKey": "deleteFile",
+    "callbackKey": "DeleteFile",
     "icon": "icons/DeleteIcon.png"
   },
   {
