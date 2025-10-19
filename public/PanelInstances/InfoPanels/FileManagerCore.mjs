@@ -210,6 +210,7 @@ export async function createNewFile(fileName, currentPath = '') {
   return result;
 }
 
+
 // ------------------------------
 // Global refresh helper
 // ------------------------------

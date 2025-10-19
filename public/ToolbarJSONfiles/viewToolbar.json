@@ -3,7 +3,9 @@
     "ToolbarCategory": "View",
     "heading": "Viewing",
     "content": "",
-    "script": "SwitchToViewing.js"
+    "panelTemplate": "View",
+    "panelType": "ViewPanel",
+    "panelPath": "/PanelInstances/ViewPanels/FileView.mjs"
   },
   {
     "ToolbarCategory": "View",

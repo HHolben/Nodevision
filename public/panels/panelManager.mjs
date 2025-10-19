@@ -1,7 +1,8 @@
 // Nodevision/public/panels/panelManager.mjs
-// Handles creating and managing panels dynamically
+// Handles creating and managing panels dynamically (backwards-compatible)
 
-export async function createPanel(panelType, instanceVars = {}) {
+
+export async function createPanel(panelType, instanceVars = {}, panelPath = null) {
   try {
     console.log(`createPanel(): Creating panel for type "${panelType}"`);
 
@@ -21,7 +22,8 @@ export async function createPanel(panelType, instanceVars = {}) {
     panel.style.background = "#fafafa";
 
     // Dynamic module path
-    const modulePath = `../PanelInstances/InfoPanels/${panelType}.mjs`;
+    // Use panelPath if provided; else fallback to old pattern
+    const modulePath = panelPath || `../PanelInstances/InfoPanels/${panelType}.mjs`;
     console.log(`Loading panel module from: ${modulePath}`);
 
     try {
@@ -53,4 +55,3 @@ export async function createPanel(panelType, instanceVars = {}) {
     throw err;
   }
 }
-

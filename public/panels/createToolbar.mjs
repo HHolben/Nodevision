@@ -156,14 +156,14 @@ function buildToolbar(container, items, parentHeading = null) {
       // Close other dropdowns
       Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
 
-      // Panel
-      if (item.panelTemplateId || item.panelTemplate) {
-        const templateId = item.panelTemplateId || item.panelTemplate;
-        const moduleName = (item.panelModule ||
-          templateId.replace(".json", "").replace("Panel", "").replace("panel", "").replace(/^\w/, c => c.toUpperCase()));
-        const panelType = item.panelType || "InfoPanel";
-        createPanel(moduleName, panelType, item.defaultInstanceVars || {});
-      }
+// Panel
+if (item.panelTemplateId || item.panelTemplate) {
+  const templateId = item.panelTemplateId || item.panelTemplate;
+  const panelType = item.panelType || "InfoPanel";
+  const panelModulePath = item.panelPath || null;  // <-- new
+  createPanel(panelType, item.defaultInstanceVars || {}, panelModulePath);
+}
+
 
       // Script import
       if (item.script) import(`/ToolbarJSONfiles/${item.script}`);

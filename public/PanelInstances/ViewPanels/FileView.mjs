@@ -1,85 +1,89 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileView.mjs
-// Purpose: Panel for viewing files
+// Purpose: Panel for viewing files and automatically reacting to selectedFilePath changes
 
-const iframe = document.getElementById('content-frame');
+let lastRenderedPath = null;
 
-export function updateViewPanel(element) {
-  const viewPanel = document.getElementById('element-view');
+export async function setupPanel(panel, instanceVars = {}) {
+  // Create inner container for the view
+  const viewDiv = document.createElement("div");
+  viewDiv.id = "element-view";
+  viewDiv.style.width = "100%";
+  viewDiv.style.height = "100%";
+  viewDiv.style.overflow = "auto";
+  panel.appendChild(viewDiv);
+
+  // Create iframe for rendering HTML
+  const iframe = document.createElement("iframe");
+  iframe.id = "content-frame";
+  iframe.style.width = "100%";
+  iframe.style.height = "400px";
+  iframe.style.border = "1px solid #ccc";
+  panel.appendChild(iframe);
+
+  // Setup reactive tracking of selectedFilePath
+  if (!window._selectedFileProxyInstalled) {
+    let internalPath = window.selectedFilePath || null;
+
+    window.selectedFilePath = internalPath;
+    window._selectedFileProxyInstalled = true;
+
+    Object.defineProperty(window, "selectedFilePath", {
+      get() {
+        return internalPath;
+      },
+      set(value) {
+        if (value !== internalPath) {
+          console.log("📂 selectedFilePath changed:", value);
+          internalPath = value;
+          updateViewPanel(value);
+        }
+      },
+      configurable: true,
+    });
+
+    console.log("✅ Reactive selectedFilePath watcher installed.");
+  }
+
+  // Render immediately if instanceVars specify a file
+  if (instanceVars.filePath) {
+    window.selectedFilePath = instanceVars.filePath;
+    updateViewPanel(instanceVars.filePath);
+  }
+}
+
+export async function updateViewPanel(element) {
+  const viewPanel = document.getElementById("element-view");
+  const iframe = document.getElementById("content-frame");
+
   if (!viewPanel) {
-    console.error('View panel element not found.');
+    console.error("View panel element not found.");
     return;
   }
 
-  viewPanel.innerHTML = ''; // clear panel
-  iframe.src = '';
-
-  const serverBase = 'http://localhost:3000/Notebook';
-
-  // Handle Cytoscape elements
-  if (element && typeof element.id === 'function') {
-    if (element.isNode && element.isNode()) {
-      window.ActiveNode = element.id();
-      const label = element.data('label') || element.id();
-      const type = element.data('type') || 'Node';
-
-      viewPanel.innerHTML = `<strong>${type}:</strong> ${label}<br><strong>ID:</strong> ${window.ActiveNode}`;
-
-      // Special handling for regions
-      if (type === 'region') {
-        if (element.isParent && element.isParent()) {
-          const collapseBtn = document.createElement('button');
-          collapseBtn.textContent = 'Collapse';
-          collapseBtn.addEventListener('click', () => collapseRegion(element));
-          viewPanel.appendChild(collapseBtn);
-        }
-
-        const expandBtn = document.createElement('button');
-        expandBtn.textContent = 'Expand';
-        expandBtn.addEventListener('click', () => expandRegion(element));
-        viewPanel.appendChild(expandBtn);
-        return;
-      }
-
-      // Render file content
-      const filename = element.id();
-      renderFile(filename, viewPanel, iframe, serverBase);
-      return;
-    } else if (element.isEdge && element.isEdge()) {
-      viewPanel.innerHTML = `
-        <strong>Edge:</strong> ${element.id()}<br>
-        <strong>Source:</strong> ${element.source().id()}<br>
-        <strong>Target:</strong> ${element.target().id()}<br>
-        <strong>Type:</strong> ${element.data('type') || 'Edge'}
-      `;
-      return;
-    }
+  const filename = element || window.selectedFilePath;
+  if (!filename) {
+    viewPanel.innerHTML = "<em>No file selected.</em>";
+    return;
   }
 
-  // Plain file selection
-  const filename = element;
-  window.ActiveNode = filename;
-  renderFile(filename, viewPanel, iframe, serverBase);
+  if (filename === lastRenderedPath) {
+    console.log("🔁 File already displayed:", filename);
+    return; // avoid redundant renders
+  }
+  lastRenderedPath = filename;
+
+  console.log("🧭 Updating view panel for file:", filename);
+
+  viewPanel.innerHTML = "";
+  iframe.src = "";
+
+  const serverBase = "http://localhost:3000/Notebook";
+  await renderFile(filename, viewPanel, iframe, serverBase);
 }
 
-function renderFile(filename, viewPanel, iframe, serverBase) {
-  const lower = filename.toLowerCase();
-
-  if (lower.endsWith('.csv')) {
-    renderCSV(filename, viewPanel, serverBase);
-  } else if (lower.endsWith('.scad')) {
-    renderSCAD(filename, viewPanel, serverBase);
-  } else if (lower.endsWith('.stl')) {
-    renderSTL(filename, viewPanel, serverBase);
-  } else if (lower.endsWith('.svg')) {
-    window.InfoSVG(filename, viewPanel, serverBase);
-  } else if (['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'].some(ext => lower.endsWith(ext))) {
-    renderRasterImage(filename, viewPanel, serverBase);
-  } else if (lower.endsWith('.pdf')) {
-    renderPDF(filename, viewPanel, serverBase);
-  } else {
-    // Default: render as HTML in iframe
-    renderHTML(filename, iframe, serverBase, 0.5);
-  }
+async function renderFile(filename, viewPanel, iframe, serverBase) {
+  console.log(`📄 renderFile() called for: ${filename}`);
+  viewPanel.innerHTML = `<em>Rendering placeholder for:</em> ${filename}`;
 }
 
 // Expose globally

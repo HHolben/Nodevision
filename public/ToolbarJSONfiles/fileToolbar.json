@@ -3,9 +3,9 @@
     "ToolbarCategory": "File",
     "heading": "File Manager",
     "icon": "icons/folder.png",
-    "panelTemplate": "fileManagerPanel.json",
-    "panelModule": "FileManager",
-    "panelScript": "PanelInstances/InfoPanels/FileManager.mjs"
+    "panelTemplateId": "FileManager",          
+    "panelType": "InfoPanel",                
+    "panelPath": "/PanelInstances/InfoPanels/FileManager.mjs" 
   },
   {
     "ToolbarCategory": "File",
