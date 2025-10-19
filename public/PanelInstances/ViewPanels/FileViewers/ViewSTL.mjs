@@ -1,5 +1,6 @@
-// Nodevision/public/InfoSTL.js
-// Uses 3JS to provide the html and javascript needed to render STL models in the info panel
+// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewSTL.mjs
+// Purpose: Uses Three.js to render STL models inside a view panel.
+
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -7,18 +8,22 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 let renderer, scene, camera, controls;
 let overlayRenderer, overlayScene, overlayCamera;
 
-function initViewer() {
-  const containerId = "stl-viewer-container";
-  let container = document.getElementById(containerId);
-  if (!container) {
-    container = document.createElement("div");
-    container.id = containerId;
-    container.style.width = "100%";
-    container.style.height = "400px";
-    container.style.border = "1px solid #ccc";
-    document.getElementById("content-frame-container").appendChild(container);
-  }
+/**
+ * Initializes a Three.js viewer inside the provided container.
+ * @param {HTMLElement} container - The DOM container element to render into.
+ */
+function initViewer(container) {
+  console.log('[ViewSTL] Initializing STL viewer...');
 
+  // Prepare container
+  container.innerHTML = '';
+  container.style.position = 'relative';
+  container.style.width = '100%';
+  container.style.height = '400px';
+  container.style.border = '1px solid #ccc';
+  container.style.background = '#fff';
+
+  // Basic scene setup
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xffffff);
 
@@ -27,13 +32,14 @@ function initViewer() {
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  container.innerHTML = "";
   container.appendChild(renderer.domElement);
 
+  // Controls
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
 
+  // Lighting
   const ambientLight = new THREE.AmbientLight(0x606060);
   scene.add(ambientLight);
 
@@ -41,7 +47,7 @@ function initViewer() {
   directionalLight.position.set(1, 1, 1).normalize();
   scene.add(directionalLight);
 
-  // Overlay axes
+  // Overlay axes helper
   overlayScene = new THREE.Scene();
   overlayCamera = new THREE.PerspectiveCamera(50, 1, 1, 100);
   overlayCamera.position.set(50, 50, 50);
@@ -57,6 +63,9 @@ function initViewer() {
   animate();
 }
 
+/**
+ * Animation loop
+ */
 function animate() {
   requestAnimationFrame(animate);
   controls?.update();
@@ -64,15 +73,31 @@ function animate() {
   overlayRenderer?.render(overlayScene, overlayCamera);
 }
 
-function renderSTL(filePath) {
-  // clear meshes
+/**
+ * Renders an STL file inside the given container.
+ * @param {string} filePath - Path to the STL file (relative to /Notebook)
+ * @param {HTMLElement} container - The panel container element
+ * @param {string} serverBase - Server base URL
+ */
+export function renderSTL(filePath, container, serverBase) {
+  console.log(`[ViewSTL] Rendering STL: ${filePath}`);
+
+  // Initialize viewer if not already set up
+  if (!renderer || !scene || !camera) {
+    initViewer(container);
+  } else {
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+  }
+
+  // Remove old meshes
   for (let i = scene.children.length - 1; i >= 0; i--) {
     const obj = scene.children[i];
-    if (obj.type === "Mesh" || obj.userData.isVertex) scene.remove(obj);
+    if (obj.type === 'Mesh' || obj.userData.isVertex) scene.remove(obj);
   }
 
   const loader = new STLLoader();
-  loader.load(`/Notebook/${encodeURIComponent(filePath)}`, geometry => {
+  loader.load(`${serverBase}/${encodeURIComponent(filePath)}`, geometry => {
     const material = new THREE.MeshPhongMaterial({ color: 0xadd8e6, transparent: true, opacity: 0.8 });
     const mesh = new THREE.Mesh(geometry, material);
 
@@ -85,8 +110,9 @@ function renderSTL(filePath) {
 
     mesh.position.sub(center);
 
+    // Position camera dynamically
     const fov = camera.fov * (Math.PI / 180);
-    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
+    const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
     camera.position.set(center.x, center.y, cameraZ);
 
     controls.target.copy(center);
@@ -94,11 +120,13 @@ function renderSTL(filePath) {
 
     scene.add(mesh);
 
+    // Add edges overlay
     const edges = new THREE.EdgesGeometry(geometry);
     const edgeLines = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ff00 }));
     edgeLines.position.sub(center);
     scene.add(edgeLines);
 
+    // Add small vertex spheres
     const vertexMaterial = new THREE.MeshPhongMaterial({ color: 0xffcc00 });
     const vertexGeom = new THREE.SphereGeometry(0.1, 8, 8);
     const posAttr = geometry.attributes.position;
@@ -111,8 +139,3 @@ function renderSTL(filePath) {
     }
   });
 }
-
-initViewer();
-
-// Export instead of window
-export { renderSTL };
