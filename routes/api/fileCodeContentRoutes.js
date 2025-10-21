@@ -11,10 +11,9 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // Ensure the path is correctly resolved relative to the project root
-const notebookBasePath = path.resolve(__dirname, '../..');
+// routes/api/fileCodeContentRoutes.js
+const notebookBasePath = path.resolve(__dirname, '../../Notebook'); // points to Nodevision/Notebook
 
-
-// Endpoint to get file content
 router.get('/fileCodeContent', async (req, res) => {
     const filePath = req.query.path;
     console.log('Requested file path:', filePath);
@@ -23,7 +22,7 @@ router.get('/fileCodeContent', async (req, res) => {
         return res.status(400).send('File path is required');
     }
 
-    const absolutePath = path.join(notebookBasePath, filePath);
+    const absolutePath = path.join(notebookBasePath, filePath); // now correctly inside Notebook
 
     try {
         const data = await fs.readFile(absolutePath, 'utf8');
@@ -33,5 +32,6 @@ router.get('/fileCodeContent', async (req, res) => {
         res.status(500).send('Error reading file');
     }
 });
+
 
 export default router;
