@@ -44,3 +44,34 @@ export function createCell(row) {
   row.appendChild(cell);
   return cell;
 }
+
+export async function loadDefaultLayout() {
+  const response = await fetch("/UserSettings/DefaultLayout.json");
+  if (!response.ok) throw new Error("Could not load layout");
+  const layout = await response.json();
+  const workspace = ensureWorkspace();
+  renderLayout(layout.workspace, workspace);
+}
+
+function renderLayout(node, parent) {
+  if (node.type === "row" || node.type === "vertical") {
+    const row = document.createElement("div");
+    row.className = "panel-row";
+    Object.assign(row.style, {
+      display: "flex",
+      flexDirection: node.type === "vertical" ? "column" : "row",
+      flexBasis: node.size || "auto",
+      gap: "8px",
+      borderBottom: "4px solid #ddd",
+      overflow: "auto"
+    });
+    parent.appendChild(row);
+    node.children?.forEach(child => renderLayout(child, row));
+  } else if (node.type === "cell") {
+    const cell = createCell(parent);
+    cell.dataset.id = node.id;
+    // Later you can load panel content dynamically here:
+    loadPanelIntoCell(cell, node.content);
+  }
+}
+

@@ -88,6 +88,7 @@ app.use('/vendor/react', express.static(path.join(__dirname, 'public/vendor/reac
 
 app.use("/api/toolbar", toolbarRoutes);
 
+app.use('/UserSettings', express.static(path.join(__dirname, 'UserSettings')));
 
 
 app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
