@@ -44,36 +44,40 @@ async function loadDefaultLayout() {
   }
 }
 
-function applyLayout(parent, node) {
-  if (!node) return;
 
-  if (node.type === "workspace" || node.type === "vertical") {
-    const container = document.createElement("div");
-    Object.assign(container.style, {
-      display: "flex",
-      flexDirection: "column",
-      gap: "8px",
-    });
-    parent.appendChild(container);
-    node.children?.forEach(child => applyLayout(container, child));
-  }
+/**
+ * Applies a grid-based layout from DefaultLayout.json
+ */
+function applyLayout(workspace, layout) {
+  if (!layout || layout.type !== "grid") return;
 
-  else if (node.type === "row") {
-    const row = document.createElement("div");
-    Object.assign(row.style, {
-      display: "flex",
-      flexDirection: "row",
-      gap: "8px",
-      borderBottom: "2px solid #ccc",
+  workspace.style.display = "grid";
+  workspace.style.gridTemplateRows = `repeat(${layout.rows}, 1fr)`;
+  workspace.style.gridTemplateColumns = `repeat(${layout.cols}, 1fr)`;
+  workspace.style.gap = "8px";
+  workspace.innerHTML = ""; // clear any existing content
+
+  layout.cells.forEach(cell => {
+    const div = document.createElement("div");
+    div.className = "panel-cell";
+    div.textContent = cell.id || "Untitled Panel";
+
+    // basic styling
+    Object.assign(div.style, {
+      border: "1px solid #aaa",
+      background: "#fafafa",
+      padding: "8px",
       overflow: "auto"
     });
-    parent.appendChild(row);
-    node.children?.forEach(child => applyLayout(row, child));
-  }
 
-  else if (node.type === "cell") {
-    const cell = createCell(parent);
-    cell.dataset.id = node.id;
-    cell.textContent = node.content || "(empty)";
-  }
+    // place into correct grid position
+    if (cell.position) {
+      const [col, row] = cell.position.split(",").map(Number);
+      div.style.gridColumn = col + 1;
+      div.style.gridRow = row + 1;
+    }
+
+    workspace.appendChild(div);
+  });
 }
+
