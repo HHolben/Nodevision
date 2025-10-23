@@ -6,6 +6,12 @@ import { makeGridResizable } from './panels/gridResizer.mjs';
 import { makeRowsResizable } from './panels/rowResizer.mjs';
 import { ensureWorkspace, createCell } from './panels/workspace.mjs';
 
+import { loadDefaultLayout } from "./panels/workspace.mjs";
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadDefaultLayout();
+});
+
 document.addEventListener("DOMContentLoaded", async () => {
   createToolbar("#global-toolbar");
 
@@ -32,17 +38,6 @@ if (root) {
   makeGridResizable(workspace, { minSize: 50 });
   makeRowsResizable(workspace, { minHeight: 50 });
 });
-
-async function loadDefaultLayout() {
-  try {
-    const response = await fetch("/UserSettings/DefaultLayout.json");
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
-  } catch (err) {
-    console.error("Failed to load DefaultLayout.json:", err);
-    return null;
-  }
-}
 
 
 /**
