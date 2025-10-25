@@ -118,22 +118,25 @@ function createDivider(leftCell, rightCell) {
 
 export async function loadDefaultLayout() {
   try {
-    const response = await fetch("/UserSettings/DefaultLayout.json");
-    if (!response.ok) throw new Error("Could not load layout");
+const res = await fetch("/UserSettings/DefaultLayout.json");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const json = await response.json();
-    const layout = json.layout || json.workspace || json;
-    const workspace = ensureWorkspace();
-    workspace.innerHTML = "";
-    renderLayout(layout, workspace);
+    const raw = await res.text();
+    console.log("Fetched layout file (raw):", raw);
+
+    const json = JSON.parse(raw);
+    const layout =
+      json.workspace || json.layout || json; // normalize structure
+    console.log("Parsed layout object:", layout);
+
+    return layout; // ✅ this line is crucial
   } catch (err) {
-    console.warn("No valid DefaultLayout.json found, using fallback layout.");
-    const workspace = ensureWorkspace();
-    const row = ensureTopRow(workspace);
-    createCell(row);
-    createCell(row);
+    console.warn("Failed to load DefaultLayout.json:", err);
+    return null;
   }
 }
+
+
 
 function renderLayout(node, parent) {
   if (node.type === "row" || node.type === "vertical") {

@@ -8,9 +8,7 @@ import { ensureWorkspace, createCell } from './panels/workspace.mjs';
 
 import { loadDefaultLayout } from "./panels/workspace.mjs";
 
-window.addEventListener("DOMContentLoaded", () => {
-  loadDefaultLayout();
-});
+
 
 document.addEventListener("DOMContentLoaded", async () => {
   createToolbar("#global-toolbar");
