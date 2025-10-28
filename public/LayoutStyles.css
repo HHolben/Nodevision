@@ -197,3 +197,10 @@
 
 /* Resize handle is positioned by JS but you can tweak */
 .resize-handle { background:#777; border-radius:2px; }
+
+
+.layout-cell.active {
+  outline: 2px solid #007acc;
+  background-color: #e6f0ff;
+}
+

@@ -1,5 +1,6 @@
 // Nodevision/public/panels/workspace.mjs
-// Handles workspace, rows, cells, and resizable dividers, with dynamic multi-directory panel loading.
+// Handles workspace, rows, cells, and resizable dividers, with dynamic multi-directory panel loading
+// Adds activeCell/activePanel tracking and toolbar-based panel replacement
 
 export function ensureWorkspace() {
   let workspace = document.getElementById("workspace");
@@ -47,27 +48,38 @@ export function createCell(row) {
     userSelect: "none",
   });
 
-  // 🟢 When clicked, mark this panel as active
+  // 🟢 Handle click to set active panel + cell
   cell.addEventListener("click", (e) => {
     e.stopPropagation();
+
+    window.activeCell = cell;
     const panelId = cell.dataset.id || "Unknown";
     const panelTitle =
       cell.querySelector("h3")?.textContent ||
       cell.querySelector(".panel-header")?.textContent ||
       panelId;
     window.activePanel = panelTitle;
-    console.log(`Active panel set to: ${window.activePanel}`);
 
-    // Optional: visual highlight for active panel
+    console.log(`Active panel: ${window.activePanel}`);
+    console.log("Active cell element:", window.activeCell);
+
+    // Highlight active cell
     document.querySelectorAll(".panel-cell").forEach((c) => {
       c.style.outline = "";
     });
     cell.style.outline = "2px solid #0078d7";
+
+    // Dispatch event for listeners
+    window.dispatchEvent(
+      new CustomEvent("activePanelChanged", {
+        detail: { panel: window.activePanel, cell: window.activeCell },
+      })
+    );
   });
 
   row.appendChild(cell);
 
-  // Keep your divider logic
+  // Add divider between cells
   if (row.children.length > 1) {
     const divider = createDivider(row.children[row.children.length - 2], cell);
     row.insertBefore(divider, cell);
@@ -75,7 +87,6 @@ export function createCell(row) {
 
   return cell;
 }
-
 
 function createDivider(leftCell, rightCell) {
   const divider = document.createElement("div");
@@ -180,10 +191,8 @@ async function loadPanelIntoCell(cell, node) {
   const possiblePaths = [];
 
   if (module) {
-    // Explicitly declared in layout
     possiblePaths.push(module);
   } else {
-    // Try multiple directories automatically
     possiblePaths.push(
       `/PanelInstances/InfoPanels/${id}.mjs`,
       `/PanelInstances/ToolPanels/${id}.mjs`,
@@ -216,3 +225,17 @@ async function loadPanelIntoCell(cell, node) {
     console.warn(`No panel module found for ${id}`);
   }
 }
+
+// 🟣 Listen for toolbar events globally — replaces active cell with selected panel
+window.addEventListener("toolbarAction", async (e) => {
+  const { id } = e.detail;
+  if (!window.activeCell) {
+    console.warn("No active cell selected to replace with toolbar panel.");
+    return;
+  }
+
+  const cell = window.activeCell;
+  cell.innerHTML = `<div class="panel-header">${id}</div>`;
+  await loadPanelIntoCell(cell, { id, content: id });
+  console.log(`Replaced active cell content with toolbar panel: ${id}`);
+});
