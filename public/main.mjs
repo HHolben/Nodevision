@@ -1,32 +1,32 @@
 // Nodevision/public/main.mjs
 // Purpose: Initializes workspace, loads DefaultLayout.json, and renders panels with dividers.
+
 import { createToolbar } from './panels/createToolbar.mjs';
 import { ensureWorkspace, loadDefaultLayout, renderLayout } from "./panels/workspace.mjs";
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    
-    // 2. ADD THIS FUNCTION CALL to execute the toolbar creation
-    // Assuming your HTML has an element with id="global-toolbar"
-    createToolbar("#global-toolbar"); 
+    // Initialize toolbar
+    createToolbar("#global-toolbar");
 
-  
-    // Ensure the workspace container exists or create it
+    // Ensure the workspace container exists
     const workspace = ensureWorkspace();
     console.log("Workspace initialized:", workspace);
 
-    // Attempt to load DefaultLayout.json from /layouts
+    // Load layout file
     const layout = await loadDefaultLayout();
     console.log("Fetched layout file:", layout);
 
-    if (layout && layout.children && layout.children.length > 0) {
-      console.log("Loaded declarative layout:", layout);
-      renderLayout(layout, workspace);
+    // Render declarative layout
+    const root = layout?.workspace || layout;
+    if (root?.children?.length > 0) {
+      console.log("Loaded declarative layout:", root);
+      renderLayout(root, workspace);
     } else {
       console.warn("No valid DefaultLayout.json found, using fallback layout.");
     }
 
-    // --- Apply divider styles (for visual separation) ---
+    // Apply divider styles
     addDividers();
 
   } catch (err) {
@@ -73,6 +73,18 @@ function addDividers() {
       color: white;
       font-family: sans-serif;
       overflow: auto;
+    }
+
+    .divider {
+      width: 6px;
+      background: #555;
+      cursor: col-resize;
+      flex: 0 0 auto;
+      z-index: 10;
+    }
+
+    .divider:hover {
+      background: #777;
     }
 
     /* Last child should not draw a divider on its outer edge */
