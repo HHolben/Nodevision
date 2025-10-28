@@ -1,5 +1,5 @@
 // Nodevision/public/panels/workspace.mjs
-// Handles workspace, rows, cells, and resizable dividers.
+// Handles workspace, rows, cells, and resizable dividers, with panel script integration.
 
 export function ensureWorkspace() {
   let workspace = document.getElementById("workspace");
@@ -7,6 +7,9 @@ export function ensureWorkspace() {
     workspace = document.createElement("div");
     workspace.id = "workspace";
     workspace.style.padding = "8px";
+    workspace.style.height = "calc(100vh - 50px)";
+    workspace.style.display = "flex";
+    workspace.style.flexDirection = "column";
     document.body.appendChild(workspace);
   }
   return workspace;
@@ -19,10 +22,11 @@ export function ensureTopRow(workspace) {
     topRow.className = "panel-row";
     Object.assign(topRow.style, {
       display: "flex",
-      gap: "0px", // gap disabled for manual dividers
+      gap: "0px",
       marginBottom: "4px",
       borderBottom: "4px solid #ddd",
       overflow: "hidden",
+      flex: "1 1 auto",
     });
     workspace.appendChild(topRow);
   }
@@ -39,6 +43,7 @@ export function createCell(row) {
     flex: "1 1 0",
     display: "flex",
     flexDirection: "column",
+    position: "relative",
   });
   row.appendChild(cell);
 
@@ -54,16 +59,13 @@ function createDivider(leftCell, rightCell) {
   const divider = document.createElement("div");
   divider.className = "divider";
   Object.assign(divider.style, {
-    width: "5px",
+    width: "8px",
     cursor: "col-resize",
-    background: "#ccc",
+    background: "#aaa",
     zIndex: "10",
   });
 
-  let startX;
-  let startLeftWidth;
-  let startRightWidth;
-  let totalWidth;
+  let startX, startLeftWidth, startRightWidth, totalWidth;
 
   divider.addEventListener("mousedown", (e) => {
     e.preventDefault();
@@ -78,7 +80,6 @@ function createDivider(leftCell, rightCell) {
     startRightWidth = rightRect.width;
     totalWidth = rowRect.width;
 
-    // Temporarily disable transitions for smooth real-time drag
     leftCell.style.transition = "none";
     rightCell.style.transition = "none";
 
@@ -90,22 +91,16 @@ function createDivider(leftCell, rightCell) {
     const dx = e.clientX - startX;
     let newLeftWidth = startLeftWidth + dx;
     let newRightWidth = startRightWidth - dx;
-
-    // Clamp widths but allow near-zero squish
     const min = 5;
     if (newLeftWidth < min) newLeftWidth = min;
     if (newRightWidth < min) newRightWidth = min;
-
-    // Convert to % so they fill container naturally
     const leftPercent = (newLeftWidth / totalWidth) * 100;
     const rightPercent = (newRightWidth / totalWidth) * 100;
-
     leftCell.style.flex = `0 0 ${leftPercent}%`;
     rightCell.style.flex = `0 0 ${rightPercent}%`;
   }
 
   function onMouseUp() {
-    // Re-enable transitions
     leftCell.style.transition = "";
     rightCell.style.transition = "";
     document.removeEventListener("mousemove", onMouseMove);
@@ -115,28 +110,24 @@ function createDivider(leftCell, rightCell) {
   return divider;
 }
 
-
 export async function loadDefaultLayout() {
   try {
-const res = await fetch("/UserSettings/DefaultLayout.json");
+    const res = await fetch("/UserSettings/DefaultLayout.json");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const raw = await res.text();
     console.log("Fetched layout file (raw):", raw);
 
     const json = JSON.parse(raw);
-    const layout =
-      json.workspace || json.layout || json; // normalize structure
+    const layout = json.workspace || json.layout || json;
     console.log("Parsed layout object:", layout);
 
-    return layout; // ✅ this line is crucial
+    return layout;
   } catch (err) {
     console.warn("Failed to load DefaultLayout.json:", err);
     return null;
   }
 }
-
-
 
 export function renderLayout(node, parent) {
   if (node.type === "row" || node.type === "vertical") {
@@ -147,24 +138,31 @@ export function renderLayout(node, parent) {
       flexDirection: node.type === "vertical" ? "column" : "row",
       borderBottom: "4px solid #ddd",
       overflow: "hidden",
+      flex: "1 1 auto",
     });
     parent.appendChild(row);
     node.children?.forEach((child) => renderLayout(child, row));
   } else if (node.type === "cell") {
     const cell = createCell(parent);
     cell.dataset.id = node.id;
-    loadPanelIntoCell(cell, node.content);
+    loadPanelIntoCell(cell, node.id, node.content);
   }
 }
 
+async function loadPanelIntoCell(cell, id, content) {
+  try {
+    const modulePath = `/PanelInstances/InfoPanels/${id}.mjs`;
+    console.log(`Attempting to import panel script: ${modulePath}`);
 
-function loadPanelIntoCell(cell, content) {
-  if (!content) {
-    cell.innerHTML = "<em>Empty panel</em>";
-    return;
+    const mod = await import(modulePath);
+    if (typeof mod.setupPanel === "function") {
+      mod.setupPanel(cell, { content });
+    } else {
+      console.warn(`Module ${id}.mjs does not export setupPanel().`);
+      cell.innerHTML = `<strong>${content || id}</strong><br><em>No setupPanel() found.</em>`;
+    }
+  } catch (err) {
+    console.error(`Failed to load panel for ${id}:`, err);
+    cell.innerHTML = `<strong>${content || id}</strong><br><em>Failed to load panel script.</em>`;
   }
-  const header = document.createElement("div");
-  header.textContent = content;
-  header.style.cssText = "background:#ddd;padding:4px;text-align:center;font-weight:bold;";
-  cell.appendChild(header);
 }
