@@ -138,7 +138,7 @@ const res = await fetch("/UserSettings/DefaultLayout.json");
 
 
 
-function renderLayout(node, parent) {
+export function renderLayout(node, parent) {
   if (node.type === "row" || node.type === "vertical") {
     const row = document.createElement("div");
     row.className = "panel-row";
@@ -156,6 +156,7 @@ function renderLayout(node, parent) {
     loadPanelIntoCell(cell, node.content);
   }
 }
+
 
 function loadPanelIntoCell(cell, content) {
   if (!content) {
