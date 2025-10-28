@@ -1,5 +1,5 @@
 // Nodevision/public/panels/workspace.mjs
-// Handles workspace, rows, cells, and resizable dividers, with panel script integration.
+// Handles workspace, rows, cells, and resizable dividers, with dynamic multi-directory panel loading.
 
 export function ensureWorkspace() {
   let workspace = document.getElementById("workspace");
@@ -145,24 +145,52 @@ export function renderLayout(node, parent) {
   } else if (node.type === "cell") {
     const cell = createCell(parent);
     cell.dataset.id = node.id;
-    loadPanelIntoCell(cell, node.id, node.content);
+    loadPanelIntoCell(cell, node);
   }
 }
 
-async function loadPanelIntoCell(cell, id, content) {
-  try {
-    const modulePath = `/PanelInstances/InfoPanels/${id}.mjs`;
-    console.log(`Attempting to import panel script: ${modulePath}`);
+/**
+ * Dynamically load a panel based on its id and/or module path.
+ * Supports multiple search directories and layout-specified module paths.
+ */
+async function loadPanelIntoCell(cell, node) {
+  const { id, content, module } = node;
+  const possiblePaths = [];
 
-    const mod = await import(modulePath);
-    if (typeof mod.setupPanel === "function") {
-      mod.setupPanel(cell, { content });
-    } else {
-      console.warn(`Module ${id}.mjs does not export setupPanel().`);
-      cell.innerHTML = `<strong>${content || id}</strong><br><em>No setupPanel() found.</em>`;
+  if (module) {
+    // Explicitly declared in layout
+    possiblePaths.push(module);
+  } else {
+    // Try multiple directories automatically
+    possiblePaths.push(
+      `/PanelInstances/InfoPanels/${id}.mjs`,
+      `/PanelInstances/ToolPanels/${id}.mjs`,
+      `/PanelInstances/SidePanels/${id}.mjs`,
+      `/PanelInstances/${id}.mjs`,
+      `/panels/${id}.mjs`
+    );
+  }
+
+  let loaded = false;
+  for (const modulePath of possiblePaths) {
+    try {
+      console.log(`Trying to import panel: ${modulePath}`);
+      const mod = await import(modulePath);
+      if (typeof mod.setupPanel === "function") {
+        mod.setupPanel(cell, { content });
+        loaded = true;
+        break;
+      }
+    } catch (err) {
+      // Try next one silently
     }
-  } catch (err) {
-    console.error(`Failed to load panel for ${id}:`, err);
-    cell.innerHTML = `<strong>${content || id}</strong><br><em>Failed to load panel script.</em>`;
+  }
+
+  if (!loaded) {
+    cell.innerHTML = `<div style="padding:8px;">
+      <strong>${content || id}</strong><br>
+      <em>Panel script not found.</em>
+    </div>`;
+    console.warn(`No panel module found for ${id}`);
   }
 }
