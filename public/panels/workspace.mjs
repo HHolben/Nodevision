@@ -44,9 +44,30 @@ export function createCell(row) {
     display: "flex",
     flexDirection: "column",
     position: "relative",
+    userSelect: "none",
   });
+
+  // 🟢 When clicked, mark this panel as active
+  cell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const panelId = cell.dataset.id || "Unknown";
+    const panelTitle =
+      cell.querySelector("h3")?.textContent ||
+      cell.querySelector(".panel-header")?.textContent ||
+      panelId;
+    window.activePanel = panelTitle;
+    console.log(`Active panel set to: ${window.activePanel}`);
+
+    // Optional: visual highlight for active panel
+    document.querySelectorAll(".panel-cell").forEach((c) => {
+      c.style.outline = "";
+    });
+    cell.style.outline = "2px solid #0078d7";
+  });
+
   row.appendChild(cell);
 
+  // Keep your divider logic
   if (row.children.length > 1) {
     const divider = createDivider(row.children[row.children.length - 2], cell);
     row.insertBefore(divider, cell);
@@ -54,6 +75,7 @@ export function createCell(row) {
 
   return cell;
 }
+
 
 function createDivider(leftCell, rightCell) {
   const divider = document.createElement("div");
