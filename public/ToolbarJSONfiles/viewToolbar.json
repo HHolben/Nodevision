@@ -121,6 +121,20 @@
     "icon": "icons/fullscreenPanel.png",
     "callbackKey": "fullscreenPanel"
   },
+    {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Split Cell Horizontally",
+    "icon": "icons/HorizontalCellSplitting.png",
+    "callbackKey": "SplitCellHorizontally"
+  },
+      {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Split Cell Vertically",
+    "icon": "icons/VerticalCellSplitting.png",
+    "callbackKey": "SplitCellVertically"
+  },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
