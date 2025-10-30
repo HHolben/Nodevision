@@ -1,6 +1,6 @@
 // Nodevision/public/PanelInstances/EditorPanels/CodeEditor.mjs
 // Purpose: Editor panel for editing code files using Monaco Editor.
-// Reacts to window.selectedFilePath like View Panels.
+// Now supports adding or replacing panels depending on selection.
 
 let lastEditedPath = null;
 let editorInstance = null;
@@ -52,7 +52,52 @@ export async function setupPanel(panel, instanceVars = {}) {
   }
 }
 
+/**
+ * Opens or replaces a CodeEditor panel for the given file.
+ * If an active cell is selected, replaces it. Otherwise, adds a new one.
+ */
+export async function openCodeEditor(filePath) {
+  if (!filePath) {
+    alert("No file selected to open in Code Editor.");
+    return;
+  }
 
+  // 🟦 Determine workspace behavior
+  const workspace = document.getElementById("workspace");
+  if (!workspace) {
+    console.error("[CodeEditor] Workspace not found!");
+    return;
+  }
+
+  let targetCell = window.activeCell;
+
+  // 🟢 If no cell is active, add one
+  if (!targetCell) {
+    console.log("[CodeEditor] No active cell — creating new panel cell.");
+    const row = workspace.querySelector(".panel-row") || workspace;
+    targetCell = document.createElement("div");
+    targetCell.className = "panel-cell";
+    Object.assign(targetCell.style, {
+      border: "1px solid #bbb",
+      background: "#fafafa",
+      overflow: "auto",
+      flex: "1 1 0",
+      position: "relative",
+      display: "flex",
+      flexDirection: "column",
+    });
+    row.appendChild(targetCell);
+  }
+
+  // 🟪 Replace or fill the target cell
+  targetCell.innerHTML = `<div class="panel-header">Code Editor</div>`;
+  await setupPanel(targetCell, { filePath });
+  console.log(`🧩 Code editor opened for ${filePath}`);
+}
+
+/**
+ * Updates the Monaco editor when the file changes.
+ */
 export async function updateEditorPanel(filePath) {
   if (!filePath) {
     if (editorContainer) editorContainer.innerHTML = "<em>No file selected.</em>";
@@ -69,6 +114,9 @@ export async function updateEditorPanel(filePath) {
   await loadFileIntoMonaco(filePath);
 }
 
+/**
+ * Loads a file into the Monaco editor.
+ */
 async function loadFileIntoMonaco(filePath) {
   try {
     const res = await fetch(`/api/fileCodeContent?path=${encodeURIComponent(filePath)}`);
@@ -80,24 +128,24 @@ async function loadFileIntoMonaco(filePath) {
     editorContainer.innerHTML = `<pre style="color:red;">Error loading file: ${err.message}</pre>`;
   }
 }
+
+/**
+ * Initializes or replaces the Monaco editor instance.
+ */
 function initializeMonaco(filePath, content) {
-  // Dispose previous editor
   if (editorInstance) {
     editorInstance.dispose();
     editorInstance = null;
   }
 
-  // Ensure RequireJS (loader.js) is present
   if (typeof require === "undefined") {
     console.error("[CodeEditor] RequireJS not found. Cannot initialize Monaco.");
     editorContainer.innerHTML = "<p style='color:red;'>Monaco Editor could not be loaded.</p>";
     return;
   }
 
-  // Configure Monaco paths
   require.config({ paths: { vs: "/lib/monaco/vs" } });
 
-  // Configure Monaco workers
   window.MonacoEnvironment = {
     getWorker: function (moduleId, label) {
       const base = window.location.origin + "/lib/monaco/vs/";
@@ -113,7 +161,6 @@ function initializeMonaco(filePath, content) {
     },
   };
 
-  // ✅ Wait one animation frame to ensure the container is attached
   requestAnimationFrame(() => {
     require(["vs/editor/editor.main"], function () {
       if (!editorContainer) {
@@ -121,7 +168,6 @@ function initializeMonaco(filePath, content) {
         return;
       }
 
-      // Create Monaco instance in the correct container
       editorInstance = monaco.editor.create(editorContainer, {
         value: content || "",
         language: detectLanguage(filePath),
@@ -132,7 +178,9 @@ function initializeMonaco(filePath, content) {
   });
 }
 
-
+/**
+ * Detects language for Monaco syntax highlighting.
+ */
 function detectLanguage(filePath) {
   const ext = filePath.split(".").pop().toLowerCase();
   switch (ext) {
@@ -151,6 +199,9 @@ function detectLanguage(filePath) {
   }
 }
 
+/**
+ * Saves file from editor content back to disk.
+ */
 async function saveFile(filePath) {
   if (!editorInstance || !filePath) return;
   const content = editorInstance.getValue();
@@ -169,5 +220,6 @@ async function saveFile(filePath) {
   }
 }
 
-// Expose globally for debugging or hot reloads
+// Expose globally for convenience
 window.updateEditorPanel = updateEditorPanel;
+window.openCodeEditor = openCodeEditor;

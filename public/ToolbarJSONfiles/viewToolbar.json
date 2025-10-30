@@ -121,6 +121,7 @@
     "icon": "icons/fullscreenPanel.png",
     "callbackKey": "fullscreenPanel"
   },
+
     {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
@@ -134,6 +135,12 @@
     "heading": "Split Cell Vertically",
     "icon": "icons/VerticalCellSplitting.png",
     "callbackKey": "SplitCellVertically"
+  },    {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Merge Cells",
+    "icon": "icons/cellsMerging.png",
+    "callbackKey": "MergeCells"
   },
   {
     "ToolbarCategory": "View",
@@ -162,5 +169,12 @@
     "heading": "Move Panel Down",
     "icon": "icons/moveDown.png",
     "callbackKey": "movePanelDown"
+  },
+    {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Save Current Layout",
+    "icon": "icons/SaveTheLayout.png",
+    "callbackKey": "SaveCurrentLayout"
   }
 ]

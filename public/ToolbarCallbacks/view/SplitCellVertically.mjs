@@ -1,8 +1,8 @@
-// Nodevision/public/ToolbarCallbacks/view/SplitCellHorizontally.mjs
+// Nodevision/public/ToolbarCallbacks/view/SplitCellVertically.mjs
 // Prompts the user for a number, then divides the active cell into that
-// number of horizontally spaced cells.
+// number of vertically stacked cells.
 
-export function splitCellHorizontally() {
+export function splitCellVertically() {
   const cell = window.activeCell;
   if (!cell) {
     console.warn("No active cell to split.");
@@ -10,30 +10,31 @@ export function splitCellHorizontally() {
     return;
   }
 
-  const num = parseInt(prompt("Enter number of horizontal splits:", "2"), 10);
+  const num = parseInt(prompt("Enter number of vertical splits:", "2"), 10);
   if (isNaN(num) || num < 1) {
     alert("Invalid number.");
     return;
   }
 
-  const parentRow = cell.parentElement;
-  if (!parentRow) return;
+  const parentContainer = cell.parentElement;
+  if (!parentContainer) return;
 
   // Store the original content
   const originalContent = cell.innerHTML;
 
-  // Clear the current cell and remove it from the DOM
-  parentRow.removeChild(cell);
+  // Remove the original cell
+  parentContainer.removeChild(cell);
 
-  // Create a new row to contain the horizontal cells
-  const newRow = document.createElement("div");
-  newRow.className = "row";
-  newRow.style.display = "flex";
-  newRow.style.flexDirection = "row";
-  newRow.style.flex = "1 1 auto";
-  newRow.style.width = "100%";
+  // Create a new column container
+  const newColumn = document.createElement("div");
+  newColumn.className = "column";
+  newColumn.style.display = "flex";
+  newColumn.style.flexDirection = "column";
+  newColumn.style.flex = "1 1 auto";
+  newColumn.style.height = "100%";
+  newColumn.style.width = "100%";
 
-  // Create the specified number of horizontal cells
+  // Create the specified number of vertical cells
   for (let i = 0; i < num; i++) {
     const newCell = document.createElement("div");
     newCell.className = "cell";
@@ -44,7 +45,7 @@ export function splitCellHorizontally() {
     // First cell inherits the original content
     if (i === 0) newCell.innerHTML = originalContent;
 
-    // Allow selection of new cells
+    // Allow selecting this new cell
     newCell.addEventListener("click", (e) => {
       e.stopPropagation();
       window.activeCell = newCell;
@@ -52,27 +53,27 @@ export function splitCellHorizontally() {
       newCell.classList.add("active");
     });
 
-    newRow.appendChild(newCell);
+    newColumn.appendChild(newCell);
 
-    // Optionally add a divider between cells
+    // Optional divider between stacked cells
     if (i < num - 1) {
       const divider = document.createElement("div");
       divider.className = "divider";
-      divider.style.width = "4px";
-      divider.style.cursor = "col-resize";
+      divider.style.height = "4px";
+      divider.style.cursor = "row-resize";
       divider.style.background = "var(--divider-color, #222)";
-      newRow.appendChild(divider);
+      newColumn.appendChild(divider);
     }
   }
 
-  // Insert the new row where the old cell was
-  parentRow.appendChild(newRow);
+  // Insert the new column where the old cell was
+  parentContainer.appendChild(newColumn);
 
-  // Update activeCell
-  window.activeCell = newRow.querySelector(".cell");
+  // Update activeCell to the first new one
+  window.activeCell = newColumn.querySelector(".cell");
 }
 
 // Default export for toolbar system
 export default function run() {
-  splitCellHorizontally();
+  splitCellVertically();
 }
