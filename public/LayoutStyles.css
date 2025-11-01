@@ -187,8 +187,19 @@
 
 .panel-cell { position: relative; }
 
-/* Panel visuals */
-.panel { box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.panel-content {
+  flex: 1;
+  overflow: auto;
+  height: 100%;
+  position: relative;
+}
 .panel.docked { /* fills cell by inline styles set by JS */ }
 .panel.floating { position:absolute; pointer-events:auto; }
 

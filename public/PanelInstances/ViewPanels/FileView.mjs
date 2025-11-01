@@ -12,13 +12,6 @@ export async function setupPanel(panel, instanceVars = {}) {
   viewDiv.style.overflow = "auto";
   panel.appendChild(viewDiv);
 
-  // Create iframe for HTML or embedded rendering
-  const iframe = document.createElement("iframe");
-  iframe.id = "content-frame";
-  iframe.style.width = "100%";
-  iframe.style.height = "400px";
-  iframe.style.border = "1px solid #ccc";
-  panel.appendChild(iframe);
 
   // Reactive watcher for window.selectedFilePath
   if (!window._selectedFileProxyInstalled) {
@@ -50,13 +43,23 @@ export async function setupPanel(panel, instanceVars = {}) {
 }
 
 export async function updateViewPanel(element) {
-  const viewPanel = document.getElementById("element-view");
-  const iframe = document.getElementById("content-frame");
-
+  let viewPanel = document.getElementById("element-view");
   if (!viewPanel) {
     console.error("View panel element not found.");
     return;
   }
+
+// Create iframe for HTML or embedded rendering
+const iframe = document.createElement("iframe");
+iframe.id = "content-frame";
+Object.assign(iframe.style, {
+  width: "100%",
+  height: "100%",           // fill parent vertically
+  border: "none",
+  display: "block",
+  flex: "1 1 auto",         // participate in flex layout
+});
+
 
   const filename = element || window.selectedFilePath;
   if (!filename) {
@@ -72,11 +75,13 @@ export async function updateViewPanel(element) {
 
   console.log("🧭 Updating view panel for file:", filename);
   viewPanel.innerHTML = "";
+  viewPanel.appendChild(iframe); // reattach to ensure correct order
   iframe.src = "";
 
   const serverBase = "http://localhost:3000/Notebook";
   await renderFile(filename, viewPanel, iframe, serverBase);
 }
+
 
 async function renderFile(filename, viewPanel, iframe, serverBase) {
   console.log(`📄 renderFile() called for: ${filename}`);
