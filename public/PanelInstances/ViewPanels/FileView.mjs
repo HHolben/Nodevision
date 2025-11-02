@@ -12,7 +12,6 @@ export async function setupPanel(panel, instanceVars = {}) {
   viewDiv.style.overflow = "auto";
   panel.appendChild(viewDiv);
 
-
   // Reactive watcher for window.selectedFilePath
   if (!window._selectedFileProxyInstalled) {
     let internalPath = window.selectedFilePath || null;
@@ -35,6 +34,20 @@ export async function setupPanel(panel, instanceVars = {}) {
     console.log("✅ Reactive selectedFilePath watcher installed.");
   }
 
+  // Listen for iframe -> parent click messages
+  window.addEventListener("message", (event) => {
+    if (event.data?.type === "activatePanel" && event.data?.id === "FileView") {
+      const cell = document.querySelector(`[data-id="FileView"]`);
+      if (cell) {
+        window.activeCell = cell;
+        window.activePanel = "FileView";
+        console.log("Active panel via postMessage:", window.activePanel);
+        document.querySelectorAll(".panel-cell").forEach((c) => (c.style.outline = ""));
+        cell.style.outline = "2px solid #0078d7";
+      }
+    }
+  });
+
   // Initial render if filePath provided
   if (instanceVars.filePath) {
     window.selectedFilePath = instanceVars.filePath;
@@ -49,17 +62,16 @@ export async function updateViewPanel(element) {
     return;
   }
 
-// Create iframe for HTML or embedded rendering
-const iframe = document.createElement("iframe");
-iframe.id = "content-frame";
-Object.assign(iframe.style, {
-  width: "100%",
-  height: "100%",           // fill parent vertically
-  border: "none",
-  display: "block",
-  flex: "1 1 auto",         // participate in flex layout
-});
-
+  // Create iframe for HTML or embedded rendering
+  const iframe = document.createElement("iframe");
+  iframe.id = "content-frame";
+  Object.assign(iframe.style, {
+    width: "100%",
+    height: "100%",
+    border: "none",
+    display: "block",
+    flex: "1 1 auto",
+  });
 
   const filename = element || window.selectedFilePath;
   if (!filename) {
@@ -75,13 +87,29 @@ Object.assign(iframe.style, {
 
   console.log("🧭 Updating view panel for file:", filename);
   viewPanel.innerHTML = "";
-  viewPanel.appendChild(iframe); // reattach to ensure correct order
+  viewPanel.appendChild(iframe);
   iframe.src = "";
+
+  // 🔹 Hook into iframe once it loads
+  iframe.addEventListener("load", () => {
+    try {
+      // Inject lightweight click forwarding script if same-origin
+      const script = `
+        window.addEventListener("mousedown", () => {
+          window.parent.postMessage({ type: "activatePanel", id: "FileView" }, "*");
+        });
+      `;
+      const scriptTag = iframe.contentDocument.createElement("script");
+      scriptTag.textContent = script;
+      iframe.contentDocument.head.appendChild(scriptTag);
+    } catch (err) {
+      console.warn("⚠️ Could not inject click handler into iframe (possibly cross-origin):", err);
+    }
+  });
 
   const serverBase = "http://localhost:3000/Notebook";
   await renderFile(filename, viewPanel, iframe, serverBase);
 }
-
 
 async function renderFile(filename, viewPanel, iframe, serverBase) {
   console.log(`📄 renderFile() called for: ${filename}`);

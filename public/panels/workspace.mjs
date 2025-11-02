@@ -49,33 +49,40 @@ export function createCell(row) {
   });
 
   // 🟢 Handle click to set active panel + cell
-  cell.addEventListener("click", (e) => {
-    e.stopPropagation();
+  
+// Find the workspace container that holds all cells
+const workspaceElem = document.getElementById("workspace");
 
-    window.activeCell = cell;
-    const panelId = cell.dataset.id || "Unknown";
-    const panelTitle =
-      cell.querySelector("h3")?.textContent ||
-      cell.querySelector(".panel-header")?.textContent ||
-      panelId;
-    window.activePanel = panelTitle;
+// Use a single delegated listener
+workspaceElem.addEventListener("click", (e) => {
+  const cell = e.target.closest(".panel-cell");
+  if (!cell || !workspaceElem.contains(cell)) return;
 
-    console.log(`Active panel: ${window.activePanel}`);
-    console.log("Active cell element:", window.activeCell);
+  window.activeCell = cell;
+  const panelId = cell.dataset.id || "Unknown";
+  const panelTitle =
+    cell.querySelector("h3")?.textContent ||
+    cell.querySelector(".panel-header")?.textContent ||
+    panelId;
+  window.activePanel = panelTitle;
 
-    // Highlight active cell
-    document.querySelectorAll(".panel-cell").forEach((c) => {
-      c.style.outline = "";
-    });
-    cell.style.outline = "2px solid #0078d7";
+  console.log(`Active panel: ${window.activePanel}`);
+  console.log("Active cell element:", window.activeCell);
 
-    // Dispatch event for listeners
-    window.dispatchEvent(
-      new CustomEvent("activePanelChanged", {
-        detail: { panel: window.activePanel, cell: window.activeCell },
-      })
-    );
+  // Highlight active cell
+  document.querySelectorAll(".panel-cell").forEach((c) => {
+    c.style.outline = "";
   });
+  cell.style.outline = "2px solid #0078d7";
+
+  // Notify listeners that the active panel changed
+  window.dispatchEvent(
+    new CustomEvent("activePanelChanged", {
+      detail: { panel: window.activePanel, cell: window.activeCell },
+    })
+  );
+});
+
 
   row.appendChild(cell);
 

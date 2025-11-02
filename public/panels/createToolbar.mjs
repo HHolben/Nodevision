@@ -1,4 +1,4 @@
-// Nodevision/public/createToolbar.mjs
+// Nodevision/public/panels/createToolbar.mjs
 // Fully prebuilt, instant toolbar and dropdowns
 
 import { createPanel } from '/panels/panelManager.mjs';
@@ -159,9 +159,10 @@ function buildToolbar(container, items, parentHeading = null) {
 // Panel
 if (item.panelTemplateId || item.panelTemplate) {
   const templateId = item.panelTemplateId || item.panelTemplate;
-  const panelType = item.panelType || "InfoPanel";
-  const panelModulePath = item.panelPath || null;  // <-- new
-  createPanel(panelType, item.defaultInstanceVars || {}, panelModulePath);
+  const event = new CustomEvent("toolbarAction", {
+    detail: { id: templateId }
+  });
+  window.dispatchEvent(event);
 }
 
 

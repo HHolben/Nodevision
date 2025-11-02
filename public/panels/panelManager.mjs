@@ -1,14 +1,14 @@
 // Nodevision/public/panels/panelManager.mjs
 // Handles creating and managing panels dynamically (backwards-compatible)
 
-
-export async function createPanel(panelType, instanceVars = {}, panelPath = null) {
+export async function createPanel(panelType, instanceVars = {}, panelPath = null, targetElem = null) {
   try {
     console.log(`createPanel(): Creating panel for type "${panelType}"`);
 
     // If panelType is already a DOM element
     if (panelType instanceof HTMLElement) {
-      document.querySelector("#panel-container")?.appendChild(panelType);
+      (targetElem || document.querySelector("#panel-container") || document.body)
+        .appendChild(panelType);
       return panelType;
     }
 
@@ -16,13 +16,17 @@ export async function createPanel(panelType, instanceVars = {}, panelPath = null
     const panel = document.createElement("div");
     panel.classList.add("info-panel");
     panel.dataset.type = panelType;
-    panel.style.border = "1px solid #999";
-    panel.style.margin = "4px";
-    panel.style.padding = "8px";
-    panel.style.background = "#fafafa";
+    Object.assign(panel.style, {
+      border: "1px solid #999",
+      margin: "4px",
+      padding: "8px",
+      background: "#fafafa",
+      flex: "1",
+      display: "flex",
+      flexDirection: "column",
+    });
 
     // Dynamic module path
-    // Use panelPath if provided; else fallback to old pattern
     const modulePath = panelPath || `../PanelInstances/InfoPanels/${panelType}.mjs`;
     console.log(`Loading panel module from: ${modulePath}`);
 
@@ -42,10 +46,19 @@ export async function createPanel(panelType, instanceVars = {}, panelPath = null
       panel.innerHTML = `Panel type: ${panelType}<br>No JS module found.`;
     }
 
-    // Append panel to container
-    const container = document.querySelector("#panel-container");
-    if (container) container.appendChild(panel);
-    else document.body.appendChild(panel);
+    // 🟩 Determine where to place this panel
+    const container =
+      targetElem ||
+      document.querySelector("#panel-container") ||
+      document.body;
+
+    // 🟨 If replacing an active cell, clear it first
+    if (container.classList.contains("panel-cell")) {
+      container.innerHTML = "";
+      container.appendChild(panel);
+    } else {
+      container.appendChild(panel);
+    }
 
     console.log(`Panel "${panelType}" created successfully.`);
     return panel;
