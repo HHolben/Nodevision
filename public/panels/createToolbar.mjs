@@ -156,11 +156,16 @@ function buildToolbar(container, items, parentHeading = null) {
       // Close other dropdowns
       Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
 
-// Panel
+// === Panel handling ===
 if (item.panelTemplateId || item.panelTemplate) {
   const templateId = item.panelTemplateId || item.panelTemplate;
+  const panelType = item.panelType || "ViewPanels"; // Default for top-level panels
+
   const event = new CustomEvent("toolbarAction", {
-    detail: { id: templateId }
+    detail: {
+      id: templateId,
+      type: panelType
+    }
   });
   window.dispatchEvent(event);
 }

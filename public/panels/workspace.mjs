@@ -185,53 +185,67 @@ export function renderLayout(node, parent) {
   } else if (node.type === "cell") {
     const cell = createCell(parent);
     cell.dataset.id = node.id;
-    loadPanelIntoCell(cell, node);
+
+    // Set active cell
+    window.activeCell = cell;
+
+    // Extract panel type string
+    let panelType = "InfoPanel"; // default fallback
+    if (node.module) {
+      panelType = node.module
+        .replace(/^\/PanelInstances\//, "")
+        .replace(/\.mjs$/, "");
+    }
+
+    // Load the panel by string
+    loadPanelIntoCell(panelType, { id: node.id });
   }
 }
+
 
 /**
  * Dynamically load a panel based on its id and/or module path.
  * Supports multiple search directories and layout-specified module paths.
  */
-async function loadPanelIntoCell(cell, node) {
-  const { id, content, module } = node;
-  const possiblePaths = [];
-
-  if (module) {
-    possiblePaths.push(module);
-  } else {
-    possiblePaths.push(
-      `/PanelInstances/InfoPanels/${id}.mjs`,
-      `/PanelInstances/ToolPanels/${id}.mjs`,
-      `/PanelInstances/SidePanels/${id}.mjs`,
-      `/PanelInstances/${id}.mjs`,
-      `/panels/${id}.mjs`
-    );
+export async function loadPanelIntoCell(panelType, panelVars = {}) {
+  const cell = window.activeCell;
+  if (!cell) {
+    console.warn("⚠️ No active cell selected for loading panel:", panelType);
+    return;
   }
 
-  let loaded = false;
-  for (const modulePath of possiblePaths) {
+  console.log("Panel Type:", panelType);
+
+  // Try multiple search paths for panels
+  const possiblePaths = [
+    `/PanelInstances/${panelType}.mjs`,
+    `/PanelInstances/EditorPanels/${panelType}.mjs`,
+    `/panels/${panelType}.mjs`,
+  ];
+
+  let module = null;
+  for (const path of possiblePaths) {
     try {
-      console.log(`Trying to import panel: ${modulePath}`);
-      const mod = await import(modulePath);
-      if (typeof mod.setupPanel === "function") {
-        mod.setupPanel(cell, { content });
-        loaded = true;
-        break;
-      }
+      console.log("🔍 Trying to import panel:", path);
+      module = await import(path);
+      console.log("✅ Successfully imported:", path);
+      break;
     } catch (err) {
-      // Try next one silently
+      // Only log 404s; ignore missing paths
     }
   }
 
-  if (!loaded) {
-    cell.innerHTML = `<div style="padding:8px;">
-      <strong>${content || id}</strong><br>
-      <em>Panel script not found.</em>
-    </div>`;
-    console.warn(`No panel module found for ${id}`);
+  if (!module) {
+    console.warn("⚠️ No panel module found for", panelType);
+    return;
   }
+
+  cell.innerHTML = "";
+  await module.setupPanel(cell, panelVars);
+  console.log("✅ Loaded panel:", panelType);
 }
+
+
 
 // 🟣 Listen for toolbar events globally — replaces active cell with selected panel
 window.addEventListener("toolbarAction", async (e) => {
@@ -243,6 +257,8 @@ window.addEventListener("toolbarAction", async (e) => {
 
   const cell = window.activeCell;
   cell.innerHTML = `<div class="panel-header">${id}</div>`;
-  await loadPanelIntoCell(cell, { id, content: id });
-  console.log(`Replaced active cell content with toolbar panel: ${id}`);
+
+  // Pass panel type string instead of cell
+  await loadPanelIntoCell(id, { id, content: id });
 });
+

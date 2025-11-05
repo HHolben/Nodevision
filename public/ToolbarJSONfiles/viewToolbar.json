@@ -47,7 +47,7 @@
   "ToolbarCategory": "View",
   "heading": "Code Editing",
   "content": "",
-  "panelTemplate": "Editor",
+  "panelTemplate": "CodeEditor",
   "panelType": "EditorPanel",
   "panelPath": "/PanelInstances/EditorPanels/CodeEditor.mjs"
 }
