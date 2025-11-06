@@ -127,8 +127,14 @@ function initializeMonaco(filePath, content) {
       theme: "vs-dark",
       automaticLayout: true,
     });
+
+    // ✅ Add these lines:
+    window.monacoEditor = editorInstance;
+    window.currentActiveFilePath = filePath;
+    console.log("🧠 Monaco editor registered globally for saving:", filePath);
   });
 }
+
 
 /**
  * Detects language from file extension.

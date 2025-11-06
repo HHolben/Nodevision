@@ -50,8 +50,7 @@
   "panelTemplate": "CodeEditor",
   "panelType": "EditorPanel",
   "panelPath": "/PanelInstances/EditorPanels/CodeEditor.mjs"
-}
-,
+},
   {
     "ToolbarCategory": "View",
     "heading": "Graph View",
