@@ -25,21 +25,37 @@ export async function setupPanel(cell, instanceVars = {}) {
   }
 
   console.log("🧭 Updating graphical editor for file:", filePath);
+// Determine which graphical editor to load
+let editorModulePath = null;
+const ext = filePath.split(".").pop().toLowerCase();
 
-  // Determine which graphical editor to load (stub)
-  let editorModulePath = null;
-  const ext = filePath.split(".").pop().toLowerCase();
+const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
 
-  if (["svg"].includes(ext)) {
-    editorModulePath =
-      "/PanelInstances/EditorPanels/GraphicalEditors/EditorSVG.mjs";
-  } else if (["stl"].includes(ext)) {
-    editorModulePath =
-      "/PanelInstances/EditorPanels/GraphicalEditors/EditorSTL.mjs";
+if (["html", "htm"].includes(ext)) {
+  editorModulePath = `${basePath}/HTMLeditor.mjs`; // ✅ match actual file name
+} else if (["svg"].includes(ext)) {
+  editorModulePath = `${basePath}/EditorSVG.mjs`;
+} else if (["stl"].includes(ext)) {
+  editorModulePath = `${basePath}/EditorSTL.mjs`;
+} else {
+  editorModulePath = `${basePath}/EditorFallback.mjs`;
+}
+
+try {
+  const module = await import(editorModulePath);
+  if (typeof module.renderEditor === "function") {
+    await module.renderEditor(filePath, container);
   } else {
-    editorModulePath =
-      "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs";
+    console.warn(`⚠️ ${editorModulePath} has no renderEditor(); falling back.`);
+    const { renderEditor } = await import(`${basePath}/EditorFallback.mjs`);
+    renderEditor(filePath, container);
   }
+} catch (err) {
+  console.error("Failed to load graphical editor:", err);
+  const { renderEditor } = await import(`${basePath}/EditorFallback.mjs`);
+  renderEditor(filePath, container);
+}
+
 
   try {
     const { renderEditor } = await import(editorModulePath);
@@ -73,8 +89,10 @@ export async function updateGraphicalEditor(filePath) {
   editorDiv.innerHTML = "";
 
   const ext = filename.split(".").pop().toLowerCase();
+  console.log(ext);
   const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
   const editorModuleMap = {
+    html: "HTMLeditor.mjs",
     svg: "EditorSVG.mjs",
     stl: "EditorSTL.mjs",
     scad: "EditorSCAD.mjs",
