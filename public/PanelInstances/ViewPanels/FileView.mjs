@@ -1,5 +1,5 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileView.mjs
-// Purpose: Panel that reacts to window.selectedFilePath and dynamically loads the proper viewer module.
+// This file reacts to window.selectedFilePath and dynamically loads the proper viewer module.
 
 let lastRenderedPath = null;
 

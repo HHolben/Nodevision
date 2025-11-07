@@ -1,5 +1,5 @@
 // Nodevision/public/PanelInstances/EditorPanels/CodeEditor.mjs
-// Purpose: Replace the active panel cell with a Monaco-based Code Editor for the selected file.
+// Replaces the active panel cell with a Monaco-based Code Editor for the selected file.
 
 let editorInstance = null;
 let editorContainer = null;

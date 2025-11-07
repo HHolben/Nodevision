@@ -51,6 +51,14 @@
   "panelType": "EditorPanel",
   "panelPath": "/PanelInstances/EditorPanels/CodeEditor.mjs"
 },
+{
+  "ToolbarCategory": "View",
+  "heading": "Graphical Editing",
+  "content": "",
+  "panelTemplate": "GraphicalEditor",
+  "panelType": "EditorPanel",
+  "panelPath": "/PanelInstances/EditorPanels/GraphicalEditor.mjs"
+},
   {
     "ToolbarCategory": "View",
     "heading": "Graph View",
@@ -87,12 +95,6 @@
     "heading": "Virtual World Editing",
     "content": "",
     "script": "SwitchToVirtualWorldEditing.js"
-  },
-  {
-    "ToolbarCategory": "View",
-    "heading": "Code Editing",
-    "content": "",
-    "script": "SwitchToCodeEditing.js"
   },
   {
     "ToolbarCategory": "View",
