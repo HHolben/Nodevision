@@ -1,127 +1,98 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs
-// Loads a WYSIWYG editing environment for HTML (and related) files into a Nodevision panel cell
-
-
 export async function renderEditor(filePath, container) {
-  container.innerHTML = `
-    <div style="display:flex; flex-direction:column; width:100%; height:100%;">
-      <div style="background:#f0f0f0; padding:8px; border-bottom:1px solid #ccc;">
-        <strong>HTML Graphical Editor</strong> — ${filePath}
-      </div>
-      <iframe
-        src="/Notebook/${filePath.split('/').pop()}"
-        style="flex:1; width:100%; border:none;"
-      ></iframe>
-    </div>
-  `;
-}
-export async function setupPanel(cell, panelVars = {}) {
-  cell.innerHTML = `<div class="panel-header">WYSIWYG HTML Editor</div>
-  <iframe id="html-editor-frame" style="flex:1;width:100%;border:none;"></iframe>`;
+  if (!container) throw new Error("Container required");
+  container.innerHTML = "";
 
-  // 🟢 Automatically use the file path from the selected FileView panel, if available
-  let filePath =
-    panelVars.path ||
-    panelVars.filePath ||
-    window.selectedFilePath ||
-    (window.activeCell && window.activeCell.dataset?.filePath) ||
-    "";
+  const wrapper = document.createElement("div");
+  wrapper.id = "editor-root";
+  wrapper.style.display = "flex";
+  wrapper.style.flexDirection = "column";
+  wrapper.style.height = "100%";
+  wrapper.style.width = "100%";
+  container.appendChild(wrapper);
 
-  if (!filePath) {
-    console.warn("⚠️ No file path provided to HTMLeditor; defaulting to blank workspace.");
-  }
+  const wysiwyg = document.createElement("div");
+  wysiwyg.id = "wysiwyg";
+  wysiwyg.contentEditable = "true";
+  wysiwyg.style.flex = "1";
+  wysiwyg.style.overflow = "auto";
+  wysiwyg.style.padding = "12px";
+  wrapper.appendChild(wysiwyg);
 
-  const ext = (filePath.split(".").pop() || "html").toLowerCase();
+  const hidden = document.createElement("div");
+  hidden.id = "hidden-elements";
+  hidden.style.display = "none";
+  wrapper.appendChild(hidden);
 
-  const scriptBundles = {
-    html: [
-      "saveWYSIWYGFile.js",
-      "toolbar.js",
-      "fileLoader.js",
-      "tabHandler.js",
-      "imageHandling.js",
-      "clipboardHandler.js",
-      "imageCropper.js",
-      "editRasterToolbar.js",
-      "initWYSIWYG.js",
-    ],
-    md: ["loadMarkdown.js", "saveMarkdown.js", "initMarkdownEditor.js"],
-    json: ["loadJSON.js", "saveJSON.js", "initJSONEditor.js"],
-    csv: ["loadCSV.js", "saveCSV.js", "initCSVEditor.js"],
-  };
+  try {
+    const res = await fetch(`/Notebook/${filePath}`);
+    if (!res.ok) throw new Error(res.statusText);
+    const htmlText = await res.text();
 
-  const scripts = scriptBundles[ext] || scriptBundles.html;
+    // Parse the HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
 
-  // Compute the base directory relative to this file
-  const basePath = "/SwitchToWYSIWYGediting/";
+    // Clone <head> elements
+    const headClone = document.createElement("div");
+    for (const el of doc.head.children) {
+      if (el.tagName === "SCRIPT") {
+        const placeholder = document.createElement("div");
+        placeholder.dataset.script = el.textContent;
+        hidden.appendChild(placeholder);
+      } else {
+        headClone.appendChild(el.cloneNode(true));
+      }
+    }
+    wrapper.prepend(headClone);
 
-  console.log("🟢 HTMLeditor setup:", { filePath, ext, scripts });
+    // Clone <body> elements
+    for (const child of doc.body.children) {
+      if (child.tagName === "SCRIPT") {
+        const placeholder = document.createElement("div");
+        placeholder.dataset.script = child.textContent;
+        hidden.appendChild(placeholder);
+      } else {
+        wysiwyg.appendChild(child.cloneNode(true));
+      }
+    }
 
-  // Prepare iframe environment for WYSIWYG
-  const iframe = cell.querySelector("#html-editor-frame");
-  const doc = iframe.contentDocument || iframe.contentWindow.document;
-  doc.open();
-  doc.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>HTML Editor - ${filePath}</title>
-    </head>
-    <body style="margin:0;padding:0;display:flex;flex-direction:column;height:100%;">
-      <div id="editor-root" style="flex:1;display:flex;flex-direction:column;"></div>
-    </body>
-    </html>
-  `);
-  doc.close();
+    // Expose API for saving
+    window.getEditorHTML = () => {
+      const headContent = Array.from(headClone.children)
+        .map(el => el.outerHTML).join("\n");
+      const bodyContent = wysiwyg.innerHTML;
+      const scripts = Array.from(hidden.children)
+        .map(el => `<script>${el.dataset.script}</script>`).join("\n");
+      return `<!DOCTYPE html><html><head>${headContent}</head><body>${bodyContent}${scripts}</body></html>`;
+    };
 
-  // Load script bundles in sequence inside iframe
-  async function loadScriptsSequentially(index = 0) {
-    if (index >= scripts.length) return;
-    const scriptPath = basePath + scripts[index];
-    return new Promise((resolve) => {
-      const tag = doc.createElement("script");
-      tag.src = scriptPath;
-      tag.defer = true;
-      tag.onload = () => {
-        console.log("✅ Loaded", scriptPath);
-        loadScriptsSequentially(index + 1).then(resolve);
-      };
-      tag.onerror = () => {
-        console.warn("⚠️ Failed to load", scriptPath);
-        loadScriptsSequentially(index + 1).then(resolve);
-      };
-      doc.head.appendChild(tag);
-    });
-  }
-
-  await loadScriptsSequentially(0);
-
-  // 🟢 Pass file path into iframe’s global context
-  iframe.contentWindow.filePath = filePath;
-
-  // Enable Ctrl+S saving inside iframe
-  doc.addEventListener(
-    "keydown",
-    (e) => {
-      if (
-        (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) &&
-        e.key.toLowerCase() === "s"
-      ) {
-        e.preventDefault();
-        console.log("💾 Saving", filePath);
-        const win = iframe.contentWindow;
-        if (typeof win.saveWYSIWYGFile === "function") {
-          win.saveWYSIWYGFile(filePath);
-        } else if (typeof win.saveRasterImage === "function" && win.rasterCanvas) {
-          win.saveRasterImage(filePath);
+    window.setEditorHTML = html => {
+      const doc = parser.parseFromString(html, "text/html");
+      wysiwyg.innerHTML = "";
+      hidden.innerHTML = "";
+      for (const el of doc.body.children) {
+        if (el.tagName === "SCRIPT") {
+          const placeholder = document.createElement("div");
+          placeholder.dataset.script = el.textContent;
+          hidden.appendChild(placeholder);
         } else {
-          console.warn("⚠️ No save function defined in iframe for", filePath);
+          wysiwyg.appendChild(el.cloneNode(true));
         }
       }
-    },
-    false
-  );
+    };
 
-  console.log("✅ HTMLeditor panel initialized for:", filePath);
+    window.saveWYSIWYGFile = async (path) => {
+      const content = window.getEditorHTML();
+      await fetch("/api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: path || filePath, content }),
+      });
+      console.log("Saved WYSIWYG file:", path || filePath);
+    };
+
+  } catch (err) {
+    wrapper.innerHTML = `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
+    console.error(err);
+  }
 }
