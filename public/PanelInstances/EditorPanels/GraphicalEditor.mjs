@@ -33,7 +33,9 @@ const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
 
 if (["html", "htm"].includes(ext)) {
   editorModulePath = `${basePath}/HTMLeditor.mjs`; // ✅ match actual file name
-} else if (["svg"].includes(ext)) {
+} else if (["csv"].includes(ext)) {
+  editorModulePath = `${basePath}/CSVeditor.mjs`;
+ } else if (["svg"].includes(ext)) {
   editorModulePath = `${basePath}/EditorSVG.mjs`;
 } else if (["stl"].includes(ext)) {
   editorModulePath = `${basePath}/EditorSTL.mjs`;

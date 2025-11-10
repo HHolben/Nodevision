@@ -1,98 +1,80 @@
+// Nodevision/public/PanelInstances/EditorPanels/HTMLeditor.mjs
+// Minimal WYSIWYG HTML editor compatible with saveFile.mjs
+
 export async function renderEditor(filePath, container) {
-  if (!container) throw new Error("Container required");
-  container.innerHTML = "";
+  if (!container) throw new Error("renderEditor requires a container element");
+  container.innerHTML = ""; // clear previous content
 
-  const wrapper = document.createElement("div");
-  wrapper.id = "editor-root";
-  wrapper.style.display = "flex";
-  wrapper.style.flexDirection = "column";
-  wrapper.style.height = "100%";
-  wrapper.style.width = "100%";
-  container.appendChild(wrapper);
+  const root = document.createElement("div");
+  root.style.display = "flex";
+  root.style.flexDirection = "column";
+  root.style.height = "100%";
+  root.style.width = "100%";
+  container.appendChild(root);
 
-  const wysiwyg = document.createElement("div");
-  wysiwyg.id = "wysiwyg";
-  wysiwyg.contentEditable = "true";
-  wysiwyg.style.flex = "1";
-  wysiwyg.style.overflow = "auto";
-  wysiwyg.style.padding = "12px";
-  wrapper.appendChild(wysiwyg);
+  // Editor iframe container
+  const iframeWrap = document.createElement("div");
+  iframeWrap.style.flex = "1 1 auto";
+  iframeWrap.style.display = "flex";
+  iframeWrap.style.minHeight = "0";
+  root.appendChild(iframeWrap);
 
-  const hidden = document.createElement("div");
-  hidden.id = "hidden-elements";
-  hidden.style.display = "none";
-  wrapper.appendChild(hidden);
+  const iframe = document.createElement("iframe");
+  iframe.style.border = "none";
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.id = `html-editor-iframe-${Date.now()}`;
+  iframeWrap.appendChild(iframe);
 
-  try {
-    const res = await fetch(`/Notebook/${filePath}`);
-    if (!res.ok) throw new Error(res.statusText);
-    const htmlText = await res.text();
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
 
-    // Parse the HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlText, "text/html");
+  doc.open();
+  doc.write(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Nodevision WYSIWYG - ${filePath || "(untitled)"}</title>
+<style>
+html,body { height:100%; margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: white; color: #111; }
+#editor-root { display:flex; flex-direction:column; height:100%; }
+#wysiwyg { flex:1; padding:12px; overflow:auto; outline:none; border:1px solid #ccc; }
+</style>
+</head>
+<body>
+<div id="editor-root">
+  <div id="wysiwyg" contenteditable="true" spellcheck="true">Loading…</div>
+</div>
+</body>
+</html>`);
+  doc.close();
 
-    // Clone <head> elements
-    const headClone = document.createElement("div");
-    for (const el of doc.head.children) {
-      if (el.tagName === "SCRIPT") {
-        const placeholder = document.createElement("div");
-        placeholder.dataset.script = el.textContent;
-        hidden.appendChild(placeholder);
-      } else {
-        headClone.appendChild(el.cloneNode(true));
-      }
-    }
-    wrapper.prepend(headClone);
+// --- Immediately after writing the document ---
+try {
+  if (!filePath) return;
+  const resp = await fetch(`/Notebook/${filePath}`);
+  if (!resp.ok) throw new Error(`Failed to load ${filePath}: ${resp.statusText}`);
+  const html = await resp.text();
 
-    // Clone <body> elements
-    for (const child of doc.body.children) {
-      if (child.tagName === "SCRIPT") {
-        const placeholder = document.createElement("div");
-        placeholder.dataset.script = child.textContent;
-        hidden.appendChild(placeholder);
-      } else {
-        wysiwyg.appendChild(child.cloneNode(true));
-      }
-    }
+  const editorDiv = doc.getElementById("wysiwyg");
+  if (!editorDiv) throw new Error("Editor div not found in iframe");
 
-    // Expose API for saving
-    window.getEditorHTML = () => {
-      const headContent = Array.from(headClone.children)
-        .map(el => el.outerHTML).join("\n");
-      const bodyContent = wysiwyg.innerHTML;
-      const scripts = Array.from(hidden.children)
-        .map(el => `<script>${el.dataset.script}</script>`).join("\n");
-      return `<!DOCTYPE html><html><head>${headContent}</head><body>${bodyContent}${scripts}</body></html>`;
-    };
+  editorDiv.innerHTML = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ""); // neutralize scripts
 
-    window.setEditorHTML = html => {
-      const doc = parser.parseFromString(html, "text/html");
-      wysiwyg.innerHTML = "";
-      hidden.innerHTML = "";
-      for (const el of doc.body.children) {
-        if (el.tagName === "SCRIPT") {
-          const placeholder = document.createElement("div");
-          placeholder.dataset.script = el.textContent;
-          hidden.appendChild(placeholder);
-        } else {
-          wysiwyg.appendChild(el.cloneNode(true));
-        }
-      }
-    };
+  // Expose globals for saveFile.mjs
+  window.currentActiveFilePath = filePath;
+  window.wysiwygEditor = {
+    getValue: () => editorDiv.innerHTML,
+    setValue: (html) => { editorDiv.innerHTML = html; }
+  };
 
-    window.saveWYSIWYGFile = async (path) => {
-      const content = window.getEditorHTML();
-      await fetch("/api/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: path || filePath, content }),
-      });
-      console.log("Saved WYSIWYG file:", path || filePath);
-    };
+  console.log("🖋 WYSIWYG editor ready for:", filePath);
+} catch (err) {
+  container.innerHTML = `<div style="padding:12px;color:#900">Error loading file: ${err.message}</div>`;
+  console.error("Error loading WYSIWYG file:", err);
+}
 
-  } catch (err) {
-    wrapper.innerHTML = `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
-    console.error(err);
-  }
+
+  // Force iframe load (necessary in some browsers)
+  iframe.src = "about:blank";
 }
