@@ -123,7 +123,7 @@ async function renderFile(filename, viewPanel, iframe, serverBase) {
     stl: "ViewSTL.mjs",
     svg: "ViewSVG.mjs",
     pdf: "ViewPDF.mjs",
-    png: "ViewImage.mjs",
+    png: "ViewPNG.mjs",
     jpg: "ViewImage.mjs",
     jpeg: "ViewImage.mjs",
     gif: "ViewImage.mjs",
