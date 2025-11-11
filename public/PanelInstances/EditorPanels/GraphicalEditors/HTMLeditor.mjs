@@ -1,3 +1,6 @@
+//Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs
+//This file populates the panel with the HTML editor.
+
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   container.innerHTML = "";
