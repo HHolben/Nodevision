@@ -9,7 +9,7 @@
   },
   {
     "ToolbarCategory": "View",
-    "heading": "WYSIWYG Editing",
+    "heading": "HTMLediting",
     "content": "",
     "script": "SwitchToWYSIWYGediting.js"
   },

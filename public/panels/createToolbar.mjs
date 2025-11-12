@@ -10,15 +10,25 @@ let subToolbarContainer = null;
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
 
-// === Global Nodevision State ===
 window.NodevisionState = window.NodevisionState || {
   activePanelType: null,
   fileIsDirty: false,
   selectedFile: null,
+  currentMode: "Default", // ← NEW: track editor mode (e.g. "HTMLediting", "Code Editing")
 };
+
 
 // === Helper: Check toolbar item conditions ===
 function checkToolbarConditions(item, state) {
+  // === Handle 'modes' property ===
+  if (item.modes) {
+    const allowedModes = Array.isArray(item.modes) ? item.modes : [item.modes];
+    if (!allowedModes.includes(state.currentMode)) {
+      return false;
+    }
+  }
+
+  // === Handle 'conditions' property as before ===
   if (!item.conditions) return true;
 
   if (item.conditions.activePanelType) {
@@ -37,14 +47,20 @@ function checkToolbarConditions(item, state) {
   return true;
 }
 
+
 // === Dynamic callback loader ===
 async function handleToolbarClick(category, key) {
   const callback = await loadCallback(category.toLowerCase(), key);
   callback();
 }
 
-// === Main export: create toolbar ===
-export async function createToolbar(toolbarSelector = "#global-toolbar") {
+/**
+ * Creates the global toolbar, loading toolbars from JSON files.
+ * Each toolbar item may have a "mode" property specifying when it appears.
+ * @param {string} toolbarSelector 
+ * @param {string} currentMode - optional mode filter ("code", "graphical", etc.)
+ */
+export async function createToolbar(toolbarSelector = "#global-toolbar", currentMode = "default") {
   const toolbar = document.querySelector(toolbarSelector);
   subToolbarContainer = document.querySelector("#sub-toolbar");
 
@@ -52,7 +68,7 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
   toolbar.innerHTML = "";
   if (subToolbarContainer) subToolbarContainer.innerHTML = "";
 
-  // Preload toolbar JSON
+  // ✅ Preload toolbar JSON files
   const jsonFiles = [
     "/ToolbarJSONfiles/defaultToolbar.json",
     "/ToolbarJSONfiles/fileToolbar.json",
@@ -73,7 +89,7 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
     }
   }));
 
-  // Prebuild dropdowns
+  // ✅ Prebuild dropdowns for each heading
   for (const key in toolbarDataCache) {
     const items = toolbarDataCache[key];
     if (!Array.isArray(items)) continue;
@@ -83,10 +99,19 @@ export async function createToolbar(toolbarSelector = "#global-toolbar") {
     });
   }
 
-  // Build main toolbar
+  // ✅ Apply mode filtering before building toolbar
   const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
-  buildToolbar(toolbar, defaultToolbar);
+  const filteredToolbar = defaultToolbar.filter(item => {
+    // Only include items that match currentMode (or have no mode)
+    return !item.mode || item.mode === currentMode;
+  });
+
+  // Build main toolbar from filtered items
+  buildToolbar(toolbar, filteredToolbar);
+
+  console.log(`🧭 Toolbar built for mode: ${currentMode}`);
 }
+
 
 // === Build toolbar buttons (main or sub-toolbar) ===
 function buildToolbar(container, items, parentHeading = null) {
@@ -296,11 +321,27 @@ function showSubToolbar(panelHeading) {
 
 // === Update toolbar state dynamically ===
 export function updateToolbarState(newState = {}) {
+  // Merge new state into the global NodevisionState
   Object.assign(window.NodevisionState, newState);
+
+  // Determine the current mode (fallback to "default")
+  const currentMode = window.NodevisionState?.currentMode || "default";
+
   const toolbar = document.querySelector("#global-toolbar");
-  if (toolbar) {
-    toolbar.innerHTML = "";
-    const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
-    buildToolbar(toolbar, defaultToolbar);
-  }
+  if (!toolbar) return;
+
+  toolbar.innerHTML = "";
+
+  // Get cached toolbar data
+  const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
+
+  // ✅ Filter based on mode
+  const filteredToolbar = defaultToolbar.filter(item => {
+    return !item.mode || item.mode === currentMode;
+  });
+
+  // Rebuild toolbar using filtered items
+  buildToolbar(toolbar, filteredToolbar);
+
+  console.log(`🔁 Toolbar updated for mode: ${currentMode}`);
 }

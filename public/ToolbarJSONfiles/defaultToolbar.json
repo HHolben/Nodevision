@@ -10,6 +10,12 @@
     "callbackKey": "editMenu"
   },
   {
+    "heading": "Insert",
+    "icon": "/icons/Insert.svg",
+    "callbackKey": "fileMenu",
+    "mode": "HTMLediting"
+  },
+  {
     "heading": "Terminal",
     "icon": "/icons/terminal.svg",
     "callbackKey": "openTerminal"

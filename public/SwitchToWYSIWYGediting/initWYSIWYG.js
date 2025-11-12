@@ -23,9 +23,9 @@
 
   // Switch editing mode
   if (window.AppState && typeof window.AppState.setMode === 'function') {
-    window.AppState.setMode('WYSIWYG Editing');
+    window.AppState.setMode('HTMLediting');
   } else {
-    window.currentMode = 'WYSIWYG Editing';
+    window.currentMode = 'HTMLediting';
   }
 
   // Inject editor container into right-plane
@@ -56,7 +56,7 @@
   window.updateWYSIWYGToolbar(filePath);
   window.addEditRasterToolbarItem();
 
-  console.log('WYSIWYG editing initialized for:', filePath);
+  console.log('HTMLediting initialized for:', filePath);
 
 
 

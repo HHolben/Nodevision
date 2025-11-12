@@ -3,14 +3,14 @@
       "ToolbarCategory": "Insert",
       "heading": "Insert Text",
       "callbackKey": "insertText",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h1",
       "insertGroup": "text",
       "callbackKey": "insertH1",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/h1Icon.png"
     },
     {
@@ -18,7 +18,7 @@
       "heading": "h2",
       "insertGroup": "text",
       "callbackKey": "insertH2",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/h2Icon.png"
     },
     {
@@ -26,7 +26,7 @@
       "heading": "h3",
       "insertGroup": "text",
       "callbackKey": "insertH3",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/h3Icon.png"
     },
     {
@@ -34,7 +34,7 @@
       "heading": "h4",
       "insertGroup": "text",
       "callbackKey": "insertH4",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/h4Icon.png"
     },
     {
@@ -42,7 +42,7 @@
       "heading": "h5",
       "insertGroup": "text",
       "callbackKey": "insertH5",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/h5Icon.png"
     },
     {
@@ -50,7 +50,7 @@
       "heading": "h6",
       "insertGroup": "text",
       "callbackKey": "insertH6",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/h6Icon.png"
     },
         {
@@ -58,7 +58,7 @@
       "heading": "DIV",
       "insertGroup": "Layout",
       "callbackKey": "insertDIV",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/InsertDivIcon.png"
     },
         {
@@ -66,7 +66,7 @@
       "heading": "Footnote",
       "insertGroup": "text",
       "callbackKey": "insertFootnote",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/insertFootnoteIcon.png"
     },
 
@@ -76,7 +76,7 @@
       "heading": "paragraph",
       "insertGroup": "text",
       "callbackKey": "insertParagraph",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },
 
 
@@ -85,7 +85,7 @@
       "heading": "Footer",
       "insertGroup": "text",
       "callbackKey": "insertFooter",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/InsertFooterIcon.png"
     },
            {
@@ -93,7 +93,7 @@
       "heading": "Superscript",
       "insertGroup": "text",
       "callbackKey": "insertSuperscript",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/InsertSuperscript.png"
     },
     
@@ -102,7 +102,7 @@
       "heading": "table",
       "insertGroup": "table",
       "callbackKey": "insertTable",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/SpreadsheetIcon.png"
     },
     {
@@ -110,7 +110,7 @@
       "heading": "OrderedList",
       "insertGroup": "text",
       "callbackKey": "insertOrderedList",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/NumberedList.png"
 
     },
@@ -119,7 +119,7 @@
       "heading": "UnorderedList",
       "insertGroup": "text",
       "callbackKey": "insertUnorderedList",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/BulletPoints.png"
 
     },
@@ -128,7 +128,7 @@
       "heading": "Italics",
       "insertGroup": "text",
       "callbackKey": "insertItalics",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/ItalicsIcon.png"
     },
     {
@@ -136,7 +136,7 @@
       "heading": "Bold",
       "insertGroup": "text",
       "callbackKey": "insertBold",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/BoldIcon.png"
     },
     {
@@ -144,7 +144,7 @@
       "heading": "Underline",
       "insertGroup": "text",
       "callbackKey": "insertUnderline",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/UnderlineIcon.png"
     },
     {
@@ -152,7 +152,7 @@
       "heading": "Strikethrough",
       "insertGroup": "text",
       "callbackKey": "insertStrikethrough",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/StrikethroughIcon.png"
     },
     {
@@ -160,7 +160,7 @@
       "heading": "Insert Sensitive",
       "insertGroup": "text",
       "callbackKey": "insertSensitive",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/InsertSensitiveIcon.png"
     },
     {
@@ -168,7 +168,7 @@
       "heading": "Insert Blank SVG Drawing",
       "insertGroup": "image",
       "callbackKey": "insertBlankSVG",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/ImageIcon.png"
     },
     {
@@ -176,7 +176,7 @@
       "heading": "Insert Video",
       "insertGroup": "video",
       "callbackKey": "insertVideo",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/videoIcon.png"
     },
     {
@@ -184,21 +184,21 @@
       "heading": "Serial Monitor",
       "insertGroup": "text",
       "callbackKey": "insertSerialMonitor",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert CSV as table",
       "insertGroup": "table",
       "callbackKey": "insertCSV",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert QRcode",
       "insertGroup": "image",
       "callbackKey": "insertQRcode",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/QRcodeIcon.png"
 
     },
@@ -207,14 +207,14 @@
       "heading": "Insert CSV Flash Cards",
       "insertGroup": "table",
       "callbackKey": "insertFlashCards",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Hyperlink",
       "insertGroup": "text",
       "callbackKey": "insertLink",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/LinkIcon.png"
     },
     {
@@ -222,21 +222,21 @@
       "heading": "Insert IFRAME",
       "insertGroup": "text",
       "callbackKey": "insertIFRAME",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Collapsible",
       "insertGroup": "text",
       "callbackKey": "InsertCollapsible",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },  
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Quote",
       "insertGroup": "text",
       "callbackKey": "insertQuote",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/QuotationIcon.png"
     },
     {
@@ -244,14 +244,14 @@
       "heading": "Insert Abbreviation",
       "insertGroup": "text",
       "callbackKey": "insertAbbreviation",
-      "modes": ["WYSIWYG Editing"]
+      "modes": ["HTMLediting"]
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Address",
       "insertGroup": "text",
       "callbackKey": "insertAddress",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/AddressIcon.png"
     },
     {
@@ -259,7 +259,7 @@
       "heading": "Insert Blockquote",
       "insertGroup": "text",
       "callbackKey": "insertBlockquote",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/BlockquoteIcon.png"
     },
     {
@@ -267,7 +267,7 @@
       "heading": "Insert Code Element",
       "insertGroup": "text",
       "callbackKey": "InsertCodeElement",
-      "modes": ["WYSIWYG Editing"],
+      "modes": ["HTMLediting"],
       "icon": "icons/CodeEditor.png"
     },
     {

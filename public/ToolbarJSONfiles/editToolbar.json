@@ -15,13 +15,13 @@
     "ToolbarCategory": "Edit",
     "heading": "Edit RASTER",
     "callbackKey": "editRASTER",
-    "modes": ["WYSIWYG Editing"]
+    "modes": ["HTMLediting"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "Edit Styles",
     "callbackKey": "editStyles",
-    "modes": ["WYSIWYG Editing"]
+    "modes": ["HTMLediting"]
   },
   {
     "ToolbarCategory": "Edit",
