@@ -7,6 +7,14 @@
     "panelType": "InfoPanel",                
     "panelPath": "/PanelInstances/InfoPanels/FileManager.mjs" 
   },
+    {
+    "ToolbarCategory": "File",
+    "heading": "Graph Manager",
+    "icon": "icons/Graph.png",
+    "panelTemplateId": "GraphManager",          
+    "panelType": "InfoPanel",                
+    "panelPath": "/PanelInstances/InfoPanels/GraphManager.mjs" 
+  },
   {
     "ToolbarCategory": "File",
     "heading": "File View",

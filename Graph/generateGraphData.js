@@ -1,4 +1,4 @@
-// Graph/generateGraphData.js
+// Nodevision/Graph/generateGraphData.js
 // Purpose: TODO: Add description of module purpose
 
 // Nodevision/scripts/GenerateGraphFiles.js

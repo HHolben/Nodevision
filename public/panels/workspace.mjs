@@ -217,11 +217,12 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
   console.log("Panel Type:", panelType);
 
   // Try multiple search paths for panels
-  const possiblePaths = [
-    `/PanelInstances/${panelType}.mjs`,
-    `/PanelInstances/EditorPanels/${panelType}.mjs`,
-    `/panels/${panelType}.mjs`,
-  ];
+const possiblePaths = [
+  `/PanelInstances/${panelType}.mjs`,
+  `/PanelInstances/EditorPanels/${panelType}.mjs`,
+  `/PanelInstances/InfoPanels/${panelType}.mjs`,
+  `/panels/${panelType}.mjs`,
+];
 
   let module = null;
   for (const path of possiblePaths) {

@@ -96,12 +96,7 @@
     "content": "",
     "script": "SwitchToVirtualWorldEditing.js"
   },
-  {
-    "ToolbarCategory": "View",
-    "heading": "Graph View",
-    "content": "",
-    "script": "SwitchToGraphView.js"
-  },
+
   {
     "ToolbarCategory": "View",
     "heading": "Layout Controls",
