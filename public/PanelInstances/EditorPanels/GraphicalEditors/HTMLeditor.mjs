@@ -1,16 +1,79 @@
-//Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs
-//This file populates the panel with the HTML editor.
+// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs
+// This file populates the panel with the HTML editor.
+
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 
- // ✅ Set editor mode
-  window.NodevisionState.currentMode = "HTMLediting";
-  updateToolbarState({ currentMode: "HTMLediting" });
+// --------------------------------------------------
+// Fallback Hotkeys (self-contained)
+// --------------------------------------------------
+function registerHTMLFallbackHotkeys(wysiwyg, filePath) {
+  const handlers = {
+    "Control+s": (e) => {
+      e.preventDefault();
+      if (window.saveWYSIWYGFile) {
+        window.saveWYSIWYGFile(filePath);
+      }
+      console.log("🔧 Fallback hotkey: Save");
+    },
 
+    "Control+b": (e) => {
+      e.preventDefault();
+      document.execCommand("bold");
+      console.log("🔧 Fallback hotkey: Bold");
+    },
+
+    "Control+i": (e) => {
+      e.preventDefault();
+      document.execCommand("italic");
+      console.log("🔧 Fallback hotkey: Italic");
+    },
+
+    "Control+u": (e) => {
+      e.preventDefault();
+      document.execCommand("underline");
+      console.log("🔧 Fallback hotkey: Underline");
+    },
+
+    "Control+z": (e) => {
+      e.preventDefault();
+      document.execCommand("undo");
+      console.log("🔧 Fallback hotkey: Undo");
+    },
+
+    "Control+Shift+z": (e) => {
+      e.preventDefault();
+      document.execCommand("redo");
+      console.log("🔧 Fallback hotkey: Redo");
+    }
+  };
+
+  document.addEventListener("keydown", (e) => {
+    const key =
+      (e.ctrlKey ? "Control+" : "") +
+      (e.shiftKey ? "Shift+" : "") +
+      e.key;
+
+    if (handlers[key]) {
+      handlers[key](e);
+    }
+  });
+
+  console.log("🔧 HTML Fallback Hotkeys Loaded");
+}
+
+// --------------------------------------------------
+// Main HTML Editor
+// --------------------------------------------------
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   container.innerHTML = "";
 
+  // Set mode
+  window.NodevisionState.currentMode = "HTMLediting";
+  updateToolbarState({ currentMode: "HTMLediting" });
+
+  // Root container
   const wrapper = document.createElement("div");
   wrapper.id = "editor-root";
   wrapper.style.display = "flex";
@@ -19,6 +82,7 @@ export async function renderEditor(filePath, container) {
   wrapper.style.width = "100%";
   container.appendChild(wrapper);
 
+  // WYSIWYG editable area
   const wysiwyg = document.createElement("div");
   wysiwyg.id = "wysiwyg";
   wysiwyg.contentEditable = "true";
@@ -27,6 +91,7 @@ export async function renderEditor(filePath, container) {
   wysiwyg.style.padding = "12px";
   wrapper.appendChild(wysiwyg);
 
+  // Hidden script container
   const hidden = document.createElement("div");
   hidden.id = "hidden-elements";
   hidden.style.display = "none";
@@ -37,11 +102,11 @@ export async function renderEditor(filePath, container) {
     if (!res.ok) throw new Error(res.statusText);
     const htmlText = await res.text();
 
-    // Parse the HTML
+    // Parse HTML
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlText, "text/html");
 
-    // Clone <head> elements
+    // Clone <head>
     const headClone = document.createElement("div");
     for (const el of doc.head.children) {
       if (el.tagName === "SCRIPT") {
@@ -54,7 +119,7 @@ export async function renderEditor(filePath, container) {
     }
     wrapper.prepend(headClone);
 
-    // Clone <body> elements
+    // Clone <body>
     for (const child of doc.body.children) {
       if (child.tagName === "SCRIPT") {
         const placeholder = document.createElement("div");
@@ -65,20 +130,26 @@ export async function renderEditor(filePath, container) {
       }
     }
 
-    // Expose API for saving
+    // Saving function
     window.getEditorHTML = () => {
       const headContent = Array.from(headClone.children)
-        .map(el => el.outerHTML).join("\n");
+        .map(el => el.outerHTML)
+        .join("\n");
+
       const bodyContent = wysiwyg.innerHTML;
+
       const scripts = Array.from(hidden.children)
-        .map(el => `<script>${el.dataset.script}</script>`).join("\n");
+        .map(el => `<script>${el.dataset.script}</script>`)
+        .join("\n");
+
       return `<!DOCTYPE html><html><head>${headContent}</head><body>${bodyContent}${scripts}</body></html>`;
     };
 
-    window.setEditorHTML = html => {
+    window.setEditorHTML = (html) => {
       const doc = parser.parseFromString(html, "text/html");
       wysiwyg.innerHTML = "";
       hidden.innerHTML = "";
+
       for (const el of doc.body.children) {
         if (el.tagName === "SCRIPT") {
           const placeholder = document.createElement("div");
@@ -101,7 +172,13 @@ export async function renderEditor(filePath, container) {
     };
 
   } catch (err) {
-    wrapper.innerHTML = `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
+    wrapper.innerHTML =
+      `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
     console.error(err);
   }
+
+  // --------------------------------------------------
+  // Enable fallback hotkeys
+  // --------------------------------------------------
+  registerHTMLFallbackHotkeys(wysiwyg, filePath);
 }

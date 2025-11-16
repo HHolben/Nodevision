@@ -1,8 +1,6 @@
 // Nodevision/public/ToolbarCallbacks/file/SaveFile.mjs
 // Handles saving the currently active file from any supported editor.
 
-// Nodevision/public/ToolbarCallbacks/file/SaveFile.mjs
-// Provides the callback for saving a file open in the editor.
 
 export default async function saveFile() {
   const filePath =

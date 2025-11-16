@@ -4,6 +4,9 @@
 import { createToolbar } from './panels/createToolbar.mjs';
 import { ensureWorkspace, loadDefaultLayout, renderLayout } from "./panels/workspace.mjs";
 
+
+
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     // Initialize toolbar

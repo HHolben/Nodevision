@@ -3,14 +3,16 @@
       "ToolbarCategory": "Insert",
       "heading": "Insert Text",
       "callbackKey": "insertText",
-      "modes": ["HTMLediting"]
+      "modes": ["HTMLediting"],
+          "availability": ["fileOpen", "panelType:EditorPanel"]
+
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h1",
       "insertGroup": "text",
       "callbackKey": "insertH1",
-      "modes": ["HTMLediting"],
+      "modes": "HTMLediting",
       "icon": "icons/h1Icon.png"
     },
     {

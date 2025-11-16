@@ -21,7 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const userSettingsDir = path.join(__dirname, 'UserSettings');
-const gamepadSettingsFile = path.join(userSettingsDir, 'GameControllerSettings.json');
+const gamepadSettingsFile = path.join(userSettingsDir, 'KeyboardAndControlSchemes/GameControllerSettings.json');
 
 // Ensure the UserSettings folder exists
 if (!fs.existsSync(userSettingsDir)) fs.mkdirSync(userSettingsDir, { recursive: true });
