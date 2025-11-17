@@ -1,12 +1,13 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewMIDI.mjs
-// Purpose: Display MIDI file information and render a simplified sheet music preview using VexFlow
+// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewMIDI.mjs
+// Purpose: Display MIDI file information and render simplified sheet music with VexFlow
 
-export async function setupPanel(panel, instanceVars = {}) {
-  const filePath = window.selectedFilePath || instanceVars.filePath || '';
+export async function renderFile(filePath, panel) {
   const serverBase = '/Notebook';
   panel.innerHTML = '';
 
-  if (!filePath.toLowerCase().endsWith('.mid') && !filePath.toLowerCase().endsWith('.midi')) {
+  if (!filePath ||
+      (!filePath.toLowerCase().endsWith('.mid') &&
+       !filePath.toLowerCase().endsWith('.midi'))) {
     panel.innerHTML = `<p>No MIDI file selected.</p>`;
     return;
   }
@@ -21,6 +22,7 @@ export async function setupPanel(panel, instanceVars = {}) {
 
     const buffer = await response.arrayBuffer();
     const { header, tracks } = parseMIDI(buffer);
+
     renderInfoTable(header, tracks, panel);
     renderSheet(buffer, header.division, panel);
 
@@ -30,11 +32,11 @@ export async function setupPanel(panel, instanceVars = {}) {
   }
 }
 
-/**
- * Ensures VexFlow is loaded before proceeding.
- */
+/* ----------------------------- VEXFLOW LOADER ----------------------------- */
+
 async function ensureVexFlowLoaded() {
   if (window.VF || (window.Vex && window.Vex.Flow) || window.VexFlow) return;
+
   const existingScript = document.querySelector('script[src*="vexflow"]');
   if (existingScript) {
     await new Promise((resolve, reject) => {
@@ -53,12 +55,12 @@ async function ensureVexFlowLoaded() {
   });
 }
 
-/**
- * Parse MIDI ArrayBuffer into header and track summaries.
- */
+/* ------------------------------- MIDI PARSER ------------------------------- */
+
 function parseMIDI(buffer) {
   const view = new DataView(buffer);
   let offset = 0;
+
   const readFourCC = () => String.fromCharCode(...Array.from({ length: 4 }, () => view.getUint8(offset++)));
   const readUint32 = () => (offset += 4, view.getUint32(offset - 4, false));
   const readUint16 = () => (offset += 2, view.getUint16(offset - 2, false));
@@ -80,9 +82,8 @@ function parseMIDI(buffer) {
   return { header: { format, tracks: numTracks, division }, tracks };
 }
 
-/**
- * Render header & track summary table.
- */
+/* ------------------------------ INFO TABLE -------------------------------- */
+
 function renderInfoTable(header, tracks, container) {
   let html = `
     <h3>MIDI File Information</h3>
@@ -111,21 +112,20 @@ function renderInfoTable(header, tracks, container) {
   container.innerHTML = html;
 }
 
-/**
- * Extract simple note-on events.
- */
+/* --------------------------- NOTE EXTRACTION ------------------------------- */
+
 function extractNotes(buffer, division) {
   const view = new DataView(buffer);
-  let pos = 14; // after header + first track header
+  let pos = 14; 
   const notes = [];
 
   try {
     while (pos < buffer.byteLength) {
       const status = view.getUint8(pos++);
       if ((status & 0xF0) === 0x90) {
-        const noteNum = view.getUint8(pos++);
-        const vel = view.getUint8(pos++);
-        if (vel > 0) notes.push({ keys: [midiToVexKey(noteNum)], duration: 'q' });
+      const noteNum = view.getUint8(pos++);
+      const vel = view.getUint8(pos++);
+      if (vel > 0) notes.push({ keys: [midiToVexKey(noteNum)], duration: 'q' });
       } else {
         pos++;
       }
@@ -144,9 +144,8 @@ function midiToVexKey(n) {
   return `${names[n % 12]}/${oct}`;
 }
 
-/**
- * Render simplified sheet music using VexFlow.
- */
+/* ----------------------------- RENDER SHEET ------------------------------- */
+
 function renderSheet(buffer, division, container) {
   const VF = window.VF || (window.Vex && window.Vex.Flow) || window.VexFlow;
   if (!VF) {

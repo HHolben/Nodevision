@@ -1,37 +1,39 @@
 // Nodevision/public/PanelInstances/ViewPanels/ViewPDF.mjs
 // Purpose: Render PDF files in a Nodevision view panel
 
-export async function setupPanel(panel, instanceVars = {}) {
-  const filePath = window.selectedFilePath || instanceVars.filePath || '';
-  const serverBase = '/Notebook';
+export async function renderFile(filename, viewPanel, iframe, serverBase) {
+  console.log("ViewPDF: initializing for", filename);
 
-  console.log('ViewPDF: initializing for', filePath);
-
-  if (!filePath.toLowerCase().endsWith('.pdf')) {
-    panel.innerHTML = `<p>No PDF file selected.</p>`;
+  if (!filename || !filename.toLowerCase().endsWith(".pdf")) {
+    viewPanel.innerHTML = `<p>No PDF file selected.</p>`;
     return;
   }
 
+  // Default server base if not provided
+  serverBase = serverBase || "/Notebook";
+
   // Clear panel
-  panel.innerHTML = '';
+  viewPanel.innerHTML = "";
 
-  // Create container
-  const container = document.createElement('div');
-  container.style.width = '100%';
-  container.style.height = '100%';
-  container.style.overflow = 'auto';
-  panel.appendChild(container);
+  // Create outer container
+  const container = document.createElement("div");
+  container.style.width = "100%";
+  container.style.height = "100%";
+  container.style.overflow = "auto";
+  viewPanel.appendChild(container);
 
-  // Create iframe
-  const iframe = document.createElement('iframe');
-  iframe.src = `${serverBase}/${encodeURIComponent(filePath)}`;
-  iframe.style.width = '100%';
-  iframe.style.height = '600px';
-  iframe.style.border = '1px solid #ccc';
-  iframe.onload = () => console.log('PDF loaded:', filePath);
-  iframe.onerror = () => {
-    iframe.srcdoc = `<p style="color:red;">Error loading PDF: ${filePath}</p>`;
+  // Use existing iframe param or create a new one
+  const pdfFrame = iframe || document.createElement("iframe");
+
+  pdfFrame.src = `${serverBase}/${encodeURIComponent(filename)}`;
+  pdfFrame.style.width = "100%";
+  pdfFrame.style.height = "600px";
+  pdfFrame.style.border = "1px solid #ccc";
+
+  pdfFrame.onload = () => console.log("PDF loaded:", filename);
+  pdfFrame.onerror = () => {
+    pdfFrame.srcdoc = `<p style="color:red;">Error loading PDF: ${filename}</p>`;
   };
 
-  container.appendChild(iframe);
+  container.appendChild(pdfFrame);
 }

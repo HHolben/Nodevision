@@ -1,11 +1,9 @@
 //Nodevision/public/PanelInstances/InfoPanels/GraphManager.mjs
 //This file sets up the info panel for for the Nodevision Graph view, which takes the user's node and edge data stored in Nodevision/public/data to generate a cytoscape.js graph
-
-
+// Nodevision/public/PanelInstances/InfoPanels/GraphManager.mjs
 export async function setupPanel(panelElem, panelVars = {}) {
   console.log("Initializing GraphManager panel...", panelVars);
 
-  // Panel structure
   panelElem.innerHTML = `
     <div class="graph-manager" style="display:flex; flex-direction:column; height:100%;">
       <h3 style="margin:0 0 8px 0;">Graph View</h3>
@@ -20,82 +18,79 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const container = panelElem.querySelector(".cy-container");
 
   try {
-    const { default: cytoscape } = await import("/vendor/cytoscape/cytoscape.esm.js");
+    // Load Cytoscape via ESM dynamically
+    const cytoscape = await import('/vendor/cytoscape/cytoscape.esm.js');
+    if (!cytoscape) throw new Error("Cytoscape failed to load");
 
-    // Helper: fetch JSON files
-    async function fetchJson(path) {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error(`Failed to fetch ${path}`);
-      return res.json();
+    console.log("Cytoscape loaded:", cytoscape);
+
+    // Destroy previous instance if any
+    if (panelVars.cyInstance) {
+      panelVars.cyInstance.destroy();
+      panelVars.cyInstance = null;
     }
 
-    // Fetch Node files progressively by first character
-    const nodeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'.split('');
-    let allNodes = [];
-    let allEdges = [];
+    // Import generated graph data
+    const { generatedNodes } = await import('/data/GeneratedNodes.js');
+    const { generatedEdges } = await import('/data/GeneratedEdges.js');
 
-    // Initialize Cytoscape early with empty elements
-    const cy = cytoscape({
+    // Only show top-level nodes
+    const topLevelNodes = generatedNodes.filter(n => !n.parent || n.parent.endsWith("_root"));
+    const topLevelNodeIds = new Set(topLevelNodes.map(n => n.id));
+    const topLevelEdges = generatedEdges.filter(e => topLevelNodeIds.has(e.source) && topLevelNodeIds.has(e.target));
+
+    const elements = [
+      ...topLevelNodes.map(n => ({ data: n })),
+      ...topLevelEdges.map(e => ({ data: e }))
+    ];
+
+    // Initialize Cytoscape
+    panelVars.cyInstance = cytoscape.default({
       container,
-      elements: [],
+      elements,
       style: [
-        { selector: 'node', style: { 'background-color': '#1976d2', 'label': 'data(name)', 'text-valign': 'center', 'color': '#fff', 'font-size': '10px' } },
-        { selector: 'node[type="directory"]', style: { 'shape': 'rectangle', 'background-color': '#4caf50' } },
-        { selector: 'edge', style: { 'width': 1, 'line-color': '#888', 'target-arrow-color': '#888', 'target-arrow-shape': 'triangle' } }
+        { selector: 'node[type="region"]', style: { 'background-color': '#f0f0f0', 'shape': 'roundrectangle', 'label': 'data(label)', 'text-valign': 'center', 'text-halign': 'center', 'font-weight': 'bold', 'border-width': 2, 'border-color': '#ccc' } },
+        { selector: 'node', style: { 'background-color': '#0074D9', 'label': 'data(label)', 'text-valign': 'center', 'color': '#fff', 'text-outline-width': 2, 'text-outline-color': '#0074D9' } },
+        { selector: 'edge', style: { 'width': 2, 'line-color': '#ccc', 'target-arrow-color': '#ccc', 'target-arrow-shape': 'triangle' } }
       ],
-      layout: { name: 'breadthfirst', directed: true, padding: 10, spacingFactor: 1.5 }
+      layout: { name: 'fcose', animate: true }
     });
 
-    // Function to progressively load a single character batch
-    async function loadBatch(char) {
-      try {
-        const nodeFile = `/data/Nodes/Nodes_${char}.json`;
-        const nodes = await fetchJson(nodeFile);
-        const cyNodes = nodes.map(n => ({ data: { id: n.id, name: n.name, type: n.type } }));
-        cy.add(cyNodes);
-        allNodes.push(...cyNodes);
-      } catch {
-        // Missing node file is fine
-      }
-
-      try {
-        const edgesFromFile = `/data/Edges/EdgesFrom_${char}.json`;
-        const edgesToFile = `/data/Edges/EdgesTo_${char}.json`;
-        const edgesFrom = await fetchJson(edgesFromFile).catch(() => []);
-        const edgesTo = await fetchJson(edgesToFile).catch(() => []);
-        const cyEdges = [...edgesFrom, ...edgesTo].map(e => ({ data: { source: e.source, target: e.target } }));
-        cy.add(cyEdges);
-        allEdges.push(...cyEdges);
-      } catch (err) {
-        console.warn(`Edges for ${char} missing:`, err);
-      }
-    }
-
-    // Progressive loading loop
-    for (const char of nodeChars) {
-      await loadBatch(char);
-      // Optional: re-run layout after each batch for visible updates
-      cy.layout({ name: 'breadthfirst', directed: true, padding: 10, spacingFactor: 1.5 }).run();
-    }
-
-    console.log("Graph fully loaded:", { nodes: allNodes.length, edges: allEdges.length });
-
-    // Node selection event
-    cy.on('tap', 'node', event => {
-      const node = event.target;
-      console.log("Node selected:", node.data());
-      // Optional: send selection info to other panels or highlight
-      cy.elements().removeClass('highlighted');
-      node.addClass('highlighted');
+    // Event listeners
+    const debouncedUpdate = debounce(updateGraphDatabase, 500);
+    panelVars.cyInstance.on('add remove data drag free', debouncedUpdate);
+    panelVars.cyInstance.on('click', 'node, edge', evt => {
+      if (typeof updateInfoPanel === 'function') updateInfoPanel(evt.target);
     });
 
-    // Node highlighting style
-    cy.style().selector('.highlighted').style({ 'border-width': 2, 'border-color': '#ff9800' }).update();
-
+    console.log("GraphManager Cytoscape initialized");
   } catch (err) {
     console.error("GraphManager error:", err);
     errorElem.textContent = "Failed to load graph: " + err.message;
   } finally {
     loadingElem.style.display = "none";
+  }
+
+  function updateGraphDatabase() {
+    if (!panelVars.cyInstance) return;
+
+    const graphData = panelVars.cyInstance.json().elements;
+
+    fetch('/api/updateGraph', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ elements: graphData })
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(`Server error: ${res.statusText}`))
+      .then(result => console.log("Graph database updated:", result))
+      .catch(err => console.error("Failed to update graph database:", err));
+  }
+
+  function debounce(fn, delay) {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fn(...args), delay);
+    };
   }
 }
