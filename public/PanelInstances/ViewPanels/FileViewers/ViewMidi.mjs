@@ -1,13 +1,17 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewMIDI.mjs
 // Purpose: Display MIDI file information and render simplified sheet music with VexFlow
 
+import { VexFlow as VF } from '/lib/vexflow/build/esm/entry/vexflow.js';
+
 export async function renderFile(filePath, panel) {
   const serverBase = '/Notebook';
   panel.innerHTML = '';
 
-  if (!filePath ||
-      (!filePath.toLowerCase().endsWith('.mid') &&
-       !filePath.toLowerCase().endsWith('.midi'))) {
+  if (
+    !filePath ||
+    (!filePath.toLowerCase().endsWith('.mid') &&
+     !filePath.toLowerCase().endsWith('.midi'))
+  ) {
     panel.innerHTML = `<p>No MIDI file selected.</p>`;
     return;
   }
@@ -15,8 +19,6 @@ export async function renderFile(filePath, panel) {
   console.log('ViewMIDI: loading', filePath);
 
   try {
-    await ensureVexFlowLoaded();
-
     const response = await fetch(`${serverBase}/${filePath}`);
     if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
 
@@ -32,36 +34,16 @@ export async function renderFile(filePath, panel) {
   }
 }
 
-/* ----------------------------- VEXFLOW LOADER ----------------------------- */
-
-async function ensureVexFlowLoaded() {
-  if (window.VF || (window.Vex && window.Vex.Flow) || window.VexFlow) return;
-
-  const existingScript = document.querySelector('script[src*="vexflow"]');
-  if (existingScript) {
-    await new Promise((resolve, reject) => {
-      existingScript.onload = resolve;
-      existingScript.onerror = () => reject(new Error('VexFlow script failed to load'));
-    });
-    return;
-  }
-
-  await new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/vexflow/releases/vexflow-min.js';
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('VexFlow script failed to load'));
-    document.head.appendChild(script);
-  });
-}
-
 /* ------------------------------- MIDI PARSER ------------------------------- */
 
 function parseMIDI(buffer) {
   const view = new DataView(buffer);
   let offset = 0;
 
-  const readFourCC = () => String.fromCharCode(...Array.from({ length: 4 }, () => view.getUint8(offset++)));
+  const readFourCC = () =>
+    String.fromCharCode(
+      ...Array.from({ length: 4 }, () => view.getUint8(offset++))
+    );
   const readUint32 = () => (offset += 4, view.getUint32(offset - 4, false));
   const readUint16 = () => (offset += 2, view.getUint16(offset - 2, false));
 
@@ -70,11 +52,12 @@ function parseMIDI(buffer) {
   const format = readUint16();
   const numTracks = readUint16();
   const division = readUint16();
-  offset += (hdrLen - 6);
+  offset += hdrLen - 6;
 
   const tracks = [];
   for (let i = 0; i < numTracks; i++) {
-    if (readFourCC() !== 'MTrk') throw new Error(`Invalid MIDI: missing MTrk at track ${i}`);
+    if (readFourCC() !== 'MTrk')
+      throw new Error(`Invalid MIDI: missing MTrk at track ${i}`);
     const length = readUint32();
     tracks.push({ index: i + 1, offset, length });
     offset += length;
@@ -100,6 +83,7 @@ function renderInfoTable(header, tracks, container) {
       </thead>
       <tbody>
   `;
+
   tracks.forEach(t => {
     html += `
       <tr>
@@ -108,48 +92,57 @@ function renderInfoTable(header, tracks, container) {
         <td style="border:1px solid #ccc;padding:5px">${t.length}</td>
       </tr>`;
   });
+
   html += `</tbody></table>`;
-  container.innerHTML = html;
+
+  container.insertAdjacentHTML('beforeend', html);
 }
 
 /* --------------------------- NOTE EXTRACTION ------------------------------- */
 
-function extractNotes(buffer, division) {
+function extractNotes(buffer) {
   const view = new DataView(buffer);
-  let pos = 14; 
+  let pos = 14;
   const notes = [];
 
   try {
-    while (pos < buffer.byteLength) {
+    while (pos < buffer.byteLength - 3) {
       const status = view.getUint8(pos++);
-      if ((status & 0xF0) === 0x90) {
-      const noteNum = view.getUint8(pos++);
-      const vel = view.getUint8(pos++);
-      if (vel > 0) notes.push({ keys: [midiToVexKey(noteNum)], duration: 'q' });
+
+      if ((status & 0xf0) === 0x90) {
+        const note = view.getUint8(pos++);
+        const vel = view.getUint8(pos++);
+        if (vel > 0)
+          notes.push({ keys: [midiToVexKey(note)], duration: 'q' });
       } else {
         pos++;
       }
-      if (status === 0xFF || notes.length >= 20) break;
+
+      if (status === 0xff || notes.length >= 20) break;
     }
-  } catch (e) {
-    console.warn('Error extracting notes:', e);
+  } catch (err) {
+    console.warn('extractNotes error:', err);
   }
 
   return notes.length ? notes : [{ keys: ['c/4'], duration: 'q' }];
 }
 
 function midiToVexKey(n) {
+  const names = [
+    'c','c#','d','d#','e','f','f#','g','g#','a','a#','b'
+  ];
   const oct = Math.floor(n / 12) - 1;
-  const names = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b'];
   return `${names[n % 12]}/${oct}`;
 }
 
 /* ----------------------------- RENDER SHEET ------------------------------- */
 
 function renderSheet(buffer, division, container) {
-  const VF = window.VF || (window.Vex && window.Vex.Flow) || window.VexFlow;
-  if (!VF) {
-    container.innerHTML += `<p style="color:red;">Error: VexFlow not loaded.</p>`;
+  if (!VF || !VF.Renderer) {
+    container.insertAdjacentHTML(
+      'beforeend',
+      `<p style="color:red;">Error: VexFlow not available.</p>`
+    );
     return;
   }
 
@@ -161,48 +154,58 @@ function renderSheet(buffer, division, container) {
   sheetDiv.style.marginTop = '1em';
   sheetDiv.style.border = '1px solid #ddd';
   sheetDiv.style.padding = '10px';
-  sheetDiv.style.backgroundColor = '#f7f7f7';
+  sheetDiv.style.background = '#f7f7f7';
   sheetDiv.innerHTML = '<h3>MIDI Preview</h3>';
   container.appendChild(sheetDiv);
 
   try {
-    const notesData = extractNotes(buffer, division);
+    const notesData = extractNotes(buffer);
+
     if (!notesData.length) {
-      sheetDiv.innerHTML += '<p>No renderable notes found.</p>';
+      sheetDiv.insertAdjacentHTML('beforeend', '<p>No renderable notes found.</p>');
       return;
     }
 
-    const width = Math.min(container.clientWidth - 40, 800);
-    const height = Math.min(notesData.length * 25 + 80, 200);
+    const width = container.clientWidth || 600;
+    const height = 140;
 
     const rendererDiv = document.createElement('div');
     rendererDiv.id = 'vf-renderer';
     sheetDiv.appendChild(rendererDiv);
 
     const renderer = new VF.Renderer(rendererDiv, VF.Renderer.Backends.SVG);
-    renderer.resize(width, height);
+    renderer.resize(width - 20, height);
     const ctx = renderer.getContext();
     ctx.setFont('Arial', 10);
 
-    const stave = new VF.Stave(10, 10, width - 20);
+    const stave = new VF.Stave(10, 10, width - 40);
     stave.addClef('treble').setContext(ctx).draw();
 
     const vfNotes = notesData.slice(0, 16).map(n =>
-      new VF.StaveNote({ clef: 'treble', keys: n.keys, duration: n.duration })
+      new VF.StaveNote({
+        clef: 'treble',
+        keys: n.keys,
+        duration: n.duration
+      })
     );
 
     const voice = new VF.Voice({ num_beats: vfNotes.length, beat_value: 4 })
       .setStrict(false)
       .addTickables(vfNotes);
 
-    new VF.Formatter().joinVoices([voice]).format([voice], width - 50);
+    new VF.Formatter().joinVoices([voice]).format([voice], width - 60);
     voice.draw(ctx, stave);
 
-    sheetDiv.innerHTML +=
-      '<p style="font-size:0.8em;color:#666;margin-top:1em;">Note: Simplified preview showing at most 16 notes.</p>';
+    sheetDiv.insertAdjacentHTML(
+      'beforeend',
+      '<p style="font-size:0.8em;color:#666;margin-top:1em;">Note: Simplified preview showing at most 16 notes.</p>'
+    );
 
   } catch (err) {
     console.error('Error rendering sheet music:', err);
-    sheetDiv.innerHTML += `<p style="color:red;">Error rendering sheet music: ${err.message}</p>`;
+    sheetDiv.insertAdjacentHTML(
+      'beforeend',
+      `<p style="color:red;">Error rendering sheet music: ${err.message}</p>`
+    );
   }
 }
