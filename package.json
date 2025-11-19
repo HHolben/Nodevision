@@ -52,7 +52,7 @@
     "serve-favicon": "^2.5.0",
     "socket.io": "^4.8.1",
     "tesseract.js": "^6.0.1",
-    "three": "^0.128.0",
+    "three": "^0.160.0",
     "vexflow": "^5.0.0",
     "vis-network": "^10.0.2",
     "ws": "^8.18.3"

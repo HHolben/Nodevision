@@ -1,7 +1,7 @@
 // Nodevision/public/PanelInstances/ViewPanels/ViewMP3.mjs
 // Purpose: Displays and plays .mp3 files inside a ViewPanel, with waveform visualization.
 
-export function setupPanel(panelEl, fileUrl) {
+export function renderFile(panelEl, fileUrl) {
   console.log("ViewMP3: loading", fileUrl);
 
   const canvas = document.createElement('canvas');

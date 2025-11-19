@@ -1,8 +1,8 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewSTL.mjs
 // Purpose: Uses Three.js to render STL models inside a view panel.
-import * as THREE from 'https://esm.sh/three@0.160.0';
-import { STLLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/STLLoader.js';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import * as THREE from '/lib/three/three.module.js';
+import { STLLoader } from '/lib/three/STLLoader.js';
+import { OrbitControls } from '/lib/three/OrbitControls.js';
 
 let renderer, scene, camera, controls;
 let overlayRenderer, overlayScene, overlayCamera;

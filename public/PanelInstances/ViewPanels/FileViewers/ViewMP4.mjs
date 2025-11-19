@@ -1,7 +1,7 @@
 // Nodevision/public/PanelInstances/ViewPanels/ViewMP4.mjs
 // Purpose: Displays and plays .mp4 video files inside a ViewPanel with a simple waveform analyzer.
 
-export function setupPanel(panelEl, fileUrl) {
+export function renderFile(panelEl, fileUrl) {
   console.log("ViewMP4: loading", fileUrl);
   panelEl.innerHTML = '';
 
