@@ -38,7 +38,7 @@ if (["html", "htm"].includes(ext)) {
  }else if (["png"].includes(ext)) {
   editorModulePath = `${basePath}/PNGeditor.mjs`;
  } else if (["svg"].includes(ext)) {
-  editorModulePath = `${basePath}/EditorSVG.mjs`;
+  editorModulePath = `${basePath}/SVGeditor.mjs`;
 } else if (["stl"].includes(ext)) {
   editorModulePath = `${basePath}/EditorSTL.mjs`;
 } else {
