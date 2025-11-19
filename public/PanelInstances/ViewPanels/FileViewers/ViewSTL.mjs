@@ -1,9 +1,8 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewSTL.mjs
 // Purpose: Uses Three.js to render STL models inside a view panel.
-
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-import { STLLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/STLLoader.js';
-import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'https://esm.sh/three@0.160.0';
+import { STLLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/STLLoader.js';
+import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 
 let renderer, scene, camera, controls;
 let overlayRenderer, overlayScene, overlayCamera;
@@ -15,7 +14,6 @@ let overlayRenderer, overlayScene, overlayCamera;
 function initViewer(container) {
   console.log('[ViewSTL] Initializing STL viewer...');
 
-  // Prepare container
   container.innerHTML = '';
   container.style.position = 'relative';
   container.style.width = '100%';
@@ -23,31 +21,35 @@ function initViewer(container) {
   container.style.border = '1px solid #ccc';
   container.style.background = '#fff';
 
-  // Basic scene setup
+  // === Base Scene ===
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xffffff);
 
-  camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 10000);
+  camera = new THREE.PerspectiveCamera(
+    45,
+    container.clientWidth / container.clientHeight,
+    1,
+    50000
+  );
   camera.position.set(200, 200, 200);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
 
-  // Controls
+  // === Controls ===
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0x606060);
-  scene.add(ambientLight);
+  // === Lighting ===
+  scene.add(new THREE.AmbientLight(0x606060));
+  const d = new THREE.DirectionalLight(0xffffff, 1.0);
+  d.position.set(1, 1, 1).normalize();
+  scene.add(d);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff);
-  directionalLight.position.set(1, 1, 1).normalize();
-  scene.add(directionalLight);
-
-  // Overlay axes helper
+  // === Overlay Axes ===
   overlayScene = new THREE.Scene();
   overlayCamera = new THREE.PerspectiveCamera(50, 1, 1, 100);
   overlayCamera.position.set(50, 50, 50);
@@ -60,7 +62,21 @@ function initViewer(container) {
   overlayRenderer.domElement.style.right = '10px';
   container.appendChild(overlayRenderer.domElement);
 
+  // === Resize Handling ===
+  window.addEventListener('resize', () => handleResize(container));
+
   animate();
+}
+
+function handleResize(container) {
+  if (!renderer || !camera) return;
+
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
 }
 
 /**
@@ -69,8 +85,24 @@ function initViewer(container) {
 function animate() {
   requestAnimationFrame(animate);
   controls?.update();
+
   renderer?.render(scene, camera);
   overlayRenderer?.render(overlayScene, overlayCamera);
+}
+
+/**
+ * Removes all STL-related meshes, edges, and vertex markers.
+ */
+function clearModel() {
+  const toRemove = [];
+
+  for (const child of scene.children) {
+    if (child.userData?.isVertex || child.userData?.isModel || child.userData?.isEdge) {
+      toRemove.push(child);
+    }
+  }
+
+  toRemove.forEach(obj => scene.remove(obj));
 }
 
 /**
@@ -82,60 +114,79 @@ function animate() {
 export function renderSTL(filePath, container, serverBase) {
   console.log(`[ViewSTL] Rendering STL: ${filePath}`);
 
-  // Initialize viewer if not already set up
+  // Initialize viewer if not already present
   if (!renderer || !scene || !camera) {
     initViewer(container);
   } else {
+    // Reattach DOM element into this panel
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
+    container.appendChild(overlayRenderer.domElement);
   }
 
-  // Remove old meshes
-  for (let i = scene.children.length - 1; i >= 0; i--) {
-    const obj = scene.children[i];
-    if (obj.type === 'Mesh' || obj.userData.isVertex) scene.remove(obj);
-  }
+  clearModel();
 
   const loader = new STLLoader();
   loader.load(`${serverBase}/${encodeURIComponent(filePath)}`, geometry => {
-    const material = new THREE.MeshPhongMaterial({ color: 0xadd8e6, transparent: true, opacity: 0.8 });
-    const mesh = new THREE.Mesh(geometry, material);
-
     geometry.computeBoundingBox();
+
     const center = new THREE.Vector3();
     geometry.boundingBox.getCenter(center);
+
     const size = new THREE.Vector3();
     geometry.boundingBox.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
 
+    // Create Mesh
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xadd8e6,
+      transparent: true,
+      opacity: 0.9
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
     mesh.position.sub(center);
-
-    // Position camera dynamically
-    const fov = camera.fov * (Math.PI / 180);
-    const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
-    camera.position.set(center.x, center.y, cameraZ);
-
-    controls.target.copy(center);
-    controls.update();
-
+    mesh.userData.isModel = true;
     scene.add(mesh);
 
-    // Add edges overlay
+    // Camera positioning
+    const fov = camera.fov * (Math.PI / 180);
+    const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.6;
+    camera.position.set(dist, dist, dist);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    // Edges overlay
     const edges = new THREE.EdgesGeometry(geometry);
-    const edgeLines = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ff00 }));
+    const edgeLines = new THREE.LineSegments(
+      edges,
+      new THREE.LineBasicMaterial({ color: 0x008800 })
+    );
     edgeLines.position.sub(center);
+    edgeLines.userData.isEdge = true;
     scene.add(edgeLines);
 
-    // Add small vertex spheres
-    const vertexMaterial = new THREE.MeshPhongMaterial({ color: 0xffcc00 });
-    const vertexGeom = new THREE.SphereGeometry(0.1, 8, 8);
-    const posAttr = geometry.attributes.position;
+    // Vertex markers
+    const posAttr = geometry.getAttribute('position');
+    const vertexGeom = new THREE.SphereGeometry(maxDim * 0.003, 8, 8);
+    const vertexMat = new THREE.MeshPhongMaterial({ color: 0xffcc00 });
+
     for (let i = 0; i < posAttr.count; i++) {
-      const vertex = new THREE.Vector3().fromBufferAttribute(posAttr, i);
-      const sphere = new THREE.Mesh(vertexGeom, vertexMaterial);
-      sphere.position.copy(vertex.sub(center));
+      const v = new THREE.Vector3().fromBufferAttribute(posAttr, i).sub(center);
+      const sphere = new THREE.Mesh(vertexGeom, vertexMat);
+      sphere.position.copy(v);
       sphere.userData.isVertex = true;
       scene.add(sphere);
     }
   });
+}
+
+export async function renderFile(filename, viewPanel, iframe, serverBase) {
+  try {
+    renderSTL(filename, viewPanel, serverBase);
+  } catch (err) {
+    console.error('[ViewSTL] Error:', err);
+    viewPanel.innerHTML =
+      `<p style="color:red;">Error loading STL file.</p>`;
+  }
 }

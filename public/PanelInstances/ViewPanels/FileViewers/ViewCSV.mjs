@@ -30,3 +30,4 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     viewPanel.innerHTML = '<p style="color:red;">Error loading CSV file.</p>';
   }
 }
+

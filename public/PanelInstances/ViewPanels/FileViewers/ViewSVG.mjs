@@ -1,23 +1,25 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewSVG.mjs
-// Purpose: Handles viewing of SVG files in the View Panel
+// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewSVG.mjs
+// Purpose: Render SVG files in an iframe inside the View Panel
 
 /**
- * Renders an SVG file inside an iframe.
- * @param {string} filename - The SVG file name or path relative to /Notebook
+ * Renders an SVG file inside the view panel.
+ * @param {string} filename - Path to the file relative to /Notebook
  * @param {HTMLElement} viewPanel - The panel container element
- * @param {string} serverBase - The base URL of the server (e.g., http://localhost:3000/Notebook)
  */
-export function renderSVG(filename, viewPanel, serverBase) {
-  console.log(`[ViewSVG] Rendering SVG: ${filename}`);
+export async function renderFile(filename, viewPanel) {
+  console.log(`[ViewSVG] renderFile → ${filename}`);
+  if (!viewPanel) throw new Error("ViewSVG: viewPanel container is required.");
 
-  // Clear the panel
+  const serverBase = '/Notebook';
+
+  // Clear panel
   viewPanel.innerHTML = '';
 
-  // Create iframe to display the SVG
+  // Create an iframe for the SVG
   const iframe = document.createElement('iframe');
   iframe.src = `${serverBase}/${filename}`;
-  iframe.width = '100%';
-  iframe.height = '600px';
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
   iframe.style.border = '1px solid #ccc';
   iframe.style.background = 'white';
   iframe.style.display = 'block';
@@ -25,5 +27,5 @@ export function renderSVG(filename, viewPanel, serverBase) {
   viewPanel.appendChild(iframe);
 }
 
-// Expose globally (optional)
-window.renderSVG = renderSVG;
+// Optional global exposure
+window.ViewSVG = { renderFile };
