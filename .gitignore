@@ -14,8 +14,6 @@ public/GeneratedEdges.js
 public/AllNodes.js
 public/data
 
-# Ignore Monaco Editor and Require.js libraries
-public/lib
 
 # Ignore User Settings
 UserSettings
