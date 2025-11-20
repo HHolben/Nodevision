@@ -95,7 +95,10 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
     if (!Array.isArray(items)) continue;
     items.forEach(item => {
       const dropdown = buildDropdownFromItem(item);
-      if (dropdown) prebuiltDropdowns[item.heading] = dropdown;
+if (dropdown && !prebuiltDropdowns[item.heading]) {
+  prebuiltDropdowns[item.heading] = dropdown;
+}
+
     });
   }
 
@@ -103,7 +106,13 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
   const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
   const filteredToolbar = defaultToolbar.filter(item => {
     // Only include items that match currentMode (or have no mode)
-    return !item.mode || item.mode === currentMode;
+// Support both "mode" and "modes"
+if (item.modes) {
+  const allowed = Array.isArray(item.modes) ? item.modes : [item.modes];
+  return allowed.includes(currentMode);
+}
+if (item.mode) return item.mode === currentMode;
+return true;
   });
 
   // Build main toolbar from filtered items
@@ -203,10 +212,15 @@ if (item.panelTemplateId || item.panelTemplate) {
       if (item.callbackKey && item.ToolbarCategory) handleToolbarClick(item.ToolbarCategory, item.callbackKey);
 
       // Sub-toolbar
-      if (subToolbarContainer) showSubToolbar(item.heading);
+   // Priority rule:
+// If this item HAS a dropdown, do NOT open a sub-toolbar
+if (dropdown) {
+  dropdown.style.display = "block";
+} else {
+  // Otherwise allow sub-toolbar
+  if (subToolbarContainer) showSubToolbar(item.heading);
+}
 
-      // Show dropdown if exists
-      if (dropdown) dropdown.style.display = "block";
     });
 
     container.appendChild(btnWrapper);
@@ -337,7 +351,12 @@ export function updateToolbarState(newState = {}) {
 
   // ✅ Filter based on mode
   const filteredToolbar = defaultToolbar.filter(item => {
-    return !item.mode || item.mode === currentMode;
+if (item.modes) {
+  const allowed = Array.isArray(item.modes) ? item.modes : [item.modes];
+  return allowed.includes(currentMode);
+}
+if (item.mode) return item.mode === currentMode;
+return true;
   });
 
   // Rebuild toolbar using filtered items

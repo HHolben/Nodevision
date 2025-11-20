@@ -1,61 +1,199 @@
 [
     {
       "ToolbarCategory": "Insert",
-      "heading": "Insert Text",
-      "callbackKey": "insertText",
-      "modes": ["HTMLediting"],
-          "availability": ["fileOpen", "panelType:EditorPanel"]
-
+      "heading": "Insert Text"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h1",
       "insertGroup": "text",
       "callbackKey": "insertH1",
-      "modes": "HTMLediting",
-      "icon": "icons/h1Icon.png"
+      "icon": "icons/h1Icon.png",
+      "parentHeading": "Insert Text"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h2",
       "insertGroup": "text",
       "callbackKey": "insertH2",
-      "modes": ["HTMLediting"],
-      "icon": "icons/h2Icon.png"
+      "icon": "icons/h2Icon.png",
+      "parentHeading": "Insert Text"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h3",
       "insertGroup": "text",
       "callbackKey": "insertH3",
-      "modes": ["HTMLediting"],
-      "icon": "icons/h3Icon.png"
+      "icon": "icons/h3Icon.png",
+      "parentHeading": "Insert Text"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h4",
       "insertGroup": "text",
       "callbackKey": "insertH4",
-      "modes": ["HTMLediting"],
-      "icon": "icons/h4Icon.png"
+      "icon": "icons/h4Icon.png",
+      "parentHeading": "Insert Text"
+
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h5",
       "insertGroup": "text",
       "callbackKey": "insertH5",
-      "modes": ["HTMLediting"],
-      "icon": "icons/h5Icon.png"
+      "icon": "icons/h5Icon.png",
+      "parentHeading": "Insert Text"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "h6",
       "insertGroup": "text",
       "callbackKey": "insertH6",
-      "modes": ["HTMLediting"],
-      "icon": "icons/h6Icon.png"
+      "icon": "icons/h6Icon.png",
+      "parentHeading": "Insert Text"
+    },
+
+
+    
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "paragraph",
+      "insertGroup": "text",
+      "callbackKey": "insertParagraph",
+      "parentHeading": "Insert Text"
+
+    },
+
+
+       {
+      "ToolbarCategory": "Insert",
+      "heading": "Footer",
+      "insertGroup": "text",
+      "callbackKey": "insertFooter",
+      "icon": "icons/InsertFooterIcon.png",
+       "parentHeading": "Insert Text"
+    },
+           {
+      "ToolbarCategory": "Insert",
+      "heading": "Superscript",
+      "insertGroup": "text",
+      "callbackKey": "insertSuperscript",
+      "icon": "icons/InsertSuperscript.png",
+      "parentHeading": "Insert Text"
+    },
+    
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "table",
+      "insertGroup": "table",
+      "callbackKey": "insertTable",
+      "icon": "icons/SpreadsheetIcon.png",
+       "parentHeading": "Insert Text"
+
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "OrderedList",
+      "insertGroup": "text",
+      "callbackKey": "insertOrderedList",
+      "icon": "icons/NumberedList.png",
+      "parentHeading": "Insert Text"
+
+
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "UnorderedList",
+      "insertGroup": "text",
+      "callbackKey": "insertUnorderedList",
+      "icon": "icons/BulletPoints.png",
+      "parentHeading": "Insert Text"
+
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Italics",
+      "insertGroup": "text",
+      "callbackKey": "insertItalics",
+      "icon": "icons/ItalicsIcon.png",
+      "parentHeading": "Insert Text"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Bold",
+      "insertGroup": "text",
+      "callbackKey": "insertBold",
+      "icon": "icons/BoldIcon.png",
+      "parentHeading": "Insert Text"
+
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Underline",
+      "insertGroup": "text",
+      "callbackKey": "insertUnderline",
+      "icon": "icons/UnderlineIcon.png",
+      "parentHeading": "Insert Text"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Strikethrough",
+      "insertGroup": "text",
+      "callbackKey": "insertStrikethrough",
+      "icon": "icons/StrikethroughIcon.png",
+      "parentHeading": "Insert Text"
+    },
+       {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Hyperlink",
+      "insertGroup": "text",
+      "callbackKey": "insertLink",
+      "icon": "icons/LinkIcon.png",
+      "parentHeading": "Insert Text"
+
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Abbreviation",
+      "insertGroup": "text",
+      "callbackKey": "insertAbbreviation",
+      "parentHeading": "Insert Text"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Address",
+      "insertGroup": "text",
+      "callbackKey": "insertAddress",
+      "icon": "icons/AddressIcon.png",
+      "parentHeading": "Insert Text"
+
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Blockquote",
+      "insertGroup": "text",
+      "callbackKey": "insertBlockquote",
+      "icon": "icons/BlockquoteIcon.png",
+      "parentHeading": "Insert Text"
     },
         {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Quote",
+      "insertGroup": "text",
+      "callbackKey": "insertQuote",
+      "icon": "icons/QuotationIcon.png",
+      "parentHeading": "Insert Text"
+
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Code Element",
+      "insertGroup": "text",
+      "callbackKey": "InsertCodeElement",
+      "modes": ["HTMLediting"],
+      "icon": "icons/CodeEditor.png"
+    },
+            {
       "ToolbarCategory": "Insert",
       "heading": "DIV",
       "insertGroup": "Layout",
@@ -70,92 +208,6 @@
       "callbackKey": "insertFootnote",
       "modes": ["HTMLediting"],
       "icon": "icons/insertFootnoteIcon.png"
-    },
-
-    
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "paragraph",
-      "insertGroup": "text",
-      "callbackKey": "insertParagraph",
-      "modes": ["HTMLediting"]
-    },
-
-
-       {
-      "ToolbarCategory": "Insert",
-      "heading": "Footer",
-      "insertGroup": "text",
-      "callbackKey": "insertFooter",
-      "modes": ["HTMLediting"],
-      "icon": "icons/InsertFooterIcon.png"
-    },
-           {
-      "ToolbarCategory": "Insert",
-      "heading": "Superscript",
-      "insertGroup": "text",
-      "callbackKey": "insertSuperscript",
-      "modes": ["HTMLediting"],
-      "icon": "icons/InsertSuperscript.png"
-    },
-    
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "table",
-      "insertGroup": "table",
-      "callbackKey": "insertTable",
-      "modes": ["HTMLediting"],
-      "icon": "icons/SpreadsheetIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "OrderedList",
-      "insertGroup": "text",
-      "callbackKey": "insertOrderedList",
-      "modes": ["HTMLediting"],
-      "icon": "icons/NumberedList.png"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "UnorderedList",
-      "insertGroup": "text",
-      "callbackKey": "insertUnorderedList",
-      "modes": ["HTMLediting"],
-      "icon": "icons/BulletPoints.png"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Italics",
-      "insertGroup": "text",
-      "callbackKey": "insertItalics",
-      "modes": ["HTMLediting"],
-      "icon": "icons/ItalicsIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Bold",
-      "insertGroup": "text",
-      "callbackKey": "insertBold",
-      "modes": ["HTMLediting"],
-      "icon": "icons/BoldIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Underline",
-      "insertGroup": "text",
-      "callbackKey": "insertUnderline",
-      "modes": ["HTMLediting"],
-      "icon": "icons/UnderlineIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Strikethrough",
-      "insertGroup": "text",
-      "callbackKey": "insertStrikethrough",
-      "modes": ["HTMLediting"],
-      "icon": "icons/StrikethroughIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -211,14 +263,7 @@
       "callbackKey": "insertFlashCards",
       "modes": ["HTMLediting"]
     },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Hyperlink",
-      "insertGroup": "text",
-      "callbackKey": "insertLink",
-      "modes": ["HTMLediting"],
-      "icon": "icons/LinkIcon.png"
-    },
+
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert IFRAME",
@@ -233,45 +278,8 @@
       "callbackKey": "InsertCollapsible",
       "modes": ["HTMLediting"]
     },  
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Quote",
-      "insertGroup": "text",
-      "callbackKey": "insertQuote",
-      "modes": ["HTMLediting"],
-      "icon": "icons/QuotationIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Abbreviation",
-      "insertGroup": "text",
-      "callbackKey": "insertAbbreviation",
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Address",
-      "insertGroup": "text",
-      "callbackKey": "insertAddress",
-      "modes": ["HTMLediting"],
-      "icon": "icons/AddressIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Blockquote",
-      "insertGroup": "text",
-      "callbackKey": "insertBlockquote",
-      "modes": ["HTMLediting"],
-      "icon": "icons/BlockquoteIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Code Element",
-      "insertGroup": "text",
-      "callbackKey": "InsertCodeElement",
-      "modes": ["HTMLediting"],
-      "icon": "icons/CodeEditor.png"
-    },
+
+     
     {
   "ToolbarCategory": "Insert",
   "heading": "Insert Prism",
