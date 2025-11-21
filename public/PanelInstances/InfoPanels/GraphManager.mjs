@@ -19,7 +19,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   try {
     // Load Cytoscape via ESM dynamically
-    const cytoscape = await import('/vendor/cytoscape/cytoscape.esm.js');
+    const cytoscape = await import('/vendor/cytoscape/dist/cytoscape.esm.mjs');
     if (!cytoscape) throw new Error("Cytoscape failed to load");
 
     console.log("Cytoscape loaded:", cytoscape);
@@ -51,9 +51,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
       style: [
         { selector: 'node[type="region"]', style: { 'background-color': '#f0f0f0', 'shape': 'roundrectangle', 'label': 'data(label)', 'text-valign': 'center', 'text-halign': 'center', 'font-weight': 'bold', 'border-width': 2, 'border-color': '#ccc' } },
         { selector: 'node', style: { 'background-color': '#0074D9', 'label': 'data(label)', 'text-valign': 'center', 'color': '#fff', 'text-outline-width': 2, 'text-outline-color': '#0074D9' } },
-        { selector: 'edge', style: { 'width': 2, 'line-color': '#ccc', 'target-arrow-color': '#ccc', 'target-arrow-shape': 'triangle' } }
+        { selector: 'edge', style: { 'width': 2, 'line-color': '#ccc', 'target-arrow-color': '#ccc', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' } }
       ],
-      layout: { name: 'fcose', animate: true }
+      layout: { name: 'breadthfirst', animate: true, directed: true, padding: 10 }
     });
 
     // Event listeners

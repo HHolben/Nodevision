@@ -1,20 +1,13 @@
-// api/updateGraph.js
-// Purpose: TODO: Add description of module purpose
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const express = require('express');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const router = express.Router();
-const NodevisionDB = require('nodevisiondb'); // Ensure this package is installed
 
-// Initialize the Nodevision graph database.
-const db = NodevisionDB.createGraphDB();
-
-/**
- * POST /api/updateGraph
- * Expects a JSON body with a property "elements" that is an array of Cytoscape elements.
- * Each element should have a "data" property. For nodes, it includes an "id" and "label" (and optionally "path").
- * For edges, it includes "source" and "target".
- */
-router.post('/updateGraph', (req, res) => {
+router.post('/api/updateGraph', async (req, res) => {
   const elements = req.body.elements;
 
   if (!elements || !Array.isArray(elements)) {
@@ -22,30 +15,28 @@ router.post('/updateGraph', (req, res) => {
   }
 
   try {
-    // Clear the existing graph.
-    if (typeof db.clearGraph === 'function') {
-      db.clearGraph();
-    }
+    const nodes = [];
+    const edges = [];
 
-    // Process each element.
     elements.forEach(element => {
       if (element.data) {
         const data = element.data;
-        // If it has both source and target, treat it as an edge.
         if (data.source && data.target) {
-          db.createEdge(data.source, data.target);
+          edges.push(data);
         } else {
-          // Otherwise, treat it as a node.
-          // Use id and label; optionally pass the path if available.
-          db.createNode(data.id, data.label, data.path || '');
+          nodes.push(data);
         }
       }
     });
 
-    // Save the updated graph.
-    if (typeof db.saveGraph === 'function') {
-      db.saveGraph();
-    }
+    const dataDir = path.resolve(__dirname, '../../public/data');
+    await fs.mkdir(dataDir, { recursive: true });
+
+    const nodesContent = `export const generatedNodes = ${JSON.stringify(nodes, null, 2)};\n`;
+    const edgesContent = `export const generatedEdges = ${JSON.stringify(edges, null, 2)};\n`;
+
+    await fs.writeFile(path.join(dataDir, 'GeneratedNodes.js'), nodesContent, 'utf8');
+    await fs.writeFile(path.join(dataDir, 'GeneratedEdges.js'), edgesContent, 'utf8');
 
     res.json({ success: true, message: 'Graph updated successfully.' });
   } catch (error) {
@@ -54,4 +45,4 @@ router.post('/updateGraph', (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
