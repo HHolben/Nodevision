@@ -19,6 +19,7 @@
     { "name": "serial", "path": "./routes/api/serial.js" },
     { "name": "Arduino Upload", "path": "./routes/arduinoUpload.js"},
     { "name": "downloadFile", "path": "./routes/api/downloadFile.js" },
-    { "name": "updateGraph", "path": "./routes/api/updateGraph.js" }
+    { "name": "updateGraph", "path": "./routes/api/updateGraph.js" },
+    { "name": "scanNotebook", "path": "./routes/api/scanNotebook.js" }
   ]
 }
