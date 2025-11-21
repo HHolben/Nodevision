@@ -3,10 +3,20 @@
     "ToolbarCategory": "View",
     "heading": "Viewing",
     "content": "",
-    "panelTemplate": "View",
+    "panelTemplate": "FileView",
     "panelType": "ViewPanel",
     "panelPath": "/PanelInstances/ViewPanels/FileView.mjs"
   },
+
+{
+  "ToolbarCategory": "View",
+  "heading": "Virtual World Viewing",
+  "panel": "GameView",
+  "panelTemplate": "GameView",
+
+  "panelPath": "/PanelInstances/ViewPanels/GameView.mjs"
+},
+
   {
     "ToolbarCategory": "View",
     "heading": "HTMLediting",

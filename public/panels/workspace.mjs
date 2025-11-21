@@ -218,9 +218,10 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
 
   // Try multiple search paths for panels
 const possiblePaths = [
-  `/PanelInstances/${panelType}.mjs`,
+ `/PanelInstances/${panelType}.mjs`,
   `/PanelInstances/EditorPanels/${panelType}.mjs`,
   `/PanelInstances/InfoPanels/${panelType}.mjs`,
+  `/PanelInstances/ViewPanels/${panelType}.mjs`,   // ← add this
   `/panels/${panelType}.mjs`,
 ];
 
@@ -236,10 +237,20 @@ const possiblePaths = [
     }
   }
 
-  if (!module) {
-    console.warn("⚠️ No panel module found for", panelType);
-    return;
-  }
+if (!module) {
+  console.warn("⚠️ No panel module found for", panelType);
+  return;
+}
+
+cell.innerHTML = "";
+
+// 🔥 ALWAYS pass filePath
+await module.setupPanel(cell, {
+  ...panelVars,
+  filePath: window.selectedFilePath
+});
+
+console.log("✅ Loaded panel:", panelType);
 
   cell.innerHTML = "";
   await module.setupPanel(cell, panelVars);
@@ -251,6 +262,8 @@ const possiblePaths = [
 // 🟣 Listen for toolbar events globally — replaces active cell with selected panel
 window.addEventListener("toolbarAction", async (e) => {
   const { id } = e.detail;
+  const { panel, panelPath } = e.detail;
+
   if (!window.activeCell) {
     console.warn("No active cell selected to replace with toolbar panel.");
     return;

@@ -49,10 +49,12 @@ export async function setupPanel(panel, instanceVars = {}) {
   });
 
   // Initial render if filePath provided
-  if (instanceVars.filePath) {
-    window.selectedFilePath = instanceVars.filePath;
-    updateViewPanel(instanceVars.filePath);
-  }
+if (instanceVars.filePath) {
+  window.selectedFilePath = instanceVars.filePath;
+  lastRenderedPath = null;      // 🔹 reset so update will run
+  updateViewPanel(instanceVars.filePath);
+}
+
 }
 
 export async function updateViewPanel(element) {
