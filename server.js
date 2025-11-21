@@ -17,6 +17,7 @@ import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 
 
 
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -37,6 +38,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use('/lib/monaco', express.static(path.join(__dirname, 'public/lib/monaco')));
 
+
+
+import listDirectoryRouter from "./routes/api/listDirectory.js";
+import edgesRouter from "./routes/api/edges.js";
+
+app.use("/api", listDirectoryRouter);
+app.use("/api", edgesRouter);
 
 
 // Secure helper function to validate and normalize paths
