@@ -82,6 +82,11 @@ app.use('/vendor/cytoscape', express.static(path.join(__dirname, 'node_modules/c
 app.use('/vendor/mathjax', express.static(path.join(__dirname, 'node_modules/mathjax')));
 app.use('/vendor/vexflow', express.static(path.join(__dirname, 'node_modules/vexflow')));
 app.use('/vendor/tesseract.js', express.static(path.join(__dirname, 'node_modules/tesseract.js')));
+app.use('/vendor/layout-base', express.static(path.join(__dirname, 'node_modules/layout-base')));
+app.use('/vendor/cytoscape-expand-collapse', express.static(path.join(__dirname, 'node_modules/cytoscape-expand-collapse')));
+app.use('/vendor/cytoscape-fcose', express.static(path.join(__dirname, 'node_modules/cytoscape-fcose')));
+app.use('/vendor/cose-base', express.static(path.join(__dirname, 'node_modules/cose-base')));
+app.use('/vendor/requirejs', express.static(path.join(__dirname, 'node_modules/requirejs')));
 app.use('/vendor/babel', express.static(path.join(__dirname, 'public/vendor/babel')));
 app.use('/vendor/react', express.static(path.join(__dirname, 'public/vendor/react')));
 
