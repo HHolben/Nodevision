@@ -122,6 +122,12 @@
     "callbackKey": "viewNodevisionDeployment",
     "icon": "icons/ViewDeploymentNodevisionIcon.png"
   },
+    {
+    "ToolbarCategory": "File",
+    "heading": "View Nodevision Document",
+    "callbackKey": "viewNodevisionDocument",
+    "icon": "icons/ViewNodevisionDocumentIcon.png"
+  },
   {
     "ToolbarCategory": "File",
     "heading": "Upload to Arduino",
