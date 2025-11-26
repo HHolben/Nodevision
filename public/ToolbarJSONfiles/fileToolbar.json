@@ -112,6 +112,13 @@
   },
   {
     "ToolbarCategory": "File",
+    "heading": "Extract Edges",
+    "callbackKey": "extractEdges",
+    "icon": "icons/ExtraactEdgesIcon.png",
+    "availability": ["fileOpen", "panelType:EditorPanel"]
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "View PHP Deployment",
     "callbackKey": "viewPHPdeployment",
     "icon": "icons/ViewDeploymentIconPHP.png"

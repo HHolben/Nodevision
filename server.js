@@ -41,10 +41,10 @@ app.use('/lib/monaco', express.static(path.join(__dirname, 'public/lib/monaco'))
 
 
 import listDirectoryRouter from "./routes/api/listDirectory.js";
-import edgesRouter from "./routes/api/edges.js";
+
+
 
 app.use("/api", listDirectoryRouter);
-app.use("/api", edgesRouter);
 
 
 // Secure helper function to validate and normalize paths
@@ -206,6 +206,8 @@ app.get('/api/list-directory', async (req, res) => {
     res.status(403).json({ error: 'Access denied or directory not found' });
   }
 });
+
+
 
 // List file-to-file links in a directory - SECURE VERSION (SECURITY FIX)
 app.get('/api/list-links', async (req, res) => {

@@ -7,6 +7,8 @@
     { "name": "fileSaveRoutes", "path": "./routes/api/fileSaveRoutes.js" },
     { "name": "regenerateNodesRoutes", "path": "./routes/api/regenerateNodesRoutes.js" },
     { "name": "generateEdgesRoutes", "path": "./routes/api/generateEdgesRoutes.js" },
+    { "name": "extractEdges", "path": "./routes/api/extractEdges.js" },
+    { "name": "saveDataRouter", "path": "./routes/api/saveData.js" },
     { "name": "getSubNodesRoutes", "path": "./routes/api/getSubNodesRoutes.js" },
     { "name": "fileCodeContentRoutes", "path": "./routes/api/fileCodeContentRoutes.js" },
     { "name": "fileSearchRoutes", "path": "./routes/api/search.js" },

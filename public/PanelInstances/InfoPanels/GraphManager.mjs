@@ -2,6 +2,8 @@
 // Graph-styled file manager with lazy directory loading and collapsed-edge behavior
 
 /* eslint-disable no-undef */
+
+
 export async function setupPanel(panelElem, panelVars = {}) {
   console.log("[GraphManager] setupPanel", panelVars);
 
