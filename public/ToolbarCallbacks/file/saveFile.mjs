@@ -1,7 +1,6 @@
 // Nodevision/public/ToolbarCallbacks/file/SaveFile.mjs
 // Handles saving the currently active file from any supported editor.
 
-
 export default async function saveFile() {
   const filePath =
     window.currentActiveFilePath ||
@@ -20,8 +19,6 @@ export default async function saveFile() {
     return;
   }
 
-
-
   // 1. SVG editor (Publisher-style)
   const svgEditor = document.getElementById("svg-editor");
   if (svgEditor && typeof window.currentSaveSVG === 'function') {
@@ -36,7 +33,7 @@ export default async function saveFile() {
     const svgContent = svgEditor.outerHTML;
 
     try {
-      const res = await fetch('/api/save', {
+      const res = await fetch('/api/files/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: filePath, content: svgContent })
@@ -60,9 +57,37 @@ export default async function saveFile() {
   }
 
   // 3. Raster image editor
-  if (window.rasterCanvas && typeof window.saveRasterImage === 'function') {
+  if (window.rasterCanvas instanceof HTMLCanvasElement) {
     console.log("Saving raster image file");
-    window.saveRasterImage(filePath);
+
+    try {
+      const canvas = window.rasterCanvas;
+      const dataURL = canvas.toDataURL("image/png");
+      const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
+
+      const res = await fetch("/api/files/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: filePath,
+          content: base64Data,
+          encoding: "base64",
+          mimeType: "image/png"
+        })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to save PNG:", res.status, text);
+        return;
+      }
+
+      const json = await res.json();
+      console.log("Saved PNG successfully:", json.path);
+
+    } catch (err) {
+      console.error("Error saving raster image:", err);
+    }
     return;
   }
 
@@ -70,7 +95,7 @@ export default async function saveFile() {
   if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
     const content = window.monacoEditor.getValue();
     try {
-      const res = await fetch('/api/save', {
+      const res = await fetch('/api/files/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: filePath, content })

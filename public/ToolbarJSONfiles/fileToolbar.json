@@ -112,9 +112,10 @@
   },
   {
     "ToolbarCategory": "File",
-    "heading": "Extract Edges",
-    "callbackKey": "extractEdges",
-    "icon": "icons/ExtraactEdgesIcon.png",
+    "parentHeading": "Graph Manager",
+    "heading": "Update Edges",
+    "callbackKey": "UpdateEdges",
+    "icon": "icons/UpdateEdgesIcon.png",
     "availability": ["fileOpen", "panelType:EditorPanel"]
   },
   {

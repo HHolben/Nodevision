@@ -1,5 +1,6 @@
 // Nodevision/routes/api/fileSaveRoutes.js
 // This module declares the server routes needed to save files.
+
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -10,56 +11,79 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Change this to wherever your Notebook folder lives on disk
+// Correct Notebook root path
 const NOTEBOOK_ROOT = path.resolve(__dirname, '../../Notebook');
 
-// Helper to sanitize and resolve user paths under NOTEBOOK_ROOT
+// ---------- Path Sanitizer ----------
 function resolveNotebookPath(relativePath) {
-  let safeRelative = path.normalize(relativePath);
+  if (!relativePath) throw new Error("Missing path");
 
-  // Prevent absolute paths or back-references
-  safeRelative = safeRelative.replace(/^(\/*)/, '')              // strip leading slashes
-                             .replace(/\.\.(\/|\\)/g, '');       // strip “..” segments
+  let cleaned = relativePath.replace(/^\/+/, '');   // strip leading slashes
+  cleaned = path.normalize(cleaned);                // resolve ../ etc
+  cleaned = cleaned.replace(/\.\.(\/|\\)/g, '');    // block directory escape
 
-  // Remove a leading "Notebook/"
+  // Remove accidental "Notebook/" prefix
   const nbPrefix = `Notebook${path.sep}`;
-  if (safeRelative.startsWith(nbPrefix)) {
-    safeRelative = safeRelative.slice(nbPrefix.length);
+  if (cleaned.startsWith(nbPrefix)) {
+    cleaned = cleaned.slice(nbPrefix.length);
   }
 
-  return path.join(NOTEBOOK_ROOT, safeRelative);
+  return path.join(NOTEBOOK_ROOT, cleaned);
 }
 
-/* ========= Existing routes ========= */
+// =========================================================
+// ===============   SAVE / UPDATE FILE   ==================
+// =========================================================
 
-// Save (update or overwrite file)
 router.post('/save', async (req, res) => {
-  const { path: relativePath, content, encoding, mimeType } = req.body;
-  if (!relativePath || typeof content !== 'string') {
-    return res.status(400).send('File path and content are required');
+  const {
+    path: relativePath,
+    content,
+    encoding = 'utf8',
+    mimeType
+  } = req.body;
+
+  if (!relativePath) {
+    return res.status(400).json({ error: "File path is required" });
+  }
+  if (content === undefined) {
+    return res.status(400).json({ error: "File content is required" });
   }
 
   const filePath = resolveNotebookPath(relativePath);
+
   try {
     await fs.mkdir(path.dirname(filePath), { recursive: true });
 
+    let buffer;
+
     if (encoding === 'base64') {
-      const buffer = Buffer.from(content, 'base64');
+      // Correct binary handling for PNG/JPG/etc
+      buffer = Buffer.from(content, 'base64');
       await fs.writeFile(filePath, buffer);
-      console.log(`Saved binary file: ${relativePath} (${mimeType || 'unknown type'})`);
+      console.log(`Saved binary file: ${relativePath} (${mimeType || 'unknown'})`);
+    } else if (encoding === 'binary') {
+      // Raw binary (ArrayBuffer passed from frontend)
+      buffer = Buffer.from(content, 'binary');
+      await fs.writeFile(filePath, buffer);
+      console.log(`Saved raw binary: ${relativePath}`);
     } else {
+      // UTF-8 text
       await fs.writeFile(filePath, content, 'utf8');
       console.log(`Saved text file: ${relativePath}`);
     }
 
     res.json({ success: true, path: relativePath });
   } catch (err) {
-    console.error('Error saving file:', err);
-    res.status(500).send('Error saving file');
+    console.error("Error saving file:", err);
+    res.status(500).json({ error: "Error saving file" });
   }
 });
 
-// Create new file
+// =========================================================
+// ===============      CREATE FILE       ===================
+// =========================================================
+
 router.post('/create', async (req, res) => {
   const { path: relativePath } = req.body;
   if (!relativePath) return res.status(400).send('File path is required');
@@ -78,15 +102,17 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// Create new directory
+// =========================================================
+// ===============   CREATE DIRECTORY     ===================
+// =========================================================
+
 router.post('/create-directory', async (req, res) => {
   const { path: relativePath } = req.body;
   if (!relativePath) return res.status(400).json({ error: 'Directory path is required' });
 
   const targetPath = resolveNotebookPath(relativePath);
   try {
-    await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.mkdir(targetPath);
+    await fs.mkdir(targetPath, { recursive: false });
     res.json({ success: true, path: relativePath });
   } catch (err) {
     if (err.code === 'EEXIST') {
@@ -97,42 +123,47 @@ router.post('/create-directory', async (req, res) => {
   }
 });
 
-/* ========= New CRUD routes ========= */
+// =========================================================
+// ================       DELETE          ===================
+// =========================================================
 
-// Move file or directory to Trash inside Notebook
 router.post('/delete', async (req, res) => {
   const { path: relativePath } = req.body;
   if (!relativePath) return res.status(400).send('Path is required');
 
   const targetPath = resolveNotebookPath(relativePath);
-  const trashDir = resolveNotebookPath('Trash'); // inside Notebook
+  const trashDir = resolveNotebookPath('Trash');
 
   try {
-    // Ensure the trash folder exists
     await fs.mkdir(trashDir, { recursive: true });
 
-    // Preserve folder structure in trash
-    const safeRelative = relativePath.replace(/^\/+/, ''); // remove leading slashes
-    const trashPath = path.join(trashDir, `${Date.now()}_${safeRelative}`);
+    const stamped = `${Date.now()}_${relativePath.replace(/^\/+/, '')}`;
+    const trashPath = path.join(trashDir, stamped);
 
-    // Make sure parent directories exist
     await fs.mkdir(path.dirname(trashPath), { recursive: true });
 
-    // Move the file or directory
     await fs.rename(targetPath, trashPath);
 
-    res.json({ success: true, originalPath: relativePath, trashedPath: trashPath });
+    res.json({
+      success: true,
+      originalPath: relativePath,
+      trashedPath: trashPath
+    });
   } catch (err) {
     console.error('Error moving to trash:', err);
     res.status(500).send('Error moving to trash');
   }
 });
 
+// =========================================================
+// ================       RENAME          ===================
+// =========================================================
 
-// Rename (or move)
 router.post('/rename', async (req, res) => {
   const { oldPath, newPath } = req.body;
-  if (!oldPath || !newPath) return res.status(400).send('Both oldPath and newPath are required');
+  if (!oldPath || !newPath) {
+    return res.status(400).send('Both oldPath and newPath are required');
+  }
 
   const src = resolveNotebookPath(oldPath);
   const dest = resolveNotebookPath(newPath);
@@ -147,10 +178,15 @@ router.post('/rename', async (req, res) => {
   }
 });
 
-// Copy
+// =========================================================
+// ================       COPY            ===================
+// =========================================================
+
 router.post('/copy', async (req, res) => {
   const { source, destination } = req.body;
-  if (!source || !destination) return res.status(400).send('Both source and destination are required');
+  if (!source || !destination) {
+    return res.status(400).send('Both source and destination are required');
+  }
 
   const src = resolveNotebookPath(source);
   const dest = resolveNotebookPath(destination);
@@ -158,13 +194,13 @@ router.post('/copy', async (req, res) => {
   try {
     await fs.mkdir(path.dirname(dest), { recursive: true });
 
-    // If directory, copy recursively
     const stat = await fs.stat(src);
     if (stat.isDirectory()) {
-      await fs.cp(src, dest, { recursive: true, errorOnExist: false });
+      await fs.cp(src, dest, { recursive: true });
     } else {
       await fs.copyFile(src, dest);
     }
+
     res.json({ success: true, source, destination });
   } catch (err) {
     console.error('Error copying:', err);
@@ -172,17 +208,22 @@ router.post('/copy', async (req, res) => {
   }
 });
 
-// Cut (move to new location)
+// =========================================================
+// ================        CUT            ===================
+// =========================================================
+
 router.post('/cut', async (req, res) => {
   const { source, destination } = req.body;
-  if (!source || !destination) return res.status(400).send('Both source and destination are required');
+  if (!source || !destination) {
+    return res.status(400).send('Both source and destination are required');
+  }
 
   const src = resolveNotebookPath(source);
   const dest = resolveNotebookPath(destination);
 
   try {
     await fs.mkdir(path.dirname(dest), { recursive: true });
-    await fs.rename(src, dest); // move
+    await fs.rename(src, dest);
     res.json({ success: true, source, destination });
   } catch (err) {
     console.error('Error cutting/moving:', err);

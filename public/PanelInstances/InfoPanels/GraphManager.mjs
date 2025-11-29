@@ -365,4 +365,58 @@ for (const f of data.files) {
     const status = panelElem.querySelector("#gm-status");
     if (status) status.textContent = "Error initializing GraphManager (see console)";
   }
+
+  // --- FILE SELECTION LOGIC (integrate FileManagerCore behavior) ---
+let lastSelected = null;
+
+// Clear previous selection highlight
+function clearSelection() {
+  if (lastSelected) {
+    lastSelected.style("border-color", "#a8b8d8");
+    lastSelected.style("border-width", 2);
+  }
+  lastSelected = null;
 }
+
+// Highlight selection
+function highlight(node) {
+  clearSelection();
+  lastSelected = node;
+
+  node.style("border-color", "#0066ff");
+  node.style("border-width", 4);
+
+  const id = node.id();
+  console.log("[GraphManager] Selected:", id);
+
+  // Make it available for toolbar actions
+  window.selectedFilePath = id;
+}
+
+// Single-click = select
+cy.on("tap", "node", evt => {
+  const node = evt.target;
+  highlight(node);
+});
+
+// Double-click = open file (same as FileManagerCore)
+let lastTapTime = 0;
+
+cy.on("tap", "node", evt => {
+  const now = Date.now();
+  const node = evt.target;
+
+  if (now - lastTapTime < 250) {
+    // Double-click
+    const id = node.id();
+    console.log("[GraphManager] Opening:", id);
+
+    window.selectedFilePath = id;
+    window.open(`/Notebook/${id}`, "_blank");
+  }
+
+  lastTapTime = now;
+});
+
+}
+
