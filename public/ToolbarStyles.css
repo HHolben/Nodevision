@@ -1,83 +1,93 @@
-/* Toolbar Styles */
-.toolbar {
-    background-color: #333; /* Dark gray background */
-    padding: 10px;
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start; /* Align items to the left */
-    gap: 5px; /* Minimal space between buttons */
+/* === Global Toolbar Container === */
+#global-toolbar {
+  display: flex;
+  flex-wrap: wrap;   /* allow multiple rows */
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #333;
+  border-bottom: 1px solid #444;
 }
 
-.dropdown {
-    position: relative;
-    display: inline-block;
+/* === Main Toolbar Buttons === */
+.toolbar-button button {
+  font-size: 14px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #555;
+  color: rgb(0, 0, 0);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.dropbtn {
-    background-color: #555; /* Slightly lighter gray for button */
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 4px;
+.toolbar-button button:hover {
+  background: #444;
 }
 
-.dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #555; /* Darker gray for dropdown */
-    min-width: 160px;
-    z-index: 1;
-    border-radius: 4px;
+/* Disabled state */
+.toolbar-button button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.dropdown-content a {
-    color: white;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
+/* === Icons inside buttons === */
+.toolbar-button img {
+  width: 18px;
+  height: 18px;
 }
 
-.dropdown-content a:hover {
-    background-color: #666; /* Lighter gray on hover */
+/* === Dropdown Panels === */
+.toolbar-button > div {
+  position: absolute;
+  background: #006b1c;
+  border-radius: 4px;
+  padding: 0;                /* remove padding so items can fill width */
+  display: none;
+  flex-direction: column;
+  min-width: 160px;          /* minimum width of the dropdown */
+  z-index: 9999;
+  box-sizing: border-box;    /* ensures padding doesn't exceed width */
 }
 
-.dropdown:hover .dropdown-content {
-    display: block;
+/* === Dropdown Items === */
+.toolbar-button > div a {
+  align-items: center;
+  width: 30px;               /* full width of parent dropdown */
+  padding: 8px 12px;
+  color: black;
+  background: #eee;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
-.dropdown:hover .dropbtn {
-    background-color: #444; /* Darker gray for button on hover */
+.toolbar-button > div a:last-child {
+  border-bottom: none;
+}
+
+/* Hover effect */
+.toolbar-button > div a:hover {
+  background: #ff0000;
 }
 
 
-label {
-    display: flex;
-    align-items: center;
+/* === Sub Toolbar Row === */
+#sub-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 4px;
+  gap: 4px;
+
 }
 
-input[type="checkbox"] {
-    margin-left: 8px;
+#sub-toolbar button {
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
-.sub-toolbar .insert-option-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-  }
-  
-  .insert-option-btn .insert-option-icon {
-    width: 24px;
-    height: 24px;
-  }
-  
-  /* optional hover effect */
-  .insert-option-btn:hover {
-    background-color: rgba(0,0,0,0.05);
-  }
-  
+#sub-toolbar button:hover {
+  background: #ddd;
+}

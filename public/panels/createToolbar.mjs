@@ -237,22 +237,26 @@ function buildDropdownFromItem(item) {
   if (!topItems.length) return null;
 
   const dropdown = document.createElement("div");
-  Object.assign(dropdown.style, {
-    position: "absolute",
-    top: "100%",
-    left: "0",
-    backgroundColor: "#fff",
-    border: "1px solid #333",
-    display: "none",
-    minWidth: "180px",
-    zIndex: "9999",
-    boxShadow: "2px 2px 6px rgba(0,0,0,0.2)",
-    padding: "4px",
-  });
 
   buildToolbar(dropdown, topItems);
+
+  // Wait a tick to ensure DOM exists, then set full width for dropdown items
+  setTimeout(() => {
+    const parentBtnWrapper = document.querySelector(`.toolbar-button button:contains('${item.heading}')`) || null;
+    const parentWidth = parentBtnWrapper ? parentBtnWrapper.offsetWidth : dropdown.offsetWidth;
+
+    Array.from(dropdown.children).forEach(child => {
+      if (child.tagName === "BUTTON") {
+        child.style.width = parentWidth + "px";  // match parent button width
+      }
+    });
+  }, 0);
+
   return dropdown;
 }
+
+
+
 
 // === Build sub-toolbar ===
 function buildSubToolbar(items, container = subToolbarContainer) {
@@ -263,14 +267,11 @@ function buildSubToolbar(items, container = subToolbarContainer) {
     const btn = document.createElement("button");
     btn.textContent = item.heading;
     Object.assign(btn.style, {
-      margin: "2px",
-      padding: "4px 8px",
-      border: "1px solid #333",
-      backgroundColor: "#ddd",
+    
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
-      gap: "6px",
+ 
     });
 
     if (item.icon) {

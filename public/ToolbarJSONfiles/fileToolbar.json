@@ -25,30 +25,6 @@
   },
   {
     "ToolbarCategory": "File",
-    "heading": "Code Editor",
-    "icon": "icons/DefaultNodeImage.png",
-    "panelTemplateId": "EditorPanel",
-    "panelType": "EditorPanel",
-    "defaultInstanceVars": { "filePath": "/Notebook/index.html", "fileType": "html" }
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Control Panel",
-    "icon": "icons/SettingsIcon.png",
-    "panelTemplateId": "ControlPanel",
-    "panelType": "ControlPanel"
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Tool Panel",
-    "icon": "icons/ToolIcon.png",
-    "panelTemplateId": "ToolPanel",
-    "panelType": "ToolPanel",
-    "defaultInstanceVars": { "targetPanel": "ViewPanel" }
-  },
-
-  {
-    "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "New File",
     "callbackKey": "NewFile",
@@ -96,13 +72,6 @@
     "callbackKey": "pasteFile",
     "icon": "icons/PasteIcon.png"
   },
-
-  {
-    "ToolbarCategory": "File",
-    "heading": "Export Graph",
-    "script": "ExportGraph.js",
-    "icon": "icons/ExportGraph.png"
-  },
   {
     "ToolbarCategory": "File",
     "heading": "Save File",
@@ -120,13 +89,20 @@
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Export Graph",
+    "script": "ExportGraph.js",
+    "icon": "icons/ExportGraph.png"
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "View PHP Deployment",
     "callbackKey": "viewPHPdeployment",
     "icon": "icons/ViewDeploymentIconPHP.png"
   },
   {
     "ToolbarCategory": "File",
-    "heading": "View Nodevision Deployment",
+    "heading": "View Node.js Deployment",
     "callbackKey": "viewNodevisionDeployment",
     "icon": "icons/ViewDeploymentNodevisionIcon.png"
   },
@@ -142,23 +118,6 @@
     "callbackKey": "uploadToArduino",
     "icon": "icons/ArduinoUpload.png",
     "availability": ["panelType:EditorPanel", "mode:Code Editing"]
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Edit SVG",
-    "callbackKey": "switchToSVGEditing",
-    "icon": "icons/SVGIcon.png",
-    "availability": ["panelType:EditorPanel", "fileType:svg"],
-    "panelTemplateId": "EditorPanel",
-    "panelType": "EditorPanel",
-    "defaultInstanceVars": { "fileType": "svg" }
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Save SVG",
-    "callbackKey": "saveFile",
-    "icon": "icons/SaveIcon.png",
-    "availability": ["panelType:EditorPanel", "fileType:svg"]
   },
   {
     "ToolbarCategory": "File",

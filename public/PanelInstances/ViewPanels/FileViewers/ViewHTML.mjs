@@ -1,7 +1,10 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewHTML.mjs
 // Purpose: Display HTML files directly inside the viewPanel with scaling support.
+export const wantsIframe = true;
 
 export async function renderFile(path, viewPanel, iframe, serverBase) {
+  
+  
   // Ensure the iframe is attached *inside* the panel
   if (!viewPanel.contains(iframe)) {
     viewPanel.innerHTML = ""; // clear previous content

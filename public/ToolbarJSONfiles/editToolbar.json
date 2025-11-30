@@ -1,22 +1,27 @@
 [
+  
   {
-    "ToolbarCategory": "Edit",
-    "heading": "Edit Code",
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Editing",
     "content": "",
-    "script": "SendToCodeEditorPage.js"
+    "script": "SwitchToVirtualWorldEditing.js"
   },
-  {
-    "ToolbarCategory": "Edit",
-    "heading": "WYSIWYG Editor",
-    "content": "",
-    "script": "SendToWYSIWYGeditorPage.js"
-  },
-  {
-    "ToolbarCategory": "Edit",
-    "heading": "Edit RASTER",
-    "callbackKey": "editRASTER",
-    "modes": ["HTMLediting"]
-  },
+{
+  "ToolbarCategory": "View",
+  "heading": "Code Editing",
+  "content": "",
+  "panelTemplate": "CodeEditor",
+  "panelType": "EditorPanel",
+  "panelPath": "/PanelInstances/EditorPanels/CodeEditor.mjs"
+},
+{
+  "ToolbarCategory": "View",
+  "heading": "Graphical Editing",
+  "content": "",
+  "panelTemplate": "GraphicalEditor",
+  "panelType": "EditorPanel",
+  "panelPath": "/PanelInstances/EditorPanels/GraphicalEditor.mjs"
+},
   {
     "ToolbarCategory": "Edit",
     "heading": "Edit Styles",

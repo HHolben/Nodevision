@@ -1,19 +1,7 @@
 // Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs
-// Purpose: Paint-like PNG editor (improved)
-// Features:
-// - crisp rendering using devicePixelRatio
-// - proper resize preserving content (backing buffer)
-// - aspect-preserving image load
-// - accurate coordinate transforms for CSS scaling / HiDPI
-// - mouse + touch support
-// - undo / redo stack
-// - clear, save, color & brush UI
-// - registers window.rasterCanvas and window.saveRasterImage for global SaveFile()
-// - exposes window.destroyPngEditor() to clean up when switching editors
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
-  // Clean container
   container.innerHTML = "";
 
   // Root wrapper
@@ -52,22 +40,20 @@ export async function renderEditor(filePath, container) {
   brushInput.title = "Brush size (px)";
   toolbar.appendChild(brushInput);
 
-  // Undo
+  // Undo/Redo/Clear
   const undoBtn = document.createElement("button");
   undoBtn.textContent = "Undo";
   toolbar.appendChild(undoBtn);
 
-  // Redo
   const redoBtn = document.createElement("button");
   redoBtn.textContent = "Redo";
   toolbar.appendChild(redoBtn);
 
-  // Clear
   const clearBtn = document.createElement("button");
   clearBtn.textContent = "Clear";
   toolbar.appendChild(clearBtn);
 
-  // Save button (local affordance; SaveFile toolbar will call global hook)
+  // Local Save Button
   const saveBtn = document.createElement("button");
   saveBtn.textContent = "Save PNG";
   toolbar.appendChild(saveBtn);
@@ -86,18 +72,18 @@ export async function renderEditor(filePath, container) {
   canvasWrapper.style.height = "100%";
   wrapper.appendChild(canvasWrapper);
 
-  // Canvas element (styled via CSS size; actual pixel buffer controlled in JS)
   const canvas = document.createElement("canvas");
   canvas.style.width = "100%";
   canvas.style.height = "100%";
   canvas.style.display = "block";
   canvas.style.userSelect = "none";
-  canvas.style.touchAction = "none"; // important for proper touch drawing
+  canvas.style.touchAction = "none";
+  canvas.style.cursor = "crosshair"; // UX improvement
   canvasWrapper.appendChild(canvas);
 
   const ctx = canvas.getContext("2d", { alpha: true });
 
-  // Backing buffer for preserving content across resizes
+  // --- Buffer & Resize Logic (Unchanged) ---
   function makeBuffer(w, h) {
     const off = document.createElement("canvas");
     off.width = w;
@@ -105,22 +91,18 @@ export async function renderEditor(filePath, container) {
     return off;
   }
 
-  // Undo/redo stacks (store ImageData objects)
   const undoStack = [];
   const redoStack = [];
   const UNDO_LIMIT = 30;
 
   function pushUndo() {
     try {
-      // capture current pixel buffer
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       undoStack.push(imgData);
       if (undoStack.length > UNDO_LIMIT) undoStack.shift();
-      // clear redo when new action
       redoStack.length = 0;
       updateUndoRedoButtons();
     } catch (err) {
-      // Security or other errors shouldn't break editor
       console.warn("pushUndo failed:", err);
     }
   }
@@ -156,107 +138,140 @@ export async function renderEditor(filePath, container) {
     redoBtn.disabled = redoStack.length === 0;
   }
 
-  // Device pixel ratio handling for crisp lines
   let DPR = window.devicePixelRatio || 1;
 
+// --- FIXED RESIZE LOGIC ---
   function resizeCanvasToWrapper() {
-    // Save current contents to an offscreen buffer (physical pixels)
-    const prev = makeBuffer(canvas.width || 1, canvas.height || 1);
-    const prevCtx = prev.getContext("2d");
-    // If canvas had a pixel buffer, copy it
-    try {
-      if (canvas.width && canvas.height) prevCtx.drawImage(canvas, 0, 0);
-    } catch (err) {
-      // ignore
+    // 1. Snapshot the current physical pixels
+    // We create a buffer exactly the size of the current physical canvas
+    const prevW = canvas.width;
+    const prevH = canvas.height;
+    
+    // If the canvas has 0 size (first run), don't try to snapshot
+    let prev = null;
+    if (prevW > 0 && prevH > 0) {
+      prev = makeBuffer(prevW, prevH);
+      prev.getContext("2d").drawImage(canvas, 0, 0);
     }
 
-    // Compute new logical pixel dimensions based on wrapper client size and DPR
+    // 2. Calculate new dimensions
     const cw = Math.max(1, Math.floor(canvasWrapper.clientWidth));
     const ch = Math.max(1, Math.floor(canvasWrapper.clientHeight));
     const newWidth = Math.floor(cw * DPR);
     const newHeight = Math.floor(ch * DPR);
 
-    // Resize actual canvas pixel buffer
+    // 3. Resize the canvas (this clears the context)
     canvas.width = newWidth;
     canvas.height = newHeight;
 
-    // Keep display size via CSS (already set to 100%)
-    // Scale ctx so 1 canvas pixel == 1/DPR CSS pixel
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // scale drawing operations by DPR
+    // 4. RESTORE CONTENT
+    // Crucial: We reset the transform to Identity (1:1) to copy pixels exactly
+    // This prevents the "disappearing content" bug caused by double-scaling
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // Redraw previous buffer into resized canvas and scale appropriately
-    try {
-      // draw prev (which is in previous pixel buffer size) into current
-      ctx.clearRect(0, 0, canvas.width / DPR, canvas.height / DPR);
-      ctx.drawImage(prev, 0, 0, prev.width / DPR, prev.height / DPR, 0, 0, cw, ch);
-    } catch (err) {
-      // fallback: clear to white/transparent
-      ctx.clearRect(0, 0, canvas.width / DPR, canvas.height / DPR);
+    if (prev) {
+      // Draw the previous image into the new canvas.
+      // We draw it at 0,0 with its original physical dimensions.
+      // If the new window is smaller, it crops. If larger, it leaves whitespace.
+      ctx.drawImage(prev, 0, 0);
     }
+
+    // 5. Re-apply High DPI Scaling for FUTURE strokes
+    // Now that the old pixels are safe, we set the scale for the user's mouse/brush
+    ctx.scale(DPR, DPR);
 
     updateUndoRedoButtons();
   }
 
-  // Observe size changes (better than window resize only)
+  // --- FIXED SAVE LOGIC (With Debugging) ---
+  async function internalSave() {
+    if (!filePath) {
+      msg.textContent = "No file path!";
+      msg.style.color = "red";
+      return;
+    }
+    
+    msg.textContent = "Saving...";
+
+    try {
+      // DEBUG: Check if canvas is actually empty
+      const pixelCheck = ctx.getImageData(0, 0, 1, 1).data; // Check top left pixel
+      console.log(`Saving Canvas. Dimensions: ${canvas.width}x${canvas.height} (DPR: ${DPR})`);
+
+      const dataURL = canvas.toDataURL("image/png");
+      const base64Content = dataURL.replace(/^data:image\/png;base64,/, "");
+      
+      console.log(`Payload size: ${base64Content.length} chars`);
+
+      const res = await fetch("/api/files/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: filePath,
+          content: base64Content,
+          encoding: "base64",
+          mimeType: "image/png"
+        })
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+      const data = await res.json();
+      if (data.success || data.path) {
+        msg.textContent = "Saved!";
+        msg.style.color = "green";
+        setTimeout(() => { if (msg.textContent === "Saved!") msg.textContent = ""; }, 2000);
+      } else {
+        throw new Error(data.error || "Save failed");
+      }
+    } catch (err) {
+      console.error("Internal PNG Save Error:", err);
+      msg.textContent = "Error saving";
+      msg.style.color = "red";
+    }
+  }
+
   let resizeObserver = new ResizeObserver(() => {
-    // recompute DPR in case of monitor move
     DPR = window.devicePixelRatio || 1;
     resizeCanvasToWrapper();
   });
   resizeObserver.observe(canvasWrapper);
-
-  // Initial resize
   resizeCanvasToWrapper();
 
-  // --- Drawing state & helpers ---
+  // --- Drawing Logic (Unchanged) ---
   let drawing = false;
-  let lastPos = { x: 0, y: 0 };
 
   function getEventPos(e) {
-    // support mouse and touch events; always return coordinates in CSS pixels
     const rect = canvas.getBoundingClientRect();
-
-    if (e.touches && e.touches.length) {
-      const t = e.touches[0];
-      return {
-        x: (t.clientX - rect.left) * (canvas.width / rect.width) / DPR,
-        y: (t.clientY - rect.top) * (canvas.height / rect.height) / DPR
-      };
-    } else {
-      return {
-        x: (e.clientX - rect.left) * (canvas.width / rect.width) / DPR,
-        y: (e.clientY - rect.top) * (canvas.height / rect.height) / DPR
-      };
-    }
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width) / DPR,
+      y: (clientY - rect.top) * (canvas.height / rect.height) / DPR
+    };
   }
 
   function beginStroke(e) {
-    // push snapshot for undo before mutating
     pushUndo();
-
     drawing = true;
     const pos = getEventPos(e);
-    lastPos = pos;
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
-    // set stroke style
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = colorInput.value;
     ctx.lineWidth = parseFloat(brushInput.value) || 1;
-    // prevent scrolling on touch devices
     if (e.cancelable) e.preventDefault();
   }
 
   function continueStroke(e) {
     if (!drawing) return;
     const pos = getEventPos(e);
-    // update stroke style in case UI changed mid-stroke
     ctx.strokeStyle = colorInput.value;
     ctx.lineWidth = parseFloat(brushInput.value) || 1;
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    lastPos = pos;
     if (e.cancelable) e.preventDefault();
   }
 
@@ -267,27 +282,17 @@ export async function renderEditor(filePath, container) {
     updateUndoRedoButtons();
   }
 
-  // Mouse events
-  canvas.addEventListener("mousedown", (e) => {
-    if (e.button !== 0) return; // only left click
-    beginStroke(e);
-  });
+  canvas.addEventListener("mousedown", (e) => { if (e.button === 0) beginStroke(e); });
   window.addEventListener("mousemove", continueStroke);
   window.addEventListener("mouseup", endStroke);
 
-  // Touch events
-  canvas.addEventListener("touchstart", (e) => beginStroke(e), { passive: false });
-  canvas.addEventListener("touchmove", (e) => continueStroke(e), { passive: false });
-  canvas.addEventListener("touchend", (e) => {
-    // touchend has no touches; finish stroke
-    endStroke();
-  });
+  canvas.addEventListener("touchstart", beginStroke, { passive: false });
+  canvas.addEventListener("touchmove", continueStroke, { passive: false });
+  canvas.addEventListener("touchend", endStroke);
 
-  // Keyboard shortcuts for undo/redo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z)
   function onKeyDown(e) {
     const isMac = navigator.platform.toUpperCase().includes("MAC");
     const meta = isMac ? e.metaKey : e.ctrlKey;
-
     if (meta && !e.shiftKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       doUndo();
@@ -298,112 +303,96 @@ export async function renderEditor(filePath, container) {
   }
   window.addEventListener("keydown", onKeyDown);
 
-  // Button handlers
   undoBtn.addEventListener("click", doUndo);
   redoBtn.addEventListener("click", doRedo);
-
   clearBtn.addEventListener("click", () => {
     pushUndo();
     ctx.clearRect(0, 0, canvas.width / DPR, canvas.height / DPR);
     updateUndoRedoButtons();
   });
 
-  saveBtn.addEventListener("click", async () => {
-    // If filePath undefined, show message
+  // --- SAVE LOGIC ---
+
+  /**
+   * Internal Save function for the LOCAL toolbar button.
+   * Mirrors the logic found in global SaveFile.mjs to ensure consistency.
+   */
+  async function internalSave() {
     if (!filePath) {
-      msg.textContent = "No file path selected";
+      msg.textContent = "No file path!";
       msg.style.color = "red";
       return;
     }
-    await internalSave(filePath);
-  });
+    
+    msg.textContent = "Saving...";
 
-  // Expose a programmatic save hook used by global SaveFile()
-async function internalSave() {
-  if (!filePath) {
-    console.error("Cannot save PNG: missing filePath");
-    return;
-  }
+    try {
+      const dataURL = canvas.toDataURL("image/png");
+      const base64Content = dataURL.replace(/^data:image\/png;base64,/, "");
 
-  try {
-    const dataURL = canvas.toDataURL("image/png");
-    const base64 = dataURL.replace(/^data:image\/png;base64,/, "");
+      // NOTE: Using /api/files/save to match SaveFile.mjs logic
+      const res = await fetch("/api/files/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: filePath,
+          content: base64Content,
+          encoding: "base64",
+          mimeType: "image/png"
+        })
+      });
 
-fetch("/api/save", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    path: "TestImages/test_save.png",
-    content: base64Data,
-    encoding: "base64",
-    mimeType: "image/png"
-  })
-})
-.then(res => res.json())
-.then(data => console.log("Server response:", data))
-.catch(err => console.error("Error sending PNG:", err));
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
 
-
-    const data = await res.json();
-    if (data.success) {
-      msg.textContent = "Saved!";
-      msg.style.color = "green";
-      console.log("PNG saved:", filePath);
-    } else {
-      console.error("Save failed:", data.error);
-      msg.textContent = "Save failed!";
+      const data = await res.json();
+      if (data.success || data.path) {
+        msg.textContent = "Saved!";
+        msg.style.color = "green";
+        setTimeout(() => { if (msg.textContent === "Saved!") msg.textContent = ""; }, 2000);
+      } else {
+        throw new Error(data.error || "Save failed");
+      }
+    } catch (err) {
+      console.error("Internal PNG Save Error:", err);
+      msg.textContent = "Error saving";
       msg.style.color = "red";
     }
-  } catch (err) {
-    console.error("Save error:", err);
-    msg.textContent = "Save failed!";
-    msg.style.color = "red";
   }
-}
 
+  // Hook up the local button
+  saveBtn.addEventListener("click", internalSave);
 
-  // Register global hooks expected by saveFile.mjs
-  // rasterCanvas is a reference to the drawing canvas element
-  // saveRasterImage(path) is called by the global SaveFile handler
+  // --- GLOBAL INTEGRATION ---
+  
+  // 1. Expose the canvas instance so SaveFile.mjs can find it
+  // (See SaveFile.mjs Section 3: if (window.rasterCanvas instanceof HTMLCanvasElement))
   window.rasterCanvas = canvas;
-  window.saveRasterImage = async function(path) {
-    await internalSave(path);
-  };
 
-  // Provide a cleanup function to remove globals and listeners when editor is destroyed
+  // 2. Cleanup function
   window.destroyPngEditor = function() {
-    try {
-      resizeObserver.disconnect();
+    try { resizeObserver.disconnect(); } catch (e) {}
+    try { canvas.remove(); } catch (e) {}
+    try { 
+      // Important: nullify this so SaveFile doesn't try to save a dead canvas
+      if (window.rasterCanvas === canvas) window.rasterCanvas = null; 
     } catch (e) {}
-    try {
-      canvas.remove();
-    } catch (e) {}
-    try {
-      delete window.rasterCanvas;
-    } catch (e) {}
-    try {
-      delete window.saveRasterImage;
-    } catch (e) {}
-    try {
-      delete window.destroyPngEditor;
-    } catch (e) {}
-    try {
-      window.removeEventListener("keydown", onKeyDown);
-    } catch (e) {}
+    try { delete window.destroyPngEditor; } catch (e) {}
+    try { window.removeEventListener("keydown", onKeyDown); } catch (e) {}
+    try { window.removeEventListener("mousemove", continueStroke); } catch (e) {}
+    try { window.removeEventListener("mouseup", endStroke); } catch (e) {}
   };
 
-  // --- Image loading (preserve aspect ratio) ---
+  // --- Image Loading ---
   if (filePath) {
     const img = new Image();
-    // Prevent tainting if images are from another origin - but Notebook files are local
     img.crossOrigin = "anonymous";
     img.src = `/Notebook/${filePath}`;
     img.onload = () => {
-      // compute scale preserving aspect ratio inside the canvas CSS area
       const cssW = canvasWrapper.clientWidth;
       const cssH = canvasWrapper.clientHeight;
       if (!cssW || !cssH) {
-        // fallback: draw at natural size
         ctx.drawImage(img, 0, 0);
         return;
       }
@@ -413,36 +402,22 @@ fetch("/api/save", {
       const offsetX = (cssW - drawW) / 2;
       const offsetY = (cssH - drawH) / 2;
 
-      // Because ctx is scaled by DPR, we draw using CSS-coordinate sizes
       ctx.clearRect(0, 0, canvas.width / DPR, canvas.height / DPR);
       ctx.drawImage(img, 0, 0, img.width, img.height, offsetX, offsetY, drawW, drawH);
-
-      // push initial state to undo stack (so user can undo the load)
       pushUndo();
     };
     img.onerror = (err) => {
       console.warn("Image load failed:", err);
     };
   } else {
-    // initialize with transparent canvas; push initial state so undo works
     pushUndo();
   }
 
-  // Utility: allow other code to programmatically export a dataUrl
-  window.getPngEditorDataUrl = function() {
-    return canvas.toDataURL("image/png");
-  };
-
-  // Ensure undo/redo buttons state
-  updateUndoRedoButtons();
-
-  // Return an object (optional) for embedding code to manipulate editor directly
   return {
     canvas,
     ctx,
     save: internalSave,
-    destroy: window.destroyPngEditor,
-    getDataUrl: window.getPngEditorDataUrl
+    destroy: window.destroyPngEditor
   };
 }
 

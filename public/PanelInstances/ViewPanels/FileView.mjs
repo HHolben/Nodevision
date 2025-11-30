@@ -57,23 +57,12 @@ if (instanceVars.filePath) {
 
 }
 
-export async function updateViewPanel(element) {
-  let viewPanel = document.getElementById("element-view");
+export async function updateViewPanel(element, { force = false } = {}) {
+  const viewPanel = document.getElementById("element-view");
   if (!viewPanel) {
     console.error("View panel element not found.");
     return;
   }
-
-  // Create iframe for HTML or embedded rendering
-  const iframe = document.createElement("iframe");
-  iframe.id = "content-frame";
-  Object.assign(iframe.style, {
-    width: "100%",
-    height: "100%",
-    border: "none",
-    display: "block",
-    flex: "1 1 auto",
-  });
 
   const filename = element || window.selectedFilePath;
   if (!filename) {
@@ -81,7 +70,8 @@ export async function updateViewPanel(element) {
     return;
   }
 
-  if (filename === lastRenderedPath) {
+  // Prevent redundant rerenders unless forced
+  if (!force && filename === lastRenderedPath) {
     console.log("🔁 File already displayed:", filename);
     return;
   }
@@ -89,72 +79,86 @@ export async function updateViewPanel(element) {
 
   console.log("🧭 Updating view panel for file:", filename);
   viewPanel.innerHTML = "";
-  viewPanel.appendChild(iframe);
-  iframe.src = "";
 
-  // 🔹 Hook into iframe once it loads
-  iframe.addEventListener("load", () => {
-    try {
-      // Inject lightweight click forwarding script if same-origin
-      const script = `
-        window.addEventListener("mousedown", () => {
-          window.parent.postMessage({ type: "activatePanel", id: "FileView" }, "*");
-        });
-      `;
-      const scriptTag = iframe.contentDocument.createElement("script");
-      scriptTag.textContent = script;
-      iframe.contentDocument.head.appendChild(scriptTag);
-    } catch (err) {
-      console.warn("⚠️ Could not inject click handler into iframe (possibly cross-origin):", err);
-    }
-  });
-
-  const serverBase = "http://localhost:3000/Notebook";
-  await renderFile(filename, viewPanel, iframe, serverBase);
+  // Let renderFile() decide whether it needs an iframe
+  await renderFile(filename, viewPanel, "http://localhost:3000/Notebook");
 }
 
-async function renderFile(filename, viewPanel, iframe, serverBase) {
+
+async function renderFile(filename, viewPanel, serverBase) {
   console.log(`📄 renderFile() called for: ${filename}`);
 
   const ext = filename.split(".").pop().toLowerCase();
   const basePath = "/PanelInstances/ViewPanels/FileViewers";
   const moduleMap = {
     html: "ViewHTML.mjs",
-    htm: "ViewHTML.mjs",
-    csv: "ViewCSV.mjs",
-    stl: "ViewSTL.mjs",
-    svg: "ViewSVG.mjs",
-    mid: "ViewMidi.mjs",
+    htm:  "ViewHTML.mjs",
+    ipynb: "ViewIPYN.mjs",
+    csv:  "ViewCSV.mjs",
+    stl:  "ViewSTL.mjs",
+    svg:  "ViewSVG.mjs",
+    mid:  "ViewMidi.mjs",
     midi: "ViewMidi.mjs",
-    pdf: "ViewPDF.mjs",
-    pgn: "ViewPGN.mjs",
-    png: "ViewPNG.mjs",
-    jpg: "ViewImage.mjs",
+    pdf:  "ViewPDF.mjs",
+    pgn:  "ViewPGN.mjs",
+    png:  "ViewPNG.mjs",
+    jpg:  "ViewImage.mjs",
     jpeg: "ViewImage.mjs",
-    gif: "ViewImage.mjs",
+    gif:  "ViewImage.mjs",
     webp: "ViewImage.mjs",
-    bmp: "ViewImage.mjs",
+    bmp:  "ViewImage.mjs",
     scad: "ViewSCAD.mjs",
   };
 
-  const viewerModule = moduleMap[ext] || "ViewText.mjs"; // Default fallback
-  const modulePath = `${basePath}/${viewerModule}`;
+  const viewerFile = moduleMap[ext] || "ViewText.mjs";
+  const modulePath = `${basePath}/${viewerFile}`;
   console.log(`🔍 Loading viewer module: ${modulePath}`);
 
   try {
     const viewer = await import(modulePath);
-    if (typeof viewer.renderFile === "function") {
-      await viewer.renderFile(filename, viewPanel, iframe, serverBase);
-      console.log(`✅ Rendered with ${viewerModule}`);
-    } else {
-      viewPanel.innerHTML = `<em>${viewerModule}</em> loaded, but no renderFile() found.`;
-      console.warn(`⚠️ No renderFile() found in ${viewerModule}`);
+
+    // Allow viewer to specify if it wants an iframe
+    const wantsIframe = viewer.wantsIframe === true;
+
+    let iframe = null;
+    if (wantsIframe) {
+      iframe = document.createElement("iframe");
+      Object.assign(iframe.style, {
+        width: "100%",
+        height: "100%",
+        border: "none"
+      });
+
+      viewPanel.appendChild(iframe);
+
+      iframe.src = ""; // allow viewer to decide final src
+
+      iframe.addEventListener("load", () => {
+        try {
+          const script = `
+            window.addEventListener("mousedown", () => {
+              window.parent.postMessage({ type: "activatePanel", id: "FileView" }, "*");
+            });
+          `;
+          const tag = iframe.contentDocument.createElement("script");
+          tag.textContent = script;
+          iframe.contentDocument.head.appendChild(tag);
+        } catch (err) {
+          console.warn("⚠️ iframe injection failed:", err);
+        }
+      });
     }
+
+    // Call viewer
+    await viewer.renderFile(filename, viewPanel, iframe, serverBase);
+    console.log(`✅ Rendered with ${viewerFile}`);
+
   } catch (err) {
     console.error(`❌ Failed to import ${modulePath}:`, err);
     viewPanel.innerHTML = `<em>Error loading viewer for ${filename}</em>`;
   }
 }
+
 
 // Expose globally
 window.updateViewPanel = updateViewPanel;
