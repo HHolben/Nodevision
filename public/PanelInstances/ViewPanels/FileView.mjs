@@ -1,5 +1,5 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileView.mjs
-// This file reacts to window.selectedFilePath and dynamically loads the proper viewer module.
+// Reactively displays files in the view panel using the appropriate viewer.
 
 let lastRenderedPath = null;
 
@@ -41,20 +41,19 @@ export async function setupPanel(panel, instanceVars = {}) {
       if (cell) {
         window.activeCell = cell;
         window.activePanel = "FileView";
-        console.log("Active panel via postMessage:", window.activePanel);
         document.querySelectorAll(".panel-cell").forEach((c) => (c.style.outline = ""));
         cell.style.outline = "2px solid #0078d7";
+        console.log("Active panel via postMessage:", window.activePanel);
       }
     }
   });
 
   // Initial render if filePath provided
-if (instanceVars.filePath) {
-  window.selectedFilePath = instanceVars.filePath;
-  lastRenderedPath = null;      // 🔹 reset so update will run
-  updateViewPanel(instanceVars.filePath);
-}
-
+  if (instanceVars.filePath) {
+    window.selectedFilePath = instanceVars.filePath;
+    lastRenderedPath = null; // 🔹 reset so update will run
+    updateViewPanel(instanceVars.filePath);
+  }
 }
 
 export async function updateViewPanel(element, { force = false } = {}) {
@@ -80,47 +79,51 @@ export async function updateViewPanel(element, { force = false } = {}) {
   console.log("🧭 Updating view panel for file:", filename);
   viewPanel.innerHTML = "";
 
-  // Let renderFile() decide whether it needs an iframe
-  await renderFile(filename, viewPanel, "http://localhost:3000/Notebook");
-}
+  // Determine server base depending on file type
+  const ext = filename.split(".").pop().toLowerCase();
+  const isPHP = ext === "php";
+  const serverBase = isPHP ? "http://localhost:8080" : "http://localhost:3000/Notebook";
 
+  await renderFile(filename, viewPanel, serverBase);
+}
 
 async function renderFile(filename, viewPanel, serverBase) {
   console.log(`📄 renderFile() called for: ${filename}`);
 
-  const ext = filename.split(".").pop().toLowerCase();
+  // Viewer module map
   const basePath = "/PanelInstances/ViewPanels/FileViewers";
   const moduleMap = {
+    bmp:  "ViewImage.mjs",
+    csv:  "ViewCSV.mjs",
+    gif:  "ViewImage.mjs",
     html: "ViewHTML.mjs",
     htm:  "ViewHTML.mjs",
     ipynb: "ViewIPYN.mjs",
-    csv:  "ViewCSV.mjs",
-    stl:  "ViewSTL.mjs",
-    svg:  "ViewSVG.mjs",
+    jpg:  "ViewImage.mjs",
+    jpeg: "ViewImage.mjs",
     mid:  "ViewMidi.mjs",
     midi: "ViewMidi.mjs",
     pdf:  "ViewPDF.mjs",
     pgn:  "ViewPGN.mjs",
+    php: "ViewPHP.mjs",
     png:  "ViewPNG.mjs",
-    jpg:  "ViewImage.mjs",
-    jpeg: "ViewImage.mjs",
-    gif:  "ViewImage.mjs",
-    webp: "ViewImage.mjs",
-    bmp:  "ViewImage.mjs",
     scad: "ViewSCAD.mjs",
+    stl:  "ViewSTL.mjs",
+    svg:  "ViewSVG.mjs",
+    webp: "ViewImage.mjs",
   };
 
-  const viewerFile = moduleMap[ext] || "ViewText.mjs";
+  const viewerFile = moduleMap[filename.split(".").pop().toLowerCase()] || "ViewText.mjs";
   const modulePath = `${basePath}/${viewerFile}`;
   console.log(`🔍 Loading viewer module: ${modulePath}`);
 
   try {
     const viewer = await import(modulePath);
 
-    // Allow viewer to specify if it wants an iframe
+    // Let viewer specify if it wants an iframe
     const wantsIframe = viewer.wantsIframe === true;
-
     let iframe = null;
+
     if (wantsIframe) {
       iframe = document.createElement("iframe");
       Object.assign(iframe.style, {
@@ -128,29 +131,17 @@ async function renderFile(filename, viewPanel, serverBase) {
         height: "100%",
         border: "none"
       });
-
       viewPanel.appendChild(iframe);
+    }
 
-      iframe.src = ""; // allow viewer to decide final src
-
-      iframe.addEventListener("load", () => {
-        try {
-          const script = `
-            window.addEventListener("mousedown", () => {
-              window.parent.postMessage({ type: "activatePanel", id: "FileView" }, "*");
-            });
-          `;
-          const tag = iframe.contentDocument.createElement("script");
-          tag.textContent = script;
-          iframe.contentDocument.head.appendChild(tag);
-        } catch (err) {
-          console.warn("⚠️ iframe injection failed:", err);
-        }
-      });
+    // Clean up PHP path for server
+    let cleanPath = filename;
+    if (viewerFile === "ViewPHP.mjs" && cleanPath.startsWith("Notebook/")) {
+      cleanPath = cleanPath.slice("Notebook/".length);
     }
 
     // Call viewer
-    await viewer.renderFile(filename, viewPanel, iframe, serverBase);
+    await viewer.renderFile(cleanPath, viewPanel, iframe, serverBase);
     console.log(`✅ Rendered with ${viewerFile}`);
 
   } catch (err) {
@@ -158,7 +149,6 @@ async function renderFile(filename, viewPanel, serverBase) {
     viewPanel.innerHTML = `<em>Error loading viewer for ${filename}</em>`;
   }
 }
-
 
 // Expose globally
 window.updateViewPanel = updateViewPanel;

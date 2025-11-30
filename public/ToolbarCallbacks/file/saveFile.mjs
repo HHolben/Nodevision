@@ -56,40 +56,48 @@ export default async function saveFile() {
     return;
   }
 
-  // 3. Raster image editor
-  if (window.rasterCanvas instanceof HTMLCanvasElement) {
-    console.log("Saving raster image file");
+// 3. Raster image editor
+if (window.rasterCanvas instanceof HTMLCanvasElement) {
+  console.log("Saving raster image file");
 
-    try {
-      const canvas = window.rasterCanvas;
-      const dataURL = canvas.toDataURL("image/png");
-      const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
+  try {
+    const canvas = window.rasterCanvas;
 
-      const res = await fetch("/api/files/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          path: filePath,
-          content: base64Data,
-          encoding: "base64",
-          mimeType: "image/png"
-        })
-      });
+    // Use willReadFrequently to improve performance for getImageData/readback
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Failed to save PNG:", res.status, text);
-        return;
-      }
+    const dataURL = canvas.toDataURL("image/png");
+    const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
 
-      const json = await res.json();
-      console.log("Saved PNG successfully:", json.path);
+    // Corrected endpoint: singular 'file'
+    const res = await fetch("/api/file/uploadRoutes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: filePath,
+        content: base64Data,
+        encoding: "base64",
+        mimeType: "image/png"
+      })
+    });
 
-    } catch (err) {
-      console.error("Error saving raster image:", err);
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Failed to save PNG:", res.status, text);
+      return;
     }
-    return;
+
+    const json = await res.json();
+    console.log("Saved PNG successfully:", json.path);
+
+  } catch (err) {
+    console.error("Error saving raster image:", err);
   }
+
+  return;
+}
+
+
 
   // 4. Code (Monaco) editor
   if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {

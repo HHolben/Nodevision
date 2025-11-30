@@ -47,6 +47,12 @@ import listDirectoryRouter from "./routes/api/listDirectory.js";
 app.use("/api", listDirectoryRouter);
 
 
+
+import uploadRoutes from './routes/api/fileUploadRoutes.js';
+app.use('/api/file', uploadRoutes);
+
+
+
 // Secure helper function to validate and normalize paths
 function validateAndNormalizePath(userPath, allowedBaseDir) {
   if (!userPath) return allowedBaseDir;
