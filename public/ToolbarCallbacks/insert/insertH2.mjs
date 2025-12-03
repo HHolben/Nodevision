@@ -7,7 +7,7 @@ export default function insertH2() {
     ".editor-panel.active, .active-editor, [data-editor-active='true'], #editor-root"
   );
   if (!panel) {
-    console.warn("insertH1: No active editor panel found.");
+    console.warn("insertH2: No active editor panel found.");
     return;
   }
 
