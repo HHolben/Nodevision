@@ -27,6 +27,10 @@ export async function setupPanel(cell, instanceVars = {}) {
   console.log("🧭 Updating graphical editor for file:", filePath);
 // Determine which graphical editor to load
 let editorModulePath = null;
+
+
+
+
 const ext = filePath.split(".").pop().toLowerCase();
 
 const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
@@ -40,7 +44,12 @@ if (["html", "htm"].includes(ext)) {
  } else if (["svg"].includes(ext)) {
   editorModulePath = `${basePath}/SVGeditor.mjs`;
 } else if (["stl"].includes(ext)) {
-  editorModulePath = `${basePath}/EditorSTL.mjs`;
+
+  console.log("Goingfor STL Editor!");
+editorModulePath = `${basePath}/STLeditor.mjs`;
+  console.log(editorModulePath);
+
+
 } else {
   editorModulePath = `${basePath}/EditorFallback.mjs`;
 }
@@ -60,13 +69,6 @@ try {
   renderEditor(filePath, container);
 }
 
-
-  try {
-    const { renderEditor } = await import(editorModulePath);
-    await renderEditor(filePath, container);
-  } catch (err) {
-    console.error("Failed to load graphical editor:", err);
-  }
 }
 
 
@@ -97,13 +99,13 @@ export async function updateGraphicalEditor(filePath) {
   const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
   const editorModuleMap = {
     html: "HTMLeditor.mjs",
-    svg: "EditorSVG.mjs",
-    stl: "EditorSTL.mjs",
+    svg: "SVGeditor.mjs",
+    stl: "STLeditor.mjs",
     scad: "EditorSCAD.mjs",
     usd: "EditorUSD.mjs",
   };
 
-  const editorModule = editorModuleMap[ext] || "EditorGeneric.mjs"; // Default fallback
+const editorModule = editorModuleMap[ext] || "EditorFallback.mjs";
   const modulePath = `${basePath}/${editorModule}`;
   console.log(`🔍 Loading editor module: ${modulePath}`);
 
