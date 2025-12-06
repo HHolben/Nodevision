@@ -4,9 +4,14 @@ export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   container.innerHTML = "";
 
-  // Root wrapper
+  // --- PIXEL ART CONSTANTS (Unchanged) ---
+  const LOGICAL_WIDTH = 32;
+  const LOGICAL_HEIGHT = 32;
+  let PIXEL_SIZE = 1;
+
+  // Root wrapper (Unchanged)
   const wrapper = document.createElement("div");
-  wrapper.id = "png-editor-root";
+  wrapper.id = "pixel-editor-root";
   wrapper.style.display = "flex";
   wrapper.style.flexDirection = "column";
   wrapper.style.height = "100%";
@@ -23,24 +28,29 @@ export async function renderEditor(filePath, container) {
   toolbar.style.flex = "0 0 auto";
   wrapper.appendChild(toolbar);
 
-  // Color picker
+  // Color picker (Unchanged)
   const colorInput = document.createElement("input");
   colorInput.type = "color";
   colorInput.value = "#000000";
   colorInput.title = "Brush color";
   toolbar.appendChild(colorInput);
 
-  // Brush size
-  const brushInput = document.createElement("input");
-  brushInput.type = "number";
-  brushInput.min = 1;
-  brushInput.max = 200;
-  brushInput.value = 5;
-  brushInput.style.width = "70px";
-  brushInput.title = "Brush size (px)";
-  toolbar.appendChild(brushInput);
+  // PIXEL SIZE INPUT (Unchanged)
+  const pixelSizeInput = document.createElement("input");
+  pixelSizeInput.type = "number";
+  pixelSizeInput.min = 1;
+  pixelSizeInput.max = 16; 
+  pixelSizeInput.value = PIXEL_SIZE;
+  pixelSizeInput.style.width = "70px";
+  pixelSizeInput.title = "Brush size (logical pixels)";
+  pixelSizeInput.addEventListener("change", () => {
+    const val = parseInt(pixelSizeInput.value);
+    PIXEL_SIZE = (val >= 1 && val <= 16) ? val : 1;
+    pixelSizeInput.value = PIXEL_SIZE;
+  });
+  toolbar.appendChild(pixelSizeInput);
 
-  // Undo/Redo/Clear
+  // Undo/Redo/Clear (Unchanged)
   const undoBtn = document.createElement("button");
   undoBtn.textContent = "Undo";
   toolbar.appendChild(undoBtn);
@@ -53,41 +63,43 @@ export async function renderEditor(filePath, container) {
   clearBtn.textContent = "Clear";
   toolbar.appendChild(clearBtn);
 
-  // Local Save Button
-  const saveBtn = document.createElement("button");
-  saveBtn.textContent = "Save PNG";
-  toolbar.appendChild(saveBtn);
+  // ⚠️ REMOVED LOCAL SAVE BUTTON: The saving will now rely only on the global SaveFile.mjs
 
-  // Message element
+  // Message element (Now only for status, not for local save messages)
   const msg = document.createElement("span");
   msg.style.marginLeft = "8px";
   msg.style.fontSize = "0.9em";
   toolbar.appendChild(msg);
 
-  // --- Canvas wrapper & canvas ---
+  // --- Canvas setup (Unchanged) ---
   const canvasWrapper = document.createElement("div");
   canvasWrapper.style.flex = "1 1 auto";
   canvasWrapper.style.position = "relative";
   canvasWrapper.style.width = "100%";
   canvasWrapper.style.height = "100%";
+  canvasWrapper.style.display = "flex";
+  canvasWrapper.style.justifyContent = "center";
+  canvasWrapper.style.alignItems = "center";
   wrapper.appendChild(canvasWrapper);
 
   const canvas = document.createElement("canvas");
-  canvas.style.width = "100%";
-  canvas.style.height = "100%";
-  canvas.style.display = "block";
+  canvas.style.maxWidth = "100%";
+  canvas.style.maxHeight = "100%";
+  canvas.style.imageRendering = "pixelated";
   canvas.style.userSelect = "none";
   canvas.style.touchAction = "none";
-  canvas.style.cursor = "crosshair"; // UX improvement
+  canvas.style.cursor = "crosshair";
   canvasWrapper.appendChild(canvas);
 
   const ctx = canvas.getContext("2d", { alpha: true });
+  ctx.imageSmoothingEnabled = false;
 
-  // --- Buffer & Resize Logic (Unchanged) ---
+  // --- Buffer & Undo/Redo Logic (Unchanged) ---
   function makeBuffer(w, h) {
     const off = document.createElement("canvas");
     off.width = w;
     off.height = h;
+    off.getContext("2d").imageSmoothingEnabled = false;
     return off;
   }
 
@@ -138,147 +150,94 @@ export async function renderEditor(filePath, container) {
     redoBtn.disabled = redoStack.length === 0;
   }
 
-  let DPR = window.devicePixelRatio || 1;
-
-// --- FIXED RESIZE LOGIC ---
+  // --- PIXEL ART RESIZE LOGIC (Unchanged) ---
   function resizeCanvasToWrapper() {
-    // 1. Snapshot the current physical pixels
-    // We create a buffer exactly the size of the current physical canvas
-    const prevW = canvas.width;
-    const prevH = canvas.height;
-    
-    // If the canvas has 0 size (first run), don't try to snapshot
-    let prev = null;
-    if (prevW > 0 && prevH > 0) {
-      prev = makeBuffer(prevW, prevH);
-      prev.getContext("2d").drawImage(canvas, 0, 0);
-    }
+    canvas.width = LOGICAL_WIDTH;
+    canvas.height = LOGICAL_HEIGHT;
 
-    // 2. Calculate new dimensions
     const cw = Math.max(1, Math.floor(canvasWrapper.clientWidth));
     const ch = Math.max(1, Math.floor(canvasWrapper.clientHeight));
-    const newWidth = Math.floor(cw * DPR);
-    const newHeight = Math.floor(ch * DPR);
 
-    // 3. Resize the canvas (this clears the context)
-    canvas.width = newWidth;
-    canvas.height = newHeight;
+    const scaleFactor = Math.floor(Math.min(cw / LOGICAL_WIDTH, ch / LOGICAL_HEIGHT));
+    const displaySize = Math.max(1, scaleFactor);
 
-    // 4. RESTORE CONTENT
-    // Crucial: We reset the transform to Identity (1:1) to copy pixels exactly
-    // This prevents the "disappearing content" bug caused by double-scaling
+    canvas.style.width = `${LOGICAL_WIDTH * displaySize}px`;
+    canvas.style.height = `${LOGICAL_HEIGHT * displaySize}px`;
+
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-    if (prev) {
-      // Draw the previous image into the new canvas.
-      // We draw it at 0,0 with its original physical dimensions.
-      // If the new window is smaller, it crops. If larger, it leaves whitespace.
-      ctx.drawImage(prev, 0, 0);
-    }
-
-    // 5. Re-apply High DPI Scaling for FUTURE strokes
-    // Now that the old pixels are safe, we set the scale for the user's mouse/brush
-    ctx.scale(DPR, DPR);
-
     updateUndoRedoButtons();
   }
 
-  // --- FIXED SAVE LOGIC (With Debugging) ---
-  async function internalSave() {
-    if (!filePath) {
-      msg.textContent = "No file path!";
-      msg.style.color = "red";
-      return;
-    }
-    
-    msg.textContent = "Saving...";
-
-    try {
-      // DEBUG: Check if canvas is actually empty
-      const pixelCheck = ctx.getImageData(0, 0, 1, 1).data; // Check top left pixel
-      console.log(`Saving Canvas. Dimensions: ${canvas.width}x${canvas.height} (DPR: ${DPR})`);
-
-      const dataURL = canvas.toDataURL("image/png");
-      const base64Content = dataURL.replace(/^data:image\/png;base64,/, "");
-      
-      console.log(`Payload size: ${base64Content.length} chars`);
-
-      const res = await fetch("/api/files/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          path: filePath,
-          content: base64Content,
-          encoding: "base64",
-          mimeType: "image/png"
-        })
-      });
-
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-
-      const data = await res.json();
-      if (data.success || data.path) {
-        msg.textContent = "Saved!";
-        msg.style.color = "green";
-        setTimeout(() => { if (msg.textContent === "Saved!") msg.textContent = ""; }, 2000);
-      } else {
-        throw new Error(data.error || "Save failed");
-      }
-    } catch (err) {
-      console.error("Internal PNG Save Error:", err);
-      msg.textContent = "Error saving";
-      msg.style.color = "red";
-    }
-  }
-
   let resizeObserver = new ResizeObserver(() => {
-    DPR = window.devicePixelRatio || 1;
     resizeCanvasToWrapper();
   });
   resizeObserver.observe(canvasWrapper);
   resizeCanvasToWrapper();
 
-  // --- Drawing Logic (Unchanged) ---
+  // --- PIXEL DRAWING LOGIC (Unchanged) ---
   let drawing = false;
 
-  function getEventPos(e) {
+  function getEventLogicalPos(e) {
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
-    return {
-      x: (clientX - rect.left) * (canvas.width / rect.width) / DPR,
-      y: (clientY - rect.top) * (canvas.height / rect.height) / DPR
-    };
+
+    const xRatio = (clientX - rect.left) / rect.width;
+    const yRatio = (clientY - rect.top) / rect.height;
+
+    const logicalX = Math.floor(xRatio * LOGICAL_WIDTH);
+    const logicalY = Math.floor(yRatio * LOGICAL_HEIGHT);
+
+    return { x: logicalX, y: logicalY };
   }
+
+  function drawPixel(pos) {
+    ctx.fillStyle = colorInput.value;
+    ctx.fillRect(pos.x, pos.y, PIXEL_SIZE, PIXEL_SIZE);
+  }
+
+  let lastLogicalPos = null;
 
   function beginStroke(e) {
     pushUndo();
     drawing = true;
-    const pos = getEventPos(e);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = colorInput.value;
-    ctx.lineWidth = parseFloat(brushInput.value) || 1;
+    lastLogicalPos = getEventLogicalPos(e);
+    drawPixel(lastLogicalPos);
     if (e.cancelable) e.preventDefault();
   }
 
   function continueStroke(e) {
     if (!drawing) return;
-    const pos = getEventPos(e);
-    ctx.strokeStyle = colorInput.value;
-    ctx.lineWidth = parseFloat(brushInput.value) || 1;
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+    const pos = getEventLogicalPos(e);
+
+    if (pos.x !== lastLogicalPos.x || pos.y !== lastLogicalPos.y) {
+      const dx = Math.abs(pos.x - lastLogicalPos.x);
+      const dy = Math.abs(pos.y - lastLogicalPos.y);
+      const sx = (lastLogicalPos.x < pos.x) ? 1 : -1;
+      const sy = (lastLogicalPos.y < pos.y) ? 1 : -1;
+      let err = dx - dy;
+
+      let x = lastLogicalPos.x;
+      let y = lastLogicalPos.y;
+
+      while (x !== pos.x || y !== pos.y) {
+          drawPixel({ x: x, y: y });
+          const e2 = 2 * err;
+          if (e2 > -dy) { err -= dy; x += sx; }
+          if (e2 < dx) { err += dx; y += sy; }
+      }
+
+      drawPixel(pos);
+      lastLogicalPos = pos;
+    }
+
     if (e.cancelable) e.preventDefault();
   }
 
   function endStroke() {
     if (!drawing) return;
     drawing = false;
-    ctx.closePath();
+    lastLogicalPos = null;
     updateUndoRedoButtons();
   }
 
@@ -290,6 +249,7 @@ export async function renderEditor(filePath, container) {
   canvas.addEventListener("touchmove", continueStroke, { passive: false });
   canvas.addEventListener("touchend", endStroke);
 
+  // Keyboard shortcuts (Unchanged)
   function onKeyDown(e) {
     const isMac = navigator.platform.toUpperCase().includes("MAC");
     const meta = isMac ? e.metaKey : e.ctrlKey;
@@ -307,71 +267,20 @@ export async function renderEditor(filePath, container) {
   redoBtn.addEventListener("click", doRedo);
   clearBtn.addEventListener("click", () => {
     pushUndo();
-    ctx.clearRect(0, 0, canvas.width / DPR, canvas.height / DPR);
+    ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     updateUndoRedoButtons();
   });
 
-  // --- SAVE LOGIC ---
-
-  /**
-   * Internal Save function for the LOCAL toolbar button.
-   * Mirrors the logic found in global SaveFile.mjs to ensure consistency.
-   */
-  async function internalSave() {
-    if (!filePath) {
-      msg.textContent = "No file path!";
-      msg.style.color = "red";
-      return;
-    }
-    
-    msg.textContent = "Saving...";
-
-    try {
-      const dataURL = canvas.toDataURL("image/png");
-      const base64Content = dataURL.replace(/^data:image\/png;base64,/, "");
-
-      // NOTE: Using /api/files/save to match SaveFile.mjs logic
-      const res = await fetch("/api/files/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          path: filePath,
-          content: base64Content,
-          encoding: "base64",
-          mimeType: "image/png"
-        })
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server error: ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (data.success || data.path) {
-        msg.textContent = "Saved!";
-        msg.style.color = "green";
-        setTimeout(() => { if (msg.textContent === "Saved!") msg.textContent = ""; }, 2000);
-      } else {
-        throw new Error(data.error || "Save failed");
-      }
-    } catch (err) {
-      console.error("Internal PNG Save Error:", err);
-      msg.textContent = "Error saving";
-      msg.style.color = "red";
-    }
-  }
-
-  // Hook up the local button
-  saveBtn.addEventListener("click", internalSave);
-
-  // --- GLOBAL INTEGRATION ---
+  // --- GLOBAL INTEGRATION (THE FIX) ---
   
-  // 1. Expose the canvas instance so SaveFile.mjs can find it
-  // (See SaveFile.mjs Section 3: if (window.rasterCanvas instanceof HTMLCanvasElement))
+  // 1. Expose the canvas instance for SaveFile.mjs to find
   window.rasterCanvas = canvas;
 
-  // 2. Cleanup function
+  // 2. We no longer need an internalSave function since the global saveFile() handles it.
+  
+  // 3. Cleanup function
   window.destroyPngEditor = function() {
+    // ... cleanup logic (omitted for brevity, but keep it)
     try { resizeObserver.disconnect(); } catch (e) {}
     try { canvas.remove(); } catch (e) {}
     try { 
@@ -384,39 +293,27 @@ export async function renderEditor(filePath, container) {
     try { window.removeEventListener("mouseup", endStroke); } catch (e) {}
   };
 
-  // --- Image Loading ---
+  // --- Image Loading (Unchanged) ---
   if (filePath) {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = `/Notebook/${filePath}`;
     img.onload = () => {
-      const cssW = canvasWrapper.clientWidth;
-      const cssH = canvasWrapper.clientHeight;
-      if (!cssW || !cssH) {
-        ctx.drawImage(img, 0, 0);
-        return;
-      }
-      const scale = Math.min(cssW / img.width, cssH / img.height, 1);
-      const drawW = img.width * scale;
-      const drawH = img.height * scale;
-      const offsetX = (cssW - drawW) / 2;
-      const offsetY = (cssH - drawH) / 2;
-
-      ctx.clearRect(0, 0, canvas.width / DPR, canvas.height / DPR);
-      ctx.drawImage(img, 0, 0, img.width, img.height, offsetX, offsetY, drawW, drawH);
+      ctx.drawImage(img, 0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
       pushUndo();
     };
     img.onerror = (err) => {
       console.warn("Image load failed:", err);
     };
   } else {
+    ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     pushUndo();
   }
 
   return {
     canvas,
     ctx,
-    save: internalSave,
+    // Removed save from return
     destroy: window.destroyPngEditor
   };
 }

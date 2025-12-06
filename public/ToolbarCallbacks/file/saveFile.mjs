@@ -55,6 +55,7 @@ export default async function saveFile() {
     }
     return;
   }
+// Nodevision/public/ToolbarCallbacks/file/SaveFile.mjs (Section 3 - Raster Image Editor)
 
 // 3. Raster image editor
 if (window.rasterCanvas instanceof HTMLCanvasElement) {
@@ -62,36 +63,38 @@ if (window.rasterCanvas instanceof HTMLCanvasElement) {
 
   try {
     const canvas = window.rasterCanvas;
-
-    // Use willReadFrequently to improve performance for getImageData/readback
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     const dataURL = canvas.toDataURL("image/png");
     const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
 
-    // Corrected endpoint: singular 'file'
-    const res = await fetch("/api/file/uploadRoutes", {
+    // *** FIX: CHANGE ENDPOINT TO THE CORRECT, DYNAMICALLY LOADED /api/save ***
+    const res = await fetch("/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         path: filePath,
         content: base64Data,
-        encoding: "base64",
+        encoding: "base64", // Critical for server binary handling
         mimeType: "image/png"
       })
     });
 
     if (!res.ok) {
-      const text = await res.text();
-      console.error("Failed to save PNG:", res.status, text);
+      const errorText = await res.text();
+      console.error("🔴 Server Save Failed:", res.status, res.statusText, errorText);
       return;
     }
 
     const json = await res.json();
-    console.log("Saved PNG successfully:", json.path);
+    if (json.success) {
+      console.log("🟢 Saved PNG successfully:", json.path);
+    } else {
+      console.error("🔴 Save failed (JSON error):", json.error);
+    }
 
   } catch (err) {
-    console.error("Error saving raster image:", err);
+    console.error("🔴 Network/Client Error during save:", err);
   }
 
   return;
