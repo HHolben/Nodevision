@@ -103,6 +103,7 @@ async function renderFile(filename, viewPanel, serverBase) {
     jpeg: "ViewImage.mjs",
     mid:  "ViewMidi.mjs",
     midi: "ViewMidi.mjs",
+    odt: "ViewODT.mjs",
     pdf:  "ViewPDF.mjs",
     pgn:  "ViewPGN.mjs",
     php: "ViewPHP.mjs",

@@ -1,19 +1,20 @@
 // Nodevision/public/PanelInstances/ViewPanels/ViewODT.mjs
 // Purpose: Display .odt (OpenDocument Text) files inside a panel using JSZip to extract content.xml
 
-import JSZip from "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+import JSZip from "../../../lib/jszip/jszip.min.js";
 
-export async function ViewODT(filename, infoPanel, serverBase) {
+export async function renderFile(filename, viewPanel, serverBase) {
+
   console.log("ViewODT: rendering", filename);
 
   // Clear the panel and create iframe
-  infoPanel.innerHTML = "";
+  viewPanel.innerHTML = "";
   const iframe = document.createElement("iframe");
   iframe.width = "100%";
   iframe.height = "600px";
   iframe.style.border = "1px solid #ccc";
   iframe.style.background = "white";
-  infoPanel.appendChild(iframe);
+  viewPanel.appendChild(iframe);
 
   const fileUrl = `${serverBase}/${filename}`;
   const doc = iframe.contentDocument || iframe.contentWindow.document;

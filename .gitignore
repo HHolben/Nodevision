@@ -7,6 +7,9 @@ node_modules/
 # Ignore environment variables file
 .env
 
+#Ignore rsync stuff
+.sync
+
 # Ignore generated files in the public directory
 public/GeneratedNodes.js
 public/GeneratedRegions.js
