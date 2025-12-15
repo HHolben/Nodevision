@@ -1,0 +1,22 @@
+Extension,ViewerModule,GraphicalEditorModule
+bmp,ViewImage.mjs,
+csv,ViewCSV.mjs,
+gif,ViewImage.mjs,
+html,ViewHTML.mjs,
+htm,ViewHTML.mjs, HTMLeditor.mjs
+ipynb,ViewIPYNB.mjs,
+jpg,ViewJPG.mjs,PNGeditor.mjs
+jpeg,ViewJPG.mjs,PNGeditor.mjs
+mid,ViewMidi.mjs,
+midi,ViewMidi.mjs,
+odt,ViewODT.mjs,
+pdf,ViewPDF.mjs,
+pgn,ViewPGN.mjs,
+php,ViewPHP.mjs,
+png,ViewPNG.mjs,PNGeditor.mjs
+scad,ViewSCAD.mjs,SCADeditor.mjs
+stl,ViewSTL.mjs,STLeditor.mjs
+svg,ViewSVG.mjs,SVGeditor.mjs
+vcf,ViewVCF.mjs,
+webp,ViewImage.mjs,
+,ViewText.mjs,

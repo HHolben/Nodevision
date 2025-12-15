@@ -3,6 +3,48 @@
 
 let lastRenderedPath = null;
 
+
+let moduleMapCache = null;
+
+async function loadModuleMap() {
+  if (moduleMapCache) return moduleMapCache;
+
+  // 🚨 Updated path to match user-provided CSV path
+  const res = await fetch("/PanelInstances/ModuleMap.csv");
+  if (!res.ok) {
+    console.error("❌ Failed to load ModuleMap.csv");
+    moduleMapCache = {};
+    return moduleMapCache;
+  }
+
+  const text = await res.text();
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  const header = lines.shift().split(",").map(h => h.trim());
+  const idx = {
+    ext: header.indexOf("Extension"),
+    viewer: header.indexOf("ViewerModule"),
+    editor: header.indexOf("GraphicalEditorModule"),
+  };
+
+  const map = {};
+
+  for (const line of lines) {
+    const cols = line.split(",").map(c => c.trim());
+    const ext = cols[idx.ext] || "";
+    map[ext.toLowerCase()] = {
+      viewer: cols[idx.viewer] || null,
+      editor: cols[idx.editor] || null,
+    };
+  }
+
+  moduleMapCache = map;
+  console.log("📦 moduleMap loaded:", map);
+  return map;
+}
+
+
+
 export async function setupPanel(panel, instanceVars = {}) {
   // Create container for view content
   const viewDiv = document.createElement("div");
@@ -90,31 +132,24 @@ export async function updateViewPanel(element, { force = false } = {}) {
 async function renderFile(filename, viewPanel, serverBase) {
   console.log(`📄 renderFile() called for: ${filename}`);
 
-  // Viewer module map
+  // 1. Get the module map from the CSV file
+  const moduleMap = await loadModuleMap();
   const basePath = "/PanelInstances/ViewPanels/FileViewers";
-  const moduleMap = {
-    bmp:  "ViewImage.mjs",
-    csv:  "ViewCSV.mjs",
-    gif:  "ViewImage.mjs",
-    html: "ViewHTML.mjs",
-    htm:  "ViewHTML.mjs",
-    ipynb: "ViewIPYN.mjs",
-    jpg:  "ViewImage.mjs",
-    jpeg: "ViewImage.mjs",
-    mid:  "ViewMidi.mjs",
-    midi: "ViewMidi.mjs",
-    odt: "ViewODT.mjs",
-    pdf:  "ViewPDF.mjs",
-    pgn:  "ViewPGN.mjs",
-    php: "ViewPHP.mjs",
-    png:  "ViewPNG.mjs",
-    scad: "ViewSCAD.mjs",
-    stl:  "ViewSTL.mjs",
-    svg:  "ViewSVG.mjs",
-    webp: "ViewImage.mjs",
-  };
 
-  const viewerFile = moduleMap[filename.split(".").pop().toLowerCase()] || "ViewText.mjs";
+  // 2. Determine file extension and lookup viewer
+  const ext = filename.split(".").pop().toLowerCase();
+  
+  // Use ViewText.mjs as fallback if no extension or mapping exists
+  const viewerInfo = moduleMap[ext] || moduleMap[""] || { viewer: "ViewText.mjs" };
+  const viewerFile = viewerInfo.viewer;
+  
+  // 3. Handle cases where the CSV entry might not have a viewer
+  if (!viewerFile) {
+    console.warn(`⚠️ No viewer module defined for extension: ${ext}. Defaulting to ViewText.mjs.`);
+    // Fallback to ViewText.mjs if the CSV had an entry but no viewer (e.g., only an editor)
+    viewerFile = "ViewText.mjs"; 
+  }
+  
   const modulePath = `${basePath}/${viewerFile}`;
   console.log(`🔍 Loading viewer module: ${modulePath}`);
 
@@ -137,6 +172,7 @@ async function renderFile(filename, viewPanel, serverBase) {
 
     // Clean up PHP path for server
     let cleanPath = filename;
+    // Check viewerFile instead of ext for robustness against future changes
     if (viewerFile === "ViewPHP.mjs" && cleanPath.startsWith("Notebook/")) {
       cleanPath = cleanPath.slice("Notebook/".length);
     }

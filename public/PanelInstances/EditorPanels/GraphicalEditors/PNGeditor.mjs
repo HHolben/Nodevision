@@ -35,6 +35,27 @@ export async function renderEditor(filePath, container) {
   colorInput.title = "Brush color";
   toolbar.appendChild(colorInput);
 
+  // Alpha slider (0–100)
+const alphaInput = document.createElement("input");
+alphaInput.type = "range";
+alphaInput.min = 0;
+alphaInput.max = 100;
+alphaInput.value = 100; // fully opaque by default
+alphaInput.title = "Transparency";
+alphaInput.style.width = "90px";
+toolbar.appendChild(alphaInput);
+
+// Display % next to slider
+const alphaLabel = document.createElement("span");
+alphaLabel.textContent = "100%";
+alphaLabel.style.minWidth = "40px";
+toolbar.appendChild(alphaLabel);
+
+alphaInput.addEventListener("input", () => {
+  alphaLabel.textContent = alphaInput.value + "%";
+});
+
+
   // PIXEL SIZE INPUT (Unchanged)
   const pixelSizeInput = document.createElement("input");
   pixelSizeInput.type = "number";
@@ -83,6 +104,13 @@ export async function renderEditor(filePath, container) {
   wrapper.appendChild(canvasWrapper);
 
   const canvas = document.createElement("canvas");
+
+  canvas.style.background = `
+  repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%)
+  50% / 20px 20px
+`;
+
+
   canvas.style.maxWidth = "100%";
   canvas.style.maxHeight = "100%";
   canvas.style.imageRendering = "pixelated";
@@ -155,6 +183,10 @@ export async function renderEditor(filePath, container) {
     canvas.width = LOGICAL_WIDTH;
     canvas.height = LOGICAL_HEIGHT;
 
+    // Make initial canvas fully transparent
+ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+
     const cw = Math.max(1, Math.floor(canvasWrapper.clientWidth));
     const ch = Math.max(1, Math.floor(canvasWrapper.clientHeight));
 
@@ -191,8 +223,21 @@ export async function renderEditor(filePath, container) {
     return { x: logicalX, y: logicalY };
   }
 
+  
+
   function drawPixel(pos) {
-    ctx.fillStyle = colorInput.value;
+function hexToRGBA(hex, alphaPct) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const a = alphaPct / 100;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function drawPixel(pos) {
+  ctx.fillStyle = hexToRGBA(colorInput.value, alphaInput.value);
+  ctx.fillRect(pos.x, pos.y, PIXEL_SIZE, PIXEL_SIZE);
+}
     ctx.fillRect(pos.x, pos.y, PIXEL_SIZE, PIXEL_SIZE);
   }
 

@@ -106,7 +106,7 @@ if (window.rasterCanvas instanceof HTMLCanvasElement) {
   if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
     const content = window.monacoEditor.getValue();
     try {
-      const res = await fetch('/api/files/save', {
+      const res = await fetch('/api/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: filePath, content })

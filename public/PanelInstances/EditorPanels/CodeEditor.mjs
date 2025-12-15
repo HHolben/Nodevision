@@ -94,6 +94,7 @@ function initializeMonaco(filePath, content) {
     return;
   }
 
+  // 1. Clean up existing editor instance
   if (editorInstance) {
     editorInstance.dispose();
     editorInstance = null;
@@ -104,6 +105,7 @@ function initializeMonaco(filePath, content) {
     return;
   }
 
+  // 2. Configure and load Monaco
   require.config({ paths: { vs: "/lib/monaco/vs" } });
 
   window.MonacoEnvironment = {
@@ -121,6 +123,7 @@ function initializeMonaco(filePath, content) {
   };
 
   require(["vs/editor/editor.main"], function () {
+    // 3. Create the editor instance
     editorInstance = monaco.editor.create(editorContainer, {
       value: content || "",
       language: detectLanguage(filePath),
@@ -128,13 +131,30 @@ function initializeMonaco(filePath, content) {
       automaticLayout: true,
     });
 
-    // ✅ Add these lines:
+    // 4. Register globals for the SaveFile.mjs router
+    // These variables are critical for the main save function to recognize the active editor.
     window.monacoEditor = editorInstance;
     window.currentActiveFilePath = filePath;
     console.log("🧠 Monaco editor registered globally for saving:", filePath);
+
+    // 5. Add Keyboard Shortcut Listener (The Fix!)
+    // We use Monaco's built-in command system to listen for Ctrl+S / Cmd+S.
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
+        // Prevent the browser's default save dialog
+        // (This is implicitly handled by Monaco's command system, but good practice).
+        
+        console.log("⌨️ Ctrl+S / Cmd+S detected in Monaco. Triggering global save...");
+        
+        // This calls the saveFile function exported from /ToolbarCallbacks/file/SaveFile.mjs
+        if (typeof window.saveFile === 'function') {
+            window.saveFile(); 
+        } else {
+            console.error("🔴 Global save function (window.saveFile) is not available to the editor.");
+        }
+    });
+
   });
 }
-
 
 /**
  * Detects language from file extension.
