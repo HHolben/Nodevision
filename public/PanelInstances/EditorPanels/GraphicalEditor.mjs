@@ -39,6 +39,12 @@ if (["html", "htm"].includes(ext)) {
   editorModulePath = `${basePath}/HTMLeditor.mjs`; // ✅ match actual file name
 } else if (["csv"].includes(ext)) {
   editorModulePath = `${basePath}/CSVeditor.mjs`;
+  
+ } else if (["mid"].includes(ext)) {
+  editorModulePath = `${basePath}/MIDIeditor.mjs`;
+
+
+
  }else if (["png"].includes(ext)) {
   editorModulePath = `${basePath}/PNGeditor.mjs`;
  } else if (["svg"].includes(ext)) {
@@ -103,6 +109,8 @@ export async function updateGraphicalEditor(filePath) {
     stl: "STLeditor.mjs",
     scad: "EditorSCAD.mjs",
     usd: "EditorUSD.mjs",
+    mid: "EditorMIDI.mjs",
+
   };
 
 const editorModule = editorModuleMap[ext] || "EditorFallback.mjs";

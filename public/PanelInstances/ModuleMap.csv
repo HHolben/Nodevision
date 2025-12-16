@@ -1,5 +1,6 @@
 Extension,ViewerModule,GraphicalEditorModule
 bmp,ViewImage.mjs,
+cir,ViewCIR.mjs,
 csv,ViewCSV.mjs,
 gif,ViewImage.mjs,
 html,ViewHTML.mjs,
