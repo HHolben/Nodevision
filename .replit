@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "c-clang14", "python-3.11", "php-8.2"]
+modules = ["nodejs-18", "web"]
 [agent]
 expertMode = true
 
