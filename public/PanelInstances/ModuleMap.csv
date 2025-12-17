@@ -3,7 +3,7 @@ bmp,ViewImage.mjs,
 cir,ViewCIR.mjs,
 csv,ViewCSV.mjs,
 gif,ViewImage.mjs,
-html,ViewHTML.mjs,
+html,ViewHTML.mjs,HTMLeditor.mjs
 htm,ViewHTML.mjs, HTMLeditor.mjs
 ipynb,ViewIPYNB.mjs,
 jpg,ViewJPG.mjs,PNGeditor.mjs

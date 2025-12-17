@@ -1,134 +1,160 @@
 // Nodevision/public/PanelInstances/EditorPanels/GraphicalEditor.mjs
-// This file replaces the content of the selected panel with the appropriate Nodevision graphical editor for the selected file's type
+// Displays the appropriate Nodevision graphical editor for the selected file,
+// using ModuleMap.csv as the single source of truth.
 
 let lastEditedPath = null;
+let moduleMapCache = null;
 
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditor.mjs
+/* ---------------------------------------------------------
+ * ModuleMap loader (mirrors FileView.mjs behavior)
+ * --------------------------------------------------------- */
+async function loadModuleMap() {
+  if (moduleMapCache) return moduleMapCache;
+
+  const res = await fetch("/PanelInstances/ModuleMap.csv");
+  if (!res.ok) {
+    console.error("❌ Failed to load ModuleMap.csv");
+    moduleMapCache = {};
+    return moduleMapCache;
+  }
+
+  const text = await res.text();
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  const header = lines.shift().split(",").map(h => h.trim());
+  const idx = {
+    ext: header.indexOf("Extension"),
+    editor: header.indexOf("GraphicalEditorModule"),
+  };
+
+  const map = {};
+
+  for (const line of lines) {
+    const cols = line.split(",").map(c => c.trim());
+    const ext = (cols[idx.ext] || "").toLowerCase();
+
+    map[ext] = {
+      editor: cols[idx.editor] || null,
+    };
+  }
+
+  moduleMapCache = map;
+  console.log("📦 ModuleMap loaded for editors:", map);
+  return map;
+}
+
+/* ---------------------------------------------------------
+ * Editor resolution
+ * --------------------------------------------------------- */
+async function resolveEditorModule(filePath) {
+  const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
+  const ext = filePath.split(".").pop().toLowerCase();
+  const moduleMap = await loadModuleMap();
+
+  const editorFile =
+    moduleMap[ext]?.editor ||
+    moduleMap[""]?.editor ||
+    "EditorFallback.mjs";
+
+  // Safety check
+  if (!/^[\w.-]+\.mjs$/.test(editorFile)) {
+    console.warn("⚠️ Invalid editor module name:", editorFile);
+    return `${basePath}/EditorFallback.mjs`;
+  }
+
+  return `${basePath}/${editorFile}`;
+}
+
+/* ---------------------------------------------------------
+ * Panel setup
+ * --------------------------------------------------------- */
 export async function setupPanel(cell, instanceVars = {}) {
-  const filePath = instanceVars.filePath || window.selectedFilePath || null;
-
   const container = document.createElement("div");
   container.id = "graphical-editor";
-  container.style.flex = "1";
+  container.style.width = "100%";
+  container.style.height = "100%";
   container.style.display = "flex";
-  container.style.justifyContent = "center";
   container.style.alignItems = "center";
+  container.style.justifyContent = "center";
   cell.appendChild(container);
 
-  // If no file selected, show fallback right away
-  if (!filePath) {
-    const { renderEditor } = await import(
-      "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs"
-    );
-    renderEditor("(no file selected)", container);
-    return;
+  // Reactive watcher for selectedFilePath
+  if (!window._graphicalEditorProxyInstalled) {
+    let internalPath = window.selectedFilePath || null;
+
+    Object.defineProperty(window, "selectedFilePath", {
+      get() {
+        return internalPath;
+      },
+      set(value) {
+        if (value !== internalPath) {
+          internalPath = value;
+          updateGraphicalEditor(value);
+        }
+      },
+      configurable: true,
+    });
+
+    window._graphicalEditorProxyInstalled = true;
+    console.log("✅ GraphicalEditor reactive watcher installed.");
   }
 
-  console.log("🧭 Updating graphical editor for file:", filePath);
-// Determine which graphical editor to load
-let editorModulePath = null;
-
-
-
-
-const ext = filePath.split(".").pop().toLowerCase();
-
-const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
-
-if (["html", "htm"].includes(ext)) {
-  editorModulePath = `${basePath}/HTMLeditor.mjs`; // ✅ match actual file name
-} else if (["csv"].includes(ext)) {
-  editorModulePath = `${basePath}/CSVeditor.mjs`;
-  
- } else if (["mid"].includes(ext)) {
-  editorModulePath = `${basePath}/MIDIeditor.mjs`;
-
-
-
- }else if (["png"].includes(ext)) {
-  editorModulePath = `${basePath}/PNGeditor.mjs`;
- } else if (["svg"].includes(ext)) {
-  editorModulePath = `${basePath}/SVGeditor.mjs`;
-} else if (["stl"].includes(ext)) {
-
-  console.log("Goingfor STL Editor!");
-editorModulePath = `${basePath}/STLeditor.mjs`;
-  console.log(editorModulePath);
-
-
-} else {
-  editorModulePath = `${basePath}/EditorFallback.mjs`;
+  // Initial render
+  const initialPath = instanceVars.filePath || window.selectedFilePath;
+  await updateGraphicalEditor(initialPath, { force: true });
 }
 
-try {
-  const module = await import(editorModulePath);
-  if (typeof module.renderEditor === "function") {
-    await module.renderEditor(filePath, container);
-  } else {
-    console.warn(`⚠️ ${editorModulePath} has no renderEditor(); falling back.`);
-    const { renderEditor } = await import(`${basePath}/EditorFallback.mjs`);
-    renderEditor(filePath, container);
-  }
-} catch (err) {
-  console.error("Failed to load graphical editor:", err);
-  const { renderEditor } = await import(`${basePath}/EditorFallback.mjs`);
-  renderEditor(filePath, container);
-}
-
-}
-
-
-export async function updateGraphicalEditor(filePath) {
+/* ---------------------------------------------------------
+ * Editor update
+ * --------------------------------------------------------- */
+export async function updateGraphicalEditor(
+  filePath,
+  { force = false } = {}
+) {
   const editorDiv = document.getElementById("graphical-editor");
   if (!editorDiv) {
     console.error("Graphical editor element not found.");
     return;
   }
 
-  const filename = filePath || window.selectedFilePath;
-  if (!filename) {
-    editorDiv.innerHTML = "<em>No file selected.</em>";
+  if (!filePath) {
+    const { renderEditor } = await import(
+      "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs"
+    );
+    editorDiv.innerHTML = "";
+    renderEditor("(no file selected)", editorDiv);
     return;
   }
 
-  if (filename === lastEditedPath) {
-    console.log("🔁 File already loaded in editor:", filename);
+  if (!force && filePath === lastEditedPath) {
+    console.log("🔁 Editor already active for:", filePath);
     return;
   }
-  lastEditedPath = filename;
 
-  console.log("🧭 Updating graphical editor for file:", filename);
+  lastEditedPath = filePath;
   editorDiv.innerHTML = "";
 
-  const ext = filename.split(".").pop().toLowerCase();
-  console.log(ext);
-  const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
-  const editorModuleMap = {
-    html: "HTMLeditor.mjs",
-    svg: "SVGeditor.mjs",
-    stl: "STLeditor.mjs",
-    scad: "EditorSCAD.mjs",
-    usd: "EditorUSD.mjs",
-    mid: "EditorMIDI.mjs",
-
-  };
-
-const editorModule = editorModuleMap[ext] || "EditorFallback.mjs";
-  const modulePath = `${basePath}/${editorModule}`;
-  console.log(`🔍 Loading editor module: ${modulePath}`);
+  console.log("🧭 Loading graphical editor for:", filePath);
 
   try {
+    const modulePath = await resolveEditorModule(filePath);
+    console.log("🔍 Editor module:", modulePath);
+
     const editor = await import(modulePath);
+
     if (typeof editor.renderEditor === "function") {
-      await editor.renderEditor(filename, editorDiv);
-      console.log(`✅ Loaded graphical editor: ${editorModule}`);
+      await editor.renderEditor(filePath, editorDiv);
+      console.log("✅ Editor rendered:", modulePath);
     } else {
-      editorDiv.innerHTML = `<em>${editorModule}</em> loaded, but no renderEditor() found.`;
-      console.warn(`⚠️ No renderEditor() found in ${editorModule}`);
+      throw new Error("renderEditor() not found");
     }
   } catch (err) {
-    console.error(`❌ Failed to import ${modulePath}:`, err);
-    editorDiv.innerHTML = `<em>Error loading editor for ${filename}</em>`;
+    console.error("❌ Failed to load editor:", err);
+
+    const { renderEditor } = await import(
+      "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs"
+    );
+    renderEditor(filePath, editorDiv);
   }
 }
 
