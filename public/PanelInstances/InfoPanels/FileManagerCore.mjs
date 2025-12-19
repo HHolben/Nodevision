@@ -1,6 +1,32 @@
 // Nodevision/public/PanelInstances/InfoPanels/FileManagerCore.mjs
 // Core logic for enhanced File Manager panel with breadcrumbs, drag/drop, selection, and toolbar actions
 
+
+
+
+export function OpenDirectoryOrFileInfo(listElem,link, li)
+{
+  console.log("Opening "+ listElem + " at "+ link + " and "+ li);
+      // Click: open directory or file info
+    link.addEventListener("dblclick", async e => {
+      e.preventDefault();
+      if (f.isDirectory) {
+        const newPath = `${currentPath}/${f.name}`.replace(/\/+/g, "/");
+        await fetchDirectoryContents(newPath, displayFiles, document.getElementById("error"), document.getElementById("loading"));
+      } else {
+        try {
+          const mod = await import("/panels/InfoPanel.mjs");
+          mod.updateInfoPanel(f.name);
+        } catch (err) {
+          console.error("Failed to load InfoPanel module:", err);
+        }
+      }
+    });
+
+    li.appendChild(link);
+    listElem.appendChild(li);
+}
+
 // ------------------------------
 // Fetch directory contents
 // ------------------------------
@@ -119,22 +145,9 @@ export function displayFiles(files, currentPath) {
         }
       });
     }
-
+    
     // Click: open directory or file info
-    link.addEventListener("dblclick", async e => {
-      e.preventDefault();
-      if (f.isDirectory) {
-        const newPath = `${currentPath}/${f.name}`.replace(/\/+/g, "/");
-        await fetchDirectoryContents(newPath, displayFiles, document.getElementById("error"), document.getElementById("loading"));
-      } else {
-        try {
-          const mod = await import("/panels/InfoPanel.mjs");
-          mod.updateInfoPanel(f.name);
-        } catch (err) {
-          console.error("Failed to load InfoPanel module:", err);
-        }
-      }
-    });
+OpenDirectoryOrFileInfo(listElem, link, li);
 
     li.appendChild(link);
     listElem.appendChild(li);
@@ -147,7 +160,9 @@ export function displayFiles(files, currentPath) {
 // ------------------------------
 // Selection logic
 // ------------------------------
-function attachFileClickHandlers() {
+
+
+export function attachFileClickHandlers() {
   const fileItems = document.querySelectorAll("#file-list a.file, #file-list a.folder");
   fileItems.forEach(item => {
     item.addEventListener("click", e => {
