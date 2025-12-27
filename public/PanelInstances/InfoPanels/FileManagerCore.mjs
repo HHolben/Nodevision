@@ -147,7 +147,22 @@ export function displayFiles(files, currentPath) {
     }
     
     // Click: open directory or file info
-OpenDirectoryOrFileInfo(listElem, link, li);
+console.log("Opening "+ listElem + " at "+ link + " and "+ li);
+      // Click: open directory or file info
+    link.addEventListener("dblclick", async e => {
+      e.preventDefault();
+      if (f.isDirectory) {
+        const newPath = `${currentPath}/${f.name}`.replace(/\/+/g, "/");
+        await fetchDirectoryContents(newPath, displayFiles, document.getElementById("error"), document.getElementById("loading"));
+      } else {
+        try {
+          const mod = await import("/panels/InfoPanel.mjs");
+          mod.updateInfoPanel(f.name);
+        } catch (err) {
+          console.error("Failed to load InfoPanel module:", err);
+        }
+      }
+    });
 
     li.appendChild(link);
     listElem.appendChild(li);

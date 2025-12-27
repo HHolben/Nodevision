@@ -179,25 +179,23 @@ alphaInput.addEventListener("input", () => {
   }
 
   // --- PIXEL ART RESIZE LOGIC (Unchanged) ---
-  function resizeCanvasToWrapper() {
-    canvas.width = LOGICAL_WIDTH;
-    canvas.height = LOGICAL_HEIGHT;
+ // --- REPLACED DRAWING LOGIC ---
 
-    // Make initial canvas fully transparent
-ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+  /** Converts Hex + Slider Value to CSS RGBA **/
+  function getBrushColor() {
+    const hex = colorInput.value;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const a = alphaInput.value / 100;
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
 
-
-    const cw = Math.max(1, Math.floor(canvasWrapper.clientWidth));
-    const ch = Math.max(1, Math.floor(canvasWrapper.clientHeight));
-
-    const scaleFactor = Math.floor(Math.min(cw / LOGICAL_WIDTH, ch / LOGICAL_HEIGHT));
-    const displaySize = Math.max(1, scaleFactor);
-
-    canvas.style.width = `${LOGICAL_WIDTH * displaySize}px`;
-    canvas.style.height = `${LOGICAL_HEIGHT * displaySize}px`;
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    updateUndoRedoButtons();
+  function drawPixel(pos) {
+    ctx.fillStyle = getBrushColor();
+    // Use clearRect first if you want "overwrite" behavior, 
+    // or leave as is for "layering" behavior
+    ctx.fillRect(pos.x, pos.y, PIXEL_SIZE, PIXEL_SIZE);
   }
 
   let resizeObserver = new ResizeObserver(() => {
