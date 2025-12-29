@@ -1,8 +1,9 @@
 // Nodevision/public/PanelInstances/ViewPanels/ViewMP3.mjs
 // Purpose: Displays and plays .mp3 files inside a ViewPanel, with waveform visualization.
 
-export function renderFile(panelEl, fileUrl) {
-  console.log("ViewMP3: loading", fileUrl);
+
+export function renderFile(filename, viewPanel) {
+  console.log("ViewMP3: loading", viewPanel);
 
   const canvas = document.createElement('canvas');
   const playBtn = document.createElement('button');
@@ -25,19 +26,19 @@ export function renderFile(panelEl, fileUrl) {
   slider.style.display = 'block';
   slider.style.marginTop = '10px';
 
-  panelEl.innerHTML = '';
-  panelEl.appendChild(canvas);
-  panelEl.appendChild(playBtn);
-  panelEl.appendChild(pauseBtn);
-  panelEl.appendChild(slider);
+  filename.innerHTML = '';
+  filename.appendChild(canvas);
+  filename.appendChild(playBtn);
+  filename.appendChild(pauseBtn);
+  filename.appendChild(slider);
 
-  const audio = new Audio(fileUrl);
+  const audio = new Audio(viewPanel);
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const sourceNode = audioCtx.createMediaElementSource(audio);
   sourceNode.connect(audioCtx.destination);
 
   // Draw waveform preview
-  fetch(fileUrl)
+  fetch(viewPanel)
     .then(r => r.arrayBuffer())
     .then(buf => audioCtx.decodeAudioData(buf))
     .then(decoded => {
@@ -73,7 +74,7 @@ export function renderFile(panelEl, fileUrl) {
     })
     .catch(err => {
       console.error("Error decoding MP3:", err);
-      panelEl.innerHTML = `<p style="color:red;">Error decoding MP3: ${err.message}</p>`;
+      filename.innerHTML = `<p style="color:red;">Error decoding MP3: ${err.message}</p>`;
     });
 
   playBtn.addEventListener('click', () => {

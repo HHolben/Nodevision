@@ -238,19 +238,24 @@ const possiblePaths = [
   }
 
 if (!module) {
-  console.warn("⚠️ No panel module found for", panelType);
-  return;
-}
+    console.warn("⚠️ No panel module found for", panelType);
+    return;
+  }
 
-cell.innerHTML = "";
+  cell.innerHTML = "";
 
-// 🔥 ALWAYS pass filePath
-await module.setupPanel(cell, {
-  ...panelVars,
-  filePath: window.selectedFilePath
-});
+  // ✅ ONLY ONE CALL. Pass everything in one go.
+  // This ensures window.selectedFilePath is respected on initial load.
+  await module.setupPanel(cell, {
+    ...panelVars,
+    filePath: window.selectedFilePath
+  });
 
-console.log("✅ Loaded panel:", panelType);
+  // REMOVE the extra lines below that were here before:
+  // cell.innerHTML = ""; 
+  // await module.setupPanel(cell, panelVars);
+
+  console.log("✅ Loaded panel:", panelType);
 
   cell.innerHTML = "";
   await module.setupPanel(cell, panelVars);

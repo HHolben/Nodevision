@@ -1,5 +1,5 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewCSS.mjs
-// Purpose: Preview CSS selectors with live sample rendering
+// This module previews CSS selectors with live sample rendering.
 
 export async function renderFile(filePath, viewPanel, iframe, serverBase) {
   viewPanel.innerHTML = '';

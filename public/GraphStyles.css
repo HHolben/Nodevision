@@ -5,3 +5,10 @@
     border: 1px solid #ccc;
     margin-right: 20px;
 }
+/* Target the container holding the Cytoscape instance */
+#cy-container-id {
+    overflow: hidden !important; /* Prevent the browser from trying to manage scrollbars */
+    display: block;
+    width: 100%;
+    height: 100%;
+}

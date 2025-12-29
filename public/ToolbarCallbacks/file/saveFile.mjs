@@ -129,3 +129,28 @@ if (window.rasterCanvas instanceof HTMLCanvasElement) {
 
   console.error("Cannot save: editor state not recognized.");
 }
+// 6 Markdown editor
+if (typeof window.getEditorMarkdown === "function") {
+  console.log("Saving Markdown file");
+
+  const content = window.getEditorMarkdown();
+
+  try {
+    const res = await fetch("/api/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: filePath, content })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      console.log("Markdown file saved successfully:", filePath);
+    } else {
+      console.error("Error saving Markdown file:", data.error);
+    }
+  } catch (err) {
+    console.error("Error saving Markdown file:", err);
+  }
+
+  return;
+}

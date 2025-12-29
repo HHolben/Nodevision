@@ -1,87 +1,109 @@
 // Nodevision/public/PanelInstances/ViewPanels/ViewMP4.mjs
-// Purpose: Displays and plays .mp4 video files inside a ViewPanel with a simple waveform analyzer.
+// This module displays and plays MP4 video files with a simple real-time audio waveform analyzer.
 
-export function renderFile(panelEl, fileUrl) {
-  console.log("ViewMP4: loading", fileUrl);
-  panelEl.innerHTML = '';
+export function renderFile(filePath, viewPanel) {
+  console.log('[ViewMP4] Loading:', filePath);
 
-  // Create elements
+  // Clear panel
+  viewPanel.innerHTML = '';
+
+  // === Container ===
   const container = document.createElement('div');
-  const canvas = document.createElement('canvas');
-  const video = document.createElement('video');
+  container.style.width = '100%';
+  container.style.boxSizing = 'border-box';
 
-  canvas.width = 800;
+  // === Canvas (Waveform) ===
+  const canvas = document.createElement('canvas');
   canvas.height = 200;
+  canvas.style.width = '100%';
   canvas.style.border = '1px solid #ccc';
   canvas.style.display = 'block';
   canvas.style.marginBottom = '10px';
 
-  video.src = fileUrl;
+  // === Video ===
+  const video = document.createElement('video');
+  video.src = 'Notebook/'+filePath;
   video.controls = true;
-  video.style.width = '800px';
+  video.style.width = '100%';
   video.crossOrigin = 'anonymous';
-  video.style.display = 'block';
+  video.preload = 'metadata';
 
   container.appendChild(canvas);
   container.appendChild(video);
-  panelEl.appendChild(container);
+  viewPanel.appendChild(container);
 
-  // Set up Web Audio API
+  // Resize canvas to match container
+  function resizeCanvas() {
+    canvas.width = canvas.clientWidth;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // === Web Audio API ===
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const source = audioCtx.createMediaElementSource(video);
   const analyser = audioCtx.createAnalyser();
+
+  analyser.fftSize = 512;
+
   source.connect(analyser);
   analyser.connect(audioCtx.destination);
 
-  analyser.fftSize = 512;
   const bufferLength = analyser.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
-
   const ctx = canvas.getContext('2d');
+
   const waveform = [];
-  let recording = false;
-
-  function analyzeFrame() {
-    if (!recording) return;
-    analyser.getByteTimeDomainData(dataArray);
-    let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
-      const v = (dataArray[i] - 128) / 128;
-      sum += v * v;
-    }
-    const rms = Math.sqrt(sum / bufferLength);
-    waveform.push(rms);
-
-    if (waveform.length > canvas.width) waveform.shift(); // keep waveform in view
-    drawWaveform();
-
-    requestAnimationFrame(analyzeFrame);
-  }
+  let running = false;
 
   function drawWaveform() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
+
     for (let i = 0; i < waveform.length; i++) {
+      const x = i;
       const y = (1 - waveform[i]) * canvas.height;
-      ctx.lineTo(i, y);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
+
     ctx.strokeStyle = '#FF4136';
     ctx.lineWidth = 1;
     ctx.stroke();
   }
 
-  // Event handlers
+  function analyze() {
+    if (!running) return;
+
+    analyser.getByteTimeDomainData(dataArray);
+
+    let sum = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      const v = (dataArray[i] - 128) / 128;
+      sum += v * v;
+    }
+
+    const rms = Math.sqrt(sum / bufferLength);
+    waveform.push(rms);
+
+    if (waveform.length > canvas.width) waveform.shift();
+
+    drawWaveform();
+    requestAnimationFrame(analyze);
+  }
+
+  // === Events ===
   video.addEventListener('play', () => {
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    recording = true;
-    analyzeFrame();
+    running = true;
+    analyze();
   });
 
-  video.addEventListener('pause', () => { recording = false; });
-  video.addEventListener('ended', () => { recording = false; });
+  video.addEventListener('pause', () => { running = false; });
+  video.addEventListener('ended', () => { running = false; });
 
-  // Optional: resume context if user clicks anywhere (for browsers that block autoplay)
-  panelEl.addEventListener('click', () => {
+  // Browser autoplay unlock
+  viewPanel.addEventListener('click', () => {
     if (audioCtx.state === 'suspended') audioCtx.resume();
   });
 }

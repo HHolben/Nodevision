@@ -43,6 +43,15 @@ async function loadModuleMap() {
   return map;
 }
 
+function resolveExtension(filename) {
+  const lower = filename.toLowerCase();
+
+  if (lower.endsWith(".alto.xml")) return "alto";
+  if (lower.endsWith(".musicxml.xml")) return "musicxml"; // future-proofing
+  if (lower.endsWith(".tar.gz")) return "tar.gz";          // optional
+
+  return lower.split(".").pop();
+}
 
 
 export async function setupPanel(panel, instanceVars = {}) {
@@ -122,7 +131,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
   viewPanel.innerHTML = "";
 
   // Determine server base depending on file type
-  const ext = filename.split(".").pop().toLowerCase();
+const ext = resolveExtension(filename);
   const isPHP = ext === "php";
   const serverBase = isPHP ? "http://localhost:8080" : "http://localhost:3000/Notebook";
 
@@ -137,19 +146,17 @@ async function renderFile(filename, viewPanel, serverBase) {
   const basePath = "/PanelInstances/ViewPanels/FileViewers";
 
   // 2. Determine file extension and lookup viewer
-  const ext = filename.split(".").pop().toLowerCase();
-  
+  const ext = resolveExtension(filename);
+
   // Use ViewText.mjs as fallback if no extension or mapping exists
   const viewerInfo = moduleMap[ext] || moduleMap[""] || { viewer: "ViewText.mjs" };
-  const viewerFile = viewerInfo.viewer;
-  
-  // 3. Handle cases where the CSV entry might not have a viewer
-  if (!viewerFile) {
-    console.warn(`⚠️ No viewer module defined for extension: ${ext}. Defaulting to ViewText.mjs.`);
-    // Fallback to ViewText.mjs if the CSV had an entry but no viewer (e.g., only an editor)
-    viewerFile = "ViewText.mjs"; 
-  }
-  
+let viewerFile = viewerInfo.viewer;
+
+if (!viewerFile) {
+  console.warn(`⚠️ No viewer module defined for extension: ${ext}. Defaulting to ViewText.mjs.`);
+  viewerFile = "ViewText.mjs";
+}
+
   const modulePath = `${basePath}/${viewerFile}`;
   console.log(`🔍 Loading viewer module: ${modulePath}`);
 

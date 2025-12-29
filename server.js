@@ -16,7 +16,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 import graphDataRoutes from "./routes/api/graphData.js";
 
-
+import * as fontkit from 'fontkit';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -212,6 +212,60 @@ app.get('/api/list-directory', async (req, res) => {
   } catch (err) {
     console.error('Failed to list directory:', err.message);
     res.status(403).json({ error: 'Access denied or directory not found' });
+  }
+});
+
+
+app.get('/font-info', async (req, res) => {
+  try {
+    const originalRelPath = req.query.file;
+    const notebookDir = path.join(__dirname, 'Notebook');
+    
+    // 1. Try the path as provided
+    let fullPath = validateAndNormalizePath(originalRelPath, notebookDir);
+
+    // 2. If it fails, try just the filename part (the part after the last slash)
+    if (!fs.existsSync(fullPath)) {
+      const fileNameOnly = path.basename(originalRelPath);
+      
+      // We search recursively for this file in the Notebook directory
+      const findFile = async (dir, target) => {
+        const entries = await fsPromises.readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const res = path.resolve(dir, entry.name);
+          if (entry.isDirectory()) {
+            const found = await findFile(res, target);
+            if (found) return found;
+          } else if (entry.name === target) {
+            return res;
+          }
+        }
+        return null;
+      };
+
+      const correctedPath = await findFile(notebookDir, fileNameOnly);
+      if (correctedPath) {
+        fullPath = correctedPath;
+      } else {
+        console.error("❌ Even fuzzy search failed for:", fileNameOnly);
+        return res.status(404).json({ error: 'File not found even after fuzzy search' });
+      }
+    }
+
+    // 3. Open the font once the path is corrected
+    fontkit.open(fullPath, null, (err, font) => {
+      if (err || !font) return res.status(500).json({ error: 'Fontkit failed' });
+
+      res.json({
+        "Family Name": font.familyName,
+        "Full Name": font.fullName,
+        "Number of Glyphs": font.numGlyphs,
+        "characterSet": font.characterSet ? font.characterSet.slice(0, 256) : []
+      });
+    });
+  } catch (err) {
+    console.error('Font Route Error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

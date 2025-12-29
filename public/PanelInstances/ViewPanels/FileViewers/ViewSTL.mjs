@@ -1,6 +1,5 @@
 // Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewSTL.mjs
-// Improved multi-instance STL viewer with safer memory, resize handling,
-// points-based vertex display, and container-specific state.
+// This module populates an STL viewer panel.
 
 import * as THREE from '/lib/three/three.module.js';
 import { STLLoader } from '/lib/three/STLLoader.js';
