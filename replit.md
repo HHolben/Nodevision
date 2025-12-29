@@ -49,6 +49,22 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## December 29, 2025 - Dynamic Edge Extraction from File Content
+- Enhanced extractEdges API to extract all link types from HTML files:
+  - Hyperlinks (a[href])
+  - Images (img[src])
+  - Scripts (script[src])
+  - Stylesheets (link[href])
+  - Iframes (iframe[src])
+  - Media elements (audio, video, source[src])
+  - Forms (form[action])
+  - Data attributes ([data-src], [srcset])
+- Added POST /api/extractEdgesBatch endpoint for batch processing multiple files
+- Updated EdgeManagement.mjs to dynamically scan visible file nodes for edges
+- Edges are extracted from file content and rendered between visible nodes
+- Added nearestVisibleAncestor logic to collapse edges to visible directory nodes when targets are hidden
+- Added cache-control headers to prevent browser caching of JavaScript files during development
+
 ## December 29, 2025 - Resizable Dividers and Panel System Enhancements
 - Added resizable dividers between all panels (both horizontal and vertical) with drag-to-resize functionality
 - Dividers use 6px size with hover highlight effect (#0078d7) for better usability
