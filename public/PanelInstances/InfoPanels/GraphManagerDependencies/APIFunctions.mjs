@@ -45,6 +45,34 @@ export async function listDirectory(pathId, status) {
 }
 
 /**
+ * Extracts edges from visible files by calling the server-side batch extraction API.
+ * @param {string[]} files - Array of file paths (relative to Notebook) to scan for edges.
+ * @returns {Promise<Object<string, string[]>>} Map of source file -> array of target files
+ */
+export async function extractEdgesFromFiles(files) {
+  if (!files || files.length === 0) return {};
+  
+  try {
+    const res = await fetch('/api/extractEdgesBatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files })
+    });
+    
+    if (!res.ok) {
+      console.warn("[APIFunctions] extractEdgesBatch failed:", res.status);
+      return {};
+    }
+    
+    const data = await res.json();
+    return data.edgeMap || {};
+  } catch (err) {
+    console.error("[APIFunctions] extractEdgesBatch error:", err);
+    return {};
+  }
+}
+
+/**
  * Fetches and resolves all necessary edge buckets for the given list of files.
  * @param {Set<string>} neededBuckets - Set of unique bucket filenames (e.g., "a.json").
  * @returns {Promise<Object<string, {edgesFrom: string[], edgesTo: string[]}>>}
