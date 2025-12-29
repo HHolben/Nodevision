@@ -1,0 +1,169 @@
+You are working inside the Nodevision project, a Node.js–based digital notebooking and development tool.
+Nodevision represents:
+
+Nodes → files
+
+Edges → links or relationships defined inside files
+
+Regions → directories
+
+The graph is automatically generated from the filesystem, not manually authored by users.
+
+The Graph Manager is responsible for generating, updating, storing, and serving graph data that is later rendered in the UI (e.g., via Cytoscape.js or D3.js).
+
+Goal
+
+Ensure the Graph Manager works correctly, predictably, and efficiently.
+
+This includes:
+
+Correct graph generation from files and directories
+
+Correct file splitting and indexing strategy
+
+Good performance and responsiveness
+
+Compatibility with Nodevision’s open-source, file-based philosophy
+
+Core Requirements
+1. Input Source
+
+Read from Nodevision/public/Notebook
+
+Treat:
+
+Files as nodes
+
+Directories as regions
+
+Explicit links (e.g., markdown or HTML links) as edges
+
+2. Graph Generation Rules
+
+Nodes are derived from filenames (including extension)
+
+Regions encapsulate child nodes
+
+When a region is:
+
+Expanded → child nodes visible, internal edges hidden
+
+Collapsed → region behaves as a node with external edges only
+
+Edge metadata is stored in the originating file, not globally
+
+3. File Output Structure (MANDATORY)
+
+All graph output must live in a folder named:
+
+Nodevision/public/Graph/
+
+Nodes
+
+Generate one node file per starting character
+
+Case-sensitive (A, a, B, b, etc.)
+
+Symbols go into a special file (e.g. _symbols.json)
+
+Example:
+
+nodes/A.json
+nodes/b.json
+nodes/_symbols.json
+
+Edges
+
+Generate two mirrored edge indexes:
+
+By origin
+
+By destination
+
+Each index must also be split by the first letter of the relevant node name.
+
+Example:
+
+edges/by-origin/A.json
+edges/by-origin/b.json
+edges/by-destination/A.json
+edges/by-destination/b.json
+
+
+This structure is required to keep the graph responsive at scale.
+
+4. Update Strategy
+
+The Graph Manager must:
+
+Detect file additions, deletions, and edits
+
+Regenerate only affected node and edge files
+
+Avoid full graph rebuilds unless explicitly requested
+
+5. API / Interface Expectations
+
+Expose clear functions such as:
+
+generateGraph()
+
+updateGraphForFile(filePath)
+
+removeFileFromGraph(filePath)
+
+getNode(nodeId)
+
+getEdgesByOrigin(nodeId)
+
+getEdgesByDestination(nodeId)
+
+These should be usable both:
+
+Internally (Nodevision UI)
+
+Later by a standalone NodevisionDB
+
+6. Constraints
+
+Open-source friendly
+
+No proprietary databases
+
+File-backed storage only (JSON / CSV where appropriate)
+
+Node.js first, but code structure should not block a future C++ / Node-API backend
+
+Clean, readable modules (Graph Manager should not be monolithic)
+
+7. Validation Checklist (Must Pass)
+
+Before considering the task complete, verify:
+
+Graph regenerates correctly after:
+
+Adding a file
+
+Deleting a file
+
+Renaming a file
+
+Adding or removing a link
+
+No duplicate nodes or edges
+
+Node and edge files are written to the correct letter buckets
+
+UI graph can load only the required files for a given view
+
+Output Expectation
+
+Clean, modular code
+
+Clear comments explaining graph logic
+
+No assumptions about UI framework
+
+No hardcoded paths outside the Graph folder
+
+No unnecessary dependencies
