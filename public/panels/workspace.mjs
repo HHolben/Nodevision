@@ -252,21 +252,11 @@ if (!module) {
 
   cell.innerHTML = "";
 
-  // ✅ ONLY ONE CALL. Pass everything in one go.
-  // This ensures window.selectedFilePath is respected on initial load.
   await module.setupPanel(cell, {
     ...panelVars,
     filePath: window.selectedFilePath
   });
 
-  // REMOVE the extra lines below that were here before:
-  // cell.innerHTML = ""; 
-  // await module.setupPanel(cell, panelVars);
-
-  console.log("✅ Loaded panel:", panelType);
-
-  cell.innerHTML = "";
-  await module.setupPanel(cell, panelVars);
   console.log("✅ Loaded panel:", panelType);
 }
 

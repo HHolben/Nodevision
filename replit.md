@@ -49,6 +49,13 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## December 29, 2025 - FileView Integration Complete
+- Fixed workspace.mjs duplicate setupPanel call causing panel re-render issues
+- Simplified NodeInteraction.mjs to use reactive selectedFilePath system
+- FileView panel at `/PanelInstances/ViewPanels/FileView.mjs` reactively renders file contents
+- Single-click file/node selection shows content in FileView panel
+- Cytoscape vendor libraries load before Monaco AMD loader to prevent conflicts
+
 ## December 29, 2025 - GraphManager/FileManager Parity Implementation
 - Fixed config.json to use port 5000 (matching Replit workflow requirements)
 - Created GraphManagerCore.mjs with full parity operations (selection, creation, modification, deletion, refresh)

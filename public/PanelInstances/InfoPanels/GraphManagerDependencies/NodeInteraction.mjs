@@ -27,45 +27,18 @@ export async function highlight(node) {
   node.style("border-width", 4);
 
   const rawId = node.id();
-  // Strip "Notebook/" to match the filename keys in ModuleMap.csv
   const cleanPath = rawId.startsWith("Notebook/") ? rawId.replace("Notebook/", "") : rawId;
   
-  console.log("[NodeInteraction] Synchronizing View for:", cleanPath);
+  console.log("[NodeInteraction] Selected node:", cleanPath);
 
-  // 1. Update global path
+  // Set global path - FileView's reactive watcher will handle rendering
   window.selectedFilePath = cleanPath;
 
-  // 2. Locate the view target and the specific render function
-  const viewTarget = document.getElementById("element-view");
-  const renderFn = window.renderFile;
-
-  if (!viewTarget || typeof renderFn !== "function") {
-    console.error("❌ Integration Error: #element-view or window.renderFile missing.");
-    return;
-  }
-
-  // 3. Force Focus on the View Panel
-  // This ensures the workspace doesn't hide the result of our render
+  // Highlight the FileView panel
   const viewCell = document.querySelector('[data-id="FileView"]');
   if (viewCell) {
-    window.activeCell = viewCell;
-    window.activePanel = "GraphView";
     document.querySelectorAll(".panel-cell").forEach(c => c.style.outline = "");
     viewCell.style.outline = "2px solid #0078d7";
-  }
-
-  // 4. Determine Server Base (use current origin for non-PHP, 8080 for PHP)
-  const ext = cleanPath.split(".").pop().toLowerCase();
-  const currentOrigin = window.location.origin;
-  const serverBase = (ext === "php") ? "http://localhost:8080" : `${currentOrigin}/Notebook`;
-
-  // 5. Execute Render and Log Success/Failure
-  try {
-    console.log(`[NodeInteraction] Triggering render for extension: .${ext}`);
-    await renderFn(cleanPath, viewTarget, serverBase);
-    console.log(`✅ [NodeInteraction] Render complete for: ${cleanPath}`);
-  } catch (err) {
-    console.error(`❌ [NodeInteraction] Render failed:`, err);
   }
 }
 
