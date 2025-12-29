@@ -33,8 +33,11 @@ export default async function NewFile() {
 
     console.log('File created successfully:', payload);
 
-    // ✅ Immediately refresh File Manager after creation
-    await window.refreshFileManager(currentPath);
+    // Refresh the active panel after creation
+    if (typeof window.refreshFileManager === "function") {
+      await window.refreshFileManager(currentPath);
+    }
+    document.dispatchEvent(new CustomEvent("refreshFileManager"));
 
   } catch (err) {
     console.error('Failed to create file:', err);

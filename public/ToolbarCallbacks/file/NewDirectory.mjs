@@ -33,8 +33,11 @@ export default async function NewDirectory() {
 
     console.log('Directory created successfully:', payload);
 
-    // ✅ Immediately refresh File Manager after directory creation
-    await window.refreshFileManager(parentPath);
+    // Refresh the active panel after directory creation
+    if (typeof window.refreshFileManager === "function") {
+      await window.refreshFileManager(parentPath);
+    }
+    document.dispatchEvent(new CustomEvent("refreshFileManager"));
 
   } catch (err) {
     console.error('Failed to create directory:', err);
