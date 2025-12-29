@@ -1,0 +1,231 @@
+Context
+
+You are working inside the Nodevision project, a Node.js–based digital notebooking and development tool.
+
+Nodevision represents:
+
+Nodes → files
+
+Edges → links or relationships defined inside files
+
+Regions → directories
+
+The graph is automatically generated from the filesystem, not manually authored by users.
+
+Relevant File Locations (IMPORTANT)
+
+You must be aware of the following existing modules and their roles:
+
+File Manager Panel
+
+Nodevision/public/PanelInstances/InfoPanels/FileManager.mjs
+
+
+Graph Manager Panel
+
+Nodevision/public/PanelInstances/InfoPanels/GraphManager.mjs
+
+
+Toolbar Creation & State Management
+
+Nodevision/public/panels/createToolbar.mjs
+
+
+⚠️ Critical architectural rule:
+
+The toolbar is NOT implemented directly inside any panel
+
+Panels register capabilities and state, but toolbar UI and logic live in createToolbar.mjs
+
+Both FileManager and GraphManager panels must integrate with the toolbar indirectly via shared state and exported hooks
+
+Core Principle: FileManager ↔ GraphManager Parity
+
+The Graph Manager must have functional parity with the File Manager.
+
+Anything the user can conceptually do to files, they must also be able to do to the graph representation, using the same mental model and similar toolbar affordances.
+
+The two panels should feel like two views of the same underlying system.
+
+Required User-Accessible Operations (Parity List)
+
+The following operations must be supported in both:
+
+1. Selection
+
+Select a single file / node
+
+Select multiple files / nodes
+
+Select a directory / region
+
+Clear selection
+
+2. Inspection
+
+View metadata (name, path, type)
+
+View relationships
+
+FileManager → links in/out of file
+
+GraphManager → edges in/out of node
+
+Highlight related items (children, parents, linked nodes)
+
+3. Navigation
+
+Jump to file from graph node
+
+Jump to graph node from file
+
+Expand / collapse directories or regions
+
+Focus view on a selection
+
+4. Creation
+
+Create a new file / node
+
+Create a new directory / region
+
+Create a new link / edge (via file edit, reflected in graph)
+
+5. Modification
+
+Rename file / node
+
+Move file / node between directories / regions
+
+Edit content that changes edges
+
+Refresh / re-index affected graph data
+
+6. Deletion
+
+Delete file / node
+
+Delete directory / region
+
+Remove links / edges (via file edits)
+
+7. Visibility & Filtering
+
+Toggle visibility of:
+
+File types
+
+Edge types
+
+Regions
+
+Collapse or expand large structures
+
+Load partial graph data on demand
+
+Graph Manager Responsibilities
+
+The Graph Manager Panel (GraphManager.mjs) must:
+
+Act as the graph analogue of FileManager.mjs
+
+Consume graph data generated under:
+
+Nodevision/public/Graph/
+
+
+Reflect filesystem truth, not override it
+
+Register its available actions so the toolbar can:
+
+Enable / disable buttons
+
+Route actions to the active panel
+
+Never instantiate toolbar UI directly
+
+Toolbar Integration Rules
+
+All toolbar buttons are created and managed in:
+
+Nodevision/public/panels/createToolbar.mjs
+
+
+Panels:
+
+Declare supported operations
+
+Export handlers (e.g. onRename, onDelete, onRefresh)
+
+Update toolbar state via shared APIs (e.g. updateToolbarState)
+
+Toolbar logic must remain panel-agnostic
+
+Same button should work in FileManager or GraphManager depending on focus
+
+Graph Data Generation (Summary)
+
+Graph data is generated from:
+
+Nodevision/public/Notebook/
+
+
+Stored in:
+
+Nodevision/public/Graph/
+
+Nodes
+
+Split by first character (case-sensitive)
+
+Symbol bucket for non-alphanumerics
+
+Edges
+
+Two mirrored indexes:
+
+by origin
+
+by destination
+
+Each index split by first character
+
+Update Strategy
+
+Incremental updates only
+
+Regenerate affected node/edge files
+
+No full rebuild unless explicitly requested
+
+GraphManager must be able to request:
+
+Partial reloads
+
+Targeted refreshes
+
+Validation Checklist (Must Pass)
+
+FileManager and GraphManager expose matching operations
+
+Toolbar buttons work identically in both contexts
+
+Graph updates correctly after:
+
+File add / delete / rename
+
+Link add / remove
+
+No toolbar UI code inside panel files
+
+GraphManager code mirrors FileManager structure where appropriate
+
+Output Expectations
+
+Modular, readable code
+
+Clear separation of concerns
+
+No hardcoded toolbar logic in panels
+
+No duplication of filesystem authority
