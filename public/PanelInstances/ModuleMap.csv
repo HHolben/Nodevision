@@ -242,7 +242,7 @@ toml,ViewText.mjs,
 trs,ViewText.mjs,
 tscn,ViewGodotScene.mjs,
 tsv,ViewCSV.mjs,
-ttf,ViewFont.mjs,
+ttf,ViewTTF.mjs,
 ttl,ViewRDF.mjs,
 txt,ViewText.mjs,
 
