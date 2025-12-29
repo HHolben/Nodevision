@@ -1,11 +1,25 @@
 // Nodevision/public/PanelInstances/InfoPanels/GraphManager.mjs
 // Graph-styled file manager with lazy directory loading and collapsed-edge behavior
+// Provides parity with FileManager through GraphManagerCore
 
 /* eslint-disable no-undef */
 
 import { GRAPH_STYLE } from './GraphManagerDependencies/CytoscapeStyling.mjs';
 import { loadRoot, setupInteractionHandlers } from './GraphManagerDependencies/NodeInteraction.mjs';
-// Note: recomputeEdges and other functions are now internally imported by NodeInteraction/EdgeManagement
+import { setCyInstance, handleGraphManagerAction } from './GraphManagerCore.mjs';
+import { updateToolbarState } from '/panels/createToolbar.mjs';
+
+export const panelCapabilities = {
+  supportedActions: [
+    'NewFile', 'NewDirectory', 'DeleteFile', 'renameFile',
+    'copyFile', 'cutFile', 'pasteFile', 'UpdateEdges'
+  ],
+  panelType: 'GraphManager'
+};
+
+export function getActionHandler() {
+  return handleGraphManagerAction;
+}
 
 export async function setupPanel(panelElem, panelVars = {}) {
   console.log("[GraphManager] setupPanel", panelVars);
@@ -13,7 +27,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   panelElem.innerHTML = `
     <div class="graph-manager" style="display:flex; flex-direction:column; height:100%;">
       <div style="display:flex;align-items:center;gap:12px;padding:8px;border-bottom:1px solid #ddd;">
-        <strong>Graph View (file manager)</strong>
+        <strong>Graph View</strong>
         <span id="gm-status" style="font-size:12px;color:#666;">Initializing...</span>
       </div>
       <div class="cy-container" style="flex:1; width:100%;"></div>
@@ -23,11 +37,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const status = panelElem.querySelector("#gm-status");
   const container = panelElem.querySelector(".cy-container");
 
-  const NODE_ROOT = "Notebook"; // project-relative root id
-  const directoryState = {}; // { id: { expanded, childrenLoaded } }
+  const NODE_ROOT = "Notebook";
+  const directoryState = {};
   let cy = null;
 
-  // init cytoscape
   try {
     status.textContent = "Loading cytoscape...";
     const cytoscapeMod = await import("/vendor/cytoscape/dist/cytoscape.esm.mjs");
@@ -36,7 +49,6 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const cytoscape = cytoscapeMod.default || cytoscapeMod;
     console.log("[GraphManager] cytoscape loaded", cytoscape);
 
-    // destroy previous instance if exists
     if (panelVars.cyInstance) {
       console.log("[GraphManager] destroying previous cy instance");
       panelVars.cyInstance.destroy();
@@ -46,22 +58,34 @@ export async function setupPanel(panelElem, panelVars = {}) {
     cy = cytoscape({
       container,
       elements: [],
-      style: GRAPH_STYLE, // Imported style
+      style: GRAPH_STYLE,
       layout: { name: "grid", avoidOverlap: true, fit: true },
       userZoomingEnabled: true,
-      boxSelectionEnabled: false
+      boxSelectionEnabled: true
     });
 
     panelVars.cyInstance = cy;
     console.log("[GraphManager] cytoscape instance created");
 
-    // Params object to pass state and Cytoscape instance to handlers
     const params = { cy, status, directoryState };
 
-    // Setup tap handlers (selection, open file, toggle directory)
+    setCyInstance(cy, params);
+
     setupInteractionHandlers(params);
 
-    // Load root on start
+    updateToolbarState({ activePanelType: 'GraphManager' });
+    window.NodevisionState.activeActionHandler = handleGraphManagerAction;
+
+    panelElem.addEventListener('focus', () => {
+      updateToolbarState({ activePanelType: 'GraphManager' });
+      window.NodevisionState.activeActionHandler = handleGraphManagerAction;
+    }, true);
+
+    panelElem.addEventListener('click', () => {
+      updateToolbarState({ activePanelType: 'GraphManager' });
+      window.NodevisionState.activeActionHandler = handleGraphManagerAction;
+    });
+
     await loadRoot(params, NODE_ROOT);
 
     status.textContent = `Ready — ${cy.nodes().length} nodes`;

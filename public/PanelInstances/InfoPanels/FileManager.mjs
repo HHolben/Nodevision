@@ -1,10 +1,24 @@
 // Nodevision/public/PanelInstances/InfoPanels/FileManager.mjs
 // Sets up the File Manager panel and loads FileManagerCore.mjs
+// Provides toolbar integration through panelCapabilities
+
+import { updateToolbarState } from '/panels/createToolbar.mjs';
+
+export const panelCapabilities = {
+  supportedActions: [
+    'NewFile', 'NewDirectory', 'DeleteFile', 'renameFile',
+    'copyFile', 'cutFile', 'pasteFile'
+  ],
+  panelType: 'FileManager'
+};
+
+export function getActionHandler() {
+  return window.handleFileManagerAction;
+}
 
 export function setupPanel(panelElem, panelVars = {}) {
   console.log("Initializing FileManager panel...", panelVars);
 
-  // Create the panel structure
   panelElem.innerHTML = `
     <div class="file-manager">
       <h3>File Manager</h3>
@@ -15,7 +29,16 @@ export function setupPanel(panelElem, panelVars = {}) {
     </div>
   `;
 
-  // Lazy-load the actual file management logic
+  panelElem.addEventListener('focus', () => {
+    updateToolbarState({ activePanelType: 'FileManager' });
+    window.NodevisionState.activeActionHandler = window.handleFileManagerAction;
+  }, true);
+
+  panelElem.addEventListener('click', () => {
+    updateToolbarState({ activePanelType: 'FileManager' });
+    window.NodevisionState.activeActionHandler = window.handleFileManagerAction;
+  });
+
   import("/PanelInstances/InfoPanels/FileManagerCore.mjs")
     .then(mod => {
       mod.initFileView(panelVars.currentDirectory || '');

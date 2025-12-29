@@ -17,7 +17,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Backend Architecture
 - **Express.js Server**: RESTful API with middleware for authentication, file serving, and proxy capabilities
-- **Dual Server Setup**: Node.js server (port 3000) with PHP server proxy (port 8080) for hybrid content support
+- **Dual Server Setup**: Node.js server (port 5000) with PHP server proxy (port 8080) for hybrid content support
 - **Route Management**: JSON-driven route configuration system for modular API endpoint management
 - **File System Integration**: Direct filesystem operations for notebook content management with security validation
 - **Real-time Communication**: WebSocket support for live data streaming (oscilloscope functionality)
@@ -39,6 +39,25 @@ Preferred communication style: Simple, everyday language.
 - **Link Extraction**: HTML content parsing to establish edges between related documents
 - **Hierarchical Regions**: Directory-based grouping with expand/collapse functionality
 - **Real-time Updates**: Live graph regeneration when file system changes occur
+
+## Panel System (FileManager/GraphManager Parity)
+- **FileManager**: Traditional hierarchical file browser with selection, navigation, and CRUD operations
+- **GraphManager**: Graph-based view with full parity to FileManager (same operations for nodes/edges)
+- **Shared Toolbar Integration**: Both panels register capabilities and route actions through createToolbar.mjs
+- **Panel State System**: window.NodevisionState tracks active panel and routes toolbar actions appropriately
+- **Core Modules**: FileManagerCore.mjs and GraphManagerCore.mjs provide matching operation handlers
+
+# Recent Changes
+
+## December 29, 2025 - GraphManager/FileManager Parity Implementation
+- Fixed config.json to use port 5000 (matching Replit workflow requirements)
+- Created GraphManagerCore.mjs with full parity operations (selection, creation, modification, deletion, refresh)
+- Updated GraphManager.mjs to integrate with GraphManagerCore and toolbar system
+- Updated FileManager.mjs with panelCapabilities export and toolbar integration
+- Updated fileToolbar.json with GraphManager-specific toolbar items (New Node, New Region, etc.)
+- Modified createToolbar.mjs to support routeToActivePanel for panel-agnostic toolbar actions
+- Fixed broken code in NodeInteraction.mjs (removed invalid function call)
+- Added window.NodevisionState.activeActionHandler for dynamic action routing
 
 # External Dependencies
 

@@ -7,7 +7,7 @@
     "panelType": "InfoPanel",                
     "panelPath": "/PanelInstances/InfoPanels/FileManager.mjs" 
   },
-    {
+  {
     "ToolbarCategory": "File",
     "heading": "Graph Manager",
     "icon": "icons/Graph.png",
@@ -28,56 +28,88 @@
     "parentHeading": "File Manager",
     "heading": "New File",
     "callbackKey": "NewFile",
-    "icon": "icons/DefaultNodeImage.png"
+    "icon": "icons/DefaultNodeImage.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "New Directory",
     "callbackKey": "NewDirectory",
-    "icon": "icons/DefaultRegionImage.png"
+    "icon": "icons/DefaultRegionImage.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Delete File/Directory",
     "callbackKey": "DeleteFile",
-    "icon": "icons/DeleteIcon.png"
+    "icon": "icons/DeleteIcon.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Rename File/Directory",
     "callbackKey": "renameFile",
-    "icon": "icons/RenameIcon.png"
+    "icon": "icons/RenameIcon.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Copy File/Directory",
     "callbackKey": "copyFile",
-    "icon": "icons/CopyIcon.png"
+    "icon": "icons/CopyIcon.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Cut File/Directory",
     "callbackKey": "cutFile",
-    "icon": "icons/CutIcon.png"
+    "icon": "icons/CutIcon.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Paste File/Directory",
     "callbackKey": "pasteFile",
-    "icon": "icons/PasteIcon.png"
+    "icon": "icons/PasteIcon.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
-    "heading": "Save File",
-    "callbackKey": "saveFile",
-    "icon": "icons/SaveIcon.png",
-    "availability": ["fileOpen", "panelType:EditorPanel"]
+    "parentHeading": "Graph Manager",
+    "heading": "New Node",
+    "callbackKey": "NewFile",
+    "icon": "icons/DefaultNodeImage.png",
+    "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "New Region",
+    "callbackKey": "NewDirectory",
+    "icon": "icons/DefaultRegionImage.png",
+    "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Delete Node/Region",
+    "callbackKey": "DeleteFile",
+    "icon": "icons/DeleteIcon.png",
+    "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Rename Node/Region",
+    "callbackKey": "renameFile",
+    "icon": "icons/RenameIcon.png",
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
@@ -85,7 +117,7 @@
     "heading": "Update Edges",
     "callbackKey": "UpdateEdges",
     "icon": "icons/UpdateEdgesIcon.png",
-    "availability": ["fileOpen", "panelType:EditorPanel"]
+    "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
@@ -93,6 +125,21 @@
     "heading": "Export Graph",
     "script": "ExportGraph.js",
     "icon": "icons/ExportGraph.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Refresh Graph",
+    "callbackKey": "UpdateEdges",
+    "icon": "icons/RefreshIcon.png",
+    "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Save File",
+    "callbackKey": "saveFile",
+    "icon": "icons/SaveIcon.png",
+    "availability": ["fileOpen", "panelType:EditorPanel"]
   },
   {
     "ToolbarCategory": "File",
@@ -106,7 +153,7 @@
     "callbackKey": "viewNodevisionDeployment",
     "icon": "icons/ViewDeploymentNodevisionIcon.png"
   },
-    {
+  {
     "ToolbarCategory": "File",
     "heading": "View Nodevision Document",
     "callbackKey": "viewNodevisionDocument",

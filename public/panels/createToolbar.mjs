@@ -14,7 +14,8 @@ window.NodevisionState = window.NodevisionState || {
   activePanelType: null,
   fileIsDirty: false,
   selectedFile: null,
-  currentMode: "Default", // ← NEW: track editor mode (e.g. "HTMLediting", "Code Editing")
+  currentMode: "Default",
+  activeActionHandler: null,
 };
 
 
@@ -208,8 +209,17 @@ if (item.panelTemplateId || item.panelTemplate) {
       // Script import
       if (item.script) import(`/ToolbarJSONfiles/${item.script}`);
 
-      // Callback
-      if (item.callbackKey && item.ToolbarCategory) handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+      // Route to active panel handler if specified
+      if (item.routeToActivePanel && item.callbackKey) {
+        const handler = window.NodevisionState.activeActionHandler;
+        if (typeof handler === 'function') {
+          handler(item.callbackKey);
+        } else if (item.ToolbarCategory) {
+          handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+        }
+      } else if (item.callbackKey && item.ToolbarCategory) {
+        handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+      }
 
       // Sub-toolbar
    // Priority rule:
@@ -290,7 +300,17 @@ function buildSubToolbar(items, container = subToolbarContainer) {
         const panelType = item.panelType || "InfoPanel";
         createPanel(moduleName, panelType, item.defaultInstanceVars || {});
       }
-      if (item.callbackKey && item.ToolbarCategory) handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+      
+      if (item.routeToActivePanel && item.callbackKey) {
+        const handler = window.NodevisionState.activeActionHandler;
+        if (typeof handler === 'function') {
+          handler(item.callbackKey);
+        } else if (item.ToolbarCategory) {
+          handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+        }
+      } else if (item.callbackKey && item.ToolbarCategory) {
+        handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+      }
     });
 
     container.appendChild(btn);

@@ -1,21 +1,12 @@
 // Nodevision/public/PanelInstances/InfoPanels/GraphManagerDependencies/NodeInteraction.mjs
 
-// Import core logic to ensure we use the same variable-setting behavior
-// Note: We use the absolute path to avoid the 404 issues we saw earlier
-import { fetchDirectoryContents } from '/PanelInstances/InfoPanels/FileManagerCore.mjs';
-
 import { recomputeEdges } from './EdgeManagement.mjs';
 import { listDirectory } from './APIFunctions.mjs';
 import { SELECTED_COLOR, UNSELECTED_COLOR } from './CytoscapeStyling.mjs';
-import {OpenDirectoryOrFileInfo} from './../FileManagerCore.mjs';
 
 // --- Selection Logic ---
 let lastSelected = null;
 
-/** * Helper to strip the "Notebook/" prefix.
- * Based on FileView.mjs line 170, it seems ViewPHP handles this, 
- * but other viewers might not. Stripping it here makes it match the File Manager.
- */
 function getCleanPath(id) {
   return id.startsWith("Notebook/") ? id.replace("Notebook/", "") : id;
 }
@@ -28,19 +19,12 @@ export function clearSelection() {
   lastSelected = null;
 }
 
-/**
- * Highlights a node and synchronizes with the FileView panel.
- */
 export async function highlight(node) {
   clearSelection();
   lastSelected = node;
 
   node.style("border-color", SELECTED_COLOR);
   node.style("border-width", 4);
-
-
-OpenDirectoryOrFileInfo(listElem,link, li);
-
 
   const rawId = node.id();
   // Strip "Notebook/" to match the filename keys in ModuleMap.csv
@@ -70,9 +54,10 @@ OpenDirectoryOrFileInfo(listElem,link, li);
     viewCell.style.outline = "2px solid #0078d7";
   }
 
-  // 4. Determine Server Base
+  // 4. Determine Server Base (use current origin for non-PHP, 8080 for PHP)
   const ext = cleanPath.split(".").pop().toLowerCase();
-  const serverBase = (ext === "php") ? "http://localhost:8080" : "http://localhost:3000/Notebook";
+  const currentOrigin = window.location.origin;
+  const serverBase = (ext === "php") ? "http://localhost:8080" : `${currentOrigin}/Notebook`;
 
   // 5. Execute Render and Log Success/Failure
   try {
