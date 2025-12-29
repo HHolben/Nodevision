@@ -7,40 +7,52 @@ let lastRenderedPath = null;
 let moduleMapCache = null;
 
 async function loadModuleMap() {
-  if (moduleMapCache) return moduleMapCache;
-
-  // 🚨 Updated path to match user-provided CSV path
-  const res = await fetch("/PanelInstances/ModuleMap.csv");
-  if (!res.ok) {
-    console.error("❌ Failed to load ModuleMap.csv");
-    moduleMapCache = {};
+  // Only use cache if it has actual entries (not empty from failed load)
+  if (moduleMapCache && Object.keys(moduleMapCache).length > 0) {
     return moduleMapCache;
   }
 
-  const text = await res.text();
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  try {
+    // Use relative path - browser will resolve through current origin/proxy
+    const csvUrl = "/PanelInstances/ModuleMap.csv";
+    console.log("📦 Fetching ModuleMap from:", csvUrl);
+    const res = await fetch(csvUrl, { cache: "no-store" });
+    console.log("📦 ModuleMap fetch status:", res.status, res.statusText);
+    if (!res.ok) {
+      console.error("❌ Failed to load ModuleMap.csv, status:", res.status);
+      // Don't cache failures - allow retry
+      return {};
+    }
 
-  const header = lines.shift().split(",").map(h => h.trim());
-  const idx = {
-    ext: header.indexOf("Extension"),
-    viewer: header.indexOf("ViewerModule"),
-    editor: header.indexOf("GraphicalEditorModule"),
-  };
+    const text = await res.text();
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
-  const map = {};
-
-  for (const line of lines) {
-    const cols = line.split(",").map(c => c.trim());
-    const ext = cols[idx.ext] || "";
-    map[ext.toLowerCase()] = {
-      viewer: cols[idx.viewer] || null,
-      editor: cols[idx.editor] || null,
+    const header = lines.shift().split(",").map(h => h.trim());
+    const idx = {
+      ext: header.indexOf("Extension"),
+      viewer: header.indexOf("ViewerModule"),
+      editor: header.indexOf("GraphicalEditorModule"),
     };
-  }
 
-  moduleMapCache = map;
-  console.log("📦 moduleMap loaded:", map);
-  return map;
+    const map = {};
+
+    for (const line of lines) {
+      const cols = line.split(",").map(c => c.trim());
+      const ext = cols[idx.ext] || "";
+      map[ext.toLowerCase()] = {
+        viewer: cols[idx.viewer] || null,
+        editor: cols[idx.editor] || null,
+      };
+    }
+
+    moduleMapCache = map;
+    console.log("📦 moduleMap loaded:", map);
+    return map;
+  } catch (err) {
+    console.error("❌ Error loading ModuleMap.csv:", err);
+    moduleMapCache = {};
+    return moduleMapCache;
+  }
 }
 
 function resolveExtension(filename) {
