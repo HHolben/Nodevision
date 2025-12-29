@@ -75,7 +75,9 @@ export async function setupPanel(panel, instanceVars = {}) {
         if (value !== internalPath) {
           console.log("📂 selectedFilePath changed:", value);
           internalPath = value;
-          updateViewPanel(value);
+          updateViewPanel(value).catch(err => {
+            console.error("❌ updateViewPanel error:", err);
+          });
         }
       },
       configurable: true,
@@ -103,7 +105,9 @@ export async function setupPanel(panel, instanceVars = {}) {
   if (instanceVars.filePath) {
     window.selectedFilePath = instanceVars.filePath;
     lastRenderedPath = null; // 🔹 reset so update will run
-    updateViewPanel(instanceVars.filePath);
+    updateViewPanel(instanceVars.filePath).catch(err => {
+      console.error("❌ Initial updateViewPanel error:", err);
+    });
   }
 }
 
@@ -149,26 +153,28 @@ export async function updateViewPanel(element, { force = false } = {}) {
 async function renderFile(filename, viewPanel, serverBase) {
   console.log(`📄 renderFile() called for: ${filename}`);
 
-  // 1. Get the module map from the CSV file
-  const moduleMap = await loadModuleMap();
-  const basePath = "/PanelInstances/ViewPanels/FileViewers";
-
-  // 2. Determine file extension and lookup viewer
-  const ext = resolveExtension(filename);
-
-  // Use ViewText.mjs as fallback if no extension or mapping exists
-  const viewerInfo = moduleMap[ext] || moduleMap[""] || { viewer: "ViewText.mjs" };
-let viewerFile = viewerInfo.viewer;
-
-if (!viewerFile) {
-  console.warn(`⚠️ No viewer module defined for extension: ${ext}. Defaulting to ViewText.mjs.`);
-  viewerFile = "ViewText.mjs";
-}
-
-  const modulePath = `${basePath}/${viewerFile}`;
-  console.log(`🔍 Loading viewer module: ${modulePath}`);
-
   try {
+    // 1. Get the module map from the CSV file
+    console.log("📦 Loading module map...");
+    const moduleMap = await loadModuleMap();
+    console.log("📦 Module map loaded, keys:", Object.keys(moduleMap).slice(0, 10));
+    const basePath = "/PanelInstances/ViewPanels/FileViewers";
+
+    // 2. Determine file extension and lookup viewer
+    const ext = resolveExtension(filename);
+
+    // Use ViewText.mjs as fallback if no extension or mapping exists
+    const viewerInfo = moduleMap[ext] || moduleMap[""] || { viewer: "ViewText.mjs" };
+    let viewerFile = viewerInfo.viewer;
+
+    if (!viewerFile) {
+      console.warn(`⚠️ No viewer module defined for extension: ${ext}. Defaulting to ViewText.mjs.`);
+      viewerFile = "ViewText.mjs";
+    }
+
+    const modulePath = `${basePath}/${viewerFile}`;
+    console.log(`🔍 Loading viewer module: ${modulePath}`);
+
     const viewer = await import(modulePath);
 
     // Let viewer specify if it wants an iframe
@@ -197,8 +203,8 @@ if (!viewerFile) {
     console.log(`✅ Rendered with ${viewerFile}`);
 
   } catch (err) {
-    console.error(`❌ Failed to import ${modulePath}:`, err);
-    viewPanel.innerHTML = `<em>Error loading viewer for ${filename}</em>`;
+    console.error(`❌ renderFile failed for ${filename}:`, err);
+    viewPanel.innerHTML = `<em>Error loading viewer for ${filename}: ${err.message}</em>`;
   }
 }
 
