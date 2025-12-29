@@ -122,7 +122,8 @@ export async function updateViewPanel(element, { force = false } = {}) {
 
   // Skip rendering for directories (no extension or known directory names)
   const ext = resolveExtension(filename);
-  if (!ext || filename === ext) {
+  const lowerFilename = filename.toLowerCase();
+  if (!ext || lowerFilename === ext || !filename.includes('.')) {
     console.log("📁 Skipping directory view for:", filename);
     return;
   }
