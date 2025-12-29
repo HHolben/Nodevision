@@ -17,7 +17,7 @@ import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 import graphDataRoutes from "./routes/api/graphData.js";
 
 
-import * as fontkit from 'fontkit';
+
 
 
 const __filename = fileURLToPath(import.meta.url);
