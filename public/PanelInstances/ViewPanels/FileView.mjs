@@ -120,6 +120,13 @@ export async function updateViewPanel(element, { force = false } = {}) {
     return;
   }
 
+  // Skip rendering for directories (no extension or known directory names)
+  const ext = resolveExtension(filename);
+  if (!ext || filename === ext) {
+    console.log("📁 Skipping directory view for:", filename);
+    return;
+  }
+
   // Prevent redundant rerenders unless forced
   if (!force && filename === lastRenderedPath) {
     console.log("🔁 File already displayed:", filename);
@@ -131,9 +138,9 @@ export async function updateViewPanel(element, { force = false } = {}) {
   viewPanel.innerHTML = "";
 
   // Determine server base depending on file type
-const ext = resolveExtension(filename);
   const isPHP = ext === "php";
-  const serverBase = isPHP ? "http://localhost:8080" : "http://localhost:3000/Notebook";
+  const origin = window.location.origin;
+  const serverBase = isPHP ? `${origin}/php` : `${origin}/Notebook`;
 
   await renderFile(filename, viewPanel, serverBase);
 }

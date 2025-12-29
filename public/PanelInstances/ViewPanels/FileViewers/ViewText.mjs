@@ -113,6 +113,18 @@ export async function renderText(filename, viewPanel, serverBase) {
   }
 }
 
+/**
+ * Main entry point called by FileView.mjs
+ * @param {string} filename - File path
+ * @param {HTMLElement} viewPanel - The container to render into
+ * @param {HTMLIFrameElement|null} iframe - Optional iframe (not used for text)
+ * @param {string} serverBase - Base path
+ */
+export async function renderFile(filename, viewPanel, iframe, serverBase) {
+  console.log(`[ViewText] renderFile called for: ${filename}`);
+  await renderText(filename, viewPanel, serverBase);
+}
+
 // Expose globally (optional)
 window.renderHTML = renderHTML;
 window.renderCSS = renderCSS;

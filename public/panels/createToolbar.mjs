@@ -132,6 +132,7 @@ function buildToolbar(container, items, parentHeading = null) {
 
     const btnWrapper = document.createElement("div");
     btnWrapper.className = "toolbar-button";
+    btnWrapper.dataset.heading = item.heading;
     Object.assign(btnWrapper.style, { position: "relative", display: "inline-block", marginRight: "4px" });
 
     const btn = document.createElement("button");
@@ -252,7 +253,8 @@ function buildDropdownFromItem(item) {
 
   // Wait a tick to ensure DOM exists, then set full width for dropdown items
   setTimeout(() => {
-    const parentBtnWrapper = document.querySelector(`.toolbar-button button:contains('${item.heading}')`) || null;
+    // Find button by data attribute instead of :contains (which is jQuery, not CSS)
+    const parentBtnWrapper = document.querySelector(`.toolbar-button[data-heading="${item.heading}"] button`) || null;
     const parentWidth = parentBtnWrapper ? parentBtnWrapper.offsetWidth : dropdown.offsetWidth;
 
     Array.from(dropdown.children).forEach(child => {
