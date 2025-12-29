@@ -267,15 +267,28 @@ window.addEventListener("toolbarAction", async (e) => {
   const { id } = e.detail;
   const { panel, panelPath } = e.detail;
 
+  // First, check if this panel already exists in the layout
+  const existingCell = document.querySelector(`[data-id="${id}"]`);
+  if (existingCell) {
+    // Panel already exists - just make it visible and active
+    existingCell.style.display = "flex";
+    window.activeCell = existingCell;
+    window.activePanel = id;
+    console.log(`📌 Panel "${id}" already exists, activated.`);
+    return;
+  }
+
+  // Otherwise, load into active cell
   if (!window.activeCell) {
     console.warn("No active cell selected to replace with toolbar panel.");
     return;
   }
 
   const cell = window.activeCell;
-  cell.innerHTML = `<div class="panel-header">${id}</div>`;
+  cell.innerHTML = "";
+  cell.dataset.id = id;
 
   // Pass panel type string instead of cell
-  await loadPanelIntoCell(id, { id, content: id });
+  await loadPanelIntoCell(id, { id, displayName: id });
 });
 
