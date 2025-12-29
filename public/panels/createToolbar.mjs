@@ -200,7 +200,8 @@ if (item.panelTemplateId || item.panelTemplate) {
   const event = new CustomEvent("toolbarAction", {
     detail: {
       id: templateId,
-      type: panelType
+      type: panelType,
+      replaceActive: item.replaceActive === true
     }
   });
   window.dispatchEvent(event);

@@ -1,21 +1,38 @@
 [
   {
     "ToolbarCategory": "View",
-    "heading": "Viewing",
+    "heading": "File View",
     "content": "",
     "panelTemplate": "FileView",
     "panelType": "ViewPanel",
-    "panelPath": "/PanelInstances/ViewPanels/FileView.mjs"
+    "panelPath": "/PanelInstances/ViewPanels/FileView.mjs",
+    "replaceActive": true
   },
-
-{
-  "ToolbarCategory": "View",
-  "heading": "Virtual World Viewing",
-  "panel": "GameView",
-  "panelTemplate": "GameView",
-
-  "panelPath": "/PanelInstances/ViewPanels/GameView.mjs"
-},
+  {
+    "ToolbarCategory": "View",
+    "heading": "Graph View",
+    "content": "",
+    "panelTemplate": "GraphManager",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/GraphManager.mjs",
+    "replaceActive": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "File Manager",
+    "content": "",
+    "panelTemplate": "FileManager",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/FileManager.mjs",
+    "replaceActive": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Viewing",
+    "panel": "GameView",
+    "panelTemplate": "GameView",
+    "panelPath": "/PanelInstances/ViewPanels/GameView.mjs"
+  },
   {
     "ToolbarCategory": "View",
     "heading": "Virtual World Viewing",
