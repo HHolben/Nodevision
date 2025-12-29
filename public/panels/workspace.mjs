@@ -170,35 +170,43 @@ export async function loadDefaultLayout() {
 }
 
 export function renderLayout(node, parent) {
-  if (node.type === "row" || node.type === "vertical") {
-    const row = document.createElement("div");
-    row.className = "panel-row";
-    Object.assign(row.style, {
+  const isContainer = node.direction || node.type === "row" || node.type === "vertical";
+  
+  if (isContainer && node.children) {
+    const container = document.createElement("div");
+    container.className = "panel-row";
+    const direction = node.direction === "column" || node.type === "vertical" ? "column" : "row";
+    Object.assign(container.style, {
       display: "flex",
-      flexDirection: node.type === "vertical" ? "column" : "row",
-      borderBottom: "4px solid #ddd",
+      flexDirection: direction,
       overflow: "hidden",
-      flex: "1 1 auto",
+      flex: node.flex ? `${node.flex} 1 0` : "1 1 auto",
     });
-    parent.appendChild(row);
-    node.children?.forEach((child) => renderLayout(child, row));
-  } else if (node.type === "cell") {
-    const cell = createCell(parent);
-    cell.dataset.id = node.id;
+    parent.appendChild(container);
+    node.children.forEach((child) => renderLayout(child, container));
+  } else if (node.instanceName || node.type === "cell") {
+    const cell = document.createElement("div");
+    cell.className = "panel-cell";
+    Object.assign(cell.style, {
+      border: "1px solid #bbb",
+      background: "#fafafa",
+      overflow: "auto",
+      flex: node.flex ? `${node.flex} 1 0` : "1 1 0",
+      display: "flex",
+      flexDirection: "column",
+      position: "relative",
+    });
+    cell.dataset.id = node.instanceName || node.id;
+    parent.appendChild(cell);
 
-    // Set active cell
     window.activeCell = cell;
 
-    // Extract panel type string
-    let panelType = "InfoPanel"; // default fallback
-    if (node.module) {
-      panelType = node.module
-        .replace(/^\/PanelInstances\//, "")
-        .replace(/\.mjs$/, "");
-    }
-
-    // Load the panel by string
-    loadPanelIntoCell(panelType, { id: node.id });
+    const panelType = node.instanceName || (node.module ? node.module.replace(/^\/PanelInstances\//, "").replace(/\.mjs$/, "") : "InfoPanel");
+    
+    loadPanelIntoCell(panelType, { 
+      id: node.instanceName || node.id,
+      ...node.panelVars 
+    });
   }
 }
 

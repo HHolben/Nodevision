@@ -17,15 +17,15 @@
   <link rel="stylesheet" href="ToolbarStyles.css">
   <link rel="stylesheet" href="NodeViewContainerStyles.css">
 
-  <!-- Monaco AMD Loader -->
-  <script src="/lib/monaco/vs/loader.js"></script>
+  <!-- Cytoscape + Extensions (Load BEFORE Monaco to avoid AMD conflicts) -->
+  <script src="vendor/cytoscape/cytoscape.min.js"></script>
+  <script src="vendor/layout-base/layout-base.js"></script>
+  <script src="vendor/cose-base/cose-base.js"></script>
+  <script src="vendor/cytoscape-fcose/cytoscape-fcose.js"></script>
+  <script src="vendor/cytoscape-expand-collapse/cytoscape-expand-collapse.js"></script>
 
-  <!-- Cytoscape + Extensions (Only Load Once) -->
-  <script src="vendor/cytoscape/dist/cytoscape.min.js" defer></script>
-  <script src="vendor/layout-base/layout-base.js" defer></script>
-  <script src="vendor/cose-base/cose-base.js" defer></script>
-  <script src="vendor/cytoscape-fcose/cytoscape-fcose.js" defer></script>
-  <script src="vendor/cytoscape-expand-collapse/cytoscape-expand-collapse.js" defer></script>
+  <!-- Monaco AMD Loader (after Cytoscape) -->
+  <script src="/lib/monaco/vs/loader.js"></script>
 
   <style>
     /* Toolbar pinned to top */
@@ -67,48 +67,6 @@
 
   <!-- Workspace for panels -->
   <div id="workspace"></div>
-
-  <!-- ==========================
-       Cytoscape Test Block
-       (Runs After Everything Loads)
-  ========================== -->
-
-  <script defer>
-    window.addEventListener('load', () => {
-      if (!window.cytoscape) {
-        console.error("Cytoscape did not load!");
-        return;
-      }
-
-      console.log("Cytoscape loaded successfully:", window.cytoscape);
-
-      // Small test container
-      const testContainer = document.createElement('div');
-      testContainer.id = 'cy-test';
-      testContainer.style.width = '300px';
-      testContainer.style.height = '300px';
-      testContainer.style.border = '1px solid #ccc';
-      testContainer.style.margin = '8px';
-      document.body.appendChild(testContainer);
-
-      // Test graph
-      const cy = cytoscape({
-        container: testContainer,
-        elements: [
-          { data: { id: 'a', name: 'Node A' } },
-          { data: { id: 'b', name: 'Node B' } },
-          { data: { source: 'a', target: 'b' } }
-        ],
-        style: [
-          { selector: 'node', style: { 'label': 'data(name)' } },
-          { selector: 'edge', style: { 'target-arrow-shape': 'triangle' } }
-        ],
-        layout: { name: 'grid' }
-      });
-
-      console.log("Test Cytoscape graph initialized:", cy);
-    });
-  </script>
 
   <!-- Main Application Entrypoint -->
   <script type="module" src="./main.mjs"></script>
