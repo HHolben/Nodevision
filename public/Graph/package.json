@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "name": "nodevision-graph-manager",
+  "version": "1.0.0",
+  "description": "Graph generation and management for Nodevision",
+  "main": "GraphManager.mjs",
+  "scripts": {
+    "generate": "node GraphManager.mjs"
+  }
+}

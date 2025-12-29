@@ -14,6 +14,7 @@ import { exec } from 'node:child_process';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 import toolbarRoutes from "./routes/api/toolbarRoutes.js";
+import graphDataRoutes from "./routes/api/graphData.js";
 
 
 
@@ -106,6 +107,7 @@ app.use('/vendor/react', express.static(path.join(__dirname, 'public/vendor/reac
 
 
 app.use("/api/toolbar", toolbarRoutes);
+app.use("/api/graph", graphDataRoutes);
 
 app.use('/UserSettings', express.static(path.join(__dirname, 'UserSettings')));
 
