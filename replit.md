@@ -49,6 +49,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## December 29, 2025 - Resizable Dividers and Panel System Enhancements
+- Added resizable dividers between all panels (both horizontal and vertical) with drag-to-resize functionality
+- Dividers use 6px size with hover highlight effect (#0078d7) for better usability
+- Implemented global active panel tracking - clicking any panel sets it as active with visual highlighting
+- Active panel state tracks: window.activeCell, window.activePanel, window.activePanelClass, and NodevisionState.activePanelType
+- Added panel replacement feature - View menu items can replace the active panel using `replaceActive: true` flag
+- Panel replacement properly updates all metadata including cell.dataset.panelClass
+- viewToolbar.json updated with File View, Graph View, and File Manager options supporting replaceActive
+
 ## December 29, 2025 - FileView Integration Complete
 - Fixed workspace.mjs duplicate setupPanel call causing panel re-render issues
 - Simplified NodeInteraction.mjs to use reactive selectedFilePath system
