@@ -1,97 +1,82 @@
 // Nodevision/public/PanelInstances/InfoPanels/GraphManager.mjs
-// Graph-styled file manager with lazy directory loading and collapsed-edge behavior
-// Provides parity with FileManager through GraphManagerCore
+// Sets up the Graph Manager panel and loads GraphManagerCore.mjs
+// Provides toolbar integration through panelCapabilities
 
-/* eslint-disable no-undef */
-
-import { GRAPH_STYLE } from './GraphManagerDependencies/CytoscapeStyling.mjs';
-import { loadRoot, setupInteractionHandlers } from './GraphManagerDependencies/NodeInteraction.mjs';
-import { setCyInstance, handleGraphManagerAction } from './GraphManagerCore.mjs';
 import { updateToolbarState } from '/panels/createToolbar.mjs';
 
+/**
+ * Toolbar and System Integration
+ */
 export const panelCapabilities = {
   supportedActions: [
     'NewFile', 'NewDirectory', 'DeleteFile', 'renameFile',
-    'copyFile', 'cutFile', 'pasteFile', 'UpdateEdges'
+    'copyFile', 'cutFile', 'pasteFile'
   ],
   panelType: 'GraphManager'
 };
 
+/**
+ * Returns the global action handler (managed by GraphManagerCore)
+ */
 export function getActionHandler() {
-  return handleGraphManagerAction;
+  return window.handleGraphManagerAction;
 }
 
+/**
+ * Main Setup Function
+ */
 export async function setupPanel(panelElem, panelVars = {}) {
-  console.log("[GraphManager] setupPanel", panelVars);
 
+  // Ensure the panel itself fills the cell
+panelElem.style.height = "100%";
+panelElem.style.display = "flex";
+panelElem.style.flexDirection = "column";
+
+
+  console.log("🛠️ Initializing GraphManager panel...", panelVars);
+
+  // 1. Create the UI Structure
   panelElem.innerHTML = `
-    <div class="graph-manager" style="display:flex; flex-direction:column; height:100%;">
-      <div style="display:flex;align-items:center;gap:12px;padding:8px;border-bottom:1px solid #ddd;">
-        <strong>Graph View</strong>
-        <span id="gm-status" style="font-size:12px;color:#666;">Initializing...</span>
+    <div class="graph-manager" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+      <div class="graph-header" style="padding: 8px; background: #f0f0f0; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1.1em;">Graph Explorer</h3>
+        <div id="graph-status" style="font-size: 0.85em; color: #666;">Initializing...</div>
       </div>
-      <div class="cy-container" style="flex:1; width:100%;"></div>
+      
+      <div id="cy" style="flex-grow: 1; width: 100%; background: #ffffff; position: relative;"></div>
+      
+      <div id="graph-error" style="color:red; padding: 10px; font-weight: bold;"></div>
     </div>
   `;
 
-  const status = panelElem.querySelector("#gm-status");
-  const container = panelElem.querySelector(".cy-container");
-
-  const NODE_ROOT = "Notebook";
-  const directoryState = {};
-  let cy = null;
-
-  try {
-    status.textContent = "Loading cytoscape...";
-    const cytoscapeMod = await import("/vendor/cytoscape/dist/cytoscape.esm.mjs");
-    if (!cytoscapeMod) throw new Error("Failed to import cytoscape");
-
-    const cytoscape = cytoscapeMod.default || cytoscapeMod;
-    console.log("[GraphManager] cytoscape loaded", cytoscape);
-
-    if (panelVars.cyInstance) {
-      console.log("[GraphManager] destroying previous cy instance");
-      panelVars.cyInstance.destroy();
-      panelVars.cyInstance = null;
-    }
-
-    cy = cytoscape({
-      container,
-      elements: [],
-      style: GRAPH_STYLE,
-      layout: { name: "grid", avoidOverlap: true, fit: true },
-      userZoomingEnabled: true,
-      boxSelectionEnabled: true
-    });
-
-    panelVars.cyInstance = cy;
-    console.log("[GraphManager] cytoscape instance created");
-
-    const params = { cy, status, directoryState };
-
-    setCyInstance(cy, params);
-
-    setupInteractionHandlers(params);
-
+  // 2. Focus & Toolbar State Management
+  // This ensures that clicking the graph tells the system this is the active panel
+  const handleFocus = () => {
     updateToolbarState({ activePanelType: 'GraphManager' });
-    window.NodevisionState.activeActionHandler = handleGraphManagerAction;
+    // This handler will be defined inside GraphManagerCore.mjs
+    window.NodevisionState.activeActionHandler = window.handleGraphManagerAction;
+  };
 
-    panelElem.addEventListener('focus', () => {
-      updateToolbarState({ activePanelType: 'GraphManager' });
-      window.NodevisionState.activeActionHandler = handleGraphManagerAction;
-    }, true);
+  panelElem.addEventListener('focus', handleFocus, true);
+  panelElem.addEventListener('click', handleFocus);
 
-    panelElem.addEventListener('click', () => {
-      updateToolbarState({ activePanelType: 'GraphManager' });
-      window.NodevisionState.activeActionHandler = handleGraphManagerAction;
+  // 3. Dynamic Module Loading
+  // We keep the heavy Cytoscape/Logic in 'Core' just like the File Manager
+  try {
+    const mod = await import("/PanelInstances/InfoPanels/GraphManagerCore.mjs");
+    
+    // Initialize the graph logic
+    // We pass the root directory and the container ID
+    await mod.initGraphView({
+      containerId: 'cy',
+      rootPath: panelVars.currentDirectory || '',      
+      statusElemId: 'graph-status'
     });
-
-    await loadRoot(params, NODE_ROOT);
-
-    status.textContent = `Ready — ${cy.nodes().length} nodes`;
+    
+    console.log("✅ GraphManagerCore loaded and initialized.");
   } catch (err) {
-    console.error("[GraphManager] error during setup", err);
-    const status = panelElem.querySelector("#gm-status");
-    if (status) status.textContent = "Error initializing GraphManager (see console)";
+    console.error("❌ Failed to load GraphManagerCore.mjs:", err);
+    const errElem = panelElem.querySelector("#graph-error");
+    if (errElem) errElem.textContent = "Failed to initialize Graph Engine.";
   }
 }

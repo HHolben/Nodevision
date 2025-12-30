@@ -1,428 +1,201 @@
 // Nodevision/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
-// Core logic for GraphManager with full FileManager parity
-// Provides: selection, creation, modification, deletion, refresh, and toolbar integration
 
-import { updateToolbarState } from '/panels/createToolbar.mjs';
+import { fetchDirectoryContents } from './FileManagerCore.mjs';
 
-let currentCyInstance = null;
-let currentParams = null;
+let cy;
+let currentRootPath = '';
 
-export function setCyInstance(cy, params) {
-  currentCyInstance = cy;
-  currentParams = params;
-  window.graphManagerCy = cy;
-  window.graphManagerParams = params;
-}
+/**
+ * Initialize the Cytoscape Graph
+ */
+export async function initGraphView({ containerId, rootPath, statusElemId }) {
+    // 1. Assign state variables
+    currentRootPath = rootPath;
+    const container = document.getElementById(containerId);
+    const statusElem = document.getElementById(statusElemId);
 
-export function getCyInstance() {
-  return currentCyInstance || window.graphManagerCy;
-}
-
-export function getParams() {
-  return currentParams || window.graphManagerParams;
-}
-
-export function getSelectedNodes() {
-  const cy = getCyInstance();
-  if (!cy) return [];
-  return cy.nodes(':selected').map(n => ({
-    id: n.id(),
-    label: n.data('label'),
-    type: n.data('type'),
-    parent: n.data('parent')
-  }));
-}
-
-export function getSelectedNodeIds() {
-  const cy = getCyInstance();
-  if (!cy) return [];
-  return cy.nodes(':selected').map(n => n.id());
-}
-
-export function selectNode(nodeId) {
-  const cy = getCyInstance();
-  if (!cy) return;
-  
-  cy.nodes().unselect();
-  const node = cy.getElementById(nodeId);
-  if (node.length) {
-    node.select();
-    window.selectedFilePath = getCleanPath(nodeId);
-    updateToolbarState({ selectedFile: window.selectedFilePath });
-  }
-}
-
-export function selectMultipleNodes(nodeIds) {
-  const cy = getCyInstance();
-  if (!cy) return;
-  
-  cy.nodes().unselect();
-  nodeIds.forEach(id => {
-    const node = cy.getElementById(id);
-    if (node.length) node.select();
-  });
-}
-
-export function clearSelection() {
-  const cy = getCyInstance();
-  if (!cy) return;
-  cy.nodes().unselect();
-  window.selectedFilePath = null;
-  updateToolbarState({ selectedFile: null });
-}
-
-function getCleanPath(id) {
-  if (id === "Notebook") return "";
-  return id.startsWith("Notebook/") ? id.replace("Notebook/", "") : id;
-}
-
-function getFullPath(cleanPath) {
-  return cleanPath.startsWith("Notebook/") ? cleanPath : `Notebook/${cleanPath}`;
-}
-
-export async function createNewFile(fileName, parentPath = '') {
-  if (!fileName) throw new Error("File name is required");
-
-  const cleanParent = parentPath.replace(/^Notebook\/?/, '').replace(/^\/+/, '');
-  const fullPath = cleanParent ? `${cleanParent}/${fileName}` : fileName;
-
-  const res = await fetch("/api/files/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: fullPath }),
-  });
-
-  if (!res.ok) throw new Error(`Failed to create file: ${fileName}`);
-  const result = await res.json();
-  console.log("[GraphManagerCore] Created new file:", result);
-
-  await refreshGraph();
-  return result;
-}
-
-export async function createNewDirectory(dirName, parentPath = '') {
-  if (!dirName) throw new Error("Directory name is required");
-
-  const cleanParent = parentPath.replace(/^Notebook\/?/, '').replace(/^\/+/, '');
-  const fullPath = cleanParent ? `${cleanParent}/${dirName}` : dirName;
-
-  const res = await fetch("/api/folders/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: fullPath }),
-  });
-
-  if (!res.ok) throw new Error(`Failed to create directory: ${dirName}`);
-  const result = await res.json();
-  console.log("[GraphManagerCore] Created new directory:", result);
-
-  await refreshGraph();
-  return result;
-}
-
-export async function deleteNode(nodePath) {
-  if (!nodePath) throw new Error("Node path is required");
-
-  const cleanPath = getCleanPath(nodePath);
-  
-  const res = await fetch("/api/files/delete", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: cleanPath }),
-  });
-
-  if (!res.ok) throw new Error(`Failed to delete: ${cleanPath}`);
-  const result = await res.json();
-  console.log("[GraphManagerCore] Deleted:", result);
-
-  const cy = getCyInstance();
-  if (cy) {
-    const node = cy.getElementById(nodePath);
-    if (node.length) {
-      const descendants = cy.nodes().filter(n => n.id().startsWith(nodePath + "/"));
-      cy.batch(() => {
-        descendants.remove();
-        node.remove();
-      });
+    if (!container) {
+        console.error("❌ Graph container not found:", containerId);
+        return;
     }
-  }
 
-  await refreshGraph();
-  return result;
-}
-
-export async function renameNode(oldPath, newName) {
-  if (!oldPath || !newName) throw new Error("Path and new name are required");
-
-  const cleanOldPath = getCleanPath(oldPath);
-  const pathParts = cleanOldPath.split("/");
-  pathParts.pop();
-  const newPath = pathParts.length ? `${pathParts.join("/")}/${newName}` : newName;
-
-  const res = await fetch("/api/files/rename", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ oldPath: cleanOldPath, newPath }),
-  });
-
-  if (!res.ok) throw new Error(`Failed to rename: ${cleanOldPath}`);
-  const result = await res.json();
-  console.log("[GraphManagerCore] Renamed:", result);
-
-  await refreshGraph();
-  return result;
-}
-
-export async function moveNode(srcPath, destPath) {
-  const cleanSrc = getCleanPath(srcPath);
-  const cleanDest = getCleanPath(destPath);
-
-  const res = await fetch("/api/files/move", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ src: cleanSrc, dest: cleanDest }),
-  });
-
-  if (!res.ok) throw new Error(`Failed to move: ${cleanSrc}`);
-  const result = await res.json();
-  console.log("[GraphManagerCore] Moved:", result);
-
-  await refreshGraph();
-  return result;
-}
-
-export async function refreshGraph() {
-  const params = getParams();
-  if (!params) {
-    console.warn("[GraphManagerCore] No params available for refresh");
-    return;
-  }
-
-  const { cy, status, directoryState } = params;
-  
-  try {
-    status.textContent = "Refreshing...";
-    
-    const { recomputeEdges } = await import('./GraphManagerDependencies/EdgeManagement.mjs');
-    const { loadRoot } = await import('./GraphManagerDependencies/NodeInteraction.mjs');
-    
-    Object.keys(directoryState).forEach(key => {
-      directoryState[key].childrenLoaded = false;
+    // 2. Initialize Cytoscape Instance
+    cy = cytoscape({
+        container: container,
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'label': 'data(label)',
+                    'text-valign': 'center',
+                    'color': '#333',
+                    'background-color': '#0078d7',
+                    'width': '40px',
+                    'height': '40px',
+                    'font-size': '10px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '80px'
+                }
+            },
+            {
+                selector: 'node[type="directory"]',
+                style: {
+                    'background-color': '#ffca28',
+                    'shape': 'rectangle',
+                    'width': '50px'
+                }
+            },
+            {
+                selector: 'node:selected',
+                style: {
+                    'border-width': '4px',
+                    'border-color': '#005a9e'
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 2,
+                    'line-color': '#ccc',
+                    'target-arrow-color': '#ccc',
+                    'target-arrow-shape': 'triangle',
+                    'curve-style': 'bezier'
+                }
+            }
+        ],
+        layout: { name: 'grid' }
     });
-    
-    cy.nodes().remove();
-    cy.edges().remove();
-    
-    await loadRoot(params, "Notebook");
-    await recomputeEdges(params);
-    
-    status.textContent = `Ready — ${cy.nodes().length} nodes`;
-  } catch (err) {
-    console.error("[GraphManagerCore] Refresh error:", err);
-    status.textContent = "Refresh failed (see console)";
-  }
-}
 
-export function focusOnNode(nodeId) {
-  const cy = getCyInstance();
-  if (!cy) return;
+    // 3. Expose to global window for console troubleshooting
+    window.cy = cy;
+    console.log("🕸️ Cytoscape instance exposed to window.cy");
 
-  const node = cy.getElementById(nodeId);
-  if (node.length) {
-    cy.animate({
-      center: { eles: node },
-      zoom: 1.5
-    }, { duration: 300 });
-    selectNode(nodeId);
-  }
-}
-
-export function getNodeMetadata(nodeId) {
-  const cy = getCyInstance();
-  if (!cy) return null;
-
-  const node = cy.getElementById(nodeId);
-  if (!node.length) return null;
-
-  const incomingEdges = cy.edges().filter(e => e.target().id() === nodeId);
-  const outgoingEdges = cy.edges().filter(e => e.source().id() === nodeId);
-
-  return {
-    id: node.id(),
-    label: node.data('label'),
-    type: node.data('type'),
-    parent: node.data('parent'),
-    path: getCleanPath(node.id()),
-    incomingEdges: incomingEdges.map(e => ({ source: e.source().id(), id: e.id() })),
-    outgoingEdges: outgoingEdges.map(e => ({ target: e.target().id(), id: e.id() })),
-    childCount: cy.nodes().filter(n => n.data('parent') === nodeId).length
-  };
-}
-
-export function highlightRelatedNodes(nodeId) {
-  const cy = getCyInstance();
-  if (!cy) return;
-
-  cy.nodes().removeClass('highlighted related');
-  cy.edges().removeClass('highlighted');
-
-  const node = cy.getElementById(nodeId);
-  if (!node.length) return;
-
-  node.addClass('highlighted');
-
-  const connectedEdges = node.connectedEdges();
-  connectedEdges.addClass('highlighted');
-
-  const neighbors = node.neighborhood('node');
-  neighbors.addClass('related');
-}
-
-export function setVisibilityFilter(options = {}) {
-  const cy = getCyInstance();
-  if (!cy) return;
-
-  const { showFiles = true, showDirectories = true, fileTypes = null } = options;
-
-  cy.batch(() => {
-    cy.nodes().forEach(node => {
-      const type = node.data('type');
-      let visible = true;
-
-      if (type === 'file' && !showFiles) visible = false;
-      if (type === 'directory' && !showDirectories) visible = false;
-
-      if (fileTypes && type === 'file') {
-        const ext = node.data('label').split('.').pop().toLowerCase();
-        if (!fileTypes.includes(ext)) visible = false;
-      }
-
-      node.style('display', visible ? 'element' : 'none');
+    // 4. Interaction Handlers
+    cy.on('tap', 'node', (evt) => {
+        const node = evt.target;
+        const path = node.data('fullPath');
+        if (path !== undefined) {
+            window.selectedFilePath = path;
+            console.log("🎯 Graph Selection:", path);
+        }
     });
-  });
+
+    cy.on('dblclick', 'node', async (evt) => {
+        const node = evt.target;
+        if (node.data('type') === 'directory') {
+            await toggleDirectory(node);
+        }
+    });
+
+    // 5. Load Initial Data
+    statusElem.textContent = "Fetching Files...";
+    await fetchDirectoryContents(rootPath, (data) => {
+        renderGraphData(data, rootPath);
+        statusElem.textContent = "Ready";
+    }, null, null);
 }
 
+/**
+ * Renders nodes and creates edges to a parent
+ */
+function renderGraphData(files, parentPath) {
+    if (!files) return;
+
+    // Ensure a 'Parent' node exists to act as the hub
+    const parentId = parentPath || "Root";
+    if (cy.getElementById(parentId).empty()) {
+        cy.add({
+            group: 'nodes',
+            data: { 
+                id: parentId, 
+                label: parentId === "Root" ? "🏠 Notebook" : parentId.split('/').pop(), 
+                type: 'directory', 
+                fullPath: parentPath 
+            }
+        });
+    }
+
+    cy.batch(() => {
+        files.forEach(f => {
+            const fullPath = (parentPath ? `${parentPath}/${f.name}` : f.name).replace(/\/+/g, "/");
+            
+            // Add Node
+            if (cy.getElementById(fullPath).empty()) {
+                cy.add({
+                    group: 'nodes',
+                    data: {
+                        id: fullPath,
+                        label: f.name,
+                        fullPath: fullPath,
+                        type: f.isDirectory ? 'directory' : 'file'
+                    }
+                });
+                
+                // Add Edge from current view hub to this child
+                cy.add({
+                    group: 'edges',
+                    data: { 
+                        id: `edge-${parentId}-${fullPath}`,
+                        source: parentId, 
+                        target: fullPath 
+                    }
+                });
+            }
+        });
+    });
+
+    // Apply a clean physics-based layout
+    cy.layout({ 
+        name: 'cose', 
+        animate: true, 
+        randomize: false, 
+        nodeRepulsion: 8000 
+    }).run();
+}
+
+/**
+ * Handles Expanding/Collapsing via double-click
+ */
+async function toggleDirectory(node) {
+    const path = node.data('fullPath');
+    
+    // Find existing children (any node whose ID starts with 'path/')
+    const children = cy.nodes().filter(n => n.id().startsWith(path + '/') && n.id() !== path);
+    
+    if (children.length > 0) {
+        // Collapse: Remove them
+        cy.remove(children);
+    } else {
+        // Expand: Fetch and Render
+        await fetchDirectoryContents(path, (data) => {
+            renderGraphData(data, path);
+        }, null, null);
+    }
+}
+
+/**
+ * Toolbar Action Dispatcher
+ */
 export async function handleGraphManagerAction(actionKey) {
-  console.log(`[GraphManagerCore] Handling toolbar action: ${actionKey}`);
-
-  const selectedNodes = getSelectedNodeIds();
-  const selectedPath = selectedNodes[0] || null;
-
-  try {
-    switch (actionKey) {
-      case 'NewFile': {
-        const fileName = prompt("Enter new file name:");
-        if (fileName) {
-          const parentPath = selectedPath && getCyInstance()?.getElementById(selectedPath)?.data('type') === 'directory'
-            ? selectedPath
-            : 'Notebook';
-          await createNewFile(fileName, parentPath);
-        }
-        break;
-      }
-
-      case 'NewDirectory': {
-        const dirName = prompt("Enter new directory name:");
-        if (dirName) {
-          const parentPath = selectedPath && getCyInstance()?.getElementById(selectedPath)?.data('type') === 'directory'
-            ? selectedPath
-            : 'Notebook';
-          await createNewDirectory(dirName, parentPath);
-        }
-        break;
-      }
-
-      case 'DeleteFile': {
-        if (!selectedPath) {
-          alert("Please select a node to delete.");
-          return;
-        }
-        if (confirm(`Delete "${getCleanPath(selectedPath)}"?`)) {
-          await deleteNode(selectedPath);
-        }
-        break;
-      }
-
-      case 'renameFile': {
-        if (!selectedPath) {
-          alert("Please select a node to rename.");
-          return;
-        }
-        const currentName = selectedPath.split('/').pop();
-        const newName = prompt("Enter new name:", currentName);
-        if (newName && newName !== currentName) {
-          await renameNode(selectedPath, newName);
-        }
-        break;
-      }
-
-      case 'copyFile': {
-        if (!selectedPath) {
-          alert("Please select a node to copy.");
-          return;
-        }
-        window.clipboardPath = selectedPath;
-        window.clipboardOperation = 'copy';
-        console.log("[GraphManagerCore] Copied to clipboard:", selectedPath);
-        break;
-      }
-
-      case 'cutFile': {
-        if (!selectedPath) {
-          alert("Please select a node to cut.");
-          return;
-        }
-        window.clipboardPath = selectedPath;
-        window.clipboardOperation = 'cut';
-        console.log("[GraphManagerCore] Cut to clipboard:", selectedPath);
-        break;
-      }
-
-      case 'pasteFile': {
-        if (!window.clipboardPath) {
-          alert("Nothing to paste. Copy or cut a file first.");
-          return;
-        }
-        const destPath = selectedPath && getCyInstance()?.getElementById(selectedPath)?.data('type') === 'directory'
-          ? selectedPath
-          : 'Notebook';
-        
-        const cleanDestPath = getCleanPath(destPath);
-        const fileName = window.clipboardPath.split('/').pop();
-        const fullDestPath = cleanDestPath ? `${cleanDestPath}/${fileName}` : fileName;
-        
-        if (window.clipboardOperation === 'cut') {
-          await moveNode(window.clipboardPath, fullDestPath);
-          window.clipboardPath = null;
-          window.clipboardOperation = null;
-        } else {
-          const res = await fetch("/api/files/copy", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              src: getCleanPath(window.clipboardPath),
-              dest: fullDestPath
-            }),
-          });
-          if (!res.ok) throw new Error("Copy failed");
-          await refreshGraph();
-        }
-        break;
-      }
-
-      case 'UpdateEdges': {
-        await refreshGraph();
-        break;
-      }
-
-      default:
-        console.warn(`[GraphManagerCore] Unknown action: ${actionKey}`);
+    console.log(`GraphManager: Action "${actionKey}" routed to File System`);
+    try {
+        const modulePath = `/ToolbarCallbacks/file/${actionKey}.mjs`;
+        const callbackModule = await import(modulePath);
+        await callbackModule.default();
+        // Refresh graph after action (e.g., delete or new file)
+        window.refreshGraphManager();
+    } catch (err) {
+        console.error("Action handler failed:", err);
     }
-  } catch (err) {
-    console.error(`[GraphManagerCore] Error executing action ${actionKey}:`, err);
-    alert(`Error: ${err.message}`);
-  }
 }
-
 window.handleGraphManagerAction = handleGraphManagerAction;
-window.refreshGraphManager = refreshGraph;
+
+/**
+ * Global Refresh
+ */
+window.refreshGraphManager = async function() {
+    cy.elements().remove();
+    await fetchDirectoryContents(currentRootPath, (data) => {
+        renderGraphData(data, currentRootPath);
+    });
+};
