@@ -88,8 +88,18 @@ const phpProxyOptions = {
 // Apply PHP proxy middleware for /php/* routes
 app.use('/php', createProxyMiddleware(phpProxyOptions));
 
-// Serve static files with security restrictions
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files with security restrictions and no caching for development
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  maxAge: 0,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.mjs') || path.endsWith('.js') || path.endsWith('.json')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // Restrict vendor access to only necessary client libraries (SECURITY FIX)
 app.use('/vendor/monaco-editor', express.static(path.join(__dirname, 'node_modules/monaco-editor')));
