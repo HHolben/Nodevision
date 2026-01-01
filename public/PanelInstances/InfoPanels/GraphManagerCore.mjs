@@ -1,25 +1,16 @@
 // Nodevision/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
-
 import { fetchDirectoryContents } from './FileManagerCore.mjs';
+import { scanFileForLinks } from './GraphManagerDependencies/ScanForLinks.mjs';
+import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs'; // Added import
 
 let cy;
 let currentRootPath = '';
 
-/**
- * Initialize the Cytoscape Graph
- */
 export async function initGraphView({ containerId, rootPath, statusElemId }) {
-    // 1. Assign state variables
     currentRootPath = rootPath;
     const container = document.getElementById(containerId);
     const statusElem = document.getElementById(statusElemId);
 
-    if (!container) {
-        console.error("❌ Graph container not found:", containerId);
-        return;
-    }
-
-    // 2. Initialize Cytoscape Instance
     cy = cytoscape({
         container: container,
         style: [
@@ -30,64 +21,53 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'text-valign': 'center',
                     'color': '#333',
                     'background-color': '#0078d7',
-                    'width': '40px',
-                    'height': '40px',
-                    'font-size': '10px',
-                    'text-wrap': 'wrap',
-                    'text-max-width': '80px'
+                    'font-size': '10px'
                 }
             },
+            // Style for the "Collapsed" Directory
             {
                 selector: 'node[type="directory"]',
                 style: {
                     'background-color': '#ffca28',
                     'shape': 'rectangle',
-                    'width': '50px'
+                    'width': '50px',
+                    'height': '30px'
                 }
             },
+            // Style for the "Expanded" Compound Node
             {
-                selector: 'node:selected',
+                selector: ':parent',
                 style: {
-                    'border-width': '4px',
-                    'border-color': '#005a9e'
+                    'background-opacity': 0.1,
+                    'background-color': '#ffca28',
+                    'border-color': '#ffca28',
+                    'border-width': 2,
+                    'text-valign': 'top',
+                    'text-halign': 'center'
                 }
             },
             {
                 selector: 'edge',
-                style: {
-                    'width': 2,
-                    'line-color': '#ccc',
-                    'target-arrow-color': '#ccc',
-                    'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier'
-                }
+                style: { 'width': 1, 'line-color': '#ccc' }
             }
         ],
-        layout: { name: 'grid' }
+        layout: { name: 'cose', padding: 30 }
     });
 
-    // 3. Expose to global window for console troubleshooting
     window.cy = cy;
-    console.log("🕸️ Cytoscape instance exposed to window.cy");
 
-    // 4. Interaction Handlers
     cy.on('tap', 'node', (evt) => {
-        const node = evt.target;
-        const path = node.data('fullPath');
-        if (path !== undefined) {
-            window.selectedFilePath = path;
-            console.log("🎯 Graph Selection:", path);
-        }
+        const path = evt.target.data('fullPath');
+        if (path !== undefined) window.selectedFilePath = path;
     });
 
     cy.on('dblclick', 'node', async (evt) => {
         const node = evt.target;
         if (node.data('type') === 'directory') {
-            await toggleDirectory(node);
+            await toggleCompoundDirectory(node);
         }
     });
 
-    // 5. Load Initial Data
     statusElem.textContent = "Fetching Files...";
     await fetchDirectoryContents(rootPath, (data) => {
         renderGraphData(data, rootPath);
@@ -95,14 +75,11 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
     }, null, null);
 }
 
-/**
- * Renders nodes and creates edges to a parent
- */
 function renderGraphData(files, parentPath) {
     if (!files) return;
 
-    // Ensure a 'Parent' node exists to act as the hub
     const parentId = parentPath || "Root";
+    
     if (cy.getElementById(parentId).empty()) {
         cy.add({
             group: 'nodes',
@@ -119,7 +96,6 @@ function renderGraphData(files, parentPath) {
         files.forEach(f => {
             const fullPath = (parentPath ? `${parentPath}/${f.name}` : f.name).replace(/\/+/g, "/");
             
-            // Add Node
             if (cy.getElementById(fullPath).empty()) {
                 cy.add({
                     group: 'nodes',
@@ -127,72 +103,72 @@ function renderGraphData(files, parentPath) {
                         id: fullPath,
                         label: f.name,
                         fullPath: fullPath,
-                        type: f.isDirectory ? 'directory' : 'file'
+                        type: f.isDirectory ? 'directory' : 'file',
+                        parent: parentId 
                     }
                 });
-                
-                // Add Edge from current view hub to this child
-                cy.add({
-                    group: 'edges',
-                    data: { 
-                        id: `edge-${parentId}-${fullPath}`,
-                        source: parentId, 
-                        target: fullPath 
+
+                if (!f.isDirectory) {
+                    const ext = f.name.split('.').pop().toLowerCase();
+                    if (ext === 'html' || ext === 'md') {
+                        // Trigger scan and save logic
+                        handleLinkDiscovery(fullPath);
                     }
-                });
+                }
             }
         });
     });
 
-    // Apply a clean physics-based layout
-    cy.layout({ 
-        name: 'cose', 
-        animate: true, 
-        randomize: false, 
-        nodeRepulsion: 8000 
-    }).run();
+    cy.layout({ name: 'cose', animate: true }).run();
 }
 
 /**
- * Handles Expanding/Collapsing via double-click
+ * Helper to scan a file and save any found edges to the JSON shards
  */
-async function toggleDirectory(node) {
+async function handleLinkDiscovery(filePath) {
+    try {
+        const links = await scanFileForLinks(filePath);
+        
+        if (links && Array.isArray(links)) {
+            // Use a for...of loop for async operations to ensure 
+            // shards are updated sequentially rather than overlapping.
+            for (const targetPath of links) {
+                await saveFoundEdge({
+                    source: filePath,
+                    target: targetPath
+                });
+            }
+        }
+    } catch (err) {
+        console.error(`Link discovery failed for ${filePath}:`, err);
+    }
+}
+
+async function toggleCompoundDirectory(node) {
     const path = node.data('fullPath');
     
-    // Find existing children (any node whose ID starts with 'path/')
-    const children = cy.nodes().filter(n => n.id().startsWith(path + '/') && n.id() !== path);
+    // Find children that currently have this node as a parent
+    const children = cy.nodes().filter(n => n.data('parent') === node.id());
     
     if (children.length > 0) {
-        // Collapse: Remove them
-        cy.remove(children);
+        // COLLAPSE: Remove all children recursively
+        // We use a selector to find all descendants
+        const descendants = node.descendants();
+        cy.remove(descendants);
+        
+        // After removing children, the node reverts to a regular rectangle via style
+        console.log("Collapsed directory:", path);
     } else {
-        // Expand: Fetch and Render
+        // EXPAND: Fetch contents and add them as children
         await fetchDirectoryContents(path, (data) => {
             renderGraphData(data, path);
         }, null, null);
+        console.log("Expanded directory to compound node:", path);
     }
+    
+    cy.layout({ name: 'cose', animate: true }).run();
 }
 
-/**
- * Toolbar Action Dispatcher
- */
-export async function handleGraphManagerAction(actionKey) {
-    console.log(`GraphManager: Action "${actionKey}" routed to File System`);
-    try {
-        const modulePath = `/ToolbarCallbacks/file/${actionKey}.mjs`;
-        const callbackModule = await import(modulePath);
-        await callbackModule.default();
-        // Refresh graph after action (e.g., delete or new file)
-        window.refreshGraphManager();
-    } catch (err) {
-        console.error("Action handler failed:", err);
-    }
-}
-window.handleGraphManagerAction = handleGraphManagerAction;
-
-/**
- * Global Refresh
- */
 window.refreshGraphManager = async function() {
     cy.elements().remove();
     await fetchDirectoryContents(currentRootPath, (data) => {

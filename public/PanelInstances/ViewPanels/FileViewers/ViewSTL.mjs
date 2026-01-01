@@ -148,7 +148,7 @@ class STLViewer {
 
       // Vertex cloud instead of thousands of spheres
       const verticesMaterial = new THREE.PointsMaterial({
-        size: maxDim * 0.01,
+        size: maxDim * 0.05,
         color: 0xffcc00
       });
       const pointCloud = new THREE.Points(geometry, verticesMaterial);

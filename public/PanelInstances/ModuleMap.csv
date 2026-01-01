@@ -209,6 +209,7 @@ rst,ViewText.mjs,
 s,ViewText.mjs,
 sam,ViewText.mjs,
 sav,ViewBinary.mjs,
+scad,ViewSCAD.mjs
 sch,ViewText.mjs,
 scad,ViewSCAD.mjs,SCADeditor.mjs
 scss,ViewText.mjs,

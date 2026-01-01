@@ -88,6 +88,11 @@ const phpProxyOptions = {
 // Apply PHP proxy middleware for /php/* routes
 app.use('/php', createProxyMiddleware(phpProxyOptions));
 
+
+// 1. Explicitly allow the data folder with the prefix you want
+app.use('/public/data', express.static(path.join(__dirname, 'public/data')));
+
+// 2. Then the general public folder
 // Serve static files with security restrictions and no caching for development
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: false,
@@ -100,6 +105,8 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
+
+
 
 // Restrict vendor access to only necessary client libraries (SECURITY FIX)
 app.use('/vendor/monaco-editor', express.static(path.join(__dirname, 'node_modules/monaco-editor')));
@@ -124,6 +131,8 @@ app.use('/UserSettings', express.static(path.join(__dirname, 'UserSettings')));
 
 
 app.use('/Notebook', express.static(path.join(__dirname, 'Notebook')));
+
+
 
 // Serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -257,6 +266,59 @@ app.get('/api/list-links', async (req, res) => {
     res.status(403).json({ error: 'Access denied or directory not found' });
   }
 });
+
+
+// Generic edge-bucket JSON saver (case-sensitive, by first character)
+app.post('/api/graph/save-edges', async (req, res) => {
+  try {
+    const { filename, data } = req.body;
+
+    if (!filename || typeof filename !== 'string') {
+      return res.status(400).json({ error: 'filename is required' });
+    }
+
+    if (typeof data !== 'object') {
+      return res.status(400).json({ error: 'data must be a JSON object' });
+    }
+
+    // Determine bucket character (CASE-SENSITIVE)
+    let char = filename.trim()[0];
+    if (!char) char = '#';
+
+    // Optional safety: restrict to sane filename chars
+    if (!/^[A-Za-z0-9]$/.test(char)) {
+      char = '#';
+    }
+
+    const edgesDir = path.join(__dirname, 'public/data/edges');
+    const targetFile = path.join(edgesDir, `${char}.json`);
+
+    await fsPromises.mkdir(edgesDir, { recursive: true });
+
+    // Atomic write
+    const tmpFile = targetFile + '.tmp';
+    await fsPromises.writeFile(
+      tmpFile,
+      JSON.stringify(data, null, 2),
+      'utf8'
+    );
+    await fsPromises.rename(tmpFile, targetFile);
+
+    res.json({
+      success: true,
+      bucket: char,
+      path: `public/data/edges/${char}.json`
+    });
+  } catch (err) {
+    console.error('Failed to save edge bucket:', err);
+    res.status(500).json({ error: 'Failed to save edge data' });
+  }
+});
+
+
+
+
+
 
 // Load gamepad settings
 app.get('/api/load-gamepad-settings', async (req, res) => {

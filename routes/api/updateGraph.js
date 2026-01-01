@@ -1,3 +1,4 @@
+// Nodevision/routes/api/updateGraph.js
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -7,42 +8,56 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const router = express.Router();
 
-router.post('/api/updateGraph', async (req, res) => {
-  const elements = req.body.elements;
+const EDGES_DIR = path.resolve(__dirname, '../../public/data/edges');
 
-  if (!elements || !Array.isArray(elements)) {
-    return res.status(400).json({ error: 'No graph elements provided or invalid format.' });
-  }
+/**
+ * Endpoint to update graph shards or legacy files
+ * Mounted at /api via server.js, so URL is /api/updateGraph
+ */
+router.post('/updateGraph', async (req, res) => {
+    console.log("📥 Received request at /api/updateGraph");
+    const { shardName, edges, elements } = req.body;
 
-  try {
-    const nodes = [];
-    const edges = [];
-
-    elements.forEach(element => {
-      if (element.data) {
-        const data = element.data;
-        if (data.source && data.target) {
-          edges.push(data);
-        } else {
-          nodes.push(data);
+    try {
+        // 1. Shard Saving Logic
+        if (shardName && Array.isArray(edges)) {
+            await fs.mkdir(EDGES_DIR, { recursive: true });
+            const filePath = path.join(EDGES_DIR, shardName);
+            await fs.writeFile(filePath, JSON.stringify(edges, null, 2), 'utf8');
+            
+            console.log(`✅ Shard saved: ${shardName}`);
+            return res.json({ success: true, message: `Shard ${shardName} updated.` });
         }
-      }
-    });
 
-    const dataDir = path.resolve(__dirname, '../../public/data');
-    await fs.mkdir(dataDir, { recursive: true });
+        // 2. Legacy Full Graph Logic
+        if (elements && Array.isArray(elements)) {
+            const nodes = [];
+            const edgesList = [];
 
-    const nodesContent = `export const generatedNodes = ${JSON.stringify(nodes, null, 2)};\n`;
-    const edgesContent = `export const generatedEdges = ${JSON.stringify(edges, null, 2)};\n`;
+            elements.forEach(el => {
+                if (el.data?.source && el.data?.target) edgesList.push(el.data);
+                else if (el.data) nodes.push(el.data);
+            });
 
-    await fs.writeFile(path.join(dataDir, 'GeneratedNodes.js'), nodesContent, 'utf8');
-    await fs.writeFile(path.join(dataDir, 'GeneratedEdges.js'), edgesContent, 'utf8');
+            const dataDir = path.resolve(__dirname, '../../public/data');
+            await fs.mkdir(dataDir, { recursive: true });
 
-    res.json({ success: true, message: 'Graph updated successfully.' });
-  } catch (error) {
-    console.error('Error updating graph:', error);
-    res.status(500).json({ error: 'Failed to update graph.' });
-  }
+            await fs.writeFile(path.join(dataDir, 'GeneratedNodes.js'), `export const generatedNodes = ${JSON.stringify(nodes, null, 2)};`, 'utf8');
+            await fs.writeFile(path.join(dataDir, 'GeneratedEdges.js'), `export const generatedEdges = ${JSON.stringify(edgesList, null, 2)};`, 'utf8');
+
+            console.log("✅ Legacy graph files updated.");
+            return res.json({ success: true, message: 'Legacy graph files updated.' });
+        }
+
+        // 3. Fallback if body doesn't match
+        console.warn("⚠️ updateGraph received invalid body structure");
+        return res.status(400).json({ error: 'Invalid request format. Expected shardName/edges or elements.' });
+
+    } catch (error) {
+        console.error('❌ Error in updateGraph route:', error);
+        return res.status(500).json({ error: 'Internal server error while updating graph.' });
+    }
 });
 
+// CRITICAL: Ensure the router is the default export
 export default router;
