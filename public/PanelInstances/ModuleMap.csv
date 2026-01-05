@@ -110,6 +110,7 @@ iges,ViewText.mjs,
 iiif.json,ViewIIIF.mjs,
 ini,ViewText.mjs,
 inp,ViewText.mjs,
+io,ViewIO.mjs
 isoxml,ViewISOXML.mjs,
 
 jar,ViewArchive.mjs,

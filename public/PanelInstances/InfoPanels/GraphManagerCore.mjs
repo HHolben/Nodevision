@@ -1,13 +1,15 @@
 // Nodevision/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
 import { fetchDirectoryContents } from './FileManagerCore.mjs';
 import { scanFileForLinks } from './GraphManagerDependencies/ScanForLinks.mjs';
-import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs'; // Added import
+import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
+import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';
+import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
 
 let cy;
 let currentRootPath = '';
 
 export async function initGraphView({ containerId, rootPath, statusElemId }) {
-    currentRootPath = rootPath;
+    currentRootPath = normalizePath(rootPath);
     const container = document.getElementById(containerId);
     const statusElem = document.getElementById(statusElemId);
 
@@ -21,10 +23,10 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'text-valign': 'center',
                     'color': '#333',
                     'background-color': '#0078d7',
-                    'font-size': '10px'
+                    'font-size': '10px',
+                    'z-index': 10
                 }
             },
-            // Style for the "Collapsed" Directory
             {
                 selector: 'node[type="directory"]',
                 style: {
@@ -34,7 +36,6 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'height': '30px'
                 }
             },
-            // Style for the "Expanded" Compound Node
             {
                 selector: ':parent',
                 style: {
@@ -48,7 +49,15 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
             },
             {
                 selector: 'edge',
-                style: { 'width': 1, 'line-color': '#ccc' }
+                style: { 
+                    'width': 2, 
+                    'line-color': '#adadad',
+                    'target-arrow-shape': 'triangle',
+                    'target-arrow-color': '#adadad',
+                    'curve-style': 'bezier',
+                    'opacity': 0.8,
+                    'arrow-scale': 1.2
+                }
             }
         ],
         layout: { name: 'cose', padding: 30 }
@@ -56,7 +65,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
 
     window.cy = cy;
 
-    cy.on('tap', 'node', (evt) => {
+        cy.on('tap', 'node', (evt) => {
         const path = evt.target.data('fullPath');
         if (path !== undefined) window.selectedFilePath = path;
     });
@@ -69,17 +78,18 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
     });
 
     statusElem.textContent = "Fetching Files...";
-    await fetchDirectoryContents(rootPath, (data) => {
-        renderGraphData(data, rootPath);
+    await fetchDirectoryContents(currentRootPath, (data) => {
+        renderGraphData(data, currentRootPath);
         statusElem.textContent = "Ready";
     }, null, null);
 }
 
-function renderGraphData(files, parentPath) {
+async function renderGraphData(files, parentPath) {
     if (!files) return;
 
-    const parentId = parentPath || "Root";
-    
+    const normalizedParentPath = normalizePath(parentPath);
+    const parentId = normalizedParentPath || "Root";
+
     if (cy.getElementById(parentId).empty()) {
         cy.add({
             group: 'nodes',
@@ -87,14 +97,17 @@ function renderGraphData(files, parentPath) {
                 id: parentId, 
                 label: parentId === "Root" ? "🏠 Notebook" : parentId.split('/').pop(), 
                 type: 'directory', 
-                fullPath: parentPath 
+                fullPath: normalizedParentPath 
             }
         });
     }
 
+    const filesToScan = [];
+
     cy.batch(() => {
         files.forEach(f => {
-            const fullPath = (parentPath ? `${parentPath}/${f.name}` : f.name).replace(/\/+/g, "/");
+            const rawPath = parentPath ? `${parentPath}/${f.name}` : f.name;
+            const fullPath = normalizePath(rawPath);
             
             if (cy.getElementById(fullPath).empty()) {
                 cy.add({
@@ -111,67 +124,76 @@ function renderGraphData(files, parentPath) {
                 if (!f.isDirectory) {
                     const ext = f.name.split('.').pop().toLowerCase();
                     if (ext === 'html' || ext === 'md') {
-                        // Trigger scan and save logic
-                        handleLinkDiscovery(fullPath);
+                        filesToScan.push(fullPath);
                     }
                 }
             }
         });
     });
 
-    cy.layout({ name: 'cose', animate: true }).run();
+    // Run layout first so nodes have positions
+    cy.layout({ name: 'cose', animate: true, fit: true }).run();
+
+    // Scan for links AFTER nodes are added to the graph instance
+    for (const filePath of filesToScan) {
+        await handleLinkDiscovery(filePath);
+    }
 }
 
-/**
- * Helper to scan a file and save any found edges to the JSON shards
- */
 async function handleLinkDiscovery(filePath) {
+    const cleanSource = normalizePath(filePath);
     try {
-        const links = await scanFileForLinks(filePath);
+        const links = await scanFileForLinks(cleanSource);
         
         if (links && Array.isArray(links)) {
-            // Use a for...of loop for async operations to ensure 
-            // shards are updated sequentially rather than overlapping.
             for (const targetPath of links) {
-                await saveFoundEdge({
-                    source: filePath,
-                    target: targetPath
-                });
+                const cleanTarget = normalizePath(targetPath);
+                console.log("Clean Target: "+cleanTarget);
+    
+
+                // Persist
+                await saveFoundEdge({ source: cleanSource, target: cleanTarget });
+
+                // Find visible endpoints
+                const visibleSource = getVisibleNodeId(cy, cleanSource);
+                const visibleTarget = getVisibleNodeId(cy, cleanTarget);
+                console.log("Visible Target:" + visibleTarget);
+
+                // DEBUG: If you still see root edges, check these logs
+                console.log(`Link: ${cleanSource} -> ${cleanTarget} | Visual: ${visibleSource} -> ${visibleTarget}`);
+
+                if (visibleSource !== visibleTarget) {
+                    const edgeId = `edge-${visibleSource}-${visibleTarget}`;
+                    
+                    if (cy.getElementById(edgeId).empty()) {
+                        cy.add({
+                            group: 'edges',
+                            data: {
+                                id: edgeId,
+                                source: visibleSource,
+                                target: visibleTarget
+                            }
+                        });
+
+                    }
+                }
             }
         }
     } catch (err) {
-        console.error(`Link discovery failed for ${filePath}:`, err);
+        console.error(`Link discovery failed for ${cleanSource}:`, err);
     }
 }
 
 async function toggleCompoundDirectory(node) {
     const path = node.data('fullPath');
+    const descendants = node.descendants();
     
-    // Find children that currently have this node as a parent
-    const children = cy.nodes().filter(n => n.data('parent') === node.id());
-    
-    if (children.length > 0) {
-        // COLLAPSE: Remove all children recursively
-        // We use a selector to find all descendants
-        const descendants = node.descendants();
+    if (!descendants.empty()) {
         cy.remove(descendants);
-        
-        // After removing children, the node reverts to a regular rectangle via style
-        console.log("Collapsed directory:", path);
     } else {
-        // EXPAND: Fetch contents and add them as children
         await fetchDirectoryContents(path, (data) => {
             renderGraphData(data, path);
         }, null, null);
-        console.log("Expanded directory to compound node:", path);
     }
-    
     cy.layout({ name: 'cose', animate: true }).run();
 }
-
-window.refreshGraphManager = async function() {
-    cy.elements().remove();
-    await fetchDirectoryContents(currentRootPath, (data) => {
-        renderGraphData(data, currentRootPath);
-    });
-};

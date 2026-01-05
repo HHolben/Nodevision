@@ -36,6 +36,7 @@
     "express-session": "^1.18.1",
     "fontkit": "^2.0.4",
     "http-proxy-middleware": "^3.0.5",
+    "jszip": "^3.10.1",
     "keycloak-js": "^26.2.0",
     "layout-base": "^2.0.1",
     "mathjax": "^3.2.2",

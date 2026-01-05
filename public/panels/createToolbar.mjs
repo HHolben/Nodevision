@@ -248,7 +248,19 @@ function buildDropdownFromItem(item) {
   const topItems = subItems.filter(i => !i.parentHeading);
   if (!topItems.length) return null;
 
+
   const dropdown = document.createElement("div");
+
+Object.assign(dropdown.style, {
+  position: "absolute",
+  top: "100%",
+  left: "0",
+  zIndex: "1000",      // 🔥 this is the key
+  background: "#f5f5f5",
+  border: "1px solid #333",
+  display: "none",
+  minWidth: "100%",
+});
 
   buildToolbar(dropdown, topItems);
 
@@ -274,17 +286,26 @@ function buildDropdownFromItem(item) {
 // === Build sub-toolbar ===
 function buildSubToolbar(items, container = subToolbarContainer) {
   if (!container) return;
+
+  // Clear + FORCE visibility (fixes "disappearing" bug)
   container.innerHTML = "";
+  Object.assign(container.style, {
+    display: "flex",
+    position: "relative", // creates stacking context
+    zIndex: "10",         // lower than dropdowns (which should be 1000+)
+    backgroundColor: "#f5f5f5",
+  });
 
   items.forEach(item => {
     const btn = document.createElement("button");
     btn.textContent = item.heading;
+
     Object.assign(btn.style, {
-    
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
- 
+      gap: "6px",
+      padding: "4px 8px",
     });
 
     if (item.icon) {
@@ -297,16 +318,22 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 
     btn.addEventListener("click", e => {
       e.stopPropagation();
+
       if (item.panelTemplateId || item.panelTemplate) {
         const templateId = item.panelTemplateId || item.panelTemplate;
-        const moduleName = templateId.replace(".json", "").replace("Panel", "").replace("panel", "").replace(/^\w/, c => c.toUpperCase());
+        const moduleName = templateId
+          .replace(".json", "")
+          .replace("Panel", "")
+          .replace("panel", "")
+          .replace(/^\w/, c => c.toUpperCase());
+
         const panelType = item.panelType || "InfoPanel";
         createPanel(moduleName, panelType, item.defaultInstanceVars || {});
       }
-      
+
       if (item.routeToActivePanel && item.callbackKey) {
         const handler = window.NodevisionState.activeActionHandler;
-        if (typeof handler === 'function') {
+        if (typeof handler === "function") {
           handler(item.callbackKey);
         } else if (item.ToolbarCategory) {
           handleToolbarClick(item.ToolbarCategory, item.callbackKey);
@@ -318,14 +345,8 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 
     container.appendChild(btn);
   });
-
-  Object.assign(container.style, {
-    display: "flex",
-    borderTop: "1px solid #333",
-    padding: "4px",
-    backgroundColor: "#f5f5f5",
-  });
 }
+
 
 // === Show sub-toolbar ===
 function showSubToolbar(panelHeading) {

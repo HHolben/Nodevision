@@ -82,6 +82,19 @@
       "parentHeading": "Insert Text"
     },
     
+           {
+      "ToolbarCategory": "Insert",
+      "heading": "Tab",
+      "insertGroup": "text",
+      "callbackKey": "insertTab",
+      "icon": "icons/InsertTab.png",
+      "parentHeading": "Insert Text"
+    },
+
+    
+
+
+
     {
       "ToolbarCategory": "Insert",
       "heading": "table",
