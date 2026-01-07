@@ -22,6 +22,7 @@
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
+
 }
 
 .toolbar-button button:hover {
@@ -40,28 +41,41 @@
   height: 18px;
 }
 
+
+
 /* === Dropdown Panels === */
 .toolbar-button > div {
   position: absolute;
+  top: 100%;
+  left: 0;
+
+  min-width: 180px;        /* ← single source of truth */
+  width: 180px;            /* force uniform width */
+
   background: #006b1c;
   border-radius: 4px;
-  padding: 0;                /* remove padding so items can fill width */
+  padding: 4px 0;
+  z-index: 9999;
+
   display: none;
   flex-direction: column;
-  min-width: 160px;          /* minimum width of the dropdown */
-  z-index: 9999;
-  box-sizing: border-box;    /* ensures padding doesn't exceed width */
 }
 
+
+.toolbar-button > div a:focus {
+  outline: none;
+  background: #00c040;
+}
 /* === Dropdown Items === */
 .toolbar-button > div a {
   align-items: center;
-  width: 30px;               /* full width of parent dropdown */
+  width:100%;               /* full width of parent dropdown */
   padding: 8px 12px;
   color: black;
   background: #eee;
   text-decoration: none;
   box-sizing: border-box;
+
 }
 
 .toolbar-button > div a:last-child {
