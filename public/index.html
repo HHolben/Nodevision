@@ -53,11 +53,7 @@
       flex-direction: column;
     }
 
-    #workspace {
-      flex: 1;
-      overflow: auto; /* workspace scrolling instead of body scrolling */
-      position: relative;
-    }
+
   </style>
 
 </head>
@@ -70,6 +66,13 @@
 
   <!-- Workspace for panels -->
   <div id="workspace"></div>
+
+  
+<!-- Status bar pinned to bottom -->
+<div id="status-bar">
+  <span id="status-left">Ready</span>
+  <span id="status-right"></span>
+</div>
 
   <!-- Main Application Entrypoint -->
   <script type="module" src="./main.mjs"></script>

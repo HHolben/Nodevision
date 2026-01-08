@@ -3,7 +3,11 @@
 
 import { createToolbar } from './panels/createToolbar.mjs';
 import { ensureWorkspace, loadDefaultLayout, renderLayout } from "./panels/workspace.mjs";
+import { initStatusBar } from "./StatusBar.mjs";
 
+
+//Initialize the status bar: 
+initStatusBar();
 
 
 
@@ -46,8 +50,6 @@ function addDividers() {
     #workspace {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      width: 98vw;
       overflow: hidden;
     }
 

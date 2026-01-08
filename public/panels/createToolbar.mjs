@@ -4,6 +4,9 @@
 import { createPanel } from '/panels/panelManager.mjs';
 import { dockPanel } from '/panels/panelControls.mjs';
 import { loadCallback } from "/callbackLoader.mjs";
+import { setStatus } from "./../StatusBar.mjs";
+
+
 
 let currentSubToolbarHeading = null;
 let subToolbarContainer = null;
@@ -118,6 +121,8 @@ return true;
 
   // Build main toolbar from filtered items
   buildToolbar(toolbar, filteredToolbar);
+
+setStatus("Toolbar ready", `Mode: ${currentMode}`);
 
   console.log(`🧭 Toolbar built for mode: ${currentMode}`);
 }
@@ -380,11 +385,14 @@ function showSubToolbar(panelHeading) {
 
 // === Update toolbar state dynamically ===
 export function updateToolbarState(newState = {}) {
+  console.log("Updating Toolbar state")
   // Merge new state into the global NodevisionState
   Object.assign(window.NodevisionState, newState);
 
   // Determine the current mode (fallback to "default")
   const currentMode = window.NodevisionState?.currentMode || "default";
+setStatus("Mode", currentMode);
+
 
   const toolbar = document.querySelector("#global-toolbar");
   if (!toolbar) return;

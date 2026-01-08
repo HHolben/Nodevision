@@ -72,7 +72,6 @@
   width:100%;               /* full width of parent dropdown */
   padding: 8px 12px;
   color: black;
-  background: #eee;
   text-decoration: none;
   box-sizing: border-box;
 
@@ -102,6 +101,3 @@
   border-radius: 4px;
 }
 
-#sub-toolbar button:hover {
-  background: #ddd;
-}

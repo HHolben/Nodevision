@@ -6,9 +6,7 @@
   display: grid;
   grid-template-columns: repeat(12, 1fr); /* flexible 12-col system */
   grid-auto-rows: minmax(100px, auto);    /* rows expand to fit */
-  gap: 8px;
-  height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: #e9e9e9;
   position: relative; /* anchor for overlay */
 }
@@ -84,10 +82,7 @@
   right: 0;
   cursor: se-resize;
 }
-.panel-row {
-  display: flex;
-  width: 100%;
-}
+
 
 .panel-cell {
   flex: 1;
@@ -123,10 +118,6 @@
   margin: 0 !important;
 }
 
-.panel-row {
-  display: flex;
-  width: 100%;
-}
 
 .panel-cell {
   flex: 1;
@@ -136,7 +127,6 @@
 
 .panel {
   border: 1px solid #333;
-  margin: 4px;
   background: #f9f9f9;
   display: flex;
   flex-direction: column;
@@ -144,14 +134,12 @@
 
 .panel-header {
   background: #ddd;
-  padding: 2px 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .panel-controls button {
-  margin-left: 4px;
   cursor: pointer;
 }
 
@@ -163,16 +151,25 @@
 }
 
 /* Panel grid / workspace */
-#workspace { width: 100%; box-sizing: border-box; }
+#workspace { 
+
+  padding-right: 0.3%;
+  padding-left: 0.3%;
+  box-sizing: border-box;}
+  
+
+
 .panel-row {
   display: flex;
   flex-direction: row;
   width: 100%;
   flex: 1;
   min-height: 50px;
-  position: relative; /* so dividers align well */
-}
+  position: relative;
 
+
+  
+}
 .row-divider {
   height: 6px;
   background: #666;

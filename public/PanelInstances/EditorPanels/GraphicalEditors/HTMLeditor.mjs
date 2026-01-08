@@ -1,7 +1,8 @@
 // Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs
 // This file populates the panel with the HTML editor.
 
-import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { updateToolbarState } from "./../../../panels/createToolbar.mjs";
+
 
 // --------------------------------------------------
 // Fallback Hotkeys (self-contained)
@@ -72,6 +73,7 @@ export async function renderEditor(filePath, container) {
   // Set mode
   window.NodevisionState.currentMode = "HTMLediting";
   updateToolbarState({ currentMode: "HTMLediting" });
+
 
   // Root container
   const wrapper = document.createElement("div");

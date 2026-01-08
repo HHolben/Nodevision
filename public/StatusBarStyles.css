@@ -1,0 +1,18 @@
+/*Nodevision/public/StatusBarStyles.css*/
+
+#status-bar {
+  height: 22px;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+
+  z-index: 1500;
+}
+
+#status-bar span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -2,13 +2,17 @@
 // Handles workspace, rows, cells, and resizable dividers, with dynamic multi-directory panel loading
 // Adds activeCell/activePanel tracking and toolbar-based panel replacement
 
+import { logStatus } from "./../StatusBar.mjs";
+import { setStatus } from "./../StatusBar.mjs";
+
+
+
 export function ensureWorkspace() {
   let workspace = document.getElementById("workspace");
   if (!workspace) {
     workspace = document.createElement("div");
     workspace.id = "workspace";
     workspace.style.padding = "8px";
-    workspace.style.height = "calc(100vh - 50px)";
     workspace.style.display = "flex";
     workspace.style.flexDirection = "column";
     document.body.appendChild(workspace);
@@ -435,7 +439,9 @@ function setupActivePanelTracking() {
     window.activePanel = panelId;
     window.activePanelClass = panelClass;
 
-    console.log(`🎯 Active panel: ${panelId} (${panelClass})`);
+    logStatus(`🎯 Active panel: ${panelId} (${panelClass})`);
+    setStatus("🎯 Active panel", `${panelId} (${panelClass})`);
+    
     highlightActiveCell(cell);
 
     // Update NodevisionState for toolbar
