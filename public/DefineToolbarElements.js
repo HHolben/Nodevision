@@ -15,7 +15,9 @@ async function loadToolbarElements(configUrls = [
   'ToolbarJSONfiles/viewToolbar.json',
   'ToolbarJSONfiles/searchToolbar.json',
   'ToolbarJSONfiles/userToolbar.json',
-  'ToolbarJSONfiles/insertToolbar.json'
+  'ToolbarJSONfiles/insertToolbar.json',
+    'ToolbarJSONfiles/drawToolbar.json',
+
 ]) {
   try {
     // Fetch all configuration files concurrently.

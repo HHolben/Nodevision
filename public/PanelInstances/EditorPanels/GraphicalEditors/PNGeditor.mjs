@@ -2,6 +2,8 @@
 //This file is used to create an editor panel for PNG files.
 import { History } from './PNGeditorComponents/history.mjs';
 import { bresenhamLine, hexToRGBA } from './PNGeditorComponents/canvasEngine.mjs';
+import { updateToolbarState } from "./../../../panels/createToolbar.mjs";
+
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
@@ -15,6 +17,12 @@ export async function renderEditor(filePath, container) {
     lastPos: null
   };
 
+
+  //0.set current Mode
+    window.NodevisionState.currentMode = "PNGediting";
+  updateToolbarState({ currentMode: "PNGediting" });
+
+
   // 1. UI Build (Wrapper & Canvas)
   const wrapper = document.createElement("div");
   wrapper.style.cssText = "display:flex; flex-direction:column; height:100%; width:100%; overflow:hidden;";
@@ -26,6 +34,7 @@ export async function renderEditor(filePath, container) {
   
   const ctx = canvas.getContext("2d", { alpha: true });
   const history = new History(ctx);
+
 
   // 2. Setup Toolbar (Briefly showing logic)
   const toolbar = document.createElement("div");

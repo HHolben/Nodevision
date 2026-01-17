@@ -16,6 +16,12 @@
     "mode": "HTMLediting"
   },
   {
+    "heading": "Draw",
+    "icon": "/icons/Draw.svg",
+    "mode": "PNGediting"
+  },
+
+  {
     "heading": "Terminal",
     "icon": "/icons/terminal.svg",
     "callbackKey": "openTerminal"

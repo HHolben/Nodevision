@@ -1,0 +1,8 @@
+[
+  {
+    "heading": "Color",
+    "parentHeading": "Draw", 
+    "ToolbarCategory": "draw",
+    "callbackKey": "PickColor"
+  }
+]

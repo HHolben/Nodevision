@@ -82,6 +82,8 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
     "/ToolbarJSONfiles/viewToolbar.json",
     "/ToolbarJSONfiles/searchToolbar.json",
     "/ToolbarJSONfiles/userToolbar.json",
+    "/ToolbarJSONfiles/drawToolbar.json",
+
   ];
 
   await Promise.all(jsonFiles.map(async (file) => {
@@ -250,9 +252,18 @@ function buildDropdownFromItem(item) {
   const normalizedHeading = item.heading.toLowerCase();
   const jsonName = `${normalizedHeading}Toolbar.json`;
   const subItems = toolbarDataCache[jsonName] || [];
-  const topItems = subItems.filter(i => !i.parentHeading);
-  if (!topItems.length) return null;
 
+  // FIXED LOGIC:
+  // 1. First, try to find items explicitly assigned to this heading
+  let topItems = subItems.filter(i => i.parentHeading === item.heading);
+  
+  // 2. If no items match specifically, assume the whole file belongs to this dropdown
+  // (This supports your older File/Edit/Settings JSON structures)
+  if (topItems.length === 0) {
+    topItems = subItems.filter(i => !i.parentHeading);
+  }
+
+  if (!topItems.length) return null;
 
   const dropdown = document.createElement("div");
 
@@ -274,9 +285,11 @@ Object.assign(dropdown.style, {
     // Find button by data attribute instead of :contains (which is jQuery, not CSS)
     const parentBtnWrapper = document.querySelector(`.toolbar-button[data-heading="${item.heading}"] button`) || null;
     const parentWidth = parentBtnWrapper ? parentBtnWrapper.offsetWidth : dropdown.offsetWidth;
+        console.log("children:"+ item.heading);
 
     Array.from(dropdown.children).forEach(child => {
       if (child.tagName === "BUTTON") {
+        console.log("Tag:"+ child.tagName);
         child.style.width = parentWidth + "px";  // match parent button width
       }
     });
