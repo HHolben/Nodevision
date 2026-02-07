@@ -1,5 +1,8 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewer.mjs
-// This crreates a ViewPanel that displays a JSON-defined 3D world mbedded inside an HTML file (<script type="application/json">).
+// Nodevision/public/PanelInstances/ViewPanels/GameView.mjs
+// ViewPanel that displays a JSON-defined 3D world embedded in an HTML file.
+
+import * as THREE from '/lib/three/three.module.js';
+import { PointerLockControls } from '/lib/three/PointerLockControls.js';
 
 export async function setupPanel(panel, instanceVars = {}) {
   console.log("GameView.mjs loaded");
@@ -14,52 +17,49 @@ export async function setupPanel(panel, instanceVars = {}) {
   canvas.style.height = "100%";
   panel.appendChild(canvas);
 
-  // --- Load Three.js if not present ---
-  function ensureScript(src) {
-    return new Promise((resolve) => {
-      if (document.querySelector(`script[src="${src}"]`)) return resolve();
-      const s = document.createElement("script");
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = () => {
-        console.error("Failed to load", src);
-        resolve(); 
-      };
-      document.body.appendChild(s);
-    });
-  }
+  let pendingWorldPath = null;
 
-  await ensureScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js");
-  await ensureScript("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js");
-
-  // --- Extract JSON world embedded in HTML ---
-  function extractWorldFromHTML(htmlText) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlText, "text/html");
-    const script = doc.querySelector('script[type="application/json"]');
-    if (!script) return null;
-
-    try {
-      return JSON.parse(script.textContent.trim());
-    } catch (err) {
-      console.error("Invalid world JSON", err);
-      return null;
+  function normalizeWorldPath(filePath) {
+    if (!filePath) return "";
+    const normalized = filePath.replace(/\\/g, "/");
+    const notebookMarker = "/Notebook/";
+    const idx = normalized.indexOf(notebookMarker);
+    if (idx !== -1) {
+      return normalized.slice(idx + notebookMarker.length);
     }
+    return normalized.replace(/^\/+/, "");
   }
 
   async function loadWorldFromFile(filePath) {
     console.log("Loading world:", filePath);
 
     try {
-      const res = await fetch(filePath);
-      const text = await res.text();
-      const worldData = extractWorldFromHTML(text);
+      if (!filePath) return;
+      if (!window.VRWorldContext) {
+        pendingWorldPath = filePath;
+        return;
+      }
+
+      const worldPath = normalizeWorldPath(filePath);
+      const res = await fetch("/api/load-world", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ worldPath })
+      });
+
+      if (!res.ok) {
+        console.warn("World load failed:", res.status, res.statusText);
+        return;
+      }
+
+      const data = await res.json();
+      const worldData = data?.worldDefinition || null;
       if (!worldData || !worldData.objects) {
         console.warn("World has no objects.");
         return;
       }
 
-      const { scene, objects, THREE } = window.VRWorldContext;
+      const { scene, objects } = window.VRWorldContext;
 
       // Clear previous meshes
       objects.forEach(obj => scene.remove(obj));
@@ -92,15 +92,11 @@ export async function setupPanel(panel, instanceVars = {}) {
     }
   }
 
-  // --- Initialize 3D scene once THREE is ready ---
+  // --- Initialize 3D scene ---
   function initScene() {
-    if (typeof THREE === "undefined" || !THREE.PointerLockControls) {
-      setTimeout(initScene, 100);
-      return;
-    }
-
     const scene = new THREE.Scene();
-    const renderer = new THREE.WebGLRenderer({ canvas });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
     renderer.setSize(panel.clientWidth, panel.clientHeight);
 
     const camera = new THREE.PerspectiveCamera(
@@ -136,7 +132,7 @@ export async function setupPanel(panel, instanceVars = {}) {
     };
 
     // --- Controls ---
-    const controls = new THREE.PointerLockControls(camera, renderer.domElement);
+    const controls = new PointerLockControls(camera, renderer.domElement);
     canvas.addEventListener("click", () => controls.lock());
 
     // Crosshair
@@ -173,15 +169,37 @@ export async function setupPanel(panel, instanceVars = {}) {
     }
 
     animate();
+
+    const resizeObserver = new ResizeObserver(() => {
+      const w = panel.clientWidth;
+      const h = panel.clientHeight;
+      if (!w || !h) return;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+    resizeObserver.observe(panel);
+    panel._vrResizeObserver = resizeObserver;
+
+    if (pendingWorldPath) {
+      loadWorldFromFile(pendingWorldPath);
+      pendingWorldPath = null;
+    }
   }
 
   initScene();
 
+  const initialPath = instanceVars.filePath || window.selectedFilePath;
+  if (initialPath) {
+    loadWorldFromFile(initialPath);
+  } else {
+    console.warn("GameView: no file selected. Select a world HTML under /Notebook.");
+  }
+
   // --- Handle file selection while panel is active ---
   const listener = (e) => {
-    if (!window.VRWorldContext) return;
     const filePath = e.detail.filePath;
-    window.VRWorldContext.loadWorldFromFile(filePath);
+    loadWorldFromFile(filePath);
   };
 
   document.addEventListener("fileSelected", listener);
@@ -189,5 +207,9 @@ export async function setupPanel(panel, instanceVars = {}) {
   // Cleanup if panel is replaced
   panel.cleanup = () => {
     document.removeEventListener("fileSelected", listener);
+    if (panel._vrResizeObserver) {
+      panel._vrResizeObserver.disconnect();
+      panel._vrResizeObserver = null;
+    }
   };
 }

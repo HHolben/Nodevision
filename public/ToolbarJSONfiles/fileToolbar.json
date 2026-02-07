@@ -136,6 +136,14 @@
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Verify Graph",
+    "callbackKey": "RefreshGraphNodes",
+    "icon": "icons/RefreshIcon.png",
+    "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "Save File",
     "callbackKey": "saveFile",
     "icon": "icons/SaveIcon.png",

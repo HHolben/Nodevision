@@ -1,11 +1,5 @@
 [
   
-  {
-    "ToolbarCategory": "View",
-    "heading": "Virtual World Editing",
-    "content": "",
-    "script": "SwitchToVirtualWorldEditing.js"
-  },
 {
   "ToolbarCategory": "View",
   "heading": "Code Editing",

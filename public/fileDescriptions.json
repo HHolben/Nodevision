@@ -107,7 +107,6 @@
   "public/SwitchToSVGediting/loadSVG.js": "JavaScript module.",
   "public/SwitchToSVGediting/saveSVG.js": "JavaScript module.",
   "public/SwitchToViewing.js": "JavaScript module.",
-  "public/SwitchToVirtualWorldViewing.js": "JavaScript module.",
   "public/SwitchToWYSIWYGediting.js": "JavaScript module.",
   "public/SwitchToWYSIWYGediting/clipboardHandler.js": "JavaScript module.",
   "public/SwitchToWYSIWYGediting/editRasterToolbar.js": "JavaScript module.",

@@ -35,19 +35,6 @@
   },
   {
     "ToolbarCategory": "View",
-    "heading": "Virtual World Viewing",
-    "content": "",
-    "script": "SwitchToVirtualWorldViewing.js"
-  },
-  {
-    "ToolbarCategory": "View",
-    "heading": "Virtual World Editing",
-    "content": "",
-    "script": "SwitchToVirtualWorldEditing.js"
-  },
-
-  {
-    "ToolbarCategory": "View",
     "heading": "Layout Controls",
     "content": "",
     "icon": "icons/layoutControls.png"
