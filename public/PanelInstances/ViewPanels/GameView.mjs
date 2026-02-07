@@ -18,6 +18,60 @@ export async function setupPanel(panel, instanceVars = {}) {
   panel.appendChild(canvas);
 
   let pendingWorldPath = null;
+  let controlBindings = null;
+
+  const defaultBindings = {
+    moveForward: "w",
+    moveBackward: "s",
+    moveLeft: "a",
+    moveRight: "d",
+    jump: "space",
+    pause: "escape"
+  };
+
+  function normalizeKeyName(key) {
+    if (!key) return "";
+    const normalized = String(key).toLowerCase().trim();
+    if (normalized === " ") return "space";
+    if (normalized === "spacebar") return "space";
+    return normalized;
+  }
+
+  function buildBindingsFromScheme(scheme) {
+    const getKey = (action, fallback) => {
+      const key = scheme?.[action]?.keyboard;
+      return normalizeKeyName(key || fallback);
+    };
+
+    return {
+      moveForward: getKey("Move Forward", defaultBindings.moveForward),
+      moveBackward: getKey("Move Backward", defaultBindings.moveBackward),
+      moveLeft: getKey("Move Left", defaultBindings.moveLeft),
+      moveRight: getKey("Move Right", defaultBindings.moveRight),
+      jump: getKey("Jump", defaultBindings.jump),
+      pause: getKey("Pause", defaultBindings.pause)
+    };
+  }
+
+  async function loadControlScheme() {
+    if (controlBindings) return;
+    controlBindings = { ...defaultBindings };
+
+    try {
+      const res = await fetch("/UserSettings/KeyboardAndControlSchemes/GameControllerSettings.json", {
+        cache: "no-store"
+      });
+      if (!res.ok) {
+        console.warn("GameView: control scheme load failed:", res.status, res.statusText);
+        return;
+      }
+
+      const scheme = await res.json();
+      controlBindings = buildBindingsFromScheme(scheme);
+    } catch (err) {
+      console.warn("GameView: failed to load control scheme:", err);
+    }
+  }
 
   function normalizeWorldPath(filePath) {
     if (!filePath) return "";
@@ -151,18 +205,19 @@ export async function setupPanel(panel, instanceVars = {}) {
 
     // movement
     const heldKeys = {};
-    document.addEventListener("keydown", e => heldKeys[e.key.toLowerCase()] = true);
-    document.addEventListener("keyup", e => heldKeys[e.key.toLowerCase()] = false);
+    document.addEventListener("keydown", e => heldKeys[normalizeKeyName(e.key)] = true);
+    document.addEventListener("keyup", e => heldKeys[normalizeKeyName(e.key)] = false);
 
     function animate() {
       requestAnimationFrame(animate);
 
       if (controls.isLocked) {
         const speed = 0.2;
-        if (heldKeys["w"]) controls.moveForward(speed);
-        if (heldKeys["s"]) controls.moveForward(-speed);
-        if (heldKeys["a"]) controls.moveRight(-speed);
-        if (heldKeys["d"]) controls.moveRight(speed);
+        const bindings = controlBindings || defaultBindings;
+        if (heldKeys[bindings.moveForward]) controls.moveForward(speed);
+        if (heldKeys[bindings.moveBackward]) controls.moveForward(-speed);
+        if (heldKeys[bindings.moveLeft]) controls.moveRight(-speed);
+        if (heldKeys[bindings.moveRight]) controls.moveRight(speed);
       }
 
       renderer.render(scene, camera);
@@ -188,6 +243,7 @@ export async function setupPanel(panel, instanceVars = {}) {
   }
 
   initScene();
+  loadControlScheme();
 
   const initialPath = instanceVars.filePath || window.selectedFilePath;
   if (initialPath) {
