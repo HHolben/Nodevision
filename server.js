@@ -345,12 +345,17 @@ app.post('/api/save-gamepad-settings', async (req, res) => {
 });
 
 app.post('/api/load-world', async (req, res) => {
-  const { worldPath } = req.body;
+  let { worldPath } = req.body;
   if (!worldPath) {
       return res.status(400).json({ error: "No world path provided" });
   }
 
   try {
+    worldPath = worldPath
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '')
+      .replace(/^\.\//, '')
+      .replace(/^Notebook\//, '');
     // Use secure path validation (SECURITY FIX)
     const notebookDir = path.join(__dirname, 'Notebook');
     const filePath = validateAndNormalizePath(worldPath, notebookDir);
@@ -366,11 +371,14 @@ app.post('/api/load-world', async (req, res) => {
         return res.status(400).json({ error: "No world definition found in file" });
     }
 
-    const worldDefinition = JSON.parse(worldScript);
+    const cleaned = worldScript
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1")
+      .trim();
+    const worldDefinition = JSON.parse(cleaned);
     res.json({ worldDefinition });
   } catch (error) {
-      console.error("Error loading world:", error);
-      res.status(500).json({ error: "Error loading world" });
+      res.status(500).json({ error: "Error loading world", details: error?.message || "Unknown error" });
   }
 });
 

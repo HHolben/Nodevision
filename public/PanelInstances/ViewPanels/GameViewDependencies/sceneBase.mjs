@@ -15,9 +15,9 @@ export function createSceneBase({ THREE, panel, canvas }) {
   );
   camera.position.set(0, 1.75, 10);
 
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(5, 10, 7);
-  scene.add(light);
+  const baseLight = new THREE.DirectionalLight(0xffffff, 1);
+  baseLight.position.set(5, 10, 7);
+  scene.add(baseLight);
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(50, 50),
@@ -26,5 +26,5 @@ export function createSceneBase({ THREE, panel, canvas }) {
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  return { scene, renderer, camera, objects: [], colliders: [] };
+  return { scene, renderer, camera, objects: [], colliders: [], lights: [] };
 }

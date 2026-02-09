@@ -9,7 +9,9 @@ import { startRenderLoop } from "./renderLoop.mjs";
 import { setupResizeObserver } from "./resizeObserver.mjs";
 
 export function initScene({ THREE, PointerLockControls, panel, canvas, state, loadWorldFromFile, getBindings, normalizeKeyName }) {
-  const { scene, renderer, camera, objects, colliders } = createSceneBase({ THREE, panel, canvas });
+  const { scene, renderer, camera, objects, colliders, lights } = createSceneBase({ THREE, panel, canvas });
+  const portals = [];
+  const collisionActions = [];
 
   window.VRWorldContext = {
     THREE,
@@ -18,6 +20,9 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     renderer,
     objects,
     colliders,
+    lights,
+    portals,
+    collisionActions,
     loadWorldFromFile: (filePath) => loadWorldFromFile(filePath, state, THREE)
   };
 
@@ -35,7 +40,18 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   };
 
   const { heldKeys } = createInputHandlers({ getBindings, normalizeKeyName, movementState });
-  const update = createMovementUpdater({ THREE, camera, controls, colliders, getBindings, heldKeys, movementState });
+  const update = createMovementUpdater({
+    THREE,
+    camera,
+    controls,
+    colliders,
+    portals,
+    collisionActions,
+    loadWorldFromFile: (filePath) => loadWorldFromFile(filePath, state, THREE),
+    getBindings,
+    heldKeys,
+    movementState
+  });
   startRenderLoop(renderer, scene, camera, update);
   setupResizeObserver(panel, camera, renderer);
 
