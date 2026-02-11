@@ -59,5 +59,9 @@ export async function setupPanel(panel, instanceVars = {}) {
       panel._vrResizeObserver.disconnect();
       panel._vrResizeObserver = null;
     }
+    if (panel._vrViewController?.dispose) {
+      panel._vrViewController.dispose();
+      panel._vrViewController = null;
+    }
   };
 }

@@ -3,6 +3,7 @@
 
 import { createSceneBase } from "./sceneBase.mjs";
 import { addCrosshair } from "./crosshair.mjs";
+import { createCameraModeController } from "./cameraModes.mjs";
 import { createInputHandlers } from "./inputHandlers.mjs";
 import { createMovementUpdater } from "./movementUpdate.mjs";
 import { startRenderLoop } from "./renderLoop.mjs";
@@ -32,7 +33,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
 
   const controls = new PointerLockControls(camera, renderer.domElement);
   canvas.addEventListener("click", () => controls.lock());
-  addCrosshair(panel);
+  const crosshair = addCrosshair(panel);
 
   const movementState = {
     isFlying: false,
@@ -46,8 +47,19 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   window.VRWorldContext.controls = controls;
   window.VRWorldContext.movementState = movementState;
 
+  const viewController = createCameraModeController({
+    THREE,
+    panel,
+    scene,
+    playerCamera: camera,
+    controls,
+    movementState,
+    crosshair
+  });
+  panel._vrViewController = viewController;
+
   const { heldKeys } = createInputHandlers({ getBindings, normalizeKeyName, movementState });
-  const update = createMovementUpdater({
+  const movementUpdate = createMovementUpdater({
     THREE,
     camera,
     controls,
@@ -61,8 +73,12 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     heldKeys,
     movementState
   });
-  startRenderLoop(renderer, scene, camera, update);
-  setupResizeObserver(panel, camera, renderer);
+  const update = () => {
+    movementUpdate();
+    viewController.update();
+  };
+  startRenderLoop(renderer, scene, () => viewController.getActiveCamera(), update);
+  setupResizeObserver(panel, [camera, viewController.followCamera], renderer);
 
   if (state.pendingWorldPath) {
     loadWorldFromFile(state.pendingWorldPath, state, THREE, state.pendingWorldOptions);
