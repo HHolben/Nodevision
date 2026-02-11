@@ -11,7 +11,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   followCamera.position.copy(playerCamera.position);
   scene.add(followCamera);
 
-  const avatar = new THREE.Group();
+  const fallbackAvatar = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.CapsuleGeometry(0.3, 0.75, 6, 10),
     new THREE.MeshStandardMaterial({ color: 0x2e6da4, roughness: 0.65, metalness: 0.1 })
@@ -22,10 +22,44 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     new THREE.MeshStandardMaterial({ color: 0xf0c8a0, roughness: 0.7, metalness: 0.05 })
   );
   head.position.y = 1.55;
-  avatar.add(body);
-  avatar.add(head);
-  avatar.visible = false;
-  scene.add(avatar);
+  fallbackAvatar.add(body);
+  fallbackAvatar.add(head);
+  fallbackAvatar.visible = false;
+  scene.add(fallbackAvatar);
+
+  let loadedAvatar = null;
+  const gltfLoaderModulePath = "/lib/three/examples/jsm/loaders/GLTFLoader.js";
+  import(gltfLoaderModulePath)
+    .then((mod) => {
+      if (typeof mod?.GLTFLoader !== "function") {
+        throw new Error("GLTFLoader export missing.");
+      }
+      const loader = new mod.GLTFLoader();
+      loader.load(
+        "/UserSettings/PlayerAvatar.glTF",
+        (gltf) => {
+          if (!gltf?.scene) return;
+          loadedAvatar = gltf.scene;
+          loadedAvatar.visible = false;
+          loadedAvatar.scale.set(1, 1, 1);
+          loadedAvatar.traverse((node) => {
+            if (node.isMesh) {
+              node.castShadow = false;
+              node.receiveShadow = false;
+            }
+          });
+          scene.add(loadedAvatar);
+          scene.remove(fallbackAvatar);
+        },
+        undefined,
+        (err) => {
+          console.warn("PlayerAvatar.glTF load failed. Using fallback avatar.", err);
+        }
+      );
+    })
+    .catch((err) => {
+      console.warn("GLTFLoader unavailable. Using fallback avatar.", err);
+    });
 
   const modes = [
     { id: "first", label: "First Person" },
@@ -85,6 +119,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   applyCrosshairVisibility();
 
   function update() {
+    const avatar = loadedAvatar || fallbackAvatar;
     const player = controls.getObject();
     controls.getDirection(forward);
     forward.y = 0;
@@ -141,7 +176,8 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   function dispose() {
     window.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("mousemove", onMouseMove);
-    scene.remove(avatar);
+    if (loadedAvatar) scene.remove(loadedAvatar);
+    scene.remove(fallbackAvatar);
     scene.remove(followCamera);
   }
 
