@@ -180,5 +180,12 @@
     "callbackKey": "downloadFile",
     "icon": "icons/DownloadIcon.png",
     "availability": ["fileOpen"]
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Export virtual world as usd",
+    "callbackKey": "ExportVirtualWorldAsUSD",
+    "icon": "icons/DownloadIcon.png",
+    "availability": ["fileOpen"]
   }
 ]

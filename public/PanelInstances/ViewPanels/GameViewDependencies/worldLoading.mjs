@@ -17,13 +17,14 @@ function normalizeWorldPath(filePath) {
   return withoutLeading;
 }
 
-export async function loadWorldFromFile(filePath, state, THREE) {
+export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
   console.log("Loading world:", filePath);
 
   try {
     if (!filePath) return;
     if (!window.VRWorldContext) {
       state.pendingWorldPath = filePath;
+      state.pendingWorldOptions = options;
       return;
     }
 
@@ -49,34 +50,233 @@ export async function loadWorldFromFile(filePath, state, THREE) {
 
     const data = await res.json();
     const worldData = data?.worldDefinition || null;
-    const objectDefs = worldData?.objects || null;
+    let objectDefs = worldData?.objects || null;
     if (!objectDefs) {
       console.warn("World has no objects.");
       return;
     }
 
-    const { scene, objects, colliders, lights, portals, collisionActions } = window.VRWorldContext;
+    const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, controls, movementState } = window.VRWorldContext;
     objects.forEach(obj => scene.remove(obj));
     objects.length = 0;
     colliders.length = 0;
     if (portals) portals.length = 0;
     if (collisionActions) collisionActions.length = 0;
+    if (useTargets) useTargets.length = 0;
+    if (spawnPoints) spawnPoints.length = 0;
     if (lights) {
       lights.forEach(light => scene.remove(light));
       lights.length = 0;
     }
 
-    const normalizeAction = (action, fallbackTarget) => {
+    const isSameWorldTarget = (value) => {
+      if (typeof value !== "string") return false;
+      const normalized = value.trim().toLowerCase();
+      return normalized === "self" || normalized === "." || normalized === "same" || normalized === "current";
+    };
+
+    const readTypedValue = (entry) => {
+      if (!entry) return entry;
+      if (typeof entry === "object" && "value" in entry) return entry.value;
+      return entry;
+    };
+
+    const parseMaybeJson = (value) => {
+      if (typeof value !== "string") return value;
+      try {
+        return JSON.parse(value);
+      } catch (_) {
+        return value;
+      }
+    };
+
+    const color3fToHex = (value) => {
+      if (!Array.isArray(value) || value.length < 3) return null;
+      const clamp = (num) => Math.max(0, Math.min(255, Math.round(num * 255)));
+      const [r, g, b] = value;
+      const toHex = (num) => clamp(num).toString(16).padStart(2, "0");
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    };
+
+    const normalizeUsdObjects = (primDefs) => {
+      return primDefs.map((prim) => {
+        if (!prim || typeof prim !== "object") return null;
+        const attrs = prim.attributes || {};
+        const custom = prim.customAttributes || prim.custom || {};
+        const typeName = prim.typeName || prim.type || "";
+
+        const readAttr = (name) => readTypedValue(attrs[name]);
+        const readCustom = (name) => readTypedValue(custom[name]);
+
+        const translate = readAttr("xformOp:translate") || readCustom("nv:position") || [0, 0, 0];
+        const scale = readAttr("xformOp:scale");
+
+        const displayColor = readAttr("primvars:displayColor");
+        let colorValue = null;
+        if (Array.isArray(displayColor)) {
+          colorValue = Array.isArray(displayColor[0]) ? displayColor[0] : displayColor;
+        }
+        const colorHex = color3fToHex(colorValue) || readCustom("nv:color") || readCustom("nv:colorHex") || null;
+
+        const nvType = readCustom("nv:type") || readCustom("nv:kind");
+        const isPortal = readCustom("nv:isPortal") === true || nvType === "portal";
+        const isLight = /light/i.test(typeName) || nvType === "light";
+
+        const def = {
+          position: Array.isArray(translate) ? translate : [0, 0, 0]
+        };
+
+        if (colorHex) def.color = colorHex;
+
+        if (isLight) {
+          def.type = "light";
+          const lightTypeName = (typeName || readCustom("nv:lightType") || "point").toLowerCase();
+          if (lightTypeName.includes("distant")) def.lightType = "directional";
+          else if (lightTypeName.includes("dome")) def.lightType = "ambient";
+          else if (lightTypeName.includes("disk")) def.lightType = "spot";
+          else def.lightType = "point";
+          const intensity = readAttr("intensity") ?? readCustom("nv:intensity");
+          if (Number.isFinite(intensity)) def.intensity = intensity;
+          const distance = readCustom("nv:distance");
+          if (Number.isFinite(distance)) def.distance = distance;
+          const decay = readCustom("nv:decay");
+          if (Number.isFinite(decay)) def.decay = decay;
+          const angle = readCustom("nv:angle");
+          if (Number.isFinite(angle)) def.angle = angle;
+          const penumbra = readCustom("nv:penumbra");
+          if (Number.isFinite(penumbra)) def.penumbra = penumbra;
+          const target = readCustom("nv:target");
+          if (Array.isArray(target)) def.target = target;
+          return def;
+        }
+
+        if (isPortal) {
+          def.type = "portal";
+          const shape = readCustom("nv:shape");
+          if (shape) def.shape = shape;
+          const size = readCustom("nv:size") || scale;
+          if (Array.isArray(size)) def.size = size;
+          const targetWorld = readCustom("nv:targetWorld");
+          if (targetWorld) def.targetWorld = targetWorld;
+          if (readCustom("nv:sameWorld") === true) def.sameWorld = true;
+          const spawn = readCustom("nv:spawn");
+          if (Array.isArray(spawn)) def.spawn = spawn;
+          const spawnPoint = readCustom("nv:spawnPoint");
+          if (spawnPoint) def.spawnPoint = spawnPoint;
+          const spawnYaw = readCustom("nv:spawnYaw");
+          if (Number.isFinite(spawnYaw)) def.spawnYaw = spawnYaw;
+          const cooldownMs = readCustom("nv:cooldownMs");
+          if (Number.isFinite(cooldownMs)) def.cooldownMs = cooldownMs;
+          const opacity = readCustom("nv:opacity");
+          if (Number.isFinite(opacity)) def.opacity = opacity;
+          const emissive = readCustom("nv:emissive");
+          if (emissive !== undefined) def.emissive = emissive;
+          const emissiveIntensity = readCustom("nv:emissiveIntensity");
+          if (Number.isFinite(emissiveIntensity)) def.emissiveIntensity = emissiveIntensity;
+          const isSolid = readCustom("nv:isSolid");
+          if (isSolid !== undefined) def.isSolid = isSolid;
+          const tag = readCustom("nv:tag");
+          if (tag) def.tag = tag;
+          return def;
+        }
+
+        if (typeName === "Cube") {
+          def.type = "box";
+          def.size = Array.isArray(scale) ? scale : [1, 1, 1];
+        } else if (typeName === "Sphere") {
+          def.type = "sphere";
+          const radius = readAttr("radius") ?? readCustom("nv:radius");
+          def.size = [Number.isFinite(radius) ? radius : 0.5];
+        } else if (typeName === "Cylinder") {
+          def.type = "cylinder";
+          const radius = readAttr("radius") ?? readCustom("nv:radius");
+          const height = readAttr("height") ?? readCustom("nv:height");
+          def.size = [
+            Number.isFinite(radius) ? radius : 0.5,
+            Number.isFinite(height) ? height : 1
+          ];
+        } else if (typeName === "Mesh") {
+          const shape = readCustom("nv:shape");
+          if (shape) {
+            def.type = shape === "torus" ? "torus" : shape;
+          } else {
+            def.type = "box";
+          }
+          const size = readCustom("nv:size") || scale;
+          if (Array.isArray(size)) def.size = size;
+        } else if (nvType) {
+          def.type = nvType;
+          const size = readCustom("nv:size") || scale;
+          if (Array.isArray(size)) def.size = size;
+        } else {
+          return null;
+        }
+
+        const isSolid = readCustom("nv:isSolid");
+        if (isSolid !== undefined) def.isSolid = isSolid;
+        const tag = readCustom("nv:tag");
+        if (tag) def.tag = tag;
+        const spawnId = readCustom("nv:spawnId");
+        if (spawnId) def.spawnId = spawnId;
+        const spawnYaw = readCustom("nv:spawnYaw");
+        if (Number.isFinite(spawnYaw)) def.spawnYaw = spawnYaw;
+        const useRange = readCustom("nv:useRange");
+        if (Number.isFinite(useRange)) def.useRange = useRange;
+        const useAction = parseMaybeJson(readCustom("nv:useAction"));
+        if (useAction) def.useAction = useAction;
+        const collisionAction = parseMaybeJson(readCustom("nv:collisionAction"));
+        if (collisionAction) def.collisionAction = collisionAction;
+
+        return def;
+      }).filter(Boolean);
+    };
+
+    const isUsdLike = Array.isArray(objectDefs)
+      && (worldData?.usd?.metadata || objectDefs.some(def => def?.typeName || def?.path || def?.primPath));
+    if (isUsdLike) {
+      objectDefs = normalizeUsdObjects(objectDefs);
+    }
+
+    const normalizeAction = (action, fallbackTarget, fallbackSameWorld) => {
       if (!action) return null;
       if (typeof action === "string") return { type: action };
       if (typeof action === "object") {
         const normalized = { ...action };
-        if (normalized.type === "portal" && !normalized.targetWorld && fallbackTarget) {
-          normalized.targetWorld = fallbackTarget;
+        if (normalized.type === "portal") {
+          const sameWorld = normalized.sameWorld === true || isSameWorldTarget(normalized.targetWorld) || fallbackSameWorld === true;
+          if (!normalized.targetWorld && fallbackTarget && !sameWorld) {
+            normalized.targetWorld = fallbackTarget;
+          }
+          if (sameWorld) {
+            normalized.sameWorld = true;
+            if (isSameWorldTarget(normalized.targetWorld)) {
+              normalized.targetWorld = null;
+            }
+          }
         }
         return normalized;
       }
       return null;
+    };
+
+    const spawnCandidates = [];
+    const recordSpawnPoint = (def) => {
+      if (!Array.isArray(def?.position) || def.position.length < 3) return;
+      const id = typeof def.spawnId === "string"
+        ? def.spawnId
+        : typeof def.id === "string"
+          ? def.id
+          : typeof def.name === "string"
+            ? def.name
+            : typeof def.label === "string"
+              ? def.label
+              : null;
+      const yaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : (Number.isFinite(def.yaw) ? def.yaw : null);
+      spawnCandidates.push({
+        id,
+        position: [def.position[0], def.position[1], def.position[2]],
+        yaw
+      });
     };
 
     for (const def of objectDefs) {
@@ -84,14 +284,23 @@ export async function loadWorldFromFile(filePath, state, THREE) {
       let light = null;
       const isPortal = def.type === "portal" || def.isPortal === true;
       const portalTarget = def.targetWorld || def.target || def.href || def.world;
+      const sameWorld = def.sameWorld === true || isSameWorldTarget(portalTarget);
+      const resolvedPortalTarget = isSameWorldTarget(portalTarget) ? null : portalTarget;
+      const portalSpawnPoint = def.spawnPoint ?? def.spawnId ?? null;
+      const isSpawnPoint = def.type === "spawn" || def.tag === "spawn" || def.isSpawn === true;
+      if (isSpawnPoint) {
+        recordSpawnPoint(def);
+      }
       const rawActions = def.collisionAction ?? def.onCollide;
       const actionList = Array.isArray(rawActions) ? rawActions : (rawActions ? [rawActions] : []);
       if (isPortal && actionList.length === 0) {
         actionList.push({
           type: "portal",
-          targetWorld: portalTarget,
+          targetWorld: resolvedPortalTarget,
+          sameWorld,
           spawn: def.spawn,
-          spawnYaw: def.spawnYaw
+          spawnYaw: def.spawnYaw,
+          spawnPoint: portalSpawnPoint
         });
       }
       const portalShape = (def.shape || def.geometry || (def.type === "portal" ? "box" : def.type) || "").toLowerCase();
@@ -162,14 +371,16 @@ export async function loadWorldFromFile(filePath, state, THREE) {
         objects.push(mesh);
         if (isPortal) {
           mesh.userData.isPortal = true;
-          mesh.userData.portalTarget = portalTarget;
-          if (portalTarget && portals) {
+          mesh.userData.portalTarget = resolvedPortalTarget;
+          if ((resolvedPortalTarget || sameWorld) && portals) {
             const box = new THREE.Box3().setFromObject(mesh);
             portals.push({
               box,
-              targetWorld: portalTarget,
+              targetWorld: resolvedPortalTarget,
+              sameWorld,
               spawn: Array.isArray(def.spawn) ? def.spawn : null,
               spawnYaw: Number.isFinite(def.spawnYaw) ? def.spawnYaw : null,
+              spawnPoint: typeof portalSpawnPoint === "string" ? portalSpawnPoint : null,
               cooldownMs: Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200,
               lastTriggeredAt: 0
             });
@@ -180,7 +391,7 @@ export async function loadWorldFromFile(filePath, state, THREE) {
         if (actionList.length > 0 && collisionActions) {
           const box = new THREE.Box3().setFromObject(mesh);
           const actions = actionList
-            .map(action => normalizeAction(action, portalTarget))
+            .map(action => normalizeAction(action, resolvedPortalTarget, sameWorld))
             .filter(Boolean);
           if (actions.length > 0) {
             collisionActions.push({
@@ -189,6 +400,24 @@ export async function loadWorldFromFile(filePath, state, THREE) {
               cooldownMs: Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200,
               lastTriggeredAt: 0
             });
+          }
+        }
+        if (useTargets) {
+          const rawUseActions = def.useAction ?? def.onUse;
+          const useList = Array.isArray(rawUseActions) ? rawUseActions : (rawUseActions ? [rawUseActions] : []);
+          if (useList.length > 0) {
+            const actions = useList
+              .map(action => normalizeAction(action, resolvedPortalTarget, sameWorld))
+              .filter(Boolean);
+            if (actions.length > 0) {
+              useTargets.push({
+                position: mesh.position.clone(),
+                range: Number.isFinite(def.useRange) ? def.useRange : 2,
+                actions,
+                cooldownMs: Number.isFinite(def.useCooldownMs) ? def.useCooldownMs : 600,
+                lastTriggeredAt: 0
+              });
+            }
           }
         }
 
@@ -217,6 +446,42 @@ export async function loadWorldFromFile(filePath, state, THREE) {
         }
         scene.add(light);
         if (lights) lights.push(light);
+      }
+    }
+
+    if (spawnPoints) {
+      spawnPoints.push(...spawnCandidates);
+    }
+
+    const shouldAutoSpawn = options?.skipAutoSpawn !== true;
+    if (shouldAutoSpawn && controls) {
+      const availableSpawns = spawnPoints && spawnPoints.length > 0 ? spawnPoints : spawnCandidates;
+      const spawnPointId = typeof options?.spawnPoint === "string" ? options.spawnPoint.trim() : null;
+      let chosen = null;
+      if (availableSpawns.length > 0) {
+        if (spawnPointId) {
+          chosen = availableSpawns.find(point => point?.id === spawnPointId) || null;
+        }
+        if (!chosen) {
+          const idx = Math.floor(Math.random() * availableSpawns.length);
+          chosen = availableSpawns[idx] || null;
+        }
+      }
+      const position = Array.isArray(chosen?.position) && chosen.position.length >= 3
+        ? chosen.position
+        : [0, 0, 0];
+      controls.getObject().position.set(position[0], position[1], position[2]);
+      if (movementState) {
+        movementState.velocityY = 0;
+        movementState.isGrounded = true;
+      }
+      const yaw = Number.isFinite(options?.spawnYaw)
+        ? options.spawnYaw
+        : Number.isFinite(chosen?.yaw)
+          ? chosen.yaw
+          : null;
+      if (Number.isFinite(yaw)) {
+        controls.getObject().rotation.y = yaw;
       }
     }
   } catch (err) {

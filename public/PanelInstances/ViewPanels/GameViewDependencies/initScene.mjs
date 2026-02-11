@@ -12,6 +12,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const { scene, renderer, camera, objects, colliders, lights } = createSceneBase({ THREE, panel, canvas });
   const portals = [];
   const collisionActions = [];
+  const useTargets = [];
+  const spawnPoints = [];
 
   window.VRWorldContext = {
     THREE,
@@ -23,7 +25,9 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     lights,
     portals,
     collisionActions,
-    loadWorldFromFile: (filePath) => loadWorldFromFile(filePath, state, THREE)
+    useTargets,
+    spawnPoints,
+    loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options)
   };
 
   const controls = new PointerLockControls(camera, renderer.domElement);
@@ -34,10 +38,13 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     isFlying: false,
     flyToggleLatch: false,
     jumpLatch: false,
+    useLatch: false,
     velocityY: 0,
     isGrounded: true,
     playerHeight: 1.75
   };
+  window.VRWorldContext.controls = controls;
+  window.VRWorldContext.movementState = movementState;
 
   const { heldKeys } = createInputHandlers({ getBindings, normalizeKeyName, movementState });
   const update = createMovementUpdater({
@@ -47,7 +54,9 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     colliders,
     portals,
     collisionActions,
-    loadWorldFromFile: (filePath) => loadWorldFromFile(filePath, state, THREE),
+    useTargets,
+    spawnPoints,
+    loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options),
     getBindings,
     heldKeys,
     movementState
@@ -56,7 +65,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   setupResizeObserver(panel, camera, renderer);
 
   if (state.pendingWorldPath) {
-    loadWorldFromFile(state.pendingWorldPath, state, THREE);
+    loadWorldFromFile(state.pendingWorldPath, state, THREE, state.pendingWorldOptions);
     state.pendingWorldPath = null;
+    state.pendingWorldOptions = null;
   }
 }
