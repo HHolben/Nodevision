@@ -26,6 +26,85 @@ export function movePiece(board, from, to) {
   board[from.r][from.c] = '';
 }
 
+function inBounds(r, c) {
+  return r >= 0 && r < 8 && c >= 0 && c < 8;
+}
+
+function isWhitePiece(piece) {
+  return piece && piece === piece.toUpperCase();
+}
+
+function isPathClear(board, from, to) {
+  const dr = Math.sign(to.r - from.r);
+  const dc = Math.sign(to.c - from.c);
+  let r = from.r + dr;
+  let c = from.c + dc;
+
+  while (r !== to.r || c !== to.c) {
+    if (board[r][c] !== '') return false;
+    r += dr;
+    c += dc;
+  }
+
+  return true;
+}
+
+function canPawnReach(board, from, to, turn, capture) {
+  const dir = turn === 'w' ? -1 : 1;
+  const startRow = turn === 'w' ? 6 : 1;
+  const targetPiece = board[to.r][to.c];
+
+  if (capture) {
+    if (to.r !== from.r + dir || Math.abs(to.c - from.c) !== 1) return false;
+    if (!targetPiece) return false; // en passant is not handled in this simple viewer
+    return turn === 'w' ? !isWhitePiece(targetPiece) : isWhitePiece(targetPiece);
+  }
+
+  if (from.c !== to.c) return false;
+  if (targetPiece !== '') return false;
+
+  if (to.r === from.r + dir) return true;
+  if (from.r === startRow && to.r === from.r + 2 * dir) {
+    const mid = from.r + dir;
+    return board[mid][from.c] === '';
+  }
+
+  return false;
+}
+
+function canPieceReach(board, from, to, pieceLetter, turn, capture) {
+  if (!inBounds(to.r, to.c)) return false;
+
+  const targetPiece = board[to.r][to.c];
+  const targetOccupied = targetPiece !== '';
+
+  if (capture && !targetOccupied) return false;
+  if (!capture && targetOccupied) return false;
+  if (targetOccupied) {
+    const sameColor = turn === 'w' ? isWhitePiece(targetPiece) : !isWhitePiece(targetPiece);
+    if (sameColor) return false;
+  }
+
+  const dr = to.r - from.r;
+  const dc = to.c - from.c;
+  const adr = Math.abs(dr);
+  const adc = Math.abs(dc);
+  const p = pieceLetter.toUpperCase();
+
+  if (p === 'P') return canPawnReach(board, from, to, turn, capture);
+  if (p === 'N') return (adr === 2 && adc === 1) || (adr === 1 && adc === 2);
+  if (p === 'K') return adr <= 1 && adc <= 1 && (adr + adc > 0);
+  if (p === 'B') return adr === adc && isPathClear(board, from, to);
+  if (p === 'R') return (dr === 0 || dc === 0) && isPathClear(board, from, to);
+  if (p === 'Q') {
+    const straight = dr === 0 || dc === 0;
+    const diagonal = adr === adc;
+    return (straight || diagonal) && isPathClear(board, from, to);
+  }
+
+  return false;
+}
+
 /**
  * Find a piece of type (letter) and color ('w' or 'b') that can move to the target square.
  * Options:
@@ -38,20 +117,28 @@ export function findPiece(board, pieceLetter, turn, options = {}) {
   const target = options.target;
   const piece = pieceLetter.toUpperCase();
   const pieceCode = isWhite ? piece : piece.toLowerCase();
+  const fileFilter = options.file ? options.file.toLowerCase().charCodeAt(0) - 97 : null;
+  const rankFilter = options.rank ? 8 - parseInt(options.rank, 10) : null;
+  const capture = options.capture === true;
 
-  // Naive: return first matching piece that exists on board
+  const candidates = [];
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       if (board[r][c] === pieceCode) {
-        // For pawns, check file for disambiguation if provided
-        if (piece === 'P' && options.file && c !== options.file.charCodeAt(0) - 97) continue;
-
-        // Optional: we could add more sophisticated legality checks later
-        return { r, c };
+        if (fileFilter !== null && c !== fileFilter) continue;
+        if (rankFilter !== null && r !== rankFilter) continue;
+        if (!target) {
+          candidates.push({ r, c });
+          continue;
+        }
+        if (canPieceReach(board, { r, c }, target, piece, turn, capture)) {
+          candidates.push({ r, c });
+        }
       }
     }
   }
-  return null; // piece not found
+
+  return candidates[0] || null;
 }
 
 /**

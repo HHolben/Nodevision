@@ -1,68 +1,83 @@
-// Very simplified SAN handler for basic PGN moves.
-// Assumes board is an 8×8 array of objects { piece: "P", color: "w" }
-
 import { findPiece, movePiece, parseSquare } from "./boardUtils.mjs";
 
 export function applyMove(board, san, turn) {
-  san = san.trim();
+  san = (san || "").trim();
+  if (!san || !turn) return false;
 
-  // 1. Handle castling
+  // Handle castling
   if (san === "O-O" || san === "0-0") {
     const row = turn === "w" ? 7 : 0;
     movePiece(board, { r: row, c: 4 }, { r: row, c: 6 }); // king
     movePiece(board, { r: row, c: 7 }, { r: row, c: 5 }); // rook
-    return;
+    return true;
   }
   if (san === "O-O-O" || san === "0-0-0") {
     const row = turn === "w" ? 7 : 0;
     movePiece(board, { r: row, c: 4 }, { r: row, c: 2 }); // king
     movePiece(board, { r: row, c: 0 }, { r: row, c: 3 }); // rook
-    return;
+    return true;
   }
 
-  // 2. Strip symbols
-  san = san.replace(/[+#?!]/g, ""); // remove check, mate, annotations
+  // Strip SAN suffixes like check, mate, NAG punctuation.
+  san = san.replace(/[+#?!]+/g, "");
 
-  // 3. Detect captures
-  const isCapture = san.includes("x");
-
-  // 4. Pawn move (starts with file or pawn capture: e4, exd5)
-  if (/^[a-h]/.test(san)) {
-    let from, to;
-
-    if (isCapture) {
-      // Example: exd5 → pawn from 'e' file captures on d5
-      const fromFile = san[0];
-      const dest = san.slice(san.indexOf("x") + 1);
-      to = parseSquare(dest);
-      from = findPiece(board, "P", turn, {
-        file: fromFile,
-        target: to,
-        capture: true,
-      });
-    } else {
-      // Example: e4 → pawn advances
-      to = parseSquare(san);
-      from = findPiece(board, "P", turn, { target: to });
-    }
-
-    if (!from || !to) return;
+  // Pawn capture SAN: exd5 or exd8=Q
+  let m = san.match(/^([a-h])x([a-h][1-8])(=?[QRBN])?$/);
+  if (m) {
+    const fromFile = m[1];
+    const to = parseSquare(m[2]);
+    const promo = m[3];
+    const from = findPiece(board, "P", turn, {
+      file: fromFile,
+      target: to,
+      capture: true
+    });
+    if (!from || !to) return false;
     movePiece(board, from, to);
-    return;
+    if (promo) {
+      const p = promo.replace("=", "");
+      board[to.r][to.c] = turn === "w" ? p.toUpperCase() : p.toLowerCase();
+    }
+    return true;
   }
 
-  // 5. Piece moves: Nf3, Rxe5, Qh4
-  const pieceLetter = san[0]; // N, B, R, Q, K
-  const rest = san.slice(1);
+  // Pawn push SAN: e4 or e8=Q
+  m = san.match(/^([a-h][1-8])(=?[QRBN])?$/);
+  if (m) {
+    const to = parseSquare(m[1]);
+    const promo = m[2];
+    const from = findPiece(board, "P", turn, {
+      target: to,
+      capture: false
+    });
+    if (!from || !to) return false;
+    movePiece(board, from, to);
+    if (promo) {
+      const p = promo.replace("=", "");
+      board[to.r][to.c] = turn === "w" ? p.toUpperCase() : p.toLowerCase();
+    }
+    return true;
+  }
 
-  let destString = rest.includes("x")
-    ? rest.split("x")[1]
-    : rest;
+  // Piece SAN: Nf3, Rxe5, Nbd2, R1e2, Qh4e1 (last one uncommon but valid format)
+  m = san.match(/^([KQRBN])([a-h]?)([1-8]?)(x?)([a-h][1-8])$/);
+  if (m) {
+    const piece = m[1];
+    const disFile = m[2] || null;
+    const disRank = m[3] || null;
+    const capture = m[4] === "x";
+    const to = parseSquare(m[5]);
 
-  const to = parseSquare(destString);
-  const from = findPiece(board, pieceLetter, turn, { target: to });
+    const from = findPiece(board, piece, turn, {
+      file: disFile,
+      rank: disRank,
+      target: to,
+      capture
+    });
+    if (!from || !to) return false;
+    movePiece(board, from, to);
+    return true;
+  }
 
-  if (!from || !to) return;
-
-  movePiece(board, from, to);
+  return false;
 }
