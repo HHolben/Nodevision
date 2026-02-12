@@ -12,11 +12,15 @@ export function ensureWorkspace() {
   if (!workspace) {
     workspace = document.createElement("div");
     workspace.id = "workspace";
-    workspace.style.padding = "8px";
-    workspace.style.display = "flex";
-    workspace.style.flexDirection = "column";
     document.body.appendChild(workspace);
   }
+  Object.assign(workspace.style, {
+    display: "flex",
+    flexDirection: "column",
+    flex: "1 1 auto",
+    minHeight: "0",
+    overflow: "hidden",
+  });
   return workspace;
 }
 
@@ -153,6 +157,8 @@ export function renderLayout(node, parent) {
       overflow: "hidden",
       flex: node.flex ? `${node.flex} 1 0` : "1 1 auto",
       alignItems: "stretch", // Ensures dividers stretch to fill height/width
+      minHeight: "0",
+      minWidth: "0",
     });
     parent.appendChild(container);
     
@@ -187,6 +193,8 @@ export function renderLayout(node, parent) {
       display: "flex",
       flexDirection: "column",
       position: "relative",
+      minHeight: "0",
+      minWidth: "0",
     });
     cell.dataset.id = node.instanceName || node.id;
     cell.dataset.panelClass = node.panelClass || "InfoPanel";
@@ -460,4 +468,3 @@ function setupActivePanelTracking() {
 
 // Initialize tracking when module loads
 setupActivePanelTracking();
-

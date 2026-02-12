@@ -55,6 +55,12 @@ export async function createPanel(panelType, instanceVars = {}, panelPath = null
     // 🟨 If replacing an active cell, clear it first
     if (container.classList.contains("panel-cell")) {
       container.innerHTML = "";
+      Object.assign(panel.style, {
+        width: "100%",
+        height: "100%",
+        minHeight: "0",
+        margin: "0",
+      });
       container.appendChild(panel);
     } else {
       container.appendChild(panel);

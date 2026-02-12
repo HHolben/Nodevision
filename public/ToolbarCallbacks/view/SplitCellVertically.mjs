@@ -1,6 +1,118 @@
 // Nodevision/public/ToolbarCallbacks/view/SplitCellVertically.mjs
-// Prompts the user for a number, then divides the active cell into that
-// number of vertically stacked cells.
+// Splits the active panel cell into stacked panel cells using workspace layout conventions.
+
+function createLayoutDivider(leftCell, rightCell, isVertical = false) {
+  const divider = document.createElement("div");
+  divider.className = "layout-divider";
+  divider._leftCell = leftCell;
+  divider._rightCell = rightCell;
+
+  Object.assign(divider.style, {
+    flexShrink: "0",
+    flexGrow: "0",
+    background: "#666",
+    zIndex: "100",
+    transition: "background 0.2s",
+    ...(isVertical
+      ? {
+          height: "6px",
+          minHeight: "6px",
+          maxHeight: "6px",
+          cursor: "row-resize",
+          width: "100%",
+        }
+      : {
+          width: "6px",
+          minWidth: "6px",
+          maxWidth: "6px",
+          cursor: "col-resize",
+          height: "100%",
+        }),
+  });
+
+  divider.addEventListener("mouseenter", () => {
+    divider.style.background = "#0078d7";
+  });
+  divider.addEventListener("mouseleave", () => {
+    divider.style.background = "#666";
+  });
+
+  let startPos = 0;
+  let startLeftSize = 0;
+  let startRightSize = 0;
+  let totalSize = 0;
+
+  divider.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    const leftEl = divider._leftCell;
+    const rightEl = divider._rightCell;
+    if (!leftEl || !rightEl) return;
+
+    const container = divider.parentElement;
+    const leftRect = leftEl.getBoundingClientRect();
+    const rightRect = rightEl.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    if (isVertical) {
+      startPos = e.clientY;
+      startLeftSize = leftRect.height;
+      startRightSize = rightRect.height;
+      totalSize = containerRect.height;
+    } else {
+      startPos = e.clientX;
+      startLeftSize = leftRect.width;
+      startRightSize = rightRect.width;
+      totalSize = containerRect.width;
+    }
+
+    const onMouseMove = (moveEvent) => {
+      const leftTarget = divider._leftCell;
+      const rightTarget = divider._rightCell;
+      if (!leftTarget || !rightTarget) return;
+
+      const currentPos = isVertical ? moveEvent.clientY : moveEvent.clientX;
+      const delta = currentPos - startPos;
+
+      let newLeftSize = startLeftSize + delta;
+      let newRightSize = startRightSize - delta;
+      const min = 50;
+      if (newLeftSize < min) newLeftSize = min;
+      if (newRightSize < min) newRightSize = min;
+
+      const leftPercent = (newLeftSize / totalSize) * 100;
+      const rightPercent = (newRightSize / totalSize) * 100;
+      leftTarget.style.flex = `0 0 ${leftPercent}%`;
+      rightTarget.style.flex = `0 0 ${rightPercent}%`;
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  });
+
+  return divider;
+}
+
+function makePanelCell(flexValue = "1 1 0") {
+  const cell = document.createElement("div");
+  cell.className = "panel-cell";
+  Object.assign(cell.style, {
+    border: "1px solid #bbb",
+    background: "#fafafa",
+    overflow: "auto",
+    flex: flexValue,
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
+    minHeight: "0",
+    minWidth: "0",
+  });
+  return cell;
+}
 
 export function splitCellVertically() {
   const cell = window.activeCell;
@@ -16,61 +128,53 @@ export function splitCellVertically() {
     return;
   }
 
-  const parentContainer = cell.parentElement;
-  if (!parentContainer) return;
+  const parent = cell.parentElement;
+  if (!parent) return;
 
-  // Store the original content
+  const originalFlex = cell.style.flex || "1 1 0";
   const originalContent = cell.innerHTML;
+  const inheritedId = cell.dataset.id || "";
+  const inheritedPanelClass = cell.dataset.panelClass || "";
 
-  // Remove the original cell
-  parentContainer.removeChild(cell);
+  const splitContainer = document.createElement("div");
+  splitContainer.className = "panel-row";
+  Object.assign(splitContainer.style, {
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    flex: originalFlex,
+    alignItems: "stretch",
+    minHeight: "0",
+    minWidth: "0",
+  });
 
-  // Create a new column container
-  const newColumn = document.createElement("div");
-  newColumn.className = "column";
-  newColumn.style.display = "flex";
-  newColumn.style.flexDirection = "column";
-  newColumn.style.flex = "1 1 auto";
-  newColumn.style.height = "100%";
-  newColumn.style.width = "100%";
+  const referenceNode = cell.nextSibling;
+  parent.removeChild(cell);
 
-  // Create the specified number of vertical cells
+  let firstCell = null;
   for (let i = 0; i < num; i++) {
-    const newCell = document.createElement("div");
-    newCell.className = "cell";
-    newCell.style.flex = `1 1 ${100 / num}%`;
-    newCell.style.border = "1px solid var(--border-color, #444)";
-    newCell.style.overflow = "auto";
+    const newCell = makePanelCell(`1 1 ${100 / num}%`);
+    if (i === 0) {
+      newCell.innerHTML = originalContent;
+      if (inheritedId) newCell.dataset.id = inheritedId;
+      if (inheritedPanelClass) newCell.dataset.panelClass = inheritedPanelClass;
+      firstCell = newCell;
+    }
 
-    // First cell inherits the original content
-    if (i === 0) newCell.innerHTML = originalContent;
+    splitContainer.appendChild(newCell);
 
-    // Allow selecting this new cell
-    newCell.addEventListener("click", (e) => {
-      e.stopPropagation();
-      window.activeCell = newCell;
-      document.querySelectorAll(".cell").forEach(c => c.classList.remove("active"));
-      newCell.classList.add("active");
-    });
-
-    newColumn.appendChild(newCell);
-
-    // Optional divider between stacked cells
-    if (i < num - 1) {
-      const divider = document.createElement("div");
-      divider.className = "divider";
-      divider.style.height = "4px";
-      divider.style.cursor = "row-resize";
-      divider.style.background = "var(--divider-color, #222)";
-      newColumn.appendChild(divider);
+    if (i > 0) {
+      const top = splitContainer.children[splitContainer.children.length - 3];
+      const bottom = splitContainer.children[splitContainer.children.length - 1];
+      const divider = createLayoutDivider(top, bottom, true);
+      splitContainer.insertBefore(divider, bottom);
     }
   }
 
-  // Insert the new column where the old cell was
-  parentContainer.appendChild(newColumn);
-
-  // Update activeCell to the first new one
-  window.activeCell = newColumn.querySelector(".cell");
+  parent.insertBefore(splitContainer, referenceNode);
+  if (firstCell) {
+    window.activeCell = firstCell;
+  }
 }
 
 // Default export for toolbar system

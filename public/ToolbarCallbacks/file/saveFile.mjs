@@ -1,156 +1,155 @@
-// Nodevision/public/ToolbarCallbacks/file/SaveFile.mjs
-// Handles saving the currently active file from any supported editor.
+// Nodevision/public/ToolbarCallbacks/file/saveFile.mjs
+// Unified save callback for all supported editor modes.
 
-export default async function saveFile() {
-  const filePath =
+function resolveFilePath(preferredPath) {
+  return (
+    preferredPath ||
     window.currentActiveFilePath ||
     window.filePath ||
-    window.selectedFilePath;
-
-  console.log(
-    "💾 Saving from source:",
-    window.currentActiveFilePath ? "currentActiveFilePath" :
-    window.filePath ? "filePath" : "selectedFilePath",
-    "→", filePath
+    window.selectedFilePath ||
+    window.NodevisionState?.selectedFile ||
+    null
   );
+}
 
+async function saveViaApi(payload) {
+  const res = await fetch("/api/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+
+  if (!res.ok || !data?.success) {
+    const detail = data?.error || `${res.status} ${res.statusText}`;
+    throw new Error(detail);
+  }
+
+  return data;
+}
+
+async function saveRasterCanvas(filePath) {
+  const canvas = window.rasterCanvas;
+  if (!(canvas instanceof HTMLCanvasElement)) return false;
+
+  if (typeof window.saveRasterImage === "function") {
+    if (window.saveRasterImage.length >= 2) {
+      await window.saveRasterImage(canvas, filePath);
+    } else {
+      await window.saveRasterImage(filePath);
+    }
+    return true;
+  }
+
+  const dataURL = canvas.toDataURL("image/png");
+  const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
+  await saveViaApi({
+    path: filePath,
+    content: base64Data,
+    encoding: "base64",
+    mimeType: "image/png",
+  });
+  return true;
+}
+
+export default async function saveFile(options = {}) {
+  const requestedPath =
+    typeof options === "string" ? options : options?.path;
+  const filePath = resolveFilePath(requestedPath);
   if (!filePath) {
-    console.error("Cannot save: filePath is missing.");
-    return;
+    console.error("[saveFile] Cannot save: file path is missing.");
+    return false;
   }
-
-  // 1. SVG editor (Publisher-style)
-  const svgEditor = document.getElementById("svg-editor");
-  if (svgEditor && typeof window.currentSaveSVG === 'function') {
-    console.log("Saving SVG file using Publisher-style editor");
-    window.currentSaveSVG();
-    return;
-  }
-
-  // 2. Legacy SVG editor
-  if (svgEditor) {
-    console.log("Saving SVG file using legacy direct method");
-    const svgContent = svgEditor.outerHTML;
-
-    try {
-      const res = await fetch('/api/files/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath, content: svgContent })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        console.log('SVG file saved successfully:', filePath);
-        const messageEl = document.getElementById('svg-message');
-        if (messageEl) {
-          messageEl.textContent = 'SVG saved successfully!';
-          messageEl.style.color = 'green';
-        }
-      } else {
-        console.error('Error saving SVG:', data.error);
-      }
-    } catch (err) {
-      console.error('Error saving SVG file:', err);
-    }
-    return;
-  }
-// Nodevision/public/ToolbarCallbacks/file/SaveFile.mjs (Section 3 - Raster Image Editor)
-
-// 3. Raster image editor
-if (window.rasterCanvas instanceof HTMLCanvasElement) {
-  console.log("Saving raster image file");
 
   try {
-    const canvas = window.rasterCanvas;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const mode = window.NodevisionState?.currentMode || window.currentMode || "";
+    const inSvgEditor =
+      !!document.getElementById("svg-editor-root") ||
+      !!document.getElementById("svg-editor");
+    const inMarkdownEditor =
+      mode === "MDediting" ||
+      !!document.getElementById("markdown-editor") ||
+      typeof window.getEditorMarkdown === "function";
+    const inWysiwygEditor =
+      mode === "HTMLediting" ||
+      mode === "CSVediting" ||
+      !!document.getElementById("wysiwyg") ||
+      typeof window.getEditorHTML === "function";
+    const inMidiEditor = mode === "MIDIediting";
 
-    const dataURL = canvas.toDataURL("image/png");
-    const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
-
-    // *** FIX: CHANGE ENDPOINT TO THE CORRECT, DYNAMICALLY LOADED /api/save ***
-    const res = await fetch("/api/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        path: filePath,
-        content: base64Data,
-        encoding: "base64", // Critical for server binary handling
-        mimeType: "image/png"
-      })
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("🔴 Server Save Failed:", res.status, res.statusText, errorText);
-      return;
+    // 1) Explicit editor state checks.
+    if (await saveRasterCanvas(filePath)) {
+      return true;
+    }
+    if (window.monacoEditor && typeof window.monacoEditor.getValue === "function") {
+      const content = window.monacoEditor.getValue();
+      await saveViaApi({ path: filePath, content });
+      return true;
+    }
+    if (typeof window.getEditorMarkdown === "function") {
+      const content = window.getEditorMarkdown();
+      await saveViaApi({ path: filePath, content });
+      return true;
+    }
+    if (inWysiwygEditor && typeof window.getEditorHTML === "function") {
+      const content = window.getEditorHTML();
+      await saveViaApi({ path: filePath, content });
+      return true;
     }
 
-    const json = await res.json();
-    if (json.success) {
-      console.log("🟢 Saved PNG successfully:", json.path);
-    } else {
-      console.error("🔴 Save failed (JSON error):", json.error);
+    // 2) Editor-specific save hooks (guarded by mode/context).
+    if (inMidiEditor && typeof window.saveMIDIFile === "function") {
+      await window.saveMIDIFile(filePath);
+      return true;
+    }
+    if (inSvgEditor && typeof window.currentSaveSVG === "function") {
+      await window.currentSaveSVG(filePath);
+      return true;
+    }
+    if (inMarkdownEditor && typeof window.saveMDFile === "function") {
+      await window.saveMDFile(filePath);
+      return true;
+    }
+    if (inWysiwygEditor && typeof window.saveWYSIWYGFile === "function") {
+      await window.saveWYSIWYGFile(filePath);
+      return true;
     }
 
+    // 3) Generic SVG fallback.
+    if (inSvgEditor) {
+      const svgEditor =
+        document.getElementById("svg-editor-root") ||
+        document.getElementById("svg-editor");
+      const svgContent =
+        svgEditor instanceof SVGElement
+          ? new XMLSerializer().serializeToString(svgEditor)
+          : svgEditor.outerHTML;
+      await saveViaApi({ path: filePath, content: svgContent });
+      return true;
+    }
+
+    // 4) Generic text fallback for simple editors.
+    const markdownEl = document.getElementById("markdown-editor");
+    if (markdownEl && "value" in markdownEl) {
+      await saveViaApi({ path: filePath, content: markdownEl.value });
+      return true;
+    }
+
+    console.error("[saveFile] Cannot save: editor state not recognized.");
+    return false;
   } catch (err) {
-    console.error("🔴 Network/Client Error during save:", err);
+    console.error(`[saveFile] Failed to save "${filePath}":`, err);
+    return false;
   }
-
-  return;
 }
 
-
-
-  // 4. Code (Monaco) editor
-  if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
-    const content = window.monacoEditor.getValue();
-    try {
-      const res = await fetch('/api/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath, content })
-      });
-      const data = await res.json();
-      if (data.success) console.log('Code file saved successfully:', filePath);
-      else console.error('Error saving file:', data.error);
-    } catch (err) {
-      console.error('Error saving code file:', err);
-    }
-    return;
-  }
-
-  // 5. WYSIWYG fallback
-  if (typeof window.saveWYSIWYGFile === 'function') {
-    console.log("Saving file using WYSIWYG editor");
-    window.saveWYSIWYGFile(filePath);
-    return;
-  }
-
-  console.error("Cannot save: editor state not recognized.");
-}
-// 6 Markdown editor
-if (typeof window.getEditorMarkdown === "function") {
-  console.log("Saving Markdown file");
-
-  const content = window.getEditorMarkdown();
-
-  try {
-    const res = await fetch("/api/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: filePath, content })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      console.log("Markdown file saved successfully:", filePath);
-    } else {
-      console.error("Error saving Markdown file:", data.error);
-    }
-  } catch (err) {
-    console.error("Error saving Markdown file:", err);
-  }
-
-  return;
+if (typeof window !== "undefined") {
+  window.saveFile = saveFile;
+  window.saveCurrentFile = saveFile;
 }

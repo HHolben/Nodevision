@@ -1,5 +1,6 @@
 // Nodevision/public/PanelInstances/EditorPanels/CodeEditor.mjs
 // Replaces the active panel cell with a Monaco-based Code Editor for the selected file.
+import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
 
 let editorInstance = null;
 let editorContainer = null;
@@ -140,17 +141,8 @@ function initializeMonaco(filePath, content) {
     // 5. Add Keyboard Shortcut Listener (The Fix!)
     // We use Monaco's built-in command system to listen for Ctrl+S / Cmd+S.
     editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
-        // Prevent the browser's default save dialog
-        // (This is implicitly handled by Monaco's command system, but good practice).
-        
-        console.log("⌨️ Ctrl+S / Cmd+S detected in Monaco. Triggering global save...");
-        
-        // This calls the saveFile function exported from /ToolbarCallbacks/file/SaveFile.mjs
-        if (typeof window.saveFile === 'function') {
-            window.saveFile(); 
-        } else {
-            console.error("🔴 Global save function (window.saveFile) is not available to the editor.");
-        }
+        // Monaco handles preventing browser default when command is registered.
+        saveCurrentFile({ path: filePath });
     });
 
   });
@@ -178,25 +170,6 @@ function detectLanguage(filePath) {
   );
 }
 
-/**
- * Saves file from editor content back to disk.
- */
-async function saveFile(filePath) {
-  if (!editorInstance || !filePath) return;
-  const content = editorInstance.getValue();
-
-  try {
-    const res = await fetch("/api/fileSave", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: filePath, content }),
-    });
-    if (!res.ok) throw new Error(`Save failed: ${res.status}`);
-    console.log(`💾 Saved ${filePath}`);
-  } catch (err) {
-    console.error("[CodeEditor] Error saving file:", err);
-  }
-}
 /**
  * Integrates with panelManager.mjs to allow the Code Editor to be loaded as a panel.
  */

@@ -1,6 +1,5 @@
 // Nodevision/public/ToolbarCallbacks/view/MergeCells.mjs
-// Merges all cells in the same container (row or column) as the active cell into one unified cell,
-// removing dividers and preserving the ID/panel type of the first cell.
+// Merges panel cells in the same split container and preserves workspace panel semantics.
 
 export function mergeCells() {
   const active = window.activeCell;
@@ -14,7 +13,7 @@ export function mergeCells() {
 
   // Collect all sibling cells
   const cells = Array.from(container.children).filter(
-    (el) => el.classList && el.classList.contains("cell")
+    (el) => el.classList && el.classList.contains("panel-cell")
   );
 
   if (cells.length <= 1) {
@@ -25,18 +24,21 @@ export function mergeCells() {
   // Get ID and panel type from the first cell
   const firstCell = cells[0];
   const inheritedId = firstCell.dataset.id || "MergedPanel";
-  const inheritedPanel = firstCell.dataset.panel || firstCell.id || "MergedPanel";
+  const inheritedPanelClass = firstCell.dataset.panelClass || "InfoPanel";
 
   // Combine inner content of all cells
   let mergedContent = "";
   for (const cell of cells) {
-    mergedContent += cell.innerHTML + "\n";
+    if (cell.innerHTML) {
+      mergedContent += cell.innerHTML;
+    }
   }
 
   // Remove all cells and dividers from the container
   Array.from(container.children).forEach((child) => {
     if (
-      child.classList?.contains("cell") ||
+      child.classList?.contains("panel-cell") ||
+      child.classList?.contains("layout-divider") ||
       child.classList?.contains("divider")
     ) {
       container.removeChild(child);
@@ -45,26 +47,21 @@ export function mergeCells() {
 
   // Create the merged cell
   const newCell = document.createElement("div");
-  newCell.className = "cell";
+  newCell.className = "panel-cell";
   newCell.dataset.id = inheritedId;
-  newCell.dataset.panel = inheritedPanel;
+  newCell.dataset.panelClass = inheritedPanelClass;
   Object.assign(newCell.style, {
-    flex: "1 1 auto",
-    border: "1px solid var(--border-color, #444)",
+    flex: "1 1 0",
+    border: "1px solid #bbb",
+    background: "#fafafa",
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
     overflow: "auto",
+    minHeight: "0",
+    minWidth: "0",
   });
   newCell.innerHTML = mergedContent;
-
-  // Rebind click-to-activate behavior
-  newCell.addEventListener("click", (e) => {
-    e.stopPropagation();
-    window.activeCell = newCell;
-    document.querySelectorAll(".cell").forEach((c) =>
-      c.classList.remove("active")
-    );
-    newCell.classList.add("active");
-    console.log(`Active cell set to merged panel: ${newCell.dataset.id}`);
-  });
 
   // Add merged cell to container
   container.appendChild(newCell);
@@ -73,7 +70,7 @@ export function mergeCells() {
   window.activeCell = newCell;
 
   console.log(
-    `✅ Merged ${cells.length} cells into one with ID "${inheritedId}" and panel type "${inheritedPanel}".`
+    `✅ Merged ${cells.length} cells into one with ID "${inheritedId}" and panel class "${inheritedPanelClass}".`
   );
 }
 
