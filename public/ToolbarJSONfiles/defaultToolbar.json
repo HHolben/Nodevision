@@ -20,26 +20,25 @@
     "icon": "/icons/Draw.svg",
     "mode": "PNGediting"
   },
-
   {
     "heading": "Terminal",
     "icon": "/icons/terminal.svg",
     "callbackKey": "openTerminal"
   },
-    {
+  {
     "heading": "View",
     "icon": "/icons/terminal.svg",
     "callbackKey": "openTerminal"
   },
-    {
+  {
     "heading": "Settings",
     "icon": "/icons/terminal.svg",
     "callbackKey": "openTerminal"
   },
   {
-    "heading": "Search",
-    "icon": "/icons/search.svg",
-    "callbackKey": "openSearch"
+    "heading": "SearchBar",
+    "content": "<div id=\"toolbar-file-search\" style=\"display:flex;align-items:center;gap:6px;position:relative;\"><input id=\"toolbar-file-search-input\" type=\"text\" placeholder=\"Search files, folders, or content\" style=\"width:300px;padding:4px 6px;border:1px solid #888;border-radius:4px;\" /><select id=\"toolbar-file-search-scope\" style=\"padding:4px;border:1px solid #888;border-radius:4px;\"><option value=\"all\">All</option><option value=\"name\">Names</option><option value=\"content\">Content</option></select><button id=\"toolbar-file-search-btn\" style=\"padding:4px 8px;border:1px solid #333;background:#eee;cursor:pointer;border-radius:4px;\">Search</button><div id=\"toolbar-file-search-results\" style=\"display:none;position:absolute;left:0;top:calc(100% + 4px);width:560px;max-height:300px;overflow:auto;background:#fff;border:1px solid #bbb;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:2000;\"></div></div>",
+    "script": "searchWidget.mjs"
   },
   {
     "heading": "User",

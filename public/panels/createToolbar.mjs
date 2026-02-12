@@ -12,6 +12,7 @@ let currentSubToolbarHeading = null;
 let subToolbarContainer = null;
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
+const toolbarScriptModuleCache = new Map();
 
 window.NodevisionState = window.NodevisionState || {
   activePanelType: null,
@@ -56,6 +57,32 @@ function checkToolbarConditions(item, state) {
 async function handleToolbarClick(category, key) {
   const callback = await loadCallback(category.toLowerCase(), key);
   callback();
+}
+
+function resolveToolbarScriptPath(scriptPath) {
+  if (!scriptPath || typeof scriptPath !== "string") return null;
+  if (scriptPath.startsWith("/")) return scriptPath;
+  const clean = scriptPath.replace(/^\.\//, "");
+  return `/ToolbarJSONfiles/${clean}`;
+}
+
+async function attachToolbarScript(item, hostElement) {
+  const modulePath = resolveToolbarScriptPath(item?.script);
+  if (!modulePath) return;
+
+  try {
+    let mod = toolbarScriptModuleCache.get(modulePath);
+    if (!mod) {
+      mod = await import(modulePath);
+      toolbarScriptModuleCache.set(modulePath, mod);
+    }
+
+    if (mod && typeof mod.initToolbarWidget === "function") {
+      mod.initToolbarWidget(hostElement, item);
+    }
+  } catch (err) {
+    console.warn("Failed to load toolbar script:", modulePath, err);
+  }
 }
 
 /**
@@ -137,6 +164,23 @@ function buildToolbar(container, items, parentHeading = null) {
   items.forEach(item => {
     if (item.parentHeading && !parentHeading) return;
 
+    // Inline custom content widget (e.g., search bar)
+    if (item.content) {
+      const contentWrapper = document.createElement("div");
+      contentWrapper.className = "toolbar-inline-widget";
+      contentWrapper.dataset.heading = item.heading || "";
+      Object.assign(contentWrapper.style, {
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        marginRight: "6px",
+      });
+      contentWrapper.innerHTML = item.content;
+      container.appendChild(contentWrapper);
+      attachToolbarScript(item, contentWrapper);
+      return;
+    }
+
     const btnWrapper = document.createElement("div");
     btnWrapper.className = "toolbar-button";
     btnWrapper.dataset.heading = item.heading;
@@ -216,7 +260,7 @@ if (item.panelTemplateId || item.panelTemplate) {
 
 
       // Script import
-      if (item.script) import(`/ToolbarJSONfiles/${item.script}`);
+      if (item.script) attachToolbarScript(item, btnWrapper);
 
       // Route to active panel handler if specified
       if (item.routeToActivePanel && item.callbackKey) {
