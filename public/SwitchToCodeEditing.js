@@ -68,7 +68,11 @@
                 if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
             })
-            .then(data => initializeMonaco(data.content))
+            .then(data => {
+                window.currentFileEncoding = data.encoding || 'utf8';
+                window.currentFileBom = Boolean(data.bom);
+                initializeMonaco(data.content);
+            })
             .catch(error => {
                 console.error('Error fetching file content:', error);
                 initializeMonaco('// Error fetching file content: ' + error.message);

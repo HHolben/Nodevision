@@ -5,6 +5,9 @@ import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
 let editorInstance = null;
 let editorContainer = null;
 let lastEditedPath = null;
+let currentLoadedEncoding = "utf8";
+let currentLoadedBom = false;
+let currentLoadedIsBinary = false;
 
 /**
  * Opens or replaces a Code Editor panel in the active cell.
@@ -78,6 +81,11 @@ export async function updateEditorPanel(filePath) {
     const res = await fetch(`/api/fileCodeContent?path=${encodeURIComponent(filePath)}`);
     if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
     const data = await res.json();
+    currentLoadedEncoding = data.encoding || "utf8";
+    currentLoadedBom = Boolean(data.bom);
+    currentLoadedIsBinary = Boolean(data.isBinary);
+    window.currentFileEncoding = currentLoadedEncoding;
+    window.currentFileBom = currentLoadedBom;
     initializeMonaco(filePath, data.content);
   } catch (err) {
     console.error("[CodeEditor] Error loading file:", err);
@@ -136,7 +144,13 @@ function initializeMonaco(filePath, content) {
     // These variables are critical for the main save function to recognize the active editor.
     window.monacoEditor = editorInstance;
     window.currentActiveFilePath = filePath;
+    window.currentFileEncoding = currentLoadedEncoding;
+    window.currentFileBom = currentLoadedBom;
     console.log("🧠 Monaco editor registered globally for saving:", filePath);
+
+    if (currentLoadedIsBinary) {
+      console.warn(`[CodeEditor] "${filePath}" looks binary; text rendering may be lossy.`);
+    }
 
     // 5. Add Keyboard Shortcut Listener (The Fix!)
     // We use Monaco's built-in command system to listen for Ctrl+S / Cmd+S.

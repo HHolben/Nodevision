@@ -40,7 +40,8 @@ router.post('/save', async (req, res) => {
     path: relativePath,
     content,
     encoding = 'utf8',
-    mimeType
+    mimeType,
+    bom = false
   } = req.body;
 
   if (!relativePath) {
@@ -68,9 +69,32 @@ router.post('/save', async (req, res) => {
       await fs.writeFile(filePath, buffer);
       console.log(`Saved raw binary: ${relativePath}`);
     } else {
-      // UTF-8 text
-      await fs.writeFile(filePath, content, 'utf8');
-      console.log(`Saved text file: ${relativePath}`);
+      // Text encodings
+      const enc = String(encoding).toLowerCase();
+
+      if (enc === 'utf8' || enc === 'utf-8') {
+        const textBuf = Buffer.from(content, 'utf8');
+        const out = bom ? Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), textBuf]) : textBuf;
+        await fs.writeFile(filePath, out);
+        console.log(`Saved text file: ${relativePath} (utf8${bom ? '+bom' : ''})`);
+      } else if (enc === 'utf16le' || enc === 'utf-16le') {
+        const textBuf = Buffer.from(content, 'utf16le');
+        const out = bom ? Buffer.concat([Buffer.from([0xff, 0xfe]), textBuf]) : textBuf;
+        await fs.writeFile(filePath, out);
+        console.log(`Saved text file: ${relativePath} (utf16le${bom ? '+bom' : ''})`);
+      } else if (enc === 'utf16be' || enc === 'utf-16be') {
+        const textBuf = Buffer.from(content, 'utf16le');
+        textBuf.swap16();
+        const out = bom ? Buffer.concat([Buffer.from([0xfe, 0xff]), textBuf]) : textBuf;
+        await fs.writeFile(filePath, out);
+        console.log(`Saved text file: ${relativePath} (utf16be${bom ? '+bom' : ''})`);
+      } else if (enc === 'latin1' || enc === 'iso-8859-1') {
+        const textBuf = Buffer.from(content, 'latin1');
+        await fs.writeFile(filePath, textBuf);
+        console.log(`Saved text file: ${relativePath} (latin1)`);
+      } else {
+        return res.status(400).json({ error: `Unsupported encoding: ${encoding}` });
+      }
     }
 
     res.json({ success: true, path: relativePath });

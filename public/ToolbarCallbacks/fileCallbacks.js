@@ -59,7 +59,12 @@ saveFile: () => {
     fetch('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, content: content })
+      body: JSON.stringify({
+        path: filePath,
+        content: content,
+        encoding: window.currentFileEncoding || 'utf8',
+        bom: Boolean(window.currentFileBom)
+      })
     })
       .then(res => res.text())
       .then(data => {
@@ -168,7 +173,12 @@ NewFile: async () => {
     await fetch('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, content })
+      body: JSON.stringify({
+        path: filePath,
+        content,
+        encoding: window.currentFileEncoding || 'utf8',
+        bom: Boolean(window.currentFileBom)
+      })
     });
 
     // Ask user for Arduino board and port

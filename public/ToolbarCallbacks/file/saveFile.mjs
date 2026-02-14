@@ -89,7 +89,12 @@ export default async function saveFile(options = {}) {
     }
     if (window.monacoEditor && typeof window.monacoEditor.getValue === "function") {
       const content = window.monacoEditor.getValue();
-      await saveViaApi({ path: filePath, content });
+      await saveViaApi({
+        path: filePath,
+        content,
+        encoding: window.currentFileEncoding || "utf8",
+        bom: Boolean(window.currentFileBom),
+      });
       return true;
     }
     if (typeof window.getEditorMarkdown === "function") {
