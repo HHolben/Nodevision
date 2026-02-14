@@ -31,9 +31,28 @@
     "callbackKey": "openTerminal"
   },
   {
-    "heading": "Settings",
+    "heading": "Open Settings",
     "icon": "/icons/terminal.svg",
-    "callbackKey": "openTerminal"
+    "ToolbarCategory": "settings",
+    "callbackKey": "openSettingsPage"
+  },
+  {
+    "heading": "Toggle View Mode",
+    "icon": "/icons/terminal.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "toggleViewMode"
+  },
+  {
+    "heading": "Toggle Page Preview Mode",
+    "icon": "/icons/terminal.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "togglePagePreviewMode"
+  },
+  {
+    "heading": "Game Controls",
+    "icon": "/icons/terminal.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "openGameControls"
   },
   {
     "heading": "SearchBar",
@@ -41,8 +60,9 @@
     "script": "searchWidget.mjs"
   },
   {
-    "heading": "User",
+    "heading": "Logout",
     "icon": "/icons/user.svg",
-    "callbackKey": "userMenu"
+    "ToolbarCategory": "user",
+    "callbackKey": "logout"
   }
 ]

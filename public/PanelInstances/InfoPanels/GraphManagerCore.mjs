@@ -7,11 +7,195 @@ import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
 
 let cy;
 let currentRootPath = '';
+const discoveredLinks = new Map(); // sourcePath -> Set(targetPath)
+const EDGE_BUCKET_SYMBOLS = [
+    ...'abcdefghijklmnopqrstuvwxyz',
+    ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    ...'0123456789',
+    '#',
+    '_'
+];
+
+function isExternalOrAnchorLink(link) {
+    return (
+        link.startsWith('http://') ||
+        link.startsWith('https://') ||
+        link.startsWith('//') ||
+        link.startsWith('mailto:') ||
+        link.startsWith('javascript:') ||
+        link.startsWith('data:') ||
+        link.startsWith('#')
+    );
+}
+
+function normalizeNotebookRelativePath(path) {
+    const parts = [];
+    for (const part of path.split('/')) {
+        if (!part || part === '.') continue;
+        if (part === '..') {
+            if (parts.length === 0) return null;
+            parts.pop();
+            continue;
+        }
+        parts.push(part);
+    }
+    return parts.join('/');
+}
+
+function resolveNotebookLink(sourceFilePath, rawLink) {
+    if (typeof rawLink !== 'string') return null;
+    let link = rawLink.trim();
+    if (!link || isExternalOrAnchorLink(link)) return null;
+
+    const hashIndex = link.indexOf('#');
+    if (hashIndex >= 0) link = link.slice(0, hashIndex);
+    const queryIndex = link.indexOf('?');
+    if (queryIndex >= 0) link = link.slice(0, queryIndex);
+    if (!link) return null;
+
+    const sourceDir = sourceFilePath.includes('/') ? sourceFilePath.slice(0, sourceFilePath.lastIndexOf('/')) : '';
+    const isRootRelative = rawLink.startsWith('/') || rawLink.startsWith('Notebook/');
+    let candidate = link.replace(/^\/+/, '');
+    if (candidate.startsWith('Notebook/')) {
+        candidate = candidate.slice('Notebook/'.length);
+    } else if (!isRootRelative && sourceDir) {
+        candidate = `${sourceDir}/${candidate}`;
+    }
+
+    return normalizeNotebookRelativePath(candidate);
+}
+
+function rememberLink(sourcePath, targetPath) {
+    const source = normalizePath(sourcePath);
+    const target = normalizePath(targetPath);
+    if (!source || !target) return;
+
+    let targets = discoveredLinks.get(source);
+    if (!targets) {
+        targets = new Set();
+        discoveredLinks.set(source, targets);
+    }
+    targets.add(target);
+}
+
+function ingestPersistedEdgeData(data) {
+    if (!data) return;
+
+    // Current bucket format: [{ source, target }, ...]
+    if (Array.isArray(data)) {
+        for (const edge of data) {
+            if (edge && typeof edge === 'object') {
+                rememberLink(edge.source, edge.target);
+            }
+        }
+        return;
+    }
+
+    // Backward compatibility with keyed object formats.
+    if (typeof data === 'object') {
+        for (const [source, rec] of Object.entries(data)) {
+            if (!rec || typeof rec !== 'object') continue;
+            const outgoing = rec.edgesFrom || rec.sources || [];
+            if (Array.isArray(outgoing)) {
+                for (const target of outgoing) {
+                    rememberLink(source, target);
+                }
+            }
+        }
+    }
+}
+
+async function hydrateDiscoveredLinksFromBuckets() {
+    const fetches = EDGE_BUCKET_SYMBOLS.map(async (symbol) => {
+        const bucket = `${encodeURIComponent(symbol)}.json`;
+        const url = `/public/data/edges/${bucket}`;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const text = await res.text();
+            if (!text.trim()) return;
+            const json = JSON.parse(text);
+            ingestPersistedEdgeData(json);
+        } catch (err) {
+            console.warn(`[GraphManager] Failed to hydrate bucket ${bucket}:`, err);
+        }
+    });
+
+    await Promise.all(fetches);
+}
+
+function isExpandedDirectory(nodeId) {
+    const node = cy.getElementById(nodeId);
+    if (node.empty()) return false;
+    if (node.data('type') !== 'directory') return false;
+    return !node.descendants().empty();
+}
+
+function resolveVisibleTargetNode(targetPath) {
+    const visibleTarget = getVisibleNodeId(cy, targetPath);
+    if (!visibleTarget) return null;
+
+    // Never anchor an edge on an expanded directory.
+    // Prefer the closest visible descendant along targetPath.
+    if (!isExpandedDirectory(visibleTarget)) return visibleTarget;
+    const cleanTarget = normalizePath(targetPath);
+    const prefix = `${visibleTarget}/`;
+    if (!cleanTarget.startsWith(prefix)) return null;
+
+    const parts = cleanTarget.split('/');
+    for (let i = parts.length; i > 0; i--) {
+        const candidate = parts.slice(0, i).join('/');
+        const node = cy.getElementById(candidate);
+        if (!node.empty()) {
+            if (node.data('type') !== 'directory' || node.descendants().empty()) {
+                return candidate;
+            }
+        }
+    }
+
+    return null;
+}
+
+function rebuildVisibleEdges() {
+    if (!cy) return;
+
+    const edgeMap = new Map();
+    for (const [sourcePath, targets] of discoveredLinks.entries()) {
+        const visibleSource = getVisibleNodeId(cy, sourcePath);
+        if (!visibleSource) continue;
+
+        for (const targetPath of targets) {
+            const visibleTarget = resolveVisibleTargetNode(targetPath);
+            if (!visibleTarget) continue;
+            if (visibleSource === visibleTarget) continue;
+
+            const key = `${visibleSource}->${visibleTarget}`;
+            if (edgeMap.has(key)) continue;
+
+            edgeMap.set(key, {
+                group: 'edges',
+                data: {
+                    id: `edge-${visibleSource}-${visibleTarget}`,
+                    source: visibleSource,
+                    target: visibleTarget
+                }
+            });
+        }
+    }
+
+    cy.batch(() => {
+        cy.edges().remove();
+        if (edgeMap.size > 0) {
+            cy.add([...edgeMap.values()]);
+        }
+    });
+}
 
 export async function initGraphView({ containerId, rootPath, statusElemId }) {
     currentRootPath = normalizePath(rootPath);
+    discoveredLinks.clear();
     const container = document.getElementById(containerId);
-    const statusElem = document.getElementById(statusElemId);
+    const statusElem = statusElemId ? document.getElementById(statusElemId) : null;
 
     cy = cytoscape({
         container: container,
@@ -77,10 +261,11 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
         }
     });
 
-    statusElem.textContent = "Fetching Files...";
+    if (statusElem) statusElem.textContent = "Fetching Files...";
+    await hydrateDiscoveredLinksFromBuckets();
     await fetchDirectoryContents(currentRootPath, (data) => {
         renderGraphData(data, currentRootPath);
-        statusElem.textContent = "Ready";
+        if (statusElem) statusElem.textContent = "Ready";
     }, null, null);
 }
 
@@ -138,6 +323,8 @@ async function renderGraphData(files, parentPath) {
     for (const filePath of filesToScan) {
         await handleLinkDiscovery(filePath);
     }
+
+    rebuildVisibleEdges();
 }
 
 async function handleLinkDiscovery(filePath) {
@@ -146,37 +333,17 @@ async function handleLinkDiscovery(filePath) {
         const links = await scanFileForLinks(cleanSource);
         
         if (links && Array.isArray(links)) {
-            for (const targetPath of links) {
-                const cleanTarget = normalizePath(targetPath);
+            for (const rawTarget of links) {
+                const resolvedTarget = resolveNotebookLink(cleanSource, rawTarget);
+                if (!resolvedTarget) continue;
+
+                const cleanTarget = normalizePath(resolvedTarget);
                 console.log("Clean Target: "+cleanTarget);
     
+                rememberLink(cleanSource, cleanTarget);
 
                 // Persist
                 await saveFoundEdge({ source: cleanSource, target: cleanTarget });
-
-                // Find visible endpoints
-                const visibleSource = getVisibleNodeId(cy, cleanSource);
-                const visibleTarget = getVisibleNodeId(cy, cleanTarget);
-                console.log("Visible Target:" + visibleTarget);
-
-                // DEBUG: If you still see root edges, check these logs
-                console.log(`Link: ${cleanSource} -> ${cleanTarget} | Visual: ${visibleSource} -> ${visibleTarget}`);
-
-                if (visibleSource !== visibleTarget) {
-                    const edgeId = `edge-${visibleSource}-${visibleTarget}`;
-                    
-                    if (cy.getElementById(edgeId).empty()) {
-                        cy.add({
-                            group: 'edges',
-                            data: {
-                                id: edgeId,
-                                source: visibleSource,
-                                target: visibleTarget
-                            }
-                        });
-
-                    }
-                }
             }
         }
     } catch (err) {
@@ -195,5 +362,7 @@ async function toggleCompoundDirectory(node) {
             renderGraphData(data, path);
         }, null, null);
     }
+
+    rebuildVisibleEdges();
     cy.layout({ name: 'cose', animate: true }).run();
 }

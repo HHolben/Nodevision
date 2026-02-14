@@ -38,11 +38,6 @@ panelElem.style.flexDirection = "column";
   // 1. Create the UI Structure
   panelElem.innerHTML = `
     <div class="graph-manager" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
-      <div class="graph-header" style="padding: 8px; background: #f0f0f0; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="margin: 0; font-size: 1.1em;">Graph Explorer</h3>
-        <div id="graph-status" style="font-size: 0.85em; color: #666;">Initializing...</div>
-      </div>
-      
       <div id="cy" style="flex-grow: 1; width: 100%; background: #ffffff; position: relative;"></div>
       
       <div id="graph-error" style="color:red; padding: 10px; font-weight: bold;"></div>
@@ -70,7 +65,7 @@ panelElem.style.flexDirection = "column";
     await mod.initGraphView({
       containerId: 'cy',
       rootPath: panelVars.currentDirectory || '',      
-      statusElemId: 'graph-status'
+      statusElemId: null
     });
     
     console.log("✅ GraphManagerCore loaded and initialized.");

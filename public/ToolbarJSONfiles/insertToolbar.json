@@ -240,6 +240,22 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "heading": "Insert Positionable Image",
+      "insertGroup": "image",
+      "callbackKey": "insertPositionableImage",
+      "modes": ["HTMLediting"],
+      "icon": "icons/ImageIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Layout Canvas",
+      "insertGroup": "Layout",
+      "callbackKey": "insertLayoutCanvas",
+      "modes": ["HTMLediting"],
+      "icon": "icons/InsertDivIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
       "heading": "Insert Video",
       "insertGroup": "video",
       "callbackKey": "insertVideo",

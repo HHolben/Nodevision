@@ -85,6 +85,24 @@ async function attachToolbarScript(item, hostElement) {
   }
 }
 
+function rebuildPrebuiltDropdowns() {
+  // Clear old cached dropdown DOM so conditions are reevaluated
+  for (const key of Object.keys(prebuiltDropdowns)) {
+    delete prebuiltDropdowns[key];
+  }
+
+  for (const key in toolbarDataCache) {
+    const items = toolbarDataCache[key];
+    if (!Array.isArray(items)) continue;
+    items.forEach(item => {
+      const dropdown = buildDropdownFromItem(item);
+      if (dropdown && !prebuiltDropdowns[item.heading]) {
+        prebuiltDropdowns[item.heading] = dropdown;
+      }
+    });
+  }
+}
+
 /**
  * Creates the global toolbar, loading toolbars from JSON files.
  * Each toolbar item may have a "mode" property specifying when it appears.
@@ -123,17 +141,7 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
   }));
 
   // ✅ Prebuild dropdowns for each heading
-  for (const key in toolbarDataCache) {
-    const items = toolbarDataCache[key];
-    if (!Array.isArray(items)) continue;
-    items.forEach(item => {
-      const dropdown = buildDropdownFromItem(item);
-if (dropdown && !prebuiltDropdowns[item.heading]) {
-  prebuiltDropdowns[item.heading] = dropdown;
-}
-
-    });
-  }
+  rebuildPrebuiltDropdowns();
 
   // ✅ Apply mode filtering before building toolbar
   const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
@@ -458,6 +466,7 @@ setStatus("Mode", currentMode);
 
   // Get cached toolbar data
   const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
+  rebuildPrebuiltDropdowns();
 
   // ✅ Filter based on mode
   const filteredToolbar = defaultToolbar.filter(item => {

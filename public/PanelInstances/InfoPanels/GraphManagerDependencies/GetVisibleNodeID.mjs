@@ -30,6 +30,6 @@ export function getVisibleNodeId(cy, fullPath) {
         }
     }
 
-    // 3. Fallback to Root
-    return "Root";
+    // 3. No visible anchor found (likely invalid/non-existent target)
+    return null;
 }
