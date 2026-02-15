@@ -107,13 +107,6 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     console.log(`Camera view mode: ${currentMode().label}`);
   }
 
-  function onKeyDown(event) {
-    if (event.repeat) return;
-    if (event.key && event.key.toLowerCase() === "y") {
-      cycleMode();
-    }
-  }
-
   function onMouseMove(event) {
     const mode = currentMode().id;
     if (!controls?.isLocked) return;
@@ -123,7 +116,6 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     if (orbitPitch > maxPitch) orbitPitch = maxPitch;
   }
 
-  window.addEventListener("keydown", onKeyDown);
   document.addEventListener("mousemove", onMouseMove);
   applyCrosshairVisibility();
 
@@ -192,7 +184,6 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   }
 
   function dispose() {
-    window.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("mousemove", onMouseMove);
     if (loadedAvatar) scene.remove(loadedAvatar);
     scene.remove(fallbackAvatar);

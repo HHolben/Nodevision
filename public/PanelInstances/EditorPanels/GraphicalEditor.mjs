@@ -118,6 +118,13 @@ export async function updateGraphicalEditor(
   }
 
   if (!filePath) {
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.activePanelType = "GraphicalEditor";
+    window.NodevisionState.selectedFile = null;
+    window.NodevisionState.activeEditorFilePath = null;
+    window.currentActiveFilePath = null;
+    window.filePath = null;
+
     const { renderEditor } = await import(
       "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs"
     );
@@ -133,6 +140,15 @@ export async function updateGraphicalEditor(
 
   lastEditedPath = filePath;
   editorDiv.innerHTML = "";
+
+  // Keep global "active file" state aligned with the file shown in the graphical editor.
+  window.currentActiveFilePath = filePath;
+  window.filePath = filePath;
+  window.selectedFilePath = filePath;
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activePanelType = "GraphicalEditor";
+  window.NodevisionState.selectedFile = filePath;
+  window.NodevisionState.activeEditorFilePath = filePath;
 
   console.log("🧭 Loading graphical editor for:", filePath);
 

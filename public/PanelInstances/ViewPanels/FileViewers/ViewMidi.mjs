@@ -23,9 +23,22 @@ export async function renderFile(filePath, panel) {
     if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
 
     const buffer = await response.arrayBuffer();
-    const { header, tracks } = parseMIDI(buffer);
+    let header = { format: 0, tracks: 0, division: 480 };
+    let tracks = [];
 
-    renderInfoTable(header, tracks, panel);
+    try {
+      const parsed = parseMIDI(buffer);
+      header = parsed.header;
+      tracks = parsed.tracks;
+      renderInfoTable(header, tracks, panel);
+    } catch (parseErr) {
+      console.warn("ViewMIDI parse fallback:", parseErr);
+      panel.insertAdjacentHTML(
+        "beforeend",
+        `<p style="color:#b36b00;">MIDI header/track parse fallback: ${parseErr.message}</p>`
+      );
+    }
+
     renderSheet(buffer, header.division, panel);
 
   } catch (err) {
@@ -39,26 +52,57 @@ export async function renderFile(filePath, panel) {
 function parseMIDI(buffer) {
   const view = new DataView(buffer);
   let offset = 0;
+  const total = view.byteLength;
 
-  const readFourCC = () =>
-    String.fromCharCode(
-      ...Array.from({ length: 4 }, () => view.getUint8(offset++))
+  const ensure = (n) => {
+    if (offset + n > total) {
+      throw new Error("Unexpected end of MIDI data.");
+    }
+  };
+
+  const readFourCC = () => {
+    ensure(4);
+    return String.fromCharCode(
+      view.getUint8(offset++),
+      view.getUint8(offset++),
+      view.getUint8(offset++),
+      view.getUint8(offset++)
     );
-  const readUint32 = () => (offset += 4, view.getUint32(offset - 4, false));
-  const readUint16 = () => (offset += 2, view.getUint16(offset - 2, false));
+  };
+  const readUint32 = () => {
+    ensure(4);
+    const value = view.getUint32(offset, false);
+    offset += 4;
+    return value;
+  };
+  const readUint16 = () => {
+    ensure(2);
+    const value = view.getUint16(offset, false);
+    offset += 2;
+    return value;
+  };
 
   if (readFourCC() !== 'MThd') throw new Error('Invalid MIDI: missing MThd');
   const hdrLen = readUint32();
   const format = readUint16();
   const numTracks = readUint16();
   const division = readUint16();
-  offset += hdrLen - 6;
+  offset += Math.max(0, hdrLen - 6);
+  if (offset > total) {
+    throw new Error("Invalid MIDI: header length exceeds file size.");
+  }
 
   const tracks = [];
   for (let i = 0; i < numTracks; i++) {
+    if (offset + 8 > total) break;
     if (readFourCC() !== 'MTrk')
       throw new Error(`Invalid MIDI: missing MTrk at track ${i}`);
     const length = readUint32();
+    if (offset + length > total) {
+      tracks.push({ index: i + 1, offset, length: Math.max(0, total - offset) });
+      offset = total;
+      break;
+    }
     tracks.push({ index: i + 1, offset, length });
     offset += length;
   }
@@ -101,24 +145,34 @@ function renderInfoTable(header, tracks, container) {
 /* --------------------------- NOTE EXTRACTION ------------------------------- */
 
 function extractNotes(buffer) {
-  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer || new ArrayBuffer(0));
   let pos = 14;
   const notes = [];
 
   try {
-    while (pos < buffer.byteLength - 3) {
-      const status = view.getUint8(pos++);
+    if (bytes.length < 4) return [{ keys: ['c/4'], duration: 'q' }];
+    if (pos >= bytes.length) pos = 0;
+    while (pos < bytes.length && notes.length < 20) {
+      const status = bytes[pos++];
+      if (status === undefined) break;
 
       if ((status & 0xf0) === 0x90) {
-        const note = view.getUint8(pos++);
-        const vel = view.getUint8(pos++);
-        if (vel > 0)
-          notes.push({ keys: [midiToVexKey(note)], duration: 'q' });
-      } else {
-        pos++;
+        const note = bytes[pos++];
+        const vel = bytes[pos++];
+        if (note === undefined || vel === undefined) break;
+        if (vel > 0) notes.push({ keys: [midiToVexKey(note)], duration: 'q' });
+        continue;
       }
 
-      if (status === 0xff || notes.length >= 20) break;
+      if ((status & 0xf0) === 0x80 || (status & 0xf0) === 0xa0 || (status & 0xf0) === 0xb0 || (status & 0xf0) === 0xe0) {
+        pos += 2;
+        continue;
+      }
+      if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+        pos += 1;
+        continue;
+      }
+      if (status === 0xff) break;
     }
   } catch (err) {
     console.warn('extractNotes error:', err);

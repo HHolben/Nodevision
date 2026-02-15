@@ -1,10 +1,10 @@
 // Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/movementSteps.mjs
 // This file groups movement step helpers used by the per-frame update.
 
-export function applyDirectionalMovement({ THREE, controls, movementState, inputState, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight }) {
+export function applyDirectionalMovement({ THREE, controls, movementState, inputState, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight, allowVerticalMovement = false }) {
   if (!(inputState.moveForward || inputState.moveBackward || inputState.moveLeft || inputState.moveRight)) return;
   controls.getDirection(forward);
-  if (!movementState.isFlying) forward.y = 0;
+  if (!allowVerticalMovement) forward.y = 0;
   forward.normalize();
   right.crossVectors(forward, up).normalize();
 
@@ -43,19 +43,23 @@ export function applyDirectionalMovement({ THREE, controls, movementState, input
   }
 }
 
-export function applyFlyingMovement({ THREE, controls, inputState, speed, wouldCollide }) {
+export function applyFlyingMovement({ THREE, controls, inputState, speed, wouldCollide, buoyancy = 0 }) {
   const verticalMove = new THREE.Vector3(0, 0, 0);
   if (inputState.flyUp) verticalMove.y += speed;
   if (inputState.flyDown) verticalMove.y -= speed;
+  if (Number.isFinite(buoyancy) && buoyancy > 0 && !inputState.flyDown) {
+    verticalMove.y += buoyancy;
+  }
   if (verticalMove.lengthSq() === 0) return;
   const object = controls.getObject();
   const nextPosition = object.position.clone().add(verticalMove);
   if (!wouldCollide(nextPosition)) object.position.copy(nextPosition);
 }
 
-export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, groundLevel, wouldCollide }) {
-  if (inputState.jump && movementState.isGrounded && !movementState.jumpLatch) {
-    movementState.velocityY = jumpSpeed;
+export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, crouching, crouchJumpMultiplier = 1.85, groundLevel, wouldCollide }) {
+  if (inputState.jump && movementState.isGrounded) {
+    const jumpImpulse = crouching ? jumpSpeed * crouchJumpMultiplier : jumpSpeed;
+    movementState.velocityY = jumpImpulse;
     movementState.isGrounded = false;
     movementState.jumpLatch = true;
   }

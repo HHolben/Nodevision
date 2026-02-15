@@ -9,6 +9,7 @@ import { createMovementUpdater } from "./movementUpdate.mjs";
 import { startRenderLoop } from "./renderLoop.mjs";
 import { setupResizeObserver } from "./resizeObserver.mjs";
 import { createPlayerInventory } from "./playerInventory.mjs";
+import { createObjectInspector } from "./objectInspector.mjs";
 
 export function initScene({ THREE, PointerLockControls, panel, canvas, state, loadWorldFromFile, getBindings, normalizeKeyName }) {
   const { scene, renderer, camera, objects, colliders, lights } = createSceneBase({ THREE, panel, canvas });
@@ -16,6 +17,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const collisionActions = [];
   const useTargets = [];
   const spawnPoints = [];
+  const waterVolumes = [];
+  const measurementVisuals = [];
 
   window.VRWorldContext = {
     THREE,
@@ -29,6 +32,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     collisionActions,
     useTargets,
     spawnPoints,
+    waterVolumes,
+    measurementVisuals,
     currentWorldPath: state.currentWorldPath || null,
     loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options)
   };
@@ -51,13 +56,18 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     jumpLatch: false,
     useLatch: false,
     attackLatch: false,
+    inspectLatch: false,
     suppressAttackUntilMs: 0,
     velocityY: 0,
     isGrounded: true,
+    isSwimming: false,
     playerHeight: 1.75,
     worldMode: "3d",
     planeZ: 0,
-    requestCycleCamera: false
+    requestCycleCamera: false,
+    playerBuoyancy: 0.015,
+    swimSpeedMultiplier: 0.72,
+    crouchJumpMultiplier: 1.85
   };
   window.VRWorldContext.controls = controls;
   window.VRWorldContext.movementState = movementState;
@@ -65,6 +75,15 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const inventory = createPlayerInventory({ panel });
   panel._vrInventory = inventory;
   window.VRWorldContext.inventory = inventory;
+
+  const objectInspector = createObjectInspector({
+    THREE,
+    panel,
+    sceneObjects: objects,
+    colliders
+  });
+  panel._vrObjectInspector = objectInspector;
+  window.VRWorldContext.objectInspector = objectInspector;
 
   const viewController = createCameraModeController({
     THREE,
@@ -90,6 +109,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     collisionActions,
     useTargets,
     spawnPoints,
+    waterVolumes,
+    objectInspector,
     loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options),
     getBindings,
     heldKeys,
@@ -108,4 +129,22 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     state.pendingWorldPath = null;
     state.pendingWorldOptions = null;
   }
+
+  fetch("/UserSettings/PlayerCharacterInformation.json", { cache: "no-store" })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((cfg) => {
+      if (!cfg || typeof cfg !== "object") return;
+      if (Number.isFinite(cfg.buoyancy)) {
+        movementState.playerBuoyancy = cfg.buoyancy;
+      }
+      if (Number.isFinite(cfg.swimSpeedMultiplier)) {
+        movementState.swimSpeedMultiplier = cfg.swimSpeedMultiplier;
+      }
+      if (Number.isFinite(cfg.crouchJumpMultiplier)) {
+        movementState.crouchJumpMultiplier = cfg.crouchJumpMultiplier;
+      }
+    })
+    .catch((err) => {
+      console.warn("GameView: failed to load PlayerCharacterInformation.json", err);
+    });
 }

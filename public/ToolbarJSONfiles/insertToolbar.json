@@ -382,6 +382,151 @@
   "insertGroup": "shapes",
   "callbackKey": "svgInsertPolygon",
   "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Insert Note",
+  "callbackKey": "midiInsertNote",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Insert"
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Insert Rest",
+  "callbackKey": "midiInsertRest",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Insert"
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Note Selected",
+  "modes": ["MIDIediting"],
+  "parentHeading": "Insert",
+  "conditions": { "midiSelectedType": "note" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Whole",
+  "callbackKey": "midiDurationWhole",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Note Selected",
+  "conditions": { "midiSelectedType": "note" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Half",
+  "callbackKey": "midiDurationHalf",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Note Selected",
+  "conditions": { "midiSelectedType": "note" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Quarter",
+  "callbackKey": "midiDurationQuarter",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Note Selected",
+  "conditions": { "midiSelectedType": "note" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Eighth",
+  "callbackKey": "midiDurationEighth",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Note Selected",
+  "conditions": { "midiSelectedType": "note" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Rest Selected",
+  "modes": ["MIDIediting"],
+  "parentHeading": "Insert",
+  "conditions": { "midiSelectedType": "rest" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Whole",
+  "callbackKey": "midiDurationWhole",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Rest Selected",
+  "conditions": { "midiSelectedType": "rest" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Half",
+  "callbackKey": "midiDurationHalf",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Rest Selected",
+  "conditions": { "midiSelectedType": "rest" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Quarter",
+  "callbackKey": "midiDurationQuarter",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Rest Selected",
+  "conditions": { "midiSelectedType": "rest" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Eighth",
+  "callbackKey": "midiDurationEighth",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Rest Selected",
+  "conditions": { "midiSelectedType": "rest" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Cleff Selected",
+  "modes": ["MIDIediting"],
+  "parentHeading": "Insert",
+  "conditions": { "midiSelectedType": "cleff" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Treble",
+  "callbackKey": "midiCleffTreble",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Cleff Selected",
+  "conditions": { "midiSelectedType": "cleff" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Bass",
+  "callbackKey": "midiCleffBass",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Cleff Selected",
+  "conditions": { "midiSelectedType": "cleff" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Alto",
+  "callbackKey": "midiCleffAlto",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Cleff Selected",
+  "conditions": { "midiSelectedType": "cleff" }
+},
+{
+  "ToolbarCategory": "Insert",
+  "heading": "Tenor",
+  "callbackKey": "midiCleffTenor",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Cleff Selected",
+  "conditions": { "midiSelectedType": "cleff" }
 }
                         
   ]

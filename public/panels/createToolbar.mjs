@@ -49,6 +49,19 @@ function checkToolbarConditions(item, state) {
 
   if (item.conditions.requiresFile && !state.selectedFile) return false;
 
+  // Generic condition support: any additional condition key maps to NodevisionState key.
+  // Allows domain-specific toolbar gating (e.g., midiHasSelection, midiSelectedType).
+  const reserved = new Set(["activePanelType", "fileIsDirty", "requiresFile"]);
+  for (const [key, expected] of Object.entries(item.conditions)) {
+    if (reserved.has(key)) continue;
+    const actual = state[key];
+    if (Array.isArray(expected)) {
+      if (!expected.includes(actual)) return false;
+    } else if (actual !== expected) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -168,9 +181,12 @@ setStatus("Toolbar ready", `Mode: ${currentMode}`);
 // === Build toolbar buttons (main or sub-toolbar) ===
 function buildToolbar(container, items, parentHeading = null) {
   const state = window.NodevisionState;
+  const isDropdownContainer = container?.dataset?.toolbarDropdown === "true";
 
   items.forEach(item => {
     if (item.parentHeading && !parentHeading) return;
+    const enabled = checkToolbarConditions(item, state);
+    if (!enabled) return;
 
     // Inline custom content widget (e.g., search bar)
     if (item.content) {
@@ -192,21 +208,51 @@ function buildToolbar(container, items, parentHeading = null) {
     const btnWrapper = document.createElement("div");
     btnWrapper.className = "toolbar-button";
     btnWrapper.dataset.heading = item.heading;
-    Object.assign(btnWrapper.style, { position: "relative", display: "inline-block", marginRight: "4px" });
+    Object.assign(
+      btnWrapper.style,
+      isDropdownContainer
+        ? { position: "relative", display: "block", width: "100%", marginRight: "0" }
+        : { position: "relative", display: "inline-block", marginRight: "4px" }
+    );
 
     const btn = document.createElement("button");
     btn.textContent = item.heading;
-    Object.assign(btn.style, {
-      margin: "2px",
-      padding: "4px 8px",
-      border: "1px solid #333",
-      backgroundColor: "#eee",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      opacity: "1.0",
-    });
+    Object.assign(
+      btn.style,
+      isDropdownContainer
+        ? {
+            margin: "0",
+            width: "100%",
+            padding: "8px 12px",
+            border: "0",
+            borderRadius: "0",
+            backgroundColor: "transparent",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "6px",
+            opacity: "1.0",
+            boxSizing: "border-box",
+            whiteSpace: "normal",
+            overflowWrap: "anywhere",
+            wordBreak: "break-word",
+            lineHeight: "1.25",
+            height: "auto",
+            textAlign: "left",
+          }
+        : {
+            margin: "2px",
+            padding: "4px 8px",
+            border: "1px solid #333",
+            backgroundColor: "#eee",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            opacity: "1.0",
+          }
+    );
 
     // Icon
     if (item.icon) {
@@ -219,12 +265,22 @@ function buildToolbar(container, items, parentHeading = null) {
 
     btnWrapper.appendChild(btn);
 
-    // State conditions
-    const enabled = checkToolbarConditions(item, state);
-    if (!enabled) {
-      btn.disabled = true;
-      btn.style.opacity = "0.5";
-      btn.style.cursor = "not-allowed";
+    if (isDropdownContainer) {
+      const baseColor = "transparent";
+      const hoverColor = "#ff8c00";
+      const activeColor = "#00c040";
+      btn.addEventListener("mouseenter", () => {
+        btn.style.backgroundColor = hoverColor;
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.backgroundColor = baseColor;
+      });
+      btn.addEventListener("mousedown", () => {
+        btn.style.backgroundColor = activeColor;
+      });
+      btn.addEventListener("mouseup", () => {
+        btn.style.backgroundColor = hoverColor;
+      });
     }
 
     // Dropdown handling
@@ -233,7 +289,6 @@ function buildToolbar(container, items, parentHeading = null) {
       btnWrapper.appendChild(dropdown);
       let hoverTimeout;
       btnWrapper.addEventListener("mouseenter", () => {
-        if (!enabled) return;
         clearTimeout(hoverTimeout);
         Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
         dropdown.style.display = "block";
@@ -245,7 +300,6 @@ function buildToolbar(container, items, parentHeading = null) {
 
     // Click
     btn.addEventListener("click", e => {
-      if (!enabled) return;
       e.stopPropagation();
 
       // Close other dropdowns
@@ -301,6 +355,7 @@ if (dropdown) {
 // === Build dropdown from toolbar item ===
 function buildDropdownFromItem(item) {
   if (!item.heading) return null;
+  const state = window.NodevisionState || {};
   const normalizedHeading = item.heading.toLowerCase();
   const jsonName = `${normalizedHeading}Toolbar.json`;
   const subItems = toolbarDataCache[jsonName] || [];
@@ -315,9 +370,20 @@ function buildDropdownFromItem(item) {
     topItems = subItems.filter(i => !i.parentHeading);
   }
 
+  topItems = topItems.filter((subItem) => checkToolbarConditions(subItem, state));
+
+  // MIDI Insert menu should only show MIDI-scoped actions.
+  if (state.currentMode === "MIDIediting" && item.heading === "Insert") {
+    topItems = topItems.filter((subItem) => {
+      const modes = Array.isArray(subItem?.modes) ? subItem.modes : (subItem?.modes ? [subItem.modes] : []);
+      return modes.includes("MIDIediting");
+    });
+  }
+
   if (!topItems.length) return null;
 
   const dropdown = document.createElement("div");
+  dropdown.dataset.toolbarDropdown = "true";
 
 Object.assign(dropdown.style, {
   position: "absolute",
@@ -332,21 +398,6 @@ Object.assign(dropdown.style, {
 
   buildToolbar(dropdown, topItems);
 
-  // Wait a tick to ensure DOM exists, then set full width for dropdown items
-  setTimeout(() => {
-    // Find button by data attribute instead of :contains (which is jQuery, not CSS)
-    const parentBtnWrapper = document.querySelector(`.toolbar-button[data-heading="${item.heading}"] button`) || null;
-    const parentWidth = parentBtnWrapper ? parentBtnWrapper.offsetWidth : dropdown.offsetWidth;
-        console.log("children:"+ item.heading);
-
-    Array.from(dropdown.children).forEach(child => {
-      if (child.tagName === "BUTTON") {
-        console.log("Tag:"+ child.tagName);
-        child.style.width = parentWidth + "px";  // match parent button width
-      }
-    });
-  }, 0);
-
   return dropdown;
 }
 
@@ -356,6 +407,7 @@ Object.assign(dropdown.style, {
 // === Build sub-toolbar ===
 function buildSubToolbar(items, container = subToolbarContainer) {
   if (!container) return;
+  const state = window.NodevisionState || {};
 
   // Clear + FORCE visibility (fixes "disappearing" bug)
   container.innerHTML = "";
@@ -367,6 +419,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
   });
 
   items.forEach(item => {
+    if (!checkToolbarConditions(item, state)) return;
     const btn = document.createElement("button");
     btn.textContent = item.heading;
 
@@ -421,6 +474,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 // === Show sub-toolbar ===
 function showSubToolbar(panelHeading) {
   if (!subToolbarContainer) return;
+  const state = window.NodevisionState || {};
 
   if (currentSubToolbarHeading === panelHeading) {
     subToolbarContainer.style.display = "none";
@@ -437,6 +491,7 @@ function showSubToolbar(panelHeading) {
     const matches = set.filter(i => i.parentHeading === panelHeading);
     if (matches.length) items.push(...matches);
   }
+  items = items.filter((item) => checkToolbarConditions(item, state));
 
   if (!items.length) {
     subToolbarContainer.style.display = "none";

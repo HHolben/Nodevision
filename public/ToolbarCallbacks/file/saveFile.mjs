@@ -4,6 +4,7 @@
 function resolveFilePath(preferredPath) {
   return (
     preferredPath ||
+    window.NodevisionState?.activeEditorFilePath ||
     window.currentActiveFilePath ||
     window.filePath ||
     window.selectedFilePath ||
@@ -69,6 +70,9 @@ export default async function saveFile(options = {}) {
 
   try {
     const mode = window.NodevisionState?.currentMode || window.currentMode || "";
+    const inGraphicalEditor =
+      window.NodevisionState?.activePanelType === "GraphicalEditor" ||
+      !!document.getElementById("graphical-editor");
     const inSvgEditor =
       !!document.getElementById("svg-editor-root") ||
       !!document.getElementById("svg-editor");
@@ -117,11 +121,11 @@ export default async function saveFile(options = {}) {
       await window.currentSaveSVG(filePath);
       return true;
     }
-    if (inMarkdownEditor && typeof window.saveMDFile === "function") {
+    if ((inMarkdownEditor || inGraphicalEditor) && typeof window.saveMDFile === "function") {
       await window.saveMDFile(filePath);
       return true;
     }
-    if (inWysiwygEditor && typeof window.saveWYSIWYGFile === "function") {
+    if ((inWysiwygEditor || inGraphicalEditor) && typeof window.saveWYSIWYGFile === "function") {
       await window.saveWYSIWYGFile(filePath);
       return true;
     }

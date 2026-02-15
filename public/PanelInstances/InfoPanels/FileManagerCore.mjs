@@ -124,24 +124,67 @@ export function displayFiles(files, currentPath) {
 
     // Save full path on element for selection
     link.dataset.fullPath = (currentPath ? `${currentPath}/${f.name}` : f.name).replace(/\/+/g, "/");
+    link.dataset.isDirectory = String(Boolean(f.isDirectory));
 
     // Drag & drop
-    if (!f.isDirectory) {
-      link.draggable = true;
-      link.addEventListener("dragstart", e => {
-        e.dataTransfer.setData("text/plain", link.dataset.fullPath);
+    link.draggable = true;
+    link.addEventListener("dragstart", e => {
+      const payload = {
+        path: link.dataset.fullPath,
+        isDirectory: link.dataset.isDirectory === "true",
+      };
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("application/json", JSON.stringify(payload));
+      e.dataTransfer.setData("text/plain", payload.path);
+      link.style.opacity = "0.6";
+    });
+    link.addEventListener("dragend", () => {
+      link.style.opacity = "";
+      clearDropHighlights();
+    });
+
+    if (f.isDirectory) {
+      link.addEventListener("dragenter", e => {
+        if (!hasDragPayload(e)) return;
+        e.preventDefault();
+        link.style.backgroundColor = "#e8f4ff";
+        link.style.outline = "1px dashed #4b7fd1";
       });
-    } else {
-      link.addEventListener("dragover", e => e.preventDefault());
+      link.addEventListener("dragover", e => {
+        if (!hasDragPayload(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      });
+      link.addEventListener("dragleave", e => {
+        if (!link.contains(e.relatedTarget)) {
+          link.style.backgroundColor = "";
+          link.style.outline = "";
+        }
+      });
       link.addEventListener("drop", async e => {
         e.preventDefault();
-        const srcPath = e.dataTransfer.getData("text/plain");
-        const destPath = currentPath + "/" + f.name;
+        link.style.backgroundColor = "";
+        link.style.outline = "";
+
+        const dragData = readDragPayload(e);
+        if (!dragData?.path) return;
+
+        const sourcePath = normalizePath(dragData.path);
+        const destinationPath = normalizePath(link.dataset.fullPath);
+
+        if (sourcePath === destinationPath) return;
+        if (isSameParent(sourcePath, destinationPath)) return;
+
+        if (dragData.isDirectory && isSubPath(destinationPath, sourcePath)) {
+          console.warn("Cannot move a directory into itself or one of its descendants.");
+          return;
+        }
+
         try {
-          await moveFileOrDirectory(srcPath, destPath);
+          await moveFileOrDirectory(sourcePath, destinationPath);
           await window.refreshFileManager(currentPath);
         } catch (err) {
-          console.error("Failed to move file:", err);
+          console.error("Failed to move file or directory:", err);
         }
       });
     }
@@ -198,12 +241,67 @@ export function attachFileClickHandlers() {
 // Move file/directory
 // ------------------------------
 export async function moveFileOrDirectory(src, dest) {
-  const res = await fetch("/api/files/move", {
+  const source = normalizePath(src);
+  const destination = normalizePath(dest);
+  const res = await fetch("/api/move", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ src, dest }),
+    body: JSON.stringify({ source, destination }),
   });
-  return res.json();
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error || `Move failed with status ${res.status}`);
+  }
+  return data;
+}
+
+function normalizePath(value = "") {
+  return String(value).replace(/^\/+/, "").replace(/\/+/g, "/");
+}
+
+function dirnameSafe(p = "") {
+  const parts = normalizePath(p).split("/").filter(Boolean);
+  parts.pop();
+  return parts.join("/");
+}
+
+function isSameParent(sourcePath, destinationDirPath) {
+  return dirnameSafe(sourcePath) === normalizePath(destinationDirPath);
+}
+
+function isSubPath(candidate, root) {
+  const c = normalizePath(candidate);
+  const r = normalizePath(root);
+  return c === r || c.startsWith(`${r}/`);
+}
+
+function hasDragPayload(evt) {
+  const types = evt?.dataTransfer?.types;
+  if (!types) return false;
+  const asArray = Array.from(types);
+  return asArray.includes("application/json") || asArray.includes("text/plain");
+}
+
+function readDragPayload(evt) {
+  const transfer = evt?.dataTransfer;
+  if (!transfer) return null;
+  const raw = transfer.getData("application/json");
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      // Fall through to plain text.
+    }
+  }
+  const plain = transfer.getData("text/plain");
+  return plain ? { path: plain, isDirectory: false } : null;
+}
+
+function clearDropHighlights() {
+  document.querySelectorAll("#file-list a.folder").forEach(el => {
+    el.style.backgroundColor = "";
+    el.style.outline = "";
+  });
 }
 
 // ------------------------------

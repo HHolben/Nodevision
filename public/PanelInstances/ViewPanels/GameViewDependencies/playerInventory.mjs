@@ -13,7 +13,8 @@ export function createPlayerInventory({ panel }) {
       { id: "sphere", label: "Sphere", count: 6 },
       { id: "cylinder", label: "Cylinder", count: 6 },
       { id: "portal", label: "Portal", count: 2 },
-      { id: "svg-camera", label: "SVG Camera", count: 1, tool: true }
+      { id: "svg-camera", label: "SVG Camera", count: 1, tool: true },
+      { id: "tape-measure", label: "Tape Measure", count: 1, tool: true }
     ]
   };
 
@@ -159,6 +160,31 @@ export function createPlayerInventory({ panel }) {
         badge.style.color = "#eff5ff";
         badge.textContent = "SVG";
         icon.appendChild(badge);
+        return icon;
+      }
+
+      if (id === "tape-measure") {
+        icon.style.position = "relative";
+        icon.style.borderRadius = "7px";
+        icon.style.background = "linear-gradient(135deg, #ffd777 0%, #d28e24 100%)";
+        icon.style.border = "1px solid rgba(255, 235, 182, 0.95)";
+        const tape = document.createElement("div");
+        tape.style.position = "absolute";
+        tape.style.left = "4px";
+        tape.style.top = "15px";
+        tape.style.width = "26px";
+        tape.style.height = "3px";
+        tape.style.background = "rgba(32, 24, 12, 0.9)";
+        icon.appendChild(tape);
+        const pin = document.createElement("div");
+        pin.style.position = "absolute";
+        pin.style.left = "11px";
+        pin.style.top = "7px";
+        pin.style.width = "12px";
+        pin.style.height = "12px";
+        pin.style.borderRadius = "50%";
+        pin.style.background = "radial-gradient(circle at 30% 30%, #fffbe8 0%, #f0b437 80%)";
+        icon.appendChild(pin);
         return icon;
       }
 

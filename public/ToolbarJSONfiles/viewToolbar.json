@@ -1,6 +1,12 @@
 [
   {
     "ToolbarCategory": "View",
+    "heading": "ViewLayers",
+    "icon": "icons/layoutControls.png",
+    "callbackKey": "ViewLayers"
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "File View",
     "content": "",
     "panelTemplate": "FileView",

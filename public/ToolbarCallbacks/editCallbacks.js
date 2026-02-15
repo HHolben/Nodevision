@@ -209,6 +209,9 @@ moveShape: () => {
     // Check if we're in the new direct SVG editing mode
     const svgEditor = document.getElementById('svg-editor');
     if (svgEditor) {
+        if (window.SVGEditorContext?.setMode) {
+            window.SVGEditorContext.setMode('select');
+        }
         // Use the direct SVG editor approach
         window.currentSVGTool = 'select';
         
@@ -290,10 +293,14 @@ moveShape: () => {
 svgSelectTool: () => {
     console.log("SVG Select Tool activated");
     window.currentSVGTool = 'select';
+    if (window.SVGEditorContext?.setMode) {
+        window.SVGEditorContext.setMode('select');
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (svgEditor) {
         svgEditor.style.cursor = 'pointer';
-        document.getElementById('svg-message').textContent = 'Select Tool active - click on shapes to select them';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'Select Tool active - click on shapes to select them';
     }
 },
 
@@ -303,9 +310,11 @@ svgDeleteShape: () => {
     if (selectedElement && selectedElement.parentNode) {
         selectedElement.parentNode.removeChild(selectedElement);
         window.selectedSVGElement = null;
-        document.getElementById('svg-message').textContent = 'Shape deleted';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'Shape deleted';
     } else {
-        document.getElementById('svg-message').textContent = 'No shape selected to delete';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'No shape selected to delete';
     }
 },
 
@@ -329,9 +338,11 @@ svgDuplicateShape: () => {
         }
         
         selectedElement.parentNode.appendChild(clone);
-        document.getElementById('svg-message').textContent = 'Shape duplicated';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'Shape duplicated';
     } else {
-        document.getElementById('svg-message').textContent = 'No shape selected to duplicate';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'No shape selected to duplicate';
     }
 },
 
@@ -342,10 +353,15 @@ svgChangeFillColor: () => {
         const color = prompt('Enter fill color (hex, rgb, or color name):', selectedElement.getAttribute('fill') || '#000000');
         if (color) {
             selectedElement.setAttribute('fill', color);
-            document.getElementById('svg-message').textContent = `Fill color changed to ${color}`;
+            if (window.SVGEditorContext?.setFillColor) {
+                window.SVGEditorContext.setFillColor(color);
+            }
+            const msg = document.getElementById('svg-message');
+            if (msg) msg.textContent = `Fill color changed to ${color}`;
         }
     } else {
-        document.getElementById('svg-message').textContent = 'No shape selected to change fill color';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'No shape selected to change fill color';
     }
 },
 
@@ -356,10 +372,12 @@ svgChangeStrokeColor: () => {
         const color = prompt('Enter stroke color (hex, rgb, or color name):', selectedElement.getAttribute('stroke') || '#000000');
         if (color) {
             selectedElement.setAttribute('stroke', color);
-            document.getElementById('svg-message').textContent = `Stroke color changed to ${color}`;
+            const msg = document.getElementById('svg-message');
+            if (msg) msg.textContent = `Stroke color changed to ${color}`;
         }
     } else {
-        document.getElementById('svg-message').textContent = 'No shape selected to change stroke color';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'No shape selected to change stroke color';
     }
 },
 
@@ -370,11 +388,23 @@ svgChangeStrokeWidth: () => {
         const width = prompt('Enter stroke width (number):', selectedElement.getAttribute('stroke-width') || '1');
         if (width && !isNaN(width)) {
             selectedElement.setAttribute('stroke-width', width);
-            document.getElementById('svg-message').textContent = `Stroke width changed to ${width}`;
+            const msg = document.getElementById('svg-message');
+            if (msg) msg.textContent = `Stroke width changed to ${width}`;
         }
     } else {
-        document.getElementById('svg-message').textContent = 'No shape selected to change stroke width';
+        const msg = document.getElementById('svg-message');
+        if (msg) msg.textContent = 'No shape selected to change stroke width';
     }
+},
+
+svgCropToSelection: () => {
+    console.log("SVG Crop To Selection callback fired");
+    if (window.SVGEditorContext?.cropToSelection) {
+        window.SVGEditorContext.cropToSelection(8);
+        return;
+    }
+    const msg = document.getElementById('svg-message');
+    if (msg) msg.textContent = 'Crop is available only in SVG editor mode';
 },
 
 // === Publisher-like Editing Callbacks ===

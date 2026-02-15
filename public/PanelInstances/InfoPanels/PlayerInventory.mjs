@@ -38,7 +38,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     minWidth: "340px",
     maxWidth: "640px",
     maxHeight: "70vh",
-    zIndex: "3500",
+    zIndex: "22020",
     margin: "0",
     display: "flex",
     flexDirection: "column",
@@ -197,7 +197,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
       maxWidth: "640px",
       height: "",
       maxHeight: "70vh",
-      zIndex: "3500"
+      zIndex: "22020"
     });
     dockedCell = null;
     previousHost = null;

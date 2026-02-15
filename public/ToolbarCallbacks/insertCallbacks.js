@@ -649,6 +649,10 @@ insertSTL: () => {
 // === New Enhanced SVG Shape Insertion Callbacks ===
 svgInsertRectangle: () => {
     console.log("Insert Rectangle callback fired");
+    if (window.SVGEditorContext?.insertShape) {
+        window.SVGEditorContext.insertShape("rect");
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");
@@ -671,6 +675,10 @@ svgInsertRectangle: () => {
 
 svgInsertCircle: () => {
     console.log("Insert Circle callback fired");
+    if (window.SVGEditorContext?.insertShape) {
+        window.SVGEditorContext.insertShape("circle");
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");
@@ -692,6 +700,10 @@ svgInsertCircle: () => {
 
 svgInsertEllipse: () => {
     console.log("Insert Ellipse callback fired");
+    if (window.SVGEditorContext?.insertShape) {
+        window.SVGEditorContext.insertShape("ellipse");
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");
@@ -714,6 +726,10 @@ svgInsertEllipse: () => {
 
 svgInsertLine: () => {
     console.log("Insert Line callback fired");
+    if (window.SVGEditorContext?.setMode) {
+        window.SVGEditorContext.setMode("line");
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");
@@ -735,6 +751,10 @@ svgInsertLine: () => {
 
 svgInsertPath: () => {
     console.log("Insert Path callback fired");
+    if (window.SVGEditorContext?.setMode) {
+        window.SVGEditorContext.setMode("bezier");
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");
@@ -753,6 +773,10 @@ svgInsertPath: () => {
 },
 svgInsertFreehand: () => {
     console.log("Freehand mode activated");
+    if (window.SVGEditorContext?.setMode) {
+        window.SVGEditorContext.setMode("freehand");
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");
@@ -811,6 +835,24 @@ svgInsertFreehand: () => {
 
 svgInsertText: () => {
     console.log("Insert Text callback fired");
+    if (window.SVGEditorContext?.svgRoot) {
+        const text = prompt('Enter text:', 'Sample Text');
+        if (!text) return;
+        const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        textElement.setAttribute("x", "20");
+        textElement.setAttribute("y", "40");
+        textElement.setAttribute("font-family", "Arial");
+        textElement.setAttribute("font-size", "16");
+        textElement.setAttribute("fill", "black");
+        textElement.textContent = text;
+        if (window.SVGEditorContext.layers?.appendToActiveLayer) {
+            window.SVGEditorContext.layers.appendToActiveLayer(textElement);
+        } else {
+            window.SVGEditorContext.svgRoot.appendChild(textElement);
+        }
+        if (window.selectSVGElement) window.selectSVGElement(textElement);
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");
@@ -835,6 +877,10 @@ svgInsertText: () => {
 
 svgInsertPolygon: () => {
     console.log("Insert Polygon callback fired");
+    if (window.SVGEditorContext?.insertShape) {
+        window.SVGEditorContext.insertShape("polygon");
+        return;
+    }
     const svgEditor = document.getElementById('svg-editor');
     if (!svgEditor) {
         console.error("SVG editor not found. Are you in SVG Editing mode?");

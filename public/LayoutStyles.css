@@ -213,7 +213,7 @@
   position: relative;
 }
 .panel.docked { /* fills cell by inline styles set by JS */ }
-.panel.floating { position:absolute; pointer-events:auto; }
+.panel.floating { position:absolute; pointer-events:auto; z-index: 22000; }
 
 /* Header buttons small styling (if you prefer CSS instead of inline) */
 .panel-header button { font-size: 12px; }
@@ -254,7 +254,7 @@
   background: #fafafa;
   border: 1px solid #6f6f6f;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  z-index: 3000;
+  z-index: 22010;
   display: flex;
   flex-direction: column;
 }

@@ -124,6 +124,12 @@
 },
 {
   "ToolbarCategory": "Edit",
+  "heading": "Crop To Selection",
+  "callbackKey": "svgCropToSelection",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
   "heading": "Copy",
   "callbackKey": "svgCopy",
   "modes": ["SVG Editing"],

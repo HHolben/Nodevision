@@ -60,7 +60,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       return;
     }
 
-    const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, controls, movementState } = window.VRWorldContext;
+    const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, waterVolumes, measurementVisuals, controls, movementState } = window.VRWorldContext;
     const modeHint = String(
       worldData?.worldMode
       || worldData?.mode
@@ -79,6 +79,25 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     if (collisionActions) collisionActions.length = 0;
     if (useTargets) useTargets.length = 0;
     if (spawnPoints) spawnPoints.length = 0;
+    if (waterVolumes) waterVolumes.length = 0;
+    if (Array.isArray(measurementVisuals) && measurementVisuals.length > 0) {
+      measurementVisuals.forEach((entry) => {
+        if (entry?.parent) entry.parent.remove(entry);
+        if (entry?.geometry?.dispose) entry.geometry.dispose();
+        if (entry?.material?.dispose) entry.material.dispose();
+        if (entry?.material?.map?.dispose) entry.material.map.dispose();
+      });
+      measurementVisuals.length = 0;
+    }
+    if (movementState) {
+      movementState.tapeMeasureFirstPoint = null;
+      movementState.tapeMeasureSecondPoint = null;
+      movementState.tapeMeasureFirstMarker = null;
+      movementState.tapeMeasureSecondMarker = null;
+      movementState.tapeMeasureLine = null;
+      movementState.tapeMeasureLabel = null;
+      movementState.tapeToolLatch = false;
+    }
     if (lights) {
       lights.forEach(light => scene.remove(light));
       lights.length = 0;
@@ -229,6 +248,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
         const isSolid = readCustom("nv:isSolid");
         if (isSolid !== undefined) def.isSolid = isSolid;
+        const isWater = readCustom("nv:isWater");
+        if (isWater !== undefined) def.isWater = isWater;
+        const waterBuoyancyScale = readCustom("nv:waterBuoyancyScale");
+        if (Number.isFinite(waterBuoyancyScale)) def.waterBuoyancyScale = waterBuoyancyScale;
         const tag = readCustom("nv:tag");
         if (tag) def.tag = tag;
         const spawnId = readCustom("nv:spawnId");
@@ -322,6 +345,13 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       const materialOpts = {
         color: def.color || "#888"
       };
+      if (def.isWater === true) {
+        materialOpts.transparent = true;
+        materialOpts.opacity = Number.isFinite(def.opacity) ? def.opacity : 0.45;
+        materialOpts.emissive = def.emissive || "#0a4b7a";
+        materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.2;
+        materialOpts.side = THREE.DoubleSide;
+      }
       if (isPortal) {
         materialOpts.transparent = true;
         materialOpts.opacity = Number.isFinite(def.opacity) ? def.opacity : 0.65;
@@ -383,7 +413,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       if (mesh) {
         mesh.position.set(...def.position);
         mesh.userData.nvType = def.type || portalShape || null;
-        mesh.userData.breakable = def.breakable !== false && !isPortal && !isSpawnPoint;
+        mesh.userData.breakable = def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true;
+        mesh.userData.isWater = def.isWater === true;
         scene.add(mesh);
         objects.push(mesh);
         if (isPortal) {
@@ -442,7 +473,15 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           }
         }
 
-        if (def.isSolid) {
+        if (def.isWater === true && waterVolumes) {
+          const box = new THREE.Box3().setFromObject(mesh);
+          waterVolumes.push({
+            box,
+            buoyancyScale: Number.isFinite(def.waterBuoyancyScale) ? def.waterBuoyancyScale : 1
+          });
+        }
+
+        if (def.isSolid && def.isWater !== true) {
           if (portalShape === "box") {
             const [sx, sy, sz] = def.size;
             const halfSize = new THREE.Vector3(sx / 2, sy / 2, sz / 2);

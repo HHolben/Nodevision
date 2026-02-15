@@ -5,7 +5,7 @@ import { createCollisionChecker } from "./collisionCheck.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
 
-export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, loadWorldFromFile, getBindings, heldKeys, movementState }) {
+export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, loadWorldFromFile, getBindings, heldKeys, movementState }) {
   const playerRadius = 0.35;
   const basePlayerHeight = 1.75;
   const crouchHeight = 1.2;
@@ -21,6 +21,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const gamepadLookMouseScale = 16;
   const useRangeMax = 6;
   const useRepeatMs = 180;
+  const baseSwimSpeedMultiplier = 0.72;
+  const defaultCrouchJumpMultiplier = 1.85;
   let cycleCameraLatch = false;
   let pauseLatch = false;
   let inventoryToggleLatch = false;
@@ -82,6 +84,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const crawl = heldKeys[bindings.crawl];
     const use = heldKeys[bindings.use] || heldKeys.r || heldKeys.mouse0 || readGamepadBinding(gp, gpBindings.use) > 0 || rightBumperPressed;
     const attack = heldKeys[bindings.attack] || heldKeys.t || heldKeys.mouse2 || readGamepadBinding(gp, gpBindings.attack) > 0 || rightBumperPressed;
+    const inspect = heldKeys[bindings.inspect] || heldKeys.y || readGamepadBinding(gp, gpBindings.inspect) > 0;
     const snapPlace = !!heldKeys.shift && !!(heldKeys.r || heldKeys[bindings.use]);
     const fly = heldKeys[bindings.fly] || readGamepadBinding(gp, gpBindings.fly) > 0;
     const flyUp = heldKeys[bindings.flyUp] || jump;
@@ -95,7 +98,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const lookYaw = readGamepadBinding(gp, gpBindings.lookYaw);
     const lookPitch = readGamepadBinding(gp, gpBindings.lookPitch);
 
-    const cycleCamera = readGamepadBinding(gp, gpBindings.cycleCamera) > 0;
+    const cycleCamera = heldKeys[bindings.cycleCamera] || heldKeys.u || readGamepadBinding(gp, gpBindings.cycleCamera) > 0;
     const pause = heldKeys[bindings.pause] || readGamepadBinding(gp, gpBindings.pause) > 0;
     const openInventory = heldKeys[bindings.openInventory] || readGamepadBinding(gp, gpBindings.openInventory) > 0;
     const inventoryMenuUp = heldKeys.arrowup || !!gp?.buttons?.[12]?.pressed;
@@ -115,6 +118,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       use,
       snapPlace,
       attack,
+      inspect,
       fly,
       flyUp,
       flyDown,
@@ -274,6 +278,37 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       } else if (sameWorld && typeof action.spawnPoint === "string") {
         applySpawnChoice(action.spawnPoint, action.spawnYaw);
       }
+    } else if (action.type === "impulse") {
+      const impulse = Array.isArray(action.impulse) ? action.impulse : null;
+      const upBoost = Number.isFinite(action.up) ? action.up : null;
+      const forwardBoost = Number.isFinite(action.forward) ? action.forward : null;
+
+      const player = controls.getObject();
+      if (impulse && impulse.length >= 3) {
+        player.position.x += Number(impulse[0]) || 0;
+        player.position.y += Number(impulse[1]) || 0;
+        player.position.z += Number(impulse[2]) || 0;
+      } else {
+        if (Number.isFinite(upBoost)) {
+          player.position.y += upBoost;
+        }
+        if (Number.isFinite(forwardBoost) && Math.abs(forwardBoost) > 0) {
+          controls.getDirection(forward);
+          forward.y = 0;
+          if (forward.lengthSq() < 1e-6) forward.set(0, 0, -1);
+          forward.normalize();
+          player.position.addScaledVector(forward, forwardBoost);
+        }
+      }
+
+      if (Number.isFinite(action.velocityY)) {
+        movementState.velocityY = action.velocityY;
+      } else if (Number.isFinite(upBoost)) {
+        movementState.velocityY = Math.max(movementState.velocityY || 0, upBoost * 0.55);
+      } else if (impulse && impulse.length >= 2) {
+        movementState.velocityY = Math.max(movementState.velocityY || 0, (Number(impulse[1]) || 0) * 0.55);
+      }
+      movementState.isGrounded = false;
     } else {
       console.warn("Unhandled collision action:", action.type, action);
     }
@@ -382,6 +417,174 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return false;
   }
 
+  function getMeasurementVisualsStore() {
+    if (!window.VRWorldContext) return [];
+    if (!Array.isArray(window.VRWorldContext.measurementVisuals)) {
+      window.VRWorldContext.measurementVisuals = [];
+    }
+    return window.VRWorldContext.measurementVisuals;
+  }
+
+  function registerMeasurementVisual(entry) {
+    if (!entry) return;
+    const measurementVisuals = getMeasurementVisualsStore();
+    if (!measurementVisuals.includes(entry)) {
+      measurementVisuals.push(entry);
+    }
+  }
+
+  function removeMeasurementVisual(entry) {
+    if (!entry) return;
+    if (entry?.parent) entry.parent.remove(entry);
+    if (entry?.geometry?.dispose) entry.geometry.dispose();
+    if (entry?.material?.dispose) entry.material.dispose();
+    if (entry?.material?.map?.dispose) entry.material.map.dispose();
+    const measurementVisuals = getMeasurementVisualsStore();
+    const idx = measurementVisuals.indexOf(entry);
+    if (idx !== -1) measurementVisuals.splice(idx, 1);
+  }
+
+  function clearMeasurementVisuals() {
+    const measurementVisuals = getMeasurementVisualsStore();
+    measurementVisuals.forEach((entry) => {
+      if (entry?.parent) entry.parent.remove(entry);
+      if (entry?.geometry?.dispose) entry.geometry.dispose();
+      if (entry?.material?.dispose) entry.material.dispose();
+      if (entry?.material?.map?.dispose) entry.material.map.dispose();
+    });
+    measurementVisuals.length = 0;
+    movementState.tapeMeasureFirstPoint = null;
+    movementState.tapeMeasureSecondPoint = null;
+    movementState.tapeMeasureFirstMarker = null;
+    movementState.tapeMeasureSecondMarker = null;
+    movementState.tapeMeasureLine = null;
+    movementState.tapeMeasureLabel = null;
+  }
+
+  function createMeasureMarker(point, endpointRole) {
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(0.09, 14, 14),
+      new THREE.MeshStandardMaterial({
+        color: 0xffdf5d,
+        emissive: 0x6a4d00,
+        emissiveIntensity: 0.8
+      })
+    );
+    marker.position.copy(point);
+    marker.userData.isMeasure = true;
+    marker.userData.isMeasureEndpoint = endpointRole || null;
+    return marker;
+  }
+
+  function createMeasureLine(startPoint, endPoint) {
+    const geometry = new THREE.BufferGeometry().setFromPoints([startPoint.clone(), endPoint.clone()]);
+    const line = new THREE.Line(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 })
+    );
+    line.userData.isMeasure = true;
+    return line;
+  }
+
+  function createDistanceLabel(text, position) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 192;
+    const ctx = canvas.getContext("2d");
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false
+      })
+    );
+    sprite.position.copy(position);
+    sprite.scale.set(1.9, 0.7, 1);
+    sprite.userData.isMeasure = true;
+    sprite.userData.labelCanvas = canvas;
+    sprite.userData.labelContext = ctx;
+    sprite.userData.labelTexture = texture;
+    updateDistanceLabel(sprite, text, position);
+    return sprite;
+  }
+
+  function updateDistanceLabel(sprite, text, position) {
+    const ctx = sprite?.userData?.labelContext;
+    const canvas = sprite?.userData?.labelCanvas;
+    const texture = sprite?.userData?.labelTexture;
+    if (ctx && canvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
+      ctx.fillRect(40, 48, 432, 96);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(40, 48, 432, 96);
+      ctx.fillStyle = "#f7fbff";
+      ctx.font = "700 56px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    }
+    if (texture) texture.needsUpdate = true;
+    if (position && sprite?.position) {
+      sprite.position.copy(position);
+    }
+  }
+
+  function getTapeMeasureHit() {
+    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+    const candidates = (objects || []).filter((obj) => (
+      obj?.isMesh
+      && obj?.visible
+      && obj?.userData?.isMeasure !== true
+      && obj?.userData?.isWater !== true
+    ));
+    const hits = raycaster.intersectObjects(candidates, false);
+    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
+  }
+
+  function ensureTapeMeasureLineAndLabel(startPoint, endPoint) {
+    if (!startPoint || !endPoint) return;
+    if (!movementState.tapeMeasureLine) {
+      const line = createMeasureLine(startPoint, endPoint);
+      scene.add(line);
+      movementState.tapeMeasureLine = line;
+      registerMeasurementVisual(line);
+    } else {
+      movementState.tapeMeasureLine.geometry.setFromPoints([startPoint.clone(), endPoint.clone()]);
+      movementState.tapeMeasureLine.geometry.computeBoundingSphere();
+    }
+    const distanceMeters = startPoint.distanceTo(endPoint);
+    const mid = startPoint.clone().add(endPoint).multiplyScalar(0.5);
+    mid.y += 0.2;
+    const text = `${distanceMeters.toFixed(2)} m`;
+    if (!movementState.tapeMeasureLabel) {
+      const label = createDistanceLabel(text, mid);
+      scene.add(label);
+      movementState.tapeMeasureLabel = label;
+      registerMeasurementVisual(label);
+    } else {
+      updateDistanceLabel(movementState.tapeMeasureLabel, text, mid);
+    }
+  }
+
+  function updateTapeMeasurePreview() {
+    const firstPoint = movementState.tapeMeasureFirstPoint;
+    const secondPoint = movementState.tapeMeasureSecondPoint;
+    if (!firstPoint || secondPoint) return;
+    const hit = getTapeMeasureHit();
+    if (!hit?.point) {
+      if (movementState.tapeMeasureLine) movementState.tapeMeasureLine.visible = false;
+      if (movementState.tapeMeasureLabel) movementState.tapeMeasureLabel.visible = false;
+      return;
+    }
+    ensureTapeMeasureLineAndLabel(firstPoint, hit.point);
+    if (movementState.tapeMeasureLine) movementState.tapeMeasureLine.visible = true;
+    if (movementState.tapeMeasureLabel) movementState.tapeMeasureLabel.visible = true;
+  }
+
   function tryPlaceSelectedInventoryItem({ snapToGrid = false } = {}) {
     if (movementState.worldMode === "2d") return false;
     const inventory = window.VRWorldContext?.inventory;
@@ -472,17 +675,56 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       return true;
     }
 
+    if (toolId === "tape-measure") {
+      if (movementState.tapeToolLatch) return true;
+      movementState.tapeToolLatch = true;
+      const hit = getTapeMeasureHit();
+      if (!hit?.point) return true;
+      if (!movementState.tapeMeasureFirstPoint || movementState.tapeMeasureSecondPoint) {
+        clearMeasurementVisuals();
+        const firstPoint = hit.point.clone();
+        const firstMarker = createMeasureMarker(firstPoint, "first");
+        scene.add(firstMarker);
+        registerMeasurementVisual(firstMarker);
+        movementState.tapeMeasureFirstMarker = firstMarker;
+        movementState.tapeMeasureFirstPoint = firstPoint;
+        updateTapeMeasurePreview();
+        return true;
+      }
+
+      const secondPoint = hit.point.clone();
+      const firstPoint = movementState.tapeMeasureFirstPoint.clone();
+      const secondMarker = createMeasureMarker(secondPoint, "second");
+      scene.add(secondMarker);
+      registerMeasurementVisual(secondMarker);
+      movementState.tapeMeasureSecondMarker = secondMarker;
+      movementState.tapeMeasureSecondPoint = secondPoint;
+      ensureTapeMeasureLineAndLabel(firstPoint, secondPoint);
+      if (movementState.tapeMeasureLine) movementState.tapeMeasureLine.visible = true;
+      if (movementState.tapeMeasureLabel) movementState.tapeMeasureLabel.visible = true;
+      return true;
+    }
+
     return false;
   }
 
   function tryBreakTargetBlock() {
     if (movementState.worldMode === "2d") return false;
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const worldCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const measureCandidates = getMeasurementVisualsStore().filter((obj) => obj?.isMesh && obj?.visible);
+    const candidates = worldCandidates.concat(measureCandidates);
     const hits = raycaster.intersectObjects(candidates, false);
     const hit = hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible);
     if (!hit?.object) return false;
     const target = hit.object;
+    if (target.userData?.isMeasureEndpoint === "second") {
+      removeMeasurementVisual(target);
+      movementState.tapeMeasureSecondMarker = null;
+      movementState.tapeMeasureSecondPoint = null;
+      updateTapeMeasurePreview();
+      return true;
+    }
     if (target.userData?.isPortal) return false;
     if (target.userData?.breakable === false) return false;
     if (!target.userData?.breakable && !target.userData?.placedByPlayer) return false;
@@ -518,6 +760,25 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return true;
   }
 
+  function getWaterVolumeAtPosition(position) {
+    if (!Array.isArray(waterVolumes) || waterVolumes.length === 0) return null;
+    for (const water of waterVolumes) {
+      if (!water?.box || typeof water.box.containsPoint !== "function") continue;
+      if (water.box.containsPoint(position)) return water;
+    }
+    return null;
+  }
+
+  function tryInspectTarget() {
+    if (!objectInspector) return false;
+    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+    const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const hits = raycaster.intersectObjects(candidates, false);
+    const hit = hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible);
+    if (!hit?.object) return false;
+    return objectInspector.inspectTarget(hit.object, hit.distance);
+  }
+
   return function update() {
     if (!controls.isLocked) return;
     const nowMs = performance.now();
@@ -528,6 +789,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const crawling = inputState.crawl;
     const using = inputState.use;
     const attacking = inputState.attack;
+    const inspecting = inputState.inspect;
     const inventory = window.VRWorldContext?.inventory;
 
     if (inputState.openInventory && !inventoryToggleLatch) {
@@ -586,14 +848,23 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       movementState.useLatch = false;
       movementState.lastUseActionMs = 0;
       movementState.svgToolLatch = false;
+      movementState.tapeToolLatch = false;
     }
     if (!attacking) movementState.attackLatch = false;
+    if (!inspecting) movementState.inspectLatch = false;
     if (!movementState.isFlying) {
       movementState.playerHeight = crawling ? crawlHeight : crouching ? crouchHeight : basePlayerHeight;
     }
     if (movementState.worldMode === "2d" && Number.isFinite(movementState.planeZ)) {
       controls.getObject().position.z = movementState.planeZ;
     }
+
+    const playerPos = controls.getObject().position;
+    const torsoPosition = playerPos.clone();
+    torsoPosition.y = playerPos.y - Math.max(0.35, movementState.playerHeight * 0.45);
+    const activeWaterVolume = getWaterVolumeAtPosition(torsoPosition);
+    const swimActive = Boolean(activeWaterVolume);
+    movementState.isSwimming = swimActive;
 
     applyDirectionalMovement({
       THREE,
@@ -607,13 +878,33 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       crawling,
       crouching,
       wouldCollide,
-      stepHeight
+      stepHeight,
+      allowVerticalMovement: movementState.isFlying || swimActive
     });
 
-    if (movementState.isFlying) {
-      applyFlyingMovement({ THREE, controls, inputState, speed, wouldCollide });
+    if (movementState.isFlying || swimActive) {
+      const buoyancyBase = Number.isFinite(movementState.playerBuoyancy) ? movementState.playerBuoyancy : 0;
+      const waterScale = swimActive && Number.isFinite(activeWaterVolume?.buoyancyScale) ? activeWaterVolume.buoyancyScale : 1;
+      const buoyancy = swimActive ? buoyancyBase * waterScale : 0;
+      const swimSpeed = swimActive
+        ? speed * (Number.isFinite(movementState.swimSpeedMultiplier) ? movementState.swimSpeedMultiplier : baseSwimSpeedMultiplier)
+        : speed;
+      movementState.isGrounded = false;
+      applyFlyingMovement({ THREE, controls, inputState, speed: swimSpeed, wouldCollide, buoyancy });
     } else {
-      applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, groundLevel, wouldCollide });
+      applyGroundMovement({
+        controls,
+        inputState,
+        movementState,
+        gravity,
+        jumpSpeed,
+        crouching,
+        crouchJumpMultiplier: Number.isFinite(movementState.crouchJumpMultiplier)
+          ? movementState.crouchJumpMultiplier
+          : defaultCrouchJumpMultiplier,
+        groundLevel,
+        wouldCollide
+      });
     }
 
     if (movementState.worldMode !== "2d" && (Math.abs(inputState.lookYaw) > 0 || Math.abs(inputState.lookPitch) > 0)) {
@@ -637,6 +928,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
 
     applyRollPitch({ camera, inputState });
+    updateTapeMeasurePreview();
 
     const actionHit = findCollisionActionHit(controls.getObject().position, performance.now());
     if (actionHit) {
@@ -674,6 +966,13 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     if (attacking && !movementState.attackLatch && nowMs >= (movementState.suppressAttackUntilMs || 0)) {
       movementState.attackLatch = true;
       if (tryBreakTargetBlock()) {
+        return;
+      }
+    }
+
+    if (inspecting && !movementState.inspectLatch) {
+      movementState.inspectLatch = true;
+      if (tryInspectTarget()) {
         return;
       }
     }

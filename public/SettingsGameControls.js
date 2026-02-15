@@ -72,6 +72,8 @@
       "Jump",
       "Use",
       "Attack",
+      "Inspect/Modify",
+      "Cycle Camera",
       "Fly",
       "Open Inventory",
       "Pause"

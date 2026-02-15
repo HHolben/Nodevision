@@ -131,6 +131,10 @@ export async function setupPanel(panel, instanceVars = {}) {
       panel._vrInventory.dispose();
       panel._vrInventory = null;
     }
+    if (panel._vrObjectInspector?.dispose) {
+      panel._vrObjectInspector.dispose();
+      panel._vrObjectInspector = null;
+    }
     if (window.__nodevisionGameViewCleanup === panel.cleanup) {
       window.__nodevisionGameViewCleanup = null;
     }

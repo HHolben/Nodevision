@@ -6,13 +6,13 @@ Extension,ViewerModule,GraphicalEditorModule
 abc,ViewABC.mjs,TextFamilyEditor.mjs
 adoc,ViewADOC.mjs,TextFamilyEditor.mjs
 afm,ViewAFM.mjs,TextFamilyEditor.mjs
-aiff,ViewAIFF.mjs,MediaFamilyEditor.mjs
+aiff,ViewAIFF.mjs,SoundFamilyEditor.mjs
 alto,ViewALTO.mjs,XMLFamilyEditor.mjs
 amf,ViewAMF.mjs,ModelFamilyEditor.mjs
 ann,ViewANN.mjs,TextFamilyEditor.mjs
 asc,ViewASC.mjs,TextFamilyEditor.mjs
 atom,ViewATOM.mjs,XMLFamilyEditor.mjs
-avi,ViewAVI.mjs,MediaFamilyEditor.mjs
+avi,ViewAVI.mjs,VideoFamilyEditor.mjs
 avsc,ViewAVRO.mjs,JSONFamilyEditor.mjs
 avro,ViewAVRO.mjs,JSONFamilyEditor.mjs
 
@@ -63,7 +63,7 @@ eaf,ViewELAN.mjs,XMLFamilyEditor.mjs
 ecg,ViewBinary.mjs,BinaryFamilyEditor.mjs
 edf,ViewBinary.mjs,BinaryFamilyEditor.mjs
 elf,ViewBinary.mjs,BinaryFamilyEditor.mjs
-epub,ViewEPUB.mjs,DocumentFamilyEditor.mjs
+epub,ViewEPUB.mjs,EPUBeditor.mjs
 excellon,ViewText.mjs,TextFamilyEditor.mjs
 exr,ViewEXR.mjs,MediaFamilyEditor.mjs
 
@@ -73,7 +73,7 @@ fastq,ViewText.mjs,TextFamilyEditor.mjs
 fb2,ViewXML.mjs,XMLFamilyEditor.mjs
 fbx,ViewBinary.mjs,BinaryFamilyEditor.mjs
 fhir,ViewJSON.mjs,JSONFamilyEditor.mjs
-flac,ViewAudio.mjs,MediaFamilyEditor.mjs
+flac,ViewAudio.mjs,SoundFamilyEditor.mjs
 flextext,ViewText.mjs,TextFamilyEditor.mjs
 fnt,ViewFont.mjs,BinaryFamilyEditor.mjs
 foxml,ViewXML.mjs,XMLFamilyEditor.mjs
@@ -148,13 +148,13 @@ mhd,ViewBinary.mjs,BinaryFamilyEditor.mjs
 mid,ViewMidi.mjs,MIDIeditor.mjs
 midi,ViewMidi.mjs,MIDIeditor.mjs
 mjs,ViewText.mjs,TextFamilyEditor.mjs
-mkv,ViewVideo.mjs,MediaFamilyEditor.mjs
+mkv,ViewVideo.mjs,VideoFamilyEditor.mjs
 mobi,ViewBinary.mjs,BinaryFamilyEditor.mjs
 mods.xml,ViewXML.mjs,XMLFamilyEditor.mjs
 mol,ViewMOL.mjs,ModelFamilyEditor.mjs
-mov,ViewVideo.mjs,MediaFamilyEditor.mjs
-mp3,ViewMP3.mjs,MediaFamilyEditor.mjs
-mp4,ViewMP4.mjs,MediaFamilyEditor.mjs
+mov,ViewVideo.mjs,VideoFamilyEditor.mjs
+mp3,ViewMP3.mjs,SoundFamilyEditor.mjs
+mp4,ViewMP4.mjs,VideoFamilyEditor.mjs
 musicxml,ViewMusicXML.mjs,DocumentFamilyEditor.mjs
 
 nbt,ViewNBT.mjs,ModelFamilyEditor.mjs
@@ -171,11 +171,11 @@ ocrd.zip,ViewArchive.mjs,BinaryFamilyEditor.mjs
 odp,ViewODP.mjs,DocumentFamilyEditor.mjs
 ods,ViewODS.mjs,DocumentFamilyEditor.mjs
 odt,ViewODT.mjs,DocumentFamilyEditor.mjs
-ogg,ViewAudio.mjs,MediaFamilyEditor.mjs
-ogv,ViewVideo.mjs,MediaFamilyEditor.mjs
+ogg,ViewAudio.mjs,SoundFamilyEditor.mjs
+ogv,ViewVideo.mjs,VideoFamilyEditor.mjs
 opf,ViewXML.mjs,XMLFamilyEditor.mjs
 ops,ViewText.mjs,TextFamilyEditor.mjs
-opus,ViewAudio.mjs,MediaFamilyEditor.mjs
+opus,ViewAudio.mjs,SoundFamilyEditor.mjs
 ora,ViewBinary.mjs,BinaryFamilyEditor.mjs
 org,ViewText.mjs,TextFamilyEditor.mjs
 otf,ViewFont.mjs,BinaryFamilyEditor.mjs
@@ -262,8 +262,8 @@ vtk,ViewVTK.mjs,ModelFamilyEditor.mjs
 vtp,ViewVTK.mjs,ModelFamilyEditor.mjs
 vtt,ViewText.mjs,TextFamilyEditor.mjs
 
-wav,ViewAudio.mjs,MediaFamilyEditor.mjs
-webm,ViewVideo.mjs,MediaFamilyEditor.mjs
+wav,ViewAudio.mjs,SoundFamilyEditor.mjs
+webm,ViewVideo.mjs,VideoFamilyEditor.mjs
 webp,ViewImage.mjs,MediaFamilyEditor.mjs
 wlf,ViewBinary.mjs,BinaryFamilyEditor.mjs
 woff,ViewFont.mjs,BinaryFamilyEditor.mjs
