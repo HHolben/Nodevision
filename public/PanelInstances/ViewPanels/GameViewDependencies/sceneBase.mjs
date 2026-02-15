@@ -5,7 +5,7 @@ export function createSceneBase({ THREE, panel, canvas }) {
   const scene = new THREE.Scene();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1);
-  renderer.setSize(panel.clientWidth, panel.clientHeight);
+  renderer.setSize(panel.clientWidth, panel.clientHeight, false);
 
   const camera = new THREE.PerspectiveCamera(
     75,

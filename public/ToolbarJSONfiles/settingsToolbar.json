@@ -1,12 +1,6 @@
 [
   {
     "ToolbarCategory": "Settings",
-    "heading": "Settings",
-    "content": "<iframe src=\"SettingsPage.html\"></iframe>",
-    "script": "SendToCodeSettingsPage.js"
-  },
-  {
-    "ToolbarCategory": "Settings",
     "heading": "Toggle View Mode",
     "type": "toggle",
     "callbackKey": "toggleViewMode"
@@ -17,10 +11,31 @@
     "type": "toggle",
     "callbackKey": "togglePagePreviewMode"
   },
-{
-  "ToolbarCategory": "Settings",
-  "heading": "Game Controls",
-  "script": "SettingsGameControls.js"
-}
+
+  {
+    "heading": "Game Controls",
+    "icon": "/icons/terminal.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "openGameControls"
+  },
+
+  {
+    "heading": "Open Settings",
+    "icon": "/icons/terminal.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "openSettingsPage"
+  },
+  {
+    "heading": "Toggle View Mode",
+    "icon": "/icons/terminal.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "toggleViewMode"
+  },
+  {
+    "heading": "Toggle Page Preview Mode",
+    "icon": "/icons/terminal.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "togglePagePreviewMode"
+  }
 
 ]

@@ -1,28 +1,40 @@
 // Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/movementSteps.mjs
 // This file groups movement step helpers used by the per-frame update.
 
-export function applyDirectionalMovement({ THREE, controls, movementState, heldKeys, bindings, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight }) {
-  if (!(heldKeys[bindings.moveForward] || heldKeys[bindings.moveBackward] || heldKeys[bindings.moveLeft] || heldKeys[bindings.moveRight])) return;
+export function applyDirectionalMovement({ THREE, controls, movementState, inputState, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight }) {
+  if (!(inputState.moveForward || inputState.moveBackward || inputState.moveLeft || inputState.moveRight)) return;
   controls.getDirection(forward);
   if (!movementState.isFlying) forward.y = 0;
   forward.normalize();
   right.crossVectors(forward, up).normalize();
 
   const desiredMove = new THREE.Vector3();
-  if (heldKeys[bindings.moveForward]) desiredMove.add(forward);
-  if (heldKeys[bindings.moveBackward]) desiredMove.sub(forward);
-  if (heldKeys[bindings.moveRight]) desiredMove.add(right);
-  if (heldKeys[bindings.moveLeft]) desiredMove.sub(right);
+  const is2D = movementState.worldMode === "2d";
+  if (is2D) {
+    if (inputState.moveRight) desiredMove.x += 1;
+    if (inputState.moveLeft) desiredMove.x -= 1;
+  } else {
+    if (inputState.moveForward) desiredMove.add(forward);
+    if (inputState.moveBackward) desiredMove.sub(forward);
+    if (inputState.moveRight) desiredMove.add(right);
+    if (inputState.moveLeft) desiredMove.sub(right);
+  }
   if (desiredMove.lengthSq() === 0) return;
 
   const speedMultiplier = crawling ? 0.45 : crouching ? 0.7 : 1;
   desiredMove.normalize().multiplyScalar(speed * speedMultiplier);
   const object = controls.getObject();
   const nextPosition = object.position.clone().add(desiredMove);
+  if (is2D && Number.isFinite(movementState.planeZ)) {
+    nextPosition.z = movementState.planeZ;
+  }
   if (!wouldCollide(nextPosition)) object.position.copy(nextPosition);
   else if (!movementState.isFlying) {
     const stepPosition = nextPosition.clone();
     stepPosition.y += stepHeight;
+    if (is2D && Number.isFinite(movementState.planeZ)) {
+      stepPosition.z = movementState.planeZ;
+    }
     if (!wouldCollide(stepPosition)) {
       object.position.copy(stepPosition);
       movementState.velocityY = 0;
@@ -31,28 +43,31 @@ export function applyDirectionalMovement({ THREE, controls, movementState, heldK
   }
 }
 
-export function applyFlyingMovement({ THREE, controls, heldKeys, bindings, speed, wouldCollide }) {
+export function applyFlyingMovement({ THREE, controls, inputState, speed, wouldCollide }) {
   const verticalMove = new THREE.Vector3(0, 0, 0);
-  if (heldKeys[bindings.flyUp]) verticalMove.y += speed;
-  if (heldKeys[bindings.flyDown]) verticalMove.y -= speed;
+  if (inputState.flyUp) verticalMove.y += speed;
+  if (inputState.flyDown) verticalMove.y -= speed;
   if (verticalMove.lengthSq() === 0) return;
   const object = controls.getObject();
   const nextPosition = object.position.clone().add(verticalMove);
   if (!wouldCollide(nextPosition)) object.position.copy(nextPosition);
 }
 
-export function applyGroundMovement({ controls, heldKeys, bindings, movementState, gravity, jumpSpeed, groundLevel, wouldCollide }) {
-  if (heldKeys[bindings.jump] && movementState.isGrounded && !movementState.jumpLatch) {
+export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, groundLevel, wouldCollide }) {
+  if (inputState.jump && movementState.isGrounded && !movementState.jumpLatch) {
     movementState.velocityY = jumpSpeed;
     movementState.isGrounded = false;
     movementState.jumpLatch = true;
   }
-  if (!heldKeys[bindings.jump]) movementState.jumpLatch = false;
+  if (!inputState.jump) movementState.jumpLatch = false;
 
   movementState.velocityY -= gravity;
   const object = controls.getObject();
   const nextPosition = object.position.clone();
   nextPosition.y += movementState.velocityY;
+  if (movementState.worldMode === "2d" && Number.isFinite(movementState.planeZ)) {
+    nextPosition.z = movementState.planeZ;
+  }
 
   if (nextPosition.y - movementState.playerHeight <= groundLevel) {
     nextPosition.y = groundLevel + movementState.playerHeight;
@@ -68,13 +83,13 @@ export function applyGroundMovement({ controls, heldKeys, bindings, movementStat
   object.position.y = nextPosition.y;
 }
 
-export function applyRollPitch({ camera, heldKeys, bindings }) {
-  if (!(heldKeys[bindings.rollLeft] || heldKeys[bindings.rollRight] || heldKeys[bindings.pitchUp] || heldKeys[bindings.pitchDown])) return;
+export function applyRollPitch({ camera, inputState }) {
+  if (!(inputState.rollLeft || inputState.rollRight || inputState.pitchUp || inputState.pitchDown)) return;
   const rollSpeed = 0.03;
   const pitchSpeed = 0.02;
-  if (heldKeys[bindings.rollLeft]) camera.rotation.z += rollSpeed;
-  if (heldKeys[bindings.rollRight]) camera.rotation.z -= rollSpeed;
-  if (heldKeys[bindings.pitchUp]) camera.rotation.x += pitchSpeed;
-  if (heldKeys[bindings.pitchDown]) camera.rotation.x -= pitchSpeed;
+  if (inputState.rollLeft) camera.rotation.z += rollSpeed;
+  if (inputState.rollRight) camera.rotation.z -= rollSpeed;
+  if (inputState.pitchUp) camera.rotation.x += pitchSpeed;
+  if (inputState.pitchDown) camera.rotation.x -= pitchSpeed;
   camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
 }

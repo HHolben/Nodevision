@@ -53,6 +53,13 @@
     "icon": "icons/fullscreenPanel.png",
     "callbackKey": "fullscreenPanel"
   },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Undock Panel",
+    "icon": "icons/layoutControls.png",
+    "callbackKey": "UndockPanel"
+  },
 
     {
     "ToolbarCategory": "View",

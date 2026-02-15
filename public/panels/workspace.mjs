@@ -5,6 +5,87 @@
 import { logStatus } from "./../StatusBar.mjs";
 import { setStatus } from "./../StatusBar.mjs";
 
+function collectPanelCells(root) {
+  if (!root) return [];
+  if (root.classList?.contains("panel-cell")) return [root];
+  return Array.from(root.querySelectorAll?.(".panel-cell") || []);
+}
+
+function placeholderColorForCell(cell, index) {
+  const key = `${cell.dataset?.id || "panel"}:${index}`;
+  let hash = 0;
+  for (let i = 0; i < key.length; i += 1) {
+    hash = ((hash << 5) - hash) + key.charCodeAt(i);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 45% 55% / 0.78)`;
+}
+
+function startResizePlaceholderMode(elements) {
+  const uniqueCells = new Set();
+  for (const element of elements) {
+    for (const cell of collectPanelCells(element)) uniqueCells.add(cell);
+  }
+
+  const states = [];
+  let idx = 0;
+  for (const cell of uniqueCells) {
+    const visibilityEntries = [];
+    for (const child of Array.from(cell.children)) {
+      visibilityEntries.push([child, child.style.visibility]);
+      child.style.visibility = "hidden";
+    }
+
+    const placeholder = document.createElement("div");
+    placeholder.className = "panel-resize-placeholder";
+    Object.assign(placeholder.style, {
+      position: "absolute",
+      inset: "0",
+      background: placeholderColorForCell(cell, idx),
+      border: "1px solid rgba(20, 20, 20, 0.18)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "rgba(255, 255, 255, 0.95)",
+      fontSize: "12px",
+      fontFamily: "monospace",
+      letterSpacing: "0.02em",
+      pointerEvents: "none",
+      userSelect: "none",
+      zIndex: "999",
+      opacity: "0",
+      transition: "opacity 140ms ease"
+    });
+    placeholder.textContent = cell.dataset?.id || "Panel";
+
+    const prevPosition = cell.style.position;
+    if (!prevPosition) cell.style.position = "relative";
+    cell.appendChild(placeholder);
+    requestAnimationFrame(() => {
+      placeholder.style.opacity = "1";
+    });
+
+    states.push({ cell, visibilityEntries, placeholder, prevPosition });
+    idx += 1;
+  }
+
+  return () => {
+    for (const state of states) {
+      const { cell, visibilityEntries, placeholder, prevPosition } = state;
+      placeholder.style.opacity = "0";
+      for (const [child, vis] of visibilityEntries) {
+        child.style.visibility = vis;
+      }
+      setTimeout(() => {
+        if (placeholder.parentNode === cell) {
+          cell.removeChild(placeholder);
+        }
+      }, 140);
+      cell.style.position = prevPosition;
+    }
+  };
+}
 
 
 export function ensureWorkspace() {
@@ -80,6 +161,7 @@ function createDivider(leftCell, rightCell) {
   });
 
   let startX, startLeftWidth, startRightWidth, totalWidth;
+  let stopPlaceholderMode = null;
 
   divider.addEventListener("mousedown", (e) => {
     e.preventDefault();
@@ -96,6 +178,7 @@ function createDivider(leftCell, rightCell) {
 
     leftCell.style.transition = "none";
     rightCell.style.transition = "none";
+    stopPlaceholderMode = startResizePlaceholderMode([leftCell, rightCell]);
 
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
@@ -117,6 +200,10 @@ function createDivider(leftCell, rightCell) {
   function onMouseUp() {
     leftCell.style.transition = "";
     rightCell.style.transition = "";
+    if (stopPlaceholderMode) {
+      stopPlaceholderMode();
+      stopPlaceholderMode = null;
+    }
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
   }
@@ -250,6 +337,7 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
   });
 
   let startPos, startLeftSize, startRightSize, totalSize;
+  let stopPlaceholderMode = null;
 
   divider.addEventListener("mousedown", (e) => {
     e.preventDefault();
@@ -276,6 +364,7 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
 
     leftEl.style.transition = "none";
     rightEl.style.transition = "none";
+    stopPlaceholderMode = startResizePlaceholderMode([leftEl, rightEl]);
 
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
@@ -308,6 +397,10 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
     const rightEl = divider._rightCell;
     if (leftEl) leftEl.style.transition = "";
     if (rightEl) rightEl.style.transition = "";
+    if (stopPlaceholderMode) {
+      stopPlaceholderMode();
+      stopPlaceholderMode = null;
+    }
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
   }
@@ -355,6 +448,14 @@ if (!module) {
     return;
   }
 
+  if (typeof cell.cleanup === "function") {
+    try {
+      cell.cleanup();
+    } catch (err) {
+      console.warn("Panel cleanup failed before reload:", err);
+    }
+  }
+  cell.cleanup = null;
   cell.innerHTML = "";
 
   await module.setupPanel(cell, {
@@ -375,6 +476,14 @@ window.addEventListener("toolbarAction", async (e) => {
   // If replaceActive is true, always replace the active cell's content
   if (replaceActive && window.activeCell) {
     const cell = window.activeCell;
+    if (typeof cell.cleanup === "function") {
+      try {
+        cell.cleanup();
+      } catch (err) {
+        console.warn("Panel cleanup failed before replaceActive:", err);
+      }
+    }
+    cell.cleanup = null;
     cell.innerHTML = "";
     cell.dataset.id = id;
     cell.dataset.panelClass = panelClass;
@@ -416,6 +525,14 @@ window.addEventListener("toolbarAction", async (e) => {
   }
 
   const cell = window.activeCell;
+  if (typeof cell.cleanup === "function") {
+    try {
+      cell.cleanup();
+    } catch (err) {
+      console.warn("Panel cleanup failed before toolbar load:", err);
+    }
+  }
+  cell.cleanup = null;
   cell.innerHTML = "";
   cell.dataset.id = id;
   window.activePanel = id;

@@ -1,5 +1,5 @@
 // Nodevision/public/SettingsGameControls.js
-// Purpose: TODO: Add description of module purpose
+// This is a description of module purpose
 (function() {
 
   // Poll every 50ms until the content frame exists
@@ -70,6 +70,10 @@
       "Look (Yaw)",
       "Look (Pitch)",
       "Jump",
+      "Use",
+      "Attack",
+      "Fly",
+      "Open Inventory",
       "Pause"
     ];
 

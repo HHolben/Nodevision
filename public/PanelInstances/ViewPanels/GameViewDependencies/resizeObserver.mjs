@@ -12,7 +12,7 @@ export function setupResizeObserver(panel, cameraOrCameras, renderer) {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
-    renderer.setSize(w, h);
+    renderer.setSize(w, h, false);
   });
   resizeObserver.observe(panel);
   panel._vrResizeObserver = resizeObserver;

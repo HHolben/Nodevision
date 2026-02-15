@@ -22,6 +22,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
   try {
     if (!filePath) return;
+    state.currentWorldPath = filePath;
+    if (window.VRWorldContext) {
+      window.VRWorldContext.currentWorldPath = filePath;
+    }
     if (!window.VRWorldContext) {
       state.pendingWorldPath = filePath;
       state.pendingWorldOptions = options;
@@ -57,6 +61,17 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     }
 
     const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, controls, movementState } = window.VRWorldContext;
+    const modeHint = String(
+      worldData?.worldMode
+      || worldData?.mode
+      || worldData?.metadata?.worldMode
+      || worldData?.usd?.metadata?.worldMode
+      || "3d"
+    ).toLowerCase();
+    if (movementState) {
+      movementState.worldMode = modeHint === "2d" ? "2d" : "3d";
+      movementState.requestCycleCamera = false;
+    }
     objects.forEach(obj => scene.remove(obj));
     objects.length = 0;
     colliders.length = 0;
@@ -367,6 +382,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
       if (mesh) {
         mesh.position.set(...def.position);
+        mesh.userData.nvType = def.type || portalShape || null;
+        mesh.userData.breakable = def.breakable !== false && !isPortal && !isSpawnPoint;
         scene.add(mesh);
         objects.push(mesh);
         if (isPortal) {
@@ -394,12 +411,14 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             .map(action => normalizeAction(action, resolvedPortalTarget, sameWorld))
             .filter(Boolean);
           if (actions.length > 0) {
-            collisionActions.push({
+            const collisionRef = {
               box,
               actions,
               cooldownMs: Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200,
               lastTriggeredAt: 0
-            });
+            };
+            collisionActions.push(collisionRef);
+            mesh.userData.collisionActionRef = collisionRef;
           }
         }
         if (useTargets) {
@@ -410,13 +429,15 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
               .map(action => normalizeAction(action, resolvedPortalTarget, sameWorld))
               .filter(Boolean);
             if (actions.length > 0) {
-              useTargets.push({
+              const useRef = {
                 position: mesh.position.clone(),
                 range: Number.isFinite(def.useRange) ? def.useRange : 2,
                 actions,
                 cooldownMs: Number.isFinite(def.useCooldownMs) ? def.useCooldownMs : 600,
                 lastTriggeredAt: 0
-              });
+              };
+              useTargets.push(useRef);
+              mesh.userData.useTargetRef = useRef;
             }
           }
         }
@@ -427,11 +448,15 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             const halfSize = new THREE.Vector3(sx / 2, sy / 2, sz / 2);
             const center = new THREE.Vector3(...def.position);
             const box = new THREE.Box3(center.clone().sub(halfSize), center.clone().add(halfSize));
-            colliders.push({ type: "box", box });
+            const colliderRef = { type: "box", box };
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
           } else if (portalShape === "sphere") {
             const center = new THREE.Vector3(...def.position);
             const radius = def.size[0];
-            colliders.push({ type: "sphere", center, radius });
+            const colliderRef = { type: "sphere", center, radius };
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
           }
         }
       }
@@ -471,6 +496,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         ? chosen.position
         : [0, 0, 0];
       controls.getObject().position.set(position[0], position[1], position[2]);
+      if (movementState?.worldMode === "2d") {
+        movementState.planeZ = Number.isFinite(position[2]) ? position[2] : 0;
+        controls.getObject().position.z = movementState.planeZ;
+      }
       if (movementState) {
         movementState.velocityY = 0;
         movementState.isGrounded = true;

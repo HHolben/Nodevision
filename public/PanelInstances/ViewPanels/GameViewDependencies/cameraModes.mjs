@@ -85,10 +85,19 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
 
   function applyCrosshairVisibility() {
     if (!crosshair) return;
+    if (movementState?.worldMode === "2d") {
+      crosshair.style.display = "none";
+      return;
+    }
     crosshair.style.display = currentMode().id === "first" ? "block" : "none";
   }
 
   function cycleMode() {
+    if (movementState?.worldMode === "2d") {
+      modeIndex = modes.findIndex((m) => m.id === "side");
+      applyCrosshairVisibility();
+      return;
+    }
     modeIndex = (modeIndex + 1) % modes.length;
     const id = currentMode().id;
     if (id !== "second" && id !== "third") {
@@ -119,6 +128,11 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   applyCrosshairVisibility();
 
   function update() {
+    if (movementState?.requestCycleCamera) {
+      movementState.requestCycleCamera = false;
+      cycleMode();
+    }
+
     const avatar = loadedAvatar || fallbackAvatar;
     const player = controls.getObject();
     controls.getDirection(forward);
@@ -134,7 +148,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     avatar.position.set(player.position.x, bodyY, player.position.z);
     avatar.rotation.y = Math.atan2(forward.x, forward.z);
 
-    const mode = currentMode().id;
+    const mode = movementState?.worldMode === "2d" ? "side" : currentMode().id;
     if (mode === "first") {
       avatar.visible = false;
       return;
@@ -163,6 +177,9 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     } else {
       cameraPos.copy(player.position).addScaledVector(side, 9);
       cameraPos.y = headY + 2.5;
+      if (movementState?.worldMode === "2d") {
+        target.y = headY + 0.7;
+      }
     }
 
     followCamera.position.copy(cameraPos);
@@ -170,6 +187,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   }
 
   function getActiveCamera() {
+    if (movementState?.worldMode === "2d") return followCamera;
     return currentMode().id === "first" ? playerCamera : followCamera;
   }
 

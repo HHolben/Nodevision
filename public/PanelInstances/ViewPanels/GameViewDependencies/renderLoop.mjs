@@ -3,6 +3,11 @@
 
 export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
   let running = true;
+  const state = window.__nodevisionGameLoopState || { active: 0, nextId: 1 };
+  window.__nodevisionGameLoopState = state;
+  const loopId = state.nextId++;
+  state.active += 1;
+  console.log(`[GameView] render loop start id=${loopId} active=${state.active}`);
   function animate() {
     if (!running) return;
     requestAnimationFrame(animate);
@@ -13,5 +18,10 @@ export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
     if (activeCamera) renderer.render(scene, activeCamera);
   }
   animate();
-  return () => { running = false; };
+  return () => {
+    if (!running) return;
+    running = false;
+    state.active = Math.max(0, state.active - 1);
+    console.log(`[GameView] render loop stop id=${loopId} active=${state.active}`);
+  };
 }
