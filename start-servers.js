@@ -8,7 +8,7 @@ const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 const phpPort = config.phpPort;
 const nodePort = config.nodePort;
 
-concurrently([
+const run = concurrently([
   { 
     command: `php -S 0.0.0.0:${phpPort} -t Notebook`, 
     name: 'php', 
@@ -19,7 +19,32 @@ concurrently([
     name: 'node', 
     prefixColor: 'blue'
   }
-])
+], {
+  // Keep Node alive even if PHP fails to bind (e.g., port already in use).
+  killOthersOn: [],
+  restartTries: 0,
+});
+
+run.result.catch((events) => {
+  const failures = Array.isArray(events)
+    ? events.filter((event) => Number(event?.exitCode) !== 0)
+    : [];
+
+  const onlyPhpFailed =
+    failures.length === 1 &&
+    String(failures[0]?.command?.name || "").toLowerCase() === "php";
+
+  if (onlyPhpFailed) {
+    console.warn(
+      "[start-servers] PHP server failed to start (likely port already in use). " +
+      "Continuing with Node server."
+    );
+    return;
+  }
+
+  console.error("[start-servers] One or more processes exited with failure:", failures);
+  process.exitCode = 1;
+});
 
 /*.then(result => {
   console.log('Both servers have started successfully.');

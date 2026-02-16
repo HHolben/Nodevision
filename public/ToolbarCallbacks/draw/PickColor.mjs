@@ -35,6 +35,9 @@ export function PickColor() {
   const updateColor = (color) => {
     if (!window.NodevisionState) window.NodevisionState = {};
     window.NodevisionState.drawColor = color;
+    if (window.rasterEditor) {
+      window.rasterEditor.brushColor = color;
+    }
     preview.style.backgroundColor = color;
   };
 
@@ -45,3 +48,5 @@ export function PickColor() {
     updateColor(e.target.value);
   });
 }
+
+export default PickColor;

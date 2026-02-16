@@ -13,6 +13,16 @@ const router = express.Router();
 // Base directory for the Notebook
 const notebookBasePath = path.resolve(__dirname, '../../Notebook');
 
+function normalizeNotebookRelativePath(inputPath) {
+    if (!inputPath) return '';
+
+    let cleaned = String(inputPath).replace(/\\/g, '/').trim();
+    cleaned = cleaned.replace(/^\/+/, '');
+    cleaned = cleaned.replace(/^Notebook\//i, '');
+    cleaned = path.normalize(cleaned).replace(/^(\.\.(\/|\\|$))+/, '');
+    return cleaned;
+}
+
 // Helper function to read directory contents
 async function readDirectory(dir) {
     const result = [];
@@ -54,7 +64,7 @@ router.get('/api/files', async (req, res) => {
 
 // Endpoint to read file content
 router.get('/api/file', async (req, res) => {
-    const filePath = req.query.path;
+    const filePath = normalizeNotebookRelativePath(req.query.path);
     if (!filePath) {
         return res.status(400).json({ error: 'File path is required' });
     }
@@ -80,6 +90,49 @@ router.get('/api/file', async (req, res) => {
         }
     }
 });
+
+// Endpoint to read binary file content (used by raster editors such as PNG)
+const handleFileBinary = async (req, res) => {
+    const filePath = normalizeNotebookRelativePath(req.query.path);
+    if (!filePath) {
+        return res.status(400).json({ error: 'File path is required' });
+    }
+
+    const fullPath = path.join(notebookBasePath, filePath);
+
+    try {
+        const stat = await fs.stat(fullPath);
+        if (stat.isDirectory()) {
+            return res.status(400).json({ error: `The path ${filePath} is a directory, not a file` });
+        }
+
+        const ext = path.extname(filePath).toLowerCase();
+        const mimeTypes = {
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.bmp': 'image/bmp',
+        };
+
+        const data = await fs.readFile(fullPath);
+        res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'no-store');
+        res.send(data);
+    } catch (err) {
+        console.error(`Error reading binary file ${filePath}:`, err);
+        if (err.code === 'ENOENT') {
+            res.status(404).json({ error: `File ${filePath} not found` });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+};
+
+// Support both mounting styles used in this codebase.
+router.get('/file-binary', handleFileBinary);
+router.get('/api/file-binary', handleFileBinary);
 
 
 

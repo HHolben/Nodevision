@@ -396,7 +396,7 @@ Object.assign(dropdown.style, {
   minWidth: "100%",
 });
 
-  buildToolbar(dropdown, topItems);
+  buildToolbar(dropdown, topItems, item.heading);
 
   return dropdown;
 }
