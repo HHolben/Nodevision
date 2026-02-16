@@ -337,14 +337,14 @@ if (item.panelTemplateId || item.panelTemplate) {
       }
 
       // Sub-toolbar
-   // Priority rule:
-// If this item HAS a dropdown, do NOT open a sub-toolbar
-if (dropdown) {
-  dropdown.style.display = "block";
-} else {
-  // Otherwise allow sub-toolbar
-  if (subToolbarContainer) showSubToolbar(item.heading);
-}
+      // Priority rule:
+      // If this item HAS a dropdown, do NOT open a sub-toolbar.
+      // Some actions (like Draw -> Color) render their own custom sub-toolbar.
+      if (dropdown) {
+        dropdown.style.display = "block";
+      } else if (item.preventAutoSubToolbar !== true) {
+        if (subToolbarContainer) showSubToolbar(item.heading);
+      }
 
     });
 

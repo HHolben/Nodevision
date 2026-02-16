@@ -3,6 +3,7 @@
     "heading": "Color",
     "parentHeading": "Draw", 
     "ToolbarCategory": "draw",
-    "callbackKey": "PickColor"
+    "callbackKey": "PickColor",
+    "preventAutoSubToolbar": true
   }
 ]

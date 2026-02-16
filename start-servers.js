@@ -15,13 +15,17 @@ const run = concurrently([
     prefixColor: 'green'
   },
   { 
-    command: `PORT=${nodePort} node server.js`, 
+    command: `node server.js`,
     name: 'node', 
-    prefixColor: 'blue'
+    prefixColor: 'blue',
+    env: {
+      ...process.env,
+      PORT: String(nodePort)
+    }
   }
 ], {
   // Keep Node alive even if PHP fails to bind (e.g., port already in use).
-  killOthersOn: [],
+  killOthers: [],
   restartTries: 0,
 });
 

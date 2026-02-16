@@ -27,6 +27,8 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     img.style.objectFit = 'contain';
     img.style.display = 'block';
     img.style.margin = '0 auto';
+    // Keep scaled pixel art sharp (disable interpolation/blur).
+    img.style.imageRendering = 'pixelated';
 
     img.onload = () => {
       img.title = `${img.naturalWidth} × ${img.naturalHeight}`;
@@ -44,4 +46,3 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
       '<p style="color:red;">Error loading PNG file.</p>';
   }
 }
-

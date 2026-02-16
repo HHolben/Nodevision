@@ -11,6 +11,10 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
   img.style.height = "100%";
   img.style.objectFit = "contain";
   img.style.display = "block";
+  if (String(filename).toLowerCase().endsWith(".png")) {
+    // Keep pixel-art PNGs sharp when scaled in the viewer.
+    img.style.imageRendering = "pixelated";
+  }
 
   img.onerror = () => {
     viewPanel.innerHTML = `<p style="color:#b00020;">Unable to load image: ${filename}</p>`;
