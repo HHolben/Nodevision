@@ -218,7 +218,7 @@ export async function renderEditor(filePath, container) {
     };
 
     try {
-      await renderHTMLEditor(virtualPath, editorHost);
+      await renderHTMLEditor(virtualPath, editorHost, { mode: "EPUBediting" });
     } finally {
       window.fetch = originalFetch;
     }

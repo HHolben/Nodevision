@@ -2,6 +2,21 @@
 // This file populates the panel with the HTML editor.
 
 import { updateToolbarState } from "./../../../panels/createToolbar.mjs";
+import { createPanelDOM } from "./../../../panels/panelFactory.mjs";
+
+const NOTEBOOK_PREFIX = "/Notebook/";
+const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp"]);
+const SVG_IMAGE_EXTENSIONS = new Set(["svg"]);
+const NEW_IMAGE_MIME_BY_EXTENSION = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  svg: "image/svg+xml",
+};
+const lastSelectionRangeByEditor = new WeakMap();
 
 function ensureHTMLLayoutStyles() {
   if (document.getElementById("nv-html-layout-style")) return;
@@ -140,24 +155,167 @@ function ensureHTMLLayoutStyles() {
     .nv-canvas-item:hover {
       border-color: #4b7fd1;
     }
+    #wysiwyg img.nv-selected-image {
+      outline: 2px solid #2f80ff;
+      outline-offset: 2px;
+    }
+    #wysiwyg .nv-canvas-item.nv-selected-image-item {
+      border-color: #2f80ff;
+      box-shadow: 0 0 0 2px rgba(47, 128, 255, 0.3);
+    }
+    #wysiwyg .nv-inline-embedded-panel {
+      position: relative;
+      border: 1px solid #6a7f9c;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    #wysiwyg .nv-inline-embedded-panel-header {
+      min-height: 24px;
+      height: 24px;
+      padding: 0 6px;
+      background: linear-gradient(#dde9f8, #c9d9ee);
+      border-bottom: 1px solid #97abc5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      user-select: none;
+    }
+    #wysiwyg .nv-inline-embedded-panel-title {
+      font: 11px monospace;
+      color: #15324f;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+    #wysiwyg .nv-inline-embedded-panel-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    #wysiwyg .nv-inline-embedded-panel-controls button {
+      font: 11px monospace;
+      padding: 1px 8px;
+      border: 1px solid #355b7f;
+      background: #e8f3ff;
+      color: #0f2740;
+      cursor: pointer;
+    }
+    #wysiwyg .nv-inline-embedded-panel-content {
+      position: absolute;
+      top: 24px;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      overflow: hidden;
+      background: #fff;
+    }
   `;
   document.head.appendChild(style);
 }
 
-function insertNodeAtCaret(wysiwyg, node) {
-  wysiwyg.focus();
+function isNodeInsideEditor(wysiwyg, node) {
+  if (!wysiwyg || !node) return false;
+  return node === wysiwyg || (node instanceof Node && wysiwyg.contains(node));
+}
+
+function isRangeInsideEditor(wysiwyg, range) {
+  if (!wysiwyg || !range) return false;
+  return isNodeInsideEditor(wysiwyg, range.startContainer) &&
+    isNodeInsideEditor(wysiwyg, range.endContainer);
+}
+
+function getCurrentSelectionRangeInEditor(wysiwyg) {
   const sel = window.getSelection();
-  if (sel && sel.rangeCount > 0) {
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    range.insertNode(node);
-    range.setStartAfter(node);
-    range.setEndAfter(node);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  } else {
-    wysiwyg.appendChild(node);
+  if (!sel || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  if (!isRangeInsideEditor(wysiwyg, range)) return null;
+  return range.cloneRange();
+}
+
+function rememberCurrentSelectionRange(wysiwyg) {
+  const range = getCurrentSelectionRangeInEditor(wysiwyg);
+  if (range) {
+    lastSelectionRangeByEditor.set(wysiwyg, range);
   }
+}
+
+function getRememberedSelectionRange(wysiwyg) {
+  const saved = lastSelectionRangeByEditor.get(wysiwyg);
+  if (!saved) return null;
+  if (!isRangeInsideEditor(wysiwyg, saved)) return null;
+  return saved.cloneRange();
+}
+
+function applySelectionRange(range) {
+  if (!range) return false;
+  const sel = window.getSelection();
+  if (!sel) return false;
+  sel.removeAllRanges();
+  sel.addRange(range);
+  return true;
+}
+
+function insertNodeAtCaret(wysiwyg, node, options = {}) {
+  const preferredRange = options?.preferredRange || null;
+  const range = (isRangeInsideEditor(wysiwyg, preferredRange) ? preferredRange.cloneRange() : null) ||
+    getRememberedSelectionRange(wysiwyg) ||
+    getCurrentSelectionRangeInEditor(wysiwyg);
+
+  if (range) {
+    try {
+      applySelectionRange(range);
+      wysiwyg.focus();
+      range.deleteContents();
+      range.insertNode(node);
+      range.setStartAfter(node);
+      range.setEndAfter(node);
+      applySelectionRange(range);
+      rememberCurrentSelectionRange(wysiwyg);
+      return;
+    } catch (err) {
+      console.warn("insertNodeAtCaret fallback append due to range error:", err);
+    }
+  }
+
+  wysiwyg.appendChild(node);
+  const fallbackRange = document.createRange();
+  fallbackRange.setStartAfter(node);
+  fallbackRange.setEndAfter(node);
+  applySelectionRange(fallbackRange);
+  rememberCurrentSelectionRange(wysiwyg);
+}
+
+function registerCaretTracking(wysiwyg) {
+  if (!wysiwyg) return () => {};
+
+  const capture = () => {
+    rememberCurrentSelectionRange(wysiwyg);
+  };
+
+  const onSelectionChange = () => {
+    capture();
+  };
+
+  document.addEventListener("selectionchange", onSelectionChange);
+  wysiwyg.addEventListener("mouseup", capture);
+  wysiwyg.addEventListener("keyup", capture);
+  wysiwyg.addEventListener("input", capture);
+  wysiwyg.addEventListener("focus", capture);
+  capture();
+
+  return () => {
+    document.removeEventListener("selectionchange", onSelectionChange);
+    wysiwyg.removeEventListener("mouseup", capture);
+    wysiwyg.removeEventListener("keyup", capture);
+    wysiwyg.removeEventListener("input", capture);
+    wysiwyg.removeEventListener("focus", capture);
+    lastSelectionRangeByEditor.delete(wysiwyg);
+  };
 }
 
 function getActiveLayoutCanvas(wysiwyg) {
@@ -420,17 +578,158 @@ function createCanvasItem({
   return item;
 }
 
-async function chooseImageSource() {
-  const typed = prompt(
-    "Enter image URL/path (or leave blank to pick a local PNG/SVG file):",
-    ""
-  );
-  if (typed && typed.trim()) return typed.trim();
+function safeDecode(value = "") {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
 
+function normalizePathSlashes(value = "") {
+  return String(value).replace(/\\/g, "/");
+}
+
+function stripQueryAndHash(value = "") {
+  const q = value.indexOf("?");
+  const h = value.indexOf("#");
+  const stop = [q, h].filter((idx) => idx >= 0).sort((a, b) => a - b)[0];
+  return stop === undefined ? value : value.slice(0, stop);
+}
+
+function normalizePath(pathLike = "") {
+  const raw = normalizePathSlashes(stripQueryAndHash(String(pathLike).trim()));
+  const parts = raw.split("/");
+  const out = [];
+  for (const part of parts) {
+    if (!part || part === ".") continue;
+    if (part === "..") {
+      if (out.length > 0) out.pop();
+      continue;
+    }
+    out.push(part);
+  }
+  return out.join("/");
+}
+
+function dirname(pathLike = "") {
+  const clean = normalizePath(pathLike);
+  const idx = clean.lastIndexOf("/");
+  return idx === -1 ? "" : clean.slice(0, idx);
+}
+
+function resolveRelativePath(baseDir = "", href = "") {
+  const target = String(href || "").trim();
+  if (!target) return "";
+  if (/^(https?:)?\/\//i.test(target) || target.startsWith("data:")) {
+    return target;
+  }
+  if (target.startsWith("/")) {
+    return normalizePath(target.replace(/^\/+/, ""));
+  }
+  return normalizePath([baseDir, target].filter(Boolean).join("/"));
+}
+
+function relativePath(fromDir = "", toPath = "") {
+  const from = normalizePath(fromDir).split("/").filter(Boolean);
+  const to = normalizePath(toPath).split("/").filter(Boolean);
+  let i = 0;
+  while (i < from.length && i < to.length && from[i] === to[i]) i += 1;
+  const up = new Array(Math.max(0, from.length - i)).fill("..");
+  const down = to.slice(i);
+  const rel = [...up, ...down].join("/");
+  return rel || (to[to.length - 1] || "");
+}
+
+function normalizeNotebookPathInput(inputPath = "") {
+  let clean = normalizePathSlashes(safeDecode(String(inputPath || "").trim()));
+  if (!clean) return "";
+  clean = clean.replace(/^https?:\/\/[^/]+/i, "");
+  clean = clean.replace(/^\/+/, "");
+  clean = clean.replace(/^.*\/Notebook\//i, "");
+  clean = clean.replace(/^Notebook\//i, "");
+  clean = stripQueryAndHash(clean);
+  return normalizePath(clean);
+}
+
+function isVirtualEditorPath(filePath = "") {
+  return String(filePath || "").startsWith("__epub_virtual__/");
+}
+
+function sanitizeImageFilename(name = "") {
+  const clean = String(name || "").replace(/[^\w.\-]+/g, "_").replace(/^_+|_+$/g, "");
+  if (clean) return clean;
+  return `image-${Date.now()}.png`;
+}
+
+function inferExtensionFromMime(mime = "") {
+  const clean = String(mime || "").toLowerCase();
+  const map = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/gif": "gif",
+    "image/webp": "webp",
+    "image/bmp": "bmp",
+    "image/svg+xml": "svg",
+  };
+  return map[clean] || "";
+}
+
+function inferExtensionFromPath(pathLike = "") {
+  const clean = normalizePath(stripQueryAndHash(pathLike));
+  const idx = clean.lastIndexOf(".");
+  if (idx === -1) return "";
+  return clean.slice(idx + 1).toLowerCase();
+}
+
+function ensureFilenameExtension(filename = "", mimeType = "") {
+  const current = inferExtensionFromPath(filename);
+  if (current) return filename;
+  const ext = inferExtensionFromMime(mimeType) || "png";
+  return `${filename}.${ext}`;
+}
+
+function getDefaultNotebookImageDir(editorFilePath = "") {
+  const normalizedEditorPath = normalizeNotebookPathInput(editorFilePath);
+  if (isVirtualEditorPath(normalizedEditorPath)) {
+    const activeFile = normalizeNotebookPathInput(
+      window.NodevisionState?.activeEditorFilePath ||
+      window.currentActiveFilePath ||
+      ""
+    );
+    const activeDir = dirname(activeFile);
+    return activeDir || "images";
+  }
+  return dirname(normalizedEditorPath);
+}
+
+function encodeNotebookUrl(notebookPath = "") {
+  const parts = normalizeNotebookPathInput(notebookPath)
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment));
+  return `${NOTEBOOK_PREFIX}${parts.join("/")}`;
+}
+
+function sourceFromNotebookPath(notebookPath = "", editorFilePath = "") {
+  const normalized = normalizeNotebookPathInput(notebookPath);
+  if (!normalized) return "";
+
+  const mode = window.NodevisionState?.currentMode || "";
+  if (mode === "EPUBediting" || isVirtualEditorPath(editorFilePath)) {
+    return encodeNotebookUrl(normalized);
+  }
+
+  const fromDir = dirname(normalizeNotebookPathInput(editorFilePath));
+  return relativePath(fromDir, normalized);
+}
+
+async function pickLocalImageFile() {
   return new Promise((resolve) => {
     const picker = document.createElement("input");
     picker.type = "file";
-    picker.accept = "image/png,image/svg+xml,image/*";
+    picker.accept = "image/*";
     picker.style.display = "none";
     document.body.appendChild(picker);
 
@@ -440,28 +739,1362 @@ async function chooseImageSource() {
 
     picker.addEventListener("change", () => {
       const file = picker.files && picker.files[0];
-      if (!file) {
-        cleanup();
-        resolve(null);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        cleanup();
-        resolve(typeof reader.result === "string" ? reader.result : null);
-      };
-      reader.onerror = () => {
-        cleanup();
-        resolve(null);
-      };
-      reader.readAsDataURL(file);
+      cleanup();
+      resolve(file || null);
     }, { once: true });
 
     picker.click();
   });
 }
 
-function attachCanvasTools(canvas) {
+async function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Image read failed"));
+      }
+    };
+    reader.onerror = () => reject(new Error("Unable to read image file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function parseDataUrl(value = "") {
+  const match = /^data:([^;,]+)?;base64,(.*)$/i.exec(String(value || ""));
+  if (!match) return null;
+  return {
+    mimeType: match[1] || "application/octet-stream",
+    base64: match[2] || "",
+  };
+}
+
+async function saveNotebookImageFromDataUrl(notebookPath, dataUrl) {
+  const normalizedPath = normalizeNotebookPathInput(notebookPath);
+  const parsed = parseDataUrl(dataUrl);
+  if (!normalizedPath || !parsed) {
+    throw new Error("Invalid image save request");
+  }
+
+  const res = await fetch("/api/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      path: normalizedPath,
+      content: parsed.base64,
+      encoding: "base64",
+      mimeType: parsed.mimeType,
+    }),
+  });
+
+  const payload = await res.json().catch(() => null);
+  if (!res.ok || !payload?.success) {
+    throw new Error(payload?.error || `${res.status} ${res.statusText}`);
+  }
+
+  return normalizedPath;
+}
+
+async function saveNotebookText(notebookPath, content, mimeType = "text/plain") {
+  const normalizedPath = normalizeNotebookPathInput(notebookPath);
+  if (!normalizedPath) {
+    throw new Error("Invalid text save request");
+  }
+
+  const res = await fetch("/api/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      path: normalizedPath,
+      content: String(content || ""),
+      encoding: "utf8",
+      mimeType,
+    }),
+  });
+
+  const payload = await res.json().catch(() => null);
+  if (!res.ok || !payload?.success) {
+    throw new Error(payload?.error || `${res.status} ${res.statusText}`);
+  }
+
+  return normalizedPath;
+}
+
+function classifyImageChoice(rawChoice = "") {
+  const choice = String(rawChoice || "").trim().toLowerCase();
+  if (!choice) return "linked-upload";
+  if (choice === "1" || choice.startsWith("linked")) return "linked-upload";
+  if (choice === "2" || choice.startsWith("inline")) return "inline";
+  if (choice === "3" || choice.startsWith("existing")) return "existing-notebook";
+  if (choice === "4" || choice.startsWith("external")) return "external-url";
+  return "linked-upload";
+}
+
+function buildImageContextFromElement(imageEl, editorFilePath = "") {
+  if (!(imageEl instanceof HTMLImageElement)) return null;
+  const rawSrc = imageEl.getAttribute("src") || imageEl.currentSrc || "";
+  const explicitLinked = normalizeNotebookPathInput(imageEl.getAttribute("data-nv-linked-path") || "");
+  const source = String(rawSrc || "").trim();
+
+  const context = {
+    element: imageEl,
+    src: source,
+    linkedNotebookPath: "",
+    isInline: false,
+    isExternal: false,
+    extension: "",
+  };
+
+  if (!source) return context;
+
+  if (source.startsWith("data:image/")) {
+    context.isInline = true;
+    context.extension = inferExtensionFromMime(parseDataUrl(source)?.mimeType || "");
+    return context;
+  }
+
+  if (explicitLinked) {
+    context.linkedNotebookPath = explicitLinked;
+    context.extension = inferExtensionFromPath(explicitLinked);
+    return context;
+  }
+
+  if (/^(https?:)?\/\//i.test(source)) {
+    try {
+      const url = new URL(source, window.location.origin);
+      if (url.origin === window.location.origin && url.pathname.startsWith("/Notebook/")) {
+        const notebookPath = normalizeNotebookPathInput(url.pathname);
+        context.linkedNotebookPath = notebookPath;
+        context.extension = inferExtensionFromPath(notebookPath);
+      } else {
+        context.isExternal = true;
+      }
+    } catch {
+      context.isExternal = true;
+    }
+    return context;
+  }
+
+  if (source.startsWith("/Notebook/") || source.startsWith("Notebook/")) {
+    const notebookPath = normalizeNotebookPathInput(source);
+    context.linkedNotebookPath = notebookPath;
+    context.extension = inferExtensionFromPath(notebookPath);
+    return context;
+  }
+
+  if (isVirtualEditorPath(editorFilePath)) {
+    context.isExternal = true;
+    return context;
+  }
+
+  const editorDir = dirname(normalizeNotebookPathInput(editorFilePath));
+  const resolved = resolveRelativePath(editorDir, source);
+  if (resolved) {
+    context.linkedNotebookPath = normalizeNotebookPathInput(resolved);
+    context.extension = inferExtensionFromPath(context.linkedNotebookPath);
+  }
+  return context;
+}
+
+function getImageEditorDescriptor(linkedNotebookPath = "") {
+  const ext = inferExtensionFromPath(linkedNotebookPath);
+  if (SVG_IMAGE_EXTENSIONS.has(ext)) {
+    return {
+      label: "SVG Editor",
+      modulePath: "/PanelInstances/EditorPanels/GraphicalEditors/SVGeditor.mjs",
+    };
+  }
+  if (RASTER_IMAGE_EXTENSIONS.has(ext)) {
+    return {
+      label: "Image Editor",
+      modulePath: "/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs",
+    };
+  }
+  return null;
+}
+
+function getImageEditorMode(linkedNotebookPath = "") {
+  const ext = inferExtensionFromPath(linkedNotebookPath);
+  if (SVG_IMAGE_EXTENSIONS.has(ext)) return "SVG Editing";
+  if (RASTER_IMAGE_EXTENSIONS.has(ext)) return "PNGediting";
+  return "GraphicalEditor";
+}
+
+function buildTemporaryImageEditPath(editorFilePath = "", extension = "png") {
+  const ext = String(extension || "png").toLowerCase();
+  const safeExt = NEW_IMAGE_MIME_BY_EXTENSION[ext] ? ext : "png";
+  const defaultDir = getDefaultNotebookImageDir(editorFilePath);
+  const tempName = `nv-inline-edit-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${safeExt}`;
+  return normalizeNotebookPathInput([defaultDir, tempName].filter(Boolean).join("/"));
+}
+
+function decorateInsertedImage(img, insertion) {
+  if (!(img instanceof HTMLImageElement)) return img;
+  img.classList.add("nv-editable-image");
+  if (insertion?.linkedNotebookPath) {
+    img.setAttribute("data-nv-linked-path", normalizeNotebookPathInput(insertion.linkedNotebookPath));
+  } else {
+    img.removeAttribute("data-nv-linked-path");
+  }
+  return img;
+}
+
+async function chooseImageInsertion(editorFilePath = "") {
+  const choice = classifyImageChoice(prompt(
+    "Insert image mode:\n1) Linked Notebook image (upload and save file)\n2) Inline image (embed in document)\n3) Existing Notebook image path\n4) External URL",
+    "1"
+  ));
+
+  if (choice === "linked-upload") {
+    const file = await pickLocalImageFile();
+    if (!file) return null;
+    const dataUrl = await readFileAsDataUrl(file);
+    const defaultDir = getDefaultNotebookImageDir(editorFilePath);
+    const defaultName = ensureFilenameExtension(sanitizeImageFilename(file.name), file.type);
+    const defaultPath = [defaultDir, defaultName].filter(Boolean).join("/");
+    const entered = prompt("Save linked image under Notebook path:", defaultPath);
+    if (!entered) return null;
+    const notebookPath = normalizeNotebookPathInput(entered);
+    if (!notebookPath) return null;
+    try {
+      await saveNotebookImageFromDataUrl(notebookPath, dataUrl);
+    } catch (err) {
+      alert(`Failed to save linked image: ${err.message}`);
+      return null;
+    }
+    return {
+      src: sourceFromNotebookPath(notebookPath, editorFilePath),
+      linkedNotebookPath: notebookPath,
+      mode: "linked-upload",
+    };
+  }
+
+  if (choice === "inline") {
+    const file = await pickLocalImageFile();
+    if (!file) return null;
+    const dataUrl = await readFileAsDataUrl(file);
+    return {
+      src: dataUrl,
+      linkedNotebookPath: "",
+      mode: "inline",
+    };
+  }
+
+  if (choice === "existing-notebook") {
+    const entered = prompt("Notebook image path (example: images/photo.png):", "");
+    if (!entered) return null;
+    const notebookPath = normalizeNotebookPathInput(entered);
+    if (!notebookPath) return null;
+    return {
+      src: sourceFromNotebookPath(notebookPath, editorFilePath),
+      linkedNotebookPath: notebookPath,
+      mode: "existing-notebook",
+    };
+  }
+
+  const external = prompt("External image URL:", "https://");
+  if (!external || !external.trim()) return null;
+  return {
+    src: external.trim(),
+    linkedNotebookPath: "",
+    mode: "external-url",
+  };
+}
+
+function markSelectedImage(wysiwyg, imageEl) {
+  wysiwyg.querySelectorAll(".nv-selected-image").forEach((img) => {
+    img.classList.remove("nv-selected-image");
+  });
+  wysiwyg.querySelectorAll(".nv-selected-image-item").forEach((item) => {
+    item.classList.remove("nv-selected-image-item");
+  });
+
+  if (!(imageEl instanceof HTMLImageElement)) return;
+  imageEl.classList.add("nv-selected-image");
+  const canvasItem = imageEl.closest(".nv-canvas-item");
+  if (canvasItem) canvasItem.classList.add("nv-selected-image-item");
+}
+
+function updateSelectedImageState(context) {
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activeHtmlImageContext = context || null;
+  updateToolbarState({
+    htmlImageSelected: Boolean(context && context.element),
+    htmlImagePath: context?.linkedNotebookPath || null,
+  });
+}
+
+async function openCropModalForImage(sourceUrl) {
+  const image = new Image();
+  image.crossOrigin = "anonymous";
+  image.src = sourceUrl;
+
+  await new Promise((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("Unable to load image for crop"));
+  });
+
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = [
+      "position:fixed",
+      "inset:0",
+      "background:rgba(0,0,0,0.6)",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
+      "z-index:25050",
+    ].join(";");
+
+    const box = document.createElement("div");
+    box.style.cssText = "background:#fff;padding:10px;max-width:90vw;max-height:90vh;overflow:auto;";
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    canvas.style.cssText = "max-width:80vw;max-height:70vh;cursor:crosshair;border:1px solid #999;";
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0);
+
+    let startX = 0;
+    let startY = 0;
+    let endX = 0;
+    let endY = 0;
+    let selecting = false;
+
+    function redrawSelection() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0);
+      const x = Math.min(startX, endX);
+      const y = Math.min(startY, endY);
+      const w = Math.abs(endX - startX);
+      const h = Math.abs(endY - startY);
+      if (w > 0 && h > 0) {
+        ctx.strokeStyle = "#e02020";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+      }
+    }
+
+    canvas.addEventListener("mousedown", (evt) => {
+      const rect = canvas.getBoundingClientRect();
+      selecting = true;
+      startX = evt.clientX - rect.left;
+      startY = evt.clientY - rect.top;
+      endX = startX;
+      endY = startY;
+    });
+
+    canvas.addEventListener("mousemove", (evt) => {
+      if (!selecting) return;
+      const rect = canvas.getBoundingClientRect();
+      endX = evt.clientX - rect.left;
+      endY = evt.clientY - rect.top;
+      redrawSelection();
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      selecting = false;
+      redrawSelection();
+    });
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;gap:8px;margin-top:8px;";
+
+    const cropBtn = document.createElement("button");
+    cropBtn.type = "button";
+    cropBtn.textContent = "Crop";
+    cropBtn.addEventListener("click", () => {
+      const x = Math.round(Math.min(startX, endX));
+      const y = Math.round(Math.min(startY, endY));
+      const w = Math.round(Math.abs(endX - startX));
+      const h = Math.round(Math.abs(endY - startY));
+      if (!w || !h) {
+        alert("Select an area to crop.");
+        return;
+      }
+      const out = document.createElement("canvas");
+      out.width = w;
+      out.height = h;
+      const outCtx = out.getContext("2d");
+      outCtx.drawImage(canvas, x, y, w, h, 0, 0, w, h);
+      document.body.removeChild(overlay);
+      resolve(out.toDataURL("image/png"));
+    });
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.addEventListener("click", () => {
+      document.body.removeChild(overlay);
+      resolve(null);
+    });
+
+    actions.appendChild(cropBtn);
+    actions.appendChild(cancelBtn);
+    box.appendChild(canvas);
+    box.appendChild(actions);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  });
+}
+
+function findClickedImage(target) {
+  if (!(target instanceof Element)) return null;
+  const direct = target.closest("img");
+  if (direct instanceof HTMLImageElement) return direct;
+  const item = target.closest(".nv-canvas-item");
+  if (!item) return null;
+  const nested = item.querySelector("img");
+  return nested instanceof HTMLImageElement ? nested : null;
+}
+
+function attachUndockedDragBehavior(container, header) {
+  let dragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+  let activePointerId = null;
+  let hasWindowDragListeners = false;
+  header.style.touchAction = "none";
+
+  const onPointerMove = (evt) => {
+    if (!dragging || evt.pointerId !== activePointerId) return;
+    container.style.left = `${evt.clientX - offsetX}px`;
+    container.style.top = `${evt.clientY - offsetY}px`;
+  };
+
+  const endDrag = (evt) => {
+    if (!dragging || evt.pointerId !== activePointerId) return;
+    dragging = false;
+    container.style.userSelect = "";
+    container.style.willChange = "";
+    try {
+      header.releasePointerCapture?.(evt.pointerId);
+    } catch (_) {
+      // No-op: window listeners handle cleanup as fallback.
+    }
+    activePointerId = null;
+    removeWindowDragListeners();
+  };
+
+  const onWindowBlur = () => {
+    if (!dragging) return;
+    dragging = false;
+    container.style.userSelect = "";
+    container.style.willChange = "";
+    activePointerId = null;
+    removeWindowDragListeners();
+  };
+
+  function addWindowDragListeners() {
+    if (hasWindowDragListeners) return;
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("pointerup", endDrag, true);
+    window.addEventListener("pointercancel", endDrag, true);
+    window.addEventListener("blur", onWindowBlur);
+    hasWindowDragListeners = true;
+  }
+
+  function removeWindowDragListeners() {
+    if (!hasWindowDragListeners) return;
+    window.removeEventListener("pointermove", onPointerMove, true);
+    window.removeEventListener("pointerup", endDrag, true);
+    window.removeEventListener("pointercancel", endDrag, true);
+    window.removeEventListener("blur", onWindowBlur);
+    hasWindowDragListeners = false;
+  }
+
+  header.addEventListener("pointerdown", (evt) => {
+    if (evt.target?.closest?.("button, a, input, select, textarea")) return;
+    dragging = true;
+    activePointerId = evt.pointerId;
+    const rect = container.getBoundingClientRect();
+    offsetX = evt.clientX - rect.left;
+    offsetY = evt.clientY - rect.top;
+    container.style.userSelect = "none";
+    container.style.willChange = "left, top";
+    addWindowDragListeners();
+    try {
+      header.setPointerCapture?.(evt.pointerId);
+    } catch (_) {
+      // No-op: window listeners still keep drag active.
+    }
+    evt.preventDefault();
+  });
+}
+
+function createUndockedEditorPanel(title = "Image Editor") {
+  const floatingEl = document.createElement("div");
+  floatingEl.className = "undocked-panel-float";
+  floatingEl.style.left = `${Math.max(20, Math.round(window.innerWidth * 0.2))}px`;
+  floatingEl.style.top = `${Math.max(20, Math.round(window.innerHeight * 0.15))}px`;
+
+  const header = document.createElement("div");
+  header.className = "undocked-panel-header";
+
+  const titleSpan = document.createElement("span");
+  titleSpan.textContent = title;
+  header.appendChild(titleSpan);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.textContent = "Close";
+  closeBtn.style.cssText = "font:11px monospace;padding:2px 8px;border:1px solid #666;background:#eee;cursor:pointer;display:none;";
+  header.appendChild(closeBtn);
+
+  const body = document.createElement("div");
+  body.className = "undocked-panel-body";
+  body.style.padding = "0";
+
+  floatingEl.appendChild(header);
+  floatingEl.appendChild(body);
+  document.body.appendChild(floatingEl);
+  attachUndockedDragBehavior(floatingEl, header);
+
+  return { floatingEl, body, closeBtn };
+}
+
+function readBlobAsDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Failed to convert blob to data URL"));
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read blob"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function getNotebookPathFromSourceInput(rawSource = "", editorFilePath = "") {
+  const source = String(rawSource || "").trim();
+  if (!source || source.startsWith("data:")) return "";
+
+  if (/^(https?:)?\/\//i.test(source)) {
+    try {
+      const url = new URL(source, window.location.origin);
+      if (url.origin === window.location.origin && url.pathname.startsWith("/Notebook/")) {
+        return normalizeNotebookPathInput(url.pathname);
+      }
+    } catch {
+      return "";
+    }
+    return "";
+  }
+
+  if (source.startsWith("/Notebook/") || source.startsWith("Notebook/") || source.startsWith("/")) {
+    return normalizeNotebookPathInput(source);
+  }
+
+  if (isVirtualEditorPath(editorFilePath)) {
+    return normalizeNotebookPathInput(source);
+  }
+
+  const editorDir = dirname(normalizeNotebookPathInput(editorFilePath));
+  return normalizeNotebookPathInput(resolveRelativePath(editorDir, source));
+}
+
+async function sourceInputToInlineDataUrl(rawSource = "", editorFilePath = "") {
+  const source = String(rawSource || "").trim();
+  if (!source) throw new Error("Source is required");
+  if (source.startsWith("data:image/")) return source;
+
+  const notebookPath = getNotebookPathFromSourceInput(source, editorFilePath);
+  const fetchUrl = notebookPath ? encodeNotebookUrl(notebookPath) : source;
+
+  const res = await fetch(fetchUrl, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Failed to load image source (${res.status} ${res.statusText})`);
+  }
+  const blob = await res.blob();
+  return readBlobAsDataUrl(blob);
+}
+
+function clampImageDimension(rawValue, fallback = 512) {
+  const parsed = Number.parseInt(String(rawValue || "").trim(), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(4096, parsed);
+}
+
+function normalizeNewImageFilename(rawName = "") {
+  const fallback = `image-${Date.now()}.png`;
+  let name = sanitizeImageFilename(String(rawName || "").trim() || fallback);
+  if (!inferExtensionFromPath(name)) {
+    name = `${name}.png`;
+  }
+  const ext = inferExtensionFromPath(name);
+  if (!NEW_IMAGE_MIME_BY_EXTENSION[ext]) {
+    name = `${name.replace(/\.[^.]+$/, "") || `image-${Date.now()}`}.png`;
+  }
+  return name;
+}
+
+function mimeTypeFromImageFilename(filename = "") {
+  const ext = inferExtensionFromPath(filename);
+  return NEW_IMAGE_MIME_BY_EXTENSION[ext] || "image/png";
+}
+
+function utf8ToBase64(value = "") {
+  const bytes = new TextEncoder().encode(String(value));
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary);
+}
+
+function createGeneratedImageDataUrl(filename = "", width = 512, height = 512) {
+  const mimeType = mimeTypeFromImageFilename(filename);
+  if (mimeType === "image/svg+xml") {
+    const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#ffffff"/></svg>`;
+    return `data:image/svg+xml;base64,${utf8ToBase64(svgMarkup)}`;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Unable to create image canvas.");
+  }
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  return canvas.toDataURL(mimeType);
+}
+
+async function createInsertImagePanel() {
+  const instanceId = "nv-insert-image-panel";
+  const existing = document.querySelector(`.panel[data-instance-id="${instanceId}"]`);
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+  const panelInst = await createPanelDOM(
+    "InsertImageFormPanel",
+    instanceId,
+    "GenericPanel",
+    { displayName: "Insert Image" }
+  );
+
+  document.body.appendChild(panelInst.panel);
+  panelInst.panel.__nvDefaultDockCell = (
+    window.activeCell &&
+    window.activeCell.classList?.contains("panel-cell")
+  ) ? window.activeCell : null;
+  if (panelInst.dockBtn && typeof panelInst.dockBtn.click === "function") {
+    panelInst.dockBtn.click();
+  }
+
+  panelInst.panel.style.width = "min(560px, 88vw)";
+  panelInst.panel.style.height = "auto";
+  panelInst.panel.style.maxHeight = "min(560px, 82vh)";
+  panelInst.panel.style.left = `${Math.max(20, Math.round(window.innerWidth * 0.2))}px`;
+  panelInst.panel.style.top = `${Math.max(20, Math.round(window.innerHeight * 0.15))}px`;
+  panelInst.panel.style.zIndex = "23000";
+  panelInst.panel.style.pointerEvents = "auto";
+  panelInst.content.style.padding = "10px";
+  panelInst.content.style.background = "#f8f8f8";
+  panelInst.content.style.overflow = "auto";
+  panelInst.content.innerHTML = "";
+
+  return {
+    panelEl: panelInst.panel,
+    body: panelInst.content,
+    closeBtn: panelInst.closeBtn,
+  };
+}
+
+async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange = null) {
+  const panel = await createInsertImagePanel();
+  const defaultDir = getDefaultNotebookImageDir(editorFilePath);
+
+  const form = document.createElement("form");
+  form.style.cssText = "display:flex;flex-direction:column;gap:10px;font:12px monospace;";
+
+  form.innerHTML = `
+    <fieldset style="border:1px solid #c6c6c6;padding:8px;">
+      <legend>Image Source</legend>
+      <label style="display:block;margin-bottom:6px;">
+        <input type="radio" name="nv-image-source" value="new" checked />
+        New Image
+      </label>
+      <label style="display:block;">
+        <input type="radio" name="nv-image-source" value="existing" />
+        Existing Image
+      </label>
+    </fieldset>
+
+    <fieldset style="border:1px solid #c6c6c6;padding:8px;">
+      <legend>Storage Mode</legend>
+      <label style="display:block;margin-bottom:6px;">
+        <input type="radio" name="nv-image-storage" value="referenced" checked />
+        Referenced (src points to file path)
+      </label>
+      <label style="display:block;">
+        <input type="radio" name="nv-image-storage" value="inline" />
+        Inline (embed as data URL)
+      </label>
+    </fieldset>
+
+    <div id="nv-new-image-fields" style="display:flex;flex-direction:column;gap:8px;">
+      <label>
+        New Image File Name
+        <input id="nv-insert-new-name" type="text" placeholder="image.png" style="display:block;width:100%;margin-top:4px;" />
+      </label>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <label style="flex:1;">
+          Width (px)
+          <input id="nv-insert-new-width" type="number" min="1" max="4096" value="512" style="display:block;width:100%;margin-top:4px;" />
+        </label>
+        <label style="flex:1;">
+          Height (px)
+          <input id="nv-insert-new-height" type="number" min="1" max="4096" value="512" style="display:block;width:100%;margin-top:4px;" />
+        </label>
+      </div>
+      <div id="nv-new-referenced-target" style="font-size:11px;color:#4b4b4b;"></div>
+    </div>
+
+    <div id="nv-existing-image-fields" style="display:none;flex-direction:column;gap:8px;">
+      <label>
+        Existing Source (Notebook path or URL)
+        <input id="nv-insert-existing-source" type="text" placeholder="images/example.png or https://..." style="display:block;width:100%;margin-top:4px;" />
+      </label>
+    </div>
+
+    <div id="nv-insert-image-error" style="color:#b00020;min-height:16px;"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button type="button" id="nv-insert-cancel">Cancel</button>
+      <button type="submit" id="nv-insert-apply">Insert</button>
+    </div>
+  `;
+
+  panel.body.appendChild(form);
+
+  const sourceRadios = Array.from(form.querySelectorAll('input[name="nv-image-source"]'));
+  const storageRadios = Array.from(form.querySelectorAll('input[name="nv-image-storage"]'));
+  const newFields = form.querySelector("#nv-new-image-fields");
+  const existingFields = form.querySelector("#nv-existing-image-fields");
+  const newNameInput = form.querySelector("#nv-insert-new-name");
+  const newWidthInput = form.querySelector("#nv-insert-new-width");
+  const newHeightInput = form.querySelector("#nv-insert-new-height");
+  const newReferencedTarget = form.querySelector("#nv-new-referenced-target");
+  const existingSourceInput = form.querySelector("#nv-insert-existing-source");
+  const errorEl = form.querySelector("#nv-insert-image-error");
+  const cancelBtn = form.querySelector("#nv-insert-cancel");
+  const applyBtn = form.querySelector("#nv-insert-apply");
+
+  const closePanel = () => {
+    if (panel.panelEl.parentNode) panel.panelEl.parentNode.removeChild(panel.panelEl);
+  };
+
+  panel.closeBtn.addEventListener("click", closePanel, { once: true });
+  cancelBtn.addEventListener("click", closePanel);
+
+  const selectedValue = (radios) => {
+    const checked = radios.find((radio) => radio.checked);
+    return checked ? checked.value : "";
+  };
+
+  const updateReferencedTargetHint = () => {
+    const sourceMode = selectedValue(sourceRadios);
+    const storageMode = selectedValue(storageRadios);
+    if (sourceMode !== "new" || storageMode !== "referenced") {
+      newReferencedTarget.textContent = "";
+      return;
+    }
+    const filename = normalizeNewImageFilename(newNameInput.value);
+    const notebookPath = normalizeNotebookPathInput([defaultDir, filename].filter(Boolean).join("/"));
+    newReferencedTarget.textContent = notebookPath
+      ? `Will save to: ${notebookPath}`
+      : "Will save to the current editor folder.";
+  };
+
+  const syncVisibility = () => {
+    const sourceMode = selectedValue(sourceRadios);
+    newFields.style.display = sourceMode === "new" ? "flex" : "none";
+    existingFields.style.display = sourceMode === "existing" ? "flex" : "none";
+    updateReferencedTargetHint();
+  };
+
+  sourceRadios.forEach((radio) => radio.addEventListener("change", syncVisibility));
+  storageRadios.forEach((radio) => radio.addEventListener("change", syncVisibility));
+  newNameInput.addEventListener("input", updateReferencedTargetHint);
+
+  if (!newNameInput.value.trim()) {
+    newNameInput.value = `image-${Date.now()}.png`;
+  }
+  syncVisibility();
+
+  form.addEventListener("submit", async (evt) => {
+    evt.preventDefault();
+    errorEl.textContent = "";
+    applyBtn.disabled = true;
+
+    try {
+      const sourceMode = selectedValue(sourceRadios);
+      const storageMode = selectedValue(storageRadios);
+      let insertion = null;
+
+      if (sourceMode === "new") {
+        const filename = normalizeNewImageFilename(newNameInput.value);
+        const width = clampImageDimension(newWidthInput.value, 512);
+        const height = clampImageDimension(newHeightInput.value, 512);
+        const dataUrl = createGeneratedImageDataUrl(filename, width, height);
+
+        if (storageMode === "inline") {
+          insertion = { src: dataUrl, linkedNotebookPath: "", mode: "inline-new" };
+        } else {
+          const notebookPath = normalizeNotebookPathInput([defaultDir, filename].filter(Boolean).join("/"));
+          if (!notebookPath) throw new Error("Could not resolve referenced image path.");
+          await saveNotebookImageFromDataUrl(notebookPath, dataUrl);
+          insertion = {
+            src: sourceFromNotebookPath(notebookPath, editorFilePath),
+            linkedNotebookPath: notebookPath,
+            mode: "referenced-new",
+          };
+        }
+      } else {
+        const existingSource = String(existingSourceInput.value || "").trim();
+        if (!existingSource) throw new Error("Enter an existing image source.");
+
+        if (storageMode === "inline") {
+          const inlineDataUrl = await sourceInputToInlineDataUrl(existingSource, editorFilePath);
+          insertion = { src: inlineDataUrl, linkedNotebookPath: "", mode: "inline-existing" };
+        } else {
+          const notebookPath = getNotebookPathFromSourceInput(existingSource, editorFilePath);
+          if (notebookPath) {
+            insertion = {
+              src: sourceFromNotebookPath(notebookPath, editorFilePath),
+              linkedNotebookPath: notebookPath,
+              mode: "referenced-existing",
+            };
+          } else {
+            insertion = { src: existingSource, linkedNotebookPath: "", mode: "referenced-existing" };
+          }
+        }
+      }
+
+      const img = createImageElementFromInsertion(insertion);
+      if (!img) throw new Error("Failed to prepare image insertion.");
+      insertNodeAtCaret(wysiwyg, img, { preferredRange: preferredInsertRange });
+      markSelectedImage(wysiwyg, img);
+      updateSelectedImageState(buildImageContextFromElement(img, editorFilePath));
+      closePanel();
+    } catch (err) {
+      errorEl.textContent = err?.message || String(err);
+    } finally {
+      applyBtn.disabled = false;
+    }
+  });
+}
+
+async function ensureLinkedImageForEditor(context, editorFilePath) {
+  if (!context) return null;
+  if (context.linkedNotebookPath) return context.linkedNotebookPath;
+  if (!context.isInline) return null;
+
+  const dataUrl = context.element?.getAttribute("src") || "";
+  if (!dataUrl.startsWith("data:image/")) return null;
+
+  const parsed = parseDataUrl(dataUrl);
+  if (!parsed) return null;
+
+  const defaultDir = getDefaultNotebookImageDir(editorFilePath);
+  const ext = inferExtensionFromMime(parsed.mimeType) || "png";
+  const suggested = [defaultDir, `image-${Date.now()}.${ext}`].filter(Boolean).join("/");
+  const entered = prompt("Save inline image to Notebook before opening editor:", suggested);
+  if (!entered) return null;
+  const notebookPath = normalizeNotebookPathInput(entered);
+  if (!notebookPath) return null;
+  await saveNotebookImageFromDataUrl(notebookPath, dataUrl);
+
+  context.element.setAttribute("src", sourceFromNotebookPath(notebookPath, editorFilePath));
+  context.element.setAttribute("data-nv-linked-path", notebookPath);
+  context.linkedNotebookPath = notebookPath;
+  context.isInline = false;
+  return notebookPath;
+}
+
+async function prepareImageForUndockedEditor(context, editorFilePath) {
+  if (!context?.element) return null;
+
+  const linkedPath = context.linkedNotebookPath || "";
+  if (linkedPath) {
+    return {
+      editorPath: linkedPath,
+      temporaryPath: null,
+    };
+  }
+
+  const source = context.element.getAttribute("src") || context.element.currentSrc || "";
+  if (!source.startsWith("data:image/")) return null;
+
+  const parsed = parseDataUrl(source);
+  const extension = inferExtensionFromMime(parsed?.mimeType || "") || context.extension || "png";
+  const temporaryPath = buildTemporaryImageEditPath(editorFilePath, extension);
+  await saveNotebookImageFromDataUrl(temporaryPath, source);
+  return {
+    editorPath: temporaryPath,
+    temporaryPath,
+  };
+}
+
+function registerImageInteractionTools(wysiwyg, editorFilePath) {
+  let inlineEditorSession = null;
+
+  const showEditorSubToolbarForMode = (mode) => {
+    let heading = "";
+    if (mode === "PNGediting") heading = "Draw";
+    if (mode === "SVG Editing") heading = "Edit";
+    if (!heading) return;
+    window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+      detail: {
+        heading,
+        force: false,
+        toggle: false,
+      },
+    }));
+  };
+
+  const restoreGlobalEditorFileContext = (snapshot = {}) => {
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.selectedFile = snapshot.previousSelectedFile || null;
+    window.NodevisionState.activeEditorFilePath = snapshot.previousActiveEditorFilePath || null;
+    window.currentActiveFilePath = snapshot.previousCurrentActiveFilePath || null;
+    window.filePath = snapshot.previousFilePath || null;
+    window.selectedFilePath = snapshot.previousSelectedFilePath || null;
+  };
+
+  const restoreGlobalEditorRuntime = (snapshot = {}) => {
+    window.getEditorHTML = snapshot.previousGetEditorHTML;
+    window.setEditorHTML = snapshot.previousSetEditorHTML;
+    window.saveWYSIWYGFile = snapshot.previousSaveWYSIWYGFile;
+    window.selectSVGElement = snapshot.previousSelectSVGElement;
+    window.SVGEditorContext = snapshot.previousSVGEditorContext;
+    window.toggleSVGLayersPanel = snapshot.previousToggleSVGLayersPanel;
+    window.rasterCanvas = snapshot.previousRasterCanvas || null;
+  };
+
+  const onClick = (evt) => {
+    if (inlineEditorSession?.frame && inlineEditorSession.frame.contains(evt.target)) {
+      return;
+    }
+    const imageEl = findClickedImage(evt.target);
+    if (imageEl && wysiwyg.contains(imageEl)) {
+      const context = buildImageContextFromElement(imageEl, editorFilePath);
+      markSelectedImage(wysiwyg, imageEl);
+      updateSelectedImageState(context);
+      return;
+    }
+    markSelectedImage(wysiwyg, null);
+    updateSelectedImageState(null);
+  };
+  wysiwyg.addEventListener("click", onClick);
+
+  const cropSelectedImage = async () => {
+    const context = window.NodevisionState?.activeHtmlImageContext;
+    if (!context?.element) {
+      alert("Select an image first.");
+      return;
+    }
+
+    let croppedDataUrl = null;
+    try {
+      croppedDataUrl = await openCropModalForImage(context.element.src);
+    } catch (err) {
+      alert(`Crop failed: ${err.message}`);
+      return;
+    }
+    if (!croppedDataUrl) return;
+
+    if (context.linkedNotebookPath) {
+      const mode = prompt(
+        "Save cropped result:\n1) Overwrite linked Notebook image\n2) Keep inline in this document",
+        "1"
+      );
+      if (String(mode || "").trim() === "1") {
+        try {
+          await saveNotebookImageFromDataUrl(context.linkedNotebookPath, croppedDataUrl);
+          context.element.setAttribute("src", sourceFromNotebookPath(context.linkedNotebookPath, editorFilePath));
+          context.element.setAttribute("data-nv-linked-path", context.linkedNotebookPath);
+        } catch (err) {
+          alert(`Failed to overwrite linked image: ${err.message}`);
+          return;
+        }
+      } else {
+        context.element.setAttribute("src", croppedDataUrl);
+        context.element.removeAttribute("data-nv-linked-path");
+      }
+    } else {
+      context.element.setAttribute("src", croppedDataUrl);
+      context.element.removeAttribute("data-nv-linked-path");
+    }
+
+    const refreshed = buildImageContextFromElement(context.element, editorFilePath);
+    updateSelectedImageState(refreshed);
+    markSelectedImage(wysiwyg, context.element);
+  };
+
+  const closeInlineImageEditor = async ({ applyChanges = true } = {}) => {
+    const session = inlineEditorSession;
+    if (!session) return;
+    inlineEditorSession = null;
+
+    if (applyChanges) {
+      try {
+        const ext = inferExtensionFromPath(session.editorPath);
+        if (RASTER_IMAGE_EXTENSIONS.has(ext)) {
+          const canvas = session.inlineRasterCanvas || window.rasterCanvas;
+          if (canvas instanceof HTMLCanvasElement && session.host.contains(canvas)) {
+            await saveNotebookImageFromDataUrl(session.editorPath, canvas.toDataURL("image/png"));
+          }
+        } else if (SVG_IMAGE_EXTENSIONS.has(ext)) {
+          const serializer = session.inlineGetEditorHTML ||
+            (typeof window.getEditorHTML === "function" ? window.getEditorHTML : null);
+          if (typeof serializer === "function") {
+            const svgMarkup = serializer();
+            if (typeof svgMarkup === "string" && svgMarkup.trim()) {
+              await saveNotebookText(session.editorPath, svgMarkup, "image/svg+xml");
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to save inline image editor changes:", err);
+      }
+    }
+
+    if (typeof session.editorCleanup === "function") {
+      try {
+        session.editorCleanup();
+      } catch (err) {
+        console.warn("Inline image editor cleanup failed:", err);
+      }
+    }
+
+    if (session.targetImage) {
+      try {
+        if (session.temporaryPath) {
+          const inlineUpdated = await sourceInputToInlineDataUrl(
+            encodeNotebookUrl(session.temporaryPath),
+            editorFilePath,
+          );
+          session.targetImage.setAttribute("src", inlineUpdated);
+          session.targetImage.removeAttribute("data-nv-linked-path");
+        } else {
+          const preservedSrc = String(session.originalSrcAttribute || "").trim();
+          const fallbackSrc = sourceFromNotebookPath(session.editorPath, editorFilePath);
+          session.targetImage.setAttribute("src", preservedSrc || fallbackSrc);
+          session.targetImage.setAttribute(
+            "data-nv-linked-path",
+            normalizeNotebookPathInput(session.editorPath),
+          );
+        }
+      } catch (err) {
+        console.warn("Failed to sync edited image back into document:", err);
+      }
+    }
+
+    if (session.frame?.isConnected && session.targetImage) {
+      session.frame.replaceWith(session.targetImage);
+    }
+
+    restoreGlobalEditorFileContext(session);
+    restoreGlobalEditorRuntime(session);
+    window.NodevisionState.htmlImageEditingInline = false;
+    window.NodevisionState.htmlInlineImageEditorMode = null;
+    updateToolbarState({
+      currentMode: session.previousMode,
+      htmlImageSelected: Boolean(session.targetImage?.isConnected),
+      htmlImagePath: session.temporaryPath ? null : session.editorPath,
+      htmlImageEditingInline: false,
+      htmlInlineImageEditorMode: null,
+    });
+    if (session.targetImage?.isConnected) {
+      markSelectedImage(wysiwyg, session.targetImage);
+      updateSelectedImageState(
+        buildImageContextFromElement(session.targetImage, editorFilePath),
+      );
+      window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+        detail: {
+          heading: "Edit Image Here",
+          force: false,
+          toggle: false,
+        },
+      }));
+    }
+  };
+
+  const toggleSelectedImageInlineEditor = async () => {
+    const context = window.NodevisionState?.activeHtmlImageContext;
+    if (!context?.element) {
+      alert("Select an image first.");
+      return;
+    }
+
+    const targetImage = context.element;
+    if (inlineEditorSession?.targetImage === targetImage) {
+      await closeInlineImageEditor({ applyChanges: true });
+      return;
+    }
+    if (inlineEditorSession) {
+      await closeInlineImageEditor({ applyChanges: true });
+    }
+
+    let prepared = null;
+    try {
+      prepared = await prepareImageForUndockedEditor(context, editorFilePath);
+    } catch (err) {
+      alert(`Failed to prepare image for editor: ${err.message}`);
+      return;
+    }
+    if (!prepared?.editorPath) {
+      alert("Selected image cannot be edited yet. Use a linked or inline Notebook-supported image.");
+      return;
+    }
+    const linkedPath = prepared.editorPath;
+    const temporaryPath = prepared.temporaryPath || null;
+
+    const editorDescriptor = getImageEditorDescriptor(linkedPath);
+    if (!editorDescriptor) {
+      alert("No image editor is available for this file type.");
+      return;
+    }
+
+    const targetRect = targetImage.getBoundingClientRect();
+    const fallbackWidth = targetImage.clientWidth || targetImage.width || targetImage.naturalWidth || 320;
+    const fallbackHeight = targetImage.clientHeight || targetImage.height || targetImage.naturalHeight || 240;
+    const editorWidth = Math.max(80, Math.round(targetRect.width || fallbackWidth));
+    const editorHeight = Math.max(80, Math.round(targetRect.height || fallbackHeight));
+    const targetDisplay = window.getComputedStyle(targetImage).display;
+    const frameDisplay = targetDisplay && targetDisplay !== "inline" ? targetDisplay : "inline-block";
+
+    const frame = document.createElement("div");
+    frame.className = "panel nv-inline-image-editor-frame nv-inline-embedded-panel";
+    frame.dataset.nvPanelMode = "embedded";
+    frame.dataset.panelClass = "EmbeddedPanel";
+    frame.style.cssText = [
+      "position:relative",
+      `display:${frameDisplay}`,
+      "vertical-align:middle",
+      `width:${editorWidth}px`,
+      `height:${editorHeight}px`,
+      "max-width:100%",
+      "overflow:hidden",
+      "border:1px solid #6a7f9c",
+      "background:#fff",
+      "box-sizing:border-box",
+    ].join(";");
+
+    const panelHeader = document.createElement("div");
+    panelHeader.className = "panel-header nv-inline-embedded-panel-header";
+    const panelTitle = document.createElement("span");
+    panelTitle.className = "nv-inline-embedded-panel-title";
+    panelTitle.textContent = "Embedded Image Editor";
+    panelHeader.appendChild(panelTitle);
+
+    const panelControls = document.createElement("div");
+    panelControls.className = "nv-inline-embedded-panel-controls";
+    const finishBtn = document.createElement("button");
+    finishBtn.type = "button";
+    finishBtn.textContent = "Finish";
+    finishBtn.addEventListener("click", () => {
+      closeInlineImageEditor({ applyChanges: true });
+    });
+    panelControls.appendChild(finishBtn);
+    panelHeader.appendChild(panelControls);
+    frame.appendChild(panelHeader);
+
+    const body = document.createElement("div");
+    body.className = "nv-inline-embedded-panel-content";
+    frame.appendChild(body);
+
+    const host = document.createElement("div");
+    host.className = "nv-inline-image-editor-host";
+    host.style.cssText = "position:absolute;inset:0;overflow:hidden;";
+    body.appendChild(host);
+
+    if (targetImage.parentNode) {
+      targetImage.replaceWith(frame);
+    } else {
+      alert("Unable to place inline editor for selected image.");
+      return;
+    }
+
+    const previousMode = window.NodevisionState?.currentMode || "HTMLediting";
+    const previousSelectedFile = window.NodevisionState?.selectedFile || null;
+    const previousActiveEditorFilePath = window.NodevisionState?.activeEditorFilePath || null;
+    const previousCurrentActiveFilePath = window.currentActiveFilePath || null;
+    const previousFilePath = window.filePath || null;
+    const previousSelectedFilePath = window.selectedFilePath || null;
+    const previousGetEditorHTML = window.getEditorHTML;
+    const previousSetEditorHTML = window.setEditorHTML;
+    const previousSaveWYSIWYGFile = window.saveWYSIWYGFile;
+    const previousSelectSVGElement = window.selectSVGElement;
+    const previousSVGEditorContext = window.SVGEditorContext;
+    const previousToggleSVGLayersPanel = window.toggleSVGLayersPanel;
+    const previousRasterCanvas = window.rasterCanvas || null;
+
+    const editorMode = getImageEditorMode(linkedPath);
+    panelTitle.textContent = editorMode === "SVG Editing"
+      ? "Embedded SVG Editor"
+      : "Embedded Raster Editor";
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.htmlImageEditingInline = true;
+    window.NodevisionState.htmlInlineImageEditorMode = editorMode;
+    updateToolbarState({
+      currentMode: previousMode,
+      htmlImageSelected: true,
+      htmlImagePath: temporaryPath ? null : linkedPath,
+      htmlImageEditingInline: true,
+      htmlInlineImageEditorMode: editorMode,
+    });
+    showEditorSubToolbarForMode(editorMode);
+
+    let editorCleanup = null;
+
+    try {
+      const mod = await import(editorDescriptor.modulePath);
+      if (typeof mod.renderEditor !== "function") {
+        throw new Error("Editor module missing renderEditor()");
+      }
+      const instance = await mod.renderEditor(linkedPath, host);
+      const inlineGetEditorHTML = typeof window.getEditorHTML === "function"
+        ? window.getEditorHTML
+        : null;
+      const inlineRasterCanvas = window.rasterCanvas instanceof HTMLCanvasElement
+        ? window.rasterCanvas
+        : host.querySelector("canvas");
+
+      restoreGlobalEditorFileContext({
+        previousSelectedFile,
+        previousActiveEditorFilePath,
+        previousCurrentActiveFilePath,
+        previousFilePath,
+        previousSelectedFilePath,
+      });
+      window.getEditorHTML = previousGetEditorHTML;
+      window.setEditorHTML = previousSetEditorHTML;
+      window.saveWYSIWYGFile = previousSaveWYSIWYGFile;
+      window.selectSVGElement = previousSelectSVGElement;
+      window.SVGEditorContext = previousSVGEditorContext;
+      window.toggleSVGLayersPanel = previousToggleSVGLayersPanel;
+      window.rasterCanvas = inlineRasterCanvas || null;
+      window.NodevisionState.currentMode = previousMode;
+      window.NodevisionState.htmlImageEditingInline = true;
+      window.NodevisionState.htmlInlineImageEditorMode = editorMode;
+      showEditorSubToolbarForMode(editorMode);
+
+      if (editorMode === "PNGediting") {
+        const inlineCanvas = inlineRasterCanvas || host.querySelector("canvas");
+        if (inlineCanvas instanceof HTMLCanvasElement) {
+          inlineCanvas.style.width = "100%";
+          inlineCanvas.style.height = "100%";
+          inlineCanvas.style.display = "block";
+        }
+      }
+      if (instance && typeof instance.destroy === "function") {
+        editorCleanup = instance.destroy;
+      }
+      inlineEditorSession = {
+        targetImage,
+        originalSrcAttribute: targetImage.getAttribute("src") || "",
+        frame,
+        host,
+        editorPath: linkedPath,
+        temporaryPath,
+        previousMode,
+        previousSelectedFile,
+        previousActiveEditorFilePath,
+        previousCurrentActiveFilePath,
+        previousFilePath,
+        previousSelectedFilePath,
+        previousGetEditorHTML,
+        previousSetEditorHTML,
+        previousSaveWYSIWYGFile,
+        previousSelectSVGElement,
+        previousSVGEditorContext,
+        previousToggleSVGLayersPanel,
+        previousRasterCanvas,
+        inlineGetEditorHTML,
+        inlineRasterCanvas: inlineRasterCanvas || null,
+        editorCleanup,
+      };
+    } catch (err) {
+      if (frame.isConnected && targetImage) {
+        frame.replaceWith(targetImage);
+      }
+      restoreGlobalEditorFileContext({
+        previousSelectedFile,
+        previousActiveEditorFilePath,
+        previousCurrentActiveFilePath,
+        previousFilePath,
+        previousSelectedFilePath,
+      });
+      restoreGlobalEditorRuntime({
+        previousGetEditorHTML,
+        previousSetEditorHTML,
+        previousSaveWYSIWYGFile,
+        previousSelectSVGElement,
+        previousSVGEditorContext,
+        previousToggleSVGLayersPanel,
+        previousRasterCanvas,
+      });
+      updateToolbarState({
+        currentMode: previousMode,
+        htmlImageSelected: true,
+        htmlImagePath: context?.linkedNotebookPath || null,
+        htmlImageEditingInline: false,
+        htmlInlineImageEditorMode: null,
+      });
+      window.NodevisionState.htmlImageEditingInline = false;
+      window.NodevisionState.htmlInlineImageEditorMode = null;
+      alert(`Failed to open editor: ${err.message}`);
+    }
+  };
+
+  const openSelectedImageEditorUndocked = async () => {
+    await toggleSelectedImageInlineEditor();
+  };
+
+  const finishInlineImageEditor = async () => {
+    await closeInlineImageEditor({ applyChanges: true });
+  };
+
+  const cancelInlineImageEditor = async () => {
+    await closeInlineImageEditor({ applyChanges: false });
+  };
+
+  return {
+    cropSelectedImage,
+    toggleSelectedImageInlineEditor,
+    openSelectedImageEditorUndocked,
+    finishInlineImageEditor,
+    cancelInlineImageEditor,
+    isInlineImageEditorOpen() {
+      return Boolean(inlineEditorSession);
+    },
+    destroy() {
+      void closeInlineImageEditor({ applyChanges: false });
+      wysiwyg.removeEventListener("click", onClick);
+      markSelectedImage(wysiwyg, null);
+      updateSelectedImageState(null);
+    },
+  };
+}
+
+function createImageElementFromInsertion(insertion) {
+  if (!insertion?.src) return null;
+  const img = document.createElement("img");
+  img.src = insertion.src;
+  img.alt = "Inserted image";
+  return decorateInsertedImage(img, insertion);
+}
+
+function attachCanvasTools(canvas, editorFilePath) {
   let tools = canvas.querySelector(".nv-canvas-tools");
   if (!tools) {
     tools = document.createElement("div");
@@ -520,12 +2153,9 @@ function attachCanvasTools(canvas) {
     };
 
     const addImageBlock = async () => {
-      const src = await chooseImageSource();
-      if (!src) return;
-
-      const img = document.createElement("img");
-      img.src = src;
-      img.alt = "Inserted media";
+      const insertion = await chooseImageInsertion(editorFilePath);
+      const img = createImageElementFromInsertion(insertion);
+      if (!img) return;
       const item = createCanvasItem({
         typeLabel: "Media",
         x: 40 + canvas.querySelectorAll(".nv-canvas-item").length * 14,
@@ -545,13 +2175,13 @@ function attachCanvasTools(canvas) {
   }
 }
 
-function registerHTMLLayoutTools(wysiwyg) {
+function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
   const createLayoutCanvas = () => {
     const canvas = document.createElement("div");
     canvas.className = "nv-layout-canvas";
     canvas.setAttribute("contenteditable", "false");
 
-    attachCanvasTools(canvas);
+    attachCanvasTools(canvas, editorFilePath);
     ensureCanvasResizeHandles(canvas);
     makeLayoutCanvasResizable(canvas);
 
@@ -570,12 +2200,9 @@ function registerHTMLLayoutTools(wysiwyg) {
       canvas = insertLayoutCanvas();
     }
 
-    const src = await chooseImageSource();
-    if (!src) return;
-
-    const img = document.createElement("img");
-    img.src = src;
-    img.alt = "Inserted media";
+    const insertion = await chooseImageInsertion(editorFilePath);
+    const img = createImageElementFromInsertion(insertion);
+    if (!img) return;
     const item = createCanvasItem({
       typeLabel: "Media",
       x: 32 + canvas.querySelectorAll(".nv-canvas-item").length * 14,
@@ -589,17 +2216,24 @@ function registerHTMLLayoutTools(wysiwyg) {
     makeCanvasItemInteractive(item, canvas);
   };
 
+  const insertImageAtCaret = async () => {
+    const preferredRange = getCurrentSelectionRangeInEditor(wysiwyg) ||
+      getRememberedSelectionRange(wysiwyg);
+    await openInsertImageForm(wysiwyg, editorFilePath, preferredRange);
+  };
+
   window.HTMLWysiwygTools = {
+    insertImageAtCaret,
     insertLayoutCanvas,
     insertPositionableImage,
   };
 }
 
-function rehydrateLayoutCanvases(wysiwyg) {
+function rehydrateLayoutCanvases(wysiwyg, editorFilePath) {
   const canvases = wysiwyg.querySelectorAll(".nv-layout-canvas");
   canvases.forEach((canvas) => {
     canvas.setAttribute("contenteditable", "false");
-    attachCanvasTools(canvas);
+    attachCanvasTools(canvas, editorFilePath);
     ensureCanvasResizeHandles(canvas);
     makeLayoutCanvasResizable(canvas);
     canvas.querySelectorAll(".nv-canvas-item").forEach((item) => {
@@ -767,18 +2401,36 @@ function registerHTMLFallbackHotkeys(wysiwyg, filePath, rootElem) {
 // Main HTML Editor
 // --------------------------------------------------
 
-export async function renderEditor(filePath, container) {
+export async function renderEditor(filePath, container, options = {}) {
   if (!container) throw new Error("Container required");
   if (typeof container.__cleanupHTMLHotkeys === "function") {
     container.__cleanupHTMLHotkeys();
     container.__cleanupHTMLHotkeys = null;
   }
+  if (typeof container.__cleanupHTMLCanvasDeletion === "function") {
+    container.__cleanupHTMLCanvasDeletion();
+    container.__cleanupHTMLCanvasDeletion = null;
+  }
+  if (typeof container.__cleanupHTMLImageTools === "function") {
+    container.__cleanupHTMLImageTools();
+    container.__cleanupHTMLImageTools = null;
+  }
+  if (typeof container.__cleanupHTMLCaretTracking === "function") {
+    container.__cleanupHTMLCaretTracking();
+    container.__cleanupHTMLCaretTracking = null;
+  }
   container.innerHTML = "";
   ensureHTMLLayoutStyles();
 
   // Set mode
-  window.NodevisionState.currentMode = "HTMLediting";
-  updateToolbarState({ currentMode: "HTMLediting" });
+  const editorMode = options?.mode || "HTMLediting";
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.currentMode = editorMode;
+  updateToolbarState({
+    currentMode: editorMode,
+    htmlImageSelected: false,
+    htmlImagePath: null,
+  });
 
 
   // Root container
@@ -804,7 +2456,16 @@ export async function renderEditor(filePath, container) {
   hidden.id = "hidden-elements";
   hidden.style.display = "none";
   wrapper.appendChild(hidden);
-  registerHTMLLayoutTools(wysiwyg);
+  registerHTMLLayoutTools(wysiwyg, filePath);
+  const imageTools = registerImageInteractionTools(wysiwyg, filePath);
+  Object.assign(window.HTMLWysiwygTools || {}, {
+    cropSelectedImage: imageTools.cropSelectedImage,
+    toggleSelectedImageInlineEditor: imageTools.toggleSelectedImageInlineEditor,
+    openSelectedImageEditorUndocked: imageTools.openSelectedImageEditorUndocked,
+    finishInlineImageEditor: imageTools.finishInlineImageEditor,
+    cancelInlineImageEditor: imageTools.cancelInlineImageEditor,
+    isInlineImageEditorOpen: imageTools.isInlineImageEditorOpen,
+  });
 
   try {
     const res = await fetch(`/Notebook/${filePath}`);
@@ -876,6 +2537,10 @@ export async function renderEditor(filePath, container) {
           wysiwyg.appendChild(el.cloneNode(true));
         }
       }
+
+      rehydrateLayoutCanvases(wysiwyg, filePath);
+      markSelectedImage(wysiwyg, null);
+      updateSelectedImageState(null);
     };
 
     window.saveWYSIWYGFile = async (path) => {
@@ -894,14 +2559,13 @@ export async function renderEditor(filePath, container) {
     console.error(err);
   }
 
-  rehydrateLayoutCanvases(wysiwyg);
+  rehydrateLayoutCanvases(wysiwyg, filePath);
 
   // --------------------------------------------------
   // Enable fallback hotkeys
   // --------------------------------------------------
   container.__cleanupHTMLHotkeys = registerHTMLFallbackHotkeys(wysiwyg, filePath, wrapper);
-  if (typeof container.__cleanupHTMLCanvasDeletion === "function") {
-    container.__cleanupHTMLCanvasDeletion();
-  }
   container.__cleanupHTMLCanvasDeletion = registerCanvasDeletionHotkeys(wysiwyg);
+  container.__cleanupHTMLImageTools = imageTools.destroy;
+  container.__cleanupHTMLCaretTracking = registerCaretTracking(wysiwyg);
 }

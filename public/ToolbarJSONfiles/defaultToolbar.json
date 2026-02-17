@@ -13,7 +13,7 @@
     "heading": "Insert",
     "icon": "/icons/Insert.svg",
     "callbackKey": "fileMenu",
-    "modes": ["HTMLediting", "MIDIediting"]
+    "modes": ["HTMLediting", "EPUBediting", "MIDIediting"]
   },
   {
     "heading": "Draw",

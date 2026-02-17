@@ -218,6 +218,11 @@
 /* Header buttons small styling (if you prefer CSS instead of inline) */
 .panel-header button { font-size: 12px; }
 
+/* Layout controls are routed via the View -> Layout Controls sub-toolbar */
+.panel-header .panel-controls {
+  display: none !important;
+}
+
 /* Resize handle is positioned by JS but you can tweak */
 .resize-handle { background:#777; border-radius:2px; }
 

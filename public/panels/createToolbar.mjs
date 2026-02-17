@@ -22,6 +22,92 @@ window.NodevisionState = window.NodevisionState || {
   activeActionHandler: null,
 };
 
+if (!window.__nvShowSubToolbarEventBound) {
+  window.addEventListener("nv-show-subtoolbar", (evt) => {
+    const detail = evt?.detail || {};
+    const heading = detail.heading || "";
+    if (!heading) return;
+    showSubToolbar(heading, {
+      force: Boolean(detail.force),
+      toggle: detail.toggle !== false,
+    });
+  });
+  window.__nvShowSubToolbarEventBound = true;
+}
+
+function setActivePanelContextFromHeader(headerEl) {
+  if (!headerEl) return;
+
+  const panel = headerEl.closest(".panel");
+  const legacyUndocked = headerEl.closest(".undocked-panel-float");
+  const owningCell = (
+    panel?.closest(".panel-cell") ||
+    headerEl.closest(".panel-cell") ||
+    panel?.__nvDefaultDockCell ||
+    null
+  );
+
+  if (panel) {
+    window.__nvActivePanelElement = panel;
+    window.__nvActiveLegacyUndockedPanel = null;
+    window.activePanel = panel.dataset.instanceName || panel.dataset.instanceId || "Panel";
+    window.activePanelClass = panel.dataset.panelClass || "GenericPanel";
+  } else {
+    window.__nvActivePanelElement = null;
+    window.__nvActiveLegacyUndockedPanel = legacyUndocked || null;
+    if (legacyUndocked) {
+      window.activePanel = "UndockedPanel";
+      window.activePanelClass = "FloatingPanel";
+      window.NodevisionState.activePanelType = "FloatingPanel";
+    }
+  }
+
+  window.NodevisionState = window.NodevisionState || {};
+  if (window.activePanelClass) {
+    window.NodevisionState.activePanelType = window.activePanelClass;
+  }
+
+  if (owningCell && owningCell.classList?.contains("panel-cell")) {
+    window.activeCell = owningCell;
+    const panelIdFromCell = owningCell.dataset.id || window.activePanel || "Unknown";
+    const panelClassFromCell = owningCell.dataset.panelClass || window.activePanelClass || "InfoPanel";
+    window.activePanel = panelIdFromCell;
+    window.activePanelClass = panelClassFromCell;
+    window.NodevisionState.activePanelType = panelClassFromCell;
+
+    document.querySelectorAll(".panel-cell").forEach((c) => {
+      c.style.outline = "";
+    });
+    owningCell.style.outline = "2px solid #0078d7";
+
+    window.dispatchEvent(new CustomEvent("activePanelChanged", {
+      detail: {
+        panel: panelIdFromCell,
+        cell: owningCell,
+        panelClass: panelClassFromCell,
+      },
+    }));
+  } else {
+    window.activeCell = null;
+  }
+}
+
+if (!window.__nvPanelHeaderLayoutBound) {
+  document.addEventListener("click", (evt) => {
+    const header = evt.target?.closest?.(".panel-header, .undocked-panel-header");
+    if (!header) return;
+
+    if (evt.target?.closest?.("button, a, input, select, textarea")) return;
+
+    // Standard .panel headers manage their own click/drag suppression.
+    if (header.closest(".panel")) return;
+
+    setActivePanelContextFromHeader(header);
+    showSubToolbar("Layout Controls", { force: false, toggle: false });
+  }, true);
+  window.__nvPanelHeaderLayoutBound = true;
+}
+
 
 // === Helper: Check toolbar item conditions ===
 function checkToolbarConditions(item, state) {
@@ -156,6 +242,12 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
   // ✅ Prebuild dropdowns for each heading
   rebuildPrebuiltDropdowns();
 
+  // Prefer current Nodevision mode over the default argument when available.
+  const effectiveMode =
+    currentMode === "default" && window.NodevisionState?.currentMode
+      ? window.NodevisionState.currentMode
+      : currentMode;
+
   // ✅ Apply mode filtering before building toolbar
   const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
   const filteredToolbar = defaultToolbar.filter(item => {
@@ -163,18 +255,18 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
 // Support both "mode" and "modes"
 if (item.modes) {
   const allowed = Array.isArray(item.modes) ? item.modes : [item.modes];
-  return allowed.includes(currentMode);
+  return allowed.includes(effectiveMode);
 }
-if (item.mode) return item.mode === currentMode;
+if (item.mode) return item.mode === effectiveMode;
 return true;
   });
 
   // Build main toolbar from filtered items
   buildToolbar(toolbar, filteredToolbar);
 
-setStatus("Toolbar ready", `Mode: ${currentMode}`);
+setStatus("Toolbar ready", `Mode: ${effectiveMode}`);
 
-  console.log(`🧭 Toolbar built for mode: ${currentMode}`);
+  console.log(`🧭 Toolbar built for mode: ${effectiveMode}`);
 }
 
 
@@ -360,17 +452,16 @@ function buildDropdownFromItem(item) {
   const jsonName = `${normalizedHeading}Toolbar.json`;
   const subItems = toolbarDataCache[jsonName] || [];
 
-  // FIXED LOGIC:
-  // 1. First, try to find items explicitly assigned to this heading
-  let topItems = subItems.filter(i => i.parentHeading === item.heading);
-  
-  // 2. If no items match specifically, assume the whole file belongs to this dropdown
-  // (This supports your older File/Edit/Settings JSON structures)
-  if (topItems.length === 0) {
-    topItems = subItems.filter(i => !i.parentHeading);
-  }
+  const directChildren = subItems.filter((i) => i.parentHeading === item.heading);
+  const rootItems = subItems.filter((i) => !i.parentHeading);
+  const filterByState = (items) => items.filter((subItem) => checkToolbarConditions(subItem, state));
 
-  topItems = topItems.filter((subItem) => checkToolbarConditions(subItem, state));
+  // Prefer explicit children for this heading, but if none are valid in the
+  // current mode/state, fall back to top-level items in that toolbar file.
+  let topItems = directChildren.length ? filterByState(directChildren) : filterByState(rootItems);
+  if (!topItems.length && directChildren.length) {
+    topItems = filterByState(rootItems);
+  }
 
   // MIDI Insert menu should only show MIDI-scoped actions.
   if (state.currentMode === "MIDIediting" && item.heading === "Insert") {
@@ -472,11 +563,21 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 
 
 // === Show sub-toolbar ===
-function showSubToolbar(panelHeading) {
+function showSubToolbar(panelHeading, options = {}) {
   if (!subToolbarContainer) return;
+  const { force = false, toggle = true } = options || {};
   const state = window.NodevisionState || {};
 
-  if (currentSubToolbarHeading === panelHeading) {
+  if (
+    !force &&
+    currentSubToolbarHeading === panelHeading &&
+    subToolbarContainer.style.display !== "none" &&
+    subToolbarContainer.childElementCount > 0
+  ) {
+    return;
+  }
+
+  if (toggle && !force && currentSubToolbarHeading === panelHeading) {
     subToolbarContainer.style.display = "none";
     subToolbarContainer.innerHTML = "";
     currentSubToolbarHeading = null;
@@ -501,6 +602,10 @@ function showSubToolbar(panelHeading) {
 
   buildSubToolbar(items);
   currentSubToolbarHeading = panelHeading;
+}
+
+export function showToolbarSubToolbar(panelHeading, options = {}) {
+  showSubToolbar(panelHeading, options);
 }
 
 // === Update toolbar state dynamically ===

@@ -2,6 +2,19 @@
 // Toggles fullscreen for the active panel.
 
 export function toggleFullscreenPanel() {
+  if (window.__nvActiveLegacyUndockedPanel?.isConnected) {
+    return;
+  }
+
+  const activePanel = window.__nvActivePanelElement;
+  if (activePanel?.isConnected && activePanel.classList?.contains("panel")) {
+    const maxBtn = activePanel.querySelector(".panel-max-btn");
+    if (maxBtn && typeof maxBtn.click === "function") {
+      maxBtn.click();
+      return;
+    }
+  }
+
   const cell = window.activeCell;
   if (!cell) {
     console.warn("No active cell to fullscreen.");

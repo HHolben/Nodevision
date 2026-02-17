@@ -24,6 +24,35 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Edit Image Here",
+    "callbackKey": "editImageHere",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit Image Here",
+    "heading": "Crop Image",
+    "callbackKey": "cropSelectedImage",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit Image Here",
+    "heading": "Toggle Embedded Image Editor",
+    "callbackKey": "openSelectedImageEditorUndocked",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "Indent File",
     "callbackKey": "indentFile",
     "modes": ["Code Editing"]

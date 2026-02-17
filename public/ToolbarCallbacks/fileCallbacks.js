@@ -1,12 +1,37 @@
 // Nodevision/public/ToolbarCallbacks/fileCallbacks.js
 // Purpose: TODO: Add description of module purpose
 window.fileCallbacks = {
-saveFile: () => {
+saveFile: async () => {
   const filePath = window.currentActiveFilePath || window.filePath;
+  const mode = window.NodevisionState?.currentMode || window.currentMode || "";
+  const ext = String(filePath || "")
+    .replace(/[?#].*$/, "")
+    .split(".")
+    .pop()
+    .toLowerCase();
+  const isRasterPath = ["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext);
+  const isRasterMode = ["PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting"].includes(mode);
 
   if (!filePath) {
     console.error("Cannot save: filePath is missing.");
     return;
+  }
+
+  if (window.NodevisionState?.htmlImageEditingInline) {
+    if (typeof window.HTMLWysiwygTools?.finishInlineImageEditor !== "function") {
+      console.error("Inline image editor is active but cannot be finalized for document save.");
+      return;
+    }
+    try {
+      await window.HTMLWysiwygTools.finishInlineImageEditor();
+    } catch (inlineErr) {
+      console.warn("Failed to finalize inline image editor before save:", inlineErr);
+      return;
+    }
+    if (window.NodevisionState?.htmlImageEditingInline) {
+      console.error("Inline image editor is still active; aborting save to avoid corrupting document markup.");
+      return;
+    }
   }
 
   // Check if we're in SVG editing mode first
@@ -47,7 +72,10 @@ saveFile: () => {
   }
 
   // Check for raster editing mode
-  if (window.rasterCanvas && typeof window.saveRasterImage === 'function') {
+  if (!window.NodevisionState?.htmlImageEditingInline &&
+      (isRasterMode || isRasterPath) &&
+      window.rasterCanvas &&
+      typeof window.saveRasterImage === 'function') {
     console.log("Saving raster image file");
     window.saveRasterImage(filePath);
     return;

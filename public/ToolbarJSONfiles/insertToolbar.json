@@ -240,10 +240,18 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "heading": "Insert Image",
+      "insertGroup": "image",
+      "callbackKey": "insertImage",
+      "modes": ["HTMLediting", "EPUBediting"],
+      "icon": "icons/ImageIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
       "heading": "Insert Positionable Image",
       "insertGroup": "image",
       "callbackKey": "insertPositionableImage",
-      "modes": ["HTMLediting"],
+      "modes": ["HTMLediting", "EPUBediting"],
       "icon": "icons/ImageIcon.png"
     },
     {
@@ -251,7 +259,7 @@
       "heading": "Insert Layout Canvas",
       "insertGroup": "Layout",
       "callbackKey": "insertLayoutCanvas",
-      "modes": ["HTMLediting"],
+      "modes": ["HTMLediting", "EPUBediting"],
       "icon": "icons/InsertDivIcon.png"
     },
     {

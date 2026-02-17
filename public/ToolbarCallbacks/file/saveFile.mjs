@@ -1,6 +1,24 @@
 // Nodevision/public/ToolbarCallbacks/file/saveFile.mjs
 // Unified save callback for all supported editor modes.
 
+const RASTER_EDITING_MODES = new Set([
+  "PNGediting",
+  "JPGediting",
+  "JPEGediting",
+  "GIFediting",
+  "BMPediting",
+  "WEBPediting",
+]);
+
+const RASTER_FILE_EXTENSIONS = new Set([
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "bmp",
+  "webp",
+]);
+
 function resolveFilePath(preferredPath) {
   return (
     preferredPath ||
@@ -59,6 +77,15 @@ async function saveRasterCanvas(filePath) {
   return true;
 }
 
+function getFileExtension(pathValue = "") {
+  const clean = String(pathValue || "")
+    .trim()
+    .replace(/[?#].*$/, "");
+  const dot = clean.lastIndexOf(".");
+  if (dot === -1) return "";
+  return clean.slice(dot + 1).toLowerCase();
+}
+
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
@@ -86,9 +113,38 @@ export default async function saveFile(options = {}) {
       !!document.getElementById("wysiwyg") ||
       typeof window.getEditorHTML === "function";
     const inMidiEditor = mode === "MIDIediting";
+    const fileExt = getFileExtension(filePath);
+    const isRasterPath = RASTER_FILE_EXTENSIONS.has(fileExt);
+    const isRasterMode = RASTER_EDITING_MODES.has(mode);
+
+    // Inline image editing embeds raster/SVG editors into HTML/EPUB.
+    // Finalize that session first so save targets the parent document,
+    // not the temporary inline editor canvas path.
+    if (window.NodevisionState?.htmlImageEditingInline) {
+      if (typeof window.HTMLWysiwygTools?.finishInlineImageEditor !== "function") {
+        throw new Error("Inline image editor is active but cannot be finalized for document save.");
+      }
+      try {
+        await window.HTMLWysiwygTools.finishInlineImageEditor();
+      } catch (inlineErr) {
+        console.warn("[saveFile] Failed to finalize inline image editor before save:", inlineErr);
+        throw inlineErr;
+      }
+      if (window.NodevisionState?.htmlImageEditingInline) {
+        throw new Error("Inline image editor is still active; aborting save to avoid corrupting document markup.");
+      }
+    }
+
+    if (mode === "EPUBediting" && typeof window.saveWYSIWYGFile === "function") {
+      await window.saveWYSIWYGFile(filePath);
+      return true;
+    }
 
     // 1) Explicit editor state checks.
-    if (await saveRasterCanvas(filePath)) {
+    const canSaveRasterCanvas =
+      (isRasterMode || (isRasterPath && !inWysiwygEditor)) &&
+      !window.NodevisionState?.htmlImageEditingInline;
+    if (canSaveRasterCanvas && (await saveRasterCanvas(filePath))) {
       return true;
     }
     if (window.monacoEditor && typeof window.monacoEditor.getValue === "function") {

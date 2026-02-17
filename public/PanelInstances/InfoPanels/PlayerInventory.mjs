@@ -2,10 +2,13 @@
 // This is a reusable floating inventory panel shell for GameView and toolbar usage.
 
 export function createFloatingInventoryPanel({ title = "Inventory", onRequestClose = null } = {}) {
+  let highlightedSnapTarget = null;
+
   function clearTargetHighlight() {
-    document.querySelectorAll(".undock-snap-target").forEach((el) => {
-      el.classList.remove("undock-snap-target");
-    });
+    if (highlightedSnapTarget?.classList) {
+      highlightedSnapTarget.classList.remove("undock-snap-target");
+    }
+    highlightedSnapTarget = null;
   }
 
   function isOutsideInner80Percent(cell, clientX, clientY) {
@@ -30,6 +33,9 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
 
   const panel = document.createElement("div");
   panel.className = "panel floating";
+  panel.__nvOnClose = () => {
+    if (typeof onRequestClose === "function") onRequestClose();
+  };
   Object.assign(panel.style, {
     position: "fixed",
     left: "24px",
@@ -63,22 +69,26 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
   const controls = document.createElement("div");
   controls.className = "panel-controls";
   const dockBtn = document.createElement("button");
+  dockBtn.className = "panel-dock-btn";
   dockBtn.type = "button";
   dockBtn.title = "Dock / Undock";
   dockBtn.textContent = "⇔";
 
   const maxBtn = document.createElement("button");
+  maxBtn.className = "panel-max-btn";
   maxBtn.type = "button";
   maxBtn.title = "Maximize / Restore";
   maxBtn.textContent = "⬜";
 
   const closeBtn = document.createElement("button");
+  closeBtn.className = "panel-close-btn";
   closeBtn.type = "button";
   closeBtn.title = "Close Inventory";
   closeBtn.textContent = "✕";
   closeBtn.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    removeWindowDragListeners();
     if (typeof onRequestClose === "function") onRequestClose();
   });
   controls.appendChild(dockBtn);
@@ -107,6 +117,16 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
   let maximized = false;
   let prevBox = null;
   let dockedCell = null;
+  let movedWhileDragging = false;
+  let activePointerId = null;
+  let hasWindowDragListeners = false;
+  let dragStartClientX = 0;
+  let dragStartClientY = 0;
+  let dragPanelWidth = 0;
+  let dragPanelHeight = 0;
+  let latestPointerX = 0;
+  let latestPointerY = 0;
+  let snapRafId = 0;
   let currentDockTarget = null;
   let canSnapToCurrentTarget = false;
   let previousHost = null;
@@ -114,23 +134,68 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
   let previousHostDatasetId = "";
   let previousHostDatasetClass = "";
 
+  function openLayoutControlsSubToolbar() {
+    window.__nvActivePanelElement = panel;
+    window.__nvActiveLegacyUndockedPanel = null;
+    window.activePanel = "PlayerInventory";
+    window.activePanelClass = "InfoPanel";
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.activePanelType = "InfoPanel";
+
+    if (dockedCell && dockedCell.classList?.contains("panel-cell")) {
+      window.activeCell = dockedCell;
+      document.querySelectorAll(".panel-cell").forEach((c) => {
+        c.style.outline = "";
+      });
+      dockedCell.style.outline = "2px solid #0078d7";
+      window.dispatchEvent(new CustomEvent("activePanelChanged", {
+        detail: {
+          panel: "PlayerInventory",
+          cell: dockedCell,
+          panelClass: "InfoPanel",
+        },
+      }));
+    }
+
+    window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+      detail: {
+        heading: "Layout Controls",
+        force: false,
+        toggle: false,
+      },
+    }));
+  }
+
   function clampAndApply(left, top) {
-    const rect = panel.getBoundingClientRect();
-    const maxLeft = Math.max(0, window.innerWidth - rect.width);
-    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    const width = dragPanelWidth || panel.getBoundingClientRect().width;
+    const height = dragPanelHeight || panel.getBoundingClientRect().height;
+    const maxLeft = Math.max(0, window.innerWidth - width);
+    const maxTop = Math.max(0, window.innerHeight - height);
     panel.style.left = `${Math.max(0, Math.min(left, maxLeft))}px`;
     panel.style.top = `${Math.max(0, Math.min(top, maxTop))}px`;
   }
 
-  function onMouseMove(event) {
-    if (!dragging) return;
-    clampAndApply(event.clientX - offsetX, event.clientY - offsetY);
-    currentDockTarget = findDockCellAtPoint(event.clientX, event.clientY) || null;
-    canSnapToCurrentTarget = isOutsideInner80Percent(currentDockTarget, event.clientX, event.clientY);
-    clearTargetHighlight();
-    if (currentDockTarget && canSnapToCurrentTarget) {
-      currentDockTarget.classList.add("undock-snap-target");
+  function updateSnapTarget(clientX, clientY) {
+    currentDockTarget = findDockCellAtPoint(clientX, clientY) || null;
+    canSnapToCurrentTarget = isOutsideInner80Percent(currentDockTarget, clientX, clientY);
+    const nextHighlighted = (currentDockTarget && canSnapToCurrentTarget) ? currentDockTarget : null;
+    if (nextHighlighted !== highlightedSnapTarget) {
+      clearTargetHighlight();
+      if (nextHighlighted) {
+        nextHighlighted.classList.add("undock-snap-target");
+        highlightedSnapTarget = nextHighlighted;
+      }
     }
+  }
+
+  function scheduleSnapUpdate(clientX, clientY) {
+    latestPointerX = clientX;
+    latestPointerY = clientY;
+    if (snapRafId) return;
+    snapRafId = window.requestAnimationFrame(() => {
+      snapRafId = 0;
+      updateSnapTarget(latestPointerX, latestPointerY);
+    });
   }
 
   function dockToCell(targetCell) {
@@ -206,10 +271,18 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     previousHostDatasetClass = "";
   }
 
-  function onMouseUp() {
+  function finishDrag(clientX, clientY) {
+    if (!dragging) return;
     dragging = false;
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
+    panel.style.userSelect = "";
+    panel.style.willChange = "";
+
+    if (snapRafId) {
+      window.cancelAnimationFrame(snapRafId);
+      snapRafId = 0;
+    }
+
+    updateSnapTarget(clientX, clientY);
     if (currentDockTarget && canSnapToCurrentTarget) {
       dockToCell(currentDockTarget);
     }
@@ -245,17 +318,89 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     maximized = false;
   });
 
-  header.addEventListener("mousedown", (event) => {
+  header.style.touchAction = "none";
+
+  const onPointerMove = (event) => {
+    if (!dragging || event.pointerId !== activePointerId) return;
+    if (!movedWhileDragging) {
+      const dx = Math.abs(event.clientX - dragStartClientX);
+      const dy = Math.abs(event.clientY - dragStartClientY);
+      if (dx > 2 || dy > 2) movedWhileDragging = true;
+    }
+    clampAndApply(event.clientX - offsetX, event.clientY - offsetY);
+    scheduleSnapUpdate(event.clientX, event.clientY);
+  };
+
+  const onPointerEnd = (event) => {
+    if (!dragging || event.pointerId !== activePointerId) return;
+    try {
+      header.releasePointerCapture?.(event.pointerId);
+    } catch (_) {
+      // No-op: window-level listeners already handle end-of-drag cleanup.
+    }
+    activePointerId = null;
+    finishDrag(event.clientX, event.clientY);
+    removeWindowDragListeners();
+  };
+
+  const onWindowBlur = () => {
+    if (!dragging) return;
+    activePointerId = null;
+    finishDrag(latestPointerX, latestPointerY);
+    removeWindowDragListeners();
+  };
+
+  function addWindowDragListeners() {
+    if (hasWindowDragListeners) return;
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("pointerup", onPointerEnd, true);
+    window.addEventListener("pointercancel", onPointerEnd, true);
+    window.addEventListener("blur", onWindowBlur);
+    hasWindowDragListeners = true;
+  }
+
+  function removeWindowDragListeners() {
+    if (!hasWindowDragListeners) return;
+    window.removeEventListener("pointermove", onPointerMove, true);
+    window.removeEventListener("pointerup", onPointerEnd, true);
+    window.removeEventListener("pointercancel", onPointerEnd, true);
+    window.removeEventListener("blur", onWindowBlur);
+    hasWindowDragListeners = false;
+  }
+
+  header.addEventListener("pointerdown", (event) => {
+    if (event.target?.closest?.("button, a, input, select, textarea")) return;
     if (dockedCell) return;
-    if (event.target === closeBtn) return;
-    if (event.target === maxBtn) return;
-    if (event.target === dockBtn) return;
+
     const rect = panel.getBoundingClientRect();
+    activePointerId = event.pointerId;
+    dragStartClientX = event.clientX;
+    dragStartClientY = event.clientY;
+    latestPointerX = event.clientX;
+    latestPointerY = event.clientY;
+    dragPanelWidth = rect.width;
+    dragPanelHeight = rect.height;
     dragging = true;
+    movedWhileDragging = false;
     offsetX = event.clientX - rect.left;
     offsetY = event.clientY - rect.top;
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    panel.style.userSelect = "none";
+    panel.style.willChange = "left, top";
+    addWindowDragListeners();
+    try {
+      header.setPointerCapture?.(event.pointerId);
+    } catch (_) {
+      // No-op: window-level listeners already keep dragging active.
+    }
+    event.preventDefault();
+  });
+
+  header.addEventListener("click", () => {
+    if (movedWhileDragging) {
+      movedWhileDragging = false;
+      return;
+    }
+    openLayoutControlsSubToolbar();
   });
 
   dockBtn.addEventListener("click", (event) => {
@@ -292,7 +437,8 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
       }
     },
     dispose() {
-      onMouseUp();
+      finishDrag(latestPointerX, latestPointerY);
+      removeWindowDragListeners();
       clearTargetHighlight();
       panel.remove();
     }

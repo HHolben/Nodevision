@@ -1,7 +1,11 @@
 // Nodevision/public/ToolbarCallbacks/view/UndockPanel.mjs
 // Undocks the active panel cell content into a floating panel and lets it snap to panel cells.
 
-function clearTargetHighlight() {
+function clearTargetHighlight(target = null) {
+  if (target?.classList) {
+    target.classList.remove("undock-snap-target");
+    return;
+  }
   document.querySelectorAll(".undock-snap-target").forEach((el) => {
     el.classList.remove("undock-snap-target");
   });
@@ -35,6 +39,19 @@ function setActiveCell(cell) {
 }
 
 export default function run() {
+  if (window.__nvActiveLegacyUndockedPanel?.isConnected) {
+    return;
+  }
+
+  const activePanel = window.__nvActivePanelElement;
+  if (activePanel?.isConnected && activePanel.classList?.contains("panel")) {
+    const dockBtn = activePanel.querySelector(".panel-dock-btn");
+    if (dockBtn && typeof dockBtn.click === "function") {
+      dockBtn.click();
+      return;
+    }
+  }
+
   const sourceCell = window.activeCell;
   if (!sourceCell || !sourceCell.classList.contains("panel-cell")) {
     alert("Select a panel cell first.");
@@ -49,6 +66,15 @@ export default function run() {
   if (!sourceCell.firstChild) {
     alert("The active panel is empty.");
     return;
+  }
+
+  const sourcePanel = sourceCell.firstElementChild;
+  if (sourcePanel?.classList?.contains("panel")) {
+    const dockBtn = sourcePanel.querySelector(".panel-dock-btn");
+    if (dockBtn && typeof dockBtn.click === "function") {
+      dockBtn.click();
+      return;
+    }
   }
 
   const sourceRect = sourceCell.getBoundingClientRect();
@@ -84,24 +110,49 @@ export default function run() {
   let dragging = false;
   let offsetX = 0;
   let offsetY = 0;
+  let activePointerId = null;
+  let hasWindowDragListeners = false;
+  let latestPointerX = 0;
+  let latestPointerY = 0;
+  let snapRafId = 0;
+  let highlightedTarget = null;
   let currentTarget = null;
   let canSnapToCurrentTarget = false;
 
-  const onMouseMove = (e) => {
-    if (!dragging) return;
-    floatingEl.style.left = `${e.clientX - offsetX}px`;
-    floatingEl.style.top = `${e.clientY - offsetY}px`;
-
+  function updateSnapTarget(clientX, clientY) {
     const hit = document
-      .elementsFromPoint(e.clientX, e.clientY)
+      .elementsFromPoint(clientX, clientY)
       .find((el) => el.classList?.contains("panel-cell") && !floatingEl.contains(el));
 
     currentTarget = hit || null;
-    canSnapToCurrentTarget = isOutsideInner80Percent(currentTarget, e.clientX, e.clientY);
-    clearTargetHighlight();
-    if (currentTarget && canSnapToCurrentTarget) {
-      currentTarget.classList.add("undock-snap-target");
+    canSnapToCurrentTarget = isOutsideInner80Percent(currentTarget, clientX, clientY);
+    const nextHighlighted = (currentTarget && canSnapToCurrentTarget) ? currentTarget : null;
+    if (nextHighlighted !== highlightedTarget) {
+      clearTargetHighlight(highlightedTarget);
+      if (nextHighlighted) {
+        nextHighlighted.classList.add("undock-snap-target");
+      }
+      highlightedTarget = nextHighlighted;
     }
+  }
+
+  function scheduleSnapUpdate(clientX, clientY) {
+    latestPointerX = clientX;
+    latestPointerY = clientY;
+    if (snapRafId) return;
+    snapRafId = window.requestAnimationFrame(() => {
+      snapRafId = 0;
+      updateSnapTarget(latestPointerX, latestPointerY);
+    });
+  }
+
+  const onPointerMove = (e) => {
+    if (!dragging || e.pointerId !== activePointerId) return;
+    latestPointerX = e.clientX;
+    latestPointerY = e.clientY;
+    floatingEl.style.left = `${e.clientX - offsetX}px`;
+    floatingEl.style.top = `${e.clientY - offsetY}px`;
+    scheduleSnapUpdate(e.clientX, e.clientY);
   };
 
   const dockToCell = (targetCell) => {
@@ -133,20 +184,35 @@ export default function run() {
     }
 
     floatingEl.remove();
-    clearTargetHighlight();
+    clearTargetHighlight(highlightedTarget);
+    highlightedTarget = null;
     setActiveCell(targetCell);
     window.__undockedPanelState = null;
     return true;
   };
 
-  const onMouseUp = () => {
+  const onPointerUp = (e) => {
+    if (!dragging || e.pointerId !== activePointerId) return;
     dragging = false;
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
+    floatingEl.style.userSelect = "";
+    floatingEl.style.willChange = "";
+    try {
+      header.releasePointerCapture?.(e.pointerId);
+    } catch (_) {
+      // No-op: window listeners continue to receive drag lifecycle events.
+    }
+    activePointerId = null;
+    if (snapRafId) {
+      window.cancelAnimationFrame(snapRafId);
+      snapRafId = 0;
+    }
+    updateSnapTarget(e.clientX, e.clientY);
+    removeWindowDragListeners();
     if (currentTarget && canSnapToCurrentTarget) {
       dockToCell(currentTarget);
     } else {
-      clearTargetHighlight();
+      clearTargetHighlight(highlightedTarget);
+      highlightedTarget = null;
       window.__undockedPanelState = {
         floatingEl,
         sourceCell,
@@ -157,14 +223,65 @@ export default function run() {
     }
   };
 
+  const onWindowBlur = () => {
+    if (!dragging) return;
+    dragging = false;
+    floatingEl.style.userSelect = "";
+    floatingEl.style.willChange = "";
+    activePointerId = null;
+    if (snapRafId) {
+      window.cancelAnimationFrame(snapRafId);
+      snapRafId = 0;
+    }
+    clearTargetHighlight(highlightedTarget);
+    highlightedTarget = null;
+    window.__undockedPanelState = {
+      floatingEl,
+      sourceCell,
+      sourcePanelId,
+      sourcePanelClass,
+      sourceCleanup,
+    };
+    removeWindowDragListeners();
+  };
+
+  function addWindowDragListeners() {
+    if (hasWindowDragListeners) return;
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", onPointerUp, true);
+    window.addEventListener("blur", onWindowBlur);
+    hasWindowDragListeners = true;
+  }
+
+  function removeWindowDragListeners() {
+    if (!hasWindowDragListeners) return;
+    window.removeEventListener("pointermove", onPointerMove, true);
+    window.removeEventListener("pointerup", onPointerUp, true);
+    window.removeEventListener("pointercancel", onPointerUp, true);
+    window.removeEventListener("blur", onWindowBlur);
+    hasWindowDragListeners = false;
+  }
+
   function onHeaderDown(e) {
     dragging = true;
+    activePointerId = e.pointerId;
+    latestPointerX = e.clientX;
+    latestPointerY = e.clientY;
     const rect = floatingEl.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    floatingEl.style.userSelect = "none";
+    floatingEl.style.willChange = "left, top";
+    addWindowDragListeners();
+    try {
+      header.setPointerCapture?.(e.pointerId);
+    } catch (_) {
+      // No-op: window listeners keep dragging behavior stable.
+    }
+    e.preventDefault();
   }
 
-  header.addEventListener("mousedown", onHeaderDown);
+  header.style.touchAction = "none";
+  header.addEventListener("pointerdown", onHeaderDown);
 }

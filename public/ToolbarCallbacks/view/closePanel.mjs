@@ -2,6 +2,46 @@
 // Closes the panel from the workspace corresponding to the active panel.
 
 export function closeActivePanel() {
+  const legacyUndocked = window.__nvActiveLegacyUndockedPanel;
+  if (legacyUndocked?.isConnected) {
+    const closeHook = legacyUndocked.__nvOnClose;
+    if (typeof closeHook === "function") {
+      try {
+        closeHook();
+      } catch (err) {
+        console.warn("Legacy undocked panel close hook failed:", err);
+      }
+    }
+    legacyUndocked.remove();
+    if (window.__nvActiveLegacyUndockedPanel === legacyUndocked) {
+      window.__nvActiveLegacyUndockedPanel = null;
+    }
+    if (window.__nvActivePanelElement === legacyUndocked) {
+      window.__nvActivePanelElement = null;
+    }
+    return;
+  }
+
+  const activePanel = window.__nvActivePanelElement;
+  if (activePanel?.isConnected && activePanel.classList?.contains("panel")) {
+    const ownerCell = activePanel.closest(".panel-cell");
+    if (!ownerCell) {
+      const closeHook = activePanel.__nvOnClose;
+      if (typeof closeHook === "function") {
+        try {
+          closeHook();
+        } catch (err) {
+          console.warn("Active floating panel close hook failed:", err);
+        }
+      }
+      activePanel.remove();
+      if (window.__nvActivePanelElement === activePanel) {
+        window.__nvActivePanelElement = null;
+      }
+      return;
+    }
+  }
+
   const cell = window.activeCell;
   if (!cell) {
     console.warn("No active cell to close.");
@@ -29,6 +69,9 @@ export function closeActivePanel() {
 
   // Remove the active cell itself
   cell.remove();
+  if (window.__nvActivePanelElement && !window.__nvActivePanelElement.isConnected) {
+    window.__nvActivePanelElement = null;
+  }
 
   // Reset globals
   console.log(`Closed panel: ${window.activePanel}`);

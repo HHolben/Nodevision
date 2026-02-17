@@ -14,7 +14,7 @@ initStatusBar();
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     // Initialize toolbar
-    createToolbar("#global-toolbar");
+    await createToolbar("#global-toolbar");
 
     // Ensure the workspace container exists
     const workspace = ensureWorkspace();

@@ -71,11 +71,17 @@
     // Process the event here (such as click on submit button)
     console.log("Saving" + window.filePath);
     
-    // Guard check: prevent ReferenceError for raster images
-    if (typeof saveWYSIWYGFile === 'function') {
+    // Prefer the unified save callback when available.
+    if (typeof window.saveFile === 'function') {
+      window.saveFile({ path: window.filePath });
+    } else if (typeof saveWYSIWYGFile === 'function') {
       saveWYSIWYGFile(window.filePath);
-    } else if (typeof saveRasterImage === 'function' && window.rasterCanvas) {
-      // For raster image editing, use the raster save function
+    } else if (
+      !window.NodevisionState?.htmlImageEditingInline &&
+      typeof saveRasterImage === 'function' &&
+      window.rasterCanvas
+    ) {
+      // For standalone raster image editing only.
       saveRasterImage(window.filePath);
     } else {
       console.warn('No appropriate save function available for current editor mode');
@@ -83,7 +89,6 @@
   }
 }, false);
 })();
-
 
 
 
