@@ -1,9 +1,11 @@
 // Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs
 //This file is used to create an editor panel for PNG files.
-import { History } from './PNGeditorComponents/history.mjs';
-import { bresenhamLine, hexToRGBA } from './PNGeditorComponents/canvasEngine.mjs';
+import { History } from "./PNGeditorComponents/history.mjs";
+import {
+  bresenhamLine,
+  hexToRGBA,
+} from "./PNGeditorComponents/canvasEngine.mjs";
 import { updateToolbarState } from "./../../../panels/createToolbar.mjs";
-
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
@@ -15,16 +17,23 @@ export async function renderEditor(filePath, container) {
     pixelSize: 1,
     drawing: false,
     lastPos: null,
-    startPos: null
+    startPos: null,
   };
-
 
   //0.set current Mode + default draw controls
   window.NodevisionState = window.NodevisionState || {};
-  if (!window.NodevisionState.drawColor) window.NodevisionState.drawColor = "#000000";
-  if (!window.NodevisionState.drawTool) window.NodevisionState.drawTool = "brush";
-  if (!Number.isFinite(window.NodevisionState.drawAlpha)) window.NodevisionState.drawAlpha = 0;
-  if (!Number.isFinite(window.NodevisionState.drawBrushSize)) window.NodevisionState.drawBrushSize = 1;
+  if (!window.NodevisionState.drawColor) {
+    window.NodevisionState.drawColor = "#000000";
+  }
+  if (!window.NodevisionState.drawTool) {
+    window.NodevisionState.drawTool = "brush";
+  }
+  if (!Number.isFinite(window.NodevisionState.drawAlpha)) {
+    window.NodevisionState.drawAlpha = 0;
+  }
+  if (!Number.isFinite(window.NodevisionState.drawBrushSize)) {
+    window.NodevisionState.drawBrushSize = 1;
+  }
   window.NodevisionState.currentMode = "PNGediting";
   updateToolbarState({
     currentMode: "PNGediting",
@@ -34,28 +43,34 @@ export async function renderEditor(filePath, container) {
     drawBrushSize: window.NodevisionState.drawBrushSize,
   });
 
-
   if (filePath) {
     try {
       const sourceImage = await loadPngFromNotebook(filePath);
-      state.logicalWidth = sourceImage.naturalWidth || sourceImage.width || state.logicalWidth;
-      state.logicalHeight = sourceImage.naturalHeight || sourceImage.height || state.logicalHeight;
+      state.logicalWidth = sourceImage.naturalWidth || sourceImage.width ||
+        state.logicalWidth;
+      state.logicalHeight = sourceImage.naturalHeight || sourceImage.height ||
+        state.logicalHeight;
       state.initialImage = sourceImage;
     } catch (err) {
       state.loadError = err?.message || "Failed to load source image.";
-      console.warn("PNG editor: failed to load source image, starting with blank canvas.", err);
+      console.warn(
+        "PNG editor: failed to load source image, starting with blank canvas.",
+        err,
+      );
     }
   }
 
   // 1. UI Build (Wrapper & Canvas)
   const wrapper = document.createElement("div");
-  wrapper.style.cssText = "display:flex; flex-direction:column; height:100%; width:100%; overflow:hidden;";
-  
+  wrapper.style.cssText =
+    "display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; height:100%; width:100%; overflow:hidden; padding:8px; box-sizing:border-box;";
+
   const canvas = document.createElement("canvas");
   canvas.width = state.logicalWidth;
   canvas.height = state.logicalHeight;
-  canvas.style.cssText = "image-rendering:pixelated; cursor:crosshair; background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50% / 20px 20px;";
-  
+  canvas.style.cssText =
+    "image-rendering:pixelated; image-rendering:crisp-edges; cursor:crosshair; background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50% / 20px 20px; display:block; align-self:flex-start;";
+
   const ctx = canvas.getContext("2d", { alpha: true });
   const history = new History(ctx);
 
@@ -63,7 +78,8 @@ export async function renderEditor(filePath, container) {
   if (state.loadError) {
     const warning = document.createElement("div");
     warning.textContent = state.loadError;
-    warning.style.cssText = "padding:6px 8px; color:#b00020; background:#fff3f3; border-bottom:1px solid #d9a0a0; font:12px monospace;";
+    warning.style.cssText =
+      "padding:6px 8px; color:#b00020; background:#fff3f3; border-bottom:1px solid #d9a0a0; font:12px monospace;";
     wrapper.appendChild(warning);
   }
   wrapper.appendChild(canvas);
@@ -74,6 +90,27 @@ export async function renderEditor(filePath, container) {
     ctx.drawImage(state.initialImage, 0, 0);
   }
 
+  const updateDisplayScale = () => {
+    const boundsW = Math.max(1, wrapper.clientWidth - 16);
+    const boundsH = Math.max(
+      1,
+      wrapper.clientHeight - (state.loadError ? 40 : 16),
+    );
+    const fitScale = Math.max(
+      1,
+      Math.floor(
+        Math.min(boundsW / state.logicalWidth, boundsH / state.logicalHeight),
+      ),
+    );
+    const displayW = Math.max(1, state.logicalWidth * fitScale);
+    const displayH = Math.max(1, state.logicalHeight * fitScale);
+    canvas.style.width = `${displayW}px`;
+    canvas.style.height = `${displayH}px`;
+  };
+  updateDisplayScale();
+  const resizeObserver = new ResizeObserver(updateDisplayScale);
+  resizeObserver.observe(wrapper);
+
   // 3. Drawing Logic
   const getPos = (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -81,7 +118,7 @@ export async function renderEditor(filePath, container) {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     return {
       x: Math.floor(((clientX - rect.left) / rect.width) * state.logicalWidth),
-      y: Math.floor(((clientY - rect.top) / rect.height) * state.logicalHeight)
+      y: Math.floor(((clientY - rect.top) / rect.height) * state.logicalHeight),
     };
   };
 
@@ -183,7 +220,10 @@ export async function renderEditor(filePath, container) {
       state.lastPos = null;
       return;
     }
-    if (selectedTool === "line" || selectedTool === "rectangle" || selectedTool === "circle") {
+    if (
+      selectedTool === "line" || selectedTool === "rectangle" ||
+      selectedTool === "circle"
+    ) {
       state.drawing = true;
       state.startPos = startPos;
       state.lastPos = startPos;
@@ -199,15 +239,36 @@ export async function renderEditor(filePath, container) {
   const onMouseUp = (e) => {
     if (!state.drawing) return;
     const selectedTool = window.NodevisionState?.drawTool || "brush";
-    if (selectedTool === "line" || selectedTool === "rectangle" || selectedTool === "circle") {
+    if (
+      selectedTool === "line" || selectedTool === "rectangle" ||
+      selectedTool === "circle"
+    ) {
       const endPos = inBounds(getPos(e));
       if (state.startPos) {
         if (selectedTool === "line") {
-          drawLine(state.startPos.x, state.startPos.y, endPos.x, endPos.y, draw);
+          drawLine(
+            state.startPos.x,
+            state.startPos.y,
+            endPos.x,
+            endPos.y,
+            draw,
+          );
         } else if (selectedTool === "rectangle") {
-          drawRectangle(state.startPos.x, state.startPos.y, endPos.x, endPos.y, draw);
+          drawRectangle(
+            state.startPos.x,
+            state.startPos.y,
+            endPos.x,
+            endPos.y,
+            draw,
+          );
         } else if (selectedTool === "circle") {
-          drawCircle(state.startPos.x, state.startPos.y, endPos.x, endPos.y, draw);
+          drawCircle(
+            state.startPos.x,
+            state.startPos.y,
+            endPos.x,
+            endPos.y,
+            draw,
+          );
         }
       }
     }
@@ -224,8 +285,9 @@ export async function renderEditor(filePath, container) {
     destroy: () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onMouseUp);
+      resizeObserver.disconnect();
       window.rasterCanvas = null;
-    }
+    },
   };
 }
 
@@ -356,7 +418,8 @@ async function loadPngFromNotebook(filePath) {
   const decodedNormalized = normalizeNotebookPath(safeDecode(filePath));
   const raw = String(filePath || "").trim().replace(/\\/g, "/");
   const rawNoHashQuery = raw.replace(/[?#].*$/, "");
-  const rawPathname = rawNoHashQuery.startsWith("http://") || rawNoHashQuery.startsWith("https://")
+  const rawPathname = rawNoHashQuery.startsWith("http://") ||
+      rawNoHashQuery.startsWith("https://")
     ? safePathnameFromUrl(rawNoHashQuery)
     : rawNoHashQuery;
 
@@ -377,10 +440,16 @@ async function loadPngFromNotebook(filePath) {
 
   const candidates = dedupe([
     normalized ? `/Notebook/${encodePathSegments(normalized)}?${stamp}` : null,
-    decodedNormalized ? `/Notebook/${encodePathSegments(decodedNormalized)}?${stamp}` : null,
+    decodedNormalized
+      ? `/Notebook/${encodePathSegments(decodedNormalized)}?${stamp}`
+      : null,
     normalized ? `/${encodePathSegments(normalized)}?${stamp}` : null,
-    decodedNormalized ? `/${encodePathSegments(decodedNormalized)}?${stamp}` : null,
-    rawPathname ? `${rawPathname}${rawPathname.includes("?") ? "&" : "?"}${stamp}` : null,
+    decodedNormalized
+      ? `/${encodePathSegments(decodedNormalized)}?${stamp}`
+      : null,
+    rawPathname
+      ? `${rawPathname}${rawPathname.includes("?") ? "&" : "?"}${stamp}`
+      : null,
   ]).filter(Boolean);
 
   let lastError = null;
@@ -393,7 +462,8 @@ async function loadPngFromNotebook(filePath) {
     }
   }
 
-  throw lastError || new Error(`Failed to load PNG from candidates for: ${filePath}`);
+  throw lastError ||
+    new Error(`Failed to load PNG from candidates for: ${filePath}`);
 }
 
 async function loadImageFromApiPath(relativePath, stamp) {
@@ -421,7 +491,9 @@ async function loadImageFromApiPath(relativePath, stamp) {
     }
   }
 
-  throw new Error(`Binary API returned ${lastStatus ?? "error"} for ${relativePath}`);
+  throw new Error(
+    `Binary API returned ${lastStatus ?? "error"} for ${relativePath}`,
+  );
 }
 
 function loadImageFromSrc(src) {

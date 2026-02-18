@@ -16,6 +16,8 @@ const NEW_IMAGE_MIME_BY_EXTENSION = {
   bmp: "image/bmp",
   svg: "image/svg+xml",
 };
+const NEW_IMAGE_DEFAULT_DISPLAY_WIDTH = 320;
+const NEW_IMAGE_DEFAULT_DISPLAY_HEIGHT = 240;
 const lastSelectionRangeByEditor = new WeakMap();
 
 function ensureHTMLLayoutStyles() {
@@ -158,6 +160,23 @@ function ensureHTMLLayoutStyles() {
     #wysiwyg img.nv-selected-image {
       outline: 2px solid #2f80ff;
       outline-offset: 2px;
+    }
+    .nv-image-corner-handle {
+      position: fixed;
+      width: 12px;
+      height: 12px;
+      border: 1px solid #2f80ff;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transform: translate(-50%, -50%);
+      z-index: 26000;
+      cursor: nwse-resize;
+      touch-action: none;
+    }
+    .nv-image-corner-handle[data-corner="ne"],
+    .nv-image-corner-handle[data-corner="sw"] {
+      cursor: nesw-resize;
     }
     #wysiwyg .nv-canvas-item.nv-selected-image-item {
       border-color: #2f80ff;
@@ -933,6 +952,14 @@ function buildTemporaryImageEditPath(editorFilePath = "", extension = "png") {
 function decorateInsertedImage(img, insertion) {
   if (!(img instanceof HTMLImageElement)) return img;
   img.classList.add("nv-editable-image");
+  // Preserve crisp nearest-neighbor scaling by default (good for pixel art).
+  img.style.imageRendering = "pixelated";
+  if (insertion?.mode === "inline-new" || insertion?.mode === "referenced-new") {
+    // Keep a consistent on-page size for newly generated images,
+    // independent from pixel resolution chosen at creation time.
+    img.style.width = `${NEW_IMAGE_DEFAULT_DISPLAY_WIDTH}px`;
+    img.style.height = `${NEW_IMAGE_DEFAULT_DISPLAY_HEIGHT}px`;
+  }
   if (insertion?.linkedNotebookPath) {
     img.setAttribute("data-nv-linked-path", normalizeNotebookPathInput(insertion.linkedNotebookPath));
   } else {
@@ -1321,15 +1348,21 @@ function clampImageDimension(rawValue, fallback = 512) {
   return Math.min(4096, parsed);
 }
 
-function normalizeNewImageFilename(rawName = "") {
-  const fallback = `image-${Date.now()}.png`;
+function normalizeNewImageFormat(rawFormat = "") {
+  const format = String(rawFormat || "").trim().toLowerCase();
+  return format === "svg" ? "svg" : "png";
+}
+
+function normalizeNewImageFilename(rawName = "", preferredFormat = "png") {
+  const format = normalizeNewImageFormat(preferredFormat);
+  const fallback = `image-${Date.now()}.${format}`;
   let name = sanitizeImageFilename(String(rawName || "").trim() || fallback);
   if (!inferExtensionFromPath(name)) {
-    name = `${name}.png`;
+    name = `${name}.${format}`;
   }
   const ext = inferExtensionFromPath(name);
-  if (!NEW_IMAGE_MIME_BY_EXTENSION[ext]) {
-    name = `${name.replace(/\.[^.]+$/, "") || `image-${Date.now()}`}.png`;
+  if (!NEW_IMAGE_MIME_BY_EXTENSION[ext] || (ext !== "png" && ext !== "svg")) {
+    name = `${name.replace(/\.[^.]+$/, "") || `image-${Date.now()}`}.${format}`;
   }
   return name;
 }
@@ -1348,10 +1381,11 @@ function utf8ToBase64(value = "") {
   return btoa(binary);
 }
 
-function createGeneratedImageDataUrl(filename = "", width = 512, height = 512) {
-  const mimeType = mimeTypeFromImageFilename(filename);
+function createGeneratedImageDataUrl(format = "png", width = 512, height = 512) {
+  const normalizedFormat = normalizeNewImageFormat(format);
+  const mimeType = normalizedFormat === "svg" ? "image/svg+xml" : "image/png";
   if (mimeType === "image/svg+xml") {
-    const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#ffffff"/></svg>`;
+    const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"></svg>`;
     return `data:image/svg+xml;base64,${utf8ToBase64(svgMarkup)}`;
   }
 
@@ -1362,8 +1396,6 @@ function createGeneratedImageDataUrl(filename = "", width = 512, height = 512) {
   if (!ctx) {
     throw new Error("Unable to create image canvas.");
   }
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, width, height);
   return canvas.toDataURL(mimeType);
 }
 
@@ -1441,6 +1473,13 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
 
     <div id="nv-new-image-fields" style="display:flex;flex-direction:column;gap:8px;">
       <label>
+        New Image Format
+        <select id="nv-insert-new-format" style="display:block;width:100%;margin-top:4px;">
+          <option value="png" selected>PNG</option>
+          <option value="svg">SVG</option>
+        </select>
+      </label>
+      <label id="nv-new-name-row">
         New Image File Name
         <input id="nv-insert-new-name" type="text" placeholder="image.png" style="display:block;width:100%;margin-top:4px;" />
       </label>
@@ -1478,6 +1517,8 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
   const storageRadios = Array.from(form.querySelectorAll('input[name="nv-image-storage"]'));
   const newFields = form.querySelector("#nv-new-image-fields");
   const existingFields = form.querySelector("#nv-existing-image-fields");
+  const newFormatSelect = form.querySelector("#nv-insert-new-format");
+  const newNameRow = form.querySelector("#nv-new-name-row");
   const newNameInput = form.querySelector("#nv-insert-new-name");
   const newWidthInput = form.querySelector("#nv-insert-new-width");
   const newHeightInput = form.querySelector("#nv-insert-new-height");
@@ -1506,7 +1547,8 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
       newReferencedTarget.textContent = "";
       return;
     }
-    const filename = normalizeNewImageFilename(newNameInput.value);
+    const format = normalizeNewImageFormat(newFormatSelect.value);
+    const filename = normalizeNewImageFilename(newNameInput.value, format);
     const notebookPath = normalizeNotebookPathInput([defaultDir, filename].filter(Boolean).join("/"));
     newReferencedTarget.textContent = notebookPath
       ? `Will save to: ${notebookPath}`
@@ -1515,17 +1557,33 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
 
   const syncVisibility = () => {
     const sourceMode = selectedValue(sourceRadios);
+    const storageMode = selectedValue(storageRadios);
     newFields.style.display = sourceMode === "new" ? "flex" : "none";
     existingFields.style.display = sourceMode === "existing" ? "flex" : "none";
+    if (newNameRow) {
+      newNameRow.style.display = (sourceMode === "new" && storageMode === "referenced") ? "block" : "none";
+    }
     updateReferencedTargetHint();
   };
 
   sourceRadios.forEach((radio) => radio.addEventListener("change", syncVisibility));
   storageRadios.forEach((radio) => radio.addEventListener("change", syncVisibility));
+  newFormatSelect.addEventListener("change", () => {
+    const format = normalizeNewImageFormat(newFormatSelect.value);
+    const current = String(newNameInput.value || "").trim();
+    if (!current) {
+      newNameInput.value = `image-${Date.now()}.${format}`;
+    } else {
+      const base = current.replace(/\.[^.]+$/, "");
+      newNameInput.value = `${base}.${format}`;
+    }
+    updateReferencedTargetHint();
+  });
   newNameInput.addEventListener("input", updateReferencedTargetHint);
 
   if (!newNameInput.value.trim()) {
-    newNameInput.value = `image-${Date.now()}.png`;
+    const format = normalizeNewImageFormat(newFormatSelect.value);
+    newNameInput.value = `image-${Date.now()}.${format}`;
   }
   syncVisibility();
 
@@ -1540,10 +1598,11 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
       let insertion = null;
 
       if (sourceMode === "new") {
-        const filename = normalizeNewImageFilename(newNameInput.value);
+        const format = normalizeNewImageFormat(newFormatSelect.value);
+        const filename = normalizeNewImageFilename(newNameInput.value, format);
         const width = clampImageDimension(newWidthInput.value, 512);
         const height = clampImageDimension(newHeightInput.value, 512);
-        const dataUrl = createGeneratedImageDataUrl(filename, width, height);
+        const dataUrl = createGeneratedImageDataUrl(format, width, height);
 
         if (storageMode === "inline") {
           insertion = { src: dataUrl, linkedNotebookPath: "", mode: "inline-new" };
@@ -1645,6 +1704,176 @@ async function prepareImageForUndockedEditor(context, editorFilePath) {
 
 function registerImageInteractionTools(wysiwyg, editorFilePath) {
   let inlineEditorSession = null;
+  let selectedImageForHandles = null;
+  let selectedImageLoadListener = null;
+  let handleSyncRaf = 0;
+  let removed = false;
+
+  const cornerHandles = new Map();
+  const cornerOrder = ["nw", "ne", "sw", "se"];
+
+  const readImageRotation = (imageEl) => {
+    if (!(imageEl instanceof HTMLImageElement)) return 0;
+    const fromDataset = Number.parseFloat(imageEl.dataset.nvImageRotation || "");
+    if (Number.isFinite(fromDataset)) return fromDataset;
+    const styleTransform = String(imageEl.style.transform || "");
+    const match = styleTransform.match(/rotate\(([-\d.]+)deg\)/i);
+    if (!match) return 0;
+    const parsed = Number.parseFloat(match[1]);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const applyImageRotation = (imageEl, degrees) => {
+    if (!(imageEl instanceof HTMLImageElement)) return;
+    const rounded = Math.round(Number(degrees || 0) * 100) / 100;
+    imageEl.dataset.nvImageRotation = String(rounded);
+    const styleTransform = String(imageEl.style.transform || "");
+    const withoutRotate = styleTransform.replace(/rotate\([^)]*\)/gi, "").trim();
+    imageEl.style.transformOrigin = "center center";
+    imageEl.style.transform = `${withoutRotate}${withoutRotate ? " " : ""}rotate(${rounded}deg)`.trim();
+  };
+
+  const hideImageHandles = () => {
+    cornerHandles.forEach((handle) => {
+      handle.style.display = "none";
+    });
+  };
+
+  const syncImageHandlesNow = () => {
+    handleSyncRaf = 0;
+    if (removed) return;
+    const imageEl = selectedImageForHandles;
+    if (!(imageEl instanceof HTMLImageElement) || !imageEl.isConnected) {
+      hideImageHandles();
+      return;
+    }
+    if (!wysiwyg.contains(imageEl)) {
+      hideImageHandles();
+      return;
+    }
+    if (imageEl.closest(".nv-canvas-item")) {
+      hideImageHandles();
+      return;
+    }
+    const rect = imageEl.getBoundingClientRect();
+    if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height) || rect.width < 2 || rect.height < 2) {
+      hideImageHandles();
+      return;
+    }
+
+    const points = {
+      nw: { x: rect.left, y: rect.top },
+      ne: { x: rect.right, y: rect.top },
+      sw: { x: rect.left, y: rect.bottom },
+      se: { x: rect.right, y: rect.bottom },
+    };
+
+    cornerHandles.forEach((handle, corner) => {
+      const pt = points[corner];
+      handle.style.left = `${pt.x}px`;
+      handle.style.top = `${pt.y}px`;
+      handle.style.display = "block";
+    });
+  };
+
+  const scheduleImageHandleSync = () => {
+    if (handleSyncRaf) return;
+    handleSyncRaf = window.requestAnimationFrame(syncImageHandlesNow);
+  };
+
+  const setSelectedImageForHandles = (imageEl) => {
+    if (selectedImageForHandles && selectedImageLoadListener) {
+      selectedImageForHandles.removeEventListener("load", selectedImageLoadListener);
+    }
+    selectedImageForHandles = null;
+    selectedImageLoadListener = null;
+
+    if (!(imageEl instanceof HTMLImageElement)) {
+      hideImageHandles();
+      return;
+    }
+    if (imageEl.closest(".nv-canvas-item")) {
+      hideImageHandles();
+      return;
+    }
+
+    selectedImageForHandles = imageEl;
+    selectedImageLoadListener = () => scheduleImageHandleSync();
+    imageEl.addEventListener("load", selectedImageLoadListener);
+    scheduleImageHandleSync();
+  };
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  const startCornerTransform = (startEvt) => {
+    const imageEl = selectedImageForHandles;
+    if (!(imageEl instanceof HTMLImageElement) || !imageEl.isConnected) return;
+    if (imageEl.closest(".nv-canvas-item")) return;
+    startEvt.preventDefault();
+    startEvt.stopPropagation();
+
+    const rect = imageEl.getBoundingClientRect();
+    const centerX = rect.left + (rect.width / 2);
+    const centerY = rect.top + (rect.height / 2);
+    const startWidth = Math.max(1, imageEl.offsetWidth || rect.width || imageEl.naturalWidth || 1);
+    const startHeight = Math.max(1, imageEl.offsetHeight || rect.height || imageEl.naturalHeight || 1);
+    const aspect = startWidth / Math.max(1, startHeight);
+    const startDistance = Math.max(8, Math.hypot(startEvt.clientX - centerX, startEvt.clientY - centerY));
+    const startAngle = Math.atan2(startEvt.clientY - centerY, startEvt.clientX - centerX);
+    const startRotation = readImageRotation(imageEl);
+    const rotateMode = Boolean(startEvt.shiftKey);
+
+    const onMove = (moveEvt) => {
+      moveEvt.preventDefault();
+      if (rotateMode) {
+        const nextAngle = Math.atan2(moveEvt.clientY - centerY, moveEvt.clientX - centerX);
+        let degrees = startRotation + ((nextAngle - startAngle) * 180 / Math.PI);
+        if (moveEvt.shiftKey && moveEvt.ctrlKey) {
+          degrees = Math.round(degrees / 45) * 45;
+        }
+        applyImageRotation(imageEl, degrees);
+      } else {
+        const nextDistance = Math.max(1, Math.hypot(moveEvt.clientX - centerX, moveEvt.clientY - centerY));
+        const scale = nextDistance / startDistance;
+        const nextWidth = clamp(startWidth * scale, 16, 4096);
+        const nextHeight = clamp(nextWidth / Math.max(aspect, 0.01), 16, 4096);
+        imageEl.style.width = `${Math.round(nextWidth)}px`;
+        imageEl.style.height = `${Math.round(nextHeight)}px`;
+        if (!imageEl.style.display || imageEl.style.display === "inline") {
+          imageEl.style.display = "inline-block";
+        }
+      }
+      scheduleImageHandleSync();
+    };
+
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("pointercancel", onUp, true);
+      scheduleImageHandleSync();
+    };
+
+    window.addEventListener("pointermove", onMove, true);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("pointercancel", onUp, true);
+  };
+
+  cornerOrder.forEach((corner) => {
+    const handle = document.createElement("div");
+    handle.className = "nv-image-corner-handle nv-editor-only";
+    handle.dataset.corner = corner;
+    handle.title = "Drag to resize evenly. Shift+drag to rotate. Ctrl+Shift snaps to 45deg.";
+    handle.style.display = "none";
+    handle.addEventListener("pointerdown", startCornerTransform);
+    document.body.appendChild(handle);
+    cornerHandles.set(corner, handle);
+  });
+
+  const onGlobalGeometryChange = () => scheduleImageHandleSync();
+  window.addEventListener("resize", onGlobalGeometryChange);
+  window.addEventListener("scroll", onGlobalGeometryChange, true);
+  wysiwyg.addEventListener("scroll", onGlobalGeometryChange, true);
+  wysiwyg.addEventListener("input", onGlobalGeometryChange);
 
   const showEditorSubToolbarForMode = (mode) => {
     let heading = "";
@@ -1688,10 +1917,12 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
       const context = buildImageContextFromElement(imageEl, editorFilePath);
       markSelectedImage(wysiwyg, imageEl);
       updateSelectedImageState(context);
+      setSelectedImageForHandles(imageEl);
       return;
     }
     markSelectedImage(wysiwyg, null);
     updateSelectedImageState(null);
+    setSelectedImageForHandles(null);
   };
   wysiwyg.addEventListener("click", onClick);
 
@@ -1737,6 +1968,7 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
     const refreshed = buildImageContextFromElement(context.element, editorFilePath);
     updateSelectedImageState(refreshed);
     markSelectedImage(wysiwyg, context.element);
+    setSelectedImageForHandles(context.element);
   };
 
   const closeInlineImageEditor = async ({ applyChanges = true } = {}) => {
@@ -1818,6 +2050,7 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
       updateSelectedImageState(
         buildImageContextFromElement(session.targetImage, editorFilePath),
       );
+      setSelectedImageForHandles(session.targetImage);
       window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
         detail: {
           heading: "Edit Image Here",
@@ -1918,6 +2151,7 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
     body.appendChild(host);
 
     if (targetImage.parentNode) {
+      setSelectedImageForHandles(null);
       targetImage.replaceWith(frame);
     } else {
       alert("Unable to place inline editor for selected image.");
@@ -2052,6 +2286,11 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
       });
       window.NodevisionState.htmlImageEditingInline = false;
       window.NodevisionState.htmlInlineImageEditorMode = null;
+      if (targetImage?.isConnected) {
+        setSelectedImageForHandles(targetImage);
+      } else {
+        setSelectedImageForHandles(null);
+      }
       alert(`Failed to open editor: ${err.message}`);
     }
   };
@@ -2080,6 +2319,18 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
     destroy() {
       void closeInlineImageEditor({ applyChanges: false });
       wysiwyg.removeEventListener("click", onClick);
+      window.removeEventListener("resize", onGlobalGeometryChange);
+      window.removeEventListener("scroll", onGlobalGeometryChange, true);
+      wysiwyg.removeEventListener("scroll", onGlobalGeometryChange, true);
+      wysiwyg.removeEventListener("input", onGlobalGeometryChange);
+      if (handleSyncRaf) {
+        window.cancelAnimationFrame(handleSyncRaf);
+        handleSyncRaf = 0;
+      }
+      removed = true;
+      setSelectedImageForHandles(null);
+      cornerHandles.forEach((handle) => handle.remove());
+      cornerHandles.clear();
       markSelectedImage(wysiwyg, null);
       updateSelectedImageState(null);
     },
@@ -2397,6 +2648,76 @@ function registerHTMLFallbackHotkeys(wysiwyg, filePath, rootElem) {
   return () => rootElem.removeEventListener("keydown", onKeyDown);
 }
 
+const HTML_VOID_TAGS = new Set([
+  "area", "base", "br", "col", "embed", "hr", "img", "input",
+  "link", "meta", "param", "source", "track", "wbr",
+]);
+
+const HTML_RAW_TEXT_TAGS = new Set(["script", "style", "pre", "textarea"]);
+
+function formatHtmlMarkup(html = "") {
+  const source = String(html || "");
+  if (!source.trim()) return "";
+
+  const tokens = source.split(/(<[^>]+>)/g).filter((token) => token.length > 0);
+  const lines = [];
+  let indentLevel = 0;
+  let rawTextTag = null;
+
+  function pushLine(value, level = indentLevel) {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return;
+    lines.push(`${"  ".repeat(Math.max(level, 0))}${trimmed}`);
+  }
+
+  for (const token of tokens) {
+    const isTag = token.startsWith("<") && token.endsWith(">");
+    if (!isTag) {
+      if (rawTextTag) {
+        const rawLines = token.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        rawLines.forEach((line) => pushLine(line, indentLevel));
+      } else {
+        token
+          .split(/\r?\n/)
+          .map((line) => line.replace(/\s+/g, " ").trim())
+          .filter(Boolean)
+          .forEach((line) => pushLine(line, indentLevel));
+      }
+      continue;
+    }
+
+    if (token.startsWith("</")) {
+      const closingMatch = token.match(/^<\/\s*([a-zA-Z0-9:-]+)/);
+      const closingTag = closingMatch ? closingMatch[1].toLowerCase() : "";
+      indentLevel = Math.max(indentLevel - 1, 0);
+      pushLine(token, indentLevel);
+      if (rawTextTag && closingTag === rawTextTag) {
+        rawTextTag = null;
+      }
+      continue;
+    }
+
+    if (token.startsWith("<!")) {
+      pushLine(token, 0);
+      continue;
+    }
+
+    const openingMatch = token.match(/^<\s*([a-zA-Z0-9:-]+)/);
+    const openingTag = openingMatch ? openingMatch[1].toLowerCase() : "";
+    const selfClosing = token.endsWith("/>") || HTML_VOID_TAGS.has(openingTag);
+
+    pushLine(token, indentLevel);
+    if (!selfClosing) {
+      indentLevel += 1;
+      if (HTML_RAW_TEXT_TAGS.has(openingTag)) {
+        rawTextTag = openingTag;
+      }
+    }
+  }
+
+  return lines.join("\n");
+}
+
 // --------------------------------------------------
 // Main HTML Editor
 // --------------------------------------------------
@@ -2520,7 +2841,8 @@ export async function renderEditor(filePath, container, options = {}) {
         .map(el => `<script>${el.dataset.script}</script>`)
         .join("\n");
 
-      return `<!DOCTYPE html><html><head>${headContent}</head><body>${bodyContent}${scripts}</body></html>`;
+      const rawHtml = `<!DOCTYPE html><html><head>${headContent}</head><body>${bodyContent}${scripts}</body></html>`;
+      return formatHtmlMarkup(rawHtml);
     };
 
     window.setEditorHTML = (html) => {
