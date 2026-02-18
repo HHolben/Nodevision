@@ -15,6 +15,40 @@ const EDGE_BUCKET_SYMBOLS = [
     '#',
     '_'
 ];
+const DIRECTORY_IMAGE_CANDIDATES = [
+    '.directory.svg',
+    '.directory.png',
+    'directory.svg',
+    'directory.png',
+];
+
+function toNotebookAssetUrl(relativePath) {
+    const parts = String(relativePath)
+        .split(/[\\/]+/)
+        .filter(Boolean)
+        .map(encodeURIComponent);
+    return `/Notebook/${parts.join('/')}`;
+}
+
+function inferCurrentDirectoryImage(files, parentPath) {
+    if (!Array.isArray(files)) return '';
+
+    for (const candidate of DIRECTORY_IMAGE_CANDIDATES) {
+        const hit = files.find((entry) => entry && !entry.isDirectory && entry.name === candidate);
+        if (!hit) continue;
+
+        if (typeof hit.path === 'string' && hit.path) {
+            return toNotebookAssetUrl(hit.path);
+        }
+
+        const rel = normalizePath(parentPath)
+            ? `${normalizePath(parentPath)}/${candidate}`
+            : candidate;
+        return toNotebookAssetUrl(rel);
+    }
+
+    return '';
+}
 
 function isExternalOrAnchorLink(link) {
     return (
@@ -216,8 +250,20 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                 style: {
                     'background-color': '#ffca28',
                     'shape': 'rectangle',
-                    'width': '50px',
-                    'height': '30px'
+                    'width': '64px',
+                    'height': '64px'
+                }
+            },
+            {
+                selector: 'node[type="directory"][hasDirectoryImage = 1]:childless',
+                style: {
+                    'background-image': 'data(directoryImageUrl)',
+                    'background-fit': 'cover',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%',
+                    'background-repeat': 'no-repeat',
+                    'border-width': 1,
+                    'border-color': '#b58a19'
                 }
             },
             {
@@ -229,6 +275,17 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'border-width': 2,
                     'text-valign': 'top',
                     'text-halign': 'center'
+                }
+            },
+            {
+                selector: 'node[type="directory"][hasDirectoryImage = 1]:parent',
+                style: {
+                    'background-image': 'data(directoryImageUrl)',
+                    'background-fit': 'cover',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%',
+                    'background-repeat': 'no-repeat',
+                    'background-opacity': 0.35
                 }
             },
             {
@@ -274,6 +331,7 @@ async function renderGraphData(files, parentPath) {
 
     const normalizedParentPath = normalizePath(parentPath);
     const parentId = normalizedParentPath || "Root";
+    const currentDirectoryImage = inferCurrentDirectoryImage(files, normalizedParentPath);
 
     if (cy.getElementById(parentId).empty()) {
         cy.add({
@@ -282,9 +340,15 @@ async function renderGraphData(files, parentPath) {
                 id: parentId, 
                 label: parentId === "Root" ? "🏠 Notebook" : parentId.split('/').pop(), 
                 type: 'directory', 
-                fullPath: normalizedParentPath 
+                fullPath: normalizedParentPath,
+                directoryImageUrl: currentDirectoryImage,
+                hasDirectoryImage: currentDirectoryImage ? 1 : 0
             }
         });
+    } else {
+        const parentNode = cy.getElementById(parentId);
+        parentNode.data('directoryImageUrl', currentDirectoryImage);
+        parentNode.data('hasDirectoryImage', currentDirectoryImage ? 1 : 0);
     }
 
     const filesToScan = [];
@@ -293,6 +357,7 @@ async function renderGraphData(files, parentPath) {
         files.forEach(f => {
             const rawPath = parentPath ? `${parentPath}/${f.name}` : f.name;
             const fullPath = normalizePath(rawPath);
+            const directoryImageUrl = f.isDirectory && typeof f.directoryImageUrl === 'string' ? f.directoryImageUrl : '';
             
             if (cy.getElementById(fullPath).empty()) {
                 cy.add({
@@ -302,15 +367,21 @@ async function renderGraphData(files, parentPath) {
                         label: f.name,
                         fullPath: fullPath,
                         type: f.isDirectory ? 'directory' : 'file',
-                        parent: parentId 
+                        parent: parentId,
+                        directoryImageUrl,
+                        hasDirectoryImage: directoryImageUrl ? 1 : 0
                     }
                 });
+            } else if (f.isDirectory) {
+                const existing = cy.getElementById(fullPath);
+                existing.data('directoryImageUrl', directoryImageUrl);
+                existing.data('hasDirectoryImage', directoryImageUrl ? 1 : 0);
+            }
 
-                if (!f.isDirectory) {
-                    const ext = f.name.split('.').pop().toLowerCase();
-                    if (ext === 'html' || ext === 'md') {
-                        filesToScan.push(fullPath);
-                    }
+            if (!f.isDirectory) {
+                const ext = f.name.split('.').pop().toLowerCase();
+                if (ext === 'html' || ext === 'md') {
+                    filesToScan.push(fullPath);
                 }
             }
         });

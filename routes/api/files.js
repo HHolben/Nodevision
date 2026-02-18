@@ -12,6 +12,12 @@ const router = express.Router();
 
 // Base directory for the Notebook
 const notebookBasePath = path.resolve(__dirname, '../../Notebook');
+const DIRECTORY_IMAGE_CANDIDATES = [
+    '.directory.svg',
+    '.directory.png',
+    'directory.svg',
+    'directory.png',
+];
 
 function normalizeNotebookRelativePath(inputPath) {
     if (!inputPath) return '';
@@ -23,27 +29,59 @@ function normalizeNotebookRelativePath(inputPath) {
     return cleaned;
 }
 
-// Helper function to read directory contents
-async function readDirectory(dir) {
-    const result = [];
-    const entries = await fs.readdir(dir, { withFileTypes: true });
+function toNotebookAssetUrl(relativePath) {
+    const parts = String(relativePath)
+        .split(/[\\/]+/)
+        .filter(Boolean)
+        .map(encodeURIComponent);
+    return `/Notebook/${parts.join('/')}`;
+}
 
-    for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            result.push({
-                name: entry.name,
-                path: path.relative(notebookBasePath, fullPath),
-                isDirectory: true,
-            });
-        } else {
-            result.push({
-                name: entry.name,
-                path: path.relative(notebookBasePath, fullPath),
-                isDirectory: false,
-            });
+async function findDirectoryImage(directoryFullPath, directoryRelativePath) {
+    for (const candidate of DIRECTORY_IMAGE_CANDIDATES) {
+        const candidateFullPath = path.join(directoryFullPath, candidate);
+        try {
+            await fs.access(candidateFullPath);
+            const rel = directoryRelativePath
+                ? `${directoryRelativePath.split(path.sep).join('/')}/${candidate}`
+                : candidate;
+            return {
+                directoryImageName: candidate,
+                directoryImageUrl: toNotebookAssetUrl(rel),
+            };
+        } catch {
+            // Try next candidate.
         }
     }
+
+    return {
+        directoryImageName: null,
+        directoryImageUrl: null,
+    };
+}
+
+// Helper function to read directory contents
+async function readDirectory(dir) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    const result = await Promise.all(entries.map(async (entry) => {
+        const fullPath = path.join(dir, entry.name);
+        const relativePath = path.relative(notebookBasePath, fullPath);
+        if (entry.isDirectory()) {
+            const imageInfo = await findDirectoryImage(fullPath, relativePath);
+            return {
+                name: entry.name,
+                path: relativePath,
+                isDirectory: true,
+                ...imageInfo,
+            };
+        }
+
+        return {
+            name: entry.name,
+            path: relativePath,
+            isDirectory: false,
+        };
+    }));
     return result;
 }
 

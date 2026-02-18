@@ -13,6 +13,7 @@ const router = express.Router();
 
 // Correct Notebook root path
 const NOTEBOOK_ROOT = path.resolve(__dirname, '../../Notebook');
+const USER_SETTINGS_ROOT = path.resolve(__dirname, '../../UserSettings');
 
 // ---------- Path Sanitizer ----------
 function resolveNotebookPath(relativePath) {
@@ -29,6 +30,16 @@ function resolveNotebookPath(relativePath) {
   }
 
   return path.join(NOTEBOOK_ROOT, cleaned);
+}
+
+function resolveUserSettingsPath(relativePath) {
+  if (!relativePath) throw new Error("Missing path");
+
+  let cleaned = relativePath.replace(/^\/+/, '');
+  cleaned = path.normalize(cleaned);
+  cleaned = cleaned.replace(/\.\.(\/|\\)/g, '');
+
+  return path.join(USER_SETTINGS_ROOT, cleaned);
 }
 
 // =========================================================
@@ -156,12 +167,25 @@ router.post('/delete', async (req, res) => {
   if (!relativePath) return res.status(400).send('Path is required');
 
   const targetPath = resolveNotebookPath(relativePath);
-  const trashDir = resolveNotebookPath('Trash');
+  const legacyTrashDir = resolveNotebookPath('Trash');
+  const trashDir = resolveUserSettingsPath('Trash');
 
   try {
+    try {
+      await fs.access(legacyTrashDir);
+      await fs.access(trashDir);
+    } catch {
+      try {
+        await fs.rename(legacyTrashDir, trashDir);
+      } catch {
+        // Best-effort migration only.
+      }
+    }
+
     await fs.mkdir(trashDir, { recursive: true });
 
-    const stamped = `${Date.now()}_${relativePath.replace(/^\/+/, '')}`;
+    const safeRelativePath = path.relative(NOTEBOOK_ROOT, targetPath).split(path.sep).join('/');
+    const stamped = `${Date.now()}_${safeRelativePath}`;
     const trashPath = path.join(trashDir, stamped);
 
     await fs.mkdir(path.dirname(trashPath), { recursive: true });

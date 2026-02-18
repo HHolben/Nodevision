@@ -119,8 +119,41 @@ export function displayFiles(files, currentPath) {
     const li = document.createElement("li");
     const link = document.createElement("a");
     link.href = "#";
-    link.textContent = (f.isDirectory ? "📁  " : "🖹  ") + f.name;
     link.classList.add(f.isDirectory ? "folder" : "file");
+    link.style.display = "flex";
+    link.style.alignItems = "center";
+    link.style.gap = "8px";
+
+    const icon = document.createElement("span");
+    icon.style.display = "inline-flex";
+    icon.style.alignItems = "center";
+    icon.style.justifyContent = "center";
+    icon.style.width = "20px";
+    icon.style.height = "20px";
+    icon.style.flex = "0 0 20px";
+    icon.style.borderRadius = "3px";
+
+    if (f.isDirectory && typeof f.directoryImageUrl === "string" && f.directoryImageUrl) {
+      icon.style.backgroundImage = `url(${JSON.stringify(f.directoryImageUrl)})`;
+      icon.style.backgroundSize = "cover";
+      icon.style.backgroundPosition = "center";
+      icon.style.backgroundRepeat = "no-repeat";
+      icon.style.border = "1px solid rgba(0, 0, 0, 0.2)";
+    } else {
+      icon.textContent = f.isDirectory ? "📁" : "🖹";
+      icon.style.fontSize = "14px";
+      icon.style.lineHeight = "1";
+    }
+
+    const label = document.createElement("span");
+    label.textContent = f.name;
+    label.style.minWidth = "0";
+    label.style.overflow = "hidden";
+    label.style.textOverflow = "ellipsis";
+    label.style.whiteSpace = "nowrap";
+
+    link.appendChild(icon);
+    link.appendChild(label);
 
     // Save full path on element for selection
     link.dataset.fullPath = (currentPath ? `${currentPath}/${f.name}` : f.name).replace(/\/+/g, "/");
