@@ -103,8 +103,29 @@ class STLViewer {
     removable.forEach(ch => this.scene.remove(ch));
   }
 
+  showError(message) {
+    const existing = this.container.querySelector('.stl-viewer-error');
+    if (existing) existing.remove();
+    const errorEl = document.createElement('div');
+    errorEl.className = 'stl-viewer-error';
+    errorEl.style.position = 'absolute';
+    errorEl.style.left = '10px';
+    errorEl.style.bottom = '10px';
+    errorEl.style.maxWidth = '80%';
+    errorEl.style.padding = '8px 10px';
+    errorEl.style.background = 'rgba(176,0,32,0.92)';
+    errorEl.style.color = '#fff';
+    errorEl.style.fontFamily = 'sans-serif';
+    errorEl.style.fontSize = '12px';
+    errorEl.style.borderRadius = '4px';
+    errorEl.textContent = message;
+    this.container.appendChild(errorEl);
+  }
+
   loadSTL(filePath, serverBase) {
     this.clearModel();
+    const oldError = this.container.querySelector('.stl-viewer-error');
+    if (oldError) oldError.remove();
 
     const loader = new STLLoader();
     loader.load(`${serverBase}/${encodeURIComponent(filePath)}`, geometry => {
@@ -155,6 +176,10 @@ class STLViewer {
       pointCloud.position.sub(center);
       pointCloud.userData.isVertex = true;
       this.scene.add(pointCloud);
+    }, undefined, err => {
+      console.error('[ViewSTL] Failed to load STL:', err);
+      const message = err?.message || 'Unknown STL load error.';
+      this.showError(`Failed to load STL model: ${message}`);
     });
   }
 }

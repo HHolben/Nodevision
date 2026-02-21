@@ -14,6 +14,7 @@ const router = express.Router();
 // Correct Notebook root path
 const NOTEBOOK_ROOT = path.resolve(__dirname, '../../Notebook');
 const USER_SETTINGS_ROOT = path.resolve(__dirname, '../../UserSettings');
+const USER_TRASH_ROOT = path.join(USER_SETTINGS_ROOT, 'Trash');
 
 // ---------- Path Sanitizer ----------
 function resolveNotebookPath(relativePath) {
@@ -40,6 +41,19 @@ function resolveUserSettingsPath(relativePath) {
   cleaned = cleaned.replace(/\.\.(\/|\\)/g, '');
 
   return path.join(USER_SETTINGS_ROOT, cleaned);
+}
+
+function normalizeClientPath(inputPath) {
+  return String(inputPath || '')
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/')
+    .trim();
+}
+
+function isWithin(parentDir, childPath) {
+  const rel = path.relative(parentDir, childPath);
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 
 // =========================================================
@@ -166,11 +180,29 @@ router.post('/delete', async (req, res) => {
   const { path: relativePath } = req.body;
   if (!relativePath) return res.status(400).send('Path is required');
 
-  const targetPath = resolveNotebookPath(relativePath);
+  const normalizedClientPath = normalizeClientPath(relativePath);
+  const deletingFromUserSettings = normalizedClientPath === 'UserSettings' || normalizedClientPath.startsWith('UserSettings/');
+  const targetPath = deletingFromUserSettings
+    ? resolveUserSettingsPath(normalizedClientPath.replace(/^UserSettings\/?/i, ''))
+    : resolveNotebookPath(normalizedClientPath);
   const legacyTrashDir = resolveNotebookPath('Trash');
   const trashDir = resolveUserSettingsPath('Trash');
 
   try {
+    // Permanent delete if item is already in UserSettings/Trash.
+    if (isWithin(USER_TRASH_ROOT, targetPath)) {
+      if (path.resolve(targetPath) === path.resolve(USER_TRASH_ROOT)) {
+        return res.status(400).json({ error: 'Refusing to delete Trash root directory.' });
+      }
+
+      await fs.rm(targetPath, { recursive: true, force: true });
+      return res.json({
+        success: true,
+        originalPath: relativePath,
+        permanentlyDeleted: true
+      });
+    }
+
     try {
       await fs.access(legacyTrashDir);
       await fs.access(trashDir);
@@ -184,7 +216,9 @@ router.post('/delete', async (req, res) => {
 
     await fs.mkdir(trashDir, { recursive: true });
 
-    const safeRelativePath = path.relative(NOTEBOOK_ROOT, targetPath).split(path.sep).join('/');
+    const safeRelativePath = deletingFromUserSettings
+      ? `UserSettings/${path.relative(USER_SETTINGS_ROOT, targetPath).split(path.sep).join('/')}`
+      : path.relative(NOTEBOOK_ROOT, targetPath).split(path.sep).join('/');
     const stamped = `${Date.now()}_${safeRelativePath}`;
     const trashPath = path.join(trashDir, stamped);
 

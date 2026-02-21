@@ -135,6 +135,14 @@ export async function setupPanel(panel, instanceVars = {}) {
       panel._vrObjectInspector.dispose();
       panel._vrObjectInspector = null;
     }
+    if (panel._vrTerrainToolController?.dispose) {
+      panel._vrTerrainToolController.dispose();
+      panel._vrTerrainToolController = null;
+    }
+    if (panel._vrSaveVirtualWorldFile && window.saveVirtualWorldFile === panel._vrSaveVirtualWorldFile) {
+      window.saveVirtualWorldFile = null;
+    }
+    panel._vrSaveVirtualWorldFile = null;
     if (window.__nodevisionGameViewCleanup === panel.cleanup) {
       window.__nodevisionGameViewCleanup = null;
     }

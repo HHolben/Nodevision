@@ -61,6 +61,12 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     }
 
     const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, waterVolumes, measurementVisuals, controls, movementState } = window.VRWorldContext;
+    if (state) {
+      state.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+    }
+    if (window.VRWorldContext) {
+      window.VRWorldContext.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+    }
     const modeHint = String(
       worldData?.worldMode
       || worldData?.mode
@@ -71,6 +77,27 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     if (movementState) {
       movementState.worldMode = modeHint === "2d" ? "2d" : "3d";
       movementState.requestCycleCamera = false;
+
+      const rawRules = worldData?.playerRules
+        || worldData?.metadata?.playerRules
+        || worldData?.metadata?.capabilities
+        || worldData?.usd?.metadata?.playerRules
+        || worldData?.usd?.metadata?.capabilities
+        || {};
+      const readRule = (name, fallback = false) => {
+        const value = rawRules?.[name];
+        return typeof value === "boolean" ? value : fallback;
+      };
+      movementState.worldRules = {
+        allowFly: readRule("allowFly", false),
+        allowRoll: readRule("allowRoll", false),
+        allowPitch: readRule("allowPitch", false),
+        allowPlace: readRule("allowPlace", false),
+        allowBreak: readRule("allowBreak", false),
+        allowInspect: readRule("allowInspect", false),
+        allowToolUse: readRule("allowToolUse", false),
+        allowSave: readRule("allowSave", false)
+      };
     }
     objects.forEach(obj => scene.remove(obj));
     objects.length = 0;
@@ -413,6 +440,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       if (mesh) {
         mesh.position.set(...def.position);
         mesh.userData.nvType = def.type || portalShape || null;
+        if (typeof def.tag === "string" && def.tag) mesh.userData.tag = def.tag;
+        if (typeof def.spawnId === "string" && def.spawnId) mesh.userData.spawnId = def.spawnId;
+        if (Number.isFinite(def.spawnYaw)) mesh.userData.spawnYaw = def.spawnYaw;
         mesh.userData.breakable = def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true;
         mesh.userData.isWater = def.isWater === true;
         scene.add(mesh);
@@ -420,6 +450,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         if (isPortal) {
           mesh.userData.isPortal = true;
           mesh.userData.portalTarget = resolvedPortalTarget;
+          mesh.userData.portalSameWorld = sameWorld;
+          mesh.userData.portalSpawn = Array.isArray(def.spawn) ? [...def.spawn] : null;
+          mesh.userData.portalSpawnPoint = typeof portalSpawnPoint === "string" ? portalSpawnPoint : null;
+          mesh.userData.portalSpawnYaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : null;
+          mesh.userData.portalCooldownMs = Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200;
           if ((resolvedPortalTarget || sameWorld) && portals) {
             const box = new THREE.Box3().setFromObject(mesh);
             portals.push({

@@ -4,6 +4,15 @@
     "parentHeading": "Draw", 
     "ToolbarCategory": "draw",
     "callbackKey": "PickColor",
-    "preventAutoSubToolbar": true
+    "preventAutoSubToolbar": true,
+    "modes": ["PNGediting"]
+  },
+  {
+    "heading": "SVG Draw",
+    "parentHeading": "Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "DrawSVG",
+    "preventAutoSubToolbar": true,
+    "modes": ["SVG Editing"]
   }
 ]

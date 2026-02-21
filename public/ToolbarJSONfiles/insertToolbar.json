@@ -5,6 +5,46 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "heading": "PHP Runtime Tools",
+      "modes": ["PHPediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "PHP Runtime Tools",
+      "heading": "Device Management Panel",
+      "callbackKey": "phpOpenDeviceManager",
+      "modes": ["PHPediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "PHP Runtime Tools",
+      "heading": "Logic Block Editor Panel",
+      "callbackKey": "phpOpenLogicEditor",
+      "modes": ["PHPediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "PHP Runtime Tools",
+      "heading": "Dashboard Configuration Panel",
+      "callbackKey": "phpOpenDashboardConfig",
+      "modes": ["PHPediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "PHP Runtime Tools",
+      "heading": "Data Logging Panel",
+      "callbackKey": "phpOpenDataLogging",
+      "modes": ["PHPediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "PHP Runtime Tools",
+      "heading": "Live Preview / Execution",
+      "callbackKey": "phpToggleLivePreview",
+      "modes": ["PHPediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
       "heading": "h1",
       "insertGroup": "text",
       "callbackKey": "insertH1",

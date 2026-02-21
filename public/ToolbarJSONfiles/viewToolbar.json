@@ -3,7 +3,50 @@
     "ToolbarCategory": "View",
     "heading": "ViewLayers",
     "icon": "icons/layoutControls.png",
-    "callbackKey": "ViewLayers"
+    "callbackKey": "ViewLayers",
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "ViewLayers",
+    "heading": "New Layer",
+    "callbackKey": "svgLayerAdd",
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "ViewLayers",
+    "heading": "Next Layer",
+    "callbackKey": "svgLayerNext",
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "ViewLayers",
+    "heading": "Previous Layer",
+    "callbackKey": "svgLayerPrev",
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "ViewLayers",
+    "heading": "Rename Active Layer",
+    "callbackKey": "svgLayerRenameActive",
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "ViewLayers",
+    "heading": "Delete Active Layer",
+    "callbackKey": "svgLayerDeleteActive",
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "ViewLayers",
+    "heading": "Toggle Layer Visibility",
+    "callbackKey": "svgLayerToggleActiveVisibility",
+    "modes": ["SVG Editing"]
   },
   {
     "ToolbarCategory": "View",
@@ -35,6 +78,15 @@
   {
     "ToolbarCategory": "View",
     "heading": "Virtual World Viewing",
+    "callbackKey": "VirtualWorldViewing",
+    "panel": "GameView",
+    "panelTemplate": "GameView",
+    "panelPath": "/PanelInstances/ViewPanels/GameView.mjs"
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Editing",
+    "callbackKey": "VirtualWorldEditing",
     "panel": "GameView",
     "panelTemplate": "GameView",
     "panelPath": "/PanelInstances/ViewPanels/GameView.mjs"

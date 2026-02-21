@@ -5,7 +5,7 @@ import { createCollisionChecker } from "./collisionCheck.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
 
-export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, loadWorldFromFile, getBindings, heldKeys, movementState }) {
+export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController }) {
   const playerRadius = 0.35;
   const basePlayerHeight = 1.75;
   const crouchHeight = 1.2;
@@ -35,6 +35,16 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const raycastDirection = new THREE.Vector3();
   const mouseLikeEuler = new THREE.Euler(0, 0, 0, "YXZ");
   const halfPi = Math.PI / 2;
+
+  function playerMode() {
+    const mode = String(movementState?.playerMode || "survival").toLowerCase();
+    return mode === "creative" ? "creative" : "survival";
+  }
+
+  function canUseAbility(abilityKey) {
+    if (playerMode() === "creative") return true;
+    return movementState?.worldRules?.[abilityKey] === true;
+  }
 
   movementState.playerHeight = basePlayerHeight;
   const wouldCollide = createCollisionChecker({ colliders, movementState, playerRadius });
@@ -587,6 +597,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
   function tryPlaceSelectedInventoryItem({ snapToGrid = false } = {}) {
     if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowPlace")) return false;
     const inventory = window.VRWorldContext?.inventory;
     if (!inventory?.getSelectedItem || !inventory?.consumeSelected) return false;
     const selected = inventory.getSelectedItem();
@@ -650,6 +661,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
   function tryUseSelectedTool() {
     if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowToolUse")) return false;
     const inventory = window.VRWorldContext?.inventory;
     const selected = inventory?.getSelectedItem?.();
     if (!selected?.id) return false;
@@ -676,8 +688,6 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
 
     if (toolId === "tape-measure") {
-      if (movementState.tapeToolLatch) return true;
-      movementState.tapeToolLatch = true;
       const hit = getTapeMeasureHit();
       if (!hit?.point) return true;
       if (!movementState.tapeMeasureFirstPoint || movementState.tapeMeasureSecondPoint) {
@@ -705,11 +715,20 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       return true;
     }
 
+    if (toolId === "terrain-generator") {
+      if (movementState.terrainToolLatch) return true;
+      movementState.terrainToolLatch = true;
+      const terrainTool = terrainToolController || window.VRWorldContext?.terrainToolController;
+      terrainTool?.openPanel?.();
+      return true;
+    }
+
     return false;
   }
 
   function tryBreakTargetBlock() {
     if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowBreak")) return false;
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const worldCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
     const measureCandidates = getMeasurementVisualsStore().filter((obj) => obj?.isMesh && obj?.visible);
@@ -771,6 +790,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
   function tryInspectTarget() {
     if (!objectInspector) return false;
+    if (!canUseAbility("allowInspect")) return false;
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
     const hits = raycaster.intersectObjects(candidates, false);
@@ -840,7 +860,9 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     inventoryMenuConfirmLatch = false;
 
     if (inputState.fly && !movementState.flyToggleLatch) {
-      movementState.isFlying = !movementState.isFlying;
+      if (canUseAbility("allowFly")) {
+        movementState.isFlying = !movementState.isFlying;
+      }
       movementState.flyToggleLatch = true;
     }
     if (!inputState.fly) movementState.flyToggleLatch = false;
@@ -848,7 +870,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       movementState.useLatch = false;
       movementState.lastUseActionMs = 0;
       movementState.svgToolLatch = false;
-      movementState.tapeToolLatch = false;
+      movementState.terrainToolLatch = false;
     }
     if (!attacking) movementState.attackLatch = false;
     if (!inspecting) movementState.inspectLatch = false;
@@ -927,7 +949,14 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       pauseLatch = false;
     }
 
-    applyRollPitch({ camera, inputState });
+    const rollPitchInput = {
+      ...inputState,
+      rollLeft: canUseAbility("allowRoll") ? inputState.rollLeft : false,
+      rollRight: canUseAbility("allowRoll") ? inputState.rollRight : false,
+      pitchUp: canUseAbility("allowPitch") ? inputState.pitchUp : false,
+      pitchDown: canUseAbility("allowPitch") ? inputState.pitchDown : false
+    };
+    applyRollPitch({ camera, inputState: rollPitchInput });
     updateTapeMeasurePreview();
 
     const actionHit = findCollisionActionHit(controls.getObject().position, performance.now());

@@ -3,6 +3,40 @@
 const SAVE_ENDPOINT = "/api/save";
 const NOTEBOOK_BASE = "/Notebook";
 
+function normalizeNotebookPath(pathLike = "") {
+  let clean = String(pathLike || "").trim();
+  if (!clean) return "";
+
+  clean = clean.replace(/[?#].*$/, "");
+  clean = clean.replace(/\\/g, "/");
+  clean = clean.replace(/^https?:\/\/[^/]+/i, "");
+  clean = clean.replace(/^\/+/, "");
+  clean = clean.replace(/^Notebook\/+/i, "");
+  clean = clean.replace(/\/+/g, "/");
+  return clean;
+}
+
+function assertFileLikePath(pathLike = "") {
+  const clean = normalizeNotebookPath(pathLike);
+  if (!clean) {
+    throw new Error("No file path selected.");
+  }
+  if (clean.endsWith("/")) {
+    throw new Error(`"${clean}" looks like a directory, not a file.`);
+  }
+  return clean;
+}
+
+function toNotebookUrl(pathLike = "") {
+  const clean = assertFileLikePath(pathLike);
+  const encoded = clean
+    .split("/")
+    .filter(Boolean)
+    .map(encodeURIComponent)
+    .join("/");
+  return `${NOTEBOOK_BASE}/${encoded}`;
+}
+
 export function resetEditorHooks() {
   window.getEditorMarkdown = undefined;
   window.saveMDFile = undefined;
@@ -50,23 +84,28 @@ export function createBaseLayout(container, title) {
 }
 
 export async function fetchArrayBuffer(filePath) {
-  const res = await fetch(`${NOTEBOOK_BASE}/${filePath}`);
+  const res = await fetch(toNotebookUrl(filePath));
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return await res.arrayBuffer();
 }
 
 export async function fetchText(filePath) {
-  const res = await fetch(`${NOTEBOOK_BASE}/${filePath}`);
+  const res = await fetch(toNotebookUrl(filePath));
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return await res.text();
 }
 
 export async function saveText(path, content) {
-  await postSave({ path, content, encoding: "utf8" });
+  await postSave({ path: assertFileLikePath(path), content, encoding: "utf8" });
 }
 
 export async function saveBase64(path, base64, mimeType = "application/octet-stream") {
-  await postSave({ path, content: base64, encoding: "base64", mimeType });
+  await postSave({
+    path: assertFileLikePath(path),
+    content: base64,
+    encoding: "base64",
+    mimeType,
+  });
 }
 
 async function postSave(payload) {
@@ -93,4 +132,3 @@ export function escapeHTML(str = "") {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 }
-

@@ -1,6 +1,7 @@
 // Nodevision/public/PanelInstances/EditorPanels/GraphicalEditor.mjs
 // Displays the appropriate Nodevision graphical editor for the selected file,
 // using ModuleMap.csv as the single source of truth.
+import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 let lastEditedPath = null;
 let moduleMapCache = null;
@@ -120,8 +121,10 @@ export async function updateGraphicalEditor(
   if (!filePath) {
     window.NodevisionState = window.NodevisionState || {};
     window.NodevisionState.activePanelType = "GraphicalEditor";
+    window.NodevisionState.currentMode = "GraphicalEditing";
     window.NodevisionState.selectedFile = null;
     window.NodevisionState.activeEditorFilePath = null;
+    updateToolbarState({ currentMode: "GraphicalEditing" });
     window.currentActiveFilePath = null;
     window.filePath = null;
 
@@ -147,8 +150,10 @@ export async function updateGraphicalEditor(
   window.selectedFilePath = filePath;
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activePanelType = "GraphicalEditor";
+  window.NodevisionState.currentMode = "GraphicalEditing";
   window.NodevisionState.selectedFile = filePath;
   window.NodevisionState.activeEditorFilePath = filePath;
+  updateToolbarState({ currentMode: "GraphicalEditing" });
 
   console.log("🧭 Loading graphical editor for:", filePath);
 

@@ -14,6 +14,8 @@ const router = express.Router();
 // Define the base directory for the Notebook
 const tmp = path.resolve(__dirname, '../../Notebook'); // temporary ref
 const notebookDir = tmp; // rename for clarity
+const userSettingsDir = path.resolve(__dirname, '../../UserSettings');
+const userTrashRelative = 'Trash';
 
 // Ensure the Notebook directory exists on startup
 (async () => {
@@ -25,8 +27,49 @@ const notebookDir = tmp; // rename for clarity
   }
 })();
 
+function normalizeClientPath(inputPath) {
+    if (!inputPath) return '';
+    return String(inputPath)
+        .replace(/\\/g, '/')
+        .replace(/^\/+/, '')
+        .replace(/\/+/g, '/')
+        .trim();
+}
+
+function resolveScopedDirectory(clientPath = '') {
+    const normalized = normalizeClientPath(clientPath);
+    const isUserSettings = normalized === 'UserSettings' || normalized.startsWith('UserSettings/');
+
+    if (isUserSettings) {
+        const relativeUnderUserSettings = normalized.slice('UserSettings'.length).replace(/^\/+/, '');
+        const resolved = path.resolve(userSettingsDir, relativeUnderUserSettings || '.');
+        const rel = path.relative(userSettingsDir, resolved);
+        if (rel.startsWith('..') || path.isAbsolute(rel)) {
+            throw new Error('Access denied');
+        }
+        return {
+            fullPath: resolved,
+            rootType: 'userSettings',
+            rootBase: userSettingsDir,
+            rootPrefix: 'UserSettings'
+        };
+    }
+
+    const resolved = path.resolve(notebookDir, normalized || '.');
+    const rel = path.relative(notebookDir, resolved);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+        throw new Error('Access denied');
+    }
+    return {
+        fullPath: resolved,
+        rootType: 'notebook',
+        rootBase: notebookDir,
+        rootPrefix: ''
+    };
+}
+
 // Helper function to read a directory
-async function readDirectory(dir) {
+async function readDirectory(dir, { rootBase, rootPrefix } = {}) {
     let entries;
     try {
         entries = await fs.readdir(dir, { withFileTypes: true });
@@ -41,9 +84,11 @@ async function readDirectory(dir) {
     const result = [];
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
+        const relFromRoot = path.relative(rootBase || notebookDir, fullPath).split(path.sep).join('/');
+        const prefixedPath = rootPrefix ? `${rootPrefix}/${relFromRoot}` : relFromRoot;
         result.push({
             name: entry.name,
-            path: path.relative(notebookDir, fullPath),
+            path: prefixedPath,
             isDirectory: entry.isDirectory(),
         });
     }
@@ -76,10 +121,19 @@ router.post('/create-directory', async (req, res) => {
 
 // Endpoint to list available files in a directory
 router.get('/files', async (req, res) => {
-    const dir = req.query.path ? path.join(notebookDir, req.query.path) : notebookDir;
-
     try {
-        const structure = await readDirectory(dir);
+        const requestedPath = req.query.path || '';
+        const scoped = resolveScopedDirectory(requestedPath);
+
+        // Ensure the trash directory exists on first open.
+        if (normalizeClientPath(requestedPath).toLowerCase() === 'usersettings/trash') {
+            await fs.mkdir(path.join(userSettingsDir, userTrashRelative), { recursive: true });
+        }
+
+        const structure = await readDirectory(scoped.fullPath, {
+            rootBase: scoped.rootBase,
+            rootPrefix: scoped.rootPrefix
+        });
         res.json(structure);
     } catch (error) {
         console.error('Error reading directory structure:', error);

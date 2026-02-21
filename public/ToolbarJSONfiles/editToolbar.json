@@ -108,6 +108,64 @@
   },
 {
   "ToolbarCategory": "Edit",
+  "heading": "SVG Selection",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "SVG Controls",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Controls",
+  "heading": "Change Fill Color",
+  "callbackKey": "svgChangeFillColor",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Controls",
+  "heading": "Change Stroke Color",
+  "callbackKey": "svgChangeStrokeColor",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Controls",
+  "heading": "Change Stroke Width",
+  "callbackKey": "svgChangeStrokeWidth",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Controls",
+  "heading": "Apply Style To Selection",
+  "callbackKey": "svgApplyStyleToSelection",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Controls",
+  "heading": "Resize Canvas",
+  "callbackKey": "svgResizeCanvas",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Controls",
+  "heading": "Crop To Selection",
+  "callbackKey": "svgCropToSelection",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "heading": "SVG Arrange",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
   "heading": "Select Tool",
   "callbackKey": "svgSelectTool",
   "modes": ["SVG Editing"],
@@ -115,6 +173,7 @@
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
   "heading": "Move Shape",
   "callbackKey": "moveShape",
   "modes": ["SVG Editing"],
@@ -122,6 +181,14 @@
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
+  "heading": "Select All",
+  "callbackKey": "svgSelectAll",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
   "heading": "Delete Shape",
   "callbackKey": "svgDeleteShape",
   "modes": ["SVG Editing"],
@@ -129,36 +196,14 @@
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
   "heading": "Duplicate Shape",
   "callbackKey": "svgDuplicateShape",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
-  "heading": "Change Fill Color",
-  "callbackKey": "svgChangeFillColor",
-  "modes": ["SVG Editing"]
-},
-{
-  "ToolbarCategory": "Edit",
-  "heading": "Change Stroke Color",
-  "callbackKey": "svgChangeStrokeColor",
-  "modes": ["SVG Editing"]
-},
-{
-  "ToolbarCategory": "Edit",
-  "heading": "Change Stroke Width",
-  "callbackKey": "svgChangeStrokeWidth",
-  "modes": ["SVG Editing"]
-},
-{
-  "ToolbarCategory": "Edit",
-  "heading": "Crop To Selection",
-  "callbackKey": "svgCropToSelection",
-  "modes": ["SVG Editing"]
-},
-{
-  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
   "heading": "Copy",
   "callbackKey": "svgCopy",
   "modes": ["SVG Editing"],
@@ -166,6 +211,7 @@
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
   "heading": "Paste",
   "callbackKey": "svgPaste",
   "modes": ["SVG Editing"],
@@ -173,30 +219,49 @@
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
+  "heading": "Group Selection",
+  "callbackKey": "svgGroupSelection",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Selection",
+  "heading": "Ungroup Selection",
+  "callbackKey": "svgUngroupSelection",
+  "modes": ["SVG Editing"]
+},
+{
+  "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Arrange",
   "heading": "Align Left",
   "callbackKey": "svgAlignLeft",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Arrange",
   "heading": "Align Center",
   "callbackKey": "svgAlignCenter",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Arrange",
   "heading": "Align Right",
   "callbackKey": "svgAlignRight",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Arrange",
   "heading": "Bring to Front",
   "callbackKey": "svgBringToFront",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
+  "parentHeading": "SVG Arrange",
   "heading": "Send to Back",
   "callbackKey": "svgSendToBack",
   "modes": ["SVG Editing"]

@@ -74,6 +74,14 @@
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
+    "heading": "Open Trash",
+    "callbackKey": "openTrash",
+    "icon": "icons/folder.png",
+    "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
     "heading": "Paste File/Directory",
     "callbackKey": "pasteFile",
     "icon": "icons/PasteIcon.png",

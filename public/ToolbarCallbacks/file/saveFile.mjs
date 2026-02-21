@@ -95,6 +95,13 @@ export default async function saveFile(options = {}) {
     return false;
   }
 
+  const inActiveGameView =
+    String(window.activePanel || "").toLowerCase() === "gameview"
+    && typeof window.saveVirtualWorldFile === "function";
+  if (inActiveGameView) {
+    return !!(await window.saveVirtualWorldFile(filePath));
+  }
+
   try {
     const mode = window.NodevisionState?.currentMode || window.currentMode || "";
     const inGraphicalEditor =

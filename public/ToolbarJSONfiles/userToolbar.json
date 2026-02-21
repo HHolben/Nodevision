@@ -1,8 +1,22 @@
 [
   {
     "ToolbarCategory": "User",
+    "heading": "Profile",
+    "callbackKey": "profile"
+  },
+  {
+    "ToolbarCategory": "User",
+    "heading": "Avatars",
+    "callbackKey": "avatars"
+  },
+  {
+    "ToolbarCategory": "User",
+    "heading": "Permissions",
+    "callbackKey": "permissions"
+  },
+  {
+    "ToolbarCategory": "User",
     "heading": "Logout",
-    "content": "<h1>Log out user?</h1><h2><a href=\"login.html\">Logout</a></h2>",
-    "script": "SendToLoginPage.js"
+    "callbackKey": "logout"
   }
 ]

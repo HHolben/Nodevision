@@ -14,7 +14,8 @@ export function createPlayerInventory({ panel }) {
       { id: "cylinder", label: "Cylinder", count: 6 },
       { id: "portal", label: "Portal", count: 2 },
       { id: "svg-camera", label: "SVG Camera", count: 1, tool: true },
-      { id: "tape-measure", label: "Tape Measure", count: 1, tool: true }
+      { id: "tape-measure", label: "Tape Measure", count: 1, tool: true },
+      { id: "terrain-generator", label: "Terrain Generator", count: 1, tool: true }
     ]
   };
 
@@ -188,6 +189,27 @@ export function createPlayerInventory({ panel }) {
         return icon;
       }
 
+      if (id === "terrain-generator") {
+        icon.style.position = "relative";
+        icon.style.borderRadius = "7px";
+        icon.style.background = "linear-gradient(135deg, #6ea96b 0%, #365f33 100%)";
+        icon.style.border = "1px solid rgba(205, 232, 188, 0.85)";
+        for (let i = 0; i < 3; i += 1) {
+          for (let j = 0; j < 3; j += 1) {
+            const tile = document.createElement("div");
+            tile.style.position = "absolute";
+            tile.style.left = `${5 + i * 9}px`;
+            tile.style.top = `${5 + j * 9}px`;
+            tile.style.width = "6px";
+            tile.style.height = "6px";
+            tile.style.background = "rgba(234, 247, 218, 0.85)";
+            tile.style.borderRadius = "1px";
+            icon.appendChild(tile);
+          }
+        }
+        return icon;
+      }
+
       icon.style.background = "linear-gradient(135deg, #d8d8d8 0%, #8f8f8f 48%, #666666 100%)";
       icon.style.boxShadow = "-4px 4px 0 rgba(0,0,0,0.25)";
       return icon;
@@ -261,6 +283,16 @@ export function createPlayerInventory({ panel }) {
       count.textContent = choice.id === null ? "" : (choice.tool ? "tool" : `x${choice.count}`);
       cell.appendChild(count);
 
+      cell.style.cursor = "pointer";
+      cell.title = choice.id === null
+        ? "Empty hand"
+        : `Equip ${choice.label || choice.id}`;
+      cell.addEventListener("click", () => {
+        state.selectedMenuIndex = idx;
+        applySelection();
+        setMenuOpen(false);
+      });
+
       grid.appendChild(cell);
     });
 
@@ -315,6 +347,12 @@ export function createPlayerInventory({ panel }) {
     const row = Math.floor(current / cols);
     const col = current % cols;
     const totalRows = Math.ceil(choices.length / cols);
+
+    if (totalRows <= 1 && deltaCols === 0 && deltaRows !== 0) {
+      // When inventory fits a single row, up/down should still cycle tools.
+      deltaCols = deltaRows;
+      deltaRows = 0;
+    }
 
     let nextRow = row + deltaRows;
     while (nextRow < 0) nextRow += totalRows;
@@ -373,8 +411,13 @@ export function createPlayerInventory({ panel }) {
     if (event.repeat) return;
     const key = (event.key || "").toLowerCase();
     if (!state.menuOpen) return;
+    const deferToGameLoop = !!window.VRWorldContext?.inventory;
+
     if (key === "escape") {
       setMenuOpen(false);
+      return;
+    }
+    if (deferToGameLoop && (key === "arrowup" || key === "arrowdown" || key === "arrowleft" || key === "arrowright" || key === "enter")) {
       return;
     }
     if (key === "arrowup") {

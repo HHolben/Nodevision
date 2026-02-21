@@ -1,0 +1,216 @@
+{
+  "metadata": {
+    "name": "Nodevision MetaWorld Example",
+    "version": "1.0",
+    "description": "Declarative example scene with entities, AI, factions, spawners, templates, and spatial sound prims."
+  },
+  "prims": [
+    {
+      "id": "FactionPlayers",
+      "type": "NvFaction",
+      "attributes": {
+        "hostility": {
+          "FactionWildlife": true,
+          "FactionCivilians": false
+        }
+      },
+      "relationships": {},
+      "children": [],
+      "metadata": {}
+    },
+    {
+      "id": "FactionWildlife",
+      "type": "NvFaction",
+      "attributes": {
+        "hostility": {
+          "FactionPlayers": true,
+          "FactionCivilians": true
+        }
+      },
+      "relationships": {},
+      "children": [],
+      "metadata": {}
+    },
+    {
+      "id": "FactionCivilians",
+      "type": "NvFaction",
+      "attributes": {
+        "hostility": {
+          "FactionWildlife": true,
+          "FactionPlayers": false
+        }
+      },
+      "relationships": {},
+      "children": [],
+      "metadata": {}
+    },
+    {
+      "id": "MobBrainBasic",
+      "type": "NvAIController",
+      "attributes": {
+        "tree": {
+          "type": "Selector",
+          "children": [
+            {
+              "type": "Sequence",
+              "children": [
+                { "type": "Condition", "key": "targetVisible", "params": { "range": 18 } },
+                { "type": "Condition", "key": "playerInRange", "params": { "range": 2.2 } },
+                { "type": "Action", "key": "attackTarget", "params": { "damage": 10 } }
+              ]
+            },
+            {
+              "type": "Sequence",
+              "children": [
+                { "type": "Condition", "key": "targetVisible", "params": { "range": 18 } },
+                { "type": "Action", "key": "chaseTarget", "params": { "speed": 3.0 } }
+              ]
+            },
+            { "type": "Action", "key": "wander", "params": { "speed": 1.1 } }
+          ]
+        }
+      },
+      "relationships": {},
+      "children": [],
+      "metadata": {}
+    },
+    {
+      "id": "Player_1",
+      "type": "NvPlayer",
+      "attributes": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "health": 100,
+        "moveSpeed": 4.0
+      },
+      "relationships": {
+        "faction": "FactionPlayers"
+      },
+      "children": [
+        {
+          "id": "CampfireAmbient",
+          "type": "NvSoundSource",
+          "attributes": {
+            "url": "/soundEffects/campfire.wav",
+            "loop": true,
+            "maxDistance": 40,
+            "autoPlayRange": 28,
+            "volume": 0.4,
+            "localOffset": [0, 0, 0]
+          },
+          "relationships": {},
+          "children": [],
+          "metadata": {}
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "Villager_1",
+      "type": "NvNPC",
+      "attributes": {
+        "position": [4, 0, 5],
+        "rotation": [0, 0, 0],
+        "health": 60,
+        "moveSpeed": 1.6
+      },
+      "relationships": {
+        "faction": "FactionCivilians"
+      },
+      "children": [],
+      "metadata": {}
+    },
+    {
+      "id": "Wolf_1",
+      "type": "NvMob",
+      "attributes": {
+        "position": [12, 0, 8],
+        "rotation": [0, 0, 0],
+        "health": 45,
+        "attackDamage": 12,
+        "attackRange": 2,
+        "viewRange": 18
+      },
+      "relationships": {
+        "faction": "FactionWildlife",
+        "aiController": "MobBrainBasic"
+      },
+      "children": [
+        {
+          "id": "WolfGrowlEmitter",
+          "type": "NvSoundEmitter",
+          "attributes": {
+            "url": "/soundEffects/wolf-growl.wav",
+            "eventTypes": ["ai.attack", "collision"],
+            "maxDistance": 28,
+            "volume": 0.75,
+            "localOffset": [0, 0.8, 0]
+          },
+          "relationships": {},
+          "children": [],
+          "metadata": {}
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "Rock_01",
+      "type": "NvEntity",
+      "attributes": {
+        "position": [-8, 0, 6],
+        "rotation": [0, 0, 0],
+        "health": 9999
+      },
+      "relationships": {
+        "faction": "FactionCivilians"
+      },
+      "children": [],
+      "metadata": {}
+    },
+    {
+      "id": "Template_Wolf",
+      "type": "NvTemplate",
+      "attributes": {
+        "entityPrim": {
+          "id": "Template_Wolf_Instance",
+          "type": "NvMob",
+          "attributes": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "health": 40,
+            "attackDamage": 10,
+            "attackRange": 2.0,
+            "viewRange": 16
+          },
+          "relationships": {
+            "faction": "FactionWildlife",
+            "aiController": "MobBrainBasic"
+          },
+          "children": [],
+          "metadata": {}
+        }
+      },
+      "relationships": {},
+      "children": [],
+      "metadata": {}
+    },
+    {
+      "id": "Spawner_WolfDen",
+      "type": "NvSpawner",
+      "attributes": {
+        "maxCount": 4,
+        "cooldownSec": 10,
+        "active": true,
+        "regionBounds": {
+          "min": [18, 0, 18],
+          "max": [30, 0, 30]
+        }
+      },
+      "relationships": {
+        "template": "Template_Wolf"
+      },
+      "children": [],
+      "metadata": {}
+    }
+  ]
+}

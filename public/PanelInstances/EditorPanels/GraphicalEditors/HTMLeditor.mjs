@@ -2177,10 +2177,11 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
       ? "Embedded SVG Editor"
       : "Embedded Raster Editor";
     window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.currentMode = editorMode;
     window.NodevisionState.htmlImageEditingInline = true;
     window.NodevisionState.htmlInlineImageEditorMode = editorMode;
     updateToolbarState({
-      currentMode: previousMode,
+      currentMode: editorMode,
       htmlImageSelected: true,
       htmlImagePath: temporaryPath ? null : linkedPath,
       htmlImageEditingInline: true,
@@ -2217,9 +2218,16 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
       window.SVGEditorContext = previousSVGEditorContext;
       window.toggleSVGLayersPanel = previousToggleSVGLayersPanel;
       window.rasterCanvas = inlineRasterCanvas || null;
-      window.NodevisionState.currentMode = previousMode;
+      window.NodevisionState.currentMode = editorMode;
       window.NodevisionState.htmlImageEditingInline = true;
       window.NodevisionState.htmlInlineImageEditorMode = editorMode;
+      updateToolbarState({
+        currentMode: editorMode,
+        htmlImageSelected: true,
+        htmlImagePath: temporaryPath ? null : linkedPath,
+        htmlImageEditingInline: true,
+        htmlInlineImageEditorMode: editorMode,
+      });
       showEditorSubToolbarForMode(editorMode);
 
       if (editorMode === "PNGediting") {

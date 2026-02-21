@@ -188,7 +188,7 @@ pdf,ViewPDF.mjs,DocumentFamilyEditor.mjs
 pem,ViewText.mjs,TextFamilyEditor.mjs
 pfa,ViewFont.mjs,BinaryFamilyEditor.mjs
 pfb,ViewFont.mjs,BinaryFamilyEditor.mjs
-php,ViewPHP.mjs,TextFamilyEditor.mjs
+php,ViewPHP.mjs,PHPeditor.mjs
 pgn,ViewPGN.mjs,DocumentFamilyEditor.mjs
 pl,ViewText.mjs,TextFamilyEditor.mjs
 ply,ViewPLY.mjs,ModelFamilyEditor.mjs

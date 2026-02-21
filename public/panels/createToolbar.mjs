@@ -19,6 +19,7 @@ window.NodevisionState = window.NodevisionState || {
   fileIsDirty: false,
   selectedFile: null,
   currentMode: "Default",
+  virtualWorldMode: "survival",
   activeActionHandler: null,
 };
 
@@ -512,22 +513,27 @@ function buildSubToolbar(items, container = subToolbarContainer) {
   items.forEach(item => {
     if (!checkToolbarConditions(item, state)) return;
     const btn = document.createElement("button");
-    btn.textContent = item.heading;
+    btn.title = item.heading || "";
+    const hasIcon = Boolean(item.icon);
+    if (!hasIcon) {
+      btn.textContent = item.heading;
+    }
 
     Object.assign(btn.style, {
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
-      gap: "6px",
+      justifyContent: "center",
+      gap: hasIcon ? "0" : "6px",
       padding: "4px 8px",
     });
 
-    if (item.icon) {
+    if (hasIcon) {
       const icon = document.createElement("img");
       icon.src = item.icon;
       icon.alt = item.heading;
       Object.assign(icon.style, { width: "16px", height: "16px" });
-      btn.prepend(icon);
+      btn.appendChild(icon);
     }
 
     btn.addEventListener("click", e => {

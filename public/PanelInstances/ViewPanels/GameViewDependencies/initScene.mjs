@@ -10,8 +10,20 @@ import { startRenderLoop } from "./renderLoop.mjs";
 import { setupResizeObserver } from "./resizeObserver.mjs";
 import { createPlayerInventory } from "./playerInventory.mjs";
 import { createObjectInspector } from "./objectInspector.mjs";
+import { createTerrainToolController } from "./terrainGeneratorTool.mjs";
+import { saveCurrentWorldFile } from "./worldSave.mjs";
 
 export function initScene({ THREE, PointerLockControls, panel, canvas, state, loadWorldFromFile, getBindings, normalizeKeyName }) {
+  const normalizePlayerMode = (value) => {
+    const mode = String(value || "").toLowerCase();
+    return mode === "creative" ? "creative" : "survival";
+  };
+  const preferredMode = normalizePlayerMode(
+    state?.preferredPlayerMode
+    || window.NodevisionState?.virtualWorldMode
+    || "survival"
+  );
+
   const { scene, renderer, camera, objects, colliders, lights } = createSceneBase({ THREE, panel, canvas });
   const portals = [];
   const collisionActions = [];
@@ -35,6 +47,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     waterVolumes,
     measurementVisuals,
     currentWorldPath: state.currentWorldPath || null,
+    currentWorldDefinition: state.currentWorldDefinition || null,
     loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options)
   };
 
@@ -62,15 +75,37 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     isGrounded: true,
     isSwimming: false,
     playerHeight: 1.75,
+    playerMode: preferredMode,
     worldMode: "3d",
     planeZ: 0,
     requestCycleCamera: false,
     playerBuoyancy: 0.015,
     swimSpeedMultiplier: 0.72,
-    crouchJumpMultiplier: 1.85
+    crouchJumpMultiplier: 1.85,
+    worldRules: {
+      allowFly: false,
+      allowRoll: false,
+      allowPitch: false,
+      allowPlace: false,
+      allowBreak: false,
+      allowInspect: false,
+      allowToolUse: false,
+      allowSave: false
+    }
   };
   window.VRWorldContext.controls = controls;
   window.VRWorldContext.movementState = movementState;
+  window.VRWorldContext.setPlayerMode = (nextMode) => {
+    const normalized = normalizePlayerMode(nextMode);
+    movementState.playerMode = normalized;
+    if (window.NodevisionState) {
+      window.NodevisionState.virtualWorldMode = normalized;
+      window.NodevisionState.currentMode = normalized === "creative"
+        ? "Virtual World Editing"
+        : "Virtual World Viewing";
+    }
+  };
+  window.VRWorldContext.setPlayerMode(preferredMode);
 
   const inventory = createPlayerInventory({ panel });
   panel._vrInventory = inventory;
@@ -84,6 +119,15 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   });
   panel._vrObjectInspector = objectInspector;
   window.VRWorldContext.objectInspector = objectInspector;
+
+  const terrainToolController = createTerrainToolController({
+    THREE,
+    scene,
+    objects,
+    colliders
+  });
+  panel._vrTerrainToolController = terrainToolController;
+  window.VRWorldContext.terrainToolController = terrainToolController;
 
   const viewController = createCameraModeController({
     THREE,
@@ -114,8 +158,21 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options),
     getBindings,
     heldKeys,
-    movementState
+    movementState,
+    terrainToolController
   });
+
+  const saveVirtualWorldFile = async () => {
+    return saveCurrentWorldFile({
+      state,
+      movementState,
+      objects,
+      lights
+    });
+  };
+  panel._vrSaveVirtualWorldFile = saveVirtualWorldFile;
+  window.saveVirtualWorldFile = saveVirtualWorldFile;
+  window.VRWorldContext.saveVirtualWorldFile = saveVirtualWorldFile;
   const update = () => {
     movementUpdate();
     viewController.update();

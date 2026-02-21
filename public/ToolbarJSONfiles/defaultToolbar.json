@@ -18,7 +18,16 @@
   {
     "heading": "Draw",
     "icon": "/icons/Draw.svg",
-    "mode": "PNGediting"
+    "modes": ["PNGediting", "GraphicalEditing", "SVG Editing"]
+  },
+  {
+    "heading": "Draw",
+    "icon": "/icons/Draw.svg",
+    "mode": "HTMLediting",
+    "conditions": {
+      "htmlImageEditingInline": true,
+      "htmlInlineImageEditorMode": "SVG Editing"
+    }
   },
   {
     "heading": "Terminal",
@@ -40,9 +49,7 @@
     "script": "searchWidget.mjs"
   },
   {
-    "heading": "Logout",
-    "icon": "/icons/user.svg",
-    "ToolbarCategory": "user",
-    "callbackKey": "logout"
+    "heading": "User",
+    "icon": "/icons/user.svg"
   }
 ]
