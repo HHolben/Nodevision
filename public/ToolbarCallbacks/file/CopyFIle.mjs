@@ -1,14 +1,7 @@
-// Nodevision/public/ToolbarCallbacks/file/CopyFile.mjs
-//Provides the callback for the Copy File toolbar item
+import copyFile from "./copyFile.mjs";
 
-let clipboard = null;
-
-export function CopyFile(filePath) {
-  if (!filePath) return alert("No file selected.");
-  clipboard = { type: "copy", filePath };
-  alert(`Copied: ${filePath}`);
+export function CopyFile() {
+  return copyFile();
 }
 
-export function getClipboard() {
-  return clipboard;
-}
+export default copyFile;

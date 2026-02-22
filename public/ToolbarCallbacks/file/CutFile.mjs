@@ -1,13 +1,7 @@
-// Nodevision/public/ToolbarCallbacks/file/CutFile.mjs
-// Provides the callback for the copy file Toolbar item
-let clipboard = null;
+import cutFile from "./cutFile.mjs";
 
-export function CutFile(filePath) {
-  if (!filePath) return alert("No file selected.");
-  clipboard = { type: "cut", filePath };
-  alert(`Cut: ${filePath}`);
+export function CutFile() {
+  return cutFile();
 }
 
-export function getClipboard() {
-  return clipboard;
-}
+export default cutFile;

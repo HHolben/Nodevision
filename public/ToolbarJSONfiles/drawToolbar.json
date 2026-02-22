@@ -1,11 +1,11 @@
 [
   {
     "heading": "Color",
-    "parentHeading": "Draw", 
+    "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "PickColor",
     "preventAutoSubToolbar": true,
-    "modes": ["PNGediting"]
+    "modes": ["PNGediting", "GraphicalEditing"]
   },
   {
     "heading": "SVG Draw",
@@ -13,6 +13,6 @@
     "ToolbarCategory": "draw",
     "callbackKey": "DrawSVG",
     "preventAutoSubToolbar": true,
-    "modes": ["SVG Editing"]
+    "modes": ["SVG Editing", "GraphicalEditing"]
   }
 ]

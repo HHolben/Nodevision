@@ -1,6 +1,111 @@
 // Nodevision/public/PanelInstances/InfoPanels/FileManagerCore.mjs
 // Core logic for enhanced File Manager panel with breadcrumbs, drag/drop, selection, and toolbar actions
 
+const FILE_ITEM_SOUND_URLS = [
+  "/soundEffects/Splish.mp3",
+  "/soundEffects/Splish.wav",
+  "/soundEffects/Tic.mp3",
+  "/soundEffects/Tic.wav"
+];
+let fileItemHoverAudio = null;
+let fileItemHoverAudioIndex = 0;
+let lastFileItemHoverSoundAt = 0;
+let fileItemHoverSoundUnlocked = false;
+
+function getFileItemHoverAudio() {
+  if (fileItemHoverAudio) return fileItemHoverAudio;
+  const audio = new Audio(FILE_ITEM_SOUND_URLS[fileItemHoverAudioIndex]);
+  audio.preload = "auto";
+  audio.volume = 0.45;
+  audio.addEventListener("error", () => {
+    if (fileItemHoverAudioIndex < FILE_ITEM_SOUND_URLS.length - 1) {
+      fileItemHoverAudioIndex += 1;
+      fileItemHoverAudio = null;
+    }
+  });
+  fileItemHoverAudio = audio;
+  return audio;
+}
+
+async function unlockFileItemHoverSound() {
+  if (fileItemHoverSoundUnlocked) return;
+  const audio = getFileItemHoverAudio();
+  const previousVolume = audio.volume;
+  audio.volume = 0;
+  try {
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.then === "function") {
+      await playPromise;
+    }
+    audio.pause();
+    audio.currentTime = 0;
+    fileItemHoverSoundUnlocked = true;
+  } catch {
+    // Ignore; we will retry on subsequent user gestures.
+  } finally {
+    audio.volume = previousVolume;
+  }
+}
+
+if (!window.__nvFileItemSoundUnlockBound) {
+  const unlockOnce = () => {
+    unlockFileItemHoverSound();
+  };
+  window.addEventListener("pointerdown", unlockOnce, { passive: true });
+  window.addEventListener("keydown", unlockOnce, { passive: true });
+  window.__nvFileItemSoundUnlockBound = true;
+}
+
+function playFileItemHoverSound() {
+  const now = Date.now();
+  if (now - lastFileItemHoverSoundAt < 40) return;
+  lastFileItemHoverSoundAt = now;
+  try {
+    const audio = getFileItemHoverAudio();
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // If blocked or failed, retry after first interaction unlock.
+        fileItemHoverSoundUnlocked = false;
+      });
+    }
+  } catch {
+    // Ignore unavailable audio device/permission errors.
+  }
+}
+
+function applyFileItemVisualState(link, state = "base") {
+  if (!link) return;
+  const base = {
+    backgroundColor: "#ffffff",
+    borderColor: "#c9d1dc",
+    color: "#1f2937"
+  };
+  const hover = {
+    backgroundColor: "#2f6fe5",
+    borderColor: "#2f6fe5",
+    color: "#ffffff"
+  };
+  const selected = {
+    backgroundColor: "#2f6fe5",
+    borderColor: "#2f6fe5",
+    color: "#ffffff"
+  };
+  const palette = state === "selected" ? selected : state === "hover" ? hover : base;
+  link.style.backgroundColor = palette.backgroundColor;
+  link.style.borderColor = palette.borderColor;
+  link.style.color = palette.color;
+}
+
+function markSelectedFileItem(selectedLink) {
+  const allItems = document.querySelectorAll("#file-list a.file, #file-list a.folder");
+  allItems.forEach((item) => {
+    const isSelected = item === selectedLink;
+    item.classList.toggle("selected", isSelected);
+    applyFileItemVisualState(item, isSelected ? "selected" : "base");
+  });
+}
 
 
 
@@ -95,14 +200,45 @@ export function displayFiles(files, currentPath) {
   }
 
   listElem.innerHTML = "";
+  Object.assign(listElem.style, {
+    listStyle: "none",
+    margin: "0",
+    padding: "0",
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px"
+  });
 
   // ".." entry — only if not at root
   if (currentPath !== "") {
     const li = document.createElement("li");
+    li.style.margin = "0";
     const link = document.createElement("a");
     link.href = "#";
     link.textContent = "..";
     link.classList.add("folder");
+    Object.assign(link.style, {
+      display: "flex",
+      alignItems: "center",
+      width: "100%",
+      minHeight: "24px",
+      padding: "2px 8px",
+      border: "1px solid #c9d1dc",
+      borderRadius: "0",
+      textDecoration: "none",
+      fontSize: "12px",
+      lineHeight: "1.2",
+      boxSizing: "border-box",
+      transition: "background-color 120ms ease, border-color 120ms ease, color 120ms ease"
+    });
+    applyFileItemVisualState(link, "base");
+    link.addEventListener("mouseenter", () => {
+      if (!link.classList.contains("selected")) applyFileItemVisualState(link, "hover");
+      playFileItemHoverSound();
+    });
+    link.addEventListener("mouseleave", () => {
+      applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
+    });
     link.addEventListener("click", () => {
       const segments = currentPath.split("/").filter(Boolean);
       segments.pop();
@@ -117,12 +253,31 @@ export function displayFiles(files, currentPath) {
 
   files.forEach(f => {
     const li = document.createElement("li");
+    li.style.margin = "0";
     const link = document.createElement("a");
     link.href = "#";
     link.classList.add(f.isDirectory ? "folder" : "file");
     link.style.display = "flex";
     link.style.alignItems = "center";
     link.style.gap = "8px";
+    link.style.width = "100%";
+    link.style.minHeight = "24px";
+    link.style.padding = "2px 8px";
+    link.style.border = "1px solid #c9d1dc";
+    link.style.borderRadius = "0";
+    link.style.textDecoration = "none";
+    link.style.fontSize = "12px";
+    link.style.lineHeight = "1.2";
+    link.style.boxSizing = "border-box";
+    link.style.transition = "background-color 120ms ease, border-color 120ms ease, color 120ms ease";
+    applyFileItemVisualState(link, "base");
+    link.addEventListener("mouseenter", () => {
+      if (!link.classList.contains("selected")) applyFileItemVisualState(link, "hover");
+      playFileItemHoverSound();
+    });
+    link.addEventListener("mouseleave", () => {
+      applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
+    });
 
     const icon = document.createElement("span");
     icon.style.display = "inline-flex";
@@ -190,13 +345,13 @@ export function displayFiles(files, currentPath) {
       });
       link.addEventListener("dragleave", e => {
         if (!link.contains(e.relatedTarget)) {
-          link.style.backgroundColor = "";
+          applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
           link.style.outline = "";
         }
       });
       link.addEventListener("drop", async e => {
         e.preventDefault();
-        link.style.backgroundColor = "";
+        applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
         link.style.outline = "";
 
         const dragData = readDragPayload(e);
@@ -264,8 +419,7 @@ export function attachFileClickHandlers() {
       console.log("Selected file:", window.selectedFilePath);
 
       // Visually mark selection
-      fileItems.forEach(i => i.classList.remove("selected"));
-      item.classList.add("selected");
+      markSelectedFileItem(item);
     });
   });
 }
@@ -391,21 +545,63 @@ window.refreshFileManager = async function (path = '') {
 // ------------------------------
 // Toolbar action dispatcher
 // ------------------------------
+function uniqueValues(values = []) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function fileActionModuleCandidates(actionKey = "") {
+  const key = String(actionKey || "").trim();
+  if (!key) return [];
+
+  const capitalized = `${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+  const legacyAliases = {
+    renameFile: ["RenameFile"],
+    copyFile: ["CopyFIle", "CopyFile"],
+    cutFile: ["CutFile"],
+    pasteFile: ["PasteFile"]
+  };
+  const aliases = legacyAliases[key] || [];
+  const names = uniqueValues([key, capitalized, ...aliases]);
+  return names.map((name) => `/ToolbarCallbacks/file/${name}.mjs`);
+}
+
 export async function handleFileManagerAction(actionKey) {
   console.log(`FileManagerCore: handling toolbar action "${actionKey}"`);
 
-  try {
-    const modulePath = `/ToolbarCallbacks/file/${actionKey}.mjs`;
-    const callbackModule = await import(modulePath);
+  const modulePaths = fileActionModuleCandidates(actionKey);
+  const importErrors = [];
 
-    if (typeof callbackModule.default !== "function") {
-      throw new Error(`Callback module ${modulePath} has no default export`);
+  for (const modulePath of modulePaths) {
+    try {
+      const callbackModule = await import(modulePath);
+      if (typeof callbackModule.default === "function") {
+        await callbackModule.default();
+        return;
+      }
+    } catch (err) {
+      importErrors.push(err);
     }
-
-    await callbackModule.default();
-  } catch (err) {
-    console.error(`Error executing toolbar action ${actionKey}:`, err);
-    alert(`Error executing toolbar action "${actionKey}": ${err.message}`);
   }
+
+  const callbackFromWindow =
+    window.fileCallbacks && typeof window.fileCallbacks[actionKey] === "function"
+      ? window.fileCallbacks[actionKey]
+      : null;
+
+  if (callbackFromWindow) {
+    try {
+      await callbackFromWindow();
+      return;
+    } catch (err) {
+      console.error(`Error executing toolbar action ${actionKey}:`, err);
+      alert(`Error executing toolbar action "${actionKey}": ${err.message}`);
+      return;
+    }
+  }
+
+  const rootCause = importErrors[0];
+  const rootCauseMessage = rootCause?.message || "No matching callback module found.";
+  console.error(`Error executing toolbar action ${actionKey}:`, rootCause || new Error(rootCauseMessage));
+  alert(`Error executing toolbar action "${actionKey}": ${rootCauseMessage}`);
 }
 window.handleFileManagerAction = handleFileManagerAction;

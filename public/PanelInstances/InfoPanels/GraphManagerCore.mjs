@@ -437,3 +437,65 @@ async function toggleCompoundDirectory(node) {
     rebuildVisibleEdges();
     cy.layout({ name: 'cose', animate: true }).run();
 }
+
+function uniqueValues(values = []) {
+    return [...new Set(values.filter(Boolean))];
+}
+
+function fileActionModuleCandidates(actionKey = "") {
+    const key = String(actionKey || "").trim();
+    if (!key) return [];
+
+    const capitalized = `${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+    const legacyAliases = {
+        renameFile: ["RenameFile"],
+        copyFile: ["CopyFIle", "CopyFile"],
+        cutFile: ["CutFile"],
+        pasteFile: ["PasteFile"]
+    };
+    const aliases = legacyAliases[key] || [];
+    const names = uniqueValues([key, capitalized, ...aliases]);
+    return names.map((name) => `/ToolbarCallbacks/file/${name}.mjs`);
+}
+
+export async function handleGraphManagerAction(actionKey) {
+    console.log(`GraphManagerCore: handling toolbar action "${actionKey}"`);
+
+    const modulePaths = fileActionModuleCandidates(actionKey);
+    const importErrors = [];
+
+    for (const modulePath of modulePaths) {
+        try {
+            const callbackModule = await import(modulePath);
+            if (typeof callbackModule.default === "function") {
+                await callbackModule.default();
+                return;
+            }
+        } catch (err) {
+            importErrors.push(err);
+        }
+    }
+
+    const callbackFromWindow =
+        window.fileCallbacks && typeof window.fileCallbacks[actionKey] === "function"
+            ? window.fileCallbacks[actionKey]
+            : null;
+
+    if (callbackFromWindow) {
+        try {
+            await callbackFromWindow();
+            return;
+        } catch (err) {
+            console.error(`Error executing toolbar action ${actionKey}:`, err);
+            alert(`Error executing toolbar action "${actionKey}": ${err.message}`);
+            return;
+        }
+    }
+
+    const rootCause = importErrors[0];
+    const rootCauseMessage = rootCause?.message || "No matching callback module found.";
+    console.error(`Error executing toolbar action ${actionKey}:`, rootCause || new Error(rootCauseMessage));
+    alert(`Error executing toolbar action "${actionKey}": ${rootCauseMessage}`);
+}
+
+window.handleGraphManagerAction = handleGraphManagerAction;

@@ -13,11 +13,23 @@ function createSvgEl(tag, attrs = {}) {
 }
 
 function toSvgPoint(svgRoot, clientX, clientY) {
-  const pt = svgRoot.createSVGPoint();
-  pt.x = clientX;
-  pt.y = clientY;
-  const ctm = svgRoot.getScreenCTM();
-  return ctm ? pt.matrixTransform(ctm.inverse()) : { x: 0, y: 0 };
+  if (svgRoot && typeof svgRoot.createSVGPoint === "function") {
+    const pt = svgRoot.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = typeof svgRoot.getScreenCTM === "function" ? svgRoot.getScreenCTM() : null;
+    return ctm ? pt.matrixTransform(ctm.inverse()) : { x: 0, y: 0 };
+  }
+
+  const rect = svgRoot?.getBoundingClientRect?.();
+  if (rect && Number.isFinite(rect.left) && Number.isFinite(rect.top)) {
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  return { x: 0, y: 0 };
 }
 
 function ensureSvgSizeAttrs(svgRoot) {
@@ -108,7 +120,12 @@ export async function renderEditor(filePath, container) {
     const svgText = await res.text();
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgText, "image/svg+xml");
-    const loaded = doc.documentElement;
+    const loaded = doc.documentElement?.tagName?.toLowerCase() === "svg"
+      ? doc.documentElement
+      : doc.querySelector("svg");
+    if (!(loaded instanceof SVGElement) || loaded.tagName.toLowerCase() !== "svg") {
+      throw new Error("Loaded file does not contain a valid <svg> root element");
+    }
     svgRoot.replaceWith(loaded);
     svgRoot = loaded;
     svgRoot.id = "svg-editor";

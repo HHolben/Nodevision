@@ -13,6 +13,38 @@ let subToolbarContainer = null;
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
 const toolbarScriptModuleCache = new Map();
+const TOOLBAR_HIGHLIGHT_SOUND_URLS = [
+  "/soundEffects/Tic.wav",
+  "/soundEffects/Tic.mp3"
+];
+let lastToolbarHighlightSoundAt = 0;
+
+function playToolbarHighlightSound() {
+  const now = Date.now();
+  if (now - lastToolbarHighlightSoundAt < 55) return;
+  lastToolbarHighlightSoundAt = now;
+
+  const tryUrl = (url) => {
+    if (!url) return Promise.resolve(false);
+    const audio = new Audio(url);
+    audio.preload = "auto";
+    audio.volume = 0.95;
+    try {
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.then === "function") {
+        return playPromise.then(() => true).catch(() => false);
+      }
+      return Promise.resolve(true);
+    } catch {
+      return Promise.resolve(false);
+    }
+  };
+
+  tryUrl(TOOLBAR_HIGHLIGHT_SOUND_URLS[0]).then((ok) => {
+    if (ok) return;
+    return tryUrl(TOOLBAR_HIGHLIGHT_SOUND_URLS[1]);
+  }).catch(() => {});
+}
 
 window.NodevisionState = window.NodevisionState || {
   activePanelType: null,
@@ -357,6 +389,7 @@ function buildToolbar(container, items, parentHeading = null) {
     }
 
     btnWrapper.appendChild(btn);
+    btn.addEventListener("mouseenter", playToolbarHighlightSound);
 
     if (isDropdownContainer) {
       const baseColor = "transparent";
@@ -383,6 +416,7 @@ function buildToolbar(container, items, parentHeading = null) {
       let hoverTimeout;
       btnWrapper.addEventListener("mouseenter", () => {
         clearTimeout(hoverTimeout);
+        playToolbarHighlightSound();
         Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
         dropdown.style.display = "block";
       });
@@ -535,6 +569,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
       Object.assign(icon.style, { width: "16px", height: "16px" });
       btn.appendChild(icon);
     }
+    btn.addEventListener("mouseenter", playToolbarHighlightSound);
 
     btn.addEventListener("click", e => {
       e.stopPropagation();
