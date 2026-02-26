@@ -6,7 +6,9 @@
   "content": "",
   "panelTemplate": "CodeEditor",
   "panelType": "EditorPanel",
-  "panelPath": "/PanelInstances/EditorPanels/CodeEditor.mjs"
+  "panelPath": "/PanelInstances/EditorPanels/CodeEditor.mjs",
+  "icon": "icons/CodeEditor.png"
+
 },
 {
   "ToolbarCategory": "View",
@@ -14,7 +16,9 @@
   "content": "",
   "panelTemplate": "GraphicalEditor",
   "panelType": "EditorPanel",
-  "panelPath": "/PanelInstances/EditorPanels/GraphicalEditor.mjs"
+  "panelPath": "/PanelInstances/EditorPanels/GraphicalEditor.mjs",
+  "icon": "icons/imageEditIcon.png"
+
 },
   {
     "ToolbarCategory": "Edit",

@@ -44,7 +44,7 @@
     "parentHeading": "File Manager",
     "heading": "Delete File/Directory",
     "callbackKey": "DeleteFile",
-    "icon": "icons/DeleteIcon.png",
+    "icon": "icons/TrashIcon.png",
     "routeToActivePanel": true
   },
   {

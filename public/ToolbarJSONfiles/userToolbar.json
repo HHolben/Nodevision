@@ -17,6 +17,7 @@
   {
     "ToolbarCategory": "User",
     "heading": "Logout",
-    "callbackKey": "logout"
+    "callbackKey": "logout",
+    "icon": "icons/ExitIcon.png"    
   }
 ]
