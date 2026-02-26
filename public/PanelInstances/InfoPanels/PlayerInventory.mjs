@@ -1,6 +1,8 @@
 // Nodevision/public/PanelInstances/InfoPanels/PlayerInventory.mjs
 // This is a reusable floating inventory panel shell for GameView and toolbar usage.
 
+import { attachResizeEvents } from "/panels/panelResize.mjs";
+
 export function createFloatingInventoryPanel({ title = "Inventory", onRequestClose = null } = {}) {
   let highlightedSnapTarget = null;
 
@@ -109,7 +111,12 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
 
   panel.appendChild(header);
   panel.appendChild(content);
+  const resizer = document.createElement("div");
+  resizer.className = "panel-resizer";
+  panel.appendChild(resizer);
   document.body.appendChild(panel);
+
+  attachResizeEvents(panel, resizer);
 
   let dragging = false;
   let offsetX = 0;

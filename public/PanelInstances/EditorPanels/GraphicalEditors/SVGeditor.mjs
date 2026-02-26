@@ -63,6 +63,133 @@ function setAttrNumber(el, name, value) {
   el.setAttribute(name, String(value));
 }
 
+function distancePointToSegment(point, a, b) {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const apx = point.x - a.x;
+  const apy = point.y - a.y;
+  const abLenSq = (abx * abx) + (aby * aby);
+  if (abLenSq <= 1e-9) {
+    const dx = point.x - a.x;
+    const dy = point.y - a.y;
+    return Math.hypot(dx, dy);
+  }
+  const t = Math.max(0, Math.min(1, ((apx * abx) + (apy * aby)) / abLenSq));
+  const closestX = a.x + (abx * t);
+  const closestY = a.y + (aby * t);
+  return Math.hypot(point.x - closestX, point.y - closestY);
+}
+
+function normalizeNotebookPath(filePath) {
+  if (!filePath) return "";
+
+  let pathOnly = String(filePath).trim();
+  if (!pathOnly) return "";
+
+  try {
+    if (/^https?:\/\//i.test(pathOnly)) {
+      pathOnly = new URL(pathOnly).pathname;
+    }
+  } catch {
+    // keep original if URL parsing fails
+  }
+
+  return pathOnly
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .replace(/^\/+/, "")
+    .replace(/^.*\/Notebook\//i, "")
+    .replace(/^Notebook\//i, "");
+}
+
+function safeDecode(value) {
+  try {
+    return decodeURIComponent(String(value));
+  } catch {
+    return String(value);
+  }
+}
+
+function encodePathSegments(pathValue) {
+  return String(pathValue)
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(safeDecode(segment)))
+    .join("/");
+}
+
+function dedupe(values = []) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function looksLikeSvgText(text) {
+  return /<svg[\s>]/i.test(String(text || ""));
+}
+
+async function fetchSvgText(filePath) {
+  const raw = String(filePath || "").trim().replace(/\\/g, "/");
+  const rawNoHashQuery = raw.replace(/[?#].*$/, "");
+  const rawPathname = /^https?:\/\//i.test(rawNoHashQuery)
+    ? (() => {
+      try {
+        return new URL(rawNoHashQuery).pathname;
+      } catch {
+        return rawNoHashQuery;
+      }
+    })()
+    : rawNoHashQuery;
+
+  const pathCandidates = dedupe([
+    normalizeNotebookPath(filePath),
+    normalizeNotebookPath(safeDecode(filePath)),
+    normalizeNotebookPath(rawPathname),
+    normalizeNotebookPath(safeDecode(rawPathname)),
+  ]);
+  const stamp = `t=${Date.now()}`;
+  let lastReason = "Unable to fetch SVG";
+
+  if (!pathCandidates.length) {
+    throw new Error("Missing SVG file path");
+  }
+
+  for (const relativePath of pathCandidates) {
+    const apiRes = await fetch(
+      `/api/fileCodeContent?path=${encodeURIComponent(relativePath)}&${stamp}`,
+      { cache: "no-store" }
+    );
+    if (apiRes.ok) {
+      const payload = await apiRes.json();
+      if (typeof payload?.content === "string") {
+        const content = payload.content;
+        if (!content.trim() || looksLikeSvgText(content)) {
+          return content;
+        }
+      }
+      lastReason = "API response did not contain SVG markup";
+    }
+  }
+
+  const notebookCandidates = dedupe([
+    ...pathCandidates.map((p) => `/Notebook/${encodePathSegments(p)}?${stamp}`),
+    rawPathname ? `${rawPathname}${rawPathname.includes("?") ? "&" : "?"}${stamp}` : "",
+  ]);
+
+  for (const url of notebookCandidates) {
+    const notebookRes = await fetch(url, { cache: "no-store" });
+    if (!notebookRes.ok) {
+      lastReason = `Notebook fetch failed (${notebookRes.status})`;
+      continue;
+    }
+    const text = await notebookRes.text();
+    if (!text.trim() || looksLikeSvgText(text)) {
+      return text;
+    }
+    lastReason = "Notebook response did not contain SVG markup";
+  }
+
+  throw new Error(lastReason);
+}
+
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   container.innerHTML = "";
@@ -115,21 +242,33 @@ export async function renderEditor(filePath, container) {
   svgWrapper.appendChild(svgRoot);
 
   try {
-    const res = await fetch(`/Notebook/${filePath}`);
-    if (!res.ok) throw new Error(res.statusText);
-    const svgText = await res.text();
+    const svgText = await fetchSvgText(filePath);
+    if (!svgText.trim()) {
+      svgRoot.setAttribute("xmlns", SVG_NS);
+      ensureSvgSizeAttrs(svgRoot);
+    } else {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, "image/svg+xml");
-    const loaded = doc.documentElement?.tagName?.toLowerCase() === "svg"
-      ? doc.documentElement
-      : doc.querySelector("svg");
-    if (!(loaded instanceof SVGElement) || loaded.tagName.toLowerCase() !== "svg") {
-      throw new Error("Loaded file does not contain a valid <svg> root element");
+      let doc = parser.parseFromString(svgText, "image/svg+xml");
+      let parseError = doc.querySelector("parsererror");
+      let loaded = doc.documentElement?.localName?.toLowerCase() === "svg"
+        ? doc.documentElement
+        : doc.querySelector("svg");
+      if (parseError || !loaded) {
+        // Fallback for SVG-like content that is not strict XML but still contains renderable SVG.
+        const htmlDoc = parser.parseFromString(svgText, "text/html");
+        const htmlSvg = htmlDoc.querySelector("svg");
+        if (htmlSvg) {
+          loaded = document.importNode(htmlSvg, true);
+        }
+      }
+      if (!loaded || loaded.localName?.toLowerCase() !== "svg") {
+        throw new Error("Loaded file does not contain parseable SVG markup");
+      }
+      svgRoot.replaceWith(loaded);
+      svgRoot = loaded;
+      svgRoot.id = "svg-editor";
+      svgRoot.setAttribute("xmlns", SVG_NS);
     }
-    svgRoot.replaceWith(loaded);
-    svgRoot = loaded;
-    svgRoot.id = "svg-editor";
-    svgRoot.setAttribute("xmlns", SVG_NS);
   } catch (err) {
     wrapper.innerHTML = `<div style="color:red;padding:12px">Failed to load SVG: ${err.message}</div>`;
     console.error(err);
@@ -162,6 +301,9 @@ export async function renderEditor(filePath, container) {
   let svgClipboard = [];
   let dragState = null;
   let marqueeState = null;
+  let lineHandleDragState = null;
+  let resizeState = null;
+  let rotateState = null;
 
   const overlayLayer = createSvgEl("g", { [SVG_UI_ATTR]: "overlay" });
   overlayLayer.style.pointerEvents = "none";
@@ -181,8 +323,41 @@ export async function renderEditor(filePath, container) {
     "stroke-dasharray": "3 3",
     display: "none"
   });
+  selectionBox.style.pointerEvents = "none";
+  marqueeBox.style.pointerEvents = "none";
+
+  function createOverlayHandle(kind, attrs = {}) {
+    const node = createSvgEl(kind, {
+      [SVG_UI_ATTR]: "handle",
+      fill: "#ffffff",
+      stroke: "#2f80ff",
+      "stroke-width": "1.5",
+      display: "none",
+      ...attrs
+    });
+    node.style.pointerEvents = "all";
+    node.style.cursor = "pointer";
+    return node;
+  }
+
+  const lineStartHandle = createOverlayHandle("circle", { r: "5" });
+  const lineEndHandle = createOverlayHandle("circle", { r: "5" });
+  const resizeHandles = {
+    nw: createOverlayHandle("rect", { width: "8", height: "8", rx: "1.5", ry: "1.5" }),
+    ne: createOverlayHandle("rect", { width: "8", height: "8", rx: "1.5", ry: "1.5" }),
+    se: createOverlayHandle("rect", { width: "8", height: "8", rx: "1.5", ry: "1.5" }),
+    sw: createOverlayHandle("rect", { width: "8", height: "8", rx: "1.5", ry: "1.5" })
+  };
+  resizeHandles.nw.style.cursor = "nwse-resize";
+  resizeHandles.se.style.cursor = "nwse-resize";
+  resizeHandles.ne.style.cursor = "nesw-resize";
+  resizeHandles.sw.style.cursor = "nesw-resize";
+
   overlayLayer.appendChild(selectionBox);
   overlayLayer.appendChild(marqueeBox);
+  overlayLayer.appendChild(lineStartHandle);
+  overlayLayer.appendChild(lineEndHandle);
+  Object.values(resizeHandles).forEach((handle) => overlayLayer.appendChild(handle));
   svgRoot.appendChild(overlayLayer);
 
   function setStatus(text) {
@@ -273,6 +448,58 @@ export async function renderEditor(filePath, container) {
     return { x: minX, y: minY, width: Math.max(0, maxX - minX), height: Math.max(0, maxY - minY) };
   }
 
+  function hideTransformHandles() {
+    lineStartHandle.setAttribute("display", "none");
+    lineEndHandle.setAttribute("display", "none");
+    Object.values(resizeHandles).forEach((handle) => handle.setAttribute("display", "none"));
+  }
+
+  function updateLineEndpointHandles(line) {
+    const x1 = getAttrNumber(line, "x1", 0);
+    const y1 = getAttrNumber(line, "y1", 0);
+    const x2 = getAttrNumber(line, "x2", 0);
+    const y2 = getAttrNumber(line, "y2", 0);
+    lineStartHandle.setAttribute("cx", String(x1));
+    lineStartHandle.setAttribute("cy", String(y1));
+    lineStartHandle.setAttribute("display", "");
+    lineEndHandle.setAttribute("cx", String(x2));
+    lineEndHandle.setAttribute("cy", String(y2));
+    lineEndHandle.setAttribute("display", "");
+  }
+
+  function setResizeHandle(handle, x, y) {
+    handle.setAttribute("x", String(x - 4));
+    handle.setAttribute("y", String(y - 4));
+    handle.setAttribute("display", "");
+  }
+
+  function updateResizeHandles(bbox) {
+    if (!bbox) return;
+    setResizeHandle(resizeHandles.nw, bbox.x, bbox.y);
+    setResizeHandle(resizeHandles.ne, bbox.x + bbox.width, bbox.y);
+    setResizeHandle(resizeHandles.se, bbox.x + bbox.width, bbox.y + bbox.height);
+    setResizeHandle(resizeHandles.sw, bbox.x, bbox.y + bbox.height);
+  }
+
+  function refreshTransformHandles() {
+    hideTransformHandles();
+    if (selectedElements.length !== 1) return;
+    const el = selectedElements[0];
+    if (!el) return;
+    const tag = el.tagName.toLowerCase();
+    if (tag === "line") {
+      updateLineEndpointHandles(el);
+      return;
+    }
+    try {
+      const bbox = el.getBBox();
+      if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height)) return;
+      updateResizeHandles(bbox);
+    } catch {
+      // element cannot be resized via bbox handles
+    }
+  }
+
   function refreshSelectionVisuals() {
     const selectable = getSelectableElements();
     selectable.forEach((el) => {
@@ -302,10 +529,14 @@ export async function renderEditor(filePath, container) {
     } else {
       selectionBox.setAttribute("display", "none");
     }
+    refreshTransformHandles();
   }
 
   function clearSelection() {
     selectedElements = [];
+    lineHandleDragState = null;
+    resizeState = null;
+    rotateState = null;
     refreshSelectionVisuals();
   }
 
@@ -391,6 +622,22 @@ export async function renderEditor(filePath, container) {
     selectedElements.forEach((el) => translateElement(el, dx, dy));
     refreshSelectionVisuals();
     return true;
+  }
+
+  function rotatePointAroundCenter(point, center, angleRadians) {
+    const dx = point.x - center.x;
+    const dy = point.y - center.y;
+    const cos = Math.cos(angleRadians);
+    const sin = Math.sin(angleRadians);
+    return {
+      x: center.x + (dx * cos - dy * sin),
+      y: center.y + (dx * sin + dy * cos)
+    };
+  }
+
+  function setTransformFromBase(el, baseTransform, operation) {
+    const base = String(baseTransform || "").trim();
+    el.setAttribute("transform", base ? `${base} ${operation}` : operation);
   }
 
   function deleteSelection() {
@@ -648,6 +895,32 @@ export async function renderEditor(filePath, container) {
       a.y + a.height >= b.y;
   }
 
+  function pointerToleranceInSvgUnits(px = 8) {
+    const ctm = typeof svgRoot.getScreenCTM === "function" ? svgRoot.getScreenCTM() : null;
+    if (!ctm) return px;
+    const sx = Math.hypot(ctm.a, ctm.b);
+    const sy = Math.hypot(ctm.c, ctm.d);
+    const avg = (sx + sy) / 2;
+    if (!Number.isFinite(avg) || avg <= 1e-9) return px;
+    return px / avg;
+  }
+
+  function findNearestLineAtPoint(point, tolerance) {
+    let hit = null;
+    let bestDistance = Infinity;
+    getSelectableElements().forEach((el) => {
+      if (el.tagName.toLowerCase() !== "line") return;
+      const a = { x: getAttrNumber(el, "x1", 0), y: getAttrNumber(el, "y1", 0) };
+      const b = { x: getAttrNumber(el, "x2", 0), y: getAttrNumber(el, "y2", 0) };
+      const d = distancePointToSegment(point, a, b);
+      if (d <= tolerance && d < bestDistance) {
+        bestDistance = d;
+        hit = el;
+      }
+    });
+    return hit;
+  }
+
   function setMarqueeBox(start, current) {
     const x = Math.min(start.x, current.x);
     const y = Math.min(start.y, current.y);
@@ -660,6 +933,104 @@ export async function renderEditor(filePath, container) {
     marqueeBox.setAttribute("display", "");
     return { x, y, width, height };
   }
+
+  function startLineHandleDrag(which, pointerId) {
+    if (selectedElements.length !== 1) return;
+    const line = selectedElements[0];
+    if (!line || line.tagName.toLowerCase() !== "line") return;
+    lineHandleDragState = {
+      pointerId,
+      line,
+      which
+    };
+    try {
+      svgRoot.setPointerCapture(pointerId);
+    } catch {
+      // Ignore unsupported pointer capture errors.
+    }
+  }
+
+  function startResizeInteraction(corner, pointerId) {
+    if (selectedElements.length !== 1) return;
+    const el = selectedElements[0];
+    if (!el || el.tagName.toLowerCase() === "line") return;
+    try {
+      const bbox = el.getBBox();
+      if (!bbox || bbox.width <= 0 || bbox.height <= 0) return;
+      resizeState = {
+        pointerId,
+        element: el,
+        corner,
+        bbox,
+        baseTransform: el.getAttribute("transform") || ""
+      };
+      try {
+        svgRoot.setPointerCapture(pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+    } catch {
+      // Ignore elements without measurable bbox.
+    }
+  }
+
+  function startRotateInteraction(target, pointerId, point) {
+    if (!target) return false;
+    try {
+      const bbox = target.getBBox();
+      if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return false;
+      const cx = bbox.x + bbox.width / 2;
+      const cy = bbox.y + bbox.height / 2;
+      const startAngle = Math.atan2(point.y - cy, point.x - cx);
+      const tag = target.tagName.toLowerCase();
+      rotateState = {
+        pointerId,
+        element: target,
+        cx,
+        cy,
+        startAngle,
+        baseTransform: target.getAttribute("transform") || "",
+        baseLine: tag === "line"
+          ? {
+            p1: { x: getAttrNumber(target, "x1", 0), y: getAttrNumber(target, "y1", 0) },
+            p2: { x: getAttrNumber(target, "x2", 0), y: getAttrNumber(target, "y2", 0) }
+          }
+          : null
+      };
+      try {
+        svgRoot.setPointerCapture(pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      setStatus("Rotating selection");
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  lineStartHandle.addEventListener("pointerdown", (e) => {
+    if (toolState.mode !== "select") return;
+    e.preventDefault();
+    e.stopPropagation();
+    startLineHandleDrag("start", e.pointerId);
+  });
+
+  lineEndHandle.addEventListener("pointerdown", (e) => {
+    if (toolState.mode !== "select") return;
+    e.preventDefault();
+    e.stopPropagation();
+    startLineHandleDrag("end", e.pointerId);
+  });
+
+  Object.entries(resizeHandles).forEach(([corner, handle]) => {
+    handle.addEventListener("pointerdown", (e) => {
+      if (toolState.mode !== "select") return;
+      e.preventDefault();
+      e.stopPropagation();
+      startResizeInteraction(corner, e.pointerId);
+    });
+  });
 
   wrapper.addEventListener("keydown", (e) => {
     if (toolState.mode !== "select") return;
@@ -688,11 +1059,16 @@ export async function renderEditor(filePath, container) {
     wrapper.focus();
 
     if (toolState.mode === "select") {
-      const target = e.target instanceof SVGElement ? e.target : null;
+      let target = e.target instanceof SVGElement ? e.target : null;
+      if (!target || !isSelectableElement(target)) {
+        target = findNearestLineAtPoint(p, pointerToleranceInSvgUnits(8));
+      }
       if (target && isSelectableElement(target)) {
         if (e.shiftKey) {
-          toggleSelection(target);
-          if (!selectedElements.includes(target)) {
+          if (!selectedElements.includes(target) || selectedElements.length !== 1) {
+            setSelection([target], { primary: target });
+          }
+          if (startRotateInteraction(target, e.pointerId, p)) {
             e.preventDefault();
             return;
           }
@@ -777,9 +1153,70 @@ export async function renderEditor(filePath, container) {
   });
 
   svgRoot.addEventListener("pointermove", (e) => {
-    if (toolState.mode === "select") {
-      const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
+    const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
 
+    if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
+      const line = lineHandleDragState.line;
+      if (lineHandleDragState.which === "start") {
+        line.setAttribute("x1", String(p.x));
+        line.setAttribute("y1", String(p.y));
+      } else {
+        line.setAttribute("x2", String(p.x));
+        line.setAttribute("y2", String(p.y));
+      }
+      refreshSelectionVisuals();
+      e.preventDefault();
+      return;
+    }
+
+    if (resizeState && resizeState.pointerId === e.pointerId) {
+      const { bbox, corner, element, baseTransform } = resizeState;
+      const minSize = 0.05;
+      const anchor = {
+        x: corner.includes("w") ? bbox.x + bbox.width : bbox.x,
+        y: corner.includes("n") ? bbox.y + bbox.height : bbox.y
+      };
+      const rawScaleX = corner.includes("w")
+        ? (anchor.x - p.x) / Math.max(1, bbox.width)
+        : (p.x - anchor.x) / Math.max(1, bbox.width);
+      const rawScaleY = corner.includes("n")
+        ? (anchor.y - p.y) / Math.max(1, bbox.height)
+        : (p.y - anchor.y) / Math.max(1, bbox.height);
+      const sx = Math.max(minSize, rawScaleX);
+      const sy = Math.max(minSize, rawScaleY);
+      setTransformFromBase(
+        element,
+        baseTransform,
+        `translate(${anchor.x} ${anchor.y}) scale(${sx} ${sy}) translate(${-anchor.x} ${-anchor.y})`
+      );
+      refreshSelectionVisuals();
+      e.preventDefault();
+      return;
+    }
+
+    if (rotateState && rotateState.pointerId === e.pointerId) {
+      const angle = Math.atan2(p.y - rotateState.cy, p.x - rotateState.cx) - rotateState.startAngle;
+      const angleDeg = (angle * 180) / Math.PI;
+      if (rotateState.baseLine) {
+        const p1 = rotatePointAroundCenter(rotateState.baseLine.p1, { x: rotateState.cx, y: rotateState.cy }, angle);
+        const p2 = rotatePointAroundCenter(rotateState.baseLine.p2, { x: rotateState.cx, y: rotateState.cy }, angle);
+        rotateState.element.setAttribute("x1", String(p1.x));
+        rotateState.element.setAttribute("y1", String(p1.y));
+        rotateState.element.setAttribute("x2", String(p2.x));
+        rotateState.element.setAttribute("y2", String(p2.y));
+      } else {
+        setTransformFromBase(
+          rotateState.element,
+          rotateState.baseTransform,
+          `rotate(${angleDeg} ${rotateState.cx} ${rotateState.cy})`
+        );
+      }
+      refreshSelectionVisuals();
+      e.preventDefault();
+      return;
+    }
+
+    if (toolState.mode === "select") {
       if (dragState && dragState.pointerId === e.pointerId) {
         const dx = p.x - dragState.last.x;
         const dy = p.y - dragState.last.y;
@@ -810,7 +1247,6 @@ export async function renderEditor(filePath, container) {
     }
 
     if (!toolState.drawing || !toolState.tempShape) return;
-    const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
     if (toolState.mode === "line") {
       toolState.tempShape.setAttribute("x2", String(p.x));
       toolState.tempShape.setAttribute("y2", String(p.y));
@@ -821,6 +1257,34 @@ export async function renderEditor(filePath, container) {
   });
 
   svgRoot.addEventListener("pointerup", (e) => {
+    if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
+      lineHandleDragState = null;
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      return;
+    }
+    if (resizeState && resizeState.pointerId === e.pointerId) {
+      resizeState = null;
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      return;
+    }
+    if (rotateState && rotateState.pointerId === e.pointerId) {
+      rotateState = null;
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      return;
+    }
+
     if (toolState.mode === "select") {
       if (dragState && dragState.pointerId === e.pointerId) {
         dragState = null;

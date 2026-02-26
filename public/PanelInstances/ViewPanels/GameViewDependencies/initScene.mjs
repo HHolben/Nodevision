@@ -12,6 +12,9 @@ import { createPlayerInventory } from "./playerInventory.mjs";
 import { createObjectInspector } from "./objectInspector.mjs";
 import { createTerrainToolController } from "./terrainGeneratorTool.mjs";
 import { saveCurrentWorldFile } from "./worldSave.mjs";
+import { createWorldPropertiesPanel } from "./worldPropertiesPanel.mjs";
+import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
+import { createConsolePanels } from "./consolePanels.mjs";
 
 export function initScene({ THREE, PointerLockControls, panel, canvas, state, loadWorldFromFile, getBindings, normalizeKeyName }) {
   const normalizePlayerMode = (value) => {
@@ -24,7 +27,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     || "survival"
   );
 
-  const { scene, renderer, camera, objects, colliders, lights } = createSceneBase({ THREE, panel, canvas });
+  const { scene, renderer, camera, objects, colliders, lights, ground } = createSceneBase({ THREE, panel, canvas });
   const portals = [];
   const collisionActions = [];
   const useTargets = [];
@@ -107,6 +110,15 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   };
   window.VRWorldContext.setPlayerMode(preferredMode);
 
+  const consolePanels = createConsolePanels({
+    THREE,
+    scene,
+    ground,
+    movementState
+  });
+  panel._vrConsolePanels = consolePanels;
+  window.VRWorldContext.consolePanels = consolePanels;
+
   const inventory = createPlayerInventory({ panel });
   panel._vrInventory = inventory;
   window.VRWorldContext.inventory = inventory;
@@ -119,6 +131,14 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   });
   panel._vrObjectInspector = objectInspector;
   window.VRWorldContext.objectInspector = objectInspector;
+
+  const worldPropertiesPanel = createWorldPropertiesPanel({ movementState });
+  panel._vrWorldPropertiesPanel = worldPropertiesPanel;
+  window.VRWorldContext.worldPropertiesPanel = worldPropertiesPanel;
+
+  const functionPlotterPanel = createFunctionPlotterPanel();
+  panel._vrFunctionPlotterPanel = functionPlotterPanel;
+  window.VRWorldContext.functionPlotterPanel = functionPlotterPanel;
 
   const terrainToolController = createTerrainToolController({
     THREE,
@@ -155,11 +175,14 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     spawnPoints,
     waterVolumes,
     objectInspector,
+    worldPropertiesPanel,
+    functionPlotterPanel,
     loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options),
     getBindings,
     heldKeys,
     movementState,
-    terrainToolController
+    terrainToolController,
+    consolePanels
   });
 
   const saveVirtualWorldFile = async () => {

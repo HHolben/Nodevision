@@ -26,5 +26,5 @@ export function createSceneBase({ THREE, panel, canvas }) {
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  return { scene, renderer, camera, objects: [], colliders: [], lights: [] };
+  return { scene, renderer, camera, objects: [], colliders: [], lights: [], ground };
 }

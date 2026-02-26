@@ -5,7 +5,7 @@ import { createCollisionChecker } from "./collisionCheck.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
 
-export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController }) {
+export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, worldPropertiesPanel, functionPlotterPanel, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController, consolePanels }) {
   const playerRadius = 0.35;
   const basePlayerHeight = 1.75;
   const crouchHeight = 1.2;
@@ -35,6 +35,156 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const raycastDirection = new THREE.Vector3();
   const mouseLikeEuler = new THREE.Euler(0, 0, 0, "YXZ");
   const halfPi = Math.PI / 2;
+  let noTroubleSplash = null;
+  let noTroubleTimer = 0;
+
+  function getPlacementHit() {
+    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+    const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const hits = raycaster.intersectObjects(candidates, false);
+    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
+  }
+
+  function buildConsoleMeshFromConfig(config) {
+    if (!config) return null;
+    const width = Number.isFinite(config.size?.[0]) ? config.size[0] : 0.9;
+    const height = Number.isFinite(config.size?.[1]) ? config.size[1] : 1.15;
+    const depth = Number.isFinite(config.size?.[2]) ? config.size[2] : 0.7;
+    const material = new THREE.MeshStandardMaterial({ color: config.color || "#33ccaa" });
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(width, height, depth),
+      material
+    );
+    mesh.userData.consoleProperties = {
+      collider: config.collider !== false,
+      color: config.color || "#33ccaa",
+      objectFile: config.objectFile || "",
+      linkedObject: config.linkedObject || ""
+    };
+    mesh.userData.nvType = "console";
+    return {
+      mesh,
+      collider: config.collider !== false ? {
+        type: "box",
+        half: new THREE.Vector3(width * 0.5, height * 0.5, depth * 0.5)
+      } : null
+    };
+  }
+
+  function finalizeConsolePlacement(hit, config, snapToGrid) {
+    if (!hit) return false;
+    const placement = buildConsoleMeshFromConfig(config);
+    if (!placement) return false;
+    const normal = (hit.face?.normal?.clone?.() || raycastDirection.set(0, 1, 0)).clone();
+    const hitObject = hit.object;
+    if (hitObject?.matrixWorld) {
+      normal.transformDirection(hitObject.matrixWorld).normalize();
+    }
+    const placePos = hit.point.clone().addScaledVector(normal, 0.55);
+    if (snapToGrid) {
+      placePos.x = Math.round(placePos.x);
+      placePos.y = Math.round(placePos.y);
+      placePos.z = Math.round(placePos.z);
+    }
+    if (placePos.y < 0.5) placePos.y = 0.5;
+
+    if (placement.collider && intersectsPlayer(placePos, placement.collider)) return false;
+    if (placement.collider && intersectsExistingColliders(placePos, placement.collider)) return false;
+
+    const mesh = placement.mesh;
+    mesh.position.copy(placePos);
+    mesh.userData.isSolid = Boolean(placement.collider);
+    mesh.userData.breakable = true;
+    mesh.userData.placedByPlayer = true;
+    scene.add(mesh);
+    objects.push(mesh);
+
+    if (placement.collider?.type === "box") {
+      const half = placement.collider.half;
+      const colliderRef = {
+        type: "box",
+        box: new THREE.Box3(
+          new THREE.Vector3(placePos.x - half.x, placePos.y - half.y, placePos.z - half.z),
+          new THREE.Vector3(placePos.x + half.x, placePos.y + half.y, placePos.z + half.z)
+        )
+      };
+      colliders.push(colliderRef);
+      mesh.userData.colliderRef = colliderRef;
+    }
+
+    const inventory = window.VRWorldContext?.inventory;
+
+    if (consolePanels?.hasPendingPlacement?.()) {
+      const pendingHit = getPlacementHit();
+      consolePanels.updatePlacementTarget?.(pendingHit);
+    }
+    inventory?.consumeSelected?.(1);
+    return true;
+  }
+
+  function showNoTroubleSplash() {
+    if (!noTroubleSplash) {
+      noTroubleSplash = document.createElement("div");
+      Object.assign(noTroubleSplash.style, {
+        position: "fixed",
+        left: "50%",
+        top: "22%",
+        transform: "translate(-50%, -50%)",
+        padding: "12px 18px",
+        borderRadius: "8px",
+        border: "1px solid rgba(190, 220, 245, 0.95)",
+        background: "rgba(10, 18, 30, 0.9)",
+        color: "#f4fbff",
+        font: "700 16px/1.2 serif",
+        textAlign: "center",
+        zIndex: "24000",
+        pointerEvents: "none",
+        opacity: "0",
+        transition: "opacity 120ms ease-in-out"
+      });
+      document.body.appendChild(noTroubleSplash);
+    }
+    noTroubleSplash.textContent = "You find no trouble here.";
+    noTroubleSplash.style.opacity = "1";
+    if (noTroubleTimer) window.clearTimeout(noTroubleTimer);
+    noTroubleTimer = window.setTimeout(() => {
+      if (noTroubleSplash) noTroubleSplash.style.opacity = "0";
+      noTroubleTimer = 0;
+    }, 1700);
+  }
+
+  function getPlacementHit() {
+    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+    const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const hits = raycaster.intersectObjects(candidates, false);
+    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
+  }
+
+  function buildConsoleMeshFromConfig(config) {
+    if (!config) return null;
+    const width = Number.isFinite(config.size?.[0]) ? config.size[0] : 0.9;
+    const height = Number.isFinite(config.size?.[1]) ? config.size[1] : 1.15;
+    const depth = Number.isFinite(config.size?.[2]) ? config.size[2] : 0.7;
+    const material = new THREE.MeshStandardMaterial({ color: config.color || "#33ccaa" });
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(width, height, depth),
+      material
+    );
+    mesh.userData.consoleProperties = {
+      collider: config.collider !== false,
+      color: config.color || "#33ccaa",
+      objectFile: config.objectFile || "",
+      linkedObject: config.linkedObject || ""
+    };
+    mesh.userData.nvType = "console";
+    return {
+      mesh,
+      collider: config.collider !== false ? {
+        type: "box",
+        half: new THREE.Vector3(width * 0.5, height * 0.5, depth * 0.5)
+      } : null
+    };
+  }
 
   function playerMode() {
     const mode = String(movementState?.playerMode || "survival").toLowerCase();
@@ -324,8 +474,92 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
   }
 
-  function createPlacedMesh(itemId) {
-    const id = String(itemId || "").toLowerCase();
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function normalizeFunctionConfig(rawConfig) {
+    const cfg = rawConfig || {};
+    const equation = typeof cfg.equation === "string" && cfg.equation.trim()
+      ? cfg.equation.trim()
+      : "Math.sin(x)";
+    const rawResolution = Number.parseInt(cfg.resolution, 10);
+    const resolution = Number.isFinite(rawResolution) ? clamp(rawResolution, 16, 192) : 96;
+    const rawLimits = Array.isArray(cfg.limits) ? cfg.limits : [-8, 8];
+    let xMin = Number.parseFloat(rawLimits[0]);
+    let xMax = Number.parseFloat(rawLimits[1]);
+    if (!Number.isFinite(xMin)) xMin = -8;
+    if (!Number.isFinite(xMax)) xMax = 8;
+    if (xMin > xMax) {
+      const t = xMin;
+      xMin = xMax;
+      xMax = t;
+    }
+    const safeWidth = clamp(xMax - xMin, 0.5, 80);
+    xMax = xMin + safeWidth;
+    return {
+      equation,
+      resolution,
+      limits: [xMin, xMax],
+      collider: cfg.collider !== false,
+      color: typeof cfg.color === "string" && cfg.color ? cfg.color : "#44bbff"
+    };
+  }
+
+  function evaluateFunctionY(equation, x) {
+    try {
+      const fn = new Function("x", "Math", `"use strict"; return (${equation});`);
+      const y = fn(x, Math);
+      if (!Number.isFinite(y)) return null;
+      return clamp(y, -100, 100);
+    } catch (_) {
+      return clamp(Math.sin(x), -100, 100);
+    }
+  }
+
+  function buildMathFunctionMesh(rawProps) {
+    const props = normalizeFunctionConfig(rawProps);
+    const [xMin, xMax] = props.limits;
+    const segments = props.resolution;
+    const points = [];
+    for (let i = 0; i <= segments; i += 1) {
+      const t = i / segments;
+      const x = xMin + (xMax - xMin) * t;
+      const y = evaluateFunctionY(props.equation, x);
+      if (y === null) continue;
+      points.push(new THREE.Vector3(x, y, 0));
+    }
+    if (points.length < 2) return null;
+    const curve = new THREE.CatmullRomCurve3(points);
+    const geometry = new THREE.TubeGeometry(curve, Math.max(16, segments), 0.035, 8, false);
+    const material = new THREE.MeshStandardMaterial({
+      color: props.color,
+      emissive: props.color,
+      emissiveIntensity: 0.18
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.userData.mathFunctionProperties = props;
+    return mesh;
+  }
+
+  function parseConsoleProperties(inventory) {
+    const defaultObject = inventory?.getSelectedObjectFile?.() || "";
+    const raw = prompt(
+      "Console properties:\ncollider(true/false); color; 3D object file; linked object tag/name\nExample: true;#33ccaa;props/console.glb;target-a",
+      `true;#33ccaa;${defaultObject};`
+    );
+    if (raw === null) return null;
+    const parts = String(raw).split(";").map((part) => part.trim());
+    return {
+      collider: String(parts[0] || "true").toLowerCase() !== "false",
+      color: parts[1] || "#33ccaa",
+      objectFile: parts[2] || "",
+      linkedObject: parts[3] || ""
+    };
+  }
+
+  function createPlacedMesh(selectedItem, inventory) {
+    const id = String(selectedItem?.id || "").toLowerCase();
     if (id === "box") {
       return {
         mesh: new THREE.Mesh(
@@ -353,10 +587,55 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         collider: { type: "cylinder", radius: 0.5, halfHeight: 0.5 }
       };
     }
+    if (id === "math-function") {
+      const panelRef = functionPlotterPanel || window.VRWorldContext?.functionPlotterPanel;
+      const pending = panelRef?.consumePendingConfig?.() || null;
+      if (!pending) {
+        panelRef?.open?.();
+        return null;
+      }
+      const mesh = buildMathFunctionMesh(pending);
+      if (!mesh) return null;
+      return {
+        mesh,
+        collider: mesh.userData?.mathFunctionProperties?.collider ? { type: "sphere", radius: 0.7 } : null
+      };
+    }
+    if (id === "console") {
+      const props = parseConsoleProperties(inventory);
+      if (!props) return null;
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 1.15, 0.7),
+        new THREE.MeshStandardMaterial({ color: props.color })
+      );
+      mesh.userData.consoleProperties = props;
+      return {
+        mesh,
+        collider: props.collider ? { type: "box", half: new THREE.Vector3(0.45, 0.575, 0.35) } : null
+      };
+    }
+    if (id === "object-file") {
+      const objectFilePath = String(
+        selectedItem?.objectFilePath
+        || inventory?.getSelectedObjectFile?.()
+        || ""
+      ).trim();
+      if (!objectFilePath) return null;
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshStandardMaterial({ color: 0x6e80d8 })
+      );
+      mesh.userData.objectFilePath = objectFilePath;
+      return {
+        mesh,
+        collider: { type: "box", half: new THREE.Vector3(0.5, 0.5, 0.5) }
+      };
+    }
     return null;
   }
 
   function intersectsPlayer(position, shape) {
+    if (!shape) return false;
     const playerPos = controls.getObject().position;
     const playerMinY = playerPos.y - movementState.playerHeight;
     const playerMaxY = playerPos.y;
@@ -381,6 +660,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   }
 
   function intersectsExistingColliders(position, shape) {
+    if (!shape) return false;
     const overlapEpsilon = 0.001;
 
     function boxesPenetrate(a, b) {
@@ -602,14 +882,37 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     if (!inventory?.getSelectedItem || !inventory?.consumeSelected) return false;
     const selected = inventory.getSelectedItem();
     if (!selected || !selected.id || (Number.isFinite(selected.count) && selected.count <= 0)) return false;
-    const placement = createPlacedMesh(selected.id);
-    if (!placement) return false;
-
-    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const candidates = (objects || []).filter((obj) => obj?.isMesh);
-    const hits = raycaster.intersectObjects(candidates, false);
-    const hit = hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible);
+    const hit = getPlacementHit();
     if (!hit) return false;
+
+    if (String(selected.id || "").toLowerCase() === "console") {
+      if (consolePanels?.openPlacementPanel?.(
+        hit,
+        {
+          color: "#33ccaa",
+          collider: true,
+          size: [0.9, 1.15, 0.7]
+        },
+        snapToGrid,
+        {
+          onConfirm: (config, confirmHit, gridSnap) => {
+            finalizeConsolePlacement(confirmHit || hit, config, gridSnap);
+          },
+          onCancel: () => {}
+        }
+      )) {
+        return true;
+      }
+      // Fallback to prompt if panels missing
+      const consoleProps = parseConsoleProperties(inventory);
+      if (!consoleProps) return false;
+      consoleProps.size = [0.9, 1.15, 0.7];
+      finalizeConsolePlacement(hit, consoleProps, snapToGrid);
+      return true;
+    }
+
+    const placement = createPlacedMesh(selected, inventory);
+    if (!placement) return false;
 
     const normal = hit.face?.normal?.clone?.() || raycastDirection.set(0, 1, 0);
     normal.transformDirection(hit.object.matrixWorld).normalize();
@@ -622,19 +925,19 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
     if (placePos.y < 0.5) placePos.y = 0.5;
 
-    if (intersectsPlayer(placePos, placement.collider)) return false;
-    if (intersectsExistingColliders(placePos, placement.collider)) return false;
+    if (placement.collider && intersectsPlayer(placePos, placement.collider)) return false;
+    if (placement.collider && intersectsExistingColliders(placePos, placement.collider)) return false;
 
     const mesh = placement.mesh;
     mesh.position.copy(placePos);
-    mesh.userData.isSolid = true;
+    mesh.userData.isSolid = Boolean(placement.collider);
     mesh.userData.breakable = true;
     mesh.userData.placedByPlayer = true;
     mesh.userData.nvType = selected.id;
     scene.add(mesh);
     objects.push(mesh);
 
-    if (placement.collider.type === "box") {
+    if (placement.collider?.type === "box") {
       const half = placement.collider.half;
       const colliderRef = {
         type: "box",
@@ -645,7 +948,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       };
       colliders.push(colliderRef);
       mesh.userData.colliderRef = colliderRef;
-    } else {
+    } else if (placement.collider?.type === "sphere" || placement.collider?.type === "cylinder") {
       const colliderRef = {
         type: "sphere",
         center: placePos.clone(),
@@ -771,8 +1074,18 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const inventory = window.VRWorldContext?.inventory;
     const itemType = target.userData?.nvType;
     if (inventory?.addItem && typeof itemType === "string" && itemType) {
-      if (itemType === "box" || itemType === "sphere" || itemType === "cylinder") {
+      if (
+        itemType === "box"
+        || itemType === "sphere"
+        || itemType === "cylinder"
+        || itemType === "console"
+        || itemType === "math-function"
+        || itemType === "object-file"
+      ) {
         inventory.addItem(itemType, 1, itemType.charAt(0).toUpperCase() + itemType.slice(1));
+        if (itemType === "object-file" && target.userData?.objectFilePath && inventory?.setSelectedObjectFile) {
+          inventory.setSelectedObjectFile(target.userData.objectFilePath);
+        }
       }
     }
 
@@ -788,15 +1101,100 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return null;
   }
 
-  function tryInspectTarget() {
-    if (!objectInspector) return false;
-    if (!canUseAbility("allowInspect")) return false;
+  function getInspectHit() {
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
     const hits = raycaster.intersectObjects(candidates, false);
-    const hit = hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible);
-    if (!hit?.object) return false;
-    return objectInspector.inspectTarget(hit.object, hit.distance);
+    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
+  }
+
+  function applyColorToMeshTarget(target, colorHex) {
+    if (!target || !colorHex) return;
+    const queue = [];
+    target.traverse?.((node) => {
+      if (node?.isMesh) queue.push(node);
+    });
+    if (queue.length === 0 && target?.isMesh) queue.push(target);
+    queue.forEach((mesh) => {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat) => {
+          if (mat?.color) mat.color.set(colorHex);
+        });
+      } else if (mesh.material?.color) {
+        mesh.material.color.set(colorHex);
+      }
+    });
+  }
+
+  function applyConsoleConfig(target, config) {
+    if (!target || !config) return;
+    if (config.color) {
+      applyColorToMeshTarget(target, config.color);
+    }
+    setBoxColliderEnabled(target, config.collider);
+    const existing = target.userData?.consoleProperties || {};
+    target.userData.consoleProperties = {
+      ...existing,
+      color: config.color || existing.color,
+      collider: config.collider !== false,
+      objectFile: config.objectFile || existing.objectFile || "",
+      linkedObject: config.linkedObject || existing.linkedObject || ""
+    };
+  }
+
+  function setBoxColliderEnabled(target, enabled) {
+    if (!target) return;
+    const existing = target.userData?.colliderRef;
+    if (!enabled && existing) {
+      const idx = colliders.indexOf(existing);
+      if (idx !== -1) colliders.splice(idx, 1);
+      delete target.userData.colliderRef;
+      return;
+    }
+    if (enabled && !existing) {
+      const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(target) };
+      colliders.push(colliderRef);
+      target.userData.colliderRef = colliderRef;
+      return;
+    }
+    if (enabled && existing) {
+      existing.box = new THREE.Box3().setFromObject(target);
+    }
+  }
+
+  function tryUseConsoleTarget() {
+    const hit = getInspectHit();
+    const consoleMesh = hit?.object;
+    if (!consoleMesh || String(consoleMesh.userData?.nvType || "").toLowerCase() !== "console") return false;
+    consolePanels?.openUsePanel?.(consoleMesh);
+    return true;
+  }
+
+  function handleInspectAction() {
+    const hit = getInspectHit();
+    const target = hit?.object;
+    if (target && canUseAbility("allowInspect")) {
+      const type = String(target.userData?.nvType || "").toLowerCase();
+      if (type === "console" && consolePanels?.openInspectPanel) {
+        return consolePanels.openInspectPanel(target, hit.distance, {
+          onApply: (mesh, config) => {
+            applyConsoleConfig(mesh, config);
+          }
+        });
+      }
+      if (objectInspector) {
+        return objectInspector.inspectTarget(target, hit.distance);
+      }
+    }
+    if (!hit) {
+      if (playerMode() === "creative") {
+        worldPropertiesPanel?.open?.();
+        return true;
+      }
+      showNoTroubleSplash();
+      return true;
+    }
+    return false;
   }
 
   return function update() {
@@ -982,6 +1380,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         }
         return;
       }
+      if (tryUseConsoleTarget()) {
+        movementState.suppressAttackUntilMs = nowMs + 220;
+        return;
+      }
       if (tryUseSelectedTool()) {
         movementState.suppressAttackUntilMs = nowMs + 220;
         return;
@@ -1001,7 +1403,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
     if (inspecting && !movementState.inspectLatch) {
       movementState.inspectLatch = true;
-      if (tryInspectTarget()) {
+      if (handleInspectAction()) {
         return;
       }
     }

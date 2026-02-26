@@ -8,11 +8,16 @@ export function createPlayerInventory({ panel }) {
     menuOpen: false,
     selectedMenuIndex: 0,
     equippedId: null,
+    selectedObjectFile: "",
     items: [
       { id: "box", label: "Box", count: 10 },
       { id: "sphere", label: "Sphere", count: 6 },
       { id: "cylinder", label: "Cylinder", count: 6 },
+      { id: "math-function", label: "Math Function", count: 4 },
+      { id: "console", label: "Console", count: 4 },
       { id: "portal", label: "Portal", count: 2 },
+      { id: "object-file", label: "Object File", count: 0 },
+      { id: "select-object", label: "Select Object", count: 1, tool: true },
       { id: "svg-camera", label: "SVG Camera", count: 1, tool: true },
       { id: "tape-measure", label: "Tape Measure", count: 1, tool: true },
       { id: "terrain-generator", label: "Terrain Generator", count: 1, tool: true }
@@ -44,6 +49,12 @@ export function createPlayerInventory({ panel }) {
   function getAvailableChoices() {
     const choices = [{ id: null, label: "Empty Hand", count: null }];
     for (const item of state.items) {
+      if (item?.id === "object-file") {
+        if (state.selectedObjectFile && Number.isFinite(item.count) && item.count > 0) {
+          choices.push(item);
+        }
+        continue;
+      }
       if (item?.tool || (Number.isFinite(item.count) && item.count > 0)) {
         choices.push(item);
       }
@@ -61,13 +72,18 @@ export function createPlayerInventory({ panel }) {
     if (!state.equippedId) return "Empty Hand";
     const match = state.items.find((item) => item.id === state.equippedId);
     if (!match) return "Empty Hand";
+    if (match.id === "object-file") {
+      if (!state.selectedObjectFile || !(Number.isFinite(match.count) && match.count > 0)) return "Empty Hand";
+      return `${match.label} (${state.selectedObjectFile}) x${match.count}`;
+    }
     if (match.tool) return match.label;
     if (!(Number.isFinite(match.count) && match.count > 0)) return "Empty Hand";
     return `${match.label} x${match.count}`;
   }
 
   function renderStatus() {
-    statusHud.textContent = `Equipped: ${getEquippedLabel()}  |  Inventory: 0 / Back`;
+    const objectInfo = state.selectedObjectFile ? `  |  Object: ${state.selectedObjectFile}` : "";
+    statusHud.textContent = `Equipped: ${getEquippedLabel()}  |  Inventory: 0 / Back${objectInfo}`;
   }
 
   function renderMenu() {
@@ -210,6 +226,87 @@ export function createPlayerInventory({ panel }) {
         return icon;
       }
 
+      if (id === "math-function") {
+        icon.style.position = "relative";
+        icon.style.borderRadius = "7px";
+        icon.style.background = "linear-gradient(135deg, #f6a85e 0%, #cc5d2f 100%)";
+        icon.style.border = "1px solid rgba(255, 226, 194, 0.9)";
+        const graph = document.createElement("div");
+        graph.style.position = "absolute";
+        graph.style.left = "4px";
+        graph.style.right = "4px";
+        graph.style.bottom = "8px";
+        graph.style.height = "12px";
+        graph.style.borderLeft = "1px solid rgba(255,255,255,0.9)";
+        graph.style.borderBottom = "1px solid rgba(255,255,255,0.9)";
+        icon.appendChild(graph);
+        const wave = document.createElement("div");
+        wave.style.position = "absolute";
+        wave.style.left = "7px";
+        wave.style.top = "12px";
+        wave.style.width = "20px";
+        wave.style.height = "10px";
+        wave.style.border = "2px solid rgba(255, 247, 227, 0.95)";
+        wave.style.borderColor = "rgba(255, 247, 227, 0.95) transparent transparent transparent";
+        wave.style.borderRadius = "50%";
+        icon.appendChild(wave);
+        return icon;
+      }
+
+      if (id === "console") {
+        icon.style.position = "relative";
+        icon.style.borderRadius = "7px";
+        icon.style.background = "linear-gradient(135deg, #57bfa2 0%, #266f6d 100%)";
+        icon.style.border = "1px solid rgba(213, 255, 242, 0.85)";
+        const screen = document.createElement("div");
+        screen.style.position = "absolute";
+        screen.style.left = "6px";
+        screen.style.top = "6px";
+        screen.style.width = "22px";
+        screen.style.height = "13px";
+        screen.style.border = "1px solid rgba(204, 251, 255, 0.95)";
+        screen.style.background = "rgba(14, 42, 60, 0.9)";
+        icon.appendChild(screen);
+        const knob = document.createElement("div");
+        knob.style.position = "absolute";
+        knob.style.left = "13px";
+        knob.style.top = "22px";
+        knob.style.width = "8px";
+        knob.style.height = "8px";
+        knob.style.borderRadius = "50%";
+        knob.style.background = "radial-gradient(circle at 35% 35%, #fff, #8cefd8 70%)";
+        icon.appendChild(knob);
+        return icon;
+      }
+
+      if (id === "object-file" || id === "select-object") {
+        icon.style.position = "relative";
+        icon.style.borderRadius = "7px";
+        icon.style.background = "linear-gradient(135deg, #7b8ef2 0%, #4356ab 100%)";
+        icon.style.border = "1px solid rgba(222, 230, 255, 0.85)";
+        const cube = document.createElement("div");
+        cube.style.position = "absolute";
+        cube.style.left = "9px";
+        cube.style.top = "8px";
+        cube.style.width = "16px";
+        cube.style.height = "16px";
+        cube.style.transform = "rotate(18deg)";
+        cube.style.border = "1px solid rgba(239, 244, 255, 0.95)";
+        cube.style.background = "rgba(164, 182, 255, 0.55)";
+        icon.appendChild(cube);
+        if (id === "select-object") {
+          const plus = document.createElement("div");
+          plus.style.position = "absolute";
+          plus.style.right = "3px";
+          plus.style.bottom = "1px";
+          plus.style.color = "#f5fbff";
+          plus.style.font = "700 11px/1 monospace";
+          plus.textContent = "+";
+          icon.appendChild(plus);
+        }
+        return icon;
+      }
+
       icon.style.background = "linear-gradient(135deg, #d8d8d8 0%, #8f8f8f 48%, #666666 100%)";
       icon.style.boxShadow = "-4px 4px 0 rgba(0,0,0,0.25)";
       return icon;
@@ -304,9 +401,70 @@ export function createPlayerInventory({ panel }) {
     renderMenu();
   }
 
+  function normalizeNotebookPath(input = "") {
+    return String(input || "")
+      .trim()
+      .replace(/\\/g, "/")
+      .replace(/^\/+/, "")
+      .replace(/^Notebook\//i, "");
+  }
+
+  function pickLocalFile(accept = "") {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      if (accept) input.accept = accept;
+      input.style.position = "fixed";
+      input.style.left = "-2000px";
+      document.body.appendChild(input);
+      input.addEventListener("change", () => {
+        const file = input.files?.[0] || null;
+        input.remove();
+        resolve(file);
+      }, { once: true });
+      input.click();
+    });
+  }
+
+  async function uploadObjectFileToNotebook(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/file/upload-binary", {
+      method: "POST",
+      body: formData
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.error || `${response.status} ${response.statusText}`);
+    }
+    return normalizeNotebookPath(payload?.filename || file.name);
+  }
+
+  async function selectObjectFile() {
+    const file = await pickLocalFile(".glb,.gltf,.obj,.stl,.fbx,.dae,.ply,.usdz,.usd,.usda,.usdc");
+    if (!file) return;
+    const notebookPath = await uploadObjectFileToNotebook(file);
+    const objectItem = state.items.find((item) => item.id === "object-file");
+    if (objectItem) {
+      objectItem.count = Math.max(objectItem.count || 0, 12);
+      objectItem.label = "Object File";
+    }
+    state.selectedObjectFile = notebookPath;
+    state.equippedId = "object-file";
+    render();
+  }
+
   function applySelection() {
     const choice = getAvailableChoices()[state.selectedMenuIndex] || null;
     state.equippedId = choice?.id || null;
+    if (state.equippedId === "select-object") {
+      void selectObjectFile().catch((err) => {
+        console.warn("Failed to select object file:", err);
+        alert(`Failed to select object file: ${err.message}`);
+      });
+    } else if (state.equippedId === "math-function") {
+      window.VRWorldContext?.functionPlotterPanel?.open?.();
+    }
     render();
   }
 
@@ -402,9 +560,27 @@ export function createPlayerInventory({ panel }) {
     if (!state.equippedId) return null;
     const item = state.items.find((entry) => entry.id === state.equippedId);
     if (!item) return null;
+    if (item.id === "object-file") {
+      if (!state.selectedObjectFile) return null;
+      if (item.count <= 0) return null;
+      return {
+        ...item,
+        objectFilePath: state.selectedObjectFile
+      };
+    }
     if (item.tool) return item;
     if (item.count <= 0) return null;
     return item;
+  }
+
+  function setSelectedObjectFile(path) {
+    const normalized = normalizeNotebookPath(path || "");
+    state.selectedObjectFile = normalized;
+    const objectItem = state.items.find((item) => item.id === "object-file");
+    if (objectItem && normalized) {
+      objectItem.count = Math.max(objectItem.count || 0, 1);
+    }
+    render();
   }
 
   function onKeyDown(event) {
@@ -463,6 +639,8 @@ export function createPlayerInventory({ panel }) {
     toggleMenu,
     setMenuOpen,
     isMenuOpen: () => state.menuOpen,
+    getSelectedObjectFile: () => state.selectedObjectFile || "",
+    setSelectedObjectFile,
     get items() { return state.items; },
     get selectedIndex() { return state.selectedMenuIndex; },
     dispose() {

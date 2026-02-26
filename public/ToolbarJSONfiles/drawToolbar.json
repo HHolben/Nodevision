@@ -12,7 +12,47 @@
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "DrawSVG",
-    "preventAutoSubToolbar": true,
+    "preventDropdown": true,
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Select",
+    "parentHeading": "SVG Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeSelect",
+    "icon": "icons/EditIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Line",
+    "parentHeading": "SVG Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeLine",
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Bezier",
+    "parentHeading": "SVG Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeBezier",
+    "icon": "icons/CanvasIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Freehand",
+    "parentHeading": "SVG Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeFreehand",
+    "icon": "icons/imageEditIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Delete",
+    "parentHeading": "SVG Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgDeleteSelection",
+    "icon": "icons/ExitIcon.png",
     "modes": ["SVG Editing", "GraphicalEditing"]
   }
 ]

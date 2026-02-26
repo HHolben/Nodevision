@@ -217,6 +217,37 @@ async function attachToolbarScript(item, hostElement) {
   }
 }
 
+function createToolbarIconElement(item, { allowFallback = true } = {}) {
+  if (item?.icon) {
+    const icon = document.createElement("img");
+    icon.src = item.icon;
+    icon.alt = item.heading || "toolbar icon";
+    Object.assign(icon.style, {
+      width: "16px",
+      height: "16px",
+      flex: "0 0 16px",
+      objectFit: "contain",
+    });
+    return icon;
+  }
+
+  if (!allowFallback) return null;
+
+  const fallback = document.createElement("span");
+  fallback.setAttribute("aria-hidden", "true");
+  Object.assign(fallback.style, {
+    width: "16px",
+    height: "16px",
+    flex: "0 0 16px",
+    border: "1px solid #666",
+    borderRadius: "3px",
+    background: "linear-gradient(135deg, #f2f2f2 0%, #cfcfcf 100%)",
+    boxSizing: "border-box",
+    display: "inline-block",
+  });
+  return fallback;
+}
+
 function rebuildPrebuiltDropdowns() {
   // Clear old cached dropdown DOM so conditions are reevaluated
   for (const key of Object.keys(prebuiltDropdowns)) {
@@ -379,13 +410,10 @@ function buildToolbar(container, items, parentHeading = null) {
           }
     );
 
-    // Icon
-    if (item.icon) {
-      const icon = document.createElement("img");
-      icon.src = item.icon;
-      icon.alt = item.heading;
-      Object.assign(icon.style, { width: "16px", height: "16px" });
-      btn.prepend(icon);
+    // Main toolbar is text-only. Dropdown entries are icon + text.
+    if (isDropdownContainer) {
+      const iconEl = createToolbarIconElement(item, { allowFallback: true });
+      if (iconEl) btn.prepend(iconEl);
     }
 
     btnWrapper.appendChild(btn);
@@ -482,6 +510,7 @@ if (item.panelTemplateId || item.panelTemplate) {
 // === Build dropdown from toolbar item ===
 function buildDropdownFromItem(item) {
   if (!item.heading) return null;
+  if (item.preventDropdown === true) return null;
   const state = window.NodevisionState || {};
   const normalizedHeading = item.heading.toLowerCase();
   const jsonName = `${normalizedHeading}Toolbar.json`;
@@ -548,27 +577,24 @@ function buildSubToolbar(items, container = subToolbarContainer) {
     if (!checkToolbarConditions(item, state)) return;
     const btn = document.createElement("button");
     btn.title = item.heading || "";
-    const hasIcon = Boolean(item.icon);
-    if (!hasIcon) {
-      btn.textContent = item.heading;
-    }
+    btn.setAttribute("aria-label", item.heading || "toolbar action");
 
     Object.assign(btn.style, {
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: hasIcon ? "0" : "6px",
-      padding: "4px 8px",
+      gap: "0",
+      width: "30px",
+      minWidth: "30px",
+      height: "30px",
+      minHeight: "30px",
+      padding: "0",
     });
 
-    if (hasIcon) {
-      const icon = document.createElement("img");
-      icon.src = item.icon;
-      icon.alt = item.heading;
-      Object.assign(icon.style, { width: "16px", height: "16px" });
-      btn.appendChild(icon);
-    }
+    // Sub-toolbar is icon-only.
+    const iconEl = createToolbarIconElement(item, { allowFallback: true });
+    if (iconEl) btn.appendChild(iconEl);
     btn.addEventListener("mouseenter", playToolbarHighlightSound);
 
     btn.addEventListener("click", e => {

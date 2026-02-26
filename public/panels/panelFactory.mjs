@@ -1,4 +1,6 @@
 // Nodevision/public/panels/panelFactory.mjs
+import { attachResizeEvents } from "./panelResize.mjs";
+
 // Panel factory: creates DOM containers for panels, lazy-loads per-instance modules,
 // and invokes the panel's exported initializer. Uses a module cache to avoid re-imports.
 
@@ -145,6 +147,8 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
   panel.appendChild(header);
   panel.appendChild(content);
   panel.appendChild(resizer);
+
+  attachResizeEvents(panel, resizer);
 
   // Try to resolve & load instance module
   const modulePath = resolveModulePath(instanceName, panelClass);

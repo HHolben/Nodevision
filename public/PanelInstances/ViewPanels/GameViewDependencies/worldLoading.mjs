@@ -98,6 +98,13 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         allowToolUse: readRule("allowToolUse", false),
         allowSave: readRule("allowSave", false)
       };
+
+      const envDef =
+        worldData?.metadata?.environment
+        || worldData?.environment
+        || window.VRWorldContext?.environment
+        || null;
+      window.VRWorldContext?.consolePanels?.applyEnvironmentDefinition?.(envDef);
     }
     objects.forEach(obj => scene.remove(obj));
     objects.length = 0;
@@ -324,6 +331,50 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       return null;
     };
 
+    const evaluateFunctionY = (equation, x) => {
+      try {
+        const fn = new Function("x", "Math", `"use strict"; return (${equation});`);
+        const y = fn(x, Math);
+        if (!Number.isFinite(y)) return null;
+        return Math.max(-100, Math.min(100, y));
+      } catch (_) {
+        return Math.sin(x);
+      }
+    };
+
+    const createMathFunctionMesh = (def) => {
+      const equation = typeof def.equation === "string" && def.equation ? def.equation : "Math.sin(x)";
+      const limits = Array.isArray(def.limits) && def.limits.length >= 2 ? def.limits : [-8, 8];
+      const xMin = Number.isFinite(limits[0]) ? limits[0] : -8;
+      const xMax = Number.isFinite(limits[1]) ? limits[1] : 8;
+      const resolution = Number.isFinite(def.resolution) ? Math.max(16, Math.min(192, Math.floor(def.resolution))) : 96;
+      const points = [];
+      for (let i = 0; i <= resolution; i += 1) {
+        const t = i / resolution;
+        const x = xMin + (xMax - xMin) * t;
+        const y = evaluateFunctionY(equation, x);
+        if (!Number.isFinite(y)) continue;
+        points.push(new THREE.Vector3(x, y, 0));
+      }
+      if (points.length < 2) return null;
+      const curve = new THREE.CatmullRomCurve3(points);
+      const geometry = new THREE.TubeGeometry(curve, Math.max(16, resolution), 0.035, 8, false);
+      const material = new THREE.MeshStandardMaterial({
+        color: def.color || "#44bbff",
+        emissive: def.color || "#44bbff",
+        emissiveIntensity: 0.22
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.userData.mathFunctionProperties = {
+        equation,
+        resolution,
+        limits: [xMin, xMax],
+        collider: def.collider !== false,
+        color: def.color || "#44bbff"
+      };
+      return mesh;
+    };
+
     const spawnCandidates = [];
     const recordSpawnPoint = (def) => {
       if (!Array.isArray(def?.position) || def.position.length < 3) return;
@@ -369,6 +420,12 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         });
       }
       const portalShape = (def.shape || def.geometry || (def.type === "portal" ? "box" : def.type) || "").toLowerCase();
+      if (!Array.isArray(def.size) || def.size.length === 0) {
+        if (portalShape === "box") def.size = [1, 1, 1];
+        else if (portalShape === "sphere") def.size = [0.5];
+        else if (portalShape === "cylinder") def.size = [0.5, 1];
+        else if (portalShape === "torus") def.size = [1, 0.25];
+      }
       const materialOpts = {
         color: def.color || "#888"
       };
@@ -389,7 +446,30 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         materialOpts.emissive = def.emissive === true ? def.color || "#888" : def.emissive;
         materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.75;
       }
-      if (portalShape === "box") {
+      if (def.type === "math-function") {
+        mesh = createMathFunctionMesh(def);
+      } else if (def.type === "console") {
+        const size = Array.isArray(def.size) && def.size.length >= 3 ? def.size : [0.9, 1.15, 0.7];
+        mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(size[0], size[1], size[2]),
+          new THREE.MeshStandardMaterial(materialOpts)
+        );
+        mesh.userData.consoleProperties = {
+          collider: def.collider !== false,
+          color: def.color || "#33ccaa",
+          objectFile: typeof def.objectFile === "string" ? def.objectFile : "",
+          linkedObject: typeof def.linkedObject === "string" ? def.linkedObject : ""
+        };
+      } else if (def.type === "object-file") {
+        const size = Array.isArray(def.size) && def.size.length >= 3 ? def.size : [1, 1, 1];
+        mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(size[0], size[1], size[2]),
+          new THREE.MeshStandardMaterial(materialOpts)
+        );
+        if (typeof def.objectFile === "string" && def.objectFile) {
+          mesh.userData.objectFilePath = def.objectFile;
+        }
+      } else if (portalShape === "box") {
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(...def.size),
           new THREE.MeshStandardMaterial(materialOpts)
@@ -529,6 +609,16 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             const center = new THREE.Vector3(...def.position);
             const radius = def.size[0];
             const colliderRef = { type: "sphere", center, radius };
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
+          } else if (def.type === "console" || def.type === "object-file") {
+            const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
+          } else if (def.type === "math-function" && def.collider !== false) {
+            const sphere = new THREE.Sphere();
+            new THREE.Box3().setFromObject(mesh).getBoundingSphere(sphere);
+            const colliderRef = { type: "sphere", center: sphere.center.clone(), radius: sphere.radius };
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           }

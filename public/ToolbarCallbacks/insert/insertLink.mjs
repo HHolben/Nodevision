@@ -78,18 +78,20 @@ function showLinkTypeDialog() {
 
     const box = document.createElement("div");
     box.style.cssText = "width:min(420px,92vw);background:#fff;border:1px solid #888;border-radius:8px;padding:14px;font:13px monospace;";
-    box.innerHTML = "<div style='font-weight:700;margin-bottom:10px;'>Insert Link</div><div style='margin-bottom:12px;'>Choose link type:</div>";
+    box.innerHTML = "<div style='font-weight:700;margin-bottom:10px;'>Insert Link</div><div style='margin-bottom:12px;'>Choose link source:</div>";
 
     const actions = document.createElement("div");
     actions.style.cssText = "display:flex;gap:8px;justify-content:flex-end;";
-    const internalBtn = document.createElement("button");
-    internalBtn.textContent = "Internal File";
+    const localBtn = document.createElement("button");
+    localBtn.textContent = "Local File";
     const externalBtn = document.createElement("button");
-    externalBtn.textContent = "External URL";
+    externalBtn.textContent = "Hyperlink URL";
+    const internalBtn = document.createElement("button");
+    internalBtn.textContent = "Notebook File";
     const cancelBtn = document.createElement("button");
     cancelBtn.textContent = "Cancel";
 
-    [internalBtn, externalBtn, cancelBtn].forEach((btn) => {
+    [localBtn, externalBtn, internalBtn, cancelBtn].forEach((btn) => {
       btn.style.cssText = "padding:6px 10px;border:1px solid #777;background:#f6f6f6;cursor:pointer;";
       actions.appendChild(btn);
     });
@@ -101,6 +103,7 @@ function showLinkTypeDialog() {
       overlay.remove();
       resolve(value);
     };
+    localBtn.onclick = () => finish("local");
     internalBtn.onclick = () => finish("internal");
     externalBtn.onclick = () => finish("external");
     cancelBtn.onclick = () => finish(null);
@@ -209,6 +212,36 @@ async function chooseInternalNotebookTarget() {
   return showNotebookFilePicker(files);
 }
 
+function chooseLocalFile() {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.style.position = "fixed";
+    input.style.left = "-2000px";
+    document.body.appendChild(input);
+    input.addEventListener("change", () => {
+      const file = input.files?.[0] || null;
+      input.remove();
+      resolve(file);
+    }, { once: true });
+    input.click();
+  });
+}
+
+async function uploadLocalFileToNotebook(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/file/upload-binary", {
+    method: "POST",
+    body: formData
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok || !payload?.success) {
+    throw new Error(payload?.error || `${res.status} ${res.statusText}`);
+  }
+  return normalizeNotebookPath(payload?.filename || file.name);
+}
+
 function insertAnchorAtSelection(wysiwyg, href, linkText, linkType = "external") {
   const sel = window.getSelection();
   if (!sel) return null;
@@ -266,6 +299,23 @@ export default async function insertLink() {
     }
     if (!targetPath) return;
     edgeTarget = normalizeNotebookPath(targetPath);
+    href = toRelativeNotebookHref(sourcePath, edgeTarget);
+  } else if (linkType === "local") {
+    let file = null;
+    try {
+      file = await chooseLocalFile();
+    } catch (err) {
+      console.error("insertLink: Failed to open local file dialog:", err);
+      return;
+    }
+    if (!file) return;
+    try {
+      edgeTarget = await uploadLocalFileToNotebook(file);
+    } catch (err) {
+      console.error("insertLink: Failed to upload local file:", err);
+      alert(`Failed to upload local file: ${err.message}`);
+      return;
+    }
     href = toRelativeNotebookHref(sourcePath, edgeTarget);
   } else {
     const entered = prompt("Enter the hyperlink URL:");

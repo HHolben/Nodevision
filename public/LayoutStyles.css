@@ -215,6 +215,20 @@
 .panel.docked { /* fills cell by inline styles set by JS */ }
 .panel.floating { position:absolute; pointer-events:auto; z-index: 22000; }
 
+.panel-resizer {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.panel.floating .panel-resizer {
+  opacity: 1;
+}
+
 /* Header buttons small styling (if you prefer CSS instead of inline) */
 .panel-header button { font-size: 12px; }
 

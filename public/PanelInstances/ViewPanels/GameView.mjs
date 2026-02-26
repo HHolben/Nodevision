@@ -135,6 +135,14 @@ export async function setupPanel(panel, instanceVars = {}) {
       panel._vrObjectInspector.dispose();
       panel._vrObjectInspector = null;
     }
+    if (panel._vrWorldPropertiesPanel?.dispose) {
+      panel._vrWorldPropertiesPanel.dispose();
+      panel._vrWorldPropertiesPanel = null;
+    }
+    if (panel._vrFunctionPlotterPanel?.dispose) {
+      panel._vrFunctionPlotterPanel.dispose();
+      panel._vrFunctionPlotterPanel = null;
+    }
     if (panel._vrTerrainToolController?.dispose) {
       panel._vrTerrainToolController.dispose();
       panel._vrTerrainToolController = null;

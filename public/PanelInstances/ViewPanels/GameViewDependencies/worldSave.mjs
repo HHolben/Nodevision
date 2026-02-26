@@ -9,6 +9,24 @@ function normalizeWorldPath(filePath) {
   return normalized;
 }
 
+const DEFAULT_ENVIRONMENT = {
+  skyColor: "#0f1c2b",
+  floorColor: "#333333",
+  backgroundMode: "color",
+  backgroundImage: ""
+};
+
+function buildEnvironmentMeta(movementState) {
+  const env = movementState?.environment || {};
+  return {
+    skyColor: env.skyColor || DEFAULT_ENVIRONMENT.skyColor,
+    floorColor: env.floorColor || DEFAULT_ENVIRONMENT.floorColor,
+    backgroundMode: env.backgroundMode || (env.backgroundImage ? "image" : "color"),
+    backgroundImage: env.backgroundImage || "",
+    floorImage: env.floorImage || ""
+  };
+}
+
 function round3(n) {
   return Math.round(Number(n) * 1000) / 1000;
 }
@@ -20,7 +38,15 @@ function vec3(v) {
 function getMeshType(mesh) {
   const hint = String(mesh?.userData?.nvType || "").toLowerCase();
   if (hint === "portal") return "portal";
-  if (hint === "box" || hint === "sphere" || hint === "cylinder" || hint === "torus") return hint;
+  if (
+    hint === "box"
+    || hint === "sphere"
+    || hint === "cylinder"
+    || hint === "torus"
+    || hint === "math-function"
+    || hint === "console"
+    || hint === "object-file"
+  ) return hint;
   const gType = mesh?.geometry?.type;
   if (gType === "BoxGeometry") return "box";
   if (gType === "SphereGeometry") return "sphere";
@@ -73,7 +99,35 @@ function serializeMesh(mesh) {
 
   const shape = type === "portal" ? getGeometryShape(mesh) : type;
 
-  if (shape === "box") {
+  if (type === "math-function") {
+    const props = mesh.userData?.mathFunctionProperties || {};
+    def.equation = typeof props.equation === "string" ? props.equation : "Math.sin(x)";
+    const rawResolution = Number.isFinite(props.resolution) ? props.resolution : 96;
+    def.resolution = Math.max(16, Math.min(192, Math.floor(rawResolution)));
+    def.limits = Array.isArray(props.limits) ? props.limits.slice(0, 2).map(round3) : [-8, 8];
+    def.collider = props.collider !== false;
+  } else if (type === "console") {
+    const props = mesh.userData?.consoleProperties || {};
+    def.collider = props.collider !== false;
+    if (typeof props.objectFile === "string" && props.objectFile) def.objectFile = props.objectFile;
+    if (typeof props.linkedObject === "string" && props.linkedObject) def.linkedObject = props.linkedObject;
+    const p = g?.parameters || {};
+    def.size = [
+      round3((p.width ?? 1) * sx),
+      round3((p.height ?? 1) * sy),
+      round3((p.depth ?? 1) * sz)
+    ];
+  } else if (type === "object-file") {
+    const p = g?.parameters || {};
+    def.size = [
+      round3((p.width ?? 1) * sx),
+      round3((p.height ?? 1) * sy),
+      round3((p.depth ?? 1) * sz)
+    ];
+    if (typeof mesh.userData?.objectFilePath === "string" && mesh.userData.objectFilePath) {
+      def.objectFile = mesh.userData.objectFilePath;
+    }
+  } else if (shape === "box") {
     const p = g?.parameters || {};
     def.size = [
       round3((p.width ?? 1) * sx),
@@ -148,13 +202,23 @@ function buildWorldDefinition({
     ? JSON.parse(JSON.stringify(existingWorldDefinition))
     : {};
 
-  const meshDefs = (objects || [])
+  const objectArray = objects || [];
+  const meshDefs = objectArray
     .map(serializeMesh)
     .filter(Boolean);
   const lightDefs = (lights || [])
     .map(serializeLight)
     .filter(Boolean);
 
+  const shouldFallbackToExistingObjects = meshDefs.length === 0
+    && objectArray.length > 0
+    && Array.isArray(existing.objects)
+    && existing.objects.length > 0;
+  if (shouldFallbackToExistingObjects) {
+    console.warn("[worldSave] Retaining previously saved objects because serialization returned 0 meshes after environment update.");
+  }
+
+  const finalMeshDefs = shouldFallbackToExistingObjects ? existing.objects : meshDefs;
   const worldRules = movementState?.worldRules || {};
   const metadata = {
     ...(existing.metadata || {}),
@@ -169,14 +233,15 @@ function buildWorldDefinition({
       allowInspect: worldRules.allowInspect === true,
       allowToolUse: worldRules.allowToolUse === true,
       allowSave: worldRules.allowSave === true
-    }
+    },
+    environment: buildEnvironmentMeta(movementState)
   };
 
   return {
     ...existing,
     worldMode: movementState?.worldMode === "2d" ? "2d" : "3d",
     metadata,
-    objects: meshDefs.concat(lightDefs)
+    objects: finalMeshDefs.concat(lightDefs)
   };
 }
 
