@@ -1,0 +1,39 @@
+// GenerateNodes.js
+// Purpose: Generate individual node data for file system items
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT_DIR = path.resolve(__dirname, '..');
+const notebookDir = path.join(ROOT_DIR, 'Notebook');
+const generatedNodesPath = path.join(__dirname, 'public', 'GeneratedNodes.js');
+
+function generateNodes(dir) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const nodes = [];
+
+  entries.forEach(entry => {
+    if (entry.isFile()) {
+      const node = {
+        data: {
+          id: entry.name,
+          label: entry.name,
+          link: path.join('Notebook', entry.name),
+          imageUrl: 'http://localhost:3000/DefaultNodeImage.png',
+          IndexNumber: 1
+        }
+      };
+      nodes.push(node);
+    }
+  });
+
+  return nodes;
+}
+
+const nodes = generateNodes(notebookDir);
+
+// Add module.exports so that GeneratedNodes.js can be imported
+const nodesOutput = `// GeneratedNodes.js\nconst nodes = [\n${nodes.map(node => JSON.stringify(node)).join(',\n')}\n];\n\nmodule.exports = nodes;`;
+
+fs.writeFileSync(generatedNodesPath, nodesOutput, 'utf8');
+console.log(`Generated nodes have been written to ${generatedNodesPath}`);

@@ -1,7 +1,7 @@
 // No need for an import - we'll use Deno's built-in API
 
 // Read config file
-const configText = await Deno.readTextFile("config.json");
+const configText = await Deno.readTextFile("ApplicationSystem/config.json");
 const config = JSON.parse(configText);
 const phpPort = config.phpPort;
 const nodePort = config.nodePort;
@@ -18,9 +18,12 @@ async function startServers() {
     
     // Node server command
     const nodeCommand = new Deno.Command("node", {
-      args: ["server.js"],
+      args: ["ApplicationSystem/server.js"],
       stdout: "piped",
       stderr: "piped",
+      env: {
+        PORT: String(nodePort),
+      },
     });
     
     // Start processes

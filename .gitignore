@@ -10,15 +10,15 @@ node_modules/
 #Ignore rsync stuff
 .sync
 
-# Ignore generated files in the public directory
-public/GeneratedNodes.js
-public/GeneratedRegions.js
-public/GeneratedEdges.js
-public/AllNodes.js
-public/data
+# Ignore generated files inside ApplicationSystem/public
+ApplicationSystem/public/GeneratedNodes.js
+ApplicationSystem/public/GeneratedRegions.js
+ApplicationSystem/public/GeneratedEdges.js
+ApplicationSystem/public/AllNodes.js
+# Ignore shared data storage
+UserData/data
 
 
 # Ignore User Settings
 UserSettings
-
 

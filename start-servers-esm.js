@@ -4,8 +4,8 @@
 // Import fs module from Deno standard library
 import { readTextFile } from "https://deno.land/std@0.220.0/fs/mod.ts";
 
-// Read config file
-const configText = await readTextFile("config.json");
+// Read config file from the ApplicationSystem folder
+const configText = await readTextFile("ApplicationSystem/config.json");
 const config = JSON.parse(configText);
 const phpPort = config.phpPort;
 const nodePort = config.nodePort;
@@ -15,16 +15,19 @@ async function startServers() {
   try {
     // PHP server process
     const phpProcess = Deno.run({
-      cmd: ["php", "-S", `localhost:${phpPort}`, "-t", "Notebook"],
+    cmd: ["php", "-S", `localhost:${phpPort}`, "-t", "Notebook"],
       stdout: "piped",
       stderr: "piped",
     });
     
     // Node server process
     const nodeProcess = Deno.run({
-      cmd: ["node", "server.js"],
-      stdout: "piped",
-      stderr: "piped",
+    cmd: ["node", "ApplicationSystem/server.js"],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      PORT: String(nodePort),
+    },
     });
     
     console.log(`PHP server started on port ${phpPort}`);

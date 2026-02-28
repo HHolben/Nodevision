@@ -1,21 +1,31 @@
 // Nodevision/start-servers.js
-// Purpose: Launch dual server setup (Node.js + PHP) using concurrently with configuration from config.json
+// Purpose: Launch dual server setup (Node.js + PHP) using concurrently with configuration sourced from ApplicationSystem/config.json
 
-import concurrently from 'concurrently';
 import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
-const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const applicationSystemDir = path.join(__dirname, 'ApplicationSystem');
+const requireFromAppSystem = createRequire(path.join(applicationSystemDir, 'package.json'));
+const concurrently = requireFromAppSystem('concurrently');
+const configPath = path.join(applicationSystemDir, 'config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const phpPort = config.phpPort;
 const nodePort = config.nodePort;
+const phpDocRoot = path.join(__dirname, 'Notebook');
+const nodeServerPath = path.join(applicationSystemDir, 'server.js');
 
 const run = concurrently([
   { 
-    command: `php -S 0.0.0.0:${phpPort} -t Notebook`, 
+    command: `php -S 0.0.0.0:${phpPort} -t "${phpDocRoot}"`, 
     name: 'php', 
     prefixColor: 'green'
   },
   { 
-    command: `node server.js`,
+    command: `node "${nodeServerPath}"`,
     name: 'node', 
     prefixColor: 'blue',
     env: {
