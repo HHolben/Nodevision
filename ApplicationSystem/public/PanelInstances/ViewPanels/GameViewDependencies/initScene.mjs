@@ -182,7 +182,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     heldKeys,
     movementState,
     terrainToolController,
-    consolePanels
+    consolePanels,
+    ground
   });
 
   const saveVirtualWorldFile = async () => {

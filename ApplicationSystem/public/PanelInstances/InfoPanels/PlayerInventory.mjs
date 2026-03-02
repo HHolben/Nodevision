@@ -151,10 +151,14 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
 
     if (dockedCell && dockedCell.classList?.contains("panel-cell")) {
       window.activeCell = dockedCell;
-      document.querySelectorAll(".panel-cell").forEach((c) => {
-        c.style.outline = "";
-      });
-      dockedCell.style.outline = "2px solid #0078d7";
+      if (window.highlightActiveCell) {
+        window.highlightActiveCell(dockedCell);
+      } else {
+        document.querySelectorAll(".panel-cell").forEach((c) => {
+          c.style.outline = "";
+        });
+        dockedCell.style.outline = "2px solid #0078d7";
+      }
       window.dispatchEvent(new CustomEvent("activePanelChanged", {
         detail: {
           panel: "PlayerInventory",

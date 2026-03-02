@@ -29,6 +29,7 @@ export function PickColor() {
         <button id="draw-tool-line" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "line" ? "#cfead2" : "#fff"};cursor:pointer;">Line</button>
         <button id="draw-tool-rectangle" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "rectangle" ? "#cfead2" : "#fff"};cursor:pointer;">Rectangle</button>
         <button id="draw-tool-circle" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "circle" ? "#cfead2" : "#fff"};cursor:pointer;">Circle</button>
+        <button id="draw-tool-rectselect" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "rectselect" ? "#cfead2" : "#fff"};cursor:pointer;">Rect Select</button>
       </div>
       <input id="draw-color-input" type="color" value="${currentColor}" style="cursor:pointer;" />
       <span id="draw-color-hex" style="font-family:monospace;font-size:12px;min-width:70px;">${currentColor}</span>
@@ -58,7 +59,8 @@ export function PickColor() {
   const lineBtn = subToolbar.querySelector("#draw-tool-line");
   const rectangleBtn = subToolbar.querySelector("#draw-tool-rectangle");
   const circleBtn = subToolbar.querySelector("#draw-tool-circle");
-  if (!colorInput || !colorHex || !preview || !alphaInput || !alphaValue || !brushSizeInput || !brushSizeValue || !brushBtn || !eraserBtn || !fillBtn || !eyedropperBtn || !lineBtn || !rectangleBtn || !circleBtn) return;
+  const rectSelectBtn = subToolbar.querySelector("#draw-tool-rectselect");
+  if (!colorInput || !colorHex || !preview || !alphaInput || !alphaValue || !brushSizeInput || !brushSizeValue || !brushBtn || !eraserBtn || !fillBtn || !eyedropperBtn || !lineBtn || !rectangleBtn || !circleBtn || !rectSelectBtn) return;
 
   const updateColor = (color) => {
     window.NodevisionState.drawColor = color;
@@ -68,7 +70,17 @@ export function PickColor() {
   };
 
   const setTool = (tool) => {
-    const normalizedTool = ["brush", "eraser", "fill", "eyedropper", "line", "rectangle", "circle"].includes(tool) ? tool : "brush";
+    const allowedTools = [
+      "brush",
+      "eraser",
+      "fill",
+      "eyedropper",
+      "line",
+      "rectangle",
+      "circle",
+      "rectselect",
+    ];
+    const normalizedTool = allowedTools.includes(tool) ? tool : "brush";
     window.NodevisionState.drawTool = normalizedTool;
     brushBtn.style.background = normalizedTool === "brush" ? "#cfead2" : "#fff";
     eraserBtn.style.background = normalizedTool === "eraser" ? "#cfead2" : "#fff";
@@ -77,9 +89,19 @@ export function PickColor() {
     lineBtn.style.background = normalizedTool === "line" ? "#cfead2" : "#fff";
     rectangleBtn.style.background = normalizedTool === "rectangle" ? "#cfead2" : "#fff";
     circleBtn.style.background = normalizedTool === "circle" ? "#cfead2" : "#fff";
-    if (window.rasterCanvas) {
-      window.rasterCanvas.style.cursor = normalizedTool === "fill" ? "cell" : normalizedTool === "eyedropper" ? "copy" : "crosshair";
+    if (rectSelectBtn) {
+      rectSelectBtn.style.background = normalizedTool === "rectselect" ? "#cfead2" : "#fff";
     }
+    if (window.rasterCanvas) {
+      window.rasterCanvas.style.cursor =
+        normalizedTool === "fill"
+          ? "cell"
+          : normalizedTool === "eyedropper"
+          ? "copy"
+          : "crosshair";
+    }
+    const event = new CustomEvent("nv-draw-tool-changed", { detail: { tool: normalizedTool } });
+    window.dispatchEvent(event);
   };
 
   const updateAlpha = (alpha) => {
@@ -109,6 +131,9 @@ export function PickColor() {
   lineBtn.addEventListener("click", () => setTool("line"));
   rectangleBtn.addEventListener("click", () => setTool("rectangle"));
   circleBtn.addEventListener("click", () => setTool("circle"));
+  if (rectSelectBtn) {
+    rectSelectBtn.addEventListener("click", () => setTool("rectselect"));
+  }
 }
 
 export default PickColor;

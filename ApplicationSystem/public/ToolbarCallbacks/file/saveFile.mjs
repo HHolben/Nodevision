@@ -86,6 +86,18 @@ function getFileExtension(pathValue = "") {
   return clean.slice(dot + 1).toLowerCase();
 }
 
+function notifyFileSaved(path) {
+  if (!path || typeof window === "undefined" || typeof window.dispatchEvent !== "function")
+    return false;
+
+  window.dispatchEvent(
+    new CustomEvent("nodevision-file-saved", {
+      detail: { filePath: path },
+    })
+  );
+  return true;
+}
+
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
@@ -99,7 +111,8 @@ export default async function saveFile(options = {}) {
     String(window.activePanel || "").toLowerCase() === "gameview"
     && typeof window.saveVirtualWorldFile === "function";
   if (inActiveGameView) {
-    return !!(await window.saveVirtualWorldFile(filePath));
+    const saved = !!(await window.saveVirtualWorldFile(filePath));
+    return saved ? notifyFileSaved(filePath) : false;
   }
 
   try {
@@ -144,7 +157,7 @@ export default async function saveFile(options = {}) {
 
     if (mode === "EPUBediting" && typeof window.saveWYSIWYGFile === "function") {
       await window.saveWYSIWYGFile(filePath);
-      return true;
+      return notifyFileSaved(filePath);
     }
 
     // 1) Explicit editor state checks.
@@ -152,7 +165,7 @@ export default async function saveFile(options = {}) {
       (isRasterMode || (isRasterPath && !inWysiwygEditor)) &&
       !window.NodevisionState?.htmlImageEditingInline;
     if (canSaveRasterCanvas && (await saveRasterCanvas(filePath))) {
-      return true;
+      return notifyFileSaved(filePath);
     }
     if (window.monacoEditor && typeof window.monacoEditor.getValue === "function") {
       const content = window.monacoEditor.getValue();
@@ -162,35 +175,35 @@ export default async function saveFile(options = {}) {
         encoding: window.currentFileEncoding || "utf8",
         bom: Boolean(window.currentFileBom),
       });
-      return true;
+      return notifyFileSaved(filePath);
     }
     if (typeof window.getEditorMarkdown === "function") {
       const content = window.getEditorMarkdown();
       await saveViaApi({ path: filePath, content });
-      return true;
+      return notifyFileSaved(filePath);
     }
     if (inWysiwygEditor && typeof window.getEditorHTML === "function") {
       const content = window.getEditorHTML();
       await saveViaApi({ path: filePath, content });
-      return true;
+      return notifyFileSaved(filePath);
     }
 
     // 2) Editor-specific save hooks (guarded by mode/context).
     if (inMidiEditor && typeof window.saveMIDIFile === "function") {
       await window.saveMIDIFile(filePath);
-      return true;
+      return notifyFileSaved(filePath);
     }
     if (inSvgEditor && typeof window.currentSaveSVG === "function") {
       await window.currentSaveSVG(filePath);
-      return true;
+      return notifyFileSaved(filePath);
     }
     if ((inMarkdownEditor || inGraphicalEditor) && typeof window.saveMDFile === "function") {
       await window.saveMDFile(filePath);
-      return true;
+      return notifyFileSaved(filePath);
     }
     if ((inWysiwygEditor || inGraphicalEditor) && typeof window.saveWYSIWYGFile === "function") {
       await window.saveWYSIWYGFile(filePath);
-      return true;
+      return notifyFileSaved(filePath);
     }
 
     // 3) Generic SVG fallback.
@@ -203,14 +216,14 @@ export default async function saveFile(options = {}) {
           ? new XMLSerializer().serializeToString(svgEditor)
           : svgEditor.outerHTML;
       await saveViaApi({ path: filePath, content: svgContent });
-      return true;
+      return notifyFileSaved(filePath);
     }
 
     // 4) Generic text fallback for simple editors.
     const markdownEl = document.getElementById("markdown-editor");
     if (markdownEl && "value" in markdownEl) {
       await saveViaApi({ path: filePath, content: markdownEl.value });
-      return true;
+      return notifyFileSaved(filePath);
     }
 
     console.error("[saveFile] Cannot save: editor state not recognized.");

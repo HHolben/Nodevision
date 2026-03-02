@@ -42,6 +42,12 @@ class STLViewer {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(this.renderer.domElement);
 
+    const canvas = this.renderer.domElement;
+    canvas.tabIndex = -1;
+    canvas.setAttribute("role", "application");
+    canvas.addEventListener("pointerdown", () => canvas.focus(), { passive: true });
+    canvas.addEventListener("mousedown", () => canvas.focus(), { passive: true });
+
     // ==== Controls ====
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;

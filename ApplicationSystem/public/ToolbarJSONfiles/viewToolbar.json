@@ -1,49 +1,53 @@
 [
   {
     "ToolbarCategory": "View",
-    "heading": "ViewLayers",
+    "heading": "View Layers",
     "icon": "icons/layoutControls.png",
     "callbackKey": "ViewLayers",
+    "panelTemplate": "SVGLayersPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/SVGLayersPanel.mjs",
+    "replaceActive": true,
     "modes": ["SVG Editing"]
   },
   {
     "ToolbarCategory": "View",
-    "parentHeading": "ViewLayers",
+    "parentHeading": "View Layers",
     "heading": "New Layer",
     "callbackKey": "svgLayerAdd",
     "modes": ["SVG Editing"]
   },
   {
     "ToolbarCategory": "View",
-    "parentHeading": "ViewLayers",
+    "parentHeading": "View Layers",
     "heading": "Next Layer",
     "callbackKey": "svgLayerNext",
     "modes": ["SVG Editing"]
   },
   {
     "ToolbarCategory": "View",
-    "parentHeading": "ViewLayers",
+    "parentHeading": "View Layers",
     "heading": "Previous Layer",
     "callbackKey": "svgLayerPrev",
     "modes": ["SVG Editing"]
   },
   {
     "ToolbarCategory": "View",
-    "parentHeading": "ViewLayers",
+    "parentHeading": "View Layers",
     "heading": "Rename Active Layer",
     "callbackKey": "svgLayerRenameActive",
     "modes": ["SVG Editing"]
   },
   {
     "ToolbarCategory": "View",
-    "parentHeading": "ViewLayers",
+    "parentHeading": "View Layers",
     "heading": "Delete Active Layer",
     "callbackKey": "svgLayerDeleteActive",
     "modes": ["SVG Editing"]
   },
   {
     "ToolbarCategory": "View",
-    "parentHeading": "ViewLayers",
+    "parentHeading": "View Layers",
     "heading": "Toggle Layer Visibility",
     "callbackKey": "svgLayerToggleActiveVisibility",
     "modes": ["SVG Editing"]

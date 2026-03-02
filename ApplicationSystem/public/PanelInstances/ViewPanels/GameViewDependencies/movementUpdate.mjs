@@ -5,7 +5,7 @@ import { createCollisionChecker } from "./collisionCheck.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
 
-export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, worldPropertiesPanel, functionPlotterPanel, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController, consolePanels }) {
+export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, worldPropertiesPanel, functionPlotterPanel, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController, consolePanels, ground }) {
   const playerRadius = 0.35;
   const basePlayerHeight = 1.75;
   const crouchHeight = 1.2;
@@ -37,10 +37,33 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const halfPi = Math.PI / 2;
   let noTroubleSplash = null;
   let noTroubleTimer = 0;
+  let objectFileGeometryApplier = null;
+  let objectFileGeometryLoaderPromise = null;
+
+  async function ensureObjectFileGeometryApplier() {
+    if (objectFileGeometryApplier) return objectFileGeometryApplier;
+    if (!objectFileGeometryLoaderPromise) {
+      objectFileGeometryLoaderPromise = import("./objectFileLoader.mjs")
+        .then((mod) => {
+          objectFileGeometryApplier = mod.applyObjectFileGeometry;
+          return objectFileGeometryApplier;
+        })
+        .catch((err) => {
+          console.warn("Object file geometry loader failed to load:", err);
+          objectFileGeometryLoaderPromise = null;
+          objectFileGeometryApplier = null;
+          return null;
+        });
+    }
+    return objectFileGeometryLoaderPromise;
+  }
 
   function getPlacementHit() {
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const objectCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const candidates = [];
+    if (ground?.visible) candidates.push(ground);
+    candidates.push(...objectCandidates);
     const hits = raycaster.intersectObjects(candidates, false);
     return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
   }
@@ -99,6 +122,16 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     scene.add(mesh);
     objects.push(mesh);
 
+    if (mesh.userData?.objectFilePath) {
+      console.debug("[MovementUpdate] queued object-file geometry for", mesh.userData.objectFilePath);
+      void (async () => {
+        const applier = await ensureObjectFileGeometryApplier();
+        if (applier) {
+          await applier(mesh);
+        }
+      })();
+    }
+
     if (placement.collider?.type === "box") {
       const half = placement.collider.half;
       const colliderRef = {
@@ -151,39 +184,6 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       if (noTroubleSplash) noTroubleSplash.style.opacity = "0";
       noTroubleTimer = 0;
     }, 1700);
-  }
-
-  function getPlacementHit() {
-    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
-    const hits = raycaster.intersectObjects(candidates, false);
-    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
-  }
-
-  function buildConsoleMeshFromConfig(config) {
-    if (!config) return null;
-    const width = Number.isFinite(config.size?.[0]) ? config.size[0] : 0.9;
-    const height = Number.isFinite(config.size?.[1]) ? config.size[1] : 1.15;
-    const depth = Number.isFinite(config.size?.[2]) ? config.size[2] : 0.7;
-    const material = new THREE.MeshStandardMaterial({ color: config.color || "#33ccaa" });
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(width, height, depth),
-      material
-    );
-    mesh.userData.consoleProperties = {
-      collider: config.collider !== false,
-      color: config.color || "#33ccaa",
-      objectFile: config.objectFile || "",
-      linkedObject: config.linkedObject || ""
-    };
-    mesh.userData.nvType = "console";
-    return {
-      mesh,
-      collider: config.collider !== false ? {
-        type: "box",
-        half: new THREE.Vector3(width * 0.5, height * 0.5, depth * 0.5)
-      } : null
-    };
   }
 
   function playerMode() {
@@ -1245,7 +1245,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       if (inputState.inventoryMenuConfirm && !inventoryMenuConfirmLatch) {
         inventoryMenuConfirmLatch = true;
         inventory.applySelection?.();
-        inventory.setMenuOpen?.(false);
+        // Keep the menu open so the player can immediately change items again
       } else if (!inputState.inventoryMenuConfirm) {
         inventoryMenuConfirmLatch = false;
       }

@@ -2,9 +2,12 @@
 // Rich in-panel SVG editor with layers, drawing tools, fill/stroke controls, and crop/resize.
 
 import { createElementLayers } from "./ElementLayers.mjs";
+import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG_UI_ATTR = "data-nv-editor-ui";
+const SVG_RULER_THICKNESS = 26;
+const SVG_RULER_SIDE = 34;
 
 function createSvgEl(tag, attrs = {}) {
   const node = document.createElementNS(SVG_NS, tag);
@@ -206,6 +209,9 @@ export async function renderEditor(filePath, container) {
   wrapper.tabIndex = 0;
   container.appendChild(wrapper);
 
+  window.NodevisionState = window.NodevisionState || {};
+  updateToolbarState({ currentMode: "SVG Editing" });
+
   const status = document.createElement("div");
   status.id = "svg-message";
   status.textContent = "SVG editor ready";
@@ -222,14 +228,66 @@ export async function renderEditor(filePath, container) {
   });
   wrapper.appendChild(body);
 
-  const svgWrapper = document.createElement("div");
-  Object.assign(svgWrapper.style, {
+  const rulerLayout = document.createElement("div");
+  Object.assign(rulerLayout.style, {
     flex: "1",
-    overflow: "auto",
-    background: "#fff",
-    position: "relative"
+    minHeight: "0",
+    minWidth: "0",
+    display: "grid",
+    width: "100%",
+    height: "100%",
+    gridTemplateColumns: `${SVG_RULER_SIDE}px 1fr`,
+    gridTemplateRows: `${SVG_RULER_THICKNESS}px 1fr`,
+    overflow: "hidden"
   });
-  body.appendChild(svgWrapper);
+  body.appendChild(rulerLayout);
+
+  const rulerCorner = document.createElement("div");
+  Object.assign(rulerCorner.style, {
+    gridArea: "1 / 1 / 2 / 2",
+    background: "#f4f4f4",
+    borderRight: "1px solid #ccc",
+    borderBottom: "1px solid #ccc"
+  });
+
+  const svgTopRuler = document.createElement("canvas");
+  Object.assign(svgTopRuler.style, {
+    gridArea: "1 / 2 / 2 / 3",
+    width: "100%",
+    height: `${SVG_RULER_THICKNESS}px`,
+    display: "block",
+    background: "#f4f4f4"
+  });
+
+  const svgLeftRuler = document.createElement("canvas");
+  Object.assign(svgLeftRuler.style, {
+    gridArea: "2 / 1 / 3 / 2",
+    width: `${SVG_RULER_SIDE}px`,
+    height: "100%",
+    display: "block",
+    background: "#f4f4f4"
+  });
+
+  const svgViewportHost = document.createElement("div");
+  Object.assign(svgViewportHost.style, {
+    gridArea: "2 / 2 / 3 / 3",
+    position: "relative",
+    overflow: "hidden",
+    background: "#ffffff",
+    minWidth: "0",
+    minHeight: "0"
+  });
+
+  const svgViewport = document.createElement("div");
+  Object.assign(svgViewport.style, {
+    position: "absolute",
+    inset: "0",
+    overflow: "auto",
+    background: "#fff"
+  });
+  svgViewportHost.appendChild(svgViewport);
+
+  rulerLayout.append(rulerCorner, svgTopRuler, svgLeftRuler, svgViewportHost);
 
   let svgRoot = createSvgEl("svg");
   svgRoot.id = "svg-editor";
@@ -239,48 +297,56 @@ export async function renderEditor(filePath, container) {
     minHeight: "400px",
     display: "block"
   });
-  svgWrapper.appendChild(svgRoot);
+  svgViewport.appendChild(svgRoot);
 
-  try {
-    const svgText = await fetchSvgText(filePath);
-    if (!svgText.trim()) {
+  let svgText = "";
+  let loadError = null;
+  if (filePath) {
+    try {
+      svgText = await fetchSvgText(filePath);
+    } catch (err) {
+      loadError = err;
+    }
+  }
+  if (loadError && filePath) {
+    wrapper.innerHTML = `<div style="color:red;padding:12px">Failed to load SVG: ${loadError.message}</div>`;
+    console.warn("SVG editor: failed to load file, showing blank canvas as fallback.", loadError);
+    svgText = "";
+  }
+
+  if (!svgText.trim()) {
+    svgRoot.setAttribute("xmlns", SVG_NS);
+    ensureSvgSizeAttrs(svgRoot);
+  } else {
+    const parser = new DOMParser();
+    let doc = parser.parseFromString(svgText, "image/svg+xml");
+    let parseError = doc.querySelector("parsererror");
+    let loaded = doc.documentElement?.localName?.toLowerCase() === "svg"
+      ? doc.documentElement
+      : doc.querySelector("svg");
+    if (parseError || !loaded) {
+      // Fallback for SVG-like content that is not strict XML but still contains renderable SVG.
+      const htmlDoc = parser.parseFromString(svgText, "text/html");
+      const htmlSvg = htmlDoc.querySelector("svg");
+      if (htmlSvg) {
+        loaded = document.importNode(htmlSvg, true);
+      }
+    }
+    if (!loaded || loaded.localName?.toLowerCase() !== "svg") {
+      console.warn("SVG editor: loaded content was not parseable, defaulting to blank SVG.");
       svgRoot.setAttribute("xmlns", SVG_NS);
       ensureSvgSizeAttrs(svgRoot);
     } else {
-    const parser = new DOMParser();
-      let doc = parser.parseFromString(svgText, "image/svg+xml");
-      let parseError = doc.querySelector("parsererror");
-      let loaded = doc.documentElement?.localName?.toLowerCase() === "svg"
-        ? doc.documentElement
-        : doc.querySelector("svg");
-      if (parseError || !loaded) {
-        // Fallback for SVG-like content that is not strict XML but still contains renderable SVG.
-        const htmlDoc = parser.parseFromString(svgText, "text/html");
-        const htmlSvg = htmlDoc.querySelector("svg");
-        if (htmlSvg) {
-          loaded = document.importNode(htmlSvg, true);
-        }
-      }
-      if (!loaded || loaded.localName?.toLowerCase() !== "svg") {
-        throw new Error("Loaded file does not contain parseable SVG markup");
-      }
       svgRoot.replaceWith(loaded);
       svgRoot = loaded;
       svgRoot.id = "svg-editor";
       svgRoot.setAttribute("xmlns", SVG_NS);
     }
-  } catch (err) {
-    wrapper.innerHTML = `<div style="color:red;padding:12px">Failed to load SVG: ${err.message}</div>`;
-    console.error(err);
-    return;
   }
 
   ensureSvgSizeAttrs(svgRoot);
 
-  const layersPanelHost = document.createElement("div");
-  layersPanelHost.style.display = "none";
-
-  const layersMgr = createElementLayers(svgRoot, layersPanelHost);
+  const layersMgr = createElementLayers(svgRoot);
   const styleState = {
     fill: "#80c0ff",
     stroke: "#000000",
@@ -360,6 +426,138 @@ export async function renderEditor(filePath, container) {
   Object.values(resizeHandles).forEach((handle) => overlayLayer.appendChild(handle));
   svgRoot.appendChild(overlayLayer);
 
+  function getSvgNaturalDimensions() {
+    const viewBox = svgRoot.viewBox?.baseVal;
+    const parsedWidth = Number(svgRoot.getAttribute("width"));
+    const parsedHeight = Number(svgRoot.getAttribute("height"));
+    const vbX = viewBox && Number.isFinite(viewBox.x) ? viewBox.x : 0;
+    const vbY = viewBox && Number.isFinite(viewBox.y) ? viewBox.y : 0;
+    const vbWidth = viewBox && Number.isFinite(viewBox.width) && viewBox.width > 0
+      ? viewBox.width
+      : Number.isFinite(parsedWidth) ? parsedWidth : 0;
+    const vbHeight = viewBox && Number.isFinite(viewBox.height) && viewBox.height > 0
+      ? viewBox.height
+      : Number.isFinite(parsedHeight) ? parsedHeight : 0;
+    const vbMaxX = vbX + (vbWidth || 0);
+    const vbMaxY = vbY + (vbHeight || 0);
+
+    let bboxWidth = 0;
+    let bboxHeight = 0;
+    let bboxX = vbX;
+    let bboxY = vbY;
+    if (typeof svgRoot.getBBox === "function") {
+      try {
+        const bbox = svgRoot.getBBox();
+        if (Number.isFinite(bbox.x)) bboxX = Math.min(bboxX, bbox.x);
+        if (Number.isFinite(bbox.y)) bboxY = Math.min(bboxY, bbox.y);
+        if (Number.isFinite(bbox.width)) bboxWidth = bbox.width;
+        if (Number.isFinite(bbox.height)) bboxHeight = bbox.height;
+      } catch {
+        // SVG cannot provide bbox; ignore.
+      }
+    }
+    const bboxMaxX = bboxWidth > 0 ? bboxX + bboxWidth : vbMaxX;
+    const bboxMaxY = bboxHeight > 0 ? bboxY + bboxHeight : vbMaxY;
+
+    const left = Math.min(vbX, bboxX);
+    const top = Math.min(vbY, bboxY);
+    const right = Math.max(vbMaxX, bboxMaxX);
+    const bottom = Math.max(vbMaxY, bboxMaxY);
+
+    const hostRect = svgViewportHost.getBoundingClientRect();
+    const fallbackWidth = Math.max(1, Math.round(hostRect.width));
+    const fallbackHeight = Math.max(1, Math.round(hostRect.height));
+
+    return {
+      naturalWidth: Math.max(1, right > left ? right - left : fallbackWidth),
+      naturalHeight: Math.max(1, bottom > top ? bottom - top : fallbackHeight),
+    };
+  }
+
+  function drawSvgTopRuler() {
+    const { naturalWidth } = getSvgNaturalDimensions();
+    const width = Math.max(1, Math.round(naturalWidth));
+    const ctx = svgTopRuler.getContext("2d");
+    svgTopRuler.width = width;
+    svgTopRuler.height = SVG_RULER_THICKNESS;
+    ctx.clearRect(0, 0, width, SVG_RULER_THICKNESS);
+    ctx.fillStyle = "#f4f4f4";
+    ctx.fillRect(0, 0, width, SVG_RULER_THICKNESS);
+    ctx.strokeStyle = "#999";
+    ctx.beginPath();
+    ctx.moveTo(0.5, SVG_RULER_THICKNESS - 0.5);
+    ctx.lineTo(width - 0.5, SVG_RULER_THICKNESS - 0.5);
+    ctx.stroke();
+
+    ctx.fillStyle = "#222";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    for (let perc = 0; perc <= 100; perc += 10) {
+      const x = Math.round((perc / 100) * width) + 0.5;
+      const tickHeight = perc % 20 === 0 ? 12 : 8;
+      ctx.beginPath();
+      ctx.moveTo(x, SVG_RULER_THICKNESS);
+      ctx.lineTo(x, SVG_RULER_THICKNESS - tickHeight);
+      ctx.stroke();
+      if (perc % 20 === 0) {
+        ctx.fillText(`${perc}%`, x, 2);
+      }
+    }
+  }
+
+  function drawSvgLeftRuler() {
+    const height = Math.max(1, Math.round(svgViewportHost.getBoundingClientRect().height));
+    const ctx = svgLeftRuler.getContext("2d");
+    svgLeftRuler.height = height;
+    svgLeftRuler.width = SVG_RULER_SIDE;
+    ctx.clearRect(0, 0, SVG_RULER_SIDE, height);
+    ctx.fillStyle = "#f4f4f4";
+    ctx.fillRect(0, 0, SVG_RULER_SIDE, height);
+    ctx.strokeStyle = "#999";
+    ctx.beginPath();
+    ctx.moveTo(SVG_RULER_SIDE - 0.5, 0);
+    ctx.lineTo(SVG_RULER_SIDE - 0.5, height);
+    ctx.stroke();
+
+    ctx.fillStyle = "#222";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    for (let perc = 0; perc <= 100; perc += 10) {
+      const y = Math.round((perc / 100) * height) + 0.5;
+      const tickLength = perc % 20 === 0 ? 12 : 8;
+      ctx.beginPath();
+      ctx.moveTo(SVG_RULER_SIDE, y);
+      ctx.lineTo(SVG_RULER_SIDE - tickLength, y);
+      ctx.stroke();
+      if (perc % 20 === 0) {
+        ctx.fillText(`${perc}%`, SVG_RULER_SIDE - 4, y);
+      }
+    }
+  }
+
+  function updateSvgRulers() {
+    drawSvgTopRuler();
+    drawSvgLeftRuler();
+    const viewportWidth = Math.max(
+      1,
+      Math.round(svgViewportHost.getBoundingClientRect().width),
+    );
+    const { naturalWidth } = getSvgNaturalDimensions();
+    const scrollX = svgViewport.scrollLeft;
+    const scaleX = viewportWidth ? naturalWidth / viewportWidth : 1;
+    svgTopRuler.style.transform = `translateX(-${scrollX * scaleX}px)`;
+  }
+
+  const svgRulerObserver = new ResizeObserver(updateSvgRulers);
+  svgRulerObserver.observe(svgViewportHost);
+  window.addEventListener("resize", updateSvgRulers);
+  svgViewport.addEventListener("scroll", updateSvgRulers);
+  updateSvgRulers();
+
   function setStatus(text) {
     status.textContent = text;
   }
@@ -368,7 +566,7 @@ export async function renderEditor(filePath, container) {
     const show = Boolean(visible);
     if (show) {
       window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
-        detail: { heading: "ViewLayers", force: true, toggle: false }
+        detail: { heading: "View Layers", force: true, toggle: false }
       }));
       setStatus("Layer tools moved to sub-toolbar");
     }
@@ -377,7 +575,7 @@ export async function renderEditor(filePath, container) {
 
   function toggleLayersPanel() {
     window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
-      detail: { heading: "ViewLayers", force: true, toggle: true }
+      detail: { heading: "View Layers", force: true, toggle: true }
     }));
     setStatus("Layer tools moved to sub-toolbar");
     return true;

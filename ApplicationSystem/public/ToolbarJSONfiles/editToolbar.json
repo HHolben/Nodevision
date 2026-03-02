@@ -21,6 +21,14 @@
 
 },
   {
+    "ToolbarCategory": "View",
+    "heading": "Virtual World Editing",
+    "callbackKey": "VirtualWorldEditing",
+    "panel": "GameView",
+    "panelTemplate": "GameView",
+    "panelPath": "/PanelInstances/ViewPanels/GameView.mjs"
+  },
+  {
     "ToolbarCategory": "Edit",
     "heading": "Edit Styles",
     "callbackKey": "editStyles",

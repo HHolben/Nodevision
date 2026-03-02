@@ -17,6 +17,27 @@ function normalizeWorldPath(filePath) {
   return withoutLeading;
 }
 
+let objectFileGeometryApplier = null;
+let objectFileGeometryLoaderPromise = null;
+
+async function ensureObjectFileGeometryApplier() {
+  if (objectFileGeometryApplier) return objectFileGeometryApplier;
+  if (!objectFileGeometryLoaderPromise) {
+    objectFileGeometryLoaderPromise = import("./objectFileLoader.mjs")
+      .then((mod) => {
+        objectFileGeometryApplier = mod.applyObjectFileGeometry;
+        return objectFileGeometryApplier;
+      })
+      .catch((err) => {
+        console.warn("Object file geometry loader failed to load:", err);
+        objectFileGeometryLoaderPromise = null;
+        objectFileGeometryApplier = null;
+        return null;
+      });
+  }
+  return objectFileGeometryLoaderPromise;
+}
+
 export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
   console.log("Loading world:", filePath);
 
@@ -468,6 +489,12 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         );
         if (typeof def.objectFile === "string" && def.objectFile) {
           mesh.userData.objectFilePath = def.objectFile;
+          void (async () => {
+            const applier = await ensureObjectFileGeometryApplier();
+            if (applier) {
+              await applier(mesh);
+            }
+          })();
         }
       } else if (portalShape === "box") {
         mesh = new THREE.Mesh(

@@ -232,10 +232,14 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
 
     if (owningCell && owningCell.classList?.contains("panel-cell")) {
       window.activeCell = owningCell;
-      document.querySelectorAll(".panel-cell").forEach((c) => {
-        c.style.outline = "";
-      });
-      owningCell.style.outline = "2px solid #0078d7";
+      if (window.highlightActiveCell) {
+        window.highlightActiveCell(owningCell);
+      } else {
+        document.querySelectorAll(".panel-cell").forEach((c) => {
+          c.style.outline = "";
+        });
+        owningCell.style.outline = "2px solid #0078d7";
+      }
       window.dispatchEvent(new CustomEvent("activePanelChanged", {
         detail: {
           panel: window.activePanel,

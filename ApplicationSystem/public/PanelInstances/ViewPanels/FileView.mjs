@@ -2,6 +2,7 @@
 // Reactively displays files in the view panel using the appropriate viewer.
 
 let lastRenderedPath = null;
+let viewDivRef = null;
 
 
 let moduleMapCache = null;
@@ -65,6 +66,148 @@ function resolveExtension(filename) {
   return lower.split(".").pop();
 }
 
+function activateFileViewPanel() {
+  const cell = getFileViewCell();
+  if (!cell) return;
+
+  window.activeCell = cell;
+  window.activePanel = "FileView";
+  window.activePanelClass = cell.dataset.panelClass || "ViewPanel";
+  if (window.NodevisionState) {
+    window.NodevisionState.activePanelType = window.activePanelClass;
+  }
+
+  if (window.highlightActiveCell) {
+    window.highlightActiveCell(cell);
+  }
+
+  window.dispatchEvent(new CustomEvent("activePanelChanged", {
+    detail: { panel: "FileView", cell, panelClass: window.activePanelClass }
+  }));
+}
+
+function enableViewActivation(viewDiv) {
+  if (!viewDiv) return;
+  const handler = () => activateFileViewPanel();
+  viewDiv.addEventListener("pointerdown", handler, { capture: true });
+  viewDiv.addEventListener("mousedown", handler, { capture: true });
+}
+
+function getFileViewCell() {
+  if (viewDivRef) {
+    const cell = viewDivRef.closest?.(".panel-cell");
+    if (cell) {
+      return cell;
+    }
+  }
+  return document.querySelector(`[data-id="FileView"]`);
+}
+
+function installFileViewPointerTracking() {
+  if (window.__nvFileViewPointerTrackingInstalled) return;
+
+  const handler = (event) => {
+    if (!event?.target) return;
+    const cell = getFileViewCell();
+    if (!cell || !cell.contains(event.target)) return;
+    activateFileViewPanel();
+  };
+
+  document.addEventListener("pointerdown", handler, true);
+  document.addEventListener("mousedown", handler, true);
+  window.__nvFileViewPointerTrackingInstalled = true;
+}
+
+function installFileViewFocusHandler() {
+  if (window.__nvFileViewFocusHandlerInstalled) return;
+
+  const focusHandler = (event) => {
+    const cell = getFileViewCell();
+    if (!cell || !cell.contains(event?.target)) {
+      return;
+    }
+    activateFileViewPanel();
+  };
+
+  document.addEventListener("focusin", focusHandler, true);
+  window.__nvFileViewFocusHandlerInstalled = true;
+}
+
+function handleFileSavedForView(event) {
+  try {
+    const savedPath = event?.detail?.filePath;
+    if (!savedPath) return;
+
+    if (savedPath === lastRenderedPath) {
+      console.log("📡 FileViewer live-refresh for:", savedPath);
+      updateViewPanel(savedPath, { force: true }).catch((err) => {
+        console.error("❌ Live-refresh updateViewPanel failed:", err);
+      });
+    }
+  } catch (err) {
+    console.error("❌ Live-refresh handler error:", err);
+  }
+}
+
+function installFileViewLiveRefresh() {
+  if (window.__nvFileViewLiveRefreshInstalled) return;
+  window.addEventListener("nodevision-file-saved", handleFileSavedForView);
+  window.__nvFileViewLiveRefreshInstalled = true;
+}
+
+function attachIframeActivation(node) {
+  if (!node) return;
+  if (node instanceof HTMLIFrameElement) {
+    installIframeActivation(node);
+  } else if (node.querySelectorAll) {
+    node.querySelectorAll("iframe").forEach((iframe) => installIframeActivation(iframe));
+  }
+}
+
+function observeViewIframes(viewDiv) {
+  if (!viewDiv) return;
+  if (viewDiv.__nvIframeObserver) return;
+
+  const observer = new MutationObserver((records) => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        attachIframeActivation(node);
+      }
+    }
+  });
+
+  viewDiv.__nvIframeObserver = observer;
+  observer.observe(viewDiv, { childList: true, subtree: true });
+  attachIframeActivation(viewDiv);
+}
+
+function installIframeActivation(iframe) {
+  if (!iframe) return;
+  if (iframe.__nvFileViewActivationAttached) return;
+  iframe.__nvFileViewActivationAttached = true;
+
+  const handler = () => activateFileViewPanel();
+
+  const tryAttachDocument = () => {
+    try {
+      const doc = iframe.contentDocument;
+      if (!doc || doc.__nvFileViewActivationAttached) return;
+      doc.__nvFileViewActivationAttached = true;
+      doc.addEventListener("mousedown", handler, { capture: true });
+      doc.addEventListener("pointerdown", handler, { capture: true });
+    } catch (err) {
+      // Accessing cross-origin documents will throw; ignore indicator.
+    }
+  };
+
+  iframe.addEventListener("pointerdown", handler, { capture: true });
+  iframe.addEventListener("focus", handler, true);
+  iframe.addEventListener("load", () => {
+    tryAttachDocument();
+  });
+  tryAttachDocument();
+}
+
 
 export async function setupPanel(panel, instanceVars = {}) {
   // Create container for view content
@@ -73,7 +216,13 @@ export async function setupPanel(panel, instanceVars = {}) {
   viewDiv.style.width = "100%";
   viewDiv.style.height = "100%";
   viewDiv.style.overflow = "auto";
+  viewDivRef = viewDiv;
   panel.appendChild(viewDiv);
+  enableViewActivation(viewDiv);
+  observeViewIframes(viewDiv);
+  installFileViewPointerTracking();
+  installFileViewFocusHandler();
+  installFileViewLiveRefresh();
 
   // Reactive watcher for window.selectedFilePath
   if (!window._selectedFileProxyInstalled) {
@@ -102,14 +251,8 @@ export async function setupPanel(panel, instanceVars = {}) {
   // Listen for iframe -> parent click messages
   window.addEventListener("message", (event) => {
     if (event.data?.type === "activatePanel" && event.data?.id === "FileView") {
-      const cell = document.querySelector(`[data-id="FileView"]`);
-      if (cell) {
-        window.activeCell = cell;
-        window.activePanel = "FileView";
-        document.querySelectorAll(".panel-cell").forEach((c) => (c.style.outline = ""));
-        cell.style.outline = "2px solid #0078d7";
-        console.log("Active panel via postMessage:", window.activePanel);
-      }
+      activateFileViewPanel();
+      console.log("Active panel via postMessage:", window.activePanel);
     }
   });
 
@@ -164,6 +307,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
 
 async function renderFile(filename, viewPanel, serverBase) {
   console.log(`📄 renderFile() called for: ${filename}`);
+  let iframe = null;
 
   try {
     // 1. Get the module map from the CSV file
@@ -191,7 +335,6 @@ async function renderFile(filename, viewPanel, serverBase) {
 
     // Let viewer specify if it wants an iframe
     const wantsIframe = viewer.wantsIframe === true;
-    let iframe = null;
 
     if (wantsIframe) {
       iframe = document.createElement("iframe");
@@ -201,6 +344,7 @@ async function renderFile(filename, viewPanel, serverBase) {
         border: "none"
       });
       viewPanel.appendChild(iframe);
+      installIframeActivation(iframe);
     }
 
     // Clean up PHP path for server
@@ -217,6 +361,9 @@ async function renderFile(filename, viewPanel, serverBase) {
   } catch (err) {
     console.error(`❌ renderFile failed for ${filename}:`, err);
     viewPanel.innerHTML = `<em>Error loading viewer for ${filename}: ${err.message}</em>`;
+
+  } finally {
+    installIframeActivation(iframe);
   }
 }
 

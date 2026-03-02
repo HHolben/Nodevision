@@ -375,6 +375,14 @@
 },
 {
   "ToolbarCategory": "Insert",
+  "heading": "Add Vertex",
+  "callbackKey": "stlAddVertex",
+  "routeToActivePanel": true,
+  "modes": ["STLediting"],
+  "parentHeading": "Insert"
+},
+{
+  "ToolbarCategory": "Insert",
   "heading": "Rectangle",
   "insertGroup": "shapes",
   "callbackKey": "svgInsertRectangle",

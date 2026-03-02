@@ -32,10 +32,14 @@ function setActiveCell(cell) {
   const panelClass = cell.dataset.panelClass || "InfoPanel";
   window.activePanel = panelId;
   window.activePanelClass = panelClass;
-  document.querySelectorAll(".panel-cell").forEach((c) => {
-    c.style.outline = "";
-  });
-  cell.style.outline = "2px solid #0078d7";
+  if (window.highlightActiveCell) {
+    window.highlightActiveCell(cell);
+  } else {
+    document.querySelectorAll(".panel-cell").forEach((c) => {
+      c.style.outline = "";
+    });
+    cell.style.outline = "2px solid #0078d7";
+  }
 }
 
 export default function run() {

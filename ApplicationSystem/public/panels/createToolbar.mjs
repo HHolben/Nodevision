@@ -108,10 +108,14 @@ function setActivePanelContextFromHeader(headerEl) {
     window.activePanelClass = panelClassFromCell;
     window.NodevisionState.activePanelType = panelClassFromCell;
 
-    document.querySelectorAll(".panel-cell").forEach((c) => {
-      c.style.outline = "";
-    });
-    owningCell.style.outline = "2px solid #0078d7";
+    if (window.highlightActiveCell) {
+      window.highlightActiveCell(owningCell);
+    } else {
+      document.querySelectorAll(".panel-cell").forEach((c) => {
+        c.style.outline = "";
+      });
+      owningCell.style.outline = "2px solid #0078d7";
+    }
 
     window.dispatchEvent(new CustomEvent("activePanelChanged", {
       detail: {

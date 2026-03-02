@@ -3,6 +3,9 @@
 const container = document.getElementById('content-frame-container'); // right pane
 const canvas = document.getElementById("three-canvas");
 
+const DEFAULT_SKY_COLOR = 0xebf5ff;
+const DEFAULT_GROUND_COLOR = 0x2e8b57;
+
 // Use injected canvas and set renderer size to container
 const renderer = new THREE.WebGLRenderer({ canvas });
 renderer.setSize(container.clientWidth, container.clientHeight);
@@ -17,17 +20,23 @@ const camera = new THREE.PerspectiveCamera(
 
 // Scene
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(DEFAULT_SKY_COLOR);
 
 // Persistent objects can go here
 const worldGroup = new THREE.Group();
 scene.add(worldGroup);
 
-// Ground plane
-const planeGeometry = new THREE.PlaneGeometry(50, 50);
-const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide });
-const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-plane.rotation.x = -Math.PI / 2;
-plane.userData.isSolid = true;
+function createGroundPlane() {
+  const planeGeometry = new THREE.PlaneGeometry(50, 50);
+  const planeMaterial = new THREE.MeshBasicMaterial({ color: DEFAULT_GROUND_COLOR, side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(planeGeometry, planeMaterial);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.userData.isSolid = true;
+  mesh.userData.isGround = true;
+  return mesh;
+}
+
+let plane = createGroundPlane();
 worldGroup.add(plane);
 
 // Camera initial position
@@ -44,8 +53,8 @@ window.addEventListener('resize', () => {
 
 // Render loop
 function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
 }
 animate();
 
@@ -55,15 +64,11 @@ function loadWorld(worldDefinition) {
         worldGroup.remove(worldGroup.children[0]);
     }
 
-    // Re-add ground
-    const planeGeometry = new THREE.PlaneGeometry(50, 50);
-    const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2;
-    plane.userData.isSolid = true;
+    scene.background = new THREE.Color(DEFAULT_SKY_COLOR);
+    plane = createGroundPlane();
     worldGroup.add(plane);
 
-    worldDefinition.objects.forEach(obj => {
+    (worldDefinition?.objects || []).forEach(obj => {
         let geometry;
         if (obj.type === "box") geometry = new THREE.BoxGeometry(...obj.size);
         else if (obj.type === "sphere") geometry = new THREE.SphereGeometry(obj.size[0], 32, 32);

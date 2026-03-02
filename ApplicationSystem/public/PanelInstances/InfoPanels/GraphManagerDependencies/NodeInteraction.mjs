@@ -37,8 +37,12 @@ export async function highlight(node) {
   // Highlight the FileView panel
   const viewCell = document.querySelector('[data-id="FileView"]');
   if (viewCell) {
-    document.querySelectorAll(".panel-cell").forEach(c => c.style.outline = "");
-    viewCell.style.outline = "2px solid #0078d7";
+    if (window.highlightActiveCell) {
+      window.highlightActiveCell(viewCell);
+    } else {
+      document.querySelectorAll(".panel-cell").forEach(c => c.style.outline = "");
+      viewCell.style.outline = "2px solid #0078d7";
+    }
   }
 }
 

@@ -57,7 +57,7 @@
   background: #006b1c;
   border-radius: 4px;
   padding: 4px 0;
-  z-index: 9999;
+  z-index: 30000;
 
   display: none;
   flex-direction: column;
@@ -106,7 +106,7 @@
   padding: 4px;
   gap: 4px;
   position: relative;
-  z-index: 24990;
+  z-index: 9980;
 }
 
 #sub-toolbar button {

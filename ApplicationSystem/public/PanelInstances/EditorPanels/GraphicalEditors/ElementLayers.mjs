@@ -15,10 +15,11 @@ function ensureGroup(svgRoot, name = "Layer 1", id = null) {
   return group;
 }
 
-export function createElementLayers(svgRoot, hostPanel) {
+export function createElementLayers(svgRoot, hostPanel = null) {
   if (!svgRoot) throw new Error("svgRoot is required");
 
   let activeLayerId = null;
+  let panelEl = null;
 
   function getLayers() {
     return qsa(svgRoot, ":scope > g[data-layer='true']");
@@ -109,7 +110,19 @@ export function createElementLayers(svgRoot, hostPanel) {
     renderPanel();
   }
 
-  let panelEl = null;
+  function createPanelElement() {
+    const el = document.createElement("div");
+    el.id = "svg-layer-panel";
+    Object.assign(el.style, {
+      border: "1px solid #d0d0d0",
+      background: "#fafafa",
+      padding: "6px",
+      minWidth: "220px",
+      maxWidth: "280px",
+      overflow: "auto",
+    });
+    return el;
+  }
 
   function renderPanel() {
     if (!panelEl) return;
@@ -200,21 +213,20 @@ export function createElementLayers(svgRoot, hostPanel) {
     panelEl.appendChild(list);
   }
 
-  function mountPanel() {
-    panelEl = document.createElement("div");
-    panelEl.id = "svg-layer-panel";
-    panelEl.style.border = "1px solid #d0d0d0";
-    panelEl.style.background = "#fafafa";
-    panelEl.style.padding = "6px";
-    panelEl.style.minWidth = "220px";
-    panelEl.style.maxWidth = "280px";
-    panelEl.style.overflow = "auto";
-    hostPanel.appendChild(panelEl);
+  function attachHost(nextHost) {
+    if (!nextHost) return;
+    if (!panelEl) {
+      panelEl = createPanelElement();
+    }
+    if (panelEl.parentElement && panelEl.parentElement !== nextHost) {
+      panelEl.parentElement.removeChild(panelEl);
+    }
+    nextHost.appendChild(panelEl);
     renderPanel();
   }
 
   normalizeInitialLayers();
-  if (hostPanel) mountPanel();
+  if (hostPanel) attachHost(hostPanel);
 
   return {
     getLayers,
@@ -225,6 +237,7 @@ export function createElementLayers(svgRoot, hostPanel) {
     setLayerVisible,
     moveLayer,
     removeLayer,
-    renderPanel
+    renderPanel,
+    attachHost
   };
 }

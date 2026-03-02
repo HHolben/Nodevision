@@ -3,7 +3,11 @@
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 
 export function createPlayerInventory({ panel }) {
-  const GRID_COLUMNS = 10;
+  const GRID_COLUMNS = 9;
+  const ICON_SIZE = 30;
+  const CELL_MIN_HEIGHT = 58;
+  const CELL_PADDING = "4px 4px";
+  const CELL_GAP = "3px";
   const state = {
     menuOpen: false,
     selectedMenuIndex: 0,
@@ -105,15 +109,15 @@ export function createPlayerInventory({ panel }) {
     const grid = document.createElement("div");
     grid.style.display = "grid";
     grid.style.gridTemplateColumns = `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`;
-    grid.style.gap = "8px";
+    grid.style.gap = "6px";
     grid.style.maxHeight = "52vh";
     grid.style.overflowY = "auto";
     menu.appendChild(grid);
 
     function create3DIcon(choice) {
       const icon = document.createElement("div");
-      icon.style.width = "34px";
-      icon.style.height = "34px";
+      icon.style.width = `${ICON_SIZE}px`;
+      icon.style.height = `${ICON_SIZE}px`;
       icon.style.margin = "0 auto";
       icon.style.transformStyle = "preserve-3d";
       icon.style.transform = "rotateX(26deg) rotateY(-28deg)";
@@ -315,8 +319,8 @@ export function createPlayerInventory({ panel }) {
     function createIcon(choice) {
       if (!choice || choice.id === null) {
         const empty = document.createElement("div");
-        empty.style.width = "34px";
-        empty.style.height = "34px";
+        empty.style.width = `${ICON_SIZE}px`;
+        empty.style.height = `${ICON_SIZE}px`;
         empty.style.margin = "0 auto";
         empty.style.border = "1px dashed rgba(231,247,255,0.7)";
         empty.style.borderRadius = "6px";
@@ -337,8 +341,8 @@ export function createPlayerInventory({ panel }) {
         const img = document.createElement("img");
         img.src = choice.sprite;
         img.alt = choice.label || choice.id;
-        img.style.width = "34px";
-        img.style.height = "34px";
+        img.style.width = `${ICON_SIZE}px`;
+        img.style.height = `${ICON_SIZE}px`;
         img.style.objectFit = "contain";
         img.style.display = "block";
         img.style.margin = "0 auto";
@@ -353,19 +357,19 @@ export function createPlayerInventory({ panel }) {
       const selected = idx === state.selectedMenuIndex;
       cell.style.border = selected ? "2px solid #74d4ff" : "1px solid rgba(190, 220, 235, 0.4)";
       cell.style.borderRadius = "8px";
-      cell.style.padding = "6px 5px";
+      cell.style.padding = CELL_PADDING;
       cell.style.background = selected ? "rgba(40, 110, 150, 0.42)" : "rgba(255,255,255,0.04)";
-      cell.style.minHeight = "72px";
+      cell.style.minHeight = `${CELL_MIN_HEIGHT}px`;
       cell.style.display = "flex";
       cell.style.flexDirection = "column";
       cell.style.justifyContent = "space-between";
-      cell.style.gap = "4px";
+      cell.style.gap = CELL_GAP;
 
       const icon = createIcon(choice);
       cell.appendChild(icon);
 
       const label = document.createElement("div");
-      label.style.fontSize = "11px";
+      label.style.fontSize = "10px";
       label.style.textAlign = "center";
       label.style.whiteSpace = "nowrap";
       label.style.overflow = "hidden";

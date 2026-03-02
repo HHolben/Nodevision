@@ -4,6 +4,7 @@
 import * as THREE from "/lib/three/three.module.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
+import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 const SAVE_ENDPOINT = "/api/save";
 const WELD_EPSILON = 1e-5;
@@ -590,6 +591,26 @@ export async function renderEditor(
     setModeLabel("face fill");
   }
 
+  function addVertexAtCameraFocus() {
+    if (!state.topology) return;
+    const direction = camera.getWorldDirection(new THREE.Vector3());
+    const distance = Math.max(1, state.maxDim * 0.35);
+    const position = controls.target.clone().addScaledVector(direction, -distance);
+    const newIndex = state.topology.vertices.length;
+    state.topology.vertices.push(position);
+    state.selection.clear();
+    state.selection.add(newIndex);
+    state.maxDim = computeBounds().maxDim;
+    rebuildDisplayGeometry();
+    setModeLabel("vertex added");
+  }
+
+  function handleSTLToolbarAction(callbackKey) {
+    if (callbackKey === "stlAddVertex") {
+      addVertexAtCameraFocus();
+    }
+  }
+
   function pickVertex(evt) {
     if (!vertexPoints || !state.topology) return;
     const rect = renderer.domElement.getBoundingClientRect();
@@ -742,7 +763,11 @@ export async function renderEditor(
   );
 
   window.NodevisionState = window.NodevisionState || {};
-  window.NodevisionState.currentMode = "STLediting";
+  window.NodevisionState.activeActionHandler = handleSTLToolbarAction;
+  updateToolbarState({
+    currentMode: "STLediting",
+    activeActionHandler: handleSTLToolbarAction,
+  });
   window.saveWYSIWYGFile = async (path = filePath) => {
     await saveSTL(path);
   };
@@ -779,6 +804,9 @@ export async function renderEditor(
       controls.dispose();
       renderer.dispose();
       overlayRenderer.dispose();
+      if (window.NodevisionState?.activeActionHandler === handleSTLToolbarAction) {
+        window.NodevisionState.activeActionHandler = null;
+      }
       container.innerHTML = "";
     },
   };

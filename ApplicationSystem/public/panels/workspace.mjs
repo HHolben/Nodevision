@@ -542,20 +542,27 @@ window.addEventListener("toolbarAction", async (e) => {
 // Helper to highlight the active cell
 function highlightActiveCell(cell) {
   document.querySelectorAll(".panel-cell").forEach((c) => {
+    c.classList.remove("active-panel");
     c.style.outline = "";
   });
   if (cell) {
-    cell.style.outline = "2px solid #0078d7";
+    classListAdd(cell, "active-panel");
   }
 }
+
+function classListAdd(el, className) {
+  if (!el || !className) return;
+  el.classList.add(className);
+}
+
+window.highlightActiveCell = highlightActiveCell;
 
 // Setup global click handler for active panel tracking (run once)
 function setupActivePanelTracking() {
   if (window._activePanelTrackingSetup) return;
   window._activePanelTrackingSetup = true;
-  
-  document.addEventListener("click", (e) => {
-    const cell = e.target.closest(".panel-cell");
+
+  function handlePanelActivation(cell) {
     if (!cell) return;
 
     window.activeCell = cell;
@@ -566,21 +573,27 @@ function setupActivePanelTracking() {
 
     logStatus(`🎯 Active panel: ${panelId} (${panelClass})`);
     setStatus("🎯 Active panel", `${panelId} (${panelClass})`);
-    
+
     highlightActiveCell(cell);
 
-    // Update NodevisionState for toolbar
     if (window.NodevisionState) {
       window.NodevisionState.activePanelType = panelClass;
     }
 
-    // Dispatch event for other listeners
     window.dispatchEvent(
       new CustomEvent("activePanelChanged", {
         detail: { panel: panelId, cell, panelClass }
       })
     );
-  }, true); // Use capture phase to catch clicks before panels handle them
+  }
+
+  const activateHandler = (event) => {
+    const cell = event?.target?.closest?.(".panel-cell");
+    if (!cell) return;
+    handlePanelActivation(cell);
+  };
+
+  document.addEventListener("click", activateHandler, true);
 }
 
 // Initialize tracking when module loads
