@@ -1497,10 +1497,14 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
     </div>
 
     <div id="nv-existing-image-fields" style="display:none;flex-direction:column;gap:8px;">
-      <label>
-        Existing Source (Notebook path or URL)
-        <input id="nv-insert-existing-source" type="text" placeholder="images/example.png or https://..." style="display:block;width:100%;margin-top:4px;" />
-      </label>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <label style="flex:1;">
+          Existing Source (Notebook path or URL)
+          <input id="nv-insert-existing-source" type="text" placeholder="images/example.png or https://..." style="display:block;width:100%;margin-top:4px;" />
+        </label>
+        <button type="button" id="nv-insert-existing-source-file" style="font:12px monospace;padding:6px 10px;border:1px solid #666;background:#fff;cursor:pointer;">Choose File...</button>
+      </div>
+      <div id="nv-insert-existing-file-status" style="font-size:11px;color:#4b4b4b;">No local file selected.</div>
     </div>
 
     <div id="nv-insert-image-error" style="color:#b00020;min-height:16px;"></div>
@@ -1524,9 +1528,33 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
   const newHeightInput = form.querySelector("#nv-insert-new-height");
   const newReferencedTarget = form.querySelector("#nv-new-referenced-target");
   const existingSourceInput = form.querySelector("#nv-insert-existing-source");
+  const existingSourceFileBtn = form.querySelector("#nv-insert-existing-source-file");
+  const existingSourceFileStatus = form.querySelector("#nv-insert-existing-file-status");
   const errorEl = form.querySelector("#nv-insert-image-error");
   const cancelBtn = form.querySelector("#nv-insert-cancel");
   const applyBtn = form.querySelector("#nv-insert-apply");
+  const hiddenExistingFileInput = document.createElement("input");
+  hiddenExistingFileInput.type = "file";
+  hiddenExistingFileInput.accept = "image/*";
+  hiddenExistingFileInput.style.display = "none";
+  let localFileState = { dataUrl: "", name: "" };
+
+  const updateLocalFileStatus = () => {
+    if (!existingSourceFileStatus) return;
+    existingSourceFileStatus.textContent = localFileState.dataUrl
+      ? `Selected local file: ${localFileState.name}`
+      : "No local file selected.";
+  };
+
+  const clearLocalFileSelection = () => {
+    localFileState = { dataUrl: "", name: "" };
+    if (existingSourceInput) {
+      delete existingSourceInput.dataset.localFile;
+    }
+    updateLocalFileStatus();
+  };
+
+  form.appendChild(hiddenExistingFileInput);
 
   const closePanel = () => {
     if (panel.panelEl.parentNode) panel.panelEl.parentNode.removeChild(panel.panelEl);
@@ -1587,6 +1615,35 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
   }
   syncVisibility();
 
+  existingSourceInput.addEventListener("input", () => {
+    if (existingSourceInput.dataset.localFile === "true" && existingSourceInput.value !== localFileState.name) {
+      clearLocalFileSelection();
+    }
+  });
+
+  if (existingSourceFileBtn) {
+    existingSourceFileBtn.addEventListener("click", () => hiddenExistingFileInput.click());
+  }
+
+  hiddenExistingFileInput.addEventListener("change", async () => {
+    const file = hiddenExistingFileInput.files?.[0];
+    if (!file) return;
+    hiddenExistingFileInput.value = "";
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      localFileState = { dataUrl, name: file.name };
+      existingSourceInput.value = file.name;
+      existingSourceInput.dataset.localFile = "true";
+      updateLocalFileStatus();
+    } catch (err) {
+      existingSourceFileStatus.textContent = err?.message || "Unable to read selected file.";
+      localFileState = { dataUrl: "", name: "" };
+      delete existingSourceInput.dataset.localFile;
+    }
+  });
+
+  updateLocalFileStatus();
+
   form.addEventListener("submit", async (evt) => {
     evt.preventDefault();
     errorEl.textContent = "";
@@ -1618,11 +1675,32 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
         }
       } else {
         const existingSource = String(existingSourceInput.value || "").trim();
-        if (!existingSource) throw new Error("Enter an existing image source.");
+        const localFileSelected = Boolean(localFileState.dataUrl && existingSourceInput.dataset.localFile === "true");
+        if (!existingSource && !localFileSelected) {
+          throw new Error("Enter an existing image source or select a local file.");
+        }
 
         if (storageMode === "inline") {
-          const inlineDataUrl = await sourceInputToInlineDataUrl(existingSource, editorFilePath);
+          const inlineDataUrl = localFileSelected
+            ? localFileState.dataUrl
+            : await sourceInputToInlineDataUrl(existingSource, editorFilePath);
           insertion = { src: inlineDataUrl, linkedNotebookPath: "", mode: "inline-existing" };
+        } else if (localFileSelected) {
+          const sanitizedName = sanitizeImageFilename(localFileState.name || "image.png");
+          const specifiedPath = normalizeNotebookPathInput(existingSource);
+          const fallbackPath = normalizeNotebookPathInput(
+            [defaultDir, sanitizedName].filter(Boolean).join("/")
+          );
+          const notebookPath = specifiedPath || fallbackPath;
+          if (!notebookPath) {
+            throw new Error("Enter a destination path for the selected file.");
+          }
+          await saveNotebookImageFromDataUrl(notebookPath, localFileState.dataUrl);
+          insertion = {
+            src: sourceFromNotebookPath(notebookPath, editorFilePath),
+            linkedNotebookPath: notebookPath,
+            mode: "referenced-existing",
+          };
         } else {
           const notebookPath = getNotebookPathFromSourceInput(existingSource, editorFilePath);
           if (notebookPath) {

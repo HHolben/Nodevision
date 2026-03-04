@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '../../');
+const projectRoot = path.resolve(__dirname, '../../../');
 
 const router = express.Router();
 
@@ -25,8 +25,9 @@ function isLikelyTextFile(filePath) {
 }
 
 async function collectSearchResults({ query, scope, limit }) {
+  const notebookRoot = path.join(projectRoot, 'Notebook');
   const roots = [
-    { label: 'Notebook', abs: path.join(projectRoot, 'Notebook') }
+    { label: 'Notebook', abs: notebookRoot }
   ];
 
   const q = query.toLowerCase();

@@ -3,7 +3,7 @@
     "direct": true,
     "ToolbarCategory": "Search",
     "heading": "Search",
-    "content": "<div style=\"display: flex; align-items: center; gap: 8px;\"><input type=\"text\" id=\"searchBar\" placeholder=\"Search nodes\"><button id=\"searchButton\">Search</button></div><div id=\"searchResults\" style=\"display: none; position: absolute; background: white; border: 1px solid #ccc; padding: 5px;\"></div>",
+    "content": "<div id=\"toolbar-file-search\" style=\"display:flex;align-items:center;gap:6px;position:relative;width:100%;\">\n      <input id=\"toolbar-file-search-input\" type=\"text\" placeholder=\"Search Notebook files\" style=\"flex:1;padding:6px;min-width:0;border:1px solid #bbb;border-radius:4px;font-size:12px;\" />\n      <select id=\"toolbar-file-search-scope\" style=\"padding:6px;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:12px;\">\n        <option value=\"all\">All</option>\n        <option value=\"name\">File names</option>\n        <option value=\"content\">File contents</option>\n      </select>\n      <button id=\"toolbar-file-search-btn\" style=\"padding:6px 10px;border:1px solid #333;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;\">Search</button>\n      <div id=\"toolbar-file-search-results\" style=\"display:none;position:absolute;top:100%;left:0;right:0;max-height:320px;overflow:auto;background:#fff;border:1px solid #ccc;box-shadow:0 2px 6px rgba(0,0,0,0.2);z-index:2000;margin-top:4px;\"></div>\n    </div>",
     "script": "searchWidget.mjs"
   }
 ]
