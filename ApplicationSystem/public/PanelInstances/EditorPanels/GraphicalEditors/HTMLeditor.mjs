@@ -744,6 +744,102 @@ function sourceFromNotebookPath(notebookPath = "", editorFilePath = "") {
   return relativePath(fromDir, normalized);
 }
 
+async function resolveEditorImageDisplay(imageEl, editorFilePath) {
+  if (!(imageEl instanceof HTMLImageElement)) return null;
+  const originalSrc = String(imageEl.getAttribute("src") || imageEl.currentSrc || "").trim();
+  if (!originalSrc) return null;
+
+  const context = buildImageContextFromElement(imageEl, editorFilePath);
+  if (context.linkedNotebookPath) {
+    const displaySrc = encodeNotebookUrl(context.linkedNotebookPath);
+    if (displaySrc && displaySrc !== originalSrc) {
+      return { displaySrc, savedValue: originalSrc };
+    }
+    return null;
+  }
+
+  if (!isVirtualEditorPath(editorFilePath)) return null;
+
+  const epubContext = window.NodevisionState?.epubImageContext;
+  if (!epubContext || !epubContext.zip) return null;
+  const baseDir = epubContext.chapterDir || "";
+  const href = context.src || originalSrc;
+  const targetPath = resolveRelativePath(baseDir, href);
+  if (!targetPath) return null;
+  const entry = epubContext.zip.file(targetPath);
+  if (!entry) return null;
+  const buffer = await entry.async("arraybuffer");
+  const mimeType = mimeTypeFromImageFilename(targetPath);
+  const blob = new Blob([buffer], { type: mimeType || undefined });
+  const blobUrl = URL.createObjectURL(blob);
+  if (!blobUrl) return null;
+  return { displaySrc: blobUrl, savedValue: originalSrc, blobUrl };
+}
+
+async function hydrateEditorImage(imageEl, editorFilePath) {
+  if (!(imageEl instanceof HTMLImageElement)) return;
+  const displayInfo = await resolveEditorImageDisplay(imageEl, editorFilePath);
+  if (!displayInfo || !displayInfo.displaySrc) return;
+
+  const currentSrc = String(imageEl.getAttribute("src") || imageEl.currentSrc || "").trim();
+  if (displayInfo.displaySrc === currentSrc) {
+    if (displayInfo.savedValue && !imageEl.dataset.nvSavedSrc) {
+      imageEl.dataset.nvSavedSrc = displayInfo.savedValue;
+    }
+    return;
+  }
+
+  if (imageEl.dataset.nvBlobUrl && imageEl.dataset.nvBlobUrl !== displayInfo.blobUrl) {
+    try {
+      URL.revokeObjectURL(imageEl.dataset.nvBlobUrl);
+    } catch (_) {
+      // best effort
+    }
+  }
+
+  if (displayInfo.savedValue) {
+    imageEl.dataset.nvSavedSrc = displayInfo.savedValue;
+  }
+  if (displayInfo.blobUrl) {
+    imageEl.dataset.nvBlobUrl = displayInfo.blobUrl;
+  } else {
+    delete imageEl.dataset.nvBlobUrl;
+  }
+  imageEl.setAttribute("src", displayInfo.displaySrc);
+}
+
+async function hydrateEditorImages(root, editorFilePath) {
+  if (!root) return;
+  const images = Array.from(root.querySelectorAll("img"));
+  for (const image of images) {
+    try {
+      await hydrateEditorImage(image, editorFilePath);
+    } catch (err) {
+      console.warn("Failed to hydrate editor image:", err);
+    }
+  }
+}
+
+function restoreSavedImageSources(root) {
+  if (!root) return;
+  root.querySelectorAll("img[data-nv-saved-src]").forEach((img) => {
+    const saved = img.dataset.nvSavedSrc;
+    if (saved) {
+      img.setAttribute("src", saved);
+    }
+    const blobUrl = img.dataset.nvBlobUrl;
+    if (blobUrl) {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch (_) {
+        // best effort
+      }
+    }
+    img.removeAttribute("data-nv-saved-src");
+    img.removeAttribute("data-nv-blob-url");
+  });
+}
+
 async function pickLocalImageFile() {
   return new Promise((resolve) => {
     const picker = document.createElement("input");
@@ -1718,6 +1814,9 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
       const img = createImageElementFromInsertion(insertion);
       if (!img) throw new Error("Failed to prepare image insertion.");
       insertNodeAtCaret(wysiwyg, img, { preferredRange: preferredInsertRange });
+      hydrateEditorImage(img, editorFilePath).catch((err) => {
+        console.warn("Failed to hydrate inserted image:", err);
+      });
       markSelectedImage(wysiwyg, img);
       updateSelectedImageState(buildImageContextFromElement(img, editorFilePath));
       closePanel();
@@ -2922,6 +3021,7 @@ export async function renderEditor(filePath, container, options = {}) {
 
     // Saving function
     window.getEditorHTML = () => {
+      restoreSavedImageSources(wysiwyg);
       const headContent = Array.from(headClone.children)
         .map(el => el.outerHTML)
         .join("\n");
@@ -2941,7 +3041,11 @@ export async function renderEditor(filePath, container, options = {}) {
         .join("\n");
 
       const rawHtml = `<!DOCTYPE html><html><head>${headContent}</head><body>${bodyContent}${scripts}</body></html>`;
-      return formatHtmlMarkup(rawHtml);
+      const formatted = formatHtmlMarkup(rawHtml);
+      hydrateEditorImages(wysiwyg, filePath).catch((err) => {
+        console.warn("Failed to rehydrate images after generating HTML:", err);
+      });
+      return formatted;
     };
 
     window.setEditorHTML = (html) => {
@@ -2960,6 +3064,9 @@ export async function renderEditor(filePath, container, options = {}) {
       }
 
       rehydrateLayoutCanvases(wysiwyg, filePath);
+      hydrateEditorImages(wysiwyg, filePath).catch((err) => {
+        console.warn("Failed to rehydrate images after setEditorHTML:", err);
+      });
       markSelectedImage(wysiwyg, null);
       updateSelectedImageState(null);
     };
@@ -2981,6 +3088,11 @@ export async function renderEditor(filePath, container, options = {}) {
   }
 
   rehydrateLayoutCanvases(wysiwyg, filePath);
+  try {
+    await hydrateEditorImages(wysiwyg, filePath);
+  } catch (err) {
+    console.warn("Failed to hydrate editor images:", err);
+  }
 
   // --------------------------------------------------
   // Enable fallback hotkeys

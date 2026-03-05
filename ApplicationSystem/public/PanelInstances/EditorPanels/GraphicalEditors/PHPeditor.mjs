@@ -38,6 +38,23 @@ function toNotebookUrl(filePath = "") {
   return `${NOTEBOOK_PREFIX}${normalizePath(filePath)}`;
 }
 
+function notebookDir(filePath = "") {
+  const cleaned = normalizePath(filePath);
+  const idx = cleaned.lastIndexOf("/");
+  if (idx === -1) return "";
+  return cleaned.slice(0, idx);
+}
+
+function buildNotebookBaseHref(filePath = "") {
+  const dir = notebookDir(filePath);
+  const segments = (dir || "")
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment));
+  const pathSegment = segments.length ? `${segments.join("/")}/` : "";
+  return `${NOTEBOOK_PREFIX}${pathSegment}`;
+}
+
 async function fetchTextFile(filePath) {
   const res = await fetch(toNotebookUrl(filePath), { cache: "no-store" });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -349,10 +366,12 @@ function recordsToCsv(records) {
 function buildPreviewHtml(state) {
   const escapedCode = escapeHTML(state.code);
   const escapedGenerated = escapeHTML(state.generatedPhp);
+  const baseHref = buildNotebookBaseHref(state.filePath);
   return `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
+  ${baseHref ? `<base href="${baseHref}">` : ""}
   <title>Nodevision PHP Preview</title>
   <style>
     body { font-family: monospace; margin: 0; background: #f4f5f8; color: #1a1d22; }

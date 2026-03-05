@@ -45,6 +45,22 @@ function resolveRelative(baseDir, href) {
   return out.join("/");
 }
 
+function setEpubImageContext(zipInstance, chapterPath = "") {
+  window.NodevisionState = window.NodevisionState || {};
+  if (!zipInstance) {
+    window.NodevisionState.epubImageContext = null;
+    return;
+  }
+  window.NodevisionState.epubImageContext = {
+    zip: zipInstance,
+    chapterDir: dirname(chapterPath),
+  };
+}
+
+function clearEpubImageContext() {
+  setEpubImageContext(null);
+}
+
 async function discoverEpubChapters(zip) {
   const containerFile = zip.file("META-INF/container.xml");
   if (!containerFile) {
@@ -137,6 +153,7 @@ export async function renderEditor(filePath, container) {
   window.NodevisionState.currentMode = "EPUBediting";
   window.getEditorMarkdown = undefined;
   window.saveMDFile = undefined;
+  clearEpubImageContext();
 
   const wrapper = document.createElement("div");
   wrapper.style.cssText = "display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden;";
@@ -272,6 +289,8 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
+    setEpubImageContext(zip, chapterPath);
+
     if (!htmlEditorMounted) {
       const virtualPath = "__epub_virtual__/chapter.xhtml";
       await mountHtmlEditorWithVirtualSource(virtualPath, chapterText);
@@ -314,6 +333,7 @@ export async function renderEditor(filePath, container) {
   } catch (err) {
     editorHost.innerHTML = `<div style="padding:12px;color:#b00020;font:13px monospace;">Failed to load EPUB editor: ${escapeHTML(err.message)}</div>`;
     setStatus("Load failed");
+    clearEpubImageContext();
     window.getEditorHTML = undefined;
     window.setEditorHTML = undefined;
     window.saveWYSIWYGFile = undefined;
