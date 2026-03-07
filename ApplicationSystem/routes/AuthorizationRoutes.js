@@ -13,9 +13,9 @@ router.post('/login', passport.authenticate('local', {
     failureFlash: true             // Enable flash messages for errors (requires flash middleware)
 }));
 
-// Serve the login page
+// Redirect legacy login endpoints to the main app shell.
 router.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/login.html'));
+    res.redirect('/');
 });
 
 // Logout route

@@ -22,3 +22,6 @@ UserData/data
 # Ignore User Settings
 UserSettings
 
+# Accounts runtime data (sessions/logs should not be committed)
+Accounts/logs/
+Accounts/data/sessions.json

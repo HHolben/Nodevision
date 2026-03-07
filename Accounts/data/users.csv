@@ -1,0 +1,2 @@
+id,username,password_hash,role,created
+1,admin,$argon2id$v=19$m=65536,t=3,p=4$GV3Wl//snQSs6wtAnzE7bA$rOa/HJsE8z8oesDkCiwUKLdFoyNGNQfaQOhHioDRED0,admin,2026-03-07

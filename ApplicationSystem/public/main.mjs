@@ -11,22 +11,16 @@ import { initStatusBar } from "./StatusBar.mjs";
 //Initialize the status bar: 
 initStatusBar();
 
-
-
-document.addEventListener("DOMContentLoaded", async () => {
+async function initNodevision() {
   try {
-    // Initialize toolbar
     await createToolbar("#global-toolbar");
 
-    // Ensure the workspace container exists
     const workspace = ensureWorkspace();
     console.log("Workspace initialized:", workspace);
 
-    // Load layout file
     const layout = await loadDefaultLayout();
     console.log("Fetched layout file:", layout);
 
-    // Render declarative layout
     const root = layout?.workspace || layout;
     if (root?.children?.length > 0) {
       console.log("Loaded declarative layout:", root);
@@ -35,13 +29,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.warn("No valid DefaultLayout.json found, using fallback layout.");
     }
 
-    // Apply divider styles
     addDividers();
-
   } catch (err) {
     console.error("Error during initialization:", err);
   }
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initNodevision);
+} else {
+  initNodevision();
+}
 
 /**
  * Adds horizontal and vertical divider styling between layout cells.

@@ -5,9 +5,9 @@ const express = require('express');
 const path = require('path');
 const router = express.Router();
 
-// Define the route for the login page
+// Redirect legacy login entry points to the SPA root.
 router.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/login.html')); // Adjust the path as needed
+    res.redirect('/');
 });
 
 module.exports = router;

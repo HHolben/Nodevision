@@ -12,6 +12,10 @@ import multer from 'multer';
 import * as cheerio from 'cheerio';
 import { exec } from 'node:child_process';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import cookieParser from 'cookie-parser';
+
+import * as AuthService from './Auth/AuthService.mjs';
+import { ensureDefaultAdminAccount } from './Auth/userStore.mjs';
 
 import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 import graphDataRoutes from "./routes/api/graphData.js";
@@ -37,13 +41,52 @@ if (!fs.existsSync(userSettingsDir)) fs.mkdirSync(userSettingsDir, { recursive: 
 if (!fs.existsSync(USER_DATA_DIR)) fs.mkdirSync(USER_DATA_DIR, { recursive: true });
 if (!fs.existsSync(SHARED_DATA_DIR)) fs.mkdirSync(SHARED_DATA_DIR, { recursive: true });
 
+try {
+  await ensureDefaultAdminAccount();
+} catch (err) {
+  console.error('Failed to bootstrap authentication data:', err);
+}
+
 const app = express();
 const port = process.env.PORT || 3000; // Use port from .env or default to 3000
+
+function requireAuthentication(req, res, next) {
+  if (req.identity) {
+    return next();
+  }
+  return res.redirect('/');
+}
 
 
 // Middleware setup (configure body size limits first)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser());
+
+app.use(async (req, res, next) => {
+  try {
+    req.identity = await AuthService.authenticateRequest(req);
+  } catch (err) {
+    return next(err);
+  }
+  next();
+});
+
+app.get('/api/session', (req, res) => {
+  if (!req.identity) {
+    return res.status(200).json({ loggedIn: false });
+  }
+
+  const { id, username, role, type } = req.identity;
+  res.status(200).json({
+    loggedIn: true,
+    identity: { id, username, role, type },
+  });
+});
+
+app.get('/login', (req, res) => {
+  res.redirect('/');
+});
 
 
 app.use('/lib/monaco', express.static(path.join(__dirname, 'public/lib/monaco')));
@@ -60,6 +103,53 @@ app.use("/api", listDirectoryRouter);
 
 import uploadRoutes from './routes/api/fileUploadRoutes.js';
 app.use('/api/file', uploadRoutes);
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const result = await AuthService.login({
+      username,
+      password,
+      ip: req.ip,
+    });
+
+    const expiresMs = Math.max(result.expires * 1000 - Date.now(), 0);
+    res.cookie('nodevision_session', result.token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: expiresMs,
+      path: '/',
+    });
+
+    res.json({
+      success: true,
+      identity: result.identity,
+      expires: result.expires,
+    });
+  } catch (err) {
+    if (err?.message === 'Invalid credentials') {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    console.error('Login error', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/logout', async (req, res) => {
+  try {
+    const token = req.cookies?.nodevision_session;
+    await AuthService.logout(token);
+    res.clearCookie('nodevision_session', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Logout error', err);
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
 
 
 
@@ -138,7 +228,7 @@ app.use("/api/graph", graphDataRoutes);
 app.use('/UserSettings', express.static(USER_SETTINGS_DIR));
 
 
-app.use('/Notebook', express.static(NOTEBOOK_DIR));
+app.use('/Notebook', requireAuthentication, express.static(NOTEBOOK_DIR));
 
 
 

@@ -1,9 +1,9 @@
 // routes/auth.js
 // Purpose: TODO: Add description of module purpose
 
-// Route for login page
+// Legacy route now simply returns to the SPA root.
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/login.html'));
+    res.redirect('/');
 });
 
 // Middleware for parsing form data

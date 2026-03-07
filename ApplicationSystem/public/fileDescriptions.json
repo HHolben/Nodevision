@@ -265,7 +265,6 @@
   "public/initMarkdownEditor.js": "JavaScript module.",
   "public/loadCSV.js": "JavaScript module.",
   "public/loadCytoscape.js": "JavaScript module.",
-  "public/login.html": "HTML page.",
   "public/main.js": "JavaScript module.",
   "public/resizeAndDrag.js": "JavaScript module.",
   "public/resizeContainers.js": "JavaScript module.",
