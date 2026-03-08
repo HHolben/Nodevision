@@ -150,7 +150,14 @@
   margin: 0 !important;
 }
 
-/* Panel grid / workspace */
+/* App shell + panel grid / workspace */
+#app-shell {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 #workspace { 
   flex: 1 1 auto;
   min-height: 0;
@@ -186,6 +193,33 @@
   /* make sure it's clickable */
   z-index: 10;
   position: relative;
+}
+
+.layout-divider {
+  flex-shrink: 0;
+  flex-grow: 0;
+  background: linear-gradient(90deg, #d4d4d4, #8f8f8f);
+  cursor: col-resize;
+  width: 6px;
+  min-width: 6px;
+  max-width: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  z-index: 100;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel-row[data-is-vertical="1"] > .layout-divider {
+  width: 100%;
+  height: 6px;
+  min-height: 6px;
+  max-height: 6px;
+  cursor: row-resize;
+  background: linear-gradient(180deg, #d4d4d4, #8f8f8f);
+}
+
+.layout-divider:hover {
+  background: #0078d7;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
 

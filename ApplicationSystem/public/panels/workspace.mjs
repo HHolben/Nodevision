@@ -118,6 +118,8 @@ export function ensureTopRow(workspace) {
       overflow: "hidden",
       flex: "1 1 auto",
     });
+    topRow.dataset.direction = "row";
+    topRow.dataset.isVertical = "0";
     workspace.appendChild(topRow);
   }
   return topRow;
@@ -247,6 +249,8 @@ export function renderLayout(node, parent) {
       minHeight: "0",
       minWidth: "0",
     });
+    container.dataset.direction = direction;
+    container.dataset.isVertical = isVertical ? "1" : "0";
     parent.appendChild(container);
     
     // First render all children
@@ -261,13 +265,9 @@ export function renderLayout(node, parent) {
     
     console.log(`📐 Adding dividers: ${children.length} children in ${direction} container`);
     
-    // Insert dividers between each pair of children (in reverse to maintain order)
-    for (let i = children.length - 1; i > 0; i--) {
-      const leftChild = children[i - 1];
-      const rightChild = children[i];
-      const divider = createLayoutDivider(leftChild, rightChild, isVertical);
-      container.insertBefore(divider, rightChild);
-      console.log(`📐 Inserted ${isVertical ? 'vertical' : 'horizontal'} divider between children`);
+    const inserted = rebuildLayoutDividersForContainer(container, isVertical);
+    if (inserted > 0) {
+      console.log(`📐 Inserted ${isVertical ? 'vertical' : 'horizontal'} divider(s) for ${children.length} children`);
     }
   } else if (node.instanceName || node.type === "cell") {
     const cell = document.createElement("div");
@@ -406,6 +406,35 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
   }
 
   return divider;
+}
+
+export function rebuildLayoutDividersForContainer(container, isVerticalOverride) {
+  if (!container) return 0;
+
+  const isVerticalFlag = container.dataset?.isVertical?.toLowerCase?.();
+  const isVertical = typeof isVerticalOverride === "boolean"
+    ? isVerticalOverride
+    : (isVerticalFlag === "1" || isVerticalFlag === "true" || container.dataset?.direction === "column");
+
+  const existingChildren = Array.from(container.children);
+  existingChildren
+    .filter((child) => child.classList?.contains("layout-divider"))
+    .forEach((divider) => divider.remove());
+
+  const panels = Array.from(container.children).filter((child) =>
+    child.classList?.contains("panel-cell") || child.classList?.contains("panel-row")
+  );
+
+  if (panels.length < 2) return 0;
+
+  for (let i = panels.length - 1; i > 0; i -= 1) {
+    const leftChild = panels[i - 1];
+    const rightChild = panels[i];
+    const divider = createLayoutDivider(leftChild, rightChild, isVertical);
+    container.insertBefore(divider, rightChild);
+  }
+
+  return panels.length - 1;
 }
 
 

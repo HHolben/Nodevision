@@ -1,6 +1,8 @@
 // Nodevision/public/ToolbarCallbacks/view/closePanel.mjs
 // Closes the panel from the workspace corresponding to the active panel.
 
+import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
+
 export function closeActivePanel() {
   const legacyUndocked = window.__nvActiveLegacyUndockedPanel;
   if (legacyUndocked?.isConnected) {
@@ -57,18 +59,16 @@ export function closeActivePanel() {
   // Remove the divider adjacent to this cell if it exists
   const prevSibling = cell.previousElementSibling;
   const nextSibling = cell.nextElementSibling;
-
-  // If previous sibling is a divider, remove it
-  if (prevSibling && prevSibling.classList.contains("divider")) {
-    prevSibling.remove();
-  }
-  // Otherwise, if next sibling is a divider, remove it
-  else if (nextSibling && nextSibling.classList.contains("divider")) {
-    nextSibling.remove();
+  const dividerToRemove = [prevSibling, nextSibling].find((sibling) =>
+    sibling?.classList?.contains("divider") || sibling?.classList?.contains("layout-divider")
+  );
+  if (dividerToRemove) {
+    dividerToRemove.remove();
   }
 
   // Remove the active cell itself
   cell.remove();
+  rebuildLayoutDividersForContainer(row);
   if (window.__nvActivePanelElement && !window.__nvActivePanelElement.isConnected) {
     window.__nvActivePanelElement = null;
   }

@@ -24,6 +24,8 @@ export function createRow() {
     minHeight: "150px",
     position: "relative",
   });
+  row.dataset.direction = "row";
+  row.dataset.isVertical = "0";
   return row;
 }
 

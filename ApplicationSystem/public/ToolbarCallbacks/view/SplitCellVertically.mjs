@@ -147,6 +147,8 @@ export function splitCellVertically() {
     minHeight: "0",
     minWidth: "0",
   });
+  splitContainer.dataset.direction = "column";
+  splitContainer.dataset.isVertical = "1";
 
   const referenceNode = cell.nextSibling;
   parent.removeChild(cell);

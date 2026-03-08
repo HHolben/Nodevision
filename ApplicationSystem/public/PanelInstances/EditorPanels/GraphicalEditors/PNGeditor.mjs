@@ -34,6 +34,10 @@ export async function renderEditor(filePath, container) {
     displayWidth: 32,
     displayHeight: 32,
   };
+  let cropButton;
+  let widthInput;
+  let heightInput;
+  let canvasSizeLabel;
   const RULER_THICKNESS = 26;
   const RULER_LEFT_WIDTH = 32;
 
@@ -90,6 +94,50 @@ export async function renderEditor(filePath, container) {
   const ctx = canvas.getContext("2d", { alpha: true });
   const history = new History(ctx);
 
+  const controlBar = document.createElement("div");
+  controlBar.style.cssText =
+    "display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%; margin-bottom:8px; font-size:12px;";
+  const legend = document.createElement("span");
+  legend.textContent = "Canvas size:";
+  legend.style.cssText = "color:#222; white-space:nowrap;";
+  widthInput = document.createElement("input");
+  widthInput.type = "number";
+  widthInput.min = "1";
+  widthInput.style.cssText =
+    "width:70px; padding:3px 6px; border-radius:4px; border:1px solid #888; font-size:12px; background:#fff;";
+  heightInput = document.createElement("input");
+  heightInput.type = "number";
+  heightInput.min = "1";
+  heightInput.style.cssText =
+    "width:70px; padding:3px 6px; border-radius:4px; border:1px solid #888; font-size:12px; background:#fff;";
+  const sizeSeparator = document.createElement("span");
+  sizeSeparator.textContent = "×";
+  sizeSeparator.style.cssText = "font-weight:bold;";
+  const resizeButton = document.createElement("button");
+  resizeButton.type = "button";
+  resizeButton.textContent = "Resize canvas";
+  resizeButton.style.cssText =
+    "padding:4px 10px; border-radius:4px; border:1px solid #666; background:#fff; cursor:pointer; font-size:12px;";
+  cropButton = document.createElement("button");
+  cropButton.type = "button";
+  cropButton.textContent = "Crop to selection";
+  cropButton.style.cssText =
+    "padding:4px 10px; border-radius:4px; border:1px solid #666; background:#fff; cursor:pointer; font-size:12px;";
+  canvasSizeLabel = document.createElement("span");
+  canvasSizeLabel.style.cssText = "color:#555; white-space:nowrap;";
+  controlBar.append(
+    legend,
+    widthInput,
+    sizeSeparator,
+    heightInput,
+    resizeButton,
+    cropButton,
+    canvasSizeLabel,
+  );
+  resizeButton.addEventListener("click", resizeCanvasToInputs);
+  cropButton.addEventListener("click", cropToSelectionRect);
+  updateCanvasSizeInputs();
+  updateCropButtonState();
   const canvasArea = document.createElement("div");
   canvasArea.style.cssText = `
     display:grid;
@@ -137,6 +185,58 @@ export async function renderEditor(filePath, container) {
   canvasContainer.style.cssText =
     "grid-area:2/2/3/3; position:relative; overflow:auto; min-width:0; min-height:0; background:#ffffff; display:flex; align-items:flex-start; justify-content:flex-start;";
   canvasContainer.appendChild(canvas);
+
+  const shapePreviewCanvas = document.createElement("canvas");
+  shapePreviewCanvas.style.cssText =
+    "position:absolute; inset:0; pointer-events:none; z-index:5; image-rendering:pixelated; image-rendering:crisp-edges;";
+  shapePreviewCanvas.width = canvas.width;
+  shapePreviewCanvas.height = canvas.height;
+  canvasContainer.appendChild(shapePreviewCanvas);
+  const shapePreviewCtx = shapePreviewCanvas.getContext("2d");
+  if (shapePreviewCtx) {
+    shapePreviewCtx.imageSmoothingEnabled = false;
+  }
+ 
+  function refreshPreviewCanvasDimensions() {
+    shapePreviewCanvas.width = canvas.width;
+    shapePreviewCanvas.height = canvas.height;
+    if (!shapePreviewCtx) return;
+    shapePreviewCtx.imageSmoothingEnabled = false;
+    shapePreviewCtx.clearRect(0, 0, shapePreviewCanvas.width, shapePreviewCanvas.height);
+  }
+
+  function clearShapePreview() {
+    if (!shapePreviewCtx) return;
+    shapePreviewCtx.clearRect(0, 0, shapePreviewCanvas.width, shapePreviewCanvas.height);
+  }
+
+  function updateShapePreview(pos) {
+    if (!shapePreviewCtx || !state.startPos || !pos) return;
+    const tool = window.NodevisionState?.drawTool;
+    if (!["line", "rectangle", "circle"].includes(tool)) {
+      clearShapePreview();
+      return;
+    }
+    const drawColor = window.NodevisionState?.drawColor || "#000000";
+    const opacity = 100 - clampTransparency(window.NodevisionState?.drawAlpha);
+    shapePreviewCtx.fillStyle = hexToRGBA(drawColor, opacity);
+    shapePreviewCtx.imageSmoothingEnabled = false;
+    shapePreviewCtx.clearRect(0, 0, shapePreviewCanvas.width, shapePreviewCanvas.height);
+    const brushSize = clampBrushSize(window.NodevisionState?.drawBrushSize);
+    const drawPreviewPixel = (x, y) => {
+      const half = Math.floor(brushSize / 2);
+      shapePreviewCtx.fillRect(x - half, y - half, brushSize, brushSize);
+    };
+    if (tool === "line") {
+      bresenhamLine(state.startPos.x, state.startPos.y, pos.x, pos.y, drawPreviewPixel);
+    } else if (tool === "rectangle") {
+      drawRectangle(state.startPos.x, state.startPos.y, pos.x, pos.y, drawPreviewPixel);
+    } else if (tool === "circle") {
+      drawCircle(state.startPos.x, state.startPos.y, pos.x, pos.y, drawPreviewPixel);
+    }
+  }
+
+  refreshPreviewCanvasDimensions();
 
   const selectionOverlay = document.createElement("div");
   selectionOverlay.id = "png-selection-overlay";
@@ -193,7 +293,7 @@ export async function renderEditor(filePath, container) {
   const selectionPreviewCtx = selectionPreview.getContext("2d");
 
   canvasArea.append(rulerCorner, topRulerSlot, leftRulerSlot, canvasContainer);
-  wrapper.appendChild(canvasArea);
+  wrapper.append(controlBar, canvasArea);
   container.appendChild(wrapper);
 
   if (state.initialImage) {
@@ -222,6 +322,7 @@ export async function renderEditor(filePath, container) {
   updateDisplayScale();
   const resizeObserver = new ResizeObserver(updateDisplayScale);
   resizeObserver.observe(wrapper);
+
 
   function createSelectionBounds(a, b) {
     if (!a || !b) return null;
@@ -311,6 +412,7 @@ export async function renderEditor(filePath, container) {
     updateSelectionHandles(null);
     updateSelectionToolbar(null);
     clearSelectionAssets();
+    updateCropButtonState();
   }
 
   function updateSelectionPreview(cssRect) {
@@ -474,6 +576,7 @@ export async function renderEditor(filePath, container) {
   function refreshSelectionOverlay() {
     const tool = window.NodevisionState?.drawTool;
     const rect = state.selectionRect;
+    updateCropButtonState();
     if (!rect || tool !== "rectselect") {
       selectionOverlay.style.display = "none";
       selectionOverlay.style.pointerEvents = "none";
@@ -763,6 +866,109 @@ export async function renderEditor(filePath, container) {
     }, 1800);
   }
 
+  function updateCropButtonState() {
+    if (!cropButton) return;
+    const enabled = state.selectionPhase === "committed" && !!state.selectionRect;
+    cropButton.disabled = !enabled;
+  }
+
+  function updateCanvasSizeInputs() {
+    if (widthInput) widthInput.value = String(state.logicalWidth);
+    if (heightInput) heightInput.value = String(state.logicalHeight);
+    if (canvasSizeLabel) {
+      canvasSizeLabel.textContent = `${state.logicalWidth}×${state.logicalHeight}`;
+    }
+  }
+
+  function resizeCanvasToInputs() {
+    if (!widthInput || !heightInput) return;
+    const requestedWidth = Math.max(1, Math.floor(Number(widthInput.value) || 1));
+    const requestedHeight = Math.max(1, Math.floor(Number(heightInput.value) || 1));
+    if (
+      requestedWidth === canvas.width &&
+      requestedHeight === canvas.height
+    ) {
+      updateRasterStatus(`Canvas already ${requestedWidth}×${requestedHeight}`);
+      updateCanvasSizeInputs();
+      return;
+    }
+    history.push(canvas);
+    const snapshot = document.createElement("canvas");
+    snapshot.width = canvas.width;
+    snapshot.height = canvas.height;
+    const snapshotCtx = snapshot.getContext("2d");
+    if (!snapshotCtx) return;
+    snapshotCtx.imageSmoothingEnabled = false;
+    snapshotCtx.drawImage(canvas, 0, 0);
+    canvas.width = requestedWidth;
+    canvas.height = requestedHeight;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, requestedWidth, requestedHeight);
+    ctx.drawImage(
+      snapshot,
+      0,
+      0,
+      snapshot.width,
+      snapshot.height,
+      0,
+      0,
+      requestedWidth,
+      requestedHeight,
+    );
+    state.logicalWidth = requestedWidth;
+    state.logicalHeight = requestedHeight;
+    refreshPreviewCanvasDimensions();
+    clearShapePreview();
+    resetSelectionState();
+    updateDisplayScale();
+    updateCanvasSizeInputs();
+    updateRasterStatus(`Canvas resized to ${requestedWidth}×${requestedHeight}`);
+  }
+
+  function cropToSelectionRect() {
+    if (
+      state.selectionPhase !== "committed" ||
+      !state.selectionRect ||
+      state.selectionRect.width <= 0 ||
+      state.selectionRect.height <= 0
+    ) {
+      updateRasterStatus("Define and commit a selection before cropping.");
+      return;
+    }
+    const { x, y, width, height } = state.selectionRect;
+    history.push(canvas);
+    const snapshot = document.createElement("canvas");
+    snapshot.width = width;
+    snapshot.height = height;
+    const snapshotCtx = snapshot.getContext("2d");
+    if (!snapshotCtx) return;
+    snapshotCtx.imageSmoothingEnabled = false;
+    snapshotCtx.drawImage(
+      canvas,
+      x,
+      y,
+      width,
+      height,
+      0,
+      0,
+      width,
+      height,
+    );
+    canvas.width = width;
+    canvas.height = height;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(snapshot, 0, 0);
+    state.logicalWidth = width;
+    state.logicalHeight = height;
+    refreshPreviewCanvasDimensions();
+    clearShapePreview();
+    resetSelectionState();
+    updateDisplayScale();
+    updateCanvasSizeInputs();
+    updateRasterStatus(`Cropped to ${width}×${height}`);
+  }
+
   function copySelection() {
     if (
       state.selectionPhase === "committed" &&
@@ -862,7 +1068,12 @@ export async function renderEditor(filePath, container) {
     state.selectionCurrent = null;
   }
 
-  const handleToolChange = () => refreshSelectionOverlay();
+  const handleToolChange = () => {
+    refreshSelectionOverlay();
+    if (!["line", "rectangle", "circle"].includes(window.NodevisionState?.drawTool)) {
+      clearShapePreview();
+    }
+  };
   window.addEventListener("nv-draw-tool-changed", handleToolChange);
   window.addEventListener("resize", updateDisplayScale);
 
@@ -959,14 +1170,27 @@ export async function renderEditor(filePath, container) {
       updateRectSelection(pos);
       return;
     }
-    if (!state.drawing) return;
-    const selectedTool = window.NodevisionState?.drawTool || "brush";
-    if (selectedTool !== "brush" && selectedTool !== "eraser") return;
-    const pos = getPos(e);
-    if (state.lastPos) {
-      bresenhamLine(state.lastPos.x, state.lastPos.y, pos.x, pos.y, draw);
+    if (!state.drawing) {
+      if (["line", "rectangle", "circle"].includes(window.NodevisionState?.drawTool)) {
+        clearShapePreview();
+      }
+      return;
     }
-    state.lastPos = pos;
+    const selectedTool = window.NodevisionState?.drawTool || "brush";
+    if (selectedTool === "brush" || selectedTool === "eraser") {
+      const pos = getPos(e);
+      if (state.lastPos) {
+        bresenhamLine(state.lastPos.x, state.lastPos.y, pos.x, pos.y, draw);
+      }
+      state.lastPos = pos;
+      return;
+    }
+    if (["line", "rectangle", "circle"].includes(selectedTool)) {
+      const pos = inBounds(getPos(e));
+      updateShapePreview(pos);
+      return;
+    }
+    clearShapePreview();
   };
 
   // Event Listeners
@@ -1047,6 +1271,7 @@ export async function renderEditor(filePath, container) {
         }
       }
     }
+    clearShapePreview();
     state.drawing = false;
     state.startPos = null;
     state.lastPos = null;

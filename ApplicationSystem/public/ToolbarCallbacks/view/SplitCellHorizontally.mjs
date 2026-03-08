@@ -147,6 +147,8 @@ export function splitCellHorizontally() {
     minHeight: "0",
     minWidth: "0",
   });
+  splitContainer.dataset.direction = "row";
+  splitContainer.dataset.isVertical = "0";
 
   const referenceNode = cell.nextSibling;
   parent.removeChild(cell);
