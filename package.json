@@ -1,6 +1,14 @@
 {
   "type": "module",
+  "main": "electron-main.cjs",
+  "scripts": {
+    "start": "node start-servers.js",
+    "desktop": "electron ."
+  },
   "dependencies": {
     "dependencies": "^0.0.1"
+  },
+  "devDependencies": {
+    "electron": "^26.6.10"
   }
 }
