@@ -71,6 +71,39 @@ async function loadUsers() {
   }
 }
 
+function serializeUserLine(user) {
+  const { id, username, password_hash, role, created } = user;
+  if (!Number.isInteger(id)) {
+    throw new Error('User record missing numeric id');
+  }
+  if (!username || !password_hash || !role || !created) {
+    throw new Error('Incomplete user record cannot be serialized');
+  }
+  return `${id},${username},${password_hash},${role},${created}`;
+}
+
+async function persistUsers(users) {
+  await ensureUsersFile();
+  const lines = users.map(serializeUserLine);
+  const content = lines.length ? `${HEADER}\n${lines.join('\n')}\n` : `${HEADER}\n`;
+  await fs.writeFile(USERS_FILE, content, 'utf8');
+}
+
+const VALID_ROLES = new Set(['admin', 'user']);
+
+function ensureValidRole(role) {
+  if (!role || typeof role !== 'string') return 'user';
+  return VALID_ROLES.has(role) ? role : 'user';
+}
+
+function findUserIndex(users, id) {
+  return users.findIndex((user) => user.id === id);
+}
+
+function cloneUsers(users) {
+  return users.map((user) => ({ ...user }));
+}
+
 export async function getUserByUsername(username) {
   if (!username) return null;
   const users = await loadUsers();
@@ -107,6 +140,51 @@ export async function createUser(username, passwordHash, role = 'user') {
     role,
     created,
   };
+}
+
+export async function listUsers() {
+  return await loadUsers();
+}
+
+async function updateUserField(id, updater) {
+  if (!Number.isInteger(id)) {
+    throw new Error('User id must be a number');
+  }
+  const users = cloneUsers(await loadUsers());
+  const idx = findUserIndex(users, id);
+  if (idx === -1) {
+    throw new Error('User not found');
+  }
+  const updated = updater(users[idx]);
+  users[idx] = { ...users[idx], ...updated };
+  await persistUsers(users);
+  return users[idx];
+}
+
+export async function updateUserPasswordById(id, passwordHash) {
+  if (!passwordHash) {
+    throw new Error('Password hash is required');
+  }
+  return await updateUserField(id, (user) => ({ password_hash: passwordHash }));
+}
+
+export async function updateUserRoleById(id, role) {
+  const normalizedRole = ensureValidRole(role);
+  return await updateUserField(id, (user) => ({ role: normalizedRole }));
+}
+
+export async function deleteUserById(id) {
+  if (!Number.isInteger(id)) {
+    throw new Error('User id must be a number');
+  }
+  const users = cloneUsers(await loadUsers());
+  const idx = findUserIndex(users, id);
+  if (idx === -1) {
+    throw new Error('User not found');
+  }
+  const [removed] = users.splice(idx, 1);
+  await persistUsers(users);
+  return removed;
 }
 
 export async function ensureDefaultAdminAccount() {

@@ -22,6 +22,7 @@
     { "name": "Arduino Upload", "path": "./routes/arduinoUpload.js"},
     { "name": "downloadFile", "path": "./routes/api/downloadFile.js" },
     { "name": "updateGraph", "path": "./routes/api/updateGraph.js" },
-    { "name": "scanNotebook", "path": "./routes/api/scanNotebook.js" }
+    { "name": "scanNotebook", "path": "./routes/api/scanNotebook.js" },
+    { "name": "userRoutes", "path": "./routes/api/userRoutes.js" }
   ]
 }

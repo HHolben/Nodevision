@@ -11,8 +11,18 @@
   },
   {
     "ToolbarCategory": "User",
+    "heading": "Password",
+    "callbackKey": "password"
+  },
+  {
+    "ToolbarCategory": "User",
     "heading": "Permissions",
     "callbackKey": "permissions"
+  },
+  {
+    "ToolbarCategory": "User",
+    "heading": "Users",
+    "callbackKey": "users"
   },
   {
     "ToolbarCategory": "User",

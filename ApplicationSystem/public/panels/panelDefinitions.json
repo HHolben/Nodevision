@@ -59,6 +59,26 @@
       "dataFields": [],
       "behaviors": ["combinePanels"],
       "behaviorModule": "./compositePanel.mjs"
+    },
+    {
+      "id": "PasswordPanel",
+      "displayName": "Change Password",
+      "description": "Interface for the signed-in user to update their password.",
+      "states": ["Inactive", "Active"],
+      "properties": { "active": true, "duplicable": false, "selectable": true },
+      "dataFields": [],
+      "behaviors": ["changePassword"],
+      "behaviorModule": "./InfoPanels/PasswordPanel.mjs"
+    },
+    {
+      "id": "UsersPanel",
+      "displayName": "Users",
+      "description": "Administrative user directory with role management.",
+      "states": ["Inactive", "Active"],
+      "properties": { "active": true, "duplicable": false, "selectable": true },
+      "dataFields": [],
+      "behaviors": ["manageUsers"],
+      "behaviorModule": "./InfoPanels/UsersPanel.mjs"
     }
   ]
 }
