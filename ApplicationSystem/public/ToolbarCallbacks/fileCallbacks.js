@@ -1,5 +1,21 @@
 // Nodevision/public/ToolbarCallbacks/fileCallbacks.js
 // Purpose: TODO: Add description of module purpose
+const loadInputDialog = (() => {
+  let cachedPromise = null;
+  return async () => {
+    if (cachedPromise) {
+      return cachedPromise;
+    }
+    cachedPromise = import('/ui/modals/InputDialog.mjs')
+      .then((module) => module.showInputDialog)
+      .catch((err) => {
+        console.error('Failed to load InputDialog module:', err);
+        return null;
+      });
+    return cachedPromise;
+  };
+})();
+
 window.fileCallbacks = {
 saveFile: async () => {
   const filePath = window.currentActiveFilePath || window.filePath;
@@ -121,7 +137,22 @@ NewFile: async () => {
     return;
   }
 
-  const fileName = prompt("Enter the name of the new file (include extension):");
+  const showInputDialog = await loadInputDialog();
+  if (!showInputDialog) {
+    alert("Unable to open the new file dialog.");
+    return;
+  }
+
+  const fileName = await showInputDialog({
+    title: 'Create new file',
+    description: 'Enter the name of the new file (include extension)',
+    placeholder: 'example.txt',
+    confirmText: 'Create file',
+    cancelText: 'Cancel',
+    emptyMessage: 'A file name is required.',
+    returnTrimmed: true,
+  });
+
   if (!fileName) {
     console.log("File creation cancelled.");
     return;
@@ -209,11 +240,34 @@ NewFile: async () => {
       })
     });
 
-    // Ask user for Arduino board and port
-    const fqbn = prompt("Enter Arduino board FQBN (e.g., arduino:avr:uno):", "arduino:avr:uno");
+    const showInputDialog = await loadInputDialog();
+    if (!showInputDialog) {
+      alert("Unable to open the Arduino input dialog.");
+      return;
+    }
+
+    const fqbn = await showInputDialog({
+      title: "Arduino board",
+      description: "Enter the board FQBN (e.g., arduino:avr:uno)",
+      placeholder: "arduino:avr:uno",
+      defaultValue: "arduino:avr:uno",
+      confirmText: "Use board",
+      cancelText: "Cancel",
+      emptyMessage: "Board identifier is required.",
+      returnTrimmed: true,
+    });
     if (!fqbn) return;
 
-    const port = prompt("Enter Arduino serial port (e.g., /dev/ttyACM0):", "/dev/ttyACM0");
+    const port = await showInputDialog({
+      title: "Arduino port",
+      description: "Enter the serial port (e.g., /dev/ttyACM0)",
+      placeholder: "/dev/ttyACM0",
+      defaultValue: "/dev/ttyACM0",
+      confirmText: "Use port",
+      cancelText: "Cancel",
+      emptyMessage: "Port is required.",
+      returnTrimmed: true,
+    });
     if (!port) return;
 
     // Call backend upload endpoint
@@ -239,8 +293,22 @@ NewFile: async () => {
     // 1. Grab the current directory from window (set by fetchDirectoryContents)
     const parentPath = window.currentDirectoryPath || '';
 
-    // 2. Ask the user for the new folder’s name
-    const folderName = prompt("Enter the name of the new directory:");
+    const showInputDialog = await loadInputDialog();
+    if (!showInputDialog) {
+      alert("Unable to open the directory dialog.");
+      return;
+    }
+
+    const folderName = await showInputDialog({
+      title: 'Create new directory',
+      description: 'Enter the name of the new directory',
+      placeholder: 'MyFolder',
+      confirmText: 'Create folder',
+      cancelText: 'Cancel',
+      emptyMessage: 'Directory name is required.',
+      returnTrimmed: true,
+    });
+
     if (!folderName) {
       console.log("Directory creation cancelled.");
       return;

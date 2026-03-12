@@ -4,7 +4,7 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import favicon from 'serve-favicon';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
@@ -20,29 +20,7 @@ import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 import graphDataRoutes from "./routes/api/graphData.js";
 import listDirectoryRouter from "./routes/api/listDirectory.js";
 import uploadRoutes from './routes/api/fileUploadRoutes.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '..');
-const NOTEBOOK_DIR = path.join(ROOT_DIR, 'Notebook');
-const USER_SETTINGS_DIR = path.join(ROOT_DIR, 'UserSettings');
-const USER_DATA_DIR = path.join(ROOT_DIR, 'UserData');
-const SHARED_DATA_DIR = path.join(USER_DATA_DIR, 'data');
-
-const userSettingsDir = USER_SETTINGS_DIR;
-const gamepadSettingsFile = path.join(userSettingsDir, 'KeyboardAndControlSchemes/GameControllerSettings.json');
-
-// Ensure the UserSettings folder exists
-if (!fs.existsSync(userSettingsDir)) fs.mkdirSync(userSettingsDir, { recursive: true });
-// Ensure the UserData/data folder exists
-if (!fs.existsSync(USER_DATA_DIR)) fs.mkdirSync(USER_DATA_DIR, { recursive: true });
-if (!fs.existsSync(SHARED_DATA_DIR)) fs.mkdirSync(SHARED_DATA_DIR, { recursive: true });
-
-try {
-  await ensureDefaultAdminAccount();
-} catch (err) {
-  console.error('Failed to bootstrap authentication data:', err);
-}
+import { createServerContext, ensureServerDirectories } from './shared/serverContext.mjs';
 
 function requireAuthentication(req, res, next) {
   if (req.identity) {
@@ -81,20 +59,39 @@ const phpProxyOptions = {
 };
 
 // Dynamically load routes from JSON
-async function loadRoutes(app) {
+async function loadRoutes(app, ctx) {
   try {
-    const data = await fsPromises.readFile(path.join(__dirname, 'routes.json'), 'utf8');
+    const data = await fsPromises.readFile(ctx.routesJsonPath, 'utf8');
     const { routes } = JSON.parse(data);
 
     for (const { name, path: routePath } of routes) {
-      const absoluteRoutePath = path.resolve(__dirname, routePath);
+      const absoluteRoutePath = path.resolve(ctx.applicationSystemRoot, routePath);
       
       console.log(`Attempting to load route: ${name} from ${routePath}`);
     
       if (fs.existsSync(absoluteRoutePath)) {
         try {
           const mod = await import(pathToFileURL(absoluteRoutePath).href);
-          const route = mod.default ?? mod;
+          const factory = mod.default ?? mod;
+          let route;
+          if (typeof factory === 'function') {
+            try {
+              route = factory(ctx);
+            } catch (err) {
+              if (err instanceof TypeError && err.message.includes('argument callback is required')) {
+                route = factory;
+              } else {
+                throw err;
+              }
+            }
+          } else {
+            route = factory;
+          }
+
+          if (!route) {
+            throw new Error('Route factory returned nothing');
+          }
+
           app.use('/api', route);
           console.log(`✅ Loaded route: ${name} from ${absoluteRoutePath}`);
         } catch (err) {
@@ -111,7 +108,7 @@ async function loadRoutes(app) {
 }
 
 // Function to extract the first image URL from the file content
-async function getFirstImageUrl(filePath) {
+async function getFirstImageUrl(filePath, publicDir) {
   try {
     const fileContent = await fsPromises.readFile(filePath, 'utf8');
     const $ = cheerio.load(fileContent);
@@ -121,9 +118,10 @@ async function getFirstImageUrl(filePath) {
       if (firstImageSrc.startsWith('http') || firstImageSrc.startsWith('//')) {
         return firstImageSrc;
       } else {
-        const imagePath = path.join(path.dirname(filePath), firstImageSrc);
-        const resolvedImagePath = path.relative(path.join(__dirname, 'public'), imagePath);
-        return resolvedImagePath.split(path.sep).join('/');
+      const imagePath = path.join(path.dirname(filePath), firstImageSrc);
+      const basePublic = publicDir ?? path.join(process.cwd(), 'public');
+      const resolvedImagePath = path.relative(basePublic, imagePath);
+      return resolvedImagePath.split(path.sep).join('/');
       }
     } else {
       return null;
@@ -135,6 +133,23 @@ async function getFirstImageUrl(filePath) {
 }
 
 export default async function createApp(runtimeConfig = {}) {
+  const ctx = createServerContext(runtimeConfig);
+  ensureServerDirectories(ctx);
+
+  try {
+    await ensureDefaultAdminAccount();
+  } catch (err) {
+    console.error('Failed to bootstrap authentication data:', err);
+  }
+
+  const NOTEBOOK_DIR = ctx.notebookDir;
+  const USER_SETTINGS_DIR = ctx.userSettingsDir;
+  const USER_DATA_DIR = ctx.userDataDir;
+  const SHARED_DATA_DIR = ctx.sharedDataDir;
+  const PUBLIC_DIR = ctx.publicDir;
+  const NODE_MODULES_DIR = ctx.nodeModulesDir;
+  const gamepadSettingsFile = ctx.gamepadSettingsFile;
+
   const app = express();
 
   // Middleware setup (configure body size limits first)
@@ -167,8 +182,8 @@ export default async function createApp(runtimeConfig = {}) {
     res.redirect('/');
   });
 
-  app.use('/lib/monaco', express.static(path.join(__dirname, 'public/lib/monaco')));
-  app.use("/api", listDirectoryRouter);
+  app.use('/lib/monaco', express.static(path.join(PUBLIC_DIR, 'lib/monaco')));
+  app.use("/api", listDirectoryRouter(ctx));
   app.use('/api/file', uploadRoutes);
 
   app.post('/api/login', async (req, res) => {
@@ -220,7 +235,7 @@ export default async function createApp(runtimeConfig = {}) {
 
   app.use('/php', createProxyMiddleware(phpProxyOptions));
   app.use('/public/data', express.static(SHARED_DATA_DIR));
-  app.use(express.static(path.join(__dirname, 'public'), {
+  app.use(express.static(PUBLIC_DIR, {
     etag: false,
     maxAge: 0,
     setHeaders: (res, path) => {
@@ -232,25 +247,25 @@ export default async function createApp(runtimeConfig = {}) {
     }
   }));
 
-  app.use('/vendor/monaco-editor', express.static(path.join(__dirname, 'node_modules/monaco-editor')));
-  app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules/three')));
-  app.use('/vendor/cytoscape', express.static(path.join(__dirname, 'node_modules/cytoscape')));
-  app.use('/vendor/mathjax', express.static(path.join(__dirname, 'node_modules/mathjax')));
-  app.use('/vendor/vexflow', express.static(path.join(__dirname, 'node_modules/vexflow')));
-  app.use('/vendor/tesseract.js', express.static(path.join(__dirname, 'node_modules/tesseract.js')));
-  app.use('/vendor/layout-base', express.static(path.join(__dirname, 'node_modules/layout-base')));
-  app.use('/vendor/cytoscape-expand-collapse', express.static(path.join(__dirname, 'node_modules/cytoscape-expand-collapse')));
-  app.use('/vendor/cytoscape-fcose', express.static(path.join(__dirname, 'node_modules/cytoscape-fcose')));
-  app.use('/vendor/cose-base', express.static(path.join(__dirname, 'node_modules/cose-base')));
-  app.use('/vendor/requirejs', express.static(path.join(__dirname, 'node_modules/requirejs')));
-  app.use('/vendor/babel', express.static(path.join(__dirname, 'public/vendor/babel')));
-  app.use('/vendor/react', express.static(path.join(__dirname, 'public/vendor/react')));
+  app.use('/vendor/monaco-editor', express.static(path.join(NODE_MODULES_DIR, 'monaco-editor')));
+  app.use('/vendor/three', express.static(path.join(NODE_MODULES_DIR, 'three')));
+  app.use('/vendor/cytoscape', express.static(path.join(NODE_MODULES_DIR, 'cytoscape')));
+  app.use('/vendor/mathjax', express.static(path.join(NODE_MODULES_DIR, 'mathjax')));
+  app.use('/vendor/vexflow', express.static(path.join(NODE_MODULES_DIR, 'vexflow')));
+  app.use('/vendor/tesseract.js', express.static(path.join(NODE_MODULES_DIR, 'tesseract.js')));
+  app.use('/vendor/layout-base', express.static(path.join(NODE_MODULES_DIR, 'layout-base')));
+  app.use('/vendor/cytoscape-expand-collapse', express.static(path.join(NODE_MODULES_DIR, 'cytoscape-expand-collapse')));
+  app.use('/vendor/cytoscape-fcose', express.static(path.join(NODE_MODULES_DIR, 'cytoscape-fcose')));
+  app.use('/vendor/cose-base', express.static(path.join(NODE_MODULES_DIR, 'cose-base')));
+  app.use('/vendor/requirejs', express.static(path.join(NODE_MODULES_DIR, 'requirejs')));
+  app.use('/vendor/babel', express.static(path.join(PUBLIC_DIR, 'vendor/babel')));
+  app.use('/vendor/react', express.static(path.join(PUBLIC_DIR, 'vendor/react')));
 
-  app.use("/api/toolbar", toolbarRoutes);
+  app.use("/api/toolbar", toolbarRoutes(ctx));
   app.use("/api/graph", graphDataRoutes);
   app.use('/UserSettings', express.static(USER_SETTINGS_DIR));
   app.use('/Notebook', requireAuthentication, express.static(NOTEBOOK_DIR));
-  app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+  app.use(favicon(path.join(PUBLIC_DIR, 'favicon.ico')));
 
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -266,7 +281,7 @@ export default async function createApp(runtimeConfig = {}) {
     limits: { fileSize: 50 * 1024 * 1024 }
   });
 
-  await loadRoutes(app);
+  await loadRoutes(app, ctx);
 
   app.get('/api/topLevelNodes', async (req, res) => {
     const dir = NOTEBOOK_DIR;

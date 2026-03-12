@@ -1,7 +1,7 @@
 // Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs
 // This fallback graphical editor for unsupported file types displays a warning and allows opening the file in the code editor.
 
-export async function renderEditor(filePath, container) {
+export async function renderEditor(filePath, container, options = {}) {
   if (!filePath) {
     container.innerHTML = "<em>No file selected.</em>";
     return;
@@ -17,6 +17,37 @@ export async function renderEditor(filePath, container) {
   warning.style.color = "#b00";
   warning.style.fontWeight = "bold";
   warning.innerText = `⚠️ No graphical editor available for "${filePath}"`;
+
+  const errorDetail = options?.error || options?.details || null;
+  container.appendChild(warning);
+
+  if (errorDetail) {
+    const detail = document.createElement("pre");
+    detail.style.margin = "12px auto 0";
+    detail.style.maxWidth = "920px";
+    detail.style.textAlign = "left";
+    detail.style.whiteSpace = "pre-wrap";
+    detail.style.wordBreak = "break-word";
+    detail.style.padding = "12px";
+    detail.style.borderRadius = "6px";
+    detail.style.background = "rgba(0,0,0,0.05)";
+    detail.style.border = "1px solid rgba(0,0,0,0.15)";
+    detail.style.color = "#222";
+
+    const lines = [];
+    if (typeof errorDetail === "string") {
+      lines.push(errorDetail);
+    } else {
+      if (errorDetail.modulePath) lines.push(`Module: ${errorDetail.modulePath}`);
+      if (errorDetail.editorFile) lines.push(`Editor: ${errorDetail.editorFile}`);
+      if (errorDetail.extension) lines.push(`Extension: ${errorDetail.extension}`);
+      if (errorDetail.message) lines.push(`Error: ${errorDetail.message}`);
+      if (errorDetail.stack) lines.push(String(errorDetail.stack));
+    }
+
+    detail.textContent = lines.filter(Boolean).join("\n");
+    container.appendChild(detail);
+  }
 
   // Create button to open code editor
   const btn = document.createElement("button");
@@ -46,6 +77,5 @@ export async function renderEditor(filePath, container) {
   });
 
   // Append elements
-  container.appendChild(warning);
   container.appendChild(btn);
 }

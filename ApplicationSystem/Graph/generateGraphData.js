@@ -4,15 +4,14 @@
 // Nodevision/scripts/GenerateGraphFiles.js
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import { createServerContext } from '../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const ctx = createServerContext();
 
 // Paths
-const NOTEBOOK_DIR = path.resolve(__dirname, '../Notebook');
-const DATA_DIR = path.resolve(__dirname, '../../UserData/data');
+const NOTEBOOK_DIR = ctx.notebookDir;
+const DATA_DIR = ctx.sharedDataDir;
 const NODES_DIR = path.join(DATA_DIR, 'Nodes');
 const EDGES_DIR = path.join(DATA_DIR, 'Edges');
 

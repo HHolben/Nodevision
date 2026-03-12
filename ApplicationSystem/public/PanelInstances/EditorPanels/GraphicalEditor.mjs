@@ -5,56 +5,92 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 let lastEditedPath = null;
 let moduleMapCache = null;
+const FALLBACK_EDITOR_BY_EXT = {
+  png: "PNGeditor.mjs",
+};
 
 /* ---------------------------------------------------------
  * ModuleMap loader (mirrors FileView.mjs behavior)
  * --------------------------------------------------------- */
 async function loadModuleMap() {
-  if (moduleMapCache) return moduleMapCache;
+  // Only use cache if it has actual entries (avoid caching failed/empty loads).
+  if (moduleMapCache && Object.keys(moduleMapCache).length > 0) return moduleMapCache;
 
-  const res = await fetch("/PanelInstances/ModuleMap.csv");
-  if (!res.ok) {
-    console.error("❌ Failed to load ModuleMap.csv");
-    moduleMapCache = {};
-    return moduleMapCache;
-  }
+  try {
+    const csvUrl = "/PanelInstances/ModuleMap.csv";
+    const res = await fetch(csvUrl, { cache: "no-store" });
+    if (!res.ok) {
+      console.error("❌ Failed to load ModuleMap.csv, status:", res.status);
+      return {};
+    }
 
-  const text = await res.text();
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-
-  const header = lines.shift().split(",").map(h => h.trim());
-  const idx = {
-    ext: header.indexOf("Extension"),
-    editor: header.indexOf("GraphicalEditorModule"),
-  };
-
-  const map = {};
-
-  for (const line of lines) {
-    const cols = line.split(",").map(c => c.trim());
-    const ext = (cols[idx.ext] || "").toLowerCase();
-
-    map[ext] = {
-      editor: cols[idx.editor] || null,
+    const text = await res.text();
+    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const header = lines.shift()?.split(",").map((h) => h.trim()) || [];
+    const idx = {
+      ext: header.indexOf("Extension"),
+      editor: header.indexOf("GraphicalEditorModule"),
     };
-  }
 
-  moduleMapCache = map;
-  console.log("📦 ModuleMap loaded for editors:", map);
-  return map;
+    if (idx.ext < 0 || idx.editor < 0) {
+      console.error("❌ ModuleMap.csv header missing required columns:", header);
+      return {};
+    }
+
+    const map = {};
+    for (const line of lines) {
+      const cols = line.split(",").map((c) => c.trim());
+      const ext = (cols[idx.ext] || "").toLowerCase();
+      map[ext] = { editor: cols[idx.editor] || null };
+    }
+
+    moduleMapCache = map;
+    return map;
+  } catch (err) {
+    console.error("❌ Error loading ModuleMap.csv:", err);
+    return {};
+  }
 }
 
 /* ---------------------------------------------------------
  * Editor resolution
  * --------------------------------------------------------- */
+function resolveExtension(filePath) {
+  const raw = String(filePath || "").trim();
+  if (!raw) return "";
+
+  const withoutHashQuery = raw.replace(/[?#].*$/, "");
+  const pathname = withoutHashQuery.startsWith("http://") ||
+      withoutHashQuery.startsWith("https://")
+    ? (() => {
+      try {
+        return new URL(withoutHashQuery).pathname || "";
+      } catch {
+        return withoutHashQuery;
+      }
+    })()
+    : withoutHashQuery;
+
+  const lower = pathname.toLowerCase();
+  if (lower.endsWith(".alto.xml")) return "alto";
+  if (lower.endsWith(".musicxml.xml")) return "musicxml";
+  if (lower.endsWith(".tar.gz")) return "tar.gz";
+
+  const lastSegment = lower.split("/").pop() || lower;
+  if (!lastSegment.includes(".")) return "";
+  return lastSegment.split(".").pop();
+}
+
 async function resolveEditorModule(filePath) {
   const basePath = "/PanelInstances/EditorPanels/GraphicalEditors";
-  const ext = filePath.split(".").pop().toLowerCase();
+  const ext = resolveExtension(filePath);
   const moduleMap = await loadModuleMap();
 
+  const moduleMapEmpty = !moduleMap || Object.keys(moduleMap).length === 0;
   const editorFile =
     moduleMap[ext]?.editor ||
     moduleMap[""]?.editor ||
+    (moduleMapEmpty ? FALLBACK_EDITOR_BY_EXT[ext] : null) ||
     "EditorFallback.mjs";
 
   // Safety check
@@ -158,8 +194,17 @@ export async function updateGraphicalEditor(
   console.log("🧭 Loading graphical editor for:", filePath);
 
   try {
+    const ext = resolveExtension(filePath);
     const modulePath = await resolveEditorModule(filePath);
-    console.log("🔍 Editor module:", modulePath);
+    const editorFile = modulePath.split("/").pop();
+    window.__nodevisionGraphicalEditorLastError = null;
+    window.__nodevisionGraphicalEditorLastAttempt = {
+      filePath,
+      extension: ext,
+      editorFile,
+      modulePath,
+      timestamp: Date.now(),
+    };
 
     const editor = await import(modulePath);
 
@@ -171,11 +216,18 @@ export async function updateGraphicalEditor(
     }
   } catch (err) {
     console.error("❌ Failed to load editor:", err);
+    const attempt = window.__nodevisionGraphicalEditorLastAttempt || {};
+    window.__nodevisionGraphicalEditorLastError = {
+      ...attempt,
+      message: err?.message || String(err),
+      stack: err?.stack || null,
+      timestamp: Date.now(),
+    };
 
     const { renderEditor } = await import(
       "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs"
     );
-    renderEditor(filePath, editorDiv);
+    renderEditor(filePath, editorDiv, { error: window.__nodevisionGraphicalEditorLastError });
   }
 }
 

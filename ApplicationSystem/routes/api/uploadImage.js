@@ -4,32 +4,31 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createServerContext } from '../../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '../../..');
-const NOTEBOOK_DIR = path.join(ROOT_DIR, 'Notebook');
+const BASE_CONTEXT = createServerContext();
 
-const router = express.Router();
+export default function createUploadImageRouter(ctx = BASE_CONTEXT) {
+  const NOTEBOOK_DIR = ctx.notebookDir;
+  const router = express.Router();
 
-// Storage settings for image upload
-const storage = multer.diskStorage({
+  const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, NOTEBOOK_DIR);  // Save to 'Notebook' directory
+      cb(null, NOTEBOOK_DIR);
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));  // Use unique filename
+      cb(null, Date.now() + path.extname(file.originalname));
     }
-});
-const upload = multer({ storage: storage });
+  });
+  const upload = multer({ storage });
 
-router.post('/upload-image', upload.single('image'), (req, res) => {
+  router.post('/upload-image', upload.single('image'), (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    const filePath = `/Notebook/${req.file.filename}`;  // Return path for serving
+    const filePath = `/Notebook/${path.basename(req.file.filename)}`;
     res.json({ success: true, message: 'Image uploaded successfully', filePath });
-});
+  });
 
-export default router;
+  return router;
+}

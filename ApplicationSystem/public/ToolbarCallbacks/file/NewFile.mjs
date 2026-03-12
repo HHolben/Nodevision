@@ -1,3 +1,5 @@
+import { showInputDialog } from '/ui/modals/InputDialog.mjs';
+
 export default async function NewFile() {
   let currentPath = window.currentDirectoryPath;
 
@@ -5,8 +7,15 @@ export default async function NewFile() {
   if (!currentPath || currentPath.trim() === "") {
     currentPath = "";
   }
+  const fileName = await showInputDialog({
+    title: "Create new file",
+    description: "Enter the file name (include extension).",
+    placeholder: "example.txt",
+    confirmText: "Create file",
+    cancelText: "Cancel",
+    emptyMessage: "A file name is required.",
+  });
 
-  const fileName = prompt("Enter the name of the new file (include extension):");
   if (!fileName) {
     console.log("File creation cancelled.");
     return;

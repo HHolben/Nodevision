@@ -22,7 +22,7 @@ async function startServers() {
     
     // Node server process
     const nodeProcess = Deno.run({
-    cmd: ["node", "ApplicationSystem/server.js"],
+    cmd: ["node", "ApplicationSystem/server.mjs"],
     stdout: "piped",
     stderr: "piped",
     env: {

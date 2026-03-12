@@ -8,6 +8,15 @@
     "modes": ["PNGediting", "GraphicalEditing"]
   },
   {
+    "heading": "Layout",
+    "parentHeading": "Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "PngLayout",
+    "preventAutoSubToolbar": true,
+    "icon": "icons/CanvasIcon.png",
+    "modes": ["PNGediting"]
+  },
+  {
     "heading": "SVG Draw",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",

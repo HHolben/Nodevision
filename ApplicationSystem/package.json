@@ -2,12 +2,12 @@
   "name": "nodevision",
   "version": "1.0.0",
   "type": "module",
-  "main": "server.js",
+  "main": "server.mjs",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "dev": "concurrently -k -n NODE,PHP \"nodemon server.js\" \"php -S 0.0.0.0:8080 -t ../Notebook\"",
+    "dev": "concurrently -k -n NODE,PHP \"nodemon server.mjs\" \"php -S 0.0.0.0:8080 -t ../Notebook\"",
     "start": "node start-servers.js",
     "start-servers": "node start-servers.js",
     "build": "echo 'No build process needed'",

@@ -3,33 +3,20 @@
 
 import express from 'express';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '../../..');
-const NOTEBOOK_DIR = path.join(ROOT_DIR, 'Notebook');
-
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
+import { createServerContext } from '../../shared/serverContext.mjs';
 
-const router = express.Router();
-
-// Configuration
-const SERIAL_PORT_PATH = "/dev/ttyUSB1"; // update to your device's path
+const BASE_CONTEXT = createServerContext();
+const SERIAL_PORT_PATH = "/dev/ttyUSB1";
 const BAUD_RATE = 115200;
-const CSV_FILE_PATH = path.join(NOTEBOOK_DIR, 'data.csv');
 
 let serialConnection = null;
-let parser = null; // Reference to the parser
+let parser = null;
 
-/**
- * Initializes the serial connection if not already open.
- * Sets up a parser that writes data to CSV and emits serial data over Socket.IO.
- */
-function initializeSerialConnection(io) {
+function initializeSerialConnection(io, csvFilePath) {
   if (serialConnection) {
     return serialConnection;
   }
@@ -43,17 +30,15 @@ function initializeSerialConnection(io) {
     serialConnection = new SerialPort({ path: SERIAL_PORT_PATH, baudRate: BAUD_RATE });
     parser = serialConnection.pipe(new ReadlineParser({ delimiter: '\n' }));
 
-    // When data arrives, write to CSV and broadcast via Socket.IO.
     parser.on('data', async (line) => {
       console.log('Received from serial:', line);
       try {
-        await fsPromises.appendFile(CSV_FILE_PATH, line.trim() + "\n", 'utf8');
+        await fsPromises.appendFile(csvFilePath, line.trim() + "\n", 'utf8');
         console.log('Data appended to CSV.');
       } catch (error) {
         console.error('Error appending to CSV:', error);
       }
-      // Emit the data to all clients connected to the "/serial-monitor" namespace.
-      io.of('/serial-monitor').emit('serial-data', line.trim());
+      io?.of('/serial-monitor')?.emit('serial-data', line.trim());
     });
 
     serialConnection.on('error', (err) => {
@@ -70,39 +55,35 @@ function initializeSerialConnection(io) {
   }
 }
 
-// Endpoint to send a command to the serial device.
-router.post('/send-serial-command', express.json(), (req, res) => {
-  const { command } = req.body;
-  if (!command) {
-    return res.status(400).json({ error: "Missing 'command' in request body." });
-  }
+export default function createSerialRouter(ctx = BASE_CONTEXT) {
+  const NOTEBOOK_DIR = ctx.notebookDir;
+  const CSV_FILE_PATH = path.join(NOTEBOOK_DIR, 'data.csv');
+  const router = express.Router();
 
-  // 'io' should have been attached to req.app.locals by the main server.
-  const io = req.app.locals.io;
-  const portInstance = initializeSerialConnection(io);
-  if (!portInstance) {
-    return res.status(500).json({ error: "No serial device connected." });
-  }
-
-  portInstance.write(command + "\n", (err) => {
-    if (err) {
-      console.error('Error writing to serial:', err);
-      return res.status(500).json({ error: "Error writing to serial." });
+  router.post('/send-serial-command', express.json(), (req, res) => {
+    const { command } = req.body;
+    if (!command) {
+      return res.status(400).json({ error: "Missing 'command' in request body." });
     }
-    res.json({ message: "Command sent successfully!", command });
+
+    const portInstance = initializeSerialConnection(io, CSV_FILE_PATH);
+    if (!portInstance) {
+      return res.status(500).json({ error: "No serial device connected." });
+    }
+
+    portInstance.write(command + "\n", (err) => {
+      if (err) {
+        console.error('Error writing to serial:', err);
+        return res.status(500).json({ error: "Error writing to serial." });
+      }
+      res.json({ message: "Command sent successfully!", command });
+    });
   });
-});
 
-// Endpoint to check serial connection status.
-router.get('/serial-status', (req, res) => {
-  const isConnected = serialConnection !== null;
-  res.json({ connected: isConnected });
-});
+  router.get('/serial-status', (req, res) => {
+    const isConnected = serialConnection !== null;
+    res.json({ connected: isConnected });
+  });
 
-export default (io) => {
-  // Initialize serial connection with the passed Socket.IO instance.
-  initializeSerialConnection(io);
-
-  // Return the configured router.
   return router;
-};
+}

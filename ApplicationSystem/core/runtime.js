@@ -1,27 +1,9 @@
 import http from 'node:http';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
-import createApp from '../server.js';
-
-const HOME_DIR = os.homedir();
-const NODEVISION_ROOT = path.join(HOME_DIR, 'Nodevision');
-const REQUIRED_DIRS = [
-  NODEVISION_ROOT,
-  path.join(NODEVISION_ROOT, 'Notebook'),
-  path.join(NODEVISION_ROOT, 'Config'),
-  path.join(NODEVISION_ROOT, 'Cache'),
-  path.join(NODEVISION_ROOT, 'Logs'),
-];
-
-function ensureDirectories() {
-  for (const dir of REQUIRED_DIRS) {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  }
-}
+import createApp from '../server.mjs';
+import {
+  createServerContext,
+  ensureServerDirectories,
+} from '../shared/serverContext.mjs';
 
 function detectRuntimeType(config) {
   if (config.runtimeType) return config.runtimeType;
@@ -53,7 +35,7 @@ export function createRuntime(options = {}) {
   const config = { ...normalizedConfig, runtimeType };
   const baseUrl = `http://${config.host}:${config.port}`;
 
-  ensureDirectories();
+  ensureServerDirectories(createServerContext());
 
   let server = null;
   let runtimeInstance = null;

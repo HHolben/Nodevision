@@ -1,14 +1,27 @@
 {
   "type": "module",
   "main": "electron-main.cjs",
+  "bin": {
+    "nodevision": "nodevision-cli.js"
+  },
   "scripts": {
     "start": "node start-servers.js",
-    "desktop": "electron ."
+    "desktop": "electron .",
+    "portable": "node scripts/build-portable-entry.mjs && pkg --no-bytecode --public --public-packages \"*\" build/nodevision-cli.cjs --output nodevision",
+    "build-portable": "node scripts/build-portable-entry.mjs && pkg --no-bytecode --public --public-packages \"*\" build/nodevision-cli.cjs --targets node18-linux-x64,node18-win-x64,node18-macos-x64 --output nodevision && node scripts/copy-xdg-open.js"
   },
   "dependencies": {
-    "dependencies": "^0.0.1"
+    "open": "^8.4.0"
   },
   "devDependencies": {
-    "electron": "^26.6.10"
+    "electron": "^26.6.10",
+    "esbuild": "^0.19.2"
+  },
+  "pkg": {
+    "assets": [
+      "ApplicationSystem/public/**/*",
+      "ApplicationSystem/routes/**/*",
+      "ApplicationSystem/Auth/**/*"
+    ]
   }
 }

@@ -18,7 +18,7 @@ async function startServers() {
     
     // Node server command
     const nodeCommand = new Deno.Command("node", {
-      args: ["ApplicationSystem/server.js"],
+      args: ["ApplicationSystem/server.mjs"],
       stdout: "piped",
       stderr: "piped",
       env: {

@@ -1,11 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createServerContext } from '../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '..', '..');
-const LOGS_DIR = path.join(ROOT_DIR, 'Accounts', 'logs');
+const ctx = createServerContext();
+const LOGS_DIR = ctx.accountsLogsDir;
 const LOG_FILE = path.join(LOGS_DIR, 'auth.log');
 
 async function ensureLogDir() {

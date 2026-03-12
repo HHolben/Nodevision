@@ -34,10 +34,6 @@ export async function renderEditor(filePath, container) {
     displayWidth: 32,
     displayHeight: 32,
   };
-  let cropButton;
-  let widthInput;
-  let heightInput;
-  let canvasSizeLabel;
   const RULER_THICKNESS = 26;
   const RULER_LEFT_WIDTH = 32;
 
@@ -93,51 +89,6 @@ export async function renderEditor(filePath, container) {
     "image-rendering:pixelated; image-rendering:crisp-edges; cursor:crosshair; background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50% / 20px 20px; display:block;";
   const ctx = canvas.getContext("2d", { alpha: true });
   const history = new History(ctx);
-
-  const controlBar = document.createElement("div");
-  controlBar.style.cssText =
-    "display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%; margin-bottom:8px; font-size:12px;";
-  const legend = document.createElement("span");
-  legend.textContent = "Canvas size:";
-  legend.style.cssText = "color:#222; white-space:nowrap;";
-  widthInput = document.createElement("input");
-  widthInput.type = "number";
-  widthInput.min = "1";
-  widthInput.style.cssText =
-    "width:70px; padding:3px 6px; border-radius:4px; border:1px solid #888; font-size:12px; background:#fff;";
-  heightInput = document.createElement("input");
-  heightInput.type = "number";
-  heightInput.min = "1";
-  heightInput.style.cssText =
-    "width:70px; padding:3px 6px; border-radius:4px; border:1px solid #888; font-size:12px; background:#fff;";
-  const sizeSeparator = document.createElement("span");
-  sizeSeparator.textContent = "×";
-  sizeSeparator.style.cssText = "font-weight:bold;";
-  const resizeButton = document.createElement("button");
-  resizeButton.type = "button";
-  resizeButton.textContent = "Resize canvas";
-  resizeButton.style.cssText =
-    "padding:4px 10px; border-radius:4px; border:1px solid #666; background:#fff; cursor:pointer; font-size:12px;";
-  cropButton = document.createElement("button");
-  cropButton.type = "button";
-  cropButton.textContent = "Crop to selection";
-  cropButton.style.cssText =
-    "padding:4px 10px; border-radius:4px; border:1px solid #666; background:#fff; cursor:pointer; font-size:12px;";
-  canvasSizeLabel = document.createElement("span");
-  canvasSizeLabel.style.cssText = "color:#555; white-space:nowrap;";
-  controlBar.append(
-    legend,
-    widthInput,
-    sizeSeparator,
-    heightInput,
-    resizeButton,
-    cropButton,
-    canvasSizeLabel,
-  );
-  resizeButton.addEventListener("click", resizeCanvasToInputs);
-  cropButton.addEventListener("click", cropToSelectionRect);
-  updateCanvasSizeInputs();
-  updateCropButtonState();
   const canvasArea = document.createElement("div");
   canvasArea.style.cssText = `
     display:grid;
@@ -293,7 +244,7 @@ export async function renderEditor(filePath, container) {
   const selectionPreviewCtx = selectionPreview.getContext("2d");
 
   canvasArea.append(rulerCorner, topRulerSlot, leftRulerSlot, canvasContainer);
-  wrapper.append(controlBar, canvasArea);
+  wrapper.append(canvasArea);
   container.appendChild(wrapper);
 
   if (state.initialImage) {
@@ -319,10 +270,29 @@ export async function renderEditor(filePath, container) {
     refreshSelectionOverlay();
     updateRulers();
   };
+
+  let lastLayoutEvent = null;
+  const canCropSelection = () =>
+    state.selectionPhase === "committed" &&
+    !!state.selectionRect &&
+    state.selectionRect.width > 0 &&
+    state.selectionRect.height > 0;
+
+  const notifyLayoutChanged = () => {
+    const payload = {
+      width: state.logicalWidth,
+      height: state.logicalHeight,
+      canCrop: canCropSelection(),
+    };
+    const key = `${payload.width}x${payload.height}:${payload.canCrop ? 1 : 0}`;
+    if (lastLayoutEvent === key) return;
+    lastLayoutEvent = key;
+    window.dispatchEvent(new CustomEvent("nv-png-editor-layout-changed", { detail: payload }));
+  };
+
   updateDisplayScale();
   const resizeObserver = new ResizeObserver(updateDisplayScale);
   resizeObserver.observe(wrapper);
-
 
   function createSelectionBounds(a, b) {
     if (!a || !b) return null;
@@ -412,7 +382,7 @@ export async function renderEditor(filePath, container) {
     updateSelectionHandles(null);
     updateSelectionToolbar(null);
     clearSelectionAssets();
-    updateCropButtonState();
+    notifyLayoutChanged();
   }
 
   function updateSelectionPreview(cssRect) {
@@ -576,7 +546,7 @@ export async function renderEditor(filePath, container) {
   function refreshSelectionOverlay() {
     const tool = window.NodevisionState?.drawTool;
     const rect = state.selectionRect;
-    updateCropButtonState();
+    notifyLayoutChanged();
     if (!rect || tool !== "rectselect") {
       selectionOverlay.style.display = "none";
       selectionOverlay.style.pointerEvents = "none";
@@ -866,30 +836,15 @@ export async function renderEditor(filePath, container) {
     }, 1800);
   }
 
-  function updateCropButtonState() {
-    if (!cropButton) return;
-    const enabled = state.selectionPhase === "committed" && !!state.selectionRect;
-    cropButton.disabled = !enabled;
-  }
-
-  function updateCanvasSizeInputs() {
-    if (widthInput) widthInput.value = String(state.logicalWidth);
-    if (heightInput) heightInput.value = String(state.logicalHeight);
-    if (canvasSizeLabel) {
-      canvasSizeLabel.textContent = `${state.logicalWidth}×${state.logicalHeight}`;
-    }
-  }
-
-  function resizeCanvasToInputs() {
-    if (!widthInput || !heightInput) return;
-    const requestedWidth = Math.max(1, Math.floor(Number(widthInput.value) || 1));
-    const requestedHeight = Math.max(1, Math.floor(Number(heightInput.value) || 1));
+  function resizeCanvas(requestedWidth, requestedHeight) {
+    const nextWidth = Math.max(1, Math.floor(Number(requestedWidth) || 1));
+    const nextHeight = Math.max(1, Math.floor(Number(requestedHeight) || 1));
     if (
-      requestedWidth === canvas.width &&
-      requestedHeight === canvas.height
+      nextWidth === canvas.width &&
+      nextHeight === canvas.height
     ) {
-      updateRasterStatus(`Canvas already ${requestedWidth}×${requestedHeight}`);
-      updateCanvasSizeInputs();
+      updateRasterStatus(`Canvas already ${nextWidth}×${nextHeight}`);
+      notifyLayoutChanged();
       return;
     }
     history.push(canvas);
@@ -900,10 +855,10 @@ export async function renderEditor(filePath, container) {
     if (!snapshotCtx) return;
     snapshotCtx.imageSmoothingEnabled = false;
     snapshotCtx.drawImage(canvas, 0, 0);
-    canvas.width = requestedWidth;
-    canvas.height = requestedHeight;
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
     ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, requestedWidth, requestedHeight);
+    ctx.clearRect(0, 0, nextWidth, nextHeight);
     ctx.drawImage(
       snapshot,
       0,
@@ -912,17 +867,17 @@ export async function renderEditor(filePath, container) {
       snapshot.height,
       0,
       0,
-      requestedWidth,
-      requestedHeight,
+      nextWidth,
+      nextHeight,
     );
-    state.logicalWidth = requestedWidth;
-    state.logicalHeight = requestedHeight;
+    state.logicalWidth = nextWidth;
+    state.logicalHeight = nextHeight;
     refreshPreviewCanvasDimensions();
     clearShapePreview();
     resetSelectionState();
     updateDisplayScale();
-    updateCanvasSizeInputs();
-    updateRasterStatus(`Canvas resized to ${requestedWidth}×${requestedHeight}`);
+    notifyLayoutChanged();
+    updateRasterStatus(`Canvas resized to ${nextWidth}×${nextHeight}`);
   }
 
   function cropToSelectionRect() {
@@ -965,7 +920,7 @@ export async function renderEditor(filePath, container) {
     clearShapePreview();
     resetSelectionState();
     updateDisplayScale();
-    updateCanvasSizeInputs();
+    notifyLayoutChanged();
     updateRasterStatus(`Cropped to ${width}×${height}`);
   }
 
@@ -1280,6 +1235,13 @@ export async function renderEditor(filePath, container) {
 
   // Global Integration
   window.rasterCanvas = canvas;
+  window.__nvPngEditorApi = {
+    getCanvasSize: () => ({ width: state.logicalWidth, height: state.logicalHeight }),
+    resizeCanvas,
+    cropToSelection: cropToSelectionRect,
+    canCrop: canCropSelection,
+  };
+  notifyLayoutChanged();
 
   return {
     destroy: () => {
@@ -1303,6 +1265,10 @@ export async function renderEditor(filePath, container) {
         selectionToolbar.parentNode.removeChild(selectionToolbar);
       }
       window.rasterCanvas = null;
+      if (window.__nvPngEditorApi && window.__nvPngEditorApi.cropToSelection === cropToSelectionRect) {
+        window.__nvPngEditorApi = null;
+      }
+      window.dispatchEvent(new CustomEvent("nv-png-editor-layout-changed", { detail: { destroyed: true } }));
     },
   };
 }

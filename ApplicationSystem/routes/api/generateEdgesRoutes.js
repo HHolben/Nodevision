@@ -1,21 +1,14 @@
 // routes/api/generateEdgesRoutes.js
-// Purpose: TODO: Add description of module purpose
+// Edge generation helpers
+
 import express from 'express';
-const router = express.Router();
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '../../..');
-const NOTEBOOK_DIR = path.join(ROOT_DIR, 'Notebook');
-
 import * as cheerio from 'cheerio';
+import { createServerContext } from '../../shared/serverContext.mjs';
 
-const notebookDir = NOTEBOOK_DIR;
+const BASE_CONTEXT = createServerContext();
 
-// Recursively get all allowed files in the Notebook directory.
 async function getAllFiles(dir) {
   let files = [];
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -25,20 +18,17 @@ async function getAllFiles(dir) {
       const subFiles = await getAllFiles(fullPath);
       files = files.concat(subFiles);
     } else {
-        files.push(fullPath);
-      
+      files.push(fullPath);
     }
   }
   return files;
 }
 
-// Extract hyperlinks from file content using Cheerio.
 function extractHyperlinksFromContent(content) {
   const $ = cheerio.load(content);
   const links = [];
   $('a').each((i, el) => {
     const href = $(el).attr('href');
-    // Only consider relative links.
     if (href && !href.startsWith('http') && !href.startsWith('//')) {
       links.push(href);
     }
@@ -46,59 +36,58 @@ function extractHyperlinksFromContent(content) {
   return links;
 }
 
-// Generate edges by scanning all files and extracting links.
-async function generateEdges() {
-  console.log("Generating edges...");
-  const allFiles = await getAllFiles(notebookDir);
-  console.log("Found files:", allFiles);
-  let edges = [];
+export default function createGenerateEdgesRouter(ctx = BASE_CONTEXT) {
+  const router = express.Router();
+  const notebookDir = ctx.notebookDir;
 
-  for (const filePath of allFiles) {
-    try {
-      const content = await fs.readFile(filePath, 'utf8');
-      const links = extractHyperlinksFromContent(content);
-      console.log(`File: ${filePath}`);
-      console.log("Extracted links:", links);
-      
-      // Get the file's path relative to Notebook
-      const relativeSource = path.relative(notebookDir, filePath).split(path.sep).join('/');
-      
-      for (const link of links) {
-        // Resolve the target path relative to the current file's directory.
-        const targetPath = path.resolve(path.dirname(filePath), link);
-        // Ensure the target is within the Notebook directory.
-        if (targetPath.startsWith(notebookDir)) {
-          try {
-            await fs.access(targetPath);
-            const relativeTarget = path.relative(notebookDir, targetPath).split(path.sep).join('/');
-            // Only add an edge if the source and target are different.
-            if (relativeSource !== relativeTarget) {
-              console.log(`Edge found: ${relativeSource} -> ${relativeTarget}`);
-              edges.push({ source: relativeSource, target: relativeTarget });
+  async function generateEdges() {
+    console.log("Generating edges...");
+    const allFiles = await getAllFiles(notebookDir);
+    console.log("Found files:", allFiles);
+    const edges = [];
+
+    for (const filePath of allFiles) {
+      try {
+        const content = await fs.readFile(filePath, 'utf8');
+        const links = extractHyperlinksFromContent(content);
+        console.log(`File: ${filePath}`);
+        console.log("Extracted links:", links);
+
+        const relativeSource = path.relative(notebookDir, filePath).split(path.sep).join('/');
+
+        for (const link of links) {
+          const targetPath = path.resolve(path.dirname(filePath), link);
+          if (targetPath.startsWith(notebookDir)) {
+            try {
+              await fs.access(targetPath);
+              const relativeTarget = path.relative(notebookDir, targetPath).split(path.sep).join('/');
+              if (relativeSource !== relativeTarget) {
+                console.log(`Edge found: ${relativeSource} -> ${relativeTarget}`);
+                edges.push({ source: relativeSource, target: relativeTarget });
+              }
+            } catch {
+              console.warn(`Target file ${targetPath} does not exist.`);
             }
-          } catch (err) {
-            console.warn(`Target file ${targetPath} does not exist.`);
           }
         }
+      } catch (err) {
+        console.error(`Error processing file ${filePath}:`, err);
       }
-    } catch (err) {
-      console.error(`Error processing file ${filePath}:`, err);
     }
+
+    console.log("Generated edges:", edges);
+    return edges;
   }
 
-  console.log("Generated edges:", edges);
-  return edges;
+  router.post('/generateEdges', async (req, res) => {
+    try {
+      const edges = await generateEdges();
+      res.status(200).json({ message: 'Edges generated successfully', edges });
+    } catch (error) {
+      console.error('Error generating edges:', error);
+      res.status(500).send('Failed to generate edges');
+    }
+  });
+
+  return router;
 }
-
-// Endpoint to generate edges.
-router.post('/generateEdges', async (req, res) => {
-  try {
-    const edges = await generateEdges();
-    res.status(200).json({ message: 'Edges generated successfully', edges });
-  } catch (error) {
-    console.error('Error generating edges:', error);
-    res.status(500).send('Failed to generate edges');
-  }
-});
-
-export default router;

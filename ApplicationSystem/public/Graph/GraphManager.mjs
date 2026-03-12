@@ -4,17 +4,14 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { extractLinksFromFile } from './LinkExtractor.mjs';
+import { createServerContext } from '../../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '../../..');
-
-// Paths
-const NOTEBOOK_DIR = path.join(ROOT_DIR, 'Notebook');
-const NODES_DIR = path.join(__dirname, 'nodes');
-const EDGES_DEST_DIR = path.join(__dirname, 'edges/by-destination');
+const ctx = createServerContext();
+const NOTEBOOK_DIR = ctx.notebookDir;
+const GRAPH_DIR = path.join(ctx.publicDir, 'Graph');
+const NODES_DIR = path.join(GRAPH_DIR, 'nodes');
+const EDGES_DEST_DIR = path.join(GRAPH_DIR, 'edges/by-destination');
 
 // Helper: Get first character bucket (case-sensitive)
 function getCharBucket(name) {
@@ -180,7 +177,7 @@ export async function getNode(nodeId) {
 }
 
 // For CLI execution
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (path.basename(process.argv[1] || '').toLowerCase() === 'graphmanager.mjs') {
   generateGraph().catch(err => {
     console.error('Fatal error:', err);
     process.exit(1);

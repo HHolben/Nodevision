@@ -4,17 +4,11 @@
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { createServerContext } from '../../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '../../..');
-const NOTEBOOK_DIR = path.join(ROOT_DIR, 'Notebook');
-const router = express.Router();
+const BASE_CONTEXT = createServerContext();
+const MAX_ITEMS = 50;
 
-const MAX_ITEMS = 50; // max files/directories returned per request
-
-// Helper: extract [[wiki-links]] from file content
 function extractLinks(content) {
   const links = [];
   const regex = /\[\[([^\]]+)\]\]/g;
@@ -27,7 +21,6 @@ function pathToId(filePath) {
   return filePath.replace(/\.md$/, '');
 }
 
-// Recursive scan with optional maxDepth
 async function scanDirectory(dirPath, relativePath = '', depth = 0, maxDepth = 1) {
   let allFiles = [];
   let allDirs = [];
@@ -68,11 +61,9 @@ async function scanDirectory(dirPath, relativePath = '', depth = 0, maxDepth = 1
   return { allFiles, allDirs };
 }
 
-// Build a top-level graph (only top-level nodes)
 function buildTopLevelGraph(allFiles, allDirs) {
   const nodes = [];
   const edges = [];
-
   const fileMap = new Map();
   for (const file of allFiles) fileMap.set(file.id, file);
 
@@ -96,13 +87,12 @@ function buildTopLevelGraph(allFiles, allDirs) {
   return { nodes, edges };
 }
 
-// Return contents of a specific directory
 function getDirectoryContents(dirPath, allFiles, allDirs) {
   const nodes = [];
   const edges = [];
 
   const fileMap = new Map();
-  for (const file of allFiles) fileMap.set(file.id, fileMap);
+  for (const file of allFiles) fileMap.set(file.id, file);
 
   const childFiles = allFiles.filter(f => f.parent === dirPath).slice(0, MAX_ITEMS);
   const childDirs = allDirs.filter(d => d.parent === dirPath).slice(0, MAX_ITEMS);
@@ -122,27 +112,32 @@ function getDirectoryContents(dirPath, allFiles, allDirs) {
   return { nodes, edges, hasMore: childFiles.length + childDirs.length > MAX_ITEMS };
 }
 
-router.get('/scanNotebook', async (req, res) => {
-  console.log('[scanNotebook] Request received');
-  try {
-    const { directory } = req.query;
-    console.log('[scanNotebook] Directory param:', directory);
+export default function createScanNotebookRouter(ctx = BASE_CONTEXT) {
+  const NOTEBOOK_DIR = ctx.notebookDir;
+  const router = express.Router();
 
-    let maxDepth = directory ? Infinity : 1;
-    const { allFiles, allDirs } = await scanDirectory(NOTEBOOK_DIR, '', 0, maxDepth);
-    console.log('[scanNotebook] Scan complete. Files:', allFiles.length, 'Dirs:', allDirs.length);
+  router.get('/scanNotebook', async (req, res) => {
+    console.log('[scanNotebook] Request received');
+    try {
+      const { directory } = req.query;
+      console.log('[scanNotebook] Directory param:', directory);
 
-    if (directory) {
-      const data = getDirectoryContents(directory, allFiles, allDirs);
-      res.json(data);
-    } else {
-      const graph = buildTopLevelGraph(allFiles, allDirs);
-      res.json(graph);
+      const maxDepth = directory ? Infinity : 1;
+      const { allFiles, allDirs } = await scanDirectory(NOTEBOOK_DIR, '', 0, maxDepth);
+      console.log('[scanNotebook] Scan complete. Files:', allFiles.length, 'Dirs:', allDirs.length);
+
+      if (directory) {
+        const data = getDirectoryContents(directory, allFiles, allDirs);
+        res.json(data);
+      } else {
+        const graph = buildTopLevelGraph(allFiles, allDirs);
+        res.json(graph);
+      }
+    } catch (err) {
+      console.error('[scanNotebook] Error:', err);
+      res.status(500).json({ error: err.message });
     }
-  } catch (err) {
-    console.error('[scanNotebook] Error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
+  });
 
-export default router;
+  return router;
+}

@@ -1,36 +1,36 @@
 // routes/api/initializeRoutes.js
-// Purpose: TODO: Add description of module purpose
+// Application initialization helper
+
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createServerContext } from '../../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '../../..');
-const NOTEBOOK_DIR = path.join(ROOT_DIR, 'Notebook');
+const BASE_CONTEXT = createServerContext();
 
-const router = express.Router();
+export default function createInitializeRoutesRouter(ctx = BASE_CONTEXT) {
+  const router = express.Router();
+  const NOTEBOOK_DIR = ctx.notebookDir;
 
-// Endpoint to initialize HTML file and regenerate graph
-router.post('/initialize', async (req, res) => {
+  router.post('/initialize', async (req, res) => {
     const { htmlContent, fileName } = req.body;
 
     if (!htmlContent || !fileName) {
-        return res.status(400).send('HTML content and file name are required.');
+      return res.status(400).send('HTML content and file name are required.');
     }
 
     const filePath = path.join(NOTEBOOK_DIR, fileName);
 
     try {
-        await fs.mkdir(path.dirname(filePath), { recursive: true });
-        await fs.writeFile(filePath, htmlContent);
-        console.log(`HTML file "${filePath}" created successfully!`);
-        res.status(200).send('HTML file created successfully.');
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.writeFile(filePath, htmlContent);
+      console.log(`HTML file "${filePath}" created successfully!`);
+      res.status(200).send('HTML file created successfully.');
     } catch (error) {
-        console.error('Error creating HTML file:', error);
-        res.status(500).send('Error creating HTML file.');
+      console.error('Error creating HTML file:', error);
+      res.status(500).send('Error creating HTML file.');
     }
-});
+  });
 
-export default router;
+  return router;
+}

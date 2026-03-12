@@ -1,13 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { hashPassword } from './password.mjs';
+import { createServerContext } from '../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '..', '..');
-const ACCOUNTS_DIR = path.join(ROOT_DIR, 'Accounts');
-const DATA_DIR = path.join(ACCOUNTS_DIR, 'data');
+const ctx = createServerContext();
+const DATA_DIR = ctx.accountsDataDir;
 const USERS_FILE = path.join(DATA_DIR, 'users.csv');
 const HEADER = 'id,username,password_hash,role,created';
 

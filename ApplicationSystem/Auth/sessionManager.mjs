@@ -1,14 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 import { logEvent } from './authLogger.mjs';
+import { createServerContext } from '../shared/serverContext.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '..', '..');
-const ACCOUNTS_DIR = path.join(ROOT_DIR, 'Accounts');
-const DATA_DIR = path.join(ACCOUNTS_DIR, 'data');
+const ctx = createServerContext();
+const DATA_DIR = ctx.accountsDataDir;
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
 const SESSION_TTL_SECONDS = Number(process.env.NODEVISION_SESSION_TTL_SECONDS) || 60 * 60;
 

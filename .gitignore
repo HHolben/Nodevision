@@ -7,6 +7,9 @@ node_modules/
 # Ignore environment variables file
 .env
 
+# Ignore build output
+build/
+
 #Ignore rsync stuff
 .sync
 
