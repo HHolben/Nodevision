@@ -11,21 +11,19 @@ export default function PngLayout() {
   const subToolbar = document.getElementById("sub-toolbar");
   if (!subToolbar) return;
 
-  const api = window.__nvPngEditorApi;
-
   subToolbar.innerHTML = `
     <div
       data-png-layout-widget="true"
-      style="display:flex;align-items:center;gap:10px;padding:4px 6px;background:#f5f5f5;border:1px solid #333;border-radius:4px;flex-wrap:wrap;"
+      class="nv-subtoolbar-widget"
     >
-      <strong style="font-size:12px;">Layout</strong>
-      <span style="font-size:12px;color:#222;">Canvas</span>
-      <input id="png-layout-width" type="number" min="1" style="width:70px;padding:3px 6px;border-radius:4px;border:1px solid #888;font-size:12px;background:#fff;" />
+      <strong>Layout</strong>
+      <span style="color:#222;">Canvas</span>
+      <input id="png-layout-width" type="number" min="1" />
       <span style="font-weight:bold;">×</span>
-      <input id="png-layout-height" type="number" min="1" style="width:70px;padding:3px 6px;border-radius:4px;border:1px solid #888;font-size:12px;background:#fff;" />
-      <button id="png-layout-resize" type="button" style="padding:4px 10px;border-radius:4px;border:1px solid #666;background:#fff;cursor:pointer;font-size:12px;">Resize Canvas</button>
-      <button id="png-layout-crop" type="button" style="padding:4px 10px;border-radius:4px;border:1px solid #666;background:#fff;cursor:pointer;font-size:12px;">Crop to Selection</button>
-      <span id="png-layout-current" style="color:#555;white-space:nowrap;font-family:monospace;font-size:12px;"></span>
+      <input id="png-layout-height" type="number" min="1" />
+      <button id="png-layout-resize" type="button">Resize Canvas</button>
+      <button id="png-layout-crop" type="button">Crop to Selection</button>
+      <span id="png-layout-current" class="nv-mono" style="color:#555;white-space:nowrap;"></span>
     </div>
   `;
 
@@ -100,4 +98,3 @@ export default function PngLayout() {
 
   refresh();
 }
-

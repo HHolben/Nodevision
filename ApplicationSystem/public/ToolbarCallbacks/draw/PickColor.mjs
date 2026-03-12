@@ -18,28 +18,28 @@ export function PickColor() {
   subToolbar.innerHTML = `
     <div
       data-draw-color-widget="true"
-      style="display:flex;align-items:center;gap:10px;padding:4px 6px;background:#f5f5f5;border:1px solid #333;border-radius:4px;flex-wrap:wrap;"
+      class="nv-subtoolbar-widget"
     >
-      <strong style="font-size:12px;">Draw Color</strong>
-      <div style="display:flex;align-items:center;gap:4px;">
-        <button id="draw-tool-brush" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "brush" ? "#cfead2" : "#fff"};cursor:pointer;">Brush</button>
-        <button id="draw-tool-eraser" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "eraser" ? "#cfead2" : "#fff"};cursor:pointer;">Eraser</button>
-        <button id="draw-tool-fill" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "fill" ? "#cfead2" : "#fff"};cursor:pointer;">Fill Bucket</button>
-        <button id="draw-tool-eyedropper" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "eyedropper" ? "#cfead2" : "#fff"};cursor:pointer;">Eyedropper</button>
-        <button id="draw-tool-line" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "line" ? "#cfead2" : "#fff"};cursor:pointer;">Line</button>
-        <button id="draw-tool-rectangle" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "rectangle" ? "#cfead2" : "#fff"};cursor:pointer;">Rectangle</button>
-        <button id="draw-tool-circle" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "circle" ? "#cfead2" : "#fff"};cursor:pointer;">Circle</button>
-        <button id="draw-tool-rectselect" type="button" style="padding:2px 8px;border:1px solid #333;background:${currentTool === "rectselect" ? "#cfead2" : "#fff"};cursor:pointer;">Rect Select</button>
+      <strong>Draw Color</strong>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+        <button id="draw-tool-brush" type="button" class="nv-compact ${currentTool === "brush" ? "nv-active" : ""}">Brush</button>
+        <button id="draw-tool-eraser" type="button" class="nv-compact ${currentTool === "eraser" ? "nv-active" : ""}">Eraser</button>
+        <button id="draw-tool-fill" type="button" class="nv-compact ${currentTool === "fill" ? "nv-active" : ""}">Fill Bucket</button>
+        <button id="draw-tool-eyedropper" type="button" class="nv-compact ${currentTool === "eyedropper" ? "nv-active" : ""}">Eyedropper</button>
+        <button id="draw-tool-line" type="button" class="nv-compact ${currentTool === "line" ? "nv-active" : ""}">Line</button>
+        <button id="draw-tool-rectangle" type="button" class="nv-compact ${currentTool === "rectangle" ? "nv-active" : ""}">Rectangle</button>
+        <button id="draw-tool-circle" type="button" class="nv-compact ${currentTool === "circle" ? "nv-active" : ""}">Circle</button>
+        <button id="draw-tool-rectselect" type="button" class="nv-compact ${currentTool === "rectselect" ? "nv-active" : ""}">Rect Select</button>
       </div>
-      <input id="draw-color-input" type="color" value="${currentColor}" style="cursor:pointer;" />
-      <span id="draw-color-hex" style="font-family:monospace;font-size:12px;min-width:70px;">${currentColor}</span>
+      <input id="draw-color-input" type="color" value="${currentColor}" />
+      <span id="draw-color-hex" class="nv-mono" style="min-width:70px;">${currentColor}</span>
       <span id="draw-color-preview" style="width:18px;height:18px;border:1px solid #333;border-radius:2px;background:${currentColor};"></span>
-      <label for="draw-alpha-input" style="font-size:12px;">Transparency</label>
-      <input id="draw-alpha-input" type="range" min="0" max="100" step="1" value="${currentAlpha}" style="cursor:pointer;" />
-      <span id="draw-alpha-value" style="font-family:monospace;font-size:12px;min-width:42px;">${currentAlpha}%</span>
-      <label for="draw-brush-size-input" style="font-size:12px;">Brush Width</label>
-      <input id="draw-brush-size-input" type="range" min="1" max="64" step="1" value="${currentBrushSize}" style="cursor:pointer;" />
-      <span id="draw-brush-size-value" style="font-family:monospace;font-size:12px;min-width:42px;">${currentBrushSize}px</span>
+      <label for="draw-alpha-input">Transparency</label>
+      <input id="draw-alpha-input" type="range" min="0" max="100" step="1" value="${currentAlpha}" />
+      <span id="draw-alpha-value" class="nv-mono" style="min-width:42px;">${currentAlpha}%</span>
+      <label for="draw-brush-size-input">Brush Width</label>
+      <input id="draw-brush-size-input" type="range" min="1" max="64" step="1" value="${currentBrushSize}" />
+      <span id="draw-brush-size-value" class="nv-mono" style="min-width:42px;">${currentBrushSize}px</span>
     </div>
   `;
 
@@ -82,15 +82,15 @@ export function PickColor() {
     ];
     const normalizedTool = allowedTools.includes(tool) ? tool : "brush";
     window.NodevisionState.drawTool = normalizedTool;
-    brushBtn.style.background = normalizedTool === "brush" ? "#cfead2" : "#fff";
-    eraserBtn.style.background = normalizedTool === "eraser" ? "#cfead2" : "#fff";
-    fillBtn.style.background = normalizedTool === "fill" ? "#cfead2" : "#fff";
-    eyedropperBtn.style.background = normalizedTool === "eyedropper" ? "#cfead2" : "#fff";
-    lineBtn.style.background = normalizedTool === "line" ? "#cfead2" : "#fff";
-    rectangleBtn.style.background = normalizedTool === "rectangle" ? "#cfead2" : "#fff";
-    circleBtn.style.background = normalizedTool === "circle" ? "#cfead2" : "#fff";
+    brushBtn.classList.toggle("nv-active", normalizedTool === "brush");
+    eraserBtn.classList.toggle("nv-active", normalizedTool === "eraser");
+    fillBtn.classList.toggle("nv-active", normalizedTool === "fill");
+    eyedropperBtn.classList.toggle("nv-active", normalizedTool === "eyedropper");
+    lineBtn.classList.toggle("nv-active", normalizedTool === "line");
+    rectangleBtn.classList.toggle("nv-active", normalizedTool === "rectangle");
+    circleBtn.classList.toggle("nv-active", normalizedTool === "circle");
     if (rectSelectBtn) {
-      rectSelectBtn.style.background = normalizedTool === "rectselect" ? "#cfead2" : "#fff";
+      rectSelectBtn.classList.toggle("nv-active", normalizedTool === "rectselect");
     }
     if (window.rasterCanvas) {
       window.rasterCanvas.style.cursor =

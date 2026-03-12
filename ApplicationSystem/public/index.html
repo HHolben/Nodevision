@@ -32,15 +32,17 @@
 
   <style>
     /* Toolbar pinned to top */
-    #global-toolbar, 
-    #sub-toolbar {
+    #global-toolbar {
       position: sticky;
       top: 0;
       z-index: 2000;
     }
 
+    /* Keep the sub-toolbar under the main toolbar (and below dropdowns). */
     #sub-toolbar {
-      top: 0px; /* directly below the main toolbar */
+      position: sticky;
+      top: var(--nv-global-toolbar-height, 40px);
+      z-index: 1990;
     }
 
     /* Ensure workspace consumes remaining height */

@@ -270,6 +270,39 @@ function rebuildPrebuiltDropdowns() {
   }
 }
 
+let globalToolbarResizeObserver = null;
+let globalToolbarResizeListenerInstalled = false;
+
+function updateGlobalToolbarHeightVar() {
+  const toolbar = document.querySelector("#global-toolbar");
+  if (!toolbar) return;
+  const height = Math.ceil(toolbar.getBoundingClientRect().height || toolbar.offsetHeight || 0);
+  if (height > 0) {
+    document.documentElement.style.setProperty("--nv-global-toolbar-height", `${height}px`);
+  }
+}
+
+function ensureGlobalToolbarHeightObserver() {
+  const toolbar = document.querySelector("#global-toolbar");
+  if (!toolbar || typeof ResizeObserver === "undefined") {
+    updateGlobalToolbarHeightVar();
+    return;
+  }
+
+  if (globalToolbarResizeObserver) {
+    globalToolbarResizeObserver.disconnect();
+  }
+
+  globalToolbarResizeObserver = new ResizeObserver(() => updateGlobalToolbarHeightVar());
+  globalToolbarResizeObserver.observe(toolbar);
+  updateGlobalToolbarHeightVar();
+
+  if (!globalToolbarResizeListenerInstalled) {
+    globalToolbarResizeListenerInstalled = true;
+    window.addEventListener("resize", updateGlobalToolbarHeightVar, { passive: true });
+  }
+}
+
 /**
  * Creates the global toolbar, loading toolbars from JSON files.
  * Each toolbar item may have a "mode" property specifying when it appears.
@@ -331,8 +364,9 @@ return true;
 
   // Build main toolbar from filtered items
   buildToolbar(toolbar, filteredToolbar);
+  ensureGlobalToolbarHeightObserver();
 
-setStatus("Toolbar ready", `Mode: ${effectiveMode}`);
+  setStatus("Toolbar ready", `Mode: ${effectiveMode}`);
 
   console.log(`🧭 Toolbar built for mode: ${effectiveMode}`);
 }
@@ -572,9 +606,6 @@ function buildSubToolbar(items, container = subToolbarContainer) {
   container.innerHTML = "";
   Object.assign(container.style, {
     display: "flex",
-    position: "relative", // creates stacking context
-    zIndex: "10",         // lower than dropdowns (which should be 1000+)
-    backgroundColor: "#f5f5f5",
   });
 
   items.forEach(item => {
@@ -711,6 +742,7 @@ return true;
 
   // Rebuild toolbar using filtered items
   buildToolbar(toolbar, filteredToolbar);
+  ensureGlobalToolbarHeightObserver();
 
   console.log(`🔁 Toolbar updated for mode: ${currentMode}`);
 }
