@@ -601,6 +601,7 @@ export async function renderEditor(filePath, container) {
       svgRoot.setAttribute("width", String(w));
       svgRoot.setAttribute("height", String(h));
       setStatus(`Cropped to selection (${Math.round(w)}x${Math.round(h)})`);
+      window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
       return true;
     } catch (err) {
       console.warn("Crop to selection failed:", err);
@@ -967,6 +968,7 @@ export async function renderEditor(filePath, container) {
     svgRoot.setAttribute("height", String(h));
     svgRoot.setAttribute("viewBox", `0 0 ${w} ${h}`);
     setStatus(`Canvas resized to ${w}x${h}`);
+    window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
     return { width: w, height: h };
   }
 
@@ -975,6 +977,88 @@ export async function renderEditor(filePath, container) {
     const width = Number.isFinite(vb[2]) ? vb[2] : Number.parseFloat(svgRoot.getAttribute("width")) || 800;
     const height = Number.isFinite(vb[3]) ? vb[3] : Number.parseFloat(svgRoot.getAttribute("height")) || 600;
     return { width, height };
+  }
+
+  function getViewBox() {
+    const vb = (svgRoot.getAttribute("viewBox") || "").trim().split(/\s+/).map((n) => Number.parseFloat(n));
+    const fallbackW = Number.parseFloat(svgRoot.getAttribute("width")) || 800;
+    const fallbackH = Number.parseFloat(svgRoot.getAttribute("height")) || 600;
+    const x = Number.isFinite(vb[0]) ? vb[0] : 0;
+    const y = Number.isFinite(vb[1]) ? vb[1] : 0;
+    const w = Number.isFinite(vb[2]) ? vb[2] : fallbackW;
+    const h = Number.isFinite(vb[3]) ? vb[3] : fallbackH;
+    return { x, y, width: Math.max(1, w || 1), height: Math.max(1, h || 1) };
+  }
+
+  function setViewBox({ x = 0, y = 0, width = 1, height = 1 } = {}) {
+    const w = Math.max(1, Number.parseFloat(width) || 1);
+    const h = Math.max(1, Number.parseFloat(height) || 1);
+    svgRoot.setAttribute("viewBox", `${Number(x) || 0} ${Number(y) || 0} ${w} ${h}`);
+    svgRoot.setAttribute("width", String(w));
+    svgRoot.setAttribute("height", String(h));
+    window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
+  }
+
+  function applyTransformToLayers(transformFragment = "") {
+    const fragment = String(transformFragment || "").trim();
+    if (!fragment) return;
+    const layers = layersMgr.getLayers?.() || [];
+    layers.forEach((layer) => {
+      const existing = String(layer.getAttribute("transform") || "").trim();
+      layer.setAttribute("transform", existing ? `${fragment} ${existing}` : fragment);
+    });
+  }
+
+  function cropEdges({ left = 0, top = 0, right = 0, bottom = 0 } = {}) {
+    const { x, y, width, height } = getViewBox();
+    const cropLeft = Math.max(0, Number.parseFloat(left) || 0);
+    const cropTop = Math.max(0, Number.parseFloat(top) || 0);
+    const cropRight = Math.max(0, Number.parseFloat(right) || 0);
+    const cropBottom = Math.max(0, Number.parseFloat(bottom) || 0);
+    if (cropLeft + cropRight >= width || cropTop + cropBottom >= height) {
+      setStatus("Crop exceeds canvas bounds");
+      return false;
+    }
+    const next = {
+      x: x + cropLeft,
+      y: y + cropTop,
+      width: width - cropLeft - cropRight,
+      height: height - cropTop - cropBottom,
+    };
+    setViewBox(next);
+    setStatus(`Cropped edges to ${Math.round(next.width)}x${Math.round(next.height)}`);
+    refreshSelectionVisuals?.();
+    return true;
+  }
+
+  function rotateCanvas90(direction = "cw") {
+    const { x, y, width, height } = getViewBox();
+    const dir = direction === "ccw" ? "ccw" : "cw";
+    const next = { x, y, width: height, height: width };
+    if (dir === "ccw") {
+      applyTransformToLayers(`translate(${x} ${y + width}) rotate(-90) translate(${-x} ${-y})`);
+    } else {
+      applyTransformToLayers(`translate(${x + height} ${y}) rotate(90) translate(${-x} ${-y})`);
+    }
+    setViewBox(next);
+    setStatus(`Rotated ${dir === "ccw" ? "90° CCW" : "90° CW"}`);
+    refreshSelectionVisuals?.();
+    return true;
+  }
+
+  function flipCanvas(axis = "h") {
+    const { x, y, width, height } = getViewBox();
+    const ax = axis === "v" ? "v" : "h";
+    if (ax === "v") {
+      applyTransformToLayers(`translate(0 ${y + height}) scale(1 -1) translate(0 ${-y})`);
+      setStatus("Flipped vertically");
+    } else {
+      applyTransformToLayers(`translate(${x + width} 0) scale(-1 1) translate(${-x} 0)`);
+      setStatus("Flipped horizontally");
+    }
+    window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width, height } }));
+    refreshSelectionVisuals?.();
+    return true;
   }
 
   function getLayers() {
@@ -1566,6 +1650,22 @@ export async function renderEditor(filePath, container) {
     },
     getCanvasSize,
     resizeCanvas,
+    canCrop() {
+      return Boolean(selectedElement && selectedElement !== svgRoot);
+    },
+    cropEdges,
+    rotate90CW() {
+      return rotateCanvas90("cw");
+    },
+    rotate90CCW() {
+      return rotateCanvas90("ccw");
+    },
+    flipHorizontal() {
+      return flipCanvas("h");
+    },
+    flipVertical() {
+      return flipCanvas("v");
+    },
     applyCurrentStyleToSelection,
     setFillColor(value) {
       styleState.fill = String(value || styleState.fill || "#80c0ff");

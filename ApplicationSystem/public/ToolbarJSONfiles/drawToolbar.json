@@ -11,10 +11,10 @@
     "heading": "Layout",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
-    "callbackKey": "PngLayout",
+    "callbackKey": "ImageLayout",
     "preventAutoSubToolbar": true,
     "icon": "icons/CanvasIcon.png",
-    "modes": ["PNGediting"]
+    "modes": ["PNGediting", "SVG Editing"]
   },
   {
     "heading": "SVG Draw",

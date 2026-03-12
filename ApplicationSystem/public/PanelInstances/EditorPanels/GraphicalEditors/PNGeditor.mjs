@@ -924,6 +924,135 @@ export async function renderEditor(filePath, container) {
     updateRasterStatus(`Cropped to ${width}×${height}`);
   }
 
+  function cropEdges({ left = 0, top = 0, right = 0, bottom = 0 } = {}) {
+    const cropLeft = Math.max(0, Math.floor(Number(left) || 0));
+    const cropTop = Math.max(0, Math.floor(Number(top) || 0));
+    const cropRight = Math.max(0, Math.floor(Number(right) || 0));
+    const cropBottom = Math.max(0, Math.floor(Number(bottom) || 0));
+
+    const currentW = canvas.width;
+    const currentH = canvas.height;
+    const nextW = Math.max(1, currentW - cropLeft - cropRight);
+    const nextH = Math.max(1, currentH - cropTop - cropBottom);
+    if (nextW === currentW && nextH === currentH && cropLeft === 0 && cropTop === 0 && cropRight === 0 && cropBottom === 0) {
+      updateRasterStatus("No edge crop applied");
+      return;
+    }
+    if (cropLeft + cropRight >= currentW || cropTop + cropBottom >= currentH) {
+      updateRasterStatus("Crop exceeds canvas bounds");
+      return;
+    }
+
+    history.push(canvas);
+    const snapshot = document.createElement("canvas");
+    snapshot.width = nextW;
+    snapshot.height = nextH;
+    const snapshotCtx = snapshot.getContext("2d");
+    if (!snapshotCtx) return;
+    snapshotCtx.imageSmoothingEnabled = false;
+    snapshotCtx.drawImage(
+      canvas,
+      cropLeft,
+      cropTop,
+      nextW,
+      nextH,
+      0,
+      0,
+      nextW,
+      nextH,
+    );
+
+    canvas.width = nextW;
+    canvas.height = nextH;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, nextW, nextH);
+    ctx.drawImage(snapshot, 0, 0);
+
+    state.logicalWidth = nextW;
+    state.logicalHeight = nextH;
+    refreshPreviewCanvasDimensions();
+    clearShapePreview();
+    resetSelectionState();
+    updateDisplayScale();
+    notifyLayoutChanged();
+    updateRasterStatus(`Cropped edges to ${nextW}×${nextH}`);
+  }
+
+  function rotateCanvas90(direction = "cw") {
+    const currentW = canvas.width;
+    const currentH = canvas.height;
+    if (!currentW || !currentH) return;
+
+    history.push(canvas);
+    const snapshot = document.createElement("canvas");
+    snapshot.width = currentW;
+    snapshot.height = currentH;
+    const snapshotCtx = snapshot.getContext("2d");
+    if (!snapshotCtx) return;
+    snapshotCtx.imageSmoothingEnabled = false;
+    snapshotCtx.drawImage(canvas, 0, 0);
+
+    const nextW = currentH;
+    const nextH = currentW;
+    canvas.width = nextW;
+    canvas.height = nextH;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, nextW, nextH);
+
+    ctx.save();
+    if (direction === "ccw") {
+      ctx.translate(0, nextH);
+      ctx.rotate(-Math.PI / 2);
+    } else {
+      ctx.translate(nextW, 0);
+      ctx.rotate(Math.PI / 2);
+    }
+    ctx.drawImage(snapshot, 0, 0);
+    ctx.restore();
+
+    state.logicalWidth = nextW;
+    state.logicalHeight = nextH;
+    refreshPreviewCanvasDimensions();
+    clearShapePreview();
+    resetSelectionState();
+    updateDisplayScale();
+    notifyLayoutChanged();
+    updateRasterStatus(`Rotated ${direction === "ccw" ? "90° CCW" : "90° CW"}`);
+  }
+
+  function flipCanvas(axis = "h") {
+    const currentW = canvas.width;
+    const currentH = canvas.height;
+    if (!currentW || !currentH) return;
+
+    history.push(canvas);
+    const snapshot = document.createElement("canvas");
+    snapshot.width = currentW;
+    snapshot.height = currentH;
+    const snapshotCtx = snapshot.getContext("2d");
+    if (!snapshotCtx) return;
+    snapshotCtx.imageSmoothingEnabled = false;
+    snapshotCtx.drawImage(canvas, 0, 0);
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, currentW, currentH);
+    ctx.save();
+    if (axis === "v") {
+      ctx.translate(0, currentH);
+      ctx.scale(1, -1);
+    } else {
+      ctx.translate(currentW, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(snapshot, 0, 0);
+    ctx.restore();
+
+    clearShapePreview();
+    resetSelectionState();
+    notifyLayoutChanged();
+    updateRasterStatus(axis === "v" ? "Flipped vertically" : "Flipped horizontally");
+  }
+
   function copySelection() {
     if (
       state.selectionPhase === "committed" &&
@@ -1240,6 +1369,11 @@ export async function renderEditor(filePath, container) {
     resizeCanvas,
     cropToSelection: cropToSelectionRect,
     canCrop: canCropSelection,
+    cropEdges,
+    rotate90CW: () => rotateCanvas90("cw"),
+    rotate90CCW: () => rotateCanvas90("ccw"),
+    flipHorizontal: () => flipCanvas("h"),
+    flipVertical: () => flipCanvas("v"),
   };
   notifyLayoutChanged();
 
