@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/scad/editorUI.mjs
+// This file defines browser-side editor UI logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Nodevision SCAD Editor - editorUI.mjs
 // Purpose: DOM-based editor UI (parameters, geometry tree, code panel) + minimal interactions.
 

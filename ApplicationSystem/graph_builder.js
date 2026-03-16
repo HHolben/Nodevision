@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/graph_builder.js
+// This file defines the graph builder module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // graph_builder.js
 // Purpose: Core graph construction logic and data structure management
 

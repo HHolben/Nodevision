@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/getRoutes.js
+// This file defines the get Routes API route handler for the Nodevision server. It validates requests and sends responses for get Routes operations.
 // routes/api/getRoutes.js
 // Route discovery endpoint
 

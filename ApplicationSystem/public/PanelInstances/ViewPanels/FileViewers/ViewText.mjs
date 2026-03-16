@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewText.mjs
-// Purpose: Handles viewing of text-based files (HTML, CSS, TXT, JS, etc.) in the View Panel
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewText.mjs
+// This file defines browser-side View Text logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 /**
  * Renders an HTML file inside an iframe with a scaling transform.

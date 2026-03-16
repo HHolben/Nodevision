@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/initWYSIWYG.mjs
-// Purpose: Initialize a simple WYSIWYG editor and load HTML content safely (without running scripts)
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/initWYSIWYG.mjs
+// This file defines browser-side init WYSIWYG logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function initWYSIWYG(container, filePath) {
   container.innerHTML = `

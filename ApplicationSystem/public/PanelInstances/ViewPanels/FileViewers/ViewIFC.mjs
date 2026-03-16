@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewIFC.mjs
-// This file delegates IFC model previews to the generic text viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewIFC.mjs
+// This file defines browser-side View IFC logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderDelegate } from "./ViewText.mjs";
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/initMarkdownEditor.js
+// This file defines browser-side init Markdown Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/initMarkdownEditor.js
 // Purpose: TODO: Add description of module purpose
 

@@ -1,5 +1,5 @@
-// Nodevision/public/SwitchToSVGediting/saveSVG.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/SwitchToSVGediting/saveSVG.js
+// This file defines browser-side save SVG logic for the Nodevision UI. It renders interface components and handles user interactions.
 console.log("saveSVG.js loaded");
 
 function saveSVG(filePath) {

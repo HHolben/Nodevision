@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/insert/insertItalics.mjs
-// This toolbar callback inserts an <i> element into HTML editors with contentEditable areas.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertItalics.mjs
+// This file defines browser-side insert Italics logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default function insertItalics() {
   // Find the active HTML WYSIWYG editor

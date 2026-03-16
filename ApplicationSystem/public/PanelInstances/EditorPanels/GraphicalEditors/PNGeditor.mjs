@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs
-//This file is used to create an editor panel for PNG files.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs
+// This file defines browser-side PNGeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { History } from "./PNGeditorComponents/history.mjs";
 import {
   bresenhamLine,

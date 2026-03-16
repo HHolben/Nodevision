@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/file/viewNodevisionDeployment.mjs
-// This toolbar callback opens the currently selected Notebook file in a new browser tab for viewing or deployment testing.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/viewNodevisionDeployment.mjs
+// This file defines browser-side view Nodevision Deployment logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default function viewNodevisionDeployment() {
   const activeNode = window.selectedFilePath;

@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/editCallbacks.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/editCallbacks.js
+// This file defines browser-side edit Callbacks logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 window.editCallbacks = {
     editRASTER: () => {

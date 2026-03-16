@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/MDeditor.mjs
-// This file populates the panel with the Markdown editor.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/MDeditor.mjs
+// This file defines browser-side MDeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 

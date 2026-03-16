@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewHTML.mjs
-// Purpose: Display HTML files directly inside the viewPanel with scaling support.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewHTML.mjs
+// This file defines browser-side View HTML logic for the Nodevision UI. It renders interface components and handles user interactions.
 export const wantsIframe = true;
 
 export async function renderFile(path, viewPanel, iframe, serverBase) {

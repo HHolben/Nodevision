@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewJSON.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewJSON.mjs
 // This file fetches JSON resources and renders them as formatted, readable text.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {

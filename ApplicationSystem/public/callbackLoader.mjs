@@ -1,5 +1,5 @@
-// Nodevision/public/callbackLoader.mjs
-// Dynamically imports toolbar callbacks from ToolbarCallbacks/ subfolders
+// Nodevision/ApplicationSystem/public/callbackLoader.mjs
+// This file defines browser-side callback Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function loadCallback(category, key) {
   try {

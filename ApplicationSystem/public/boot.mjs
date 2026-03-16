@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/boot.mjs
+// This file defines browser-side boot logic for the Nodevision UI. It renders interface components and handles user interactions.
 const loginScreen = document.getElementById('login-screen');
 const appShell = document.getElementById('app-shell');
 const loginForm = document.getElementById('login-form');

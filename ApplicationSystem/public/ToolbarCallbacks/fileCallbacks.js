@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/fileCallbacks.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/fileCallbacks.js
+// This file defines browser-side file Callbacks logic for the Nodevision UI. It renders interface components and handles user interactions.
 const loadInputDialog = (() => {
   let cachedPromise = null;
   return async () => {

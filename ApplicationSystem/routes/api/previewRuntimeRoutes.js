@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/previewRuntimeRoutes.js
+// This file defines the preview Runtime Routes API route handler for the Nodevision server. It validates requests and sends responses for preview Runtime Routes operations.
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';

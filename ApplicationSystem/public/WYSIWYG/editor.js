@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/WYSIWYG/editor.js
+// This file defines browser-side editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/WYSIWYG/editor.js
 // Purpose: TODO: Add description of module purpose
 
@@ -825,6 +827,5 @@ document.addEventListener('cut', (event) => {
         event.preventDefault();  // Prevent default cut behavior
     }
 });
-
 
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/PreviewRuntime/previewRuntimeSupervisor.mjs
+// This file defines the preview Runtime Supervisor module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';

@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewXML.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewXML.mjs
 // This file fetches XML-like text and renders it in a formatted preformatted block.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {

@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarJSONfiles/searchWidget.mjs
-// Inline toolbar search widget for files, directories, and file contents.
+// Nodevision/ApplicationSystem/public/ToolbarJSONfiles/searchWidget.mjs
+// This file defines browser-side search Widget logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 let isGlobalCloseHandlerBound = false;
 

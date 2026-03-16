@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/saveRasterImage.js
+// This file defines browser-side save Raster Image logic for the Nodevision UI. It renders interface components and handles user interactions.
 async function saveRasterImage(canvas, targetPath) {
   console.log("==== PNG SAVE DIAGNOSTICS ====");
 

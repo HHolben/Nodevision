@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/start_server.cpp
+// This file defines the start server module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 #include <cstdlib>
 #include <iostream>
 

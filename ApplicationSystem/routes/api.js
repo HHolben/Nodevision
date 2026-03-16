@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api.js
+// This file defines api routes for the Nodevision server. It registers endpoints and coordinates request handling.
 // routes/api.js
 // Purpose: TODO: Add description of module purpose
 

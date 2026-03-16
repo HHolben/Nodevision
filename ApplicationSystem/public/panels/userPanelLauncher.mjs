@@ -1,5 +1,5 @@
-// Nodevision/public/panels/userPanelLauncher.mjs
-// Helper to open floating InfoPanels for user management actions.
+// Nodevision/ApplicationSystem/public/panels/userPanelLauncher.mjs
+// This file defines browser-side user Panel Launcher logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createPanelDOM } from "./panelFactory.mjs";
 

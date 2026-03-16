@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/settingsCallbacks.js
+// This file defines browser-side settings Callbacks logic for the Nodevision UI. It renders interface components and handles user interactions.
 // settingsCallbacks.js
 // Purpose: TODO: Add description of module purpose
 window.settingsCallbacks = {

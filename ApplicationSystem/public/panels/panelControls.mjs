@@ -1,5 +1,5 @@
-// Nodevision/public/panels/panelControls.mjs
-// This module declares logic needed for docking, undocking, maximizing, and closing.
+// Nodevision/ApplicationSystem/public/panels/panelControls.mjs
+// This file defines browser-side panel Controls logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { bringToFront, createOverlayLayer } from "./utils.mjs";
 import { ensureWorkspace, insertRowWithDivider } from "./rowManager.mjs";
 import { createCell } from "./workspace.mjs";

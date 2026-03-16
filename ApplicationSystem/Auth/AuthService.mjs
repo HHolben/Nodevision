@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/Auth/AuthService.mjs
+// This file defines Auth Service authentication logic for the Nodevision server. It manages user identity and secures session operations.
 import {
   createSession,
   deleteSession,

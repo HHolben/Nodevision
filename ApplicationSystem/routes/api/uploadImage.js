@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/uploadImage.js
+// This file defines the upload Image API route handler for the Nodevision server. It validates requests and sends responses for upload Image operations.
 // routes/api/uploadImage.js
 // Purpose: Image upload and file handling operations
 

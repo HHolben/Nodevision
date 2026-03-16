@@ -1,5 +1,5 @@
-// Nodevision/public/Graph.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/Graph.js
+// This file defines browser-side Graph logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Dependencies available via window from loaded vendor scripts
 // Plugins auto-register themselves when loaded after cytoscape
 

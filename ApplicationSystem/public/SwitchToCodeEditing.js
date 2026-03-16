@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/public/SwitchToCodeEditing.js// Nodevision/public/SwitchToCodeEditing.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/SwitchToCodeEditing.js
+// This file defines browser-side Switch To Code Editing logic for the Nodevision UI. It renders interface components and handles user interactions.
 (function () {
     // Determine active node and filePath
     let activeNode = window.ActiveNode;

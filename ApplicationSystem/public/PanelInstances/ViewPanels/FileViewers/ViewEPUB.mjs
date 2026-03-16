@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewEPUB.mjs
-// This file delegates EPUB previews to the archive fallback viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewEPUB.mjs
+// This file defines browser-side View EPUB logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderDelegate } from "./ViewArchive.mjs";
 

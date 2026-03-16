@@ -1,4 +1,4 @@
-// Nodevision/public/ToolbarCallbacks/edit/fontSelection.mjs
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/fontSelection.mjs
 // Renders a font selection widget in the sub-toolbar for HTML and PHP editors.
 
 const FONT_STORAGE_KEY_HTML = "nodevision.fontFamily.html";

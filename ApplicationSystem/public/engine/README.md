@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/engine/README.md -->
+<!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Nodevision MetaWorld Engine Modules
 
 This directory provides a minimal, extensible runtime for declarative MetaWorld prims.

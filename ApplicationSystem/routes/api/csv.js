@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/csv.js
+// This file defines the csv API route handler for the Nodevision server. It validates requests and sends responses for csv operations.
 // routes/api/csv.js
 // CSV file append endpoint
 

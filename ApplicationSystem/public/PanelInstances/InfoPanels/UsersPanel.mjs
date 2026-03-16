@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/UsersPanel.mjs
-// Admin user management panel integrated with Nodevision's panel shell.
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/UsersPanel.mjs
+// This file defines browser-side Users Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 

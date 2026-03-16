@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs
-// Serializes the active GameView scene back into a world JSON block and saves it.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs
+// This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 function normalizeWorldPath(filePath) {
   if (!filePath) return "";

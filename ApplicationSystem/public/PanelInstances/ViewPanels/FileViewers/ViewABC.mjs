@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewABC.mjs
-// Purpose: Render a simplified preview of ABC notation using VexFlow (no abcjs)
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewABC.mjs
+// This file defines browser-side View ABC logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { VexFlow as VF } from '/lib/vexflow/build/esm/entry/vexflow.js';
 

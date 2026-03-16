@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting.js
+// This file defines browser-side Switch To WYSIWYGediting logic for the Nodevision UI. It renders interface components and handles user interactions.
 (function() {
   // compute the directory this script lives in
   const currentScript = document.currentScript.src;
@@ -89,6 +89,5 @@
   }
 }, false);
 })();
-
 
 

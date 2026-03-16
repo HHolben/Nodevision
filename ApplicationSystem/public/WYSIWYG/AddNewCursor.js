@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/WYSIWYG/AddNewCursor.js
+// This file defines browser-side Add New Cursor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/WYSIWYG/AddNewCursor.js
 // Purpose: TODO: Add description of module purpose
 
@@ -75,4 +77,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-

@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewVCF.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewVCF.mjs
 // Renders standard vCard fields and optionally Nodevision-specific extensions.
 
 let lastRenderedPath = null;

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewAFM.mjs
-// Purpose: Display Adobe Font Metrics (.afm) files in a readable table
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewAFM.mjs
+// This file defines browser-side View AFM logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filePath, panel) {
   const serverBase = '/Notebook';

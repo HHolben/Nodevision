@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/VirtualWorldEditing.mjs
-// Switches GameView into creative editing mode.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/VirtualWorldEditing.mjs
+// This file defines browser-side Virtual World Editing logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 

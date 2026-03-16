@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/FileManagerCore.mjs
-// Core logic for enhanced File Manager panel with breadcrumbs, drag/drop, selection, and toolbar actions
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerCore.mjs
+// This file defines browser-side File Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 const FILE_ITEM_SOUND_URLS = [
   "/soundEffects/Splish.mp3",

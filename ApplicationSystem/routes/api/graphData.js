@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/graphData.js
+// This file defines the graph Data API route handler for the Nodevision server. It validates requests and sends responses for graph Data operations.
 // routes/api/graphData.js
 // API endpoints for serving pre-generated graph data
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/src/server.js
+// This file defines the server module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // src/server.js
 // Purpose: TODO: Add description of module purpose
 

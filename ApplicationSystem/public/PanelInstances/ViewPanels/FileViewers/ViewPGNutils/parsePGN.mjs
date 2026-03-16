@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPGNutils/parsePGN.mjs
+// This file defines browser-side parse PGN logic for the Nodevision UI. It renders interface components and handles user interactions.
 //public/PanelInstances/ViewPanels/FileViewers/ViewPGN/parsePGN.mjs
 
 export function parsePGN(text) {

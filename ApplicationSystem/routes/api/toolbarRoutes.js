@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/toolbarRoutes.js
+// This file defines the toolbar Routes API route handler for the Nodevision server. It validates requests and sends responses for toolbar Routes operations.
 // routes/api/toolbarRoutes.js
 // This file creates a backend manifest of toolbar JSON files
 

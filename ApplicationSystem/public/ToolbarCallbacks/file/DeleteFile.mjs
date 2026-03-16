@@ -1,4 +1,4 @@
-// Nodevision/public/ToolbarCallbacks/file/DeleteFile.mjs
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/DeleteFile.mjs
 // This creates the callback needed for delteting files
 
 export default async function DeleteFile() {

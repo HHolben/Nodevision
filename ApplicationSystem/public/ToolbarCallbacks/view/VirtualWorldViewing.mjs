@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/VirtualWorldViewing.mjs
-// Switches GameView into survival viewing mode.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/VirtualWorldViewing.mjs
+// This file defines browser-side Virtual World Viewing logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 

@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/public/ToolbarCallbacks/insertCallbacks.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insertCallbacks.js
+// This file defines browser-side insert Callbacks logic for the Nodevision UI. It renders interface components and handles user interactions.
 window.insertCallbacks = {
   insertText: () => {
     console.log("Insert Text callback triggered.");

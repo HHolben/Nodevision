@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/TextFamilyEditor.mjs
+// This file defines browser-side Text Family Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import {
   resetEditorHooks,
   ensureNodevisionState,
@@ -45,4 +47,3 @@ export async function renderEditor(filePath, container) {
     status.textContent = "Load failed";
   }
 }
-

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewPHP.mjs
-// Displays PHP files by loading them from the PHP server inside an iframe.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPHP.mjs
+// This file defines browser-side View PHP logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export const wantsIframe = true;
 

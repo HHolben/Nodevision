@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/renderLoop.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/renderLoop.mjs
 // This file runs the animation loop and renders each frame.
 
 export function startRenderLoop(renderer, scene, cameraOrResolver, update) {

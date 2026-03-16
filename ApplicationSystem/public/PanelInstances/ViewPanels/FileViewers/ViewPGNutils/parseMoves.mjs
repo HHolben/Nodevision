@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPGNutils/parseMoves.mjs
+// This file defines browser-side parse Moves logic for the Nodevision UI. It renders interface components and handles user interactions.
 export function parseMoves(movesText) {
   if (!movesText) return [];
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewAVI.mjs
+// This file defines browser-side View AVI logic for the Nodevision UI. It renders interface components and handles user interactions.
 // AVI Video Viewer
 // Uses native HTML5 <video> support where available
 

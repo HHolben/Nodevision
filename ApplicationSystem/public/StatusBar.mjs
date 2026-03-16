@@ -1,5 +1,5 @@
-// Nodevision/public/StatusBar.mjs
-
+// Nodevision/ApplicationSystem/public/StatusBar.mjs
+// This file defines browser-side Status Bar logic for the Nodevision UI. It renders interface components and handles user interactions.
 let leftEl = null;
 let rightEl = null;
 

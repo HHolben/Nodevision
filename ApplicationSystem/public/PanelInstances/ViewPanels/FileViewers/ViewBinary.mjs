@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewBinary.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewBinary.mjs
 // This file renders binary-file metadata and a direct download link when no structured preview is available.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/FileModeTest2.js
+// This file defines the File Mode Test2 module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // FileModeTest2.js
 // Purpose: File mode testing and validation functionality
 

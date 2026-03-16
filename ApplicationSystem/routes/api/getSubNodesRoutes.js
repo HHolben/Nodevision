@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/getSubNodesRoutes.js
+// This file defines the get Sub Nodes Routes API route handler for the Nodevision server. It validates requests and sends responses for get Sub Nodes Routes operations.
 // routes/api/getSubNodesRoutes.js
 // Retrieve child nodes and related data
 

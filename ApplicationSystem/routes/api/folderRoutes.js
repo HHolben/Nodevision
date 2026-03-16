@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/folderRoutes.js
+// This file defines the folder Routes API route handler for the Nodevision server. It validates requests and sends responses for folder Routes operations.
 // routes/api/folderRoutes.js
 // Backend for folder creation and management operations
 

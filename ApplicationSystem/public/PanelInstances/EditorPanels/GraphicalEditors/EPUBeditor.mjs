@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/EPUBeditor.mjs
-// EPUB editor scaffold that reuses the HTML editor engine for chapter editing.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/EPUBeditor.mjs
+// This file defines browser-side EPUBeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import JSZip from "../../../lib/jszip/jszip.min.js";
 import { renderEditor as renderHTMLEditor } from "./HTMLeditor.mjs";

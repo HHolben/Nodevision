@@ -1,5 +1,5 @@
-// Nodevision/public/SwitchToSVGediting/loadSVG.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/SwitchToSVGediting/loadSVG.js
+// This file defines browser-side load SVG logic for the Nodevision UI. It renders interface components and handles user interactions.
 console.log("loadSVG.js loaded");
 
 function loadSVG(filePath) {

@@ -1,5 +1,5 @@
-// Nodevision/public/panels/panelDrag.mjs
-//This module is for floating panel logic.
+// Nodevision/ApplicationSystem/public/panels/panelDrag.mjs
+// This file defines browser-side panel Drag logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { bringToFront } from "./utils.mjs";
 

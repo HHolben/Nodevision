@@ -1,3 +1,5 @@
+/* Nodevision/ApplicationSystem/public/NodeViewContainerStyles.css */
+/* This file defines UI styles for Node View Container Styles in the Nodevision browser client. It controls layout and appearance across related views. */
 /* Styles for containers and divider */
 .container-wrapper {
     display: flex;

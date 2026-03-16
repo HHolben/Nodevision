@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/movementUpdate.mjs
-// This file wires movement state to per-frame update logic.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/movementUpdate.mjs
+// This file defines browser-side movement Update logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createCollisionChecker } from "./collisionCheck.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";

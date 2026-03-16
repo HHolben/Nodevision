@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewMD.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewMD.mjs
 // This module renders Markdown (.md) files into readable HTML inside a Nodevision view panel.
 
 export async function renderFile(filePath, panel) {

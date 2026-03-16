@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/routes/api/extractEdges/extractHtmlEdges.js
-// This file extracts intra-notebook edge targets from HTML-like files so that link graphs can be derived from markup and persisted by API routes.
+// This file defines the extract Html Edges API route handler for the Nodevision server. It validates requests and sends responses for extract Html Edges operations.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -133,4 +133,3 @@ export async function extractEdgesBatch({ files, notebookDir }) {
 
   return results;
 }
-

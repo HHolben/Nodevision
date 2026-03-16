@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/GraphManagement/GraphAddEdges.js
+// This file defines browser-side Graph Add Edges logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/GraphManagement/GraphAddEdges.js
 // Purpose: TODO: Add description of module purpose
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/imageCropper.js
+// This file defines browser-side image Cropper logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/SwitchToWYSIWYGediting/imageCropper.js
 // Purpose: TODO: Add description of module purpose
 

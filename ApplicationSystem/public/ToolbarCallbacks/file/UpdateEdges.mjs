@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/file/UpdateEdges.mjs
-// Toolbar callback to extract edges from a file and save them in /public/data
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/UpdateEdges.mjs
+// This file defines browser-side Update Edges logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default async function extractEdgesAndSave() {
   console.log("Extracting Edges!");

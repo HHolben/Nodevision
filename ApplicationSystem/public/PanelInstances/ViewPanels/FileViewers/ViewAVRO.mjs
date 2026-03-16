@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewAVRO.mjs
+// This file defines browser-side View AVRO logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Apache Avro Viewer
 // Supports:
 //  - .avsc  → Avro schema (JSON)

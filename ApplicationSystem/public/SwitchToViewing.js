@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToViewing.js
+// This file defines browser-side Switch To Viewing logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: SwitchToViewing.js
 // Purpose: TODO: Add description of module purpose
 (function(){

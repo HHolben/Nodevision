@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewMP4.mjs
-// This module displays and plays MP4 video files with a simple real-time audio waveform analyzer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewMP4.mjs
+// This file defines browser-side View MP4 logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function renderFile(filePath, viewPanel) {
   console.log('[ViewMP4] Loading:', filePath);

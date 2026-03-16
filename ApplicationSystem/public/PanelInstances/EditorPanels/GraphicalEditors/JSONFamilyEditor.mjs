@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/JSONFamilyEditor.mjs
+// This file defines browser-side JSONFamily Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import {
   resetEditorHooks,
   ensureNodevisionState,
@@ -87,4 +89,3 @@ export async function renderEditor(filePath, container) {
     status.textContent = "Load failed";
   }
 }
-

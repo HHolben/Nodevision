@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/boxManipulation.js
+// This file defines browser-side box Manipulation logic for the Nodevision UI. It renders interface components and handles user interactions.
 // ES Module version of boxManipulation.js
 
 import { makeResizableAndDraggable } from './resizeAndDrag.js';

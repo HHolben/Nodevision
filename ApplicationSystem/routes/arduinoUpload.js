@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/arduinoUpload.js
+// This file defines arduino Upload routes for the Nodevision server. It registers endpoints and coordinates request handling.
 // routes/arduinoUpload.js
 // Purpose: TODO: Add description of module purpose
 import express from 'express';

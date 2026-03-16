@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/styles.mjs
+// This file defines browser-side styles logic for the Nodevision UI. It renders interface components and handles user interactions.
 export function ensureHTMLLayoutStyles() {
   if (document.getElementById("nv-html-layout-style")) return;
   const style = document.createElement("style");

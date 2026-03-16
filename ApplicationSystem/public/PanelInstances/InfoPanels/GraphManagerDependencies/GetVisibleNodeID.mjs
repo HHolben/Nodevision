@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GetVisibleNodeID.mjs
-
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GetVisibleNodeID.mjs
+// This file defines browser-side Get Visible Node ID logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 /**
  * Finds the highest visible element in the hierarchy for a given path.

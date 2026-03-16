@@ -1,4 +1,4 @@
-// Nodevision/public/ToolbarCallbacks/draw/PickColor.mjs
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/draw/PickColor.mjs
 // Renders draw color controls directly in the sub-toolbar row.
 
 export function PickColor() {

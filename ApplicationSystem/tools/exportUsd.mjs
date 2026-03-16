@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/tools/exportUsd.mjs
+// This file defines the export Usd module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import { readFileSync, writeFileSync } from "node:fs";
 import { extname } from "node:path";
 

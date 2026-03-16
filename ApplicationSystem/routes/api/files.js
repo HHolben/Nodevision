@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/files.js
+// This file defines the files API route handler for the Nodevision server. It validates requests and sends responses for files operations.
 // routes/api/files.js
 // File and directory management API
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/AddUserToDatabase.js
+// This file defines the Add User To Database module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // AddUserToDatabase.js
 // Purpose: User account creation and database insertion operations
 

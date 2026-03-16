@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/PreviewRuntime/README.md -->
+<!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Preview Runtime (Local Development Only)
 
 This subsystem provides a **development-only** preview runtime for running simple notebook code files from Nodevision:
@@ -46,4 +48,3 @@ Override via env vars:
 - `NODEVISION_PREVIEW_TIMEOUT_MS`
 - `NODEVISION_PREVIEW_STDOUT_LIMIT`, `NODEVISION_PREVIEW_STDERR_LIMIT`
 - Tool paths: `NODEVISION_PREVIEW_PYTHON3`, `NODEVISION_PREVIEW_JAVAC`, `NODEVISION_PREVIEW_JAVA`, `NODEVISION_PREVIEW_GPP`
-

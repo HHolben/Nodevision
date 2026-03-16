@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/regenerateNodesRoutes.js
+// This file defines the regenerate Nodes Routes API route handler for the Nodevision server. It validates requests and sends responses for regenerate Nodes Routes operations.
 // routes/api/regenerateNodesRoutes.js
 // Regenerates Node definitions
 

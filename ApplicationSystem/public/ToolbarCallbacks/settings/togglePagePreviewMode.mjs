@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/settings/togglePagePreviewMode.mjs
-// Toggle page preview mode and forward state to settings callbacks when available.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/settings/togglePagePreviewMode.mjs
+// This file defines browser-side toggle Page Preview Mode logic for the Nodevision UI. It renders interface components and handles user interactions.
 export default function togglePagePreviewMode() {
   window.NodevisionState = window.NodevisionState || {};
   const nextState = !Boolean(window.NodevisionState.pagePreviewModeEnabled);

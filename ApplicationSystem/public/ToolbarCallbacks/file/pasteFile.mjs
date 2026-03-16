@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/pasteFile.mjs
+// This file defines browser-side paste File logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { clearClipboard, getClipboard } from "./fileClipboard.mjs";
 
 function normalizePath(value = "") {
@@ -64,4 +66,3 @@ export default async function pasteFile() {
     alert(`Failed to paste: ${err.message}`);
   }
 }
-

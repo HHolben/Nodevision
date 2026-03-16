@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/svgChangeStrokeWidth.mjs
+// This file defines browser-side svg Change Stroke Width logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Change stroke width for selected SVG element and current defaults.
 
 export default function svgChangeStrokeWidth() {

@@ -1,4 +1,4 @@
-// Nodevision/public/panels/workspace.mjs
+// Nodevision/ApplicationSystem/public/panels/workspace.mjs
 // Handles workspace, rows, cells, and resizable dividers, with dynamic multi-directory panel loading
 // Adds activeCell/activePanel tracking and toolbar-based panel replacement
 

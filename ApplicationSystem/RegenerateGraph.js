@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/RegenerateGraph.js
+// This file defines the Regenerate Graph module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // RegenerateGraph.js
 // Purpose: Refresh and rebuild the entire graph structure from current data
 

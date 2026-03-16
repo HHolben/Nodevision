@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ui/modals/InputDialog.mjs
+// This file defines browser-side Input Dialog logic for the Nodevision UI. It renders interface components and handles user interactions.
 const STYLE_ID = 'nodevision-input-dialog-styles';
 
 function ensureDialogStyles() {

@@ -1,0 +1,79 @@
+/* Nodevision/ApplicationSystem/public/ToolbarStyles/subToolbar.css */
+/* This file defines sub-toolbar styling for the Nodevision browser client. It styles secondary toolbar rows and compact widget controls. */
+/* === Sub Toolbar Row === */
+#sub-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 4px;
+  gap: 4px;
+  position: relative;
+  z-index: 9980;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ccc;
+}
+
+#sub-toolbar:empty {
+  display: none;
+  padding: 0;
+  border-bottom: 0;
+}
+
+#sub-toolbar button {
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* Sub-toolbar widgets (e.g., PNG Layout / Draw Color panels) */
+#sub-toolbar .nv-subtoolbar-widget {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  background: #f5f5f5;
+  border: 1px solid #333;
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+#sub-toolbar .nv-subtoolbar-widget strong,
+#sub-toolbar .nv-subtoolbar-widget label,
+#sub-toolbar .nv-subtoolbar-widget span {
+  font-size: 12px;
+}
+
+#sub-toolbar .nv-subtoolbar-widget input[type="number"] {
+  width: 70px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid #888;
+  font-size: 12px;
+  background: #fff;
+}
+
+#sub-toolbar .nv-subtoolbar-widget button {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #666;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#sub-toolbar .nv-subtoolbar-widget button.nv-active {
+  background: #cfead2;
+  border-color: #333;
+}
+
+#sub-toolbar .nv-subtoolbar-widget button.nv-compact {
+  padding: 2px 8px;
+}
+
+#sub-toolbar .nv-subtoolbar-widget input[type="color"],
+#sub-toolbar .nv-subtoolbar-widget input[type="range"] {
+  cursor: pointer;
+}
+
+#sub-toolbar .nv-subtoolbar-widget .nv-mono {
+  font-family: monospace;
+}
+

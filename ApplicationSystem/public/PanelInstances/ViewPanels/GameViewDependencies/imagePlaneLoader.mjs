@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/imagePlaneLoader.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/imagePlaneLoader.mjs
 // Loads PNG/SVG notebook assets as textures for "image-plane" meshes.
 
 const NOTEBOOK_PREFIX = "/Notebook/";
@@ -157,4 +157,3 @@ export async function applyImagePlaneTexture(mesh, THREE) {
   mat.needsUpdate = true;
   return texture;
 }
-

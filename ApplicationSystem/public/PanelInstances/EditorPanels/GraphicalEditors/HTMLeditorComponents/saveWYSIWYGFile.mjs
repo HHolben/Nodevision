@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/saveWYSIWYGFile.mjs
-// Purpose: Saves the contents of the WYSIWYG HTML editor back to disk via the Nodevision API.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/saveWYSIWYGFile.mjs
+// This file defines browser-side save WYSIWYGFile logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 function showMessage(msg) {
   const el = document.getElementById("message");

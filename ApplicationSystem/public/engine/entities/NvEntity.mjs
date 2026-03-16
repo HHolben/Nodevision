@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/entities/NvEntity.mjs
+// This file defines browser-side Nv Entity logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Base entity types for Nodevision MetaWorld.
 
 function toVec3(value, fallback = [0, 0, 0]) {

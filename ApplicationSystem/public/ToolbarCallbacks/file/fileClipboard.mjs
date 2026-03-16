@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/fileClipboard.mjs
+// This file defines browser-side file Clipboard logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Shared client-side clipboard for File Manager toolbar actions.
 
 const KEY = "__nodevisionFileClipboard";
@@ -16,4 +18,3 @@ export function getClipboard() {
 export function clearClipboard() {
   delete window[KEY];
 }
-

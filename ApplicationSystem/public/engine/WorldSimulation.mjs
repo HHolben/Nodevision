@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/WorldSimulation.mjs
+// This file defines browser-side World Simulation logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { AiRuntime, BehaviorTreeInterpreter, DeterministicRng, createBuiltinBehaviorLibrary } from "./ai/BehaviorTree.mjs";
 import { soundFromPrim, SpatialAudioManager } from "./audio/SpatialAudioManager.mjs";
 import { FactionRegistry, factionFromPrim } from "./factions/NvFaction.mjs";

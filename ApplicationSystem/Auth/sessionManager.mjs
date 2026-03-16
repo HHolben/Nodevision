@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/Auth/sessionManager.mjs
+// This file defines session Manager authentication logic for the Nodevision server. It manages user identity and secures session operations.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewMP3.mjs
-// Purpose: Displays and plays .mp3 files inside a ViewPanel, with waveform visualization.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewMP3.mjs
+// This file defines browser-side View MP3 logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 
 export function renderFile(filename, viewPanel) {

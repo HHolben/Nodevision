@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/server.js
+// This file defines browser-side server logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/server.js
 // Purpose: TODO: Add description of module purpose
 

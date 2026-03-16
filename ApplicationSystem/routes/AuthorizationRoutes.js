@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/AuthorizationRoutes.js
+// This file defines Authorization Routes routes for the Nodevision server. It registers endpoints and coordinates request handling.
 // routes/AuthorizationRoutes.js
 // Purpose: TODO: Add description of module purpose
 

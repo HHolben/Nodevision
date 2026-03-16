@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/WYSIWYG/InsertTabs.js
+// This file defines browser-side Insert Tabs logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/WYSIWYG/InsertTabs.js
 // Purpose: TODO: Add description of module purpose
 

@@ -1,5 +1,5 @@
-// Nodevision/public/SwitchToRasterEditing.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/SwitchToRasterEditing.js
+// This file defines browser-side Switch To Raster Editing logic for the Nodevision UI. It renders interface components and handles user interactions.
 (function() {
     // Compute the directory this script lives in
     const currentScript = document.currentScript.src;

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/userRoutes.js
+// This file defines the user Routes API route handler for the Nodevision server. It validates requests and sends responses for user Routes operations.
 // routes/api/userRoutes.js
 // User management API for notebook accounts.
 

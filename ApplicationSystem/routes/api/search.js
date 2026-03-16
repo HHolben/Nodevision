@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/search.js
+// This file defines the search API route handler for the Nodevision server. It validates requests and sends responses for search operations.
 // routes/api/search.js
 // Search files and textual contents under Notebook.
 

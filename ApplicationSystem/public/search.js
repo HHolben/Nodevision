@@ -1,5 +1,5 @@
-// Nodevision/public/search.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/search.js
+// This file defines browser-side search logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 document.addEventListener('DOMContentLoaded', function () {
     window.ActiveNode = 'defaultNode';

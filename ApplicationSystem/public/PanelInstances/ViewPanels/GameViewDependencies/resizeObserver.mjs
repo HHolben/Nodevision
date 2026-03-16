@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/resizeObserver.mjs
-// This file keeps the renderer and camera sized to the containing panel.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/resizeObserver.mjs
+// This file defines browser-side resize Observer logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function setupResizeObserver(panel, cameraOrCameras, renderer) {
   const resizeObserver = new ResizeObserver(() => {

@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/MergeCells.mjs
-// Merges panel cells in the same split container and preserves workspace panel semantics.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/MergeCells.mjs
+// This file defines browser-side Merge Cells logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function mergeCells() {
   const active = window.activeCell;

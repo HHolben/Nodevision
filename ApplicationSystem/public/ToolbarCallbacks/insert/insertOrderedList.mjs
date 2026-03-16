@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/insert/insertOrderedList.mjs
-// Toolbar callback to insert an ordered list (<ol>) into the active editor panel
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertOrderedList.mjs
+// This file defines browser-side insert Ordered List logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default function insertOrderedList() {
   const wysiwyg = document.querySelector("#wysiwyg[contenteditable='true']");

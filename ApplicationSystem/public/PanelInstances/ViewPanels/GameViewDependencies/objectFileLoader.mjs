@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/objectFileLoader.mjs
-// Helper utilities for loading audience-stored object files (STL, etc.) while keeping cache and placement helpers centralized.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectFileLoader.mjs
+// This file defines browser-side object File Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { Box3, Vector3 } from "/lib/three/three.module.js";

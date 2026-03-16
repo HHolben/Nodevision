@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/PreviewRuntime/localDevRunner.js
+// This file defines the local Dev Runner module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs/promises';

@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/SaveCurrentLayout.mjs
-// Saves the current workspace layout (panel arrangement) to /UserSettings/DefaultLayout.json
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/SaveCurrentLayout.mjs
+// This file defines browser-side Save Current Layout logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { serializeWorkspace } from "/panels/workspace.mjs";
 

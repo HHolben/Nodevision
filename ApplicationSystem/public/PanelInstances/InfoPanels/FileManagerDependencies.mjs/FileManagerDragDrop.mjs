@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerDragDrop.mjs
+// This file defines browser-side File Manager Drag Drop logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { moveFileOrDirectory } from "./FileManagerAPI.mjs";
 
 export function attachDragDrop(state, link, file) {

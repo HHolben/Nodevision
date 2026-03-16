@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPGNutils/applyMove.mjs
+// This file defines browser-side apply Move logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { findPiece, movePiece, parseSquare } from "./boardUtils.mjs";
 
 export function applyMove(board, san, turn) {

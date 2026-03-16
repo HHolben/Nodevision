@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/GenerateRegions.js
+// This file defines the Generate Regions module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // GenerateRegions.js
 // Purpose: Create hierarchical regions for organizing graph nodes by directory
 

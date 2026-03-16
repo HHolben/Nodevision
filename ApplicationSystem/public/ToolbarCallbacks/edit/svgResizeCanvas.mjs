@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/svgResizeCanvas.mjs
+// This file defines browser-side svg Resize Canvas logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Resize SVG canvas from toolbar controls.
 
 export default function svgResizeCanvas() {

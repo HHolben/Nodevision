@@ -1,4 +1,5 @@
-// Nodevision/routes/api/listDirectory.js
+// Nodevision/ApplicationSystem/routes/api/listDirectory.js
+// This file defines the list Directory API route handler for the Nodevision server. It validates requests and sends responses for list Directory operations.
 import express from "express";
 import fs from "fs/promises";
 import path from "path";

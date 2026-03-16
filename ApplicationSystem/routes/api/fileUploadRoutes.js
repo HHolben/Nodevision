@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/fileUploadRoutes.js
+// This file defines the file Upload Routes API route handler for the Nodevision server. It validates requests and sends responses for file Upload Routes operations.
 import express from 'express';
 import multer from 'multer';
 import path from 'path';

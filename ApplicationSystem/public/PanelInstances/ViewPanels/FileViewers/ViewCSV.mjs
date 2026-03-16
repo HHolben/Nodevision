@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewCSV.mjs
-// Purpose: Render CSV files in a table view
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewCSV.mjs
+// This file defines browser-side View CSV logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
   try {
@@ -30,4 +30,3 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     viewPanel.innerHTML = '<p style="color:red;">Error loading CSV file.</p>';
   }
 }
-

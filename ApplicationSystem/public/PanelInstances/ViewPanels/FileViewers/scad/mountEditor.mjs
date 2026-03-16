@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/scad/mountEditor.mjs
+// This file defines browser-side mount Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Nodevision SCAD Editor - mountEditor.mjs
 // Purpose: Shared mount logic for SCAD parametric editor (used by FileViewer + GraphicalEditor).
 
@@ -362,4 +364,3 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
     dispose,
   };
 }
-

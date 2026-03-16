@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/Graph/README.md -->
+<!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Graph
 
 The `Graph` folder contains code for generating and managing the file/directory graph in Nodevision.

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewArchive.mjs
-// This file previews archive files with a lightweight summary and a download action.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewArchive.mjs
+// This file defines browser-side View Archive logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderBinaryFile } from "./ViewBinary.mjs";
 

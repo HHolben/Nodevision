@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/GraphManagement/GraphGetStyles.js
+// This file defines browser-side Graph Get Styles logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/GraphManagement/GraphGetStyles.js
 // Purpose: TODO: Add description of module purpose
 
@@ -50,5 +52,4 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 }
-
 

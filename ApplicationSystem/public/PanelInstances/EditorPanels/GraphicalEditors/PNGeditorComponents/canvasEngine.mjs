@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditorComponents/canvasEngine.mjs
+// This file defines browser-side canvas Engine logic for the Nodevision UI. It renders interface components and handles user interactions.
 //public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditorComponents/canvasEngine.mjs
 //This file provides the Bresenham line draawing algorithm
 

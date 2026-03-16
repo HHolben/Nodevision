@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/svgChangeFillColor.mjs
+// This file defines browser-side svg Change Fill Color logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Change fill color for selected SVG element and current defaults.
 
 export default function svgChangeFillColor() {

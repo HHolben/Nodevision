@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/examples/minimalUpdateLoop.mjs
+// This file defines browser-side minimal Update Loop logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Minimal deterministic server-style simulation loop example.
 // This file demonstrates loading declarative world JSON and ticking AI/spawners.
 

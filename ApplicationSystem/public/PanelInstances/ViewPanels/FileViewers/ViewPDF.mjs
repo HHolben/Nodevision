@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewPDF.mjs
-// Purpose: Render PDF files in a Nodevision view panel
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPDF.mjs
+// This file defines browser-side View PDF logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
   console.log("ViewPDF: initializing for", filename);

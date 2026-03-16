@@ -1,5 +1,5 @@
-// Nodevision/public/loadKeyboardShortcuts.mjs
-
+// Nodevision/ApplicationSystem/public/loadKeyboardShortcuts.mjs
+// This file defines browser-side load Keyboard Shortcuts logic for the Nodevision UI. It renders interface components and handles user interactions.
 let globalShortcuts = {};      // All shortcuts loaded from the JSON
 let activeModeShortcuts = {};  // Shortcuts currently active for the mode
 let currentListener = null;

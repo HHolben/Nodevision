@@ -1,5 +1,5 @@
-// Nodevision/routes/api/scad.js
-// Purpose: OpenSCAD CLI render endpoint (SCAD -> STL) for browser preview.
+// Nodevision/ApplicationSystem/routes/api/scad.js
+// This file defines the scad API route handler for the Nodevision server. It validates requests and sends responses for scad operations.
 
 import express from "express";
 import fs from "node:fs/promises";
@@ -87,4 +87,3 @@ export default function createSCADRouter(ctx = BASE_CONTEXT) {
 
   return router;
 }
-

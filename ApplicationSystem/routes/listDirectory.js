@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/listDirectory.js
+// This file defines list Directory routes for the Nodevision server. It registers endpoints and coordinates request handling.
 //routes/listDirectory.js
 // Purpose: TODO: Add description of module purpose
 import { Router } from 'express';

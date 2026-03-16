@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/login.js
+// This file defines login routes for the Nodevision server. It registers endpoints and coordinates request handling.
 // routes/login.js
 // Purpose: TODO: Add description of module purpose
 

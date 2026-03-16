@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FilManagerActions.mjs
+// This file defines browser-side Fil Manager Actions logic for the Nodevision UI. It renders interface components and handles user interactions.
 function uniqueValues(values = []) {
   return [...new Set(values.filter(Boolean))];
 }

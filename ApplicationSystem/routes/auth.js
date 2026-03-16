@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/auth.js
+// This file defines auth routes for the Nodevision server. It registers endpoints and coordinates request handling.
 // routes/auth.js
 // Purpose: TODO: Add description of module purpose
 

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewSVG.mjs
-// Purpose: Render SVG files in an iframe inside the View Panel
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewSVG.mjs
+// This file defines browser-side View SVG logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 /**
  * Renders an SVG file inside the view panel.

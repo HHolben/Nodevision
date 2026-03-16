@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs
-// Floating inspect/modify panel for in-range world objects.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs
+// This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 

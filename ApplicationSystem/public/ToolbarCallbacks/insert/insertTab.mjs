@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/insert/insertTab.mjs
-// Toolbar callback to insert a tab character into editor panels
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertTab.mjs
+// This file defines browser-side insert Tab logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default function insertTab() {
   const panel = document.querySelector(

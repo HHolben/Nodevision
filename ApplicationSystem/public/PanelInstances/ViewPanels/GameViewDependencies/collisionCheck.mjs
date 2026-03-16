@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/collisionCheck.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/collisionCheck.mjs
 // This file provides collision checks between the player and world colliders.
 
 export function createCollisionChecker({ colliders, movementState, playerRadius }) {

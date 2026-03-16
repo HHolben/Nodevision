@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/spawn/NvSpawner.mjs
+// This file defines browser-side Nv Spawner logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { validatePrim } from "../entities/primSchema.mjs";
 
 function toBounds(region) {

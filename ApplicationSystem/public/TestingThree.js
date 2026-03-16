@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/TestingThree.js
+// This file defines browser-side Testing Three logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/TestingThree.js
 // Purpose: TODO: Add description of module purpose
 

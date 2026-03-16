@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/crosshair.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/crosshair.mjs
 // This file creates the on-screen crosshair overlay for the game view.
 
 export function addCrosshair(panel) {

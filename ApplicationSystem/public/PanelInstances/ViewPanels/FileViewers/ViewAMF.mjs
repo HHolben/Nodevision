@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewAMF.mjs
-// Viewer for AMF (Additive Manufacturing Format) files
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewAMF.mjs
+// This file defines browser-side View AMF logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filePath, panel, iframe, serverBase) {
   panel.innerHTML = '';

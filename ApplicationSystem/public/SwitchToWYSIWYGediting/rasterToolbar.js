@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/rasterToolbar.js
+// This file defines browser-side raster Toolbar logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: rasterToolbar.js
 // Purpose: TODO: Add description of module purpose
 // Publisher-style toolbar for raster editing

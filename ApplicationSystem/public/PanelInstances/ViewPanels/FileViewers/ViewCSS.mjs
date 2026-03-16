@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewCSS.mjs
-// This module previews CSS selectors with live sample rendering.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewCSS.mjs
+// This file defines browser-side View CSS logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filePath, viewPanel, iframe, serverBase) {
   viewPanel.innerHTML = '';

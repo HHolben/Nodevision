@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/PlayerInventory.mjs
-// This is a reusable floating inventory panel shell for GameView and toolbar usage.
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/PlayerInventory.mjs
+// This file defines browser-side Player Inventory logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { attachResizeEvents } from "/panels/panelResize.mjs";
 

@@ -1,0 +1,125 @@
+/* Nodevision/ApplicationSystem/public/ToolbarStyles/globalToolbar.css */
+/* This file defines global toolbar styles for the Nodevision browser client. It controls main toolbar buttons, dropdown panels, and theme overrides. */
+/* === Global Toolbar Container === */
+#global-toolbar {
+  display: flex;
+  flex-wrap: wrap; /* allow multiple rows */
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #333;
+  border-bottom: 1px solid #444;
+  position: relative;
+  z-index: 25000;
+}
+
+/* === Main Toolbar Buttons === */
+.toolbar-button button {
+  font-size: 14px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #555;
+  color: rgb(0, 0, 0);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.toolbar-button button:hover {
+  background: #444;
+}
+
+/* Disabled state */
+.toolbar-button button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* === Icons inside buttons === */
+.toolbar-button img {
+  width: 18px;
+  height: 18px;
+}
+
+/* === Dropdown Panels === */
+.toolbar-button > div {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 180px; /* single source of truth */
+  width: 180px; /* force uniform width */
+  background: #006b1c;
+  border-radius: 4px;
+  padding: 4px 0;
+  z-index: 30000;
+  display: none;
+  flex-direction: column;
+}
+
+/* === Dropdown Items === */
+.toolbar-button > div a,
+.toolbar-button > div button {
+  display: block;
+  width: 100%; /* full width of parent dropdown */
+  padding: 8px 12px;
+  color: black;
+  text-decoration: none;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toolbar-button > div a:last-child,
+.toolbar-button > div button:last-child {
+  border-bottom: none;
+}
+
+/* Hover effect */
+.toolbar-button > div a:hover,
+.toolbar-button > div button:hover {
+  background: #ff8c00;
+}
+
+.toolbar-button > div a:active,
+.toolbar-button > div button:active,
+.toolbar-button > div a:focus-visible,
+.toolbar-button > div button:focus-visible {
+  outline: none;
+  background: #00c040;
+}
+
+/* === Dark mode (UI only) === */
+html[data-nv-theme="dark"] #global-toolbar {
+  background: #0b1220;
+  border-bottom-color: #334155;
+}
+
+html[data-nv-theme="dark"] .toolbar-button button {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+html[data-nv-theme="dark"] .toolbar-button button:hover {
+  background: #111827;
+}
+
+html[data-nv-theme="dark"] .toolbar-button > div {
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+
+html[data-nv-theme="dark"] .toolbar-button > div a,
+html[data-nv-theme="dark"] .toolbar-button > div button {
+  color: #e5e7eb;
+}
+
+html[data-nv-theme="dark"] .toolbar-button > div a:hover,
+html[data-nv-theme="dark"] .toolbar-button > div button:hover {
+  background: #1f2937;
+}
+

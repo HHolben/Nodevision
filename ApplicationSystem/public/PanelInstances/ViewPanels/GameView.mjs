@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameView.mjs
-// ViewPanel that displays a JSON-defined 3D world embedded in an HTML file.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameView.mjs
+// This file defines browser-side Game View logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import * as THREE from '/lib/three/three.module.js';
 import { PointerLockControls } from '/lib/three/PointerLockControls.js';

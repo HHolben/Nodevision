@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/GenerateAllNodes.js
-// Purpose: Generate comprehensive node data for graph visualization from file system
+// Nodevision/ApplicationSystem/GenerateAllNodes.js
+// This file defines the Generate All Nodes module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio'); // Assuming you'll use Cheerio to parse HTML files

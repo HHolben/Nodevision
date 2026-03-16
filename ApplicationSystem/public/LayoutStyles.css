@@ -1,5 +1,5 @@
-/* Nodevision/public/LayoutStyles.css
-   Styles for grid layout, divider bars, and panels */
+/* Nodevision/ApplicationSystem/public/LayoutStyles.css */
+/* This file defines UI styles for Layout Styles in the Nodevision browser client. It controls layout and appearance across related views. */
 
 /* === Base grid system === */
 #grid {

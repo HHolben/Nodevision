@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/insert/insertParagraph.mjs
-// This toolbar callback inserts a <p> element into HTML editors with contentEditable areas.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertParagraph.mjs
+// This file defines browser-side insert Paragraph logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default function insertParagraph() {
   // Find the active HTML WYSIWYG editor

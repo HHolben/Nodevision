@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/insert/insertBlockquote.mjs
-// Inserts a <blockquote> (optionally with a <cite>) into HTML editors.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertBlockquote.mjs
+// This file defines browser-side insert Blockquote logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default function insertBlockquote() {
   // Locate active WYSIWYG editor

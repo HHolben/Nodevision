@@ -1,5 +1,5 @@
-// Nodevision/public/SwitchToGraphView.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/SwitchToGraphView.js
+// This file defines browser-side Switch To Graph View logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 (async function () {
   const cyContainer = document.getElementById("cy");

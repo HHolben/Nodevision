@@ -1,4 +1,4 @@
-// Nodevision/public/panels/rowManager.mjs
+// Nodevision/ApplicationSystem/public/panels/rowManager.mjs
 //This script handles the insertion of adjustable horizontal dividers.
 
 export function ensureWorkspace() {

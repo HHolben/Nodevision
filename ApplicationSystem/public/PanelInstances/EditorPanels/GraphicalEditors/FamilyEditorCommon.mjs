@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/FamilyEditorCommon.mjs
+// This file defines browser-side Family Editor Common logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Shared helpers for family editors.
 
 const SAVE_ENDPOINT = "/api/save";

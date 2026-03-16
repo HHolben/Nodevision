@@ -1,5 +1,6 @@
-// Nodevision/routes/api/updateGraph.js
-import express from 'express';
+// Nodevision/ApplicationSystem/routes/api/updateGraph.js
+// This file defines the update Graph API route handler for the Nodevision server. It validates requests and sends responses for update Graph operations.
+import express from "express";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createServerContext } from '../../shared/serverContext.mjs';

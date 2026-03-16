@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/SCADeditor.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SCADeditor.mjs
 // Parametric OpenSCAD graphical editor (viewport-first). Generates and saves .scad.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";

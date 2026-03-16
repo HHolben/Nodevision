@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/panels/README.md -->
+<!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Panels
 
 The `panels` folder defines reusable panel templates and JavaScript modules for Nodevision’s UI.

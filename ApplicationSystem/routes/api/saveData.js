@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/routes/api/saveData.js
-// Declares endpoint for saving edge data
+// This file defines the save Data API route handler for the Nodevision server. It validates requests and sends responses for save Data operations.
 
 import express from 'express';
 import fs from 'node:fs/promises';

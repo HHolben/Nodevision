@@ -1,5 +1,5 @@
-// Nodevision/routes/api/scanNotebook.js
-// Fast, responsive Notebook scanning
+// Nodevision/ApplicationSystem/routes/api/scanNotebook.js
+// This file defines the scan Notebook API route handler for the Nodevision server. It validates requests and sends responses for scan Notebook operations.
 
 import express from 'express';
 import fs from 'fs/promises';

@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/cameraModes.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/cameraModes.mjs
 // Manages view modes, player avatar visibility, and camera switching.
 
 export function createCameraModeController({ THREE, panel, scene, playerCamera, controls, movementState, crosshair }) {

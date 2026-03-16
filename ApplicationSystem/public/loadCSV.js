@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/loadCSV.js
+// This file defines browser-side load CSV logic for the Nodevision UI. It renders interface components and handles user interactions.
 // loadCSV.js
 // Purpose: TODO: Add description of module purpose
 export async function loadCSV(filePath) {

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPGNutils/boardUtils.mjs
+// This file defines browser-side board Utils logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Utility functions for a simple 8x8 chess board representation.
 // Each square holds a string: '' for empty, 'P'/'p' for pawns, 'N'/'n' for knights, etc.
 // Uppercase = White, Lowercase = Black

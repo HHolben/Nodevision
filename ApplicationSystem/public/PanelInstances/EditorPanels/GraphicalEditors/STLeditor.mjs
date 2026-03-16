@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/STLeditor.mjs
-// STL editor with Blender-like edit shortcuts (G/E/S/F) for vertex-based mesh editing.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/STLeditor.mjs
+// This file defines browser-side STLeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import * as THREE from "/lib/three/three.module.js";
 import { STLLoader } from "/lib/three/STLLoader.js";

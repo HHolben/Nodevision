@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs
-// This fallback graphical editor for unsupported file types displays a warning and allows opening the file in the code editor.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs
+// This file defines browser-side Editor Fallback logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderEditor(filePath, container, options = {}) {
   if (!filePath) {

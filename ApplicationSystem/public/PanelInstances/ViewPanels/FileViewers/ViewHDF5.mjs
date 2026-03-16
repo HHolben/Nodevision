@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewHDF5.mjs
-// This file delegates HDF5 previews to the binary fallback viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewHDF5.mjs
+// This file defines browser-side View HDF5 logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderDelegate } from "./ViewBinary.mjs";
 

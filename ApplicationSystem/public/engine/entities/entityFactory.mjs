@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/entities/entityFactory.mjs
+// This file defines browser-side entity Factory logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { NvEntity, NvMob, NvNPC, NvPlayer } from "./NvEntity.mjs";
 import { NV_PRIM_TYPES, normalizePrim, validatePrim } from "./primSchema.mjs";
 

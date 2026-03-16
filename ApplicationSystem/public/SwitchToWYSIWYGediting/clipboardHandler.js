@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/clipboardHandler.js
+// This file defines browser-side clipboard Handler logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/SwitchToWYSIWYGediting/clipboardHandler.js
 // Purpose: TODO: Add description of module purpose
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/index.mjs
+// This file defines browser-side index logic for the Nodevision UI. It renders interface components and handles user interactions.
 export { WorldSimulation } from "./WorldSimulation.mjs";
 
 export {

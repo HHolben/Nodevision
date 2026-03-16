@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/utils.mjs
+// This file defines browser-side utils logic for the Nodevision UI. It renders interface components and handles user interactions.
 export function insertNodeAtCaret(wysiwyg, node) {
   wysiwyg.focus();
   const sel = window.getSelection();

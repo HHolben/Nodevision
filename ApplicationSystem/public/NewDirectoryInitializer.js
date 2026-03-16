@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/NewDirectoryInitializer.js
+// This file defines browser-side New Directory Initializer logic for the Nodevision UI. It renders interface components and handles user interactions.
 // NewDirectoryInitializer.js
 // Purpose: TODO: Add description of module purpose
 

@@ -1,5 +1,5 @@
-// Nodevision/public/VirtualWorldControls.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/VirtualWorldControls.js
+// This file defines browser-side Virtual World Controls logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 let controlBindings = {};
 

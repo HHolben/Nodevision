@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/CombineURLs.js
+// This file defines browser-side Combine URLs logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/CombineURLs.js
 // Purpose: TODO: Add description of module purpose
 

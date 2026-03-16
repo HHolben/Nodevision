@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/saveWYSIWYGFile.js
+// This file defines browser-side save WYSIWYGFile logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/SwitchToWYSIWYGediting/saveWYSIWYGFile.js
 // Purpose: TODO: Add description of module purpose
 (function(){

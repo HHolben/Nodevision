@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPGNutils/boardRenderer.mjs
+// This file defines browser-side board Renderer logic for the Nodevision UI. It renders interface components and handles user interactions.
 const PIECES = {
   r:'♜', n:'♞', b:'♝', q:'♛', k:'♚', p:'♟',
   R:'♖', N:'♘', B:'♗', Q:'♕', K:'♔', P:'♙'

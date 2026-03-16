@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewPGN.mjs
-
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPGN.mjs
+// This file defines browser-side View PGN logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { parsePGN } from "./ViewPGNutils/parsePGN.mjs";
 import { parseMoves } from "./ViewPGNutils/parseMoves.mjs";
 import { makeStartBoard } from "./ViewPGNutils/boardSetup.mjs";

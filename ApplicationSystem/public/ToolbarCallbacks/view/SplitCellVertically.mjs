@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/SplitCellVertically.mjs
-// Splits the active panel cell into stacked panel cells using workspace layout conventions.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/SplitCellVertically.mjs
+// This file defines browser-side Split Cell Vertically logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 function createLayoutDivider(leftCell, rightCell, isVertical = false) {
   const divider = document.createElement("div");

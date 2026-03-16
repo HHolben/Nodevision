@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewMOL.mjs
-// Viewer for MDL MOL files (.mol) – 2D diagram + 3D model with element labels
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewMOL.mjs
+// This file defines browser-side View MOL logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import * as THREE from '/lib/three/three.module.js';
 import { OrbitControls } from '/lib/three/OrbitControls.js';

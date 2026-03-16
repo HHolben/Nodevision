@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/GraphManagement/GraphExpandRegion.js
+// This file defines browser-side Graph Expand Region logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/GraphManagement/GraphExpandRegion.js
 // Purpose: TODO: Add description of module purpose
 
@@ -137,4 +139,3 @@ function expandRegion(regionElement) {
       return `collapsed_${targetPath.replace(/[^\w]/g, '_')}`; // Sanitizing the path
   }
 }
-

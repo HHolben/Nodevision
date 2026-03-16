@@ -1,5 +1,5 @@
-// Nodevision/public/resizeAndDrag.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/resizeAndDrag.js
+// This file defines browser-side resize And Drag logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function makeResizableAndDraggable(element, dockCells = []) {
   let isResizing = false;

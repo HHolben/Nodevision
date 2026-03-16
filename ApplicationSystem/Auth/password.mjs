@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/Auth/password.mjs
+// This file defines password authentication logic for the Nodevision server. It manages user identity and secures session operations.
 import argon2 from 'argon2';
 
 const argonOptions = {

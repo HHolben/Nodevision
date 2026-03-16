@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/serial.js
+// This file defines the serial API route handler for the Nodevision server. It validates requests and sends responses for serial operations.
 // routes/api/serial.js
 // Purpose: Serial port communication and Arduino integration
 

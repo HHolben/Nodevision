@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/svgLayerAdd.mjs
+// This file defines browser-side svg Layer Add logic for the Nodevision UI. It renders interface components and handles user interactions.
 export default function svgLayerAdd() {
   const ctx = window.SVGEditorContext;
   if (!ctx?.createLayer) return;

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/HandwritingOcrPanel.mjs
-// Floating "Handwriting → Text" panel for the Insert toolbar.
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/HandwritingOcrPanel.mjs
+// This file defines browser-side Handwriting Ocr Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 //
 // Uses local Tesseract.js assets from /Tesseract. For fully offline OCR you must provide
 // language data (e.g. eng.traineddata.gz) under /Tesseract/lang-data.

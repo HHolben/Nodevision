@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/NewFolderTest.js
+// This file defines browser-side New Folder Test logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/NewFolderTest.js
 // Purpose: TODO: Add description of module purpose
 

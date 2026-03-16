@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/fileLoader.mjs
-// Purpose: Loads a file's HTML content into the WYSIWYG editor container.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/fileLoader.mjs
+// This file defines browser-side file Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function loadFileContents(filePath, callback) {
   if (!filePath) {

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/scripts/copy-xdg-open.js
+// This file defines the copy xdg open module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import path from 'node:path';
 import { copyFileSync, chmodSync, existsSync } from 'node:fs';
 

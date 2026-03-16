@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewADOC.mjs
-// Purpose: Display AsciiDoc (.adoc) files as a readable formatted preview
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewADOC.mjs
+// This file defines browser-side View ADOC logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filePath, panel) {
   const serverBase = '/Notebook';

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/PHPToolPanel.mjs
-// Generic shell panel for PHP runtime tools. Content is injected by PHPeditor.mjs.
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/PHPToolPanel.mjs
+// This file defines browser-side PHPTool Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function setupPanel(panelElem) {
   if (!panelElem) return;

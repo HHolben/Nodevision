@@ -1,5 +1,5 @@
-// Nodevision/public/panels/createToolbar.mjs
-// Fully prebuilt, instant toolbar and dropdowns
+// Nodevision/ApplicationSystem/public/panels/createToolbar.mjs
+// This file defines browser-side create Toolbar logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createPanel } from '/panels/panelManager.mjs';
 import { dockPanel } from '/panels/panelControls.mjs';

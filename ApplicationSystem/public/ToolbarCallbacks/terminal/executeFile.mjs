@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/terminal/executeFile.mjs
+// This file defines browser-side execute File logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { setStatus } from "/StatusBar.mjs";
 
 function resolveActiveFilePath() {
@@ -132,4 +134,3 @@ export default async function executeFile() {
   setStatus("Execution complete", `${data.exitCode ?? ""}`);
   renderOutputModal({ title: "Program Output", body: lines.join("\n") });
 }
-

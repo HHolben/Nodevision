@@ -1,5 +1,5 @@
-// FILE: Nodevision/public/VirtualWorldCallibrateGamepad.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/VirtualWorldCallibrateGamepad.js
+// This file defines browser-side Virtual World Callibrate Gamepad logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 let calibrationActive = false;
 let calibrationGamepadIndex = null;

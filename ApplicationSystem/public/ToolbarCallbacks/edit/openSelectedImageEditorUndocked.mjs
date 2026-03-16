@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/openSelectedImageEditorUndocked.mjs
+// This file defines browser-side open Selected Image Editor Undocked logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Backward-compatible callback: now toggles the inline image editor.
 export default async function openSelectedImageEditorUndocked() {
   const tools = window.HTMLWysiwygTools;

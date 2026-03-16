@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewMIDI.mjs
-// Purpose: Display MIDI file information and render simplified sheet music with VexFlow
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewMidi.mjs
+// This file defines browser-side View Midi logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { VexFlow as VF } from '/lib/vexflow/build/esm/entry/vexflow.js';
 

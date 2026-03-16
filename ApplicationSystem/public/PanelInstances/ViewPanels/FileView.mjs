@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileView.mjs
-// Reactively displays files in the view panel using the appropriate viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileView.mjs
+// This file defines browser-side File View logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 let lastRenderedPath = null;
 let viewDivRef = null;

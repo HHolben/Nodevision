@@ -1,5 +1,5 @@
-// Nodevision/public/main.mjs
-// Purpose: Initializes workspace, loads DefaultLayout.json, and renders panels with dividers.
+// Nodevision/ApplicationSystem/public/main.mjs
+// This file defines browser-side main logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import "/ToolbarCallbacks/file/saveFile.mjs"; // registers saveFile/saveCurrentFile globally
 import "/KeyboardShortcuts/ShortcutSave.js"; // installs Ctrl+S shortcut handler

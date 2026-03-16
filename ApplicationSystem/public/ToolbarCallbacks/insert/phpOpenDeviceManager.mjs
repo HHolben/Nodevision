@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/phpOpenDeviceManager.mjs
+// This file defines browser-side php Open Device Manager logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Open PHP editor device manager panel from Insert toolbar.
 export default function phpOpenDeviceManager() {
   window.dispatchEvent(new CustomEvent("nv-php-editor-command", {

@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/replit.md -->
+<!-- This file documents replit for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Overview
 
 Nodevision is a graph theory-inspired digital notebook system that visualizes file structures and content as interactive nodes and edges. The application provides a comprehensive platform for exploring, editing, and managing digital content through a graph-based interface, supporting multiple file formats including HTML, PHP, JavaScript, CSV, MIDI, PDF, and various media types.

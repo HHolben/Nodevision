@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/handwritingToText.mjs
-// This file opens the Handwriting OCR panel and inserts recognized text into the active editor so that handwritten input can be converted into editable content.
+// This file defines browser-side handwriting To Text logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 function findActiveEditorElement() {
   const panel = document.querySelector(

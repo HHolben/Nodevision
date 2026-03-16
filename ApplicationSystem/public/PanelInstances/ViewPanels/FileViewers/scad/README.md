@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/scad/README.md -->
+<!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Nodevision SCAD Editor (prototype)
 
 This folder contains a minimal parametric OpenSCAD graphical editor used by `ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewSCAD.mjs`.

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerBreadcrumbs.mjs
+// This file defines browser-side File Manager Breadcrumbs logic for the Nodevision UI. It renders interface components and handles user interactions.
 export function renderBreadcrumbs(state) {
   const pathElem = state.panelElem.querySelector("#fm-path");
   pathElem.innerHTML = "";

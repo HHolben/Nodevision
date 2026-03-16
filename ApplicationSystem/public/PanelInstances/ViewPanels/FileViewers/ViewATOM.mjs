@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewATOM.mjs
-// Atom Syndication Format (.atom) viewer
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewATOM.mjs
+// This file defines browser-side View ATOM logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(panelElem, filePath, panelVars = {}) {
   panelElem.innerHTML = `

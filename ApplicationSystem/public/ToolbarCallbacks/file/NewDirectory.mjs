@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/NewDirectory.mjs
+// This file defines browser-side New Directory logic for the Nodevision UI. It renders interface components and handles user interactions.
 export default async function NewDirectory() {
   let parentPath = window.currentDirectoryPath;
 

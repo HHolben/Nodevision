@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/initWYSIWYG.js
+// This file defines browser-side init WYSIWYG logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/SwitchToWYSIWYGediting/initWYSIWYG.js
 // Purpose: TODO: Add description of module purpose
 

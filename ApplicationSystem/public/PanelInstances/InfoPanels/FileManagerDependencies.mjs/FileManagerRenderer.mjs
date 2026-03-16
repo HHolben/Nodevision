@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerRenderer.mjs
+// This file defines browser-side File Manager Renderer logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { attachSelectionHandlers } from "./FileManagerSelection.mjs";
 import { attachDragDrop } from "./FileManagerDragDrop.mjs";
 

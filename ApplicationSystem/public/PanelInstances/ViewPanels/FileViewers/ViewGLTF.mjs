@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewGLTF.mjs
-// GLTF/GLB file viewer implementation (no shim).
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewGLTF.mjs
+// This file defines browser-side View GLTF logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import * as THREE from '/lib/three/three.module.js';
 import { OrbitControls } from '/lib/three/OrbitControls.js';

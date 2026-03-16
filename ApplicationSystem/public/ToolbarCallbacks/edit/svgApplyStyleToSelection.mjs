@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/svgApplyStyleToSelection.mjs
+// This file defines browser-side svg Apply Style To Selection logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Apply the current SVG style defaults to the selected element.
 
 export default function svgApplyStyleToSelection() {

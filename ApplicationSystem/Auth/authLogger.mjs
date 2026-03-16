@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/Auth/authLogger.mjs
+// This file defines auth Logger authentication logic for the Nodevision server. It manages user identity and secures session operations.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createServerContext } from '../shared/serverContext.mjs';

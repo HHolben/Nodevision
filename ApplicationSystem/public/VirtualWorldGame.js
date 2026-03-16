@@ -1,5 +1,5 @@
-// Nodevision/public/VirtualWorldGame.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/VirtualWorldGame.js
+// This file defines browser-side Virtual World Game logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 // --- Unified keys state ---
 const keys = { w: false, a: false, s: false, d: false, space: false, q: false };

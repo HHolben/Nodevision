@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/factions/NvFaction.mjs
+// This file defines browser-side Nv Faction logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Faction model with hostility matrix resolution.
 
 export class NvFaction {

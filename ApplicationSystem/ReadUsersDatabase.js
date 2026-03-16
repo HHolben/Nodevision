@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/ReadUsersDatabase.js
+// This file defines the Read Users Database module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // ReadUsersDatabase.js
 // Purpose: User authentication and database query operations
 

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/MIDIeditor.mjs
-// Graphical MIDI editor (staff view) with note/rest insertion, selection,
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/MIDIeditor.mjs
+// This file defines browser-side MIDIeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // delete-to-rest, and vertical drag pitch editing.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";

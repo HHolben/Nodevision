@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewThingDescription.mjs
-// Purpose: Render and interact with Thing Description (TD) JSON files
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewThingDescription.mjs
+// This file defines browser-side View Thing Description logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Allows viewing device properties and exporting an Arduino sketch
 
 export async function ViewThingDescription(filename, infoPanel, serverBase) {

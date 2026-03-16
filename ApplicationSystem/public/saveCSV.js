@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/saveCSV.js
+// This file defines browser-side save CSV logic for the Nodevision UI. It renders interface components and handles user interactions.
 // saveCSV.js
 // Purpose: TODO: Add description of module purpose
 export async function saveCSV(filePath, data) {

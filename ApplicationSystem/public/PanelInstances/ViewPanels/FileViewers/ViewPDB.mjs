@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewPDB.mjs
-// This file delegates PDB previews to the generic text viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPDB.mjs
+// This file defines browser-side View PDB logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderDelegate } from "./ViewText.mjs";
 

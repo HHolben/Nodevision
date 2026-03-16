@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/scripts/ocr.js
+// This file defines browser-side ocr logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/scripts/ocr.js
 // Purpose: TODO: Add description of module purpose
 

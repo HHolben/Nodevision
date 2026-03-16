@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewFont.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewFont.mjs
 // This file loads font files dynamically and displays a readable preview sentence.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {

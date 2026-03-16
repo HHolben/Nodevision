@@ -1,5 +1,5 @@
-// Nodevision/routes/api/downloadFile.js
-// Endpoint to download notebook files
+// Nodevision/ApplicationSystem/routes/api/downloadFile.js
+// This file defines the download File API route handler for the Nodevision server. It validates requests and sends responses for download File operations.
 
 import express from 'express';
 import fs from 'node:fs';

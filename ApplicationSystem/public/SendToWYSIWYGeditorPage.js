@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SendToWYSIWYGeditorPage.js
+// This file defines browser-side Send To WYSIWYGeditor Page logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/SendToWYSIWYGeditorPage.js
 // Purpose: TODO: Add description of module purpose
 
@@ -11,4 +13,3 @@
     } else {
         console.error('ActiveNode is not defined.');
     }
-

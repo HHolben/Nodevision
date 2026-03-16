@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/routes/api/extractEdges.js
-// This file exposes API endpoints that extract graph edges from notebook HTML so that link relationships can be computed for navigation and visualization.
+// This file defines the extract Edges API route handler for the Nodevision server. It validates requests and sends responses for extract Edges operations.
 
 import express from 'express';
 import path from 'node:path';

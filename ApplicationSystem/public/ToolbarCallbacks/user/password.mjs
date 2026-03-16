@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/user/password.mjs
-// Opens the change-password panel as a standard InfoPanel.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/user/password.mjs
+// This file defines browser-side password logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { openFloatingInfoPanel } from "/panels/userPanelLauncher.mjs";
 
 export default async function password() {

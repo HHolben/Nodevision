@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/formatHtml.js
+// This file defines browser-side format Html logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: formatHtml.js
 // Purpose: TODO: Add description of module purpose
 (function(){

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/audio/audioSecurity.mjs
+// This file defines browser-side audio Security logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Security helpers for declarative sound definitions.
 
 const DEFAULT_ALLOWED_PREFIXES = ["/soundEffects/", "/Notebook/"];

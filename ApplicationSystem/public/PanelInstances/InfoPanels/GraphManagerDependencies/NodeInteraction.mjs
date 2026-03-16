@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/GraphManagerDependencies/NodeInteraction.mjs
-
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/NodeInteraction.mjs
+// This file defines browser-side Node Interaction logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { recomputeEdges } from './EdgeManagement.mjs';
 import { listDirectory } from './APIFunctions.mjs';
 import { SELECTED_COLOR, UNSELECTED_COLOR } from './CytoscapeStyling.mjs';

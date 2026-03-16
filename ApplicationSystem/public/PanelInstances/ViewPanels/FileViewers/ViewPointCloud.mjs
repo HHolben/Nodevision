@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewPointCloud.mjs
-// This file delegates point-cloud previews to the binary fallback viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPointCloud.mjs
+// This file defines browser-side View Point Cloud logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderDelegate } from "./ViewBinary.mjs";
 

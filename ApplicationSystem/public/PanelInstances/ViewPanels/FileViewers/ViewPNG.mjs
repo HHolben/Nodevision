@@ -1,4 +1,4 @@
-//Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPNG.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPNG.mjs
 //This file renders a viewing area for png images.
 
 /**

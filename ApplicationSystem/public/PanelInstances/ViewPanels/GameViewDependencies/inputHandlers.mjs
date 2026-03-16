@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/inputHandlers.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/inputHandlers.mjs
 // This file registers keyboard handlers and tracks held input state.
 
 export function createInputHandlers({ getBindings, normalizeKeyName, movementState }) {

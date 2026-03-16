@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/initializeRoutes.js
+// This file defines the initialize Routes API route handler for the Nodevision server. It validates requests and sends responses for initialize Routes operations.
 // routes/api/initializeRoutes.js
 // Application initialization helper
 

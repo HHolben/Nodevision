@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/fileCodeContentRoutes.js
+// This file defines the file Code Content Routes API route handler for the Nodevision server. It validates requests and sends responses for file Code Content Routes operations.
 // routes/api/fileCodeContentRoutes.js
 // Read code files with encoding inference.
 

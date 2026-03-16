@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/PasswordPanel.mjs
-// Native InfoPanel for changing the current user's password.
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/PasswordPanel.mjs
+// This file defines browser-side Password Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 

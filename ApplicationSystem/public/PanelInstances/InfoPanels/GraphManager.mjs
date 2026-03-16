@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/InfoPanels/GraphManager.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManager.mjs
 // Sets up the Graph Manager panel and loads GraphManagerCore.mjs
 // Provides toolbar integration through panelCapabilities
 

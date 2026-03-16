@@ -1,5 +1,5 @@
-// Nodevision/public/panels/panelFactory.mjs
-import { attachResizeEvents } from "./panelResize.mjs";
+// Nodevision/ApplicationSystem/public/panels/panelFactory.mjs
+// This file defines browser-side panel Factory logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 // Panel factory: creates DOM containers for panels, lazy-loads per-instance modules,
 // and invokes the panel's exported initializer. Uses a module cache to avoid re-imports.

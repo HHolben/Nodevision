@@ -1,5 +1,5 @@
-// Nodevision/public/SettingsGameControls.js
-// This is a description of module purpose
+// Nodevision/ApplicationSystem/public/SettingsGameControls.js
+// This file defines browser-side Settings Game Controls logic for the Nodevision UI. It renders interface components and handles user interactions.
 (function() {
 
   // Poll every 50ms until the content frame exists

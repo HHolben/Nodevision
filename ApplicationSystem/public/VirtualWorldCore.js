@@ -1,5 +1,5 @@
-// Nodevision/public/VirtualWorldCore.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/VirtualWorldCore.js
+// This file defines browser-side Virtual World Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 export async function initVRWorld(container, options = {}) {
   const { mode = "viewing" } = options;
 

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs
-// This file populates the panel with the HTML editor.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs
+// This file defines browser-side HTMLeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "./../../../panels/createToolbar.mjs";
 import { createPanelDOM } from "./../../../panels/panelFactory.mjs";

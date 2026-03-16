@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/settings/toggleViewMode.mjs
-// Toggle graph/file view mode and forward state to settings callbacks when available.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/settings/toggleViewMode.mjs
+// This file defines browser-side toggle View Mode logic for the Nodevision UI. It renders interface components and handles user interactions.
 export default function toggleViewMode() {
   window.NodevisionState = window.NodevisionState || {};
   const nextState = !Boolean(window.NodevisionState.viewModeEnabled);

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/GraphManagerDependencies/CytoscapeStyling.mjs
-
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/CytoscapeStyling.mjs
+// This file defines browser-side Cytoscape Styling logic for the Nodevision UI. It renders interface components and handles user interactions.
 export const GRAPH_STYLE = [
   {
     selector: "node[type='directory']",

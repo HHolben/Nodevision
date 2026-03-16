@@ -1,5 +1,5 @@
-/*Nodevision/public/StatusBarStyles.css*/
-
+/* Nodevision/ApplicationSystem/public/StatusBarStyles.css */
+/* This file defines UI styles for Status Bar Styles in the Nodevision browser client. It controls layout and appearance across related views. */
 #status-bar {
   height: 22px;
   min-height: 22px;

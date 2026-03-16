@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/scripts/build-portable-entry.mjs
-// This file bundles the Nodevision CLI into a CommonJS entry so that pkg can build portable Nodevision binaries from a consistent runtime entry point.
+// This file defines the build portable entry module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 
 import { build } from 'esbuild';
 import { mkdirSync } from 'node:fs';

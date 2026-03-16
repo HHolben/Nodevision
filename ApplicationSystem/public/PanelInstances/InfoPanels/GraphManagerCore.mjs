@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
-import { fetchDirectoryContents } from './FileManagerCore.mjs';
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
+// This file defines browser-side Graph Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { scanFileForLinks } from './GraphManagerDependencies/ScanForLinks.mjs';
 import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
 import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';

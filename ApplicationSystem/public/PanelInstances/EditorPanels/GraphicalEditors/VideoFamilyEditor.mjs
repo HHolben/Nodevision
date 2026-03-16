@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/VideoFamilyEditor.mjs
+// This file defines browser-side Video Family Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import {
   resetEditorHooks,
   ensureNodevisionState,

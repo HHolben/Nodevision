@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/scad/viewer.mjs
+// This file defines browser-side viewer logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Nodevision SCAD Editor - viewer.mjs
 // Purpose: Three.js viewer + STL preview loading + basic placeholder render from scene tree.
 

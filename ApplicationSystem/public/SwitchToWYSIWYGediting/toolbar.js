@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/toolbar.js
+// This file defines browser-side toolbar logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: toolbar.js
 // Purpose: TODO: Add description of module purpose
 (function(){

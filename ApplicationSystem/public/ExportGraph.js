@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ExportGraph.js
+// This file defines browser-side Export Graph logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/ExportGraph.js
 // Purpose: TODO: Add description of module purpose
 
@@ -24,4 +26,3 @@
                        
                        link.click();
           console.log(blob);
-

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/GraphManagerDependencies/EdgeManagement.mjs
-
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/EdgeManagement.mjs
+// This file defines browser-side Edge Management logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { bucketFileForId, fetchEdgeBuckets, extractEdgesFromFiles } from './APIFunctions.mjs';
 
 /**

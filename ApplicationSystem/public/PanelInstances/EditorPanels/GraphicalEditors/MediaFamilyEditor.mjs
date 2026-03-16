@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/MediaFamilyEditor.mjs
+// This file defines browser-side Media Family Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import {
   resetEditorHooks,
   ensureNodevisionState,
@@ -101,4 +103,3 @@ export async function renderEditor(filePath, container) {
 
   status.textContent = "Media preview ready";
 }
-

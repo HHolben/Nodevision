@@ -1,4 +1,4 @@
-// Nodevision/public/ToolbarCallbacks/user/logout.mjs
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/user/logout.mjs
 // Ensures the API session ends before returning to the entry point.
 export default async function logout() {
   try {

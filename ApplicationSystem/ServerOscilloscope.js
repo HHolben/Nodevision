@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/ServerOscilloscope.js
+// This file defines the Server Oscilloscope module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // ServerOscilloscope.js (CommonJS, safe startup without Arduino)
 // Purpose: Real-time data streaming and oscilloscope functionality
 

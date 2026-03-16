@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewALTO.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewALTO.mjs
 // This module loads and renders ALTO XML files, displaying OCR text in reading order with structural grouping.
 
 export async function renderFile(filePath, panel) {

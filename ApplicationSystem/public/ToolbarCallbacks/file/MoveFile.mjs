@@ -1,4 +1,4 @@
-// Nodevision/public/ToolbarCallbacks/file/MoveFile.mjs
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/MoveFile.mjs
 // This provides the callback for th move file toolbar callback
 import { getClipboard } from "./CutFile.mjs";
 

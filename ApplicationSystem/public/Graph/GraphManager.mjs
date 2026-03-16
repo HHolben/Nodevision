@@ -1,4 +1,4 @@
-// Nodevision/public/Graph/GraphManager.mjs
+// Nodevision/ApplicationSystem/public/Graph/GraphManager.mjs
 // Core Graph Manager: generates and manages graph data
 // Output: nodes/ and edges/by-destination/ in this directory
 

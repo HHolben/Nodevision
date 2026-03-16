@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/GraphManagement/GraphData.js
+// This file defines browser-side Graph Data logic for the Nodevision UI. It renders interface components and handles user interactions.
 // GraphData.js
 // Purpose: TODO: Add description of module purpose
 

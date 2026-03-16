@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects.
 
 function normalizeWorldPath(filePath) {

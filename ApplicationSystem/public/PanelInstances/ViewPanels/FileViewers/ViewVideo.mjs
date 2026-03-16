@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewVideo.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewVideo.mjs
 // This file renders video files with native playback controls in the view panel.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {

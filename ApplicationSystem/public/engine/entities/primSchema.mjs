@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/entities/primSchema.mjs
+// This file defines browser-side prim Schema logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Nodevision MetaWorld prim schema helpers.
 // Prims are declarative JSON only. No executable code is allowed.
 

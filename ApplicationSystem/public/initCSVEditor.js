@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/initCSVEditor.js
+// This file defines browser-side init CSVEditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/initCSVEditor.js
 // Purpose: TODO: Add description of module purpose
 

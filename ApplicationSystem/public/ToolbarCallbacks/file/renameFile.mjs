@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/renameFile.mjs
+// This file defines browser-side rename File logic for the Nodevision UI. It renders interface components and handles user interactions.
 function normalizePath(value = "") {
   return String(value).replace(/^\/+/, "").replace(/\/+/g, "/");
 }
@@ -47,4 +49,3 @@ export default async function renameFile() {
     alert(`Failed to rename: ${err.message}`);
   }
 }
-

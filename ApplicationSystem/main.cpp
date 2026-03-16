@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/main.cpp
+// This file defines the main module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 #include <QApplication>
 #include <QMainWindow>
 #include <QWidget>

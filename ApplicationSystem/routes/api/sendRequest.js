@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/sendRequest.js
+// This file defines the send Request API route handler for the Nodevision server. It validates requests and sends responses for send Request operations.
 // routes/api/sendRequest.js
 // Purpose: Generic request proxy and forwarding
 

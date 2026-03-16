@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/file/ExportVirtualWorldAsUSD.mjs
-// Exports a selected virtual world definition (HTML-embedded JSON) into a .usda file.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/ExportVirtualWorldAsUSD.mjs
+// This file defines browser-side Export Virtual World As USD logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 function normalizeNotebookPath(inputPath) {
   if (!inputPath || typeof inputPath !== "string") return "";

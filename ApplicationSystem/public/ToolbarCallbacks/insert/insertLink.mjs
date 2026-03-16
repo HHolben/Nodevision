@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/insert/insertLink.mjs
-// Inserts hyperlinks into HTML/EPUB editors and persists graph edges.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertLink.mjs
+// This file defines browser-side insert Link logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { saveFoundEdge } from "../../PanelInstances/InfoPanels/GraphManagerDependencies/SaveFoundEdge.mjs";
 

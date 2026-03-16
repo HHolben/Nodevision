@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewAIFF.mjs
-// Purpose: Display and play AIFF (.aif, .aiff) audio files with metadata and waveform preview
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewAIFF.mjs
+// This file defines browser-side View AIFF logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filePath, panel) {
   const serverBase = '/Notebook';

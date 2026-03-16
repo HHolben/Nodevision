@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/WYSIWYG/3DmodelAdderScript.js
+// This file defines browser-side 3 Dmodel Adder Script logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/WYSIWYG/3DmodelAdderScript.js
 // Purpose: TODO: Add description of module purpose
 

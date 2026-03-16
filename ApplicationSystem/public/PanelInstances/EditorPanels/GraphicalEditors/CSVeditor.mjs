@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVeditor.mjs
+// This file defines browser-side CSVeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // CSVeditor.mjs
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");

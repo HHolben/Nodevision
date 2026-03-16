@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/core/runtime.js
+// This file defines the runtime module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import http from 'node:http';
 import createApp from '../server.mjs';
 import {

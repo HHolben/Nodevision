@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/toggleDarkMode.mjs
+// This file defines browser-side toggle Dark Mode logic for the Nodevision UI. It renders interface components and handles user interactions.
 // DEVELOPMENT UI FEATURE: toggles Nodevision theme.
 // This is purely visual and does not change execution/security boundaries.
 
@@ -23,4 +25,3 @@ export default function toggleDarkMode() {
   const next = current === "dark" ? "light" : "dark";
   applyTheme(next);
 }
-

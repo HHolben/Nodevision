@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/PreviewRuntime/resultSanitizer.js
+// This file defines the result Sanitizer module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 function stripControlChars(text) {
   return String(text || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
 }

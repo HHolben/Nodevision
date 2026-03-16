@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/NewNotebookPageInitializer.js
+// This file defines browser-side New Notebook Page Initializer logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/NewNotebookPageInitializer.js
 // Purpose: TODO: Add description of module purpose
 

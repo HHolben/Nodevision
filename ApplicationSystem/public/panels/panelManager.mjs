@@ -1,4 +1,4 @@
-// Nodevision/public/panels/panelManager.mjs
+// Nodevision/ApplicationSystem/public/panels/panelManager.mjs
 // Handles creating and managing panels dynamically (backwards-compatible)
 
 export async function createPanel(panelType, instanceVars = {}, panelPath = null, targetElem = null) {

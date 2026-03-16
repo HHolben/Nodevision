@@ -1,88 +1,19 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/UniversalFileEditor.mjs
-// Generic editor for any file type:
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/UniversalFileEditor.mjs
+// This file defines browser-side Universal File Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // - Text-like files: inline text editing + save.
 // - Binary files: replace file workflow with base64 save.
 
+import {
+  detectTextFromBytes,
+  escapeHTML,
+  extOf,
+  likelyTextByExtension,
+  setGlobalBinaryHook,
+  setGlobalTextHooks,
+} from "./UniversalFileEditor/utils.mjs";
+
 const NOTEBOOK_BASE = "/Notebook";
-const SAVE_ENDPOINT = "/api/save";
 const TEXT_PREVIEW_LIMIT = 2 * 1024 * 1024; // 2 MB
-
-function escapeHTML(str = "") {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function detectTextFromBytes(uint8) {
-  if (!uint8 || uint8.length === 0) return true;
-  let suspicious = 0;
-  const sampleLen = Math.min(uint8.length, 4096);
-
-  for (let i = 0; i < sampleLen; i += 1) {
-    const byte = uint8[i];
-    if (byte === 0) return false; // strong binary signal
-    if (byte < 7 || (byte > 14 && byte < 32)) suspicious += 1;
-  }
-
-  return suspicious / sampleLen < 0.15;
-}
-
-function extOf(filePath = "") {
-  const parts = String(filePath).toLowerCase().split(".");
-  return parts.length > 1 ? parts.pop() : "";
-}
-
-function likelyTextByExtension(extension) {
-  const textLike = new Set([
-    "txt", "md", "markdown", "json", "jsonl", "ndjson", "yaml", "yml",
-    "xml", "xsd", "xsl", "xslt", "rss", "atom", "svg", "html", "htm",
-    "css", "js", "mjs", "ts", "tsx", "jsx", "py", "java", "c", "cpp",
-    "h", "hpp", "go", "rs", "php", "sh", "bash", "zsh", "ini", "toml",
-    "cfg", "conf", "log", "csv", "tsv", "sql", "tex", "adoc", "rst",
-    "scad", "pgn", "gcode", "obj", "ply", "stl", "sdf", "kml"
-  ]);
-  return textLike.has(extension);
-}
-
-async function postSave({ path, content, encoding = "utf8", mimeType }) {
-  const payload = { path, content, encoding };
-  if (mimeType) payload.mimeType = mimeType;
-
-  const res = await fetch(SAVE_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  const json = await res.json().catch(() => null);
-  if (!res.ok || !json?.success) {
-    throw new Error(json?.error || `${res.status} ${res.statusText}`);
-  }
-}
-
-function setGlobalTextHooks(filePath, getTextFn) {
-  window.saveWYSIWYGFile = undefined;
-  window.getEditorMarkdown = getTextFn;
-  window.saveMDFile = async (path = filePath) => {
-    await postSave({ path, content: getTextFn(), encoding: "utf8" });
-  };
-}
-
-function setGlobalBinaryHook(filePath, getBase64Fn) {
-  window.getEditorMarkdown = undefined;
-  window.saveMDFile = undefined;
-  window.saveWYSIWYGFile = async (path = filePath) => {
-    const base64 = getBase64Fn();
-    if (!base64) throw new Error("No replacement binary loaded.");
-    await postSave({
-      path,
-      content: base64,
-      encoding: "base64",
-      mimeType: "application/octet-stream",
-    });
-  };
-}
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");

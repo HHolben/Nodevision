@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/PreviewRuntime/previewConfig.js
+// This file defines the preview Config module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import os from 'node:os';
 import path from 'node:path';
 

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/GraphCollapseRegion.js
+// This file defines browser-side Graph Collapse Region logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/GraphCollapseRegion.js
 // Purpose: TODO: Add description of module purpose
 

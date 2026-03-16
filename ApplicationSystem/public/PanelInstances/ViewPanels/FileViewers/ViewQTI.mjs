@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewQTI.mjs
-// Purpose: Display and interact with QTI (Question and Test Interoperability) XML assessment files
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewQTI.mjs
+// This file defines browser-side View QTI logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Supports multiple-choice questions with navigation and feedback
 
 export async function ViewQTI(filename, infoPanel, serverBase) {

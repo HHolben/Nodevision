@@ -1,4 +1,4 @@
-// Nodevision/public/panels/panelResize.mjs
+// Nodevision/ApplicationSystem/public/panels/panelResize.mjs
 // Handles edge-aware resizing for floating panels.
 
 const EDGE_THRESHOLD = 12;

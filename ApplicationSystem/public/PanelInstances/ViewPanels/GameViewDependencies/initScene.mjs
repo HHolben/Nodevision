@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs
 // This file builds the scene context and wires input, rendering, and resizing.
 
 import { createSceneBase } from "./sceneBase.mjs";

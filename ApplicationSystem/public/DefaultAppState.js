@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/DefaultAppState.js
+// This file defines browser-side Default App State logic for the Nodevision UI. It renders interface components and handles user interactions.
 // DefaultAppState.js
 // Purpose: TODO: Add description of module purpose
 

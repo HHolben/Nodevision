@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/GenerateEdges.js
+// This file defines the Generate Edges module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // GenerateEdges.js
 // Purpose: Create edges and relationships between graph nodes based on file links
 

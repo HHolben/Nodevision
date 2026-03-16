@@ -1,5 +1,5 @@
-// Nodevision/Graph/generateGraphData.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/Graph/generateGraphData.js
+// This file defines the generate Graph Data module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 
 // Nodevision/scripts/GenerateGraphFiles.js
 import fs from 'fs/promises';

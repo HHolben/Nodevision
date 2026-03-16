@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewMolecule.mjs
-// This file delegates molecule previews to the existing MOL viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewMolecule.mjs
+// This file defines browser-side View Molecule logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderDelegate } from "./ViewMOL.mjs";
 

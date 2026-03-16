@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/bundleCytoscape.mjs
+// This file defines the bundle Cytoscape module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // bundleCytoscape.mjs
 // Purpose: Bundle and configure Cytoscape.js library for graph visualization
 import esbuild from 'esbuild';

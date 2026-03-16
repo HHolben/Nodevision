@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/GraphAddElements.js
+// This file defines browser-side Graph Add Elements logic for the Nodevision UI. It renders interface components and handles user interactions.
 // GraphAddElements.js
 // Purpose: TODO: Add description of module purpose
 

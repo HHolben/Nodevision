@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/closePanel.mjs
-// Closes the panel from the workspace corresponding to the active panel.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/closePanel.mjs
+// This file defines browser-side close Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 

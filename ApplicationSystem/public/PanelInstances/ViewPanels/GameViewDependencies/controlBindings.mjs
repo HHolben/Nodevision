@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/controlBindings.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/controlBindings.mjs
 // This file defines default control bindings and helpers to load and normalize them.
 
 export const defaultBindings = {

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/KeyboardShortcuts/ShortcutSave.js
+// This file defines browser-side Shortcut Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/KeyboardShortcuts/ShortcutSave.js
 // Purpose: TODO: Add description of module purpose
 

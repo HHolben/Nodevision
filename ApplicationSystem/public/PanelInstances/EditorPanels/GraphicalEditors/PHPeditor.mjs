@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/GraphicalEditors/PHPeditor.mjs
-// PHP graphical editor module with device, logic, logging, and dashboard scaffolding.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PHPeditor.mjs
+// This file defines browser-side PHPeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // This module is designed to fit Nodevision editor conventions and exposes renderEditor + renderFile.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";

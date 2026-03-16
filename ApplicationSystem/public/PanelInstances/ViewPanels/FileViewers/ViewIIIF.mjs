@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewIIIF.mjs
-// This file delegates IIIF metadata previews to the JSON viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewIIIF.mjs
+// This file defines browser-side View IIIF logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { renderFile as renderDelegate } from "./ViewJSON.mjs";
 

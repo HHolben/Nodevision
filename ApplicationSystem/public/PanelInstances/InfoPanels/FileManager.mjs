@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/InfoPanels/FileManager.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManager.mjs
 // Sets up the File Manager panel and loads FileManagerCore.mjs
 // Provides toolbar integration through panelCapabilities
 

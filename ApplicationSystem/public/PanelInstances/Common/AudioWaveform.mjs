@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/Common/AudioWaveform.mjs
+// This file defines browser-side Audio Waveform logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Shared audio waveform renderer for viewers and editors.
 
 function drawWaveform(canvas, channelData) {

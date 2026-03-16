@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertH5.mjs
-//This is a a toolbar callback which can be used by text editors (such as the graphical html editor) to insert <h5> tags in editor panels
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertH5.mjs
+// This file defines browser-side insert H5 logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { insertBlock } from "./utils/insertHelpers.mjs";
 
 export default function insertH5() {

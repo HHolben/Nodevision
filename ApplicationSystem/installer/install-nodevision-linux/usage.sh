@@ -1,5 +1,5 @@
 # Nodevision/ApplicationSystem/installer/install-nodevision-linux/usage.sh
-# This file prints usage and help text for the Nodevision Linux installer so that the main installer script can stay small and focused on orchestration.
+# This file defines the usage module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 
 nv_usage() {
   cat <<'EOF'
@@ -34,4 +34,3 @@ Notes:
   - The installer also creates a wrapper script at ~/.local/bin/nodevision and uses it by default for Exec=.
 EOF
 }
-

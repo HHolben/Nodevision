@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/worldPropertiesPanel.mjs
-// Floating world-level properties editor for creative mode.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldPropertiesPanel.mjs
+// This file defines browser-side world Properties Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 

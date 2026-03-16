@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/server/routes/gamepadRoutes.mjs
-// This file exposes endpoints for reading and writing gamepad settings so that clients can persist controller mappings between sessions.
+// This file defines gamepad Routes routes for the Nodevision server. It registers endpoints and coordinates request handling.
 
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
@@ -28,4 +28,3 @@ export function registerGamepadRoutes(app, ctx) {
     }
   });
 }
-

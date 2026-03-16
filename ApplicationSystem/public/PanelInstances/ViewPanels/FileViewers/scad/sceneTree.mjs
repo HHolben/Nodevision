@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/scad/sceneTree.mjs
+// This file defines browser-side scene Tree logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Nodevision SCAD Editor - sceneTree.mjs
 // Purpose: Scene-tree data model + pure tree operations + lightweight expression evaluation (for previews).
 
@@ -372,4 +374,3 @@ export function evaluateVector(expr, parameters = {}, fallback = [0, 0, 0]) {
     return [...fallback];
   }
 }
-

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/initRasterEditor.js
+// This file defines browser-side init Raster Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: initRasterEditor.js
 // Purpose: TODO: Add description of module purpose
 // Initialize the raster image editor with canvas and controls

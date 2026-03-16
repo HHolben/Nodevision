@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/sendRequest.js
+// This file defines the send Request module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // sendRequest.js
 // Purpose: HTTP request handling and API communication utilities
 

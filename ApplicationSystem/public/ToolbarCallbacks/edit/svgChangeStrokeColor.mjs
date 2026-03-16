@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/svgChangeStrokeColor.mjs
+// This file defines browser-side svg Change Stroke Color logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Change stroke color for selected SVG element and current defaults.
 
 export default function svgChangeStrokeColor() {

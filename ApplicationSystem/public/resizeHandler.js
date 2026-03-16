@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/resizeHandler.js
+// This file defines browser-side resize Handler logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/resizeHandler.js
 // Purpose: TODO: Add description of module purpose
 
@@ -44,4 +46,3 @@ document.addEventListener('DOMContentLoaded', function () {
         document.removeEventListener('mousemove', resize);
         document.removeEventListener('mouseup', stopResize);
     }
-

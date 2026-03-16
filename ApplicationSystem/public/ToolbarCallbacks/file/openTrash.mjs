@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/file/openTrash.mjs
-// Opens the per-user Trash directory in File Manager.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/openTrash.mjs
+// This file defines browser-side open Trash logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default async function openTrash() {
   const trashPath = 'UserSettings/Trash';

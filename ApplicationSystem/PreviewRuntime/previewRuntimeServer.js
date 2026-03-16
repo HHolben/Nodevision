@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/PreviewRuntime/previewRuntimeServer.js
+// This file defines the preview Runtime Server module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import express from 'express';
 import http from 'node:http';
 import { loadPreviewRuntimeConfig } from './previewConfig.js';

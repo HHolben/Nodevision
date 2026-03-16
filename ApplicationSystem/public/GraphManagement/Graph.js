@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/GraphManagement/Graph.js
+// This file defines browser-side Graph logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/GraphManagement/Graph.js
 // Purpose: TODO: Add description of module purpose
 

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewUSD.mjs
-// Multi-instance USD (Universal Scene Description) Viewer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewUSD.mjs
+// This file defines browser-side View USD logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import * as THREE from '../../../lib/three/three.module.js';
 import { OrbitControls } from '/lib/three/OrbitControls.js'; 

@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/draw/ImageLayout.mjs
-// Shared layout sub-toolbar for both PNG and SVG editors.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/draw/ImageLayout.mjs
+// This file defines browser-side Image Layout logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 function clampInt(value, fallback = 0) {
   const numeric = Math.floor(Number(value));

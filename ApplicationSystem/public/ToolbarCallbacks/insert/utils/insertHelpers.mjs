@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/utils/insertHelpers.mjs
+// This file defines browser-side insert Helpers logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Utility functions for inserting text or elements into editors
 // Supports both <textarea> and contentEditable editors
 

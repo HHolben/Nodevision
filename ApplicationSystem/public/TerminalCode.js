@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/TerminalCode.js
+// This file defines browser-side Terminal Code logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/TerminalCode.js
 // Purpose: TODO: Add description of module purpose
 

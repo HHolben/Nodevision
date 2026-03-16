@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewTTF.mjs
-// Purpose: Render metadata about a TrueType Font (TTF) file inside a Nodevision panel.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewTTF.mjs
+// This file defines browser-side View TTF logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Fetches font metadata from the server and displays it in a clean table.
 
 export async function ViewTTF(filename, infoPanel, serverBase) {

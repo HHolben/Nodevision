@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/engine/spawn/NvTemplate.mjs
+// This file defines browser-side Nv Template logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { normalizePrim, validatePrim } from "../entities/primSchema.mjs";
 
 export class NvTemplate {

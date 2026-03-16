@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditorComponents/history.mjs
+// This file defines browser-side history logic for the Nodevision UI. It renders interface components and handles user interactions.
 //public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditorComponents/history.mjs
 //This file is used to manage the user's 'do' and 'undo' operations.
 

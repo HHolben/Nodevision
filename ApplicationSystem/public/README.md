@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/README.md -->
+<!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Public
 
 The `public` folder contains client-side code, assets, and styles that run in the browser.

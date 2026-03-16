@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/generateEdgesRoutes.js
+// This file defines the generate Edges Routes API route handler for the Nodevision server. It validates requests and sends responses for generate Edges Routes operations.
 // routes/api/generateEdgesRoutes.js
 // Edge generation helpers
 

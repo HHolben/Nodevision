@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/sceneBase.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/sceneBase.mjs
 // This file creates the Three.js scene, renderer, camera, and static ground lighting.
 
 export function createSceneBase({ THREE, panel, canvas }) {

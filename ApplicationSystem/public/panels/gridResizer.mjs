@@ -1,5 +1,5 @@
-// Nodevision/public/gridResizer.mjs
-// ES Module for making a grid of panes resizable with vertical and horizontal dividers
+// Nodevision/ApplicationSystem/public/panels/gridResizer.mjs
+// This file defines browser-side grid Resizer logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function makeGridResizable(root, options = {}) {
   const minSize = options.minSize || 50; // Minimum pane width/height

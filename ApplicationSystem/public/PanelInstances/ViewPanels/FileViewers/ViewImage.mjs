@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewImage.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewImage.mjs
 // This file renders image files inside the view panel with a contained responsive preview.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {

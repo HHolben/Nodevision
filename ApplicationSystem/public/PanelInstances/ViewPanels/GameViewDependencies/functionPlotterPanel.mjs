@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/functionPlotterPanel.mjs
-// Undocked panel for safe math function plot configuration.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/functionPlotterPanel.mjs
+// This file defines browser-side function Plotter Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 

@@ -1,5 +1,5 @@
 # Nodevision/ApplicationSystem/installer/install-nodevision-linux/install.sh
-# This file performs bundle extraction and filesystem installation steps so that the Nodevision Linux installer can keep its main script focused on configuration and prompts.
+# This file defines the install module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 
 nv_is_tar_url() {
   case "$1" in
@@ -62,4 +62,3 @@ nv_install_from_bundle_root() {
     chmod 755 "${install_dir}/xdg-open" || true
   fi
 }
-

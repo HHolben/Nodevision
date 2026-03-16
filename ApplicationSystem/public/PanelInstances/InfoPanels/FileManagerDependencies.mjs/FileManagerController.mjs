@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerController.mjs
+// This file defines browser-side File Manager Controller logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { fetchDirectoryContents } from "./FileManagerAPI.mjs";
 import { renderFiles } from "./FileManagerRenderer.mjs";
 import { renderBreadcrumbs } from "./FileManagerBreadcrumbs.mjs";

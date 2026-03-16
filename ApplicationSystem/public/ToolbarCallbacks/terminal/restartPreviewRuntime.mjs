@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/terminal/restartPreviewRuntime.mjs
+// This file defines browser-side restart Preview Runtime logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { setStatus } from "/StatusBar.mjs";
 
 export default async function restartPreviewRuntime() {
@@ -12,4 +14,3 @@ export default async function restartPreviewRuntime() {
   setStatus("Preview Runtime", "Running");
   alert("Preview Runtime restarted.");
 }
-

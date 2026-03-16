@@ -1,5 +1,5 @@
-// Nodevision/public/Graph/LinkExtractor.mjs
-// Extracts links from files to create edges in the graph
+// Nodevision/ApplicationSystem/public/Graph/LinkExtractor.mjs
+// This file defines browser-side Link Extractor logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import fs from 'fs/promises';
 import path from 'path';

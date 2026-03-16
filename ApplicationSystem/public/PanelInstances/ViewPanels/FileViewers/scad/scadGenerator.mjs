@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/scad/scadGenerator.mjs
+// This file defines browser-side scad Generator logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Nodevision SCAD Editor - scadGenerator.mjs
 // Purpose: Generate readable OpenSCAD from a scene tree + parameters; parse simple parameter assignments from SCAD.
 

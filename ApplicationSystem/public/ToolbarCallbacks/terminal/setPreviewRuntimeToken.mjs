@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/terminal/setPreviewRuntimeToken.mjs
+// This file defines browser-side set Preview Runtime Token logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { setStatus } from "/StatusBar.mjs";
 
 function renderTokenPrompt() {
@@ -100,4 +102,3 @@ export default async function setPreviewRuntimeToken() {
   setStatus("Preview Runtime", "Running");
   alert("Preview Runtime token set and service restarted.");
 }
-

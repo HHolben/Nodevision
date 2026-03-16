@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/arduinoDevices.js
+// This file defines the arduino Devices API route handler for the Nodevision server. It validates requests and sends responses for arduino Devices operations.
 // routes/api/arduinoDevices.js
 // Purpose: List connected Arduino (or Arduino-like) devices for UI selection.
 
@@ -146,4 +148,3 @@ export default function createArduinoDevicesRouter() {
 
   return router;
 }
-

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/imageHandling.js
+// This file defines browser-side image Handling logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: imageHandling.js
 // Purpose: TODO: Add description of module purpose
 (function(){

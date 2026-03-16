@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/fullscreenPanel.mjs
-// Toggles fullscreen for the active panel.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/fullscreenPanel.mjs
+// This file defines browser-side fullscreen Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function toggleFullscreenPanel() {
   if (window.__nvActiveLegacyUndockedPanel?.isConnected) {

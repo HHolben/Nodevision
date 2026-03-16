@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewSpreadsheet.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewSpreadsheet.mjs
 // This file provides a lightweight fallback preview for spreadsheet documents.
 
 import { renderFile as renderBinaryFile } from "./ViewBinary.mjs";

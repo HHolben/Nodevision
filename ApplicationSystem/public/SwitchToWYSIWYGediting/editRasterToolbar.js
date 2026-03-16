@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/editRasterToolbar.js
+// This file defines browser-side edit Raster Toolbar logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/SwitchToWYSIWYGediting/editRasterToolbar.js
 // Purpose: TODO: Add description of module purpose
 

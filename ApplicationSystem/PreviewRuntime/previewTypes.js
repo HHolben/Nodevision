@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/PreviewRuntime/previewTypes.js
+// This file defines the preview Types module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 export const SUPPORTED_LANGUAGES = Object.freeze(['python', 'java', 'cpp']);
 
 export const LANGUAGE_EXTENSIONS = Object.freeze({

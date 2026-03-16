@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/playerInventory.mjs
-// Lightweight player inventory HUD and selection logic for future world placement actions.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/playerInventory.mjs
+// This file defines browser-side player Inventory logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 
 export function createPlayerInventory({ panel }) {

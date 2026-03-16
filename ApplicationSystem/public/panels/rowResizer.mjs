@@ -1,6 +1,5 @@
-// Nodevision/public/panels/rowResizer.mjs
-//This module is used to make horizontal divider bars work.
-// Nodevision/public/panels/rowResizer.mjs
+// Nodevision/ApplicationSystem/public/panels/rowResizer.mjs
+// This file defines browser-side row Resizer logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function makeRowsResizable(workspace, { minHeight = 50 } = {}) {
   if (!workspace) return;

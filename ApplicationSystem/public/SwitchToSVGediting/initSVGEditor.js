@@ -1,5 +1,5 @@
-// Nodevision/public/SwitchToSVGediting/initSVGEditor.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/SwitchToSVGediting/initSVGEditor.js
+// This file defines browser-side init SVGEditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 (function() {
   // Determine active node and filePath
   let activeNode = window.ActiveNode;

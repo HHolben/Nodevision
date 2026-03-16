@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/README.md -->
+<!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
 # Nodevision
 Nodevision is a Node.js based web development environment with a special focus on Note taking and Graph visualizations of project directories made with love and generative AIs.
 

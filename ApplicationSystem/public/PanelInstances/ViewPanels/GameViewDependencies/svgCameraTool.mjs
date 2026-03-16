@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/svgCameraTool.mjs
-// Exports the current 3D viewport frame as SVG using Three.js SVGRenderer.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/svgCameraTool.mjs
+// This file defines browser-side svg Camera Tool logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { SVGRenderer } from "/lib/three/renderers/SVGRenderer.js";
 

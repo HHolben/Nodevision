@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewASC.mjs
-// Generic ASCII (.asc) file viewer
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewASC.mjs
+// This file defines browser-side View ASC logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(panelElem, filePath, panelVars = {}) {
   panelElem.innerHTML = `

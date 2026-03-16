@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ExtractLinksFromHTML.js
+// This file defines browser-side Extract Links From HTML logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/ExtractLinksFromHTML.js
 // Purpose: TODO: Add description of module purpose
 

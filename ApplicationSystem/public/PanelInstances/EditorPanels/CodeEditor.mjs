@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/EditorPanels/CodeEditor.mjs
-// Replaces the active panel cell with a Monaco-based Code Editor for the selected file.
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs
+// This file defines browser-side Code Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
 
 let editorInstance = null;

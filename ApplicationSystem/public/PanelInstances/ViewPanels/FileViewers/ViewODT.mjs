@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewODT.mjs
-// Purpose: Display .odt (OpenDocument Text) files inside a panel using JSZip to extract content.xml
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewODT.mjs
+// This file defines browser-side View ODT logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import JSZip from "../../../lib/jszip/jszip.min.js";
 

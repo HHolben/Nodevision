@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/scad/plugins.mjs
+// This file defines browser-side plugins logic for the Nodevision UI. It renders interface components and handles user interactions.
 // Nodevision SCAD Editor - plugins.mjs
 // Purpose: Minimal plugin registry (future-facing). Plugins can register primitives/modules/UI components.
 
@@ -43,4 +45,3 @@ export function listUIComponents() {
 export function getPrimitiveDefaults(type) {
   return primitives.get(type)?.defaultParameters;
 }
-

@@ -1,4 +1,4 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/View3MF.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/View3MF.mjs
 // This module renders 3MF (3D Manufacturing Format) files in an interactive Three.js viewer.
 
 // Imports using bare specifiers (defined in your HTML Import Map)

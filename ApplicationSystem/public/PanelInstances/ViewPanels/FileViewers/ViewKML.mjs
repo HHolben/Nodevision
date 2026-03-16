@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/ViewKML.mjs
-// Purpose: Render KML (Keyhole Markup Language) files in a Nodevision view panel
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewKML.mjs
+// This file defines browser-side View KML logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function setupPanel(panel, instanceVars = {}) {
   const filePath = window.selectedFilePath || instanceVars.filePath || '';

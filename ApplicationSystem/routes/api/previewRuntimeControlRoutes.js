@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/previewRuntimeControlRoutes.js
+// This file defines the preview Runtime Control Routes API route handler for the Nodevision server. It validates requests and sends responses for preview Runtime Control Routes operations.
 import express from 'express';
 import crypto from 'node:crypto';
 import { createPreviewRuntimeSupervisor } from '../../PreviewRuntime/previewRuntimeSupervisor.mjs';
@@ -57,4 +59,3 @@ export default function createPreviewRuntimeControlRoutes(ctx) {
 
   return router;
 }
-

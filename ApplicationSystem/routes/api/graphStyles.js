@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/graphStyles.js
+// This file defines the graph Styles API route handler for the Nodevision server. It validates requests and sends responses for graph Styles operations.
 // routes/api/graphStyles.js
 // Purpose: Graph visualization styling
 

@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/movementSteps.mjs
-// This file groups movement step helpers used by the per-frame update.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/movementSteps.mjs
+// This file defines browser-side movement Steps logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export function applyDirectionalMovement({ THREE, controls, movementState, inputState, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight, allowVerticalMovement = false }) {
   if (!(inputState.moveForward || inputState.moveBackward || inputState.moveLeft || inputState.moveRight)) return;

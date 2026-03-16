@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/GameViewDependencies/terrainGeneratorTool.mjs
-// Terrain generator tool panel for in-world procedural terrain placement.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/terrainGeneratorTool.mjs
+// This file defines browser-side terrain Generator Tool logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 

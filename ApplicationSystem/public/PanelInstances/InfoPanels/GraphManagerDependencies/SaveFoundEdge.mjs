@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/SaveFoundEdge.mjs
-//Saves an edge (link) to a partitioned JSON file in Nodevision/public/data/edges.The partition is based on the first character of the destination node's name.@param {Object} edge - The edge object, e.g., { source: 'file1.md', target: 'file2.md' }
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/SaveFoundEdge.mjs
+// This file defines browser-side Save Found Edge logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 
 /**

@@ -1,4 +1,4 @@
-//Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewIPYNB.mjs
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewIPYNB.mjs
 // Renders Jupyter notebook markdown, code, and basic cell outputs.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {

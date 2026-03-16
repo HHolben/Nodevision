@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/ViewPanels/FileViewers/ViewANN.mjs
-// Viewer for .ann annotation files (brat-style standoff annotations)
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewANN.mjs
+// This file defines browser-side View ANN logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export async function renderFile(filePath, panel, iframe, serverBase) {
   panel.innerHTML = '';

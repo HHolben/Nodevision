@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/resizeContainers.js
+// This file defines browser-side resize Containers logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/resizeContainers.js
 // Purpose: TODO: Add description of module purpose
 

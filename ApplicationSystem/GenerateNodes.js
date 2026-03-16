@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/GenerateNodes.js
+// This file defines the Generate Nodes module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 // GenerateNodes.js
 // Purpose: Generate individual node data for file system items
 

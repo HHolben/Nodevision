@@ -1,5 +1,5 @@
-// Nodevision/public/panels/utils.mjs
-//This module adds shared helpers.
+// Nodevision/ApplicationSystem/public/panels/utils.mjs
+// This file defines browser-side utils logic for the Nodevision UI. It renders interface components and handles user interactions.
 export function bringToFront(panel) {
   const zIndexes = Array.from(document.querySelectorAll(".panel"))
     .map((p) => parseInt(p.style.zIndex) || 1000);

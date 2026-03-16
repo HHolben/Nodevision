@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/GraphManagerDependencies/APIFunctions.mjs
-
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/APIFunctions.mjs
+// This file defines browser-side APIFunctions logic for the Nodevision UI. It renders interface components and handles user interactions.
 /**
  * Helper: compute bucket symbol for id (first unicode char of local name)
  * @param {string} id

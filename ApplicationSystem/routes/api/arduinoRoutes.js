@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/routes/api/arduinoRoutes.js
+// This file defines the arduino Routes API route handler for the Nodevision server. It validates requests and sends responses for arduino Routes operations.
 // routes/api/arduinoRoutes.js
 // Purpose: TODO: Add description of module purpose
 

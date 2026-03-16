@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/insert/insertUnorderedList.mjs
-// Toolbar callback to insert an unordered list (<ul>) into the active editor panel
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertUnorderedList.mjs
+// This file defines browser-side insert Unordered List logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 export default function insertUnorderedList() {
   const wysiwyg = document.querySelector("#wysiwyg[contenteditable='true']");

@@ -1,5 +1,5 @@
-// Nodevision/public/ToolbarCallbacks/view/UndockPanel.mjs
-// Undocks the active panel cell content into a floating panel and lets it snap to panel cells.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/UndockPanel.mjs
+// This file defines browser-side Undock Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 function clearTargetHighlight(target = null) {
   if (target?.classList) {

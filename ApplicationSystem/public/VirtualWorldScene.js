@@ -1,5 +1,5 @@
-//Nodevision/ApplicationSystem/public/VirtualWorldScene.js
-// Purpose: TODO: Add description of module purpose
+// Nodevision/ApplicationSystem/public/VirtualWorldScene.js
+// This file defines browser-side Virtual World Scene logic for the Nodevision UI. It renders interface components and handles user interactions.
 const container = document.getElementById('content-frame-container'); // right pane
 const canvas = document.getElementById("three-canvas");
 

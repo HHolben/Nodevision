@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToCSVediting.js
+// This file defines browser-side Switch To CSVediting logic for the Nodevision UI. It renders interface components and handles user interactions.
 // public/SwitchToCSVediting.js
 // Purpose: TODO: Add description of module purpose
 

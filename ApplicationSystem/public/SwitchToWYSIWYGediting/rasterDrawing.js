@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/rasterDrawing.js
+// This file defines browser-side raster Drawing logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: rasterDrawing.js
 // Purpose: TODO: Add description of module purpose
 // Canvas drawing functionality for raster editing

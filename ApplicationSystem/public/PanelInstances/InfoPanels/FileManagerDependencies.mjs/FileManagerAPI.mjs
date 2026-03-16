@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs
+// This file defines browser-side File Manager API logic for the Nodevision UI. It renders interface components and handles user interactions.
 export async function fetchDirectoryContents(path = "") {
   const cleanPath = path.replace(/^\/+/, "");
   const res = await fetch(`/api/files?path=${encodeURIComponent(cleanPath)}`);

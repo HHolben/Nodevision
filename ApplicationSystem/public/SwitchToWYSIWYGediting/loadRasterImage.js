@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/loadRasterImage.js
+// This file defines browser-side load Raster Image logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: loadRasterImage.js
 // Purpose: TODO: Add description of module purpose
 // Load and display raster images for editing

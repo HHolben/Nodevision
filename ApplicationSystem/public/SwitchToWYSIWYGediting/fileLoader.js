@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/SwitchToWYSIWYGediting/fileLoader.js
+// This file defines browser-side file Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 // FILE: fileLoader.js
 // Purpose: TODO: Add description of module purpose
 (function(){
