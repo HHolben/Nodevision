@@ -8,7 +8,7 @@ node_modules/
 .env
 
 # Ignore build output
-build/
+ApplicationSystem/build/
 
 #Ignore rsync stuff
 .sync
@@ -25,6 +25,6 @@ UserData/data
 # Ignore User Settings
 UserSettings
 
-# Accounts runtime data (sessions/logs should not be committed)
-Accounts/logs/
-Accounts/data/sessions.json
+# ServerData runtime data (sessions/logs should not be committed)
+ServerData/logs/
+ServerData/data/sessions.json

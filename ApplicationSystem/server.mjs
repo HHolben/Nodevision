@@ -1,15 +1,10 @@
-// Nodevision/server.js
-// Purpose: Main Express server with dual Node.js/PHP setup, API routes, file serving, and graph-based content management
+// Nodevision/ApplicationSystem/server.mjs
+// This file initializes the Nodevision Express application and wires core middleware, static asset serving, authentication, and API routes into a single server entry point.
 
 import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import favicon from 'serve-favicon';
-import fs from 'node:fs';
-import fsPromises from 'node:fs/promises';
-import multer from 'multer';
-import * as cheerio from 'cheerio';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import cookieParser from 'cookie-parser';
 
@@ -20,117 +15,18 @@ import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 import graphDataRoutes from "./routes/api/graphData.js";
 import listDirectoryRouter from "./routes/api/listDirectory.js";
 import uploadRoutes from './routes/api/fileUploadRoutes.js';
+import previewRuntimeRoutes from './routes/api/previewRuntimeRoutes.js';
+import previewRuntimeControlRoutes from './routes/api/previewRuntimeControlRoutes.js';
 import { createServerContext, ensureServerDirectories } from './shared/serverContext.mjs';
 
-function requireAuthentication(req, res, next) {
-  if (req.identity) {
-    return next();
-  }
-  return res.redirect('/');
-}
-
-// Secure helper function to validate and normalize paths
-function validateAndNormalizePath(userPath, allowedBaseDir) {
-  if (!userPath) return allowedBaseDir;
-  
-  // Remove any null bytes and normalize path
-  const sanitized = userPath.replace(/\0/g, '').replace(/\\/g, '/');
-  const resolved = path.resolve(allowedBaseDir, sanitized);
-  
-  // Ensure the resolved path is within the allowed directory using proper relative path checking
-  const relative = path.relative(allowedBaseDir, resolved);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error('Access denied: Path outside allowed directory');
-  }
-  
-  return resolved;
-}
-
-const phpProxyOptions = {
-  target: 'http://localhost:8080',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/php': '',
-  },
-  onError: (err, req, res) => {
-    console.error('PHP proxy error:', err.message);
-    res.status(503).json({ error: 'PHP server unavailable' });
-  }
-};
-
-// Dynamically load routes from JSON
-async function loadRoutes(app, ctx) {
-  try {
-    const data = await fsPromises.readFile(ctx.routesJsonPath, 'utf8');
-    const { routes } = JSON.parse(data);
-
-    for (const { name, path: routePath } of routes) {
-      const absoluteRoutePath = path.resolve(ctx.applicationSystemRoot, routePath);
-      
-      console.log(`Attempting to load route: ${name} from ${routePath}`);
-    
-      if (fs.existsSync(absoluteRoutePath)) {
-        try {
-          const mod = await import(pathToFileURL(absoluteRoutePath).href);
-          const factory = mod.default ?? mod;
-          let route;
-          if (typeof factory === 'function') {
-            try {
-              route = factory(ctx);
-            } catch (err) {
-              if (err instanceof TypeError && err.message.includes('argument callback is required')) {
-                route = factory;
-              } else {
-                throw err;
-              }
-            }
-          } else {
-            route = factory;
-          }
-
-          if (!route) {
-            throw new Error('Route factory returned nothing');
-          }
-
-          app.use('/api', route);
-          console.log(`✅ Loaded route: ${name} from ${absoluteRoutePath}`);
-        } catch (err) {
-          console.error(`❌ Error importing route ${name} from ${routePath}:`, err);
-        }
-      } else {
-        console.error(`❌ Route file not found: ${absoluteRoutePath}`);
-      }
-    }
-    
-  } catch (error) {
-    console.error('Error loading routes:', error.message);
-  }
-}
-
-// Function to extract the first image URL from the file content
-async function getFirstImageUrl(filePath, publicDir) {
-  try {
-    const fileContent = await fsPromises.readFile(filePath, 'utf8');
-    const $ = cheerio.load(fileContent);
-    const firstImageSrc = $('img').first().attr('src');
-
-    if (firstImageSrc) {
-      if (firstImageSrc.startsWith('http') || firstImageSrc.startsWith('//')) {
-        return firstImageSrc;
-      } else {
-      const imagePath = path.join(path.dirname(filePath), firstImageSrc);
-      const basePublic = publicDir ?? path.join(process.cwd(), 'public');
-      const resolvedImagePath = path.relative(basePublic, imagePath);
-      return resolvedImagePath.split(path.sep).join('/');
-      }
-    } else {
-      return null;
-    }
-  } catch (error) {
-    console.error(`Error reading file for images: ${error}`);
-    return null;
-  }
-}
+import { phpProxyOptions } from "./server/phpProxy.mjs";
+import { loadRoutes } from "./server/dynamicRoutes.mjs";
+import { identityMiddleware, requireAuthentication } from "./server/middleware/authIdentity.mjs";
+import { registerAuthRoutes } from "./server/routes/authRoutes.mjs";
+import { registerNotebookRoutes } from "./server/routes/notebookRoutes.mjs";
+import { registerGraphExtras } from "./server/routes/graphExtras.mjs";
+import { registerGamepadRoutes } from "./server/routes/gamepadRoutes.mjs";
+import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
 
 export default async function createApp(runtimeConfig = {}) {
   const ctx = createServerContext(runtimeConfig);
@@ -148,7 +44,6 @@ export default async function createApp(runtimeConfig = {}) {
   const SHARED_DATA_DIR = ctx.sharedDataDir;
   const PUBLIC_DIR = ctx.publicDir;
   const NODE_MODULES_DIR = ctx.nodeModulesDir;
-  const gamepadSettingsFile = ctx.gamepadSettingsFile;
 
   const app = express();
 
@@ -157,81 +52,12 @@ export default async function createApp(runtimeConfig = {}) {
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cookieParser());
 
-  app.use(async (req, res, next) => {
-    try {
-      req.identity = await AuthService.authenticateRequest(req);
-    } catch (err) {
-      return next(err);
-    }
-    next();
-  });
-
-  app.get('/api/session', (req, res) => {
-    if (!req.identity) {
-      return res.status(200).json({ loggedIn: false });
-    }
-
-    const { id, username, role, type } = req.identity;
-    res.status(200).json({
-      loggedIn: true,
-      identity: { id, username, role, type },
-    });
-  });
-
-  app.get('/login', (req, res) => {
-    res.redirect('/');
-  });
+  app.use(identityMiddleware(AuthService));
+  registerAuthRoutes(app, AuthService);
 
   app.use('/lib/monaco', express.static(path.join(PUBLIC_DIR, 'lib/monaco')));
   app.use("/api", listDirectoryRouter(ctx));
   app.use('/api/file', uploadRoutes);
-
-  app.post('/api/login', async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      const result = await AuthService.login({
-        username,
-        password,
-        ip: req.ip,
-      });
-
-      const expiresMs = Math.max(result.expires * 1000 - Date.now(), 0);
-      res.cookie('nodevision_session', result.token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: expiresMs,
-        path: '/',
-      });
-
-      res.json({
-        success: true,
-        identity: result.identity,
-        expires: result.expires,
-      });
-    } catch (err) {
-      if (err?.message === 'Invalid credentials') {
-        return res.status(401).json({ error: 'Invalid username or password' });
-      }
-      console.error('Login error', err);
-      res.status(500).json({ error: 'Login failed' });
-    }
-  });
-
-  app.post('/api/logout', async (req, res) => {
-    try {
-      const token = req.cookies?.nodevision_session;
-      await AuthService.logout(token);
-      res.clearCookie('nodevision_session', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-      });
-      res.json({ success: true });
-    } catch (err) {
-      console.error('Logout error', err);
-      res.status(500).json({ error: 'Logout failed' });
-    }
-  });
 
   app.use('/php', createProxyMiddleware(phpProxyOptions));
   app.use('/public/data', express.static(SHARED_DATA_DIR));
@@ -263,159 +89,17 @@ export default async function createApp(runtimeConfig = {}) {
 
   app.use("/api/toolbar", toolbarRoutes(ctx));
   app.use("/api/graph", graphDataRoutes);
+  app.use('/api', previewRuntimeRoutes(ctx));
+  app.use('/api', previewRuntimeControlRoutes(ctx));
   app.use('/UserSettings', express.static(USER_SETTINGS_DIR));
   app.use('/Notebook', requireAuthentication, express.static(NOTEBOOK_DIR));
   app.use(favicon(path.join(PUBLIC_DIR, 'favicon.ico')));
 
-  const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, NOTEBOOK_DIR);
-    },
-    filename: function (req, file, cb) {
-      cb(null, Date.now() + path.extname(file.originalname));
-    }
-  });
-
-  const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }
-  });
-
   await loadRoutes(app, ctx);
-
-  app.get('/api/topLevelNodes', async (req, res) => {
-    const dir = NOTEBOOK_DIR;
-    const entries = await fsPromises.readdir(dir);
-    res.json(entries);
-  });
-
-  app.get('/api/list-directory', async (req, res) => {
-    try {
-      const relPath = req.query.path || '';
-      const notebookDir = NOTEBOOK_DIR;
-      const fullPath = validateAndNormalizePath(relPath, notebookDir);
-      const entries = await fsPromises.readdir(fullPath, { withFileTypes: true });
-      const result = entries.map(entry => ({
-        name: entry.name,
-        fileType: entry.isDirectory() ? 'directory' : 'file'
-      }));
-      res.json(result);
-    } catch (err) {
-      console.error('Failed to list directory:', err.message);
-      res.status(403).json({ error: 'Access denied or directory not found' });
-    }
-  });
-
-  app.get('/api/list-links', async (req, res) => {
-    try {
-      const relPath = req.query.path || '';
-      const notebookDir = NOTEBOOK_DIR;
-      const dirFull = validateAndNormalizePath(relPath, notebookDir);
-      const entries = await fsPromises.readdir(dirFull, { withFileTypes: true });
-      const links = [];
-      for (const entry of entries) {
-        if (entry.isFile()) {
-          const ext = path.extname(entry.name).toLowerCase();
-          if (['.md', '.txt', '.html', '.js'].includes(ext)) {
-            const content = await fsPromises.readFile(path.join(dirFull, entry.name), 'utf8');
-            const regex = /\[\[([^\]]+)\]\]|\[.*?\]\((.*?)\)/g;
-            let match;
-            while ((match = regex.exec(content))) {
-              const target = match[1] || match[2];
-              if (target) links.push({ source: entry.name, target });
-            }
-          }
-        }
-      }
-      res.json(links);
-    } catch (err) {
-      console.error('Failed to list links:', err.message);
-      res.status(403).json({ error: 'Access denied or directory not found' });
-    }
-  });
-
-  app.post('/api/graph/save-edges', async (req, res) => {
-    try {
-      const { filename, data } = req.body;
-      if (!filename || typeof filename !== 'string') {
-        return res.status(400).json({ error: 'filename is required' });
-      }
-      if (typeof data !== 'object') {
-        return res.status(400).json({ error: 'data must be a JSON object' });
-      }
-      let char = filename.trim()[0];
-      if (!char) char = '#';
-      if (!/^[A-Za-z0-9]$/.test(char)) {
-        char = '#';
-      }
-      const edgesDir = path.join(SHARED_DATA_DIR, 'edges');
-      const targetFile = path.join(edgesDir, `${char}.json`);
-      await fsPromises.mkdir(edgesDir, { recursive: true });
-      const tmpFile = targetFile + '.tmp';
-      await fsPromises.writeFile(tmpFile, JSON.stringify(data, null, 2), 'utf8');
-      await fsPromises.rename(tmpFile, targetFile);
-      res.json({
-        success: true,
-        bucket: char,
-        path: `public/data/edges/${char}.json`
-      });
-    } catch (err) {
-      console.error('Failed to save edge bucket:', err);
-      res.status(500).json({ error: 'Failed to save edge data' });
-    }
-  });
-
-  app.get('/api/load-gamepad-settings', async (req, res) => {
-    try {
-      if (!fs.existsSync(gamepadSettingsFile)) return res.json({});
-      const data = await fsPromises.readFile(gamepadSettingsFile, 'utf8');
-      const json = JSON.parse(data);
-      res.json(json);
-    } catch (err) {
-      console.error('Error reading gamepad settings:', err);
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.post('/api/save-gamepad-settings', async (req, res) => {
-    try {
-      await fsPromises.writeFile(gamepadSettingsFile, JSON.stringify(req.body, null, 2), 'utf8');
-      res.json({ success: true });
-    } catch (err) {
-      console.error('Error saving gamepad settings:', err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  app.post('/api/load-world', async (req, res) => {
-    let { worldPath } = req.body;
-    if (!worldPath) {
-      return res.status(400).json({ error: "No world path provided" });
-    }
-    try {
-      worldPath = worldPath
-        .replace(/\\/g, '/')
-        .replace(/^\/+/, '')
-        .replace(/^\.\//, '')
-        .replace(/^Notebook\//, '');
-      const notebookDir = NOTEBOOK_DIR;
-      const filePath = validateAndNormalizePath(worldPath, notebookDir);
-      const fileContent = await fsPromises.readFile(filePath, 'utf8');
-      const $ = cheerio.load(fileContent);
-      const worldScript = $('script[type="application/json"]').html();
-      if (!worldScript) {
-        return res.status(400).json({ error: "No world definition found in file" });
-      }
-      const cleaned = worldScript
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/(^|[^:])\/\/.*$/gm, "$1")
-        .trim();
-      const worldDefinition = JSON.parse(cleaned);
-      res.json({ worldDefinition });
-    } catch (error) {
-      res.status(500).json({ error: "Error loading world", details: error?.message || "Unknown error" });
-    }
-  });
+  registerNotebookRoutes(app, ctx);
+  registerGraphExtras(app, ctx);
+  registerGamepadRoutes(app, ctx);
+  registerWorldRoutes(app, ctx);
 
   return app;
 }

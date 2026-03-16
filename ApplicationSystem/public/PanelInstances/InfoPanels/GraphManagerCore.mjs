@@ -8,6 +8,11 @@ import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
 let cy;
 let currentRootPath = '';
 const discoveredLinks = new Map(); // sourcePath -> Set(targetPath)
+let layoutHasInitialized = false;
+let activeLayout = null;
+let layoutDebounceTimer = null;
+let layoutPendingFit = false;
+let layoutPendingReasons = new Set();
 const EDGE_BUCKET_SYMBOLS = [
     ...'abcdefghijklmnopqrstuvwxyz',
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -225,6 +230,98 @@ function rebuildVisibleEdges() {
     });
 }
 
+function buildGraphLayoutOptions({ fit = true } = {}) {
+    // Use fcose for better compound-node packing and reduced wasted space.
+    // First run uses random initialization for fast, non-overlapping placement.
+    // Subsequent runs use proof quality + deterministic initialization (randomize: false)
+    // so relayouts (expand/collapse) are stable and labels are considered.
+    const proof = layoutHasInitialized === true;
+    const hasFcose = typeof cytoscape === 'function' && !!cytoscape('layout', 'fcose');
+    if (!hasFcose) {
+        // Fallback (should be rare): keep cose but still disable animation and fit.
+        return {
+            name: 'cose',
+            fit: Boolean(fit),
+            padding: 14,
+            animate: false,
+        };
+    }
+
+    return {
+        name: 'fcose',
+        fit: Boolean(fit),
+        padding: 14,
+        animate: false,
+        quality: proof ? 'proof' : 'default',
+        randomize: proof ? false : true,
+        nodeDimensionsIncludeLabels: proof ? true : false,
+        packComponents: true,
+        tile: true,
+        tilingPaddingVertical: 12,
+        tilingPaddingHorizontal: 12,
+
+        // Compact but readable spacing.
+        nodeSeparation: 40,
+        idealEdgeLength: () => 80,
+        nodeRepulsion: () => 4200,
+        edgeElasticity: () => 0.35,
+        nestingFactor: 0.45,
+
+        // Pull components together to minimize empty space; keep compounds readable.
+        gravity: 0.55,
+        gravityCompound: 1.2,
+        gravityRangeCompound: 1.25,
+        gravityRange: 2.2,
+
+        // Reasonable iteration cap for medium graphs.
+        numIter: proof ? 1600 : 1000,
+    };
+}
+
+function queueRelayout({ fit = true, reason = 'update' } = {}) {
+    if (!cy) return;
+    layoutPendingFit = layoutPendingFit || Boolean(fit);
+    if (reason) layoutPendingReasons.add(String(reason));
+    if (layoutDebounceTimer) return;
+
+    layoutDebounceTimer = window.setTimeout(() => {
+        layoutDebounceTimer = null;
+        const doFit = layoutPendingFit;
+        const reasons = [...layoutPendingReasons.values()];
+        layoutPendingFit = false;
+        layoutPendingReasons.clear();
+        runRelayout({ fit: doFit, reasons });
+    }, 60);
+}
+
+function runRelayout({ fit = true, reasons = [] } = {}) {
+    if (!cy) return;
+    try {
+        cy.resize();
+    } catch (_) {
+        // ignore
+    }
+
+    if (activeLayout && typeof activeLayout.stop === 'function') {
+        try { activeLayout.stop(); } catch (_) { /* ignore */ }
+    }
+
+    const opts = buildGraphLayoutOptions({ fit });
+    if (reasons.length > 0) {
+        console.debug('[GraphManager] relayout', reasons.join(', '), opts.quality, opts.randomize ? '(random)' : '(stable)');
+    }
+
+    activeLayout = cy.layout(opts);
+    activeLayout.one('layoutstop', () => {
+        layoutHasInitialized = true;
+        if (fit) {
+            try { cy.fit(undefined, opts.padding || 14); } catch (_) { /* ignore */ }
+        }
+        activeLayout = null;
+    });
+    activeLayout.run();
+}
+
 export async function initGraphView({ containerId, rootPath, statusElemId }) {
     currentRootPath = normalizePath(rootPath);
     discoveredLinks.clear();
@@ -242,6 +339,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'color': '#333',
                     'background-color': '#0078d7',
                     'font-size': '10px',
+                    'text-wrap': 'wrap',
+                    'text-max-width': 110,
                     'z-index': 10
                 }
             },
@@ -250,8 +349,19 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                 style: {
                     'background-color': '#ffca28',
                     'shape': 'rectangle',
-                    'width': '64px',
-                    'height': '64px'
+                    // Keep unexpanded directories compact while allowing expanded ones
+                    // to size naturally around their children.
+                    'min-width': 64,
+                    'min-height': 64,
+                    'border-width': 1,
+                    'border-color': '#b58a19'
+                }
+            },
+            {
+                selector: 'node[type="directory"]:childless',
+                style: {
+                    'width': 64,
+                    'height': 64
                 }
             },
             {
@@ -274,7 +384,11 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'border-color': '#ffca28',
                     'border-width': 2,
                     'text-valign': 'top',
-                    'text-halign': 'center'
+                    'text-halign': 'center',
+                    // Reduce wasted internal space while preserving label readability.
+                    'padding': 10,
+                    'text-margin-y': 4,
+                    'compound-sizing-wrt-labels': 'include'
                 }
             },
             {
@@ -301,10 +415,30 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                 }
             }
         ],
-        layout: { name: 'cose', padding: 30 }
+        layout: { name: 'preset' }
     });
 
     window.cy = cy;
+
+    // Keep Cytoscape's renderer in sync with available panel space.
+    if (container && typeof ResizeObserver !== 'undefined') {
+        try {
+            if (container.__nvGraphResizeObserver) {
+                container.__nvGraphResizeObserver.disconnect();
+            }
+            const ro = new ResizeObserver(() => {
+                if (!cy) return;
+                try { cy.resize(); } catch (_) { /* ignore */ }
+                if (!activeLayout) {
+                    try { cy.fit(undefined, 14); } catch (_) { /* ignore */ }
+                }
+            });
+            ro.observe(container);
+            container.__nvGraphResizeObserver = ro;
+        } catch (err) {
+            console.warn('[GraphManager] ResizeObserver setup failed:', err);
+        }
+    }
 
         cy.on('tap', 'node', (evt) => {
         const path = evt.target.data('fullPath');
@@ -387,8 +521,8 @@ async function renderGraphData(files, parentPath) {
         });
     });
 
-    // Run layout first so nodes have positions
-    cy.layout({ name: 'cose', animate: true, fit: true }).run();
+    // Give newly added nodes a reasonable placement quickly.
+    queueRelayout({ fit: false, reason: 'nodes-added' });
 
     // Scan for links AFTER nodes are added to the graph instance
     for (const filePath of filesToScan) {
@@ -396,6 +530,8 @@ async function renderGraphData(files, parentPath) {
     }
 
     rebuildVisibleEdges();
+    // Final relayout after edges exist so connected structures pack better.
+    queueRelayout({ fit: true, reason: 'edges-updated' });
 }
 
 async function handleLinkDiscovery(filePath) {
@@ -435,7 +571,7 @@ async function toggleCompoundDirectory(node) {
     }
 
     rebuildVisibleEdges();
-    cy.layout({ name: 'cose', animate: true }).run();
+    queueRelayout({ fit: true, reason: 'toggle-directory' });
 }
 
 function uniqueValues(values = []) {

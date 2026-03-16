@@ -2775,6 +2775,26 @@ function registerCanvasDeletionHotkeys(wysiwyg) {
 // Fallback Hotkeys (self-contained)
 // --------------------------------------------------
 function registerHTMLFallbackHotkeys(wysiwyg, filePath, rootElem) {
+  let insertTabCallback = null;
+  let insertTabCallbackPromise = null;
+  const ensureInsertTabCallback = () => {
+    if (insertTabCallback) return Promise.resolve(insertTabCallback);
+    if (!insertTabCallbackPromise) {
+      insertTabCallbackPromise = import("/ToolbarCallbacks/insert/insertTab.mjs")
+        .then((mod) => {
+          insertTabCallback = typeof mod?.default === "function" ? mod.default : null;
+          return insertTabCallback;
+        })
+        .catch((err) => {
+          console.warn("Failed to load insertTab callback:", err);
+          insertTabCallbackPromise = null;
+          insertTabCallback = null;
+          return null;
+        });
+    }
+    return insertTabCallbackPromise;
+  };
+
   const handlers = {
     "Control+s": (e) => {
       e.preventDefault();
@@ -2812,6 +2832,25 @@ function registerHTMLFallbackHotkeys(wysiwyg, filePath, rootElem) {
       e.preventDefault();
       document.execCommand("redo");
       console.log("🔧 Fallback hotkey: Redo");
+    },
+
+    // Match Insert → Insert Text → Tab behavior.
+    // In the HTML graphical editor, Tab should insert a tab character (not change focus).
+    "tab": (e) => {
+      if (!wysiwyg?.contains?.(e.target)) return;
+      e.preventDefault();
+      void ensureInsertTabCallback().then((cb) => {
+        if (cb) cb();
+        else document.execCommand("insertText", false, "\t");
+      });
+    },
+    "Shift+tab": (e) => {
+      if (!wysiwyg?.contains?.(e.target)) return;
+      e.preventDefault();
+      void ensureInsertTabCallback().then((cb) => {
+        if (cb) cb();
+        else document.execCommand("insertText", false, "\t");
+      });
     }
   };
 

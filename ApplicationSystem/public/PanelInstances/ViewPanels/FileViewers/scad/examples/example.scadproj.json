@@ -1,0 +1,52 @@
+{
+  "parameters": {
+    "width": "40",
+    "height": "10",
+    "hole_radius": "3"
+  },
+  "sceneTree": {
+    "id": "example_root",
+    "type": "difference",
+    "parameters": {},
+    "children": [
+      {
+        "id": "example_base",
+        "type": "cube",
+        "parameters": {
+          "size": [
+            "width",
+            "height",
+            "10"
+          ],
+          "center": false
+        },
+        "children": []
+      },
+      {
+        "id": "example_translate",
+        "type": "translate",
+        "parameters": {
+          "v": [
+            "width/2",
+            "height/2",
+            "0"
+          ]
+        },
+        "children": [
+          {
+            "id": "example_hole",
+            "type": "cylinder",
+            "parameters": {
+              "h": "10",
+              "r": "hole_radius",
+              "center": false
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "scadCode": "width = 40;\nheight = 10;\nhole_radius = 3;\n\ndifference() {\n    cube([width, height, 10], center=false);\n    translate([width/2, height/2, 0])\n        cylinder(h=10, r=hole_radius, center=false);\n}\n"
+}
+

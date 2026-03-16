@@ -46,6 +46,7 @@ function getMeshType(mesh) {
     || hint === "math-function"
     || hint === "console"
     || hint === "object-file"
+    || hint === "image-plane"
   ) return hint;
   const gType = mesh?.geometry?.type;
   if (gType === "BoxGeometry") return "box";
@@ -126,6 +127,15 @@ function serializeMesh(mesh) {
     ];
     if (typeof mesh.userData?.objectFilePath === "string" && mesh.userData.objectFilePath) {
       def.objectFile = mesh.userData.objectFilePath;
+    }
+  } else if (type === "image-plane") {
+    const p = g?.parameters || {};
+    def.size = [
+      round3((p.width ?? 2) * sx),
+      round3((p.height ?? 2) * sy)
+    ];
+    if (typeof mesh.userData?.imageFilePath === "string" && mesh.userData.imageFilePath) {
+      def.imageFile = mesh.userData.imageFilePath;
     }
   } else if (shape === "box") {
     const p = g?.parameters || {};

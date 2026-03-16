@@ -1,0 +1,26 @@
+[
+  {
+    "ToolbarCategory": "Terminal",
+    "heading": "Preview Runtime"
+  },
+  {
+    "ToolbarCategory": "Terminal",
+    "heading": "Execute File",
+    "callbackKey": "executeFile",
+    "conditions": {
+      "requiresFile": true
+    }
+  },
+  {
+    "ToolbarCategory": "Terminal",
+    "parentHeading": "Preview Runtime",
+    "heading": "Set Runtime Token…",
+    "callbackKey": "setPreviewRuntimeToken"
+  },
+  {
+    "ToolbarCategory": "Terminal",
+    "parentHeading": "Preview Runtime",
+    "heading": "Restart Preview Runtime",
+    "callbackKey": "restartPreviewRuntime"
+  }
+]

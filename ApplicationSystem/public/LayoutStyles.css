@@ -139,6 +139,33 @@
   align-items: center;
 }
 
+/* === Dark mode (UI only) === */
+html[data-nv-theme="dark"] body {
+  background-color: #0b1220;
+  color: #e5e7eb;
+}
+
+html[data-nv-theme="dark"] #grid {
+  background: #0b1220;
+}
+
+html[data-nv-theme="dark"] .cell {
+  border-color: #334155;
+}
+
+html[data-nv-theme="dark"] .panel {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e5e7eb;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+html[data-nv-theme="dark"] .panel-header {
+  background: #111827;
+  color: #e5e7eb;
+  border-bottom: 1px solid #334155;
+}
+
 .panel-controls button {
   cursor: pointer;
 }

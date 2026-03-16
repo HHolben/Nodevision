@@ -95,13 +95,21 @@
 
 
     
-    {
+       {
       "ToolbarCategory": "Insert",
       "heading": "paragraph",
       "insertGroup": "text",
       "callbackKey": "insertParagraph",
       "parentHeading": "Insert Text"
 
+    },
+
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Handwriting → Text",
+      "insertGroup": "text",
+      "callbackKey": "handwritingToText",
+      "parentHeading": "Insert Text"
     },
 
 

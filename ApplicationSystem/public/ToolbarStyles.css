@@ -79,6 +79,36 @@
   cursor: pointer;
 }
 
+/* === Dark mode (UI only) === */
+html[data-nv-theme="dark"] #global-toolbar {
+  background: #0b1220;
+  border-bottom-color: #334155;
+}
+
+html[data-nv-theme="dark"] .toolbar-button button {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+html[data-nv-theme="dark"] .toolbar-button button:hover {
+  background: #111827;
+}
+
+html[data-nv-theme="dark"] .toolbar-button > div {
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+
+html[data-nv-theme="dark"] .toolbar-button > div a,
+html[data-nv-theme="dark"] .toolbar-button > div button {
+  color: #e5e7eb;
+}
+
+html[data-nv-theme="dark"] .toolbar-button > div a:hover,
+html[data-nv-theme="dark"] .toolbar-button > div button:hover {
+  background: #1f2937;
+}
+
 .toolbar-button > div a:last-child,
 .toolbar-button > div button:last-child {
   border-bottom: none;

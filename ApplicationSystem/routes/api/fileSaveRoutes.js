@@ -1,10 +1,13 @@
-// Nodevision/routes/api/fileSaveRoutes.js
-// Server routes for file operations
+// Nodevision/ApplicationSystem/routes/api/fileSaveRoutes.js
+// This file defines notebook file save and filesystem manipulation routes so that the Nodevision client can create, update, move, and delete notebook content.
 
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createServerContext } from '../../shared/serverContext.mjs';
+import { normalizeClientPath, resolveNotebookPath, resolveUserSettingsPath } from "./fileSaveRoutes/paths.js";
+import { deleteOrTrashPath } from "./fileSaveRoutes/trash.js";
+import { writePayloadToFile } from "./fileSaveRoutes/writePayload.js";
 
 const BASE_CONTEXT = createServerContext();
 
@@ -13,39 +16,6 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   const NOTEBOOK_ROOT = ctx.notebookDir;
   const USER_SETTINGS_ROOT = ctx.userSettingsDir;
   const USER_TRASH_ROOT = path.join(USER_SETTINGS_ROOT, 'Trash');
-
-  function resolveNotebookPath(relativePath) {
-    if (!relativePath) throw new Error("Missing path");
-    let cleaned = relativePath.replace(/^\/+/, '');
-    cleaned = path.normalize(cleaned);
-    cleaned = cleaned.replace(/\.\.(\/|\\)/g, '');
-    const nbPrefix = `Notebook${path.sep}`;
-    if (cleaned.startsWith(nbPrefix)) {
-      cleaned = cleaned.slice(nbPrefix.length);
-    }
-    return path.join(NOTEBOOK_ROOT, cleaned);
-  }
-
-  function resolveUserSettingsPath(relativePath) {
-    if (!relativePath) throw new Error("Missing path");
-    let cleaned = relativePath.replace(/^\/+/, '');
-    cleaned = path.normalize(cleaned);
-    cleaned = cleaned.replace(/\.\.(\/|\\)/g, '');
-    return path.join(USER_SETTINGS_ROOT, cleaned);
-  }
-
-  function normalizeClientPath(inputPath) {
-    return String(inputPath || '')
-      .replace(/\\/g, '/')
-      .replace(/^\/+/, '')
-      .replace(/\/+/g, '/')
-      .trim();
-  }
-
-  function isWithin(parentDir, childPath) {
-    const rel = path.relative(parentDir, childPath);
-    return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-  }
 
   router.post('/save', async (req, res) => {
     const {
@@ -63,49 +33,17 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
       return res.status(400).json({ error: "File content is required" });
     }
 
-    const filePath = resolveNotebookPath(relativePath);
+    const filePath = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath });
 
     try {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
-      let buffer;
-
-      if (encoding === 'base64') {
-        buffer = Buffer.from(content, 'base64');
-        await fs.writeFile(filePath, buffer);
-        console.log(`Saved binary file: ${relativePath} (${mimeType || 'unknown'})`);
-      } else if (encoding === 'binary') {
-        buffer = Buffer.from(content, 'binary');
-        await fs.writeFile(filePath, buffer);
-        console.log(`Saved raw binary: ${relativePath}`);
-      } else {
-        const enc = String(encoding).toLowerCase();
-        if (enc === 'utf8' || enc === 'utf-8') {
-          const textBuf = Buffer.from(content, 'utf8');
-          const out = bom ? Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), textBuf]) : textBuf;
-          await fs.writeFile(filePath, out);
-          console.log(`Saved text file: ${relativePath} (utf8${bom ? '+bom' : ''})`);
-        } else if (enc === 'utf16le' || enc === 'utf-16le') {
-          const textBuf = Buffer.from(content, 'utf16le');
-          const out = bom ? Buffer.concat([Buffer.from([0xff, 0xfe]), textBuf]) : textBuf;
-          await fs.writeFile(filePath, out);
-          console.log(`Saved text file: ${relativePath} (utf16le${bom ? '+bom' : ''})`);
-        } else if (enc === 'utf16be' || enc === 'utf-16be') {
-          const textBuf = Buffer.from(content, 'utf16le');
-          textBuf.swap16();
-          const out = bom ? Buffer.concat([Buffer.from([0xfe, 0xff]), textBuf]) : textBuf;
-          await fs.writeFile(filePath, out);
-          console.log(`Saved text file: ${relativePath} (utf16be${bom ? '+bom' : ''})`);
-        } else if (enc === 'latin1' || enc === 'iso-8859-1') {
-          const textBuf = Buffer.from(content, 'latin1');
-          await fs.writeFile(filePath, textBuf);
-          console.log(`Saved text file: ${relativePath} (latin1)`);
-        } else {
-          return res.status(400).json({ error: `Unsupported encoding: ${encoding}` });
-        }
-      }
+      await writePayloadToFile({ filePath, content, encoding, mimeType, bom, logPath: relativePath });
 
       res.json({ success: true, path: relativePath });
     } catch (err) {
+      if (err?.code === "UNSUPPORTED_ENCODING") {
+        return res.status(400).json({ error: err.message });
+      }
       console.error("Error saving file:", err);
       res.status(500).json({ error: "Error saving file" });
     }
@@ -115,7 +53,7 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     const { path: relativePath } = req.body;
     if (!relativePath) return res.status(400).send('File path is required');
 
-    const filePath = resolveNotebookPath(relativePath);
+    const filePath = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath });
     try {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       await fs.writeFile(filePath, '', { flag: 'wx' });
@@ -133,7 +71,7 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     const { path: relativePath } = req.body;
     if (!relativePath) return res.status(400).json({ error: 'Directory path is required' });
 
-    const targetPath = resolveNotebookPath(relativePath);
+    const targetPath = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath });
     try {
       await fs.mkdir(targetPath, { recursive: false });
       res.json({ success: true, path: relativePath });
@@ -153,52 +91,28 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     const normalizedClientPath = normalizeClientPath(relativePath);
     const deletingFromUserSettings = normalizedClientPath === 'UserSettings' || normalizedClientPath.startsWith('UserSettings/');
     const targetPath = deletingFromUserSettings
-      ? resolveUserSettingsPath(normalizedClientPath.replace(/^UserSettings\/?/i, ''))
-      : resolveNotebookPath(normalizedClientPath);
-    const legacyTrashDir = resolveNotebookPath('Trash');
-    const trashDir = resolveUserSettingsPath('Trash');
+      ? resolveUserSettingsPath({ userSettingsRoot: USER_SETTINGS_ROOT, relativePath: normalizedClientPath.replace(/^UserSettings\/?/i, '') })
+      : resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath: normalizedClientPath });
 
     try {
-      if (isWithin(USER_TRASH_ROOT, targetPath)) {
-        if (path.resolve(targetPath) === path.resolve(USER_TRASH_ROOT)) {
-          return res.status(400).json({ error: 'Refusing to delete Trash root directory.' });
-        }
-        await fs.rm(targetPath, { recursive: true, force: true });
-        return res.json({
-          success: true,
-          originalPath: relativePath,
-          permanentlyDeleted: true
-        });
-      }
-
-      try {
-        await fs.access(legacyTrashDir);
-        await fs.access(trashDir);
-      } catch {
-        try {
-          await fs.rename(legacyTrashDir, trashDir);
-        } catch {
-          // Best effort.
-        }
-      }
-
-      await fs.mkdir(trashDir, { recursive: true });
-
-      const safeRelativePath = deletingFromUserSettings
-        ? `UserSettings/${path.relative(USER_SETTINGS_ROOT, targetPath).split(path.sep).join('/')}`
-        : path.relative(NOTEBOOK_ROOT, targetPath).split(path.sep).join('/');
-      const stamped = `${Date.now()}_${safeRelativePath}`;
-      const trashPath = path.join(trashDir, stamped);
-
-      await fs.mkdir(path.dirname(trashPath), { recursive: true });
-      await fs.rename(targetPath, trashPath);
-
+      const result = await deleteOrTrashPath({
+        notebookRoot: NOTEBOOK_ROOT,
+        userSettingsRoot: USER_SETTINGS_ROOT,
+        userTrashRoot: USER_TRASH_ROOT,
+        relativePath,
+        targetPath,
+        deletingFromUserSettings,
+      });
       res.json({
         success: true,
         originalPath: relativePath,
-        trashedPath: trashPath
+        permanentlyDeleted: Boolean(result.permanentlyDeleted),
+        trashedPath: result.trashedPath,
       });
     } catch (err) {
+      if (err?.code === "TRASH_ROOT") {
+        return res.status(400).json({ error: err.message });
+      }
       console.error('Error moving to trash:', err);
       res.status(500).send('Error moving to trash');
     }
@@ -210,8 +124,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
       return res.status(400).send('Both oldPath and newPath are required');
     }
 
-    const src = resolveNotebookPath(oldPath);
-    const dest = resolveNotebookPath(newPath);
+    const src = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath: oldPath });
+    const dest = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath: newPath });
 
     try {
       await fs.mkdir(path.dirname(dest), { recursive: true });
@@ -229,8 +143,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
       return res.status(400).send('Both source and destination are required');
     }
 
-    const src = resolveNotebookPath(source);
-    const dest = resolveNotebookPath(destination);
+    const src = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath: source });
+    const dest = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath: destination });
 
     try {
       await fs.mkdir(path.dirname(dest), { recursive: true });
@@ -255,8 +169,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
       return res.status(400).send('Both source and destination are required');
     }
 
-    const src = resolveNotebookPath(source);
-    const dest = resolveNotebookPath(destination);
+    const src = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath: source });
+    const dest = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath: destination });
 
     try {
       await fs.mkdir(path.dirname(dest), { recursive: true });

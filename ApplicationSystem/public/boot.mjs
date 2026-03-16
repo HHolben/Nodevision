@@ -6,6 +6,18 @@ const loginButton = loginForm?.querySelector('button[type="submit"]');
 
 let appStarted = false;
 
+function applyStoredTheme() {
+  try {
+    const stored = localStorage.getItem('nodevision_theme');
+    if (stored === 'dark' || stored === 'light') {
+      document.documentElement.dataset.nvTheme = stored;
+      document.documentElement.style.colorScheme = stored;
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function setUiState({ showAppView = false } = {}) {
   if (showAppView) {
     loginScreen?.classList.add('hidden');
@@ -108,6 +120,7 @@ async function handleLogin(event) {
 }
 
 async function init() {
+  applyStoredTheme();
   loginForm?.addEventListener('submit', handleLogin);
 
   try {

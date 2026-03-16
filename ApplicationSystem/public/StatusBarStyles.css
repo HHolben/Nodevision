@@ -16,3 +16,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* === Dark mode (UI only) === */
+html[data-nv-theme="dark"] #status-bar {
+  background: #0b1220;
+  color: #e5e7eb;
+  border-top: 1px solid #334155;
+}

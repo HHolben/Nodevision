@@ -13,6 +13,7 @@ export function createPlayerInventory({ panel }) {
     selectedMenuIndex: 0,
     equippedId: null,
     selectedObjectFile: "",
+    selectedImageFile: "",
     items: [
       { id: "box", label: "Box", count: 10 },
       { id: "sphere", label: "Sphere", count: 6 },
@@ -21,7 +22,9 @@ export function createPlayerInventory({ panel }) {
       { id: "console", label: "Console", count: 4 },
       { id: "portal", label: "Portal", count: 2 },
       { id: "object-file", label: "Object File", count: 0 },
+      { id: "image-plane", label: "Image Plane", count: 0 },
       { id: "select-object", label: "Select Object", count: 1, tool: true },
+      { id: "select-image", label: "Select Image", count: 1, tool: true },
       { id: "svg-camera", label: "SVG Camera", count: 1, tool: true },
       { id: "tape-measure", label: "Tape Measure", count: 1, tool: true },
       { id: "terrain-generator", label: "Terrain Generator", count: 1, tool: true }
@@ -59,6 +62,12 @@ export function createPlayerInventory({ panel }) {
         }
         continue;
       }
+      if (item?.id === "image-plane") {
+        if (state.selectedImageFile && Number.isFinite(item.count) && item.count > 0) {
+          choices.push(item);
+        }
+        continue;
+      }
       if (item?.tool || (Number.isFinite(item.count) && item.count > 0)) {
         choices.push(item);
       }
@@ -80,6 +89,10 @@ export function createPlayerInventory({ panel }) {
       if (!state.selectedObjectFile || !(Number.isFinite(match.count) && match.count > 0)) return "Empty Hand";
       return `${match.label} (${state.selectedObjectFile}) x${match.count}`;
     }
+    if (match.id === "image-plane") {
+      if (!state.selectedImageFile || !(Number.isFinite(match.count) && match.count > 0)) return "Empty Hand";
+      return `${match.label} (${state.selectedImageFile}) x${match.count}`;
+    }
     if (match.tool) return match.label;
     if (!(Number.isFinite(match.count) && match.count > 0)) return "Empty Hand";
     return `${match.label} x${match.count}`;
@@ -87,7 +100,8 @@ export function createPlayerInventory({ panel }) {
 
   function renderStatus() {
     const objectInfo = state.selectedObjectFile ? `  |  Object: ${state.selectedObjectFile}` : "";
-    statusHud.textContent = `Equipped: ${getEquippedLabel()}  |  Inventory: 0 / Back${objectInfo}`;
+    const imageInfo = state.selectedImageFile ? `  |  Image: ${state.selectedImageFile}` : "";
+    statusHud.textContent = `Equipped: ${getEquippedLabel()}  |  Inventory: 0 / Back${objectInfo}${imageInfo}`;
   }
 
   function renderMenu() {
@@ -311,6 +325,53 @@ export function createPlayerInventory({ panel }) {
         return icon;
       }
 
+      if (id === "image-plane" || id === "select-image") {
+        icon.style.position = "relative";
+        icon.style.borderRadius = "7px";
+        icon.style.background = "linear-gradient(135deg, #ff9fd8 0%, #b24aa0 100%)";
+        icon.style.border = "1px solid rgba(255, 226, 245, 0.9)";
+        const frame = document.createElement("div");
+        frame.style.position = "absolute";
+        frame.style.left = "6px";
+        frame.style.top = "7px";
+        frame.style.width = "22px";
+        frame.style.height = "16px";
+        frame.style.border = "1px solid rgba(255, 245, 252, 0.95)";
+        frame.style.borderRadius = "2px";
+        frame.style.background = "rgba(20, 10, 22, 0.25)";
+        icon.appendChild(frame);
+        const mountain = document.createElement("div");
+        mountain.style.position = "absolute";
+        mountain.style.left = "8px";
+        mountain.style.top = "16px";
+        mountain.style.width = "0";
+        mountain.style.height = "0";
+        mountain.style.borderLeft = "6px solid transparent";
+        mountain.style.borderRight = "6px solid transparent";
+        mountain.style.borderBottom = "7px solid rgba(255, 245, 252, 0.92)";
+        icon.appendChild(mountain);
+        const sun = document.createElement("div");
+        sun.style.position = "absolute";
+        sun.style.left = "21px";
+        sun.style.top = "10px";
+        sun.style.width = "5px";
+        sun.style.height = "5px";
+        sun.style.borderRadius = "50%";
+        sun.style.background = "rgba(255, 245, 252, 0.92)";
+        icon.appendChild(sun);
+        if (id === "select-image") {
+          const plus = document.createElement("div");
+          plus.style.position = "absolute";
+          plus.style.right = "3px";
+          plus.style.bottom = "1px";
+          plus.style.color = "#fff6fb";
+          plus.style.font = "700 11px/1 monospace";
+          plus.textContent = "+";
+          icon.appendChild(plus);
+        }
+        return icon;
+      }
+
       icon.style.background = "linear-gradient(135deg, #d8d8d8 0%, #8f8f8f 48%, #666666 100%)";
       icon.style.boxShadow = "-4px 4px 0 rgba(0,0,0,0.25)";
       return icon;
@@ -458,6 +519,34 @@ export function createPlayerInventory({ panel }) {
     render();
   }
 
+  async function uploadImageFileToNotebook(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/file/upload-binary", {
+      method: "POST",
+      body: formData
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.error || `${response.status} ${response.statusText}`);
+    }
+    return normalizeNotebookPath(payload?.filename || file.name);
+  }
+
+  async function selectImageFile() {
+    const file = await pickLocalFile("image/png,image/svg+xml");
+    if (!file) return;
+    const notebookPath = await uploadImageFileToNotebook(file);
+    const imageItem = state.items.find((item) => item.id === "image-plane");
+    if (imageItem) {
+      imageItem.count = Math.max(imageItem.count || 0, 12);
+      imageItem.label = "Image Plane";
+    }
+    state.selectedImageFile = notebookPath;
+    state.equippedId = "image-plane";
+    render();
+  }
+
   function applySelection() {
     const choice = getAvailableChoices()[state.selectedMenuIndex] || null;
     state.equippedId = choice?.id || null;
@@ -465,6 +554,11 @@ export function createPlayerInventory({ panel }) {
       void selectObjectFile().catch((err) => {
         console.warn("Failed to select object file:", err);
         alert(`Failed to select object file: ${err.message}`);
+      });
+    } else if (state.equippedId === "select-image") {
+      void selectImageFile().catch((err) => {
+        console.warn("Failed to select image file:", err);
+        alert(`Failed to select image file: ${err.message}`);
       });
     } else if (state.equippedId === "math-function") {
       window.VRWorldContext?.functionPlotterPanel?.open?.();
@@ -572,6 +666,14 @@ export function createPlayerInventory({ panel }) {
         objectFilePath: state.selectedObjectFile
       };
     }
+    if (item.id === "image-plane") {
+      if (!state.selectedImageFile) return null;
+      if (item.count <= 0) return null;
+      return {
+        ...item,
+        imageFilePath: state.selectedImageFile
+      };
+    }
     if (item.tool) return item;
     if (item.count <= 0) return null;
     return item;
@@ -583,6 +685,16 @@ export function createPlayerInventory({ panel }) {
     const objectItem = state.items.find((item) => item.id === "object-file");
     if (objectItem && normalized) {
       objectItem.count = Math.max(objectItem.count || 0, 1);
+    }
+    render();
+  }
+
+  function setSelectedImageFile(path) {
+    const normalized = normalizeNotebookPath(path || "");
+    state.selectedImageFile = normalized;
+    const imageItem = state.items.find((item) => item.id === "image-plane");
+    if (imageItem && normalized) {
+      imageItem.count = Math.max(imageItem.count || 0, 1);
     }
     render();
   }
@@ -645,6 +757,8 @@ export function createPlayerInventory({ panel }) {
     isMenuOpen: () => state.menuOpen,
     getSelectedObjectFile: () => state.selectedObjectFile || "",
     setSelectedObjectFile,
+    getSelectedImageFile: () => state.selectedImageFile || "",
+    setSelectedImageFile,
     get items() { return state.items; },
     get selectedIndex() { return state.selectedMenuIndex; },
     dispose() {

@@ -8,6 +8,76 @@ let lastEditedPath = null;
 let currentLoadedEncoding = "utf8";
 let currentLoadedBom = false;
 let currentLoadedIsBinary = false;
+let previewOutputEl = null;
+let previewStatusEl = null;
+
+function inferPreviewLanguage(filePath) {
+  const lower = String(filePath || "").toLowerCase();
+  if (lower.endsWith(".py")) return "python";
+  if (lower.endsWith(".java")) return "java";
+  if (lower.endsWith(".cpp")) return "cpp";
+  return null;
+}
+
+function setPreviewOutput(text) {
+  if (!previewOutputEl) return;
+  previewOutputEl.textContent = text;
+}
+
+function setPreviewStatus(text) {
+  if (!previewStatusEl) return;
+  previewStatusEl.textContent = text;
+}
+
+async function runPreview(filePath) {
+  const language = inferPreviewLanguage(filePath);
+  if (!language) {
+    alert("Preview Run supports .py, .java, .cpp files only.");
+    return;
+  }
+
+  setPreviewStatus("Running preview...");
+  setPreviewOutput("");
+
+  try {
+    const res = await fetch("/api/preview/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filePath,
+        language,
+        timeoutMs: 5000,
+      }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) {
+      setPreviewStatus("Preview failed");
+      setPreviewOutput(JSON.stringify(data || { error: "Preview failed" }, null, 2));
+      return;
+    }
+
+    const lines = [];
+    lines.push(`runner: ${data.runner || "local-dev"}`);
+    lines.push(`ok: ${Boolean(data.ok)} timedOut: ${Boolean(data.timedOut)} exitCode: ${data.exitCode}`);
+
+    if (data.stdout) {
+      lines.push("");
+      lines.push("=== stdout ===");
+      lines.push(String(data.stdout));
+    }
+    if (data.stderr) {
+      lines.push("");
+      lines.push("=== stderr ===");
+      lines.push(String(data.stderr));
+    }
+
+    setPreviewStatus("Preview complete");
+    setPreviewOutput(lines.join("\n"));
+  } catch (err) {
+    setPreviewStatus("Preview error");
+    setPreviewOutput(String(err?.message || err));
+  }
+}
 
 /**
  * Opens or replaces a Code Editor panel in the active cell.
@@ -34,6 +104,10 @@ export async function openCodeEditor(filePath) {
 
   console.log("[CodeEditor] Replacing active cell with Code Editor:", filePath);
 
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.selectedFile = filePath;
+  window.NodevisionState.activeEditorFilePath = filePath;
+
   // 🧹 Clear existing content of the selected cell (but keep the element itself)
   targetCell.innerHTML = "";
   targetCell.dataset.id = "CodeEditorPanel";
@@ -47,7 +121,32 @@ export async function openCodeEditor(filePath) {
     background: "#e0e0e0",
     borderBottom: "1px solid #ccc",
     fontWeight: "bold",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   });
+
+  const headerSpacer = document.createElement("div");
+  headerSpacer.style.flex = "1";
+  header.appendChild(headerSpacer);
+
+  const previewBtn = document.createElement("button");
+  previewBtn.textContent = "Preview Run";
+  previewBtn.onclick = () => runPreview(filePath);
+  header.appendChild(previewBtn);
+
+  const clearBtn = document.createElement("button");
+  clearBtn.textContent = "Clear Output";
+  clearBtn.onclick = () => {
+    setPreviewStatus("");
+    setPreviewOutput("");
+  };
+  header.appendChild(clearBtn);
+
+  previewStatusEl = document.createElement("span");
+  previewStatusEl.style.fontWeight = "normal";
+  previewStatusEl.style.opacity = "0.8";
+  header.appendChild(previewStatusEl);
 
   editorContainer = document.createElement("div");
   editorContainer.className = "monaco-editor-container";
@@ -61,6 +160,20 @@ export async function openCodeEditor(filePath) {
   // 🧩 Assemble cell
   targetCell.appendChild(header);
   targetCell.appendChild(editorContainer);
+  const outputWrap = document.createElement("div");
+  Object.assign(outputWrap.style, {
+    borderTop: "1px solid #ccc",
+    background: "#0b1020",
+    color: "#d6e2ff",
+    fontFamily: "monospace",
+    fontSize: "12px",
+    padding: "8px",
+    maxHeight: "180px",
+    overflow: "auto",
+    whiteSpace: "pre-wrap",
+  });
+  previewOutputEl = outputWrap;
+  targetCell.appendChild(outputWrap);
   targetCell.style.display = "flex";
   targetCell.style.flexDirection = "column";
 

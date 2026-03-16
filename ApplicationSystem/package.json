@@ -10,6 +10,7 @@
     "dev": "concurrently -k -n NODE,PHP \"nodemon server.mjs\" \"php -S 0.0.0.0:8080 -t ../Notebook\"",
     "start": "node start-servers.js",
     "start-servers": "node start-servers.js",
+    "preview-runtime": "node PreviewRuntime/previewRuntimeServer.js",
     "build": "echo 'No build process needed'",
     "generate:terrain": "node tools/generateTerrainWorld.mjs"
   },

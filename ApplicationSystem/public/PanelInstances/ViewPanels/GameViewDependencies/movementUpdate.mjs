@@ -39,6 +39,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   let noTroubleTimer = 0;
   let objectFileGeometryApplier = null;
   let objectFileGeometryLoaderPromise = null;
+  let imagePlaneTextureApplier = null;
+  let imagePlaneLoaderPromise = null;
 
   async function ensureObjectFileGeometryApplier() {
     if (objectFileGeometryApplier) return objectFileGeometryApplier;
@@ -517,6 +519,65 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
   }
 
+  async function ensureImagePlaneTextureApplier() {
+    if (imagePlaneTextureApplier) return imagePlaneTextureApplier;
+    if (!imagePlaneLoaderPromise) {
+      imagePlaneLoaderPromise = import("./imagePlaneLoader.mjs")
+        .then((mod) => {
+          imagePlaneTextureApplier = mod.applyImagePlaneTexture;
+          return imagePlaneTextureApplier;
+        })
+        .catch((err) => {
+          console.warn("Image plane loader failed to load:", err);
+          imagePlaneLoaderPromise = null;
+          imagePlaneTextureApplier = null;
+          return null;
+        });
+    }
+    return imagePlaneLoaderPromise;
+  }
+
+  function normalizeNotebookPath(rawPath) {
+    const candidate = String(rawPath || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+    const idx = candidate.indexOf("Notebook/");
+    const stripped = idx !== -1 ? candidate.slice(idx + "Notebook/".length) : (candidate.startsWith("./") ? candidate.slice(2) : candidate);
+    if (!stripped) return "";
+    const parts = stripped.split("/").filter(Boolean);
+    if (parts.some((part) => part === "." || part === "..")) return "";
+    return parts.join("/");
+  }
+
+  function isAllowedImageExtension(path) {
+    const ext = String(path || "").split(".").pop()?.toLowerCase() || "";
+    return ext === "png" || ext === "svg";
+  }
+
+  function parseImagePlaneProperties(inventory, fallbackImagePath = "") {
+    const defaultImage = String(
+      fallbackImagePath
+      || inventory?.getSelectedImageFile?.()
+      || ""
+    ).trim();
+    const raw = prompt(
+      "Image plane properties:\nimage (png/svg under Notebook); width (m); height (m)\nExample: images/hello.png;2;2",
+      `${defaultImage};2;2`
+    );
+    if (raw === null) return null;
+    const parts = String(raw).split(";").map((part) => part.trim());
+    const normalized = normalizeNotebookPath(parts[0] || "");
+    if (!normalized || !isAllowedImageExtension(normalized)) {
+      alert("Image path must be a Notebook PNG or SVG (e.g. images/pic.png or images/pic.svg).");
+      return null;
+    }
+    const width = Math.max(0.1, Math.min(50, Number.parseFloat(parts[1] || "2")));
+    const height = Math.max(0.1, Math.min(50, Number.parseFloat(parts[2] || "2")));
+    return {
+      imageFilePath: normalized,
+      width: Number.isFinite(width) ? width : 2,
+      height: Number.isFinite(height) ? height : 2
+    };
+  }
+
   function buildMathFunctionMesh(rawProps) {
     const props = normalizeFunctionConfig(rawProps);
     const [xMin, xMax] = props.limits;
@@ -629,6 +690,35 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       return {
         mesh,
         collider: { type: "box", half: new THREE.Vector3(0.5, 0.5, 0.5) }
+      };
+    }
+    if (id === "image-plane") {
+      const presetPath = String(
+        selectedItem?.imageFilePath
+        || inventory?.getSelectedImageFile?.()
+        || ""
+      ).trim();
+      const props = parseImagePlaneProperties(inventory, presetPath);
+      if (!props) return null;
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(props.width, props.height),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 1,
+          side: THREE.DoubleSide
+        })
+      );
+      mesh.userData.imageFilePath = props.imageFilePath;
+      mesh.userData.imageWidth = props.width;
+      mesh.userData.imageHeight = props.height;
+      void (async () => {
+        const applier = await ensureImagePlaneTextureApplier();
+        if (applier) await applier(mesh, THREE);
+      })();
+      return {
+        mesh,
+        collider: null
       };
     }
     return null;
@@ -1081,10 +1171,14 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         || itemType === "console"
         || itemType === "math-function"
         || itemType === "object-file"
+        || itemType === "image-plane"
       ) {
         inventory.addItem(itemType, 1, itemType.charAt(0).toUpperCase() + itemType.slice(1));
         if (itemType === "object-file" && target.userData?.objectFilePath && inventory?.setSelectedObjectFile) {
           inventory.setSelectedObjectFile(target.userData.objectFilePath);
+        }
+        if (itemType === "image-plane" && target.userData?.imageFilePath && inventory?.setSelectedImageFile) {
+          inventory.setSelectedImageFile(target.userData.imageFilePath);
         }
       }
     }

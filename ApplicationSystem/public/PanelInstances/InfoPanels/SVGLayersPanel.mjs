@@ -1,5 +1,5 @@
-// Nodevision/public/PanelInstances/InfoPanels/SVGLayersPanel.mjs
-// Dedicated layers panel that reuses the SVG editor's layer manager.
+// Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/SVGLayersPanel.mjs
+// This module renders the SVG layers panel for the active SVG editor session. This module attaches to the SVG editor layer manager so layer visibility and ordering stay synchronized. This module dispatches Nodevision panel actions so related SVG panels can be opened from the same workflow.
 
 export async function setupPanel(panel, instanceVars = {}) {
   if (!panel) throw new Error("Panel container required.");
@@ -22,12 +22,35 @@ export async function setupPanel(panel, instanceVars = {}) {
   }
 
   const header = document.createElement("div");
-  header.textContent = "SVG Layers";
+  Object.assign(header.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  });
   Object.assign(header.style, {
     fontWeight: "700",
     borderBottom: "1px solid #d0d0d0",
     paddingBottom: "4px",
   });
+  const title = document.createElement("div");
+  title.textContent = "SVG Layers";
+  title.style.flex = "1";
+  header.appendChild(title);
+
+  const propsBtn = document.createElement("button");
+  propsBtn.type = "button";
+  propsBtn.textContent = "Properties";
+  propsBtn.title = "Open SVG properties panel";
+  propsBtn.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("toolbarAction", {
+      detail: {
+        id: "SVGPropertiesPanel",
+        type: "InfoPanel",
+        replaceActive: true,
+      }
+    }));
+  });
+  header.appendChild(propsBtn);
   panel.appendChild(header);
 
   const host = document.createElement("div");

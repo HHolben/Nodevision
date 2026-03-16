@@ -4,6 +4,26 @@ window.insertCallbacks = {
   insertText: () => {
     console.log("Insert Text callback triggered.");
   },
+  handwritingToText: () => {
+    import("/PanelInstances/InfoPanels/HandwritingOcrPanel.mjs")
+      .then((mod) => {
+        mod.openHandwritingOcrPanel({
+          onInsertText: (text) => {
+            const t = String(text || "");
+            if (!t) return;
+            try {
+              document.execCommand("insertText", false, t);
+            } catch (_) {
+              document.execCommand("insertHTML", false, t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+            }
+          }
+        });
+      })
+      .catch((err) => {
+        console.warn("Failed to open Handwriting → Text panel:", err);
+        alert(`Failed to open Handwriting → Text panel: ${err?.message || err}`);
+      });
+  },
   insertH1: () => {
     document.execCommand('insertHTML', false, '<h1>Heading 1</h1>');
   },

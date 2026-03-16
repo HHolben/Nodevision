@@ -19,6 +19,8 @@ function normalizeWorldPath(filePath) {
 
 let objectFileGeometryApplier = null;
 let objectFileGeometryLoaderPromise = null;
+let imagePlaneTextureApplier = null;
+let imagePlaneLoaderPromise = null;
 
 async function ensureObjectFileGeometryApplier() {
   if (objectFileGeometryApplier) return objectFileGeometryApplier;
@@ -36,6 +38,24 @@ async function ensureObjectFileGeometryApplier() {
       });
   }
   return objectFileGeometryLoaderPromise;
+}
+
+async function ensureImagePlaneTextureApplier() {
+  if (imagePlaneTextureApplier) return imagePlaneTextureApplier;
+  if (!imagePlaneLoaderPromise) {
+    imagePlaneLoaderPromise = import("./imagePlaneLoader.mjs")
+      .then((mod) => {
+        imagePlaneTextureApplier = mod.applyImagePlaneTexture;
+        return imagePlaneTextureApplier;
+      })
+      .catch((err) => {
+        console.warn("Image plane loader failed to load:", err);
+        imagePlaneLoaderPromise = null;
+        imagePlaneTextureApplier = null;
+        return null;
+      });
+  }
+  return imagePlaneLoaderPromise;
 }
 
 export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
@@ -496,6 +516,31 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             }
           })();
         }
+      } else if (def.type === "image-plane") {
+        const size = Array.isArray(def.size) && def.size.length >= 2 ? def.size : [2, 2];
+        mesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(size[0], size[1]),
+          new THREE.MeshBasicMaterial({
+            color: def.color || "#ffffff",
+            transparent: true,
+            opacity: Number.isFinite(def.opacity) ? def.opacity : 1,
+            side: THREE.DoubleSide
+          })
+        );
+        const imageFile = typeof def.imageFile === "string"
+          ? def.imageFile
+          : typeof def.image === "string"
+            ? def.image
+            : "";
+        if (imageFile) {
+          mesh.userData.imageFilePath = imageFile;
+          void (async () => {
+            const applier = await ensureImagePlaneTextureApplier();
+            if (applier) {
+              await applier(mesh, THREE);
+            }
+          })();
+        }
       } else if (portalShape === "box") {
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(...def.size),
@@ -550,6 +595,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         if (typeof def.tag === "string" && def.tag) mesh.userData.tag = def.tag;
         if (typeof def.spawnId === "string" && def.spawnId) mesh.userData.spawnId = def.spawnId;
         if (Number.isFinite(def.spawnYaw)) mesh.userData.spawnYaw = def.spawnYaw;
+        mesh.userData.isSolid = def.isSolid === true;
         mesh.userData.breakable = def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true;
         mesh.userData.isWater = def.isWater === true;
         scene.add(mesh);
