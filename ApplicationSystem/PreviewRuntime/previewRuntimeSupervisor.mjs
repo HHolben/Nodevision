@@ -29,6 +29,7 @@ async function writeTokenToFile(ctx, token) {
 }
 
 function resolvePreviewRuntimeScript(ctx) {
+  // Use the CommonJS shim entrypoint (works for both packaged and dev contexts).
   return path.join(ctx.applicationSystemRoot, 'PreviewRuntime', 'previewRuntimeServer.js');
 }
 
@@ -84,6 +85,8 @@ export function createPreviewRuntimeSupervisor(ctx, { logger = console } = {}) {
     if (!token) throw new Error('Preview Runtime token not set (set via UI or NODEVISION_PREVIEW_RUNTIME_TOKEN)');
 
     const scriptPath = resolvePreviewRuntimeScript(ctx);
+    // In packaged builds we expect an external Node.js runtime (or compatible) to launch
+    // the Preview Runtime service process. Allow overriding via NODEVISION_PREVIEW_RUNTIME_NODE.
     const cmd = process.env.NODEVISION_PREVIEW_RUNTIME_NODE || (typeof process.pkg !== 'undefined' ? 'node' : process.execPath);
 
     const env = {

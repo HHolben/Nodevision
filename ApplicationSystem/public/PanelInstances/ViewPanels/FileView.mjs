@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileView.mjs
 // This file defines browser-side File View logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { updateToolbarState } from "/panels/createToolbar.mjs";
+
 let lastRenderedPath = null;
 let viewDivRef = null;
 
@@ -236,6 +238,13 @@ export async function setupPanel(panel, instanceVars = {}) {
         if (value !== internalPath) {
           console.log("📂 selectedFilePath changed:", value);
           internalPath = value;
+          window.NodevisionState = window.NodevisionState || {};
+          window.NodevisionState.selectedFile = internalPath || null;
+          try {
+            updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
+          } catch (err) {
+            console.warn("Failed to update toolbar state for selectedFilePath change:", err);
+          }
           updateViewPanel(value).catch(err => {
             console.error("❌ updateViewPanel error:", err);
           });

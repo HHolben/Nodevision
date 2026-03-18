@@ -36,7 +36,7 @@ Ensure Nodevision main server has the same token in its environment:
 - `export NODEVISION_PREVIEW_RUNTIME_TOKEN="dev-secret"`
 
 ## Configuration
-`ApplicationSystem/PreviewRuntime/previewConfig.js` defaults:
+`ApplicationSystem/PreviewRuntime/previewConfig.mjs` defaults:
 - `workspaceRoot`: `/tmp/nodevision-preview`
 - `timeoutMs`: `5000`
 - `stdoutLimit`: `100000`

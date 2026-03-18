@@ -5,7 +5,7 @@
   },
   {
     "ToolbarCategory": "Terminal",
-    "heading": "Execute File",
+    "heading": "Compile & Run",
     "callbackKey": "executeFile",
     "conditions": {
       "requiresFile": true

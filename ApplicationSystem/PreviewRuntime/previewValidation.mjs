@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/PreviewRuntime/previewValidation.js
 // This file defines the preview Validation module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import path from 'node:path';
-import { normalizeLanguage, isSupportedExtensionForLanguage } from './previewTypes.js';
+import { normalizeLanguage, isSupportedExtensionForLanguage } from './previewTypes.mjs';
 
 export function assertPlainObject(value, name = 'value') {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

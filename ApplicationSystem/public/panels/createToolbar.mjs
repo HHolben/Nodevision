@@ -725,10 +725,14 @@ setStatus("Mode", currentMode);
   const toolbar = document.querySelector("#global-toolbar");
   if (!toolbar) return;
 
+  const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
+  if (!Array.isArray(defaultToolbar) || defaultToolbar.length === 0) {
+    console.warn("Toolbar JSON cache not ready; skipping toolbar rebuild.");
+    return;
+  }
+
   toolbar.innerHTML = "";
 
-  // Get cached toolbar data
-  const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
   rebuildPrebuiltDropdowns();
 
   // ✅ Filter based on mode

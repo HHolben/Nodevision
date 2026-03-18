@@ -80,17 +80,17 @@ function renderOutputModal({ title, body }) {
 export default async function executeFile() {
   const filePath = resolveActiveFilePath();
   if (!filePath) {
-    alert("No active file selected to execute.");
+    alert("No active file selected to compile/run.");
     return;
   }
 
   const language = inferLanguage(filePath);
   if (!language) {
-    alert("Execute File supports .py, .java, and .cpp files only.");
+    alert("Compile & Run supports .py, .java, and .cpp files only.");
     return;
   }
 
-  setStatus("Executing", filePath);
+  setStatus("Compile & Run", filePath);
 
   let res;
   let data = null;
@@ -104,7 +104,7 @@ export default async function executeFile() {
   } catch (err) {
     setStatus("Execution failed", "Preview Runtime unavailable");
     renderOutputModal({
-      title: "Program Output",
+      title: "Compile & Run Output",
       body: `Failed to contact Nodevision Preview Runtime.\n\n${String(err?.message || err)}`,
     });
     return;
@@ -112,9 +112,13 @@ export default async function executeFile() {
 
   if (!res.ok || !data) {
     setStatus("Execution failed", `${res.status}`);
+    const hint =
+      data?.error === "Preview Runtime unavailable"
+        ? "\n\nHint: Terminal → Preview Runtime → Set Runtime Token… then Restart Preview Runtime."
+        : "";
     renderOutputModal({
-      title: "Program Output",
-      body: `Execution failed.\n\n${JSON.stringify(data || { error: "unknown error" }, null, 2)}`,
+      title: "Compile & Run Output",
+      body: `Execution failed.\n\n${JSON.stringify(data || { error: "unknown error" }, null, 2)}${hint}`,
     });
     return;
   }
@@ -132,5 +136,5 @@ export default async function executeFile() {
   lines.push(`Execution finished (${data.exitCode ?? "null"})`);
 
   setStatus("Execution complete", `${data.exitCode ?? ""}`);
-  renderOutputModal({ title: "Program Output", body: lines.join("\n") });
+  renderOutputModal({ title: "Compile & Run Output", body: lines.join("\n") });
 }

@@ -1,101 +1,8 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/SplitCellVertically.mjs
 // This file defines browser-side Split Cell Vertically logic for the Nodevision UI. It renders interface components and handles user interactions.
 
-function createLayoutDivider(leftCell, rightCell, isVertical = false) {
-  const divider = document.createElement("div");
-  divider.className = "layout-divider";
-  divider._leftCell = leftCell;
-  divider._rightCell = rightCell;
-
-  Object.assign(divider.style, {
-    flexShrink: "0",
-    flexGrow: "0",
-    background: "#666",
-    zIndex: "100",
-    transition: "background 0.2s",
-    ...(isVertical
-      ? {
-          height: "6px",
-          minHeight: "6px",
-          maxHeight: "6px",
-          cursor: "row-resize",
-          width: "100%",
-        }
-      : {
-          width: "6px",
-          minWidth: "6px",
-          maxWidth: "6px",
-          cursor: "col-resize",
-          height: "100%",
-        }),
-  });
-
-  divider.addEventListener("mouseenter", () => {
-    divider.style.background = "#0078d7";
-  });
-  divider.addEventListener("mouseleave", () => {
-    divider.style.background = "#666";
-  });
-
-  let startPos = 0;
-  let startLeftSize = 0;
-  let startRightSize = 0;
-  let totalSize = 0;
-
-  divider.addEventListener("mousedown", (e) => {
-    e.preventDefault();
-    const leftEl = divider._leftCell;
-    const rightEl = divider._rightCell;
-    if (!leftEl || !rightEl) return;
-
-    const container = divider.parentElement;
-    const leftRect = leftEl.getBoundingClientRect();
-    const rightRect = rightEl.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-
-    if (isVertical) {
-      startPos = e.clientY;
-      startLeftSize = leftRect.height;
-      startRightSize = rightRect.height;
-      totalSize = containerRect.height;
-    } else {
-      startPos = e.clientX;
-      startLeftSize = leftRect.width;
-      startRightSize = rightRect.width;
-      totalSize = containerRect.width;
-    }
-
-    const onMouseMove = (moveEvent) => {
-      const leftTarget = divider._leftCell;
-      const rightTarget = divider._rightCell;
-      if (!leftTarget || !rightTarget) return;
-
-      const currentPos = isVertical ? moveEvent.clientY : moveEvent.clientX;
-      const delta = currentPos - startPos;
-
-      let newLeftSize = startLeftSize + delta;
-      let newRightSize = startRightSize - delta;
-      const min = 50;
-      if (newLeftSize < min) newLeftSize = min;
-      if (newRightSize < min) newRightSize = min;
-
-      const leftPercent = (newLeftSize / totalSize) * 100;
-      const rightPercent = (newRightSize / totalSize) * 100;
-      leftTarget.style.flex = `0 0 ${leftPercent}%`;
-      rightTarget.style.flex = `0 0 ${rightPercent}%`;
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  });
-
-  return divider;
-}
+import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
+import { showInputDialog } from "/ui/modals/InputDialog.mjs";
 
 function makePanelCell(flexValue = "1 1 0") {
   const cell = document.createElement("div");
@@ -114,27 +21,51 @@ function makePanelCell(flexValue = "1 1 0") {
   return cell;
 }
 
-export function splitCellVertically() {
-  const cell = window.activeCell;
+function resolveActiveCell() {
+  const candidate = window.activeCell;
+  if (candidate?.classList?.contains("panel-cell")) return candidate;
+  const fromDom = candidate?.closest?.(".panel-cell");
+  if (fromDom) return fromDom;
+  return document.querySelector(".panel-cell.active-panel") || null;
+}
+
+async function requestSplitCount() {
+  const value = await showInputDialog({
+    title: "Split cell",
+    description: "How many rows?",
+    inputType: "number",
+    defaultValue: "2",
+    placeholder: "2",
+    allowEmpty: false,
+    emptyMessage: "Enter a number (2 or more).",
+    validator: (raw) => {
+      const n = Number.parseInt(String(raw || ""), 10);
+      if (!Number.isFinite(n) || n < 2) return false;
+      if (n > 6) return false;
+      return true;
+    },
+    invalidMessage: "Enter an integer between 2 and 6.",
+  });
+  if (value == null) return null;
+  const n = Number.parseInt(String(value), 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function splitCellVertically() {
+  const cell = resolveActiveCell();
   if (!cell) {
     console.warn("No active cell to split.");
     alert("Please click on a cell first.");
     return;
   }
 
-  const num = parseInt(prompt("Enter number of vertical splits:", "2"), 10);
-  if (isNaN(num) || num < 1) {
-    alert("Invalid number.");
-    return;
-  }
+  const num = await requestSplitCount();
+  if (!num) return;
 
   const parent = cell.parentElement;
   if (!parent) return;
 
   const originalFlex = cell.style.flex || "1 1 0";
-  const originalContent = cell.innerHTML;
-  const inheritedId = cell.dataset.id || "";
-  const inheritedPanelClass = cell.dataset.panelClass || "";
 
   const splitContainer = document.createElement("div");
   splitContainer.className = "panel-row";
@@ -150,36 +81,27 @@ export function splitCellVertically() {
   splitContainer.dataset.direction = "column";
   splitContainer.dataset.isVertical = "1";
 
-  const referenceNode = cell.nextSibling;
-  parent.removeChild(cell);
+  parent.replaceChild(splitContainer, cell);
 
-  let firstCell = null;
-  for (let i = 0; i < num; i++) {
-    const newCell = makePanelCell(`1 1 ${100 / num}%`);
-    if (i === 0) {
-      newCell.innerHTML = originalContent;
-      if (inheritedId) newCell.dataset.id = inheritedId;
-      if (inheritedPanelClass) newCell.dataset.panelClass = inheritedPanelClass;
-      firstCell = newCell;
-    }
+  Object.assign(cell.style, {
+    flex: `1 1 ${100 / num}%`,
+    minHeight: "0",
+    minWidth: "0",
+  });
+  splitContainer.appendChild(cell);
 
-    splitContainer.appendChild(newCell);
-
-    if (i > 0) {
-      const top = splitContainer.children[splitContainer.children.length - 3];
-      const bottom = splitContainer.children[splitContainer.children.length - 1];
-      const divider = createLayoutDivider(top, bottom, true);
-      splitContainer.insertBefore(divider, bottom);
-    }
+  for (let i = 1; i < num; i += 1) {
+    splitContainer.appendChild(makePanelCell(`1 1 ${100 / num}%`));
   }
 
-  parent.insertBefore(splitContainer, referenceNode);
-  if (firstCell) {
-    window.activeCell = firstCell;
-  }
+  rebuildLayoutDividersForContainer(splitContainer, true);
+  rebuildLayoutDividersForContainer(parent);
+
+  window.activeCell = cell;
+  window.highlightActiveCell?.(cell);
 }
 
 // Default export for toolbar system
-export default function run() {
-  splitCellVertically();
+export default async function run() {
+  await splitCellVertically();
 }

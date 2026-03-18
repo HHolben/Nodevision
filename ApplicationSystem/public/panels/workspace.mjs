@@ -418,7 +418,7 @@ export function rebuildLayoutDividersForContainer(container, isVerticalOverride)
 
   const existingChildren = Array.from(container.children);
   existingChildren
-    .filter((child) => child.classList?.contains("layout-divider"))
+    .filter((child) => child.classList?.contains("layout-divider") || child.classList?.contains("divider"))
     .forEach((divider) => divider.remove());
 
   const panels = Array.from(container.children).filter((child) =>

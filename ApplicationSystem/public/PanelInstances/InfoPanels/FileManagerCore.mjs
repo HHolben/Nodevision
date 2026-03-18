@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerCore.mjs
 // This file defines browser-side File Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { updateToolbarState } from '/panels/createToolbar.mjs';
+
 const FILE_ITEM_SOUND_URLS = [
   "/soundEffects/Splish.mp3",
   "/soundEffects/Splish.wav",
@@ -407,7 +409,6 @@ console.log("Opening "+ listElem + " at "+ link + " and "+ li);
 // Selection logic
 // ------------------------------
 
-
 export function attachFileClickHandlers() {
   const fileItems = document.querySelectorAll("#file-list a.file, #file-list a.folder");
   fileItems.forEach(item => {
@@ -416,6 +417,13 @@ export function attachFileClickHandlers() {
 
       // Set global selected file path
       window.selectedFilePath = item.dataset.fullPath;
+      // FileView installs a selectedFilePath proxy that syncs NodevisionState + toolbar.
+      // If that proxy isn't installed (e.g., FileView panel not loaded yet), do it here.
+      if (!window._selectedFileProxyInstalled) {
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.selectedFile = window.selectedFilePath || null;
+        updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
+      }
       console.log("Selected file:", window.selectedFilePath);
 
       // Visually mark selection
