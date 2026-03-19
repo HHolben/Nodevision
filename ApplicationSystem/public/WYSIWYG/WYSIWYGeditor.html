@@ -283,7 +283,7 @@ function ViewDeploymentPHP() {
 
     if (activeNode) {
         // Construct the  URL
-        const deploymentUrl = `http://localhost:8000/${activeNode}`;
+        const deploymentUrl = `${window.location.origin}/php/${activeNode}`;
 
         // Open the URL in a new window or tab
         window.open(deploymentUrl, "_blank");

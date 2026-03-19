@@ -9,13 +9,30 @@ let currentMidiBuffer = null;
 let currentFilePath = null;
 let currentNotesData = []; // [{ midi: number|null, duration: 'q', rest: boolean }]
 let selectedNoteIndex = -1;
+let midiIsDirty = false;
+
+let playbackTempoBpm = 120;
+let playbackState = {
+  status: "stopped", // 'stopped' | 'playing' | 'paused'
+  index: 0,
+  remainingMs: 0,
+  noteStartedAt: 0,
+  noteDurationMs: 0,
+  currentEntry: null,
+  timeoutId: null,
+  ctx: null,
+  osc: null,
+  gain: null,
+};
 
 let midiRoot = null;
 let rendererDiv = null;
 let statusDiv = null;
+let durationSelectEl = null;
 
 let renderedNotes = [];
 let renderedNoteXs = [];
+let renderedNoteBoxes = [];
 let activeStave = null;
 let dragState = null;
 let selectedElementType = null; // "note" | "rest" | "cleff" | null
@@ -36,6 +53,23 @@ const DURATION_TO_TICKS = {
   "8": Math.floor(MIDI_TICKS_PER_QUARTER / 2),
 };
 
+function clampNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function markDirty() {
+  if (midiIsDirty) return;
+  midiIsDirty = true;
+  updateToolbarState({ fileIsDirty: true });
+}
+
+function markSaved() {
+  midiIsDirty = false;
+  updateToolbarState({ fileIsDirty: false });
+}
+
 function midiToVexKey(midi) {
   const n = Math.max(0, Math.min(127, Math.round(midi)));
   const name = NOTE_NAMES[n % 12];
@@ -51,42 +85,192 @@ function midiFromY(baseMidi, deltaY) {
 
 function extractNotesForEditor(buffer) {
   const bytes = new Uint8Array(buffer || new ArrayBuffer(0));
-  let pos = 14;
-  const notes = [];
+  const fallback = [{ midi: 60, duration: "q", rest: false }];
+  const MAX_ENTRIES = 128;
+
+  const readU16BE = (offset) => ((bytes[offset] << 8) | bytes[offset + 1]) >>> 0;
+  const readU32BE = (offset) =>
+    ((bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]) >>> 0;
+  const readStr = (offset, len) => String.fromCharCode(...bytes.subarray(offset, offset + len));
+
+  const readVlq = (offset) => {
+    let value = 0;
+    let pos = offset;
+    for (let i = 0; i < 4 && pos < bytes.length; i += 1) {
+      const b = bytes[pos++];
+      value = (value << 7) | (b & 0x7f);
+      if ((b & 0x80) === 0) break;
+    }
+    return { value, pos };
+  };
+
+  const nearestDuration = (ticks, division) => {
+    const candidates = [
+      ["w", division * 4],
+      ["h", division * 2],
+      ["q", division],
+      ["8", Math.max(1, Math.floor(division / 2))],
+    ];
+    let best = "q";
+    let bestDist = Infinity;
+    for (const [dur, val] of candidates) {
+      const dist = Math.abs(Number(ticks) - val);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = dur;
+      }
+    }
+    return best;
+  };
+
+  const pushRestTicks = (ticks, division, out) => {
+    let remaining = Math.max(0, Math.floor(ticks));
+    const values = [
+      ["w", division * 4],
+      ["h", division * 2],
+      ["q", division],
+      ["8", Math.max(1, Math.floor(division / 2))],
+    ];
+    for (const [dur, val] of values) {
+      while (remaining >= val && out.length < MAX_ENTRIES) {
+        out.push({ midi: null, duration: dur, rest: true });
+        remaining -= val;
+      }
+    }
+    // Ignore very short leftovers; otherwise round to nearest.
+    if (remaining >= Math.floor(division / 3) && out.length < MAX_ENTRIES) {
+      out.push({ midi: null, duration: nearestDuration(remaining, division), rest: true });
+    }
+  };
 
   try {
-    if (bytes.length < 4) return [{ midi: 60, duration: "q", rest: false }];
-    if (pos >= bytes.length) pos = 0;
+    if (bytes.length < 18) return fallback;
+    if (readStr(0, 4) !== "MThd") return fallback;
+    const headerLen = readU32BE(4);
+    const division = readU16BE(12) || MIDI_TICKS_PER_QUARTER;
 
-    while (pos < bytes.length && notes.length < 48) {
-      const status = bytes[pos++];
-      if (status === undefined) break;
+    // Find first track.
+    let pos = 8 + headerLen;
+    if (pos < 14) pos = 14;
+    let trackStart = -1;
+    let trackLen = 0;
+    while (pos + 8 <= bytes.length) {
+      const id = readStr(pos, 4);
+      const len = readU32BE(pos + 4);
+      pos += 8;
+      if (id === "MTrk") {
+        trackStart = pos;
+        trackLen = len;
+        break;
+      }
+      pos += len;
+    }
+    if (trackStart < 0) return fallback;
 
-      if ((status & 0xf0) === 0x90) {
-        const midi = bytes[pos++];
-        const vel = bytes[pos++];
-        if (midi === undefined || vel === undefined) break;
-        if (vel > 0) notes.push({ midi, duration: "q", rest: false });
+    const end = Math.min(bytes.length, trackStart + trackLen);
+    const out = [];
+    let absTick = 0;
+    let runningStatus = null;
+    let active = null; // { midi, startTick }
+    let lastEndTick = 0;
+    let foundTempoBpm = null;
+
+    pos = trackStart;
+    while (pos < end && out.length < MAX_ENTRIES) {
+      const delta = readVlq(pos);
+      absTick += delta.value;
+      pos = delta.pos;
+      if (pos >= end) break;
+
+      let status = bytes[pos];
+      if (status < 0x80) {
+        if (runningStatus == null) break;
+        status = runningStatus;
+      } else {
+        pos += 1;
+        if (status < 0xf0) runningStatus = status;
+      }
+
+      if (status === 0xff) {
+        const type = bytes[pos++];
+        const lenInfo = readVlq(pos);
+        const metaLen = lenInfo.value;
+        pos = lenInfo.pos;
+        if (type === 0x51 && metaLen === 3 && pos + 3 <= end) {
+          const mpqn = (bytes[pos] << 16) | (bytes[pos + 1] << 8) | bytes[pos + 2];
+          if (mpqn > 0) {
+            foundTempoBpm = clampNumber(60000000 / mpqn, 20, 400, null);
+          }
+        }
+        pos += metaLen;
         continue;
       }
 
-      if ((status & 0xf0) === 0x80 || (status & 0xf0) === 0xa0 || (status & 0xf0) === 0xb0 || (status & 0xf0) === 0xe0) {
+      if (status === 0xf0 || status === 0xf7) {
+        const lenInfo = readVlq(pos);
+        pos = lenInfo.pos + lenInfo.value;
+        continue;
+      }
+
+      const hi = status & 0xf0;
+      if (hi === 0x90) {
+        const midi = bytes[pos++];
+        const vel = bytes[pos++];
+        if (vel > 0) {
+          if (active) {
+            const durTicks = Math.max(1, absTick - active.startTick);
+            out.push({ midi: active.midi, duration: nearestDuration(durTicks, division), rest: false });
+            lastEndTick = absTick;
+            active = null;
+          }
+          if (absTick > lastEndTick) {
+            pushRestTicks(absTick - lastEndTick, division, out);
+            lastEndTick = absTick;
+          }
+          active = { midi, startTick: absTick };
+        } else if (active && active.midi === midi) {
+          const durTicks = Math.max(1, absTick - active.startTick);
+          out.push({ midi: active.midi, duration: nearestDuration(durTicks, division), rest: false });
+          lastEndTick = absTick;
+          active = null;
+        }
+        continue;
+      }
+
+      if (hi === 0x80) {
+        const midi = bytes[pos++];
+        pos += 1; // velocity
+        if (active && active.midi === midi) {
+          const durTicks = Math.max(1, absTick - active.startTick);
+          out.push({ midi: active.midi, duration: nearestDuration(durTicks, division), rest: false });
+          lastEndTick = absTick;
+          active = null;
+        }
+        continue;
+      }
+
+      if (hi === 0xa0 || hi === 0xb0 || hi === 0xe0) {
         pos += 2;
         continue;
       }
-
-      if ((status & 0xf0) === 0xc0 || (status & 0xf0) === 0xd0) {
+      if (hi === 0xc0 || hi === 0xd0) {
         pos += 1;
         continue;
       }
 
-      if (status === 0xff) break;
+      // Unknown event; bail out safely.
+      break;
     }
+
+    if (foundTempoBpm) {
+      setTempo(foundTempoBpm);
+    }
+
+    return out.length ? out : fallback;
   } catch (err) {
     console.warn("extractNotesForEditor error:", err);
+    return fallback;
   }
-
-  return notes.length ? notes : [{ midi: 60, duration: "q", rest: false }];
 }
 
 function clearRenderEventHandlers() {
@@ -123,143 +307,177 @@ function scheduleDragRender() {
   });
 }
 
+function vexBoundingBoxToObject(bb) {
+  if (!bb) return null;
+  const x = typeof bb.getX === "function" ? bb.getX() : bb.x;
+  const y = typeof bb.getY === "function" ? bb.getY() : bb.y;
+  const w = typeof bb.getW === "function" ? bb.getW() : bb.w;
+  const h = typeof bb.getH === "function" ? bb.getH() : bb.h;
+  if (![x, y, w, h].every((v) => Number.isFinite(Number(v)))) return null;
+  return { x: Number(x), y: Number(y), w: Number(w), h: Number(h) };
+}
+
 function renderSheetMusic() {
   if (!rendererDiv || !midiRoot || !currentNotesData.length) return;
 
-  rendererDiv.innerHTML = "";
-  renderedNotes = [];
-  renderedNoteXs = [];
-  activeStave = null;
+  try {
+    rendererDiv.innerHTML = "";
+    renderedNotes = [];
+    renderedNoteXs = [];
+    renderedNoteBoxes = [];
+    activeStave = null;
 
-  const width = Math.max(640, midiRoot.clientWidth || 800);
-  const height = 220;
+    const width = Math.max(640, midiRoot.clientWidth || 800);
+    const height = 220;
 
-  const renderer = new VF.Renderer(rendererDiv, VF.Renderer.Backends.SVG);
-  renderer.resize(width - 20, height);
-  const ctx = renderer.getContext();
-  ctx.setFont("Arial", 10);
+    const renderer = new VF.Renderer(rendererDiv, VF.Renderer.Backends.SVG);
+    renderer.resize(width - 20, height);
+    const ctx = renderer.getContext();
+    ctx.setFont("Arial", 10);
 
-  const stave = new VF.Stave(10, 20, width - 40);
-  stave.addClef(currentClef || "treble").setContext(ctx).draw();
-  activeStave = stave;
+    const stave = new VF.Stave(10, 20, width - 40);
+    stave.addClef(currentClef || "treble").setContext(ctx).draw();
+    activeStave = stave;
 
-  const maxRenderable = Math.min(40, currentNotesData.length);
-  const notesForRender = currentNotesData.slice(0, maxRenderable).map((n, idx) => {
-    if (n.rest) {
-      const restNote = new VF.StaveNote({
-        clef: "treble",
-        keys: ["b/4"],
-        duration: `${n.duration}r`,
-      });
-      if (idx === selectedNoteIndex) {
-        restNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
+    const maxRenderable = Math.min(40, currentNotesData.length);
+    const notesForRender = currentNotesData.slice(0, maxRenderable).map((n, idx) => {
+      if (n.rest) {
+        const restNote = new VF.StaveNote({
+          clef: currentClef || "treble",
+          keys: ["b/4"],
+          duration: `${n.duration}r`,
+        });
+        if (idx === selectedNoteIndex) {
+          restNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
+        }
+        return restNote;
       }
-      return restNote;
-    }
 
-    const key = midiToVexKey(Number.isFinite(n.midi) ? n.midi : 60);
-    const staveNote = new VF.StaveNote({
-      clef: "treble",
-      keys: [key],
-      duration: n.duration,
+      const key = midiToVexKey(Number.isFinite(n.midi) ? n.midi : 60);
+      const staveNote = new VF.StaveNote({
+        clef: currentClef || "treble",
+        keys: [key],
+        duration: n.duration,
+      });
+
+      if (key.includes("#")) {
+        staveNote.addModifier(new VF.Accidental("#"), 0);
+      }
+      if (idx === selectedNoteIndex) {
+        staveNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
+      }
+      return staveNote;
     });
 
-    if (key.includes("#")) {
-      staveNote.addModifier(new VF.Accidental("#"), 0);
-    }
-    if (idx === selectedNoteIndex) {
-      staveNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
-    }
-    return staveNote;
-  });
+    const voice = new VF.Voice({ num_beats: 4, beat_value: 4 })
+      .setStrict(false)
+      .addTickables(notesForRender);
 
-  const voice = new VF.Voice({ num_beats: notesForRender.length, beat_value: 4 })
-    .setStrict(false)
-    .addTickables(notesForRender);
+    new VF.Formatter().joinVoices([voice]).format([voice], width - 60);
+    voice.draw(ctx, stave);
 
-  new VF.Formatter().joinVoices([voice]).format([voice], width - 60);
-  voice.draw(ctx, stave);
+    renderedNotes = notesForRender;
+    renderedNoteXs = notesForRender.map((n) => Number(n.getAbsoluteX?.() || 0));
+    renderedNoteBoxes = notesForRender.map((n) => vexBoundingBoxToObject(n.getBoundingBox?.()));
 
-  renderedNotes = notesForRender;
-  renderedNoteXs = notesForRender.map((n) => Number(n.getAbsoluteX?.() || 0));
+    clearRenderEventHandlers();
 
-  clearRenderEventHandlers();
+    rendererDiv.onpointerdown = (event) => {
+      const svgRect = rendererDiv.getBoundingClientRect();
+      const localX = event.clientX - svgRect.left;
+      const localY = event.clientY - svgRect.top;
+      let idx = -1;
 
-  rendererDiv.onpointerdown = (event) => {
-    const svgRect = rendererDiv.getBoundingClientRect();
-    const localX = event.clientX - svgRect.left;
-    const idx = closestRenderedIndexFromX(localX);
+      for (let i = 0; i < renderedNoteBoxes.length; i += 1) {
+        const bb = renderedNoteBoxes[i];
+        if (!bb) continue;
+        if (localX >= bb.x - 6 && localX <= bb.x + bb.w + 6 && localY >= bb.y - 6 && localY <= bb.y + bb.h + 6) {
+          idx = i;
+          break;
+        }
+      }
 
-    // Note hit-testing has priority so dragging notes near the clef still works.
-    if (idx < 0 && localX <= 72) {
-      selectedNoteIndex = -1;
-      selectedElementType = "cleff";
-      dragState = null;
+      if (idx < 0) {
+        idx = closestRenderedIndexFromX(localX);
+      }
+
+      // Note hit-testing has priority so dragging notes near the clef still works.
+      if (idx < 0 && localX <= 72) {
+        selectedNoteIndex = -1;
+        selectedElementType = "cleff";
+        dragState = null;
+        renderSheetMusic();
+        syncMIDIToolbarState();
+        return;
+      }
+      if (idx < 0) return;
+
+      selectedNoteIndex = idx;
+      const selected = currentNotesData[idx];
+      selectedElementType = selected ? (selected.rest ? "rest" : "note") : null;
+
+      if (selected && !selected.rest && Number.isFinite(selected.midi)) {
+        dragState = {
+          index: idx,
+          startY: event.clientY,
+          startMidi: selected.midi,
+        };
+        if (rendererDiv.setPointerCapture && Number.isFinite(event.pointerId)) {
+          rendererDiv.setPointerCapture(event.pointerId);
+        }
+      } else {
+        dragState = null;
+      }
+
       renderSheetMusic();
       syncMIDIToolbarState();
-      return;
-    }
-    if (idx < 0) return;
+    };
 
-    selectedNoteIndex = idx;
-    const selected = currentNotesData[idx];
-    selectedElementType = selected ? (selected.rest ? "rest" : "note") : null;
+    rendererDiv.onpointermove = (event) => {
+      if (!dragState) return;
+      const note = currentNotesData[dragState.index];
+      if (!note || note.rest) return;
 
-    if (selected && !selected.rest && Number.isFinite(selected.midi)) {
-      dragState = {
-        index: idx,
-        startY: event.clientY,
-        startMidi: selected.midi,
-      };
-      if (rendererDiv.setPointerCapture && Number.isFinite(event.pointerId)) {
-        rendererDiv.setPointerCapture(event.pointerId);
+      const newMidi = midiFromY(dragState.startMidi, event.clientY - dragState.startY);
+      if (newMidi !== note.midi) {
+        note.midi = newMidi;
+        pendingDragMidi = newMidi;
+        markDirty();
+        scheduleDragRender();
       }
-    } else {
+    };
+
+    rendererDiv.onpointerup = () => {
+      if (dragRenderFrame !== null) {
+        window.cancelAnimationFrame(dragRenderFrame);
+        dragRenderFrame = null;
+        renderSheetMusic();
+        if (pendingDragMidi !== null && statusDiv) {
+          statusDiv.innerHTML = `<p style=\"color:#333;\">Selected note moved to ${midiToVexKey(pendingDragMidi)}.</p>`;
+        }
+        pendingDragMidi = null;
+      }
       dragState = null;
-    }
+    };
 
-    renderSheetMusic();
-    syncMIDIToolbarState();
-  };
-
-  rendererDiv.onpointermove = (event) => {
-    if (!dragState) return;
-    const note = currentNotesData[dragState.index];
-    if (!note || note.rest) return;
-
-    const newMidi = midiFromY(dragState.startMidi, event.clientY - dragState.startY);
-    if (newMidi !== note.midi) {
-      note.midi = newMidi;
-      pendingDragMidi = newMidi;
-      scheduleDragRender();
-    }
-  };
-
-  rendererDiv.onpointerup = () => {
-    if (dragRenderFrame !== null) {
-      window.cancelAnimationFrame(dragRenderFrame);
-      dragRenderFrame = null;
-      renderSheetMusic();
-      if (pendingDragMidi !== null && statusDiv) {
-        statusDiv.innerHTML = `<p style=\"color:#333;\">Selected note moved to ${midiToVexKey(pendingDragMidi)}.</p>`;
+    rendererDiv.onpointerleave = () => {
+      if (dragRenderFrame !== null) {
+        window.cancelAnimationFrame(dragRenderFrame);
+        dragRenderFrame = null;
+        renderSheetMusic();
+        if (pendingDragMidi !== null && statusDiv) {
+          statusDiv.innerHTML = `<p style=\"color:#333;\">Selected note moved to ${midiToVexKey(pendingDragMidi)}.</p>`;
+        }
+        pendingDragMidi = null;
       }
-      pendingDragMidi = null;
+      dragState = null;
+    };
+  } catch (err) {
+    console.warn("Failed to render MIDI sheet music:", err);
+    if (statusDiv) {
+      statusDiv.innerHTML = `<p style='color:#b00020;'>Render error: ${err?.message || err}</p>`;
     }
-    dragState = null;
-  };
-
-  rendererDiv.onpointerleave = () => {
-    if (dragRenderFrame !== null) {
-      window.cancelAnimationFrame(dragRenderFrame);
-      dragRenderFrame = null;
-      renderSheetMusic();
-      if (pendingDragMidi !== null && statusDiv) {
-        statusDiv.innerHTML = `<p style=\"color:#333;\">Selected note moved to ${midiToVexKey(pendingDragMidi)}.</p>`;
-      }
-      pendingDragMidi = null;
-    }
-    dragState = null;
-  };
+  }
 }
 
 function insertNote() {
@@ -279,6 +497,7 @@ function insertNote() {
   selectedElementType = "note";
 
   renderSheetMusic();
+  markDirty();
   syncMIDIToolbarState();
 }
 
@@ -298,6 +517,7 @@ function insertRest() {
   selectedElementType = "rest";
 
   renderSheetMusic();
+  markDirty();
   syncMIDIToolbarState();
 }
 
@@ -308,6 +528,7 @@ function replaceSelectedWithRest() {
   currentNotesData[selectedNoteIndex] = { midi: null, duration, rest: true };
   selectedElementType = "rest";
   renderSheetMusic();
+  markDirty();
   syncMIDIToolbarState();
 }
 
@@ -318,6 +539,7 @@ function setSelectedDuration(duration) {
   if (!existing) return;
   existing.duration = duration;
   renderSheetMusic();
+  markDirty();
   syncMIDIToolbarState();
 }
 
@@ -371,6 +593,15 @@ function handleMIDIAction(callbackKey) {
   }
   if (callbackKey === "midiCleffTenor") {
     setClef("tenor");
+    return;
+  }
+  if (callbackKey === "midiPlayScore") {
+    window.NodevisionMIDITools?.play?.();
+    return;
+  }
+  if (callbackKey === "midiPauseScore") {
+    window.NodevisionMIDITools?.pause?.();
+    return;
   }
 }
 
@@ -382,7 +613,12 @@ function syncMIDIToolbarState() {
     activeActionHandler: handleMIDIAction,
     midiHasSelection: Boolean(selectedType),
     midiSelectedType: selectedType,
+    midiTempoBpm: playbackTempoBpm,
   });
+
+  if (durationSelectEl && selected && DURATION_VALUES.has(selected.duration)) {
+    durationSelectEl.value = selected.duration;
+  }
 }
 
 function registerMIDIHotkeys(filePath) {
@@ -435,8 +671,11 @@ window.getEditorMIDI = () => {
     return DURATION_TO_TICKS[duration] || DURATION_TO_TICKS.q;
   };
 
-  // Meta: tempo (120 BPM), time signature (4/4), program change (acoustic grand).
-  pushVlq(0); push(0xff, 0x51, 0x03, 0x07, 0xa1, 0x20);
+  // Meta: tempo, time signature (4/4), program change (acoustic grand).
+  const bpm = clampNumber(playbackTempoBpm, 20, 400, 120);
+  const mpqn = Math.max(1, Math.round(60000000 / bpm));
+  pushVlq(0);
+  push(0xff, 0x51, 0x03, (mpqn >> 16) & 0xff, (mpqn >> 8) & 0xff, mpqn & 0xff);
   pushVlq(0); push(0xff, 0x58, 0x04, 0x04, 0x02, 0x18, 0x08);
   pushVlq(0); push(0xc0, 0x00);
 
@@ -485,10 +724,10 @@ window.getEditorMIDI = () => {
 function arrayBufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer || new ArrayBuffer(0));
   let binary = "";
-  const chunkSize = 0x8000;
+  const chunkSize = 0x1000;
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const slice = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode(...slice);
+    binary += String.fromCharCode.apply(null, slice);
   }
   return btoa(binary);
 }
@@ -514,12 +753,149 @@ window.saveMIDIFile = async (path) => {
     }),
   });
 
-  const json = await res.json().catch(() => null);
-  if (!res.ok || !json?.success) {
-    throw new Error(json?.error || "Failed to save MIDI file.");
+  const text = await res.text().catch(() => "");
+  let payload = null;
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    payload = text;
+  }
+  if (!res.ok || !payload?.success) {
+    const msg = payload?.error || (typeof payload === "string" && payload.trim() ? payload : null) || `Save failed (${res.status})`;
+    throw new Error(msg);
   }
   console.log("Saved MIDI file:", targetPath);
+  markSaved();
 };
+
+function midiToFrequency(midi) {
+  const m = clampNumber(midi, 0, 127, 60);
+  return 440 * Math.pow(2, (m - 69) / 12);
+}
+
+function durationToBeats(duration) {
+  if (!duration) return 1;
+  if (duration === "w") return 4;
+  if (duration === "h") return 2;
+  if (duration === "q") return 1;
+  if (duration === "8") return 0.5;
+  return 1;
+}
+
+function stopPlayback({ resetIndex = false } = {}) {
+  if (playbackState.timeoutId) {
+    clearTimeout(playbackState.timeoutId);
+    playbackState.timeoutId = null;
+  }
+  try {
+    if (playbackState.osc) playbackState.osc.stop();
+  } catch {}
+  playbackState.osc = null;
+  if (resetIndex) playbackState.index = 0;
+  playbackState.remainingMs = 0;
+  playbackState.currentEntry = null;
+  playbackState.noteStartedAt = 0;
+  playbackState.noteDurationMs = 0;
+  playbackState.status = "stopped";
+}
+
+function ensureAudio() {
+  if (playbackState.ctx) return playbackState.ctx;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) throw new Error("Web Audio is not supported in this environment.");
+  playbackState.ctx = new Ctx();
+  playbackState.gain = playbackState.ctx.createGain();
+  playbackState.gain.gain.value = 0.15;
+  playbackState.gain.connect(playbackState.ctx.destination);
+  return playbackState.ctx;
+}
+
+function scheduleNextNote({ resumeCurrent = false } = {}) {
+  const notes = Array.isArray(currentNotesData) ? currentNotesData : [];
+  if (playbackState.index < 0) playbackState.index = 0;
+  if (playbackState.index >= notes.length) {
+    stopPlayback({ resetIndex: true });
+    if (statusDiv) statusDiv.innerHTML = "<p style='color:#2e7d32;'>Playback finished.</p>";
+    syncMIDIToolbarState();
+    return;
+  }
+
+  const entry = notes[playbackState.index];
+  const bpm = clampNumber(playbackTempoBpm, 20, 400, 120);
+  const beatSeconds = 60 / bpm;
+  const beats = durationToBeats(entry?.duration);
+  const durationMs = Math.max(50, Math.round(beatSeconds * beats * 1000));
+
+  playbackState.currentEntry = entry;
+  playbackState.noteStartedAt = performance.now();
+  const playMs = Math.max(0, resumeCurrent ? playbackState.remainingMs : durationMs);
+  playbackState.noteDurationMs = playMs;
+
+  if (!resumeCurrent) {
+    playbackState.remainingMs = durationMs;
+  }
+
+  if (entry?.rest || !Number.isFinite(entry?.midi)) {
+    playbackState.timeoutId = setTimeout(() => {
+      playbackState.index += 1;
+      scheduleNextNote();
+    }, playMs);
+    return;
+  }
+
+  const ctx = ensureAudio();
+  if (ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.value = midiToFrequency(entry.midi);
+  osc.connect(playbackState.gain);
+  playbackState.osc = osc;
+  const now = ctx.currentTime;
+  osc.start(now);
+  osc.stop(now + playMs / 1000);
+
+  playbackState.timeoutId = setTimeout(() => {
+    playbackState.index += 1;
+    scheduleNextNote();
+  }, playMs);
+}
+
+function playScore() {
+  if (playbackState.status === "playing") return;
+  const wasPaused = playbackState.status === "paused";
+  playbackState.status = "playing";
+  if (wasPaused) scheduleNextNote({ resumeCurrent: true });
+  else {
+    if (playbackState.index < 0) playbackState.index = 0;
+    scheduleNextNote();
+  }
+  syncMIDIToolbarState();
+}
+
+function pauseScore() {
+  if (playbackState.status !== "playing") return;
+  if (playbackState.timeoutId) {
+    clearTimeout(playbackState.timeoutId);
+    playbackState.timeoutId = null;
+  }
+  try {
+    if (playbackState.osc) playbackState.osc.stop();
+  } catch {}
+  playbackState.osc = null;
+
+  const elapsed = performance.now() - (playbackState.noteStartedAt || 0);
+  playbackState.remainingMs = Math.max(0, (playbackState.noteDurationMs || 0) - elapsed);
+  playbackState.status = "paused";
+  syncMIDIToolbarState();
+}
+
+function setTempo(bpm) {
+  playbackTempoBpm = clampNumber(bpm, 20, 400, 120);
+  updateToolbarState({ midiTempoBpm: playbackTempoBpm });
+}
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
@@ -529,9 +905,21 @@ export async function renderEditor(filePath, container) {
   dragState = null;
   selectedElementType = null;
   currentClef = "treble";
+  midiIsDirty = false;
+  setTempo(playbackTempoBpm);
+  stopPlayback({ resetIndex: true });
+  updateToolbarState({ fileIsDirty: false });
 
   window.NodevisionState.currentMode = "MIDIediting";
   window.NodevisionState.activeActionHandler = handleMIDIAction;
+  window.NodevisionMIDITools = {
+    play: playScore,
+    pause: pauseScore,
+    stop: () => stopPlayback({ resetIndex: true }),
+    setTempo,
+    getTempo: () => playbackTempoBpm,
+    status: () => ({ ...playbackState, tempoBpm: playbackTempoBpm }),
+  };
   syncMIDIToolbarState();
 
   const wrapper = document.createElement("div");
@@ -558,6 +946,34 @@ export async function renderEditor(filePath, container) {
   insertRestBtn.textContent = "Insert Rest";
   insertRestBtn.addEventListener("click", insertRest);
   controls.appendChild(insertRestBtn);
+
+  const durationSelect = document.createElement("select");
+  durationSelect.title = "Selected duration";
+  durationSelect.innerHTML = `
+    <option value="w">Whole</option>
+    <option value="h">Half</option>
+    <option value="q" selected>Quarter</option>
+    <option value="8">Eighth</option>
+  `;
+  durationSelect.addEventListener("change", () => {
+    setSelectedDuration(durationSelect.value);
+  });
+  controls.appendChild(durationSelect);
+  durationSelectEl = durationSelect;
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.textContent = "Save";
+  saveBtn.addEventListener("click", async () => {
+    try {
+      await window.saveMIDIFile(filePath);
+      if (statusDiv) statusDiv.innerHTML = "<p style='color:green;'>Saved.</p>";
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to save: ${err?.message || err}`);
+    }
+  });
+  controls.appendChild(saveBtn);
 
   const controlsHint = document.createElement("div");
   controlsHint.style.cssText = "font:12px monospace;color:#555;";

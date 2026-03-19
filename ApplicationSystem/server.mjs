@@ -19,7 +19,7 @@ import previewRuntimeRoutes from './routes/api/previewRuntimeRoutes.js';
 import previewRuntimeControlRoutes from './routes/api/previewRuntimeControlRoutes.js';
 import { createServerContext, ensureServerDirectories } from './shared/serverContext.mjs';
 
-import { phpProxyOptions } from "./server/phpProxy.mjs";
+import { createPhpProxyOptions } from "./server/phpProxy.mjs";
 import { loadRoutes } from "./server/dynamicRoutes.mjs";
 import { identityMiddleware, requireAuthentication } from "./server/middleware/authIdentity.mjs";
 import { registerAuthRoutes } from "./server/routes/authRoutes.mjs";
@@ -59,7 +59,7 @@ export default async function createApp(runtimeConfig = {}) {
   app.use("/api", listDirectoryRouter(ctx));
   app.use('/api/file', uploadRoutes);
 
-  app.use('/php', createProxyMiddleware(phpProxyOptions));
+  app.use('/php', createProxyMiddleware(createPhpProxyOptions(runtimeConfig)));
   app.use('/public/data', express.static(SHARED_DATA_DIR));
   app.use(express.static(PUBLIC_DIR, {
     etag: false,

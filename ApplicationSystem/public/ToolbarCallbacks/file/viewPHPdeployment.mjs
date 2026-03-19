@@ -12,8 +12,8 @@ export default function viewPHPdeployment() {
     return;
   }
 
-  // Construct URL to the Notebook file
-  const deploymentUrl = `http://localhost:8080/${activeNode}`;
+  // Open via Nodevision's /php proxy so the PHP port can vary.
+  const deploymentUrl = `${window.location.origin}/php/${activeNode}`;
 
   // Open in new tab
   window.open(deploymentUrl, "_blank");

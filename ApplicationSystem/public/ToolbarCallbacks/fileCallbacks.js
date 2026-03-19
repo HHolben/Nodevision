@@ -201,7 +201,7 @@ NewFile: async () => {
   viewPHPdeployment: () => {
     const activeNode = window.ActiveNode;
     if (activeNode) {
-      const deploymentUrl = `http://localhost:8000/Notebook/${activeNode}`;
+      const deploymentUrl = `${window.location.origin}/php/${activeNode}`;
       window.open(deploymentUrl, "_blank");
     } else {
       alert("No active node specified in the URL.");

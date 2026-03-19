@@ -611,6 +611,28 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 
   items.forEach(item => {
     if (!checkToolbarConditions(item, state)) return;
+
+    const hasWidgetContent = typeof item?.content === "string" && item.content.trim() !== "";
+    if (hasWidgetContent || item.script) {
+      const host = document.createElement("div");
+      host.className = "nv-subtoolbar-widget";
+      Object.assign(host.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "0 6px",
+        height: "30px",
+      });
+      if (hasWidgetContent) {
+        host.innerHTML = item.content;
+      }
+      if (item.script) {
+        attachToolbarScript(item, host);
+      }
+      container.appendChild(host);
+      return;
+    }
+
     const btn = document.createElement("button");
     btn.title = item.heading || "";
     btn.setAttribute("aria-label", item.heading || "toolbar action");

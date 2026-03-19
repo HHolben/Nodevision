@@ -193,8 +193,17 @@ document.getElementById('fileUpload').addEventListener('change', function(event)
         const editorRelativePath = getRelativePath(filePath, `./${file.name}`);
         const finalWebpageRelativePath = getRelativePath(filePath, imagePath);
 
-        // Construct the URL for the editor (localhost:8000)
-        const editorUrl = `http://localhost:8000/${editorRelativePath}`;
+        // Construct the URL for the editor via the /php proxy (PHP port may vary).
+        // The PHP server docroot is the Notebook folder, so we use the active file's directory.
+        const activeDir = String(activeNode || '')
+          .replace(/\\/g, '/')
+          .replace(/^\/+/, '')
+          .split('/')
+          .slice(0, -1)
+          .filter(Boolean)
+          .join('/');
+        const phpImagePath = activeDir ? `${activeDir}/${file.name}` : file.name;
+        const editorUrl = `${window.location.origin}/php/${phpImagePath}`;
         console.log('Editor URL:', editorUrl);
         
         // Create the img tag with the CSS class for styling
@@ -827,5 +836,3 @@ document.addEventListener('cut', (event) => {
         event.preventDefault();  // Prevent default cut behavior
     }
 });
-
-
