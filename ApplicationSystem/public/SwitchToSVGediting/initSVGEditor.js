@@ -32,8 +32,8 @@
     return;
   }
 
-  container.innerHTML = `
-    <div id="ScrollableSVGEditor" style="width:100%; height:100%; overflow:auto; display: flex; flex-direction: column;">
+	  container.innerHTML = `
+	    <div id="ScrollableSVGEditor" style="width:100%; height:100%; overflow:auto; display: flex; flex-direction: column;">
       <!-- Publisher-style Toolbar -->
       <div id="publisher-toolbar" style="padding: 10px; background: #f8f8f8; border-bottom: 1px solid #ccc; display: flex; align-items: center; flex-wrap: wrap;">
         <!-- Selection Tools -->
@@ -81,21 +81,24 @@
         <span style="margin-left: 20px; font-weight: bold;">Selected: <span id="selected-info">None</span></span>
       </div>
 
-      <!-- Main Editor Area -->
-      <div style="display: flex; flex: 1;">
-        <!-- Ruler and Canvas Area -->
-        <div style="flex: 1; position: relative;">
-          <!-- Horizontal Ruler -->
-          <div id="h-ruler" style="height: 20px; background: #e8e8e8; border-bottom: 1px solid #ccc; position: relative;"></div>
-          
-          <!-- Vertical Ruler and Canvas Container -->
-          <div style="display: flex;">
-            <div id="v-ruler" style="width: 20px; background: #e8e8e8; border-right: 1px solid #ccc; position: relative;"></div>
-            <div id="canvas-container" style="flex: 1; position: relative; overflow: auto;">
-              <svg id="svg-editor" width="800" height="600" viewBox="0 0 800 600" style="border:1px solid #ccc; background: white; display: block; position: relative;">
-                <!-- Grid Pattern -->
-                <defs>
-                  <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+	      <!-- Main Editor Area -->
+	      <div style="display: flex; flex: 1; min-width: 0;">
+	        <!-- Ruler and Canvas Area -->
+	        <div id="svg-editor-main" style="flex: 1; position: relative; display: flex; flex-direction: column; min-width: 0;">
+	          <!-- Ruler Row -->
+	          <div id="ruler-row" style="display: flex; height: 24px; flex: 0 0 auto;">
+	            <div id="ruler-corner"></div>
+	            <div id="h-ruler"><canvas id="h-ruler-canvas"></canvas></div>
+	          </div>
+	          
+	          <!-- Canvas Row -->
+	          <div id="canvas-row" style="display: flex; flex: 1; min-height: 0;">
+	            <div id="v-ruler"><canvas id="v-ruler-canvas"></canvas></div>
+	            <div id="canvas-container" style="flex: 1; position: relative; overflow: auto; min-width: 0;">
+	              <svg id="svg-editor" width="800" height="600" viewBox="0 0 800 600" style="border:1px solid #ccc; background: white; display: block; position: relative;">
+	                <!-- Grid Pattern -->
+	                <defs>
+	                  <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
                     <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="1"/>
                   </pattern>
                 </defs>
@@ -113,10 +116,10 @@
                 <div class="handle s-resize" data-handle="s"></div>
                 <div class="handle sw-resize" data-handle="sw"></div>
                 <div class="handle w-resize" data-handle="w"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+	              </div>
+	            </div>
+	          </div>
+	        </div>
 
         <!-- Property Panel -->
         <div id="property-panel" style="width: 250px; background: #f5f5f5; border-left: 1px solid #ccc; padding: 10px; overflow-y: auto;">
@@ -268,22 +271,49 @@
       flex: 1;
     }
     
-    /* Rulers */
-    #h-ruler, #v-ruler {
-      font-size: 10px;
-      color: #666;
-      user-select: none;
-    }
-    .ruler-mark {
-      position: absolute;
-      border-left: 1px solid #999;
-      height: 100%;
-    }
-    .ruler-number {
-      position: absolute;
-      top: 2px;
-      font-size: 9px;
-    }
+	    /* Rulers */
+	    #ruler-row {
+	      user-select: none;
+	    }
+	    #ruler-corner {
+	      width: 28px;
+	      background: linear-gradient(#f7f7f7, #ececec);
+	      border-right: 1px solid #cfcfcf;
+	      border-bottom: 1px solid #cfcfcf;
+	      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.6);
+	      flex: 0 0 auto;
+	    }
+	    #h-ruler {
+	      flex: 1 1 auto;
+	      position: relative;
+	      background: linear-gradient(#f7f7f7, #ececec);
+	      border-bottom: 1px solid #cfcfcf;
+	      overflow: hidden;
+	      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.6);
+	      min-width: 0;
+	    }
+	    #v-ruler {
+	      width: 28px;
+	      position: relative;
+	      background: linear-gradient(to right, #f7f7f7, #ececec);
+	      border-right: 1px solid #cfcfcf;
+	      overflow: hidden;
+	      box-shadow: inset -1px 0 0 rgba(255,255,255,0.6);
+	      flex: 0 0 auto;
+	    }
+	    #h-ruler-canvas,
+	    #v-ruler-canvas {
+	      width: 100%;
+	      height: 100%;
+	      display: block;
+	    }
+	    #canvas-container {
+	      --svg-editor-height: 600px;
+	    }
+	    #svg-editor {
+	      width: 100%;
+	      height: var(--svg-editor-height);
+	    }
     
     /* Checkboxes in toolbar */
     .tool-group label {
@@ -408,14 +438,40 @@
     // Initialize rulers
     initRulers();
     
-    // Initialize grid toggle
-    const gridToggle = document.getElementById('grid-toggle');
-    const snapToggle = document.getElementById('snap-toggle');
-    const gridOverlay = document.getElementById('grid-overlay');
-    
-    gridToggle.addEventListener('change', () => {
-      gridOverlay.style.display = gridToggle.checked ? 'block' : 'none';
-    });
+	    // Initialize grid toggle
+	    const gridToggle = document.getElementById('grid-toggle');
+	    const snapToggle = document.getElementById('snap-toggle');
+	    const gridOverlay = document.getElementById('grid-overlay');
+
+	    function clientToSvgCoords(clientX, clientY) {
+	      try {
+	        const ctm = svgEditor.getScreenCTM();
+	        if (!ctm) {
+	          const rect = svgEditor.getBoundingClientRect();
+	          return { x: clientX - rect.left, y: clientY - rect.top };
+	        }
+	        const inverse = ctm.inverse();
+	        if (typeof DOMPoint === 'function') {
+	          const svgPoint = new DOMPoint(clientX, clientY).matrixTransform(inverse);
+	          return { x: svgPoint.x, y: svgPoint.y };
+	        }
+	        if (typeof svgEditor.createSVGPoint === 'function') {
+	          const pt = svgEditor.createSVGPoint();
+	          pt.x = clientX;
+	          pt.y = clientY;
+	          const svgPoint = pt.matrixTransform(inverse);
+	          return { x: svgPoint.x, y: svgPoint.y };
+	        }
+	      } catch (err) {
+	        // Fall through to bounding-rect math
+	      }
+	      const rect = svgEditor.getBoundingClientRect();
+	      return { x: clientX - rect.left, y: clientY - rect.top };
+	    }
+	    
+	    gridToggle.addEventListener('change', () => {
+	      gridOverlay.style.display = gridToggle.checked ? 'block' : 'none';
+	    });
 
     // Selection and interaction handling
     svgEditor.addEventListener('click', function(e) {
@@ -439,17 +495,15 @@
     });
 
     // Mouse down for dragging/resizing
-    svgEditor.addEventListener('mousedown', function(e) {
-      if (window.currentSVGTool === 'select' && selectedElement && !e.target.classList.contains('handle')) {
-        isDragging = true;
-        const rect = svgEditor.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        if (selectedElement.tagName === 'rect') {
-          const x = parseFloat(selectedElement.getAttribute('x') || 0);
-          const y = parseFloat(selectedElement.getAttribute('y') || 0);
-          dragOffset = { x: mouseX - x, y: mouseY - y };
+	    svgEditor.addEventListener('mousedown', function(e) {
+	      if (window.currentSVGTool === 'select' && selectedElement && !e.target.classList.contains('handle')) {
+	        isDragging = true;
+	        const { x: mouseX, y: mouseY } = clientToSvgCoords(e.clientX, e.clientY);
+	        
+	        if (selectedElement.tagName === 'rect') {
+	          const x = parseFloat(selectedElement.getAttribute('x') || 0);
+	          const y = parseFloat(selectedElement.getAttribute('y') || 0);
+	          dragOffset = { x: mouseX - x, y: mouseY - y };
         } else if (selectedElement.tagName === 'circle') {
           const cx = parseFloat(selectedElement.getAttribute('cx') || 0);
           const cy = parseFloat(selectedElement.getAttribute('cy') || 0);
@@ -476,16 +530,14 @@
     });
 
     // Mouse move for dragging and resizing
-    document.addEventListener('mousemove', function(e) {
-      if (isDragging && selectedElement) {
-        const rect = svgEditor.getBoundingClientRect();
-        let mouseX = e.clientX - rect.left;
-        let mouseY = e.clientY - rect.top;
-        
-        // Snap to grid if enabled
-        if (snapToggle.checked) {
-          mouseX = Math.round(mouseX / gridSize) * gridSize;
-          mouseY = Math.round(mouseY / gridSize) * gridSize;
+	    document.addEventListener('mousemove', function(e) {
+	      if (isDragging && selectedElement) {
+	        let { x: mouseX, y: mouseY } = clientToSvgCoords(e.clientX, e.clientY);
+	        
+	        // Snap to grid if enabled
+	        if (snapToggle.checked) {
+	          mouseX = Math.round(mouseX / gridSize) * gridSize;
+	          mouseY = Math.round(mouseY / gridSize) * gridSize;
         }
         
         if (selectedElement.tagName === 'rect') {
@@ -540,43 +592,235 @@
       }
     });
 
-    function initRulers() {
-      const hRuler = document.getElementById('h-ruler');
-      const vRuler = document.getElementById('v-ruler');
-      
-      // Create horizontal ruler marks
-      for (let i = 0; i <= 800; i += 50) {
-        const mark = document.createElement('div');
-        mark.className = 'ruler-mark';
-        mark.style.left = i + 'px';
-        hRuler.appendChild(mark);
-        
-        const number = document.createElement('div');
-        number.className = 'ruler-number';
-        number.style.left = (i + 2) + 'px';
-        number.textContent = i;
-        hRuler.appendChild(number);
-      }
-      
-      // Create vertical ruler marks
-      for (let i = 0; i <= 600; i += 50) {
-        const mark = document.createElement('div');
-        mark.className = 'ruler-mark';
-        mark.style.top = i + 'px';
-        mark.style.width = '100%';
-        mark.style.height = '1px';
-        mark.style.borderTop = '1px solid #999';
-        mark.style.borderLeft = 'none';
-        vRuler.appendChild(mark);
-        
-        const number = document.createElement('div');
-        number.className = 'ruler-number';
-        number.style.top = (i + 2) + 'px';
-        number.style.left = '2px';
-        number.textContent = i;
-        vRuler.appendChild(number);
-      }
-    }
+	    function initRulers() {
+	      const canvasContainer = document.getElementById('canvas-container');
+	      const hCanvas = document.getElementById('h-ruler-canvas');
+	      const vCanvas = document.getElementById('v-ruler-canvas');
+	      if (!canvasContainer || !hCanvas || !vCanvas) return;
+
+	      function getSvgViewportBox() {
+	        const vb = svgEditor.viewBox && svgEditor.viewBox.baseVal ? svgEditor.viewBox.baseVal : null;
+	        const vbWidth = vb && vb.width ? vb.width : parseFloat(svgEditor.getAttribute('width') || 800);
+	        const vbHeight = vb && vb.height ? vb.height : parseFloat(svgEditor.getAttribute('height') || 600);
+	        const vbX = vb ? vb.x : 0;
+	        const vbY = vb ? vb.y : 0;
+	        return {
+	          x: Number.isFinite(vbX) ? vbX : 0,
+	          y: Number.isFinite(vbY) ? vbY : 0,
+	          width: Number.isFinite(vbWidth) && vbWidth > 0 ? vbWidth : 800,
+	          height: Number.isFinite(vbHeight) && vbHeight > 0 ? vbHeight : 600
+	        };
+	      }
+
+	      function getPixelsPerSvgUnit() {
+	        const vb = getSvgViewportBox();
+	        const svgRect = svgEditor.getBoundingClientRect();
+	        if (!svgRect.width || !vb.width) return 1;
+	        return svgRect.width / vb.width;
+	      }
+
+	      function chooseMinorStep(pixelsPerUnit) {
+	        const targetPx = 8;
+	        const steps = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+	        for (const step of steps) {
+	          if (step * pixelsPerUnit >= targetPx) return step;
+	        }
+	        return steps[steps.length - 1];
+	      }
+
+	      function resizeSvgToFitWidth() {
+	        const vb = getSvgViewportBox();
+	        const widthPx = canvasContainer.clientWidth;
+	        if (!widthPx || !vb.width || !vb.height) return;
+	        const heightPx = Math.max(1, Math.round(widthPx * (vb.height / vb.width)));
+	        canvasContainer.style.setProperty('--svg-editor-height', `${heightPx}px`);
+	      }
+
+	      function setupCanvas(canvasEl, cssWidth, cssHeight) {
+	        const dpr = window.devicePixelRatio || 1;
+	        const targetWidth = Math.max(1, Math.floor(cssWidth));
+	        const targetHeight = Math.max(1, Math.floor(cssHeight));
+	        if (canvasEl.width !== Math.floor(targetWidth * dpr) || canvasEl.height !== Math.floor(targetHeight * dpr)) {
+	          canvasEl.width = Math.floor(targetWidth * dpr);
+	          canvasEl.height = Math.floor(targetHeight * dpr);
+	        }
+	        const ctx = canvasEl.getContext('2d');
+	        if (!ctx) return null;
+	        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+	        return ctx;
+	      }
+
+	      function drawHorizontalRuler() {
+	        const vb = getSvgViewportBox();
+	        const pixelsPerUnit = getPixelsPerSvgUnit();
+	        const svgRect = svgEditor.getBoundingClientRect();
+
+	        const hRulerEl = document.getElementById('h-ruler');
+	        const cssWidth = (hRulerEl && hRulerEl.clientWidth) ? hRulerEl.clientWidth : canvasContainer.clientWidth;
+	        const cssHeight = (hRulerEl && hRulerEl.clientHeight) ? hRulerEl.clientHeight : 24;
+	        const viewportPxWidth = Math.min(canvasContainer.clientWidth, svgRect.width || canvasContainer.clientWidth);
+	        const visiblePxWidth = Math.min(cssWidth, viewportPxWidth);
+
+	        const ctx = setupCanvas(hCanvas, cssWidth, cssHeight);
+	        if (!ctx) return;
+
+	        ctx.clearRect(0, 0, cssWidth, cssHeight);
+	        ctx.fillStyle = '#f0f0f0';
+	        ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+	        const startUser = vb.x + (canvasContainer.scrollLeft / pixelsPerUnit);
+	        const visibleUserWidth = (visiblePxWidth / pixelsPerUnit);
+	        const endUser = startUser + visibleUserWidth;
+
+	        const minor = chooseMinorStep(pixelsPerUnit);
+	        const majorEvery = 5;
+	        const superEvery = 10;
+
+	        let labelEvery = superEvery;
+	        if (minor * pixelsPerUnit * labelEvery < 60) labelEvery *= 2;
+
+	        const startIdx = Math.floor(startUser / minor);
+	        const endIdx = Math.ceil(endUser / minor);
+
+	        const baselineY = cssHeight - 0.5;
+	        ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+	        ctx.lineWidth = 1;
+	        ctx.beginPath();
+	        ctx.moveTo(0, baselineY);
+	        ctx.lineTo(cssWidth, baselineY);
+	        ctx.stroke();
+
+	        ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+	        ctx.fillStyle = 'rgba(0,0,0,0.62)';
+	        ctx.textBaseline = 'top';
+	        ctx.textAlign = 'left';
+
+	        for (let idx = startIdx; idx <= endIdx; idx++) {
+	          const value = idx * minor;
+	          const xPx = (value - startUser) * pixelsPerUnit;
+	          const x = Math.round(xPx) + 0.5;
+	          if (x < -1 || x > cssWidth + 1) continue;
+
+	          const isSuper = (idx % superEvery) === 0;
+	          const isMajor = (idx % majorEvery) === 0;
+	          const tickH = isSuper ? 12 : (isMajor ? 8 : 5);
+	          ctx.strokeStyle = isSuper ? 'rgba(0,0,0,0.40)' : (isMajor ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.18)');
+	          ctx.beginPath();
+	          ctx.moveTo(x, cssHeight);
+	          ctx.lineTo(x, cssHeight - tickH);
+	          ctx.stroke();
+
+	          if (idx % labelEvery === 0) {
+	            const label = String(Math.round(value));
+	            const textX = x + 2;
+	            if (textX < cssWidth - 10) {
+	              ctx.fillText(label, textX, 2);
+	            }
+	          }
+	        }
+
+	        // Dim unused area if SVG is shorter than container width for any reason
+	        if (visiblePxWidth < cssWidth) {
+	          ctx.fillStyle = 'rgba(255,255,255,0.55)';
+	          ctx.fillRect(visiblePxWidth, 0, cssWidth - visiblePxWidth, cssHeight);
+	        }
+	      }
+
+	      function drawVerticalRuler() {
+	        const vb = getSvgViewportBox();
+	        const pixelsPerUnit = getPixelsPerSvgUnit();
+	        const svgRect = svgEditor.getBoundingClientRect();
+
+	        const vRulerEl = document.getElementById('v-ruler');
+	        const cssWidth = (vRulerEl && vRulerEl.clientWidth) ? vRulerEl.clientWidth : 28;
+	        const cssHeight = (vRulerEl && vRulerEl.clientHeight) ? vRulerEl.clientHeight : canvasContainer.clientHeight;
+	        const viewportPxHeight = Math.min(canvasContainer.clientHeight, svgRect.height || canvasContainer.clientHeight);
+	        const visiblePxHeight = Math.min(cssHeight, viewportPxHeight);
+
+	        const ctx = setupCanvas(vCanvas, cssWidth, cssHeight);
+	        if (!ctx) return;
+
+	        ctx.clearRect(0, 0, cssWidth, cssHeight);
+	        ctx.fillStyle = '#f0f0f0';
+	        ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+	        const startUser = vb.y + (canvasContainer.scrollTop / pixelsPerUnit);
+	        const visibleUserHeight = (visiblePxHeight / pixelsPerUnit);
+	        const endUser = startUser + visibleUserHeight;
+
+	        const minor = chooseMinorStep(pixelsPerUnit);
+	        const majorEvery = 5;
+	        const superEvery = 10;
+
+	        let labelEvery = superEvery;
+	        if (minor * pixelsPerUnit * labelEvery < 60) labelEvery *= 2;
+
+	        const startIdx = Math.floor(startUser / minor);
+	        const endIdx = Math.ceil(endUser / minor);
+
+	        const baselineX = cssWidth - 0.5;
+	        ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+	        ctx.lineWidth = 1;
+	        ctx.beginPath();
+	        ctx.moveTo(baselineX, 0);
+	        ctx.lineTo(baselineX, cssHeight);
+	        ctx.stroke();
+
+	        ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+	        ctx.fillStyle = 'rgba(0,0,0,0.62)';
+	        ctx.textBaseline = 'middle';
+	        ctx.textAlign = 'left';
+
+	        for (let idx = startIdx; idx <= endIdx; idx++) {
+	          const value = idx * minor;
+	          const yPx = (value - startUser) * pixelsPerUnit;
+	          const y = Math.round(yPx) + 0.5;
+	          if (y < -1 || y > cssHeight + 1) continue;
+
+	          const isSuper = (idx % superEvery) === 0;
+	          const isMajor = (idx % majorEvery) === 0;
+	          const tickW = isSuper ? 12 : (isMajor ? 8 : 5);
+	          ctx.strokeStyle = isSuper ? 'rgba(0,0,0,0.40)' : (isMajor ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.18)');
+	          ctx.beginPath();
+	          ctx.moveTo(cssWidth, y);
+	          ctx.lineTo(cssWidth - tickW, y);
+	          ctx.stroke();
+
+	          if (idx % labelEvery === 0) {
+	            const label = String(Math.round(value));
+	            if (y > 10 && y < cssHeight - 10) {
+	              ctx.fillText(label, 2, y);
+	            }
+	          }
+	        }
+
+	        if (visiblePxHeight < cssHeight) {
+	          ctx.fillStyle = 'rgba(255,255,255,0.55)';
+	          ctx.fillRect(0, visiblePxHeight, cssWidth, cssHeight - visiblePxHeight);
+	        }
+	      }
+
+	      let rafId = null;
+	      function scheduleRedraw() {
+	        if (rafId) return;
+	        rafId = requestAnimationFrame(() => {
+	          rafId = null;
+	          resizeSvgToFitWidth();
+	          drawHorizontalRuler();
+	          drawVerticalRuler();
+	        });
+	      }
+
+	      canvasContainer.addEventListener('scroll', scheduleRedraw, { passive: true });
+	      window.addEventListener('resize', scheduleRedraw);
+
+	      if (typeof ResizeObserver === 'function') {
+	        const ro = new ResizeObserver(() => scheduleRedraw());
+	        ro.observe(canvasContainer);
+	      }
+
+	      scheduleRedraw();
+	    }
 
     function selectElement(element) {
       selectedElement = element;

@@ -312,82 +312,189 @@ export async function renderEditor(filePath, container) {
     };
   }
 
+  function getSvgViewBox() {
+    const vb = svgRoot.viewBox?.baseVal;
+    if (vb && Number.isFinite(vb.width) && Number.isFinite(vb.height) && vb.width > 0 && vb.height > 0) {
+      return { x: vb.x, y: vb.y, width: vb.width, height: vb.height };
+    }
+    const parts = String(svgRoot.getAttribute("viewBox") || "")
+      .trim()
+      .split(/\s+/)
+      .map((n) => Number.parseFloat(n));
+    if (parts.length === 4 && parts.every((n) => Number.isFinite(n)) && parts[2] > 0 && parts[3] > 0) {
+      return { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
+    }
+    const w = Number.parseFloat(svgRoot.getAttribute("width")) || 800;
+    const h = Number.parseFloat(svgRoot.getAttribute("height")) || 600;
+    return { x: 0, y: 0, width: Math.max(1, w), height: Math.max(1, h) };
+  }
+
+  function updateSvgSizeToFitWidth() {
+    const vb = getSvgViewBox();
+    const viewportWidthPx = svgViewport.clientWidth || Math.round(svgViewportHost.getBoundingClientRect().width) || 0;
+    if (!viewportWidthPx || !vb.width || !vb.height) return;
+    const heightPx = Math.max(1, Math.round(viewportWidthPx * (vb.height / vb.width)));
+    svgRoot.style.width = "100%";
+    svgRoot.style.height = `${heightPx}px`;
+    svgRoot.style.minHeight = "0";
+    svgRoot.setAttribute("preserveAspectRatio", "xMinYMin meet");
+  }
+
+  function setupRulerCanvas(canvas, cssWidth, cssHeight) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.floor(cssWidth));
+    const h = Math.max(1, Math.floor(cssHeight));
+    canvas.width = Math.max(1, Math.floor(w * dpr));
+    canvas.height = Math.max(1, Math.floor(h * dpr));
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
+  }
+
+  function chooseRulerMinorStep(pxPerUnit) {
+    const targetPx = 8;
+    const steps = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+    for (const step of steps) {
+      if (step * pxPerUnit >= targetPx) return step;
+    }
+    return steps[steps.length - 1];
+  }
+
+  function formatRulerLabel(value, minorStep) {
+    if (Number.isInteger(minorStep)) return String(Math.round(value));
+    const rounded = Number(value.toFixed(2));
+    return String(rounded);
+  }
+
   function drawSvgTopRuler() {
-    const { naturalWidth } = getSvgNaturalDimensions();
-    const width = Math.max(1, Math.round(naturalWidth));
-    const ctx = svgTopRuler.getContext("2d");
-    svgTopRuler.width = width;
-    svgTopRuler.height = SVG_RULER_THICKNESS;
-    ctx.clearRect(0, 0, width, SVG_RULER_THICKNESS);
+    const vb = getSvgViewBox();
+    const cssWidth = Math.max(1, Math.floor(svgViewportHost.getBoundingClientRect().width));
+    const cssHeight = SVG_RULER_THICKNESS;
+    const ctx = setupRulerCanvas(svgTopRuler, cssWidth, cssHeight);
+    if (!ctx) return;
+
+    const svgRect = svgRoot.getBoundingClientRect();
+    const pxPerUnit = svgRect.width > 0 ? (svgRect.width / vb.width) : 1;
+    const startUser = vb.x + (svgViewport.scrollLeft / pxPerUnit);
+    const visibleUser = (svgViewport.clientWidth || svgRect.width || cssWidth) / pxPerUnit;
+    const endUser = startUser + visibleUser;
+
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
     ctx.fillStyle = "#f4f4f4";
-    ctx.fillRect(0, 0, width, SVG_RULER_THICKNESS);
-    ctx.strokeStyle = "#999";
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+    const baselineY = cssHeight - 0.5;
+    ctx.strokeStyle = "rgba(0,0,0,0.28)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0.5, SVG_RULER_THICKNESS - 0.5);
-    ctx.lineTo(width - 0.5, SVG_RULER_THICKNESS - 0.5);
+    ctx.moveTo(0, baselineY);
+    ctx.lineTo(cssWidth, baselineY);
     ctx.stroke();
 
-    ctx.fillStyle = "#222";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "center";
+    ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.fillStyle = "rgba(0,0,0,0.68)";
     ctx.textBaseline = "top";
+    ctx.textAlign = "left";
 
-    for (let perc = 0; perc <= 100; perc += 10) {
-      const x = Math.round((perc / 100) * width) + 0.5;
-      const tickHeight = perc % 20 === 0 ? 12 : 8;
+    const minor = chooseRulerMinorStep(pxPerUnit);
+    const majorEvery = 5;
+    const superEvery = 10;
+    let labelEvery = superEvery;
+    if (minor * pxPerUnit * labelEvery < 60) labelEvery *= 2;
+
+    const startIdx = Math.floor(startUser / minor) - 1;
+    const endIdx = Math.ceil(endUser / minor) + 1;
+
+    for (let idx = startIdx; idx <= endIdx; idx++) {
+      const value = idx * minor;
+      const xPx = (value - startUser) * pxPerUnit;
+      const x = Math.round(xPx) + 0.5;
+      if (x < -1 || x > cssWidth + 1) continue;
+
+      const isSuper = (idx % superEvery) === 0;
+      const isMajor = (idx % majorEvery) === 0;
+      const tickH = isSuper ? 12 : (isMajor ? 8 : 5);
+      ctx.strokeStyle = isSuper ? "rgba(0,0,0,0.40)" : (isMajor ? "rgba(0,0,0,0.30)" : "rgba(0,0,0,0.18)");
       ctx.beginPath();
-      ctx.moveTo(x, SVG_RULER_THICKNESS);
-      ctx.lineTo(x, SVG_RULER_THICKNESS - tickHeight);
+      ctx.moveTo(x, cssHeight);
+      ctx.lineTo(x, cssHeight - tickH);
       ctx.stroke();
-      if (perc % 20 === 0) {
-        ctx.fillText(`${perc}%`, x, 2);
+
+      if (idx % labelEvery === 0) {
+        const textX = x + 2;
+        if (textX < cssWidth - 10) ctx.fillText(formatRulerLabel(value, minor), textX, 2);
       }
     }
   }
 
   function drawSvgLeftRuler() {
-    const height = Math.max(1, Math.round(svgViewportHost.getBoundingClientRect().height));
-    const ctx = svgLeftRuler.getContext("2d");
-    svgLeftRuler.height = height;
-    svgLeftRuler.width = SVG_RULER_SIDE;
-    ctx.clearRect(0, 0, SVG_RULER_SIDE, height);
+    const vb = getSvgViewBox();
+    const cssWidth = SVG_RULER_SIDE;
+    const cssHeight = Math.max(1, Math.floor(svgViewportHost.getBoundingClientRect().height));
+    const ctx = setupRulerCanvas(svgLeftRuler, cssWidth, cssHeight);
+    if (!ctx) return;
+
+    const svgRect = svgRoot.getBoundingClientRect();
+    const pxPerUnit = svgRect.height > 0 ? (svgRect.height / vb.height) : 1;
+    const startUser = vb.y + (svgViewport.scrollTop / pxPerUnit);
+    const visibleUser = (svgViewport.clientHeight || svgRect.height || cssHeight) / pxPerUnit;
+    const endUser = startUser + visibleUser;
+
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
     ctx.fillStyle = "#f4f4f4";
-    ctx.fillRect(0, 0, SVG_RULER_SIDE, height);
-    ctx.strokeStyle = "#999";
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+    const baselineX = cssWidth - 0.5;
+    ctx.strokeStyle = "rgba(0,0,0,0.28)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(SVG_RULER_SIDE - 0.5, 0);
-    ctx.lineTo(SVG_RULER_SIDE - 0.5, height);
+    ctx.moveTo(baselineX, 0);
+    ctx.lineTo(baselineX, cssHeight);
     ctx.stroke();
 
-    ctx.fillStyle = "#222";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "right";
+    ctx.font = "10px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.fillStyle = "rgba(0,0,0,0.68)";
     ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
 
-    for (let perc = 0; perc <= 100; perc += 10) {
-      const y = Math.round((perc / 100) * height) + 0.5;
-      const tickLength = perc % 20 === 0 ? 12 : 8;
+    const minor = chooseRulerMinorStep(pxPerUnit);
+    const majorEvery = 5;
+    const superEvery = 10;
+    let labelEvery = superEvery;
+    if (minor * pxPerUnit * labelEvery < 60) labelEvery *= 2;
+
+    const startIdx = Math.floor(startUser / minor) - 1;
+    const endIdx = Math.ceil(endUser / minor) + 1;
+
+    for (let idx = startIdx; idx <= endIdx; idx++) {
+      const value = idx * minor;
+      const yPx = (value - startUser) * pxPerUnit;
+      const y = Math.round(yPx) + 0.5;
+      if (y < -1 || y > cssHeight + 1) continue;
+
+      const isSuper = (idx % superEvery) === 0;
+      const isMajor = (idx % majorEvery) === 0;
+      const tickW = isSuper ? 12 : (isMajor ? 8 : 5);
+      ctx.strokeStyle = isSuper ? "rgba(0,0,0,0.40)" : (isMajor ? "rgba(0,0,0,0.30)" : "rgba(0,0,0,0.18)");
       ctx.beginPath();
-      ctx.moveTo(SVG_RULER_SIDE, y);
-      ctx.lineTo(SVG_RULER_SIDE - tickLength, y);
+      ctx.moveTo(cssWidth, y);
+      ctx.lineTo(cssWidth - tickW, y);
       ctx.stroke();
-      if (perc % 20 === 0) {
-        ctx.fillText(`${perc}%`, SVG_RULER_SIDE - 4, y);
+
+      if (idx % labelEvery === 0) {
+        if (y > 10 && y < cssHeight - 10) ctx.fillText(formatRulerLabel(value, minor), 2, y);
       }
     }
   }
 
   function updateSvgRulers() {
+    svgTopRuler.style.transform = "";
+    updateSvgSizeToFitWidth();
     drawSvgTopRuler();
     drawSvgLeftRuler();
-    const viewportWidth = Math.max(
-      1,
-      Math.round(svgViewportHost.getBoundingClientRect().width),
-    );
-    const { naturalWidth } = getSvgNaturalDimensions();
-    const scrollX = svgViewport.scrollLeft;
-    const scaleX = viewportWidth ? naturalWidth / viewportWidth : 1;
-    svgTopRuler.style.transform = `translateX(-${scrollX * scaleX}px)`;
   }
 
   const svgRulerObserver = new ResizeObserver(updateSvgRulers);
@@ -425,7 +532,7 @@ export async function renderEditor(filePath, container) {
       return false;
     }
     try {
-      const bbox = selectedElement.getBBox();
+      const bbox = getElementBBoxInRoot(selectedElement);
       if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height) || bbox.width <= 0 || bbox.height <= 0) {
         setStatus("Unable to crop: invalid selection bounds");
         return false;
@@ -440,6 +547,7 @@ export async function renderEditor(filePath, container) {
       svgRoot.setAttribute("height", String(h));
       setStatus(`Cropped to selection (${Math.round(w)}x${Math.round(h)})`);
       window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
+      updateSvgRulers();
       return true;
     } catch (err) {
       console.warn("Crop to selection failed:", err);
@@ -461,6 +569,68 @@ export async function renderEditor(filePath, container) {
     return Array.from(svgRoot.querySelectorAll("*")).filter(isSelectableElement);
   }
 
+  function applySvgMatrix(matrix, x, y) {
+    return {
+      x: (matrix.a * x) + (matrix.c * y) + matrix.e,
+      y: (matrix.b * x) + (matrix.d * y) + matrix.f
+    };
+  }
+
+  function getElementBBoxInRoot(el) {
+    if (!el || typeof el.getBBox !== "function") return null;
+    let bbox = null;
+    try {
+      bbox = el.getBBox();
+    } catch {
+      return null;
+    }
+    if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return null;
+
+    const elToScreen = typeof el.getScreenCTM === "function" ? el.getScreenCTM() : null;
+    const rootToScreen = typeof svgRoot.getScreenCTM === "function" ? svgRoot.getScreenCTM() : null;
+    if (!elToScreen || !rootToScreen || typeof rootToScreen.inverse !== "function") {
+      return { x: bbox.x, y: bbox.y, width: bbox.width || 0, height: bbox.height || 0 };
+    }
+
+    let screenToRoot = null;
+    try {
+      screenToRoot = rootToScreen.inverse();
+    } catch {
+      return { x: bbox.x, y: bbox.y, width: bbox.width || 0, height: bbox.height || 0 };
+    }
+
+    const x1 = bbox.x;
+    const y1 = bbox.y;
+    const x2 = bbox.x + bbox.width;
+    const y2 = bbox.y + bbox.height;
+    const corners = [
+      [x1, y1],
+      [x2, y1],
+      [x1, y2],
+      [x2, y2],
+    ];
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const [x, y] of corners) {
+      const screen = applySvgMatrix(elToScreen, x, y);
+      const root = applySvgMatrix(screenToRoot, screen.x, screen.y);
+      if (!Number.isFinite(root.x) || !Number.isFinite(root.y)) continue;
+      minX = Math.min(minX, root.x);
+      minY = Math.min(minY, root.y);
+      maxX = Math.max(maxX, root.x);
+      maxY = Math.max(maxY, root.y);
+    }
+
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+      return { x: bbox.x, y: bbox.y, width: bbox.width || 0, height: bbox.height || 0 };
+    }
+
+    return { x: minX, y: minY, width: Math.max(0, maxX - minX), height: Math.max(0, maxY - minY) };
+  }
+
   function getSelectedUnionBBox() {
     if (!selectedElements.length) return null;
     let minX = Infinity;
@@ -469,7 +639,7 @@ export async function renderEditor(filePath, container) {
     let maxY = -Infinity;
     for (const el of selectedElements) {
       try {
-        const bbox = el.getBBox();
+        const bbox = getElementBBoxInRoot(el);
         if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) continue;
         minX = Math.min(minX, bbox.x);
         minY = Math.min(minY, bbox.y);
@@ -529,7 +699,7 @@ export async function renderEditor(filePath, container) {
       return;
     }
     try {
-      const bbox = el.getBBox();
+      const bbox = getElementBBoxInRoot(el);
       if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height)) return;
       updateResizeHandles(bbox);
     } catch {
@@ -538,19 +708,18 @@ export async function renderEditor(filePath, container) {
   }
 
   function refreshSelectionVisuals() {
+    const legacySelectionFilter = "drop-shadow(0 0 2px #ff2f2f)";
     const selectable = getSelectableElements();
     selectable.forEach((el) => {
       if (!selectedElements.includes(el)) {
         el.removeAttribute("data-selected");
-        if (el.style.filter === "drop-shadow(0 0 2px #ff2f2f)") {
-          el.style.filter = "";
-        }
+        if (el.style.filter === legacySelectionFilter) el.style.filter = "";
       }
     });
 
     selectedElements.forEach((el) => {
       el.setAttribute("data-selected", "true");
-      el.style.filter = "drop-shadow(0 0 2px #ff2f2f)";
+      if (el.style.filter === legacySelectionFilter) el.style.filter = "";
     });
 
     selectedElement = selectedElements[0] || null;
@@ -738,7 +907,10 @@ export async function renderEditor(filePath, container) {
 
   function alignSelection(mode = "left") {
     if (selectedElements.length < 2) return false;
-    const boxes = selectedElements.map((el) => ({ el, bbox: el.getBBox() }));
+    const boxes = selectedElements
+      .map((el) => ({ el, bbox: getElementBBoxInRoot(el) }))
+      .filter((b) => b.bbox && Number.isFinite(b.bbox.x) && Number.isFinite(b.bbox.y));
+    if (boxes.length < 2) return false;
     const minX = Math.min(...boxes.map((b) => b.bbox.x));
     const maxX = Math.max(...boxes.map((b) => b.bbox.x + b.bbox.width));
     const centerX = (minX + maxX) / 2;
@@ -824,6 +996,7 @@ export async function renderEditor(filePath, container) {
     svgRoot.setAttribute("viewBox", `0 0 ${w} ${h}`);
     setStatus(`Canvas resized to ${w}x${h}`);
     window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
+    updateSvgRulers();
     return { width: w, height: h };
   }
 
@@ -852,6 +1025,7 @@ export async function renderEditor(filePath, container) {
     svgRoot.setAttribute("width", String(w));
     svgRoot.setAttribute("height", String(h));
     window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
+    updateSvgRulers();
   }
 
   function applyTransformToLayers(transformFragment = "") {
@@ -912,6 +1086,7 @@ export async function renderEditor(filePath, container) {
       setStatus("Flipped horizontally");
     }
     window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width, height } }));
+    updateSvgRulers();
     refreshSelectionVisuals?.();
     return true;
   }
@@ -1092,7 +1267,7 @@ export async function renderEditor(filePath, container) {
     const el = selectedElements[0];
     if (!el || el.tagName.toLowerCase() === "line") return;
     try {
-      const bbox = el.getBBox();
+      const bbox = getElementBBoxInRoot(el);
       if (!bbox || bbox.width <= 0 || bbox.height <= 0) return;
       resizeState = {
         pointerId,
@@ -1114,7 +1289,7 @@ export async function renderEditor(filePath, container) {
   function startRotateInteraction(target, pointerId, point) {
     if (!target) return false;
     try {
-      const bbox = target.getBBox();
+      const bbox = getElementBBoxInRoot(target);
       if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return false;
       const cx = bbox.x + bbox.width / 2;
       const cy = bbox.y + bbox.height / 2;
@@ -1368,7 +1543,8 @@ export async function renderEditor(filePath, container) {
         const rect = setMarqueeBox(marqueeState.start, marqueeState.current);
         const hits = getSelectableElements().filter((el) => {
           try {
-            return intersectsRect(rect, el.getBBox());
+            const bbox = getElementBBoxInRoot(el);
+            return bbox ? intersectsRect(rect, bbox) : false;
           } catch {
             return false;
           }
@@ -1480,6 +1656,7 @@ export async function renderEditor(filePath, container) {
     svgRoot.setAttribute("xmlns", SVG_NS);
     ensureSvgSizeAttrs(svgRoot);
     clearSelection();
+    updateSvgRulers();
   };
 
   window.saveWYSIWYGFile = async (path) => {
