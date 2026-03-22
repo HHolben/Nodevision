@@ -57,6 +57,12 @@
     "modes": ["SVG Editing", "GraphicalEditing"]
   },
   {
+    "heading": "SVG Styles",
+    "parentHeading": "SVG Draw",
+    "script": "svgStyleWidget.mjs",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
     "heading": "Delete",
     "parentHeading": "SVG Draw",
     "ToolbarCategory": "draw",

@@ -7,6 +7,23 @@ import fsPromises from "node:fs/promises";
 export function registerGraphExtras(app, ctx) {
   const SHARED_DATA_DIR = ctx.sharedDataDir;
 
+  function edgeKey(edge) {
+    return `${edge?.source || ""}→${edge?.target || ""}`;
+  }
+
+  async function readJsonArray(filePath) {
+    try {
+      const raw = await fsPromises.readFile(filePath, "utf8");
+      const trimmed = raw.trim();
+      if (!trimmed) return [];
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      if (err?.code === "ENOENT") return [];
+      throw err;
+    }
+  }
+
   app.post("/api/graph/save-edges", async (req, res) => {
     try {
       const { filename, data } = req.body;
@@ -24,8 +41,25 @@ export function registerGraphExtras(app, ctx) {
       const edgesDir = path.join(SHARED_DATA_DIR, "edges");
       const targetFile = path.join(edgesDir, `${char}.json`);
       await fsPromises.mkdir(edgesDir, { recursive: true });
+
+      // Merge with existing data to avoid clients clobbering the shard.
+      const existingEdges = await readJsonArray(targetFile);
+      const incomingEdges = Array.isArray(data) ? data : [];
+      const combined = [...existingEdges, ...incomingEdges].filter((edge) => {
+        return edge && typeof edge === "object" && typeof edge.source === "string" && typeof edge.target === "string";
+      });
+      const seen = new Set();
+      const deduped = [];
+      for (const edge of combined) {
+        const key = edgeKey(edge);
+        if (!edge.source || !edge.target) continue;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(edge);
+      }
+
       const tmpFile = `${targetFile}.tmp`;
-      await fsPromises.writeFile(tmpFile, JSON.stringify(data, null, 2), "utf8");
+      await fsPromises.writeFile(tmpFile, JSON.stringify(deduped, null, 2), "utf8");
       await fsPromises.rename(tmpFile, targetFile);
 
       res.json({
@@ -39,4 +73,3 @@ export function registerGraphExtras(app, ctx) {
     }
   });
 }
-

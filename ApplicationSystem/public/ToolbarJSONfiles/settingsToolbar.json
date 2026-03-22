@@ -36,6 +36,12 @@
     "icon": "/icons/terminal.svg",
     "ToolbarCategory": "settings",
     "callbackKey": "togglePagePreviewMode"
+  },
+  {
+    "heading": "Edit Login Background",
+    "icon": "/icons/Settings.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "editLoginBackground"
   }
 
 ]

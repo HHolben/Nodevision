@@ -25,7 +25,22 @@ export function resolveFilePath(preferredPath) {
 }
 
 export async function saveViaApi(payload) {
-  const res = await fetch("/api/save", {
+  const normalize = (value) =>
+    String(value || "")
+      .trim()
+      .replace(/\\/g, "/")
+      .replace(/[?#].*$/, "");
+
+  const isServerDataLoginBackground = (pathValue) => {
+    const clean = normalize(pathValue).replace(/^\/+/, "");
+    return clean === "ServerData/NotebookLoginBackground.svg";
+  };
+
+  const endpoint = isServerDataLoginBackground(payload?.path)
+    ? "/api/serverData/save"
+    : "/api/save";
+
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

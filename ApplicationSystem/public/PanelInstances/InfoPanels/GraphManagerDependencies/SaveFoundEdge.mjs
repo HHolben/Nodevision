@@ -10,52 +10,26 @@
 export async function saveFoundEdge(edgeData) {
     if (!edgeData.source || !edgeData.target) return;
 
-    // The backend uses the first char of 'filename' to pick the bucket
-    // If target is "Manual.md", bucket will be "M.json"
-    const targetFileName = edgeData.target.split('/').pop() || 'unknown';
-    
-    // Paths
-    const readUrl = `/public/data/edges/${targetFileName[0].toUpperCase()}.json`;
-    const writeUrl = `/api/graph/save-edges`;
-
     try {
-        let existingEdges = [];
-        
-        // 1. Try to get existing edges for this bucket
-        const response = await fetch(readUrl);
-        if (response.ok) {
-            const text = await response.text();
-            existingEdges = text.trim() ? JSON.parse(text) : [];
-        }
+        // The backend uses the first character of `filename` to pick the bucket.
+        // Send a minimal payload; the server merges/dedupes so clients can't clobber shards.
+        const targetFileName = edgeData.target.split('/').pop() || 'unknown';
+        const saveResponse = await fetch(`/api/graph/save-edges`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                filename: targetFileName,
+                data: [edgeData]
+            })
+        });
 
-        // 2. Prevent duplicates
-        const isDuplicate = existingEdges.some(e => 
-            e.source === edgeData.source && e.target === edgeData.target
-        );
-
-        if (!isDuplicate) {
-            existingEdges.push(edgeData);
-            console.log(`📤 Requesting save for bucket [${targetFileName[0].toUpperCase()}]`);
-
-            // 3. POST to the new backend route
-            const saveResponse = await fetch(writeUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    filename: targetFileName, // Backend extracts [0] from this
-                    data: existingEdges       // Backend saves this object
-                })
-            });
-
-            const result = await saveResponse.json();
-            if (result.success) {
-                console.log(`✅ Edge saved to bucket: ${result.bucket}`);
-            }
+        const result = await saveResponse.json().catch(() => null);
+        if (result?.success) {
+            console.log(`✅ Edge saved to bucket: ${result.bucket}`);
+        } else if (!saveResponse.ok) {
+            console.warn(`⚠️ Edge save failed (${saveResponse.status})`, result?.error);
         }
     } catch (err) {
-        // Syntax errors usually mean the file was empty or 404
-        if (!(err instanceof SyntaxError)) {
-            console.error(`❌ Error in SaveFoundEdge:`, err);
-        }
+        console.error(`❌ Error in SaveFoundEdge:`, err);
     }
 }

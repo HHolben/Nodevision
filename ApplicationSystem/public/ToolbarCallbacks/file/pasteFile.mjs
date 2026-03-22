@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/pasteFile.mjs
 // This file defines browser-side paste File logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { clearClipboard, getClipboard } from "./fileClipboard.mjs";
+import { maybePromptLinkMoveImpact } from "./linkMoveImpact.mjs";
 
 function normalizePath(value = "") {
   return String(value).replace(/^\/+/, "").replace(/\/+/g, "/");
@@ -60,6 +61,10 @@ export default async function pasteFile() {
     if (clipboard.mode === "cut") clearClipboard();
     if (typeof window.refreshFileManager === "function") {
       await window.refreshFileManager(window.currentDirectoryPath || "");
+    }
+
+    if (clipboard.mode === "cut") {
+      await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
     }
   } catch (err) {
     console.error("Failed to paste file or directory:", err);

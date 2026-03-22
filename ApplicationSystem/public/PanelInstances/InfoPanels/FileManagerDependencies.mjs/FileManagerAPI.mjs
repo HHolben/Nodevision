@@ -7,11 +7,30 @@ export async function fetchDirectoryContents(path = "") {
   return res.json();
 }
 
-export async function moveFileOrDirectory(src, dest) {
-  const res = await fetch("/api/files/move", {
+function normalizePath(value = "") {
+  return String(value || "").replace(/^\/+/, "").replace(/\\/g, "/").replace(/\/+/g, "/").trim();
+}
+
+function basename(pathValue = "") {
+  const parts = normalizePath(pathValue).split("/").filter(Boolean);
+  return parts[parts.length - 1] || "";
+}
+
+/**
+ * Moves a file or directory into a destination directory path.
+ * Uses the same backend move semantics as toolbar Cut+Paste (/api/cut).
+ */
+export async function moveFileOrDirectory(src, destDir) {
+  const source = normalizePath(src);
+  const destinationDir = normalizePath(destDir);
+  const fileName = basename(source);
+  const destination = destinationDir ? `${destinationDir}/${fileName}` : fileName;
+
+  const res = await fetch("/api/cut", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ src, dest }),
+    body: JSON.stringify({ source, destination }),
   });
   if (!res.ok) throw new Error("Move failed");
+  return { source, destination };
 }

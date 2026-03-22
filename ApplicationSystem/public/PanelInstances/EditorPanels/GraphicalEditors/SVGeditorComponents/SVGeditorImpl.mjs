@@ -662,6 +662,9 @@ export async function renderEditor(filePath, container) {
   }
 
   function updateLineEndpointHandles(line) {
+    const handleRadius = Math.max(1.5, pointerToleranceInSvgUnits(4));
+    lineStartHandle.setAttribute("r", String(handleRadius));
+    lineEndHandle.setAttribute("r", String(handleRadius));
     const x1 = getAttrNumber(line, "x1", 0);
     const y1 = getAttrNumber(line, "y1", 0);
     const x2 = getAttrNumber(line, "x2", 0);
@@ -690,6 +693,7 @@ export async function renderEditor(filePath, container) {
 
   function refreshTransformHandles() {
     hideTransformHandles();
+    if (toolState.drawing) return;
     if (selectedElements.length !== 1) return;
     const el = selectedElements[0];
     if (!el) return;
@@ -837,6 +841,7 @@ export async function renderEditor(filePath, container) {
     }
     const prev = (el.getAttribute("transform") || "").trim();
     const translate = `translate(${dx} ${dy})`;
+    // Append translate so movement happens in parent/SVG coordinates.
     el.setAttribute("transform", prev ? `${prev} ${translate}` : translate);
   }
 
@@ -1217,6 +1222,153 @@ export async function renderEditor(filePath, container) {
     return px / avg;
   }
 
+  function isSvgGraphicsElement(el) {
+    if (!el) return false;
+    if (typeof SVGGraphicsElement !== "undefined") {
+      return el instanceof SVGGraphicsElement;
+    }
+    return el instanceof SVGElement && typeof el.getScreenCTM === "function";
+  }
+
+  function clientToElementPoint(element, clientX, clientY) {
+    const ctm = element && typeof element.getScreenCTM === "function" ? element.getScreenCTM() : null;
+    if (!ctm || typeof ctm.inverse !== "function") {
+      return toSvgPoint(svgRoot, clientX, clientY);
+    }
+    try {
+      const inv = ctm.inverse();
+      const pt = typeof DOMPoint === "function"
+        ? new DOMPoint(clientX, clientY).matrixTransform(inv)
+        : { x: 0, y: 0 };
+      if (Number.isFinite(pt.x) && Number.isFinite(pt.y)) return { x: pt.x, y: pt.y };
+    } catch {
+      // ignore
+    }
+    return toSvgPoint(svgRoot, clientX, clientY);
+  }
+
+  function getDragSpaceForElement(el) {
+    const parent = el?.parentNode;
+    if (isSvgGraphicsElement(parent)) return parent;
+    return svgRoot;
+  }
+
+  function getDragBaseForElement(el) {
+    const baseTransform = String(el.getAttribute("transform") || "").trim();
+    if (baseTransform) {
+      return { kind: "transform", baseTransform };
+    }
+
+    const tag = el.tagName.toLowerCase();
+    if (tag === "rect" || tag === "image" || tag === "use" || tag === "foreignobject") {
+      return { kind: "xy", x: getAttrNumber(el, "x", 0), y: getAttrNumber(el, "y", 0) };
+    }
+    if (tag === "text") {
+      return { kind: "xy", x: getAttrNumber(el, "x", 0), y: getAttrNumber(el, "y", 0) };
+    }
+    if (tag === "circle" || tag === "ellipse") {
+      return { kind: "cxy", cx: getAttrNumber(el, "cx", 0), cy: getAttrNumber(el, "cy", 0) };
+    }
+    if (tag === "line") {
+      return {
+        kind: "line",
+        x1: getAttrNumber(el, "x1", 0),
+        y1: getAttrNumber(el, "y1", 0),
+        x2: getAttrNumber(el, "x2", 0),
+        y2: getAttrNumber(el, "y2", 0),
+      };
+    }
+    if (tag === "polygon" || tag === "polyline") {
+      return { kind: "points", points: parsePoints(el.getAttribute("points") || "") };
+    }
+
+    return { kind: "transform", baseTransform: "" };
+  }
+
+  function applyDragDeltaToElement(el, base, dx, dy) {
+    if (!el || !base) return;
+    if (base.kind === "xy") {
+      setAttrNumber(el, "x", base.x + dx);
+      setAttrNumber(el, "y", base.y + dy);
+      return;
+    }
+    if (base.kind === "cxy") {
+      setAttrNumber(el, "cx", base.cx + dx);
+      setAttrNumber(el, "cy", base.cy + dy);
+      return;
+    }
+    if (base.kind === "line") {
+      setAttrNumber(el, "x1", base.x1 + dx);
+      setAttrNumber(el, "y1", base.y1 + dy);
+      setAttrNumber(el, "x2", base.x2 + dx);
+      setAttrNumber(el, "y2", base.y2 + dy);
+      return;
+    }
+    if (base.kind === "points") {
+      const moved = (base.points || []).map(([x, y]) => [x + dx, y + dy]);
+      el.setAttribute("points", formatPoints(moved));
+      return;
+    }
+
+    const translate = `translate(${dx} ${dy})`;
+    const baseTransform = String(base.baseTransform || "").trim();
+    // SVG transform lists apply left-to-right; append translate to move in parent coordinates.
+    el.setAttribute("transform", baseTransform ? `${baseTransform} ${translate}` : translate);
+  }
+
+  function buildDragState(pointerId, clientX, clientY) {
+    const startClient = { x: clientX, y: clientY };
+    const items = selectedElements
+      .filter(Boolean)
+      .map((el) => ({
+        el,
+        space: getDragSpaceForElement(el),
+        base: getDragBaseForElement(el),
+      }));
+    const spaceStarts = new Map();
+    for (const item of items) {
+      if (!spaceStarts.has(item.space)) {
+        spaceStarts.set(item.space, clientToElementPoint(item.space, startClient.x, startClient.y));
+      }
+    }
+    return {
+      pointerId,
+      startClient,
+      items,
+      spaceStarts,
+    };
+  }
+
+  function updateDragFromClient(drag, clientX, clientY) {
+    if (!drag || !drag.items?.length) return false;
+
+    const nextClient = { x: clientX, y: clientY };
+    const deltasBySpace = new Map();
+    for (const item of drag.items) {
+      if (deltasBySpace.has(item.space)) continue;
+      const startPoint = drag.spaceStarts.get(item.space);
+      if (!startPoint) continue;
+      const curPoint = clientToElementPoint(item.space, nextClient.x, nextClient.y);
+      deltasBySpace.set(item.space, { dx: curPoint.x - startPoint.x, dy: curPoint.y - startPoint.y });
+    }
+
+    let moved = false;
+    for (const item of drag.items) {
+      const delta = deltasBySpace.get(item.space);
+      if (!delta) continue;
+      if (delta.dx || delta.dy) {
+        applyDragDeltaToElement(item.el, item.base, delta.dx, delta.dy);
+        moved = true;
+      } else {
+        // Ensure exact snap-back when pointer returns to start.
+        applyDragDeltaToElement(item.el, item.base, 0, 0);
+      }
+    }
+
+    if (moved) refreshSelectionVisuals();
+    return moved;
+  }
+
   function findNearestLineAtPoint(point, tolerance) {
     let hit = null;
     let bestDistance = Infinity;
@@ -1390,7 +1542,7 @@ export async function renderEditor(filePath, container) {
           setSelection([target], { primary: target });
         }
 
-        dragState = { pointerId: e.pointerId, last: p };
+        dragState = buildDragState(e.pointerId, e.clientX, e.clientY);
         try {
           svgRoot.setPointerCapture(e.pointerId);
         } catch {
@@ -1530,10 +1682,7 @@ export async function renderEditor(filePath, container) {
 
     if (toolState.mode === "select") {
       if (dragState && dragState.pointerId === e.pointerId) {
-        const dx = p.x - dragState.last.x;
-        const dy = p.y - dragState.last.y;
-        if (dx || dy) moveSelectionBy(dx, dy);
-        dragState.last = p;
+        updateDragFromClient(dragState, e.clientX, e.clientY);
         e.preventDefault();
         return;
       }

@@ -4,6 +4,8 @@ import { scanFileForLinks } from './GraphManagerDependencies/ScanForLinks.mjs';
 import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
 import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';
 import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
+import { moveFileOrDirectory } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
+import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 
 let cy;
 let currentRootPath = '';
@@ -13,6 +15,7 @@ let activeLayout = null;
 let layoutDebounceTimer = null;
 let layoutPendingFit = false;
 let layoutPendingReasons = new Set();
+let dragMoveState = null;
 const EDGE_BUCKET_SYMBOLS = [
     ...'abcdefghijklmnopqrstuvwxyz',
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -102,6 +105,316 @@ function resolveNotebookLink(sourceFilePath, rawLink) {
     }
 
     return normalizeNotebookRelativePath(candidate);
+}
+
+function basename(pathValue = '') {
+    const clean = normalizePath(pathValue);
+    const parts = clean.split('/').filter(Boolean);
+    return parts[parts.length - 1] || '';
+}
+
+function dirname(pathValue = '') {
+    const clean = normalizePath(pathValue);
+    if (!clean.includes('/')) return '';
+    return clean.slice(0, clean.lastIndexOf('/'));
+}
+
+function isDirectoryMoveIntoSelfOrDescendant({ sourcePath, destinationDir }) {
+    const src = normalizePath(sourcePath);
+    const dest = normalizePath(destinationDir);
+    if (!src || !dest) return false;
+    return dest === src || dest.startsWith(`${src}/`);
+}
+
+function renderedPointInBox(pos, box) {
+    if (!pos || !box) return false;
+    return pos.x >= box.x1 && pos.x <= box.x2 && pos.y >= box.y1 && pos.y <= box.y2;
+}
+
+function findDirectoryAtRenderedPoint(renderedPos, { excludeIds } = {}) {
+    if (!cy || !renderedPos) return null;
+
+    let best = null;
+    let bestArea = Infinity;
+    let bestDepth = -1;
+
+    cy.nodes().forEach((node) => {
+        if (!node || node.empty()) return;
+        if (node.data('type') !== 'directory') return;
+        if (!node.visible()) return;
+        if (excludeIds && excludeIds.has(node.id())) return;
+
+        const box = node.renderedBoundingBox({ includeLabels: false });
+        if (!renderedPointInBox(renderedPos, box)) return;
+
+        const area = Math.max(1, (box.x2 - box.x1) * (box.y2 - box.y1));
+        const id = String(node.id() || '');
+        const depth = id === 'Root' ? 0 : id.split('/').filter(Boolean).length;
+
+        // Prefer the smallest bounding box; tie-break toward deeper directories.
+        if (area < bestArea || (area === bestArea && depth > bestDepth)) {
+            best = node;
+            bestArea = area;
+            bestDepth = depth;
+        }
+    });
+
+    return best;
+}
+
+function clearDropTargetHighlight() {
+    if (!cy || !dragMoveState?.dropTargetId) return;
+    const node = cy.getElementById(dragMoveState.dropTargetId);
+    if (!node.empty()) node.removeClass('nv-drop-target');
+    dragMoveState.dropTargetId = null;
+}
+
+function setDropTargetHighlight(node) {
+    if (!cy) return;
+    const nextId = node?.id?.() || null;
+    if (dragMoveState?.dropTargetId === nextId) return;
+    clearDropTargetHighlight();
+    if (!nextId) return;
+    node.addClass('nv-drop-target');
+    dragMoveState.dropTargetId = nextId;
+}
+
+async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
+    if (!cy) return;
+
+    // Reset layout bookkeeping.
+    if (layoutDebounceTimer) {
+        window.clearTimeout(layoutDebounceTimer);
+        layoutDebounceTimer = null;
+    }
+    layoutPendingFit = false;
+    layoutPendingReasons.clear();
+    layoutHasInitialized = false;
+    if (activeLayout && typeof activeLayout.stop === 'function') {
+        try { activeLayout.stop(); } catch (_) { /* ignore */ }
+        activeLayout = null;
+    }
+
+    discoveredLinks.clear();
+    cy.elements().remove();
+
+    await hydrateDiscoveredLinksFromBuckets();
+    await fetchDirectoryContents(currentRootPath, (data) => {
+        renderGraphData(data, currentRootPath);
+    }, null, null);
+
+    queueRelayout({ fit: Boolean(fit), reason });
+}
+
+window.refreshGraphManager = refreshGraphView;
+
+async function ensureDirectoryChainExpanded(targetDirPath) {
+    const cleanTarget = normalizePath(targetDirPath);
+    if (!cleanTarget) return;
+
+    const parts = cleanTarget.split('/').filter(Boolean);
+    let cumulative = '';
+    for (const part of parts) {
+        cumulative = cumulative ? `${cumulative}/${part}` : part;
+        // Render this directory's children so moved nodes remain reachable in the graph.
+        await fetchDirectoryContents(cumulative, (data) => {
+            renderGraphData(data, cumulative);
+        }, null, null);
+    }
+}
+
+function setupCtrlDragMoveHandlers() {
+    if (!cy) return;
+    dragMoveState = {
+        active: false,
+        sourceId: null,
+        sourcePath: null,
+        sourceType: null,
+        sourceParentId: null,
+        sourcePosition: null,
+        dropTargetId: null,
+    };
+
+    cy.on('grab', 'node', (evt) => {
+        const original = evt?.originalEvent;
+        const moveKey = Boolean(original?.ctrlKey || original?.metaKey);
+        if (!moveKey) return;
+
+        const node = evt.target;
+        if (!node || node.empty()) return;
+
+        const type = node.data('type');
+        if (type !== 'file' && type !== 'directory') return;
+
+        const fullPath = normalizePath(node.data('fullPath') ?? '');
+        if (!fullPath) return; // do not move Root / empty
+
+        dragMoveState.active = true;
+        dragMoveState.sourceId = node.id();
+        dragMoveState.sourcePath = fullPath;
+        dragMoveState.sourceType = type;
+        const parent = typeof node.parent === 'function' ? node.parent() : null;
+        dragMoveState.sourceParentId = parent && typeof parent.id === 'function' ? parent.id() : null;
+        dragMoveState.sourcePosition = typeof node.position === 'function'
+            ? { ...node.position() }
+            : null;
+
+        cy.batch(() => {
+            node.addClass('nv-move-source');
+            // When ctrl/meta is held, the user is intending to *remove* the node from its current compound
+            // directory. Detach immediately so the source compound doesn't keep resizing while dragging.
+            if (dragMoveState.sourceParentId && typeof node.move === 'function') {
+                try {
+                    node.move({ parent: null });
+                } catch (_) {
+                    // Fallback: attempt to clear parent data (older Cytoscape builds/plugins).
+                    try { node.data('parent', null); } catch (_) { /* ignore */ }
+                }
+            }
+        });
+    });
+
+    cy.on('drag', 'node', (evt) => {
+        if (!dragMoveState?.active) return;
+        const node = evt.target;
+        if (!node || node.empty()) return;
+        if (node.id() !== dragMoveState.sourceId) return;
+
+        const renderedPos = typeof node.renderedPosition === 'function'
+            ? node.renderedPosition()
+            : evt?.renderedPosition;
+
+        const excludeIds = new Set();
+        if (dragMoveState.sourceParentId) excludeIds.add(dragMoveState.sourceParentId);
+        if (dragMoveState.sourceType === 'directory' && dragMoveState.sourceId) excludeIds.add(dragMoveState.sourceId);
+
+        const targetDir = findDirectoryAtRenderedPoint(renderedPos, { excludeIds });
+        if (!targetDir || targetDir.empty()) {
+            // Allow dropping onto the graph root by releasing over empty canvas.
+            const sourceParent = dirname(dragMoveState.sourcePath || '');
+            if (sourceParent) {
+                const rootId = normalizePath(currentRootPath) || 'Root';
+                const rootNode = cy.getElementById(rootId);
+                if (!rootNode.empty()) {
+                    setDropTargetHighlight(rootNode);
+                    return;
+                }
+            }
+
+            setDropTargetHighlight(null);
+            return;
+        }
+
+        // Avoid suggesting moving into itself/descendant.
+        const destinationDir = normalizePath(targetDir.data('fullPath') ?? '');
+        if (dragMoveState.sourceType === 'directory') {
+            if (isDirectoryMoveIntoSelfOrDescendant({ sourcePath: dragMoveState.sourcePath, destinationDir })) {
+                setDropTargetHighlight(null);
+                return;
+            }
+        }
+
+        // If dropping onto the current parent directory, allow but don't emphasize.
+        setDropTargetHighlight(targetDir);
+    });
+
+    cy.on('free', 'node', async (evt) => {
+        const node = evt.target;
+        if (!dragMoveState?.active) return;
+        if (!node || node.empty()) return;
+        if (node.id() !== dragMoveState.sourceId) return;
+
+        node.removeClass('nv-move-source');
+        const sourcePath = dragMoveState.sourcePath;
+        const sourceType = dragMoveState.sourceType;
+        const dropTargetId = dragMoveState.dropTargetId;
+        const sourceParentId = dragMoveState.sourceParentId;
+        const sourcePosition = dragMoveState.sourcePosition;
+
+        dragMoveState.active = false;
+        dragMoveState.sourceId = null;
+        dragMoveState.sourcePath = null;
+        dragMoveState.sourceType = null;
+        dragMoveState.sourceParentId = null;
+        dragMoveState.sourcePosition = null;
+        clearDropTargetHighlight();
+
+        if (!sourcePath) return;
+        if (!dropTargetId) {
+            // Cancelled move: restore the original compound parent + position.
+            try {
+                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
+                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
+            } catch (_) { /* ignore */ }
+            return;
+        }
+
+        const targetNode = cy.getElementById(dropTargetId);
+        if (!targetNode || targetNode.empty()) {
+            try {
+                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
+                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
+            } catch (_) { /* ignore */ }
+            return;
+        }
+
+        const destinationDir = normalizePath(targetNode.data('fullPath') ?? '');
+        const destinationPath = destinationDir ? `${destinationDir}/${basename(sourcePath)}` : basename(sourcePath);
+        if (!destinationPath || destinationPath === sourcePath) {
+            try {
+                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
+                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
+            } catch (_) { /* ignore */ }
+            return;
+        }
+
+        if (sourceType === 'directory' && isDirectoryMoveIntoSelfOrDescendant({ sourcePath, destinationDir })) {
+            alert("Cannot move a folder into itself (or one of its subfolders).");
+            try {
+                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
+                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
+            } catch (_) { /* ignore */ }
+            return;
+        }
+
+        try {
+            await moveFileOrDirectory(sourcePath, destinationDir);
+        } catch (err) {
+            console.error('[GraphManager] Move failed:', err);
+            alert(`Move failed: ${err?.message || err}`);
+            try {
+                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
+                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
+            } catch (_) { /* ignore */ }
+            return;
+        }
+
+        // Link/graph impact callout for files (same behavior as File Manager).
+        if (sourceType === 'file') {
+            try {
+                await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
+            } catch (err) {
+                console.warn('[GraphManager] Link impact prompt failed:', err);
+            }
+        }
+
+        // Refresh the graph so the moved node appears in the right place.
+        try {
+            await refreshGraphView({ fit: true, reason: 'move' });
+            if (destinationDir) {
+                await ensureDirectoryChainExpanded(destinationDir);
+            }
+        } catch (err) {
+            console.warn('[GraphManager] Refresh after move failed:', err);
+        }
+
+        // Also refresh File Manager if present.
+        if (typeof window.refreshFileManager === 'function') {
+            try { await window.refreshFileManager(window.currentDirectoryPath || ''); } catch (_) { /* ignore */ }
+        } else {
+            document.dispatchEvent(new CustomEvent('refreshFileManager'));
+        }
+    });
 }
 
 function rememberLink(sourcePath, targetPath) {
@@ -330,6 +643,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
 
     cy = cytoscape({
         container: container,
+        boxSelectionEnabled: false,
+        selectionType: 'single',
         style: [
             {
                 selector: 'node',
@@ -403,6 +718,24 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                 }
             },
             {
+                selector: 'node[type="directory"].nv-drop-target',
+                style: {
+                    'background-color': '#ffe79a',
+                    'background-opacity': 0.32,
+                    'border-color': '#fff1bf',
+                    'border-width': 3
+                }
+            },
+            {
+                selector: 'node.nv-move-source',
+                style: {
+                    'border-color': '#0a84ff',
+                    'border-width': 3,
+                    'overlay-color': '#0a84ff',
+                    'overlay-opacity': 0.08
+                }
+            },
+            {
                 selector: 'edge',
                 style: { 
                     'width': 2, 
@@ -451,6 +784,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
             await toggleCompoundDirectory(node);
         }
     });
+
+    setupCtrlDragMoveHandlers();
 
     if (statusElem) statusElem.textContent = "Fetching Files...";
     await hydrateDiscoveredLinksFromBuckets();

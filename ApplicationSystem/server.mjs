@@ -4,6 +4,8 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import favicon from 'serve-favicon';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import cookieParser from 'cookie-parser';
@@ -55,9 +57,122 @@ export default async function createApp(runtimeConfig = {}) {
   app.use(identityMiddleware(AuthService));
   registerAuthRoutes(app, AuthService);
 
+  // Public login background asset (optional).
+  // NOTE: This intentionally serves *only* the one curated SVG, not the entire ServerData directory.
+  async function resolveLoginBackgroundSvg() {
+    const candidates = [
+      path.join(ctx.serverDataDir, 'NotebookLoginBackground.svg'),
+      // Common dev runtime when NODEVISION_ROOT isn't wired as expected.
+      path.resolve(process.cwd(), 'ServerData', 'NotebookLoginBackground.svg'),
+      // Common install/runtime default.
+      path.join(os.homedir(), 'Nodevision', 'ServerData', 'NotebookLoginBackground.svg'),
+    ];
+
+    for (const candidate of candidates) {
+      try {
+        await fs.access(candidate);
+        return { path: candidate, candidates };
+      } catch {
+        // try next
+      }
+    }
+    return { path: null, candidates };
+  }
+
+  function setNoCache(res) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+
+  async function sendLoginBackgroundSvg(req, res) {
+    const resolved = await resolveLoginBackgroundSvg();
+    if (!resolved.path) {
+      console.warn('[login-background] Missing NotebookLoginBackground.svg. Looked in:', resolved.candidates);
+      setNoCache(res);
+      return res.status(404).type('text/plain').send('NotebookLoginBackground.svg not found');
+    }
+
+    setNoCache(res);
+    return res.sendFile(resolved.path);
+  }
+
+  app.head('/ServerData/NotebookLoginBackground.svg', async (req, res) => {
+    const resolved = await resolveLoginBackgroundSvg();
+    setNoCache(res);
+    if (!resolved.path) return res.status(404).end();
+    return res.status(200).end();
+  });
+
+  app.get('/ServerData/NotebookLoginBackground.svg', sendLoginBackgroundSvg);
+
+  // Debug helper (no auth): shows where the server is looking for the asset.
+  app.get('/api/loginBackground/status', async (req, res) => {
+    const resolved = await resolveLoginBackgroundSvg();
+    return res.json({
+      found: Boolean(resolved.path),
+      resolvedPath: resolved.path,
+      candidates: resolved.candidates,
+    });
+  });
+
   app.use('/lib/monaco', express.static(path.join(PUBLIC_DIR, 'lib/monaco')));
   app.use("/api", listDirectoryRouter(ctx));
   app.use('/api/file', uploadRoutes);
+
+  // Authenticated write access for curated ServerData assets.
+  // Currently limited to the login background SVG.
+  app.post('/api/serverData/save', async (req, res) => {
+    if (!req.identity) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const {
+      path: requestedPath,
+      content,
+      encoding = 'utf8',
+      bom = false,
+    } = req.body || {};
+
+    if (content === undefined) {
+      return res.status(400).json({ error: 'File content is required' });
+    }
+
+    const normalized = String(requestedPath || '')
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '');
+
+    const allowed = new Set([
+      'ServerData/NotebookLoginBackground.svg',
+      'NotebookLoginBackground.svg',
+    ]);
+    if (!allowed.has(normalized)) {
+      return res.status(400).json({ error: 'Invalid ServerData save path' });
+    }
+
+    const filePath = path.join(ctx.serverDataDir, 'NotebookLoginBackground.svg');
+    try {
+      await fs.mkdir(ctx.serverDataDir, { recursive: true });
+
+      let buf;
+      if (encoding === 'base64') {
+        buf = Buffer.from(String(content || ''), 'base64');
+      } else {
+        buf = Buffer.from(String(content ?? ''), encoding);
+      }
+
+      if (bom && (encoding === 'utf8' || encoding === 'utf-8')) {
+        const utf8Bom = Buffer.from([0xef, 0xbb, 0xbf]);
+        buf = Buffer.concat([utf8Bom, buf]);
+      }
+
+      await fs.writeFile(filePath, buf);
+      return res.json({ success: true, path: normalized });
+    } catch (err) {
+      console.error('Error saving ServerData asset:', err);
+      return res.status(500).json({ error: 'Error saving ServerData asset' });
+    }
+  });
 
   app.use('/php', createProxyMiddleware(createPhpProxyOptions(runtimeConfig)));
   app.use('/public/data', express.static(SHARED_DATA_DIR));

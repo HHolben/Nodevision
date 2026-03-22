@@ -1,7 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/ScanForLinks.mjs
 // This file defines browser-side Scan For Links logic for the Nodevision UI. It renders interface components and handles user interactions.
- * Scans file content for hyperlinks based on extension
- * Returns an array of discovered links
+/**
+ * Scans file content for hyperlinks based on extension.
+ * Returns an array of discovered links.
  */
 export async function scanFileForLinks(fullPath) {
     const ext = fullPath.split('.').pop().toLowerCase();

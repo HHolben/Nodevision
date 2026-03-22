@@ -5,8 +5,10 @@ const appShell = document.getElementById('app-shell');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const loginButton = loginForm?.querySelector('button[type="submit"]');
+const loginPanorama = document.getElementById('login-panorama');
 
 let appStarted = false;
+let loginPanoramaChecked = false;
 
 function applyStoredTheme() {
   try {
@@ -27,6 +29,29 @@ function setUiState({ showAppView = false } = {}) {
   } else {
     loginScreen?.classList.remove('hidden');
     appShell?.classList.add('hidden');
+    ensureLoginPanorama();
+  }
+}
+
+async function ensureLoginPanorama() {
+  if (loginPanoramaChecked) return;
+  loginPanoramaChecked = true;
+  if (!loginPanorama) return;
+
+  const baseUrl = '/ServerData/NotebookLoginBackground.svg';
+  try {
+    const res = await fetch(baseUrl, { method: 'HEAD', cache: 'no-store' });
+    if (!res.ok) {
+      loginPanorama.style.display = 'none';
+      return;
+    }
+
+    // Cache-bust to avoid stale asset when the SVG is edited.
+    const stamped = `${baseUrl}?t=${Date.now()}`;
+    document.documentElement?.style?.setProperty('--nv-login-panorama-image', `url('${stamped}')`);
+  } catch (err) {
+    console.debug('Login panorama preflight failed:', err);
+    loginPanorama.style.display = 'none';
   }
 }
 
@@ -124,6 +149,7 @@ async function handleLogin(event) {
 async function init() {
   applyStoredTheme();
   loginForm?.addEventListener('submit', handleLogin);
+  ensureLoginPanorama();
 
   try {
     const session = await fetchSession();

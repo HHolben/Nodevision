@@ -32,6 +32,10 @@
   <script src="/lib/monaco/vs/loader.js"></script>
 
   <style>
+    :root {
+      --nv-status-bar-height: 22px;
+    }
+
     /* Toolbar pinned to top */
     #global-toolbar {
       position: sticky;
@@ -63,12 +67,41 @@
     #login-screen {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
+      background: radial-gradient(circle at 30% 20%, #0b7a43 0%, #064024 55%, #041e12 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: calc(1rem + var(--nv-global-toolbar-height, 40px)) 1rem calc(1rem + var(--nv-status-bar-height, 22px)) 1rem;
       z-index: 3000;
+      overflow: hidden;
+    }
+
+    #login-panorama {
+      position: absolute;
+      inset: var(--nv-global-toolbar-height, 40px) 0 var(--nv-status-bar-height, 22px) 0;
+      pointer-events: none;
+      overflow: hidden;
+      opacity: 0.75;
+      z-index: 0;
+      background-image: var(--nv-login-panorama-image, url('/ServerData/NotebookLoginBackground.svg'));
+      background-repeat: repeat-x;
+      background-position: 0 50%;
+      background-size: auto 100%;
+      will-change: background-position;
+      animation: nv-login-panorama-bg 140s linear infinite;
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    @keyframes nv-login-panorama-bg {
+      from { background-position: 0 50%; }
+      /* Arbitrary travel distance; repeat-x makes this seamless. */
+      to { background-position: -2400px 50%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #login-panorama {
+        animation: none;
+      }
     }
 
     .login-card {
@@ -82,6 +115,8 @@
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      position: relative;
+      z-index: 1;
     }
 
     .login-card h1 {
@@ -152,6 +187,8 @@
 <body class="booting">
 
   <div id="login-screen">
+    <div id="login-panorama" aria-hidden="true">
+    </div>
     <div class="login-card">
       <h1>Sign in to Nodevision</h1>
       <form id="login-form" action="/api/login" method="post">

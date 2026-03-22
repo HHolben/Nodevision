@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/renameFile.mjs
 // This file defines browser-side rename File logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { maybePromptLinkMoveImpact } from "./linkMoveImpact.mjs";
+
 function normalizePath(value = "") {
   return String(value).replace(/^\/+/, "").replace(/\/+/g, "/");
 }
@@ -17,6 +19,7 @@ export default async function renameFile() {
     return;
   }
 
+  const oldPath = selectedPath;
   const currentName = selectedPath.split("/").pop();
   const parentDir = dirname(selectedPath);
   const nextName = prompt("Enter new name:", currentName);
@@ -44,6 +47,8 @@ export default async function renameFile() {
     if (typeof window.refreshFileManager === "function") {
       await window.refreshFileManager(window.currentDirectoryPath || "");
     }
+
+    await maybePromptLinkMoveImpact({ oldPath, newPath });
   } catch (err) {
     console.error("Failed to rename file or directory:", err);
     alert(`Failed to rename: ${err.message}`);
