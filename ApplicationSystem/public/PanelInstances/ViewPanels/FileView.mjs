@@ -59,13 +59,30 @@ async function loadModuleMap() {
 }
 
 function resolveExtension(filename) {
-  const lower = filename.toLowerCase();
+  const raw = String(filename || "").trim();
+  if (!raw) return "";
+
+  const withoutHashQuery = raw.replace(/[?#].*$/, "");
+  const pathname =
+    withoutHashQuery.startsWith("http://") || withoutHashQuery.startsWith("https://")
+      ? (() => {
+          try {
+            return new URL(withoutHashQuery).pathname || "";
+          } catch {
+            return withoutHashQuery;
+          }
+        })()
+      : withoutHashQuery;
+
+  const lower = pathname.toLowerCase();
 
   if (lower.endsWith(".alto.xml")) return "alto";
   if (lower.endsWith(".musicxml.xml")) return "musicxml"; // future-proofing
-  if (lower.endsWith(".tar.gz")) return "tar.gz";          // optional
+  if (lower.endsWith(".tar.gz")) return "tar.gz"; // optional
 
-  return lower.split(".").pop();
+  const lastSegment = lower.split("/").pop() || lower;
+  if (!lastSegment.includes(".")) return "";
+  return lastSegment.split(".").pop();
 }
 
 function activateFileViewPanel() {
@@ -356,11 +373,22 @@ async function renderFile(filename, viewPanel, serverBase) {
       installIframeActivation(iframe);
     }
 
-    // Clean up PHP path for server
-    let cleanPath = filename;
-    // Check viewerFile instead of ext for robustness against future changes
-    if (viewerFile === "ViewPHP.mjs" && cleanPath.startsWith("Notebook/")) {
-      cleanPath = cleanPath.slice("Notebook/".length);
+    const normalizeNotebookPath = (value) => {
+      let cleaned = String(value || "").replace(/\\/g, "/").trim();
+      cleaned = cleaned.replace(/^\/+/, "");
+      if (cleaned.toLowerCase().startsWith("notebook/")) {
+        cleaned = cleaned.slice("Notebook/".length);
+      }
+      return cleaned;
+    };
+
+    // Normalize paths so viewers consistently receive Notebook-relative paths.
+    // (Some panels emit "Notebook/..." or "/Notebook/..."-prefixed values.)
+    let cleanPath = normalizeNotebookPath(filename);
+    // Check viewerFile instead of ext for robustness against future changes.
+    // PHP uses a separate proxy/root, but still expects Notebook-relative paths.
+    if (viewerFile === "ViewPHP.mjs") {
+      cleanPath = normalizeNotebookPath(cleanPath);
     }
 
     // Call viewer

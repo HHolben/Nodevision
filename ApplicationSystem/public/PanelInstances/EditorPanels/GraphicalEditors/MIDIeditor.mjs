@@ -4,6 +4,7 @@
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { VexFlow as VF } from "/lib/vexflow/build/esm/entry/vexflow.js";
+import { normalizeNotebookRelativePath, toNotebookAssetUrl } from "/utils/notebookPath.mjs";
 
 let currentMidiBuffer = null;
 let currentFilePath = null;
@@ -149,23 +150,82 @@ function extractNotesForEditor(buffer) {
     const headerLen = readU32BE(4);
     const division = readU16BE(12) || MIDI_TICKS_PER_QUARTER;
 
-    // Find first track.
+    // Prefer a track that actually contains note events.
     let pos = 8 + headerLen;
     if (pos < 14) pos = 14;
-    let trackStart = -1;
-    let trackLen = 0;
+    const tracks = [];
     while (pos + 8 <= bytes.length) {
       const id = readStr(pos, 4);
       const len = readU32BE(pos + 4);
       pos += 8;
       if (id === "MTrk") {
-        trackStart = pos;
-        trackLen = len;
-        break;
+        tracks.push({ start: pos, len });
       }
       pos += len;
     }
-    if (trackStart < 0) return fallback;
+    if (!tracks.length) return fallback;
+
+    const countNoteOns = (start, end) => {
+      let p = start;
+      let runningStatus = null;
+      let count = 0;
+      while (p < end && count < 256) {
+        const delta = readVlq(p);
+        p = delta.pos;
+        if (p >= end) break;
+
+        let status = bytes[p];
+        if (status < 0x80) {
+          if (runningStatus == null) break;
+          status = runningStatus;
+        } else {
+          p += 1;
+          if (status < 0xf0) runningStatus = status;
+          else runningStatus = null;
+        }
+
+        if (status === 0xff) {
+          if (p >= end) break;
+          p += 1; // meta type
+          const lenInfo = readVlq(p);
+          p = lenInfo.pos + lenInfo.value;
+          continue;
+        }
+        if (status === 0xf0 || status === 0xf7) {
+          const lenInfo = readVlq(p);
+          p = lenInfo.pos + lenInfo.value;
+          continue;
+        }
+
+        const hi = status & 0xf0;
+        if (hi === 0xc0 || hi === 0xd0) {
+          p += 1;
+          continue;
+        }
+        if (hi === 0x80 || hi === 0x90 || hi === 0xa0 || hi === 0xb0 || hi === 0xe0) {
+          const note = bytes[p++];
+          const vel = bytes[p++];
+          if (hi === 0x90 && vel > 0) count += 1;
+          continue;
+        }
+        break;
+      }
+      return count;
+    };
+
+    let best = tracks[0];
+    let bestCount = -1;
+    for (const t of tracks) {
+      const end = Math.min(bytes.length, t.start + t.len);
+      const n = countNoteOns(t.start, end);
+      if (n > bestCount) {
+        bestCount = n;
+        best = t;
+      }
+    }
+
+    const trackStart = best.start;
+    const trackLen = best.len;
 
     const end = Math.min(bytes.length, trackStart + trackLen);
     const out = [];
@@ -622,6 +682,7 @@ function syncMIDIToolbarState() {
 }
 
 function registerMIDIHotkeys(filePath) {
+  const normalizedPath = normalizeNotebookRelativePath(filePath);
   if (keydownHandler) {
     document.removeEventListener("keydown", keydownHandler);
   }
@@ -632,7 +693,7 @@ function registerMIDIHotkeys(filePath) {
     if ((e.ctrlKey || e.metaKey) && key === "s") {
       e.preventDefault();
       if (window.saveMIDIFile) {
-        window.saveMIDIFile(filePath);
+        window.saveMIDIFile(normalizedPath);
       }
       return;
     }
@@ -900,7 +961,8 @@ function setTempo(bpm) {
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   container.innerHTML = "";
-  currentFilePath = filePath;
+  const normalizedPath = normalizeNotebookRelativePath(filePath);
+  currentFilePath = normalizedPath;
   selectedNoteIndex = -1;
   dragState = null;
   selectedElementType = null;
@@ -966,7 +1028,7 @@ export async function renderEditor(filePath, container) {
   saveBtn.textContent = "Save";
   saveBtn.addEventListener("click", async () => {
     try {
-      await window.saveMIDIFile(filePath);
+      await window.saveMIDIFile(normalizedPath);
       if (statusDiv) statusDiv.innerHTML = "<p style='color:green;'>Saved.</p>";
     } catch (err) {
       console.error(err);
@@ -997,8 +1059,7 @@ export async function renderEditor(filePath, container) {
   editorArea.appendChild(statusDiv);
 
   try {
-    const serverBase = "/Notebook";
-    const res = await fetch(`${serverBase}/${filePath}`);
+    const res = await fetch(toNotebookAssetUrl(normalizedPath), { cache: "no-store" });
     if (!res.ok) throw new Error(res.statusText);
 
     currentMidiBuffer = await res.arrayBuffer();
@@ -1023,7 +1084,7 @@ export async function renderEditor(filePath, container) {
     return;
   }
 
-  registerMIDIHotkeys(filePath);
+  registerMIDIHotkeys(normalizedPath);
 
   if (resizeHandler) {
     window.removeEventListener("resize", resizeHandler);
