@@ -22,9 +22,39 @@ export function createElementLayers(svgRoot, hostPanel = null) {
 
   let activeLayerId = null;
   let panelEl = null;
+  let layerClipboard = [];
 
   function getLayers() {
     return qsa(svgRoot, ":scope > g[data-layer='true']");
+  }
+
+  function getLayerById(layerId) {
+    if (!layerId) return null;
+    return getLayers().find((l) => l.id === layerId) || null;
+  }
+
+  function getLayerName(layer) {
+    return layer?.getAttribute?.("data-layer-name") || layer?.id || "Layer";
+  }
+
+  function makeUniqueLayerId() {
+    const existing = new Set(getLayers().map((l) => l.id).filter(Boolean));
+    let next = "";
+    do {
+      next = `layer-${Math.random().toString(36).slice(2, 9)}`;
+    } while (existing.has(next));
+    return next;
+  }
+
+  function makeUniqueLayerName(baseName) {
+    const existing = new Set(getLayers().map((l) => getLayerName(l)));
+    const trimmed = String(baseName || "Layer").trim() || "Layer";
+    if (!existing.has(trimmed)) return trimmed;
+    const copyBase = `${trimmed} copy`;
+    if (!existing.has(copyBase)) return copyBase;
+    let i = 2;
+    while (existing.has(`${copyBase} ${i}`)) i += 1;
+    return `${copyBase} ${i}`;
   }
 
   function normalizeInitialLayers() {
@@ -73,6 +103,52 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     const layer = getActiveLayer();
     if (!layer) return;
     layer.appendChild(node);
+  }
+
+  function copyLayer(layerId) {
+    const layer = getLayerById(layerId);
+    if (!layer) return false;
+    layerClipboard = [layer.cloneNode(true)];
+    return true;
+  }
+
+  function cutLayer(layerId) {
+    const target = getLayerById(layerId);
+    if (!target) return false;
+    if (!copyLayer(layerId)) return false;
+
+    const layers = getLayers();
+    if (layers.length <= 1) {
+      while (target.firstChild) target.removeChild(target.firstChild);
+      renderPanel();
+      return true;
+    }
+
+    const fallback = layers.find((l) => l !== target) || null;
+    target.remove();
+    activeLayerId = fallback?.id || null;
+    renderPanel();
+    return true;
+  }
+
+  function pasteLayer(afterLayerId = null) {
+    if (!layerClipboard.length) return null;
+    const template = layerClipboard[0];
+    if (!template) return null;
+
+    const clone = template.cloneNode(true);
+    clone.setAttribute("data-layer", "true");
+    clone.setAttribute("id", makeUniqueLayerId());
+    clone.setAttribute("data-layer-name", makeUniqueLayerName(getLayerName(template)));
+
+    const layers = getLayers();
+    const after = afterLayerId ? layers.find((l) => l.id === afterLayerId) : getActiveLayer();
+    const ref = after?.nextSibling || null;
+    svgRoot.insertBefore(clone, ref);
+
+    activeLayerId = clone.id;
+    renderPanel();
+    return clone;
   }
 
   function removeLayer(layerId) {
@@ -151,6 +227,9 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     setLayerVisible,
     moveLayer,
     removeLayer,
+    copyLayer,
+    cutLayer,
+    pasteLayer,
     renderPanel,
     attachHost
   };

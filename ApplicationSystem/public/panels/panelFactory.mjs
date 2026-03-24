@@ -4,6 +4,8 @@
 // Panel factory: creates DOM containers for panels, lazy-loads per-instance modules,
 // and invokes the panel's exported initializer. Uses a module cache to avoid re-imports.
 
+import { attachResizeEvents } from "/panels/panelResize.mjs";
+
 const moduleCache = new Map();
 
 /**

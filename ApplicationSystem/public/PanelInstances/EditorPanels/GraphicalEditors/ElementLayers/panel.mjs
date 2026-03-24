@@ -1,9 +1,166 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/panel.mjs
 // This file defines UI helpers for the ElementLayers module in Nodevision. It builds the layers panel DOM and renders layer rows with controls for visibility, ordering, and renaming.
 
+function ensurePanelState(panelEl) {
+  if (!panelEl) return { expandedLayers: new Map() };
+  if (!panelEl.__nvElementLayersState) {
+    Object.defineProperty(panelEl, "__nvElementLayersState", {
+      value: {
+        expandedLayers: new Map(),
+        selected: { type: null, layerId: null, element: null },
+        keyHandlerInstalled: false,
+        rerender: null,
+      },
+      enumerable: false,
+      configurable: false,
+      writable: false,
+    });
+  }
+  return panelEl.__nvElementLayersState;
+}
+
+function isSvgElementVisible(el) {
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return true;
+  if (el.style?.display === "none") return false;
+  if (el.getAttribute?.("display") === "none") return false;
+  if (el.style?.visibility === "hidden") return false;
+  if (el.getAttribute?.("visibility") === "hidden") return false;
+  return true;
+}
+
+function setSvgElementVisible(el, visible) {
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return;
+  if (visible) {
+    if (el.style) {
+      el.style.display = "";
+      el.style.visibility = "";
+    }
+    if (el.getAttribute?.("display") === "none") el.removeAttribute("display");
+    if (el.getAttribute?.("visibility") === "hidden") el.removeAttribute("visibility");
+  } else {
+    if (el.style) el.style.display = "none";
+  }
+}
+
+function describeSvgElement(el) {
+  const tag = (el?.tagName || "element").toLowerCase();
+  const id = el?.getAttribute?.("id");
+  const cls = (el?.getAttribute?.("class") || "").trim();
+  const classToken = cls ? ` .${cls.split(/\s+/).filter(Boolean).join(".")}` : "";
+  const idToken = id ? ` #${id}` : "";
+
+  let extra = "";
+  if (tag === "g" && el?.children?.length) extra = ` (${el.children.length})`;
+  if (tag === "text") {
+    const t = (el.textContent || "").trim().replace(/\s+/g, " ");
+    if (t) extra = `${extra} “${t.slice(0, 32)}${t.length > 32 ? "…" : ""}”`;
+  }
+  return `${tag}${idToken}${classToken}${extra}`;
+}
+
+function renderLayerContents({
+  layer,
+  rootLayerId,
+  containerEl,
+  rerender,
+  depth = 0,
+  state,
+  panelEl,
+  setActiveLayer,
+} = {}) {
+  const children = Array.from(layer?.children || []);
+  if (children.length === 0) {
+    const empty = document.createElement("div");
+    empty.textContent = "No elements in this layer.";
+    Object.assign(empty.style, {
+      fontStyle: "italic",
+      color: "#666",
+      padding: "2px 6px",
+    });
+    containerEl.appendChild(empty);
+    return;
+  }
+
+  children.forEach((child) => {
+    const item = document.createElement("div");
+    Object.assign(item.style, {
+      display: "grid",
+      gridTemplateColumns: "52px 1fr",
+      alignItems: "center",
+      gap: "4px",
+      padding: "2px 4px",
+      paddingLeft: `${8 + depth * 12}px`,
+      borderRadius: "4px",
+      cursor: "pointer",
+    });
+
+    const visible = isSvgElementVisible(child);
+    const visBtn = document.createElement("button");
+    visBtn.type = "button";
+    visBtn.textContent = visible ? "Unsee" : "See";
+    visBtn.title = visible ? "Hide element" : "Show element";
+    visBtn.setAttribute("aria-pressed", String(visible));
+    visBtn.onclick = () => {
+      setSvgElementVisible(child, !visible);
+      rerender?.();
+    };
+    item.appendChild(visBtn);
+
+    const label = document.createElement("div");
+    label.textContent = describeSvgElement(child);
+    Object.assign(label.style, {
+      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+      fontSize: "12px",
+      color: "#222",
+      userSelect: "text",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+    });
+    item.appendChild(label);
+
+    const isSelected = state?.selected?.type === "element" && state.selected.element === child;
+    if (isSelected) {
+      item.style.background = "rgba(255, 183, 77, 0.22)";
+      item.style.outline = "1px solid rgba(255, 183, 77, 0.75)";
+    }
+
+    item.addEventListener("click", (e) => {
+      if (e.target instanceof HTMLElement && e.target.tagName === "BUTTON") return;
+      if (state?.selected) {
+        state.selected.type = "element";
+        state.selected.layerId = rootLayerId || null;
+        state.selected.element = child;
+      }
+      const ctx = window.SVGEditorContext;
+      if (ctx?.setSelection) {
+        ctx.setSelection([child], { primary: child });
+      }
+      panelEl?.focus?.({ preventScroll: true });
+      setActiveLayer?.(rootLayerId);
+    });
+
+    containerEl.appendChild(item);
+
+    if (child.children && child.children.length > 0) {
+      renderLayerContents({
+        layer: child,
+        rootLayerId,
+        containerEl,
+        rerender,
+        depth: depth + 1,
+        state,
+        panelEl,
+        setActiveLayer,
+      });
+    }
+  });
+}
+
 export function createPanelElement() {
   const el = document.createElement("div");
   el.id = "svg-layer-panel";
+  el.tabIndex = 0;
   Object.assign(el.style, {
     border: "1px solid #d0d0d0",
     background: "#fafafa",
@@ -11,6 +168,7 @@ export function createPanelElement() {
     minWidth: "220px",
     maxWidth: "280px",
     overflow: "auto",
+    outline: "none",
   });
   return el;
 }
@@ -27,6 +185,115 @@ export function renderLayersPanel({
   rerender,
 } = {}) {
   if (!panelEl || typeof getLayers !== "function") return;
+  const state = ensurePanelState(panelEl);
+  state.rerender = rerender || null;
+
+  if (state.selected?.element && !state.selected.element.isConnected) {
+    state.selected = { type: null, layerId: null, element: null };
+  }
+
+  if (!state.keyHandlerInstalled) {
+    const handler = (e) => {
+      const ctx = window.SVGEditorContext;
+      if (!ctx) return;
+      const key = String(e.key || "").toLowerCase();
+      const mod = e.ctrlKey || e.metaKey;
+
+      const selectedType = state.selected?.type;
+      const selectedLayerId = state.selected?.layerId || null;
+      const selectedElement = state.selected?.element || null;
+
+      if (key === "delete" || key === "backspace") {
+        if (selectedType === "element" && selectedElement && selectedElement.isConnected) {
+          ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          const deleted = ctx.deleteSelection?.();
+          if (deleted) {
+            state.selected = { type: null, layerId: null, element: null };
+            state.rerender?.();
+            e.preventDefault();
+          }
+        }
+        return;
+      }
+
+      if (!mod) return;
+      if (!["c", "x", "v"].includes(key)) return;
+
+      const tryPasteLayer = () => {
+        if (!ctx.layers?.pasteLayer) return null;
+        const pasted = ctx.layers.pasteLayer(selectedType === "layer" ? selectedLayerId : null);
+        if (pasted && ctx.setSelection) ctx.setSelection([pasted], { primary: pasted });
+        return pasted;
+      };
+
+      const tryPasteElements = () => {
+        if (!ctx.pasteSelection) return [];
+        const pasted = ctx.pasteSelection();
+        if (pasted?.length) state.rerender?.();
+        return pasted;
+      };
+
+      if (key === "c") {
+        if (selectedType === "layer" && selectedLayerId && ctx.layers?.copyLayer) {
+          ctx.layers.copyLayer(selectedLayerId);
+          e.preventDefault();
+          return;
+        }
+        if (selectedType === "element" && selectedElement && selectedElement.isConnected) {
+          ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          if (ctx.copySelection?.()) e.preventDefault();
+          return;
+        }
+        if (ctx.copySelection?.()) e.preventDefault();
+        return;
+      }
+
+      if (key === "x") {
+        if (selectedType === "layer" && selectedLayerId && ctx.layers?.cutLayer) {
+          ctx.layers.cutLayer(selectedLayerId);
+          state.selected = { type: null, layerId: null, element: null };
+          e.preventDefault();
+          return;
+        }
+        if (selectedType === "element" && selectedElement && selectedElement.isConnected) {
+          ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          const copied = ctx.copySelection?.();
+          const deleted = ctx.deleteSelection?.();
+          if (deleted) state.rerender?.();
+          if (copied || deleted) e.preventDefault();
+          return;
+        }
+        const copied = ctx.copySelection?.();
+        const deleted = ctx.deleteSelection?.();
+        if (deleted) state.rerender?.();
+        if (copied || deleted) e.preventDefault();
+        return;
+      }
+
+      if (key === "v") {
+        if (selectedType === "layer") {
+          const pasted = tryPasteLayer();
+          if (pasted) {
+            e.preventDefault();
+            return;
+          }
+        }
+        const pastedEls = tryPasteElements();
+        if (pastedEls?.length) {
+          e.preventDefault();
+          return;
+        }
+        const pastedLayer = tryPasteLayer();
+        if (pastedLayer) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    panelEl.addEventListener("keydown", handler, true);
+    state.keyHandlerInstalled = true;
+  }
+
   panelEl.innerHTML = "";
 
   const header = document.createElement("div");
@@ -53,22 +320,61 @@ export function renderLayersPanel({
   list.style.flexDirection = "column";
   list.style.gap = "4px";
 
+  const currentLayerIds = new Set(getLayers().map((l) => l.id));
+  [...state.expandedLayers.keys()].forEach((id) => {
+    if (!currentLayerIds.has(id)) state.expandedLayers.delete(id);
+  });
+  if (state.selected?.type === "layer" && state.selected.layerId && !currentLayerIds.has(state.selected.layerId)) {
+    state.selected = { type: null, layerId: null, element: null };
+  }
+
   getLayers().forEach((layer) => {
+    if (!state.expandedLayers.has(layer.id)) {
+      state.expandedLayers.set(layer.id, layer.id === activeLayerId);
+    }
+    const isExpanded = !!state.expandedLayers.get(layer.id);
+    const isSelectedLayer = state.selected?.type === "layer" && state.selected.layerId === layer.id;
+
+    const wrapper = document.createElement("div");
+    wrapper.style.border =
+      layer.id === activeLayerId ? "1px solid #5aa9ff" : "1px solid #d5d5d5";
+    wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
+    wrapper.style.borderRadius = "6px";
+    if (isSelectedLayer) {
+      wrapper.style.outline = "2px solid rgba(255, 183, 77, 0.95)";
+      wrapper.style.outlineOffset = "-2px";
+    }
+
     const row = document.createElement("div");
     row.style.display = "grid";
-    row.style.gridTemplateColumns = "18px 1fr auto auto auto auto";
+    row.style.gridTemplateColumns = "20px 52px 1fr auto auto auto auto";
     row.style.alignItems = "center";
     row.style.gap = "4px";
     row.style.padding = "3px 4px";
-    row.style.border =
-      layer.id === activeLayerId ? "1px solid #5aa9ff" : "1px solid #d5d5d5";
-    row.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
 
-    const vis = document.createElement("input");
-    vis.type = "checkbox";
-    vis.checked = layer.style.display !== "none";
-    vis.onchange = () => setLayerVisible?.(layer.id, vis.checked);
-    row.appendChild(vis);
+    const expandBtn = document.createElement("button");
+    expandBtn.type = "button";
+    expandBtn.textContent = isExpanded ? "▾" : "▸";
+    expandBtn.title = isExpanded ? "Collapse layer contents" : "Expand layer contents";
+    expandBtn.setAttribute("aria-expanded", String(isExpanded));
+    expandBtn.onclick = () => {
+      state.expandedLayers.set(layer.id, !isExpanded);
+      rerender?.();
+    };
+    row.appendChild(expandBtn);
+
+    const isVisible = layer.style.display !== "none";
+    const visBtn = document.createElement("button");
+    visBtn.type = "button";
+    visBtn.textContent = isVisible ? "Unsee" : "See";
+    visBtn.title = isVisible ? "Hide layer" : "Show layer";
+    visBtn.setAttribute("aria-pressed", String(isVisible));
+    visBtn.onclick = () => {
+      const nextVisible = layer.style.display === "none";
+      setLayerVisible?.(layer.id, nextVisible);
+      rerender?.();
+    };
+    row.appendChild(visBtn);
 
     const nameBtn = document.createElement("button");
     nameBtn.textContent = layer.getAttribute("data-layer-name") || layer.id;
@@ -76,7 +382,16 @@ export function renderLayersPanel({
     nameBtn.style.border = "none";
     nameBtn.style.background = "transparent";
     nameBtn.style.padding = "2px 3px";
-    nameBtn.onclick = () => setActiveLayer?.(layer.id);
+    nameBtn.title = "Select layer";
+    nameBtn.onclick = () => {
+      state.selected.type = "layer";
+      state.selected.layerId = layer.id;
+      state.selected.element = null;
+      const ctx = window.SVGEditorContext;
+      if (ctx?.setSelection) ctx.setSelection([layer], { primary: layer });
+      panelEl?.focus?.({ preventScroll: true });
+      setActiveLayer?.(layer.id);
+    };
     row.appendChild(nameBtn);
 
     const upBtn = document.createElement("button");
@@ -109,9 +424,29 @@ export function renderLayersPanel({
     delBtn.onclick = () => removeLayer?.(layer.id);
     row.appendChild(delBtn);
 
-    list.appendChild(row);
+    wrapper.appendChild(row);
+
+    if (isExpanded) {
+      const contents = document.createElement("div");
+      Object.assign(contents.style, {
+        borderTop: "1px dashed rgba(0,0,0,0.15)",
+        background: "rgba(255,255,255,0.55)",
+        padding: "4px 2px 6px 2px",
+      });
+      renderLayerContents({
+        layer,
+        rootLayerId: layer.id,
+        containerEl: contents,
+        rerender,
+        state,
+        panelEl,
+        setActiveLayer,
+      });
+      wrapper.appendChild(contents);
+    }
+
+    list.appendChild(wrapper);
   });
 
   panelEl.appendChild(list);
 }
-

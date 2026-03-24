@@ -437,6 +437,102 @@ export function rebuildLayoutDividersForContainer(container, isVerticalOverride)
   return panels.length - 1;
 }
 
+function makePanelCell(flexValue = "1 1 0") {
+  const cell = document.createElement("div");
+  cell.className = "panel-cell";
+  Object.assign(cell.style, {
+    border: "1px solid #bbb",
+    background: "#fafafa",
+    overflow: "auto",
+    flex: flexValue,
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
+    minHeight: "0",
+    minWidth: "0",
+  });
+  return cell;
+}
+
+function resolvePanelCell(candidate) {
+  if (candidate?.classList?.contains?.("panel-cell")) return candidate;
+  const closest = candidate?.closest?.(".panel-cell");
+  if (closest) return closest;
+  return null;
+}
+
+function hasTwoCellRowWithLayers(container, layersPanelId) {
+  if (!container?.classList?.contains?.("panel-row")) return false;
+  const direction = container.dataset?.direction || "";
+  if (direction !== "row") return false;
+  const cells = Array.from(container.children).filter((child) =>
+    child.classList?.contains?.("panel-cell")
+  );
+  if (cells.length !== 2) return false;
+  return cells.some((cell) => cell.dataset?.id === layersPanelId);
+}
+
+export function ensureSvgEditingSplit({
+  editorCell,
+  layersPanelId = "SVGLayersPanel",
+  layersPanelClass = "InfoPanel",
+  editorFlex = "0 0 72%",
+  layersFlex = "0 0 28%",
+} = {}) {
+  const cell = resolvePanelCell(editorCell || window.activeCell);
+  if (!cell) return null;
+
+  const parent = cell.parentElement;
+  if (!parent) return null;
+
+  if (parent.dataset?.nvSvgEditingSplit === "1" || hasTwoCellRowWithLayers(parent, layersPanelId)) {
+    const existingLayersCell = Array.from(parent.children)
+      .filter((child) => child.classList?.contains?.("panel-cell"))
+      .find((child) => child.dataset?.id === layersPanelId);
+    if (existingLayersCell) {
+      return { splitContainer: parent, editorCell: cell, layersCell: existingLayersCell, didCreate: false };
+    }
+  }
+
+  const originalFlex = cell.style.flex || "1 1 0";
+  const splitContainer = document.createElement("div");
+  splitContainer.className = "panel-row";
+  Object.assign(splitContainer.style, {
+    display: "flex",
+    flexDirection: "row",
+    overflow: "hidden",
+    flex: originalFlex,
+    alignItems: "stretch",
+    minHeight: "0",
+    minWidth: "0",
+  });
+  splitContainer.dataset.direction = "row";
+  splitContainer.dataset.isVertical = "0";
+  splitContainer.dataset.nvSvgEditingSplit = "1";
+
+  parent.replaceChild(splitContainer, cell);
+
+  Object.assign(cell.style, {
+    flex: editorFlex,
+    minHeight: "0",
+    minWidth: "0",
+  });
+  splitContainer.appendChild(cell);
+
+  const layersCell = makePanelCell(layersFlex);
+  layersCell.dataset.id = layersPanelId;
+  layersCell.dataset.panelClass = layersPanelClass;
+  splitContainer.appendChild(layersCell);
+
+  rebuildLayoutDividersForContainer(splitContainer, false);
+  rebuildLayoutDividersForContainer(parent);
+
+  window.activeCell = cell;
+  window.highlightActiveCell?.(cell);
+
+  return { splitContainer, editorCell: cell, layersCell, didCreate: true };
+}
+
 
 /**
  * Dynamically load a panel based on its id and/or module path.
