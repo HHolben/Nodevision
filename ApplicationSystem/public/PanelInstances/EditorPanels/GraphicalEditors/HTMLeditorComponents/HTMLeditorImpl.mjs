@@ -2694,6 +2694,31 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
 
   window.HTMLWysiwygTools = {
     insertImageAtCaret,
+    insertHTMLAtCaret: (html) => {
+      const preferredRange = getCurrentSelectionRangeInEditor(wysiwyg) ||
+        getRememberedSelectionRange(wysiwyg);
+      const range = (isRangeInsideEditor(wysiwyg, preferredRange) ? preferredRange.cloneRange() : null) ||
+        getRememberedSelectionRange(wysiwyg) ||
+        getCurrentSelectionRangeInEditor(wysiwyg);
+      if (!range) {
+        try {
+          document.execCommand("insertHTML", false, String(html || ""));
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      applySelectionRange(range);
+      wysiwyg.focus();
+      try {
+        document.execCommand("insertHTML", false, String(html || ""));
+      } catch {
+        const span = document.createElement("span");
+        span.innerHTML = String(html || "");
+        insertNodeAtCaret(wysiwyg, span, { preferredRange: range });
+      }
+      rememberCurrentSelectionRange(wysiwyg);
+    },
     insertLayoutCanvas,
     insertPositionableImage,
   };

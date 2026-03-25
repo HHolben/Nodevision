@@ -18,6 +18,8 @@
         svg: [
             'loadSVG.js',
             'initSVGEditor.js',
+            'insertTools.ui.js',
+            'insertTools.handlers.js',
             'saveSVG.js'
         ]
     };

@@ -280,26 +280,10 @@
     },
     {
       "ToolbarCategory": "Insert",
-      "heading": "Insert Blank SVG Drawing",
-      "insertGroup": "image",
-      "callbackKey": "insertBlankSVG",
-      "modes": ["HTMLediting"],
-      "icon": "icons/ImageIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
       "heading": "Insert Image",
       "insertGroup": "image",
       "callbackKey": "insertImage",
-      "modes": ["HTMLediting", "EPUBediting"],
-      "icon": "icons/ImageIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Positionable Image",
-      "insertGroup": "image",
-      "callbackKey": "insertPositionableImage",
-      "modes": ["HTMLediting", "EPUBediting"],
+      "modes": ["EPUBediting"],
       "icon": "icons/ImageIcon.png"
     },
     {
@@ -312,24 +296,9 @@
     },
     {
       "ToolbarCategory": "Insert",
-      "heading": "Insert Video",
-      "insertGroup": "video",
-      "callbackKey": "insertVideo",
-      "modes": ["HTMLediting"],
-      "icon": "icons/videoIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
       "heading": "Serial Monitor",
       "insertGroup": "text",
       "callbackKey": "insertSerialMonitor",
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert CSV as table",
-      "insertGroup": "table",
-      "callbackKey": "insertCSV",
       "modes": ["HTMLediting"]
     },
     {
@@ -343,10 +312,20 @@
     },
     {
       "ToolbarCategory": "Insert",
-      "heading": "Insert CSV Flash Cards",
-      "insertGroup": "table",
-      "callbackKey": "insertFlashCards",
-      "modes": ["HTMLediting"]
+      "heading": "Media",
+      "insertGroup": "media",
+      "callbackKey": "insertMedia",
+      "modes": ["HTMLediting"],
+      "icon": "icons/ImageIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Insert Media Widget",
+      "parentHeading": "Media",
+      "modes": ["HTMLediting"],
+      "content": "<div id=\"nv-insert-media-widget\" style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap;\"></div>",
+      "script": "insertMediaWidget.mjs",
+      "preventAutoSubToolbar": true
     },
 
     {

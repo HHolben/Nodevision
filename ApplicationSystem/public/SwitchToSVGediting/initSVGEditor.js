@@ -427,13 +427,27 @@
   }
 
   // Initialize Publisher-like SVG interactions and event handlers
-  function initSVGInteractions() {
-    let selectedElement = null;
-    let isDragging = false;
-    let isResizing = false;
-    let dragOffset = { x: 0, y: 0 };
-    let clipboard = null;
-    let gridSize = 20;
+		  function initSVGInteractions() {
+		    let selectedElement = null;
+		    let isDragging = false;
+		    let isResizing = false;
+		    let dragOffset = { x: 0, y: 0 };
+		    let dragMode = null; // 'attrs' | 'transform'
+		    let dragCoordElement = null;
+		    let dragStart = { x: 0, y: 0 };
+		    let dragStartClient = { x: 0, y: 0 };
+		    let dragBaseTransform = '';
+		    let dragBaseMatrix = null;
+		    let dragClientToCenter = { x: 0, y: 0 };
+		    let dragClientToCenter0 = { x: 0, y: 0 };
+		    let dragStartCenter = { x: 0, y: 0 };
+		    let suppressNextClick = false;
+		    let resizeHandle = null;
+		    let resizeCoordElement = null;
+		    let resizeStartMouse = { x: 0, y: 0 };
+		    let resizeStartBox = null;
+		    let clipboard = null;
+		    let gridSize = 20;
 
     // Initialize rulers
     initRulers();
@@ -443,13 +457,14 @@
 	    const snapToggle = document.getElementById('snap-toggle');
 	    const gridOverlay = document.getElementById('grid-overlay');
 
-	    function clientToSvgCoords(clientX, clientY) {
-	      try {
-	        const ctm = svgEditor.getScreenCTM();
-	        if (!ctm) {
-	          const rect = svgEditor.getBoundingClientRect();
-	          return { x: clientX - rect.left, y: clientY - rect.top };
-	        }
+		    function clientToSvgCoords(clientX, clientY, coordElement = svgEditor) {
+		      try {
+		        const el = coordElement && typeof coordElement.getScreenCTM === 'function' ? coordElement : svgEditor;
+		        const ctm = el.getScreenCTM();
+		        if (!ctm) {
+		          const rect = svgEditor.getBoundingClientRect();
+		          return { x: clientX - rect.left, y: clientY - rect.top };
+		        }
 	        const inverse = ctm.inverse();
 	        if (typeof DOMPoint === 'function') {
 	          const svgPoint = new DOMPoint(clientX, clientY).matrixTransform(inverse);
@@ -465,20 +480,102 @@
 	      } catch (err) {
 	        // Fall through to bounding-rect math
 	      }
-	      const rect = svgEditor.getBoundingClientRect();
-	      return { x: clientX - rect.left, y: clientY - rect.top };
-	    }
+		      const rect = svgEditor.getBoundingClientRect();
+		      return { x: clientX - rect.left, y: clientY - rect.top };
+		    }
+
+			    function getDragCoordElement(element) {
+			      if (!element) return svgEditor;
+			      const parent = element.parentNode;
+			      if (parent && typeof parent.getScreenCTM === 'function') return parent;
+			      return svgEditor;
+			    }
+
+				    function getElementCenterInParentCoords(element, parentEl) {
+				      if (!element) return { x: 0, y: 0 };
+
+			      // Fast-path for untransformed basic geometry.
+			      const tag = element.tagName;
+			      const transformAttr = (element.getAttribute('transform') || '').trim();
+			      const hasTransform = transformAttr && transformAttr.toLowerCase() !== 'none';
+			      if (!hasTransform) {
+			        if (tag === 'rect') {
+			          const x = parseFloat(element.getAttribute('x') || 0);
+			          const y = parseFloat(element.getAttribute('y') || 0);
+			          const w = parseFloat(element.getAttribute('width') || 0);
+			          const h = parseFloat(element.getAttribute('height') || 0);
+			          return { x: x + w / 2, y: y + h / 2 };
+			        }
+			        if (tag === 'circle' || tag === 'ellipse') {
+			          const cx = parseFloat(element.getAttribute('cx') || 0);
+			          const cy = parseFloat(element.getAttribute('cy') || 0);
+			          return { x: cx, y: cy };
+			        }
+			      }
+
+			      // Generic: use the element's bbox center and map it into the parent's coordinate system.
+			      try {
+			        const bbox = element.getBBox();
+			        const localCenter = new DOMPoint(bbox.x + bbox.width / 2, bbox.y + bbox.height / 2);
+			        const elToScreen = element.getScreenCTM();
+			        const parentToScreen = parentEl && typeof parentEl.getScreenCTM === 'function' ? parentEl.getScreenCTM() : null;
+			        if (elToScreen && parentToScreen) {
+			          const screenPt = localCenter.matrixTransform(elToScreen);
+			          const parentPt = screenPt.matrixTransform(parentToScreen.inverse());
+			          return { x: parentPt.x, y: parentPt.y };
+			        }
+			      } catch (err) {
+			        // ignore
+			      }
+				      return { x: 0, y: 0 };
+				    }
+
+				    function getElementCenterInClientCoords(element) {
+				      if (!element) return { x: 0, y: 0 };
+				      const rect = element.getBoundingClientRect();
+				      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+				    }
+
+				    function toDomMatrix(m) {
+				      if (!m) return null;
+				      if (typeof DOMMatrix === 'function') {
+				        // Some browsers already return DOMMatrix from getScreenCTM().
+				        if (m instanceof DOMMatrix) return m;
+				        if (typeof m.a === 'number') return new DOMMatrix([m.a, m.b, m.c, m.d, m.e, m.f]);
+				      }
+				      return null;
+				    }
+
+				    function getElementLocalToParentMatrix(element, parentEl) {
+				      try {
+				        const elToScreen = toDomMatrix(element && typeof element.getScreenCTM === 'function' ? element.getScreenCTM() : null);
+				        const parentToScreen = toDomMatrix(parentEl && typeof parentEl.getScreenCTM === 'function' ? parentEl.getScreenCTM() : null);
+				        if (!elToScreen || !parentToScreen) return null;
+				        return parentToScreen.inverse().multiply(elToScreen);
+				      } catch (err) {
+				        return null;
+				      }
+				    }
+
+				    function setTransformFromMatrix(element, matrix) {
+				      if (!element || !matrix) return;
+				      element.setAttribute('transform', `matrix(${matrix.a} ${matrix.b} ${matrix.c} ${matrix.d} ${matrix.e} ${matrix.f})`);
+				    }
 	    
 	    gridToggle.addEventListener('change', () => {
 	      gridOverlay.style.display = gridToggle.checked ? 'block' : 'none';
 	    });
 
     // Selection and interaction handling
-    svgEditor.addEventListener('click', function(e) {
-      if (window.currentSVGTool !== 'select') return;
-      
-      hideContextMenu();
-      clearSelection();
+	    svgEditor.addEventListener('click', function(e) {
+	      if (window.currentSVGTool !== 'select') return;
+	      if (suppressNextClick) {
+	        suppressNextClick = false;
+	        return;
+	      }
+	      
+	      hideContextMenu();
+	      clearSelection();
       
       if (e.target !== svgEditor && e.target.tagName !== 'svg') {
         selectElement(e.target);
@@ -494,74 +591,352 @@
       }
     });
 
-    // Mouse down for dragging/resizing
-	    svgEditor.addEventListener('mousedown', function(e) {
-	      if (window.currentSVGTool === 'select' && selectedElement && !e.target.classList.contains('handle')) {
-	        isDragging = true;
-	        const { x: mouseX, y: mouseY } = clientToSvgCoords(e.clientX, e.clientY);
-	        
-	        if (selectedElement.tagName === 'rect') {
-	          const x = parseFloat(selectedElement.getAttribute('x') || 0);
-	          const y = parseFloat(selectedElement.getAttribute('y') || 0);
-	          dragOffset = { x: mouseX - x, y: mouseY - y };
-        } else if (selectedElement.tagName === 'circle') {
-          const cx = parseFloat(selectedElement.getAttribute('cx') || 0);
-          const cy = parseFloat(selectedElement.getAttribute('cy') || 0);
-          dragOffset = { x: mouseX - cx, y: mouseY - cy };
-        } else if (selectedElement.tagName === 'ellipse') {
-          const cx = parseFloat(selectedElement.getAttribute('cx') || 0);
-          const cy = parseFloat(selectedElement.getAttribute('cy') || 0);
-          dragOffset = { x: mouseX - cx, y: mouseY - cy };
-        } else if (selectedElement.tagName === 'text') {
-          const x = parseFloat(selectedElement.getAttribute('x') || 0);
-          const y = parseFloat(selectedElement.getAttribute('y') || 0);
-          dragOffset = { x: mouseX - x, y: mouseY - y };
-        }
-        e.preventDefault();
-      }
-    });
+	    // Mouse down for dragging/resizing
+			    svgEditor.addEventListener('mousedown', function(e) {
+			      if (e.button !== 0) return;
+			      if (window.currentSVGTool === 'select' && !e.target.classList.contains('handle')) {
+			        if (isResizing) return;
+			        const target =
+			          (e.target && e.target !== svgEditor && e.target.tagName !== 'svg' && e.target.tagName !== 'SVG') ? e.target : null;
+			        if (target && target !== selectedElement) {
+			          clearSelection();
+			          selectElement(target);
+			        }
+			        if (!selectedElement) return;
+			        isDragging = true;
+			        dragStartClient = { x: e.clientX, y: e.clientY };
+			        suppressNextClick = false;
+			        dragCoordElement = getDragCoordElement(selectedElement);
+			        const { x: mouseX, y: mouseY } = clientToSvgCoords(e.clientX, e.clientY, dragCoordElement);
 
-    // Handle resizing
-    document.addEventListener('mousedown', function(e) {
-      if (e.target.classList.contains('handle')) {
-        isResizing = true;
-        e.preventDefault();
-      }
-    });
+			        const transformAttr = (selectedElement.getAttribute('transform') || '').trim();
+			        const hasTransform = transformAttr && transformAttr.toLowerCase() !== 'none';
+			        const tag = selectedElement.tagName;
+			        // Use attribute dragging only for simple, untransformed geometry.
+			        // Text is handled via transform-drag to avoid origin/baseline drift.
+			        dragMode = (!hasTransform && (tag === 'rect' || tag === 'circle' || tag === 'ellipse'))
+			          ? 'attrs'
+			          : 'transform';
+			        dragBaseTransform = hasTransform ? transformAttr : '';
+			        dragBaseMatrix = dragMode === 'transform' ? getElementLocalToParentMatrix(selectedElement, dragCoordElement) : null;
+			        dragStart = { x: mouseX, y: mouseY };
+			        dragStartCenter = getElementCenterInParentCoords(selectedElement, dragCoordElement);
+			        const clientCenter = getElementCenterInClientCoords(selectedElement);
+			        dragClientToCenter = { x: clientCenter.x - e.clientX, y: clientCenter.y - e.clientY };
+			        dragClientToCenter0 = { x: dragClientToCenter.x, y: dragClientToCenter.y };
+			        
+			        if (dragMode === 'attrs') {
+			          if (tag === 'rect') {
+			            const x = parseFloat(selectedElement.getAttribute('x') || 0);
+			            const y = parseFloat(selectedElement.getAttribute('y') || 0);
+			            dragOffset = { x: mouseX - x, y: mouseY - y };
+		          } else if (tag === 'circle') {
+		            const cx = parseFloat(selectedElement.getAttribute('cx') || 0);
+		            const cy = parseFloat(selectedElement.getAttribute('cy') || 0);
+		            dragOffset = { x: mouseX - cx, y: mouseY - cy };
+		          } else if (tag === 'ellipse') {
+		            const cx = parseFloat(selectedElement.getAttribute('cx') || 0);
+		            const cy = parseFloat(selectedElement.getAttribute('cy') || 0);
+		            dragOffset = { x: mouseX - cx, y: mouseY - cy };
+		          } else if (tag === 'text') {
+		            const x = parseFloat(selectedElement.getAttribute('x') || 0);
+		            const y = parseFloat(selectedElement.getAttribute('y') || 0);
+		            dragOffset = { x: mouseX - x, y: mouseY - y };
+		          }
+		        }
+		        e.preventDefault();
+		      }
+		    });
+
+	    // Handle resizing
+	    document.addEventListener('mousedown', function(e) {
+	      if (e.target.classList.contains('handle')) {
+	        if (!selectedElement) return;
+	        isResizing = true;
+	        isDragging = false;
+	        dragMode = null;
+	        dragCoordElement = null;
+	        dragBaseTransform = '';
+	        resizeHandle = e.target.dataset.handle || null;
+	        resizeCoordElement = getDragCoordElement(selectedElement);
+	        const { x: mouseX, y: mouseY } = clientToSvgCoords(e.clientX, e.clientY, resizeCoordElement);
+	        resizeStartMouse = { x: mouseX, y: mouseY };
+
+	        if (selectedElement.tagName === 'rect') {
+	          resizeStartBox = {
+	            type: 'rect',
+	            x: parseFloat(selectedElement.getAttribute('x') || 0),
+	            y: parseFloat(selectedElement.getAttribute('y') || 0),
+	            width: parseFloat(selectedElement.getAttribute('width') || 0),
+	            height: parseFloat(selectedElement.getAttribute('height') || 0)
+	          };
+	        } else if (selectedElement.tagName === 'circle') {
+	          resizeStartBox = {
+	            type: 'circle',
+	            cx: parseFloat(selectedElement.getAttribute('cx') || 0),
+	            cy: parseFloat(selectedElement.getAttribute('cy') || 0),
+	            r: parseFloat(selectedElement.getAttribute('r') || 0)
+	          };
+	        } else if (selectedElement.tagName === 'ellipse') {
+	          resizeStartBox = {
+	            type: 'ellipse',
+	            cx: parseFloat(selectedElement.getAttribute('cx') || 0),
+	            cy: parseFloat(selectedElement.getAttribute('cy') || 0),
+	            rx: parseFloat(selectedElement.getAttribute('rx') || 0),
+	            ry: parseFloat(selectedElement.getAttribute('ry') || 0)
+	          };
+	        } else {
+	          // Not supported yet.
+	          isResizing = false;
+	          resizeHandle = null;
+	          resizeCoordElement = null;
+	          resizeStartBox = null;
+	          return;
+	        }
+	        e.preventDefault();
+	      }
+	    });
 
     // Mouse move for dragging and resizing
-	    document.addEventListener('mousemove', function(e) {
-	      if (isDragging && selectedElement) {
-	        let { x: mouseX, y: mouseY } = clientToSvgCoords(e.clientX, e.clientY);
-	        
-	        // Snap to grid if enabled
-	        if (snapToggle.checked) {
-	          mouseX = Math.round(mouseX / gridSize) * gridSize;
-	          mouseY = Math.round(mouseY / gridSize) * gridSize;
-        }
-        
-        if (selectedElement.tagName === 'rect') {
-          selectedElement.setAttribute('x', mouseX - dragOffset.x);
-          selectedElement.setAttribute('y', mouseY - dragOffset.y);
-        } else if (selectedElement.tagName === 'circle') {
-          selectedElement.setAttribute('cx', mouseX - dragOffset.x);
-          selectedElement.setAttribute('cy', mouseY - dragOffset.y);
-        } else if (selectedElement.tagName === 'ellipse') {
-          selectedElement.setAttribute('cx', mouseX - dragOffset.x);
-          selectedElement.setAttribute('cy', mouseY - dragOffset.y);
-        } else if (selectedElement.tagName === 'text') {
-          selectedElement.setAttribute('x', mouseX - dragOffset.x);
-          selectedElement.setAttribute('y', mouseY - dragOffset.y);
-        }
-        updateSelectionHandles();
-      }
-    });
+			    document.addEventListener('mousemove', function(e) {
+			      if (isResizing && selectedElement && resizeHandle && resizeStartBox) {
+			        const coordEl = resizeCoordElement || getDragCoordElement(selectedElement);
+			        const { x: mouseX, y: mouseY } = clientToSvgCoords(e.clientX, e.clientY, coordEl);
+			        const dx = mouseX - resizeStartMouse.x;
+			        const dy = mouseY - resizeStartMouse.y;
+
+			        const snapValue = (value) => snapToggle.checked ? (Math.round(value / gridSize) * gridSize) : value;
+			        const clampSize = (value) => (Number.isFinite(value) ? Math.max(1, value) : 1);
+			        const shift = !!e.shiftKey;
+
+			        if (resizeStartBox.type === 'rect') {
+			          const start = resizeStartBox;
+			          const ratio = (start.height && start.width) ? (start.width / start.height) : 1;
+			          let x = start.x;
+			          let y = start.y;
+			          let w = start.width;
+			          let h = start.height;
+
+			          const hasN = resizeHandle.includes('n');
+			          const hasS = resizeHandle.includes('s');
+			          const hasW = resizeHandle.includes('w');
+			          const hasE = resizeHandle.includes('e');
+
+			          if (hasE) w = start.width + dx;
+			          if (hasS) h = start.height + dy;
+			          if (hasW) {
+			            x = start.x + dx;
+			            w = start.width - dx;
+			          }
+			          if (hasN) {
+			            y = start.y + dy;
+			            h = start.height - dy;
+			          }
+
+			          w = clampSize(w);
+			          h = clampSize(h);
+
+			          if (shift && ratio > 0) {
+			            // Constrain aspect ratio. For side handles, scale uniformly around center in the orthogonal axis.
+			            if ((hasE || hasW) && !(hasN || hasS)) {
+			              const targetW = w;
+			              const targetH = clampSize(targetW / ratio);
+			              y = start.y + (start.height - targetH) / 2;
+			              h = targetH;
+			            } else if ((hasN || hasS) && !(hasE || hasW)) {
+			              const targetH = h;
+			              const targetW = clampSize(targetH * ratio);
+			              x = start.x + (start.width - targetW) / 2;
+			              w = targetW;
+			            } else {
+			              // Corner handle: keep ratio by using dominant scale.
+			              const scaleX = w / (start.width || 1);
+			              const scaleY = h / (start.height || 1);
+			              const scale = Math.abs(scaleX) > Math.abs(scaleY) ? scaleX : scaleY;
+			              const targetW = clampSize((start.width || 1) * scale);
+			              const targetH = clampSize((start.height || 1) * scale);
+
+			              if (hasW) x = start.x + (start.width - targetW);
+			              if (hasN) y = start.y + (start.height - targetH);
+			              w = targetW;
+			              h = targetH;
+			            }
+			          }
+
+			          const nextX = snapValue(x);
+			          const nextY = snapValue(y);
+			          const nextW = clampSize(snapValue(w));
+			          const nextH = clampSize(snapValue(h));
+
+			          selectedElement.setAttribute('x', nextX);
+			          selectedElement.setAttribute('y', nextY);
+			          selectedElement.setAttribute('width', nextW);
+			          selectedElement.setAttribute('height', nextH);
+			        } else if (resizeStartBox.type === 'circle') {
+			          const start = resizeStartBox;
+			          const hasN = resizeHandle.includes('n');
+			          const hasS = resizeHandle.includes('s');
+			          const hasW = resizeHandle.includes('w');
+			          const hasE = resizeHandle.includes('e');
+
+			          // Derive radius from pointer distance to center (in parent coords), aligned to the active handle axes.
+			          const distX = Math.abs(mouseX - start.cx);
+			          const distY = Math.abs(mouseY - start.cy);
+			          let r = (hasE || hasW) && (hasN || hasS) ? Math.max(distX, distY) : ((hasE || hasW) ? distX : distY);
+			          r = clampSize(r);
+			          if (snapToggle.checked) r = clampSize(snapValue(r));
+			          selectedElement.setAttribute('r', r);
+			        } else if (resizeStartBox.type === 'ellipse') {
+			          const start = resizeStartBox;
+			          let rx = start.rx;
+			          let ry = start.ry;
+			          const hasN = resizeHandle.includes('n');
+			          const hasS = resizeHandle.includes('s');
+			          const hasW = resizeHandle.includes('w');
+			          const hasE = resizeHandle.includes('e');
+
+			          if (hasE) rx = start.rx + dx;
+			          if (hasW) rx = start.rx - dx;
+			          if (hasS) ry = start.ry + dy;
+			          if (hasN) ry = start.ry - dy;
+
+			          rx = clampSize(rx);
+			          ry = clampSize(ry);
+
+			          if (shift) {
+			            const ratio = (start.ry && start.rx) ? (start.rx / start.ry) : 1;
+			            const scaleX = rx / (start.rx || 1);
+			            const scaleY = ry / (start.ry || 1);
+			            const scale = Math.abs(scaleX) > Math.abs(scaleY) ? scaleX : scaleY;
+			            rx = clampSize((start.rx || 1) * scale);
+			            ry = clampSize((start.ry || 1) * scale);
+			            if (ratio > 0) {
+			              // Maintain original ellipse ratio (already achieved by uniform scale).
+			            }
+			          }
+
+			          if (snapToggle.checked) {
+			            rx = clampSize(snapValue(rx));
+			            ry = clampSize(snapValue(ry));
+			          }
+			          selectedElement.setAttribute('rx', rx);
+			          selectedElement.setAttribute('ry', ry);
+			        }
+
+			        updateSelectionHandles();
+			        return;
+			      }
+
+				        if (isDragging && selectedElement) {
+				        if (!suppressNextClick) {
+				          const dist = Math.hypot(e.clientX - dragStartClient.x, e.clientY - dragStartClient.y);
+				          if (dist > 2) suppressNextClick = true;
+				        }
+				        const coordEl = dragCoordElement || getDragCoordElement(selectedElement);
+				        const desiredCenterClientX = e.clientX + dragClientToCenter.x;
+				        const desiredCenterClientY = e.clientY + dragClientToCenter.y;
+				        const desiredCenter = clientToSvgCoords(desiredCenterClientX, desiredCenterClientY, coordEl);
+
+				        if (dragMode === 'attrs') {
+				          // Keep the mouse→center vector constant (in client/pixel space) by steering the element's
+				          // center to the desired client-space center, converted into SVG parent coordinates.
+				          const w = selectedElement.tagName === 'rect' ? parseFloat(selectedElement.getAttribute('width') || 0) : 0;
+				          const h = selectedElement.tagName === 'rect' ? parseFloat(selectedElement.getAttribute('height') || 0) : 0;
+				          let centerX = desiredCenter.x;
+				          let centerY = desiredCenter.y;
+
+				          let targetX = centerX;
+				          let targetY = centerY;
+				          if (selectedElement.tagName === 'rect') {
+				            targetX = centerX - (w / 2);
+				            targetY = centerY - (h / 2);
+				          }
+
+				          if (snapToggle.checked) {
+				            targetX = Math.round(targetX / gridSize) * gridSize;
+				            targetY = Math.round(targetY / gridSize) * gridSize;
+				          }
+
+				          if (selectedElement.tagName === 'rect') {
+				            selectedElement.setAttribute('x', targetX);
+				            selectedElement.setAttribute('y', targetY);
+				          } else if (selectedElement.tagName === 'circle') {
+				            const nextCx = snapToggle.checked ? Math.round(centerX / gridSize) * gridSize : centerX;
+				            const nextCy = snapToggle.checked ? Math.round(centerY / gridSize) * gridSize : centerY;
+				            selectedElement.setAttribute('cx', nextCx);
+				            selectedElement.setAttribute('cy', nextCy);
+				          } else if (selectedElement.tagName === 'ellipse') {
+				            const nextCx = snapToggle.checked ? Math.round(centerX / gridSize) * gridSize : centerX;
+				            const nextCy = snapToggle.checked ? Math.round(centerY / gridSize) * gridSize : centerY;
+				            selectedElement.setAttribute('cx', nextCx);
+				            selectedElement.setAttribute('cy', nextCy);
+				          }
+
+				          // Verification: ensure the mouse→center vector stays stable (or is intentionally updated when snapping).
+				          const actualCenterClient = getElementCenterInClientCoords(selectedElement);
+				          const currentVector = { x: actualCenterClient.x - e.clientX, y: actualCenterClient.y - e.clientY };
+				          if (!snapToggle.checked) {
+				            const errX = currentVector.x - dragClientToCenter0.x;
+				            const errY = currentVector.y - dragClientToCenter0.y;
+				            const err = Math.hypot(errX, errY);
+				            if (err > 0.75) {
+				              console.debug('[svg-drag] mouse→center drift', { err, errX, errY, currentVector, expected: dragClientToCenter0 });
+				            }
+				          } else {
+				            // Maintain "grabbed" feel while snapping.
+				            dragClientToCenter = currentVector;
+				          }
+				        } else {
+				          // For elements with transforms (or non-attribute geometry like paths), translate in parent coords.
+				          let dx = desiredCenter.x - dragStartCenter.x;
+				          let dy = desiredCenter.y - dragStartCenter.y;
+				          if (snapToggle.checked) {
+				            dx = Math.round(dx / gridSize) * gridSize;
+				            dy = Math.round(dy / gridSize) * gridSize;
+				          }
+
+				          if (dragBaseMatrix) {
+				            const t = new DOMMatrix().translate(dx, dy);
+				            const nextMatrix = t.multiply(dragBaseMatrix);
+				            setTransformFromMatrix(selectedElement, nextMatrix);
+				          } else {
+				            // Fallback: attempt string-based translate composition.
+				            const nextTransform = `translate(${dx} ${dy})` + (dragBaseTransform ? ' ' + dragBaseTransform : '');
+				            selectedElement.setAttribute('transform', nextTransform);
+				          }
+
+				          const actualCenterClient = getElementCenterInClientCoords(selectedElement);
+				          const currentVector = { x: actualCenterClient.x - e.clientX, y: actualCenterClient.y - e.clientY };
+				          if (!snapToggle.checked) {
+				            const errX = currentVector.x - dragClientToCenter0.x;
+				            const errY = currentVector.y - dragClientToCenter0.y;
+				            const err = Math.hypot(errX, errY);
+				            if (err > 1.0) {
+				              console.debug('[svg-drag] mouse→center drift', { err, errX, errY, currentVector, expected: dragClientToCenter0 });
+				            }
+				          } else {
+				            dragClientToCenter = currentVector;
+				          }
+				        }
+				        updateSelectionHandles();
+				      }
+				    });
 
     // Mouse up to stop dragging/resizing
-    document.addEventListener('mouseup', function() {
-      isDragging = false;
-      isResizing = false;
-    });
+		    document.addEventListener('mouseup', function() {
+		      isDragging = false;
+		      isResizing = false;
+		      dragMode = null;
+		      dragCoordElement = null;
+		      dragBaseTransform = '';
+		      dragBaseMatrix = null;
+		      dragClientToCenter = { x: 0, y: 0 };
+		      dragClientToCenter0 = { x: 0, y: 0 };
+		      dragStartCenter = { x: 0, y: 0 };
+		      resizeHandle = null;
+		      resizeCoordElement = null;
+		      resizeStartBox = null;
+		    });
 
     // Hide context menu on click
     document.addEventListener('click', hideContextMenu);
@@ -841,6 +1216,27 @@
         updatePropertyPanel(null);
       }
     }
+
+	    // Minimal API for extensions (e.g., insert tools).
+	    window.NVSvgEditorApi = {
+	      get svgRoot() { return svgEditor; },
+	      selectElement,
+	      clearSelection,
+	      getSelectedElement: () => selectedElement,
+	      setTool: (tool) => {
+	        window.currentSVGTool = tool;
+	        const selectBtn = document.getElementById('svg-select-tool');
+	        const textBtn = document.getElementById('svg-text-tool');
+	        if (selectBtn && textBtn) {
+	          selectBtn.classList.toggle('active', tool === 'select');
+	          textBtn.classList.toggle('active', tool === 'text');
+	        }
+	      },
+	      setMessage: (text) => {
+	        const el = document.getElementById('svg-message');
+	        if (el) el.textContent = String(text || '');
+	      }
+	    };
 
     function updateSelectedInfo(element) {
       const info = document.getElementById('selected-info');
