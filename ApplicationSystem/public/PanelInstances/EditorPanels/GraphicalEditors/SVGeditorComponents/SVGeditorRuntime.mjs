@@ -189,7 +189,7 @@ export async function renderEditor(filePath, container) {
   const styleState = {
     fill: "#80c0ff",
     stroke: "#000000",
-    strokeWidth: "2"
+    strokeWidth: "0.1"
   };
 
   const toolState = {
@@ -288,7 +288,279 @@ export async function renderEditor(filePath, container) {
   overlayLayer.appendChild(lineStartHandle);
   overlayLayer.appendChild(lineEndHandle);
   Object.values(resizeHandles).forEach((handle) => overlayLayer.appendChild(handle));
+
+  const lineToolPreviewLine = createSvgEl("line", {
+    [SVG_UI_ATTR]: "line-tool-preview-line",
+    fill: "none",
+    stroke: "#2f80ff",
+    "stroke-width": "1.5",
+    display: "none",
+  });
+  lineToolPreviewLine.style.pointerEvents = "none";
+
+  const lineToolPreviewEnd = createSvgEl("circle", {
+    [SVG_UI_ATTR]: "line-tool-preview-end",
+    r: "3",
+    fill: "#ffffff",
+    stroke: "#2f80ff",
+    "stroke-width": "1.5",
+    display: "none",
+  });
+  lineToolPreviewEnd.style.pointerEvents = "none";
+
+  const lineToolAngleArc = createSvgEl("path", {
+    [SVG_UI_ATTR]: "line-tool-angle-arc",
+    fill: "none",
+    stroke: "#2f80ff",
+    "stroke-width": "0.05",
+    "stroke-dasharray": "1 4",
+    "stroke-linecap": "round",
+    display: "none",
+  });
+  lineToolAngleArc.style.pointerEvents = "none";
+
+  const lineToolLengthLabel = createSvgEl("text", {
+    [SVG_UI_ATTR]: "line-tool-length-label",
+    fill: "#ffffff",
+    "font-family": "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+    "font-size": "12",
+    "text-anchor": "start",
+    display: "none",
+  });
+  lineToolLengthLabel.style.pointerEvents = "none";
+  lineToolLengthLabel.style.mixBlendMode = "difference";
+
+  const lineToolAngleLabel = createSvgEl("text", {
+    [SVG_UI_ATTR]: "line-tool-angle-label",
+    fill: "#ffffff",
+    "font-family": "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+    "font-size": "12",
+    "text-anchor": "start",
+    display: "none",
+  });
+  lineToolAngleLabel.style.pointerEvents = "none";
+  lineToolAngleLabel.style.mixBlendMode = "difference";
+
+  overlayLayer.appendChild(lineToolAngleArc);
+  overlayLayer.appendChild(lineToolPreviewLine);
+  overlayLayer.appendChild(lineToolPreviewEnd);
+  overlayLayer.appendChild(lineToolLengthLabel);
+  overlayLayer.appendChild(lineToolAngleLabel);
   svgRoot.appendChild(overlayLayer);
+
+  const lineToolState = {
+    active: false,
+    layer: null,
+    startRoot: null,
+    startSpace: null,
+    pointsSpace: [],
+    placedLines: [],
+  };
+
+  function hideLineToolOverlays() {
+    lineToolPreviewLine.setAttribute("display", "none");
+    lineToolPreviewEnd.setAttribute("display", "none");
+    lineToolAngleArc.setAttribute("display", "none");
+    lineToolLengthLabel.setAttribute("display", "none");
+    lineToolAngleLabel.setAttribute("display", "none");
+  }
+
+  function setLineToolOverlayStyle(style) {
+    const stroke = style?.stroke || "#2f80ff";
+    const strokeWidth = style?.strokeWidth || "1.5";
+    lineToolPreviewLine.setAttribute("stroke", stroke);
+    lineToolPreviewLine.setAttribute("stroke-width", strokeWidth);
+    lineToolPreviewEnd.setAttribute("stroke", stroke);
+    lineToolPreviewEnd.setAttribute("stroke-width", strokeWidth);
+    lineToolAngleArc.setAttribute("stroke", stroke);
+  }
+
+  function clearLineToolState() {
+    lineToolState.active = false;
+    lineToolState.layer = null;
+    lineToolState.startRoot = null;
+    lineToolState.startSpace = null;
+    lineToolState.pointsSpace = [];
+    lineToolState.placedLines = [];
+    hideLineToolOverlays();
+  }
+
+  function commitLineToolGeometry() {
+    const layer = lineToolState.layer;
+    const points = lineToolState.pointsSpace || [];
+    if (!layer || !Array.isArray(points) || points.length < 2) return null;
+
+    if (points.length === 2) {
+      const lastLine = lineToolState.placedLines[lineToolState.placedLines.length - 1] || null;
+      if (lastLine) setSelection([lastLine], { primary: lastLine });
+      return lastLine;
+    }
+
+    const style = currentStyleDefaults();
+    const poly = createSvgEl("polygon", {
+      points: formatPoints(points),
+      fill: style.fill,
+      stroke: style.stroke,
+      "stroke-width": style.strokeWidth,
+    });
+    try {
+      lineToolState.placedLines.forEach((el) => {
+        try {
+          el.remove();
+        } catch {
+          // ignore
+        }
+      });
+      layer.appendChild(poly);
+    } catch {
+      // ignore
+    }
+    setSelection([poly], { primary: poly });
+    return poly;
+  }
+
+  function finishLineTool() {
+    if (!lineToolState.active) return false;
+    commitLineToolGeometry();
+    lineToolState.active = false;
+    lineToolState.startRoot = null;
+    lineToolState.startSpace = null;
+    lineToolState.placedLines = [];
+    lineToolState.pointsSpace = [];
+    hideLineToolOverlays();
+    setStatus("Line tool finished");
+    return true;
+  }
+
+  function cancelLineToolAndDeletePlaced() {
+    if (!lineToolState.active && lineToolState.placedLines.length === 0) return false;
+    lineToolState.placedLines.forEach((el) => {
+      try {
+        el.remove();
+      } catch {
+        // ignore
+      }
+    });
+    clearLineToolState();
+    setStatus("Line tool canceled (cleared placed lines)");
+    return true;
+  }
+
+  function updateLineToolAngleArc(start, current) {
+    if (!start || !current) {
+      lineToolAngleArc.setAttribute("display", "none");
+      return;
+    }
+    const mid = { x: (start.x + current.x) / 2, y: (start.y + current.y) / 2 };
+    const dx = mid.x - start.x;
+    const dy = mid.y - start.y;
+    const len = Math.hypot(dx, dy);
+    if (!Number.isFinite(len) || len <= 1e-6) {
+      lineToolAngleArc.setAttribute("display", "none");
+      return;
+    }
+    const minR = pointerToleranceInSvgUnits(14);
+    const maxR = pointerToleranceInSvgUnits(72);
+    const r = Math.max(minR, Math.min(maxR, len * 0.7));
+    const theta = Math.atan2(dy, dx); // SVG coords: +y down -> positive theta is clockwise
+    const startPt = { x: start.x + r, y: start.y };
+    const endPt = { x: start.x + r * Math.cos(theta), y: start.y + r * Math.sin(theta) };
+    const sweep = theta >= 0 ? 1 : 0;
+    const dot = Math.max(0.001, pointerToleranceInSvgUnits(0.6));
+    const gap = Math.max(dot * 2, pointerToleranceInSvgUnits(5));
+    lineToolAngleArc.setAttribute("stroke-dasharray", `${dot} ${gap}`);
+    lineToolAngleArc.setAttribute(
+      "d",
+      `M ${startPt.x} ${startPt.y} A ${r} ${r} 0 0 ${sweep} ${endPt.x} ${endPt.y}`
+    );
+    lineToolAngleArc.setAttribute("display", "");
+  }
+
+  function updateLineToolLengthLabel(start, current) {
+    if (!start || !current) {
+      lineToolLengthLabel.setAttribute("display", "none");
+      return;
+    }
+    const dx = current.x - start.x;
+    const dy = current.y - start.y;
+    const len = Math.hypot(dx, dy);
+    if (!Number.isFinite(len) || len <= 1e-6) {
+      lineToolLengthLabel.setAttribute("display", "none");
+      return;
+    }
+    const vb = getViewBox();
+    const pct = vb?.width ? (len / vb.width) * 100 : 0;
+
+    const mid = { x: (start.x + current.x) / 2, y: (start.y + current.y) / 2 };
+    const nLen = Math.hypot(dx, dy);
+    const nx = nLen > 1e-9 ? (-dy / nLen) : 0;
+    const ny = nLen > 1e-9 ? (dx / nLen) : 1;
+    const offset = pointerToleranceInSvgUnits(12);
+    const px = mid.x + nx * offset;
+    const py = mid.y + ny * offset;
+
+    const fontSize = Math.max(2, pointerToleranceInSvgUnits(12) * 0.25);
+    lineToolLengthLabel.setAttribute("font-size", String(fontSize));
+    lineToolLengthLabel.setAttribute("x", String(px));
+    lineToolLengthLabel.setAttribute("y", String(py));
+    lineToolLengthLabel.textContent = `${pct.toFixed(2)}%`;
+    lineToolLengthLabel.setAttribute("display", "");
+  }
+
+  function updateLineToolAngleLabel(start, current) {
+    if (!start || !current) {
+      lineToolAngleLabel.setAttribute("display", "none");
+      return;
+    }
+
+    const mid = { x: (start.x + current.x) / 2, y: (start.y + current.y) / 2 };
+    const dx = mid.x - start.x;
+    const dy = mid.y - start.y;
+    const len = Math.hypot(dx, dy);
+    if (!Number.isFinite(len) || len <= 1e-6) {
+      lineToolAngleLabel.setAttribute("display", "none");
+      return;
+    }
+
+    const theta = Math.atan2(dy, dx);
+    const minR = pointerToleranceInSvgUnits(14);
+    const maxR = pointerToleranceInSvgUnits(72);
+    const r = Math.max(minR, Math.min(maxR, len * 0.7));
+    const half = theta / 2;
+    const outward = pointerToleranceInSvgUnits(10);
+    const px = start.x + (r + outward) * Math.cos(half);
+    const py = start.y + (r + outward) * Math.sin(half);
+
+    const fontSize = Math.max(2, pointerToleranceInSvgUnits(12) * 0.25);
+    lineToolAngleLabel.setAttribute("font-size", String(fontSize));
+    lineToolAngleLabel.setAttribute("x", String(px));
+    lineToolAngleLabel.setAttribute("y", String(py));
+    lineToolAngleLabel.textContent = `${theta.toFixed(4)} rad`;
+    lineToolAngleLabel.setAttribute("display", "");
+  }
+
+  function updateLineToolPreview(rootPoint) {
+    if (!lineToolState.active || !lineToolState.startRoot || !rootPoint) return false;
+    const style = currentStyleDefaults();
+    setLineToolOverlayStyle(style);
+
+    lineToolPreviewLine.setAttribute("x1", String(lineToolState.startRoot.x));
+    lineToolPreviewLine.setAttribute("y1", String(lineToolState.startRoot.y));
+    lineToolPreviewLine.setAttribute("x2", String(rootPoint.x));
+    lineToolPreviewLine.setAttribute("y2", String(rootPoint.y));
+    lineToolPreviewLine.setAttribute("display", "");
+
+    const r = Math.max(2, pointerToleranceInSvgUnits(4));
+    lineToolPreviewEnd.setAttribute("r", String(r));
+    lineToolPreviewEnd.setAttribute("cx", String(rootPoint.x));
+    lineToolPreviewEnd.setAttribute("cy", String(rootPoint.y));
+    lineToolPreviewEnd.setAttribute("display", "");
+
+    updateLineToolAngleArc(lineToolState.startRoot, rootPoint);
+    updateLineToolLengthLabel(lineToolState.startRoot, rootPoint);
+    updateLineToolAngleLabel(lineToolState.startRoot, rootPoint);
+    return true;
+  }
 
   function getSvgNaturalDimensions() {
     const viewBox = svgRoot.viewBox?.baseVal;
@@ -600,6 +872,117 @@ export async function renderEditor(filePath, container) {
       x: (matrix.a * x) + (matrix.c * y) + matrix.e,
       y: (matrix.b * x) + (matrix.d * y) + matrix.f
     };
+  }
+
+  function elementPointToRootPoint(el, x, y) {
+    const elToScreen = el && typeof el.getScreenCTM === "function" ? el.getScreenCTM() : null;
+    const rootToScreen = typeof svgRoot.getScreenCTM === "function" ? svgRoot.getScreenCTM() : null;
+    if (!elToScreen || !rootToScreen || typeof rootToScreen.inverse !== "function") return { x, y };
+    try {
+      const screenToRoot = rootToScreen.inverse();
+      const screen = applySvgMatrix(elToScreen, x, y);
+      const root = applySvgMatrix(screenToRoot, screen.x, screen.y);
+      if (Number.isFinite(root.x) && Number.isFinite(root.y)) return root;
+    } catch {
+      // ignore
+    }
+    return { x, y };
+  }
+
+  function rootPointToElementPoint(el, rootPoint) {
+    const rootToScreen = typeof svgRoot.getScreenCTM === "function" ? svgRoot.getScreenCTM() : null;
+    const elToScreen = el && typeof el.getScreenCTM === "function" ? el.getScreenCTM() : null;
+    if (!rootToScreen || !elToScreen || typeof elToScreen.inverse !== "function") return rootPoint;
+    try {
+      const screenToEl = elToScreen.inverse();
+      const screen = applySvgMatrix(rootToScreen, rootPoint.x, rootPoint.y);
+      const pt = applySvgMatrix(screenToEl, screen.x, screen.y);
+      if (Number.isFinite(pt.x) && Number.isFinite(pt.y)) return pt;
+    } catch {
+      // ignore
+    }
+    return rootPoint;
+  }
+
+  function findNearestSnapPointInRoot(targetRootPoint, tolerance, options = {}) {
+    const tol = Number.isFinite(tolerance) ? Math.max(0, tolerance) : 0;
+    if (!tol) return null;
+    const ignorePoints = Array.isArray(options.ignorePoints) ? options.ignorePoints : [];
+
+    const tol2 = tol * tol;
+    let best = null;
+    let bestD2 = tol2 + 1e-12;
+    const els = getSelectableElements();
+    for (const el of els) {
+      if (!el) continue;
+      if (options.ignoreElement && el === options.ignoreElement) continue;
+      const tag = el.tagName.toLowerCase();
+
+      const considerPoint = (rootPt) => {
+        if (!rootPt) return;
+        for (const ip of ignorePoints) {
+          if (!ip) continue;
+          const ddx = rootPt.x - ip.x;
+          const ddy = rootPt.y - ip.y;
+          if ((ddx * ddx + ddy * ddy) <= 1e-12) return;
+        }
+        const dx = rootPt.x - targetRootPoint.x;
+        const dy = rootPt.y - targetRootPoint.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 <= tol2 && d2 < bestD2) {
+          bestD2 = d2;
+          best = rootPt;
+        }
+      };
+
+      if (tag === "line") {
+        const x1 = getAttrNumber(el, "x1", 0);
+        const y1 = getAttrNumber(el, "y1", 0);
+        const x2 = getAttrNumber(el, "x2", 0);
+        const y2 = getAttrNumber(el, "y2", 0);
+        considerPoint(elementPointToRootPoint(el, x1, y1));
+        considerPoint(elementPointToRootPoint(el, x2, y2));
+        continue;
+      }
+
+      if (tag === "polygon" || tag === "polyline") {
+        const pts = parsePoints(el.getAttribute("points") || "");
+        if (pts.length > 2000) continue;
+        for (const [x, y] of pts) considerPoint(elementPointToRootPoint(el, x, y));
+        continue;
+      }
+
+      if (tag === "rect" || tag === "image" || tag === "use" || tag === "foreignobject") {
+        const x = getAttrNumber(el, "x", 0);
+        const y = getAttrNumber(el, "y", 0);
+        const w = getAttrNumber(el, "width", 0);
+        const h = getAttrNumber(el, "height", 0);
+        considerPoint(elementPointToRootPoint(el, x, y));
+        considerPoint(elementPointToRootPoint(el, x + w, y));
+        considerPoint(elementPointToRootPoint(el, x, y + h));
+        considerPoint(elementPointToRootPoint(el, x + w, y + h));
+        continue;
+      }
+
+      if (tag === "circle" || tag === "ellipse") {
+        const cx = getAttrNumber(el, "cx", 0);
+        const cy = getAttrNumber(el, "cy", 0);
+        considerPoint(elementPointToRootPoint(el, cx, cy));
+      }
+    }
+    return best;
+  }
+
+  function snapAngleEndpointInRoot(anchorRoot, rawRoot, incrementRad = Math.PI / 12) {
+    if (!anchorRoot || !rawRoot) return rawRoot;
+    const dx = rawRoot.x - anchorRoot.x;
+    const dy = rawRoot.y - anchorRoot.y;
+    const r = Math.hypot(dx, dy);
+    if (!Number.isFinite(r) || r <= 1e-9) return rawRoot;
+    const inc = Number.isFinite(incrementRad) && incrementRad > 1e-9 ? incrementRad : Math.PI / 12;
+    const theta = Math.atan2(dy, dx);
+    const snappedTheta = Math.round(theta / inc) * inc;
+    return { x: anchorRoot.x + r * Math.cos(snappedTheta), y: anchorRoot.y + r * Math.sin(snappedTheta) };
   }
 
   function getElementBBoxInRoot(el) {
@@ -1075,7 +1458,7 @@ export async function renderEditor(filePath, container) {
     return {
       fill: styleState.fill || "#80c0ff",
       stroke: styleState.stroke || "#000000",
-      strokeWidth: styleState.strokeWidth || "2"
+      strokeWidth: styleState.strokeWidth || "0.1"
     };
   }
 
@@ -1087,7 +1470,7 @@ export async function renderEditor(filePath, container) {
     selectedElements.forEach((el) => {
       el.setAttribute("fill", styleState.fill);
       el.setAttribute("stroke", styleState.stroke);
-      el.setAttribute("stroke-width", styleState.strokeWidth || "2");
+      el.setAttribute("stroke-width", styleState.strokeWidth || "0.1");
     });
     setStatus("Applied style");
     return true;
@@ -1298,6 +1681,9 @@ export async function renderEditor(filePath, container) {
   }
 
   function setMode(mode) {
+    if (toolState.mode === "line" && mode !== "line") {
+      finishLineTool();
+    }
     toolState.mode = mode;
     toolState.drawing = false;
     toolState.tempShape = null;
@@ -1306,6 +1692,15 @@ export async function renderEditor(filePath, container) {
     toolState.bezierPoints = [];
     const cursor = mode === "select" ? "default" : "crosshair";
     svgRoot.style.cursor = cursor;
+    try {
+      wrapper.focus({ preventScroll: true });
+    } catch {
+      try {
+        wrapper.focus();
+      } catch {
+        // ignore
+      }
+    }
     setStatus(`Tool: ${mode}`);
   }
 
@@ -1609,8 +2004,25 @@ export async function renderEditor(filePath, container) {
   });
 
   wrapper.addEventListener("keydown", (e) => {
-    if (toolState.mode !== "select") return;
     const key = String(e.key || "");
+    if (toolState.mode === "line") {
+      if (key === "Escape") {
+        if (lineToolState.active) {
+          cancelLineToolAndDeletePlaced();
+        } else {
+          clearLineToolState();
+        }
+        setMode("select");
+        e.preventDefault();
+        return;
+      }
+      if (key === "Enter" && lineToolState.active) {
+        finishLineTool();
+        e.preventDefault();
+        return;
+      }
+    }
+    if (toolState.mode !== "select") return;
     if (key === "Delete" || key === "Backspace") {
       if (deleteSelection()) e.preventDefault();
       return;
@@ -1682,25 +2094,68 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
-    if (toolState.mode === "line") {
-      const style = currentStyleDefaults();
-      toolState.drawing = true;
-      toolState.startPoint = p;
-      toolState.tempShape = createSvgEl("line", {
-        x1: p.x, y1: p.y, x2: p.x, y2: p.y,
-        stroke: style.stroke,
-        "stroke-width": style.strokeWidth
-      });
-      appendElement(toolState.tempShape);
-      try {
-        svgRoot.setPointerCapture(e.pointerId);
-      } catch {
-        // Ignore unsupported pointer capture errors.
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
+	    if (toolState.mode === "line") {
+	      if (lineToolState.active && e.detail >= 2) {
+	        finishLineTool();
+	        e.preventDefault();
+	        e.stopPropagation();
+	        return;
+	      }
+
+	      const layer = lineToolState.layer || getActiveLayer() || svgRoot;
+	      let rootPoint = p;
+	      if (lineToolState.active && e.shiftKey && lineToolState.startRoot) {
+	        const tol = pointerToleranceInSvgUnits(10);
+	        const snapped = findNearestSnapPointInRoot(p, tol);
+	        rootPoint = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
+	      }
+	      const spacePoint = rootPointToElementPoint(layer, rootPoint);
+
+	      if (!lineToolState.active) {
+	        clearSelection();
+	        lineToolState.active = true;
+	        lineToolState.layer = layer;
+	        lineToolState.startRoot = rootPoint;
+	        lineToolState.startSpace = spacePoint;
+	        lineToolState.pointsSpace = [[spacePoint.x, spacePoint.y]];
+	        lineToolState.placedLines = [];
+	        updateLineToolPreview(rootPoint);
+	        setStatus("Line tool: click next point, Enter to finish, Esc to cancel");
+	        e.preventDefault();
+	        e.stopPropagation();
+	        return;
+	      }
+
+      if (lineToolState.startSpace) {
+        const dx = spacePoint.x - lineToolState.startSpace.x;
+        const dy = spacePoint.y - lineToolState.startSpace.y;
+        const segLen = Math.hypot(dx, dy);
+        if (Number.isFinite(segLen) && segLen > 1e-6) {
+          const style = currentStyleDefaults();
+          const seg = createSvgEl("line", {
+            x1: lineToolState.startSpace.x,
+            y1: lineToolState.startSpace.y,
+            x2: spacePoint.x,
+            y2: spacePoint.y,
+            stroke: style.stroke,
+            "stroke-width": style.strokeWidth,
+          });
+          try {
+            (lineToolState.layer || layer).appendChild(seg);
+            lineToolState.placedLines.push(seg);
+          } catch {
+            // ignore
+          }
+	          lineToolState.startRoot = rootPoint;
+	          lineToolState.startSpace = spacePoint;
+	          lineToolState.pointsSpace.push([spacePoint.x, spacePoint.y]);
+	          updateLineToolPreview(rootPoint);
+	        }
+	      }
+	      e.preventDefault();
+	      e.stopPropagation();
+	      return;
+	    }
 
     if (toolState.mode === "freehand") {
       const style = currentStyleDefaults();
@@ -1760,22 +2215,19 @@ export async function renderEditor(filePath, container) {
         ? { x: base.x2, y: base.y2 }
         : { x: base.x1, y: base.y1 };
 
-      let next = clientToElementPoint(line, e.clientX, e.clientY);
+      const fixedRoot = elementPointToRootPoint(line, fixed.x, fixed.y);
+      const movingBase = which === "start"
+        ? { x: base.x1, y: base.y1 }
+        : { x: base.x2, y: base.y2 };
+      const movingBaseRoot = elementPointToRootPoint(line, movingBase.x, movingBase.y);
+
+      let nextRoot = p;
       if (e.shiftKey) {
-        const movingBase = which === "start"
-          ? { x: base.x1, y: base.y1 }
-          : { x: base.x2, y: base.y2 };
-        const dir = { x: movingBase.x - fixed.x, y: movingBase.y - fixed.y };
-        const len = Math.hypot(dir.x, dir.y);
-        if (len > 1e-6) {
-          const ux = dir.x / len;
-          const uy = dir.y / len;
-          const vpx = next.x - fixed.x;
-          const vpy = next.y - fixed.y;
-          const t = vpx * ux + vpy * uy;
-          next = { x: fixed.x + ux * t, y: fixed.y + uy * t };
-        }
+        const tol = pointerToleranceInSvgUnits(10);
+        const snapped = findNearestSnapPointInRoot(p, tol, { ignorePoints: [movingBaseRoot] });
+        nextRoot = snapped || snapAngleEndpointInRoot(fixedRoot, p, Math.PI / 12);
       }
+      const next = rootPointToElementPoint(line, nextRoot);
 
       if (which === "start") {
         line.setAttribute("x1", String(next.x));
@@ -1855,12 +2307,12 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
-    if (toolState.mode === "select") {
-      if (dragState && dragState.pointerId === e.pointerId) {
-        updateDragFromClient(dragState, e.clientX, e.clientY);
-        e.preventDefault();
-        return;
-      }
+	    if (toolState.mode === "select") {
+	      if (dragState && dragState.pointerId === e.pointerId) {
+	        updateDragFromClient(dragState, e.clientX, e.clientY);
+	        e.preventDefault();
+	        return;
+	      }
 
       if (marqueeState && marqueeState.pointerId === e.pointerId) {
         marqueeState.current = p;
@@ -1881,20 +2333,29 @@ export async function renderEditor(filePath, container) {
         e.preventDefault();
         return;
       }
-    }
+	    }
 
-    if (!toolState.drawing || !toolState.tempShape) return;
-    if (toolState.mode === "line") {
-      toolState.tempShape.setAttribute("x2", String(p.x));
-      toolState.tempShape.setAttribute("y2", String(p.y));
-    } else if (toolState.mode === "freehand") {
-      const d = toolState.tempShape.getAttribute("d") || "";
-      toolState.tempShape.setAttribute("d", `${d} L ${p.x} ${p.y}`);
-    } else if (toolState.mode === "bezier" && toolState.startPoint) {
-      toolState.tempShape.setAttribute("d", buildDragBezierPathD(toolState.startPoint, p));
-    }
-    e.preventDefault();
-  });
+	    if (toolState.mode === "line" && lineToolState.active) {
+	      let next = p;
+	      if (e.shiftKey && lineToolState.startRoot) {
+	        const tol = pointerToleranceInSvgUnits(10);
+	        const snapped = findNearestSnapPointInRoot(p, tol);
+	        next = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
+	      }
+	      updateLineToolPreview(next);
+	      e.preventDefault();
+	      return;
+	    }
+
+	    if (!toolState.drawing || !toolState.tempShape) return;
+	    if (toolState.mode === "freehand") {
+	      const d = toolState.tempShape.getAttribute("d") || "";
+	      toolState.tempShape.setAttribute("d", `${d} L ${p.x} ${p.y}`);
+	    } else if (toolState.mode === "bezier" && toolState.startPoint) {
+	      toolState.tempShape.setAttribute("d", buildDragBezierPathD(toolState.startPoint, p));
+	    }
+	    e.preventDefault();
+	  });
 
   svgRoot.addEventListener("pointerup", (e) => {
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
