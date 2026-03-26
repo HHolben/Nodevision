@@ -657,6 +657,63 @@ export async function renderEditor(filePath, container) {
     return { x: minX, y: minY, width: Math.max(0, maxX - minX), height: Math.max(0, maxY - minY) };
   }
 
+  function getElementBBoxInSpace(el, spaceEl) {
+    if (!el || typeof el.getBBox !== "function") return null;
+    if (!spaceEl || typeof spaceEl.getScreenCTM !== "function") return getElementBBoxInRoot(el);
+
+    let bbox = null;
+    try {
+      bbox = el.getBBox();
+    } catch {
+      return null;
+    }
+    if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return null;
+
+    const elToScreen = typeof el.getScreenCTM === "function" ? el.getScreenCTM() : null;
+    const spaceToScreen = typeof spaceEl.getScreenCTM === "function" ? spaceEl.getScreenCTM() : null;
+    if (!elToScreen || !spaceToScreen || typeof spaceToScreen.inverse !== "function") {
+      return { x: bbox.x, y: bbox.y, width: bbox.width || 0, height: bbox.height || 0 };
+    }
+
+    let screenToSpace = null;
+    try {
+      screenToSpace = spaceToScreen.inverse();
+    } catch {
+      return { x: bbox.x, y: bbox.y, width: bbox.width || 0, height: bbox.height || 0 };
+    }
+
+    const x1 = bbox.x;
+    const y1 = bbox.y;
+    const x2 = bbox.x + bbox.width;
+    const y2 = bbox.y + bbox.height;
+    const corners = [
+      [x1, y1],
+      [x2, y1],
+      [x1, y2],
+      [x2, y2],
+    ];
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const [x, y] of corners) {
+      const screen = applySvgMatrix(elToScreen, x, y);
+      const space = applySvgMatrix(screenToSpace, screen.x, screen.y);
+      if (!Number.isFinite(space.x) || !Number.isFinite(space.y)) continue;
+      minX = Math.min(minX, space.x);
+      minY = Math.min(minY, space.y);
+      maxX = Math.max(maxX, space.x);
+      maxY = Math.max(maxY, space.y);
+    }
+
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+      return { x: bbox.x, y: bbox.y, width: bbox.width || 0, height: bbox.height || 0 };
+    }
+
+    return { x: minX, y: minY, width: Math.max(0, maxX - minX), height: Math.max(0, maxY - minY) };
+  }
+
   function getSelectedUnionBBox() {
     if (!selectedElements.length) return null;
     let minX = Infinity;
@@ -695,11 +752,28 @@ export async function renderEditor(filePath, container) {
     const y1 = getAttrNumber(line, "y1", 0);
     const x2 = getAttrNumber(line, "x2", 0);
     const y2 = getAttrNumber(line, "y2", 0);
-    lineStartHandle.setAttribute("cx", String(x1));
-    lineStartHandle.setAttribute("cy", String(y1));
+
+    const lineToScreen = typeof line.getScreenCTM === "function" ? line.getScreenCTM() : null;
+    const rootToScreen = typeof svgRoot.getScreenCTM === "function" ? svgRoot.getScreenCTM() : null;
+    let p1 = { x: x1, y: y1 };
+    let p2 = { x: x2, y: y2 };
+    if (lineToScreen && rootToScreen && typeof rootToScreen.inverse === "function") {
+      try {
+        const screenToRoot = rootToScreen.inverse();
+        const s1 = applySvgMatrix(lineToScreen, x1, y1);
+        const s2 = applySvgMatrix(lineToScreen, x2, y2);
+        p1 = applySvgMatrix(screenToRoot, s1.x, s1.y);
+        p2 = applySvgMatrix(screenToRoot, s2.x, s2.y);
+      } catch {
+        // ignore
+      }
+    }
+
+    lineStartHandle.setAttribute("cx", String(p1.x));
+    lineStartHandle.setAttribute("cy", String(p1.y));
     lineStartHandle.setAttribute("display", "");
-    lineEndHandle.setAttribute("cx", String(x2));
-    lineEndHandle.setAttribute("cy", String(y2));
+    lineEndHandle.setAttribute("cx", String(p2.x));
+    lineEndHandle.setAttribute("cy", String(p2.y));
     lineEndHandle.setAttribute("display", "");
   }
 
@@ -867,8 +941,8 @@ export async function renderEditor(filePath, container) {
     }
     const prev = (el.getAttribute("transform") || "").trim();
     const translate = `translate(${dx} ${dy})`;
-    // Append translate so movement happens in parent/SVG coordinates.
-    el.setAttribute("transform", prev ? `${prev} ${translate}` : translate);
+    // Prepend translate so movement happens in parent/SVG coordinates (not scaled by existing transforms).
+    el.setAttribute("transform", prev ? `${translate} ${prev}` : translate);
   }
 
   function moveSelectionBy(dx, dy) {
@@ -1207,7 +1281,11 @@ export async function renderEditor(filePath, container) {
     } else if (kind === "ellipse") {
       el = createSvgEl("ellipse", { cx: 90, cy: 70, rx: 70, ry: 35, fill: style.fill, stroke: style.stroke, "stroke-width": style.strokeWidth });
     } else if (kind === "polygon") {
-      el = createSvgEl("polygon", { points: "60,20 110,90 20,90", fill: style.fill, stroke: style.stroke, "stroke-width": style.strokeWidth });
+      el = createSvgEl("polygon", { points: "90,20 145,60 125,120 55,120 35,60", fill: style.fill, stroke: style.stroke, "stroke-width": style.strokeWidth });
+    } else if (kind === "triangle") {
+      el = createSvgEl("polygon", { points: "90,20 155,125 25,125", fill: style.fill, stroke: style.stroke, "stroke-width": style.strokeWidth });
+    } else if (kind === "star") {
+      el = createSvgEl("polygon", { points: "100,20 118,72 173,72 128,104 145,158 100,126 55,158 72,104 27,72 82,72", fill: style.fill, stroke: style.stroke, "stroke-width": style.strokeWidth });
     } else if (kind === "line") {
       el = createSvgEl("line", { x1: 20, y1: 20, x2: 140, y2: 80, stroke: style.stroke, "stroke-width": style.strokeWidth });
     } else if (kind === "path-bezier") {
@@ -1338,8 +1416,8 @@ export async function renderEditor(filePath, container) {
 
     const translate = `translate(${dx} ${dy})`;
     const baseTransform = String(base.baseTransform || "").trim();
-    // SVG transform lists apply left-to-right; append translate to move in parent coordinates.
-    el.setAttribute("transform", baseTransform ? `${baseTransform} ${translate}` : translate);
+    // Prepend translate so movement is in parent coordinates (not scaled/rotated by baseTransform).
+    el.setAttribute("transform", baseTransform ? `${translate} ${baseTransform}` : translate);
   }
 
   function buildDragState(pointerId, clientX, clientY) {
@@ -1431,7 +1509,13 @@ export async function renderEditor(filePath, container) {
     lineHandleDragState = {
       pointerId,
       line,
-      which
+      which,
+      base: {
+        x1: getAttrNumber(line, "x1", 0),
+        y1: getAttrNumber(line, "y1", 0),
+        x2: getAttrNumber(line, "x2", 0),
+        y2: getAttrNumber(line, "y2", 0),
+      }
     };
     try {
       svgRoot.setPointerCapture(pointerId);
@@ -1445,13 +1529,15 @@ export async function renderEditor(filePath, container) {
     const el = selectedElements[0];
     if (!el || el.tagName.toLowerCase() === "line") return;
     try {
-      const bbox = getElementBBoxInRoot(el);
+      const space = getDragSpaceForElement(el);
+      const bbox = getElementBBoxInSpace(el, space);
       if (!bbox || bbox.width <= 0 || bbox.height <= 0) return;
       resizeState = {
         pointerId,
         element: el,
         corner,
         bbox,
+        space,
         baseTransform: el.getAttribute("transform") || ""
       };
       try {
@@ -1663,12 +1749,40 @@ export async function renderEditor(filePath, container) {
 
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
       const line = lineHandleDragState.line;
-      if (lineHandleDragState.which === "start") {
-        line.setAttribute("x1", String(p.x));
-        line.setAttribute("y1", String(p.y));
+      const which = lineHandleDragState.which;
+      const base = lineHandleDragState.base || {
+        x1: getAttrNumber(line, "x1", 0),
+        y1: getAttrNumber(line, "y1", 0),
+        x2: getAttrNumber(line, "x2", 0),
+        y2: getAttrNumber(line, "y2", 0),
+      };
+      const fixed = which === "start"
+        ? { x: base.x2, y: base.y2 }
+        : { x: base.x1, y: base.y1 };
+
+      let next = clientToElementPoint(line, e.clientX, e.clientY);
+      if (e.shiftKey) {
+        const movingBase = which === "start"
+          ? { x: base.x1, y: base.y1 }
+          : { x: base.x2, y: base.y2 };
+        const dir = { x: movingBase.x - fixed.x, y: movingBase.y - fixed.y };
+        const len = Math.hypot(dir.x, dir.y);
+        if (len > 1e-6) {
+          const ux = dir.x / len;
+          const uy = dir.y / len;
+          const vpx = next.x - fixed.x;
+          const vpy = next.y - fixed.y;
+          const t = vpx * ux + vpy * uy;
+          next = { x: fixed.x + ux * t, y: fixed.y + uy * t };
+        }
+      }
+
+      if (which === "start") {
+        line.setAttribute("x1", String(next.x));
+        line.setAttribute("y1", String(next.y));
       } else {
-        line.setAttribute("x2", String(p.x));
-        line.setAttribute("y2", String(p.y));
+        line.setAttribute("x2", String(next.x));
+        line.setAttribute("y2", String(next.y));
       }
       refreshSelectionVisuals();
       e.preventDefault();
@@ -1676,20 +1790,39 @@ export async function renderEditor(filePath, container) {
     }
 
     if (resizeState && resizeState.pointerId === e.pointerId) {
-      const { bbox, corner, element, baseTransform } = resizeState;
+      const { bbox, corner, element, baseTransform, space } = resizeState;
+      const sp = clientToElementPoint(space || svgRoot, e.clientX, e.clientY);
       const minSize = 0.05;
       const anchor = {
         x: corner.includes("w") ? bbox.x + bbox.width : bbox.x,
         y: corner.includes("n") ? bbox.y + bbox.height : bbox.y
       };
+      const denomX = Math.max(1e-6, bbox.width);
+      const denomY = Math.max(1e-6, bbox.height);
       const rawScaleX = corner.includes("w")
-        ? (anchor.x - p.x) / Math.max(1, bbox.width)
-        : (p.x - anchor.x) / Math.max(1, bbox.width);
+        ? (anchor.x - sp.x) / denomX
+        : (sp.x - anchor.x) / denomX;
       const rawScaleY = corner.includes("n")
-        ? (anchor.y - p.y) / Math.max(1, bbox.height)
-        : (p.y - anchor.y) / Math.max(1, bbox.height);
-      const sx = Math.max(minSize, rawScaleX);
-      const sy = Math.max(minSize, rawScaleY);
+        ? (anchor.y - sp.y) / denomY
+        : (sp.y - anchor.y) / denomY;
+      let sx = rawScaleX;
+      let sy = rawScaleY;
+      if (e.shiftKey) {
+        const cornerPoint = {
+          x: corner.includes("w") ? bbox.x : bbox.x + bbox.width,
+          y: corner.includes("n") ? bbox.y : bbox.y + bbox.height,
+        };
+        const c = { x: cornerPoint.x - anchor.x, y: cornerPoint.y - anchor.y };
+        const c2 = c.x * c.x + c.y * c.y;
+        if (c2 > 1e-12) {
+          const v = { x: sp.x - anchor.x, y: sp.y - anchor.y };
+          const s = (v.x * c.x + v.y * c.y) / c2;
+          sx = s;
+          sy = s;
+        }
+      }
+      sx = Math.max(minSize, sx);
+      sy = Math.max(minSize, sy);
       setTransformFromBase(
         element,
         baseTransform,
