@@ -30,6 +30,32 @@ const DIRECTORY_IMAGE_CANDIDATES = [
     'directory.png',
 ];
 
+async function loadGraphStylesJson() {
+    const candidates = [
+        '/GraphStyles.json',
+        '/GraphManagement/GraphStyles.json',
+        'GraphStyles.json'
+    ];
+
+    for (const url of candidates) {
+        try {
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) continue;
+            const json = await res.json();
+            if (json && typeof json === 'object') return json;
+        } catch (_) {
+            // ignore and try next candidate
+        }
+    }
+    return null;
+}
+
+async function loadEdgeStyleOverrides() {
+    const styles = await loadGraphStylesJson();
+    const edge = styles?.edge;
+    return edge && typeof edge === 'object' ? edge : null;
+}
+
 function toNotebookAssetUrl(relativePath) {
     const parts = String(relativePath)
         .split(/[\\/]+/)
@@ -640,6 +666,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
     discoveredLinks.clear();
     const container = document.getElementById(containerId);
     const statusElem = statusElemId ? document.getElementById(statusElemId) : null;
+    const edgeStyleOverrides = await loadEdgeStyleOverrides();
 
     cy = cytoscape({
         container: container,
@@ -737,14 +764,17 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
             },
             {
                 selector: 'edge',
-                style: { 
-                    'width': 2, 
+                style: {
+                    'width': 2,
                     'line-color': '#adadad',
                     'target-arrow-shape': 'triangle',
                     'target-arrow-color': '#adadad',
-                    'curve-style': 'bezier',
+                    'curve-style': 'unbundled-bezier',
+                    'control-point-distances': [20, -20],
+                    'control-point-weights': [0.25, 0.75],
                     'opacity': 0.8,
-                    'arrow-scale': 1.2
+                    'arrow-scale': 1.2,
+                    ...(edgeStyleOverrides || {})
                 }
             }
         ],

@@ -44,7 +44,9 @@ function createCytoscapeGraph(elements, styles)
           'line-color': '#ccc',
           'target-arrow-color': '#ccc',
           'target-arrow-shape': 'triangle',
-          'curve-style': 'bezier'
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [20, -20],
+          'control-point-weights': [0.25, 0.75]
         }
       }
     ]

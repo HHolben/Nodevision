@@ -15,6 +15,9 @@ import {
   distancePointToSegment,
 } from "./svgDom.mjs";
 import { fetchSvgText } from "./svgFetch.mjs";
+import { createBezierToolController } from "./BezierToolController.mjs";
+import { createPathNodeEditor } from "./PathNodeEditor.mjs";
+import { createSvgUndoStack } from "./SvgUndoStack.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG_UI_ATTR = "data-nv-editor-ui";
@@ -211,21 +214,6 @@ export async function renderEditor(filePath, container) {
     return true;
   }
 
-  function buildDragBezierPathD(p0, p3) {
-    const dx = p3.x - p0.x;
-    const dy = p3.y - p0.y;
-    const dist = Math.hypot(dx, dy);
-    if (!Number.isFinite(dist) || dist <= 1e-6) {
-      return `M ${p0.x} ${p0.y} C ${p0.x} ${p0.y}, ${p0.x} ${p0.y}, ${p0.x} ${p0.y}`;
-    }
-    const nx = -dy / dist;
-    const ny = dx / dist;
-    const amp = Math.min(120, dist * 0.25);
-    const p1 = { x: p0.x + (dx / 3) + (nx * amp), y: p0.y + (dy / 3) + (ny * amp) };
-    const p2 = { x: p0.x + (2 * dx / 3) - (nx * amp), y: p0.y + (2 * dy / 3) - (ny * amp) };
-    return `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y}, ${p2.x} ${p2.y}, ${p3.x} ${p3.y}`;
-  }
-
   let selectedElement = null;
   let selectedElements = [];
   let svgClipboard = [];
@@ -346,7 +334,44 @@ export async function renderEditor(filePath, container) {
   overlayLayer.appendChild(lineToolPreviewEnd);
   overlayLayer.appendChild(lineToolLengthLabel);
   overlayLayer.appendChild(lineToolAngleLabel);
+
+  // === Bezier tool preview ===
+  const bezierToolPreviewPath = createSvgEl("path", {
+    [SVG_UI_ATTR]: "bezier-tool-preview",
+    fill: "none",
+    stroke: "#2f80ff",
+    "stroke-width": "1.5",
+    display: "none",
+  });
+  bezierToolPreviewPath.style.pointerEvents = "none";
+  overlayLayer.appendChild(bezierToolPreviewPath);
   svgRoot.appendChild(overlayLayer);
+
+  const history = createSvgUndoStack(120);
+
+  // Bezier creation + node editing controllers
+  const bezierController = createBezierToolController({
+    svgRoot,
+    overlayPath: bezierToolPreviewPath,
+    currentStyleDefaults,
+    pointerToleranceInSvgUnits,
+    findNearestSnapPointInRoot,
+    snapAngleEndpointInRoot,
+    rootPointToElementPoint,
+    toRootPoint: (clientX, clientY) => toSvgPoint(svgRoot, clientX, clientY),
+    setSelection,
+    setStatus,
+    getActiveLayer,
+    history,
+  });
+
+  const nodeEditor = createPathNodeEditor({
+    svgRoot,
+    overlayLayer,
+    pointerToleranceInSvgUnits,
+    setStatus,
+    history,
+  });
 
   const lineToolState = {
     active: false,
@@ -1230,6 +1255,7 @@ export async function renderEditor(filePath, container) {
     if (selectionChangeRaf) return;
     selectionChangeRaf = window.requestAnimationFrame(() => {
       selectionChangeRaf = 0;
+      nodeEditor.onSelectionChanged?.(selectedElements);
       window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-changed", {
         detail: {
           selectedElements: [...selectedElements],
@@ -1684,6 +1710,9 @@ export async function renderEditor(filePath, container) {
     if (toolState.mode === "line" && mode !== "line") {
       finishLineTool();
     }
+    if (toolState.mode === "bezier" && mode !== "bezier") {
+      bezierController.reset();
+    }
     toolState.mode = mode;
     toolState.drawing = false;
     toolState.tempShape = null;
@@ -2005,6 +2034,15 @@ export async function renderEditor(filePath, container) {
 
   wrapper.addEventListener("keydown", (e) => {
     const key = String(e.key || "");
+    const meta = e.ctrlKey || e.metaKey;
+    if (meta && key.toLowerCase() === "z") {
+      const res = e.shiftKey ? history.redo() : history.undo();
+      if (res?.element) setSelection([res.element], { primary: res.element });
+      else if (res?.removed) clearSelection();
+      e.preventDefault();
+      return;
+    }
+    if (nodeEditor.onKeyDown?.(e)) return;
     if (toolState.mode === "line") {
       if (key === "Escape") {
         if (lineToolState.active) {
@@ -2018,6 +2056,13 @@ export async function renderEditor(filePath, container) {
       }
       if (key === "Enter" && lineToolState.active) {
         finishLineTool();
+        e.preventDefault();
+        return;
+      }
+    }
+    if (toolState.mode === "bezier") {
+      if (bezierController.onKeyDown(e)) {
+        if (!bezierController.isActive()) setMode("select");
         e.preventDefault();
         return;
       }
@@ -2046,6 +2091,7 @@ export async function renderEditor(filePath, container) {
     syncModeFromToolbarState();
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
     wrapper.focus();
+    if (nodeEditor.isActive?.() && nodeEditor.onPointerDown?.(e, e.target, p)) return;
 
     if (toolState.mode === "select") {
       let target = e.target instanceof SVGElement ? e.target : null;
@@ -2065,6 +2111,13 @@ export async function renderEditor(filePath, container) {
           setSelection([target], { primary: target });
         } else if (selectedElements.length > 1) {
           setSelection([target], { primary: target });
+        }
+
+        if (e.detail >= 2 && target.tagName.toLowerCase() === "path") {
+          nodeEditor.enter(target);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
         }
 
         dragState = buildDragState(e.pointerId, e.clientX, e.clientY);
@@ -2094,13 +2147,13 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
-	    if (toolState.mode === "line") {
-	      if (lineToolState.active && e.detail >= 2) {
-	        finishLineTool();
-	        e.preventDefault();
-	        e.stopPropagation();
-	        return;
-	      }
+    if (toolState.mode === "line") {
+      if (lineToolState.active && e.detail >= 2) {
+        finishLineTool();
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
 
 	      const layer = lineToolState.layer || getActiveLayer() || svgRoot;
 	      let rootPoint = p;
@@ -2152,10 +2205,26 @@ export async function renderEditor(filePath, container) {
 	          updateLineToolPreview(rootPoint);
 	        }
 	      }
-	      e.preventDefault();
-	      e.stopPropagation();
-	      return;
-	    }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    if (toolState.mode === "bezier") {
+      const rootPoint = p;
+      if (bezierController.isActive() && e.detail >= 2) {
+        bezierController.finish();
+        setMode("select");
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      clearSelection();
+      bezierController.onPointerDown(e, rootPoint);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
 
     if (toolState.mode === "freehand") {
       const style = currentStyleDefaults();
@@ -2176,31 +2245,11 @@ export async function renderEditor(filePath, container) {
       e.stopPropagation();
       return;
     }
-
-    if (toolState.mode === "bezier") {
-      const style = currentStyleDefaults();
-      toolState.drawing = true;
-      toolState.startPoint = p;
-      toolState.tempShape = createSvgEl("path", {
-        d: buildDragBezierPathD(p, p),
-        fill: "none",
-        stroke: style.stroke,
-        "stroke-width": style.strokeWidth
-      });
-      appendElement(toolState.tempShape);
-      try {
-        svgRoot.setPointerCapture(e.pointerId);
-      } catch {
-        // Ignore unsupported pointer capture errors.
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
   });
 
   svgRoot.addEventListener("pointermove", (e) => {
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
+    if (nodeEditor.onPointerMove?.(e)) return;
 
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
       const line = lineHandleDragState.line;
@@ -2335,29 +2384,42 @@ export async function renderEditor(filePath, container) {
       }
 	    }
 
-	    if (toolState.mode === "line" && lineToolState.active) {
-	      let next = p;
-	      if (e.shiftKey && lineToolState.startRoot) {
-	        const tol = pointerToleranceInSvgUnits(10);
-	        const snapped = findNearestSnapPointInRoot(p, tol);
-	        next = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
-	      }
-	      updateLineToolPreview(next);
-	      e.preventDefault();
-	      return;
-	    }
+    if (toolState.mode === "line" && lineToolState.active) {
+      let next = p;
+      if (e.shiftKey && lineToolState.startRoot) {
+        const tol = pointerToleranceInSvgUnits(10);
+        const snapped = findNearestSnapPointInRoot(p, tol);
+        next = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
+      }
+      updateLineToolPreview(next);
+      e.preventDefault();
+      return;
+    }
 
-	    if (!toolState.drawing || !toolState.tempShape) return;
-	    if (toolState.mode === "freehand") {
-	      const d = toolState.tempShape.getAttribute("d") || "";
-	      toolState.tempShape.setAttribute("d", `${d} L ${p.x} ${p.y}`);
-	    } else if (toolState.mode === "bezier" && toolState.startPoint) {
-	      toolState.tempShape.setAttribute("d", buildDragBezierPathD(toolState.startPoint, p));
-	    }
-	    e.preventDefault();
-	  });
+    if (toolState.mode === "bezier" && bezierController.isActive()) {
+      let target = p;
+      const model = bezierController.state?.model;
+      const last = model?.nodes?.[model.nodes.length - 1];
+      if (e.shiftKey && last) {
+        const tol = pointerToleranceInSvgUnits(10);
+        const snapped = findNearestSnapPointInRoot(p, tol);
+        target = snapped || snapAngleEndpointInRoot(last, p, Math.PI / 12);
+      }
+      bezierController.onPointerMove(e, target);
+      e.preventDefault();
+      return;
+    }
+
+    if (!toolState.drawing || !toolState.tempShape) return;
+    if (toolState.mode === "freehand") {
+      const d = toolState.tempShape.getAttribute("d") || "";
+      toolState.tempShape.setAttribute("d", `${d} L ${p.x} ${p.y}`);
+    }
+    e.preventDefault();
+  });
 
   svgRoot.addEventListener("pointerup", (e) => {
+    if (nodeEditor.onPointerUp?.(e)) return;
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
       lineHandleDragState = null;
       try {
@@ -2385,6 +2447,18 @@ export async function renderEditor(filePath, container) {
       }
       return;
     }
+    if (toolState.mode === "bezier" && bezierController.isActive()) {
+      let endRoot = toSvgPoint(svgRoot, e.clientX, e.clientY);
+      const model = bezierController.state?.model;
+      const last = model?.nodes?.[model.nodes.length - 1];
+      if (e.shiftKey && last) {
+        const tol = pointerToleranceInSvgUnits(10);
+        const snapped = findNearestSnapPointInRoot(endRoot, tol);
+        endRoot = snapped || snapAngleEndpointInRoot(last, endRoot, Math.PI / 12);
+      }
+      bezierController.onPointerUp(e, endRoot);
+      return;
+    }
 
     if (toolState.mode === "select") {
       if (dragState && dragState.pointerId === e.pointerId) {
@@ -2402,6 +2476,7 @@ export async function renderEditor(filePath, container) {
       return;
     }
     if (!toolState.drawing) return;
+
     toolState.drawing = false;
     toolState.tempShape = null;
     toolState.startPoint = null;
