@@ -1,5 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewHTML.mjs
 // This file defines browser-side View HTML logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayersContext.mjs";
+import { updateToolbarState } from "/panels/createToolbar.mjs";
+
 export const wantsIframe = true;
 
 export async function renderFile(path, viewPanel, iframe, serverBase) {
@@ -15,6 +18,12 @@ export async function renderFile(path, viewPanel, iframe, serverBase) {
   iframe.style.height = "100%";
   iframe.style.border = "none";
   iframe.style.display = "block";
+
+  // Reset previous layer context when switching files
+  window.HTMLViewLayersContext = null;
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.currentMode = "HTMLviewing";
+  updateToolbarState({ currentMode: "HTMLviewing" });
 
   // Set up error and load handlers
   iframe.onerror = () => {
@@ -38,6 +47,12 @@ export async function renderFile(path, viewPanel, iframe, serverBase) {
         }
       `;
       iframeDoc.head.appendChild(styleEl);
+
+      // Expose a layer context for the Layers panel (view mode)
+      const body = iframeDoc.body;
+      if (body) {
+        window.HTMLViewLayersContext = createHtmlLayersContext(body, { title: "HTML Layers (View)" });
+      }
     } catch (err) {
       console.warn("⚠️ Could not inject scaling style:", err);
     }

@@ -1,5 +1,274 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/insertCallbacks.js
 // This file defines browser-side insert Callbacks logic for the Nodevision UI. It renders interface components and handles user interactions.
+
+/**
+ * Helpers for interactive table insertion/editing in the HTML WYSIWYG editor.
+ */
+const TABLE_TOOLBAR_ID = "__nvTableToolbar";
+const TABLE_EDIT_BUTTON_ID = "__nvTableEditBtn";
+
+function getWysiwyg() {
+  return document.querySelector("#wysiwyg[contenteditable='true']");
+}
+
+function createTable(rows, cols) {
+  const table = document.createElement("table");
+  table.style.borderCollapse = "collapse";
+  table.style.margin = "8px 0";
+  table.style.width = "auto";
+  for (let r = 0; r < rows; r++) {
+    const tr = document.createElement("tr");
+    for (let c = 0; c < cols; c++) {
+      const cell = document.createElement("td");
+      cell.textContent = "Cell";
+      cell.style.border = "1px solid #444";
+      cell.style.padding = "6px 8px";
+      tr.appendChild(cell);
+    }
+    table.appendChild(tr);
+  }
+  return table;
+}
+
+function replaceCellTag(cell, tagName) {
+  if (!cell || cell.tagName === tagName.toUpperCase()) return cell;
+  const replacement = document.createElement(tagName);
+  replacement.innerHTML = cell.innerHTML;
+  // Preserve inline styles/border
+  replacement.setAttribute("style", cell.getAttribute("style") || "");
+  cell.replaceWith(replacement);
+  return replacement;
+}
+
+function positionFloatingEl(el, targetRect, yOffset = 0) {
+  if (!el || !targetRect) return;
+  const top = Math.max(8, targetRect.top + window.scrollY + yOffset);
+  const left = Math.max(8, targetRect.left + window.scrollX);
+  el.style.top = `${top}px`;
+  el.style.left = `${left}px`;
+}
+
+function ensureTableToolsInstalled() {
+  if (window.__nvTableToolsInstalled) return;
+  window.__nvTableToolsInstalled = true;
+
+  let currentCell = null;
+  let currentTable = null;
+
+  // Floating "Edit Table Here" button
+  const editBtn = document.createElement("button");
+  editBtn.id = TABLE_EDIT_BUTTON_ID;
+  editBtn.textContent = "Edit Table Here";
+  Object.assign(editBtn.style, {
+    position: "absolute",
+    zIndex: "2147483647",
+    display: "none",
+    padding: "6px 10px",
+    fontSize: "12px",
+    border: "1px solid #666",
+    background: "#f7f7f7",
+    cursor: "pointer",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+  });
+  document.body.appendChild(editBtn);
+
+  // Floating toolbar
+  const toolbar = document.createElement("div");
+  toolbar.id = TABLE_TOOLBAR_ID;
+  Object.assign(toolbar.style, {
+    position: "absolute",
+    zIndex: "2147483647",
+    display: "none",
+    padding: "8px",
+    border: "1px solid #666",
+    background: "#fff",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+    borderRadius: "4px",
+    gap: "6px",
+    flexWrap: "wrap",
+    maxWidth: "280px",
+  });
+  toolbar.style.display = "none";
+  toolbar.style.flexDirection = "row";
+  toolbar.style.alignItems = "center";
+
+  const makeBtn = (label, handler) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.style.fontSize = "12px";
+    b.style.padding = "4px 8px";
+    b.style.border = "1px solid #777";
+    b.style.background = "#f6f6f6";
+    b.style.cursor = "pointer";
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      handler();
+    });
+    return b;
+  };
+
+  const requireCell = () => {
+    if (currentCell && currentCell.isConnected) return currentCell;
+    if (currentTable && currentTable.isConnected) {
+      const first = currentTable.querySelector("td, th");
+      currentCell = first || null;
+      return currentCell;
+    }
+    return null;
+  };
+
+  const requireTable = () => {
+    if (currentTable && currentTable.isConnected) return currentTable;
+    if (currentCell && currentCell.isConnected) {
+      currentTable = currentCell.closest("table");
+      return currentTable;
+    }
+    return null;
+  };
+
+  const addRow = (direction) => {
+    const cell = requireCell();
+    const table = requireTable();
+    if (!cell || !table) return;
+    const row = cell.parentElement;
+    const refIndex = [...row.cells].indexOf(cell);
+    const newRow = document.createElement("tr");
+    const columnCount = row.cells.length || 1;
+    for (let i = 0; i < columnCount; i++) {
+      const tag = row.cells[i]?.tagName || "TD";
+      const newCell = document.createElement(tag);
+      newCell.textContent = "Cell";
+      newCell.style.border = row.cells[i]?.style.border || "1px solid #444";
+      newCell.style.padding = row.cells[i]?.style.padding || "6px 8px";
+      newRow.appendChild(newCell);
+    }
+    if (direction === "above") {
+      row.before(newRow);
+    } else {
+      row.after(newRow);
+    }
+    currentCell = newRow.cells[Math.max(0, refIndex)] || newRow.cells[0];
+    focusCell(currentCell);
+  };
+
+  const addColumn = (direction) => {
+    const cell = requireCell();
+    const table = requireTable();
+    if (!cell || !table) return;
+    const colIndex = cell.cellIndex;
+    const rows = table.rows;
+    for (const row of rows) {
+      const refCell = row.cells[colIndex] || row.cells[row.cells.length - 1];
+      const tag = refCell?.tagName || "TD";
+      const newCell = document.createElement(tag);
+      newCell.textContent = "Cell";
+      newCell.style.border = refCell?.style.border || "1px solid #444";
+      newCell.style.padding = refCell?.style.padding || "6px 8px";
+      if (direction === "left") {
+        row.insertBefore(newCell, refCell);
+      } else {
+        row.insertBefore(newCell, refCell?.nextSibling || null);
+      }
+      if (row === cell.parentElement) {
+        currentCell = newCell;
+      }
+    }
+    focusCell(currentCell);
+  };
+
+  const toggleHeaderRow = () => {
+    const cell = requireCell();
+    if (!cell) return;
+    const row = cell.parentElement;
+    const existing = Array.from(row.cells);
+    const shouldBeHeader = existing[0]?.tagName !== "TH";
+    existing.forEach((orig, i) => {
+      const converted = replaceCellTag(orig, shouldBeHeader ? "th" : "td");
+      converted.style.border = orig?.style.border || "1px solid #444";
+      converted.style.padding = orig?.style.padding || "6px 8px";
+      if (i === cell.cellIndex) currentCell = converted;
+    });
+    focusCell(currentCell);
+  };
+
+  const toggleHeaderColumn = () => {
+    const cell = requireCell();
+    const table = requireTable();
+    if (!cell || !table) return;
+    const colIndex = cell.cellIndex;
+    const shouldBeHeader = table.rows[0]?.cells[colIndex]?.tagName !== "TH";
+    Array.from(table.rows).forEach((row) => {
+      const orig = row.cells[colIndex];
+      if (!orig) return;
+      const converted = replaceCellTag(orig, shouldBeHeader ? "th" : "td");
+      converted.style.border = orig?.style.border || "1px solid #444";
+      converted.style.padding = orig?.style.padding || "6px 8px";
+      if (row === cell.parentElement) currentCell = converted;
+    });
+    focusCell(currentCell);
+  };
+
+  const buttons = [
+    makeBtn("Row Above", () => addRow("above")),
+    makeBtn("Row Below", () => addRow("below")),
+    makeBtn("Col Left", () => addColumn("left")),
+    makeBtn("Col Right", () => addColumn("right")),
+    makeBtn("Toggle Header Row", toggleHeaderRow),
+    makeBtn("Toggle Header Column", toggleHeaderColumn),
+  ];
+  buttons.forEach((b) => toolbar.appendChild(b));
+  document.body.appendChild(toolbar);
+
+  function hideAll() {
+    editBtn.style.display = "none";
+    toolbar.style.display = "none";
+  }
+
+  function focusCell(cell) {
+    if (!cell) return;
+    const sel = window.getSelection();
+    if (!sel) return;
+    const range = document.createRange();
+    range.selectNodeContents(cell);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    cell.focus?.();
+  }
+
+  function showEditButton(table, cell) {
+    if (!table) return hideAll();
+    currentTable = table;
+    currentCell = cell || table.querySelector("td, th") || null;
+    const rect = table.getBoundingClientRect();
+    positionFloatingEl(editBtn, rect, -30);
+    editBtn.style.display = "block";
+    toolbar.style.display = "none";
+  }
+
+  editBtn.addEventListener("click", () => {
+    if (!currentTable) return;
+    const rect = (currentCell || currentTable).getBoundingClientRect();
+    positionFloatingEl(toolbar, rect, 6);
+    toolbar.style.display = "flex";
+  });
+
+  document.addEventListener("click", (e) => {
+    const wysiwyg = getWysiwyg();
+    if (!wysiwyg) return hideAll();
+    const table = e.target.closest?.("table");
+    if (table && wysiwyg.contains(table)) {
+      const cell = e.target.closest("td, th") || table.querySelector("td, th");
+      showEditButton(table, cell);
+      return;
+    }
+    if (toolbar.contains(e.target) || editBtn.contains(e.target)) return;
+    hideAll();
+  });
+}
+window.ensureTableToolsInstalled = ensureTableToolsInstalled;
+
 window.insertCallbacks = {
   insertText: () => {
     console.log("Insert Text callback triggered.");
@@ -163,17 +432,49 @@ insertFootnote: () => {
 
 
   insertTable: () => {
-    const table = document.createElement('table');
-    table.style.borderCollapse = "collapse";
-    for (let i = 0; i < 3; i++) {
-      const row = table.insertRow();
-      for (let j = 0; j < 3; j++) {
-        const cell = row.insertCell();
-        cell.style.border = "1px solid black";
-        cell.textContent = "Cell";
-      }
+    const wysiwyg = getWysiwyg();
+    if (!wysiwyg) {
+      alert("Open an HTML document to insert a table.");
+      return;
     }
-    document.getElementById('editor').appendChild(table);
+
+    ensureTableToolsInstalled();
+
+    const rows = parseInt(prompt("Rows?", "3"), 10);
+    const cols = parseInt(prompt("Columns?", "3"), 10);
+    if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1) {
+      alert("Please enter whole numbers greater than zero.");
+      return;
+    }
+
+    const table = createTable(rows, cols);
+
+    const sel = window.getSelection();
+    const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
+    if (range && wysiwyg.contains(range.commonAncestorContainer)) {
+      range.deleteContents();
+      range.insertNode(table);
+    } else {
+      wysiwyg.appendChild(table);
+    }
+
+    // Place caret into the first cell
+    const firstCell = table.querySelector("td, th");
+    if (firstCell) {
+      const newRange = document.createRange();
+      newRange.selectNodeContents(firstCell);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    }
+
+    // Show edit button immediately for convenience
+    const rect = table.getBoundingClientRect();
+    const editBtn = document.getElementById(TABLE_EDIT_BUTTON_ID);
+    if (editBtn) {
+      positionFloatingEl(editBtn, rect, -30);
+      editBtn.style.display = "block";
+    }
   },
   insertOrderedList: () => {
     document.execCommand('insertHTML', false, `<ol><li>Ordered Item</li></ol>`);

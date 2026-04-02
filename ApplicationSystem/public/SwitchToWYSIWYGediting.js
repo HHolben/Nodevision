@@ -88,6 +88,44 @@
     }
   }
 }, false);
-})();
 
+// Formatting shortcuts (Ctrl/Cmd+B, Ctrl/Cmd+I, Ctrl/Cmd+U) for publication editors.
+document.addEventListener("keydown", function(e) {
+  if (window.__nvFormatShortcutsBound) return;
+}, { once: true });
+
+if (!window.__nvFormatShortcutsBound) {
+  window.__nvFormatShortcutsBound = true;
+  document.addEventListener("keydown", function(e) {
+    const isMac = window.navigator.platform.toUpperCase().includes("MAC");
+    const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+    if (!ctrlOrCmd || e.shiftKey || e.altKey) return;
+
+    const key = e.key?.toLowerCase?.();
+    const callbackMap = {
+      b: "insertBold",
+      i: "insertItalics",
+      u: "insertUnderline"
+    };
+    const targetCb = callbackMap[key];
+    if (!targetCb) return;
+
+    e.preventDefault();
+
+    if (window.insertCallbacks && typeof window.insertCallbacks[targetCb] === "function") {
+      window.insertCallbacks[targetCb]();
+      return;
+    }
+
+    // Fallback to native execCommand for environments without toolbar callbacks.
+    try {
+      if (key === "b") document.execCommand("bold");
+      if (key === "i") document.execCommand("italic");
+      if (key === "u") document.execCommand("underline");
+    } catch (err) {
+      console.warn("Format shortcut failed:", err);
+    }
+  });
+}
+})();
 

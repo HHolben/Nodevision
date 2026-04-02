@@ -11,8 +11,11 @@ export function escapeHtml(value) {
 
 export function normalizeNotebookPath(path) {
   const raw = String(path || "").trim().replace(/^\/+/, "");
+  const lower = raw.toLowerCase();
   if (!raw) return "";
-  if (raw.toLowerCase().startsWith("notebook/")) return `Notebook/${raw.slice(9)}`.replace(/\/+/g, "/");
+  // Treat both "Notebook" and "Notebook/..." as already notebook-relative
+  if (lower === "notebook") return "Notebook";
+  if (lower.startsWith("notebook/")) return `Notebook/${raw.slice(9)}`.replace(/\/+/g, "/");
   return `Notebook/${raw}`.replace(/\/+/g, "/");
 }
 

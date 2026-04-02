@@ -4,6 +4,7 @@
 import { updateToolbarState } from "./../../../../panels/createToolbar.mjs";
 import { createPanelDOM } from "./../../../../panels/panelFactory.mjs";
 import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
+import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayersContext.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp"]);
@@ -160,6 +161,10 @@ function ensureHTMLLayoutStyles() {
     }
     #wysiwyg img.nv-selected-image {
       outline: 2px solid #2f80ff;
+      outline-offset: 2px;
+    }
+    #wysiwyg audio.nv-selected-audio {
+      outline: 2px dashed #2f80ff;
       outline-offset: 2px;
     }
     .nv-image-corner-handle {
@@ -1014,6 +1019,85 @@ function buildImageContextFromElement(imageEl, editorFilePath = "") {
   return context;
 }
 
+function findClickedAudio(target) {
+  if (!(target instanceof Element)) return null;
+  const direct = target.closest("audio");
+  if (direct instanceof HTMLAudioElement) return direct;
+  return null;
+}
+
+function buildAudioContextFromElement(audioEl, editorFilePath = "") {
+  if (!(audioEl instanceof HTMLAudioElement)) return null;
+  const rawSrc = audioEl.getAttribute("src") || audioEl.currentSrc || "";
+  const explicitLinked = normalizeNotebookPathInput(audioEl.getAttribute("data-nv-linked-path") || "");
+  const source = String(rawSrc || "").trim();
+
+  const context = {
+    element: audioEl,
+    src: source,
+    linkedNotebookPath: "",
+    isInline: false,
+    isExternal: false,
+    extension: "",
+  };
+
+  if (!source && explicitLinked) {
+    context.linkedNotebookPath = explicitLinked;
+    context.extension = inferExtensionFromPath(explicitLinked);
+    return context;
+  }
+
+  if (!source) return context;
+
+  if (source.startsWith("data:audio/")) {
+    context.isInline = true;
+    context.extension = inferExtensionFromMime(parseDataUrl(source)?.mimeType || "");
+    return context;
+  }
+
+  if (explicitLinked) {
+    context.linkedNotebookPath = explicitLinked;
+    context.extension = inferExtensionFromPath(explicitLinked);
+    return context;
+  }
+
+  if (/^(https?:)?\/\//i.test(source)) {
+    try {
+      const url = new URL(source, window.location.origin);
+      if (url.origin === window.location.origin && url.pathname.startsWith("/Notebook/")) {
+        const notebookPath = normalizeNotebookPathInput(url.pathname);
+        context.linkedNotebookPath = notebookPath;
+        context.extension = inferExtensionFromPath(notebookPath);
+      } else {
+        context.isExternal = true;
+      }
+    } catch {
+      context.isExternal = true;
+    }
+    return context;
+  }
+
+  if (source.startsWith("/Notebook/") || source.startsWith("Notebook/")) {
+    const notebookPath = normalizeNotebookPathInput(source);
+    context.linkedNotebookPath = notebookPath;
+    context.extension = inferExtensionFromPath(notebookPath);
+    return context;
+  }
+
+  if (isVirtualEditorPath(editorFilePath)) {
+    context.isExternal = true;
+    return context;
+  }
+
+  const editorDir = dirname(normalizeNotebookPathInput(editorFilePath));
+  const resolved = resolveRelativePath(editorDir, source);
+  if (resolved) {
+    context.linkedNotebookPath = normalizeNotebookPathInput(resolved);
+    context.extension = inferExtensionFromPath(context.linkedNotebookPath);
+  }
+  return context;
+}
+
 function getImageEditorDescriptor(linkedNotebookPath = "") {
   const ext = inferExtensionFromPath(linkedNotebookPath);
   if (SVG_IMAGE_EXTENSIONS.has(ext)) {
@@ -1141,12 +1225,29 @@ function markSelectedImage(wysiwyg, imageEl) {
   if (canvasItem) canvasItem.classList.add("nv-selected-image-item");
 }
 
+function markSelectedAudio(wysiwyg, audioEl) {
+  wysiwyg.querySelectorAll(".nv-selected-audio").forEach((el) => {
+    el.classList.remove("nv-selected-audio");
+  });
+  if (!(audioEl instanceof HTMLAudioElement)) return;
+  audioEl.classList.add("nv-selected-audio");
+}
+
 function updateSelectedImageState(context) {
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activeHtmlImageContext = context || null;
   updateToolbarState({
     htmlImageSelected: Boolean(context && context.element),
     htmlImagePath: context?.linkedNotebookPath || null,
+  });
+}
+
+function updateSelectedAudioState(context) {
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activeHtmlAudioContext = context || null;
+  updateToolbarState({
+    htmlAudioSelected: Boolean(context && context.element),
+    htmlAudioPath: context?.linkedNotebookPath || context?.src || null,
   });
 }
 
@@ -2096,10 +2197,24 @@ function registerImageInteractionTools(wysiwyg, editorFilePath) {
       markSelectedImage(wysiwyg, imageEl);
       updateSelectedImageState(context);
       setSelectedImageForHandles(imageEl);
+      markSelectedAudio(wysiwyg, null);
+      updateSelectedAudioState(null);
+      return;
+    }
+    const audioEl = findClickedAudio(evt.target);
+    if (audioEl && wysiwyg.contains(audioEl)) {
+      const context = buildAudioContextFromElement(audioEl, editorFilePath);
+      markSelectedAudio(wysiwyg, audioEl);
+      updateSelectedAudioState(context);
+      markSelectedImage(wysiwyg, null);
+      updateSelectedImageState(null);
+      setSelectedImageForHandles(null);
       return;
     }
     markSelectedImage(wysiwyg, null);
     updateSelectedImageState(null);
+    markSelectedAudio(wysiwyg, null);
+    updateSelectedAudioState(null);
     setSelectedImageForHandles(null);
   };
   wysiwyg.addEventListener("click", onClick);
@@ -3030,10 +3145,14 @@ export async function renderEditor(filePath, container, options = {}) {
   const editorMode = options?.mode || "HTMLediting";
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.currentMode = editorMode;
+  // Reset any previous layer context before creating a fresh one for this document.
+  window.HTMLLayersContext = null;
   updateToolbarState({
     currentMode: editorMode,
     htmlImageSelected: false,
+    htmlAudioSelected: false,
     htmlImagePath: null,
+    htmlAudioPath: null,
   });
 
 
@@ -3060,6 +3179,14 @@ export async function renderEditor(filePath, container, options = {}) {
   hidden.id = "hidden-elements";
   hidden.style.display = "none";
   wrapper.appendChild(hidden);
+
+  // Expose a layer context so the Layers panel can toggle HTML elements.
+  window.HTMLLayersContext = createHtmlLayersContext(wysiwyg, { title: "HTML Layers" });
+
+  // Ensure table editing tools are available for existing tables.
+  if (typeof window.ensureTableToolsInstalled === "function") {
+    window.ensureTableToolsInstalled();
+  }
   registerHTMLLayoutTools(wysiwyg, filePath);
   const imageTools = registerImageInteractionTools(wysiwyg, filePath);
   Object.assign(window.HTMLWysiwygTools || {}, {
@@ -3069,6 +3196,52 @@ export async function renderEditor(filePath, container, options = {}) {
     finishInlineImageEditor: imageTools.finishInlineImageEditor,
     cancelInlineImageEditor: imageTools.cancelInlineImageEditor,
     isInlineImageEditorOpen: imageTools.isInlineImageEditorOpen,
+    editSelectedAudioRecording: async () => {
+      const context = window.NodevisionState?.activeHtmlAudioContext;
+      if (!context?.element) {
+        alert("Select a recording first.");
+        return;
+      }
+      if (context.isInline || !context.linkedNotebookPath) {
+        alert("Only linked Notebook recordings can be edited. Insert as a referenced sound and select it.");
+        return;
+      }
+      const notebookPath = context.linkedNotebookPath;
+      const safeId = btoa(notebookPath).replace(/[^a-z0-9]/gi, "-");
+      const instanceId = `nv-sound-editor-${safeId}`;
+      const existing = document.querySelector(`.panel[data-instance-id="${instanceId}"]`);
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+      const panelInst = await createPanelDOM(
+        "GraphicalEditor",
+        instanceId,
+        "EditorPanel",
+        { filePath: notebookPath, displayName: `Edit Recording: ${notebookPath}` }
+      );
+
+      document.body.appendChild(panelInst.panel);
+      panelInst.panel.classList.remove("docked");
+      panelInst.panel.classList.add("undocked");
+      panelInst.panel.__nvDefaultDockCell = (
+        window.activeCell &&
+        window.activeCell.classList?.contains("panel-cell")
+      ) ? window.activeCell : null;
+
+      if (panelInst.dockBtn && typeof panelInst.dockBtn.click === "function") {
+        try {
+          panelInst.dockBtn.dispatchEvent(new MouseEvent("click", { bubbles: false, cancelable: true, view: window }));
+        } catch {
+          panelInst.dockBtn.click();
+        }
+      }
+
+      panelInst.panel.style.width = "min(760px, 94vw)";
+      panelInst.panel.style.height = "min(560px, 90vh)";
+      panelInst.panel.style.left = `${Math.max(20, Math.round(window.innerWidth * 0.18))}px`;
+      panelInst.panel.style.top = `${Math.max(20, Math.round(window.innerHeight * 0.12))}px`;
+      panelInst.panel.style.zIndex = "23010";
+      panelInst.panel.style.pointerEvents = "auto";
+    },
   });
 
   try {

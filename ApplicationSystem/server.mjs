@@ -15,6 +15,7 @@ import { ensureDefaultAdminAccount } from './Auth/userStore.mjs';
 
 import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 import graphDataRoutes from "./routes/api/graphData.js";
+import createExternalGraphRouter from "./routes/api/externalGraph.js";
 import listDirectoryRouter from "./routes/api/listDirectory.js";
 import uploadRoutes from './routes/api/fileUploadRoutes.js';
 import previewRuntimeRoutes from './routes/api/previewRuntimeRoutes.js';
@@ -204,6 +205,7 @@ export default async function createApp(runtimeConfig = {}) {
 
   app.use("/api/toolbar", toolbarRoutes(ctx));
   app.use("/api/graph", graphDataRoutes);
+  app.use("/api/graph", createExternalGraphRouter(ctx));
   app.use('/api', previewRuntimeRoutes(ctx));
   app.use('/api', previewRuntimeControlRoutes(ctx));
   app.use('/UserSettings', express.static(USER_SETTINGS_DIR));

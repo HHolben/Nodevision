@@ -188,6 +188,31 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     renderPanel();
   }
 
+  function moveLayerTo(layerId, targetLayerId, position = "before") {
+    const layer = getLayerById(layerId);
+    const target = getLayerById(targetLayerId);
+    if (!layer || !target || layer === target) return;
+    if (position === "after" && target.nextSibling) {
+      svgRoot.insertBefore(layer, target.nextSibling);
+    } else if (position === "after") {
+      svgRoot.appendChild(layer);
+    } else {
+      svgRoot.insertBefore(layer, target);
+    }
+    renderPanel();
+  }
+
+  function moveElementToLayer(element, targetLayerId, beforeElement = null) {
+    if (!element || !element.isConnected) return;
+    const targetLayer = getLayerById(targetLayerId);
+    if (!targetLayer) return;
+    if (beforeElement && beforeElement.parentNode !== targetLayer) {
+      beforeElement = null;
+    }
+    targetLayer.insertBefore(element, beforeElement);
+    renderPanel();
+  }
+
   function renderPanel() {
     if (!panelEl) return;
     renderLayersPanel({
@@ -198,6 +223,8 @@ export function createElementLayers(svgRoot, hostPanel = null) {
       setActiveLayer,
       setLayerVisible,
       moveLayer,
+      moveLayerTo,
+      moveElementToLayer,
       removeLayer,
       rerender: renderPanel,
     });
@@ -226,10 +253,12 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     appendToActiveLayer,
     setLayerVisible,
     moveLayer,
+    moveLayerTo,
     removeLayer,
     copyLayer,
     cutLayer,
     pasteLayer,
+    moveElementToLayer,
     renderPanel,
     attachHost
   };

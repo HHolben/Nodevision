@@ -8,7 +8,7 @@
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGLayersPanel.mjs",
     "replaceActive": true,
-    "modes": ["SVG Editing"]
+    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing"]
   },
   {
     "ToolbarCategory": "View",
@@ -106,7 +106,7 @@
     "parentHeading": "Play Score",
     "heading": "Controls",
     "modes": ["MIDIediting", "MIDIviewing"],
-    "content": "<button data-nv-midi-action=\"play\" style=\"height:26px;padding:0 10px;\">Play</button><button data-nv-midi-action=\"pause\" style=\"height:26px;padding:0 10px;\">Pause</button><label style=\"display:flex;align-items:center;gap:6px;font:12px system-ui, -apple-system, Segoe UI, sans-serif;\">Tempo <input data-nv-midi-tempo type=\"number\" min=\"20\" max=\"400\" step=\"1\" style=\"width:78px;height:24px;\" /></label>",
+    "content": "<button data-nv-midi-action=\"play\" style=\"height:26px;padding:0 10px;\">Play</button><button data-nv-midi-action=\"pause\" style=\"height:26px;padding:0 10px;\">Pause</button><label style=\"display:flex;align-items:center;gap:6px;font:12px system-ui, -apple-system, Segoe UI, sans-serif;\">Tempo <input data-nv-midi-tempo type=\"number\" min=\"20\" max=\"400\" step=\"1\" style=\"width:78px;height:24px;\" /></label><label style=\"display:flex;align-items:center;gap:6px;font:12px system-ui, -apple-system, Segoe UI, sans-serif;padding-left:8px;\"><input data-nv-midi-click type=\"checkbox\" style=\"width:16px;height:16px;\" /> Click track</label>",
     "script": "playScoreControlsWidget.mjs"
   },
   {

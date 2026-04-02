@@ -10,12 +10,15 @@ import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact
 let cy;
 let currentRootPath = '';
 const discoveredLinks = new Map(); // sourcePath -> Set(targetPath)
+const brokenLinksBySource = new Map(); // sourcePath -> Set(brokenTargetPath)
 let layoutHasInitialized = false;
 let activeLayout = null;
 let layoutDebounceTimer = null;
 let layoutPendingFit = false;
 let layoutPendingReasons = new Set();
 let dragMoveState = null;
+const htmlPreviewCache = new Map(); // path -> url | null
+let externalNodesLoaded = false;
 const EDGE_BUCKET_SYMBOLS = [
     ...'abcdefghijklmnopqrstuvwxyz',
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -25,10 +28,17 @@ const EDGE_BUCKET_SYMBOLS = [
 ];
 const DIRECTORY_IMAGE_CANDIDATES = [
     '.directory.svg',
-    '.directory.png',
     'directory.svg',
+    '.directory.png',
     'directory.png',
 ];
+const BROKEN_LINK_BADGE_URL =
+    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23fbc02d" d="M1 21h22L12 2 1 21z"/><path fill="%23000" d="M12 8.5c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1s1-.45 1-1v-4c0-.55-.45-1-1-1zm0 7c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>';
+const CLIPBOARD_SHORTCUTS = {
+    c: "copyFile",
+    v: "pasteFile",
+    x: "cutFile"
+};
 
 async function loadGraphStylesJson() {
     const candidates = [
@@ -56,28 +66,156 @@ async function loadEdgeStyleOverrides() {
     return edge && typeof edge === 'object' ? edge : null;
 }
 
+function isHttpLink(link = '') {
+    // Match http:// or https:// (escape each slash once so the regex literal parses correctly)
+    return /^https?:\/\//i.test(String(link || ''));
+}
+
+function makeExternalNodeFromUrl(rawUrl) {
+    try {
+        const url = String(rawUrl || '').trim();
+        if (!isHttpLink(url)) return null;
+        const parsed = new URL(url);
+        const label = parsed.hostname || url;
+        const id = `external:${encodeURIComponent(url)}`;
+        return {
+            id,
+            label,
+            url,
+            type: 'external',
+            category: 'website',
+            description: `External link to ${label}`,
+            createdAt: new Date().toISOString(),
+            source: 'link-scan'
+        };
+    } catch (_) {
+        return null;
+    }
+}
+
+async function persistExternalNodes(nodes = []) {
+    try {
+        const res = await fetch('/api/graph/external/nodes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nodes)
+        });
+        if (!res.ok) {
+            console.warn('[GraphManager] Failed to persist external nodes:', res.statusText);
+        }
+    } catch (err) {
+        console.warn('[GraphManager] Error persisting external nodes:', err);
+    }
+}
+
+async function fetchExternalNodes() {
+    try {
+        const res = await fetch('/api/graph/external/nodes', { cache: 'no-store' });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return Array.isArray(json) ? json : [];
+    } catch (err) {
+        console.warn('[GraphManager] Failed to fetch external nodes:', err);
+        return [];
+    }
+}
+
+function addExternalNodesToGraph(nodes = []) {
+    if (!cy) return;
+    const elements = [];
+    nodes.forEach((node) => {
+        if (!node || typeof node !== 'object') return;
+        const id = String(node.id || '').trim();
+        const label = String(node.label || id || '').trim();
+        const url = String(node.url || '').trim();
+        if (!id || !label || !url) return;
+
+        if (cy.getElementById(id).empty()) {
+            elements.push({
+                group: 'nodes',
+                data: {
+                    id,
+                    label,
+                    type: 'external',
+                    url,
+                    category: node.category || 'website',
+                    description: node.description || '',
+                    createdAt: node.createdAt || '',
+                    source: node.source || ''
+                }
+            });
+        } else {
+            const existing = cy.getElementById(id);
+            existing.data('label', label);
+            existing.data('url', url);
+            existing.data('category', node.category || 'website');
+            existing.data('description', node.description || '');
+            existing.data('createdAt', node.createdAt || '');
+            existing.data('source', node.source || '');
+        }
+    });
+
+    if (elements.length) {
+        cy.add(elements);
+        queueRelayout({ fit: true, reason: 'external-nodes' });
+    }
+}
+
+async function loadExternalNodes() {
+    if (externalNodesLoaded) return;
+    const nodes = await fetchExternalNodes();
+    addExternalNodesToGraph(nodes);
+    externalNodesLoaded = true;
+}
+
 function toNotebookAssetUrl(relativePath) {
-    const parts = String(relativePath)
-        .split(/[\\/]+/)
+  const parts = String(relativePath)
+      .split(/[\\/]+/)
         .filter(Boolean)
         .map(encodeURIComponent);
     return `/Notebook/${parts.join('/')}`;
+}
+
+async function findFirstImageInHtml(path) {
+    if (htmlPreviewCache.has(path)) return htmlPreviewCache.get(path);
+    try {
+        const res = await fetch(toNotebookAssetUrl(path), { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const match = text.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (!match) {
+            htmlPreviewCache.set(path, null);
+            return null;
+        }
+        const rawSrc = match[1];
+        const resolved = resolveNotebookLink(path, rawSrc);
+        const url = resolved ? toNotebookAssetUrl(resolved) : null;
+        htmlPreviewCache.set(path, url);
+        return url;
+    } catch (_) {
+        htmlPreviewCache.set(path, null);
+        return null;
+    }
 }
 
 function inferCurrentDirectoryImage(files, parentPath) {
     if (!Array.isArray(files)) return '';
 
     for (const candidate of DIRECTORY_IMAGE_CANDIDATES) {
-        const hit = files.find((entry) => entry && !entry.isDirectory && entry.name === candidate);
+        const hit = files.find((entry) => {
+            if (!entry || entry.isDirectory) return false;
+            const name = String(entry.name || '').toLowerCase();
+            return name === candidate.toLowerCase();
+        });
         if (!hit) continue;
+
+        const actualName = hit.name || candidate;
+        const relBase = normalizePath(parentPath);
+        const rel = relBase ? `${relBase}/${actualName}` : actualName;
 
         if (typeof hit.path === 'string' && hit.path) {
             return toNotebookAssetUrl(hit.path);
         }
-
-        const rel = normalizePath(parentPath)
-            ? `${normalizePath(parentPath)}/${candidate}`
-            : candidate;
         return toNotebookAssetUrl(rel);
     }
 
@@ -216,6 +354,7 @@ async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
     layoutPendingFit = false;
     layoutPendingReasons.clear();
     layoutHasInitialized = false;
+    brokenLinksBySource.clear();
     if (activeLayout && typeof activeLayout.stop === 'function') {
         try { activeLayout.stop(); } catch (_) { /* ignore */ }
         activeLayout = null;
@@ -223,6 +362,9 @@ async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
 
     discoveredLinks.clear();
     cy.elements().remove();
+    externalNodesLoaded = false;
+
+    await loadExternalNodes();
 
     await hydrateDiscoveredLinksFromBuckets();
     await fetchDirectoryContents(currentRootPath, (data) => {
@@ -510,6 +652,11 @@ function isExpandedDirectory(nodeId) {
 }
 
 function resolveVisibleTargetNode(targetPath) {
+    // If the target is an external node, anchor directly to it.
+    if (cy && !cy.getElementById(targetPath).empty()) {
+        return targetPath;
+    }
+
     const visibleTarget = getVisibleNodeId(cy, targetPath);
     if (!visibleTarget) return null;
 
@@ -661,6 +808,58 @@ function runRelayout({ fit = true, reasons = [] } = {}) {
     activeLayout.run();
 }
 
+async function notebookAssetExists(relativePath) {
+    if (!relativePath) return false;
+    const url = toNotebookAssetUrl(relativePath);
+    try {
+        const headRes = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+        if (headRes.ok) return true;
+        // Some servers may not support HEAD; fall back to GET without reading body.
+        if (headRes.status === 405 || headRes.status === 501) {
+            const getRes = await fetch(url, { method: 'GET', cache: 'no-store' });
+            return getRes.ok;
+        }
+        return false;
+    } catch (_) {
+        return false;
+    }
+}
+
+function rememberBrokenLink(sourcePath, targetPath) {
+    const source = normalizePath(sourcePath);
+    const target = normalizePath(targetPath);
+    if (!source || !target) return;
+
+    let targets = brokenLinksBySource.get(source);
+    if (!targets) {
+        targets = new Set();
+        brokenLinksBySource.set(source, targets);
+    }
+    targets.add(target);
+}
+
+function clearBrokenLinksForSource(sourcePath) {
+    const source = normalizePath(sourcePath);
+    if (!source) return;
+    brokenLinksBySource.delete(source);
+    const node = cy?.getElementById(source);
+    if (node && !node.empty()) {
+        node.data('brokenLinkCount', 0);
+        node.data('hasBrokenLinks', 0);
+    }
+}
+
+function applyBrokenLinkBadge(sourcePath) {
+    const source = normalizePath(sourcePath);
+    if (!source) return;
+    const node = cy?.getElementById(source);
+    if (!node || node.empty()) return;
+    const brokenSet = brokenLinksBySource.get(source);
+    const count = brokenSet ? brokenSet.size : 0;
+    node.data('brokenLinkCount', count);
+    node.data('hasBrokenLinks', count > 0 ? 1 : 0);
+}
+
 export async function initGraphView({ containerId, rootPath, statusElemId }) {
     currentRootPath = normalizePath(rootPath);
     discoveredLinks.clear();
@@ -690,7 +889,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                 selector: 'node[type="directory"]',
                 style: {
                     'background-color': '#ffca28',
-                    'shape': 'rectangle',
+                    'shape': 'round-rectangle',
                     // Keep unexpanded directories compact while allowing expanded ones
                     // to size naturally around their children.
                     'min-width': 64,
@@ -707,13 +906,14 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                 }
             },
             {
-                selector: 'node[type="directory"][hasDirectoryImage = 1]:childless',
+                selector: 'node[type="directory"][hasDirectoryImage = 1]',
                 style: {
                     'background-image': 'data(directoryImageUrl)',
                     'background-fit': 'cover',
                     'background-position-x': '50%',
                     'background-position-y': '50%',
                     'background-repeat': 'no-repeat',
+                    'background-opacity': 1,
                     'border-width': 1,
                     'border-color': '#b58a19'
                 }
@@ -731,6 +931,18 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'padding': 10,
                     'text-margin-y': 4,
                     'compound-sizing-wrt-labels': 'include'
+                }
+            },
+            {
+                // Ensure directory preview stays visible even when it has children (compound node).
+                selector: 'node[type="directory"][hasDirectoryImage = 1]:parent',
+                style: {
+                    'background-image': 'data(directoryImageUrl)',
+                    'background-fit': 'cover',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%',
+                    'background-repeat': 'no-repeat',
+                    'background-opacity': 0.4
                 }
             },
             {
@@ -760,6 +972,73 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'border-width': 3,
                     'overlay-color': '#0a84ff',
                     'overlay-opacity': 0.08
+                }
+            },
+            {
+                selector: 'node[type="external"]',
+                style: {
+                    'shape': 'diamond',
+                    'width': 80,
+                    'height': 80,
+                    'background-color': '#4dd0e1',
+                    'border-color': '#00838f',
+                    'border-width': 2,
+                    'label': 'data(label)',
+                    'color': '#0b1021',
+                    'font-weight': 'bold',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'text-outline-width': 2,
+                    'text-outline-color': '#e0f7fa'
+                }
+            },
+            {
+                selector: 'node[type="file"]',
+                style: {
+                    'width': 72,
+                    'height': 72,
+                    'shape': 'ellipse',
+                    'background-color': '#e1e7ef',
+                    'border-width': 1,
+                    'border-color': '#9aa7b8',
+                    'text-valign': 'bottom',
+                    'text-halign': 'center',
+                    'text-margin-y': 6,
+                    'padding': 4
+                }
+            },
+            {
+                selector: 'node[type="file"][hasPreview = 1]',
+                style: {
+                    'background-image': 'data(previewUrl)',
+                    'background-fit': 'cover',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%',
+                    'background-repeat': 'no-repeat',
+                    'background-opacity': 1,
+                    'border-color': '#5a708c'
+                }
+            },
+            {
+                selector: 'node[type="file"][hasBrokenLinks = 1]',
+                style: {
+                    'border-color': '#d32f2f',
+                    'border-width': 3,
+                    'background-color': '#ffeaea',
+                    'shadow-blur': 12,
+                    'shadow-color': '#d32f2f',
+                    'shadow-opacity': 0.75,
+                    'shadow-offset-x': 0,
+                    'shadow-offset-y': 0,
+                    // Overlay warning badge without losing file preview/background.
+                    'background-image': ['data(previewUrl)', BROKEN_LINK_BADGE_URL],
+                    'background-fit': ['cover', 'contain'],
+                    'background-clip': ['node', 'none'],
+                    'background-repeat': ['no-repeat', 'no-repeat'],
+                    'background-position-x': ['50%', '90%'],
+                    'background-position-y': ['50%', '10%'],
+                    'background-width': ['100%', '18px'],
+                    'background-height': ['100%', '18px']
                 }
             },
             {
@@ -803,9 +1082,12 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
         }
     }
 
-        cy.on('tap', 'node', (evt) => {
+    cy.on('tap', 'node', (evt) => {
         const path = evt.target.data('fullPath');
         if (path !== undefined) window.selectedFilePath = path;
+        if (evt.target.data('type') === 'external' && evt.target.data('url')) {
+            window.selectedExternalUrl = evt.target.data('url');
+        }
     });
 
     cy.on('dblclick', 'node', async (evt) => {
@@ -816,6 +1098,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
     });
 
     setupCtrlDragMoveHandlers();
+
+    await loadExternalNodes();
 
     if (statusElem) statusElem.textContent = "Fetching Files...";
     await hydrateDiscoveredLinksFromBuckets();
@@ -831,6 +1115,7 @@ async function renderGraphData(files, parentPath) {
     const normalizedParentPath = normalizePath(parentPath);
     const parentId = normalizedParentPath || "Root";
     const currentDirectoryImage = inferCurrentDirectoryImage(files, normalizedParentPath);
+    const previewFetches = [];
 
     if (cy.getElementById(parentId).empty()) {
         cy.add({
@@ -857,24 +1142,47 @@ async function renderGraphData(files, parentPath) {
             const rawPath = parentPath ? `${parentPath}/${f.name}` : f.name;
             const fullPath = normalizePath(rawPath);
             const directoryImageUrl = f.isDirectory && typeof f.directoryImageUrl === 'string' ? f.directoryImageUrl : '';
+            let previewUrl = '';
+            let hasPreview = 0;
+            if (!f.isDirectory) {
+                const ext = f.name.split('.').pop().toLowerCase();
+                if (ext === 'svg' || ext === 'png') {
+                    previewUrl = toNotebookAssetUrl(fullPath);
+                    hasPreview = 1;
+                } else if (ext === 'html') {
+                    previewFetches.push({ id: fullPath, path: fullPath });
+                }
+            }
             
-            if (cy.getElementById(fullPath).empty()) {
-                cy.add({
-                    group: 'nodes',
-                    data: {
-                        id: fullPath,
+                if (cy.getElementById(fullPath).empty()) {
+                    cy.add({
+                        group: 'nodes',
+                        data: {
+                            id: fullPath,
                         label: f.name,
                         fullPath: fullPath,
-                        type: f.isDirectory ? 'directory' : 'file',
-                        parent: parentId,
-                        directoryImageUrl,
-                        hasDirectoryImage: directoryImageUrl ? 1 : 0
-                    }
-                });
-            } else if (f.isDirectory) {
-                const existing = cy.getElementById(fullPath);
-                existing.data('directoryImageUrl', directoryImageUrl);
+                            type: f.isDirectory ? 'directory' : 'file',
+                            parent: parentId,
+                            directoryImageUrl,
+                            hasDirectoryImage: directoryImageUrl ? 1 : 0,
+                            previewUrl,
+                            hasPreview,
+                            hasBrokenLinks: 0,
+                            brokenLinkCount: 0
+                        }
+                    });
+                } else if (f.isDirectory) {
+                    const existing = cy.getElementById(fullPath);
+                    existing.data('directoryImageUrl', directoryImageUrl);
                 existing.data('hasDirectoryImage', directoryImageUrl ? 1 : 0);
+            } else {
+                const existing = cy.getElementById(fullPath);
+                if (!existing.empty()) {
+                    existing.data('previewUrl', previewUrl);
+                    existing.data('hasPreview', hasPreview);
+                    existing.data('hasBrokenLinks', 0);
+                    existing.data('brokenLinkCount', 0);
+                }
             }
 
             if (!f.isDirectory) {
@@ -894,6 +1202,17 @@ async function renderGraphData(files, parentPath) {
         await handleLinkDiscovery(filePath);
     }
 
+    for (const task of previewFetches) {
+        const url = await findFirstImageInHtml(task.path);
+        if (url) {
+            const node = cy.getElementById(task.id);
+            if (!node.empty()) {
+                node.data('previewUrl', url);
+                node.data('hasPreview', 1);
+            }
+        }
+    }
+
     rebuildVisibleEdges();
     // Final relayout after edges exist so connected structures pack better.
     queueRelayout({ fit: true, reason: 'edges-updated' });
@@ -901,23 +1220,41 @@ async function renderGraphData(files, parentPath) {
 
 async function handleLinkDiscovery(filePath) {
     const cleanSource = normalizePath(filePath);
+    clearBrokenLinksForSource(cleanSource);
     try {
         const links = await scanFileForLinks(cleanSource);
         
         if (links && Array.isArray(links)) {
             for (const rawTarget of links) {
+                // External HTTP(S) links become external nodes + edges
+                if (isHttpLink(rawTarget)) {
+                    const extNode = makeExternalNodeFromUrl(rawTarget);
+                    if (!extNode) continue;
+                    addExternalNodesToGraph([extNode]);
+                    await persistExternalNodes([extNode]);
+                    rememberLink(cleanSource, extNode.id);
+                    await saveFoundEdge({ source: cleanSource, target: extNode.id });
+                    continue;
+                }
+
                 const resolvedTarget = resolveNotebookLink(cleanSource, rawTarget);
                 if (!resolvedTarget) continue;
 
                 const cleanTarget = normalizePath(resolvedTarget);
-                console.log("Clean Target: "+cleanTarget);
-    
+                const exists = await notebookAssetExists(cleanTarget);
+                if (!exists) {
+                    rememberBrokenLink(cleanSource, cleanTarget);
+                    applyBrokenLinkBadge(cleanSource);
+                    continue;
+                }
+
                 rememberLink(cleanSource, cleanTarget);
 
                 // Persist
                 await saveFoundEdge({ source: cleanSource, target: cleanTarget });
             }
         }
+        applyBrokenLinkBadge(cleanSource);
     } catch (err) {
         console.error(`Link discovery failed for ${cleanSource}:`, err);
     }
@@ -1000,3 +1337,46 @@ export async function handleGraphManagerAction(actionKey) {
 }
 
 window.handleGraphManagerAction = handleGraphManagerAction;
+
+// ------------------------------
+// Keyboard shortcuts (Copy / Paste / Cut)
+// ------------------------------
+function isEditableTarget(target) {
+    if (!target) return false;
+    const tag = target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (target.isContentEditable) return true;
+    return Boolean(target.closest?.('[role="textbox"]'));
+}
+
+function shouldHandleGraphManagerShortcut() {
+    const state = window.NodevisionState || {};
+    const handlerMatches = state.activeActionHandler === window.handleGraphManagerAction;
+    const panelMatches = state.activePanelType === "GraphManager";
+    return handlerMatches || panelMatches;
+}
+
+function registerGraphManagerClipboardShortcuts() {
+    if (window.__nvGraphManagerClipboardShortcutsBound) return;
+
+    const listener = async (e) => {
+        if (e.altKey || !(e.ctrlKey || e.metaKey) || e.repeat) return;
+        const actionKey = CLIPBOARD_SHORTCUTS[e.key?.toLowerCase?.()] || null;
+        if (!actionKey) return;
+        if (!shouldHandleGraphManagerShortcut()) return;
+        if (isEditableTarget(e.target)) return;
+        if (typeof window.handleGraphManagerAction !== "function") return;
+
+        e.preventDefault();
+        try {
+            await window.handleGraphManagerAction(actionKey);
+        } catch (err) {
+            console.error("GraphManager clipboard shortcut failed:", err);
+        }
+    };
+
+    document.addEventListener("keydown", listener);
+    window.__nvGraphManagerClipboardShortcutsBound = true;
+}
+
+registerGraphManagerClipboardShortcuts();

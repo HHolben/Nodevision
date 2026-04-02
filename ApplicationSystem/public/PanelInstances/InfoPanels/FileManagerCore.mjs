@@ -9,6 +9,11 @@ const FILE_ITEM_SOUND_URLS = [
   "/soundEffects/Tic.mp3",
   "/soundEffects/Tic.wav"
 ];
+const CLIPBOARD_SHORTCUTS = {
+  c: "copyFile",
+  v: "pasteFile",
+  x: "cutFile"
+};
 let fileItemHoverAudio = null;
 let fileItemHoverAudioIndex = 0;
 let lastFileItemHoverSoundAt = 0;
@@ -613,3 +618,46 @@ export async function handleFileManagerAction(actionKey) {
   alert(`Error executing toolbar action "${actionKey}": ${rootCauseMessage}`);
 }
 window.handleFileManagerAction = handleFileManagerAction;
+
+// ------------------------------
+// Keyboard shortcuts (Copy / Paste / Cut)
+// ------------------------------
+function isEditableTarget(target) {
+  if (!target) return false;
+  const tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (target.isContentEditable) return true;
+  return Boolean(target.closest?.('[role="textbox"]'));
+}
+
+function shouldHandleFileManagerShortcut() {
+  const state = window.NodevisionState || {};
+  const handlerMatches = state.activeActionHandler === window.handleFileManagerAction;
+  const panelMatches = state.activePanelType === "FileManager";
+  return handlerMatches || panelMatches;
+}
+
+function registerFileManagerClipboardShortcuts() {
+  if (window.__nvFileManagerClipboardShortcutsBound) return;
+
+  const listener = async (e) => {
+    if (e.altKey || !(e.ctrlKey || e.metaKey) || e.repeat) return;
+    const actionKey = CLIPBOARD_SHORTCUTS[e.key?.toLowerCase?.()] || null;
+    if (!actionKey) return;
+    if (!shouldHandleFileManagerShortcut()) return;
+    if (isEditableTarget(e.target)) return;
+    if (typeof window.handleFileManagerAction !== "function") return;
+
+    e.preventDefault();
+    try {
+      await window.handleFileManagerAction(actionKey);
+    } catch (err) {
+      console.error("FileManager clipboard shortcut failed:", err);
+    }
+  };
+
+  document.addEventListener("keydown", listener);
+  window.__nvFileManagerClipboardShortcutsBound = true;
+}
+
+registerFileManagerClipboardShortcuts();

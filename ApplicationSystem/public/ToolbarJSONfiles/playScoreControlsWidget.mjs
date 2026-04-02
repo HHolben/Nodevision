@@ -30,11 +30,18 @@ export function initToolbarWidget(hostElement) {
   const playBtn = hostElement.querySelector('[data-nv-midi-action="play"]');
   const pauseBtn = hostElement.querySelector('[data-nv-midi-action="pause"]');
   const tempoInput = hostElement.querySelector("[data-nv-midi-tempo]");
+  const clickToggle = hostElement.querySelector("[data-nv-midi-click]");
 
   const syncTempo = () => {
     const tools = getTools();
     const bpm = tools?.getTempo?.() ?? window.NodevisionState?.midiTempoBpm ?? 120;
     if (tempoInput) tempoInput.value = String(clamp(bpm, 20, 400, 120));
+  };
+
+  const syncClick = () => {
+    const tools = getTools();
+    const enabled = tools?.isClickTrackEnabled?.() ?? window.NodevisionState?.midiClickTrackEnabled ?? false;
+    if (clickToggle) clickToggle.checked = Boolean(enabled);
   };
 
   if (playBtn) {
@@ -74,5 +81,16 @@ export function initToolbarWidget(hostElement) {
     });
   }
 
+  if (clickToggle) {
+    clickToggle.addEventListener("change", () => {
+      const enabled = Boolean(clickToggle.checked);
+      const tools = getTools();
+      if (tools?.setClickTrackEnabled) tools.setClickTrackEnabled(enabled);
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.midiClickTrackEnabled = enabled;
+    });
+  }
+
   syncTempo();
+  syncClick();
 }

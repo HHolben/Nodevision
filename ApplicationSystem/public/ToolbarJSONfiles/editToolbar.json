@@ -45,6 +45,13 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Edit Recording Here",
+    "callbackKey": "editRecordingHere",
+    "modes": ["HTMLediting", "EPUBediting", "GraphicalEditing"],
+    "conditions": null
+  },
+  {
+    "ToolbarCategory": "Edit",
     "parentHeading": "Edit Image Here",
     "heading": "Crop Image",
     "callbackKey": "cropSelectedImage",

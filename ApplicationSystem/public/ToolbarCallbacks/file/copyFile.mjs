@@ -1,11 +1,12 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/copyFile.mjs
 // This file defines browser-side copy File logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { setClipboard } from "./fileClipboard.mjs";
+import { setStatus } from "/StatusBar.mjs";
 
 export default async function copyFile() {
   const sourcePath = window.selectedFilePath;
   if (!sourcePath) {
-    alert("No file or directory selected.");
+    setStatus("Copy failed", "Select a file or directory first");
     return;
   }
 
@@ -14,5 +15,5 @@ export default async function copyFile() {
     sourcePath
   });
 
-  alert(`Copied: ${sourcePath}`);
+  setStatus("Copied", sourcePath);
 }

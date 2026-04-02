@@ -7,6 +7,10 @@ import { extractNoteOnEventsFromMIDI, extractNoteRangesFromMIDI } from '/utils/m
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { buildStaffEventsFromNoteRanges, buildPolyphonicStaffPlan } from "/utils/midiStaffPreview.mjs";
 
+// Playhead updaters are assigned by the renderers so the playback scheduler can animate them.
+let updatePianoRollPlayhead = null;
+let updateSheetPlayhead = null;
+
 export async function renderFile(filePath, panel) {
   panel.innerHTML = '';
 
@@ -290,11 +294,16 @@ function renderPianoRoll(noteRanges, container) {
 
   const scroller = document.createElement("div");
   scroller.style.cssText = "border:1px solid #eee;max-height:520px;overflow:auto;background:#fafafa;";
+  scroller.style.position = "relative";
   wrapper.appendChild(scroller);
 
   const canvas = document.createElement("canvas");
   canvas.style.display = "block";
   scroller.appendChild(canvas);
+
+  const playhead = document.createElement("div");
+  playhead.style.cssText = "position:absolute;top:0;bottom:0;width:2px;background:#ff1744;opacity:0.8;pointer-events:none;display:none;";
+  scroller.appendChild(playhead);
 
   const tooltip = document.createElement("div");
   tooltip.style.cssText = "position:absolute;pointer-events:none;display:none;padding:6px 8px;background:rgba(0,0,0,0.85);color:#fff;border-radius:6px;font:12px monospace;z-index:5;";
@@ -404,6 +413,23 @@ function renderPianoRoll(noteRanges, container) {
 
     ctx.restore();
     stats.textContent = `Rendering ${selectedNotes.length} notes.`;
+
+    // Make playhead match canvas height.
+    playhead.style.height = `${height}px`;
+    playhead.style.display = "none";
+  };
+
+  const syncPlayhead = (tick, isActive = false) => {
+    if (!isActive) {
+      playhead.style.display = "none";
+      return;
+    }
+    const pxPerBeat = Number(zoom.value) || 40;
+    const pxPerTick = pxPerBeat / division;
+    const padding = 20;
+    const x = padding + Math.max(0, tick) * pxPerTick;
+    playhead.style.display = "block";
+    playhead.style.transform = `translateX(${x}px)`;
   };
 
   const hitTest = (evt) => {
@@ -473,6 +499,8 @@ function renderPianoRoll(noteRanges, container) {
   // Initial draw.
   // Default selection tries to match common "main" track behavior (avoid meta-only tracks).
   draw();
+
+  updatePianoRollPlayhead = syncPlayhead;
 
   return {
     getSelectedTrack: () => trackSelect.value,
@@ -559,20 +587,81 @@ function renderSheet({ buffer, division, noteRanges, viewState }, container) {
     rendererDiv.style.overflowY = "hidden";
     sheetDiv.appendChild(rendererDiv);
 
-    const renderer = new VF.Renderer(rendererDiv, VF.Renderer.Backends.SVG);
-    renderer.resize(targetWidth - 20, height);
-    const ctx = renderer.getContext();
-    ctx.setFont('Arial', 10);
+  const renderer = new VF.Renderer(rendererDiv, VF.Renderer.Backends.SVG);
+  renderer.resize(targetWidth - 20, height); // will be adjusted below after wrapping
+  const ctx = renderer.getContext();
+  ctx.setFont('Arial', 10);
 
-    const stave = new VF.Stave(10, 20, targetWidth - 40);
-    stave.addClef('treble').setContext(ctx).draw();
+  rendererDiv.style.position = "relative";
+  const sheetPlayhead = document.createElement("div");
+  sheetPlayhead.style.cssText = "position:absolute;top:0;width:2px;background:#00b0ff;opacity:0.9;pointer-events:none;display:none;";
+  rendererDiv.appendChild(sheetPlayhead);
 
-    if (plan?.voices?.length) {
+  const lineHeight = 200;
+  const viewWidth = container.clientWidth || rendererDiv.clientWidth || targetWidth;
+  const lineWidth = Math.max(600, Math.min(1600, viewWidth - 20));
+
+  // Helper: chunk voices into lines based on available ticks per line.
+  const buildLines = (voices, maxTicksPerLine, divisionTicks) => {
+    const positions = voices.map(() => 0);
+    const lines = [];
+    while (true) {
+      const allDone = positions.every((pos, i) => pos >= (voices[i]?.items?.length || 0));
+      if (allDone) break;
+      const lineVoices = [];
+      let lineTickSpan = 0;
+      voices.forEach((v, vIdx) => {
+        const items = v?.items || [];
+        const ties = v?.ties || [];
+        const startIdx = positions[vIdx];
+        let idx = startIdx;
+        let consumed = 0;
+        while (idx < items.length) {
+          const itemTicks = Math.max(1, Number(items[idx].ticks) || divisionTicks);
+          if (consumed > 0 && consumed + itemTicks > maxTicksPerLine) break;
+          consumed += itemTicks;
+          idx += 1;
+        }
+        if (idx === startIdx && idx < items.length) {
+          consumed = Math.max(1, Number(items[idx].ticks) || divisionTicks);
+          idx += 1;
+        }
+        const sliceItems = items.slice(startIdx, idx);
+        const sliceTies = ties
+          .filter((t) => t.from >= startIdx && t.to < idx)
+          .map((t) => ({ ...t, from: t.from - startIdx, to: t.to - startIdx }));
+        positions[vIdx] = idx;
+        lineVoices.push({ items: sliceItems, ties: sliceTies });
+        lineTickSpan = Math.max(lineTickSpan, consumed);
+      });
+      lines.push({ voices: lineVoices, tickLength: lineTickSpan });
+    }
+    return lines;
+  };
+
+  if (plan?.voices?.length) {
+    const sheetDivision = Number(plan?.division) || Number(division) || 480;
+    const pxPerBeatSheet = 50;
+    const pxPerTickSheetBase = pxPerBeatSheet / sheetDivision;
+    const maxTicksPerLine = Math.max(sheetDivision, Math.floor((lineWidth - 40) / pxPerTickSheetBase));
+    const lines = buildLines(plan.voices, maxTicksPerLine, sheetDivision);
+
+    const totalHeight = lines.length * lineHeight + 40;
+    renderer.resize(lineWidth, totalHeight);
+
+    const lineMeta = [];
+    let cumulativeTick = 0;
+
+    lines.forEach((line, lineIdx) => {
+      const y = 20 + lineIdx * lineHeight;
+      const stave = new VF.Stave(10, y, lineWidth - 20);
+      stave.addClef('treble').setContext(ctx).draw();
+
       const vfVoices = [];
       const allTies = [];
 
-      for (let voiceIndex = 0; voiceIndex < plan.voices.length; voiceIndex += 1) {
-        const voicePlan = plan.voices[voiceIndex];
+      for (let voiceIndex = 0; voiceIndex < line.voices.length; voiceIndex += 1) {
+        const voicePlan = line.voices[voiceIndex];
         const stemDir = (voiceIndex % 2 === 0) ? VF.Stem.UP : VF.Stem.DOWN;
 
         const tickables = [];
@@ -614,10 +703,10 @@ function renderSheet({ buffer, division, noteRanges, viewState }, container) {
           const keyCount = Math.max(1, Math.floor(Number(t.keyCount) || 1));
           const indices = Array.from({ length: keyCount }, (_, i) => i);
           allTies.push(new VF.StaveTie({
-            first_note: first,
-            last_note: last,
-            first_indices: indices,
-            last_indices: indices,
+            firstNote: first,
+            lastNote: last,
+            firstIndexes: indices,
+            lastIndexes: indices,
           }));
         }
 
@@ -631,13 +720,42 @@ function renderSheet({ buffer, division, noteRanges, viewState }, container) {
       vfVoices.forEach((v) => v.draw(ctx, stave));
       allTies.forEach((t) => t.setContext(ctx).draw());
 
-      sheetDiv.insertAdjacentHTML(
-        'beforeend',
-        `<p style="font-size:0.8em;color:#666;margin-top:1em;">Track: ${selectedTrack}. Voices: ${plan.voices.length}. (Quantized + tied)</p>`
-      );
-    } else {
-      // Fallback to simplified (non-polyphonic) preview.
-      const vfNotes = notesData.map((n) => {
+      lineMeta.push({
+        startTick: cumulativeTick,
+        tickLength: line.tickLength || maxTicksPerLine,
+        y,
+      });
+      cumulativeTick += line.tickLength;
+    });
+
+    sheetDiv.insertAdjacentHTML(
+      'beforeend',
+      `<p style="font-size:0.8em;color:#666;margin-top:1em;">Track: ${selectedTrack}. Voices: ${plan.voices.length}. (Quantized + tied)</p>`
+    );
+
+    const syncSheetPlayhead = (tick, isActive = false) => {
+      if (!isActive || !lineMeta.length) {
+        sheetPlayhead.style.display = "none";
+        return;
+      }
+      let lineIdx = lineMeta.findIndex((m) => tick < m.startTick + m.tickLength);
+      if (lineIdx === -1) {
+        sheetPlayhead.style.display = "none";
+        return;
+      }
+      const meta = lineMeta[lineIdx];
+      const localTick = Math.max(0, tick - meta.startTick);
+      const pxPerTick = (lineWidth - 40) / (meta.tickLength || 1);
+      const x = 10 + localTick * pxPerTick;
+      const y = meta.y;
+      sheetPlayhead.style.display = "block";
+      sheetPlayhead.style.height = `${lineHeight - 30}px`;
+      sheetPlayhead.style.transform = `translate(${x}px, ${y}px)`;
+    };
+    updateSheetPlayhead = syncSheetPlayhead;
+  } else {
+    // Fallback to simplified (non-polyphonic) preview.
+    const vfNotes = notesData.map((n) => {
         const note = new VF.StaveNote({
           clef: 'treble',
           keys: n.keys,
@@ -654,19 +772,36 @@ function renderSheet({ buffer, division, noteRanges, viewState }, container) {
         return note;
       });
 
-      const voice = new VF.Voice({ num_beats: Math.max(1, vfNotes.length), beat_value: 4 })
-        .setStrict(false)
-        .addTickables(vfNotes);
+    const voice = new VF.Voice({ num_beats: Math.max(1, vfNotes.length), beat_value: 4 })
+      .setStrict(false)
+      .addTickables(vfNotes);
 
-      new VF.Formatter().joinVoices([voice]).formatToStave([voice], stave);
-      voice.draw(ctx, stave);
-      sheetDiv.insertAdjacentHTML(
-        'beforeend',
-        `<p style="font-size:0.8em;color:#666;margin-top:1em;">Fallback preview (no ties/voices).</p>`
-      );
-    }
+    const stave = new VF.Stave(10, 20, lineWidth - 20);
+    stave.addClef('treble').setContext(ctx).draw();
 
-  } catch (err) {
+    new VF.Formatter().joinVoices([voice]).formatToStave([voice], stave);
+    voice.draw(ctx, stave);
+    sheetDiv.insertAdjacentHTML(
+      'beforeend',
+      `<p style="font-size:0.8em;color:#666;margin-top:1em;">Fallback preview (no ties/voices).</p>`
+    );
+
+    const pxPerBeatSheet = 60;
+    const sheetDivision = Number(plan?.division) || Number(division) || 480;
+    const pxPerTickSheet = pxPerBeatSheet / sheetDivision;
+    const syncSheetPlayhead = (tick, isActive = false) => {
+      if (!isActive) {
+        sheetPlayhead.style.display = "none";
+        return;
+      }
+      const x = 10 + Math.max(0, tick) * pxPerTickSheet;
+      sheetPlayhead.style.display = "block";
+      sheetPlayhead.style.transform = `translateX(${x}px)`;
+    };
+    updateSheetPlayhead = syncSheetPlayhead;
+  }
+
+} catch (err) {
     console.error('Error rendering sheet music:', err);
     sheetDiv.insertAdjacentHTML(
       'beforeend',
@@ -684,6 +819,50 @@ function installPlaybackTools(viewState, noteRanges) {
   let audioCtx = null;
   let scheduled = [];
   let playing = false;
+  let clickTrackEnabled = Boolean(window.NodevisionState?.midiClickTrackEnabled);
+  let playheadRaf = null;
+  let playheadStartAudioTime = 0;
+  let playheadSecPerTick = 0;
+  let totalDurationSec = 0;
+
+  const updatePlayheads = (tick, isActive) => {
+    if (typeof updatePianoRollPlayhead === "function") {
+      updatePianoRollPlayhead(tick, isActive);
+    }
+    if (typeof updateSheetPlayhead === "function") {
+      updateSheetPlayhead(tick, isActive);
+    }
+  };
+
+  const stopPlayhead = () => {
+    if (playheadRaf !== null) {
+      cancelAnimationFrame(playheadRaf);
+      playheadRaf = null;
+    }
+    updatePlayheads(0, false);
+  };
+
+  const startPlayhead = () => {
+    stopPlayhead();
+    const loop = () => {
+      if (!playing || !audioCtx) {
+        updatePlayheads(0, false);
+        return;
+      }
+      const elapsed = Math.max(0, (audioCtx.currentTime - playheadStartAudioTime));
+      const tick = elapsed / (playheadSecPerTick || 1e-6);
+      if (elapsed >= totalDurationSec + 0.05) {
+        playing = false;
+        scheduled = [];
+        stopPlayhead();
+        updatePlayheads(0, false);
+        return;
+      }
+      updatePlayheads(tick, true);
+      playheadRaf = requestAnimationFrame(loop);
+    };
+    playheadRaf = requestAnimationFrame(loop);
+  };
 
   const stopAll = () => {
     for (const entry of scheduled) {
@@ -694,6 +873,7 @@ function installPlaybackTools(viewState, noteRanges) {
     }
     scheduled = [];
     playing = false;
+    stopPlayhead();
   };
 
   const schedule = () => {
@@ -712,17 +892,18 @@ function installPlaybackTools(viewState, noteRanges) {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const now = audioCtx.currentTime + 0.02;
 
-    const MAX_SCHEDULE_NOTES = 2000;
-    const windowSeconds = 45;
+    const MAX_SCHEDULE_NOTES = 12000;
+    let maxTick = 0;
 
     let scheduledCount = 0;
+    let lastNoteEndSec = 0;
     for (const n of selectedNotes) {
       if (scheduledCount >= MAX_SCHEDULE_NOTES) break;
       const start = Number(n.startTick) || 0;
       const dur = Math.max(1, Number(n.durationTicks) || 1);
+      maxTick = Math.max(maxTick, start + dur);
       const startSec = start * secPerTick;
       const endSec = (start + dur) * secPerTick;
-      if (startSec > windowSeconds) break;
 
       const osc = audioCtx.createOscillator();
       osc.type = "triangle";
@@ -742,9 +923,36 @@ function installPlaybackTools(viewState, noteRanges) {
 
       scheduled.push({ osc, gain });
       scheduledCount += 1;
+      lastNoteEndSec = Math.max(lastNoteEndSec, endSec);
     }
 
+    const windowSeconds = Math.min(600, Math.max(1, lastNoteEndSec + 4));
+
+    if (clickTrackEnabled) {
+      const maxSec = windowSeconds;
+      let beatIdx = 0;
+      for (let beatTick = 0; beatTick * secPerTick <= maxSec; beatTick += division, beatIdx += 1) {
+        const tClick = now + beatTick * secPerTick;
+        const osc = audioCtx.createOscillator();
+        osc.type = "square";
+        osc.frequency.value = (beatIdx % 4 === 0) ? 900 : 750;
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0;
+        osc.connect(gain).connect(audioCtx.destination);
+        gain.gain.setValueAtTime(0, tClick);
+        gain.gain.linearRampToValueAtTime(0.08, tClick + 0.005);
+        gain.gain.linearRampToValueAtTime(0.0, tClick + 0.03);
+        osc.start(tClick);
+        osc.stop(tClick + 0.05);
+        scheduled.push({ osc, gain });
+      }
+    }
+
+    playheadStartAudioTime = now;
+    playheadSecPerTick = secPerTick;
+    totalDurationSec = Math.min(windowSeconds, lastNoteEndSec + 0.5);
     playing = true;
+    startPlayhead();
   };
 
   window.NodevisionMIDITools = {
@@ -763,13 +971,22 @@ function installPlaybackTools(viewState, noteRanges) {
     },
     setTempo: (bpm) => viewState?.setTempo?.(bpm),
     getTempo: () => viewState?.getTempo?.() ?? 120,
-    status: () => ({ playing }),
+    setClickTrackEnabled: (on) => {
+      clickTrackEnabled = Boolean(on);
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.midiClickTrackEnabled = clickTrackEnabled;
+    },
+    isClickTrackEnabled: () => clickTrackEnabled,
+    status: () => ({ playing, clickTrackEnabled }),
   };
 
   // Keep toolbar tempo input in sync with global state if other panels update it.
   window.NodevisionState = window.NodevisionState || {};
   if (!Number.isFinite(Number(window.NodevisionState.midiTempoBpm))) {
     window.NodevisionState.midiTempoBpm = 120;
+  }
+  if (typeof window.NodevisionState.midiClickTrackEnabled !== "boolean") {
+    window.NodevisionState.midiClickTrackEnabled = false;
   }
   updateToolbarState({ midiTempoBpm: window.NodevisionState.midiTempoBpm });
 

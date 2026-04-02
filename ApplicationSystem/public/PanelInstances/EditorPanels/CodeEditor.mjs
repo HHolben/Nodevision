@@ -10,6 +10,8 @@ let currentLoadedBom = false;
 let currentLoadedIsBinary = false;
 let previewOutputEl = null;
 let previewStatusEl = null;
+let commonVarOverlay = null;
+let commonVarData = [];
 
 function inferPreviewLanguage(filePath) {
   const lower = String(filePath || "").toLowerCase();
@@ -251,6 +253,9 @@ function initializeMonaco(filePath, content) {
       language: detectLanguage(filePath),
       theme: "vs-dark",
       automaticLayout: true,
+      folding: true,
+      foldingHighlight: true,
+      wordWrap: "off",
     });
 
     // 4. Register globals for the SaveFile.mjs router
@@ -270,6 +275,46 @@ function initializeMonaco(filePath, content) {
     editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
         // Monaco handles preventing browser default when command is registered.
         saveCurrentFile({ path: filePath });
+    });
+
+    // Folding markers (#region / #endregion) across common languages
+    configureFoldingMarkers();
+
+    // Quick fold/unfold actions for current region
+    editorInstance.addAction({
+      id: "nv.foldHere",
+      label: "Fold Region Here",
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.BracketLeft],
+      run: () => editorInstance.getAction("editor.fold")?.run(),
+    });
+    editorInstance.addAction({
+      id: "nv.unfoldHere",
+      label: "Unfold Region Here",
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.BracketRight],
+      run: () => editorInstance.getAction("editor.unfold")?.run(),
+    });
+    editorInstance.addAction({
+      id: "nv.foldAllRegions",
+      label: "Fold All Marker Regions",
+      run: () => editorInstance.getAction("editor.foldAllMarkerRegions")?.run(),
+    });
+
+    // Alt+Z word wrap toggle (explicit binding for consistency)
+    editorInstance.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyZ, () => {
+      editorInstance.getAction("editor.action.toggleWordWrap")?.run();
+    });
+
+    // Ctrl/Cmd+F: show common identifiers helper + default find
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
+      showCommonVarOverlay();
+      editorInstance.getAction("actions.find")?.run();
+    });
+
+    // Keep overlay data fresh as user types
+    editorInstance.onDidChangeModelContent(() => {
+      if (commonVarOverlay?.style.display === "block") {
+        refreshCommonVarOverlay();
+      }
     });
 
   });
@@ -295,6 +340,145 @@ function detectLanguage(filePath) {
       hpp: "cpp",
     }[ext] || "plaintext"
   );
+}
+
+function configureFoldingMarkers() {
+  const markers = {
+    start: /^\s*#region\b/i,
+    end: /^\s*#endregion\b/i,
+  };
+  ["javascript", "typescript", "html", "css", "python", "cpp", "json", "plaintext"].forEach((lang) => {
+    try {
+      monaco.languages.setLanguageConfiguration(lang, { folding: { markers } });
+    } catch (err) {
+      console.warn("Folding marker config failed for", lang, err);
+    }
+  });
+}
+
+function collectCommonIdentifiers(model, max = 8) {
+  if (!model) return [];
+  const text = model.getValue();
+  const re = /\b[A-Za-z_][A-Za-z0-9_]*\b/g;
+  const counts = new Map();
+  const keywords = new Set([
+    "function","return","const","let","var","if","else","for","while","switch","case","break","continue",
+    "class","extends","import","from","export","default","try","catch","finally","throw","new","this",
+    "true","false","null","undefined","async","await","def","lambda","pass","None","in","and","or","not",
+    "int","float","double","char","void","public","private","protected","static","final","enum","struct"
+  ]);
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const word = m[0];
+    if (keywords.has(word)) continue;
+    counts.set(word, (counts.get(word) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, max)
+    .map(([name, count]) => ({ name, count }));
+}
+
+function ensureCommonVarOverlay() {
+  if (commonVarOverlay) return commonVarOverlay;
+  const div = document.createElement("div");
+  commonVarOverlay = div;
+  Object.assign(div.style, {
+    position: "absolute",
+    top: "8px",
+    right: "8px",
+    background: "rgba(20,20,20,0.9)",
+    color: "#fff",
+    padding: "8px",
+    borderRadius: "6px",
+    boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+    fontSize: "12px",
+    display: "none",
+    maxWidth: "260px",
+    zIndex: 50,
+  });
+  const title = document.createElement("div");
+  title.textContent = "Common identifiers (click to jump)";
+  title.style.fontWeight = "700";
+  title.style.marginBottom = "6px";
+  div.appendChild(title);
+
+  const list = document.createElement("div");
+  list.id = "nv-common-var-list";
+  list.style.display = "grid";
+  list.style.gridTemplateColumns = "repeat(auto-fit, minmax(90px, 1fr))";
+  list.style.gap = "6px";
+  div.appendChild(list);
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "×";
+  Object.assign(close.style, {
+    position: "absolute",
+    top: "4px",
+    right: "6px",
+    background: "transparent",
+    color: "#fff",
+    border: "none",
+    fontSize: "14px",
+    cursor: "pointer",
+  });
+  close.addEventListener("click", () => {
+    commonVarOverlay.style.display = "none";
+  });
+  div.appendChild(close);
+
+  editorContainer.appendChild(div);
+  return div;
+}
+
+function refreshCommonVarOverlay() {
+  if (!editorInstance || !commonVarOverlay) return;
+  const list = commonVarOverlay.querySelector("#nv-common-var-list");
+  if (!list) return;
+  commonVarData = collectCommonIdentifiers(editorInstance.getModel());
+  list.innerHTML = "";
+  if (!commonVarData.length) {
+    const empty = document.createElement("div");
+    empty.textContent = "No identifiers yet.";
+    empty.style.opacity = "0.8";
+    list.appendChild(empty);
+    return;
+  }
+  commonVarData.forEach(({ name, count }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = `${name} (${count})`;
+    Object.assign(btn.style, {
+      padding: "4px 6px",
+      border: "1px solid #444",
+      background: "#1e1e1e",
+      color: "#fff",
+      borderRadius: "4px",
+      cursor: "pointer",
+      textAlign: "left",
+    });
+    btn.addEventListener("click", () => jumpToIdentifier(name));
+    list.appendChild(btn);
+  });
+}
+
+function jumpToIdentifier(name) {
+  if (!editorInstance || !name) return;
+  const model = editorInstance.getModel();
+  if (!model) return;
+  const matches = model.findMatches(name, true, false, false, null, true);
+  if (!matches.length) return;
+  const pos = matches[0].range;
+  editorInstance.setSelection(pos);
+  editorInstance.revealRangeInCenter(pos);
+  commonVarOverlay.style.display = "none";
+}
+
+function showCommonVarOverlay() {
+  ensureCommonVarOverlay();
+  refreshCommonVarOverlay();
+  commonVarOverlay.style.display = "block";
 }
 
 /**

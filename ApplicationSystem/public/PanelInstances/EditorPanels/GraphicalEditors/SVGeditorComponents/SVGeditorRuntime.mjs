@@ -1711,7 +1711,11 @@ export async function renderEditor(filePath, container) {
       finishLineTool();
     }
     if (toolState.mode === "bezier" && mode !== "bezier") {
-      bezierController.reset();
+      // Only tear down the live bezier session when a path is mid-draw; if the user
+      // already finished (Enter), leave the completed path in place.
+      if (bezierController.isActive()) {
+        bezierController.reset();
+      }
     }
     toolState.mode = mode;
     toolState.drawing = false;
@@ -2157,12 +2161,13 @@ export async function renderEditor(filePath, container) {
 
 	      const layer = lineToolState.layer || getActiveLayer() || svgRoot;
 	      let rootPoint = p;
-	      if (lineToolState.active && e.shiftKey && lineToolState.startRoot) {
-	        const tol = pointerToleranceInSvgUnits(10);
-	        const snapped = findNearestSnapPointInRoot(p, tol);
-	        rootPoint = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
-	      }
-	      const spacePoint = rootPointToElementPoint(layer, rootPoint);
+      if (lineToolState.active && e.shiftKey && lineToolState.startRoot) {
+        // Shift: snap to nearby endpoints first, then fall back to 15° angle snaps.
+        const tol = pointerToleranceInSvgUnits(18);
+        const snapped = findNearestSnapPointInRoot(p, tol);
+        rootPoint = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
+      }
+      const spacePoint = rootPointToElementPoint(layer, rootPoint);
 
 	      if (!lineToolState.active) {
 	        clearSelection();
@@ -2387,7 +2392,8 @@ export async function renderEditor(filePath, container) {
     if (toolState.mode === "line" && lineToolState.active) {
       let next = p;
       if (e.shiftKey && lineToolState.startRoot) {
-        const tol = pointerToleranceInSvgUnits(10);
+        // Shift: prefer snapping to existing endpoints/vertices within a generous tolerance.
+        const tol = pointerToleranceInSvgUnits(18);
         const snapped = findNearestSnapPointInRoot(p, tol);
         next = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
       }

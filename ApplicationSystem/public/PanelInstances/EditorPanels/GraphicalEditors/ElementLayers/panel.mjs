@@ -10,6 +10,7 @@ function ensurePanelState(panelEl) {
         selected: { type: null, layerId: null, element: null },
         keyHandlerInstalled: false,
         rerender: null,
+        dragData: null,
       },
       enumerable: false,
       configurable: false,
@@ -43,6 +44,8 @@ function setSvgElementVisible(el, visible) {
 }
 
 function describeSvgElement(el) {
+  const explicit = el?.getAttribute?.("data-element-name");
+  if (explicit) return explicit;
   const tag = (el?.tagName || "element").toLowerCase();
   const id = el?.getAttribute?.("id");
   const cls = (el?.getAttribute?.("class") || "").trim();
@@ -67,6 +70,7 @@ function renderLayerContents({
   state,
   panelEl,
   setActiveLayer,
+  moveElementToLayer,
 } = {}) {
   const children = Array.from(layer?.children || []);
   if (children.length === 0) {
@@ -93,6 +97,7 @@ function renderLayerContents({
       borderRadius: "4px",
       cursor: "pointer",
     });
+    item.draggable = true;
 
     const visible = isSvgElementVisible(child);
     const visBtn = document.createElement("button");
@@ -125,6 +130,44 @@ function renderLayerContents({
       item.style.outline = "1px solid rgba(255, 183, 77, 0.75)";
     }
 
+    label.ondblclick = () => {
+      const current = child.getAttribute("data-element-name") || describeSvgElement(child);
+      const next = prompt("Rename element", current);
+      if (next && next.trim()) {
+        child.setAttribute("data-element-name", next.trim());
+        label.textContent = describeSvgElement(child);
+      }
+    };
+
+    item.addEventListener("dragstart", (e) => {
+      state.dragData = { type: "element", element: child, layerId: rootLayerId };
+      e.dataTransfer?.setData("text/plain", "element");
+      e.dataTransfer?.setDragImage?.(item, 0, 0);
+    });
+    item.addEventListener("dragend", () => {
+      state.dragData = null;
+      item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
+    });
+    item.addEventListener("dragover", (e) => {
+      if (state.dragData?.type === "element") {
+        e.preventDefault();
+        item.style.backgroundColor = "rgba(90,169,255,0.18)";
+      }
+    });
+    item.addEventListener("dragleave", () => {
+      item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
+    });
+    item.addEventListener("drop", (e) => {
+      if (state.dragData?.type !== "element") return;
+      e.preventDefault();
+      const dragging = state.dragData.element;
+      if (!dragging || dragging === child) return;
+      const targetLayerId = rootLayerId;
+      const beforeEl = child;
+      moveElementToLayer?.(dragging, targetLayerId, beforeEl);
+      state.dragData = null;
+    });
+
     item.addEventListener("click", (e) => {
       if (e.target instanceof HTMLElement && e.target.tagName === "BUTTON") return;
       if (state?.selected) {
@@ -152,6 +195,7 @@ function renderLayerContents({
         state,
         panelEl,
         setActiveLayer,
+        moveElementToLayer,
       });
     }
   });
@@ -181,6 +225,8 @@ export function renderLayersPanel({
   setActiveLayer,
   setLayerVisible,
   moveLayer,
+  moveLayerTo,
+  moveElementToLayer,
   removeLayer,
   rerender,
 } = {}) {
@@ -340,6 +386,7 @@ export function renderLayersPanel({
       layer.id === activeLayerId ? "1px solid #5aa9ff" : "1px solid #d5d5d5";
     wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
     wrapper.style.borderRadius = "6px";
+    wrapper.draggable = true;
     if (isSelectedLayer) {
       wrapper.style.outline = "2px solid rgba(255, 183, 77, 0.95)";
       wrapper.style.outlineOffset = "-2px";
@@ -426,6 +473,45 @@ export function renderLayersPanel({
 
     wrapper.appendChild(row);
 
+    wrapper.addEventListener("dragstart", (e) => {
+      state.dragData = { type: "layer", layerId: layer.id };
+      e.dataTransfer?.setData("text/plain", layer.id);
+      e.dataTransfer?.setDragImage?.(wrapper, 0, 0);
+    });
+    wrapper.addEventListener("dragend", () => {
+      state.dragData = null;
+      wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
+    });
+    wrapper.addEventListener("dragover", (e) => {
+      if (state.dragData?.type === "layer") {
+        e.preventDefault();
+        wrapper.style.background = "rgba(90,169,255,0.18)";
+      } else if (state.dragData?.type === "element") {
+        e.preventDefault();
+        wrapper.style.background = "rgba(90,169,255,0.12)";
+      }
+    });
+    wrapper.addEventListener("dragleave", () => {
+      wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
+    });
+    wrapper.addEventListener("drop", (e) => {
+      if (state.dragData?.type === "layer") {
+        e.preventDefault();
+        const draggingId = state.dragData.layerId;
+        if (draggingId && draggingId !== layer.id) {
+          moveLayerTo?.(draggingId, layer.id, "before");
+        }
+      } else if (state.dragData?.type === "element") {
+        e.preventDefault();
+        const draggingEl = state.dragData.element;
+        if (draggingEl) {
+          moveElementToLayer?.(draggingEl, layer.id, layer.firstChild);
+        }
+      }
+      state.dragData = null;
+      wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
+    });
+
     if (isExpanded) {
       const contents = document.createElement("div");
       Object.assign(contents.style, {
@@ -441,6 +527,7 @@ export function renderLayersPanel({
         state,
         panelEl,
         setActiveLayer,
+        moveElementToLayer,
       });
       wrapper.appendChild(contents);
     }

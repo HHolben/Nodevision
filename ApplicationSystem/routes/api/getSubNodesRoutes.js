@@ -15,6 +15,13 @@ export default function createGetSubNodesRouter(ctx = BASE_CONTEXT) {
   const router = express.Router();
   const notebookDir = ctx.notebookDir;
 
+  function toNotebookAssetUrl(relativePath = '') {
+    const clean = String(relativePath || '')
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '');
+    return `/Notebook/${clean}`;
+  }
+
   async function getFirstImageUrl(filePath) {
     try {
       const fileContent = await fs.readFile(filePath, 'utf8');
@@ -26,8 +33,8 @@ export default function createGetSubNodesRouter(ctx = BASE_CONTEXT) {
           return firstImageSrc;
         }
         const imagePath = path.join(path.dirname(filePath), firstImageSrc);
-        const relativePath = path.relative(notebookDir, imagePath).split(path.sep).join('/');
-        return relativePath;
+        const relativePath = path.relative(notebookDir, imagePath);
+        return toNotebookAssetUrl(relativePath);
       }
       return null;
     } catch (error) {
@@ -47,14 +54,14 @@ export default function createGetSubNodesRouter(ctx = BASE_CONTEXT) {
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
       const subNodes = await Promise.all(entries.map(async entry => {
-        let imageUrl = 'DefaultNodeImage.png';
+        let imageUrl = '/DefaultNodeImage.png';
         if (entry.isDirectory()) {
           const directoryImage = path.join(dirPath, entry.name, 'directory.png');
           try {
             await fs.access(directoryImage);
-            imageUrl = `Notebook/${regionPath}/${entry.name}/directory.png`;
+            imageUrl = toNotebookAssetUrl(path.join(regionPath, entry.name, 'directory.png'));
           } catch {
-            imageUrl = 'DefaultRegionImage.png';
+            imageUrl = '/DefaultRegionImage.png';
           }
           return {
             id: path.join(regionPath, entry.name),
@@ -66,7 +73,7 @@ export default function createGetSubNodesRouter(ctx = BASE_CONTEXT) {
 
         const filePath = path.join(dirPath, entry.name);
         const firstImage = await getFirstImageUrl(filePath);
-        imageUrl = firstImage ? firstImage : 'DefaultNodeImage.png';
+        imageUrl = firstImage ? firstImage : '/DefaultNodeImage.png';
         return {
           id: path.join(regionPath, entry.name),
           label: entry.name,

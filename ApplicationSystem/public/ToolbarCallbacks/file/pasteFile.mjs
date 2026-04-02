@@ -24,6 +24,36 @@ function destinationDirectory() {
   return normalizePath(window.currentDirectoryPath || "");
 }
 
+function splitNameAndExt(filename = "") {
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot <= 0) return { base: filename, ext: "" }; // hidden files stay intact
+  return {
+    base: filename.slice(0, lastDot),
+    ext: filename.slice(lastDot) // includes dot
+  };
+}
+
+async function nextAvailableName(dir, desiredName) {
+  const cleanDir = normalizePath(dir || "");
+  const res = await fetch(`/api/files?path=${encodeURIComponent(cleanDir)}`);
+  if (!res.ok) return desiredName; // fallback: let server decide
+  const data = await res.json().catch(() => []);
+  const existing = new Set(
+    Array.isArray(data)
+      ? data.map((entry) => normalizePath(entry?.name || ""))
+      : []
+  );
+
+  if (!existing.has(desiredName)) return desiredName;
+
+  const { base, ext } = splitNameAndExt(desiredName);
+  let counter = 2;
+  while (existing.has(`${base}_${counter}${ext}`)) {
+    counter += 1;
+  }
+  return `${base}_${counter}${ext}`;
+}
+
 export default async function pasteFile() {
   const clipboard = getClipboard();
   if (!clipboard?.sourcePath || !clipboard?.mode) {
@@ -34,7 +64,14 @@ export default async function pasteFile() {
   const sourcePath = normalizePath(clipboard.sourcePath);
   const destinationDir = destinationDirectory();
   const fileName = basename(sourcePath);
-  const destinationPath = destinationDir ? `${destinationDir}/${fileName}` : fileName;
+
+  let destinationPath = destinationDir ? `${destinationDir}/${fileName}` : fileName;
+
+  // For copy operations, auto-increment name if target exists (file_name -> file_name_2)
+  if (clipboard.mode === "copy") {
+    const safeName = await nextAvailableName(destinationDir, fileName);
+    destinationPath = destinationDir ? `${destinationDir}/${safeName}` : safeName;
+  }
 
   if (!destinationPath || sourcePath === destinationPath) {
     alert("Choose a different destination.");

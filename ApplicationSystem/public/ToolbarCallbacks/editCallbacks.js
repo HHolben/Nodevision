@@ -527,6 +527,11 @@ svgSendToBack: () => {
     } else {
         document.getElementById('svg-message').textContent = 'No element selected to send to back';
     }
+},
+
+editRecordingHere: async () => {
+    const mod = await import("./edit/editRecordingHere.mjs");
+    await mod.default();
 }
 
 
