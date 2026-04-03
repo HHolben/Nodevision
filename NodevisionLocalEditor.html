@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nodevision Local Editor</title>
+  <style>
+    :root {
+      --nv-bg-start: #0b7a43;
+      --nv-bg-mid: #064024;
+      --nv-bg-end: #041e12;
+      --nv-panel: #0f0f12;
+      --nv-panel-border: #2a2d32;
+      --nv-muted: #b8c8c0;
+      --nv-text: #f3fbf7;
+      --nv-accent-start: #1e88e5;
+      --nv-accent-end: #64b5f6;
+      --nv-status-bar-height: 26px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--nv-text);
+      background: radial-gradient(circle at 30% 20%, var(--nv-bg-start) 0%, var(--nv-bg-mid) 55%, var(--nv-bg-end) 100%);
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px calc(32px + var(--nv-status-bar-height));
+      overflow-x: hidden;
+    }
+
+    .shell {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand-mark {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+      color: #e8fff2;
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .tag {
+      color: var(--nv-muted);
+      font-size: 0.95rem;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.25);
+    }
+
+    .card {
+      background: var(--nv-panel);
+      border: 1px solid var(--nv-panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .card-header h1 {
+      margin: 4px 0 6px 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.01em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--nv-muted);
+      max-width: 640px;
+      line-height: 1.5;
+    }
+
+    .eyebrow {
+      margin: 0;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .control-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--nv-accent-start), var(--nv-accent-end));
+      color: #0a1017;
+      border: none;
+      padding: 11px 16px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 160ms ease, filter 120ms ease;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 12px 28px rgba(30, 136, 229, 0.25);
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:active { transform: translateY(0); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; filter: none; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      min-height: 60vh;
+    }
+
+    @media (max-width: 960px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      border: 1px solid var(--nv-panel-border);
+      background: rgba(255,255,255,0.02);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .muted { color: var(--nv-muted); }
+
+    .file-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--nv-panel-border);
+      border-radius: 10px;
+      overflow: auto;
+      min-height: 200px;
+      background: rgba(0,0,0,0.35);
+    }
+
+    .file-list li {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      color: var(--nv-muted);
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .file-list li:last-child { border-bottom: none; }
+    .file-list li:hover { background: rgba(30, 136, 229, 0.12); color: var(--nv-text); }
+    .file-list li.active { background: rgba(30, 136, 229, 0.2); color: var(--nv-text); }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--nv-panel-border);
+      background: rgba(0,0,0,0.35);
+      color: var(--nv-text);
+      padding: 12px;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    #status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--nv-status-bar-height);
+      background: rgba(0,0,0,0.65);
+      border-top: 1px solid var(--nv-panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 13px;
+      color: var(--nv-muted);
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="brand-row">
+      <div class="brand-mark">Nodevision</div>
+      <div class="tag">Offline Notebook</div>
+    </header>
+
+    <main class="card">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">Local mode</p>
+          <h1>Notebook Local Editor</h1>
+          <p class="subtitle">Work on Notebook files locally with the same look and feel as the Nodevision client.</p>
+        </div>
+        <div class="control-row">
+          <button id="pickDir">Pick Notebook Folder</button>
+          <button id="pickFile">Pick Single File</button>
+          <input id="fileInputFallback" type="file" style="display:none" />
+        </div>
+      </div>
+
+      <div class="workspace">
+        <section class="panel list-panel">
+          <div class="panel-header">
+            <div id="dirLabel">No folder selected</div>
+            <small class="muted">Editable types: html, txt, md, json, css, js</small>
+          </div>
+          <ul class="file-list" id="fileList"></ul>
+        </section>
+
+        <section class="panel editor-panel">
+          <div class="panel-header">
+            <label id="fileLabel">No file open</label>
+            <div class="button-row">
+              <button id="saveFile" disabled>Save to Same File</button>
+              <button id="downloadFile" disabled>Download Edited Copy</button>
+            </div>
+          </div>
+          <textarea id="editor" placeholder="Open a file to edit..." disabled></textarea>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="status-bar">
+    <span id="status">Idle</span>
+    <span id="status-right">Local copy</span>
+  </div>
+
+  <script type="module">
+    const statusEl = document.getElementById("status");
+    const dirLabel = document.getElementById("dirLabel");
+    const fileLabel = document.getElementById("fileLabel");
+    const fileList = document.getElementById("fileList");
+    const editor = document.getElementById("editor");
+    const pickDirBtn = document.getElementById("pickDir");
+    const pickFileBtn = document.getElementById("pickFile");
+    const fileInputFallback = document.getElementById("fileInputFallback");
+    const saveBtn = document.getElementById("saveFile");
+    const downloadBtn = document.getElementById("downloadFile");
+
+    const TEXT_EXTS = new Set(["txt", "md", "markdown", "html", "htm", "json", "js", "ts", "css", "scss", "svg", "xml", "csv", "yaml", "yml"]);
+
+    let currentDirHandle = null;
+    let currentFileHandle = null;
+    let currentFileName = "";
+
+    const setStatus = (msg) => statusEl.textContent = msg;
+
+    function extOf(name = "") {
+      return name.toLowerCase().split(".").pop() || "";
+    }
+
+    async function requestPermission(handle, mode = "read") {
+      if (!handle) return false;
+      if (handle.queryPermission) {
+        const current = await handle.queryPermission({ mode });
+        if (current === "granted") return true;
+      }
+      if (handle.requestPermission) {
+        const res = await handle.requestPermission({ mode });
+        return res === "granted";
+      }
+      return false;
+    }
+
+    async function pickDirectory() {
+      if (!window.showDirectoryPicker) {
+        alert("Directory picker is not supported in this browser. Use the single-file picker instead.");
+        return;
+      }
+      try {
+        currentDirHandle = await showDirectoryPicker({ id: "nodevision-notebook" });
+        dirLabel.textContent = `Folder: ${currentDirHandle.name}`;
+        await loadDirectoryListing();
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    }
+
+    async function loadDirectoryListing() {
+      fileList.innerHTML = "";
+      currentFileHandle = null;
+      currentFileName = "";
+      editor.value = "";
+      editor.disabled = true;
+      saveBtn.disabled = true;
+      downloadBtn.disabled = true;
+
+      if (!currentDirHandle) return;
+      const entries = [];
+      for await (const entry of currentDirHandle.values()) {
+        if (entry.kind === "file" && TEXT_EXTS.has(extOf(entry.name))) {
+          entries.push(entry);
+        }
+      }
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+      if (!entries.length) {
+        fileList.innerHTML = "<li style='color:var(--muted); cursor:default;'>No editable files found</li>";
+        return;
+      }
+      for (const entry of entries) {
+        const li = document.createElement("li");
+        li.textContent = entry.name;
+        li.onclick = () => openFileFromDir(entry, li);
+        fileList.appendChild(li);
+      }
+      setStatus(`Found ${entries.length} file(s). Select one to edit.`);
+    }
+
+    async function openFileFromDir(handle, listItem) {
+      if (!(await requestPermission(handle, "read"))) {
+        setStatus("Permission denied for this file.");
+        return;
+      }
+      currentFileHandle = handle;
+      currentFileName = handle.name;
+      [...fileList.children].forEach(li => li.classList.toggle("active", li === listItem));
+      await loadFile(handle);
+    }
+
+    async function pickFile() {
+      // Modern API path
+      if (window.showOpenFilePicker) {
+        try {
+          const [fileHandle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{ description: "Text/HTML", accept: { "text/plain": TEXT_EXTS.size ? Array.from(TEXT_EXTS).map(ext => `.${ext}`) : [] } }],
+          });
+          currentFileHandle = fileHandle;
+          currentDirHandle = null;
+          dirLabel.textContent = "Single file mode";
+          fileList.innerHTML = "";
+          await loadFile(fileHandle);
+        } catch (err) {
+          setStatus(err.message || String(err));
+        }
+        return;
+      }
+
+      // Fallback for browsers without File System Access API (e.g., Firefox)
+      setStatus("Using fallback picker (save-in-place unavailable; download edited copy instead).");
+      fileInputFallback.accept = Array.from(TEXT_EXTS).map(ext => `.${ext}`).join(",");
+      fileInputFallback.onchange = async () => {
+        const file = fileInputFallback.files?.[0];
+        fileInputFallback.value = "";
+        if (!file) return;
+        currentFileHandle = file; // plain File; no writeback
+        currentDirHandle = null;
+        dirLabel.textContent = "Single file mode (fallback)";
+        fileList.innerHTML = "";
+        await loadFile(file);
+      };
+      fileInputFallback.click();
+    }
+
+    async function loadFile(handle) {
+      try {
+        const file = typeof handle.getFile === "function" ? await handle.getFile() : handle;
+        const text = await file.text();
+        editor.disabled = false;
+        editor.value = text;
+        fileLabel.textContent = `Editing: ${file.name}`;
+        const canSaveInPlace = typeof handle.createWritable === "function";
+        saveBtn.disabled = !canSaveInPlace;
+        downloadBtn.disabled = false;
+        currentFileName = file.name;
+        if (!canSaveInPlace) {
+          setStatus("Loaded (fallback: download edited copy to save).");
+        } else {
+          setStatus("Loaded.");
+        }
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    }
+
+    async function saveToSameFile() {
+      if (!currentFileHandle) return;
+      if (!(await requestPermission(currentFileHandle, "readwrite"))) {
+        setStatus("Write permission denied.");
+        return;
+      }
+      try {
+        const writable = await currentFileHandle.createWritable();
+        await writable.write(editor.value);
+        await writable.close();
+        setStatus("Saved to original file.");
+      } catch (err) {
+        setStatus(err.message || String(err));
+      }
+    }
+
+    function downloadCopy() {
+      if (!currentFileHandle && !currentFileName) return;
+      const blob = new Blob([editor.value], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentFileName || "notebook-file.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus("Downloaded edited copy.");
+    }
+
+    pickDirBtn.onclick = pickDirectory;
+    pickFileBtn.onclick = pickFile;
+    saveBtn.onclick = saveToSameFile;
+    downloadBtn.onclick = downloadCopy;
+
+    setStatus("Ready. Pick Notebook folder or a file to begin.");
+  </script>
+</body>
+</html>
