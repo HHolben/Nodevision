@@ -131,9 +131,16 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
   closeBtn.title = "Close";
   closeBtn.textContent = "✖";
 
+  const confirmBtn = document.createElement("button");
+  confirmBtn.className = "panel-confirm-btn";
+  confirmBtn.title = "Confirm and close overlay";
+  confirmBtn.textContent = "Confirm";
+  confirmBtn.style.display = "none";
+
   controls.appendChild(dockBtn);
   controls.appendChild(maxBtn);
   controls.appendChild(closeBtn);
+  controls.appendChild(confirmBtn);
   header.appendChild(controls);
 
   // Content area
@@ -195,6 +202,9 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
   let isMaximized = false;
   let prevStyles = {};
   let isDocked = true;
+  let isOverlay = false;
+  let overlayKeyHandler = null;
+  let overlayDismissHandler = null;
   let offsetX = 0;
   let offsetY = 0;
   let dragging = false;
@@ -282,6 +292,7 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
 
   function setDockedStyles() {
     panel.classList.remove("floating");
+    panel.classList.remove("overlay");
     panel.classList.add("docked");
     panel.style.position = "relative";
     panel.style.top = "";
@@ -289,10 +300,13 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
     panel.style.zIndex = "";
     panel.style.width = "";
     panel.style.height = "";
+    panel.style.maxHeight = "";
+    panel.style.transform = "";
   }
 
   function setFloatingStyles(left, top, width = null, height = null) {
     panel.classList.remove("docked");
+    panel.classList.remove("overlay");
     panel.classList.add("floating");
     panel.style.position = "absolute";
     panel.style.left = `${Math.max(8, Math.round(left))}px`;
@@ -308,6 +322,42 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
       panel.style.height = `${nextHeight}px`;
     }
     bringToFront();
+  }
+
+  function setOverlayStyles() {
+    panel.classList.remove("docked");
+    panel.classList.remove("floating");
+    panel.classList.remove("maximized");
+    panel.classList.add("overlay");
+    const preferredWidth = Math.min(window.innerWidth * 0.9, 720);
+    const topOffset = Math.max(56, (window.__nvGlobalToolbarHeight || 64));
+    Object.assign(panel.style, {
+      position: "fixed",
+      top: `${topOffset}px`,
+      left: "50%",
+      width: `${Math.round(preferredWidth)}px`,
+      maxHeight: "80vh",
+      transform: "translateX(-50%)",
+      zIndex: "1200",
+      height: ""
+    });
+    bringToFront();
+  }
+
+  function attachOverlayKeyHandler() {
+    if (overlayKeyHandler) return;
+    overlayKeyHandler = (e) => {
+      if (e.key === "Escape") {
+        dismissOverlay();
+      }
+    };
+    window.addEventListener("keydown", overlayKeyHandler);
+  }
+
+  function detachOverlayKeyHandler() {
+    if (!overlayKeyHandler) return;
+    window.removeEventListener("keydown", overlayKeyHandler);
+    overlayKeyHandler = null;
   }
 
   function getDefaultDockCell() {
@@ -345,6 +395,9 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
 
     setDockedStyles();
     isDocked = true;
+    isOverlay = false;
+    confirmBtn.style.display = "none";
+    detachOverlayKeyHandler();
     return true;
   }
 
@@ -362,9 +415,53 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
       rect.height
     );
     isDocked = false;
+    isOverlay = false;
+    confirmBtn.style.display = "none";
+    detachOverlayKeyHandler();
+  }
+
+  function enterOverlayMode() {
+    if (isOverlay) return;
+    isDocked = false;
+    isMaximized = false;
+    isOverlay = true;
+    confirmBtn.style.display = "inline-flex";
+    setOverlayStyles();
+    attachOverlayKeyHandler();
+  }
+
+  function exitOverlay(targetLayout = "docked") {
+    if (!isOverlay) return;
+    isOverlay = false;
+    panel.classList.remove("overlay");
+    confirmBtn.style.display = "none";
+    panel.style.transform = "";
+    panel.style.maxHeight = "";
+    detachOverlayKeyHandler();
+    if (targetLayout === "floating" || targetLayout === "undocked") {
+      undockPanel();
+    } else if (targetLayout === "maximized" || targetLayout === "fullscreen") {
+      dockPanel() || undockPanel();
+      maxBtn.click();
+    } else {
+      dockPanel();
+    }
+  }
+
+  function dismissOverlay() {
+    if (!isOverlay) return;
+    detachOverlayKeyHandler();
+    if (typeof overlayDismissHandler === "function") {
+      try { overlayDismissHandler(); } catch (err) { console.warn("Overlay dismiss handler error:", err); }
+    }
+    panel.remove();
   }
 
   maxBtn.addEventListener("click", () => {
+    if (isOverlay) {
+      exitOverlay("maximized");
+      return;
+    }
     if (!isMaximized) {
       prevStyles = {
         width: panel.style.width,
@@ -404,6 +501,10 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
     if (isMaximized) {
       maxBtn.click();
     }
+    if (isOverlay) {
+      exitOverlay("docked");
+      return;
+    }
     if (isDocked) {
       undockPanel();
     } else {
@@ -412,6 +513,11 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
       currentSnapTarget = null;
       canSnapToCurrentTarget = false;
     }
+  });
+
+  confirmBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dismissOverlay();
   });
 
   header.style.cursor = "move";
@@ -517,7 +623,7 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
 
   header.addEventListener("pointerdown", (e) => {
     if (e.target?.closest?.("button, a, input, select, textarea")) return;
-    if (isDocked || isMaximized) return;
+    if (isDocked || isMaximized || isOverlay) return;
 
     const rect = panel.getBoundingClientRect();
     dragging = true;
@@ -549,6 +655,33 @@ export async function createPanelDOM(instanceName, instanceId, panelClass = "Gen
     openLayoutControlsSubToolbar();
   });
 
+
+  panel.__nvSetLayout = (layout, opts = {}) => {
+    overlayDismissHandler = opts.onDismiss || overlayDismissHandler;
+    switch ((layout || "").toLowerCase()) {
+      case "overlay":
+        enterOverlayMode();
+        break;
+      case "floating":
+      case "undocked":
+        if (isOverlay) exitOverlay("floating");
+        undockPanel();
+        break;
+      case "maximized":
+      case "fullscreen":
+        if (isOverlay) exitOverlay("maximized");
+        maxBtn.click();
+        break;
+      default:
+        if (isOverlay) exitOverlay("docked");
+        dockPanel();
+        break;
+    }
+  };
+
+  if (String(panelVars.defaultLayout || panelVars.layout || "").toLowerCase() === "overlay") {
+    enterOverlayMode();
+  }
 
   return { panel, header, dockBtn, maxBtn, closeBtn, resizer, content };
 }

@@ -281,6 +281,14 @@ html[data-nv-theme="dark"] .panel-header {
 }
 .panel.docked { /* fills cell by inline styles set by JS */ }
 .panel.floating { position:absolute; pointer-events:auto; z-index: 22000; }
+.panel.overlay {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 1200;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.35);
+  border-radius: 12px;
+  overflow: hidden;
+}
 
 .panel-resizer {
   position: absolute;
@@ -302,6 +310,10 @@ html[data-nv-theme="dark"] .panel-header {
 /* Layout controls are routed via the View -> Layout Controls sub-toolbar */
 .panel-header .panel-controls {
   display: none !important;
+}
+.panel.overlay .panel-header .panel-controls {
+  display: flex !important;
+  gap: 6px;
 }
 
 /* Resize handle is positioned by JS but you can tweak */

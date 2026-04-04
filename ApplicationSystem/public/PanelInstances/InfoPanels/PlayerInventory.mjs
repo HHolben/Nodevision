@@ -3,7 +3,7 @@
 
 import { attachResizeEvents } from "/panels/panelResize.mjs";
 
-export function createFloatingInventoryPanel({ title = "Inventory", onRequestClose = null } = {}) {
+export function createFloatingInventoryPanel({ title = "Inventory", onRequestClose = null, defaultLayout = "overlay" } = {}) {
   let highlightedSnapTarget = null;
 
   function clearTargetHighlight() {
@@ -87,15 +87,29 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
   closeBtn.type = "button";
   closeBtn.title = "Close Inventory";
   closeBtn.textContent = "✕";
+
+  const confirmBtn = document.createElement("button");
+  confirmBtn.className = "panel-confirm-btn";
+  confirmBtn.type = "button";
+  confirmBtn.title = "Confirm and close overlay";
+  confirmBtn.textContent = "Confirm";
+  confirmBtn.style.display = "none";
+
   closeBtn.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    removeWindowDragListeners();
-    if (typeof onRequestClose === "function") onRequestClose();
+    finishAndClose();
   });
+  confirmBtn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    finishAndClose();
+  });
+
   controls.appendChild(dockBtn);
   controls.appendChild(maxBtn);
   controls.appendChild(closeBtn);
+  controls.appendChild(confirmBtn);
   header.appendChild(controls);
 
   const content = document.createElement("div");
@@ -140,6 +154,8 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
   let previousHostCleanup = null;
   let previousHostDatasetId = "";
   let previousHostDatasetClass = "";
+  let overlayMode = false;
+  let overlayKeyHandler = null;
 
   function openLayoutControlsSubToolbar() {
     window.__nvActivePanelElement = panel;
@@ -380,6 +396,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
   }
 
   header.addEventListener("pointerdown", (event) => {
+    if (overlayMode) return;
     if (event.target?.closest?.("button, a, input, select, textarea")) return;
     if (dockedCell) return;
 
@@ -417,6 +434,10 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
   dockBtn.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (overlayMode) {
+      exitOverlay("docked");
+      return;
+    }
     if (dockedCell) {
       undockToFloating();
       return;
@@ -427,9 +448,97 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     }
   });
 
+  function attachOverlayKeyHandler() {
+    if (overlayKeyHandler) return;
+    overlayKeyHandler = (e) => {
+      if (e.key === "Escape") {
+        finishAndClose();
+      }
+    };
+    window.addEventListener("keydown", overlayKeyHandler);
+  }
+
+  function detachOverlayKeyHandler() {
+    if (!overlayKeyHandler) return;
+    window.removeEventListener("keydown", overlayKeyHandler);
+    overlayKeyHandler = null;
+  }
+
+  function setOverlayStyles() {
+    panel.classList.add("overlay");
+    panel.classList.remove("floating");
+    panel.classList.remove("maximized");
+    const preferredWidth = Math.min(window.innerWidth * 0.9, 720);
+    const topOffset = Math.max(56, (window.__nvGlobalToolbarHeight || 64));
+    Object.assign(panel.style, {
+      position: "fixed",
+      top: `${topOffset}px`,
+      left: "50%",
+      width: `${Math.round(preferredWidth)}px`,
+      maxHeight: "80vh",
+      transform: "translateX(-50%)",
+      zIndex: "1200",
+      height: ""
+    });
+    confirmBtn.style.display = "inline-flex";
+    controls.style.display = "flex";
+    attachOverlayKeyHandler();
+  }
+
+  function exitOverlay(targetLayout = "docked") {
+    if (!overlayMode) return;
+    overlayMode = false;
+    panel.classList.remove("overlay");
+    confirmBtn.style.display = "none";
+    detachOverlayKeyHandler();
+    if (targetLayout === "floating") {
+      undockToFloating();
+    } else if (targetLayout === "maximized") {
+      undockToFloating();
+      maxBtn.click();
+    } else {
+      dockToCell(window.activeCell || document.querySelector(".panel-cell"));
+    }
+  }
+
+  function enterOverlayMode() {
+    overlayMode = true;
+    dockedCell = null;
+    setOverlayStyles();
+  }
+
+  function finishAndClose() {
+    finishDrag(latestPointerX, latestPointerY);
+    removeWindowDragListeners();
+    detachOverlayKeyHandler();
+    if (typeof onRequestClose === "function") onRequestClose();
+    panel.remove();
+  }
+
+  if (String(defaultLayout || "").toLowerCase() === "overlay") {
+    enterOverlayMode();
+  }
+
   return {
     panel,
     content,
+    setLayout(nextLayout = "docked") {
+      switch ((nextLayout || "").toLowerCase()) {
+        case "overlay":
+          enterOverlayMode();
+          break;
+        case "floating":
+        case "undocked":
+          exitOverlay("floating");
+          break;
+        case "maximized":
+          exitOverlay("maximized");
+          break;
+        default:
+          exitOverlay("docked");
+          break;
+      }
+    },
     isDocked() {
       return !!dockedCell;
     },
@@ -443,7 +552,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     },
     setVisible(nextVisible) {
       panel.style.display = nextVisible ? "flex" : "none";
-      if (nextVisible && !dockedCell) {
+      if (nextVisible && !dockedCell && !overlayMode) {
         panel.classList.add("floating");
       }
     },
@@ -451,6 +560,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
       finishDrag(latestPointerX, latestPointerY);
       removeWindowDragListeners();
       clearTargetHighlight();
+      detachOverlayKeyHandler();
       panel.remove();
     }
   };

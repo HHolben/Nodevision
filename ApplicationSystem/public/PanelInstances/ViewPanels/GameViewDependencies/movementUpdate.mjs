@@ -32,6 +32,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   let inventoryMenuRightLatch = false;
   let inventoryMenuConfirmLatch = false;
   const raycaster = new THREE.Raycaster();
+  raycaster.params.Sprite = { threshold: 0.4 }; // expand hit area for 2D sprite handles
   const raycastDirection = new THREE.Vector3();
   const mouseLikeEuler = new THREE.Euler(0, 0, 0, "YXZ");
   const halfPi = Math.PI / 2;
@@ -41,6 +42,131 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   let objectFileGeometryLoaderPromise = null;
   let imagePlaneTextureApplier = null;
   let imagePlaneLoaderPromise = null;
+  let grabbedState = null;
+  let grabbedDistanceMin = 0.25;
+  let grabbedDistanceMax = 12;
+  let stretchState = null;
+  let translateState = null;
+  let rotateState = null;
+  let wheelHandlerAttached = false;
+  const inspectRepeatMs = 220;
+  const doubleClickMs = 350;
+  // Skip click-triggered actions for one frame (used when clicking gizmo handles)
+  movementState.skipClickFrame = movementState.skipClickFrame || false;
+
+  const textureLoader = new THREE.TextureLoader();
+  let positionArrowTexture = null;
+
+  function ensurePositionArrowTexture() {
+    if (positionArrowTexture) return positionArrowTexture;
+    positionArrowTexture = textureLoader.load("/icons/PositionArrowIcon.png");
+    positionArrowTexture.anisotropy = 4;
+    positionArrowTexture.minFilter = THREE.NearestFilter;
+    positionArrowTexture.magFilter = THREE.NearestFilter;
+    positionArrowTexture.generateMipmaps = false; // keep pixel art crisp
+    return positionArrowTexture;
+  }
+
+  function getPointerNdc(event) {
+    // Pointer-lock mode lacks absolute coords; default to center crosshair.
+    if (controls?.isLocked || !event || typeof event.clientX !== "number" || typeof event.clientY !== "number") {
+      return { x: 0, y: 0 };
+    }
+    const w = window.innerWidth || 1;
+    const h = window.innerHeight || 1;
+    return {
+      x: (event.clientX / w) * 2 - 1,
+      y: -(event.clientY / h) * 2 + 1
+    };
+  }
+
+  const tmpCenter = new THREE.Vector3();
+  const tmpHandle = new THREE.Vector3();
+  const tmpCenterNdc = new THREE.Vector3();
+  const tmpHandleNdc = new THREE.Vector3();
+
+  function orientSpriteHandles(state) {
+    if (!state?.handles?.length || !state.target) return;
+    state.target.getWorldPosition(tmpCenter);
+    tmpCenterNdc.copy(tmpCenter).project(camera);
+    for (const handle of state.handles) {
+      if (!handle?.isSprite || !handle.material) continue;
+      handle.getWorldPosition(tmpHandle);
+      tmpHandleNdc.copy(tmpHandle).project(camera);
+      const dx = tmpHandleNdc.x - tmpCenterNdc.x;
+      const dy = tmpHandleNdc.y - tmpCenterNdc.y;
+      handle.material.rotation = Math.atan2(dy, dx);
+    }
+  }
+
+  function updateGizmoHandleOrientations() {
+    orientSpriteHandles(translateState);
+    orientSpriteHandles(rotateState);
+  }
+
+  const hoverColors = {
+    translate: new THREE.Color(0x00e5ff),
+    rotate: new THREE.Color(0x00e5ff)
+  };
+  const baseTranslateColor = new THREE.Color(0xffb347);
+  const baseRotateColor = new THREE.Color(0xb972ff);
+  let hoverListenerAttached = false;
+  let translateHoverHandle = null;
+  let rotateHoverHandle = null;
+  let lastHoverAxis = null;
+
+  function applyHoverState(state, hoverHandle, baseColor) {
+    if (!state?.handles) return;
+    for (const h of state.handles) {
+      if (!h?.material) continue;
+      const isHover = h === hoverHandle;
+      h.material.color.copy(isHover ? hoverColors.translate : baseColor);
+      h.material.opacity = isHover ? 0.45 : 1; // fade on hover for clearer feedback
+      h.material.needsUpdate = true;
+    }
+  }
+
+  function onPointerHover(e) {
+    if (!translateState && !rotateState) return;
+    const ndc = getPointerNdc(e);
+    raycaster.setFromCamera(ndc, camera);
+
+    translateHoverHandle = null;
+    rotateHoverHandle = null;
+
+    if (translateState?.handles?.length) {
+      const hits = raycaster.intersectObjects(translateState.handles, false);
+      translateHoverHandle = hits[0]?.object || null;
+      applyHoverState(translateState, translateHoverHandle, baseTranslateColor);
+      const axisStr = translateHoverHandle ? translateHoverHandle.userData.axis?.toArray?.().join(",") : null;
+      if (axisStr !== lastHoverAxis) {
+        lastHoverAxis = axisStr;
+        if (axisStr) {
+          console.log("[VW] Hover translate handle axis:", axisStr);
+        }
+      }
+    }
+
+    if (rotateState?.handles?.length) {
+      const hits = raycaster.intersectObjects(rotateState.handles, false);
+      rotateHoverHandle = hits[0]?.object || null;
+      // share the same hover color helper but keep rotation base
+      for (const h of rotateState.handles) {
+        if (!h?.material) continue;
+        const isHover = h === rotateHoverHandle;
+        h.material.color.copy(isHover ? hoverColors.rotate : baseRotateColor);
+        h.material.opacity = isHover ? 0.45 : 1;
+        h.material.needsUpdate = true;
+      }
+      if (rotateHoverHandle) {
+        const axisStr = rotateHoverHandle.userData.axis?.toArray?.().join(",");
+        if (axisStr !== lastHoverAxis) {
+          lastHoverAxis = axisStr;
+          console.log("[VW] Hover rotate handle axis:", axisStr);
+        }
+      }
+    }
+  }
 
   async function ensureObjectFileGeometryApplier() {
     if (objectFileGeometryApplier) return objectFileGeometryApplier;
@@ -96,6 +222,469 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     };
   }
 
+  function resolveHalfExtents(collider) {
+    if (!collider) return { x: 0.5, y: 0.5, z: 0.5 };
+    if (collider.type === "box" && collider.half) {
+      return { x: collider.half.x, y: collider.half.y, z: collider.half.z };
+    }
+    if (collider.type === "sphere" && Number.isFinite(collider.radius)) {
+      const r = collider.radius;
+      return { x: r, y: r, z: r };
+    }
+    if (collider.type === "cylinder" && Number.isFinite(collider.radius) && Number.isFinite(collider.halfHeight)) {
+      return { x: collider.radius, y: collider.halfHeight, z: collider.radius };
+    }
+    return { x: 0.5, y: 0.5, z: 0.5 };
+  }
+
+  function computePlacePosition(hit, normal, collider, { snapToGrid = false } = {}) {
+    const half = resolveHalfExtents(collider);
+    const n = normal.clone().normalize();
+    // Project half extents onto the surface normal to sit flush; tiny epsilon avoids z-fight.
+    const eps = 0.001;
+    const offset =
+      Math.abs(n.x) * half.x +
+      Math.abs(n.y) * half.y +
+      Math.abs(n.z) * half.z +
+      eps;
+
+    const placePos = hit.point.clone().addScaledVector(n, offset);
+    if (snapToGrid) {
+      placePos.x = Math.round(placePos.x);
+      placePos.y = Math.round(placePos.y);
+      placePos.z = Math.round(placePos.z);
+    }
+    if (placePos.y < 0.5) placePos.y = 0.5;
+    return placePos;
+  }
+
+  function startGrabFromHit(hit) {
+    const target = hit?.object;
+    if (!target?.isMesh) return false;
+    const distance = Math.max(grabbedDistanceMin, Math.min(hit.distance || 2, grabbedDistanceMax));
+    grabbedState = {
+      object: target,
+      distance,
+      rotation: target.quaternion.clone(),
+      colliderRef: target.userData?.colliderRef || null
+    };
+    return true;
+  }
+
+  function releaseGrabbedObject() {
+    grabbedState = null;
+  }
+
+  function updateGrabbedObjectFollow() {
+    if (!grabbedState || !grabbedState.object?.isMesh) {
+      grabbedState = null;
+      return;
+    }
+    grabbedState.distance = Math.max(grabbedDistanceMin, Math.min(grabbedState.distance, grabbedDistanceMax));
+    const obj = grabbedState.object;
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    const origin = controls.getObject().position;
+    const pos = origin.clone().addScaledVector(dir, grabbedState.distance);
+    obj.position.copy(pos);
+    if (grabbedState.rotation) obj.quaternion.copy(grabbedState.rotation);
+
+    const ref = grabbedState.colliderRef;
+    if (ref?.type === "box" && ref.box) {
+      const half = resolveHalfExtents(ref);
+      ref.box.min.set(pos.x - half.x, pos.y - half.y, pos.z - half.z);
+      ref.box.max.set(pos.x + half.x, pos.y + half.y, pos.z + half.z);
+    } else if (ref?.type === "sphere" && ref.center) {
+      ref.center.copy(pos);
+    } else if (ref?.type === "cylinder") {
+      ref.center = pos.clone();
+    }
+  }
+
+  function handleGrabScroll(event) {
+    if (!grabbedState) return;
+    const dyRaw = Number.isFinite(event.deltaY) ? event.deltaY
+      : (Number.isFinite(event.wheelDelta) ? -event.wheelDelta
+        : (Number.isFinite(event.detail) ? event.detail : 0));
+    const dy = dyRaw || 0;
+    const step = THREE.MathUtils.clamp(Math.abs(dy) * 0.002, 0.05, 1.0);
+    // Scroll up (negative deltaY) brings object closer; down pushes away.
+    grabbedState.distance += (dy > 0 ? step : -step);
+    grabbedState.distance = Math.max(grabbedDistanceMin, Math.min(grabbedState.distance, grabbedDistanceMax));
+    event.preventDefault?.();
+    event.stopPropagation?.();
+  }
+
+  function disposeStretchState() {
+    if (!stretchState) return;
+    stretchState.handles?.forEach((h) => h?.parent?.remove(h));
+    stretchState.group?.parent?.remove(stretchState.group);
+    window.removeEventListener("pointerdown", onStretchPointerDown, true);
+    window.removeEventListener("pointermove", onStretchPointerMove, true);
+    window.removeEventListener("pointerup", onStretchPointerUp, true);
+    stretchState = null;
+  }
+
+  function createStretchGizmo(target) {
+    const group = new THREE.Group();
+    const handleGeo = new THREE.ConeGeometry(0.08, 0.24, 12);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x48b0ff });
+    const handles = [];
+
+    const axes = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1)
+    ];
+
+    const corners = [];
+    const signs = [-1, 1];
+    for (const sx of signs) for (const sy of signs) for (const sz of signs) {
+      corners.push(new THREE.Vector3(sx, sy, sz).normalize());
+    }
+
+    function makeHandle(dir, isCorner = false) {
+      const mesh = new THREE.Mesh(handleGeo, handleMat.clone());
+      mesh.userData.axis = dir.clone();
+      mesh.userData.isCorner = isCorner;
+      mesh.position.copy(dir).multiplyScalar(1.05);
+      mesh.lookAt(dir.clone().multiplyScalar(2));
+      group.add(mesh);
+      handles.push(mesh);
+    }
+
+    axes.forEach((a) => makeHandle(a, false));
+    corners.forEach((c) => makeHandle(c, true));
+
+    target.add(group);
+    stretchState = {
+      target,
+      group,
+      handles,
+      dragging: false,
+      activeHandle: null,
+      startScale: null
+    };
+
+    window.addEventListener("pointerdown", onStretchPointerDown, true);
+    window.addEventListener("pointermove", onStretchPointerMove, true);
+    window.addEventListener("pointerup", onStretchPointerUp, true);
+  }
+
+  function pickStretchHandle(evt) {
+    if (!stretchState?.handles?.length) return null;
+    raycaster.setFromCamera(getPointerNdc(evt), camera);
+    const hits = raycaster.intersectObjects(stretchState.handles, false);
+    return hits[0]?.object || null;
+  }
+
+  function onStretchPointerDown(e) {
+    if (e.button !== 0) return;
+    if (!stretchState) return;
+    const handle = pickStretchHandle(e);
+    if (!handle) return;
+    stretchState.dragging = true;
+    stretchState.activeHandle = handle;
+    stretchState.startScale = stretchState.target.scale.clone();
+    movementState.skipClickFrame = true;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function onStretchPointerMove(e) {
+    if (!stretchState?.dragging || !stretchState.activeHandle) return;
+    const axis = stretchState.activeHandle.userData.axis;
+    const isCorner = stretchState.activeHandle.userData.isCorner;
+    const delta = (-(e.movementY || 0) + (e.movementX || 0)) * 0.01;
+    const target = stretchState.target;
+    if (!target) {
+      disposeStretchState();
+      return;
+    }
+    const scaleDelta = 1 + delta;
+    if (isCorner) {
+      target.scale.multiplyScalar(Math.max(0.1, Math.min(8, scaleDelta)));
+    } else {
+      const sx = Math.max(0.1, Math.min(50, target.scale.x * (1 + axis.x * delta)));
+      const sy = Math.max(0.1, Math.min(50, target.scale.y * (1 + axis.y * delta)));
+      const sz = Math.max(0.1, Math.min(50, target.scale.z * (1 + axis.z * delta)));
+      target.scale.set(sx, sy, sz);
+    }
+    e.preventDefault();
+  }
+
+  function onStretchPointerUp(e) {
+    if (!stretchState) return;
+    if (e.button !== 0) return;
+    stretchState.dragging = false;
+    stretchState.activeHandle = null;
+  }
+
+  function disposeTranslateState() {
+    if (!translateState) return;
+   translateState.handles?.forEach((h) => h?.parent?.remove(h));
+   translateState.group?.parent?.remove(translateState.group);
+   window.removeEventListener("pointerdown", onTranslatePointerDown, true);
+   window.removeEventListener("pointermove", onTranslatePointerMove, true);
+    window.removeEventListener("mousemove", onTranslatePointerMove, true);
+   window.removeEventListener("pointerup", onTranslatePointerUp, true);
+   translateState = null;
+   translateHoverHandle = null;
+ }
+
+  function disposeRotateState() {
+    if (!rotateState) return;
+    rotateState.handles?.forEach((h) => h?.parent?.remove(h));
+    rotateState.group?.parent?.remove(rotateState.group);
+   window.removeEventListener("pointerdown", onRotatePointerDown, true);
+   window.removeEventListener("pointermove", onRotatePointerMove, true);
+    window.removeEventListener("mousemove", onRotatePointerMove, true);
+   window.removeEventListener("pointerup", onRotatePointerUp, true);
+   rotateState = null;
+   rotateHoverHandle = null;
+ }
+
+  function createTranslateGizmo(target) {
+    // If we're already showing a gizmo for this target, keep it (especially during drag)
+    if (translateState?.target === target) {
+      if (translateState.dragging) {
+        console.log("[VW] Translate gizmo already active for target; skipping recreate during drag");
+        return;
+      }
+      // reuse existing if not dragging
+      disposeTranslateState();
+    }
+    const group = new THREE.Group();
+    const handleGeo = new THREE.ConeGeometry(0.08, 0.28, 12);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0xffb347 });
+    const handles = [];
+
+    const axes = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1)
+    ];
+
+    const arrowMap = ensurePositionArrowTexture();
+
+    function makeHandle(dir) {
+      const mat = new THREE.SpriteMaterial({
+        map: arrowMap,
+        color: 0xffb347,
+        depthTest: true,
+        depthWrite: false,
+        transparent: true
+      });
+      const sprite = new THREE.Sprite(mat);
+      sprite.userData.axis = dir.clone();
+      sprite.position.copy(dir).multiplyScalar(1.05);
+      sprite.scale.set(0.35, 0.35, 0.35);
+      sprite.lookAt(dir.clone().multiplyScalar(2));
+      group.add(sprite);
+      handles.push(sprite);
+    }
+
+    axes.forEach(makeHandle);
+
+    target.add(group);
+    translateState = {
+      target,
+      group,
+      handles,
+      dragging: false,
+      activeHandle: null,
+      lastPointerPos: null
+    };
+    console.log("[VW] Translate gizmo created for target", target.name || target.uuid);
+
+    if (!hoverListenerAttached) {
+      window.addEventListener("pointermove", onPointerHover, true);
+      window.addEventListener("mousemove", onPointerHover, true);
+      hoverListenerAttached = true;
+    }
+
+    window.addEventListener("pointerdown", onTranslatePointerDown, true);
+    window.addEventListener("pointermove", onTranslatePointerMove, true);
+    window.addEventListener("mousemove", onTranslatePointerMove, true);
+    window.addEventListener("pointerup", onTranslatePointerUp, true);
+  }
+
+  function pickTranslateHandle(evt) {
+    if (!translateState?.handles?.length) return null;
+    raycaster.setFromCamera(getPointerNdc(evt), camera);
+    const hits = raycaster.intersectObjects(translateState.handles, false);
+    if (hits[0]?.object) {
+      const axisStr = hits[0].object.userData.axis?.toArray?.().join(",");
+      console.log("[VW] pickTranslateHandle hit axis:", axisStr, "event", evt.type);
+    }
+    return hits[0]?.object || null;
+  }
+
+  function onTranslatePointerDown(e) {
+    if (e.button !== 0) return;
+    if (!translateState) return;
+    const handle = pickTranslateHandle(e);
+    if (!handle) return;
+    translateState.dragging = true;
+    translateState.activeHandle = handle;
+    translateState.startPos = translateState.target.position.clone();
+    translateState.lastPointerPos = { x: e.clientX, y: e.clientY };
+    movementState.skipClickFrame = true;
+    console.log("[VW] translate pointerdown axis", handle.userData.axis?.toArray?.().join(","));
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function updateColliderForTarget(target) {
+    const ref = target?.userData?.colliderRef;
+    if (!ref) return;
+    const pos = target.position;
+    if (ref.type === "box" && ref.box) {
+      const half = resolveHalfExtents(ref);
+      ref.box.min.set(pos.x - half.x, pos.y - half.y, pos.z - half.z);
+      ref.box.max.set(pos.x + half.x, pos.y + half.y, pos.z + half.z);
+    } else if (ref.type === "sphere" && ref.center) {
+      ref.center.copy(pos);
+    } else if (ref.type === "cylinder") {
+      ref.center = pos.clone();
+    }
+  }
+
+  function onTranslatePointerMove(e) {
+    if (!translateState?.dragging || !translateState.activeHandle) return;
+    const axis = translateState.activeHandle.userData.axis;
+    let dx = 0, dy = 0;
+    if (Number.isFinite(e.movementX) && Number.isFinite(e.movementY)) {
+      dx = e.movementX;
+      dy = e.movementY;
+    } else if (translateState.lastPointerPos) {
+      dx = e.clientX - translateState.lastPointerPos.x;
+      dy = e.clientY - translateState.lastPointerPos.y;
+    }
+    translateState.lastPointerPos = { x: e.clientX, y: e.clientY };
+    const delta = (-(dy || 0) + (dx || 0)) * 0.02;
+    const target = translateState.target;
+    if (!target) {
+      disposeTranslateState();
+      return;
+    }
+    target.position.addScaledVector(axis, delta);
+    updateColliderForTarget(target);
+    console.log("[VW] translating along axis", axis.toArray(), "delta", delta.toFixed(3), "event", e.type, "movement", e.movementX, e.movementY);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function onTranslatePointerUp(e) {
+    if (!translateState) return;
+    if (e.button !== 0) return;
+    console.log("[VW] translate pointerup");
+    translateState.dragging = false;
+    translateState.activeHandle = null;
+  }
+
+  function createRotateGizmo(target) {
+    const group = new THREE.Group();
+    const arrowMap = ensurePositionArrowTexture();
+    const handleMat = new THREE.SpriteMaterial({
+      map: arrowMap,
+      color: 0xb972ff,
+      depthTest: true,
+      depthWrite: false,
+      transparent: true
+    });
+    const handles = [];
+
+    const axes = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 1)
+    ];
+
+    function makeHandle(axis) {
+      const sprite = new THREE.Sprite(handleMat.clone());
+      sprite.userData.axis = axis.clone();
+      sprite.position.copy(axis).multiplyScalar(1.1);
+      sprite.scale.set(0.32, 0.32, 0.32);
+      sprite.lookAt(axis.clone().multiplyScalar(2));
+      group.add(sprite);
+      handles.push(sprite);
+    }
+
+    axes.forEach(makeHandle);
+
+    target.add(group);
+    rotateState = {
+      target,
+      group,
+      handles,
+      dragging: false,
+      activeHandle: null
+    };
+    console.log("[VW] Rotate gizmo created for target", target.name || target.uuid);
+
+    if (!hoverListenerAttached) {
+      window.addEventListener("pointermove", onPointerHover, true);
+      window.addEventListener("mousemove", onPointerHover, true);
+      hoverListenerAttached = true;
+    }
+
+    window.addEventListener("pointerdown", onRotatePointerDown, true);
+    window.addEventListener("pointermove", onRotatePointerMove, true);
+    window.addEventListener("mousemove", onRotatePointerMove, true);
+    window.addEventListener("pointerup", onRotatePointerUp, true);
+  }
+
+  function pickRotateHandle(evt) {
+    if (!rotateState?.handles?.length) return null;
+    raycaster.setFromCamera(getPointerNdc(evt), camera);
+    const hits = raycaster.intersectObjects(rotateState.handles, false);
+    return hits[0]?.object || null;
+  }
+
+  function onRotatePointerDown(e) {
+    if (e.button !== 2) return; // right click
+    if (!rotateState) return;
+    const handle = pickRotateHandle(e);
+    if (!handle) return;
+    rotateState.dragging = true;
+    rotateState.activeHandle = handle;
+    rotateState.startQuat = rotateState.target.quaternion.clone();
+    movementState.skipClickFrame = true;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function onRotatePointerMove(e) {
+    if (!rotateState?.dragging || !rotateState.activeHandle) return;
+    const axis = rotateState.activeHandle.userData.axis;
+    const delta = (-(e.movementY || 0) + (e.movementX || 0)) * 0.005;
+    const target = rotateState.target;
+    if (!target) {
+      disposeRotateState();
+      return;
+    }
+    const q = new THREE.Quaternion();
+    q.setFromAxisAngle(axis, delta);
+    target.quaternion.multiply(q);
+    updateColliderForTarget(target);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function onRotatePointerUp(e) {
+    if (!rotateState) return;
+    if (e.button !== 2) return;
+    rotateState.dragging = false;
+    rotateState.activeHandle = null;
+  }
+
   function finalizeConsolePlacement(hit, config, snapToGrid) {
     if (!hit) return false;
     const placement = buildConsoleMeshFromConfig(config);
@@ -105,13 +694,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     if (hitObject?.matrixWorld) {
       normal.transformDirection(hitObject.matrixWorld).normalize();
     }
-    const placePos = hit.point.clone().addScaledVector(normal, 0.55);
-    if (snapToGrid) {
-      placePos.x = Math.round(placePos.x);
-      placePos.y = Math.round(placePos.y);
-      placePos.z = Math.round(placePos.z);
-    }
-    if (placePos.y < 0.5) placePos.y = 0.5;
+    const placePos = computePlacePosition(hit, normal, placement.collider, { snapToGrid });
 
     if (placement.collider && intersectsPlayer(placePos, placement.collider)) return false;
     if (placement.collider && intersectsExistingColliders(placePos, placement.collider)) return false;
@@ -244,9 +827,17 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const jump = heldKeys[bindings.jump] || readGamepadBinding(gp, gpBindings.jump) > 0;
     const crouch = heldKeys[bindings.crouch];
     const crawl = heldKeys[bindings.crawl];
-    const use = heldKeys[bindings.use] || heldKeys.r || heldKeys.mouse0 || readGamepadBinding(gp, gpBindings.use) > 0 || rightBumperPressed;
-    const attack = heldKeys[bindings.attack] || heldKeys.t || heldKeys.mouse2 || readGamepadBinding(gp, gpBindings.attack) > 0 || rightBumperPressed;
-    const inspect = heldKeys[bindings.inspect] || heldKeys.y || readGamepadBinding(gp, gpBindings.inspect) > 0;
+    const useBinding = String(bindings.use || "").toLowerCase();
+    const useBindingIsMouse0 = useBinding === "mouse0";
+    const use = (!useBindingIsMouse0 && heldKeys[bindings.use]) || heldKeys.r || readGamepadBinding(gp, gpBindings.use) > 0 || rightBumperPressed; // place
+    const grab = heldKeys.mouse0; // left click (translate select / grab on double)
+    const stretch = heldKeys.g; // toggle stretch gizmo
+    const rotate = heldKeys.mouse2; // right click
+    const attackBinding = String(bindings.attack || "").toLowerCase();
+    const attackIsMouse = attackBinding === "mouse2" || attackBinding === "mouse1" || attackBinding === "mouse0";
+    const attack = (!attackIsMouse && heldKeys[bindings.attack]) || heldKeys.t || readGamepadBinding(gp, gpBindings.attack) > 0; // destroy
+    const inspectKey = String(bindings.inspect || "").toLowerCase();
+    const inspect = heldKeys[inspectKey] || heldKeys.y || readGamepadBinding(gp, gpBindings.inspect) > 0;
     const snapPlace = !!heldKeys.shift && !!(heldKeys.r || heldKeys[bindings.use]);
     const fly = heldKeys[bindings.fly] || readGamepadBinding(gp, gpBindings.fly) > 0;
     const flyUp = heldKeys[bindings.flyUp] || jump;
@@ -278,6 +869,9 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       crouch,
       crawl,
       use,
+      grab,
+      stretch,
+      rotate,
       snapPlace,
       attack,
       inspect,
@@ -1006,14 +1600,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
     const normal = hit.face?.normal?.clone?.() || raycastDirection.set(0, 1, 0);
     normal.transformDirection(hit.object.matrixWorld).normalize();
-    const placePos = hit.point.clone().addScaledVector(normal, 0.55);
-    if (snapToGrid) {
-      // 1m grid snap mode for Shift+R.
-      placePos.x = Math.round(placePos.x);
-      placePos.y = Math.round(placePos.y);
-      placePos.z = Math.round(placePos.z);
-    }
-    if (placePos.y < 0.5) placePos.y = 0.5;
+    const placePos = computePlacePosition(hit, normal, placement.collider, { snapToGrid });
 
     if (placement.collider && intersectsPlayer(placePos, placement.collider)) return false;
     if (placement.collider && intersectsExistingColliders(placePos, placement.collider)) return false;
@@ -1293,22 +1880,39 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
   return function update() {
     if (!controls.isLocked) return;
+    if (!wheelHandlerAttached) {
+      // Capture wheel early to avoid other listeners swallowing it; needed for trackpads.
+      window.addEventListener("wheel", handleGrabScroll, { passive: false, capture: true });
+      wheelHandlerAttached = true;
+    }
     const nowMs = performance.now();
     const speed = 0.2;
     const bindings = getBindings();
     const inputState = buildInputState(bindings);
     const crouching = inputState.crouch;
     const crawling = inputState.crawl;
-    const using = inputState.use;
-    const attacking = inputState.attack;
+    let using = inputState.use;       // place
+    let grabbing = inputState.grab;   // left click
+    let stretching = inputState.stretch; // 'g' toggle for stretch gizmo
+    let rotating = inputState.rotate;    // right click toggles rotation gizmo
+    const attacking = inputState.attack; // destroy (t)
     const inspecting = inputState.inspect;
     const inventory = window.VRWorldContext?.inventory;
+    const inEditorMode = playerMode() === "creative";
 
     if (inputState.openInventory && !inventoryToggleLatch) {
       inventoryToggleLatch = true;
       if (inventory?.toggleMenu) inventory.toggleMenu();
     } else if (!inputState.openInventory) {
       inventoryToggleLatch = false;
+    }
+
+    if (movementState.skipClickFrame) {
+      using = false;
+      // keep grabbing true so drag state stays latched
+      stretching = false;
+      console.log("[VW] skipClickFrame – suppressing use/stretch only");
+      movementState.skipClickFrame = false;
     }
 
     if (inventory?.isMenuOpen?.()) {
@@ -1364,13 +1968,45 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       movementState.svgToolLatch = false;
       movementState.terrainToolLatch = false;
     }
+    if (!grabbing) {
+      movementState.grabLatch = false;
+    }
+    if (!stretching) {
+      movementState.stretchLatch = false;
+    }
     if (!attacking) movementState.attackLatch = false;
-    if (!inspecting) movementState.inspectLatch = false;
+    if (!inspecting) {
+      movementState.inspectLatch = false;
+    }
     if (!movementState.isFlying) {
       movementState.playerHeight = crawling ? crawlHeight : crouching ? crouchHeight : basePlayerHeight;
     }
     if (movementState.worldMode === "2d" && Number.isFinite(movementState.planeZ)) {
       controls.getObject().position.z = movementState.planeZ;
+    }
+    if (!inEditorMode && grabbedState) {
+      releaseGrabbedObject();
+    }
+    if (!inEditorMode && stretchState) {
+      disposeStretchState();
+    }
+    if (stretchState && (!stretchState.target?.isMesh || !stretchState.target.parent)) {
+      disposeStretchState();
+    }
+    if (!inEditorMode && translateState) {
+      disposeTranslateState();
+    }
+    if (translateState && (!translateState.target?.isMesh || !translateState.target.parent)) {
+      disposeTranslateState();
+    }
+    if (!inEditorMode && rotateState) {
+      disposeRotateState();
+    }
+    if (rotateState && (!rotateState.target?.isMesh || !rotateState.target.parent)) {
+      disposeRotateState();
+    }
+    if (!Number.isFinite(movementState.lastInspectMs)) {
+      movementState.lastInspectMs = 0;
     }
 
     const playerPos = controls.getObject().position;
@@ -1379,6 +2015,9 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const activeWaterVolume = getWaterVolumeAtPosition(torsoPosition);
     const swimActive = Boolean(activeWaterVolume);
     movementState.isSwimming = swimActive;
+
+    updateGrabbedObjectFollow();
+    updateGizmoHandleOrientations();
 
     applyDirectionalMovement({
       THREE,
@@ -1461,7 +2100,82 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
     const lastUseActionMs = Number(movementState.lastUseActionMs || 0);
     const canRepeatUse = movementState.useLatch && (nowMs - lastUseActionMs >= useRepeatMs);
+
+    if (stretchState?.dragging || rotateState?.dragging) {
+      movementState.grabLatch = true;
+    }
+    const newGrabPress = grabbing && !movementState.grabLatch && !stretchState?.dragging && !rotateState?.dragging;
+    if (newGrabPress && inEditorMode) {
+      movementState.grabLatch = true;
+      const nowClick = nowMs;
+      const lastClick = movementState.lastLeftClickMs || 0;
+      const isDoubleClick = (nowClick - lastClick) <= doubleClickMs;
+      movementState.lastLeftClickMs = nowClick;
+
+      if (isDoubleClick) {
+        if (translateState?.dragging) {
+          console.log("[VW] Skip double-click grab while translate dragging");
+          return;
+        }
+        disposeTranslateState();
+        if (grabbedState) {
+          releaseGrabbedObject();
+          movementState.suppressAttackUntilMs = nowMs + 200;
+          return;
+        }
+        const grabHit = getInspectHit();
+        if (grabHit?.object && startGrabFromHit(grabHit)) {
+          movementState.suppressAttackUntilMs = nowMs + 200;
+          return;
+        }
+        // Double-click with no target: do nothing.
+      } else {
+        if (translateState?.dragging) {
+          console.log("[VW] Skip translate gizmo recreate while dragging");
+          return;
+        }
+        disposeTranslateState();
+        const translateHit = getInspectHit();
+        if (translateHit?.object) {
+          createTranslateGizmo(translateHit.object);
+          movementState.suppressAttackUntilMs = nowMs + 180;
+          return;
+        }
+      }
+    }
+
+    const newStretchPress = stretching && !movementState.stretchLatch;
+    if (newStretchPress && inEditorMode) {
+      movementState.stretchLatch = true;
+      disposeTranslateState();
+      disposeRotateState();
+      if (stretchState) {
+        disposeStretchState();
+      } else {
+        const stretchHit = getInspectHit();
+        if (stretchHit?.object) {
+          createStretchGizmo(stretchHit.object);
+        }
+      }
+    }
+
+    const newRotatePress = rotating && !movementState.rotateLatch;
+    if (newRotatePress && inEditorMode) {
+      movementState.rotateLatch = true;
+      disposeTranslateState();
+      disposeStretchState();
+      if (rotateState) {
+        disposeRotateState();
+      } else {
+        const rotHit = getInspectHit();
+        if (rotHit?.object) {
+          createRotateGizmo(rotHit.object);
+        }
+      }
+    }
+    if (!rotating) movementState.rotateLatch = false;
     if (using && (!movementState.useLatch || canRepeatUse)) {
+      if (grabbedState) return;
       movementState.useLatch = true;
       movementState.lastUseActionMs = nowMs;
       // Same physical input can map to both use + attack (e.g. RB). Suppress attack for this press window.
@@ -1495,8 +2209,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       }
     }
 
-    if (inspecting && !movementState.inspectLatch) {
+    const canInspectNow = inspecting && (!movementState.inspectLatch || (nowMs - (movementState.lastInspectMs || 0) >= inspectRepeatMs));
+    if (canInspectNow) {
       movementState.inspectLatch = true;
+      movementState.lastInspectMs = nowMs;
       if (handleInspectAction()) {
         return;
       }

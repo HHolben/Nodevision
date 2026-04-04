@@ -52,14 +52,45 @@ function createCytoscapeGraph(elements) {
           'control-point-distances': [20, -20],
           'control-point-weights': [0.25, 0.75]
         }
+      },
+      {
+        selector: 'edge:hover',
+        style: {
+          'width': 4,
+          'line-color': '#4a90e2',
+          'target-arrow-color': '#4a90e2',
+          'arrow-scale': 1.3
+        }
+      },
+      {
+        selector: 'edge.edge-clicked',
+        style: {
+          'width': 6,
+          'line-color': '#ff9800',
+          'target-arrow-color': '#ff9800',
+          'arrow-scale': 1.6,
+          'opacity': 1,
+          'z-index': 999
+        }
       }
     ],
     layout: { name: 'fcose', animate: true }
   });
 
+  let lastClickedEdge = null;
+
   window.cy.on('tap', 'node, edge', function(evt) {
     const element = evt.target;
     updateInfoPanel(element);
+  });
+
+  window.cy.on('tap', 'edge', function(evt) {
+    const edge = evt.target;
+    if (lastClickedEdge && lastClickedEdge !== edge) {
+      lastClickedEdge.removeClass('edge-clicked');
+    }
+    edge.addClass('edge-clicked');
+    lastClickedEdge = edge;
   });
 
   window.cy.on('tap', function(event) {
@@ -68,6 +99,10 @@ function createCytoscapeGraph(elements) {
       const frame = document.getElementById('content-frame');
       infoEl.innerHTML = 'Click on a node, edge, or region to see details.';
       if (frame) frame.src = '';
+      if (lastClickedEdge) {
+        lastClickedEdge.removeClass('edge-clicked');
+        lastClickedEdge = null;
+      }
     }
   });
 

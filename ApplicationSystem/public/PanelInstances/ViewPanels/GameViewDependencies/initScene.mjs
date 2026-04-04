@@ -17,6 +17,7 @@ import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
 import { createConsolePanels } from "./consolePanels.mjs";
 
 export function initScene({ THREE, PointerLockControls, panel, canvas, state, loadWorldFromFile, getBindings, normalizeKeyName }) {
+  console.log("[VW] initScene start");
   const normalizePlayerMode = (value) => {
     const mode = String(value || "").toLowerCase();
     return mode === "creative" ? "creative" : "survival";
