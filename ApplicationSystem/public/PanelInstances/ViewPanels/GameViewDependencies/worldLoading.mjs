@@ -21,6 +21,7 @@ let objectFileGeometryApplier = null;
 let objectFileGeometryLoaderPromise = null;
 let imagePlaneTextureApplier = null;
 let imagePlaneLoaderPromise = null;
+let stlLoaderPromise = null;
 
 async function ensureObjectFileGeometryApplier() {
   if (objectFileGeometryApplier) return objectFileGeometryApplier;
@@ -38,6 +39,12 @@ async function ensureObjectFileGeometryApplier() {
       });
   }
   return objectFileGeometryLoaderPromise;
+}
+
+async function ensureStlLoader() {
+  if (stlLoaderPromise) return stlLoaderPromise;
+  stlLoaderPromise = import("/lib/three/STLLoader.js").then((mod) => new mod.STLLoader());
+  return stlLoaderPromise;
 }
 
 async function ensureImagePlaneTextureApplier() {
@@ -58,18 +65,119 @@ async function ensureImagePlaneTextureApplier() {
   return imagePlaneLoaderPromise;
 }
 
+async function loadStlWorld(filePath, state, THREE) {
+  const ctx = window.VRWorldContext || {};
+  const { scene, objects, colliders, lights, movementState, ground, consolePanels } = ctx;
+  if (!scene || !movementState || !ground) return;
+
+  // Clear existing scene content.
+  objects?.forEach((obj) => scene.remove(obj));
+  if (objects) objects.length = 0;
+  if (colliders) colliders.length = 0;
+  if (lights) {
+    lights.forEach((light) => scene.remove(light));
+    lights.length = 0;
+  }
+
+  movementState.worldMode = "3d";
+  movementState.worldRules = {
+    allowFly: true,
+    allowRoll: false,
+    allowPitch: false,
+    allowPlace: true,
+    allowBreak: true,
+    allowInspect: true,
+    allowToolUse: true,
+    allowSave: true
+  };
+  movementState.stlEdit = true;
+  movementState.stlVertices = [];
+  movementState.stlNeedsMarkerRefresh = true;
+
+  // Visuals: white sky and grid floor.
+  ground.material.color?.set("#ffffff");
+  ground.material.needsUpdate = true;
+  if (!scene.__nvGridHelper) {
+    const grid = new THREE.GridHelper(100, 100, 0x999999, 0xcccccc);
+    grid.position.y = 0.001;
+    scene.add(grid);
+    scene.__nvGridHelper = grid;
+  } else {
+    scene.__nvGridHelper.visible = true;
+  }
+  const envDef = { skyColor: "#ffffff", floorColor: "#ffffff", backgroundMode: "color", backgroundImage: "" };
+  consolePanels?.applyEnvironmentDefinition?.(envDef);
+  if (movementState.environment) Object.assign(movementState.environment, envDef);
+
+  // Load STL geometry into a single editable mesh.
+  const normalized = normalizeWorldPath(filePath);
+  const url = `/Notebook/${encodeURI(normalized)}`;
+  let geometry = null;
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    const buffer = await res.arrayBuffer();
+    const loader = await ensureStlLoader();
+    geometry = loader.parse(buffer);
+  } catch (err) {
+    console.error("Failed to load STL geometry:", err);
+    return;
+  }
+  if (!geometry) return;
+  geometry.computeBoundingBox?.();
+  geometry.computeVertexNormals?.();
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ color: "#999999", metalness: 0.1, roughness: 0.5 })
+  );
+  mesh.userData.nvType = "object-file";
+  mesh.userData.objectFilePath = normalized;
+  scene.add(mesh);
+  objects?.push(mesh);
+
+  // Extract vertices for editing.
+  const pos = geometry.getAttribute("position");
+  if (pos?.count) {
+    for (let i = 0; i < pos.count; i++) {
+      movementState.stlVertices.push({
+        x: pos.getX(i),
+        y: pos.getY(i),
+        z: pos.getZ(i)
+      });
+    }
+    if (movementState.stlVertices.length > 500) {
+      movementState.stlNeedsMarkerRefresh = false;
+    }
+  }
+  if (state) state.currentWorldDefinition = null;
+  if (ctx) ctx.currentWorldDefinition = null;
+}
+
 export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
   console.log("Loading world:", filePath);
 
   try {
     if (!filePath) return;
+    const ext = String(filePath).split(".").pop()?.toLowerCase() || "";
     state.currentWorldPath = filePath;
-    if (window.VRWorldContext) {
-      window.VRWorldContext.currentWorldPath = filePath;
+    const ctx = window.VRWorldContext;
+    if (ctx) {
+      ctx.currentWorldPath = filePath;
+      if (ctx.scene?.__nvGridHelper) ctx.scene.__nvGridHelper.visible = false;
+      if (ctx.movementState) {
+        ctx.movementState.stlEdit = false;
+        ctx.movementState.stlVertices = [];
+        ctx.movementState.stlNeedsMarkerRefresh = false;
+      }
     }
     if (!window.VRWorldContext) {
       state.pendingWorldPath = filePath;
       state.pendingWorldOptions = options;
+      return;
+    }
+
+    // Special path: directly edit an STL file instead of an HTML world.
+    if (ext === "stl") {
+      await loadStlWorld(filePath, state, THREE);
       return;
     }
 

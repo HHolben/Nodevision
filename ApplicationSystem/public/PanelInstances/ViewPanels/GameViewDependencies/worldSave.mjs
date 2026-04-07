@@ -16,6 +16,38 @@ const DEFAULT_ENVIRONMENT = {
   backgroundImage: ""
 };
 
+function buildAsciiStl(vertices = []) {
+  const pts = Array.isArray(vertices) ? vertices : [];
+  const safePts = pts.length >= 3 ? pts : [
+    { x: 0, y: 0, z: 0 },
+    { x: 0.5, y: 0, z: 0 },
+    { x: 0, y: 0, z: 0.5 }
+  ];
+  const lines = ["solid edited"];
+  for (let i = 0; i < safePts.length; i += 3) {
+    const a = safePts[i];
+    const b = safePts[(i + 1) % safePts.length];
+    const c = safePts[(i + 2) % safePts.length];
+    const ax = a.x || 0, ay = a.y || 0, az = a.z || 0;
+    const bx = b.x || 0, by = b.y || 0, bz = b.z || 0;
+    const cx = c.x || 0, cy = c.y || 0, cz = c.z || 0;
+    const ux = bx - ax, uy = by - ay, uz = bz - az;
+    const vx = cx - ax, vy = cy - ay, vz = cz - az;
+    const nx = (uy * vz) - (uz * vy);
+    const ny = (uz * vx) - (ux * vz);
+    const nz = (ux * vy) - (uy * vx);
+    lines.push(`  facet normal ${nx} ${ny} ${nz}`);
+    lines.push("    outer loop");
+    lines.push(`      vertex ${ax} ${ay} ${az}`);
+    lines.push(`      vertex ${bx} ${by} ${bz}`);
+    lines.push(`      vertex ${cx} ${cy} ${cz}`);
+    lines.push("    endloop");
+    lines.push("  endfacet");
+  }
+  lines.push("endsolid edited");
+  return lines.join("\n");
+}
+
 function buildEnvironmentMeta(movementState) {
   const env = movementState?.environment || {};
   return {
@@ -283,6 +315,28 @@ export async function saveCurrentWorldFile({
   if (!worldPath) {
     alert("No world file is selected.");
     return false;
+  }
+
+  // STL save path: write vertices as an STL file.
+  if (worldPath.toLowerCase().endsWith(".stl")) {
+    const vertices = movementState?.stlVertices || [];
+    const stlContent = buildAsciiStl(vertices);
+    try {
+      const saveRes = await fetch("/api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: worldPath, content: stlContent })
+      });
+      const payload = await saveRes.json().catch(() => ({}));
+      if (!saveRes.ok || !payload?.success) {
+        throw new Error(payload?.error || `${saveRes.status} ${saveRes.statusText}`);
+      }
+      return true;
+    } catch (err) {
+      console.error("Failed to save STL:", err);
+      alert(`Failed to save STL: ${err.message}`);
+      return false;
+    }
   }
 
   const worldDefinition = buildWorldDefinition({

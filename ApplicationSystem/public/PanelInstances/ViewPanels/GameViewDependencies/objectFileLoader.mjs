@@ -49,13 +49,14 @@ async function loadStlGeometry(normalizedPath) {
           const text = new TextDecoder("utf-8").decode(data);
           geometry = stlLoader.parse(text);
         } catch (fallbackErr) {
-          throw fallbackErr;
+          console.warn("STL parse failed after RangeError; returning no geometry to avoid repeat errors.", fallbackErr);
+          return null;
         }
       } else {
         throw err;
       }
     }
-    if (!geometry) throw new Error("STL loader returned no geometry.");
+    if (!geometry) return null;
     if (geometry.computeBoundingBox) geometry.computeBoundingBox();
     if (geometry.computeVertexNormals) geometry.computeVertexNormals();
     return geometry;
@@ -81,6 +82,10 @@ export async function applyObjectFileGeometry(mesh) {
     geometry = await loadStlGeometry(normalized);
   } catch (err) {
     console.warn("STL geometry load failed:", err);
+    return null;
+  }
+  if (!geometry) {
+    // Already logged in loader; avoid spamming repeated RangeErrors.
     return null;
   }
 
