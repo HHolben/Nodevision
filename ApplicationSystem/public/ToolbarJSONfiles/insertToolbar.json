@@ -5,6 +5,86 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Source",
+      "callbackKey": "cirInsertSource",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Circuit Element",
+      "callbackKey": "cirShowCircuitElements",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Wire",
+      "callbackKey": "cirWireTool",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Circuit Element",
+      "heading": "Resistor",
+      "callbackKey": "cirInsertResistor",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Circuit Element",
+      "heading": "Inductor",
+      "callbackKey": "cirInsertInductor",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Circuit Element",
+      "heading": "Capacitor",
+      "callbackKey": "cirInsertCapacitor",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Circuit Element",
+      "heading": "Diode",
+      "callbackKey": "cirInsertDiode",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Circuit Element",
+      "heading": "Op-Amp",
+      "callbackKey": "cirInsertOpAmp",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Circuit Element",
+      "heading": "Transistor",
+      "callbackKey": "cirInsertTransistor",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Circuit Element",
+      "heading": "Other",
+      "callbackKey": "cirInsertOther",
+      "routeToActivePanel": true,
+      "modes": ["CIRediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
       "heading": "PHP Runtime Tools",
       "modes": ["PHPediting"]
     },

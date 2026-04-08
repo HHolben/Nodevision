@@ -103,6 +103,8 @@ s,Publication,ViewText.mjs,TextFamilyEditor.mjs
 sam,Publication,ViewText.mjs,TextFamilyEditor.mjs
 sfm,Publication,ViewText.mjs,TextFamilyEditor.mjs
 sif,Publication,ViewText.mjs,TextFamilyEditor.mjs
+sp,Publication,ViewText.mjs,CircuitEditor.mjs
+spi,Publication,ViewText.mjs,CircuitEditor.mjs
 sql,Publication,ViewText.mjs,TextFamilyEditor.mjs
 srec,Publication,ViewText.mjs,TextFamilyEditor.mjs
 srt,Publication,ViewText.mjs,TextFamilyEditor.mjs
@@ -129,7 +131,7 @@ odp,Presentation,ViewODP.mjs,DocumentFamilyEditor.mjs
 3mf,Model,View3MF.mjs,ModelFamilyEditor.mjs
 amf,Model,ViewAMF.mjs,ModelFamilyEditor.mjs
 bvh,Model,ViewBVH.mjs,ModelFamilyEditor.mjs
-cir,Model,ViewCIR.mjs,ModelFamilyEditor.mjs
+cir,Model,ViewCIR.mjs,CircuitEditor.mjs
 dae,Model,ViewBinary.mjs,BinaryFamilyEditor.mjs
 fbx,Model,ViewBinary.mjs,BinaryFamilyEditor.mjs
 gcode,Model,ViewGCODE.mjs,ModelFamilyEditor.mjs
@@ -231,6 +233,7 @@ isoxml,DataStorage,ViewISOXML.mjs,XMLFamilyEditor.mjs
 json,DataStorage,ViewJSON.mjs,JSONFamilyEditor.mjs
 jsonl,DataStorage,ViewJSON.mjs,JSONFamilyEditor.mjs
 jsonld,DataStorage,ViewJSON.mjs,JSONFamilyEditor.mjs
+nvcircuit.json,DataStorage,ViewText.mjs,CircuitEditor.mjs
 landxml,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
 lift,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
 mets.xml,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
