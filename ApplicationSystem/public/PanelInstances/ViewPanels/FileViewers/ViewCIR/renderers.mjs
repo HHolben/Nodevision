@@ -6,11 +6,13 @@
  * @param {Array<Object>} components - The parsed component objects.
  * @returns {string} The HTML string.
  */
-export function generateCircuitSummary(components) {
+export function generateCircuitSummary(components, options = {}) {
+  const { renderIcon } = options;
   let html = `
     <h3 style="margin:10px 0;">Component List</h3>
     <table style="border-collapse:collapse;font-family:sans-serif;width:100%;font-size:0.9em;">
     <thead><tr>
+        <th style="border:1px solid #ccc;padding:6px;background:#f5f5f5;">Icon</th>
         <th style="border:1px solid #ccc;padding:6px;background:#f5f5f5;">Type</th>
         <th style="border:1px solid #ccc;padding:6px;background:#f5f5f5;">Name</th>
         <th style="border:1px solid #ccc;padding:6px;background:#f5f5f5;">Nodes</th>
@@ -32,8 +34,11 @@ export function generateCircuitSummary(components) {
         I: "#6f42c1",
       }[comp.type] || "#6c757d";
 
+    const iconCell = renderIcon ? renderIcon(comp) : "";
+
     html += "<tr>";
-    html += `<td style="border:1px solid #eee;padding:6px;text-align:center;color:${typeColor};">**${comp.type}**</td>`;
+    html += `<td style="border:1px solid #eee;padding:6px;text-align:center;">${iconCell}</td>`;
+    html += `<td style="border:1px solid #eee;padding:6px;text-align:center;color:${typeColor};">${comp.type}</td>`;
     html += `<td style="border:1px solid #eee;padding:6px;">${comp.name}</td>`;
     html += `<td style="border:1px solid #eee;padding:6px;">${connections}</td>`;
     html += `<td style="border:1px solid #eee;padding:6px;">${valueModel}</td>`;
@@ -139,4 +144,3 @@ export function generateTopologySVG(components, nodes) {
         </svg>
     `;
 }
-

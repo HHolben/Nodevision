@@ -22,8 +22,9 @@ export default function createPreviewRuntimeControlRoutes(ctx) {
   const router = express.Router();
   const supervisor = createPreviewRuntimeSupervisor(ctx, { logger: console });
 
-  router.use(requireIdentity);
-  router.use(requireAdmin);
+  // Scope auth guards to this router's own namespace so other /api routes
+  // (e.g., /api/save) aren't intercepted and rejected with 401/403.
+  router.use('/preview/runtime', requireIdentity, requireAdmin);
 
   router.get('/preview/runtime/status', (req, res) => {
     res.json({ ok: true, ...supervisor.status() });
