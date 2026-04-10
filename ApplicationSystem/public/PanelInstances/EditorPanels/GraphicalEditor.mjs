@@ -126,8 +126,15 @@ export async function setupPanel(cell, instanceVars = {}) {
       },
       set(value) {
         if (value !== internalPath) {
-          internalPath = value;
-          updateGraphicalEditor(value);
+          const applyChange = () => {
+            internalPath = value;
+            updateGraphicalEditor(value);
+          };
+          if (typeof window.__nvGuardFileSwitch === "function") {
+            window.__nvGuardFileSwitch(value, applyChange);
+          } else {
+            applyChange();
+          }
         }
       },
       configurable: true,

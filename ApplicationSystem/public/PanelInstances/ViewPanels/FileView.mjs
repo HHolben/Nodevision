@@ -253,18 +253,36 @@ export async function setupPanel(panel, instanceVars = {}) {
       },
       set(value) {
         if (value !== internalPath) {
-          console.log("📂 selectedFilePath changed:", value);
-          internalPath = value;
-          window.NodevisionState = window.NodevisionState || {};
-          window.NodevisionState.selectedFile = internalPath || null;
-          try {
-            updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
-          } catch (err) {
-            console.warn("Failed to update toolbar state for selectedFilePath change:", err);
+          const applyChange = () => {
+            console.log("📂 selectedFilePath changed:", value);
+            internalPath = value;
+            window.NodevisionState = window.NodevisionState || {};
+            window.NodevisionState.selectedFile = internalPath || null;
+            try {
+              updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
+            } catch (err) {
+              console.warn("Failed to update toolbar state for selectedFilePath change:", err);
+            }
+            const codeEditorActive = typeof window.isCodeEditorActive === "function" ? window.isCodeEditorActive() : false;
+            if (codeEditorActive && typeof window.updateEditorPanel === "function") {
+              window.NodevisionState.activeEditorFilePath = value;
+              window.currentActiveFilePath = value;
+              window.updateEditorPanel(value);
+            } else {
+              const viewPanel = document.getElementById("element-view");
+              if (viewPanel) {
+                updateViewPanel(value).catch(err => {
+                  console.error("❌ updateViewPanel error:", err);
+                });
+              }
+            }
+          };
+
+          if (typeof window.__nvGuardFileSwitch === "function") {
+            window.__nvGuardFileSwitch(value, applyChange);
+          } else {
+            applyChange();
           }
-          updateViewPanel(value).catch(err => {
-            console.error("❌ updateViewPanel error:", err);
-          });
         }
       },
       configurable: true,
