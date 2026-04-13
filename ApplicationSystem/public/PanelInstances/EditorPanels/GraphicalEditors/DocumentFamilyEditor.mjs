@@ -8,7 +8,9 @@ import {
   fileExt,
   saveText,
   saveBase64,
+  countWords,
 } from "./FamilyEditorCommon.mjs";
+import { setWordCount } from "/StatusBar.mjs";
 
 const NOTEBOOK_BASE = "/Notebook";
 
@@ -34,6 +36,7 @@ export async function renderEditor(filePath, container) {
       iframe.style.cssText = "width:100%;height:100%;border:1px solid #c9c9c9;border-radius:8px;background:#fff;";
       body.appendChild(iframe);
       status.textContent = `PDF preview (${bytes.length.toLocaleString()} bytes)`;
+      setWordCount(0);
     } else if (isLikelyText(ext) && bytes.length < 4 * 1024 * 1024) {
       const text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
       const textarea = document.createElement("textarea");
@@ -54,11 +57,15 @@ export async function renderEditor(filePath, container) {
         "color:#111",
       ].join(";");
       body.appendChild(textarea);
+
+      const updateCount = () => setWordCount(countWords(textarea.value));
+      textarea.addEventListener("input", updateCount);
       window.getEditorMarkdown = () => textarea.value;
       window.saveMDFile = async (path = filePath) => {
         await saveText(path, textarea.value);
       };
       status.textContent = "Document text mode";
+      updateCount();
     } else {
       const note = document.createElement("div");
       note.style.cssText = "border:1px solid #c9c9c9;border-radius:8px;padding:12px;background:#fafafa;font:13px/1.45 monospace;";
@@ -68,6 +75,7 @@ export async function renderEditor(filePath, container) {
       `;
       body.appendChild(note);
       status.textContent = "Document binary mode";
+      setWordCount(0);
     }
 
     let replacementBase64 = "";
@@ -102,5 +110,6 @@ export async function renderEditor(filePath, container) {
   } catch (err) {
     body.innerHTML = `<div style="color:#b00020;font:13px monospace;">Failed to load document: ${err.message}</div>`;
     status.textContent = "Load failed";
+    setWordCount(0);
   }
 }

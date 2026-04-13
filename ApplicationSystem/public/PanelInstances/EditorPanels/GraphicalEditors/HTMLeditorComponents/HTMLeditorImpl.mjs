@@ -5,6 +5,8 @@ import { updateToolbarState } from "./../../../../panels/createToolbar.mjs";
 import { createPanelDOM } from "./../../../../panels/panelFactory.mjs";
 import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayersContext.mjs";
+import { countWords } from "../FamilyEditorCommon.mjs";
+import { setWordCount } from "/StatusBar.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp"]);
@@ -3179,6 +3181,9 @@ export async function renderEditor(filePath, container, options = {}) {
   hidden.id = "hidden-elements";
   hidden.style.display = "none";
   wrapper.appendChild(hidden);
+  const updateWordCount = () => setWordCount(countWords(wysiwyg.innerText || ""));
+  updateWordCount();
+  wysiwyg.addEventListener("input", updateWordCount);
 
   // Expose a layer context so the Layers panel can toggle HTML elements.
   window.HTMLLayersContext = createHtmlLayersContext(wysiwyg, { title: "HTML Layers" });
@@ -3290,6 +3295,8 @@ export async function renderEditor(filePath, container, options = {}) {
       }
     }
 
+    updateWordCount();
+
     // Saving function
     window.getEditorHTML = () => {
       restoreSavedImageSources(wysiwyg);
@@ -3340,6 +3347,7 @@ export async function renderEditor(filePath, container, options = {}) {
       });
       markSelectedImage(wysiwyg, null);
       updateSelectedImageState(null);
+      updateWordCount();
     };
 
     window.saveWYSIWYGFile = async (path) => {
@@ -3356,6 +3364,7 @@ export async function renderEditor(filePath, container, options = {}) {
     wrapper.innerHTML =
       `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
     console.error(err);
+    setWordCount(0);
   }
 
   rehydrateLayoutCanvases(wysiwyg, filePath);

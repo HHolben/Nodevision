@@ -16,6 +16,53 @@ const DIRECTORY_IMAGE_CANDIDATES = [
   'directory.png',
 ];
 
+function tokenizeName(value) {
+  const str = String(value ?? '');
+  return str
+    .split(/(\d+)/)
+    .filter(Boolean)
+    .map((part) => {
+      const isNumber = /^\d+$/.test(part);
+      return {
+        raw: part,
+        isNumber,
+        number: isNumber ? Number(part) : null,
+        text: isNumber ? null : part.toLowerCase(),
+      };
+    });
+}
+
+function compareEntriesNatural(a, b) {
+  const tokensA = tokenizeName(a?.name);
+  const tokensB = tokenizeName(b?.name);
+  const max = Math.max(tokensA.length, tokensB.length);
+
+  for (let i = 0; i < max; i += 1) {
+    const tokA = tokensA[i];
+    const tokB = tokensB[i];
+    if (!tokA && tokB) return -1;
+    if (!tokB && tokA) return 1;
+    if (!tokA && !tokB) return 0;
+
+    if (tokA.isNumber && tokB.isNumber) {
+      if (tokA.number !== tokB.number) {
+        return tokA.number - tokB.number;
+      }
+      continue;
+    }
+
+    if (tokA.isNumber !== tokB.isNumber) {
+      // Numbers sort before letters.
+      return tokA.isNumber ? -1 : 1;
+    }
+
+    const cmp = tokA.text.localeCompare(tokB.text);
+    if (cmp !== 0) return cmp;
+  }
+
+  return 0;
+}
+
 function normalizeNotebookRelativePath(inputPath) {
   if (!inputPath) return '';
   let cleaned = String(inputPath).replace(/\\/g, '/').trim();
@@ -77,7 +124,7 @@ async function readDirectory(baseNotebookPath, dir) {
       isDirectory: false,
     };
   }));
-  return result;
+  return result.sort(compareEntriesNatural);
 }
 
 export default function createFilesRouter(ctx = BASE_CONTEXT) {

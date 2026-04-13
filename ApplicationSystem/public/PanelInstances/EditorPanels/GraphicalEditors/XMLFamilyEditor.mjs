@@ -6,7 +6,9 @@ import {
   createBaseLayout,
   fetchText,
   saveText,
+  countWords,
 } from "./FamilyEditorCommon.mjs";
+import { setWordCount } from "/StatusBar.mjs";
 
 function validateXML(text) {
   const doc = new DOMParser().parseFromString(text, "application/xml");
@@ -68,6 +70,9 @@ export async function renderEditor(filePath, container) {
   validateBtn.addEventListener("click", runValidation);
   textarea.addEventListener("input", runValidation);
 
+  const updateCount = () => setWordCount(countWords(textarea.value));
+  textarea.addEventListener("input", updateCount);
+
   try {
     const text = await fetchText(filePath);
     textarea.value = text;
@@ -80,8 +85,10 @@ export async function renderEditor(filePath, container) {
     };
 
     status.textContent = "XML loaded";
+    updateCount();
   } catch (err) {
     body.innerHTML = `<div style="color:#b00020;font:13px monospace;">Failed to load XML: ${err.message}</div>`;
     status.textContent = "Load failed";
+    setWordCount(0);
   }
 }

@@ -2,6 +2,8 @@
 // This file defines browser-side File Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from '/panels/createToolbar.mjs';
+import { moveFileOrDirectory as moveFileOrDirectoryAPI } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
+import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 
 const FILE_ITEM_SOUND_URLS = [
   "/soundEffects/Splish.mp3",
@@ -14,6 +16,130 @@ const CLIPBOARD_SHORTCUTS = {
   v: "pasteFile",
   x: "cutFile"
 };
+const DIRECTORY_IMAGE_CANDIDATES = [
+  ".directory.svg",
+  "directory.svg",
+  ".directory.png",
+  "directory.png"
+];
+const directoryImageCache = new Map();
+
+function resolveDirectoryImageUrl(entry) {
+  if (!entry || typeof entry !== "object") return "";
+  const direct = typeof entry.directoryImageUrl === "string" ? entry.directoryImageUrl.trim() : "";
+  if (direct) return direct;
+
+  const name = typeof entry.directoryImageName === "string" ? entry.directoryImageName.trim() : "";
+  const relPath = typeof entry.path === "string" ? entry.path : "";
+  if (!name || !relPath) return "";
+
+  const normalized = relPath.replace(/\\/g, "/").replace(/^\/+/, "");
+  const parts = normalized.split("/").filter(Boolean).map(encodeURIComponent);
+  parts.push(encodeURIComponent(name));
+  return `/Notebook/${parts.join("/")}`;
+}
+
+function tokenizeName(value) {
+  return String(value ?? "")
+    .split(/(\d+)/)
+    .filter(Boolean)
+    .map((part) => {
+      const isNumber = /^\d+$/.test(part);
+      return {
+        raw: part,
+        isNumber,
+        number: isNumber ? Number(part) : null,
+        text: isNumber ? null : part.toLowerCase()
+      };
+    });
+}
+
+function naturalCompareEntries(a, b) {
+  const tokensA = tokenizeName(a?.name);
+  const tokensB = tokenizeName(b?.name);
+  const max = Math.max(tokensA.length, tokensB.length);
+
+  for (let i = 0; i < max; i += 1) {
+    const tokA = tokensA[i];
+    const tokB = tokensB[i];
+    if (!tokA && tokB) return -1;
+    if (!tokB && tokA) return 1;
+    if (!tokA && !tokB) return 0;
+
+    if (tokA.isNumber && tokB.isNumber) {
+      if (tokA.number !== tokB.number) return tokA.number - tokB.number;
+      continue;
+    }
+
+    if (tokA.isNumber !== tokB.isNumber) {
+      return tokA.isNumber ? -1 : 1; // numbers before letters
+    }
+
+    const cmp = tokA.text.localeCompare(tokB.text);
+    if (cmp !== 0) return cmp;
+  }
+
+  return 0;
+}
+
+function applyDirectoryImageIcon(icon, url) {
+  if (!icon || !url) return;
+  icon.textContent = "";
+  icon.style.backgroundImage = `url("${url}")`;
+  icon.style.backgroundSize = "cover";
+  icon.style.backgroundPosition = "center";
+  icon.style.backgroundRepeat = "no-repeat";
+  icon.style.border = "1px solid rgba(0, 0, 0, 0.2)";
+}
+
+function applyEmojiIcon(icon, emoji) {
+  if (!icon) return;
+  icon.style.backgroundImage = "";
+  icon.style.backgroundSize = "";
+  icon.style.backgroundPosition = "";
+  icon.style.backgroundRepeat = "";
+  icon.style.border = "";
+  icon.textContent = emoji;
+  icon.style.fontSize = "14px";
+  icon.style.lineHeight = "1";
+}
+
+async function findDirectoryImageUrl(entry) {
+  if (!entry?.isDirectory) return "";
+
+  const cacheKey = normalizePath(entry.path || entry.name || "");
+  if (directoryImageCache.has(cacheKey)) {
+    return directoryImageCache.get(cacheKey) || "";
+  }
+
+  const direct = resolveDirectoryImageUrl(entry);
+  if (direct) {
+    directoryImageCache.set(cacheKey, direct);
+    return direct;
+  }
+
+  if (!cacheKey) {
+    directoryImageCache.set(cacheKey, "");
+    return "";
+  }
+
+  for (const candidate of DIRECTORY_IMAGE_CANDIDATES) {
+    const guessUrl = resolveDirectoryImageUrl({ path: cacheKey, directoryImageName: candidate });
+    if (!guessUrl) continue;
+    try {
+      const res = await fetch(guessUrl, { method: "HEAD", cache: "no-store" });
+      if (res.ok) {
+        directoryImageCache.set(cacheKey, guessUrl);
+        return guessUrl;
+      }
+    } catch {
+      // Ignore network errors and try the next candidate.
+    }
+  }
+
+  directoryImageCache.set(cacheKey, "");
+  return "";
+}
 let fileItemHoverAudio = null;
 let fileItemHoverAudioIndex = 0;
 let lastFileItemHoverSoundAt = 0;
@@ -207,6 +333,7 @@ export function displayFiles(files, currentPath) {
   }
 
   listElem.innerHTML = "";
+  const sortedFiles = [...files].sort(naturalCompareEntries);
   Object.assign(listElem.style, {
     listStyle: "none",
     margin: "0",
@@ -252,13 +379,61 @@ export function displayFiles(files, currentPath) {
       const newPath = segments.join("/");
       window.refreshFileManager(newPath);
     });
+    // Enable drag-drop onto parent ("..") to move items up one level.
+    link.addEventListener("dragenter", e => {
+      if (!hasDragPayload(e)) return;
+      e.preventDefault();
+      link.style.backgroundColor = "#e8f4ff";
+      link.style.outline = "1px dashed #4b7fd1";
+    });
+    link.addEventListener("dragover", e => {
+      if (!hasDragPayload(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    link.addEventListener("dragleave", e => {
+      if (!link.contains(e.relatedTarget)) {
+        applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
+        link.style.outline = "";
+      }
+    });
+    link.addEventListener("drop", async e => {
+      e.preventDefault();
+      applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
+      link.style.outline = "";
+
+      const dragData = readDragPayload(e);
+      if (!dragData?.path) return;
+
+      const sourcePath = normalizePath(dragData.path);
+      const segments = currentPath.split("/").filter(Boolean);
+      segments.pop();
+      const destinationDir = segments.join("/");
+      if (isSameParent(sourcePath, destinationDir)) return;
+      if (dragData.isDirectory && isSubPath(destinationDir, sourcePath)) {
+        console.warn("Cannot move a directory into itself or one of its descendants.");
+        return;
+      }
+
+      const destinationPath = destinationDir ? `${destinationDir}/${basename(sourcePath)}` : basename(sourcePath);
+
+      try {
+        await moveFileOrDirectoryAPI(sourcePath, destinationDir);
+        if (!dragData.isDirectory) {
+          await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
+        }
+        await window.refreshFileManager(currentPath);
+      } catch (err) {
+        console.error("Failed to move file or directory via parent drop:", err);
+      }
+    });
     li.appendChild(link);
     listElem.appendChild(li);
   }
 
   renderBreadcrumbs(currentPath);
 
-  files.forEach(f => {
+  sortedFiles.forEach(f => {
     const li = document.createElement("li");
     li.style.margin = "0";
     const link = document.createElement("a");
@@ -295,16 +470,18 @@ export function displayFiles(files, currentPath) {
     icon.style.flex = "0 0 20px";
     icon.style.borderRadius = "3px";
 
-    if (f.isDirectory && typeof f.directoryImageUrl === "string" && f.directoryImageUrl) {
-      icon.style.backgroundImage = `url(${JSON.stringify(f.directoryImageUrl)})`;
-      icon.style.backgroundSize = "cover";
-      icon.style.backgroundPosition = "center";
-      icon.style.backgroundRepeat = "no-repeat";
-      icon.style.border = "1px solid rgba(0, 0, 0, 0.2)";
+    const directoryImageUrl = f.isDirectory ? resolveDirectoryImageUrl(f) : "";
+
+    if (directoryImageUrl) {
+      applyDirectoryImageIcon(icon, directoryImageUrl);
     } else {
-      icon.textContent = f.isDirectory ? "📁" : "🖹";
-      icon.style.fontSize = "14px";
-      icon.style.lineHeight = "1";
+      applyEmojiIcon(icon, f.isDirectory ? "📁" : "🖹");
+      if (f.isDirectory) {
+        // Fallback probe in case the API omitted directory image metadata.
+        findDirectoryImageUrl(f).then((url) => {
+          if (url) applyDirectoryImageIcon(icon, url);
+        });
+      }
     }
 
     const label = document.createElement("span");
@@ -365,18 +542,22 @@ export function displayFiles(files, currentPath) {
         if (!dragData?.path) return;
 
         const sourcePath = normalizePath(dragData.path);
-        const destinationPath = normalizePath(link.dataset.fullPath);
+        const destinationDir = normalizePath(link.dataset.fullPath);
 
-        if (sourcePath === destinationPath) return;
-        if (isSameParent(sourcePath, destinationPath)) return;
+        if (sourcePath === destinationDir) return;
+        if (isSameParent(sourcePath, destinationDir)) return;
 
-        if (dragData.isDirectory && isSubPath(destinationPath, sourcePath)) {
+        if (dragData.isDirectory && isSubPath(destinationDir, sourcePath)) {
           console.warn("Cannot move a directory into itself or one of its descendants.");
           return;
         }
 
         try {
-          await moveFileOrDirectory(sourcePath, destinationPath);
+          await moveFileOrDirectoryAPI(sourcePath, destinationDir);
+          if (!dragData.isDirectory) {
+            const destinationPath = destinationDir ? `${destinationDir}/${basename(sourcePath)}` : basename(sourcePath);
+            await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
+          }
           await window.refreshFileManager(currentPath);
         } catch (err) {
           console.error("Failed to move file or directory:", err);
@@ -440,23 +621,18 @@ export function attachFileClickHandlers() {
 // ------------------------------
 // Move file/directory
 // ------------------------------
-export async function moveFileOrDirectory(src, dest) {
-  const source = normalizePath(src);
-  const destination = normalizePath(dest);
-  const res = await fetch("/api/move", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ source, destination }),
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw new Error(data?.error || `Move failed with status ${res.status}`);
-  }
-  return data;
+export async function moveFileOrDirectory(src, destDir) {
+  // Kept for backward compatibility; delegate to shared FileManager API
+  return moveFileOrDirectoryAPI(src, destDir);
 }
 
 function normalizePath(value = "") {
   return String(value).replace(/^\/+/, "").replace(/\/+/g, "/");
+}
+
+function basename(pathValue = "") {
+  const parts = normalizePath(pathValue).split("/").filter(Boolean);
+  return parts[parts.length - 1] || "";
 }
 
 function dirnameSafe(p = "") {

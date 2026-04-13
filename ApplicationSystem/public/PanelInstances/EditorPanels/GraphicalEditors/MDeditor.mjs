@@ -2,6 +2,8 @@
 // This file defines browser-side MDeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { countWords } from "./FamilyEditorCommon.mjs";
+import { setWordCount } from "/StatusBar.mjs";
 
 // --------------------------------------------------
 // Fallback Hotkeys (self-contained)
@@ -108,6 +110,8 @@ export async function renderEditor(filePath, container) {
   textarea.style.lineHeight = "1.5";
   textarea.spellcheck = true;
   wrapper.appendChild(textarea);
+  const updateCount = () => setWordCount(countWords(textarea.value));
+  textarea.addEventListener("input", updateCount);
 
   try {
     const res = await fetch(`/Notebook/${filePath}`);
@@ -115,12 +119,14 @@ export async function renderEditor(filePath, container) {
 
     const mdText = await res.text();
     textarea.value = mdText;
+    updateCount();
 
     // Expose editor helpers
     window.getEditorMarkdown = () => textarea.value;
 
     window.setEditorMarkdown = (md) => {
       textarea.value = md || "";
+      updateCount();
     };
 
     window.saveMDFile = async (path) => {
@@ -137,6 +143,7 @@ export async function renderEditor(filePath, container) {
     wrapper.innerHTML =
       `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
     console.error(err);
+    setWordCount(0);
   }
 
   // --------------------------------------------------

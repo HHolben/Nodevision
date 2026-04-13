@@ -6,7 +6,9 @@ import {
   createBaseLayout,
   fetchText,
   saveText,
+  countWords,
 } from "./FamilyEditorCommon.mjs";
+import { setWordCount } from "/StatusBar.mjs";
 
 export async function renderEditor(filePath, container) {
   resetEditorHooks();
@@ -36,14 +38,19 @@ export async function renderEditor(filePath, container) {
 
     body.appendChild(textarea);
 
+    const updateCount = () => setWordCount(countWords(textarea.value));
+    textarea.addEventListener("input", updateCount);
+
     window.getEditorMarkdown = () => textarea.value;
     window.saveMDFile = async (path = filePath) => {
       await saveText(path, textarea.value);
     };
 
     status.textContent = `Text loaded (${text.length.toLocaleString()} chars)`;
+    updateCount();
   } catch (err) {
     body.innerHTML = `<div style="color:#b00020;font:13px monospace;">Failed to load text: ${err.message}</div>`;
     status.textContent = "Load failed";
+    setWordCount(0);
   }
 }

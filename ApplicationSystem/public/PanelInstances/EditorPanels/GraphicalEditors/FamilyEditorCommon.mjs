@@ -134,3 +134,8 @@ export function escapeHTML(str = "") {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 }
+
+export function countWords(text = "") {
+  const t = String(text || "").trim();
+  return t ? t.split(/\s+/).filter(Boolean).length : 0;
+}
