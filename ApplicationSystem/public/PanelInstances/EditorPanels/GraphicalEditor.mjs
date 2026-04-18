@@ -2,6 +2,7 @@
 // This file defines browser-side Graphical Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // using ModuleMap.csv as the single source of truth.
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { setWordCountVisibility } from "/StatusBar.mjs";
 
 let lastEditedPath = null;
 let moduleMapCache = null;
@@ -30,6 +31,7 @@ async function loadModuleMap() {
     const idx = {
       ext: header.indexOf("Extension"),
       editor: header.indexOf("GraphicalEditorModule"),
+      family: header.indexOf("Family"),
     };
 
     if (idx.ext < 0 || idx.editor < 0) {
@@ -41,7 +43,10 @@ async function loadModuleMap() {
     for (const line of lines) {
       const cols = line.split(",").map((c) => c.trim());
       const ext = (cols[idx.ext] || "").toLowerCase();
-      map[ext] = { editor: cols[idx.editor] || null };
+      map[ext] = {
+        editor: cols[idx.editor] || null,
+        family: idx.family >= 0 ? cols[idx.family] || null : null,
+      };
     }
 
     moduleMapCache = map;
@@ -88,19 +93,27 @@ async function resolveEditorModule(filePath) {
   const moduleMap = await loadModuleMap();
 
   const moduleMapEmpty = !moduleMap || Object.keys(moduleMap).length === 0;
+  const entry = moduleMap[ext] || moduleMap[""] || {};
   const editorFile =
-    moduleMap[ext]?.editor ||
-    moduleMap[""]?.editor ||
+    entry?.editor ||
     (moduleMapEmpty ? FALLBACK_EDITOR_BY_EXT[ext] : null) ||
     "EditorFallback.mjs";
 
   // Safety check
   if (!/^[\w.-]+\.mjs$/.test(editorFile)) {
     console.warn("⚠️ Invalid editor module name:", editorFile);
-    return `${basePath}/EditorFallback.mjs`;
+    return { modulePath: `${basePath}/EditorFallback.mjs`, family: entry?.family || null, ext };
   }
 
-  return `${basePath}/${editorFile}`;
+  return { modulePath: `${basePath}/${editorFile}`, family: entry?.family || null, ext };
+}
+
+function shouldShowWordCount({ family = null, ext = "" } = {}) {
+  const lowerExt = String(ext || "").toLowerCase();
+  if (family === "Publication") return true;
+  // Equation family includes LaTeX-style files where word count is helpful.
+  if (family === "Equation") return true;
+  return new Set(["html", "htm", "md", "markdown", "tex", "latex"]).has(lowerExt);
 }
 
 /* ---------------------------------------------------------
@@ -163,6 +176,7 @@ export async function updateGraphicalEditor(
   }
 
   if (!filePath) {
+    setWordCountVisibility(false);
     window.NodevisionState = window.NodevisionState || {};
     window.NodevisionState.activePanelType = "GraphicalEditor";
     window.NodevisionState.currentMode = "GraphicalEditing";
@@ -202,8 +216,9 @@ export async function updateGraphicalEditor(
   console.log("🧭 Loading graphical editor for:", filePath);
 
   try {
-    const ext = resolveExtension(filePath);
-    const modulePath = await resolveEditorModule(filePath);
+    const resolution = await resolveEditorModule(filePath);
+    const { modulePath, family, ext } = resolution;
+    setWordCountVisibility(shouldShowWordCount({ family, ext }));
     const editorFile = modulePath.split("/").pop();
     window.__nodevisionGraphicalEditorLastError = null;
     window.__nodevisionGraphicalEditorLastAttempt = {
@@ -223,6 +238,7 @@ export async function updateGraphicalEditor(
       throw new Error("renderEditor() not found");
     }
   } catch (err) {
+    setWordCountVisibility(false);
     console.error("❌ Failed to load editor:", err);
     const attempt = window.__nodevisionGraphicalEditorLastAttempt || {};
     window.__nodevisionGraphicalEditorLastError = {

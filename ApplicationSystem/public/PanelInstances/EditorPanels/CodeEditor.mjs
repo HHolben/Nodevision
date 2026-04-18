@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs
 // This file defines browser-side Code Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
+import { setWordCountVisibility } from "/StatusBar.mjs";
 
 let editorInstance = null;
 let editorContainer = null;
@@ -92,6 +93,9 @@ export async function openCodeEditor(filePath) {
     alert("No file selected to open in Code Editor.");
     return;
   }
+
+  // Code editor is not a publication-focused editor; hide word counter.
+  setWordCountVisibility(false);
 
   const workspace = document.getElementById("workspace");
   if (!workspace) {

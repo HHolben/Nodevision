@@ -6,6 +6,38 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Equation Element",
+      "modes": ["EquationEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Equation Element",
+      "heading": "Equation Elements",
+      "content": "<div></div>",
+      "script": "equationElementsWidget.mjs",
+      "modes": ["EquationEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Symbol",
+      "modes": ["EquationEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Symbol",
+      "heading": "Equation Symbols",
+      "content": "<div></div>",
+      "script": "equationSymbolsWidget.mjs",
+      "modes": ["EquationEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Source",
       "callbackKey": "cirInsertSource",
       "routeToActivePanel": true,
@@ -210,13 +242,37 @@
       "parentHeading": "Insert Text"
     },
     
-           {
+    {
       "ToolbarCategory": "Insert",
       "heading": "Tab",
       "insertGroup": "text",
       "callbackKey": "insertTab",
       "icon": "icons/InsertTab.png",
       "parentHeading": "Insert Text"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Equation Element",
+      "insertGroup": "text",
+      "modes": ["HTMLediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "MathML Equation",
+      "insertGroup": "text",
+      "callbackKey": "insertMathMLEquation",
+      "parentHeading": "Insert Text",
+      "preventAutoSubToolbar": true,
+      "modes": ["HTMLediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Equation Element",
+      "heading": "Equation Structure Tools",
+      "content": "<div></div>",
+      "script": "mathmlEquationStructureWidget.mjs",
+      "modes": ["HTMLediting"],
+      "preventDropdown": true
     },
 
     

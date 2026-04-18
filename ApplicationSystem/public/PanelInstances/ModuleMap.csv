@@ -153,8 +153,8 @@ usda,Model,ViewUSD.mjs,ModelFamilyEditor.mjs
 usdc,Model,ViewUSD.mjs,ModelFamilyEditor.mjs
 vtk,Model,ViewVTK.mjs,ModelFamilyEditor.mjs
 vtp,Model,ViewVTK.mjs,ModelFamilyEditor.mjs
-latex,Equation,ViewText.mjs,TextFamilyEditor.mjs
-tex,Equation,ViewText.mjs,TextFamilyEditor.mjs
+latex,Equation,ViewText.mjs,LaTeXeditor.mjs
+tex,Equation,ViewText.mjs,LaTeXeditor.mjs
 bat,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 c,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 cmake,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs

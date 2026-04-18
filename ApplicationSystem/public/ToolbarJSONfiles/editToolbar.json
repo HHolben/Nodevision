@@ -52,6 +52,13 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Edit Equation Here",
+    "callbackKey": "editEquationHere",
+    "modes": ["HTMLediting", "EPUBediting", "GraphicalEditing"],
+    "conditions": null
+  },
+  {
+    "ToolbarCategory": "Edit",
     "parentHeading": "Edit Image Here",
     "heading": "Crop Image",
     "callbackKey": "cropSelectedImage",
