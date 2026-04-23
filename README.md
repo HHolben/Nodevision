@@ -1,16 +1,9 @@
-<!-- Nodevision/ApplicationSystem/public/README.md -->
+<!-- Nodevision/ApplicationSystem/README.md -->
 <!-- This file documents README for the Nodevision ApplicationSystem. It explains usage and maintenance details for developers. -->
-# Public
+# Nodevision
+Nodevision is a Node.js based web development environment with a special focus on Note taking and Graph visualizations of project directories made with love and generative AIs.
 
-The `public` folder contains client-side code, assets, and styles that run in the browser.
+# Authorship and AI usage.
+Nodevision is under development by, Henry Holben using generative AIs including ChatGPT, Claude AI, Google Gemini, and Replit.
 
-## Contents
-- **CSS files** (`LayoutStyles.css`, etc.): Define the grid layout, panel spacing, and UI look-and-feel.
-- **JavaScript files** (`fileView.js`, `panelFactory.mjs`, etc.): Handle dynamic loading of panels, file views, and other front-end interactions.
-- **Icons & images** (`icons/`): Default node images and toolbar icons.
-- **HTML templates** (if any): Predefined layouts for panels and toolbars.
-
-## Notes
-- All files in `public/` are served directly to the client.
-- Avoid putting sensitive or server-only code here.
-- Styles should remain modular (per panel or per feature).
+Code from this site has also been used: https://michilehr.de/overwrite-cmds-and-ctrls-in-javascript/
