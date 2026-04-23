@@ -5,6 +5,16 @@
 function collectProviders() {
   const providers = [];
 
+  // GLB editing context
+  if (window.GLBLayersContext?.attachHost) {
+    providers.push({
+      id: "glb",
+      title: window.GLBLayersContext.title || "GLB Layers",
+      attachHost: window.GLBLayersContext.attachHost,
+      actions: [],
+    });
+  }
+
   // HTML editing context (from HTMLeditorImpl)
   if (window.HTMLLayersContext?.attachHost) {
     providers.push({
@@ -65,14 +75,17 @@ export async function setupPanel(panel, instanceVars = {}) {
   const providers = collectProviders();
   if (!providers.length) {
     const message = document.createElement("div");
-    message.textContent = "Open an SVG or HTML document to show layers.";
+    message.textContent = "Open an SVG, HTML, or GLB document to show layers.";
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);
     return;
   }
 
-  let activeProvider = providers[0];
+  const preferredProviderId = typeof instanceVars.providerId === "string"
+    ? instanceVars.providerId.trim()
+    : "";
+  let activeProvider = providers.find((provider) => provider.id === preferredProviderId) || providers[0];
   let teardown = null;
 
   const header = document.createElement("div");

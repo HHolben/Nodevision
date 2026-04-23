@@ -784,9 +784,63 @@ export async function renderEditor(filePath, container) {
     state.selectionStartRect = null;
   }
 
+  function syncAfterHistoryChange() {
+    state.logicalWidth = canvas.width;
+    state.logicalHeight = canvas.height;
+    ctx.imageSmoothingEnabled = false;
+    refreshPreviewCanvasDimensions();
+    clearShapePreview();
+    resetSelectionState();
+    updateDisplayScale();
+    notifyLayoutChanged();
+  }
+
+  function performUndo() {
+    const snapshot = history.undo(canvas);
+    if (!snapshot) {
+      updateRasterStatus("Nothing to undo");
+      return false;
+    }
+    syncAfterHistoryChange();
+    updateRasterStatus("Undo");
+    return true;
+  }
+
+  function performRedo() {
+    const snapshot = history.redo(canvas);
+    if (!snapshot) {
+      updateRasterStatus("Nothing to redo");
+      return false;
+    }
+    syncAfterHistoryChange();
+    updateRasterStatus("Redo");
+    return true;
+  }
+
   const handleKeyDown = (evt) => {
+    if (window.NodevisionState?.currentMode !== "PNGediting") return;
+    if (isEditableTarget(evt.target)) return;
+    const key = String(evt.key || "").toLowerCase();
+    const isMac = /mac|iphone|ipad|ipod/i.test(
+      String(window.navigator.platform || ""),
+    );
+    const primaryModifier = isMac ? evt.metaKey : evt.ctrlKey;
+    if (primaryModifier && key === "z") {
+      evt.preventDefault();
+      if (evt.shiftKey) {
+        performRedo();
+      } else {
+        performUndo();
+      }
+      return;
+    }
+    if (primaryModifier && key === "y") {
+      evt.preventDefault();
+      performRedo();
+      return;
+    }
+
     if (window.NodevisionState?.drawTool !== "rectselect") return;
-    const metaKey = window.navigator.platform.match("Mac") ? evt.metaKey : evt.ctrlKey;
     if (evt.key === "Escape") {
       evt.preventDefault();
       clearSelection();
@@ -796,10 +850,39 @@ export async function renderEditor(filePath, container) {
     } else if (evt.key === "Enter") {
       evt.preventDefault();
       commitSelection();
-    } else if (metaKey && evt.key.toLowerCase() === "c") {
+    } else if (primaryModifier && key === "c") {
       evt.preventDefault();
       copySelection();
-    } else if (metaKey && evt.key.toLowerCase() === "v") {
+    }
+  };
+
+  const handlePaste = (evt) => {
+    if (isEditableTarget(evt.target)) return;
+    const hasImage = hasImageInClipboard(evt.clipboardData);
+    if (hasImage) {
+      evt.preventDefault();
+      void pasteClipboardImage(evt.clipboardData)
+        .then((pasted) => {
+          if (pasted) return;
+          if (
+            window.NodevisionState?.drawTool === "rectselect" &&
+            state.selectionClipboard?.imageData
+          ) {
+            pasteSelection();
+            return;
+          }
+          updateRasterStatus("Clipboard image paste failed");
+        })
+        .catch((err) => {
+          console.warn("PNG editor: failed to paste clipboard image.", err);
+          updateRasterStatus("Clipboard image paste failed");
+        });
+      return;
+    }
+    if (
+      window.NodevisionState?.drawTool === "rectselect" &&
+      state.selectionClipboard?.imageData
+    ) {
       evt.preventDefault();
       pasteSelection();
     }
@@ -807,6 +890,7 @@ export async function renderEditor(filePath, container) {
   window.addEventListener("pointermove", handleSelectionPointerMove);
   window.addEventListener("pointerup", handleSelectionPointerUp);
   window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("paste", handlePaste);
 
   const beginSelectionDrag = (evt) => {
     if (window.NodevisionState?.drawTool !== "rectselect") return;
@@ -1063,19 +1147,18 @@ export async function renderEditor(filePath, container) {
       const width = state.selectionTextureCanvas.width;
       const height = state.selectionTextureCanvas.height;
       const imageData = textureCtx.getImageData(0, 0, width, height);
-      state.selectionClipboard = { imageData, width, height };
+      setSelectionClipboard(imageData, width, height);
       updateRasterStatus("Selection copied");
       return;
     }
     if (!state.selectionRect) return;
     const { x, y, width, height } = state.selectionRect;
     const imageData = ctx.getImageData(x, y, width, height);
-    state.selectionClipboard = { imageData, width, height };
-    window.NodevisionState.drawSelectionClipboard = state.selectionClipboard;
+    setSelectionClipboard(imageData, width, height);
     updateRasterStatus("Selection copied");
   }
 
-  function pasteSelection() {
+  function pasteSelection(statusMessage = "Selection pasted") {
     const clipboard = state.selectionClipboard;
     if (!clipboard || !clipboard.imageData) return;
     const { width, height, imageData } = clipboard;
@@ -1101,7 +1184,106 @@ export async function renderEditor(filePath, container) {
     state.baseSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
     setSelectionRect({ x, y, width, height });
     drawSelectionTexture();
-    updateRasterStatus("Selection pasted");
+    updateRasterStatus(statusMessage);
+  }
+
+  function setSelectionClipboard(imageData, width, height) {
+    if (!imageData || !Number.isFinite(width) || !Number.isFinite(height)) {
+      return false;
+    }
+    state.selectionClipboard = { imageData, width, height };
+    window.NodevisionState.drawSelectionClipboard = state.selectionClipboard;
+    return true;
+  }
+
+  function hasImageInClipboard(clipboardData) {
+    if (!clipboardData) return false;
+    const items = Array.from(clipboardData.items || []);
+    if (items.some((item) => item?.type?.startsWith?.("image/"))) {
+      return true;
+    }
+    const files = Array.from(clipboardData.files || []);
+    return files.some((file) => file?.type?.startsWith?.("image/"));
+  }
+
+  function isEditableTarget(target) {
+    if (!target || !(target instanceof Element)) return false;
+    if (target instanceof HTMLTextAreaElement) return true;
+    if (target instanceof HTMLInputElement) {
+      const inputType = (target.type || "").toLowerCase();
+      return inputType !== "range" && inputType !== "color";
+    }
+    if (target.isContentEditable) return true;
+    return !!target.closest(
+      "textarea, input:not([type='range']):not([type='color']), [contenteditable=''], [contenteditable='true'], [contenteditable='plaintext-only']",
+    );
+  }
+
+  async function pasteClipboardImage(clipboardData) {
+    const imageData = await extractImageDataFromClipboard(clipboardData);
+    if (!imageData) return false;
+    const success = setSelectionClipboard(imageData, imageData.width, imageData.height);
+    if (!success) return false;
+    pasteSelection("Clipboard image pasted");
+    return true;
+  }
+
+  async function extractImageDataFromClipboard(clipboardData) {
+    if (!clipboardData) return null;
+    const items = Array.from(clipboardData.items || []);
+    for (const item of items) {
+      if (!item?.type?.startsWith?.("image/")) continue;
+      const file = typeof item.getAsFile === "function" ? item.getAsFile() : null;
+      if (!file) continue;
+      const data = await imageBlobToImageData(file);
+      if (data) return data;
+    }
+    const files = Array.from(clipboardData.files || []);
+    for (const file of files) {
+      if (!file?.type?.startsWith?.("image/")) continue;
+      const data = await imageBlobToImageData(file);
+      if (data) return data;
+    }
+    return null;
+  }
+
+  async function imageBlobToImageData(blob) {
+    if (!(blob instanceof Blob)) return null;
+    if (typeof createImageBitmap === "function") {
+      const bitmap = await createImageBitmap(blob);
+      try {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = Math.max(1, bitmap.width);
+        tempCanvas.height = Math.max(1, bitmap.height);
+        const tempCtx = tempCanvas.getContext("2d");
+        if (!tempCtx) return null;
+        tempCtx.imageSmoothingEnabled = false;
+        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(bitmap, 0, 0);
+        return tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      } finally {
+        if (typeof bitmap.close === "function") {
+          bitmap.close();
+        }
+      }
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const img = await loadImageFromSrc(objectUrl);
+      const width = Math.max(1, img.naturalWidth || img.width || 1);
+      const height = Math.max(1, img.naturalHeight || img.height || 1);
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext("2d");
+      if (!tempCtx) return null;
+      tempCtx.imageSmoothingEnabled = false;
+      tempCtx.clearRect(0, 0, width, height);
+      tempCtx.drawImage(img, 0, 0, width, height);
+      return tempCtx.getImageData(0, 0, width, height);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 
   function deleteSelection() {
@@ -1366,6 +1548,10 @@ export async function renderEditor(filePath, container) {
   window.rasterCanvas = canvas;
   window.__nvPngEditorApi = {
     getCanvasSize: () => ({ width: state.logicalWidth, height: state.logicalHeight }),
+    undo: performUndo,
+    redo: performRedo,
+    canUndo: () => history.canUndo(),
+    canRedo: () => history.canRedo(),
     resizeCanvas,
     cropToSelection: cropToSelectionRect,
     canCrop: canCropSelection,
@@ -1386,6 +1572,7 @@ export async function renderEditor(filePath, container) {
       window.removeEventListener("pointermove", handleSelectionPointerMove);
       window.removeEventListener("pointerup", handleSelectionPointerUp);
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("paste", handlePaste);
       resizeObserver.disconnect();
       clearSelection();
       selectionOverlay.removeEventListener("pointerdown", beginSelectionDrag);

@@ -1353,7 +1353,11 @@ function shouldHandleGraphManagerShortcut() {
     const state = window.NodevisionState || {};
     const handlerMatches = state.activeActionHandler === window.handleGraphManagerAction;
     const panelMatches = state.activePanelType === "GraphManager";
-    return handlerMatches || panelMatches;
+    if (panelMatches) return true;
+    if (typeof state.activePanelType === "string" && state.activePanelType.trim()) {
+        return false;
+    }
+    return handlerMatches;
 }
 
 function registerGraphManagerClipboardShortcuts() {

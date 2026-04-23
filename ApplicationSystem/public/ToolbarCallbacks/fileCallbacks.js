@@ -25,7 +25,7 @@ saveFile: async () => {
     .split(".")
     .pop()
     .toLowerCase();
-  const isRasterPath = ["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext);
+  const isRasterPath = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "ico"].includes(ext);
   const isRasterMode = ["PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting"].includes(mode);
 
   if (!filePath) {

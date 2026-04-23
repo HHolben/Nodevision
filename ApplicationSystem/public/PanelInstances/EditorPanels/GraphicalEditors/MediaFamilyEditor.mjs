@@ -12,7 +12,7 @@ import {
 const NOTEBOOK_BASE = "/Notebook";
 
 function mediaKind(ext) {
-  const image = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff", "xcf", "psd", "exr"]);
+  const image = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp", "ico", "tif", "tiff", "xcf", "psd", "exr"]);
   const audio = new Set(["mp3", "wav", "ogg", "opus", "flac", "aiff"]);
   const video = new Set(["mp4", "mkv", "mov", "webm", "ogv", "avi"]);
   if (image.has(ext)) return "image";

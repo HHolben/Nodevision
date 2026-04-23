@@ -8,6 +8,7 @@ let lastEditedPath = null;
 let moduleMapCache = null;
 const FALLBACK_EDITOR_BY_EXT = {
   png: "PNGeditor.mjs",
+  ico: "PNGeditor.mjs",
 };
 
 /* ---------------------------------------------------------
@@ -116,6 +117,18 @@ function shouldShowWordCount({ family = null, ext = "" } = {}) {
   return new Set(["html", "htm", "md", "markdown", "tex", "latex"]).has(lowerExt);
 }
 
+function cleanupEditorHost(editorDiv) {
+  if (!editorDiv) return;
+  const cleanup = editorDiv.__nvActiveEditorCleanup;
+  if (typeof cleanup !== "function") return;
+  try {
+    cleanup();
+  } catch (err) {
+    console.warn("Graphical editor cleanup hook failed:", err);
+  }
+  editorDiv.__nvActiveEditorCleanup = null;
+}
+
 /* ---------------------------------------------------------
  * Panel setup
  * --------------------------------------------------------- */
@@ -180,15 +193,20 @@ export async function updateGraphicalEditor(
     window.NodevisionState = window.NodevisionState || {};
     window.NodevisionState.activePanelType = "GraphicalEditor";
     window.NodevisionState.currentMode = "GraphicalEditing";
+    window.NodevisionState.activeActionHandler = null;
     window.NodevisionState.selectedFile = null;
     window.NodevisionState.activeEditorFilePath = null;
-    updateToolbarState({ currentMode: "GraphicalEditing" });
+    updateToolbarState({
+      currentMode: "GraphicalEditing",
+      activeActionHandler: null,
+    });
     window.currentActiveFilePath = null;
     window.filePath = null;
 
     const { renderEditor } = await import(
       "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs"
     );
+    cleanupEditorHost(editorDiv);
     editorDiv.innerHTML = "";
     renderEditor("(no file selected)", editorDiv);
     return;
@@ -200,6 +218,7 @@ export async function updateGraphicalEditor(
   }
 
   lastEditedPath = filePath;
+  cleanupEditorHost(editorDiv);
   editorDiv.innerHTML = "";
 
   // Keep global "active file" state aligned with the file shown in the graphical editor.
@@ -209,9 +228,13 @@ export async function updateGraphicalEditor(
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activePanelType = "GraphicalEditor";
   window.NodevisionState.currentMode = "GraphicalEditing";
+  window.NodevisionState.activeActionHandler = null;
   window.NodevisionState.selectedFile = filePath;
   window.NodevisionState.activeEditorFilePath = filePath;
-  updateToolbarState({ currentMode: "GraphicalEditing" });
+  updateToolbarState({
+    currentMode: "GraphicalEditing",
+    activeActionHandler: null,
+  });
 
   console.log("🧭 Loading graphical editor for:", filePath);
 
@@ -251,6 +274,7 @@ export async function updateGraphicalEditor(
     const { renderEditor } = await import(
       "/PanelInstances/EditorPanels/GraphicalEditors/EditorFallback.mjs"
     );
+    cleanupEditorHost(editorDiv);
     renderEditor(filePath, editorDiv, { error: window.__nodevisionGraphicalEditorLastError });
   }
 }

@@ -8,6 +8,7 @@ dxf,Image,ViewDXF.mjs,ModelFamilyEditor.mjs
 excellon,Image,ViewText.mjs,TextFamilyEditor.mjs
 exr,Image,ViewEXR.mjs,MediaFamilyEditor.mjs
 gif,Image,ViewImage.mjs,MediaFamilyEditor.mjs
+ico,Image,ViewImage.mjs,PNGeditor.mjs
 jpeg,Image,ViewJPG.mjs,PNGeditor.mjs
 jpg,Image,ViewJPG.mjs,PNGeditor.mjs
 kicad_pcb,Image,ViewKiCadPCB.mjs,TextFamilyEditor.mjs
@@ -135,7 +136,7 @@ cir,Circuit,ViewCIR.mjs,CircuitEditor.mjs
 dae,Model,ViewBinary.mjs,BinaryFamilyEditor.mjs
 fbx,Model,ViewBinary.mjs,BinaryFamilyEditor.mjs
 gcode,Model,ViewGCODE.mjs,ModelFamilyEditor.mjs
-glb,Model,ViewGLTF.mjs,ModelFamilyEditor.mjs
+glb,Model,ViewGLTF.mjs,GLBeditor.mjs
 gltf,Model,ViewGLTF.mjs,ModelFamilyEditor.mjs
 h5,Model,ViewHDF5.mjs,ModelFamilyEditor.mjs
 ifc,Model,ViewIFC.mjs,ModelFamilyEditor.mjs

@@ -153,6 +153,7 @@ export default function createFilesRouter(ctx = BASE_CONTEXT) {
         '.gif': 'image/gif',
         '.webp': 'image/webp',
         '.bmp': 'image/bmp',
+        '.ico': 'image/x-icon',
       };
 
       const data = await fs.readFile(fullPath);

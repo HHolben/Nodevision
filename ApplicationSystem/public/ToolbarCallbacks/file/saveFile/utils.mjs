@@ -10,7 +10,7 @@ const RASTER_EDITING_MODES = new Set([
   "WEBPediting",
 ]);
 
-const RASTER_FILE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp"]);
+const RASTER_FILE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp", "ico"]);
 
 export function resolveFilePath(preferredPath) {
   return (

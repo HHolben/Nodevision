@@ -810,7 +810,11 @@ function shouldHandleFileManagerShortcut() {
   const state = window.NodevisionState || {};
   const handlerMatches = state.activeActionHandler === window.handleFileManagerAction;
   const panelMatches = state.activePanelType === "FileManager";
-  return handlerMatches || panelMatches;
+  if (panelMatches) return true;
+  if (typeof state.activePanelType === "string" && state.activePanelType.trim()) {
+    return false;
+  }
+  return handlerMatches;
 }
 
 function registerFileManagerClipboardShortcuts() {

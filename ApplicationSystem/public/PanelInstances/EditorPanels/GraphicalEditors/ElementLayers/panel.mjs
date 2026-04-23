@@ -61,6 +61,58 @@ function describeSvgElement(el) {
   return `${tag}${idToken}${classToken}${extra}`;
 }
 
+function getDropHalf(event, targetEl) {
+  const rect = targetEl?.getBoundingClientRect?.();
+  if (!rect || !Number.isFinite(rect.top) || !Number.isFinite(rect.height)) return "upper";
+  const mid = rect.top + (rect.height / 2);
+  return event.clientY < mid ? "upper" : "lower";
+}
+
+function getElementDropZone(event, targetEl) {
+  const rect = targetEl?.getBoundingClientRect?.();
+  if (!rect || !Number.isFinite(rect.top) || !Number.isFinite(rect.height)) return "before";
+  const y = event.clientY;
+  const upper = rect.top + (rect.height / 3);
+  const lower = rect.bottom - (rect.height / 3);
+  if (y <= upper) return "before";
+  if (y >= lower) return "after";
+  return "inside";
+}
+
+function isValidSvgContainer(el) {
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
+  const tag = String(el.tagName || "").toLowerCase();
+  return [
+    "g",
+    "svg",
+    "a",
+    "switch",
+    "symbol",
+    "defs",
+    "marker",
+    "mask",
+    "pattern",
+    "clippath",
+    "foreignobject",
+  ].includes(tag);
+}
+
+function setDropIndicator(targetEl, zone) {
+  if (!targetEl?.style) return;
+  if (zone === "inside") {
+    targetEl.style.boxShadow = "inset 0 0 0 2px #2f80ff";
+    return;
+  }
+  targetEl.style.boxShadow = zone === "before"
+    ? "inset 0 2px 0 #2f80ff"
+    : "inset 0 -2px 0 #2f80ff";
+}
+
+function clearDropIndicator(targetEl) {
+  if (!targetEl?.style) return;
+  targetEl.style.boxShadow = "";
+}
+
 function renderLayerContents({
   layer,
   rootLayerId,
@@ -72,7 +124,8 @@ function renderLayerContents({
   setActiveLayer,
   moveElementToLayer,
 } = {}) {
-  const children = Array.from(layer?.children || []);
+  // Render topmost element first so panel order matches SVG z-order.
+  const children = Array.from(layer?.children || []).reverse();
   if (children.length === 0) {
     const empty = document.createElement("div");
     empty.textContent = "No elements in this layer.";
@@ -147,25 +200,50 @@ function renderLayerContents({
     item.addEventListener("dragend", () => {
       state.dragData = null;
       item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
+      clearDropIndicator(item);
     });
     item.addEventListener("dragover", (e) => {
       if (state.dragData?.type === "element") {
         e.preventDefault();
+        e.stopPropagation();
         item.style.backgroundColor = "rgba(90,169,255,0.18)";
+        const zone = getElementDropZone(e, item);
+        const indicatorZone = zone === "inside" && !isValidSvgContainer(child)
+          ? getDropHalf(e, item) === "upper" ? "before" : "after"
+          : zone;
+        setDropIndicator(item, indicatorZone);
       }
     });
-    item.addEventListener("dragleave", () => {
+    item.addEventListener("dragleave", (e) => {
+      e.stopPropagation();
       item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
+      clearDropIndicator(item);
     });
     item.addEventListener("drop", (e) => {
       if (state.dragData?.type !== "element") return;
       e.preventDefault();
+      e.stopPropagation();
       const dragging = state.dragData.element;
       if (!dragging || dragging === child) return;
       const targetLayerId = rootLayerId;
-      const beforeEl = child;
-      moveElementToLayer?.(dragging, targetLayerId, beforeEl);
+      const rawZone = getElementDropZone(e, item);
+      const zone = rawZone === "inside" && !isValidSvgContainer(child)
+        ? getDropHalf(e, item) === "upper" ? "before" : "after"
+        : rawZone;
+      // Top third places dragged item above target in panel (after in DOM),
+      // middle third nests inside target (for container elements),
+      // bottom third places it below target in panel (before in DOM).
+      const canNest = zone === "inside";
+      const beforeEl = canNest ? null : zone === "before" ? child.nextSibling : child;
+      const targetParent = canNest
+        ? child
+        : child.parentNode instanceof SVGElement
+          ? child.parentNode
+          : null;
+      moveElementToLayer?.(dragging, targetLayerId, beforeEl, targetParent);
       state.dragData = null;
+      item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
+      clearDropIndicator(item);
     });
 
     item.addEventListener("click", (e) => {
@@ -366,7 +444,8 @@ export function renderLayersPanel({
   list.style.flexDirection = "column";
   list.style.gap = "4px";
 
-  const currentLayerIds = new Set(getLayers().map((l) => l.id));
+  const domOrderedLayers = getLayers();
+  const currentLayerIds = new Set(domOrderedLayers.map((l) => l.id));
   [...state.expandedLayers.keys()].forEach((id) => {
     if (!currentLayerIds.has(id)) state.expandedLayers.delete(id);
   });
@@ -374,7 +453,8 @@ export function renderLayersPanel({
     state.selected = { type: null, layerId: null, element: null };
   }
 
-  getLayers().forEach((layer) => {
+  // Render topmost layer first so top row corresponds to top on canvas.
+  [...domOrderedLayers].reverse().forEach((layer) => {
     if (!state.expandedLayers.has(layer.id)) {
       state.expandedLayers.set(layer.id, layer.id === activeLayerId);
     }
@@ -481,35 +561,45 @@ export function renderLayersPanel({
     wrapper.addEventListener("dragend", () => {
       state.dragData = null;
       wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
+      clearDropIndicator(row);
     });
     wrapper.addEventListener("dragover", (e) => {
       if (state.dragData?.type === "layer") {
         e.preventDefault();
+        setDropIndicator(row, getDropHalf(e, row) === "upper" ? "before" : "after");
         wrapper.style.background = "rgba(90,169,255,0.18)";
       } else if (state.dragData?.type === "element") {
         e.preventDefault();
+        setDropIndicator(row, getDropHalf(e, row) === "upper" ? "before" : "after");
         wrapper.style.background = "rgba(90,169,255,0.12)";
       }
     });
     wrapper.addEventListener("dragleave", () => {
       wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
+      clearDropIndicator(row);
     });
     wrapper.addEventListener("drop", (e) => {
+      const half = getDropHalf(e, row);
       if (state.dragData?.type === "layer") {
         e.preventDefault();
         const draggingId = state.dragData.layerId;
         if (draggingId && draggingId !== layer.id) {
-          moveLayerTo?.(draggingId, layer.id, "before");
+          // Top half = place above target in panel (after in DOM for top-first view).
+          // Bottom half = place below target in panel (before in DOM for top-first view).
+          moveLayerTo?.(draggingId, layer.id, half === "upper" ? "after" : "before");
         }
       } else if (state.dragData?.type === "element") {
         e.preventDefault();
         const draggingEl = state.dragData.element;
         if (draggingEl) {
-          moveElementToLayer?.(draggingEl, layer.id, layer.firstChild);
+          // Top half puts element at front/top of layer, bottom half at back/bottom.
+          const beforeEl = half === "upper" ? null : layer.firstChild;
+          moveElementToLayer?.(draggingEl, layer.id, beforeEl, layer);
         }
       }
       state.dragData = null;
       wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
+      clearDropIndicator(row);
     });
 
     if (isExpanded) {

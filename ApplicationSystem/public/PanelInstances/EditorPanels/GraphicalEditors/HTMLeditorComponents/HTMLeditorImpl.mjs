@@ -9,7 +9,7 @@ import { countWords } from "../FamilyEditorCommon.mjs";
 import { setWordCount } from "/StatusBar.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
-const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp"]);
+const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico"]);
 const SVG_IMAGE_EXTENSIONS = new Set(["svg"]);
 const NEW_IMAGE_MIME_BY_EXTENSION = {
   png: "image/png",

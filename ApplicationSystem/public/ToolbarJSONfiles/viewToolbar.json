@@ -111,6 +111,19 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "Zoom and Pan",
+    "content": "",
+    "icon": "icons/StretchArrowIcon.png"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Zoom and Pan",
+    "heading": "Controls",
+    "content": "",
+    "script": "zoomPanControlsWidget.mjs"
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "Layout Controls",
     "content": "",
     "icon": "icons/layoutControls.png"

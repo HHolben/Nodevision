@@ -17,12 +17,18 @@ function ensureGroup(svgRoot, name = "Layer 1", id = null) {
   return group;
 }
 
+function isEditorUiNode(node) {
+  return Boolean(node?.nodeType === Node.ELEMENT_NODE && node.getAttribute?.("data-nv-editor-ui"));
+}
+
 export function createElementLayers(svgRoot, hostPanel = null) {
   if (!svgRoot) throw new Error("svgRoot is required");
 
   let activeLayerId = null;
   let panelEl = null;
   let layerClipboard = [];
+  let renderQueued = false;
+  let domObserver = null;
 
   function getLayers() {
     return qsa(svgRoot, ":scope > g[data-layer='true']");
@@ -61,10 +67,17 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     let layers = getLayers();
     if (layers.length === 0) {
       const layer1 = ensureGroup(svgRoot, "Layer 1");
-      while (svgRoot.firstChild) {
-        layer1.appendChild(svgRoot.firstChild);
+      const children = Array.from(svgRoot.childNodes);
+      children.forEach((child) => {
+        if (isEditorUiNode(child)) return;
+        layer1.appendChild(child);
+      });
+      const firstUiNode = Array.from(svgRoot.childNodes).find((node) => isEditorUiNode(node)) || null;
+      if (firstUiNode) {
+        svgRoot.insertBefore(layer1, firstUiNode);
+      } else {
+        svgRoot.appendChild(layer1);
       }
-      svgRoot.appendChild(layer1);
       layers = [layer1];
     }
     layers.forEach((layer, i) => {
@@ -76,7 +89,8 @@ export function createElementLayers(svgRoot, hostPanel = null) {
       }
     });
     if (!activeLayerId || !layers.find((l) => l.id === activeLayerId)) {
-      activeLayerId = layers[0]?.id || null;
+      // Match "top of list is top on canvas" behavior by defaulting to the topmost layer.
+      activeLayerId = layers[layers.length - 1]?.id || null;
     }
   }
 
@@ -85,6 +99,7 @@ export function createElementLayers(svgRoot, hostPanel = null) {
   }
 
   function setActiveLayer(layerId) {
+    if (!layerId || activeLayerId === layerId) return;
     activeLayerId = layerId;
     renderPanel();
   }
@@ -103,6 +118,7 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     const layer = getActiveLayer();
     if (!layer) return;
     layer.appendChild(node);
+    queueRender();
   }
 
   function copyLayer(layerId) {
@@ -170,6 +186,7 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     const layer = getLayers().find((l) => l.id === layerId);
     if (!layer) return;
     layer.style.display = visible ? "" : "none";
+    renderPanel();
   }
 
   function moveLayer(layerId, direction) {
@@ -177,13 +194,14 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     const idx = layers.findIndex((l) => l.id === layerId);
     if (idx < 0) return;
     const layer = layers[idx];
-    const swapIdx = direction < 0 ? idx - 1 : idx + 1;
+    // direction < 0 means "move up in panel", i.e. toward front/top on canvas.
+    const swapIdx = direction < 0 ? idx + 1 : idx - 1;
     if (swapIdx < 0 || swapIdx >= layers.length) return;
     const other = layers[swapIdx];
     if (direction < 0) {
-      svgRoot.insertBefore(layer, other);
-    } else {
       svgRoot.insertBefore(other, layer);
+    } else {
+      svgRoot.insertBefore(layer, other);
     }
     renderPanel();
   }
@@ -202,15 +220,34 @@ export function createElementLayers(svgRoot, hostPanel = null) {
     renderPanel();
   }
 
-  function moveElementToLayer(element, targetLayerId, beforeElement = null) {
+  function moveElementToLayer(element, targetLayerId, beforeElement = null, targetParent = null) {
     if (!element || !element.isConnected) return;
     const targetLayer = getLayerById(targetLayerId);
     if (!targetLayer) return;
-    if (beforeElement && beforeElement.parentNode !== targetLayer) {
+    let destinationParent = targetLayer;
+    if (
+      targetParent &&
+      targetParent.nodeType === Node.ELEMENT_NODE &&
+      (targetParent === targetLayer || targetLayer.contains(targetParent))
+    ) {
+      destinationParent = targetParent;
+    }
+    if (destinationParent === element || (element.contains && element.contains(destinationParent))) return;
+    if (beforeElement && beforeElement.parentNode !== destinationParent) {
       beforeElement = null;
     }
-    targetLayer.insertBefore(element, beforeElement);
+    if (beforeElement === element) return;
+    destinationParent.insertBefore(element, beforeElement);
     renderPanel();
+  }
+
+  function queueRender() {
+    if (!panelEl || renderQueued) return;
+    renderQueued = true;
+    queueMicrotask(() => {
+      renderQueued = false;
+      renderPanel();
+    });
   }
 
   function renderPanel() {
@@ -244,6 +281,15 @@ export function createElementLayers(svgRoot, hostPanel = null) {
 
   normalizeInitialLayers();
   if (hostPanel) attachHost(hostPanel);
+
+  // Keep panel order synced with DOM ordering changes (append/insert/remove/reorder).
+  domObserver = new MutationObserver((records) => {
+    const hasStructureChange = records.some((r) => r.type === "childList");
+    if (!hasStructureChange) return;
+    normalizeInitialLayers();
+    queueRender();
+  });
+  domObserver.observe(svgRoot, { childList: true, subtree: true });
 
   return {
     getLayers,

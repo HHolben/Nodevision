@@ -56,6 +56,13 @@
             'rasterDrawing.js',
             'initRasterEditor.js',
             'saveRasterImage.js'
+        ],
+        ico: [
+            'loadRasterImage.js',
+            'rasterToolbar.js',
+            'rasterDrawing.js',
+            'initRasterEditor.js',
+            'saveRasterImage.js'
         ]
     };
 
