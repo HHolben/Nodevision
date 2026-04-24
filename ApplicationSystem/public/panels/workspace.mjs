@@ -560,7 +560,11 @@ const possiblePaths = [
   for (const path of possiblePaths) {
     try {
       console.log("🔍 Trying to import panel:", path);
-      module = await import(path);
+      if (!window.__nvModuleCacheBust) {
+        window.__nvModuleCacheBust = Date.now();
+      }
+      const importPath = `${path}${path.includes("?") ? "&" : "?"}v=${window.__nvModuleCacheBust}`;
+      module = await import(importPath);
       console.log("✅ Successfully imported:", path);
       break;
     } catch (err) {

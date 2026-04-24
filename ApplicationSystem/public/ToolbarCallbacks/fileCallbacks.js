@@ -20,11 +20,76 @@ window.fileCallbacks = {
 saveFile: async () => {
   const filePath = window.currentActiveFilePath || window.filePath;
   const mode = window.NodevisionState?.currentMode || window.currentMode || "";
-  const ext = String(filePath || "")
-    .replace(/[?#].*$/, "")
-    .split(".")
-    .pop()
-    .toLowerCase();
+  const ext = (() => {
+    const rawPath = String(filePath || "").trim();
+    if (!rawPath) return "";
+
+    const readExtensionFromPathLike = (pathLike = "") => {
+      const clean = String(pathLike || "")
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/[?#].*$/, "");
+      if (!clean) return "";
+
+      const normalized = clean.toLowerCase().replace(/%2e/gi, ".");
+      const segment = normalized.split("/").pop() || normalized;
+      if (segment.includes(".")) {
+        const token = (segment.split(".").pop() || "").trim().toLowerCase();
+        const sanitized = token.replace(/[^a-z0-9_+-]/g, "");
+        if (sanitized) return sanitized;
+      }
+
+      if (/\.ico(?=$|[^a-z0-9_+-])/i.test(normalized)) return "ico";
+      return "";
+    };
+
+    const candidates = [];
+    const pushCandidate = (value) => {
+      if (!value) return;
+      const text = String(value).trim();
+      if (!text) return;
+      candidates.push(text);
+      try {
+        const decoded = decodeURIComponent(text);
+        if (decoded && decoded !== text) candidates.push(decoded);
+      } catch {
+        // Keep undecoded candidate only.
+      }
+    };
+
+    pushCandidate(rawPath);
+
+    try {
+      const parsed = new URL(rawPath, window.location.origin);
+      pushCandidate(parsed.pathname || "");
+      ["path", "file", "filename", "filepath", "selectedFilePath"].forEach((key) =>
+        pushCandidate(parsed.searchParams.get(key) || "")
+      );
+      for (const value of parsed.searchParams.values()) {
+        pushCandidate(value);
+      }
+    } catch {
+      const [withoutHash] = rawPath.split("#");
+      const [pathPart, queryPart = ""] = withoutHash.split("?");
+      pushCandidate(pathPart);
+      if (queryPart) {
+        const params = new URLSearchParams(queryPart);
+        ["path", "file", "filename", "filepath", "selectedFilePath"].forEach((key) =>
+          pushCandidate(params.get(key) || "")
+        );
+        for (const value of params.values()) {
+          pushCandidate(value);
+        }
+      }
+    }
+
+    for (const candidate of [...new Set(candidates)]) {
+      const found = readExtensionFromPathLike(candidate);
+      if (found) return found;
+    }
+
+    return "";
+  })();
   const isRasterPath = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "ico"].includes(ext);
   const isRasterMode = ["PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting"].includes(mode);
 
