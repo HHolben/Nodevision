@@ -8,7 +8,9 @@ function ensurePanelState(panelEl) {
       value: {
         expandedLayers: new Map(),
         selected: { type: null, layerId: null, element: null },
+        selectedElements: [],
         keyHandlerInstalled: false,
+        selectionListenerInstalled: false,
         rerender: null,
         dragData: null,
       },
@@ -97,6 +99,10 @@ function isValidSvgContainer(el) {
   ].includes(tag);
 }
 
+function isLayerGroupElement(el) {
+  return Boolean(el?.getAttribute?.("data-layer") === "true");
+}
+
 function setDropIndicator(targetEl, zone) {
   if (!targetEl?.style) return;
   if (zone === "inside") {
@@ -177,7 +183,8 @@ function renderLayerContents({
     });
     item.appendChild(label);
 
-    const isSelected = state?.selected?.type === "element" && state.selected.element === child;
+    const selectedElements = Array.isArray(state?.selectedElements) ? state.selectedElements : [];
+    const isSelected = selectedElements.includes(child);
     if (isSelected) {
       item.style.background = "rgba(255, 183, 77, 0.22)";
       item.style.outline = "1px solid rgba(255, 183, 77, 0.75)";
@@ -248,17 +255,43 @@ function renderLayerContents({
 
     item.addEventListener("click", (e) => {
       if (e.target instanceof HTMLElement && e.target.tagName === "BUTTON") return;
-      if (state?.selected) {
-        state.selected.type = "element";
-        state.selected.layerId = rootLayerId || null;
-        state.selected.element = child;
-      }
       const ctx = window.SVGEditorContext;
+      const mod = e.ctrlKey || e.metaKey;
+      let nextSelected = [child];
       if (ctx?.setSelection) {
-        ctx.setSelection([child], { primary: child });
+        if (mod && ctx.getSelectedElements) {
+          const current = ctx.getSelectedElements().filter((el) => el?.isConnected);
+          const currentInLayer = current.filter(
+            (el) =>
+              el?.closest?.("g[data-layer='true']")?.id === rootLayerId &&
+              !(isLayerGroupElement(el) && el.id === rootLayerId)
+          );
+          if (currentInLayer.includes(child)) {
+            nextSelected = currentInLayer.filter((el) => el !== child);
+          } else {
+            nextSelected = [...currentInLayer, child];
+          }
+        }
+        ctx.setSelection(nextSelected, { primary: child });
+      } else if (mod && selectedElements.length) {
+        if (selectedElements.includes(child)) {
+          nextSelected = selectedElements.filter((el) => el !== child);
+        } else {
+          nextSelected = [...selectedElements, child];
+        }
+      }
+      if (state) {
+        state.selectedElements = nextSelected;
+      }
+      if (state?.selected) {
+        const primary = nextSelected[nextSelected.length - 1] || null;
+        state.selected.type = primary ? "element" : null;
+        state.selected.layerId = primary ? rootLayerId || null : null;
+        state.selected.element = primary;
       }
       panelEl?.focus?.({ preventScroll: true });
       setActiveLayer?.(rootLayerId);
+      rerender?.();
     });
 
     containerEl.appendChild(item);
@@ -311,9 +344,60 @@ export function renderLayersPanel({
   if (!panelEl || typeof getLayers !== "function") return;
   const state = ensurePanelState(panelEl);
   state.rerender = rerender || null;
+  const ctx = window.SVGEditorContext;
+
+  if (ctx?.getSelectedElements) {
+    state.selectedElements = ctx.getSelectedElements().filter((el) => el?.isConnected);
+  } else if (!Array.isArray(state.selectedElements)) {
+    state.selectedElements = [];
+  }
 
   if (state.selected?.element && !state.selected.element.isConnected) {
     state.selected = { type: null, layerId: null, element: null };
+  }
+  if (state.selected?.type === "element") {
+    const primary = state.selected.element;
+    const selectedNonLayer = state.selectedElements.filter((el) => !isLayerGroupElement(el));
+    if (!primary || !selectedNonLayer.includes(primary)) {
+      const fallback = selectedNonLayer[0] || null;
+      if (!fallback) {
+        state.selected = { type: null, layerId: null, element: null };
+      } else {
+        state.selected = {
+          type: "element",
+          layerId: fallback.closest?.("g[data-layer='true']")?.id || null,
+          element: fallback,
+        };
+      }
+    }
+  }
+
+  if (!state.selectionListenerInstalled) {
+    const onSelectionChanged = (event) => {
+      const selected = Array.isArray(event?.detail?.selectedElements)
+        ? event.detail.selectedElements.filter((el) => el?.isConnected)
+        : [];
+      state.selectedElements = selected;
+      const incomingPrimary = event?.detail?.primary;
+      const selectedNonLayer = selected.filter((el) => !isLayerGroupElement(el));
+      const primaryCandidate =
+        selectedNonLayer.includes(incomingPrimary) ? incomingPrimary : selectedNonLayer[0] || null;
+      const primary = primaryCandidate && !isLayerGroupElement(primaryCandidate)
+        ? primaryCandidate
+        : null;
+      if (primary) {
+        state.selected = {
+          type: "element",
+          layerId: primary.closest?.("g[data-layer='true']")?.id || null,
+          element: primary,
+        };
+      } else if (state.selected?.type === "element") {
+        state.selected = { type: null, layerId: null, element: null };
+      }
+      state.rerender?.();
+    };
+    window.addEventListener("nv-svg-editor-selection-changed", onSelectionChanged);
+    state.selectionListenerInstalled = true;
   }
 
   if (!state.keyHandlerInstalled) {
@@ -326,13 +410,22 @@ export function renderLayersPanel({
       const selectedType = state.selected?.type;
       const selectedLayerId = state.selected?.layerId || null;
       const selectedElement = state.selected?.element || null;
+      const selectedElements = ctx.getSelectedElements
+        ? ctx.getSelectedElements().filter((el) => el?.isConnected)
+        : [];
 
       if (key === "delete" || key === "backspace") {
-        if (selectedType === "element" && selectedElement && selectedElement.isConnected) {
-          ctx.setSelection?.([selectedElement], { primary: selectedElement });
+        if (
+          (selectedType === "element" && selectedElement && selectedElement.isConnected) ||
+          selectedElements.length
+        ) {
+          if (selectedElements.length <= 1 && selectedType === "element" && selectedElement?.isConnected) {
+            ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          }
           const deleted = ctx.deleteSelection?.();
           if (deleted) {
             state.selected = { type: null, layerId: null, element: null };
+            state.selectedElements = [];
             state.rerender?.();
             e.preventDefault();
           }
@@ -364,7 +457,9 @@ export function renderLayersPanel({
           return;
         }
         if (selectedType === "element" && selectedElement && selectedElement.isConnected) {
-          ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          if (selectedElements.length <= 1) {
+            ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          }
           if (ctx.copySelection?.()) e.preventDefault();
           return;
         }
@@ -376,11 +471,14 @@ export function renderLayersPanel({
         if (selectedType === "layer" && selectedLayerId && ctx.layers?.cutLayer) {
           ctx.layers.cutLayer(selectedLayerId);
           state.selected = { type: null, layerId: null, element: null };
+          state.selectedElements = [];
           e.preventDefault();
           return;
         }
         if (selectedType === "element" && selectedElement && selectedElement.isConnected) {
-          ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          if (selectedElements.length <= 1) {
+            ctx.setSelection?.([selectedElement], { primary: selectedElement });
+          }
           const copied = ctx.copySelection?.();
           const deleted = ctx.deleteSelection?.();
           if (deleted) state.rerender?.();
@@ -514,10 +612,12 @@ export function renderLayersPanel({
       state.selected.type = "layer";
       state.selected.layerId = layer.id;
       state.selected.element = null;
+      state.selectedElements = [];
       const ctx = window.SVGEditorContext;
       if (ctx?.setSelection) ctx.setSelection([layer], { primary: layer });
       panelEl?.focus?.({ preventScroll: true });
       setActiveLayer?.(layer.id);
+      rerender?.();
     };
     row.appendChild(nameBtn);
 

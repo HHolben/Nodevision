@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICS Weekly Calendar Viewer</title>
+  <link rel="stylesheet" href="./ICSViewer.css">
+</head>
+<body>
+  <div id="icsViewer" class="ics-viewer">
+    <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+
+    <section id="calendarSection" class="calendar-section hidden" aria-label="Weekly calendar viewer">
+      <div class="week-info">
+        <h1 class="viewer-title">Weekly Calendar</h1>
+        <div id="weekRangeLabel" class="week-range-label"></div>
+        <div id="filePathLabel" class="file-path-label"></div>
+      </div>
+
+      <div id="calendarScroll" class="calendar-scroll">
+        <div id="calendarHeader" class="calendar-header"></div>
+        <div id="calendarBody" class="calendar-body">
+          <div id="timeColumn" class="time-column"></div>
+          <div id="daysGrid" class="days-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer id="timezoneBar" class="timezone-bar">
+      <div class="timezone-title">Display Time Zone</div>
+      <form id="timezoneForm" class="timezone-form" aria-label="Display time zone options"></form>
+    </footer>
+  </div>
+
+  <script src="./ICSViewer.js"></script>
+</body>
+</html>
