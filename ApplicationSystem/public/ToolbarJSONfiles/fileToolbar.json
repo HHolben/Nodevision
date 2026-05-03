@@ -19,8 +19,8 @@
     "ToolbarCategory": "File",
     "heading": "File View",
     "icon": "icons/DefaultNodeImage.png",
-    "panelTemplateId": "ViewPanel",
-    "panelType": "ViewPanel",
+    "panelTemplateId": "FileView",
+    "panelType": "FileView",
     "defaultInstanceVars": { "filePath": "/Notebook/index.html", "renderMode": "Displaying.Rendered" }
   },
   {

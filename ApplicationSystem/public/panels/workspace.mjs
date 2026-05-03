@@ -5,6 +5,60 @@
 import { logStatus } from "./../StatusBar.mjs";
 import { setStatus } from "./../StatusBar.mjs";
 
+function normalizeNotebookPath(value) {
+  let cleaned = String(value || "").trim();
+  if (!cleaned) return "";
+
+  try {
+    const parsed = new URL(cleaned, window.location.origin);
+    cleaned = parsed.pathname || cleaned;
+  } catch {
+    // Keep raw path-like values when not a URL.
+  }
+
+  cleaned = cleaned
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^\/+/, "");
+
+  if (cleaned.toLowerCase().startsWith("notebook/")) {
+    cleaned = cleaned.slice("Notebook/".length);
+  }
+
+  return cleaned.trim();
+}
+
+function resolveActiveFilePath(preferredPath = null) {
+  const candidates = [
+    preferredPath,
+    window.currentActiveFilePath,
+    window.NodevisionState?.activeEditorFilePath,
+    window.selectedFilePath,
+    window.NodevisionState?.selectedFile,
+    window.ActiveNode,
+    window.filePath,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeNotebookPath(candidate);
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
+const PANEL_ALIASES = Object.freeze({
+  ViewPanel: "FileView",
+  FileViewer: "FileView",
+  FileViewerPanel: "FileView",
+});
+
+function normalizePanelIdentifier(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return raw;
+  return PANEL_ALIASES[raw] || raw;
+}
+
 function collectPanelCells(root) {
   if (!root) return [];
   if (root.classList?.contains("panel-cell")) return [root];
@@ -283,16 +337,19 @@ export function renderLayout(node, parent) {
       minHeight: "0",
       minWidth: "0",
     });
-    cell.dataset.id = node.instanceName || node.id;
+    const requestedCellId = node.instanceName || node.id;
+    const normalizedCellId = normalizePanelIdentifier(requestedCellId);
+    cell.dataset.id = normalizedCellId || requestedCellId;
     cell.dataset.panelClass = node.panelClass || "InfoPanel";
     parent.appendChild(cell);
 
     window.activeCell = cell;
 
-    const panelType = node.instanceName || (node.module ? node.module.replace(/^\/PanelInstances\//, "").replace(/\.mjs$/, "") : "InfoPanel");
+    const requestedPanelType = node.instanceName || (node.module ? node.module.replace(/^\/PanelInstances\//, "").replace(/\.mjs$/, "") : "InfoPanel");
+    const panelType = normalizePanelIdentifier(requestedPanelType) || requestedPanelType;
     
     loadPanelIntoCell(panelType, { 
-      id: node.instanceName || node.id,
+      id: normalizedCellId || requestedCellId,
       ...node.panelVars 
     });
   }
@@ -545,16 +602,21 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
     return;
   }
 
-  console.log("Panel Type:", panelType);
+  const requestedPanelType = panelType;
+  panelType = normalizePanelIdentifier(panelType) || panelType;
+  console.log("Panel Type:", requestedPanelType);
+  if (requestedPanelType !== panelType) {
+    console.log(`🔁 Normalized panel type: ${requestedPanelType} → ${panelType}`);
+  }
 
   // Try multiple search paths for panels
-const possiblePaths = [
- `/PanelInstances/${panelType}.mjs`,
-  `/PanelInstances/EditorPanels/${panelType}.mjs`,
-  `/PanelInstances/InfoPanels/${panelType}.mjs`,
-  `/PanelInstances/ViewPanels/${panelType}.mjs`,   // ← add this
-  `/panels/${panelType}.mjs`,
-];
+  const possiblePaths = [
+    `/PanelInstances/${panelType}.mjs`,
+    `/PanelInstances/EditorPanels/${panelType}.mjs`,
+    `/PanelInstances/InfoPanels/${panelType}.mjs`,
+    `/PanelInstances/ViewPanels/${panelType}.mjs`,
+    `/panels/${panelType}.mjs`,
+  ];
 
   let module = null;
   for (const path of possiblePaths) {
@@ -572,7 +634,7 @@ const possiblePaths = [
     }
   }
 
-if (!module) {
+  if (!module) {
     console.warn("⚠️ No panel module found for", panelType);
     return;
   }
@@ -587,9 +649,10 @@ if (!module) {
   cell.cleanup = null;
   cell.innerHTML = "";
 
+  const resolvedFilePath = resolveActiveFilePath(panelVars.filePath);
   await module.setupPanel(cell, {
     ...panelVars,
-    filePath: window.selectedFilePath
+    filePath: resolvedFilePath || null,
   });
 
   console.log("✅ Loaded panel:", panelType);
@@ -600,6 +663,10 @@ if (!module) {
 // 🟣 Listen for toolbar events globally — replaces active cell with selected panel
 window.addEventListener("toolbarAction", async (e) => {
   const { id, type, replaceActive } = e.detail;
+  const normalizedId = normalizePanelIdentifier(id) || id;
+  if (normalizedId !== id) {
+    console.log(`🔁 toolbarAction alias: ${id} -> ${normalizedId}`);
+  }
   const panelClass = type || "InfoPanel";
 
   // If replaceActive is true, always replace the active cell's content
@@ -614,36 +681,46 @@ window.addEventListener("toolbarAction", async (e) => {
     }
     cell.cleanup = null;
     cell.innerHTML = "";
-    cell.dataset.id = id;
+    cell.dataset.id = normalizedId;
     cell.dataset.panelClass = panelClass;
     
     // Update all active panel tracking
-    window.activePanel = id;
+    window.activePanel = normalizedId;
     window.activePanelClass = panelClass;
     if (window.NodevisionState) {
       window.NodevisionState.activePanelType = panelClass;
     }
     
-    await loadPanelIntoCell(id, { id, displayName: id });
+    await loadPanelIntoCell(normalizedId, { id: normalizedId, displayName: normalizedId });
     highlightActiveCell(cell);
     
-    console.log(`🔄 Replaced active panel with "${id}" (${panelClass})`);
+    console.log(`🔄 Replaced active panel with "${normalizedId}" (${panelClass})`);
     return;
   }
 
   // Default behavior: check if this panel already exists in the layout
-  const existingCell = document.querySelector(`[data-id="${id}"]`);
+  const existingCell = document.querySelector(`[data-id="${normalizedId}"]`);
   if (existingCell) {
     // Panel already exists - just make it visible and active
     existingCell.style.display = "flex";
     window.activeCell = existingCell;
-    window.activePanel = id;
+    window.activePanel = normalizedId;
     window.activePanelClass = existingCell.dataset.panelClass || panelClass;
     if (window.NodevisionState) {
       window.NodevisionState.activePanelType = existingCell.dataset.panelClass || panelClass;
     }
     highlightActiveCell(existingCell);
-    console.log(`📌 Panel "${id}" already exists, activated.`);
+    if (normalizedId === "FileView" && typeof window.updateViewPanel === "function") {
+      const activePath = resolveActiveFilePath();
+      if (activePath) {
+        window.updateViewPanel(activePath, { force: true }).catch((err) => {
+          console.error("❌ FileView reactivation failed:", err);
+        });
+      } else {
+        setStatus("File Viewer", "No active file selected");
+      }
+    }
+    console.log(`📌 Panel "${normalizedId}" already exists, activated.`);
     return;
   }
 
@@ -663,9 +740,9 @@ window.addEventListener("toolbarAction", async (e) => {
   }
   cell.cleanup = null;
   cell.innerHTML = "";
-  cell.dataset.id = id;
-  window.activePanel = id;
-  await loadPanelIntoCell(id, { id, displayName: id });
+  cell.dataset.id = normalizedId;
+  window.activePanel = normalizedId;
+  await loadPanelIntoCell(normalizedId, { id: normalizedId, displayName: normalizedId });
 });
 
 // Helper to highlight the active cell

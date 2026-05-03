@@ -213,6 +213,13 @@ export async function setupPanel(cell, instanceVars = {}) {
           const applyChange = () => {
             internalPath = value;
             updateGraphicalEditor(value);
+
+            const viewPanel = document.getElementById("element-view");
+            if (viewPanel && typeof window.updateViewPanel === "function") {
+              window.updateViewPanel(value).catch((err) => {
+                console.error("❌ GraphicalEditor -> FileView sync failed:", err);
+              });
+            }
           };
           if (typeof window.__nvGuardFileSwitch === "function") {
             window.__nvGuardFileSwitch(value, applyChange);

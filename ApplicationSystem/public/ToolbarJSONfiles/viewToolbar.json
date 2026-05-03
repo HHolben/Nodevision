@@ -57,7 +57,7 @@
     "heading": "File View",
     "content": "",
     "panelTemplate": "FileView",
-    "panelType": "ViewPanel",
+    "panelType": "FileView",
     "panelPath": "/PanelInstances/ViewPanels/FileView.mjs",
     "replaceActive": true
   },

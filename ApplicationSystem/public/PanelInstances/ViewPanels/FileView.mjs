@@ -2,12 +2,76 @@
 // This file defines browser-side File View logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { setStatus } from "/StatusBar.mjs";
 
 let lastRenderedPath = null;
 let viewDivRef = null;
 
 
 let moduleMapCache = null;
+
+function normalizeNotebookPath(value) {
+  let cleaned = String(value || "").trim();
+  if (!cleaned) return "";
+
+  try {
+    const parsed = new URL(cleaned, window.location.origin);
+    cleaned = parsed.pathname || cleaned;
+  } catch {
+    // Keep raw value when it is not a URL.
+  }
+
+  cleaned = cleaned
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^\/+/, "");
+
+  if (cleaned.toLowerCase().startsWith("notebook/")) {
+    cleaned = cleaned.slice("Notebook/".length);
+  }
+
+  return cleaned.trim();
+}
+
+function getActiveFilePath(preferredPath = null) {
+  const candidates = [
+    preferredPath,
+    window.currentActiveFilePath,
+    window.NodevisionState?.activeEditorFilePath,
+    window.selectedFilePath,
+    window.NodevisionState?.selectedFile,
+    window.ActiveNode,
+    window.filePath,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeNotebookPath(candidate);
+    if (normalized) return normalized;
+  }
+
+  return "";
+}
+
+function getViewPanelElement() {
+  if (viewDivRef && document.body.contains(viewDivRef)) {
+    return viewDivRef;
+  }
+
+  const cell = getFileViewCell();
+  const fromCell = cell?.querySelector?.("#element-view");
+  if (fromCell) return fromCell;
+
+  return document.getElementById("element-view");
+}
+
+function setFileViewStatus(message, detail = "") {
+  try {
+    setStatus(message, detail);
+  } catch (err) {
+    console.warn("[FileView] Failed to update status bar:", err);
+  }
+}
 
 async function loadModuleMap() {
   // Only use cache if it has actual entries (not empty from failed load)
@@ -163,7 +227,7 @@ function enableViewActivation(viewDiv) {
 function getFileViewCell() {
   if (viewDivRef) {
     const cell = viewDivRef.closest?.(".panel-cell");
-    if (cell) {
+    if (cell && document.body.contains(cell)) {
       return cell;
     }
   }
@@ -311,18 +375,18 @@ export async function setupPanel(panel, instanceVars = {}) {
             } catch (err) {
               console.warn("Failed to update toolbar state for selectedFilePath change:", err);
             }
+            const viewPanel = getViewPanelElement();
+            if (viewPanel) {
+              updateViewPanel(value, { force: true }).catch(err => {
+                console.error("❌ updateViewPanel error:", err);
+              });
+            }
+
             const codeEditorActive = typeof window.isCodeEditorActive === "function" ? window.isCodeEditorActive() : false;
             if (codeEditorActive && typeof window.updateEditorPanel === "function") {
               window.NodevisionState.activeEditorFilePath = value;
               window.currentActiveFilePath = value;
               window.updateEditorPanel(value);
-            } else {
-              const viewPanel = document.getElementById("element-view");
-              if (viewPanel) {
-                updateViewPanel(value).catch(err => {
-                  console.error("❌ updateViewPanel error:", err);
-                });
-              }
             }
           };
 
@@ -348,45 +412,77 @@ export async function setupPanel(panel, instanceVars = {}) {
     }
   });
 
-  // Initial render if filePath provided
-  if (instanceVars.filePath) {
-    window.selectedFilePath = instanceVars.filePath;
-    lastRenderedPath = null; // 🔹 reset so update will run
-    updateViewPanel(instanceVars.filePath).catch(err => {
-      console.error("❌ Initial updateViewPanel error:", err);
-    });
+  const initialPath = getActiveFilePath(instanceVars.filePath);
+  if (!initialPath) {
+    console.warn("⚠️ FileView activated with no active file selected.");
+    setFileViewStatus("File Viewer", "No active file selected");
+    const viewPanel = getViewPanelElement();
+    if (viewPanel) {
+      viewPanel.innerHTML = "<em>No active file selected.</em>";
+    }
+    return;
+  }
+
+  console.log("📂 FileView activation resolved path:", initialPath);
+  setFileViewStatus("File Viewer", initialPath);
+
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.selectedFile = initialPath;
+  window.currentActiveFilePath = initialPath;
+
+  if (window.selectedFilePath !== initialPath) {
+    window.selectedFilePath = initialPath;
+  }
+
+  lastRenderedPath = null;
+  try {
+    await updateViewPanel(initialPath, { force: true });
+  } catch (err) {
+    console.error("❌ Initial updateViewPanel error:", err);
+    setFileViewStatus("File Viewer", `Render failed: ${err?.message || err}`);
   }
 }
 
 export async function updateViewPanel(element, { force = false } = {}) {
-  const viewPanel = document.getElementById("element-view");
+  const viewPanel = getViewPanelElement();
   if (!viewPanel) {
     console.error("View panel element not found.");
-    return;
+    setFileViewStatus("File Viewer", "Render failed: panel not found");
+    return false;
   }
 
-  const filename = element || window.selectedFilePath;
+  const filename = getActiveFilePath(element);
   if (!filename) {
     viewPanel.innerHTML = "<em>No file selected.</em>";
-    return;
+    console.warn("⚠️ FileView update aborted: no active file selected.");
+    setFileViewStatus("File Viewer", "No active file selected");
+    return false;
   }
+
+  console.log("📍 FileView resolved path:", filename);
 
   // Skip rendering for directories (no extension or known directory names)
   const ext = resolveExtension(filename);
   const lowerFilename = filename.toLowerCase();
   if (!ext || lowerFilename === ext || !filename.includes('.')) {
     console.log("📁 Skipping directory view for:", filename);
-    return;
+    setFileViewStatus("File Viewer", `Directory selected: ${filename}`);
+    return false;
   }
 
   // Prevent redundant rerenders unless forced
   if (!force && filename === lastRenderedPath) {
     console.log("🔁 File already displayed:", filename);
-    return;
+    setFileViewStatus("File Viewer", filename);
+    return true;
   }
   lastRenderedPath = filename;
 
   console.log("🧭 Updating view panel for file:", filename);
+  window.currentActiveFilePath = filename;
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.selectedFile = filename;
+  setFileViewStatus("File Viewer", filename);
   viewPanel.innerHTML = "";
 
   // Determine server base depending on file type
@@ -394,7 +490,13 @@ export async function updateViewPanel(element, { force = false } = {}) {
   const origin = window.location.origin;
   const serverBase = isPHP ? `${origin}/php` : `${origin}/Notebook`;
 
-  await renderFile(filename, viewPanel, serverBase);
+  const success = await renderFile(filename, viewPanel, serverBase);
+  if (success) {
+    setFileViewStatus("File Viewer", `Loaded: ${filename}`);
+  } else {
+    setFileViewStatus("File Viewer", `Render failed: ${filename}`);
+  }
+  return success;
 }
 
 async function renderFile(filename, viewPanel, serverBase) {
@@ -435,6 +537,7 @@ async function renderFile(filename, viewPanel, serverBase) {
         height: "100%",
         border: "none"
       });
+      iframe.src = "about:blank";
       viewPanel.appendChild(iframe);
       installIframeActivation(iframe);
     }
@@ -460,10 +563,12 @@ async function renderFile(filename, viewPanel, serverBase) {
     // Call viewer
     await viewer.renderFile(cleanPath, viewPanel, iframe, serverBase);
     console.log(`✅ Rendered with ${viewerFile}`);
+    return true;
 
   } catch (err) {
     console.error(`❌ renderFile failed for ${filename}:`, err);
     viewPanel.innerHTML = `<em>Error loading viewer for ${filename}: ${err.message}</em>`;
+    return false;
 
   } finally {
     installIframeActivation(iframe);
