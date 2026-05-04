@@ -28,3 +28,6 @@ UserSettings
 # ServerData runtime data (sessions/logs should not be committed)
 ServerData/logs/
 ServerData/data/sessions.json
+
+# Local server identity and trust data
+ServerSettings/

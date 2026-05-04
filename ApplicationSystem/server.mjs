@@ -12,6 +12,7 @@ import cookieParser from 'cookie-parser';
 
 import * as AuthService from './Auth/AuthService.mjs';
 import { ensureDefaultAdminAccount } from './Auth/userStore.mjs';
+import { ensureDeviceIdentity } from './Sync/DeviceIdentity.mjs';
 
 import toolbarRoutes from "./routes/api/toolbarRoutes.js";
 import graphDataRoutes from "./routes/api/graphData.js";
@@ -34,6 +35,15 @@ import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
 export default async function createApp(runtimeConfig = {}) {
   const ctx = createServerContext(runtimeConfig);
   ensureServerDirectories(ctx);
+
+  let deviceIdentity;
+  try {
+    deviceIdentity = await ensureDeviceIdentity({ runtimeRoot: ctx.runtimeRoot });
+    console.log('Device identity:', { deviceId: deviceIdentity.deviceId, deviceName: deviceIdentity.deviceName });
+  } catch (err) {
+    console.error('Failed to initialize device identity:', err);
+    throw err;
+  }
 
   try {
     await ensureDefaultAdminAccount();
@@ -115,6 +125,10 @@ export default async function createApp(runtimeConfig = {}) {
       resolvedPath: resolved.path,
       candidates: resolved.candidates,
     });
+  });
+
+  app.use(/^\/ServerSettings(\/|$)/i, (req, res) => {
+    return res.status(403).json({ error: 'Forbidden' });
   });
 
   app.use('/lib/monaco', express.static(path.join(PUBLIC_DIR, 'lib/monaco')));
