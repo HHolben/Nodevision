@@ -31,6 +31,7 @@ import { registerNotebookRoutes } from "./server/routes/notebookRoutes.mjs";
 import { registerGraphExtras } from "./server/routes/graphExtras.mjs";
 import { registerGamepadRoutes } from "./server/routes/gamepadRoutes.mjs";
 import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
+import { registerPeerRoutes } from "./server/routes/peerRoutes.mjs";
 
 export default async function createApp(runtimeConfig = {}) {
   const ctx = createServerContext(runtimeConfig);
@@ -231,6 +232,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerGraphExtras(app, ctx);
   registerGamepadRoutes(app, ctx);
   registerWorldRoutes(app, ctx);
+  registerPeerRoutes(app, ctx);
 
   return app;
 }

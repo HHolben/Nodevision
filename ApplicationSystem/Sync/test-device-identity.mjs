@@ -1,11 +1,26 @@
 // Nodevision/ApplicationSystem/Sync/test-device-identity.mjs
-// This script validates local identity bootstrap by ensuring the device identity exists, signing a hello message, and verifying that signature with the local public key.
+// This script validates identity bootstrap and deterministic message signing by checking canonical JSON stability, malformed-value rejection, and local signature verification.
 
 import {
+  canonicalizeMessage,
   ensureDeviceIdentity,
   signMessage,
   verifyMessage,
 } from "./DeviceIdentity.mjs";
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function expectThrow(label, fn) {
+  let didThrow = false;
+  try {
+    fn();
+  } catch {
+    didThrow = true;
+  }
+  assert(didThrow, `${label} should throw`);
+}
 
 async function main() {
   const identity = await ensureDeviceIdentity();
@@ -16,6 +31,7 @@ async function main() {
 
   const hello = {
     type: "nodevision.peer.hello",
+    version: 1,
     deviceId: identity.deviceId,
     deviceName: identity.deviceName,
     timestamp: new Date().toISOString(),
@@ -23,14 +39,21 @@ async function main() {
 
   const { payload, signatureBase64 } = await signMessage(hello);
   const verified = await verifyMessage(payload, signatureBase64, identity.publicKey);
+  assert(verified, "Signature verification failed");
 
-  if (verified) {
-    console.log("PASS");
-    return;
-  }
+  const a = { b: 2, a: 1 };
+  const b = { a: 1, b: 2 };
+  assert(canonicalizeMessage(a) === canonicalizeMessage(b), "Flat key order canonicalization mismatch");
 
-  console.log("FAIL");
-  process.exitCode = 1;
+  const c = { z: { b: 2, a: 1 }, a: [{ d: 4, c: 3 }] };
+  const d = { a: [{ c: 3, d: 4 }], z: { a: 1, b: 2 } };
+  assert(canonicalizeMessage(c) === canonicalizeMessage(d), "Nested canonicalization mismatch");
+
+  expectThrow("NaN", () => canonicalizeMessage({ bad: NaN }));
+  expectThrow("undefined inside object", () => canonicalizeMessage({ bad: undefined }));
+  expectThrow("function value", () => canonicalizeMessage({ bad: () => "x" }));
+
+  console.log("PASS");
 }
 
 main().catch((err) => {
