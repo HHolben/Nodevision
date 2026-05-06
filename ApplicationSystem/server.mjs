@@ -27,6 +27,7 @@ import { createPhpProxyOptions } from "./server/phpProxy.mjs";
 import { loadRoutes } from "./server/dynamicRoutes.mjs";
 import { identityMiddleware, requireAuthentication } from "./server/middleware/authIdentity.mjs";
 import { registerAuthRoutes } from "./server/routes/authRoutes.mjs";
+
 import { registerNotebookRoutes } from "./server/routes/notebookRoutes.mjs";
 import { registerGraphExtras } from "./server/routes/graphExtras.mjs";
 import { registerGamepadRoutes } from "./server/routes/gamepadRoutes.mjs";
@@ -68,6 +69,8 @@ export default async function createApp(runtimeConfig = {}) {
 
   app.use(identityMiddleware(AuthService));
   registerAuthRoutes(app, AuthService);
+  registerPeerRoutes(app, ctx);
+
 
   // Public login background asset (optional).
   // NOTE: This intentionally serves *only* the one curated SVG, not the entire ServerData directory.
@@ -232,7 +235,6 @@ export default async function createApp(runtimeConfig = {}) {
   registerGraphExtras(app, ctx);
   registerGamepadRoutes(app, ctx);
   registerWorldRoutes(app, ctx);
-  registerPeerRoutes(app, ctx);
 
   return app;
 }
