@@ -31,6 +31,7 @@ import { registerAuthRoutes } from "./server/routes/authRoutes.mjs";
 import { registerNotebookRoutes } from "./server/routes/notebookRoutes.mjs";
 import { registerGraphExtras } from "./server/routes/graphExtras.mjs";
 import { registerGamepadRoutes } from "./server/routes/gamepadRoutes.mjs";
+import { registerSoundSettingsRoutes } from "./server/routes/soundSettingsRoutes.mjs";
 import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
 import { registerPeerRoutes } from "./server/routes/peerRoutes.mjs";
 
@@ -234,6 +235,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerNotebookRoutes(app, ctx);
   registerGraphExtras(app, ctx);
   registerGamepadRoutes(app, ctx);
+  registerSoundSettingsRoutes(app, ctx);
   registerWorldRoutes(app, ctx);
 
   return app;

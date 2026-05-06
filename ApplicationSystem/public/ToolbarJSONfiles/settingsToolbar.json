@@ -18,6 +18,12 @@
     "ToolbarCategory": "settings",
     "callbackKey": "openGameControls"
   },
+  {
+    "heading": "Sound Settings",
+    "icon": "/icons/Settings.svg",
+    "ToolbarCategory": "settings",
+    "callbackKey": "openSoundSettings"
+  },
 
   {
     "heading": "Open Settings",
