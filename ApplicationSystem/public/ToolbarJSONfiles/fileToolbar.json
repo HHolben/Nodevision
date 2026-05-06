@@ -191,6 +191,24 @@
   },
   {
     "ToolbarCategory": "File",
+    "heading": "Print",
+    "callbackKey": "PrintSelectedFileOrViewer",
+    "icon": "icons/FileIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Export",
+    "icon": "icons/DownloadIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Export",
+    "heading": "Export as PDF",
+    "callbackKey": "ExportSelectedFileAsPDF",
+    "icon": "icons/FileIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "Export virtual world as usd",
     "callbackKey": "ExportVirtualWorldAsUSD",
     "icon": "icons/DownloadIcon.png",
