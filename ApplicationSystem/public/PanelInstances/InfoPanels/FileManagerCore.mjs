@@ -4,6 +4,7 @@
 import { updateToolbarState } from '/panels/createToolbar.mjs';
 import { moveFileOrDirectory as moveFileOrDirectoryAPI } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
+import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
 
 const FILE_ITEM_SOUND_URLS = [
   "/soundEffects/Splish.mp3",
@@ -23,6 +24,7 @@ const DIRECTORY_IMAGE_CANDIDATES = [
   "directory.png"
 ];
 const directoryImageCache = new Map();
+const navigationState = getNodevisionNavigationState();
 
 function resolveDirectoryImageUrl(entry) {
   if (!entry || typeof entry !== "object") return "";
@@ -282,6 +284,7 @@ export async function fetchDirectoryContents(path, callback, errorElem, loadingE
     if (typeof callback === "function") callback(data, cleanPath);
 
     window.currentDirectoryPath = cleanPath;
+    navigationState.setLastOpenedDirectory(cleanPath, "FileManager");
   } catch (err) {
     console.error(err);
     if (errorElem) errorElem.textContent = err.message;
@@ -729,6 +732,51 @@ window.refreshFileManager = async function (path = '') {
   } catch (err) {
     console.error("Failed to refresh File Manager:", err);
   }
+};
+
+function findFileManagerItemByPath(targetPath) {
+  const cleanTarget = normalizePath(targetPath);
+  if (!cleanTarget) return null;
+
+  const candidates = document.querySelectorAll("#file-list a.file, #file-list a.folder");
+  for (const candidate of candidates) {
+    const itemPath = normalizePath(candidate?.dataset?.fullPath || "");
+    if (itemPath === cleanTarget) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+window.openDirectoryInFileManager = async function openDirectoryInFileManager(path = "") {
+  const directoryPath = normalizePath(path || "");
+  await window.refreshFileManager(directoryPath);
+  navigationState.setLastOpenedDirectory(directoryPath, "FileManager");
+};
+
+window.revealPathInFileManager = async function revealPathInFileManager(path = "", options = {}) {
+  const cleanPath = normalizePath(path || "");
+  if (!cleanPath) return false;
+
+  const isDirectory = Boolean(options?.isDirectory);
+  const targetDirectory = isDirectory ? cleanPath : dirnameSafe(cleanPath);
+  await window.openDirectoryInFileManager(targetDirectory);
+
+  if (isDirectory) {
+    const directoryItem = findFileManagerItemByPath(cleanPath);
+    if (directoryItem) {
+      markSelectedFileItem(directoryItem);
+    }
+    return true;
+  }
+
+  window.selectedFilePath = cleanPath;
+  const fileItem = findFileManagerItemByPath(cleanPath);
+  if (fileItem) {
+    markSelectedFileItem(fileItem);
+  }
+  return true;
 };
 
 // ------------------------------

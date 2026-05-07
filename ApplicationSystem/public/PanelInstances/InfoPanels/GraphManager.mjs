@@ -3,6 +3,9 @@
 // Provides toolbar integration through panelCapabilities
 
 import { updateToolbarState } from '/panels/createToolbar.mjs';
+import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
+
+const navigationState = getNodevisionNavigationState();
 
 /**
  * Toolbar and System Integration
@@ -50,6 +53,7 @@ panelElem.style.flexDirection = "column";
     updateToolbarState({ activePanelType: 'GraphManager' });
     // This handler will be defined inside GraphManagerCore.mjs
     window.NodevisionState.activeActionHandler = window.handleGraphManagerAction;
+    navigationState.setLastInfoPanelType('GraphManager');
   };
 
   panelElem.addEventListener('focus', handleFocus, true);

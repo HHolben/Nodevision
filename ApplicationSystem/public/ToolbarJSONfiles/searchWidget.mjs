@@ -1,7 +1,11 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/searchWidget.mjs
 // This file defines browser-side search Widget logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { getNodevisionNavigationState } from "/NodevisionNavigationState.mjs";
+import { normalizeNotebookRelativePath } from "/utils/notebookPath.mjs";
+
 let isGlobalCloseHandlerBound = false;
+const navigationState = getNodevisionNavigationState();
 
 function escapeHTML(s) {
   return String(s)
@@ -33,6 +37,80 @@ function hideResults(resultsEl) {
   resultsEl.innerHTML = "";
 }
 
+function normalizePath(pathValue) {
+  return normalizeNotebookRelativePath(pathValue || "").replace(/\/+$/, "");
+}
+
+function dirname(pathValue) {
+  const cleanPath = normalizePath(pathValue);
+  if (!cleanPath.includes("/")) return "";
+  return cleanPath.slice(0, cleanPath.lastIndexOf("/"));
+}
+
+function uniqueValues(values = []) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function getInfoPanelTypeCandidate() {
+  const panelType = window.NodevisionState?.activePanelType;
+  return panelType === "FileManager" || panelType === "GraphManager" ? panelType : null;
+}
+
+async function openPathInPanel(panelType, path, { isDirectory = false } = {}) {
+  if (panelType === "FileManager") {
+    if (typeof window.revealPathInFileManager === "function") {
+      const revealed = await window.revealPathInFileManager(path, { isDirectory });
+      if (revealed) return true;
+    }
+    if (isDirectory && typeof window.openDirectoryInFileManager === "function") {
+      await window.openDirectoryInFileManager(path);
+      return true;
+    }
+    return false;
+  }
+
+  if (panelType === "GraphManager") {
+    if (typeof window.revealPathInGraphManager === "function") {
+      const revealed = await window.revealPathInGraphManager(path, { isDirectory });
+      if (revealed) return true;
+    }
+    if (isDirectory && typeof window.openDirectoryInGraphManager === "function") {
+      await window.openDirectoryInGraphManager(path);
+      return true;
+    }
+    return false;
+  }
+
+  return false;
+}
+
+async function openPathInPreferredInfoPanel(path, { isDirectory = false } = {}) {
+  const panelCandidates = uniqueValues([
+    navigationState.getLastInfoPanelType(),
+    getInfoPanelTypeCandidate(),
+    "FileManager",
+    "GraphManager",
+  ]);
+
+  for (const panelType of panelCandidates) {
+    try {
+      const opened = await openPathInPanel(panelType, path, { isDirectory });
+      if (opened) {
+        return true;
+      }
+    } catch (err) {
+      console.warn(`[searchWidget] Failed to reveal path in ${panelType}:`, err);
+    }
+  }
+
+  return false;
+}
+
+function openFileInView(path) {
+  window.selectedFilePath = path;
+  document.dispatchEvent(new CustomEvent("fileSelected", { detail: { filePath: path } }));
+}
+
 async function runSearch(inputEl, scopeEl, resultsEl) {
   const q = (inputEl.value || "").trim();
   if (!q) {
@@ -45,7 +123,17 @@ async function runSearch(inputEl, scopeEl, resultsEl) {
   resultsEl.innerHTML = `<div style=\"padding:8px;color:#666;\">Searching...</div>`;
 
   try {
-    const url = `/api/search?q=${encodeURIComponent(q)}&scope=${encodeURIComponent(scope)}&limit=100`;
+    const params = new URLSearchParams({
+      q,
+      scope,
+      limit: "100",
+    });
+    const searchRoot = navigationState.getSearchRoot();
+    if (searchRoot) {
+      params.set("root", searchRoot);
+    }
+
+    const url = `/api/search?${params.toString()}`;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) {
       throw new Error(`Search failed (${res.status})`);
@@ -71,15 +159,23 @@ async function runSearch(inputEl, scopeEl, resultsEl) {
 }
 
 function bindResultClicks(root, resultsEl) {
-  resultsEl.addEventListener("click", (event) => {
+  resultsEl.addEventListener("click", async (event) => {
     const row = event.target.closest(".toolbar-search-row");
     if (!row || !root.contains(resultsEl)) return;
 
-    const path = row.dataset.path;
+    const path = normalizePath(row.dataset.path);
     if (!path) return;
 
-    window.selectedFilePath = path;
-    document.dispatchEvent(new CustomEvent("fileSelected", { detail: { filePath: path } }));
+    const isDirectory = row.dataset.kind === "directory";
+    if (isDirectory) {
+      const opened = await openPathInPreferredInfoPanel(path, { isDirectory: true });
+      if (!opened) {
+        openFileInView(path);
+      }
+    } else {
+      openFileInView(path);
+      await openPathInPreferredInfoPanel(dirname(path), { isDirectory: true });
+    }
 
     hideResults(resultsEl);
   });

@@ -4,8 +4,9 @@ import { scanFileForLinks } from './GraphManagerDependencies/ScanForLinks.mjs';
 import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
 import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';
 import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
-import { moveFileOrDirectory } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
+import { fetchDirectoryContents as fetchDirectoryContentsAPI, moveFileOrDirectory } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
+import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
 
 let cy;
 let currentRootPath = '';
@@ -39,6 +40,30 @@ const CLIPBOARD_SHORTCUTS = {
     v: "pasteFile",
     x: "cutFile"
 };
+const navigationState = getNodevisionNavigationState();
+
+async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
+    try {
+        if (loadingElem) loadingElem.style.display = "block";
+        const cleanPath = normalizePath(path || "");
+        const data = await fetchDirectoryContentsAPI(cleanPath);
+
+        if (typeof callback === "function") {
+            callback(data, cleanPath);
+        }
+
+        navigationState.setLastOpenedDirectory(cleanPath, "GraphManager");
+        return data;
+    } catch (err) {
+        console.error("[GraphManager] Failed to fetch directory:", path, err);
+        if (errorElem) {
+            errorElem.textContent = err?.message || String(err);
+        }
+        return null;
+    } finally {
+        if (loadingElem) loadingElem.style.display = "none";
+    }
+}
 
 async function loadGraphStylesJson() {
     const candidates = [
@@ -378,7 +403,10 @@ window.refreshGraphManager = refreshGraphView;
 
 async function ensureDirectoryChainExpanded(targetDirPath) {
     const cleanTarget = normalizePath(targetDirPath);
-    if (!cleanTarget) return;
+    if (!cleanTarget) {
+        navigationState.setLastOpenedDirectory("", "GraphManager");
+        return;
+    }
 
     const parts = cleanTarget.split('/').filter(Boolean);
     let cumulative = '';
@@ -389,7 +417,59 @@ async function ensureDirectoryChainExpanded(targetDirPath) {
             renderGraphData(data, cumulative);
         }, null, null);
     }
+
+    navigationState.setLastOpenedDirectory(cleanTarget, "GraphManager");
 }
+
+async function openDirectoryInGraphManager(targetDirectoryPath = "") {
+    if (!cy) return false;
+
+    const targetDir = normalizePath(targetDirectoryPath || "");
+    const cleanRoot = normalizePath(currentRootPath || "");
+
+    if (!targetDir && cleanRoot) {
+        currentRootPath = "";
+        await refreshGraphView({ fit: true, reason: "open-directory-root-reset" });
+    } else if (targetDir && cleanRoot && targetDir !== cleanRoot && !targetDir.startsWith(`${cleanRoot}/`)) {
+        currentRootPath = targetDir;
+        await refreshGraphView({ fit: true, reason: "open-directory-root-switch" });
+    } else if (targetDir) {
+        await ensureDirectoryChainExpanded(targetDir);
+        queueRelayout({ fit: true, reason: "open-directory-expand" });
+    }
+
+    navigationState.setLastOpenedDirectory(targetDir, "GraphManager");
+
+    const targetNodeId = targetDir || normalizePath(currentRootPath || "") || "Root";
+    const targetNode = cy.getElementById(targetNodeId);
+    if (targetNode && !targetNode.empty()) {
+        try { cy.center(targetNode); } catch (_) { /* ignore */ }
+    }
+    return true;
+}
+
+async function revealPathInGraphManager(path, options = {}) {
+    const cleanPath = normalizePath(path || "");
+    if (!cleanPath) return false;
+
+    const isDirectory = Boolean(options?.isDirectory);
+    const targetDir = isDirectory ? cleanPath : dirname(cleanPath);
+    await openDirectoryInGraphManager(targetDir);
+
+    const node = cy?.getElementById(cleanPath);
+    if (node && !node.empty()) {
+        try { cy.center(node); } catch (_) { /* ignore */ }
+    }
+
+    if (!isDirectory) {
+        window.selectedFilePath = cleanPath;
+    }
+
+    return true;
+}
+
+window.openDirectoryInGraphManager = openDirectoryInGraphManager;
+window.revealPathInGraphManager = revealPathInGraphManager;
 
 function setupCtrlDragMoveHandlers() {
     if (!cy) return;
@@ -862,6 +942,7 @@ function applyBrokenLinkBadge(sourcePath) {
 
 export async function initGraphView({ containerId, rootPath, statusElemId }) {
     currentRootPath = normalizePath(rootPath);
+    navigationState.setLastOpenedDirectory(currentRootPath, "GraphManager");
     discoveredLinks.clear();
     const container = document.getElementById(containerId);
     const statusElem = statusElemId ? document.getElementById(statusElemId) : null;
@@ -1094,6 +1175,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
         const node = evt.target;
         if (node.data('type') === 'directory') {
             await toggleCompoundDirectory(node);
+            navigationState.setLastOpenedDirectory(node.data('fullPath') || "", "GraphManager");
         }
     });
 
@@ -1271,6 +1353,8 @@ async function toggleCompoundDirectory(node) {
             renderGraphData(data, path);
         }, null, null);
     }
+
+    navigationState.setLastOpenedDirectory(path || "", "GraphManager");
 
     rebuildVisibleEdges();
     queueRelayout({ fit: true, reason: 'toggle-directory' });

@@ -3,6 +3,9 @@
 // Provides toolbar integration through panelCapabilities
 
 import { updateToolbarState } from '/panels/createToolbar.mjs';
+import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
+
+const navigationState = getNodevisionNavigationState();
 
 export const panelCapabilities = {
   supportedActions: [
@@ -32,11 +35,13 @@ export function setupPanel(panelElem, panelVars = {}) {
   panelElem.addEventListener('focus', () => {
     updateToolbarState({ activePanelType: 'FileManager' });
     window.NodevisionState.activeActionHandler = window.handleFileManagerAction;
+    navigationState.setLastInfoPanelType('FileManager');
   }, true);
 
   panelElem.addEventListener('click', () => {
     updateToolbarState({ activePanelType: 'FileManager' });
     window.NodevisionState.activeActionHandler = window.handleFileManagerAction;
+    navigationState.setLastInfoPanelType('FileManager');
   });
 
   import("/PanelInstances/InfoPanels/FileManagerCore.mjs")

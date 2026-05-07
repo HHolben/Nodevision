@@ -21,26 +21,47 @@ function isLikelyTextFile(filePath) {
   return TEXT_EXTENSIONS.has(ext);
 }
 
+function normalizeNotebookRelativePath(inputPath = '') {
+  let cleaned = String(inputPath || '').replace(/\\/g, '/').trim();
+  cleaned = cleaned.replace(/[?#].*$/, '');
+  cleaned = cleaned.replace(/^\/+/, '');
+  if (cleaned.toLowerCase().startsWith('notebook/')) {
+    cleaned = cleaned.slice('Notebook/'.length);
+  }
+
+  const normalized = path.posix.normalize(cleaned);
+  if (!normalized || normalized === '.') return '';
+  return normalized.replace(/^(\.\.(\/|\\|$))+/, '').replace(/^\/+/, '');
+}
+
+function resolveSearchRoot(notebookRoot, requestedRoot) {
+  const rootRelativePath = normalizeNotebookRelativePath(requestedRoot);
+  const rootAbsPath = rootRelativePath
+    ? path.resolve(notebookRoot, rootRelativePath)
+    : notebookRoot;
+
+  const relativeToNotebook = path.relative(notebookRoot, rootAbsPath);
+  if (relativeToNotebook.startsWith('..') || path.isAbsolute(relativeToNotebook)) {
+    throw new Error('Invalid root path');
+  }
+
+  return { rootRelativePath, rootAbsPath };
+}
+
 export default function createSearchRouter(ctx = BASE_CONTEXT) {
   const NOTEBOOK_ROOT = ctx.notebookDir;
   const router = express.Router();
 
-  async function collectSearchResults({ query, scope, limit }) {
-    const roots = [{ label: 'Notebook', abs: NOTEBOOK_ROOT }];
-
+  async function collectSearchResults({ query, scope, limit, rootRelativePath, rootAbsPath }) {
     const q = query.toLowerCase();
     const results = [];
     const wantsName = scope === 'all' || scope === 'name';
     const wantsContent = scope === 'all' || scope === 'content';
 
-    const stack = [];
-    for (const root of roots) {
-      stack.push({
-        rootLabel: root.label,
-        absPath: root.abs,
-        relPath: ''
-      });
-    }
+    const stack = [{
+      absPath: rootAbsPath,
+      relPath: rootRelativePath || ''
+    }];
 
     while (stack.length > 0 && results.length < limit) {
       const current = stack.pop();
@@ -71,7 +92,6 @@ export default function createSearchRouter(ctx = BASE_CONTEXT) {
           }
 
           stack.push({
-            rootLabel: current.rootLabel,
             absPath: abs,
             relPath: rel
           });
@@ -120,6 +140,7 @@ export default function createSearchRouter(ctx = BASE_CONTEXT) {
     const query = String(req.query.q || '').trim();
     const scope = String(req.query.scope || 'all').toLowerCase();
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 300);
+    const root = String(req.query.root || '').trim();
 
     if (!query) {
       res.status(400).json({ error: 'Missing required query parameter: q' });
@@ -132,17 +153,29 @@ export default function createSearchRouter(ctx = BASE_CONTEXT) {
     }
 
     try {
-      const results = await collectSearchResults({ query, scope, limit });
+      const { rootRelativePath, rootAbsPath } = resolveSearchRoot(NOTEBOOK_ROOT, root);
+      const results = await collectSearchResults({
+        query,
+        scope,
+        limit,
+        rootRelativePath,
+        rootAbsPath,
+      });
       const files = results.filter((r) => r.kind === 'file').map((r) => r.path);
 
       res.json({
         query,
         scope,
+        root: rootRelativePath,
         total: results.length,
         results,
         files
       });
     } catch (error) {
+      if (error?.message === 'Invalid root path') {
+        res.status(400).json({ error: 'Invalid root path' });
+        return;
+      }
       console.error('Search route error:', error);
       res.status(500).json({ error: 'Search failed' });
     }
