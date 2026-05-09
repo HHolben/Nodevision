@@ -4,10 +4,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ensureDeviceIdentity } from "./DeviceIdentity.mjs";
 
 const SERVER_SETTINGS_MODE = 0o700;
 const TRUST_DIR_MODE = 0o700;
 const TRUST_FILE_MODE = 0o600;
+const PEER_STALE_MS = 5 * 60 * 1000;
+const ALLOWED_PEER_STATUSES = new Set(["online", "offline", "unknown"]);
 
 function resolveRuntimeRoot(options = {}) {
   if (options.runtimeRoot) return path.resolve(String(options.runtimeRoot));
@@ -53,13 +56,174 @@ async function applyMode(targetPath, mode) {
 }
 
 function normalizeTrustedStore(raw) {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { trustedPeers: [] };
+  const trustedPeers = normalizeTrustedPeerList(raw?.trustedPeers);
+  return { trustedPeers };
+}
+
+function normalizeTrustedPeerList(rawTrustedPeers) {
+  if (!Array.isArray(rawTrustedPeers)) {
+    return [];
   }
-  if (!Array.isArray(raw.trustedPeers)) {
-    return { trustedPeers: [] };
+
+  return rawTrustedPeers
+    .filter((entry) => entry && typeof entry === "object" && !Array.isArray(entry))
+    .map((entry) => ({ ...entry }));
+}
+
+function resolveNowMs(options = {}) {
+  const value = options?.now;
+  if (value === undefined || value === null) return Date.now();
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    return Number.isNaN(ms) ? Date.now() : ms;
   }
-  return { trustedPeers: raw.trustedPeers };
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const ms = Date.parse(value);
+    if (!Number.isNaN(ms)) return ms;
+  }
+  return Date.now();
+}
+
+function normalizeTimestamp(value) {
+  if (value === undefined || value === null) return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  const ms = Date.parse(text);
+  if (Number.isNaN(ms)) return null;
+  return new Date(ms).toISOString();
+}
+
+function normalizeRequiredTimestamp(value, fieldName) {
+  if (value === null) return null;
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  const ms = Date.parse(text);
+  if (Number.isNaN(ms)) {
+    throw new Error(`${fieldName} must be a valid ISO date string`);
+  }
+  return new Date(ms).toISOString();
+}
+
+function normalizeStatus(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return ALLOWED_PEER_STATUSES.has(normalized) ? normalized : "unknown";
+}
+
+function derivePeerStatus(status, lastSeenIso, nowMs) {
+  if (status !== "online") return status;
+  if (!lastSeenIso) return status;
+  const lastSeenMs = Date.parse(lastSeenIso);
+  if (Number.isNaN(lastSeenMs)) return status;
+  if (nowMs - lastSeenMs > PEER_STALE_MS) return "offline";
+  return status;
+}
+
+function normalizeTrustedPeer(peer, options = {}) {
+  const raw = peer && typeof peer === "object" && !Array.isArray(peer) ? peer : {};
+  const nowMs = resolveNowMs(options);
+  const lastSeen = normalizeTimestamp(raw.lastSeen);
+  const lastHelloSuccess = normalizeTimestamp(raw.lastHelloSuccess);
+  const status = derivePeerStatus(normalizeStatus(raw.status), lastSeen, nowMs);
+
+  return {
+    ...raw,
+    deviceId: String(raw.deviceId ?? "").trim(),
+    deviceName: String(raw.deviceName ?? "").trim(),
+    publicKey: String(raw.publicKey ?? "").trim(),
+    pairedAt: String(raw.pairedAt ?? "").trim(),
+    lastSeen,
+    lastHelloSuccess,
+    status,
+  };
+}
+
+function toPeerStatusObject(peer) {
+  return {
+    deviceId: peer.deviceId,
+    deviceName: peer.deviceName,
+    status: peer.status,
+    lastSeen: peer.lastSeen,
+    lastHelloSuccess: peer.lastHelloSuccess,
+  };
+}
+
+function normalizePeerStatusUpdates(updates) {
+  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+    throw new Error("updates must be a plain object");
+  }
+
+  const patch = {};
+  if (Object.prototype.hasOwnProperty.call(updates, "lastSeen")) {
+    patch.lastSeen = normalizeRequiredTimestamp(updates.lastSeen, "lastSeen");
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "lastHelloSuccess")) {
+    patch.lastHelloSuccess = normalizeRequiredTimestamp(updates.lastHelloSuccess, "lastHelloSuccess");
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "status")) {
+    const status = String(updates.status ?? "").trim().toLowerCase();
+    if (!ALLOWED_PEER_STATUSES.has(status)) {
+      throw new Error("status must be one of: online, offline, unknown");
+    }
+    patch.status = status;
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "deviceName")) {
+    const deviceName = String(updates.deviceName ?? "").trim();
+    if (!deviceName) {
+      throw new Error("deviceName must be a nonempty string");
+    }
+    patch.deviceName = deviceName;
+  }
+
+  return patch;
+}
+
+function mapTrustedStoreWithStatus(store, options = {}) {
+  const nowMs = resolveNowMs(options);
+  return {
+    trustedPeers: normalizeTrustedPeerList(store?.trustedPeers).map((peer) => normalizeTrustedPeer(peer, { now: nowMs })),
+  };
+}
+
+async function readTrustedStoreFromDisk(trustedPeersPath) {
+  const raw = JSON.parse(await fs.readFile(trustedPeersPath, "utf8"));
+  return normalizeTrustedStore(raw);
+}
+
+async function loadOrCreateTrustedStore(options = {}) {
+  const paths = resolveTrustPaths(options);
+  const exists = await fileExists(paths.trustedPeersPath);
+  if (!exists) {
+    return ensureTrustedPeersStore(options);
+  }
+
+  return readTrustedStoreFromDisk(paths.trustedPeersPath);
+}
+
+async function loadTrustedPeerByDeviceId(deviceId, options = {}) {
+  const needle = String(deviceId || "").trim();
+  if (!needle) return null;
+  const store = await loadTrustedPeers(options);
+  return store.trustedPeers.find((peer) => peer?.deviceId === needle) || null;
+}
+
+async function writeTrustedStore(trustedPeersPath, data) {
+  const tempPath = `${trustedPeersPath}.${process.pid}.${Date.now()}.tmp`;
+  const payload = `${JSON.stringify(data, null, 2)}\n`;
+
+  try {
+    await fs.writeFile(tempPath, payload, "utf8");
+    await applyMode(tempPath, TRUST_FILE_MODE);
+    await fs.rename(tempPath, trustedPeersPath);
+    await applyMode(trustedPeersPath, TRUST_FILE_MODE);
+  } catch (err) {
+    try {
+      await fs.unlink(tempPath);
+    } catch {
+      // no-op
+    }
+    throw err;
+  }
 }
 
 function validatePeer(peer) {
@@ -86,11 +250,6 @@ function validatePeer(peer) {
   return { deviceId, deviceName, publicKey };
 }
 
-async function writeTrustedStore(trustedPeersPath, data) {
-  await fs.writeFile(trustedPeersPath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
-  await applyMode(trustedPeersPath, TRUST_FILE_MODE);
-}
-
 export async function ensureTrustedPeersStore(options = {}) {
   const paths = resolveTrustPaths(options);
 
@@ -106,32 +265,20 @@ export async function ensureTrustedPeersStore(options = {}) {
     return { trustedPeers: [] };
   }
 
-  const current = await loadTrustedPeers(options);
-  if (!Array.isArray(current.trustedPeers)) {
-    await writeTrustedStore(paths.trustedPeersPath, { trustedPeers: [] });
-    return { trustedPeers: [] };
-  }
-
+  const current = await readTrustedStoreFromDisk(paths.trustedPeersPath);
   await applyMode(paths.trustedPeersPath, TRUST_FILE_MODE);
   return current;
 }
 
 export async function loadTrustedPeers(options = {}) {
-  const paths = resolveTrustPaths(options);
-  const exists = await fileExists(paths.trustedPeersPath);
-
-  if (!exists) {
-    return ensureTrustedPeersStore(options);
-  }
-
-  const raw = JSON.parse(await fs.readFile(paths.trustedPeersPath, "utf8"));
-  return normalizeTrustedStore(raw);
+  const rawStore = await loadOrCreateTrustedStore(options);
+  return mapTrustedStoreWithStatus(rawStore, options);
 }
 
 export async function addTrustedPeer(peer, options = {}) {
   const cleanPeer = validatePeer(peer);
   const paths = resolveTrustPaths(options);
-  const store = await ensureTrustedPeersStore(options);
+  const store = await loadOrCreateTrustedStore(options);
 
   const pairedAt = new Date().toISOString();
   const record = {
@@ -149,13 +296,52 @@ export async function addTrustedPeer(peer, options = {}) {
   }
 
   await writeTrustedStore(paths.trustedPeersPath, store);
-  return record;
+  return normalizeTrustedPeer(record, options);
 }
 
 export async function findTrustedPeer(deviceId, options = {}) {
-  const needle = String(deviceId || "").trim();
-  if (!needle) return null;
+  return loadTrustedPeerByDeviceId(deviceId, options);
+}
 
-  const store = await loadTrustedPeers(options);
-  return store.trustedPeers.find((peer) => peer?.deviceId === needle) || null;
+export async function updatePeerStatus(deviceId, updates, options = {}) {
+  const needle = String(deviceId || "").trim();
+  if (!needle) {
+    throw new Error("deviceId must be a nonempty string");
+  }
+
+  const patch = normalizePeerStatusUpdates(updates);
+  if (Object.keys(patch).length === 0) {
+    const existing = await findTrustedPeer(needle, options);
+    if (!existing) throw new Error("Trusted peer not found");
+    return existing;
+  }
+
+  const paths = resolveTrustPaths(options);
+  const store = await loadOrCreateTrustedStore(options);
+  const index = store.trustedPeers.findIndex((entry) => String(entry?.deviceId || "").trim() === needle);
+  if (index < 0) {
+    throw new Error("Trusted peer not found");
+  }
+
+  store.trustedPeers[index] = {
+    ...store.trustedPeers[index],
+    ...patch,
+  };
+
+  await writeTrustedStore(paths.trustedPeersPath, store);
+  return normalizeTrustedPeer(store.trustedPeers[index], options);
+}
+
+export async function getTrustedPeerStatus(deviceId, options = {}) {
+  const peer = await loadTrustedPeerByDeviceId(deviceId, options);
+  if (!peer) return null;
+  return toPeerStatusObject(peer);
+}
+
+export async function getLocalPeerInfo(options = {}) {
+  const localIdentity = await ensureDeviceIdentity(options);
+  return {
+    deviceId: localIdentity.deviceId,
+    deviceName: localIdentity.deviceName,
+  };
 }

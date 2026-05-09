@@ -2,7 +2,7 @@
 // This module builds and verifies signed Nodevision peer hello messages by combining local identity signing with trusted-peer lookup so only known devices can complete hello handshakes.
 
 import { ensureDeviceIdentity, signMessage, verifyMessage } from "./DeviceIdentity.mjs";
-import { findTrustedPeer } from "./TrustedPeers.mjs";
+import { findTrustedPeer, updatePeerStatus } from "./TrustedPeers.mjs";
 
 const HELLO_TYPE = "nodevision.peer.hello";
 const HELLO_VERSION = 1;
@@ -101,11 +101,23 @@ export async function verifySignedHello({ payload, signatureBase64 }, options = 
     throw new Error("Peer hello signature verification failed");
   }
 
+  const nowIso = new Date().toISOString();
+  const updatedPeer = await updatePeerStatus(
+    peer.deviceId,
+    {
+      status: "online",
+      lastSeen: nowIso,
+      lastHelloSuccess: nowIso,
+      deviceName: message.deviceName,
+    },
+    options,
+  );
+
   return {
     ok: true,
     peer: {
       deviceId: peer.deviceId,
-      deviceName: peer.deviceName,
+      deviceName: updatedPeer.deviceName,
     },
     message,
   };
