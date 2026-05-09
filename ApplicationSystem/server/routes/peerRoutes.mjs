@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/server/routes/peerRoutes.mjs
-// This file registers peer sync endpoints for signed hello handshakes, trusted peer status, and benchmark-only trusted file pushes confined to Notebook/SyncTest.
+// This file registers peer sync endpoints for signed hello handshakes, trusted peer status, trusted SyncTest file pushes, and signed SyncTest manifest requests.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -10,6 +10,7 @@ import {
   MAX_FILE_PUSH_BYTES,
   verifySignedFilePush,
 } from "../../Sync/PeerFileTransfer.mjs";
+import { buildSyncTestManifest, verifySignedManifestRequest } from "../../Sync/SyncManifest.mjs";
 import { getLocalPeerInfo, loadTrustedPeers } from "../../Sync/TrustedPeers.mjs";
 
 function isLocalhostRequest(req) {
@@ -120,6 +121,34 @@ export function registerPeerRoutes(app, ctx) {
       });
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to save peer file push" });
+    }
+  });
+
+  app.post("/api/peer/manifest", async (req, res) => {
+    let verified;
+
+    try {
+      const { payload, signatureBase64 } = req.body || {};
+      verified = await verifySignedManifestRequest(
+        { payload, signatureBase64 },
+        { runtimeRoot: ctx?.runtimeRoot },
+      );
+    } catch {
+      return res.status(401).json({ ok: false, error: "Unauthorized peer manifest request" });
+    }
+
+    try {
+      const manifest = await buildSyncTestManifest({
+        runtimeRoot: ctx?.runtimeRoot,
+        notebookDir: ctx?.notebookDir,
+      });
+      return res.json({
+        ok: true,
+        peer: verified.peer,
+        manifest,
+      });
+    } catch {
+      return res.status(500).json({ ok: false, error: "Failed to build peer manifest" });
     }
   });
 
