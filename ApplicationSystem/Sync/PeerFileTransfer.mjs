@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/Sync/PeerFileTransfer.mjs
-// This module creates and verifies signed trusted-peer single-file transfer messages with strict SyncTest path constraints and a 64KB payload cap for the benchmark file-push flow.
+// This module creates and verifies signed trusted-peer file-push and file-request messages with strict SyncTest path constraints and a 64KB payload cap for benchmark transfers.
 
 import path from "node:path";
 import { Buffer } from "node:buffer";
@@ -9,6 +9,8 @@ import { findTrustedPeer } from "./TrustedPeers.mjs";
 
 const FILE_PUSH_TYPE = "nodevision.peer.filePush";
 const FILE_PUSH_VERSION = 1;
+const FILE_REQUEST_TYPE = "nodevision.peer.fileRequest";
+const FILE_REQUEST_VERSION = 1;
 const DEFAULT_CONTENT_TYPE = "text/plain";
 export const FILE_PUSH_ALLOWED_PREFIX = "SyncTest/";
 export const MAX_FILE_PUSH_BYTES = 64 * 1024;
@@ -43,7 +45,7 @@ function normalizeTimestamp(value) {
   return timestamp;
 }
 
-function validateRelativePath(value) {
+export function validateSyncTestRelativePath(value) {
   const relativePath = normalizeNonEmptyString(value, "relativePath");
 
   if (relativePath.includes("\0")) {
@@ -119,9 +121,30 @@ export function validateFilePushMessage(message) {
     deviceId: normalizeNonEmptyString(message.deviceId, "deviceId"),
     deviceName: normalizeNonEmptyString(message.deviceName, "deviceName"),
     timestamp: normalizeTimestamp(message.timestamp),
-    relativePath: validateRelativePath(message.relativePath),
+    relativePath: validateSyncTestRelativePath(message.relativePath),
     contentBase64: decodeBase64Strict(message.contentBase64),
     contentType: normalizeContentType(message.contentType),
+  };
+}
+
+export function validateFileRequestMessage(message) {
+  if (!isPlainObject(message)) {
+    throw new Error("File request message must be a plain object");
+  }
+  if (message.type !== FILE_REQUEST_TYPE) {
+    throw new Error(`File request message type must be \"${FILE_REQUEST_TYPE}\"`);
+  }
+  if (message.version !== FILE_REQUEST_VERSION) {
+    throw new Error("File request message version must be 1");
+  }
+
+  return {
+    type: FILE_REQUEST_TYPE,
+    version: FILE_REQUEST_VERSION,
+    deviceId: normalizeNonEmptyString(message.deviceId, "deviceId"),
+    deviceName: normalizeNonEmptyString(message.deviceName, "deviceName"),
+    timestamp: normalizeTimestamp(message.timestamp),
+    relativePath: validateSyncTestRelativePath(message.relativePath),
   };
 }
 
@@ -166,6 +189,57 @@ export async function verifySignedFilePush({ payload, signatureBase64 }, options
   const verified = await verifyMessage(payloadText, signatureText, peer.publicKey);
   if (!verified) {
     throw new Error("Peer file push signature verification failed");
+  }
+
+  return {
+    ok: true,
+    peer: {
+      deviceId: peer.deviceId,
+      deviceName: peer.deviceName,
+    },
+    message,
+  };
+}
+
+export async function createSignedFileRequest({ relativePath }, options = {}) {
+  const identity = await ensureDeviceIdentity(options);
+  const message = validateFileRequestMessage({
+    type: FILE_REQUEST_TYPE,
+    version: FILE_REQUEST_VERSION,
+    deviceId: identity.deviceId,
+    deviceName: identity.deviceName,
+    timestamp: options.timestamp ?? new Date().toISOString(),
+    relativePath,
+  });
+
+  const { payload, signatureBase64 } = await signMessage(message, options);
+  return {
+    payload,
+    signatureBase64,
+    deviceId: message.deviceId,
+  };
+}
+
+export async function verifySignedFileRequest({ payload, signatureBase64 }, options = {}) {
+  const payloadText = requireNonBlankString(payload, "payload");
+  const signatureText = normalizeNonEmptyString(signatureBase64, "signatureBase64");
+
+  let parsedMessage;
+  try {
+    parsedMessage = JSON.parse(payloadText);
+  } catch {
+    throw new Error("Signed file request payload must be valid JSON");
+  }
+
+  const message = validateFileRequestMessage(parsedMessage);
+  const peer = await findTrustedPeer(message.deviceId, options);
+  if (!peer) {
+    throw new Error("Unknown peer deviceId");
+  }
+
+  const verified = await verifyMessage(payloadText, signatureText, peer.publicKey);
+  if (!verified) {
+    throw new Error("Peer file request signature verification failed");
   }
 
   return {

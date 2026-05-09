@@ -1,13 +1,15 @@
 // Nodevision/ApplicationSystem/server/routes/peerRoutes.mjs
-// This file registers peer sync endpoints for signed hello handshakes, trusted peer status, trusted SyncTest file pushes, and signed SyncTest manifest requests.
+// This file registers peer sync endpoints for signed hello handshakes, trusted peer status, trusted SyncTest file transfer, and signed SyncTest manifest requests.
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import { createSignedHello, verifySignedHello } from "../../Sync/PeerHello.mjs";
 import {
   FILE_PUSH_ALLOWED_PREFIX,
   MAX_FILE_PUSH_BYTES,
+  verifySignedFileRequest,
   verifySignedFilePush,
 } from "../../Sync/PeerFileTransfer.mjs";
 import { buildSyncTestManifest, verifySignedManifestRequest } from "../../Sync/SyncManifest.mjs";
@@ -122,6 +124,51 @@ export function registerPeerRoutes(app, ctx) {
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to save peer file push" });
     }
+  });
+
+  app.post("/api/peer/file-get", async (req, res) => {
+    let verified;
+    let target;
+
+    try {
+      const { payload, signatureBase64 } = req.body || {};
+      verified = await verifySignedFileRequest(
+        { payload, signatureBase64 },
+        { runtimeRoot: ctx?.runtimeRoot },
+      );
+      target = resolveSyncTestTarget(ctx?.notebookDir, verified.message.relativePath);
+    } catch {
+      return res.status(401).json({ ok: false, error: "Unauthorized peer file get" });
+    }
+
+    let fileBuffer;
+    try {
+      const stat = await fs.stat(target.targetPath);
+      if (!stat.isFile()) {
+        return res.status(404).json({ ok: false, error: "File not found" });
+      }
+      if (stat.size > MAX_FILE_PUSH_BYTES) {
+        return res.status(413).json({ ok: false, error: `File exceeds ${MAX_FILE_PUSH_BYTES} bytes` });
+      }
+      fileBuffer = await fs.readFile(target.targetPath);
+    } catch (err) {
+      if (err?.code === "ENOENT") {
+        return res.status(404).json({ ok: false, error: "File not found" });
+      }
+      return res.status(500).json({ ok: false, error: "Failed to read peer file" });
+    }
+
+    return res.json({
+      ok: true,
+      peer: verified.peer,
+      file: {
+        relativePath: target.normalizedRelativePath,
+        contentBase64: fileBuffer.toString("base64"),
+        contentType: "application/octet-stream",
+        bytes: fileBuffer.length,
+        sha256: createHash("sha256").update(fileBuffer).digest("hex"),
+      },
+    });
   });
 
   app.post("/api/peer/manifest", async (req, res) => {
