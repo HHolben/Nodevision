@@ -23,7 +23,7 @@ import {
 
 const USAGE = "Usage: node ApplicationSystem/Sync/sync-sync-test-two-way.mjs http://localhost:3001";
 
-function normalizePeerUrl(rawUrl) {
+export function normalizePeerUrl(rawUrl) {
   const text = String(rawUrl ?? "").trim();
   if (!text) throw new Error(USAGE);
 
@@ -41,7 +41,8 @@ function normalizePeerUrl(rawUrl) {
   return `${parsed.protocol}//${parsed.host}${pathname === "/" ? "" : pathname}`;
 }
 
-function resolveRuntimeRoot() {
+export function resolveRuntimeRoot(options = {}) {
+  if (options.runtimeRoot) return path.resolve(String(options.runtimeRoot));
   if (process.env.NODEVISION_ROOT) return path.resolve(process.env.NODEVISION_ROOT);
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   return path.resolve(moduleDir, "..", "..");
@@ -236,6 +237,70 @@ async function pullRemoteConflict(peerUrl, notebookDir, requestedRelativePath, r
   };
 }
 
+export async function runSyncTestTwoWay({ peerUrl, runtimeRoot } = {}) {
+  const normalizedPeerUrl = normalizePeerUrl(peerUrl);
+  const resolvedRuntimeRoot = resolveRuntimeRoot({ runtimeRoot });
+  const notebookDir = path.resolve(resolvedRuntimeRoot, "Notebook");
+
+  const peerDeviceId = await resolveRemotePeerDeviceId(normalizedPeerUrl, resolvedRuntimeRoot);
+  const remoteBefore = await fetchRemoteManifest(normalizedPeerUrl, resolvedRuntimeRoot);
+  const localBefore = await buildSyncTestManifest({ runtimeRoot: resolvedRuntimeRoot });
+  const beforeSelection = buildTwoWaySyncSelection(await compareManifests(localBefore, remoteBefore));
+
+  const pulled = [];
+  for (const relativePath of beforeSelection.pullQueue) {
+    try {
+      pulled.push(await pullRemoteFile(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot));
+    } catch (err) {
+      throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+    }
+  }
+
+  const pushed = [];
+  for (const relativePath of beforeSelection.pushQueue) {
+    try {
+      pushed.push(await pushLocalFile(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot));
+    } catch (err) {
+      throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+    }
+  }
+
+  const conflicts = [];
+  for (const relativePath of beforeSelection.conflictQueue) {
+    try {
+      conflicts.push(await pullRemoteConflict(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot, peerDeviceId));
+    } catch (err) {
+      throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+    }
+  }
+
+  const localAfter = await buildSyncTestManifest({ runtimeRoot: resolvedRuntimeRoot });
+  const remoteAfter = await fetchRemoteManifest(normalizedPeerUrl, resolvedRuntimeRoot);
+  const afterSelection = buildTwoWaySyncSelection(await compareManifests(localAfter, remoteAfter));
+
+  return {
+    ok: true,
+    peerUrl: normalizedPeerUrl,
+    scope: "SyncTest",
+    before: {
+      localFileCount: Array.isArray(localBefore.files) ? localBefore.files.length : 0,
+      remoteFileCount: Array.isArray(remoteBefore.files) ? remoteBefore.files.length : 0,
+      plan: beforeSelection.plan,
+    },
+    operations: {
+      pulled,
+      pushed,
+      conflicts,
+      skipped: beforeSelection.skipped,
+    },
+    after: {
+      localFileCount: Array.isArray(localAfter.files) ? localAfter.files.length : 0,
+      remoteFileCount: Array.isArray(remoteAfter.files) ? remoteAfter.files.length : 0,
+      plan: afterSelection.plan,
+    },
+  };
+}
+
 async function main() {
   const peerArg = process.argv[2];
   if (!peerArg) {
@@ -244,82 +309,9 @@ async function main() {
     return;
   }
 
-  let peerUrl;
   try {
-    peerUrl = normalizePeerUrl(peerArg);
-  } catch (err) {
-    process.stderr.write(`${err?.message || String(err)}\n`);
-    process.exitCode = 1;
-    return;
-  }
-
-  const runtimeRoot = resolveRuntimeRoot();
-  const notebookDir = path.resolve(runtimeRoot, "Notebook");
-
-  try {
-    const peerDeviceId = await resolveRemotePeerDeviceId(peerUrl, runtimeRoot);
-    const remoteBefore = await fetchRemoteManifest(peerUrl, runtimeRoot);
-    const localBefore = await buildSyncTestManifest({ runtimeRoot });
-    const beforeSelection = buildTwoWaySyncSelection(await compareManifests(localBefore, remoteBefore));
-
-    const pulled = [];
-    for (const relativePath of beforeSelection.pullQueue) {
-      try {
-        pulled.push(await pullRemoteFile(peerUrl, notebookDir, relativePath, runtimeRoot));
-      } catch (err) {
-        process.stderr.write(`Failed to sync ${relativePath}: ${err?.message || String(err)}\n`);
-        process.exitCode = 1;
-        return;
-      }
-    }
-
-    const pushed = [];
-    for (const relativePath of beforeSelection.pushQueue) {
-      try {
-        pushed.push(await pushLocalFile(peerUrl, notebookDir, relativePath, runtimeRoot));
-      } catch (err) {
-        process.stderr.write(`Failed to sync ${relativePath}: ${err?.message || String(err)}\n`);
-        process.exitCode = 1;
-        return;
-      }
-    }
-
-    const conflicts = [];
-    for (const relativePath of beforeSelection.conflictQueue) {
-      try {
-        conflicts.push(await pullRemoteConflict(peerUrl, notebookDir, relativePath, runtimeRoot, peerDeviceId));
-      } catch (err) {
-        process.stderr.write(`Failed to sync ${relativePath}: ${err?.message || String(err)}\n`);
-        process.exitCode = 1;
-        return;
-      }
-    }
-
-    const localAfter = await buildSyncTestManifest({ runtimeRoot });
-    const remoteAfter = await fetchRemoteManifest(peerUrl, runtimeRoot);
-    const afterSelection = buildTwoWaySyncSelection(await compareManifests(localAfter, remoteAfter));
-
-    process.stdout.write(`${JSON.stringify({
-      ok: true,
-      peerUrl,
-      scope: "SyncTest",
-      before: {
-        localFileCount: Array.isArray(localBefore.files) ? localBefore.files.length : 0,
-        remoteFileCount: Array.isArray(remoteBefore.files) ? remoteBefore.files.length : 0,
-        plan: beforeSelection.plan,
-      },
-      operations: {
-        pulled,
-        pushed,
-        conflicts,
-        skipped: beforeSelection.skipped,
-      },
-      after: {
-        localFileCount: Array.isArray(localAfter.files) ? localAfter.files.length : 0,
-        remoteFileCount: Array.isArray(remoteAfter.files) ? remoteAfter.files.length : 0,
-        plan: afterSelection.plan,
-      },
-    }, null, 2)}\n`);
+    const report = await runSyncTestTwoWay({ peerUrl: peerArg });
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } catch (err) {
     process.stderr.write(`${err?.message || String(err)}\n`);
     process.exitCode = 1;
