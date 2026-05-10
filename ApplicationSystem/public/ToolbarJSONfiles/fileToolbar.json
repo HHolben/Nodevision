@@ -17,6 +17,14 @@
   },
   {
     "ToolbarCategory": "File",
+    "heading": "Sync",
+    "icon": "icons/RefreshIcon.png",
+    "panelTemplateId": "SyncPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/SyncPanel.mjs"
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "File View",
     "icon": "icons/DefaultNodeImage.png",
     "panelTemplateId": "FileView",

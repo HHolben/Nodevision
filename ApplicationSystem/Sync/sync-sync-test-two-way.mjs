@@ -237,10 +237,11 @@ async function pullRemoteConflict(peerUrl, notebookDir, requestedRelativePath, r
   };
 }
 
-export async function runSyncTestTwoWay({ peerUrl, runtimeRoot } = {}) {
+export async function runSyncTestTwoWay({ peerUrl, runtimeRoot, dryRun = false } = {}) {
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
   const resolvedRuntimeRoot = resolveRuntimeRoot({ runtimeRoot });
   const notebookDir = path.resolve(resolvedRuntimeRoot, "Notebook");
+  const dryRunMode = Boolean(dryRun);
 
   const peerDeviceId = await resolveRemotePeerDeviceId(normalizedPeerUrl, resolvedRuntimeRoot);
   const remoteBefore = await fetchRemoteManifest(normalizedPeerUrl, resolvedRuntimeRoot);
@@ -248,35 +249,47 @@ export async function runSyncTestTwoWay({ peerUrl, runtimeRoot } = {}) {
   const beforeSelection = buildTwoWaySyncSelection(await compareManifests(localBefore, remoteBefore));
 
   const pulled = [];
-  for (const relativePath of beforeSelection.pullQueue) {
-    try {
-      pulled.push(await pullRemoteFile(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot));
-    } catch (err) {
-      throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+  if (!dryRunMode) {
+    for (const relativePath of beforeSelection.pullQueue) {
+      try {
+        pulled.push(await pullRemoteFile(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot));
+      } catch (err) {
+        throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+      }
     }
   }
 
   const pushed = [];
-  for (const relativePath of beforeSelection.pushQueue) {
-    try {
-      pushed.push(await pushLocalFile(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot));
-    } catch (err) {
-      throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+  if (!dryRunMode) {
+    for (const relativePath of beforeSelection.pushQueue) {
+      try {
+        pushed.push(await pushLocalFile(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot));
+      } catch (err) {
+        throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+      }
     }
   }
 
   const conflicts = [];
-  for (const relativePath of beforeSelection.conflictQueue) {
-    try {
-      conflicts.push(await pullRemoteConflict(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot, peerDeviceId));
-    } catch (err) {
-      throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+  if (!dryRunMode) {
+    for (const relativePath of beforeSelection.conflictQueue) {
+      try {
+        conflicts.push(await pullRemoteConflict(normalizedPeerUrl, notebookDir, relativePath, resolvedRuntimeRoot, peerDeviceId));
+      } catch (err) {
+        throw new Error(`Failed to sync ${relativePath}: ${err?.message || String(err)}`);
+      }
     }
   }
 
-  const localAfter = await buildSyncTestManifest({ runtimeRoot: resolvedRuntimeRoot });
-  const remoteAfter = await fetchRemoteManifest(normalizedPeerUrl, resolvedRuntimeRoot);
-  const afterSelection = buildTwoWaySyncSelection(await compareManifests(localAfter, remoteAfter));
+  const localAfter = dryRunMode
+    ? localBefore
+    : await buildSyncTestManifest({ runtimeRoot: resolvedRuntimeRoot });
+  const remoteAfter = dryRunMode
+    ? remoteBefore
+    : await fetchRemoteManifest(normalizedPeerUrl, resolvedRuntimeRoot);
+  const afterSelection = dryRunMode
+    ? beforeSelection
+    : buildTwoWaySyncSelection(await compareManifests(localAfter, remoteAfter));
 
   return {
     ok: true,
@@ -288,6 +301,7 @@ export async function runSyncTestTwoWay({ peerUrl, runtimeRoot } = {}) {
       plan: beforeSelection.plan,
     },
     operations: {
+      dryRun: dryRunMode,
       pulled,
       pushed,
       conflicts,
