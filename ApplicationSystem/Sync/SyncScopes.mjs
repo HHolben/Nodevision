@@ -107,6 +107,77 @@ export async function loadSyncScopes(options = {}) {
   return { syncScopes };
 }
 
+export async function saveSyncScopes(scopes, options = {}) {
+  if (!Array.isArray(scopes)) throw new Error("scopes must be an array");
+  const seen = new Set();
+  const normalizedScopes = [];
+  for (const scope of scopes) {
+    const validated = validateSyncScope(scope);
+    if (seen.has(validated)) continue;
+    seen.add(validated);
+    normalizedScopes.push(validated);
+  }
+  if (normalizedScopes.length === 0) {
+    normalizedScopes.push(DEFAULT_SYNC_SCOPES[0]);
+  }
+
+  const scopesPath = resolveSyncScopesPath(options);
+  await fs.mkdir(path.dirname(scopesPath), { recursive: true });
+  await fs.writeFile(
+    scopesPath,
+    `${JSON.stringify({ syncScopes: normalizedScopes }, null, 2)}\n`,
+    "utf8",
+  );
+  return { syncScopes: normalizedScopes };
+}
+
+export async function addSyncScope(scope, options = {}) {
+  const normalized = validateSyncScope(scope);
+  const loaded = await loadSyncScopes(options);
+  if (loaded.syncScopes.includes(normalized)) return loaded;
+  return saveSyncScopes([...loaded.syncScopes, normalized], options);
+}
+
+export async function removeSyncScope(scope, options = {}) {
+  const normalized = validateSyncScope(scope);
+  if (normalized === "SyncTest") {
+    throw new Error("SyncTest scope cannot be removed");
+  }
+  const loaded = await loadSyncScopes(options);
+  return saveSyncScopes(loaded.syncScopes.filter((item) => item !== normalized), options);
+}
+
+export async function listCandidateNotebookFolders(options = {}) {
+  const notebookDir = resolveNotebookDir(options);
+  let entries = [];
+  try {
+    entries = await fs.readdir(notebookDir, { withFileTypes: true });
+  } catch (err) {
+    if (err?.code === "ENOENT") return [];
+    throw err;
+  }
+  const activeScopes = new Set((await loadSyncScopes(options)).syncScopes);
+  const candidates = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.isSymbolicLink()) continue;
+    if (shouldExcludeEntry(entry.name)) continue;
+    const relativePath = entry.name;
+    try {
+      validateSyncScope(relativePath);
+    } catch {
+      continue;
+    }
+    candidates.push({
+      name: entry.name,
+      relativePath,
+      syncEnabled: activeScopes.has(relativePath),
+    });
+  }
+  candidates.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+  return candidates;
+}
+
 export function resolveScopeNotebookPath({ notebookDir, scope }) {
   const notebookRoot = path.resolve(normalizeNonEmptyString(notebookDir, "notebookDir"));
   const validatedScope = validateSyncScope(scope);

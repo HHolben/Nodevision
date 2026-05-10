@@ -2,8 +2,14 @@
 // This file registers authenticated Sync Panel API endpoints that manage in-memory discovery state, expose safe local/discovery status, and run trusted scope-limited sync operations only after explicit user actions.
 
 import { getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
-import { loadSyncScopes, validateSyncScope } from "../../Sync/SyncScopes.mjs";
-import { runSyncTestTwoWay } from "../../Sync/sync-sync-test-two-way.mjs";
+import {
+  addSyncScope,
+  listCandidateNotebookFolders,
+  loadSyncScopes,
+  removeSyncScope,
+  validateSyncScope,
+} from "../../Sync/SyncScopes.mjs";
+import { runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
 import {
   startPeerDiscoveryListener,
   startPeerDiscoveryBroadcaster,
@@ -164,6 +170,38 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
+  app.get("/api/sync/notebook-folders", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const folders = await listCandidateNotebookFolders({ runtimeRoot: ctx?.runtimeRoot });
+      return res.json({ ok: true, folders });
+    } catch {
+      return res.status(500).json({ ok: false, error: "Failed to list notebook folders" });
+    }
+  });
+
+  app.post("/api/sync/scopes", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const scope = validateSyncScope(req.body?.scope);
+      const updated = await addSyncScope(scope, { runtimeRoot: ctx?.runtimeRoot });
+      return res.json({ ok: true, syncScopes: updated.syncScopes });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Failed to add scope" });
+    }
+  });
+
+  app.delete("/api/sync/scopes", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const scope = validateSyncScope(req.body?.scope);
+      const updated = await removeSyncScope(scope, { runtimeRoot: ctx?.runtimeRoot });
+      return res.json({ ok: true, syncScopes: updated.syncScopes });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Failed to remove scope" });
+    }
+  });
+
   app.get("/api/sync/status", (req, res) => {
     if (!requireSession(req, res)) return;
     return res.json(syncStateResponse(state));
@@ -247,12 +285,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
     }
 
-    // Current benchmark sync runner is SyncTest-only; configurable scopes are surfaced but not auto-enabled here.
-    if (scope !== DEFAULT_SYNC_SCOPE) {
-      return res.status(400).json({ ok: false, error: `Scope not yet supported by sync runner: ${scope}` });
-    }
-
-    const dryRun = body?.dryRun === undefined ? true : Boolean(body.dryRun);
+        const dryRun = body?.dryRun === undefined ? true : Boolean(body.dryRun);
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -261,8 +294,9 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
 
     try {
-      const sync = await runSyncTestTwoWay({
+      const sync = await runScopeSyncTwoWay({
         peerUrl,
+        scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
       });
