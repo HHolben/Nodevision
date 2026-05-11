@@ -123,7 +123,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
     peerListEl.innerHTML = peers.length
       ? peers.map((peer) => {
         const trusted = peer?.trusted === true;
-        const selected = trusted && state.status.selectedPeerDeviceId === peer.deviceId;
+        const syncCapable = peer?.capabilities?.sync === true;
+        const selected = trusted && syncCapable && state.status.selectedPeerDeviceId === peer.deviceId;
         const badgeStyle = trusted
           ? "background:#e8f7ec;color:#216b34;border:1px solid #b7e2c4;"
           : "background:#fff3e6;color:#8f4f00;border:1px solid #ffd8a8;";
@@ -131,7 +132,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
           ? `<div style="font-size:0.78em;color:#666;">Key: ${escapeHtml(String(peer.publicKeyFingerprint))}</div>`
           : "";
         const actionButton = trusted
-          ? `<button type="button" data-select-peer="${escapeHtml(peer.deviceId)}" ${state.busy ? "disabled" : ""} style="border:1px solid ${selected ? "#0a84ff" : "#bbb"};border-radius:6px;background:#fff;padding:5px 8px;font-size:0.82em;cursor:${state.busy ? "not-allowed" : "pointer"};">${selected ? "Selected for Sync" : "Select for Sync"}</button>`
+          ? `<button type="button" data-select-peer="${escapeHtml(peer.deviceId)}" ${(state.busy || !syncCapable) ? "disabled" : ""} style="border:1px solid ${selected ? "#0a84ff" : "#bbb"};border-radius:6px;background:#fff;padding:5px 8px;font-size:0.82em;cursor:${(state.busy || !syncCapable) ? "not-allowed" : "pointer"};${syncCapable ? "" : "opacity:0.6;"}">${syncCapable ? (selected ? "Selected for Sync" : "Select for Sync") : "Sync Unsupported"}</button>`
           : `<button type="button" data-trust-peer="${escapeHtml(peer.deviceId)}" ${state.busy ? "disabled" : ""} style="border:1px solid #c97d00;border-radius:6px;background:#fff7eb;color:#8f4f00;padding:5px 8px;font-size:0.82em;cursor:${state.busy ? "not-allowed" : "pointer"};">Approve/Trust Device</button>`;
         return `<div style="text-align:left;border:1px solid ${selected ? "#0a84ff" : "#d7d7d7"};border-radius:8px;background:#fff;padding:8px;display:flex;flex-direction:column;gap:5px;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="font-size:0.92em;">${escapeHtml(peer.deviceName || "Unknown Device")}</strong><span style="font-size:0.74em;border-radius:999px;padding:2px 7px;${badgeStyle}">${trusted ? "trusted" : "untrusted"}</span></div><div style="font-size:0.82em;color:#4a4a4a;">${escapeHtml(shortenDeviceId(peer.deviceId || ""))}</div><div style="font-size:0.82em;color:#333;">${escapeHtml(`${peer.address || "unknown"}:${peer.port || "?"}`)}</div>${fingerprint}<div>${actionButton}</div></div>`;
       }).join("")
@@ -174,8 +175,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const deviceId = state.status.selectedPeerDeviceId;
     if (!deviceId) return setError(errorEl, "Select a discovered peer before running sync.");
     const selectedPeer = (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
-    if (!selectedPeer || selectedPeer.trusted !== true) {
-      return setError(errorEl, "Only trusted peers can be selected for sync.");
+    if (!selectedPeer || selectedPeer.trusted !== true || selectedPeer?.capabilities?.sync !== true) {
+      return setError(errorEl, "Only trusted sync-capable peers can be selected for sync.");
     }
     setError(errorEl, ""); setBusy(true, dryRun ? "Running dry-run sync..." : "Running sync...");
     try {
@@ -224,6 +225,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const selectButton = e.target?.closest?.("[data-select-peer]");
     if (!selectButton) return;
     const deviceId = String(selectButton.getAttribute("data-select-peer") || "");
+    const selectedPeer = (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
+    if (!selectedPeer || selectedPeer.trusted !== true || selectedPeer?.capabilities?.sync !== true) {
+      setError(errorEl, "Only trusted sync-capable peers can be selected.");
+      return;
+    }
     setError(errorEl, "");
     try {
       await apiFetchJson("/api/sync/select-peer", { method: "POST", body: JSON.stringify({ deviceId }) });

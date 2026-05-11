@@ -78,8 +78,20 @@ async function main() {
     capabilities: { sync: true, conflictResolution: true },
     publicKey: publicKeyA,
   });
+
+  upsertDiscoveredPeer(state, {
+    deviceId: "peer_trusted_no_sync",
+    deviceName: "Peer Trusted No Sync",
+    trusted: true,
+    address: "10.0.0.41",
+    port: 3004,
+    lastSeen: "2026-05-10T00:03:00.000Z",
+    capabilities: { sync: false, conflictResolution: true },
+    publicKey: publicKeyA,
+  });
   assert(canRunSyncWithDiscoveredPeer(state, "peer_untrusted") === false, "Expected untrusted peer sync rejection");
   assert(canRunSyncWithDiscoveredPeer(state, "peer_a") === true, "Expected trusted peer sync acceptance");
+  assert(canRunSyncWithDiscoveredPeer(state, "peer_trusted_no_sync") === false, "Expected non-sync-capable peer sync rejection");
 
   const trustedUrl = buildTrustedDiscoveredPeerUrl(state, "peer_a");
   assert(trustedUrl === "http://10.0.0.39:3002", "Expected trusted peer URL from discovered address/port");

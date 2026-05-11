@@ -12,9 +12,27 @@ import { createSignedScopeFilePush, createSignedScopeFileRequest, createSignedSc
 
 const hash = (b) => createHash("sha256").update(b).digest("hex");
 const postJson = async (peerUrl, endpointPath, body) => {
-  const r = await fetch(new URL(endpointPath, `${peerUrl}/`).toString(), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  let r;
+  try {
+    r = await fetch(new URL(endpointPath, `${peerUrl}/`).toString(), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  } catch (err) {
+    const networkError = new Error(`Unable to reach peer at ${peerUrl}: ${err?.message || "network request failed"}`);
+    networkError.name = "PeerSyncNetworkError";
+    networkError.peerUrl = peerUrl;
+    networkError.endpointPath = endpointPath;
+    networkError.cause = err;
+    throw networkError;
+  }
   const p = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(`${endpointPath} failed (${r.status}): ${p?.error || "request failed"}`);
+  if (!r.ok) {
+    const peerHttpError = new Error(`${endpointPath} failed (${r.status}): ${p?.error || "request failed"}`);
+    peerHttpError.name = "PeerSyncHttpError";
+    peerHttpError.status = r.status;
+    peerHttpError.peerUrl = peerUrl;
+    peerHttpError.endpointPath = endpointPath;
+    peerHttpError.responsePayload = p;
+    throw peerHttpError;
+  }
   return p;
 };
 

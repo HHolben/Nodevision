@@ -123,7 +123,7 @@ export function setDiscoverableEnabled(state, enabled) {
 
 export function canRunSyncWithDiscoveredPeer(state, deviceId) {
   const peer = getDiscoveredPeer(state, deviceId);
-  return Boolean(peer && peer.trusted === true);
+  return Boolean(peer && peer.trusted === true && peer.capabilities?.sync === true);
 }
 
 export function buildTrustedDiscoveredPeerUrl(state, deviceId) {

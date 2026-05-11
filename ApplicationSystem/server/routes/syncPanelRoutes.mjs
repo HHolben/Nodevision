@@ -57,6 +57,42 @@ function parseDeviceId(value) {
   return deviceId;
 }
 
+function sanitizeSyncRunErrorDetails(errorMessage) {
+  let safe = String(errorMessage || "Unknown sync error");
+  safe = safe.replace(
+    /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?-----END [^-]*PRIVATE KEY-----/gi,
+    "[REDACTED_PRIVATE_KEY]",
+  );
+  safe = safe.replace(
+    /-----BEGIN [^-]*KEY-----[\s\S]*?-----END [^-]*KEY-----/gi,
+    "[REDACTED_KEY_MATERIAL]",
+  );
+  safe = safe.replace(
+    /(?:[A-Za-z]:)?(?:\/|\\)[^\s"'`]*ServerSettings(?:\/|\\)[^\s"'`]*/g,
+    "[REDACTED_SERVER_SETTINGS_PATH]",
+  );
+  safe = safe.replace(
+    /(?:[A-Za-z]:)?(?:\/|\\)[^\s"'`]*ServerSettings\b/g,
+    "[REDACTED_SERVER_SETTINGS_PATH]",
+  );
+  if (safe.length > 400) safe = `${safe.slice(0, 400)}...`;
+  return safe.trim() || "Unknown sync error";
+}
+
+function getSafeSyncRunErrorDetails(err) {
+  const message = err?.message ? String(err.message) : String(err || "Unknown sync error");
+  return sanitizeSyncRunErrorDetails(message);
+}
+
+function logSyncRunExecutionError(err) {
+  if (err instanceof Error) {
+    const renderedStack = err.stack || `${err.name}: ${err.message}`;
+    console.error("[/api/sync/run] Sync execution failed:\n%s", renderedStack);
+    return;
+  }
+  console.error("[/api/sync/run] Sync execution failed:", err);
+}
+
 function installShutdownHookIfNeeded(state) {
   if (state.shutdownHookInstalled) return;
   state.shutdownHookInstalled = true;
@@ -351,7 +387,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(404).json({ ok: false, error: "Discovered peer not found" });
     }
     if (!canRunSyncWithDiscoveredPeer(state, deviceId)) {
-      return res.status(403).json({ ok: false, error: "Untrusted peer cannot be synced" });
+      return res.status(403).json({ ok: false, error: "Only trusted sync-capable peers can be synced" });
     }
 
     let scope;
@@ -393,9 +429,11 @@ export function registerSyncPanelRoutes(app, ctx) {
         sync,
       });
     } catch (err) {
+      logSyncRunExecutionError(err);
       return res.status(500).json({
         ok: false,
-        error: err?.message || "Failed to run sync",
+        error: "Sync failed",
+        details: getSafeSyncRunErrorDetails(err),
       });
     }
   });
