@@ -11,9 +11,27 @@
     "build-portable": "node ApplicationSystem/scripts/build-portable-entry.mjs && pkg --no-bytecode --public --public-packages \"*\" ApplicationSystem/build/nodevision-cli.cjs --targets node18-linux-x64,node18-win-x64,node18-macos-x64 --output nodevision && node ApplicationSystem/scripts/copy-xdg-open.js"
   },
   "dependencies": {
-    "open": "^8.4.0"
+    "argon2": "^0.44.0",
+    "bcrypt": "^6.0.0",
+    "cheerio": "^1.2.0",
+    "chokidar": "^5.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "fs-extra": "^11.3.5",
+    "http-proxy-middleware": "^4.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mime": "^4.1.0",
+    "multer": "^2.1.1",
+    "open": "^8.4.0",
+    "serve-favicon": "^2.5.1",
+    "uuid": "^14.0.0",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
+    "depcheck": "^1.4.7",
     "electron": "^26.6.10",
     "esbuild": "^0.19.2"
   },
