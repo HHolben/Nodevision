@@ -13,6 +13,9 @@ const DEFAULT_DISCOVERY_PORT = 39000;
 const DEFAULT_MULTICAST_GROUP = "239.255.255.250";
 const DEFAULT_BROADCAST_INTERVAL_MS = 10_000;
 const DEFAULT_DEDUPE_WINDOW_MS = 30_000;
+const DEFAULT_BIND_ADDRESS = "0.0.0.0";
+const DEFAULT_BROADCAST_ADDRESS = "255.255.255.255";
+const DISCOVERY_BEACON_WARN_BYTES = 1200;
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.prototype.toString.call(value) === "[object Object]";
@@ -38,6 +41,18 @@ function normalizePort(value, fieldName = "port") {
     throw new Error(`${fieldName} must be an integer between 1 and 65535`);
   }
   return port;
+}
+
+function normalizePublicKey(value, fieldName = "publicKey") {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (text.includes("PRIVATE KEY")) {
+    throw new Error(`${fieldName} must not contain private key material`);
+  }
+  if (!text.includes("PUBLIC KEY")) {
+    throw new Error(`${fieldName} must be a PEM public key`);
+  }
+  return text;
 }
 
 function normalizeCapabilities(raw) {
@@ -93,6 +108,7 @@ function normalizeDiscoveryMessage(message) {
     deviceName: normalizeNonEmptyString(message.deviceName, "deviceName"),
     port: normalizePort(message.port),
     timestamp: normalizeTimestamp(message.timestamp),
+    publicKey: normalizePublicKey(message.publicKey),
     capabilities: normalizeCapabilities(message.capabilities),
   };
 }
@@ -118,6 +134,54 @@ function debugLog(enabled, message, ...args) {
   if (!enabled) return;
   const renderedArgs = args.length > 0 ? ` ${args.map((item) => String(item)).join(" ")}` : "";
   process.stderr.write(`[PeerDiscovery] ${message}${renderedArgs}\n`);
+}
+
+function asErrorMessage(err) {
+  return err?.message || String(err);
+}
+
+function rejectVerification(reason, detail = "", message = null) {
+  return {
+    ok: false,
+    reason,
+    detail: String(detail || "").trim(),
+    message: message && typeof message === "object" ? message : null,
+  };
+}
+
+function describePeerMessage(message) {
+  const deviceId = String(message?.deviceId ?? "").trim();
+  const deviceName = String(message?.deviceName ?? "").trim();
+  const port = Number(message?.port);
+  return `deviceId=${deviceId || "?"} deviceName=${deviceName || "?"} advertisedPort=${Number.isInteger(port) ? port : "?"}`;
+}
+
+function logRejection(debugEnabled, verified, remoteInfo) {
+  const remoteAddress = String(remoteInfo?.address || "unknown");
+  const remotePort = Number.isInteger(remoteInfo?.port) ? String(remoteInfo.port) : "?";
+  const base = `Rejected discovery datagram from ${remoteAddress}:${remotePort}`;
+  const detail = String(verified?.detail || "").trim();
+  const messageSummary = verified?.message ? ` (${describePeerMessage(verified.message)})` : "";
+  const suffix = detail ? `: ${detail}` : "";
+  const reason = String(verified?.reason || "unknown");
+
+  if (reason === "signature_invalid") {
+    debugLog(debugEnabled, `${base} due to signature verification failure${messageSummary}${suffix}`);
+    return;
+  }
+  if (reason === "public_key_missing_or_invalid") {
+    debugLog(debugEnabled, `${base} due to missing/invalid publicKey${messageSummary}${suffix}`);
+    return;
+  }
+  if (reason === "self_beacon") {
+    debugLog(debugEnabled, `${base} rejected as self-beacon${messageSummary}${suffix}`);
+    return;
+  }
+  if (reason === "malformed") {
+    debugLog(debugEnabled, `${base} rejected as malformed${messageSummary}${suffix}`);
+    return;
+  }
+  debugLog(debugEnabled, `${base} rejected (${reason})${messageSummary}${suffix}`);
 }
 
 function resolveAdvertisedPort(options = {}) {
@@ -186,6 +250,7 @@ function normalizeDiscoveryState(input, fieldName = "peer") {
     address: normalizeDiscoveryAddress(input.address ?? input.host ?? "0.0.0.0"),
     port: normalizePort(input.port, `${fieldName}.port`),
     trusted: Boolean(input.trusted),
+    publicKey: normalizePublicKey(input.publicKey, `${fieldName}.publicKey`),
     capabilities: normalizeCapabilities(input.capabilities),
   };
 }
@@ -225,6 +290,7 @@ export function createDiscoveryDeduper(options = {}) {
         const unseenExpired = currentMs - previous.lastSeenMs > ttlMs;
         const changed = previous.port !== peer.port
           || previous.trusted !== peer.trusted
+          || previous.publicKey !== peer.publicKey
           || previous.capabilitySig !== capabilitySig;
         emit = unseenExpired || changed;
       }
@@ -233,6 +299,7 @@ export function createDiscoveryDeduper(options = {}) {
         lastSeenMs: currentMs,
         port: peer.port,
         trusted: peer.trusted,
+        publicKey: peer.publicKey,
         capabilitySig,
       });
 
@@ -256,6 +323,7 @@ export async function createDiscoveryBeacon(options = {}) {
     deviceName: identity.deviceName,
     port: resolveAdvertisedPort(options),
     timestamp: options.timestamp ?? new Date().toISOString(),
+    publicKey: String(identity.publicKey ?? "").trim(),
     capabilities: options.capabilities ?? { sync: true, conflictResolution: true },
   });
 
@@ -269,26 +337,48 @@ export async function createDiscoveryBeacon(options = {}) {
 
 export async function verifyDiscoveryBeacon({ payload, signatureBase64 }, options = {}) {
   try {
-    if (typeof payload !== "string" || !payload.trim()) return { ok: false };
+    if (typeof payload !== "string" || !payload.trim()) {
+      return rejectVerification("malformed", "payload must be a nonempty string");
+    }
     const signatureBytes = decodeBase64Signature(signatureBase64);
-    if (!signatureBytes) return { ok: false };
+    if (!signatureBytes) {
+      return rejectVerification("malformed", "signatureBase64 is invalid");
+    }
 
     let parsedPayload;
     try {
       parsedPayload = JSON.parse(payload);
     } catch {
-      return { ok: false };
+      return rejectVerification("malformed", "payload is not valid JSON");
     }
 
     let message;
     try {
       message = normalizeDiscoveryMessage(parsedPayload);
-    } catch {
-      return { ok: false };
+    } catch (err) {
+      const detail = asErrorMessage(err);
+      if (detail.includes("publicKey")) {
+        return rejectVerification("public_key_missing_or_invalid", detail);
+      }
+      return rejectVerification("malformed", detail);
     }
 
     const peer = await findTrustedPeer(message.deviceId, options);
     if (!peer) {
+      let unknownPublicKey;
+      try {
+        unknownPublicKey = normalizePublicKey(parsedPayload?.publicKey, "message.publicKey");
+      } catch (err) {
+        return rejectVerification("public_key_missing_or_invalid", asErrorMessage(err), message);
+      }
+      if (!unknownPublicKey) {
+        return rejectVerification("public_key_missing_or_invalid", "message.publicKey is required for unknown peers", message);
+      }
+      // Verify the exact original payload string as received on the wire.
+      const verified = await verifyMessage(payload, signatureBase64, unknownPublicKey);
+      if (!verified) {
+        return rejectVerification("signature_invalid", "unknown peer signature verification failed", message);
+      }
       return {
         ok: true,
         trusted: false,
@@ -298,7 +388,9 @@ export async function verifyDiscoveryBeacon({ payload, signatureBase64 }, option
     }
 
     const verified = await verifyMessage(payload, signatureBase64, peer.publicKey);
-    if (!verified) return { ok: false };
+    if (!verified) {
+      return rejectVerification("signature_invalid", "trusted peer signature verification failed", message);
+    }
 
     return {
       ok: true,
@@ -306,11 +398,12 @@ export async function verifyDiscoveryBeacon({ payload, signatureBase64 }, option
       peer: {
         deviceId: peer.deviceId,
         deviceName: peer.deviceName,
+        publicKey: peer.publicKey,
       },
       message,
     };
   } catch {
-    return { ok: false };
+    return rejectVerification("malformed", "unexpected verification failure");
   }
 }
 
@@ -327,6 +420,7 @@ export function normalizeDiscoveredPeer(message, remoteInfo = {}) {
     address,
     port: normalizedMessage.port,
     lastSeen,
+    publicKey: normalizedMessage.publicKey,
     capabilities: normalizedMessage.capabilities,
   };
 }
@@ -336,8 +430,8 @@ export async function parseAndVerifyDiscoveryDatagram(buffer, verifyOptions = {}
   try {
     const raw = String(buffer ?? "");
     envelope = normalizeBeaconEnvelope(JSON.parse(raw));
-  } catch {
-    return { ok: false };
+  } catch (err) {
+    return rejectVerification("malformed", asErrorMessage(err));
   }
   return verifyDiscoveryBeacon(envelope, verifyOptions);
 }
@@ -345,6 +439,7 @@ export async function parseAndVerifyDiscoveryDatagram(buffer, verifyOptions = {}
 export function startPeerDiscoveryListener(options = {}) {
   const discoveryPort = normalizePort(options.discoveryPort ?? DEFAULT_DISCOVERY_PORT, "discoveryPort");
   const multicastGroup = normalizeDiscoveryAddress(options.multicastGroup ?? DEFAULT_MULTICAST_GROUP);
+  const bindAddress = normalizeDiscoveryAddress(options.bindAddress ?? DEFAULT_BIND_ADDRESS);
   const socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
   const deduper = options.deduper ?? createDiscoveryDeduper({ ttlMs: options.dedupeWindowMs });
   const verifyOptions = options.verifyOptions ?? options;
@@ -367,40 +462,62 @@ export function startPeerDiscoveryListener(options = {}) {
   });
 
   socket.on("message", async (msgBuffer, remoteInfo) => {
+    debugLog(
+      debugEnabled,
+      "Incoming discovery datagram",
+      `from=${String(remoteInfo?.address || "unknown")}:${Number.isInteger(remoteInfo?.port) ? String(remoteInfo.port) : "?"}`,
+      `bytes=${Buffer.byteLength(msgBuffer)}`,
+    );
     let verified;
     try {
       verified = await parseAndVerifyDiscoveryDatagram(msgBuffer, verifyOptions);
-    } catch {
-      verified = { ok: false };
+    } catch (err) {
+      verified = rejectVerification("malformed", asErrorMessage(err));
     }
     if (!verified?.ok) {
-      debugLog(debugEnabled, "Ignored invalid discovery datagram from", remoteInfo?.address || "unknown");
+      logRejection(debugEnabled, verified, remoteInfo);
       return;
     }
+
+    debugLog(debugEnabled, `Parsed discovery message ${describePeerMessage(verified.message)}`);
 
     const localDeviceId = await localIdentityPromise;
     if (isSelfBeacon(localDeviceId, verified.message.deviceId)) {
-      debugLog(debugEnabled, "Ignored self-beacon from device", verified.message.deviceId);
+      logRejection(debugEnabled, rejectVerification("self_beacon", "", verified.message), remoteInfo);
       return;
     }
 
-    const peer = normalizeDiscoveredPeer({ ...verified.message, trusted: verified.trusted }, remoteInfo);
+    const peerPublicKey = verified.trusted
+      ? String(verified.peer?.publicKey ?? "").trim() || null
+      : String(verified.message?.publicKey ?? "").trim() || null;
+    const peer = normalizeDiscoveredPeer({ ...verified.message, trusted: verified.trusted, publicKey: peerPublicKey }, remoteInfo);
     const shouldEmit = deduper.shouldEmit({
       deviceId: peer.deviceId,
       address: peer.address,
       port: peer.port,
       trusted: peer.trusted,
+      publicKey: peer.publicKey,
       capabilities: peer.capabilities,
     });
     if (!shouldEmit) return;
 
+    debugLog(
+      debugEnabled,
+      `Accepted discovery peer as ${verified.trusted ? "trusted" : "untrusted"} ${describePeerMessage(peer)}`,
+    );
     if (onPeerDiscovered) onPeerDiscovered({ trusted: verified.trusted, peer, verification: verified });
     if (verified.trusted && onTrustedPeer) onTrustedPeer(peer, verified);
     if (!verified.trusted && onUntrustedPeer) onUntrustedPeer(peer, verified);
   });
 
-  socket.bind(discoveryPort, () => {
-    debugLog(debugEnabled, "Listener bound on UDP port", discoveryPort);
+  socket.bind(discoveryPort, bindAddress, () => {
+    const bound = socket.address();
+    debugLog(
+      debugEnabled,
+      "Listener bound",
+      `address=${String(bound?.address || bindAddress)}`,
+      `port=${Number.isInteger(bound?.port) ? String(bound.port) : String(discoveryPort)}`,
+    );
     applyDiscoverySocketOptionsAfterBind(socket, {
       ...options,
       multicastGroup,
@@ -421,6 +538,8 @@ export function startPeerDiscoveryListener(options = {}) {
 export function startPeerDiscoveryBroadcaster(options = {}) {
   const discoveryPort = normalizePort(options.discoveryPort ?? DEFAULT_DISCOVERY_PORT, "discoveryPort");
   const multicastGroup = normalizeDiscoveryAddress(options.multicastGroup ?? DEFAULT_MULTICAST_GROUP);
+  const bindAddress = normalizeDiscoveryAddress(options.bindAddress ?? DEFAULT_BIND_ADDRESS);
+  const broadcastAddress = normalizeDiscoveryAddress(options.broadcastAddress ?? DEFAULT_BROADCAST_ADDRESS);
   const intervalMs = Number(options.intervalMs ?? DEFAULT_BROADCAST_INTERVAL_MS);
   if (!Number.isFinite(intervalMs) || intervalMs < 1_000) {
     throw new Error("intervalMs must be at least 1000ms");
@@ -436,22 +555,55 @@ export function startPeerDiscoveryBroadcaster(options = {}) {
     if (onError) onError(err);
   });
 
-  async function broadcastOnce() {
-    if (closed) return;
-    const beacon = await createDiscoveryBeacon(options);
-    const payload = Buffer.from(JSON.stringify(beacon), "utf8");
+  async function sendDatagram(buffer, targetAddress) {
     await new Promise((resolve, reject) => {
-      socket.send(payload, discoveryPort, multicastGroup, (err) => {
+      socket.send(buffer, discoveryPort, targetAddress, (err) => {
         if (err) reject(err);
         else resolve();
       });
     });
-    debugLog(debugEnabled, "Beacon sent for device", beacon.deviceId, "advertised port", JSON.parse(beacon.payload).port);
+  }
+
+  async function broadcastOnce() {
+    if (closed) return;
+    const beacon = await createDiscoveryBeacon(options);
+    const wireBeacon = {
+      payload: beacon.payload,
+      signatureBase64: beacon.signatureBase64,
+    };
+    const wireBytes = Buffer.byteLength(JSON.stringify(wireBeacon), "utf8");
+    const advertisedPort = JSON.parse(beacon.payload).port;
+    debugLog(
+      debugEnabled,
+      "Beacon prepared",
+      `bytes=${wireBytes}`,
+      `deviceId=${beacon.deviceId}`,
+      `advertisedPort=${advertisedPort}`,
+    );
+    if (wireBytes > DISCOVERY_BEACON_WARN_BYTES) {
+      debugLog(debugEnabled, "Beacon exceeds conservative LAN UDP size budget", `bytes=${wireBytes}`, `budget=${DISCOVERY_BEACON_WARN_BYTES}`);
+    }
+
+    const payloadBuffer = Buffer.from(JSON.stringify(wireBeacon), "utf8");
+    try {
+      await sendDatagram(payloadBuffer, multicastGroup);
+      debugLog(debugEnabled, "Beacon sent via multicast", `target=${multicastGroup}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
+    } catch (multicastErr) {
+      debugLog(debugEnabled, "Multicast beacon send failed; attempting IPv4 broadcast fallback", asErrorMessage(multicastErr));
+      await sendDatagram(payloadBuffer, broadcastAddress);
+      debugLog(debugEnabled, "Beacon sent via broadcast fallback", `target=${broadcastAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
+    }
   }
 
   const ready = new Promise((resolve, reject) => {
-    socket.bind(0, () => {
-      debugLog(debugEnabled, "Broadcaster bound on ephemeral UDP port");
+    socket.bind(0, bindAddress, () => {
+      const bound = socket.address();
+      debugLog(
+        debugEnabled,
+        "Broadcaster bound",
+        `address=${String(bound?.address || bindAddress)}`,
+        `port=${Number.isInteger(bound?.port) ? String(bound.port) : "?"}`,
+      );
       applyDiscoverySocketOptionsAfterBind(socket, {
         ...options,
         multicastGroup,

@@ -2,6 +2,7 @@
 // This module manages in-memory sync-panel runtime state by tracking discovery toggles, discovered peers, selected peer identity, and trusted-peer URL resolution without persisting peer data or exposing key material.
 
 import { buildDiscoveredPeerUrl } from "./sync-discovered-sync-test.mjs";
+import { createHash } from "node:crypto";
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.prototype.toString.call(value) === "[object Object]";
@@ -37,6 +38,20 @@ function normalizeLastSeen(value) {
   return new Date(ms).toISOString();
 }
 
+function normalizePublicKey(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (text.includes("PRIVATE KEY")) {
+    throw new Error("peer.publicKey must not contain private key material");
+  }
+  return text;
+}
+
+function buildPublicKeyFingerprint(publicKey) {
+  if (!publicKey) return null;
+  return createHash("sha256").update(publicKey).digest("hex").slice(0, 16);
+}
+
 export function createSyncPanelState() {
   return {
     scanning: false,
@@ -51,6 +66,7 @@ export function createSyncPanelState() {
 
 export function normalizeDiscoveredPeerRecord(input) {
   if (!isPlainObject(input)) throw new Error("peer must be a plain object");
+  const publicKey = normalizePublicKey(input.publicKey);
   return {
     deviceId: normalizeNonEmptyString(input.deviceId, "peer.deviceId"),
     deviceName: normalizeNonEmptyString(input.deviceName, "peer.deviceName"),
@@ -59,6 +75,8 @@ export function normalizeDiscoveredPeerRecord(input) {
     port: normalizePort(input.port, "peer.port"),
     lastSeen: normalizeLastSeen(input.lastSeen),
     capabilities: normalizeCapabilities(input.capabilities),
+    publicKey,
+    publicKeyFingerprint: buildPublicKeyFingerprint(publicKey),
   };
 }
 

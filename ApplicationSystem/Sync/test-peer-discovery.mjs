@@ -5,8 +5,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Buffer } from "node:buffer";
+import { sign } from "node:crypto";
 
-import { ensureDeviceIdentity } from "./DeviceIdentity.mjs";
+import { ensureDeviceIdentity, loadPrivateKey } from "./DeviceIdentity.mjs";
 import { addTrustedPeer } from "./TrustedPeers.mjs";
 import {
   applyDiscoverySocketOptionsAfterBind,
@@ -56,6 +57,7 @@ async function main() {
   }, {
     runtimeRoot: trustedVerifierRoot,
   });
+  const senderPublicKey = String(senderIdentity.publicKey || "").trim();
 
   const originalEnvPort = process.env.PORT;
   process.env.PORT = "3001";
@@ -66,6 +68,8 @@ async function main() {
   });
   if (originalEnvPort === undefined) delete process.env.PORT;
   else process.env.PORT = originalEnvPort;
+  const beaconMessage = JSON.parse(envPortBeacon.payload);
+  assert(typeof beaconMessage.publicKey === "string" && beaconMessage.publicKey.includes("PUBLIC KEY"), "Expected discovery beacon payload publicKey");
 
   const trustedVerification = await verifyDiscoveryBeacon(envPortBeacon, {
     runtimeRoot: trustedVerifierRoot,
@@ -74,6 +78,8 @@ async function main() {
   assert(trustedVerification.trusted === true, "Expected trusted peer classification");
   assert(trustedVerification.peer?.deviceId === senderIdentity.deviceId, "Expected trusted peer deviceId");
   assert(trustedVerification.message.port === 3001, "Expected process.env.PORT advertised port");
+  assert(String(trustedVerification.message.publicKey || "").trim() === senderPublicKey, "Expected discovery message publicKey");
+  assert(!String(trustedVerification.message.publicKey).includes("PRIVATE KEY"), "Discovery message must not include private key material");
 
   const unknownVerification = await verifyDiscoveryBeacon(envPortBeacon, {
     runtimeRoot: unknownVerifierRoot,
@@ -81,6 +87,41 @@ async function main() {
   assert(unknownVerification.ok === true, "Expected unknown beacon to remain visible");
   assert(unknownVerification.trusted === false, "Expected unknown peer classification");
   assert(unknownVerification.peer === null, "Expected no trusted peer object for unknown peer");
+  assert(String(unknownVerification.message.publicKey || "").trim() === senderPublicKey, "Expected unknown peer verification to retain public key");
+
+  const exactPayloadWithWhitespace = `{
+  "type": "nodevision.peer.discovery",
+  "version": 1,
+  "deviceId": "nv_dev_unknown_exact_payload_key",
+  "deviceName": "unknown-exact-payload",
+  "port": 3001,
+  "timestamp": "2026-05-09T21:30:00.000Z",
+  "publicKey": ${JSON.stringify(senderPublicKey)},
+  "capabilities": { "sync": true, "conflictResolution": true }
+}`;
+  const senderPrivateKey = await loadPrivateKey({ runtimeRoot: senderRoot });
+  const exactPayloadSignature = sign(null, Buffer.from(exactPayloadWithWhitespace), senderPrivateKey).toString("base64");
+  const exactPayloadVerification = await verifyDiscoveryBeacon({
+    payload: exactPayloadWithWhitespace,
+    signatureBase64: exactPayloadSignature,
+  }, {
+    runtimeRoot: unknownVerifierRoot,
+  });
+  assert(exactPayloadVerification.ok === true, "Expected unknown peer verification against embedded publicKey and exact payload string");
+  assert(exactPayloadVerification.trusted === false, "Expected exact-payload unknown verification to remain untrusted");
+  assert(exactPayloadVerification.message.deviceId === "nv_dev_unknown_exact_payload_key", "Expected exact-payload verification message deviceId");
+
+  const modifiedPayloadAfterSigning = exactPayloadWithWhitespace.replace(
+    "\"deviceName\": \"unknown-exact-payload\"",
+    "\"deviceName\": \"unknown-exact-payload-modified\"",
+  );
+  const modifiedAfterSigningResult = await verifyDiscoveryBeacon({
+    payload: modifiedPayloadAfterSigning,
+    signatureBase64: exactPayloadSignature,
+  }, {
+    runtimeRoot: unknownVerifierRoot,
+  });
+  assert(modifiedAfterSigningResult.ok === false, "Expected payload tampering after signing to fail verification");
 
   const badSignatureResult = await verifyDiscoveryBeacon({
     payload: envPortBeacon.payload,
@@ -89,6 +130,14 @@ async function main() {
     runtimeRoot: trustedVerifierRoot,
   });
   assert(badSignatureResult.ok === false, "Expected invalid signature rejection for trusted peer");
+
+  const badUnknownSignatureResult = await verifyDiscoveryBeacon({
+    payload: envPortBeacon.payload,
+    signatureBase64: mutateSignature(envPortBeacon.signatureBase64),
+  }, {
+    runtimeRoot: unknownVerifierRoot,
+  });
+  assert(badUnknownSignatureResult.ok === false, "Expected invalid signature rejection for unknown peer");
 
   const malformedPayloadResult = await verifyDiscoveryBeacon({
     payload: "{ this-is-not-json }",
@@ -115,7 +164,9 @@ async function main() {
   assert(normalized.port === 3001, "normalizeDiscoveredPeer must use advertised beacon port");
   assert(normalized.capabilities.sync === true, "normalizeDiscoveredPeer sync capability mismatch");
   assert(normalized.capabilities.conflictResolution === true, "normalizeDiscoveredPeer conflict capability mismatch");
+  assert(String(normalized.publicKey || "").trim() === senderPublicKey, "normalizeDiscoveredPeer publicKey mismatch");
   assert(!path.isAbsolute(normalized.deviceId), "normalizeDiscoveredPeer must not contain absolute paths");
+  assert(!envPortBeacon.payload.includes("PRIVATE KEY"), "Discovery beacon payload must never include private key text");
 
   const deduper = createDiscoveryDeduper({ ttlMs: 5_000 });
   assert(deduper.shouldEmit({

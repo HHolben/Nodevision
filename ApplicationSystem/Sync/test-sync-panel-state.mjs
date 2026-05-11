@@ -29,6 +29,8 @@ function expectThrow(label, fn) {
 
 async function main() {
   const state = createSyncPanelState();
+  const publicKeyA = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA1111111111111111111111111111111111111111111=\n-----END PUBLIC KEY-----";
+  const publicKeyB = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA2222222222222222222222222222222222222222222=\n-----END PUBLIC KEY-----";
 
   const untrusted = upsertDiscoveredPeer(state, {
     deviceId: "peer_a",
@@ -38,8 +40,11 @@ async function main() {
     port: 3001,
     lastSeen: "2026-05-10T00:00:00.000Z",
     capabilities: { sync: true, conflictResolution: true },
+    publicKey: publicKeyA,
   });
   assert(untrusted.deviceId === "peer_a", "Expected peer upsert");
+  assert(untrusted.publicKey === publicKeyA, "Expected discovered peer publicKey");
+  assert(typeof untrusted.publicKeyFingerprint === "string" && untrusted.publicKeyFingerprint.length === 16, "Expected publicKey fingerprint");
   assert(listDiscoveredPeers(state).length === 1, "Expected one discovered peer");
 
   const updated = upsertDiscoveredPeer(state, {
@@ -50,9 +55,11 @@ async function main() {
     port: 3002,
     lastSeen: "2026-05-10T00:01:00.000Z",
     capabilities: { sync: true, conflictResolution: false },
+    publicKey: publicKeyB,
   });
   assert(updated.deviceName === "Peer A Updated", "Expected peer update");
   assert(updated.address === "10.0.0.39", "Expected updated peer address");
+  assert(updated.publicKey === publicKeyB, "Expected updated peer publicKey");
   assert(getDiscoveredPeer(state, "peer_a")?.trusted === true, "Expected trusted update");
 
   expectThrow("selected peer must exist", () => {
@@ -69,6 +76,7 @@ async function main() {
     port: 3003,
     lastSeen: "2026-05-10T00:02:00.000Z",
     capabilities: { sync: true, conflictResolution: true },
+    publicKey: publicKeyA,
   });
   assert(canRunSyncWithDiscoveredPeer(state, "peer_untrusted") === false, "Expected untrusted peer sync rejection");
   assert(canRunSyncWithDiscoveredPeer(state, "peer_a") === true, "Expected trusted peer sync acceptance");

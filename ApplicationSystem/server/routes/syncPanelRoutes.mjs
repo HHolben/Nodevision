@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/server/routes/syncPanelRoutes.mjs
 // This file registers authenticated Sync Panel API endpoints that manage in-memory discovery state, expose safe local/discovery status, and run trusted scope-limited sync operations only after explicit user actions.
 
-import { getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
+import { addTrustedPeer, getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
 import {
   addSyncScope,
   listCandidateNotebookFolders,
@@ -44,6 +44,17 @@ function parseEnabledFlag(body) {
     throw new Error("enabled must be a boolean");
   }
   return body.enabled;
+}
+
+function parseDeviceId(value) {
+  if (typeof value !== "string") {
+    throw new Error("deviceId must be a nonempty string");
+  }
+  const deviceId = value.trim();
+  if (!deviceId) {
+    throw new Error("deviceId must be a nonempty string");
+  }
+  return deviceId;
 }
 
 function installShutdownHookIfNeeded(state) {
@@ -147,7 +158,9 @@ function syncStateResponse(state) {
 }
 
 export function registerSyncPanelRoutes(app, ctx) {
-  const state = createSyncPanelState();
+  const state = ctx?.syncPanelState && typeof ctx.syncPanelState === "object"
+    ? ctx.syncPanelState
+    : createSyncPanelState();
   installShutdownHookIfNeeded(state);
 
   app.get("/api/sync/local-device", async (req, res) => {
@@ -259,6 +272,69 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
+  app.post("/api/sync/trust-peer", async (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    let deviceId;
+    try {
+      deviceId = parseDeviceId(req.body?.deviceId);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid deviceId" });
+    }
+
+    let discoveredPeer;
+    try {
+      discoveredPeer = getDiscoveredPeer(state, deviceId);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid deviceId" });
+    }
+    if (!discoveredPeer) {
+      return res.status(404).json({ ok: false, error: "Discovered peer not found" });
+    }
+
+    if (discoveredPeer.trusted === true) {
+      return res.json({
+        ok: true,
+        trustedPeer: {
+          deviceId: discoveredPeer.deviceId,
+          deviceName: discoveredPeer.deviceName,
+          trusted: true,
+        },
+      });
+    }
+
+    const publicKey = String(discoveredPeer.publicKey ?? "").trim();
+    if (!publicKey) {
+      return res.status(400).json({ ok: false, error: "Discovered peer is missing a public key" });
+    }
+
+    try {
+      await addTrustedPeer({
+        deviceId: discoveredPeer.deviceId,
+        deviceName: discoveredPeer.deviceName,
+        publicKey,
+      }, {
+        runtimeRoot: ctx?.runtimeRoot,
+      });
+
+      const trustedPeer = upsertDiscoveredPeer(state, {
+        ...discoveredPeer,
+        trusted: true,
+        publicKey,
+      });
+      return res.json({
+        ok: true,
+        trustedPeer: {
+          deviceId: trustedPeer.deviceId,
+          deviceName: trustedPeer.deviceName,
+          trusted: true,
+        },
+      });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err?.message || "Failed to trust discovered peer" });
+    }
+  });
+
   app.post("/api/sync/run", async (req, res) => {
     if (!requireSession(req, res)) return;
 
@@ -285,7 +361,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
     }
 
-        const dryRun = body?.dryRun === undefined ? true : Boolean(body.dryRun);
+    const dryRun = body?.dryRun === undefined ? true : Boolean(body.dryRun);
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);

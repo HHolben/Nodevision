@@ -120,7 +120,22 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const peers = Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : [];
     if (peerCountEl) peerCountEl.textContent = `${peers.length} peer${peers.length === 1 ? "" : "s"}`;
     if (!peerListEl) return;
-    peerListEl.innerHTML = peers.length ? peers.map((peer) => `<button type="button" data-select-peer="${escapeHtml(peer.deviceId)}" style="text-align:left;border:1px solid ${state.status.selectedPeerDeviceId === peer.deviceId ? "#0a84ff" : "#d7d7d7"};border-radius:8px;background:#fff;padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:5px;"><div style="display:flex;justify-content:space-between;"><strong style="font-size:0.92em;">${escapeHtml(peer.deviceName || "Unknown Device")}</strong><span style="font-size:0.74em;">${peer?.trusted ? "trusted" : "untrusted"}</span></div><div style="font-size:0.82em;color:#4a4a4a;">${escapeHtml(shortenDeviceId(peer.deviceId || ""))}</div><div style="font-size:0.82em;color:#333;">${escapeHtml(`${peer.address || "unknown"}:${peer.port || "?"}`)}</div></button>`).join("") : `<div style="font-size:0.9em;color:#777;">No peers discovered yet.</div>`;
+    peerListEl.innerHTML = peers.length
+      ? peers.map((peer) => {
+        const trusted = peer?.trusted === true;
+        const selected = trusted && state.status.selectedPeerDeviceId === peer.deviceId;
+        const badgeStyle = trusted
+          ? "background:#e8f7ec;color:#216b34;border:1px solid #b7e2c4;"
+          : "background:#fff3e6;color:#8f4f00;border:1px solid #ffd8a8;";
+        const fingerprint = peer?.publicKeyFingerprint
+          ? `<div style="font-size:0.78em;color:#666;">Key: ${escapeHtml(String(peer.publicKeyFingerprint))}</div>`
+          : "";
+        const actionButton = trusted
+          ? `<button type="button" data-select-peer="${escapeHtml(peer.deviceId)}" ${state.busy ? "disabled" : ""} style="border:1px solid ${selected ? "#0a84ff" : "#bbb"};border-radius:6px;background:#fff;padding:5px 8px;font-size:0.82em;cursor:${state.busy ? "not-allowed" : "pointer"};">${selected ? "Selected for Sync" : "Select for Sync"}</button>`
+          : `<button type="button" data-trust-peer="${escapeHtml(peer.deviceId)}" ${state.busy ? "disabled" : ""} style="border:1px solid #c97d00;border-radius:6px;background:#fff7eb;color:#8f4f00;padding:5px 8px;font-size:0.82em;cursor:${state.busy ? "not-allowed" : "pointer"};">Approve/Trust Device</button>`;
+        return `<div style="text-align:left;border:1px solid ${selected ? "#0a84ff" : "#d7d7d7"};border-radius:8px;background:#fff;padding:8px;display:flex;flex-direction:column;gap:5px;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong style="font-size:0.92em;">${escapeHtml(peer.deviceName || "Unknown Device")}</strong><span style="font-size:0.74em;border-radius:999px;padding:2px 7px;${badgeStyle}">${trusted ? "trusted" : "untrusted"}</span></div><div style="font-size:0.82em;color:#4a4a4a;">${escapeHtml(shortenDeviceId(peer.deviceId || ""))}</div><div style="font-size:0.82em;color:#333;">${escapeHtml(`${peer.address || "unknown"}:${peer.port || "?"}`)}</div>${fingerprint}<div>${actionButton}</div></div>`;
+      }).join("")
+      : `<div style="font-size:0.9em;color:#777;">No peers discovered yet.</div>`;
   };
 
   const renderScopes = () => {
@@ -158,6 +173,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const runSync = async (dryRun) => {
     const deviceId = state.status.selectedPeerDeviceId;
     if (!deviceId) return setError(errorEl, "Select a discovered peer before running sync.");
+    const selectedPeer = (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
+    if (!selectedPeer || selectedPeer.trusted !== true) {
+      return setError(errorEl, "Only trusted peers can be selected for sync.");
+    }
     setError(errorEl, ""); setBusy(true, dryRun ? "Running dry-run sync..." : "Running sync...");
     try {
       const payload = await apiFetchJson("/api/sync/run", { method: "POST", body: JSON.stringify({ deviceId, scope: scopeSelect?.value || "SyncTest", dryRun: Boolean(dryRun) }) });
@@ -171,7 +190,48 @@ export async function setupPanel(panelElem, panelVars = {}) {
     } finally { setBusy(false); }
   };
 
-  peerListEl?.addEventListener("click", (e) => { const b = e.target?.closest?.("[data-select-peer]"); if (!b) return; apiFetchJson("/api/sync/select-peer", { method: "POST", body: JSON.stringify({ deviceId: b.getAttribute("data-select-peer") }) }).then(refreshStatus).catch((err) => setError(errorEl, err?.message || "Unable to select peer")); });
+  peerListEl?.addEventListener("click", async (e) => {
+    const trustButton = e.target?.closest?.("[data-trust-peer]");
+    if (trustButton) {
+      const deviceId = String(trustButton.getAttribute("data-trust-peer") || "");
+      const peer = (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((item) => String(item?.deviceId || "") === deviceId) || null;
+      if (!peer) {
+        setError(errorEl, "Discovered peer no longer available.");
+        return;
+      }
+      const confirmed = window.confirm(
+        `Trust this discovered device?\n\nDevice: ${String(peer.deviceName || "Unknown Device")}\nID: ${shortenDeviceId(peer.deviceId || "")}\nAddress: ${String(peer.address || "unknown")}:${String(peer.port || "?")}`,
+      );
+      if (!confirmed) return;
+
+      setError(errorEl, "");
+      setBusy(true, "Trusting device...");
+      try {
+        await apiFetchJson("/api/sync/trust-peer", {
+          method: "POST",
+          body: JSON.stringify({ deviceId }),
+        });
+        await refreshStatus();
+        setStatus(statusEl, "Device trusted. You can now select it for sync.");
+      } catch (err) {
+        setError(errorEl, err?.message || "Unable to trust peer");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    const selectButton = e.target?.closest?.("[data-select-peer]");
+    if (!selectButton) return;
+    const deviceId = String(selectButton.getAttribute("data-select-peer") || "");
+    setError(errorEl, "");
+    try {
+      await apiFetchJson("/api/sync/select-peer", { method: "POST", body: JSON.stringify({ deviceId }) });
+      await refreshStatus();
+    } catch (err) {
+      setError(errorEl, err?.message || "Unable to select peer");
+    }
+  });
   refreshBtn?.addEventListener("click", () => Promise.all([loadScopes(), loadFolders(), refreshStatus()]).catch((err) => setError(errorEl, err?.message || "Refresh failed")));
   scanningBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : "Starting scan"));
   discoverableBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : "Enabling discoverability"));
