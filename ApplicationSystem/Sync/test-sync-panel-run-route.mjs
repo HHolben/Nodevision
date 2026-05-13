@@ -148,6 +148,15 @@ async function main() {
       publicKey: "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA5555555555555555555555555555555555555555555=\n-----END PUBLIC KEY-----",
     });
 
+    const sameMachinePreflight = await app.request("POST", "/api/sync/preflight", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest" },
+    });
+    assert(sameMachinePreflight.statusCode === 200, "Expected same-machine preflight to succeed");
+    assert(sameMachinePreflight.payload?.ok === true, "Expected same-machine preflight payload ok=true");
+    assert(sameMachinePreflight.payload?.preflight === true, "Expected preflight marker in payload");
+    assert(sameMachinePreflight.payload?.ready === true, "Expected preflight ready=true");
+    assert(sameMachinePreflight.payload?.dryRun === true, "Expected preflight dryRun=true");
+
     reachableProbeDeviceId = "nv_dev_trusted_same_machine";
     const sameMachineFallbackRun = await app.request("POST", "/api/sync/run", {
       body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", dryRun: true },
@@ -252,6 +261,13 @@ async function main() {
   assert(unsupportedRun.statusCode === 403, "Expected non-sync-capable peer run to return 403");
   assert(unsupportedRun.payload?.ok === false, "Expected non-sync-capable peer run to return ok=false");
   assert(String(unsupportedRun.payload?.error || "").includes("sync-capable"), "Expected non-sync-capable peer error message");
+
+  const unsupportedPreflight = await app.request("POST", "/api/sync/preflight", {
+    body: { deviceId: "nv_dev_trusted_no_sync", scope: "SyncTest" },
+  });
+  assert(unsupportedPreflight.statusCode === 403, "Expected non-sync-capable preflight to return 403");
+  assert(unsupportedPreflight.payload?.ok === false, "Expected non-sync-capable preflight to return ok=false");
+  assert(String(unsupportedPreflight.payload?.error || "").includes("sync-capable"), "Expected non-sync-capable preflight error message");
 
   console.log("PASS");
 }

@@ -698,6 +698,98 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
+  app.post("/api/sync/preflight", async (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    const body = req.body && typeof req.body === "object" && !Array.isArray(req.body)
+      ? req.body
+      : {};
+    const deviceId = getSelectedOrRequestedDeviceId(state, body);
+    if (!deviceId) {
+      return res.status(400).json({ ok: false, error: "deviceId is required" });
+    }
+
+    let discoveredPeer = getDiscoveredPeer(state, deviceId);
+    if (!discoveredPeer) {
+      return res.status(404).json({ ok: false, error: "Discovered peer not found" });
+    }
+    if (!canRunSyncWithDiscoveredPeer(state, deviceId)) {
+      return res.status(403).json({ ok: false, error: "Only trusted sync-capable peers can be synced" });
+    }
+
+    let scope;
+    try {
+      scope = await resolveRequestedScope(body, { runtimeRoot: ctx?.runtimeRoot });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
+    }
+
+    let peerUrl;
+    try {
+      peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
+    } catch {
+      return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
+    }
+    const syncRunner = resolveSyncRunner(ctx);
+
+    try {
+      const syncResult = await runScopeSyncWithPeerUrlFallback({
+        discoveredPeer,
+        scope,
+        runtimeRoot: ctx?.runtimeRoot,
+        dryRun: true,
+        syncRunner,
+      });
+      peerUrl = syncResult.resolvedPeerUrl || peerUrl;
+      discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
+      return res.json({
+        ok: true,
+        preflight: true,
+        ready: true,
+        discoveredPeer: {
+          deviceId: discoveredPeer.deviceId,
+          deviceName: discoveredPeer.deviceName,
+          trusted: discoveredPeer.trusted,
+          address: discoveredPeer.address,
+          port: discoveredPeer.port,
+          lastSeen: discoveredPeer.lastSeen,
+          capabilities: discoveredPeer.capabilities,
+          url: peerUrl,
+        },
+        scope,
+        dryRun: true,
+        sync: syncResult.sync,
+      });
+    } catch (err) {
+      if (err?.name === "PeerSyncNetworkError") {
+        const recovered = await recoverDiscoveredPeerPort(state, discoveredPeer)
+          || await recoverDiscoveredPeerEndpoint(state, discoveredPeer, ctx);
+        if (recovered?.recoveredPeer && recovered?.recoveredPeerUrl) {
+          discoveredPeer = recovered.recoveredPeer;
+          const details = recovered.recoveryKind === "endpoint"
+            ? `Peer was re-discovered at ${recovered.recoveredPeerUrl}. The discovered peer endpoint was updated automatically; run preflight again.`
+            : `Peer is reachable at ${recovered.recoveredPeerUrl}. The discovered peer port was updated automatically; run preflight again.`;
+          return res.status(409).json({
+            ok: false,
+            preflight: true,
+            ready: false,
+            error: "Selected peer endpoint was updated. Retry preflight.",
+            details,
+          });
+        }
+      }
+      logSyncRunExecutionError(err);
+      const classified = classifySyncRunError(err);
+      return res.status(classified.statusCode).json({
+        ok: false,
+        preflight: true,
+        ready: false,
+        error: classified.error,
+        details: getSafeSyncRunErrorDetails(err),
+      });
+    }
+  });
+
   app.post("/api/sync/run", async (req, res) => {
     if (!requireSession(req, res)) return;
 

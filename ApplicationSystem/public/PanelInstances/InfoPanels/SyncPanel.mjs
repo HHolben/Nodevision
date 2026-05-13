@@ -182,16 +182,30 @@ export async function setupPanel(panelElem, panelVars = {}) {
     if (!selectedPeer || selectedPeer.trusted !== true || selectedPeer?.capabilities?.sync !== true) {
       return setError(errorEl, "Only trusted sync-capable peers can be selected for sync.");
     }
-    setError(errorEl, ""); setBusy(true, dryRun ? "Running dry-run sync..." : "Running sync...");
+    const scope = scopeSelect?.value || "SyncTest";
+    setError(errorEl, "");
     try {
-      const payload = await apiFetchJson("/api/sync/run", { method: "POST", body: JSON.stringify({ deviceId, scope: scopeSelect?.value || "SyncTest", dryRun: Boolean(dryRun) }) });
+      if (!dryRun) {
+        setBusy(true, "Running preflight checks...");
+        const preflight = await apiFetchJson("/api/sync/preflight", { method: "POST", body: JSON.stringify({ deviceId, scope }) });
+        if (syncResultEl) syncResultEl.textContent = JSON.stringify(preflight, null, 2);
+        if (syncDetailsEl) syncDetailsEl.open = true;
+      }
+      setBusy(true, dryRun ? "Running dry-run sync..." : "Running sync...");
+      const payload = await apiFetchJson("/api/sync/run", { method: "POST", body: JSON.stringify({ deviceId, scope, dryRun: Boolean(dryRun) }) });
       if (syncResultEl) syncResultEl.textContent = JSON.stringify(payload, null, 2);
       if (syncDetailsEl) syncDetailsEl.open = true;
       await refreshStatus();
       setStatus(statusEl, dryRun ? "Dry-run sync completed." : "Sync completed.");
     } catch (err) {
       const msg = String(err?.message || "Sync failed");
-      setError(errorEl, msg.includes("Scope not yet supported") ? "This scope is configured, but generalized sync execution is not enabled yet." : msg);
+      if (msg.includes("Scope is not enabled:")) {
+        setError(errorEl, `${msg}. Scope "${scope}" must be shared on both devices before sync can run.`);
+      } else if (msg.includes("Scope not yet supported")) {
+        setError(errorEl, "This scope is configured, but generalized sync execution is not enabled yet.");
+      } else {
+        setError(errorEl, msg);
+      }
     } finally { setBusy(false); }
   };
 

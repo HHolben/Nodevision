@@ -62,6 +62,14 @@ function buildScopedConflictRelativePath(originalRelativePath, peerDeviceId, tim
   return nestedDir ? `${scope}/.conflicts/${nestedDir}/${name}` : `${scope}/.conflicts/${name}`;
 }
 
+function classifyScopedPeerRequestError(err, unauthorizedError) {
+  const message = String(err?.message || "").trim();
+  if (message.startsWith("Scope is not enabled:")) {
+    return { status: 403, error: message };
+  }
+  return { status: 401, error: unauthorizedError };
+}
+
 export function registerPeerRoutes(app, ctx) {
   app.post("/api/peer/hello", async (req, res) => {
     try {
@@ -118,7 +126,10 @@ export function registerPeerRoutes(app, ctx) {
       const verified = await verifySignedScopeManifestRequest({ payload, signatureBase64 }, { runtimeRoot: ctx?.runtimeRoot });
       const manifest = await buildScopeManifest({ notebookDir: ctx?.notebookDir, scope: verified.message.scope });
       return res.json({ ok: true, peer: verified.peer, manifest });
-    } catch { return res.status(401).json({ ok: false, error: "Unauthorized peer scope manifest request" }); }
+    } catch (err) {
+      const classified = classifyScopedPeerRequestError(err, "Unauthorized peer scope manifest request");
+      return res.status(classified.status).json({ ok: false, error: classified.error });
+    }
   });
 
   app.post("/api/peer/scope/file-get", async (req, res) => {
@@ -130,6 +141,7 @@ export function registerPeerRoutes(app, ctx) {
       return res.json({ ok: true, peer: verified.peer, file: { scope: verified.message.scope, relativePath: scoped.normalizedRelativePath, contentBase64: fileBuffer.toString("base64"), contentType: "application/octet-stream", bytes: fileBuffer.length, sha256: hash } });
     } catch (err) {
       const msg = String(err?.message || "");
+      if (msg.startsWith("Scope is not enabled:")) return res.status(403).json({ ok: false, error: msg });
       if (msg.includes("not found") || err?.code === "ENOENT") return res.status(404).json({ ok: false, error: "File not found" });
       if (msg.includes("exceeds")) return res.status(413).json({ ok: false, error: msg });
       return res.status(401).json({ ok: false, error: "Unauthorized peer scope file request" });
@@ -163,7 +175,10 @@ export function registerPeerRoutes(app, ctx) {
       await fs.mkdir(path.dirname(conflictTarget.targetPath), { recursive: true });
       await fs.writeFile(conflictTarget.targetPath, incoming);
       return res.json({ ok: true, peer: verified.peer, saved: { relativePath: scoped.normalizedRelativePath, bytes: incoming.length, sha256: incomingHash, mode: "conflict", conflictRelativePath } });
-    } catch { return res.status(401).json({ ok: false, error: "Unauthorized peer scope file push" }); }
+    } catch (err) {
+      const classified = classifyScopedPeerRequestError(err, "Unauthorized peer scope file push");
+      return res.status(classified.status).json({ ok: false, error: classified.error });
+    }
   });
 
   app.get("/api/peer/status", async (req, res) => {
