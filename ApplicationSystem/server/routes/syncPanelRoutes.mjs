@@ -10,6 +10,7 @@ import {
   validateSyncScope,
 } from "../../Sync/SyncScopes.mjs";
 import { runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
+import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
 import {
   startPeerDiscoveryListener,
   startPeerDiscoveryBroadcaster,
@@ -27,6 +28,11 @@ import {
 } from "../../Sync/SyncPanelState.mjs";
 
 const DEFAULT_SYNC_SCOPE = "SyncTest";
+const DEFAULT_PEER_PORT_RECOVERY_SCAN_COUNT = 25;
+const DEFAULT_PEER_PORT_RECOVERY_TIMEOUT_MS = 650;
+const DEFAULT_PEER_ENDPOINT_REDISCOVERY_TIMEOUT_MS = 11_000;
+const DEFAULT_PEER_ENDPOINT_REDISCOVERY_POLL_MS = 150;
+const DEFAULT_PEER_URL_FALLBACK_PROBE_TIMEOUT_MS = 900;
 
 function requireSession(req, res) {
   if (!req.identity) {
@@ -81,7 +87,326 @@ function sanitizeSyncRunErrorDetails(errorMessage) {
 
 function getSafeSyncRunErrorDetails(err) {
   const message = err?.message ? String(err.message) : String(err || "Unknown sync error");
-  return sanitizeSyncRunErrorDetails(message);
+  const attemptedUrls = Array.isArray(err?.attemptedPeerUrls)
+    ? [...new Set(err.attemptedPeerUrls.map((item) => String(item || "").trim()).filter(Boolean))]
+    : [];
+  const attemptedSuffix = attemptedUrls.length ? ` Attempted URLs: ${attemptedUrls.join(", ")}` : "";
+  return sanitizeSyncRunErrorDetails(`${message}${attemptedSuffix}`);
+}
+
+function classifySyncRunError(err) {
+  const name = String(err?.name || "");
+  if (name === "PeerSyncNetworkError") {
+    return {
+      statusCode: 502,
+      error: "Selected peer is unreachable",
+    };
+  }
+  if (name === "PeerSyncHttpError") {
+    return {
+      statusCode: 502,
+      error: "Selected peer returned an error",
+    };
+  }
+  return {
+    statusCode: 500,
+    error: "Sync failed",
+  };
+}
+
+function isValidPort(value) {
+  const port = Number(value);
+  return Number.isInteger(port) && port >= 1 && port <= 65535;
+}
+
+async function probePeerHttpReachability(peerUrl, timeoutMs = DEFAULT_PEER_PORT_RECOVERY_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    await fetch(new URL("/api/peer/status", `${peerUrl}/`).toString(), {
+      method: "GET",
+      signal: controller.signal,
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function recoverDiscoveredPeerPort(state, discoveredPeer) {
+  const address = String(discoveredPeer?.address ?? "").trim();
+  const basePort = Number(discoveredPeer?.port);
+  if (!address || !isValidPort(basePort)) return null;
+  const expectedDeviceId = String(discoveredPeer?.deviceId ?? "").trim();
+  const candidateAddresses = [...new Set([address, "localhost", "127.0.0.1"])];
+  const maxOffset = Math.max(1, DEFAULT_PEER_PORT_RECOVERY_SCAN_COUNT);
+
+  for (let offset = 1; offset <= maxOffset; offset += 1) {
+    const candidatePort = basePort + offset;
+    if (!isValidPort(candidatePort)) break;
+    for (const candidateAddress of candidateAddresses) {
+      let candidateUrl;
+      try {
+        candidateUrl = buildDiscoveredPeerUrl({ address: candidateAddress, port: candidatePort });
+      } catch {
+        continue;
+      }
+      const probe = await probePeerCandidateUrl(candidateUrl, { expectedDeviceId });
+      if (!probe.ok) continue;
+      try {
+        const recoveredPeer = upsertDiscoveredPeer(state, {
+          ...discoveredPeer,
+          address: candidateAddress,
+          port: candidatePort,
+        });
+        return {
+          recoveryKind: "port",
+          recoveredPeer,
+          recoveredPeerUrl: candidateUrl,
+        };
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+function buildPeerUrlCandidates(discoveredPeer) {
+  const address = String(discoveredPeer?.address ?? "").trim();
+  const port = Number(discoveredPeer?.port);
+  if (!address || !isValidPort(port)) return [];
+  const candidates = [];
+  const add = (candidateAddress) => {
+    try {
+      const peerUrl = buildDiscoveredPeerUrl({ address: candidateAddress, port });
+      if (!candidates.includes(peerUrl)) candidates.push(peerUrl);
+    } catch {
+      // ignore invalid candidate construction
+    }
+  };
+  add(address);
+  add("localhost");
+  add("127.0.0.1");
+  return candidates;
+}
+
+async function probePeerCandidateUrl(peerUrl, { expectedDeviceId } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEFAULT_PEER_URL_FALLBACK_PROBE_TIMEOUT_MS);
+  try {
+    const response = await fetch(new URL("/api/peer/status", `${peerUrl}/`).toString(), {
+      method: "GET",
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    const reportedDeviceId = String(payload?.localDevice?.deviceId ?? "").trim();
+    if (reportedDeviceId && expectedDeviceId && reportedDeviceId !== expectedDeviceId) {
+      return {
+        ok: false,
+        reason: "device_mismatch",
+      };
+    }
+    return {
+      ok: true,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: "network_error",
+      error: err,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function attachAttemptedPeerUrls(err, attemptedPeerUrls) {
+  if (!err || typeof err !== "object") return err;
+  const uniqueUrls = [...new Set((Array.isArray(attemptedPeerUrls) ? attemptedPeerUrls : []).map((item) => String(item || "").trim()).filter(Boolean))];
+  err.attemptedPeerUrls = uniqueUrls;
+  return err;
+}
+
+function resolveSyncRunner(ctx) {
+  return typeof ctx?.syncRunner === "function"
+    ? ctx.syncRunner
+    : runScopeSyncTwoWay;
+}
+
+async function runScopeSyncWithPeerUrlFallback({
+  discoveredPeer,
+  scope,
+  runtimeRoot,
+  dryRun,
+  syncRunner,
+} = {}) {
+  const candidates = buildPeerUrlCandidates(discoveredPeer);
+  const expectedDeviceId = String(discoveredPeer?.deviceId ?? "").trim();
+  const attemptedPeerUrls = [];
+  let lastNetworkError = null;
+
+  for (const peerUrl of candidates) {
+    attemptedPeerUrls.push(peerUrl);
+    const probe = await probePeerCandidateUrl(peerUrl, { expectedDeviceId });
+    if (!probe.ok) {
+      if (probe.reason === "network_error") {
+        const networkError = new Error(`Unable to reach peer at ${peerUrl}: ${probe.error?.message || "network request failed"}`);
+        networkError.name = "PeerSyncNetworkError";
+        networkError.peerUrl = peerUrl;
+        networkError.endpointPath = "/api/peer/status";
+        networkError.cause = probe.error;
+        lastNetworkError = networkError;
+      }
+      continue;
+    }
+
+    try {
+      const sync = await syncRunner({
+        peerUrl,
+        scope,
+        runtimeRoot,
+        dryRun,
+      });
+      return {
+        sync,
+        resolvedPeerUrl: peerUrl,
+        attemptedPeerUrls: [...new Set(attemptedPeerUrls)],
+      };
+    } catch (err) {
+      if (err?.name === "PeerSyncNetworkError") {
+        lastNetworkError = err;
+        continue;
+      }
+      throw attachAttemptedPeerUrls(err, attemptedPeerUrls);
+    }
+  }
+
+  if (lastNetworkError) {
+    throw attachAttemptedPeerUrls(lastNetworkError, attemptedPeerUrls);
+  }
+
+  const fallbackError = new Error(`Unable to reach peer at ${candidates[0] || "unknown peer URL"}: no candidate endpoint responded`);
+  fallbackError.name = "PeerSyncNetworkError";
+  fallbackError.peerUrl = candidates[0] || "";
+  throw attachAttemptedPeerUrls(fallbackError, attemptedPeerUrls);
+}
+
+function maybePersistLoopbackPeerEndpoint(state, discoveredPeer, resolvedPeerUrl) {
+  try {
+    const parsed = new URL(String(resolvedPeerUrl || ""));
+    const host = String(parsed.hostname || "").trim();
+    const port = Number(parsed.port);
+    if (!host || !isValidPort(port)) return discoveredPeer;
+    if (host !== "localhost" && host !== "127.0.0.1") return discoveredPeer;
+    if (String(discoveredPeer?.address ?? "").trim() === host && Number(discoveredPeer?.port) === port) {
+      return discoveredPeer;
+    }
+    return upsertDiscoveredPeer(state, {
+      ...discoveredPeer,
+      address: host,
+      port,
+    });
+  } catch {
+    return discoveredPeer;
+  }
+}
+
+function getPeerEndpointSnapshot(peer) {
+  return {
+    address: String(peer?.address ?? "").trim(),
+    port: Number(peer?.port),
+  };
+}
+
+function didPeerEndpointChange(previousPeer, nextPeer) {
+  const prev = getPeerEndpointSnapshot(previousPeer);
+  const next = getPeerEndpointSnapshot(nextPeer);
+  return prev.address !== next.address || prev.port !== next.port;
+}
+
+function resolvePeerEndpointRediscoveryTimeoutMs(ctx) {
+  const configured = Number(ctx?.peerEndpointRediscoveryTimeoutMs);
+  if (Number.isFinite(configured) && configured >= 250) {
+    return Math.floor(configured);
+  }
+  return DEFAULT_PEER_ENDPOINT_REDISCOVERY_TIMEOUT_MS;
+}
+
+function resolvePeerDiscoveryListenerFactory(ctx) {
+  return typeof ctx?.peerDiscoveryListenerFactory === "function"
+    ? ctx.peerDiscoveryListenerFactory
+    : startPeerDiscoveryListener;
+}
+
+function resolvePeerDiscoveryBroadcasterFactory(ctx) {
+  return typeof ctx?.peerDiscoveryBroadcasterFactory === "function"
+    ? ctx.peerDiscoveryBroadcasterFactory
+    : startPeerDiscoveryBroadcaster;
+}
+
+async function waitForDiscoveredPeerEndpointUpdate(state, deviceId, baselinePeer, timeoutMs) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const latest = getDiscoveredPeer(state, deviceId);
+    if (latest && latest.trusted === true && latest.capabilities?.sync === true && didPeerEndpointChange(baselinePeer, latest)) {
+      return latest;
+    }
+    await new Promise((resolve) => setTimeout(resolve, DEFAULT_PEER_ENDPOINT_REDISCOVERY_POLL_MS));
+  }
+  return null;
+}
+
+async function recoverDiscoveredPeerEndpoint(state, discoveredPeer, ctx) {
+  const deviceId = String(discoveredPeer?.deviceId ?? "").trim();
+  if (!deviceId) return null;
+
+  let temporaryListenerHandle = null;
+  if (!state.listenerHandle) {
+    const listenerFactory = resolvePeerDiscoveryListenerFactory(ctx);
+    try {
+      temporaryListenerHandle = listenerFactory({
+        verifyOptions: { runtimeRoot: ctx?.runtimeRoot },
+        onPeerDiscovered({ peer }) {
+          try {
+            upsertDiscoveredPeer(state, peer);
+          } catch {
+            // ignore malformed peer events
+          }
+        },
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const refreshedPeer = await waitForDiscoveredPeerEndpointUpdate(
+      state,
+      deviceId,
+      discoveredPeer,
+      resolvePeerEndpointRediscoveryTimeoutMs(ctx),
+    );
+    if (!refreshedPeer) return null;
+
+    const recoveredPeerUrl = buildDiscoveredPeerUrl(refreshedPeer);
+    const reachable = await probePeerHttpReachability(recoveredPeerUrl);
+    if (!reachable) return null;
+
+    return {
+      recoveryKind: "endpoint",
+      recoveredPeer: refreshedPeer,
+      recoveredPeerUrl,
+    };
+  } catch {
+    return null;
+  } finally {
+    if (temporaryListenerHandle) {
+      await Promise.resolve(temporaryListenerHandle.close?.()).catch(() => {});
+    }
+  }
 }
 
 function logSyncRunExecutionError(err) {
@@ -137,7 +462,8 @@ async function stopBroadcaster(state) {
 
 function ensureListener(state, ctx) {
   if (state.listenerHandle) return;
-  state.listenerHandle = startPeerDiscoveryListener({
+  const listenerFactory = resolvePeerDiscoveryListenerFactory(ctx);
+  state.listenerHandle = listenerFactory({
     verifyOptions: { runtimeRoot: ctx?.runtimeRoot },
     onPeerDiscovered({ peer }) {
       try {
@@ -155,7 +481,8 @@ function ensureListener(state, ctx) {
 
 function ensureBroadcaster(state, ctx) {
   if (state.broadcasterHandle) return;
-  state.broadcasterHandle = startPeerDiscoveryBroadcaster({
+  const broadcasterFactory = resolvePeerDiscoveryBroadcasterFactory(ctx);
+  state.broadcasterHandle = broadcasterFactory({
     runtimeRoot: ctx?.runtimeRoot,
     onError(err) {
       console.warn("Sync discovery broadcaster error:", err?.message || String(err));
@@ -382,7 +709,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: "deviceId is required" });
     }
 
-    const discoveredPeer = getDiscoveredPeer(state, deviceId);
+    let discoveredPeer = getDiscoveredPeer(state, deviceId);
     if (!discoveredPeer) {
       return res.status(404).json({ ok: false, error: "Discovered peer not found" });
     }
@@ -404,14 +731,18 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
+    const syncRunner = resolveSyncRunner(ctx);
 
     try {
-      const sync = await runScopeSyncTwoWay({
-        peerUrl,
+      const syncResult = await runScopeSyncWithPeerUrlFallback({
+        discoveredPeer,
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
+        syncRunner,
       });
+      peerUrl = syncResult.resolvedPeerUrl || peerUrl;
+      discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
       return res.json({
         ok: true,
         discoveredPeer: {
@@ -426,13 +757,29 @@ export function registerSyncPanelRoutes(app, ctx) {
         },
         scope,
         dryRun,
-        sync,
+        sync: syncResult.sync,
       });
     } catch (err) {
+      if (err?.name === "PeerSyncNetworkError") {
+        const recovered = await recoverDiscoveredPeerPort(state, discoveredPeer)
+          || await recoverDiscoveredPeerEndpoint(state, discoveredPeer, ctx);
+        if (recovered?.recoveredPeer && recovered?.recoveredPeerUrl) {
+          discoveredPeer = recovered.recoveredPeer;
+          const details = recovered.recoveryKind === "endpoint"
+            ? `Peer was re-discovered at ${recovered.recoveredPeerUrl}. The discovered peer endpoint was updated automatically; run sync again.`
+            : `Peer is reachable at ${recovered.recoveredPeerUrl}. The discovered peer port was updated automatically; run sync again.`;
+          return res.status(409).json({
+            ok: false,
+            error: "Selected peer endpoint was updated. Retry sync.",
+            details,
+          });
+        }
+      }
       logSyncRunExecutionError(err);
-      return res.status(500).json({
+      const classified = classifySyncRunError(err);
+      return res.status(classified.statusCode).json({
         ok: false,
-        error: "Sync failed",
+        error: classified.error,
         details: getSafeSyncRunErrorDetails(err),
       });
     }

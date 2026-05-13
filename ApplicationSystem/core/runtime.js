@@ -138,6 +138,7 @@ export function createRuntime(options = {}) {
     const listening = await listenWithFallback(app);
     server = listening.server;
     config.actualPort = listening.port;
+    process.env.PORT = String(listening.port);
 
     const baseUrl = `http://${config.host}:${listening.port}`;
     console.log(`Nodevision ${runtimeMeta.type} runtime listening on ${baseUrl}`);

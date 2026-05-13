@@ -72,7 +72,11 @@ function setError(el, msg = "") { if (!el) return; const t = String(msg || "").t
 async function apiFetchJson(url, init = {}) {
   const response = await fetch(url, { credentials: "include", headers: { "Content-Type": "application/json" }, ...init });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+  if (!response.ok) {
+    const baseError = String(payload?.error || `Request failed (${response.status})`).trim();
+    const details = String(payload?.details || "").trim();
+    throw new Error(details ? `${baseError}: ${details}` : baseError);
+  }
   return payload;
 }
 
