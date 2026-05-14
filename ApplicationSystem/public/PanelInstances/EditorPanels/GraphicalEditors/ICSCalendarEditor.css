@@ -1,0 +1,569 @@
+:root {
+  --nv-ics-slot-height: 18px;
+  --nv-ics-quarter-height: var(--nv-ics-slot-height);
+  --nv-ics-hour-height: calc(var(--nv-ics-slot-height) * 4);
+  --nv-ics-time-column-width: 98px;
+  --nv-ics-day-column-min-width: 150px;
+  --nv-ics-border: #bfd2e8;
+  --nv-ics-quarter-line: rgba(39, 95, 150, 0.14);
+  --nv-ics-hour-line: rgba(18, 64, 109, 0.35);
+  --nv-ics-text-main: #123251;
+  --nv-ics-text-muted: #3f5f80;
+}
+
+.nv-ics-editor {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background:
+    radial-gradient(circle at 8% -10%, rgba(126, 199, 255, 0.24) 0%, transparent 38%),
+    radial-gradient(circle at 95% -10%, rgba(255, 186, 113, 0.2) 0%, transparent 34%),
+    linear-gradient(180deg, #f6fbff 0%, #f2f8ff 40%, #ffffff 100%);
+  color: var(--nv-ics-text-main);
+  font: 13px/1.35 "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  overflow: hidden;
+}
+
+.nv-ics-local-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #d8e5f2;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f9ff 100%);
+}
+
+.nv-ics-add-event-btn {
+  border: 1px solid #1f63a8;
+  background: linear-gradient(180deg, #e9f3ff 0%, #d9ebff 100%);
+  color: #113d6b;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: 600 12px/1 "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  cursor: pointer;
+}
+
+.nv-ics-add-event-btn:hover {
+  filter: brightness(0.97);
+}
+
+.nv-ics-status {
+  padding: 8px 12px;
+  border-bottom: 1px solid #d4e0ec;
+  font-size: 12px;
+}
+
+.nv-ics-status-info {
+  background: #e6f2ff;
+  color: #0f3a63;
+}
+
+.nv-ics-status-warning {
+  background: #fff7e8;
+  color: #6e4a00;
+}
+
+.nv-ics-status-error {
+  background: #fff0f0;
+  color: #7a1f1f;
+}
+
+.nv-ics-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) 320px;
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.nv-ics-calendar-section {
+  border: 1px solid var(--nv-ics-border);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fafdff;
+}
+
+.nv-ics-week-info {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #d5e4f3;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8ff 100%);
+}
+
+.nv-ics-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.nv-ics-week-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nv-ics-week-range {
+  font-size: 12px;
+  color: #385673;
+  font-weight: 600;
+}
+
+.nv-ics-week-nav {
+  border: 1px solid #3f6f9d;
+  background: #edf6ff;
+  color: #1a4f7f;
+  border-radius: 7px;
+  padding: 3px 8px;
+  font: 600 12px/1 "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  cursor: pointer;
+}
+
+.nv-ics-source {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--nv-ics-text-muted);
+  word-break: break-all;
+}
+
+.nv-ics-calendar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.nv-ics-calendar-header {
+  display: grid;
+  grid-template-columns: var(--nv-ics-time-column-width) repeat(7, minmax(var(--nv-ics-day-column-min-width), 1fr));
+  min-width: calc(var(--nv-ics-time-column-width) + (7 * var(--nv-ics-day-column-min-width)));
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  border-bottom: 1px solid var(--nv-ics-border);
+  background: linear-gradient(180deg, #e8f3ff 0%, #dcebff 100%);
+}
+
+.nv-ics-header-corner {
+  position: sticky;
+  left: 0;
+  z-index: 65;
+  border-right: 1px solid var(--nv-ics-border);
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #20547f;
+  background: linear-gradient(180deg, #daeefe 0%, #d2e8ff 100%);
+}
+
+.nv-ics-day-header {
+  border-left: 1px solid var(--nv-ics-border);
+  padding: 8px 8px 9px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(228, 241, 255, 0.85) 100%);
+}
+
+.nv-ics-day-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nv-ics-day-date {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #516b86;
+}
+
+.nv-ics-calendar-body {
+  display: grid;
+  grid-template-columns: var(--nv-ics-time-column-width) 1fr;
+  min-width: calc(var(--nv-ics-time-column-width) + (7 * var(--nv-ics-day-column-min-width)));
+  align-items: start;
+}
+
+.nv-ics-time-column {
+  position: sticky;
+  left: 0;
+  z-index: 45;
+  border-right: 1px solid var(--nv-ics-border);
+  background: linear-gradient(180deg, #f3f9ff 0%, #eaf4ff 100%);
+}
+
+.nv-ics-time-slot {
+  box-sizing: border-box;
+  height: var(--nv-ics-slot-height);
+  border-bottom: 1px solid #deebf8;
+  padding: 0 8px 0 4px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  font-size: 10px;
+  color: #355a7d;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.nv-ics-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(var(--nv-ics-day-column-min-width), 1fr));
+  position: relative;
+}
+
+.nv-ics-day-column {
+  position: relative;
+  height: calc(var(--nv-ics-slot-height) * 96);
+  border-right: 1px solid var(--nv-ics-border);
+  border-bottom: 1px solid var(--nv-ics-border);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--nv-ics-quarter-height) - 1px),
+      var(--nv-ics-quarter-line) calc(var(--nv-ics-quarter-height) - 1px),
+      var(--nv-ics-quarter-line) var(--nv-ics-quarter-height)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--nv-ics-hour-height) - 1px),
+      var(--nv-ics-hour-line) calc(var(--nv-ics-hour-height) - 1px),
+      var(--nv-ics-hour-line) var(--nv-ics-hour-height)
+    ),
+    linear-gradient(180deg, rgba(225, 239, 255, 0.34) 0%, rgba(255, 243, 227, 0.3) 100%);
+}
+
+.nv-ics-day-column:first-child {
+  border-left: 1px solid var(--nv-ics-border);
+}
+
+.nv-ics-events-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+}
+
+.nv-ics-event-card {
+  position: absolute;
+  border-radius: 9px;
+  box-sizing: border-box;
+  border: 1px solid #0f6dc6;
+  border-left-width: 6px;
+  background: #d6ebff;
+  color: #09365d;
+  padding: 4px 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 7px rgba(17, 69, 116, 0.24);
+  font-size: 11px;
+  line-height: 1.2;
+  user-select: none;
+  cursor: grab;
+}
+
+.nv-ics-event-card:focus {
+  outline: 2px solid #ff9800;
+  outline-offset: 1px;
+}
+
+.nv-ics-event-card.is-drag-source {
+  opacity: 0.45;
+}
+
+.nv-ics-event-card.priority-high {
+  border-color: #c32445;
+  background: #ffd7e1;
+  color: #5d0014;
+}
+
+.nv-ics-event-card.priority-medium {
+  border-color: #0f6fc8;
+  background: #d8ecff;
+  color: #08355e;
+}
+
+.nv-ics-event-card.priority-low {
+  border-color: #0d8b74;
+  background: #d8f8f1;
+  color: #0d4a3f;
+}
+
+.nv-ics-event-card:hover,
+.nv-ics-event-card.is-selected {
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.45), 0 3px 10px rgba(16, 67, 113, 0.34);
+}
+
+.nv-ics-event-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nv-ics-event-title-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nv-ics-event-meta,
+.nv-ics-event-footer {
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+}
+
+.nv-ics-event-footer {
+  opacity: 0.9;
+}
+
+.nv-ics-resize-handle {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 6px;
+  border-radius: 999px;
+  opacity: 0;
+  transition: opacity 140ms ease;
+  background: rgba(0, 0, 0, 0.16);
+  cursor: ns-resize;
+}
+
+.nv-ics-resize-handle.top {
+  top: 1px;
+}
+
+.nv-ics-resize-handle.bottom {
+  bottom: 1px;
+}
+
+.nv-ics-event-card:hover .nv-ics-resize-handle,
+.nv-ics-event-card.is-selected .nv-ics-resize-handle {
+  opacity: 1;
+}
+
+.nv-ics-selected-slot {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border: 1px dashed rgba(255, 122, 0, 0.92);
+  background: rgba(255, 153, 0, 0.11);
+  border-radius: 6px;
+  pointer-events: none;
+  display: none;
+  z-index: 6;
+}
+
+.nv-ics-current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ff7a00;
+  display: none;
+  z-index: 24;
+  box-shadow: 0 0 0 1px rgba(255, 122, 0, 0.12), 0 0 8px rgba(255, 122, 0, 0.4);
+}
+
+.nv-ics-current-time-line::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff7a00;
+}
+
+.nv-ics-interaction-preview {
+  position: absolute;
+  z-index: 32;
+  border-radius: 9px;
+  border: 2px dashed rgba(255, 122, 0, 0.96);
+  background: rgba(255, 173, 96, 0.25);
+  pointer-events: none;
+}
+
+.nv-ics-event-panel {
+  border: 1px solid var(--nv-ics-border);
+  border-radius: 12px;
+  background: #fcfdff;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.nv-ics-panel-title {
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid #d8e6f4;
+  font-size: 15px;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f9ff 100%);
+}
+
+.nv-ics-panel-empty {
+  padding: 12px;
+  color: #4d6781;
+  font-size: 12px;
+}
+
+.nv-ics-form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  overflow: auto;
+  padding: 10px 12px 12px;
+}
+
+.nv-ics-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2a4f74;
+}
+
+.nv-ics-form input,
+.nv-ics-form textarea,
+.nv-ics-form select {
+  font: 12px/1.25 "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  border: 1px solid #abc4df;
+  border-radius: 7px;
+  padding: 6px 7px;
+  color: #173c61;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.nv-ics-form textarea {
+  resize: vertical;
+  min-height: 68px;
+}
+
+.nv-ics-form input:focus,
+.nv-ics-form textarea:focus,
+.nv-ics-form select:focus {
+  outline: 2px solid #6faeff;
+  outline-offset: 1px;
+}
+
+.nv-ics-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nv-ics-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.nv-ics-delete-btn {
+  border: 1px solid #a33131;
+  background: #fff1f1;
+  color: #8f1a1a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font: 600 12px/1 "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+}
+
+.nv-ics-delete-btn:hover {
+  background: #ffe5e5;
+}
+
+.nv-ics-timezone-bar {
+  border-top: 1px solid var(--nv-ics-border);
+  background: linear-gradient(180deg, #f7fbff 0%, #ebf6ff 100%);
+  padding: 9px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nv-ics-timezone-title {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nv-ics-timezone-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nv-ics-timezone-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid #b7d3ef;
+  background: #dceeff;
+  color: #234c72;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 11px;
+  user-select: none;
+}
+
+.nv-ics-timezone-option input {
+  margin: 0;
+  accent-color: #0f77d5;
+}
+
+.nv-ics-drag-tooltip {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  border: 1px solid #2f4f70;
+  border-radius: 7px;
+  background: rgba(14, 39, 62, 0.92);
+  color: #f4fbff;
+  font-size: 11px;
+  padding: 4px 7px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 1120px) {
+  .nv-ics-main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(260px, 1fr) auto;
+  }
+
+  .nv-ics-event-panel {
+    max-height: 42vh;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --nv-ics-time-column-width: 84px;
+    --nv-ics-day-column-min-width: 118px;
+    --nv-ics-slot-height: 16px;
+  }
+
+  .nv-ics-form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -61,6 +61,14 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Add Event",
+      "callbackKey": "icsAddEvent",
+      "routeToActivePanel": true,
+      "modes": ["ICSCalendarEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
       "parentHeading": "Circuit Element",
       "heading": "Resistor",
       "callbackKey": "cirInsertResistor",

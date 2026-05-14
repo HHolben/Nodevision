@@ -7,11 +7,22 @@ import {
   fetchText,
   saveText,
   countWords,
+  fileExt,
 } from "./FamilyEditorCommon.mjs";
 import { setWordCount } from "/StatusBar.mjs";
+import { renderEditor as renderIcsCalendarEditor } from "./ICSCalendarEditor.mjs";
 
 export async function renderEditor(filePath, container) {
   resetEditorHooks();
+
+  const ext = fileExt(filePath);
+  if (ext === "ics") {
+    ensureNodevisionState("ICSCalendarEditing");
+    setWordCount(0);
+    await renderIcsCalendarEditor(filePath, container);
+    return;
+  }
+
   ensureNodevisionState("TextFamilyEditing");
   const { status, body } = createBaseLayout(container, `Text Editor — ${filePath}`);
 
