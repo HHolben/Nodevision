@@ -7,6 +7,13 @@ import {
   ensureServerDirectories,
 } from '../shared/serverContext.mjs';
 import { createPhpServerSupervisor } from '../server/phpServerSupervisor.mjs';
+import {
+  RUNTIME_DEFAULTS,
+  normalizeRuntimeHost,
+  normalizeRuntimePort,
+  readRuntimeConfigFile,
+  resolveRuntimeNetworkConfig,
+} from './runtimeNetworkConfig.mjs';
 
 function detectRuntimeType(config) {
   if (config.runtimeType) return config.runtimeType;
@@ -17,6 +24,8 @@ function detectRuntimeType(config) {
 }
 
 export function createRuntime(options = {}) {
+  const runtimeConfig = options && typeof options === 'object' ? options : {};
+
   const envFlag = (name) => {
     if (!(name in process.env)) return null;
     const raw = String(process.env[name] || '').trim().toLowerCase();
@@ -26,46 +35,42 @@ export function createRuntime(options = {}) {
     return null;
   };
 
-  const defaults = {
-    port: 3000,
-    host: '127.0.0.1',
-    dev: false,
-    portFallback: true,
-    portFallbackMaxAttempts: 25,
-    phpEnabled: true,
-    phpHost: '127.0.0.1',
-    phpPort: 8080,
-    phpPortFallbackMaxAttempts: 25,
-  };
+  const runtimeRoot = runtimeConfig.runtimeRoot ?? process.env.NODEVISION_ROOT;
+  const fileConfig = readRuntimeConfigFile(runtimeRoot);
+  const resolvedNetwork = resolveRuntimeNetworkConfig({
+    runtimeConfig,
+    config: fileConfig.values,
+  });
+
+  const defaults = RUNTIME_DEFAULTS;
   const normalizedConfig = {
     ...defaults,
-    ...options,
-    port: Number(options.port ?? defaults.port),
-    host: options.host || defaults.host,
-    dev: options?.dev ?? defaults.dev,
-    portFallback: options?.portFallback ?? defaults.portFallback,
-    portFallbackMaxAttempts: Number(options?.portFallbackMaxAttempts ?? defaults.portFallbackMaxAttempts),
-    phpEnabled: options?.phpEnabled ?? envFlag('NODEVISION_PHP_ENABLED') ?? defaults.phpEnabled,
-    phpHost: options?.phpHost ?? process.env.NODEVISION_PHP_HOST ?? defaults.phpHost,
-    phpPort: Number(options?.phpPort ?? process.env.NODEVISION_PHP_PORT ?? defaults.phpPort),
+    ...runtimeConfig,
+    port: resolvedNetwork.port,
+    host: resolvedNetwork.host,
+    dev: runtimeConfig?.dev ?? defaults.dev,
+    portFallback: runtimeConfig?.portFallback ?? defaults.portFallback,
+    portFallbackMaxAttempts: Number(runtimeConfig?.portFallbackMaxAttempts ?? defaults.portFallbackMaxAttempts),
+    phpEnabled: runtimeConfig?.phpEnabled ?? envFlag('NODEVISION_PHP_ENABLED') ?? defaults.phpEnabled,
+    phpHost: resolvedNetwork.phpHost,
+    phpPort: resolvedNetwork.phpPort,
     phpPortFallbackMaxAttempts: Number(
-      options?.phpPortFallbackMaxAttempts ??
+      runtimeConfig?.phpPortFallbackMaxAttempts ??
         process.env.NODEVISION_PHP_PORT_FALLBACK_MAX_ATTEMPTS ??
         defaults.phpPortFallbackMaxAttempts,
     ),
+    resolvedConfigPath: fileConfig.path,
   };
-  normalizedConfig.port = Number.isFinite(normalizedConfig.port)
-    ? Math.max(1, Math.floor(normalizedConfig.port))
-    : defaults.port;
+  normalizedConfig.port = normalizeRuntimePort(normalizedConfig.port, defaults.port);
+  normalizedConfig.host = normalizeRuntimeHost(normalizedConfig.host, defaults.host);
   normalizedConfig.dev = Boolean(normalizedConfig.dev);
   normalizedConfig.portFallback = Boolean(normalizedConfig.portFallback);
   normalizedConfig.portFallbackMaxAttempts = Number.isFinite(normalizedConfig.portFallbackMaxAttempts)
     ? Math.max(1, Math.floor(normalizedConfig.portFallbackMaxAttempts))
     : defaults.portFallbackMaxAttempts;
   normalizedConfig.phpEnabled = Boolean(normalizedConfig.phpEnabled);
-  normalizedConfig.phpPort = Number.isFinite(normalizedConfig.phpPort)
-    ? Math.max(1, Math.floor(normalizedConfig.phpPort))
-    : defaults.phpPort;
+  normalizedConfig.phpHost = normalizeRuntimeHost(normalizedConfig.phpHost, defaults.phpHost);
+  normalizedConfig.phpPort = normalizeRuntimePort(normalizedConfig.phpPort, defaults.phpPort);
   normalizedConfig.phpPortFallbackMaxAttempts = Number.isFinite(normalizedConfig.phpPortFallbackMaxAttempts)
     ? Math.max(1, Math.floor(normalizedConfig.phpPortFallbackMaxAttempts))
     : defaults.phpPortFallbackMaxAttempts;
@@ -77,7 +82,7 @@ export function createRuntime(options = {}) {
   };
   const config = { ...normalizedConfig, runtimeType };
 
-  const ctx = createServerContext({ runtimeRoot: process.env.NODEVISION_ROOT });
+  const ctx = createServerContext(runtimeRoot ? { runtimeRoot } : {});
   ensureServerDirectories(ctx);
 
   let server = null;
@@ -100,7 +105,10 @@ export function createRuntime(options = {}) {
       try {
         await new Promise((resolve, reject) => {
           candidateServer.once('error', reject);
-          candidateServer.listen(candidatePort, config.host, () => resolve());
+          candidateServer.listen(candidatePort, config.host, () => {
+            console.log(`Nodevision listening on http://${config.host}:${candidatePort}`);
+            resolve();
+          });
         });
         if (candidatePort !== preferred) {
           console.warn(`Nodevision port ${preferred} is in use; using ${candidatePort} instead.`);
@@ -124,6 +132,13 @@ export function createRuntime(options = {}) {
       return runtimeInstance;
     }
 
+    console.log(`[runtime] Node host=${config.host} port=${config.port}`);
+    if (config.phpEnabled) {
+      console.log(`[runtime] PHP host=${config.phpHost} port=${config.phpPort}`);
+    } else {
+      console.log('[runtime] PHP server disabled');
+    }
+
     try {
       const phpResult = await phpSupervisor.start();
       if (phpResult?.ok && phpResult?.url) {
@@ -141,7 +156,7 @@ export function createRuntime(options = {}) {
     process.env.PORT = String(listening.port);
 
     const baseUrl = `http://${config.host}:${listening.port}`;
-    console.log(`Nodevision ${runtimeMeta.type} runtime listening on ${baseUrl}`);
+    console.log(`Nodevision ${runtimeMeta.type} runtime ready at ${baseUrl}`);
     runtimeInstance = {
       server,
       url: baseUrl,

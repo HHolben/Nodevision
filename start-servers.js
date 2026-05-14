@@ -10,8 +10,6 @@ if (!process.env.NODEVISION_ROOT) {
 }
 
 const runtime = createRuntime({
-  port: 3000,
-  host: "127.0.0.1",
   dev: true,
 });
 
