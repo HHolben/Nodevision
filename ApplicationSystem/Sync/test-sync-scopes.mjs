@@ -64,10 +64,32 @@ async function main() {
   await writeFile(notebookDir, "Shared/.resolved-conflicts/skip.txt", "skip");
   await writeFile(notebookDir, "Shared/.conflict-backups/skip.txt", "skip");
   await writeFile(notebookDir, "Shared/sub/visible-two.txt", "visible-two");
+  const twoGiBPlusOne = (2 * 1024 * 1024 * 1024) + 1;
+  const largePath = path.resolve(notebookDir, "Shared/large-sparse.bin");
+  await fs.mkdir(path.dirname(largePath), { recursive: true });
+  const largeHandle = await fs.open(largePath, "w");
+  try {
+    await largeHandle.truncate(twoGiBPlusOne);
+  } finally {
+    await largeHandle.close();
+  }
 
   const manifest = await buildScopeManifest({ notebookDir, scope: "Shared" });
   const paths = manifest.files.map((f) => f.relativePath);
-  assert(JSON.stringify(paths) === JSON.stringify(["Shared/sub/visible-two.txt", "Shared/visible.txt"]), "manifest exclusion");
+  assert(
+    JSON.stringify(paths) === JSON.stringify(["Shared/large-sparse.bin", "Shared/sub/visible-two.txt", "Shared/visible.txt"]),
+    "manifest exclusion",
+  );
+  const largeEntry = manifest.files.find((file) => file.relativePath === "Shared/large-sparse.bin");
+  assert(largeEntry, "large file included in manifest");
+  assert(largeEntry.transferMode === "stream", "large file stream mode");
+  assert(largeEntry.tooLargeForJson === true, "large file tooLargeForJson marker");
+  assert(largeEntry.sha256 === null, "large file sha omitted");
+  assert(largeEntry.size === twoGiBPlusOne, "large file size preserved");
+  const smallEntry = manifest.files.find((file) => file.relativePath === "Shared/visible.txt");
+  assert(smallEntry?.transferMode === "json", "small file json transfer mode");
+  assert(smallEntry?.tooLargeForJson === false, "small file json marker");
+  assert(typeof smallEntry?.sha256 === "string" && smallEntry.sha256.length > 0, "small file hash present");
 
   const compared = await compareScopeManifests(
     { scope: "Shared", files: [ { relativePath: "Shared/a.txt", sha256: "a" }, { relativePath: "Shared/c.txt", sha256: "c" } ] },

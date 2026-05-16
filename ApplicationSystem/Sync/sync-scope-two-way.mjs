@@ -9,6 +9,7 @@ import { buildScopeManifest, compareScopeManifests, isPathInsideScope, loadSyncS
 import { normalizePeerUrl, resolveRuntimeRoot } from "./sync-sync-test-two-way.mjs";
 import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
 import { createSignedScopeFilePush, createSignedScopeFileRequest, createSignedScopeManifestRequest, validateScopedRelativePath } from "./ScopePeerSync.mjs";
+import { createCancelledError, pullScopeFileStream } from "./pull-scope-file-stream.mjs";
 
 const hash = (b) => createHash("sha256").update(b).digest("hex");
 const postJson = async (peerUrl, endpointPath, body) => {
@@ -42,6 +43,21 @@ function buildScopedConflictRelativePath(originalRelativePath, peerDeviceId, tim
   const safePeer = String(peerDeviceId || "peer").replace(/[^A-Za-z0-9_-]+/g, "-");
   const name = parsed.ext ? `${parsed.name}.from-${safePeer}.${safeTs}${parsed.ext}` : `${parsed.base}.from-${safePeer}.${safeTs}`;
   return `${parsed.dir.split("/")[0]}/.conflicts/${parsed.dir.split("/").slice(1).filter(Boolean).join("/")}${parsed.dir.includes("/") ? "/" : ""}${name}`.replace(/\/\.conflicts\/$/, "/.conflicts");
+}
+
+function toManifestEntryMap(manifest) {
+  const files = Array.isArray(manifest?.files) ? manifest.files : [];
+  return new Map(files.map((entry) => [String(entry?.relativePath || ""), entry]));
+}
+
+function toNonNegativeSize(value) {
+  const size = Number(value);
+  if (!Number.isFinite(size) || size < 0) return 0;
+  return Math.trunc(size);
+}
+
+function shouldUseStreamTransfer(manifestEntry) {
+  return manifestEntry?.transferMode === "stream" || manifestEntry?.tooLargeForJson === true;
 }
 
 async function saveScopedConflictCopy({ notebookDir, scope, originalRelativePath, contentBuffer, peerDeviceId, timestamp }) {
@@ -85,11 +101,36 @@ async function pullOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot 
   return { relativePath, bytes: buf.length, sha256: hash(buf) };
 }
 
+async function pullOneStream({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, shouldCancel, onByteDelta }) {
+  const report = await pullScopeFileStream({
+    peerUrl,
+    scope,
+    relativePath,
+    notebookDir,
+    runtimeRoot,
+    shouldCancel,
+    onByteDelta,
+    peerLabel: "peer",
+  });
+  if (!report?.ok) throw new Error("stream pull did not complete");
+  return {
+    relativePath,
+    bytes: toNonNegativeSize(report.bytesDownloaded),
+    sha256: String(report.sha256 || ""),
+    mode: String(report.mode || "created"),
+    savedRelativePath: String(report.savedRelativePath || relativePath),
+    conflictRelativePath: report.conflictRelativePath ? String(report.conflictRelativePath) : null,
+    transferMode: "stream",
+  };
+}
+
 async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot }) {
   const scopeRoot = path.resolve(notebookDir, scope);
   const localPath = path.resolve(scopeRoot, relativePath.slice(`${scope}/`.length));
+  const stat = await fs.stat(localPath);
+  if (!stat.isFile()) throw new Error("local path is not a file");
+  if (stat.size > MAX_FILE_PUSH_BYTES) throw new Error("file too large for json push");
   const buf = await fs.readFile(localPath);
-  if (buf.length > MAX_FILE_PUSH_BYTES) throw new Error("file too large");
   const signed = await createSignedScopeFilePush({ scope, relativePath, contentBase64: buf.toString("base64"), contentType: "application/octet-stream" }, { runtimeRoot });
   await postJson(peerUrl, "/api/peer/scope/file-push", signed);
   return { relativePath, bytes: buf.length, sha256: hash(buf) };
@@ -112,7 +153,45 @@ async function pullConflict({ peerUrl, scope, relativePath, notebookDir, runtime
   return { originalRelativePath: relativePath, conflictRelativePath: saved.relativePath, bytes: buf.length, sha256: actual };
 }
 
-export async function runScopeSyncTwoWay({ peerUrl, scope, runtimeRoot, dryRun = true } = {}) {
+async function pullConflictStream({
+  peerUrl,
+  scope,
+  relativePath,
+  notebookDir,
+  runtimeRoot,
+  shouldCancel,
+  onByteDelta,
+}) {
+  const report = await pullScopeFileStream({
+    peerUrl,
+    scope,
+    relativePath,
+    notebookDir,
+    runtimeRoot,
+    shouldCancel,
+    peerLabel: "peer",
+    onByteDelta,
+  });
+  if (!report?.ok) throw new Error("stream conflict pull did not complete");
+  return {
+    originalRelativePath: relativePath,
+    conflictRelativePath: report.conflictRelativePath || null,
+    savedRelativePath: report.savedRelativePath || relativePath,
+    mode: report.mode || "created",
+    bytes: toNonNegativeSize(report.bytesDownloaded),
+    sha256: String(report.sha256 || ""),
+    transferMode: "stream",
+  };
+}
+
+export async function runScopeSyncTwoWay({
+  peerUrl,
+  scope,
+  runtimeRoot,
+  dryRun = true,
+  shouldCancel,
+  onProgress,
+} = {}) {
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
   const normalizedScope = validateSyncScope(scope);
   const resolvedRuntimeRoot = resolveRuntimeRoot({ runtimeRoot });
@@ -123,15 +202,126 @@ export async function runScopeSyncTwoWay({ peerUrl, scope, runtimeRoot, dryRun =
   const remoteBefore = await fetchManifest(normalizedPeerUrl, normalizedScope, resolvedRuntimeRoot);
   const localBefore = await buildScopeManifest({ notebookDir, scope: normalizedScope });
   const plan = await compareScopeManifests(localBefore, remoteBefore);
+  const localEntries = toManifestEntryMap(localBefore);
+  const remoteEntries = toManifestEntryMap(remoteBefore);
+  const progressState = {
+    filesTotal: plan.onlyRemote.length + plan.onlyLocal.length + plan.changed.length,
+    filesDone: 0,
+    bytesTotal: 0,
+    bytesDone: 0,
+    currentFile: null,
+  };
+  const emitProgress = (event, details = {}) => {
+    if (typeof onProgress !== "function") return;
+    onProgress({
+      event,
+      ...progressState,
+      ...details,
+    });
+  };
+  const ensureNotCancelled = () => {
+    if (typeof shouldCancel === "function" && shouldCancel()) throw createCancelledError();
+  };
+  for (const rp of plan.onlyRemote) {
+    progressState.bytesTotal += toNonNegativeSize(remoteEntries.get(rp)?.size);
+  }
+  for (const rp of plan.onlyLocal) {
+    progressState.bytesTotal += toNonNegativeSize(localEntries.get(rp)?.size);
+  }
+  for (const rp of plan.changed) {
+    progressState.bytesTotal += toNonNegativeSize(remoteEntries.get(rp)?.size);
+  }
+  emitProgress("plan");
 
   if (dryRun) {
     return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed } };
   }
 
   const pulled = []; const pushed = []; const conflicts = [];
-  for (const rp of plan.onlyRemote) pulled.push(await pullOne({ peerUrl: normalizedPeerUrl, scope: normalizedScope, relativePath: rp, notebookDir, runtimeRoot: resolvedRuntimeRoot }));
-  for (const rp of plan.onlyLocal) pushed.push(await pushOne({ peerUrl: normalizedPeerUrl, scope: normalizedScope, relativePath: rp, notebookDir, runtimeRoot: resolvedRuntimeRoot }));
-  for (const rp of plan.changed) conflicts.push(await pullConflict({ peerUrl: normalizedPeerUrl, scope: normalizedScope, relativePath: rp, notebookDir, runtimeRoot: resolvedRuntimeRoot, peerDeviceId: "peer" }));
+  for (const rp of plan.onlyRemote) {
+    ensureNotCancelled();
+    progressState.currentFile = rp;
+    emitProgress("file-start", { operation: "pull", relativePath: rp });
+    const remoteEntry = remoteEntries.get(rp);
+    const pulledReport = shouldUseStreamTransfer(remoteEntry)
+      ? await pullOneStream({
+        peerUrl: normalizedPeerUrl,
+        scope: normalizedScope,
+        relativePath: rp,
+        notebookDir,
+        runtimeRoot: resolvedRuntimeRoot,
+        shouldCancel,
+        onByteDelta(delta) {
+          progressState.bytesDone += toNonNegativeSize(delta);
+          emitProgress("file-progress", { operation: "pull", relativePath: rp });
+        },
+      })
+      : await pullOne({
+        peerUrl: normalizedPeerUrl,
+        scope: normalizedScope,
+        relativePath: rp,
+        notebookDir,
+        runtimeRoot: resolvedRuntimeRoot,
+      });
+    if (!shouldUseStreamTransfer(remoteEntry)) {
+      progressState.bytesDone += toNonNegativeSize(pulledReport?.bytes);
+    }
+    progressState.filesDone += 1;
+    pulled.push(pulledReport);
+    emitProgress("file-complete", { operation: "pull", relativePath: rp });
+  }
+  for (const rp of plan.onlyLocal) {
+    ensureNotCancelled();
+    progressState.currentFile = rp;
+    emitProgress("file-start", { operation: "push", relativePath: rp });
+    const pushedReport = await pushOne({
+      peerUrl: normalizedPeerUrl,
+      scope: normalizedScope,
+      relativePath: rp,
+      notebookDir,
+      runtimeRoot: resolvedRuntimeRoot,
+    });
+    progressState.bytesDone += toNonNegativeSize(pushedReport?.bytes);
+    progressState.filesDone += 1;
+    pushed.push(pushedReport);
+    emitProgress("file-complete", { operation: "push", relativePath: rp });
+  }
+  for (const rp of plan.changed) {
+    ensureNotCancelled();
+    progressState.currentFile = rp;
+    emitProgress("file-start", { operation: "conflict", relativePath: rp });
+    const remoteEntry = remoteEntries.get(rp);
+    const useStream = shouldUseStreamTransfer(remoteEntry);
+    const conflictReport = useStream
+      ? await pullConflictStream({
+        peerUrl: normalizedPeerUrl,
+        scope: normalizedScope,
+        relativePath: rp,
+        notebookDir,
+        runtimeRoot: resolvedRuntimeRoot,
+        shouldCancel,
+        onByteDelta(delta) {
+          progressState.bytesDone += toNonNegativeSize(delta);
+          emitProgress("file-progress", { operation: "conflict", relativePath: rp });
+        },
+      })
+      : await pullConflict({
+        peerUrl: normalizedPeerUrl,
+        scope: normalizedScope,
+        relativePath: rp,
+        notebookDir,
+        runtimeRoot: resolvedRuntimeRoot,
+        peerDeviceId: "peer",
+      });
+    if (!useStream) {
+      progressState.bytesDone += toNonNegativeSize(conflictReport?.bytes);
+    }
+    progressState.filesDone += 1;
+    conflicts.push(conflictReport);
+    emitProgress("file-complete", { operation: "conflict", relativePath: rp });
+  }
+  progressState.currentFile = null;
+  emitProgress("sync-complete");
 
   const localAfter = await buildScopeManifest({ notebookDir, scope: normalizedScope });
   const remoteAfter = await fetchManifest(normalizedPeerUrl, normalizedScope, resolvedRuntimeRoot);

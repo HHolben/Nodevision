@@ -5,10 +5,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
 
 const DEFAULT_SYNC_SCOPES = ["SyncTest"];
-const BLOCKED_TOP_LEVEL = new Set(["serversettings", ".git", "node_modules", "applicationsystem"]);
+const BLOCKED_TOP_LEVEL = new Set(["serversettings", ".git", "node_modules", "applicationsystem", "usersettings", "userdata"]);
 const EXCLUDED_SCOPE_DIRS = new Set([".conflicts", ".resolved-conflicts", ".conflict-backups"]);
+export const SCOPE_JSON_FILE_MAX_BYTES = MAX_FILE_PUSH_BYTES;
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.prototype.toString.call(value) === "[object Object]";
@@ -192,6 +194,7 @@ function shouldExcludeEntry(entryName) {
   const name = String(entryName ?? "");
   if (!name) return true;
   if (name.startsWith(".")) return true;
+  if (BLOCKED_TOP_LEVEL.has(name.toLowerCase())) return true;
   if (EXCLUDED_SCOPE_DIRS.has(name)) return true;
   return false;
 }
@@ -217,12 +220,27 @@ async function collectScopeFiles(scopeRoot, currentDir, scope, files) {
     }
 
     const stat = await fs.stat(absolutePath);
+    const isLargeForJson = Number.isFinite(stat.size) && stat.size > SCOPE_JSON_FILE_MAX_BYTES;
+    if (isLargeForJson) {
+      files.push({
+        relativePath: `${scope}/${relativeFromScope}`,
+        size: stat.size,
+        mtimeMs: Math.trunc(stat.mtimeMs),
+        sha256: null,
+        transferMode: "stream",
+        tooLargeForJson: true,
+      });
+      continue;
+    }
+
     const sha256 = createHash("sha256").update(await fs.readFile(absolutePath)).digest("hex");
     files.push({
       relativePath: `${scope}/${relativeFromScope}`,
       size: stat.size,
       mtimeMs: Math.trunc(stat.mtimeMs),
       sha256,
+      transferMode: "json",
+      tooLargeForJson: false,
     });
   }
 }
@@ -233,7 +251,7 @@ export function isPathInsideScope({ relativePath, scope }) {
   return normalizedRelativePath === validatedScope || normalizedRelativePath.startsWith(`${validatedScope}/`);
 }
 
-function normalizeManifestHashMap(manifest, fieldName) {
+function normalizeManifestFileMap(manifest, fieldName) {
   if (!isPlainObject(manifest)) throw new Error(`${fieldName} must be a plain object`);
   const scope = validateSyncScope(manifest.scope);
   if (!Array.isArray(manifest.files)) throw new Error(`${fieldName}.files must be an array`);
@@ -246,11 +264,34 @@ function normalizeManifestHashMap(manifest, fieldName) {
     if (!isPathInsideScope({ relativePath, scope })) {
       throw new Error(`${fieldName}.files[${i}].relativePath must stay within scope ${scope}`);
     }
-    const sha256 = normalizeNonEmptyString(file.sha256, `${fieldName}.files[${i}].sha256`).toLowerCase();
-    fileMap.set(relativePath, sha256);
+    const size = Number(file.size ?? 0);
+    const mtimeMs = Number(file.mtimeMs ?? 0);
+    if (!Number.isFinite(size) || size < 0) throw new Error(`${fieldName}.files[${i}].size must be a nonnegative number`);
+    if (!Number.isFinite(mtimeMs) || mtimeMs < 0) throw new Error(`${fieldName}.files[${i}].mtimeMs must be a nonnegative number`);
+    const shaValue = file.sha256;
+    const sha256 = shaValue === null || shaValue === undefined || String(shaValue).trim() === ""
+      ? null
+      : normalizeNonEmptyString(shaValue, `${fieldName}.files[${i}].sha256`).toLowerCase();
+    const transferMode = String(file.transferMode || "").trim() === "stream" ? "stream" : "json";
+    const tooLargeForJson = Boolean(file.tooLargeForJson || transferMode === "stream");
+    fileMap.set(relativePath, {
+      relativePath,
+      size,
+      mtimeMs,
+      sha256,
+      transferMode,
+      tooLargeForJson,
+    });
   }
 
   return { scope, fileMap };
+}
+
+function areManifestEntriesEquivalent(localEntry, remoteEntry) {
+  const localSha = typeof localEntry?.sha256 === "string" ? localEntry.sha256.toLowerCase() : null;
+  const remoteSha = typeof remoteEntry?.sha256 === "string" ? remoteEntry.sha256.toLowerCase() : null;
+  if (localSha && remoteSha) return localSha === remoteSha;
+  return localEntry.size === remoteEntry.size && localEntry.mtimeMs === remoteEntry.mtimeMs;
 }
 
 export async function buildScopeManifest({ notebookDir, scope }) {
@@ -282,8 +323,8 @@ export async function buildScopeManifest({ notebookDir, scope }) {
 }
 
 export async function compareScopeManifests(localManifest, remoteManifest) {
-  const local = normalizeManifestHashMap(localManifest, "localManifest");
-  const remote = normalizeManifestHashMap(remoteManifest, "remoteManifest");
+  const local = normalizeManifestFileMap(localManifest, "localManifest");
+  const remote = normalizeManifestFileMap(remoteManifest, "remoteManifest");
   if (local.scope !== remote.scope) {
     throw new Error(`Manifest scopes must match (${local.scope} !== ${remote.scope})`);
   }
@@ -295,11 +336,11 @@ export async function compareScopeManifests(localManifest, remoteManifest) {
   const same = [];
 
   for (const relativePath of allPaths) {
-    const localHash = local.fileMap.get(relativePath);
-    const remoteHash = remote.fileMap.get(relativePath);
-    if (localHash === undefined) onlyRemote.push(relativePath);
-    else if (remoteHash === undefined) onlyLocal.push(relativePath);
-    else if (localHash === remoteHash) same.push(relativePath);
+    const localEntry = local.fileMap.get(relativePath);
+    const remoteEntry = remote.fileMap.get(relativePath);
+    if (localEntry === undefined) onlyRemote.push(relativePath);
+    else if (remoteEntry === undefined) onlyLocal.push(relativePath);
+    else if (areManifestEntriesEquivalent(localEntry, remoteEntry)) same.push(relativePath);
     else changed.push(relativePath);
   }
 

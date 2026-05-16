@@ -10,6 +10,7 @@ import {
   validateSyncScope,
 } from "../../Sync/SyncScopes.mjs";
 import { runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
+import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
 import {
   startPeerDiscoveryListener,
@@ -242,6 +243,7 @@ async function runScopeSyncWithPeerUrlFallback({
   runtimeRoot,
   dryRun,
   syncRunner,
+  syncRunnerOptions = null,
 } = {}) {
   const candidates = buildPeerUrlCandidates(discoveredPeer);
   const expectedDeviceId = String(discoveredPeer?.deviceId ?? "").trim();
@@ -269,6 +271,7 @@ async function runScopeSyncWithPeerUrlFallback({
         scope,
         runtimeRoot,
         dryRun,
+        ...(syncRunnerOptions && typeof syncRunnerOptions === "object" ? syncRunnerOptions : {}),
       });
       return {
         sync,
@@ -525,6 +528,9 @@ export function registerSyncPanelRoutes(app, ctx) {
     ? ctx.syncPanelState
     : createSyncPanelState();
   installShutdownHookIfNeeded(state);
+  const syncJobManager = ctx?.syncJobManager && typeof ctx.syncJobManager === "object"
+    ? ctx.syncJobManager
+    : createSyncJobManager();
 
   app.get("/api/sync/local-device", async (req, res) => {
     if (!requireSession(req, res)) return;
@@ -875,5 +881,94 @@ export function registerSyncPanelRoutes(app, ctx) {
         details: getSafeSyncRunErrorDetails(err),
       });
     }
+  });
+
+  app.post("/api/sync/jobs/start", async (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    const body = req.body && typeof req.body === "object" && !Array.isArray(req.body)
+      ? req.body
+      : {};
+    const deviceId = getSelectedOrRequestedDeviceId(state, body);
+    if (!deviceId) {
+      return res.status(400).json({ ok: false, error: "deviceId is required" });
+    }
+
+    let discoveredPeer = getDiscoveredPeer(state, deviceId);
+    if (!discoveredPeer) {
+      return res.status(404).json({ ok: false, error: "Discovered peer not found" });
+    }
+    if (!canRunSyncWithDiscoveredPeer(state, deviceId)) {
+      return res.status(403).json({ ok: false, error: "Only trusted sync-capable peers can be synced" });
+    }
+
+    let scope;
+    try {
+      scope = await resolveRequestedScope(body, { runtimeRoot: ctx?.runtimeRoot });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
+    }
+
+    let peerUrl;
+    try {
+      peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
+    } catch {
+      return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
+    }
+    const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
+    const syncRunner = resolveSyncRunner(ctx);
+    const discoveredPeerSnapshot = { ...discoveredPeer };
+
+    try {
+      const started = syncJobManager.startJob({
+        scope,
+        peerUrl,
+        dryRun,
+        async run({ onProgress, isCancelled }) {
+          const syncResult = await runScopeSyncWithPeerUrlFallback({
+            discoveredPeer: discoveredPeerSnapshot,
+            scope,
+            runtimeRoot: ctx?.runtimeRoot,
+            dryRun,
+            syncRunner,
+            syncRunnerOptions: {
+              onProgress,
+              shouldCancel: isCancelled,
+            },
+          });
+          maybePersistLoopbackPeerEndpoint(state, discoveredPeerSnapshot, syncResult.resolvedPeerUrl || peerUrl);
+          return syncResult.sync;
+        },
+      });
+      return res.status(202).json({ ok: true, jobId: started.jobId, job: started });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err?.message || "Failed to start sync job" });
+    }
+  });
+
+  app.get("/api/sync/jobs/:jobId", (req, res) => {
+    if (!requireSession(req, res)) return;
+    const jobId = String(req.params?.jobId || "").trim();
+    if (!jobId) {
+      return res.status(400).json({ ok: false, error: "jobId is required" });
+    }
+    const job = syncJobManager.getJobStatus(jobId);
+    if (!job) {
+      return res.status(404).json({ ok: false, error: "Sync job not found" });
+    }
+    return res.json({ ok: true, job });
+  });
+
+  app.post("/api/sync/jobs/:jobId/cancel", (req, res) => {
+    if (!requireSession(req, res)) return;
+    const jobId = String(req.params?.jobId || "").trim();
+    if (!jobId) {
+      return res.status(400).json({ ok: false, error: "jobId is required" });
+    }
+    const job = syncJobManager.cancelJob(jobId);
+    if (!job) {
+      return res.status(404).json({ ok: false, error: "Sync job not found" });
+    }
+    return res.json({ ok: true, job });
   });
 }

@@ -2,6 +2,7 @@
 // This file registers signed trusted peer endpoints for hello, status, SyncTest benchmark transfer, and generalized scope-limited manifest/file transfer with strict path confinement.
 
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
@@ -68,6 +69,14 @@ function classifyScopedPeerRequestError(err, unauthorizedError) {
     return { status: 403, error: message };
   }
   return { status: 401, error: unauthorizedError };
+}
+
+function extractSignedQuery(req) {
+  const first = (value) => (Array.isArray(value) ? value[0] : value);
+  return {
+    payload: first(req?.query?.payload),
+    signatureBase64: first(req?.query?.signatureBase64),
+  };
 }
 
 export function registerPeerRoutes(app, ctx) {
@@ -145,6 +154,50 @@ export function registerPeerRoutes(app, ctx) {
       if (msg.includes("not found") || err?.code === "ENOENT") return res.status(404).json({ ok: false, error: "File not found" });
       if (msg.includes("exceeds")) return res.status(413).json({ ok: false, error: msg });
       return res.status(401).json({ ok: false, error: "Unauthorized peer scope file request" });
+    }
+  });
+
+  app.get("/api/peer/scope/file-stream", async (req, res) => {
+    try {
+      const { payload, signatureBase64 } = extractSignedQuery(req);
+      const verified = await verifySignedScopeFileRequest({ payload, signatureBase64 }, { runtimeRoot: ctx?.runtimeRoot });
+      const scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
+      const stat = await fs.stat(scoped.targetPath);
+      if (!stat.isFile()) return res.status(404).json({ ok: false, error: "File not found" });
+
+      let knownSha = null;
+      if (stat.size <= MAX_FILE_PUSH_BYTES) {
+        const fileBuffer = await fs.readFile(scoped.targetPath);
+        knownSha = sha256(fileBuffer);
+      }
+
+      res.set({
+        "cache-control": "no-store",
+        "content-length": String(stat.size),
+        "content-type": "application/octet-stream",
+        "x-nodevision-relative-path": scoped.normalizedRelativePath,
+      });
+      if (knownSha) {
+        res.set("x-nodevision-sha256", knownSha);
+      }
+
+      const stream = createReadStream(scoped.targetPath);
+      stream.on("error", () => {
+        if (!res.headersSent) {
+          res.status(500).json({ ok: false, error: "Failed to read peer file stream" });
+          return;
+        }
+        res.destroy();
+      });
+      stream.pipe(res);
+    } catch (err) {
+      const msg = String(err?.message || "");
+      if (msg.startsWith("Scope is not enabled:")) return res.status(403).json({ ok: false, error: msg });
+      if (msg.includes("not found") || err?.code === "ENOENT") return res.status(404).json({ ok: false, error: "File not found" });
+      if (msg.includes("relativePath") || msg.includes("scoped path") || msg.includes("traversal")) {
+        return res.status(400).json({ ok: false, error: "Invalid scoped path" });
+      }
+      return res.status(401).json({ ok: false, error: "Unauthorized peer scope file stream request" });
     }
   });
 

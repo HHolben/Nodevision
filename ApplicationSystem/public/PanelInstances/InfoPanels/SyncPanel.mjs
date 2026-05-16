@@ -57,6 +57,16 @@ const TEMPLATE = `
       </div>
     </section>
 
+    <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fdfdfd;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="font-weight:600;">Sync Job Progress</div>
+        <button type="button" data-sync-cancel style="display:none;border:1px solid #c74747;border-radius:6px;background:#fff4f4;color:#902222;padding:6px 10px;cursor:pointer;font-size:0.82em;">Cancel Job</button>
+      </div>
+      <div data-job-status style="margin-top:6px;font-size:0.88em;color:#333;">No active sync job.</div>
+      <div data-job-progress style="margin-top:4px;font-size:0.82em;color:#555;"></div>
+      <div data-job-errors style="margin-top:6px;display:none;padding:6px 8px;border-radius:6px;background:#ffecec;color:#8b1c1c;font-size:0.82em;"></div>
+    </section>
+
     <details data-sync-details style="border:1px solid #ddd;border-radius:8px;padding:8px;background:#fdfdfd;">
       <summary style="cursor:pointer;font-weight:600;">Latest Sync Result</summary>
       <pre data-sync-result style="margin-top:8px;max-height:260px;overflow:auto;white-space:pre-wrap;font-size:0.85em;color:#1f1f1f;"></pre>
@@ -103,8 +113,22 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const foldersRefreshBtn = panelElem.querySelector("[data-folders-refresh]");
   const sharedScopesEl = panelElem.querySelector("[data-shared-scopes]");
   const folderListEl = panelElem.querySelector("[data-folder-list]");
+  const jobStatusEl = panelElem.querySelector("[data-job-status]");
+  const jobProgressEl = panelElem.querySelector("[data-job-progress]");
+  const jobErrorsEl = panelElem.querySelector("[data-job-errors]");
+  const syncCancelBtn = panelElem.querySelector("[data-sync-cancel]");
 
-  const state = { disposed: false, refreshTimer: null, busy: false, localDevice: null, status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null }, scopes: ["SyncTest"], candidateFolders: [] };
+  const state = {
+    disposed: false,
+    refreshTimer: null,
+    busy: false,
+    localDevice: null,
+    status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null },
+    scopes: ["SyncTest"],
+    candidateFolders: [],
+    activeJob: null,
+    activeJobId: null,
+  };
 
   const renderLocalDevice = () => {
     if (!localDeviceEl) return;
@@ -160,9 +184,48 @@ export async function setupPanel(panelElem, panelVars = {}) {
     folderListEl.innerHTML = state.candidateFolders.length ? state.candidateFolders.map((folder) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #e2e2e2;border-radius:6px;padding:6px;background:#fff;"><div><div style="font-size:0.9em;color:#222;">${escapeHtml(folder.name || folder.relativePath || "")}</div><div style="font-size:0.78em;color:#666;">${escapeHtml(folder.relativePath || "")}</div></div><button type="button" data-share-scope="${escapeHtml(folder.relativePath || "")}" ${folder.syncEnabled ? "disabled" : ""} style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:5px 8px;font-size:0.8em;${folder.syncEnabled ? "opacity:0.6;cursor:not-allowed;" : "cursor:pointer;"}">${folder.syncEnabled ? "Shared" : "Share"}</button></div>`).join("") : `<div style="font-size:0.88em;color:#777;">No eligible top-level Notebook folders found.</div>`;
   };
 
+  const isFinalJobStatus = (status) => ["complete", "failed", "cancelled"].includes(String(status || ""));
+  const renderJob = () => {
+    const job = state.activeJob && typeof state.activeJob === "object" ? state.activeJob : null;
+    if (!job) {
+      if (jobStatusEl) jobStatusEl.textContent = "No active sync job.";
+      if (jobProgressEl) jobProgressEl.textContent = "";
+      if (jobErrorsEl) {
+        jobErrorsEl.style.display = "none";
+        jobErrorsEl.textContent = "";
+      }
+      if (syncCancelBtn) syncCancelBtn.style.display = "none";
+      return;
+    }
+    const status = String(job.status || "unknown");
+    const filesDone = Number(job.filesDone || 0);
+    const filesTotal = Number(job.filesTotal || 0);
+    const bytesDone = Number(job.bytesDone || 0);
+    const bytesTotal = Number(job.bytesTotal || 0);
+    const currentFile = String(job.currentFile || "").trim();
+    if (jobStatusEl) {
+      const base = `Job ${job.jobId || ""} is ${status}.`;
+      jobStatusEl.textContent = currentFile ? `${base} Current file: ${currentFile}` : base;
+    }
+    if (jobProgressEl) {
+      jobProgressEl.textContent = `Files ${filesDone}/${filesTotal} | Bytes ${bytesDone}/${bytesTotal}`;
+    }
+    const errors = Array.isArray(job.errors) ? job.errors.filter(Boolean) : [];
+    if (jobErrorsEl) {
+      jobErrorsEl.style.display = errors.length ? "block" : "none";
+      jobErrorsEl.textContent = errors.length ? errors.join("\n") : "";
+    }
+    if (syncCancelBtn) {
+      const cancellable = status === "queued" || status === "running";
+      syncCancelBtn.style.display = cancellable ? "inline-block" : "none";
+      syncCancelBtn.disabled = state.busy || !cancellable;
+    }
+  };
+
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
     [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDryBtn, syncApplyBtn, foldersRefreshBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    renderJob();
     if (statusMessage) setStatus(statusEl, statusMessage);
   };
 
@@ -170,6 +233,20 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const loadScopes = async () => { try { const p = await apiFetchJson("/api/sync/scopes", { cache: "no-store" }); state.scopes = Array.isArray(p.syncScopes) && p.syncScopes.length ? p.syncScopes : ["SyncTest"]; } catch { state.scopes = ["SyncTest"]; } renderScopes(); renderSharedScopes(); };
   const loadFolders = async () => { try { const p = await apiFetchJson("/api/sync/notebook-folders", { cache: "no-store" }); state.candidateFolders = Array.isArray(p.folders) ? p.folders : []; } catch { state.candidateFolders = []; } renderCandidateFolders(); };
   const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null }; renderDiscoveryButtons(); renderPeers(); };
+  const refreshActiveJob = async () => {
+    const jobId = String(state.activeJobId || "").trim();
+    if (!jobId) return;
+    const currentStatus = String(state.activeJob?.status || "");
+    if (isFinalJobStatus(currentStatus)) return;
+    const payload = await apiFetchJson(`/api/sync/jobs/${encodeURIComponent(jobId)}`, { cache: "no-store" });
+    state.activeJob = payload.job || null;
+    renderJob();
+    if (syncResultEl && state.activeJob && isFinalJobStatus(state.activeJob.status)) {
+      syncResultEl.textContent = JSON.stringify({ ok: state.activeJob.status === "complete", job: state.activeJob }, null, 2);
+      if (syncDetailsEl) syncDetailsEl.open = true;
+      setStatus(statusEl, state.activeJob.status === "complete" ? "Sync job completed." : `Sync job ${state.activeJob.status}.`);
+    }
+  };
 
   const runToggle = async (url, enabled, label) => { setError(errorEl, ""); setBusy(true, `${label}...`); try { await apiFetchJson(url, { method: "POST", body: JSON.stringify({ enabled }) }); await refreshStatus(); setStatus(statusEl, `${label} complete.`); } catch (err) { setError(errorEl, err?.message || "Request failed"); } finally { setBusy(false); } };
   const shareScope = async (scope) => { setBusy(true, "Adding shared folder..."); try { await apiFetchJson("/api/sync/scopes", { method: "POST", body: JSON.stringify({ scope }) }); await Promise.all([loadScopes(), loadFolders()]); } catch (err) { setError(errorEl, err?.message || "Failed to add scope"); } finally { setBusy(false); } };
@@ -190,6 +267,14 @@ export async function setupPanel(panelElem, panelVars = {}) {
         const preflight = await apiFetchJson("/api/sync/preflight", { method: "POST", body: JSON.stringify({ deviceId, scope }) });
         if (syncResultEl) syncResultEl.textContent = JSON.stringify(preflight, null, 2);
         if (syncDetailsEl) syncDetailsEl.open = true;
+        setBusy(true, "Starting sync job...");
+        const started = await apiFetchJson("/api/sync/jobs/start", { method: "POST", body: JSON.stringify({ deviceId, scope, dryRun: false }) });
+        state.activeJobId = started.jobId || null;
+        state.activeJob = started.job || null;
+        renderJob();
+        await refreshActiveJob().catch(() => {});
+        setStatus(statusEl, "Sync job started.");
+        return;
       }
       setBusy(true, dryRun ? "Running dry-run sync..." : "Running sync...");
       const payload = await apiFetchJson("/api/sync/run", { method: "POST", body: JSON.stringify({ deviceId, scope, dryRun: Boolean(dryRun) }) });
@@ -261,11 +346,38 @@ export async function setupPanel(panelElem, panelVars = {}) {
   discoverableBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : "Enabling discoverability"));
   syncDryBtn?.addEventListener("click", () => runSync(true));
   syncApplyBtn?.addEventListener("click", () => runSync(false));
+  syncCancelBtn?.addEventListener("click", async () => {
+    const jobId = String(state.activeJobId || "").trim();
+    if (!jobId) return;
+    setBusy(true, "Cancelling sync job...");
+    try {
+      const payload = await apiFetchJson(`/api/sync/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST", body: JSON.stringify({}) });
+      state.activeJob = payload.job || state.activeJob;
+      renderJob();
+      setStatus(statusEl, "Sync job cancellation requested.");
+    } catch (err) {
+      setError(errorEl, err?.message || "Failed to cancel sync job");
+    } finally {
+      setBusy(false);
+    }
+  });
   foldersRefreshBtn?.addEventListener("click", () => Promise.all([loadScopes(), loadFolders()]).catch((err) => setError(errorEl, err?.message || "Folder refresh failed")));
   sharedScopesEl?.addEventListener("click", (e) => { const b = e.target?.closest?.("[data-remove-scope]"); if (!b) return; const scope = b.getAttribute("data-remove-scope"); if (scope && scope !== "SyncTest") unshareScope(scope); });
   folderListEl?.addEventListener("click", (e) => { const b = e.target?.closest?.("[data-share-scope]"); if (!b) return; const scope = b.getAttribute("data-share-scope"); if (scope) shareScope(scope); });
 
   panelElem.cleanup = () => { state.disposed = true; if (state.refreshTimer) clearInterval(state.refreshTimer); state.refreshTimer = null; };
-  try { setStatus(statusEl, "Loading sync panel..."); await Promise.all([loadLocalDevice(), loadScopes(), loadFolders(), refreshStatus()]); setStatus(statusEl, "Sync panel ready."); } catch (err) { setError(errorEl, err?.message || "Failed to initialize sync panel"); }
-  state.refreshTimer = setInterval(() => { if (!state.disposed) refreshStatus().catch(() => {}); }, 4000);
+  try {
+    setStatus(statusEl, "Loading sync panel...");
+    await Promise.all([loadLocalDevice(), loadScopes(), loadFolders(), refreshStatus()]);
+    renderJob();
+    setStatus(statusEl, "Sync panel ready.");
+  } catch (err) {
+    setError(errorEl, err?.message || "Failed to initialize sync panel");
+  }
+  state.refreshTimer = setInterval(() => {
+    if (!state.disposed) {
+      refreshStatus().catch(() => {});
+      refreshActiveJob().catch(() => {});
+    }
+  }, 1000);
 }
