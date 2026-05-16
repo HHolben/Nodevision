@@ -68,6 +68,37 @@ function shouldUseStreamTransfer(manifestEntry) {
   return Number.isFinite(size) && size > MAX_FILE_PUSH_BYTES;
 }
 
+function isJsonPullTooLargeError(err) {
+  const message = normalizeSyncErrorMessage(err).toLowerCase();
+  return message === "file too large"
+    || message.includes("file too large")
+    || message.includes("content exceeds");
+}
+
+function isJsonPushTooLargeError(err) {
+  const message = normalizeSyncErrorMessage(err).toLowerCase();
+  return message === "file too large for json push"
+    || message.includes("too large for json push")
+    || message.includes("content exceeds")
+    || message.includes("size limit");
+}
+
+function resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath }) {
+  const scopeRoot = path.resolve(notebookDir, scope);
+  return path.resolve(scopeRoot, relativePath.slice(`${scope}/`.length));
+}
+
+async function shouldUseStreamPushForLocalFile({ manifestEntry, notebookDir, scope, relativePath }) {
+  if (shouldUseStreamTransfer(manifestEntry)) return true;
+  try {
+    const localPath = resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath });
+    const stat = await fs.stat(localPath);
+    return stat.isFile() && stat.size > MAX_FILE_PUSH_BYTES;
+  } catch {
+    return false;
+  }
+}
+
 async function saveScopedConflictCopy({ notebookDir, scope, originalRelativePath, contentBuffer, peerDeviceId, timestamp }) {
   const conflictRelativePath = buildScopedConflictRelativePath(originalRelativePath, peerDeviceId, timestamp);
   const scopeRoot = path.resolve(notebookDir, scope);
@@ -133,8 +164,7 @@ async function pullOneStream({ peerUrl, scope, relativePath, notebookDir, runtim
 }
 
 async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot }) {
-  const scopeRoot = path.resolve(notebookDir, scope);
-  const localPath = path.resolve(scopeRoot, relativePath.slice(`${scope}/`.length));
+  const localPath = resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath });
   const stat = await fs.stat(localPath);
   if (!stat.isFile()) throw new Error("local path is not a file");
   if (stat.size > MAX_FILE_PUSH_BYTES) throw new Error("file too large for json push");
@@ -298,7 +328,7 @@ export async function runScopeSyncTwoWay({
             runtimeRoot: resolvedRuntimeRoot,
           });
       } catch (err) {
-        if (!useStream && normalizeSyncErrorMessage(err) === "file too large") {
+        if (!useStream && isJsonPullTooLargeError(err)) {
           useStream = true;
           pulledReport = await pullOneStream({
             peerUrl: normalizedPeerUrl,
@@ -333,7 +363,12 @@ export async function runScopeSyncTwoWay({
     emitProgress("file-start", { operation: "push", relativePath: rp });
     try {
       const localEntry = localEntries.get(rp);
-      let useStream = shouldUseStreamTransfer(localEntry);
+      let useStream = await shouldUseStreamPushForLocalFile({
+        manifestEntry: localEntry,
+        notebookDir,
+        scope: normalizedScope,
+        relativePath: rp,
+      });
       let pushedReport;
       try {
         pushedReport = useStream
@@ -357,7 +392,7 @@ export async function runScopeSyncTwoWay({
             runtimeRoot: resolvedRuntimeRoot,
           });
       } catch (err) {
-        if (!useStream && normalizeSyncErrorMessage(err) === "file too large for json push") {
+        if (!useStream && isJsonPushTooLargeError(err)) {
           useStream = true;
           pushedReport = await pushOneStream({
             peerUrl: normalizedPeerUrl,
