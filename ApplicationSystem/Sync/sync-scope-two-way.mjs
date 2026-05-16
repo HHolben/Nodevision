@@ -8,8 +8,9 @@ import { createHash } from "node:crypto";
 import { buildScopeManifest, compareScopeManifests, isPathInsideScope, loadSyncScopes, validateSyncScope } from "./SyncScopes.mjs";
 import { normalizePeerUrl, resolveRuntimeRoot } from "./sync-sync-test-two-way.mjs";
 import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
-import { createSignedScopeFilePush, createSignedScopeFileRequest, createSignedScopeManifestRequest, validateScopedRelativePath } from "./ScopePeerSync.mjs";
+import { createSignedScopeFilePush, createSignedScopeFileRequest, createSignedScopeManifestRequest } from "./ScopePeerSync.mjs";
 import { createCancelledError, pullScopeFileStream } from "./pull-scope-file-stream.mjs";
+import { pushScopeFileStream } from "./push-scope-file-stream.mjs";
 
 const hash = (b) => createHash("sha256").update(b).digest("hex");
 const postJson = async (peerUrl, endpointPath, body) => {
@@ -54,6 +55,11 @@ function toNonNegativeSize(value) {
   const size = Number(value);
   if (!Number.isFinite(size) || size < 0) return 0;
   return Math.trunc(size);
+}
+
+function normalizeSyncErrorMessage(err) {
+  const text = String(err?.message || err || "Sync operation failed").trim();
+  return text || "Sync operation failed";
 }
 
 function shouldUseStreamTransfer(manifestEntry) {
@@ -134,6 +140,28 @@ async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot 
   const signed = await createSignedScopeFilePush({ scope, relativePath, contentBase64: buf.toString("base64"), contentType: "application/octet-stream" }, { runtimeRoot });
   await postJson(peerUrl, "/api/peer/scope/file-push", signed);
   return { relativePath, bytes: buf.length, sha256: hash(buf) };
+}
+
+async function pushOneStream({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, shouldCancel, onByteDelta }) {
+  const report = await pushScopeFileStream({
+    peerUrl,
+    scope,
+    relativePath,
+    notebookDir,
+    runtimeRoot,
+    shouldCancel,
+    onByteDelta,
+  });
+  if (!report?.ok) throw new Error("stream push did not complete");
+  return {
+    relativePath,
+    bytes: toNonNegativeSize(report.bytesUploaded),
+    sha256: String(report.sha256 || ""),
+    mode: String(report.mode || "created"),
+    savedRelativePath: String(report.savedRelativePath || relativePath),
+    conflictRelativePath: report.conflictRelativePath ? String(report.conflictRelativePath) : null,
+    transferMode: "stream",
+  };
 }
 
 async function pullConflict({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, peerDeviceId }) {
@@ -242,83 +270,115 @@ export async function runScopeSyncTwoWay({
     ensureNotCancelled();
     progressState.currentFile = rp;
     emitProgress("file-start", { operation: "pull", relativePath: rp });
-    const remoteEntry = remoteEntries.get(rp);
-    const pulledReport = shouldUseStreamTransfer(remoteEntry)
-      ? await pullOneStream({
-        peerUrl: normalizedPeerUrl,
-        scope: normalizedScope,
-        relativePath: rp,
-        notebookDir,
-        runtimeRoot: resolvedRuntimeRoot,
-        shouldCancel,
-        onByteDelta(delta) {
-          progressState.bytesDone += toNonNegativeSize(delta);
-          emitProgress("file-progress", { operation: "pull", relativePath: rp });
-        },
-      })
-      : await pullOne({
-        peerUrl: normalizedPeerUrl,
-        scope: normalizedScope,
-        relativePath: rp,
-        notebookDir,
-        runtimeRoot: resolvedRuntimeRoot,
-      });
-    if (!shouldUseStreamTransfer(remoteEntry)) {
-      progressState.bytesDone += toNonNegativeSize(pulledReport?.bytes);
+    try {
+      const remoteEntry = remoteEntries.get(rp);
+      const pulledReport = shouldUseStreamTransfer(remoteEntry)
+        ? await pullOneStream({
+          peerUrl: normalizedPeerUrl,
+          scope: normalizedScope,
+          relativePath: rp,
+          notebookDir,
+          runtimeRoot: resolvedRuntimeRoot,
+          shouldCancel,
+          onByteDelta(delta) {
+            progressState.bytesDone += toNonNegativeSize(delta);
+            emitProgress("file-progress", { operation: "pull", relativePath: rp });
+          },
+        })
+        : await pullOne({
+          peerUrl: normalizedPeerUrl,
+          scope: normalizedScope,
+          relativePath: rp,
+          notebookDir,
+          runtimeRoot: resolvedRuntimeRoot,
+        });
+      if (!shouldUseStreamTransfer(remoteEntry)) {
+        progressState.bytesDone += toNonNegativeSize(pulledReport?.bytes);
+      }
+      progressState.filesDone += 1;
+      pulled.push(pulledReport);
+      emitProgress("file-complete", { operation: "pull", relativePath: rp });
+    } catch (err) {
+      emitProgress("file-error", { operation: "pull", relativePath: rp, error: normalizeSyncErrorMessage(err) });
+      throw err;
     }
-    progressState.filesDone += 1;
-    pulled.push(pulledReport);
-    emitProgress("file-complete", { operation: "pull", relativePath: rp });
   }
   for (const rp of plan.onlyLocal) {
     ensureNotCancelled();
     progressState.currentFile = rp;
     emitProgress("file-start", { operation: "push", relativePath: rp });
-    const pushedReport = await pushOne({
-      peerUrl: normalizedPeerUrl,
-      scope: normalizedScope,
-      relativePath: rp,
-      notebookDir,
-      runtimeRoot: resolvedRuntimeRoot,
-    });
-    progressState.bytesDone += toNonNegativeSize(pushedReport?.bytes);
-    progressState.filesDone += 1;
-    pushed.push(pushedReport);
-    emitProgress("file-complete", { operation: "push", relativePath: rp });
+    try {
+      const localEntry = localEntries.get(rp);
+      const useStream = shouldUseStreamTransfer(localEntry);
+      const pushedReport = useStream
+        ? await pushOneStream({
+          peerUrl: normalizedPeerUrl,
+          scope: normalizedScope,
+          relativePath: rp,
+          notebookDir,
+          runtimeRoot: resolvedRuntimeRoot,
+          shouldCancel,
+          onByteDelta(delta) {
+            progressState.bytesDone += toNonNegativeSize(delta);
+            emitProgress("file-progress", { operation: "push", relativePath: rp });
+          },
+        })
+        : await pushOne({
+          peerUrl: normalizedPeerUrl,
+          scope: normalizedScope,
+          relativePath: rp,
+          notebookDir,
+          runtimeRoot: resolvedRuntimeRoot,
+        });
+      if (!useStream) {
+        progressState.bytesDone += toNonNegativeSize(pushedReport?.bytes);
+      }
+      progressState.filesDone += 1;
+      pushed.push(pushedReport);
+      emitProgress("file-complete", { operation: "push", relativePath: rp });
+    } catch (err) {
+      emitProgress("file-error", { operation: "push", relativePath: rp, error: normalizeSyncErrorMessage(err) });
+      throw err;
+    }
   }
   for (const rp of plan.changed) {
     ensureNotCancelled();
     progressState.currentFile = rp;
     emitProgress("file-start", { operation: "conflict", relativePath: rp });
-    const remoteEntry = remoteEntries.get(rp);
-    const useStream = shouldUseStreamTransfer(remoteEntry);
-    const conflictReport = useStream
-      ? await pullConflictStream({
-        peerUrl: normalizedPeerUrl,
-        scope: normalizedScope,
-        relativePath: rp,
-        notebookDir,
-        runtimeRoot: resolvedRuntimeRoot,
-        shouldCancel,
-        onByteDelta(delta) {
-          progressState.bytesDone += toNonNegativeSize(delta);
-          emitProgress("file-progress", { operation: "conflict", relativePath: rp });
-        },
-      })
-      : await pullConflict({
-        peerUrl: normalizedPeerUrl,
-        scope: normalizedScope,
-        relativePath: rp,
-        notebookDir,
-        runtimeRoot: resolvedRuntimeRoot,
-        peerDeviceId: "peer",
-      });
-    if (!useStream) {
-      progressState.bytesDone += toNonNegativeSize(conflictReport?.bytes);
+    try {
+      const remoteEntry = remoteEntries.get(rp);
+      const useStream = shouldUseStreamTransfer(remoteEntry);
+      const conflictReport = useStream
+        ? await pullConflictStream({
+          peerUrl: normalizedPeerUrl,
+          scope: normalizedScope,
+          relativePath: rp,
+          notebookDir,
+          runtimeRoot: resolvedRuntimeRoot,
+          shouldCancel,
+          onByteDelta(delta) {
+            progressState.bytesDone += toNonNegativeSize(delta);
+            emitProgress("file-progress", { operation: "conflict", relativePath: rp });
+          },
+        })
+        : await pullConflict({
+          peerUrl: normalizedPeerUrl,
+          scope: normalizedScope,
+          relativePath: rp,
+          notebookDir,
+          runtimeRoot: resolvedRuntimeRoot,
+          peerDeviceId: "peer",
+        });
+      if (!useStream) {
+        progressState.bytesDone += toNonNegativeSize(conflictReport?.bytes);
+      }
+      progressState.filesDone += 1;
+      conflicts.push(conflictReport);
+      emitProgress("file-complete", { operation: "conflict", relativePath: rp });
+    } catch (err) {
+      emitProgress("file-error", { operation: "conflict", relativePath: rp, error: normalizeSyncErrorMessage(err) });
+      throw err;
     }
-    progressState.filesDone += 1;
-    conflicts.push(conflictReport);
-    emitProgress("file-complete", { operation: "conflict", relativePath: rp });
   }
   progressState.currentFile = null;
   emitProgress("sync-complete");

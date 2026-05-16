@@ -61,6 +61,25 @@ async function hashFile(filePath) {
   return hasher.digest("hex");
 }
 
+async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, attempt, createSignedRequest }) {
+  if (typeof createSignedRequest === "function") {
+    return createSignedRequest(
+      { scope, relativePath },
+      { runtimeRoot, attempt },
+    );
+  }
+  return createSignedScopeFileRequest(
+    { scope, relativePath },
+    { runtimeRoot },
+  );
+}
+
+async function readStreamErrorDetail(response) {
+  const asJson = await response.json().catch(() => null);
+  if (asJson?.error) return String(asJson.error);
+  return `HTTP ${response.status}`;
+}
+
 export async function pullScopeFileStream({
   peerUrl,
   scope,
@@ -70,6 +89,7 @@ export async function pullScopeFileStream({
   shouldCancel,
   onByteDelta,
   peerLabel,
+  createSignedRequest,
 } = {}) {
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
   const normalizedScope = validateSyncScope(scope);
@@ -83,20 +103,36 @@ export async function pullScopeFileStream({
 
   if (shouldCancel?.()) throw createCancelledError();
 
-  const signed = await createSignedScopeFileRequest(
-    { scope: normalizedScope, relativePath: normalizedRelativePath },
-    { runtimeRoot: resolvedRuntimeRoot },
-  );
-  const streamUrl = new URL("/api/peer/scope/file-stream", `${normalizedPeerUrl}/`);
-  streamUrl.searchParams.set("payload", signed.payload);
-  streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
+  let response = null;
+  let lastError = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const signed = await createSignedStreamRequest({
+      scope: normalizedScope,
+      relativePath: normalizedRelativePath,
+      runtimeRoot: resolvedRuntimeRoot,
+      attempt,
+      createSignedRequest,
+    });
+    const streamUrl = new URL("/api/peer/scope/file-stream", `${normalizedPeerUrl}/`);
+    streamUrl.searchParams.set("payload", signed.payload);
+    streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
 
-  const response = await fetch(streamUrl.toString(), { method: "GET" });
-  if (!response.ok) {
-    let detail = `HTTP ${response.status}`;
-    const asJson = await response.json().catch(() => null);
-    if (asJson?.error) detail = String(asJson.error);
-    throw new Error(`scope file-stream failed (${response.status}): ${detail}`);
+    response = await fetch(streamUrl.toString(), { method: "GET" });
+    if (response.ok) break;
+
+    const detail = await readStreamErrorDetail(response);
+    const requestError = new Error(`scope file-stream failed (${response.status}): ${detail}`);
+    requestError.status = response.status;
+    lastError = requestError;
+
+    if (response.status === 401 && attempt === 0) {
+      continue;
+    }
+    throw requestError;
+  }
+
+  if (!response || !response.ok) {
+    throw lastError || new Error("scope file-stream failed");
   }
   if (!response.body) throw new Error("scope file-stream response body is missing");
 

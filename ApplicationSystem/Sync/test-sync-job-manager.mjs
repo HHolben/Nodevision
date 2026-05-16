@@ -54,14 +54,16 @@ async function main() {
     scope: "Shared",
     peerUrl: "http://127.0.0.1:3001",
     dryRun: false,
-    async run() {
+    async run({ onProgress }) {
       await delay(10);
+      onProgress({ event: "file-error", operation: "pull", relativePath: "Shared/fail.bin", error: "stream auth expired" });
       throw new Error("intentional failure");
     },
   });
   const failedJob = await waitForFinalStatus(manager, startedFailed.jobId);
   assert(failedJob?.status === "failed", "Expected failed status for throwing job");
   assert(Array.isArray(failedJob.errors) && failedJob.errors.some((entry) => String(entry).includes("intentional failure")), "Expected failure error text");
+  assert(Array.isArray(failedJob.errors) && failedJob.errors.some((entry) => String(entry).includes("stream auth expired")), "Expected progress error text");
 
   const startedCancelled = manager.startJob({
     scope: "Shared",
