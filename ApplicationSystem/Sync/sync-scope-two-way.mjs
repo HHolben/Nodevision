@@ -167,7 +167,15 @@ async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot 
   const localPath = resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath });
   const stat = await fs.stat(localPath);
   if (!stat.isFile()) throw new Error("local path is not a file");
-  if (stat.size > MAX_FILE_PUSH_BYTES) throw new Error("file too large for json push");
+  if (stat.size > MAX_FILE_PUSH_BYTES) {
+    return pushOneStream({
+      peerUrl,
+      scope,
+      relativePath,
+      notebookDir,
+      runtimeRoot,
+    });
+  }
   const buf = await fs.readFile(localPath);
   const signed = await createSignedScopeFilePush({ scope, relativePath, contentBase64: buf.toString("base64"), contentType: "application/octet-stream" }, { runtimeRoot });
   await postJson(peerUrl, "/api/peer/scope/file-push", signed);

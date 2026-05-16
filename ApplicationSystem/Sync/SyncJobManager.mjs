@@ -68,7 +68,10 @@ function applyProgressUpdate(job, update) {
   if (update.bytesDone !== undefined && Number.isFinite(Number(update.bytesDone))) job.bytesDone = Math.max(0, Math.trunc(Number(update.bytesDone)));
   if (update.event === "file-error") {
     const message = normalizeErrorMessage(update.error || update.details || update.message);
-    if (message) job.errors.push(message);
+    const op = update.operation ? String(update.operation) : "file";
+    const rp = update.relativePath ? String(update.relativePath) : "";
+    const composed = rp ? `${op}:${rp}: ${message}` : message;
+    if (composed) job.errors.push(composed);
   }
   if (update.event === "file-complete" && update.relativePath) {
     job.operations.push({
