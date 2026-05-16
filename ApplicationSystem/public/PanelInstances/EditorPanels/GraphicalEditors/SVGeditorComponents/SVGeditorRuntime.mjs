@@ -17,6 +17,7 @@ import {
 import { fetchSvgText } from "./svgFetch.mjs";
 import { createBezierToolController } from "./BezierToolController.mjs";
 import { createPathNodeEditor } from "./PathNodeEditor.mjs";
+import { createSketchModeController } from "./SketchMode.mjs";
 import { createSvgUndoStack } from "./SvgUndoStack.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -41,7 +42,7 @@ export async function renderEditor(filePath, container) {
   container.appendChild(wrapper);
 
   window.NodevisionState = window.NodevisionState || {};
-  updateToolbarState({ currentMode: "SVG Editing" });
+  updateToolbarState({ currentMode: "SVG Editing", fileIsDirty: false });
 
   const status = document.createElement("div");
   status.id = "svg-message";
@@ -207,7 +208,7 @@ export async function renderEditor(filePath, container) {
   function syncModeFromToolbarState() {
     const desired = window.NodevisionState?.svgDrawTool;
     if (typeof desired !== "string" || !desired) return false;
-    if (!["select", "line", "freehand", "bezier"].includes(desired)) return false;
+    if (!["select", "line", "freehand", "bezier", "sketch"].includes(desired)) return false;
     if (desired === toolState.mode) return false;
     if (toolState.drawing || dragState || marqueeState || lineHandleDragState || resizeState || rotateState) return false;
     setMode(desired);
@@ -371,6 +372,19 @@ export async function renderEditor(filePath, container) {
     pointerToleranceInSvgUnits,
     setStatus,
     history,
+  });
+
+  const sketchController = createSketchModeController({
+    svgRoot,
+    createSvgEl,
+    getActiveLayer,
+    appendElement,
+    currentStyleDefaults,
+    setStatus,
+    setMode,
+    markDirty: markDocumentDirty,
+    pointerToleranceInSvgUnits,
+    uiAttrName: SVG_UI_ATTR,
   });
 
   const lineToolState = {
@@ -828,6 +842,10 @@ export async function renderEditor(filePath, container) {
 
   function setStatus(text) {
     status.textContent = text;
+  }
+
+  function markDocumentDirty(dirty = true) {
+    updateToolbarState({ fileIsDirty: Boolean(dirty) });
   }
 
   function setLayersPanelVisible(visible) {
@@ -1707,6 +1725,9 @@ export async function renderEditor(filePath, container) {
   }
 
   function setMode(mode) {
+    if (toolState.mode === "sketch" && mode !== "sketch") {
+      sketchController.onModeExit();
+    }
     if (toolState.mode === "line" && mode !== "line") {
       finishLineTool();
     }
@@ -1717,12 +1738,19 @@ export async function renderEditor(filePath, container) {
         bezierController.reset();
       }
     }
+    if (mode !== "select" && nodeEditor.isActive?.()) {
+      nodeEditor.exit?.();
+    }
     toolState.mode = mode;
     toolState.drawing = false;
     toolState.tempShape = null;
     toolState.startPoint = null;
     toolState.bezierStep = 0;
     toolState.bezierPoints = [];
+    if (mode === "sketch") {
+      clearSelection();
+      sketchController.onModeEnter();
+    }
     const cursor = mode === "select" ? "default" : "crosshair";
     svgRoot.style.cursor = cursor;
     try {
@@ -2039,12 +2067,36 @@ export async function renderEditor(filePath, container) {
   wrapper.addEventListener("keydown", (e) => {
     const key = String(e.key || "");
     const meta = e.ctrlKey || e.metaKey;
+    if (toolState.mode === "sketch" && meta && key.toLowerCase() === "z") {
+      if (!e.shiftKey) sketchController.undoLastStroke();
+      e.preventDefault();
+      return;
+    }
     if (meta && key.toLowerCase() === "z") {
       const res = e.shiftKey ? history.redo() : history.undo();
       if (res?.element) setSelection([res.element], { primary: res.element });
       else if (res?.removed) clearSelection();
       e.preventDefault();
       return;
+    }
+    if (toolState.mode === "sketch") {
+      if (key === "Enter") {
+        sketchController.finalizeSketch();
+        e.preventDefault();
+        return;
+      }
+      if (key === "Escape") {
+        if (sketchController.isDrawing()) {
+          sketchController.undoLastStroke();
+        } else if (sketchController.hasSketchContent()) {
+          sketchController.cancelSketchSession();
+        } else {
+          window.NodevisionState.svgDrawTool = "select";
+          setMode("select");
+        }
+        e.preventDefault();
+        return;
+      }
     }
     if (nodeEditor.onKeyDown?.(e)) return;
     if (toolState.mode === "line") {
@@ -2095,7 +2147,7 @@ export async function renderEditor(filePath, container) {
     syncModeFromToolbarState();
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
     wrapper.focus();
-    if (nodeEditor.isActive?.() && nodeEditor.onPointerDown?.(e, e.target, p)) return;
+    if (toolState.mode !== "sketch" && nodeEditor.isActive?.() && nodeEditor.onPointerDown?.(e, e.target, p)) return;
 
     if (toolState.mode === "select") {
       let target = e.target instanceof SVGElement ? e.target : null;
@@ -2231,6 +2283,21 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
+    if (toolState.mode === "sketch") {
+      clearSelection();
+      const started = sketchController.onPointerDown(e, p);
+      if (!started) return;
+      toolState.drawing = true;
+      try {
+        svgRoot.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     if (toolState.mode === "freehand") {
       const style = currentStyleDefaults();
       toolState.drawing = true;
@@ -2254,7 +2321,7 @@ export async function renderEditor(filePath, container) {
 
   svgRoot.addEventListener("pointermove", (e) => {
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
-    if (nodeEditor.onPointerMove?.(e)) return;
+    if (toolState.mode !== "sketch" && nodeEditor.onPointerMove?.(e)) return;
 
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
       const line = lineHandleDragState.line;
@@ -2416,6 +2483,12 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
+    if (toolState.mode === "sketch") {
+      if (!sketchController.onPointerMove(e, p)) return;
+      e.preventDefault();
+      return;
+    }
+
     if (!toolState.drawing || !toolState.tempShape) return;
     if (toolState.mode === "freehand") {
       const d = toolState.tempShape.getAttribute("d") || "";
@@ -2425,7 +2498,7 @@ export async function renderEditor(filePath, container) {
   });
 
   svgRoot.addEventListener("pointerup", (e) => {
-    if (nodeEditor.onPointerUp?.(e)) return;
+    if (toolState.mode !== "sketch" && nodeEditor.onPointerUp?.(e)) return;
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
       lineHandleDragState = null;
       try {
@@ -2481,8 +2554,44 @@ export async function renderEditor(filePath, container) {
       }
       return;
     }
+
+    if (toolState.mode === "sketch") {
+      const endRoot = toSvgPoint(svgRoot, e.clientX, e.clientY);
+      if (!sketchController.onPointerUp(e, endRoot)) return;
+      toolState.drawing = sketchController.isDrawing();
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      e.preventDefault();
+      return;
+    }
     if (!toolState.drawing) return;
 
+    toolState.drawing = false;
+    toolState.tempShape = null;
+    toolState.startPoint = null;
+    try {
+      svgRoot.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore unsupported pointer capture errors.
+    }
+  });
+
+  svgRoot.addEventListener("pointercancel", (e) => {
+    if (toolState.mode === "sketch") {
+      const endRoot = toSvgPoint(svgRoot, e.clientX, e.clientY);
+      if (!sketchController.onPointerUp(e, endRoot)) return;
+      toolState.drawing = sketchController.isDrawing();
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      return;
+    }
+    if (!toolState.drawing) return;
     toolState.drawing = false;
     toolState.tempShape = null;
     toolState.startPoint = null;
@@ -2532,6 +2641,7 @@ export async function renderEditor(filePath, container) {
     ensureSvgSizeAttrs(svgRoot);
     clearSelection();
     updateSvgRulers();
+    markDocumentDirty(false);
   };
 
   window.saveWYSIWYGFile = async (path) => {
@@ -2541,6 +2651,7 @@ export async function renderEditor(filePath, container) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path: path || filePath, content })
     });
+    markDocumentDirty(false);
     setStatus(`Saved: ${path || filePath}`);
   };
 
@@ -2572,6 +2683,39 @@ export async function renderEditor(filePath, container) {
     },
     flipVertical() {
       return flipCanvas("v");
+    },
+    finalizeSketch() {
+      return sketchController.finalizeSketch();
+    },
+    clearSketch() {
+      return sketchController.clearSketch();
+    },
+    cancelSketchMode() {
+      window.NodevisionState.svgDrawTool = "select";
+      return sketchController.cancelSketchMode();
+    },
+    undoSketchStroke() {
+      return sketchController.undoLastStroke();
+    },
+    toggleKeepSketchConstruction(nextValue) {
+      return sketchController.setKeepConstruction(nextValue);
+    },
+    toggleSketchConstructionVisibility(forceValue) {
+      return sketchController.toggleConstructionVisibility(forceValue);
+    },
+    setSketchRoughOpacity(value) {
+      return sketchController.setRoughOpacity(value);
+    },
+    setSketchSmoothingLevel(value) {
+      return sketchController.setSmoothingLevel(value);
+    },
+    getSketchState() {
+      return {
+        strokeCount: sketchController.getStrokeCount(),
+        previewPointCount: sketchController.getPreviewPointCount(),
+        keepConstruction: sketchController.getKeepConstruction(),
+        drawing: sketchController.isDrawing(),
+      };
     },
     applyCurrentStyleToSelection,
     setFillColor(value) {

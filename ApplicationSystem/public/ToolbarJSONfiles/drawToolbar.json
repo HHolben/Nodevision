@@ -17,7 +17,7 @@
     "modes": ["PNGediting", "SVG Editing"]
   },
   {
-    "heading": "SVG Draw",
+    "heading": "Vector Draw",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "DrawSVG",
@@ -25,8 +25,17 @@
     "modes": ["SVG Editing", "GraphicalEditing"]
   },
   {
+    "heading": "Pencil Sketching",
+    "parentHeading": "Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "PencilSketching",
+    "preventDropdown": true,
+    "icon": "icons/imageEditIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
     "heading": "Select",
-    "parentHeading": "SVG Draw",
+    "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeSelect",
     "icon": "icons/EditIcon.png",
@@ -34,7 +43,7 @@
   },
   {
     "heading": "Line",
-    "parentHeading": "SVG Draw",
+    "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeLine",
     "icon": "icons/DefaultNodeImage.png",
@@ -42,7 +51,7 @@
   },
   {
     "heading": "Bezier",
-    "parentHeading": "SVG Draw",
+    "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeBezier",
     "icon": "icons/CanvasIcon.png",
@@ -50,21 +59,77 @@
   },
   {
     "heading": "Freehand",
-    "parentHeading": "SVG Draw",
+    "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeFreehand",
     "icon": "icons/imageEditIcon.png",
     "modes": ["SVG Editing", "GraphicalEditing"]
   },
   {
+    "heading": "Sketch",
+    "parentHeading": "Pencil Sketching",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeSketch",
+    "icon": "icons/imageEditIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Undo Stroke",
+    "parentHeading": "Pencil Sketching",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgUndoSketchStroke",
+    "icon": "icons/EditIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Finalize Sketch",
+    "parentHeading": "Pencil Sketching",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgFinalizeSketch",
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Clear Sketch",
+    "parentHeading": "Pencil Sketching",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgClearSketch",
+    "icon": "icons/ExitIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Cancel Sketch",
+    "parentHeading": "Pencil Sketching",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgCancelSketchMode",
+    "icon": "icons/ExitIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Keep Construction",
+    "parentHeading": "Pencil Sketching",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgToggleKeepSketchConstruction",
+    "icon": "icons/CanvasIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Toggle Construction",
+    "parentHeading": "Pencil Sketching",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgToggleSketchConstructionVisibility",
+    "icon": "icons/CanvasIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
     "heading": "SVG Styles",
-    "parentHeading": "SVG Draw",
+    "parentHeading": "Vector Draw",
     "script": "svgStyleWidget.mjs",
     "modes": ["SVG Editing", "GraphicalEditing"]
   },
   {
     "heading": "Delete",
-    "parentHeading": "SVG Draw",
+    "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgDeleteSelection",
     "icon": "icons/ExitIcon.png",

@@ -222,6 +222,10 @@ function enableViewActivation(viewDiv) {
   const handler = () => activateFileViewPanel();
   viewDiv.addEventListener("pointerdown", handler, { capture: true });
   viewDiv.addEventListener("mousedown", handler, { capture: true });
+  viewDiv.addEventListener("click", handler, { capture: true });
+  viewDiv.addEventListener("pointerenter", handler, { capture: true });
+  viewDiv.addEventListener("mouseenter", handler, { capture: true });
+  viewDiv.addEventListener("focusin", handler, { capture: true });
 }
 
 function getFileViewCell() {
@@ -324,13 +328,19 @@ function installIframeActivation(iframe) {
       const doc = iframe.contentDocument;
       if (!doc || doc.__nvFileViewActivationAttached) return;
       doc.__nvFileViewActivationAttached = true;
+      doc.addEventListener("click", handler, { capture: true });
       doc.addEventListener("mousedown", handler, { capture: true });
       doc.addEventListener("pointerdown", handler, { capture: true });
+      doc.addEventListener("focusin", handler, { capture: true });
     } catch (err) {
       // Accessing cross-origin documents will throw; ignore indicator.
     }
   };
 
+  iframe.addEventListener("mousedown", handler, { capture: true });
+  iframe.addEventListener("click", handler, { capture: true });
+  iframe.addEventListener("pointerenter", handler, { capture: true });
+  iframe.addEventListener("mouseenter", handler, { capture: true });
   iframe.addEventListener("pointerdown", handler, { capture: true });
   iframe.addEventListener("focus", handler, true);
   iframe.addEventListener("load", () => {
