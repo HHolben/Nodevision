@@ -63,7 +63,9 @@ function normalizeSyncErrorMessage(err) {
 }
 
 function shouldUseStreamTransfer(manifestEntry) {
-  return manifestEntry?.transferMode === "stream" || manifestEntry?.tooLargeForJson === true;
+  if (manifestEntry?.transferMode === "stream" || manifestEntry?.tooLargeForJson === true) return true;
+  const size = Number(manifestEntry?.size);
+  return Number.isFinite(size) && size > MAX_FILE_PUSH_BYTES;
 }
 
 async function saveScopedConflictCopy({ notebookDir, scope, originalRelativePath, contentBuffer, peerDeviceId, timestamp }) {
@@ -272,27 +274,49 @@ export async function runScopeSyncTwoWay({
     emitProgress("file-start", { operation: "pull", relativePath: rp });
     try {
       const remoteEntry = remoteEntries.get(rp);
-      const pulledReport = shouldUseStreamTransfer(remoteEntry)
-        ? await pullOneStream({
-          peerUrl: normalizedPeerUrl,
-          scope: normalizedScope,
-          relativePath: rp,
-          notebookDir,
-          runtimeRoot: resolvedRuntimeRoot,
-          shouldCancel,
-          onByteDelta(delta) {
-            progressState.bytesDone += toNonNegativeSize(delta);
-            emitProgress("file-progress", { operation: "pull", relativePath: rp });
-          },
-        })
-        : await pullOne({
-          peerUrl: normalizedPeerUrl,
-          scope: normalizedScope,
-          relativePath: rp,
-          notebookDir,
-          runtimeRoot: resolvedRuntimeRoot,
-        });
-      if (!shouldUseStreamTransfer(remoteEntry)) {
+      let useStream = shouldUseStreamTransfer(remoteEntry);
+      let pulledReport;
+      try {
+        pulledReport = useStream
+          ? await pullOneStream({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+            shouldCancel,
+            onByteDelta(delta) {
+              progressState.bytesDone += toNonNegativeSize(delta);
+              emitProgress("file-progress", { operation: "pull", relativePath: rp });
+            },
+          })
+          : await pullOne({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+          });
+      } catch (err) {
+        if (!useStream && normalizeSyncErrorMessage(err) === "file too large") {
+          useStream = true;
+          pulledReport = await pullOneStream({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+            shouldCancel,
+            onByteDelta(delta) {
+              progressState.bytesDone += toNonNegativeSize(delta);
+              emitProgress("file-progress", { operation: "pull", relativePath: rp });
+            },
+          });
+        } else {
+          throw err;
+        }
+      }
+      if (!useStream) {
         progressState.bytesDone += toNonNegativeSize(pulledReport?.bytes);
       }
       progressState.filesDone += 1;
@@ -309,27 +333,48 @@ export async function runScopeSyncTwoWay({
     emitProgress("file-start", { operation: "push", relativePath: rp });
     try {
       const localEntry = localEntries.get(rp);
-      const useStream = shouldUseStreamTransfer(localEntry);
-      const pushedReport = useStream
-        ? await pushOneStream({
-          peerUrl: normalizedPeerUrl,
-          scope: normalizedScope,
-          relativePath: rp,
-          notebookDir,
-          runtimeRoot: resolvedRuntimeRoot,
-          shouldCancel,
-          onByteDelta(delta) {
-            progressState.bytesDone += toNonNegativeSize(delta);
-            emitProgress("file-progress", { operation: "push", relativePath: rp });
-          },
-        })
-        : await pushOne({
-          peerUrl: normalizedPeerUrl,
-          scope: normalizedScope,
-          relativePath: rp,
-          notebookDir,
-          runtimeRoot: resolvedRuntimeRoot,
-        });
+      let useStream = shouldUseStreamTransfer(localEntry);
+      let pushedReport;
+      try {
+        pushedReport = useStream
+          ? await pushOneStream({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+            shouldCancel,
+            onByteDelta(delta) {
+              progressState.bytesDone += toNonNegativeSize(delta);
+              emitProgress("file-progress", { operation: "push", relativePath: rp });
+            },
+          })
+          : await pushOne({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+          });
+      } catch (err) {
+        if (!useStream && normalizeSyncErrorMessage(err) === "file too large for json push") {
+          useStream = true;
+          pushedReport = await pushOneStream({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+            shouldCancel,
+            onByteDelta(delta) {
+              progressState.bytesDone += toNonNegativeSize(delta);
+              emitProgress("file-progress", { operation: "push", relativePath: rp });
+            },
+          });
+        } else {
+          throw err;
+        }
+      }
       if (!useStream) {
         progressState.bytesDone += toNonNegativeSize(pushedReport?.bytes);
       }
