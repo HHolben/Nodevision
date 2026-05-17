@@ -2687,6 +2687,12 @@ export async function renderEditor(filePath, container) {
     finalizeSketch() {
       return sketchController.finalizeSketch();
     },
+    renderSketchPreview(previewId, options = {}) {
+      return sketchController.renderSketchPreview(previewId, options);
+    },
+    renderVisibleSketchPreviews(options = {}) {
+      return sketchController.renderVisibleSketchPreviews(options);
+    },
     clearSketch() {
       return sketchController.clearSketch();
     },
@@ -2709,11 +2715,47 @@ export async function renderEditor(filePath, container) {
     setSketchSmoothingLevel(value) {
       return sketchController.setSmoothingLevel(value);
     },
+    getSketchPreviews() {
+      return sketchController.getSketchPreviews();
+    },
+    getActiveSketchPreviewId() {
+      return sketchController.getActiveSketchPreviewId();
+    },
+    createSketchPreview(name = null, options = {}) {
+      return sketchController.createSketchPreview(name, options);
+    },
+    setActiveSketchPreview(previewId) {
+      return sketchController.setActiveSketchPreview(previewId);
+    },
+    renameSketchPreview(previewId, nextName) {
+      return sketchController.renameSketchPreview(previewId, nextName);
+    },
+    setSketchPreviewVisible(previewId, visible) {
+      return sketchController.setSketchPreviewVisible(previewId, visible);
+    },
+    toggleSketchPreviewVisible(previewId) {
+      return sketchController.toggleSketchPreviewVisible(previewId);
+    },
+    setSketchPreviewLocked(previewId, locked) {
+      return sketchController.setSketchPreviewLocked(previewId, locked);
+    },
+    toggleSketchPreviewLocked(previewId) {
+      return sketchController.toggleSketchPreviewLocked(previewId);
+    },
+    clearSketchPreview(previewId, options = {}) {
+      return sketchController.clearSketchPreview(previewId, options);
+    },
+    deleteSketchPreview(previewId) {
+      return sketchController.deleteSketchPreview(previewId);
+    },
     getSketchState() {
+      const previews = sketchController.getSketchPreviews();
       return {
         strokeCount: sketchController.getStrokeCount(),
         previewPointCount: sketchController.getPreviewPointCount(),
         keepConstruction: sketchController.getKeepConstruction(),
+        previewCount: previews.length,
+        activePreviewId: sketchController.getActiveSketchPreviewId(),
         drawing: sketchController.isDrawing(),
       };
     },

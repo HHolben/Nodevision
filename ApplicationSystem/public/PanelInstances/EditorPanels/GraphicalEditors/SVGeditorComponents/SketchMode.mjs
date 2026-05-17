@@ -1,7 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SketchMode.mjs
-// Sketch mode controller for SVG editing. It captures rough construction strokes, computes an averaged preview curve, and can finalize that curve into a normal editable <path>.
+// Sketch mode controller for SVG editing. Supports multiple independent sketch previews, each representing one evolving interpretation.
 
 import {
+  averageStrokes,
   distance,
   inferStrokeTracks,
   pointsToPathD,
@@ -16,6 +17,15 @@ function toPressure(value) {
   const pressure = Number(value);
   if (!Number.isFinite(pressure) || pressure <= 0) return 0.5;
   return clamp(pressure, 0, 1);
+}
+
+function safeBool(value, fallback = false) {
+  if (typeof value === "boolean") return value;
+  return fallback;
+}
+
+function makeSketchPreviewId() {
+  return `sketch-preview-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function createSketchModeController(deps = {}) {
@@ -42,17 +52,35 @@ export function createSketchModeController(deps = {}) {
   const state = {
     enabled: false,
     activePointerId: null,
-    activeLayer: null,
-    roughGroup: null,
-    previewPath: null,
     currentStroke: null,
-    roughStrokes: [],
-    previewTracks: [],
     roughOpacity: 0.28,
     smoothingLevel: 2,
     keepConstruction: false,
-    constructionVisible: false,
+    constructionVisible: true,
+    previewCounter: 1,
+    previews: [],
+    activePreviewId: null,
   };
+
+  function status(text) {
+    if (typeof setStatus === "function") setStatus(text);
+  }
+
+  function emitSketchPreviewsChanged(reason = "update") {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("nv-sketch-previews-changed", {
+          detail: {
+            reason,
+            activePreviewId: state.activePreviewId,
+            previews: getSketchPreviews(),
+          },
+        }),
+      );
+    } catch {
+      // ignore event dispatch failures
+    }
+  }
 
   function spacingThreshold() {
     const next = typeof pointerToleranceInSvgUnits === "function"
@@ -86,49 +114,27 @@ export function createSketchModeController(deps = {}) {
     return Math.max(minimumStrokeLength() * 3.5, Number(next) || 24);
   }
 
-  function previewPointCount() {
-    return state.previewTracks.reduce(
-      (acc, points) => acc + (Array.isArray(points) ? points.length : 0),
-      0,
-    );
+  function createStrokePoint(rootPoint, event) {
+    return {
+      x: Number(rootPoint?.x) || 0,
+      y: Number(rootPoint?.y) || 0,
+      pressure: toPressure(event?.pressure),
+      time: Number(event?.timeStamp) || Date.now(),
+    };
   }
 
-  function status(text) {
-    if (typeof setStatus === "function") setStatus(text);
-  }
-
-  function ensureSessionGroup() {
-    if (state.roughGroup?.isConnected && state.previewPath?.isConnected) {
-      return state.roughGroup;
-    }
-
-    const layer = state.activeLayer?.isConnected
-      ? state.activeLayer
-      : (getActiveLayer?.() || svgRoot);
-    state.activeLayer = layer;
-
-    const group = createSvgEl("g", {
-      [uiAttrName]: "sketch-construction",
-      "data-nv-sketch-session": "true",
-    });
-
-    const preview = createSvgEl("path", {
+  function createPreviewPath() {
+    return createSvgEl("path", {
       [uiAttrName]: "sketch-preview",
       fill: "none",
-      stroke: "#4a4a4a",
+      stroke: "#1f6feb",
       "stroke-width": "1.6",
       "stroke-linecap": "round",
       "stroke-linejoin": "round",
       opacity: "0.95",
       display: "none",
+      d: "",
     });
-
-    group.appendChild(preview);
-    layer.appendChild(group);
-
-    state.roughGroup = group;
-    state.previewPath = preview;
-    return group;
   }
 
   function createStrokePath() {
@@ -144,18 +150,223 @@ export function createSketchModeController(deps = {}) {
     });
   }
 
-  function setPreviewVisible(visible) {
-    if (!state.previewPath) return;
-    state.previewPath.setAttribute("display", visible ? "" : "none");
+  function getPreviewById(previewId) {
+    if (!previewId) return null;
+    return state.previews.find((preview) => preview.id === previewId) || null;
   }
 
-  function createStrokePoint(rootPoint, event) {
+  function getActivePreview() {
+    return getPreviewById(state.activePreviewId);
+  }
+
+  function applyPreviewDomVisibility(preview) {
+    if (!preview?.groupEl) return;
+    const visible = safeBool(preview.visible, true) &&
+      safeBool(state.constructionVisible, true);
+    preview.groupEl.style.display = visible ? "" : "none";
+  }
+
+  function previewSummary(preview) {
     return {
-      x: Number(rootPoint?.x) || 0,
-      y: Number(rootPoint?.y) || 0,
-      pressure: toPressure(event?.pressure),
-      time: Number(event?.timeStamp) || Date.now(),
+      id: preview.id,
+      name: preview.name,
+      visible: safeBool(preview.visible, true),
+      locked: safeBool(preview.locked, false),
+      rawStrokes: preview.rawStrokes.map((stroke) => ({
+        pointCount: stroke.points.length,
+        length: stroke.length,
+      })),
+      hypotheses: { ...(preview.hypotheses || {}) },
+      activePreviewGeometry: preview.activePreviewGeometry
+        ? {
+          trackCount: preview.activePreviewGeometry.tracks.length,
+          pointCount: preview.activePreviewGeometry.pointCount,
+          discontinuities: Number(
+            preview.activePreviewGeometry.discontinuities,
+          ) || 0,
+        }
+        : null,
+      accepted: safeBool(preview.accepted, false),
+      strokeCount: preview.rawStrokes.length,
+      previewPointCount: Number(preview.activePreviewGeometry?.pointCount) || 0,
+      isActive: preview.id === state.activePreviewId,
     };
+  }
+
+  function getSketchPreviews() {
+    return state.previews.map((preview) => previewSummary(preview));
+  }
+
+  function createSketchPreview(name = null, options = {}) {
+    const layer = getActiveLayer?.() || svgRoot;
+    const id = makeSketchPreviewId();
+    const previewName =
+      String(name || `Sketch Preview ${state.previewCounter++}`)
+        .trim() || `Sketch Preview ${state.previewCounter++}`;
+
+    const group = createSvgEl("g", {
+      [uiAttrName]: "sketch-construction",
+      "data-nv-sketch-session": "true",
+      "data-nv-sketch-preview-id": id,
+      "data-element-name": previewName,
+    });
+    const previewPath = createPreviewPath();
+    group.appendChild(previewPath);
+    layer.appendChild(group);
+
+    const preview = {
+      id,
+      name: previewName,
+      visible: true,
+      locked: false,
+      rawStrokes: [],
+      hypotheses: {},
+      activePreviewGeometry: null,
+      accepted: false,
+      groupEl: group,
+      previewPathEl: previewPath,
+      layerEl: layer,
+      layerId: layer?.id || null,
+      lastPreviewD: "",
+    };
+
+    state.previews.push(preview);
+    applyPreviewDomVisibility(preview);
+
+    if (options.activate !== false) {
+      state.activePreviewId = preview.id;
+    }
+
+    emitSketchPreviewsChanged("create-preview");
+    return previewSummary(preview);
+  }
+
+  function ensureActivePreview() {
+    const existing = getActivePreview();
+    if (existing) return existing;
+    if (!state.previews.length) {
+      createSketchPreview();
+      return getActivePreview();
+    }
+    state.activePreviewId = state.previews[0].id;
+    return getActivePreview();
+  }
+
+  function setActiveSketchPreview(previewId) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return false;
+
+    // Do not carry an in-progress stroke across preview boundaries.
+    if (state.currentStroke) {
+      discardCurrentStroke();
+    }
+
+    state.activePreviewId = preview.id;
+    refreshActivePreview();
+    emitSketchPreviewsChanged("select-preview");
+    return true;
+  }
+
+  function renameSketchPreview(previewId, nextName) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return false;
+    const trimmed = String(nextName || "").trim();
+    if (!trimmed) return false;
+    preview.name = trimmed;
+    preview.groupEl?.setAttribute?.("data-element-name", trimmed);
+    emitSketchPreviewsChanged("rename-preview");
+    return true;
+  }
+
+  function setSketchPreviewVisible(previewId, visible) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return false;
+    preview.visible = safeBool(visible, preview.visible);
+    applyPreviewDomVisibility(preview);
+    emitSketchPreviewsChanged("visibility-preview");
+    return true;
+  }
+
+  function toggleSketchPreviewVisible(previewId) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return false;
+    return setSketchPreviewVisible(preview.id, !preview.visible);
+  }
+
+  function setSketchPreviewLocked(previewId, locked) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return false;
+    preview.locked = safeBool(locked, preview.locked);
+    emitSketchPreviewsChanged("lock-preview");
+    return true;
+  }
+
+  function toggleSketchPreviewLocked(previewId) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return false;
+    return setSketchPreviewLocked(preview.id, !preview.locked);
+  }
+
+  function clearPreviewGeometryDom(preview) {
+    if (!preview) return;
+    preview.rawStrokes.forEach((stroke) => {
+      try {
+        stroke.pathEl?.remove();
+      } catch {
+        // ignore DOM removal errors
+      }
+    });
+    preview.rawStrokes = [];
+    preview.hypotheses = {};
+    preview.activePreviewGeometry = null;
+    preview.lastPreviewD = "";
+    if (preview.previewPathEl) {
+      preview.previewPathEl.setAttribute("d", "");
+      preview.previewPathEl.setAttribute("display", "none");
+    }
+  }
+
+  function clearSketchPreview(previewId, options = {}) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return false;
+    clearPreviewGeometryDom(preview);
+    preview.accepted = false;
+    if (!options.silent) {
+      status(`Cleared ${preview.name}`);
+    }
+    emitSketchPreviewsChanged("clear-preview");
+    return true;
+  }
+
+  function deleteSketchPreview(previewId) {
+    const idx = state.previews.findIndex((preview) => preview.id === previewId);
+    if (idx < 0) return false;
+    const preview = state.previews[idx];
+
+    if (state.currentStroke && state.currentStroke.previewId === preview.id) {
+      discardCurrentStroke();
+    }
+
+    try {
+      preview.groupEl?.remove();
+    } catch {
+      // ignore DOM removal errors
+    }
+
+    state.previews.splice(idx, 1);
+    if (state.activePreviewId === preview.id) {
+      state.activePreviewId = state.previews[idx]?.id ||
+        state.previews[idx - 1]?.id ||
+        state.previews[0]?.id || null;
+    }
+
+    emitSketchPreviewsChanged("delete-preview");
+    return true;
+  }
+
+  function setPreviewVisible(pathEl, visible) {
+    if (!pathEl) return;
+    pathEl.setAttribute("display", visible ? "" : "none");
   }
 
   function pushStrokePoint(stroke, point, options = {}) {
@@ -199,142 +410,397 @@ export function createSketchModeController(deps = {}) {
     return true;
   }
 
-  function refreshPreview() {
-    if (!state.previewPath) return;
-    if (!state.roughStrokes.length) {
-      state.previewTracks = [];
-      state.previewPath.setAttribute("d", "");
-      setPreviewVisible(false);
-      return;
+  function averagePoint(points = []) {
+    if (!Array.isArray(points) || !points.length) return { x: 0, y: 0 };
+    const sum = points.reduce(
+      (acc, pt) => ({
+        x: acc.x + (Number(pt?.x) || 0),
+        y: acc.y + (Number(pt?.y) || 0),
+      }),
+      { x: 0, y: 0 },
+    );
+    return {
+      x: sum.x / points.length,
+      y: sum.y / points.length,
+    };
+  }
+
+  function unitVector(a, b) {
+    const dx = (Number(b?.x) || 0) - (Number(a?.x) || 0);
+    const dy = (Number(b?.y) || 0) - (Number(a?.y) || 0);
+    const len = Math.hypot(dx, dy);
+    if (!Number.isFinite(len) || len < 1e-6) return null;
+    return { x: dx / len, y: dy / len, len };
+  }
+
+  function averageLineConsensus(strokes = []) {
+    const segments = strokes
+      .map((stroke) => {
+        const points = Array.isArray(stroke?.points) ? stroke.points : [];
+        if (points.length < 2) return null;
+        const start = points[0];
+        const end = points[points.length - 1];
+        const dir = unitVector(start, end);
+        if (!dir) return null;
+        return { start, end, dir, len: dir.len };
+      })
+      .filter(Boolean);
+
+    if (segments.length < 2) return null;
+
+    const reference = segments[0].dir;
+    const aligned = segments.map((segment) => {
+      const dot = (segment.dir.x * reference.x) + (segment.dir.y * reference.y);
+      if (dot >= 0) return segment;
+      return {
+        ...segment,
+        start: segment.end,
+        end: segment.start,
+        dir: { x: -segment.dir.x, y: -segment.dir.y, len: segment.len },
+      };
+    });
+
+    const avgDir = averagePoint(aligned.map((segment) => segment.dir));
+    const dirLen = Math.hypot(avgDir.x, avgDir.y);
+    if (!Number.isFinite(dirLen) || dirLen < 1e-6) return null;
+    const axis = { x: avgDir.x / dirLen, y: avgDir.y / dirLen };
+
+    const dirConsistency = aligned.reduce((acc, segment) => {
+      const dot = Math.abs((segment.dir.x * axis.x) + (segment.dir.y * axis.y));
+      return acc + dot;
+    }, 0) / aligned.length;
+
+    if (dirConsistency < 0.9) return null;
+
+    const starts = aligned.map((segment) => segment.start);
+    const ends = aligned.map((segment) => segment.end);
+    const avgStart = averagePoint(starts);
+    const avgEnd = averagePoint(ends);
+    const meanLength = aligned.reduce((acc, segment) => acc + segment.len, 0) /
+      aligned.length;
+
+    const startSpread =
+      starts.reduce((acc, pt) => acc + distance(pt, avgStart), 0) /
+      starts.length;
+    const endSpread = ends.reduce((acc, pt) => acc + distance(pt, avgEnd), 0) /
+      ends.length;
+    const spreadLimit = Math.max(spacingThreshold() * 6, meanLength * 0.42);
+    if (startSpread > spreadLimit || endSpread > spreadLimit) return null;
+
+    const lengthDeviation = aligned.reduce(
+      (acc, segment) => acc + Math.abs(segment.len - meanLength),
+      0,
+    ) /
+      Math.max(1e-6, meanLength * aligned.length);
+    if (lengthDeviation > 0.5) return null;
+
+    const averagedDir = unitVector(avgStart, avgEnd);
+    if (
+      !averagedDir ||
+      averagedDir.len < Math.max(0.25, minimumStrokeLength() * 0.35)
+    ) {
+      return null;
     }
 
-    // Cluster rough strokes before averaging, using proximity, direction,
-    // continuity, and stroke-order heuristics. This keeps distant or
-    // differently intended strokes from pulling an existing inferred section.
-    const tracks = inferStrokeTracks(
-      state.roughStrokes.map((entry) => entry.points),
-      {
-        sampleCount: 44,
-        minLength: minimumStrokeLength(),
-        smoothingRadius: 2,
-        smoothingPasses: smoothingPasses(),
-        simplifyDistance: simplifyThreshold(),
-        trackDistanceThreshold: trackDistanceThreshold(),
-        clusterSpreadFactor: 2.8,
-        lengthThresholdFactor: 0.3,
-        continuityGapThreshold: trackDistanceThreshold() * 0.8,
-        continuitySpreadFactor: 1.7,
-        continuityLengthFactor: 0.12,
-        directionSimilarityThreshold: 0.68,
-        minDirectionReliability: 0.16,
-        minDirectionCoherence: 0.64,
-        directionPenaltyFactor: 1.1,
-        reverseDirectionPenalty: 0.6,
-        sameDirectionThreshold: 0.2,
-        recentStrokeWindow: 4,
-        farStrokeWindow: 10,
-        recentDistanceThreshold: trackDistanceThreshold() * 0.65,
-        recentSameDirectionBonus: 0.7,
-        shadingReverseMinDot: 0.45,
-        shadingBonus: 0.62,
-        oldStrokePenalty: 0.2,
-        lineIntentThreshold: 0.84,
-        linearityThreshold: 0.9,
-        lineFitThreshold: 0.64,
-        lineErrorScale: 0.075,
-        lineDirectionMinDot: 0.88,
-        lineBackAndForthBoost: 0.12,
-        lineMinStrokeCount: 3,
-        progressiveMinStrokeCount: 3,
-        progressiveTravelThreshold: trackDistanceThreshold() * 0.23,
-        progressiveOverlapThreshold: trackDistanceThreshold() * 0.14,
-        progressiveContinuityThreshold: trackDistanceThreshold() * 0.62,
-        stitchJoinTolerance: minimumStrokeLength() * 0.22,
-        turnMinAxial: 0.72,
-        turnContinuityThreshold: trackDistanceThreshold() * 0.56,
-        turnRecentWindow: 5,
-        tailDirectionWindow: 6,
-        mergeTrackGapThreshold: trackDistanceThreshold() * 0.34,
-        mergeTrackTurnMinAxial: 0.76,
-        mergeTrackIndexGap: 2,
-        parallelCheckMinAxial: 0.9,
-        parallelOffsetThreshold: trackDistanceThreshold() * 0.45,
-        parallelOffsetSpreadFactor: 1.8,
-        parallelAlongGapThreshold: trackDistanceThreshold() * 0.5,
-        parallelAlongGapLengthFactor: 0.42,
-      },
-    );
+    return [avgStart, avgEnd];
+  }
 
-    state.previewTracks = tracks.map((track) => track.points).filter((points) =>
+  function buildPreviewTracks(preview) {
+    if (!preview) return [];
+    if (preview.rawStrokes.length === 0) return [];
+    if (preview.rawStrokes.length === 1) {
+      const first = preview.rawStrokes[0]?.points || [];
+      return Array.isArray(first) && first.length >= 2 ? [first] : [];
+    }
+
+    const lineConsensus = averageLineConsensus(preview.rawStrokes);
+    if (lineConsensus) {
+      preview.hypotheses = {
+        mode: "line-consensus",
+        strokeCount: preview.rawStrokes.length,
+        confidence: 1,
+        discontinuities: 0,
+      };
+      return [lineConsensus];
+    }
+
+    const strokePointLists = preview.rawStrokes.map((stroke) => stroke.points);
+    const sharedOptions = {
+      sampleCount: 44,
+      minLength: minimumStrokeLength(),
+      smoothingRadius: 2,
+      smoothingPasses: smoothingPasses(),
+      simplifyDistance: simplifyThreshold(),
+      // Single-preview interpretation: permissive continuity, no multi-object intent.
+      trackDistanceThreshold: trackDistanceThreshold() * 1.8,
+      clusterSpreadFactor: 5.2,
+      lengthThresholdFactor: 0.3,
+      continuityGapThreshold: trackDistanceThreshold() * 1.45,
+      continuitySpreadFactor: 3.2,
+      continuityLengthFactor: 0.12,
+      directionSimilarityThreshold: 0.68,
+      minDirectionReliability: 0.16,
+      minDirectionCoherence: 0.64,
+      directionPenaltyFactor: 0.35,
+      reverseDirectionPenalty: 0.12,
+      sameDirectionThreshold: 0.2,
+      recentStrokeWindow: 4,
+      farStrokeWindow: 10,
+      recentDistanceThreshold: trackDistanceThreshold() * 0.65,
+      recentSameDirectionBonus: 0.7,
+      shadingReverseMinDot: 0.45,
+      shadingBonus: 0.62,
+      oldStrokePenalty: 0.2,
+      lineIntentThreshold: 0.92,
+      linearityThreshold: 0.9,
+      lineFitThreshold: 0.74,
+      lineErrorScale: 0.075,
+      lineDirectionMinDot: 0.92,
+      lineBackAndForthBoost: 0.12,
+      lineMinStrokeCount: 5,
+      progressiveMinStrokeCount: 4,
+      progressiveTravelThreshold: trackDistanceThreshold() * 0.23,
+      progressiveOverlapThreshold: trackDistanceThreshold() * 0.14,
+      progressiveContinuityThreshold: trackDistanceThreshold() * 0.62,
+      stitchJoinTolerance: minimumStrokeLength() * 0.22,
+      turnMinAxial: 0.72,
+      turnContinuityThreshold: trackDistanceThreshold() * 0.56,
+      turnRecentWindow: 5,
+      tailDirectionWindow: 6,
+      mergeTrackGapThreshold: trackDistanceThreshold() * 1.2,
+      mergeTrackTurnMinAxial: 0.76,
+      mergeTrackIndexGap: 12,
+      parallelCheckMinAxial: 0.9,
+      parallelOffsetThreshold: trackDistanceThreshold() * 0.45,
+      parallelOffsetSpreadFactor: 1.8,
+      parallelAlongGapThreshold: trackDistanceThreshold() * 0.5,
+      parallelAlongGapLengthFactor: 0.42,
+    };
+
+    const averaged = averageStrokes(strokePointLists, sharedOptions);
+    if (Array.isArray(averaged) && averaged.length >= 2) {
+      preview.hypotheses = {
+        mode: "single-average-track",
+        strokeCount: preview.rawStrokes.length,
+        confidence: 1,
+        discontinuities: 0,
+      };
+      return [averaged];
+    }
+
+    const inferredTracks = inferStrokeTracks(strokePointLists, sharedOptions)
+      .filter((track) =>
+        Array.isArray(track?.points) && track.points.length >= 2
+      );
+    if (!inferredTracks.length) {
+      preview.hypotheses = {
+        mode: "none",
+        strokeCount: preview.rawStrokes.length,
+        inferredTrackCount: 0,
+        confidence: 0,
+      };
+      return [];
+    }
+
+    // One-preview-one-interpretation rule: pick the single strongest inferred
+    // track (most supporting strokes, then longest geometric extent).
+    const chosen = [...inferredTracks].sort((a, b) => {
+      const bySupport = (Number(b.strokeCount) || 0) -
+        (Number(a.strokeCount) || 0);
+      if (bySupport !== 0) return bySupport;
+      return strokeLength(b.points || []) - strokeLength(a.points || []);
+    })[0];
+
+    preview.hypotheses = {
+      mode: "fallback-inferred-track",
+      strokeCount: preview.rawStrokes.length,
+      inferredTrackCount: inferredTracks.length,
+      chosenSupport: Number(chosen?.strokeCount) || 0,
+      confidence: 0.5,
+      discontinuities: 0,
+    };
+
+    return [chosen.points];
+  }
+
+  function setPreviewTracks(preview, tracks = []) {
+    const safeTracks = tracks.filter((points) =>
       Array.isArray(points) && points.length >= 2
     );
-    if (!state.previewTracks.length) {
-      state.previewPath.setAttribute("d", "");
-      setPreviewVisible(false);
+    const primaryTrack = safeTracks.length
+      ? [...safeTracks].sort((a, b) => strokeLength(b) - strokeLength(a))[0]
+      : null;
+    const normalizedTracks = primaryTrack ? [primaryTrack] : [];
+    preview.activePreviewGeometry = {
+      tracks: normalizedTracks,
+      pointCount: normalizedTracks.reduce(
+        (sum, points) => sum + points.length,
+        0,
+      ),
+      discontinuities: 0,
+    };
+
+    const d = primaryTrack ? pointsToPathD(primaryTrack) : "";
+    preview.lastPreviewD = d;
+    preview.previewPathEl?.setAttribute("d", d);
+
+    const visible = normalizedTracks.length > 0 && preview.visible &&
+      state.constructionVisible;
+    setPreviewVisible(preview.previewPathEl, visible);
+  }
+
+  function refreshActivePreview() {
+    const preview = ensureActivePreview();
+    if (!preview) return;
+
+    if (!preview.rawStrokes.length) {
+      preview.activePreviewGeometry = null;
+      preview.hypotheses = {};
+      preview.lastPreviewD = "";
+      preview.previewPathEl?.setAttribute("d", "");
+      setPreviewVisible(preview.previewPathEl, false);
+      emitSketchPreviewsChanged("refresh-preview-empty");
       return;
     }
 
-    const d = state.previewTracks.map((points) => pointsToPathD(points)).filter(
-      Boolean,
-    ).join(" ");
-    state.previewPath.setAttribute("d", d);
-    setPreviewVisible(true);
-  }
+    const previousD = String(preview.previewPathEl?.getAttribute("d") || "");
+    const tracks = buildPreviewTracks(preview);
 
-  function clearSessionVisuals() {
-    try {
-      state.roughGroup?.remove();
-    } catch {
-      // ignore DOM removal errors
+    if (!tracks.length) {
+      // Stability guard for transient recognition dips.
+      if (previousD && preview.rawStrokes.length >= 2) {
+        preview.previewPathEl?.setAttribute("d", previousD);
+        setPreviewVisible(
+          preview.previewPathEl,
+          preview.visible && state.constructionVisible,
+        );
+      } else {
+        preview.previewPathEl?.setAttribute("d", "");
+        setPreviewVisible(preview.previewPathEl, false);
+      }
+      preview.activePreviewGeometry = {
+        tracks: [],
+        pointCount: 0,
+        discontinuities: 0,
+      };
+      emitSketchPreviewsChanged("refresh-preview-stable");
+      return;
     }
 
-    state.roughGroup = null;
-    state.previewPath = null;
-    state.activeLayer = null;
-    state.roughStrokes = [];
-    state.previewTracks = [];
-    resetCurrentStroke();
+    setPreviewTracks(preview, tracks);
+    emitSketchPreviewsChanged("refresh-preview");
   }
 
-  function maybePersistConstructionGroup() {
-    const group = state.roughGroup;
-    if (!group || !state.keepConstruction) return;
-
-    state.previewPath?.remove();
-    state.previewPath = null;
-
-    if (!group.querySelector("path")) return;
-
-    group.removeAttribute(uiAttrName);
-    group.removeAttribute("data-nv-sketch-session");
-    group.setAttribute("data-nv-sketch-construction", "true");
-    group.style.display = state.constructionVisible ? "" : "none";
-    group.querySelectorAll(`[${uiAttrName}]`).forEach((el) =>
-      el.removeAttribute(uiAttrName)
-    );
+  function resolvePreviewLayer(preview) {
+    if (!preview) return getActiveLayer?.() || svgRoot;
+    const explicit = preview.layerEl;
+    if (explicit?.isConnected) return explicit;
+    const byId = preview.layerId
+      ? Array.from(
+        svgRoot.querySelectorAll?.(":scope > g[data-layer='true']") || [],
+      ).find((layer) => layer.id === preview.layerId) || null
+      : null;
+    return byId || getActiveLayer?.() || svgRoot;
   }
 
-  function clearSketch(options = {}) {
-    const hadContent = Boolean(
-      state.currentStroke || state.roughStrokes.length ||
-        state.previewTracks.length || state.roughGroup,
-    );
-    if (!hadContent) return false;
+  function renderTracksToPathElement(tracks = []) {
+    const style = typeof currentStyleDefaults === "function"
+      ? (currentStyleDefaults() || {})
+      : {};
+    const d = tracks.map((points) => pointsToPathD(points)).filter(Boolean)
+      .join(" ");
+    if (!d) return null;
+    return createSvgEl("path", {
+      d,
+      fill: "none",
+      stroke: "#000000",
+      "stroke-width": style.strokeWidth || "1",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round",
+    });
+  }
 
-    clearSessionVisuals();
+  function renderSketchPreview(previewId, options = {}) {
+    const preview = getPreviewById(previewId);
+    if (!preview) return null;
 
-    if (!options.silent) status("Sketch cleared");
-    return true;
+    const preservePreview = "preservePreview" in options
+      ? safeBool(options.preservePreview, true)
+      : true;
+
+    if (
+      !preview.activePreviewGeometry ||
+      !preview.activePreviewGeometry.tracks.length
+    ) {
+      const tracks = buildPreviewTracks(preview);
+      if (!tracks.length) {
+        status(`${preview.name}: no confident interpretation to render`);
+        return null;
+      }
+      setPreviewTracks(preview, tracks);
+    }
+
+    const tracks = preview.activePreviewGeometry?.tracks || [];
+    const element = renderTracksToPathElement(tracks);
+    if (!element) {
+      status(`${preview.name}: unable to render`);
+      return null;
+    }
+
+    const layer = resolvePreviewLayer(preview);
+    if (typeof appendElement === "function" && layer === getActiveLayer?.()) {
+      appendElement(element);
+    } else {
+      layer.appendChild(element);
+    }
+
+    preview.accepted = true;
+
+    if (!preservePreview) {
+      deleteSketchPreview(preview.id);
+    } else {
+      emitSketchPreviewsChanged("render-preview");
+    }
+
+    if (typeof markDirty === "function") markDirty(true);
+    status(`Rendered ${preview.name}`);
+    return element;
+  }
+
+  function renderVisibleSketchPreviews(options = {}) {
+    const visible = state.previews.filter((preview) => preview.visible);
+    if (!visible.length) {
+      status("No visible sketch previews to render");
+      return [];
+    }
+
+    const rendered = [];
+    const ids = visible.map((preview) => preview.id);
+    ids.forEach((id) => {
+      const out = renderSketchPreview(id, options);
+      if (out) rendered.push(out);
+    });
+
+    if (!rendered.length) {
+      status("No sketch previews could be rendered");
+      return rendered;
+    }
+
+    status(`Rendered ${rendered.length} sketch preview(s)`);
+    return rendered;
   }
 
   function onModeEnter() {
     state.enabled = true;
-    status("Sketch mode: draw rough strokes, Enter to finalize, Esc to cancel");
+    ensureActivePreview();
+    status("Sketch mode: draw rough strokes in the active sketch preview");
+    emitSketchPreviewsChanged("mode-enter");
   }
 
   function onModeExit() {
     state.enabled = false;
-    clearSketch({ silent: true });
+    if (state.currentStroke) discardCurrentStroke();
+    emitSketchPreviewsChanged("mode-exit");
   }
 
   function onPointerDown(event, rootPoint) {
@@ -344,16 +810,29 @@ export function createSketchModeController(deps = {}) {
       return false;
     }
 
-    ensureSessionGroup();
-
-    const pathEl = createStrokePath();
-    if (state.previewPath?.parentNode === state.roughGroup) {
-      state.roughGroup.insertBefore(pathEl, state.previewPath);
-    } else {
-      state.roughGroup.appendChild(pathEl);
+    const preview = ensureActivePreview();
+    if (!preview) return false;
+    if (preview.locked) {
+      status(`${preview.name} is locked`);
+      return false;
+    }
+    if (!preview.visible || !state.constructionVisible) {
+      status(`${preview.name} is hidden`);
+      return false;
     }
 
-    const stroke = { pathEl, points: [] };
+    const pathEl = createStrokePath();
+    if (preview.previewPathEl?.parentNode === preview.groupEl) {
+      preview.groupEl.insertBefore(pathEl, preview.previewPathEl);
+    } else {
+      preview.groupEl.appendChild(pathEl);
+    }
+
+    const stroke = {
+      previewId: preview.id,
+      pathEl,
+      points: [],
+    };
     pushStrokePoint(stroke, createStrokePoint(rootPoint, event), {
       force: true,
     });
@@ -387,6 +866,12 @@ export function createSketchModeController(deps = {}) {
     });
     updateStrokePath(state.currentStroke);
 
+    const preview = getPreviewById(state.currentStroke.previewId);
+    if (!preview) {
+      discardCurrentStroke();
+      return false;
+    }
+
     const len = strokeLength(state.currentStroke.points);
     if (
       !Number.isFinite(len) || len < minimumStrokeLength() ||
@@ -394,148 +879,110 @@ export function createSketchModeController(deps = {}) {
     ) {
       discardCurrentStroke();
       status("Sketch stroke ignored (too short)");
-      refreshPreview();
+      refreshActivePreview();
       return true;
     }
 
-    state.roughStrokes.push({
+    preview.rawStrokes.push({
       pathEl: state.currentStroke.pathEl,
       points: state.currentStroke.points.map((pt) => ({ ...pt })),
+      length: len,
     });
 
+    preview.accepted = false;
     resetCurrentStroke();
-    refreshPreview();
-
-    if (state.previewTracks.length >= 1) {
-      status(
-        `Sketch strokes: ${state.roughStrokes.length} (Enter to finalize)`,
-      );
-    } else {
-      status(`Sketch strokes: ${state.roughStrokes.length}`);
-    }
+    refreshActivePreview();
+    status(`${preview.name}: ${preview.rawStrokes.length} stroke(s)`);
     return true;
   }
 
   function undoLastStroke() {
-    if (state.currentStroke) {
+    const preview = getActivePreview();
+    if (!preview) return false;
+
+    if (state.currentStroke && state.currentStroke.previewId === preview.id) {
       discardCurrentStroke();
-      status("Canceled active sketch stroke");
+      status(`Canceled active stroke in ${preview.name}`);
       return true;
     }
-    if (!state.roughStrokes.length) return false;
 
-    const removed = state.roughStrokes.pop();
+    if (!preview.rawStrokes.length) return false;
+    const removed = preview.rawStrokes.pop();
     try {
       removed?.pathEl?.remove();
     } catch {
       // ignore DOM removal errors
     }
-    refreshPreview();
-    status(`Sketch strokes: ${state.roughStrokes.length}`);
+
+    refreshActivePreview();
+    status(`${preview.name}: ${preview.rawStrokes.length} stroke(s)`);
     return true;
   }
 
-  function finalizeSketch() {
-    const validTracks = state.previewTracks.filter((points) =>
-      Array.isArray(points) && points.length >= 2
+  function clearSketch(options = {}) {
+    const preview = getActivePreview();
+    if (!preview) return false;
+    const hadContent = Boolean(
+      (state.currentStroke && state.currentStroke.previewId === preview.id) ||
+        preview.rawStrokes.length || preview.activePreviewGeometry?.pointCount,
     );
-    if (!validTracks.length) {
-      status("Sketch finalize: draw more strokes first");
+    if (!hadContent) return false;
+
+    if (state.currentStroke && state.currentStroke.previewId === preview.id) {
+      discardCurrentStroke();
+    }
+
+    clearSketchPreview(preview.id, { silent: true });
+    if (!options.silent) status(`${preview.name} cleared`);
+    return true;
+  }
+
+  function finalizeSketch(options = {}) {
+    const preview = getActivePreview();
+    if (!preview) {
+      status("No active sketch preview");
       return null;
     }
 
-    const style = typeof currentStyleDefaults === "function"
-      ? (currentStyleDefaults() || {})
-      : {};
-    const makePath = (points) =>
-      createSvgEl("path", {
-        d: pointsToPathD(points),
-        fill: "none",
-        stroke: "#000000",
-        "stroke-width": style.strokeWidth || "1",
-        "stroke-linecap": "round",
-        "stroke-linejoin": "round",
-      });
+    const preservePreview = "preservePreview" in options
+      ? safeBool(options.preservePreview, true)
+      : safeBool(state.keepConstruction, false);
 
-    let committed = null;
-    if (validTracks.length === 1) {
-      const path = makePath(validTracks[0]);
-      committed = path;
-      if (typeof appendElement === "function") appendElement(path);
-      else (getActiveLayer?.() || svgRoot).appendChild(path);
-    } else {
-      const layer = getActiveLayer?.() || svgRoot;
-      const paths = validTracks.map((points) => makePath(points));
-      paths.forEach((path) => layer.appendChild(path));
-      committed = paths;
-    }
-
-    maybePersistConstructionGroup();
-
-    // If construction strokes are not being persisted, remove all temporary preview/stroke DOM.
-    if (!state.keepConstruction) {
-      clearSessionVisuals();
-    } else {
-      state.roughGroup = null;
-      state.previewPath = null;
-      state.activeLayer = null;
-      state.roughStrokes = [];
-      state.previewTracks = [];
-      resetCurrentStroke();
-    }
-
-    if (typeof markDirty === "function") markDirty(true);
-    status(
-      validTracks.length > 1
-        ? `Sketch finalized into ${validTracks.length} path sections`
-        : "Sketch finalized into path",
-    );
-    return committed;
+    return renderSketchPreview(preview.id, { preservePreview });
   }
 
   function cancelSketchMode() {
-    clearSketch({ silent: true });
+    if (state.currentStroke) discardCurrentStroke();
     if (typeof setMode === "function") setMode("select");
     status("Sketch mode canceled");
     return true;
   }
 
   function cancelSketchSession() {
-    const didClear = clearSketch({ silent: true });
-    status(didClear ? "Sketch session canceled" : "Sketch session empty");
-    return didClear;
+    return clearSketch();
   }
 
   function setKeepConstruction(nextValue) {
-    const next = typeof nextValue === "boolean"
-      ? nextValue
-      : !state.keepConstruction;
-    state.keepConstruction = next;
+    state.keepConstruction = safeBool(nextValue, !state.keepConstruction);
     status(
-      next
-        ? "Sketch: keep construction strokes ON"
-        : "Sketch: keep construction strokes OFF",
+      state.keepConstruction
+        ? "Sketch: keep preview on render ON"
+        : "Sketch: keep preview on render OFF",
     );
-    return next;
+    return state.keepConstruction;
   }
 
   function toggleConstructionVisibility(forceValue) {
-    const groups = Array.from(
-      svgRoot.querySelectorAll("g[data-nv-sketch-construction='true']"),
-    );
-    if (!groups.length) {
-      status("No saved construction strokes to toggle");
-      return false;
-    }
-
-    const next = typeof forceValue === "boolean"
+    state.constructionVisible = typeof forceValue === "boolean"
       ? forceValue
       : !state.constructionVisible;
-    state.constructionVisible = next;
-    groups.forEach((group) => {
-      group.style.display = next ? "" : "none";
-    });
-    status(next ? "Construction strokes shown" : "Construction strokes hidden");
+    state.previews.forEach((preview) => applyPreviewDomVisibility(preview));
+    emitSketchPreviewsChanged("toggle-construction-visibility");
+    status(
+      state.constructionVisible
+        ? "Sketch previews shown"
+        : "Sketch previews hidden",
+    );
     return true;
   }
 
@@ -543,8 +990,11 @@ export function createSketchModeController(deps = {}) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return state.roughOpacity;
     state.roughOpacity = clamp(parsed, 0.05, 1);
-    state.roughStrokes.forEach((stroke) => {
-      stroke.pathEl?.setAttribute("opacity", String(state.roughOpacity));
+
+    state.previews.forEach((preview) => {
+      preview.rawStrokes.forEach((stroke) => {
+        stroke.pathEl?.setAttribute("opacity", String(state.roughOpacity));
+      });
     });
     state.currentStroke?.pathEl?.setAttribute(
       "opacity",
@@ -557,15 +1007,29 @@ export function createSketchModeController(deps = {}) {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isFinite(parsed)) return state.smoothingLevel;
     state.smoothingLevel = clamp(parsed, 0, 6);
-    refreshPreview();
+    refreshActivePreview();
     return state.smoothingLevel;
   }
 
   function hasSketchContent() {
+    const preview = getActivePreview();
+    if (!preview) return Boolean(state.currentStroke);
     return Boolean(
-      state.currentStroke || state.roughStrokes.length ||
-        state.previewTracks.length,
+      (state.currentStroke && state.currentStroke.previewId === preview.id) ||
+        preview.rawStrokes.length || preview.activePreviewGeometry?.pointCount,
     );
+  }
+
+  function activePreviewPointCount() {
+    const preview = getActivePreview();
+    if (!preview) return 0;
+    return Number(preview.activePreviewGeometry?.pointCount) || 0;
+  }
+
+  function activePreviewStrokeCount() {
+    const preview = getActivePreview();
+    if (!preview) return 0;
+    return preview.rawStrokes.length;
   }
 
   return {
@@ -585,8 +1049,23 @@ export function createSketchModeController(deps = {}) {
     setSmoothingLevel,
     hasSketchContent,
     isDrawing: () => Boolean(state.currentStroke),
-    getPreviewPointCount: () => previewPointCount(),
-    getStrokeCount: () => state.roughStrokes.length,
+    getPreviewPointCount: () => activePreviewPointCount(),
+    getStrokeCount: () => activePreviewStrokeCount(),
     getKeepConstruction: () => state.keepConstruction,
+
+    // Multi-preview architecture API
+    getSketchPreviews,
+    getActiveSketchPreviewId: () => state.activePreviewId,
+    createSketchPreview,
+    setActiveSketchPreview,
+    renameSketchPreview,
+    setSketchPreviewVisible,
+    toggleSketchPreviewVisible,
+    setSketchPreviewLocked,
+    toggleSketchPreviewLocked,
+    clearSketchPreview,
+    deleteSketchPreview,
+    renderSketchPreview,
+    renderVisibleSketchPreviews,
   };
 }

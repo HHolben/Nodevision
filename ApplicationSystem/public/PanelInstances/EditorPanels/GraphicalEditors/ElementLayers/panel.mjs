@@ -11,6 +11,8 @@ function ensurePanelState(panelEl) {
         selectedElements: [],
         keyHandlerInstalled: false,
         selectionListenerInstalled: false,
+        sketchListenerInstalled: false,
+        sketchPreserveOnRender: true,
         rerender: null,
         dragData: null,
       },
@@ -362,6 +364,245 @@ export function createPanelElement() {
   return el;
 }
 
+function renderSketchPreviewSection({ panelEl, state, rerender } = {}) {
+  const ctx = window.SVGEditorContext;
+  if (!ctx?.getSketchPreviews || !ctx?.createSketchPreview) return;
+
+  const previews = Array.isArray(ctx.getSketchPreviews())
+    ? ctx.getSketchPreviews()
+    : [];
+  const activePreviewId = ctx.getActiveSketchPreviewId?.() || null;
+
+  const section = document.createElement("div");
+  Object.assign(section.style, {
+    marginTop: "10px",
+    borderTop: "1px solid #ddd",
+    paddingTop: "8px",
+  });
+
+  const header = document.createElement("div");
+  Object.assign(header.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    marginBottom: "6px",
+  });
+
+  const title = document.createElement("div");
+  title.textContent = "Sketch Previews";
+  title.style.fontWeight = "700";
+  title.style.flex = "1";
+  header.appendChild(title);
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.textContent = "+";
+  addBtn.title = "Create sketch preview";
+  addBtn.onclick = () => {
+    ctx.createSketchPreview();
+    rerender?.();
+  };
+  header.appendChild(addBtn);
+  section.appendChild(header);
+
+  const controls = document.createElement("div");
+  Object.assign(controls.style, {
+    display: "grid",
+    gridTemplateColumns: "1fr auto auto",
+    gap: "6px",
+    alignItems: "center",
+    marginBottom: "6px",
+  });
+
+  const preserveLabel = document.createElement("label");
+  Object.assign(preserveLabel.style, {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "5px",
+    fontSize: "12px",
+    color: "#333",
+    userSelect: "none",
+  });
+  const preserveBox = document.createElement("input");
+  preserveBox.type = "checkbox";
+  preserveBox.checked = Boolean(state.sketchPreserveOnRender);
+  preserveBox.onchange = () => {
+    state.sketchPreserveOnRender = preserveBox.checked;
+  };
+  preserveLabel.appendChild(preserveBox);
+  preserveLabel.appendChild(document.createTextNode("Keep previews"));
+  controls.appendChild(preserveLabel);
+
+  const renderActiveBtn = document.createElement("button");
+  renderActiveBtn.type = "button";
+  renderActiveBtn.textContent = "Render Active";
+  renderActiveBtn.title = "Render selected sketch preview";
+  renderActiveBtn.onclick = () => {
+    const activeId = ctx.getActiveSketchPreviewId?.();
+    if (!activeId) return;
+    ctx.renderSketchPreview?.(activeId, {
+      preservePreview: Boolean(state.sketchPreserveOnRender),
+    });
+    rerender?.();
+  };
+  controls.appendChild(renderActiveBtn);
+
+  const renderVisibleBtn = document.createElement("button");
+  renderVisibleBtn.type = "button";
+  renderVisibleBtn.textContent = "Render Visible";
+  renderVisibleBtn.title = "Render all visible sketch previews";
+  renderVisibleBtn.onclick = () => {
+    ctx.renderVisibleSketchPreviews?.({
+      preservePreview: Boolean(state.sketchPreserveOnRender),
+    });
+    rerender?.();
+  };
+  controls.appendChild(renderVisibleBtn);
+  section.appendChild(controls);
+
+  const list = document.createElement("div");
+  Object.assign(list.style, {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+  });
+
+  if (!previews.length) {
+    const empty = document.createElement("div");
+    empty.textContent = "No sketch previews yet.";
+    Object.assign(empty.style, {
+      fontStyle: "italic",
+      color: "#666",
+      padding: "3px 4px",
+    });
+    list.appendChild(empty);
+  } else {
+    previews.forEach((preview) => {
+      const isActive = preview.id === activePreviewId;
+      const wrapper = document.createElement("div");
+      Object.assign(wrapper.style, {
+        border: isActive ? "1px solid #5aa9ff" : "1px solid #d5d5d5",
+        background: isActive ? "#eef6ff" : "#fff",
+        borderRadius: "6px",
+        padding: "4px",
+      });
+
+      const row = document.createElement("div");
+      Object.assign(row.style, {
+        display: "grid",
+        gridTemplateColumns: "24px 50px 56px 1fr auto auto auto",
+        alignItems: "center",
+        gap: "4px",
+      });
+
+      const activeBtn = document.createElement("button");
+      activeBtn.type = "button";
+      activeBtn.textContent = isActive ? "●" : "○";
+      activeBtn.title = "Set active sketch preview";
+      activeBtn.onclick = () => {
+        ctx.setActiveSketchPreview?.(preview.id);
+        rerender?.();
+      };
+      row.appendChild(activeBtn);
+
+      const visBtn = document.createElement("button");
+      visBtn.type = "button";
+      visBtn.textContent = preview.visible ? "Unsee" : "See";
+      visBtn.title = preview.visible
+        ? "Hide sketch preview"
+        : "Show sketch preview";
+      visBtn.onclick = () => {
+        ctx.toggleSketchPreviewVisible?.(preview.id);
+        rerender?.();
+      };
+      row.appendChild(visBtn);
+
+      const lockBtn = document.createElement("button");
+      lockBtn.type = "button";
+      lockBtn.textContent = preview.locked ? "Unlock" : "Lock";
+      lockBtn.title = preview.locked
+        ? "Unlock sketch preview"
+        : "Lock sketch preview";
+      lockBtn.onclick = () => {
+        ctx.toggleSketchPreviewLocked?.(preview.id);
+        rerender?.();
+      };
+      row.appendChild(lockBtn);
+
+      const nameBtn = document.createElement("button");
+      nameBtn.type = "button";
+      nameBtn.textContent = preview.accepted
+        ? `${preview.name} (accepted)`
+        : preview.name;
+      Object.assign(nameBtn.style, {
+        border: "none",
+        background: "transparent",
+        textAlign: "left",
+        padding: "2px 3px",
+      });
+      nameBtn.title = "Select sketch preview";
+      nameBtn.onclick = () => {
+        ctx.setActiveSketchPreview?.(preview.id);
+        rerender?.();
+      };
+      row.appendChild(nameBtn);
+
+      const renameBtn = document.createElement("button");
+      renameBtn.type = "button";
+      renameBtn.textContent = "✎";
+      renameBtn.title = "Rename sketch preview";
+      renameBtn.onclick = () => {
+        const next = prompt("Sketch preview name:", preview.name);
+        if (!next || !next.trim()) return;
+        ctx.renameSketchPreview?.(preview.id, next.trim());
+        rerender?.();
+      };
+      row.appendChild(renameBtn);
+
+      const renderBtn = document.createElement("button");
+      renderBtn.type = "button";
+      renderBtn.textContent = "Render";
+      renderBtn.title = "Render this sketch preview";
+      renderBtn.onclick = () => {
+        ctx.renderSketchPreview?.(preview.id, {
+          preservePreview: Boolean(state.sketchPreserveOnRender),
+        });
+        rerender?.();
+      };
+      row.appendChild(renderBtn);
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "✕";
+      delBtn.title = "Delete sketch preview";
+      delBtn.onclick = () => {
+        ctx.deleteSketchPreview?.(preview.id);
+        rerender?.();
+      };
+      row.appendChild(delBtn);
+
+      wrapper.appendChild(row);
+
+      const meta = document.createElement("div");
+      meta.textContent = `${preview.strokeCount || 0} stroke(s) · ${
+        preview.previewPointCount || 0
+      } preview points`;
+      Object.assign(meta.style, {
+        marginTop: "3px",
+        paddingLeft: "4px",
+        fontSize: "11px",
+        color: "#5e5e5e",
+      });
+      wrapper.appendChild(meta);
+
+      list.appendChild(wrapper);
+    });
+  }
+
+  section.appendChild(list);
+  panelEl.appendChild(section);
+}
+
 export function renderLayersPanel({
   panelEl,
   getLayers,
@@ -442,6 +683,14 @@ export function renderLayersPanel({
       onSelectionChanged,
     );
     state.selectionListenerInstalled = true;
+  }
+
+  if (!state.sketchListenerInstalled) {
+    const onSketchChange = () => {
+      state.rerender?.();
+    };
+    window.addEventListener("nv-sketch-previews-changed", onSketchChange);
+    state.sketchListenerInstalled = true;
   }
 
   if (!state.keyHandlerInstalled) {
@@ -811,4 +1060,5 @@ export function renderLayersPanel({
   });
 
   panelEl.appendChild(list);
+  renderSketchPreviewSection({ panelEl, state, rerender });
 }
