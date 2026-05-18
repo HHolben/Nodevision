@@ -48,6 +48,14 @@
     "icon": "/icons/Settings.svg",
     "ToolbarCategory": "settings",
     "callbackKey": "editLoginBackground"
+  },
+  {
+    "heading": "App Styles",
+    "icon": "/icons/Settings.svg",
+    "ToolbarCategory": "settings",
+    "panelTemplateId": "AppStylesPanel",
+    "panelType": "InfoPanel",
+    "replaceActive": true
   }
 
 ]

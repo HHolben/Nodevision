@@ -226,12 +226,7 @@ function createToolbarIconElement(item, { allowFallback = true } = {}) {
     const icon = document.createElement("img");
     icon.src = item.icon;
     icon.alt = item.heading || "toolbar icon";
-    Object.assign(icon.style, {
-      width: "16px",
-      height: "16px",
-      flex: "0 0 16px",
-      objectFit: "contain",
-    });
+    icon.className = "nv-toolbar-icon";
     return icon;
   }
 
@@ -239,16 +234,7 @@ function createToolbarIconElement(item, { allowFallback = true } = {}) {
 
   const fallback = document.createElement("span");
   fallback.setAttribute("aria-hidden", "true");
-  Object.assign(fallback.style, {
-    width: "16px",
-    height: "16px",
-    flex: "0 0 16px",
-    border: "1px solid #666",
-    borderRadius: "3px",
-    background: "linear-gradient(135deg, #f2f2f2 0%, #cfcfcf 100%)",
-    boxSizing: "border-box",
-    display: "inline-block",
-  });
+  fallback.className = "nv-toolbar-icon-fallback";
   return fallback;
 }
 
@@ -388,12 +374,6 @@ function buildToolbar(container, items, parentHeading = null) {
       const contentWrapper = document.createElement("div");
       contentWrapper.className = "toolbar-inline-widget";
       contentWrapper.dataset.heading = item.heading || "";
-      Object.assign(contentWrapper.style, {
-        position: "relative",
-        display: "inline-flex",
-        alignItems: "center",
-        marginRight: "6px",
-      });
       contentWrapper.innerHTML = item.content;
       container.appendChild(contentWrapper);
       attachToolbarScript(item, contentWrapper);
@@ -401,53 +381,14 @@ function buildToolbar(container, items, parentHeading = null) {
     }
 
     const btnWrapper = document.createElement("div");
-    btnWrapper.className = "toolbar-button";
+    btnWrapper.className = isDropdownContainer
+      ? "toolbar-button toolbar-button--dropdown-item"
+      : "toolbar-button toolbar-button--main-item";
     btnWrapper.dataset.heading = item.heading;
-    Object.assign(
-      btnWrapper.style,
-      isDropdownContainer
-        ? { position: "relative", display: "block", width: "100%", marginRight: "0" }
-        : { position: "relative", display: "inline-block", marginRight: "4px" }
-    );
 
     const btn = document.createElement("button");
+    btn.className = isDropdownContainer ? "toolbar-dropdown-button" : "toolbar-main-button";
     btn.textContent = item.heading;
-    Object.assign(
-      btn.style,
-      isDropdownContainer
-        ? {
-            margin: "0",
-            width: "100%",
-            padding: "8px 12px",
-            border: "0",
-            borderRadius: "0",
-            backgroundColor: "transparent",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            gap: "6px",
-            opacity: "1.0",
-            boxSizing: "border-box",
-            whiteSpace: "normal",
-            overflowWrap: "anywhere",
-            wordBreak: "break-word",
-            lineHeight: "1.25",
-            height: "auto",
-            textAlign: "left",
-          }
-        : {
-            margin: "2px",
-            padding: "4px 8px",
-            border: "1px solid #333",
-            backgroundColor: "#eee",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            opacity: "1.0",
-          }
-    );
 
     // Main toolbar is text-only. Dropdown entries are icon + text.
     if (isDropdownContainer) {
@@ -457,24 +398,6 @@ function buildToolbar(container, items, parentHeading = null) {
 
     btnWrapper.appendChild(btn);
     btn.addEventListener("mouseenter", playToolbarHighlightSound);
-
-    if (isDropdownContainer) {
-      const baseColor = "transparent";
-      const hoverColor = "#ff8c00";
-      const activeColor = "#00c040";
-      btn.addEventListener("mouseenter", () => {
-        btn.style.backgroundColor = hoverColor;
-      });
-      btn.addEventListener("mouseleave", () => {
-        btn.style.backgroundColor = baseColor;
-      });
-      btn.addEventListener("mousedown", () => {
-        btn.style.backgroundColor = activeColor;
-      });
-      btn.addEventListener("mouseup", () => {
-        btn.style.backgroundColor = hoverColor;
-      });
-    }
 
     // Dropdown handling
     const dropdown = prebuiltDropdowns[item.heading];
@@ -577,18 +500,8 @@ function buildDropdownFromItem(item) {
   if (!topItems.length) return null;
 
   const dropdown = document.createElement("div");
+  dropdown.className = "toolbar-dropdown-panel";
   dropdown.dataset.toolbarDropdown = "true";
-
-Object.assign(dropdown.style, {
-  position: "absolute",
-  top: "100%",
-  left: "0",
-  zIndex: "1000",      // 🔥 this is the key
-  background: "#f5f5f5",
-  border: "1px solid #333",
-  display: "none",
-  minWidth: "100%",
-});
 
   buildToolbar(dropdown, topItems, item.heading);
 
@@ -616,13 +529,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
     if (hasWidgetContent || item.script) {
       const host = document.createElement("div");
       host.className = "nv-subtoolbar-widget";
-      Object.assign(host.style, {
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "0 6px",
-        height: "30px",
-      });
+      host.classList.add("nv-subtoolbar-widget--compact-script");
       if (hasWidgetContent) {
         host.innerHTML = item.content;
       }
@@ -634,21 +541,9 @@ function buildSubToolbar(items, container = subToolbarContainer) {
     }
 
     const btn = document.createElement("button");
+    btn.className = "nv-subtoolbar-icon-btn";
     btn.title = item.heading || "";
     btn.setAttribute("aria-label", item.heading || "toolbar action");
-
-    Object.assign(btn.style, {
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "0",
-      width: "30px",
-      minWidth: "30px",
-      height: "30px",
-      minHeight: "30px",
-      padding: "0",
-    });
 
     // Sub-toolbar is icon-only.
     const iconEl = createToolbarIconElement(item, { allowFallback: true });

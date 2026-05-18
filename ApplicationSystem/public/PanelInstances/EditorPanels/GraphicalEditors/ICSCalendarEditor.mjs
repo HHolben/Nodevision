@@ -229,7 +229,7 @@ async function ensureStylesheet() {
   const link = document.createElement("link");
   link.id = STYLESHEET_ID;
   link.rel = "stylesheet";
-  link.href = "/PanelInstances/EditorPanels/GraphicalEditors/ICSCalendarEditor.css";
+  link.href = "/Stylesheets/PanelInstances/EditorPanels/GraphicalEditors/ICSCalendarEditor.css";
   await new Promise((resolve) => {
     link.addEventListener("load", resolve, { once: true });
     link.addEventListener("error", resolve, { once: true });
