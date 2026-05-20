@@ -45,9 +45,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #eee;
-  color: rgb(0, 0, 0);
-  border: 1px solid #333;
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
@@ -99,6 +96,7 @@
   border: 1px solid #333;
   display: none;
   min-width: 100%;
+  width: max-content;
 }
 
 .toolbar-dropdown-button {
@@ -111,13 +109,13 @@
   cursor: pointer;
   display: flex;
   align-items: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   opacity: 1;
   box-sizing: border-box;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
   line-height: 1.25;
   height: auto;
   text-align: left;

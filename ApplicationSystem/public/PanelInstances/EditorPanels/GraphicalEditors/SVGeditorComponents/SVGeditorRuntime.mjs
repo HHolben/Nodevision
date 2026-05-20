@@ -394,6 +394,11 @@ export async function renderEditor(filePath, container) {
     startSpace: null,
     pointsSpace: [],
     placedLines: [],
+    cursorRoot: null,
+    constraint: null,
+    commandBuffer: "",
+    commandTimer: null,
+    grab: null,
   };
 
   function hideLineToolOverlays() {
@@ -421,6 +426,12 @@ export async function renderEditor(filePath, container) {
     lineToolState.startSpace = null;
     lineToolState.pointsSpace = [];
     lineToolState.placedLines = [];
+    lineToolState.cursorRoot = null;
+    lineToolState.constraint = null;
+    lineToolState.commandBuffer = "";
+    if (lineToolState.commandTimer) window.clearTimeout(lineToolState.commandTimer);
+    lineToolState.commandTimer = null;
+    lineToolState.grab = null;
     hideLineToolOverlays();
   }
 
@@ -466,6 +477,12 @@ export async function renderEditor(filePath, container) {
     lineToolState.startSpace = null;
     lineToolState.placedLines = [];
     lineToolState.pointsSpace = [];
+    lineToolState.cursorRoot = null;
+    lineToolState.constraint = null;
+    lineToolState.commandBuffer = "";
+    if (lineToolState.commandTimer) window.clearTimeout(lineToolState.commandTimer);
+    lineToolState.commandTimer = null;
+    lineToolState.grab = null;
     hideLineToolOverlays();
     setStatus("Line tool finished");
     return true;
@@ -599,6 +616,294 @@ export async function renderEditor(filePath, container) {
     updateLineToolLengthLabel(lineToolState.startRoot, rootPoint);
     updateLineToolAngleLabel(lineToolState.startRoot, rootPoint);
     return true;
+  }
+
+  function parseLineToolCoordinatePair(rawValue) {
+    const parts = String(rawValue || "")
+      .trim()
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map((part) => Number.parseFloat(part));
+    if (parts.length < 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return null;
+    return { x: parts[0], y: parts[1] };
+  }
+
+  function parseLineToolNumber(rawValue) {
+    const n = Number.parseFloat(String(rawValue || "").trim());
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function getLineToolAnchorRoot() {
+    return lineToolState.startRoot || lineToolState.cursorRoot || null;
+  }
+
+  function projectPointToLine(point, origin, angleRad) {
+    if (!point || !origin || !Number.isFinite(angleRad)) return point;
+    const ux = Math.cos(angleRad);
+    const uy = Math.sin(angleRad);
+    const dx = point.x - origin.x;
+    const dy = point.y - origin.y;
+    const t = dx * ux + dy * uy;
+    return { x: origin.x + ux * t, y: origin.y + uy * t };
+  }
+
+  function applyLineToolConstraint(rawPoint) {
+    const constraint = lineToolState.constraint;
+    if (!rawPoint || !constraint) return rawPoint;
+    if (constraint.fixedRoot) return { ...constraint.fixedRoot };
+    const origin = constraint.originRoot || getLineToolAnchorRoot() || rawPoint;
+    if (constraint.type === "x") return { x: rawPoint.x, y: origin.y };
+    if (constraint.type === "y") return { x: origin.x, y: rawPoint.y };
+    if (constraint.type === "angle") return projectPointToLine(rawPoint, origin, constraint.angleRad);
+    return rawPoint;
+  }
+
+  function resolveLineToolPoint(rawPoint, event = null) {
+    let next = rawPoint;
+    if (event?.shiftKey && lineToolState.startRoot) {
+      const tol = pointerToleranceInSvgUnits(18);
+      const snapped = findNearestSnapPointInRoot(rawPoint, tol);
+      next = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, rawPoint, Math.PI / 12);
+    }
+    next = applyLineToolConstraint(next);
+    lineToolState.cursorRoot = next;
+    return next;
+  }
+
+  function setLineToolCursorRoot(rootPoint, { updatePreview = true } = {}) {
+    if (!rootPoint || !Number.isFinite(rootPoint.x) || !Number.isFinite(rootPoint.y)) return false;
+    lineToolState.cursorRoot = rootPoint;
+    if (updatePreview && lineToolState.active) updateLineToolPreview(applyLineToolConstraint(rootPoint));
+    return true;
+  }
+
+  function beginLineToolAt(rootPoint, layer = null) {
+    const targetLayer = layer || lineToolState.layer || getActiveLayer() || svgRoot;
+    const spacePoint = rootPointToElementPoint(targetLayer, rootPoint);
+    clearSelection();
+    lineToolState.active = true;
+    lineToolState.layer = targetLayer;
+    lineToolState.startRoot = rootPoint;
+    lineToolState.startSpace = spacePoint;
+    lineToolState.pointsSpace = [[spacePoint.x, spacePoint.y]];
+    lineToolState.placedLines = [];
+    lineToolState.cursorRoot = rootPoint;
+    updateLineToolPreview(rootPoint);
+    setStatus("Line tool: click next point, p=x y, r=angle, px/py axis, g=grab vertex");
+    return true;
+  }
+
+  function placeLineToolVertex(rootPoint, layer = null) {
+    const targetLayer = layer || lineToolState.layer || getActiveLayer() || svgRoot;
+    if (!lineToolState.active) return beginLineToolAt(rootPoint, targetLayer);
+    const spacePoint = rootPointToElementPoint(targetLayer, rootPoint);
+    if (!lineToolState.startSpace) return false;
+    const dx = spacePoint.x - lineToolState.startSpace.x;
+    const dy = spacePoint.y - lineToolState.startSpace.y;
+    const segLen = Math.hypot(dx, dy);
+    if (Number.isFinite(segLen) && segLen > 1e-6) {
+      const style = currentStyleDefaults();
+      const seg = createSvgEl("line", {
+        x1: lineToolState.startSpace.x,
+        y1: lineToolState.startSpace.y,
+        x2: spacePoint.x,
+        y2: spacePoint.y,
+        stroke: style.stroke,
+        "stroke-width": style.strokeWidth,
+      });
+      try {
+        targetLayer.appendChild(seg);
+        lineToolState.placedLines.push(seg);
+      } catch {
+        // ignore
+      }
+      lineToolState.startRoot = rootPoint;
+      lineToolState.startSpace = spacePoint;
+      lineToolState.pointsSpace.push([spacePoint.x, spacePoint.y]);
+      lineToolState.cursorRoot = rootPoint;
+      lineToolState.constraint = null;
+      updateLineToolPreview(rootPoint);
+      setStatus("Line vertex placed");
+    }
+    return true;
+  }
+
+  function setLineToolAxisConstraint(axis, distance = null) {
+    const origin = getLineToolAnchorRoot();
+    if (!origin) {
+      setStatus("Line tool: place a vertex before using axis constraints");
+      return false;
+    }
+    lineToolState.constraint = { type: axis, originRoot: { ...origin } };
+    if (Number.isFinite(distance)) {
+      const next = axis === "x"
+        ? { x: origin.x + distance, y: origin.y }
+        : { x: origin.x, y: origin.y + distance };
+      lineToolState.constraint.fixedRoot = { ...next };
+      setLineToolCursorRoot(next);
+      setStatus(`Line cursor moved ${axis.toUpperCase()} by ${distance}`);
+    } else {
+      setStatus(`Line cursor locked to ${axis.toUpperCase()} axis`);
+    }
+    return true;
+  }
+
+  function setLineToolAngleConstraint(angleDeg) {
+    const origin = getLineToolAnchorRoot();
+    if (!origin) {
+      setStatus("Line tool: place a vertex before using rotation lock");
+      return false;
+    }
+    const angleRad = (angleDeg * Math.PI) / 180;
+    lineToolState.constraint = { type: "angle", originRoot: { ...origin }, angleRad };
+    const len = pointerToleranceInSvgUnits(120);
+    const previewPoint = {
+      x: origin.x + Math.cos(angleRad) * len,
+      y: origin.y + Math.sin(angleRad) * len,
+    };
+    setLineToolCursorRoot(previewPoint);
+    setStatus(`Line cursor locked to ${angleDeg} deg; click to place or Esc to cancel`);
+    return true;
+  }
+
+  function promptLineToolPosition() {
+    const value = window.prompt?.("Line cursor position (x y)", "") || "";
+    const point = parseLineToolCoordinatePair(value);
+    if (!point) {
+      setStatus("Line position canceled");
+      return false;
+    }
+    placeLineToolVertex(point, lineToolState.layer || getActiveLayer() || svgRoot);
+    return true;
+  }
+
+  function promptLineToolAngle() {
+    const value = window.prompt?.("Line reference angle in degrees", "") || "";
+    const angle = parseLineToolNumber(value);
+    if (angle === null) {
+      setStatus("Line angle canceled");
+      return false;
+    }
+    return setLineToolAngleConstraint(angle);
+  }
+
+  function startLineToolGrab() {
+    if (!lineToolState.active || !lineToolState.pointsSpace.length) {
+      setStatus("Line tool: place or select a vertex before grabbing");
+      return false;
+    }
+    const index = lineToolState.pointsSpace.length - 1;
+    const layer = lineToolState.layer || getActiveLayer() || svgRoot;
+    lineToolState.grab = { index, layer };
+    lineToolState.constraint = null;
+    setStatus("Grab vertex: move cursor, click to place, Esc to cancel");
+    return true;
+  }
+
+  function updateLineToolGrab(rootPoint) {
+    const grab = lineToolState.grab;
+    if (!grab || !lineToolState.active) return false;
+    const layer = grab.layer || lineToolState.layer || svgRoot;
+    const spacePoint = rootPointToElementPoint(layer, rootPoint);
+    const index = grab.index;
+    lineToolState.pointsSpace[index] = [spacePoint.x, spacePoint.y];
+    if (index === lineToolState.pointsSpace.length - 1) {
+      lineToolState.startRoot = rootPoint;
+      lineToolState.startSpace = spacePoint;
+      const lastSeg = lineToolState.placedLines[lineToolState.placedLines.length - 1];
+      if (lastSeg) {
+        lastSeg.setAttribute("x2", String(spacePoint.x));
+        lastSeg.setAttribute("y2", String(spacePoint.y));
+      }
+    } else {
+      const prevSeg = lineToolState.placedLines[index - 1];
+      const nextSeg = lineToolState.placedLines[index];
+      if (prevSeg) {
+        prevSeg.setAttribute("x2", String(spacePoint.x));
+        prevSeg.setAttribute("y2", String(spacePoint.y));
+      }
+      if (nextSeg) {
+        nextSeg.setAttribute("x1", String(spacePoint.x));
+        nextSeg.setAttribute("y1", String(spacePoint.y));
+      }
+    }
+    setLineToolCursorRoot(rootPoint);
+    updateLineToolPreview(rootPoint);
+    return true;
+  }
+
+  function finishLineToolGrab() {
+    if (!lineToolState.grab) return false;
+    lineToolState.grab = null;
+    setStatus("Grabbed vertex placed");
+    return true;
+  }
+
+  function cancelLineToolTransientOperation() {
+    if (lineToolState.commandBuffer || lineToolState.commandTimer) {
+      clearLineToolPendingCommand();
+      setStatus("Line command canceled");
+      return true;
+    }
+    if (lineToolState.grab) {
+      lineToolState.grab = null;
+      setStatus("Line grab canceled");
+      return true;
+    }
+    if (lineToolState.constraint) {
+      lineToolState.constraint = null;
+      if (lineToolState.cursorRoot) updateLineToolPreview(lineToolState.cursorRoot);
+      setStatus("Line cursor constraint canceled");
+      return true;
+    }
+    return false;
+  }
+
+  function clearLineToolPendingCommand() {
+    lineToolState.commandBuffer = "";
+    if (lineToolState.commandTimer) window.clearTimeout(lineToolState.commandTimer);
+    lineToolState.commandTimer = null;
+  }
+
+  function handleLineToolKeyCommand(e) {
+    const key = String(e.key || "");
+    const lower = key.toLowerCase();
+    if (key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return false;
+
+    if (lineToolState.commandBuffer === "p" && (lower === "x" || lower === "y")) {
+      clearLineToolPendingCommand();
+      const distanceValue = window.prompt?.(`Move cursor on ${lower.toUpperCase()} axis by distance (blank to only lock axis)`, "") ?? "";
+      const distance = String(distanceValue).trim() ? parseLineToolNumber(distanceValue) : null;
+      setLineToolAxisConstraint(lower, distance);
+      return true;
+    }
+
+    if (lineToolState.commandBuffer === "p") {
+      clearLineToolPendingCommand();
+      promptLineToolPosition();
+      return true;
+    }
+
+    if (lower === "p") {
+      clearLineToolPendingCommand();
+      lineToolState.commandBuffer = "p";
+      lineToolState.commandTimer = window.setTimeout(() => {
+        if (lineToolState.commandBuffer !== "p") return;
+        clearLineToolPendingCommand();
+        promptLineToolPosition();
+      }, 350);
+      setStatus("Line command: p position, px X axis, py Y axis");
+      return true;
+    }
+    if (lower === "r") {
+      clearLineToolPendingCommand();
+      return promptLineToolAngle();
+    }
+    if (lower === "g") {
+      clearLineToolPendingCommand();
+      return startLineToolGrab();
+    }
+    return false;
   }
 
   function getSvgNaturalDimensions() {
@@ -1729,7 +2034,8 @@ export async function renderEditor(filePath, container) {
       sketchController.onModeExit();
     }
     if (toolState.mode === "line" && mode !== "line") {
-      finishLineTool();
+      if (lineToolState.active) finishLineTool();
+      else clearLineToolState();
     }
     if (toolState.mode === "bezier" && mode !== "bezier") {
       // Only tear down the live bezier session when a path is mid-draw; if the user
@@ -2101,12 +2407,20 @@ export async function renderEditor(filePath, container) {
     if (nodeEditor.onKeyDown?.(e)) return;
     if (toolState.mode === "line") {
       if (key === "Escape") {
+        if (cancelLineToolTransientOperation()) {
+          e.preventDefault();
+          return;
+        }
         if (lineToolState.active) {
           cancelLineToolAndDeletePlaced();
         } else {
           clearLineToolState();
         }
         setMode("select");
+        e.preventDefault();
+        return;
+      }
+      if (handleLineToolKeyCommand(e)) {
         e.preventDefault();
         return;
       }
@@ -2204,6 +2518,13 @@ export async function renderEditor(filePath, container) {
     }
 
     if (toolState.mode === "line") {
+      if (lineToolState.grab) {
+        finishLineToolGrab();
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
       if (lineToolState.active && e.detail >= 2) {
         finishLineTool();
         e.preventDefault();
@@ -2211,57 +2532,9 @@ export async function renderEditor(filePath, container) {
         return;
       }
 
-	      const layer = lineToolState.layer || getActiveLayer() || svgRoot;
-	      let rootPoint = p;
-      if (lineToolState.active && e.shiftKey && lineToolState.startRoot) {
-        // Shift: snap to nearby endpoints first, then fall back to 15° angle snaps.
-        const tol = pointerToleranceInSvgUnits(18);
-        const snapped = findNearestSnapPointInRoot(p, tol);
-        rootPoint = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
-      }
-      const spacePoint = rootPointToElementPoint(layer, rootPoint);
-
-	      if (!lineToolState.active) {
-	        clearSelection();
-	        lineToolState.active = true;
-	        lineToolState.layer = layer;
-	        lineToolState.startRoot = rootPoint;
-	        lineToolState.startSpace = spacePoint;
-	        lineToolState.pointsSpace = [[spacePoint.x, spacePoint.y]];
-	        lineToolState.placedLines = [];
-	        updateLineToolPreview(rootPoint);
-	        setStatus("Line tool: click next point, Enter to finish, Esc to cancel");
-	        e.preventDefault();
-	        e.stopPropagation();
-	        return;
-	      }
-
-      if (lineToolState.startSpace) {
-        const dx = spacePoint.x - lineToolState.startSpace.x;
-        const dy = spacePoint.y - lineToolState.startSpace.y;
-        const segLen = Math.hypot(dx, dy);
-        if (Number.isFinite(segLen) && segLen > 1e-6) {
-          const style = currentStyleDefaults();
-          const seg = createSvgEl("line", {
-            x1: lineToolState.startSpace.x,
-            y1: lineToolState.startSpace.y,
-            x2: spacePoint.x,
-            y2: spacePoint.y,
-            stroke: style.stroke,
-            "stroke-width": style.strokeWidth,
-          });
-          try {
-            (lineToolState.layer || layer).appendChild(seg);
-            lineToolState.placedLines.push(seg);
-          } catch {
-            // ignore
-          }
-	          lineToolState.startRoot = rootPoint;
-	          lineToolState.startSpace = spacePoint;
-	          lineToolState.pointsSpace.push([spacePoint.x, spacePoint.y]);
-	          updateLineToolPreview(rootPoint);
-	        }
-	      }
+      const layer = lineToolState.layer || getActiveLayer() || svgRoot;
+      const rootPoint = resolveLineToolPoint(p, e);
+      placeLineToolVertex(rootPoint, layer);
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -2457,14 +2730,9 @@ export async function renderEditor(filePath, container) {
 	    }
 
     if (toolState.mode === "line" && lineToolState.active) {
-      let next = p;
-      if (e.shiftKey && lineToolState.startRoot) {
-        // Shift: prefer snapping to existing endpoints/vertices within a generous tolerance.
-        const tol = pointerToleranceInSvgUnits(18);
-        const snapped = findNearestSnapPointInRoot(p, tol);
-        next = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, p, Math.PI / 12);
-      }
-      updateLineToolPreview(next);
+      const next = resolveLineToolPoint(p, e);
+      if (lineToolState.grab) updateLineToolGrab(next);
+      else updateLineToolPreview(next);
       e.preventDefault();
       return;
     }
