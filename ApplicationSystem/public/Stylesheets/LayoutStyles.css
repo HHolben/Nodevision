@@ -339,7 +339,7 @@ html[data-nv-theme="dark"] .panel-header {
   justify-content: center;
   color: #666;
   font-size: 12px;
-  font-family: monospace;
+  font-family: var(--nv-ui-mono-font-family, monospace);
   pointer-events: none;
 }
 
@@ -366,7 +366,7 @@ html[data-nv-theme="dark"] .panel-header {
   background: #2e2e2e;
   color: #fff;
   font-size: 12px;
-  font-family: monospace;
+  font-family: var(--nv-ui-mono-font-family, monospace);
   cursor: move;
   user-select: none;
 }

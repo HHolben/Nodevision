@@ -74,6 +74,6 @@
 }
 
 #sub-toolbar .nv-subtoolbar-widget .nv-mono {
-  font-family: monospace;
+  font-family: var(--nv-ui-mono-font-family, monospace);
 }
 

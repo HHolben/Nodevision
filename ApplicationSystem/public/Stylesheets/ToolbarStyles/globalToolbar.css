@@ -86,7 +86,7 @@
   display: inline-block;
 }
 
-/* === Dropdown Panel + Items === */
+/* === Dropdown Panel === */
 .toolbar-dropdown-panel {
   position: absolute;
   top: 100%;
@@ -97,40 +97,6 @@
   display: none;
   min-width: 100%;
   width: max-content;
-}
-
-.toolbar-dropdown-button {
-  margin: 0;
-  width: 100%;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: nowrap;
-  gap: 6px;
-  opacity: 1;
-  box-sizing: border-box;
-  white-space: nowrap;
-  overflow-wrap: normal;
-  word-break: normal;
-  line-height: 1.25;
-  height: auto;
-  text-align: left;
-  font-size: 14px;
-  color: black;
-}
-
-.toolbar-dropdown-button:hover {
-  background: #ff8c00;
-}
-
-.toolbar-dropdown-button:active,
-.toolbar-dropdown-button:focus-visible {
-  outline: none;
-  background: #00c040;
 }
 
 /* Compact icon-only buttons used in #sub-toolbar */
@@ -175,12 +141,4 @@ html[data-nv-theme="dark"] .toolbar-main-button:hover {
 html[data-nv-theme="dark"] .toolbar-dropdown-panel {
   background: #0f172a;
   border: 1px solid #334155;
-}
-
-html[data-nv-theme="dark"] .toolbar-dropdown-button {
-  color: #e5e7eb;
-}
-
-html[data-nv-theme="dark"] .toolbar-dropdown-button:hover {
-  background: #1f2937;
 }

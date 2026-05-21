@@ -45,7 +45,7 @@ function ensureStyles() {
   border-radius: 10px;
   box-shadow: 0 24px 56px rgba(7, 12, 20, 0.32);
   padding: 18px;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--nv-ui-font-family, Arial, sans-serif);
 }
 
 .nv-sound-settings-overlay__title-row {

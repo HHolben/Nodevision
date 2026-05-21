@@ -2,7 +2,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "File Manager",
-    "icon": "icons/folder.png",
+    "icon": "icons/FileManager.png",
     "panelTemplateId": "FileManager",          
     "panelType": "InfoPanel",                
     "panelPath": "/PanelInstances/InfoPanels/FileManager.mjs" 
@@ -10,7 +10,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Graph Manager",
-    "icon": "icons/Graph.png",
+    "icon": "icons/GraphManager.png",
     "panelTemplateId": "GraphManager",          
     "panelType": "InfoPanel",                
     "panelPath": "/PanelInstances/InfoPanels/GraphManager.mjs" 
@@ -18,18 +18,10 @@
   {
     "ToolbarCategory": "File",
     "heading": "Sync",
-    "icon": "icons/RefreshIcon.png",
+    "icon": "icons/Sync.png",
     "panelTemplateId": "SyncPanel",
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SyncPanel.mjs"
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "File View",
-    "icon": "icons/DefaultNodeImage.png",
-    "panelTemplateId": "FileView",
-    "panelType": "FileView",
-    "defaultInstanceVars": { "filePath": "/Notebook/index.html", "renderMode": "Displaying.Rendered" }
   },
   {
     "ToolbarCategory": "File",
@@ -194,7 +186,7 @@
     "ToolbarCategory": "File",
     "heading": "Download File",
     "callbackKey": "downloadFile",
-    "icon": "icons/DownloadIcon.png",
+    "icon": "icons/Download.png",
     "availability": ["fileOpen"]
   },
   {

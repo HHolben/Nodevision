@@ -52,14 +52,13 @@
     "callbackKey": "svgLayerToggleActiveVisibility",
     "modes": ["SVG Editing"]
   },
-  {
-    "ToolbarCategory": "View",
+    {
+    "ToolbarCategory": "File",
     "heading": "File View",
-    "content": "",
-    "panelTemplate": "FileView",
+    "icon": "icons/DefaultNodeImage.png",
+    "panelTemplateId": "FileView",
     "panelType": "FileView",
-    "panelPath": "/PanelInstances/ViewPanels/FileView.mjs",
-    "replaceActive": true
+    "defaultInstanceVars": { "filePath": "/Notebook/index.html", "renderMode": "Displaying.Rendered" }
   },
   {
     "ToolbarCategory": "View",

@@ -78,7 +78,6 @@ function addDividers() {
       border: 1px solid #444;
       background-color: #1e1e1e;
       color: white;
-      font-family: sans-serif;
       overflow: auto;
     }
 
