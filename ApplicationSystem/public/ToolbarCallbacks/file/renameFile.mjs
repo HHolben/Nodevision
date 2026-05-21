@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/renameFile.mjs
 // This file defines browser-side rename File logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { maybePromptLinkMoveImpact } from "./linkMoveImpact.mjs";
+import { showInputDialog } from "/ui/modals/InputDialog.mjs";
 
 function normalizePath(value = "") {
   return String(value).replace(/^\/+/, "").replace(/\/+/g, "/");
@@ -22,7 +23,15 @@ export default async function renameFile() {
   const oldPath = selectedPath;
   const currentName = selectedPath.split("/").pop();
   const parentDir = dirname(selectedPath);
-  const nextName = prompt("Enter new name:", currentName);
+  const nextName = await showInputDialog({
+    title: "Rename file",
+    description: "Enter the new file or directory name.",
+    defaultValue: currentName,
+    placeholder: currentName,
+    confirmText: "Rename",
+    cancelText: "Cancel",
+    emptyMessage: "A name is required.",
+  });
   if (!nextName || !nextName.trim()) return;
 
   const trimmedName = nextName.trim();
