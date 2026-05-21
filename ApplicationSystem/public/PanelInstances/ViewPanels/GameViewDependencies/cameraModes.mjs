@@ -53,7 +53,10 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
         },
         undefined,
         (err) => {
-          console.warn("PlayerAvatar.glTF load failed. Using fallback avatar.", err);
+          const status = err?.target?.status || err?.status || 0;
+          if (status !== 404) {
+            console.warn("PlayerAvatar.glTF load failed. Using fallback avatar.", err);
+          }
         }
       );
     })

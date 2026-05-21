@@ -107,6 +107,14 @@ export async function setupPanel(panel, instanceVars = {}) {
     if (panel._vrCanvas) {
       panel._vrCanvas = null;
     }
+    if (window.VRWorldContext?.metaWorldRuntime?.dispose) {
+      window.VRWorldContext.metaWorldRuntime.dispose();
+      window.VRWorldContext.metaWorldRuntime = null;
+    }
+    if (window.VRWorldContext?.metaWorldHost?.parentNode) {
+      window.VRWorldContext.metaWorldHost.parentNode.removeChild(window.VRWorldContext.metaWorldHost);
+      window.VRWorldContext.metaWorldHost = null;
+    }
     if (panel._vrRenderer?.setAnimationLoop) {
       panel._vrRenderer.setAnimationLoop(null);
     }

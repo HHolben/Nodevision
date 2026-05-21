@@ -22,6 +22,14 @@ let objectFileGeometryLoaderPromise = null;
 let imagePlaneTextureApplier = null;
 let imagePlaneLoaderPromise = null;
 let stlLoaderPromise = null;
+let metaWorldRuntimePromise = null;
+
+async function ensureMetaWorldRuntime() {
+  if (!metaWorldRuntimePromise) {
+    metaWorldRuntimePromise = import("/MetaWorld/MetaWorldRuntime.mjs");
+  }
+  return metaWorldRuntimePromise;
+}
 
 async function ensureObjectFileGeometryApplier() {
   if (objectFileGeometryApplier) return objectFileGeometryApplier;
@@ -65,12 +73,111 @@ async function ensureImagePlaneTextureApplier() {
   return imagePlaneLoaderPromise;
 }
 
+function disposeCurrentMetaWorld(ctx = window.VRWorldContext) {
+  if (ctx?.metaWorldRuntime?.dispose) {
+    ctx.metaWorldRuntime.dispose();
+  }
+  if (ctx) ctx.metaWorldRuntime = null;
+}
+
+function parseMetaWorldDocument(htmlText) {
+  if (!String(htmlText || "").includes("nodevision-metaworld")) return null;
+  const doc = new DOMParser().parseFromString(htmlText, "text/html");
+  const script = doc.getElementById("nodevision-metaworld");
+  if (!script || script.type !== "application/json") return null;
+  return doc;
+}
+
+function resetLegacyWorldScene(ctx, state, worldData = null) {
+  const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, waterVolumes, measurementVisuals, movementState } = ctx;
+  disposeCurrentMetaWorld(ctx);
+  if (ctx.panel) ctx.panel.classList.remove("gameview-metaworld-active");
+  if (ctx.canvas) ctx.canvas.style.display = "block";
+  if (ctx.metaWorldHost?.parentNode) ctx.metaWorldHost.parentNode.removeChild(ctx.metaWorldHost);
+  ctx.metaWorldHost = null;
+  objects?.forEach(obj => scene.remove(obj));
+  if (objects) objects.length = 0;
+  if (colliders) colliders.length = 0;
+  if (portals) portals.length = 0;
+  if (collisionActions) collisionActions.length = 0;
+  if (useTargets) useTargets.length = 0;
+  if (spawnPoints) spawnPoints.length = 0;
+  if (waterVolumes) waterVolumes.length = 0;
+  if (Array.isArray(measurementVisuals) && measurementVisuals.length > 0) {
+    measurementVisuals.forEach((entry) => {
+      if (entry?.parent) entry.parent.remove(entry);
+      if (entry?.geometry?.dispose) entry.geometry.dispose();
+      if (entry?.material?.dispose) entry.material.dispose();
+      if (entry?.material?.map?.dispose) entry.material.map.dispose();
+    });
+    measurementVisuals.length = 0;
+  }
+  if (movementState) {
+    movementState.tapeMeasureFirstPoint = null;
+    movementState.tapeMeasureSecondPoint = null;
+    movementState.tapeMeasureFirstMarker = null;
+    movementState.tapeMeasureSecondMarker = null;
+    movementState.tapeMeasureLine = null;
+    movementState.tapeMeasureLabel = null;
+    movementState.tapeToolLatch = false;
+  }
+  if (lights) {
+    lights.forEach(light => scene.remove(light));
+    lights.length = 0;
+  }
+  if (state) state.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+  ctx.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+}
+
+async function loadMetaWorldFromHtmlDocument(metaWorldDoc, filePath, state) {
+  const ctx = window.VRWorldContext;
+  if (!ctx?.panel) return false;
+  const runtime = await ensureMetaWorldRuntime();
+  const world = runtime.loadMetaWorldFromHtmlDocument(metaWorldDoc);
+  if (world.worldType !== "NodevisionMetaWorld") return false;
+
+  console.log("Detected Nodevision MetaWorld.");
+  resetLegacyWorldScene(ctx, state, world);
+  ctx.currentWorldPath = filePath;
+  ctx.metaWorldHost = document.createElement("div");
+  ctx.metaWorldHost.className = "gameview-metaworld-host";
+  ctx.metaWorldHost.innerHTML = `<main class="gameview-metaworld-viewport" aria-label="MetaWorld viewport"></main><section class="gameview-metaworld-ui" aria-label="MetaWorld controls"></section>`;
+  Object.assign(ctx.metaWorldHost.style, {
+    position: "absolute",
+    inset: "0",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 320px",
+    width: "100%",
+    height: "100%",
+    background: "#eef2f4",
+    zIndex: "5",
+  });
+  const viewport = ctx.metaWorldHost.querySelector(".gameview-metaworld-viewport");
+  const uiRoot = ctx.metaWorldHost.querySelector(".gameview-metaworld-ui");
+  Object.assign(viewport.style, { minWidth: "0", minHeight: "0" });
+  Object.assign(uiRoot.style, { minWidth: "0", minHeight: "0", overflow: "auto" });
+  ctx.panel.appendChild(ctx.metaWorldHost);
+  if (ctx.canvas) ctx.canvas.style.display = "none";
+  ctx.panel.classList.add("gameview-metaworld-active");
+  ctx.metaWorldRuntime = runtime.mountMetaWorld({
+    viewport,
+    uiRoot,
+    world,
+    displayName: "Nodevision Physics Museum",
+  });
+  return true;
+}
+
 async function loadStlWorld(filePath, state, THREE) {
   const ctx = window.VRWorldContext || {};
   const { scene, objects, colliders, lights, movementState, ground, consolePanels } = ctx;
+  disposeCurrentMetaWorld(ctx);
+  if (ctx.panel) ctx.panel.classList.remove("gameview-metaworld-active");
+  if (ctx.canvas) ctx.canvas.style.display = "block";
+  if (ctx.metaWorldHost?.parentNode) ctx.metaWorldHost.parentNode.removeChild(ctx.metaWorldHost);
+  ctx.metaWorldHost = null;
   if (!scene || !movementState || !ground) return;
 
-  // Clear existing scene content.
   objects?.forEach((obj) => scene.remove(obj));
   if (objects) objects.length = 0;
   if (colliders) colliders.length = 0;
@@ -94,7 +201,6 @@ async function loadStlWorld(filePath, state, THREE) {
   movementState.stlVertices = [];
   movementState.stlNeedsMarkerRefresh = true;
 
-  // Visuals: white sky and grid floor.
   ground.material.color?.set("#ffffff");
   ground.material.needsUpdate = true;
   if (!scene.__nvGridHelper) {
@@ -109,9 +215,8 @@ async function loadStlWorld(filePath, state, THREE) {
   consolePanels?.applyEnvironmentDefinition?.(envDef);
   if (movementState.environment) Object.assign(movementState.environment, envDef);
 
-  // Load STL geometry into a single editable mesh.
   const normalized = normalizeWorldPath(filePath);
-  const url = `/Notebook/${encodeURI(normalized)}`;
+  const url = "/Notebook/" + encodeURI(normalized);
   let geometry = null;
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -134,7 +239,6 @@ async function loadStlWorld(filePath, state, THREE) {
   scene.add(mesh);
   objects?.push(mesh);
 
-  // Extract vertices for editing.
   const pos = geometry.getAttribute("position");
   if (pos?.count) {
     for (let i = 0; i < pos.count; i++) {
@@ -151,6 +255,7 @@ async function loadStlWorld(filePath, state, THREE) {
   if (state) state.currentWorldDefinition = null;
   if (ctx) ctx.currentWorldDefinition = null;
 }
+
 
 export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
   console.log("Loading world:", filePath);
@@ -182,6 +287,20 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     }
 
     const worldPath = normalizeWorldPath(filePath);
+    if (ext === "html" || ext === "htm") {
+      try {
+        const htmlRes = await fetch("/Notebook/" + encodeURI(worldPath), { cache: "no-store" });
+        if (htmlRes.ok) {
+          const metaWorldDoc = parseMetaWorldDocument(await htmlRes.text());
+          if (metaWorldDoc && await loadMetaWorldFromHtmlDocument(metaWorldDoc, filePath, state)) {
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("GameView: MetaWorld detection failed; falling back to legacy world loading.", err);
+      }
+    }
+
     const res = await fetch("/api/load-world", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -203,6 +322,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
     const data = await res.json();
     const worldData = data?.worldDefinition || null;
+    resetLegacyWorldScene(window.VRWorldContext, state, worldData);
     let objectDefs = worldData?.objects || null;
     if (!objectDefs) {
       console.warn("World has no objects.");

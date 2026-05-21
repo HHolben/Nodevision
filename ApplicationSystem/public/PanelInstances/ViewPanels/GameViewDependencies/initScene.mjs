@@ -41,6 +41,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     scene,
     camera,
     renderer,
+    panel,
+    canvas,
     objects,
     colliders,
     lights,

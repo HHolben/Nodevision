@@ -36,6 +36,7 @@ import { registerAppStylesRoutes } from "./server/routes/appStylesRoutes.mjs";
 import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
 import { registerPeerRoutes } from "./server/routes/peerRoutes.mjs";
 import { registerSyncPanelRoutes } from "./server/routes/syncPanelRoutes.mjs";
+import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
 
 export default async function createApp(runtimeConfig = {}) {
   const ctx = createServerContext(runtimeConfig);
@@ -74,6 +75,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerAuthRoutes(app, AuthService);
   registerPeerRoutes(app, ctx);
   registerSyncPanelRoutes(app, ctx);
+  registerBrokerRoutes(app, ctx);
 
 
   // Public login background asset (optional).

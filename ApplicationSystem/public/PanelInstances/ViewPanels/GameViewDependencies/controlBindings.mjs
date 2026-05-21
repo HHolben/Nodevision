@@ -154,7 +154,9 @@ export async function loadControlScheme(state) {
       cache: "no-store"
     });
     if (!res.ok) {
-      console.warn("GameView: control scheme load failed:", res.status, res.statusText);
+      if (res.status !== 404) {
+        console.warn("GameView: control scheme load failed:", res.status, res.statusText);
+      }
       return;
     }
 

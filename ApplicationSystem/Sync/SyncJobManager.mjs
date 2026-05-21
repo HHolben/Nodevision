@@ -2,8 +2,20 @@
 // This module tracks in-memory long-running sync jobs with progress, cancellation, and result/error lifecycle state for Sync Panel polling.
 
 import { randomUUID } from "node:crypto";
+import { getBroker } from "../MessageBroker/BrokerSingleton.mjs";
 
 const FINAL_STATUSES = new Set(["complete", "failed", "cancelled"]);
+const PROGRESS_PUBLISH_INTERVAL_MS = 250;
+const SYNC_JOB_TOPICS = {
+  started: "nodevision/sync/job/started",
+  progress: "nodevision/sync/job/progress",
+  completed: "nodevision/sync/job/completed",
+  failed: "nodevision/sync/job/failed",
+  cancelled: "nodevision/sync/job/cancelled",
+};
+
+// Future Graph Manager idea: subscribe to nodevision/sync/# to visualize
+// active sync jobs, peer relationships, file transfer activity, failures, and conflicts.
 
 function nowIso() {
   return new Date().toISOString();
@@ -55,6 +67,55 @@ function createJobRecord({ scope, peerUrl, dryRun }) {
   };
 }
 
+function isUnsafeRelativePath(value) {
+  const text = String(value || "");
+  return (
+    !text ||
+    text.startsWith("/") ||
+    /^[A-Za-z]:[\\/]/.test(text) ||
+    text.split(/[\\/]+/).includes("ServerSettings")
+  );
+}
+
+function sanitizeCurrentFile(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value);
+  return isUnsafeRelativePath(text) ? null : text;
+}
+
+function sanitizePeerUrl(value) {
+  if (!value) return "";
+  try {
+    const parsed = new URL(String(value));
+    parsed.username = "";
+    parsed.password = "";
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString();
+  } catch {
+    return String(value).split("?")[0].split("#")[0];
+  }
+}
+
+function createSyncEventPayload(job, status = job.status) {
+  return {
+    jobId: job.jobId,
+    scope: job.scope,
+    peerUrl: sanitizePeerUrl(job.peerUrl),
+    status,
+    filesDone: job.filesDone,
+    filesTotal: job.filesTotal,
+    bytesDone: job.bytesDone,
+    bytesTotal: job.bytesTotal,
+    currentFile: sanitizeCurrentFile(job.currentFile),
+    timestamp: nowIso(),
+  };
+}
+
+function jobStateTopic(job) {
+  return "nodevision/sync/job/" + job.jobId + "/state";
+}
+
 function isFinalStatus(status) {
   return FINAL_STATUSES.has(String(status || ""));
 }
@@ -102,8 +163,15 @@ function applyResultOperations(job, result) {
   }
 }
 
-export function createSyncJobManager({ maxJobs = 100 } = {}) {
+export function createSyncJobManager({ maxJobs = 100, broker = getBroker() } = {}) {
   const jobs = new Map();
+
+  function publishSyncEvent(topic, job, { status = job.status, retain = false } = {}) {
+    const payload = createSyncEventPayload(job, status);
+    broker.publish(topic, payload, { retain });
+    broker.publish(jobStateTopic(job), payload, { retain: true });
+    return payload;
+  }
 
   function pruneIfNeeded() {
     if (jobs.size <= maxJobs) return;
@@ -130,6 +198,7 @@ export function createSyncJobManager({ maxJobs = 100 } = {}) {
       job.status = "cancelled";
       job.finishedAt = nowIso();
       job.currentFile = null;
+      publishSyncEvent(SYNC_JOB_TOPICS.cancelled, job, { retain: true });
     }
     return cloneJob(job);
   }
@@ -139,21 +208,34 @@ export function createSyncJobManager({ maxJobs = 100 } = {}) {
       throw new Error("run must be a function");
     }
     const job = createJobRecord({ scope, peerUrl, dryRun });
+    let lastProgressPublishedAt = 0;
     jobs.set(job.jobId, job);
     pruneIfNeeded();
+    publishSyncEvent(SYNC_JOB_TOPICS.started, job, { retain: true });
 
     queueMicrotask(async () => {
       if (job.cancelRequested) {
+        const alreadyCancelled = job.status === "cancelled";
         job.status = "cancelled";
-        job.finishedAt = nowIso();
+        job.finishedAt = job.finishedAt || nowIso();
         job.currentFile = null;
+        if (!alreadyCancelled) {
+          publishSyncEvent(SYNC_JOB_TOPICS.cancelled, job, { retain: true });
+        }
         return;
       }
       job.status = "running";
+      publishSyncEvent(SYNC_JOB_TOPICS.started, job, { retain: true });
       try {
         const result = await run({
           onProgress(update) {
             applyProgressUpdate(job, update);
+            const elapsed = Date.now() - lastProgressPublishedAt;
+            const isCompleteUpdate = update?.event === "file-complete" || (job.filesTotal > 0 && job.filesDone >= job.filesTotal);
+            if (elapsed >= PROGRESS_PUBLISH_INTERVAL_MS || isCompleteUpdate) {
+              lastProgressPublishedAt = Date.now();
+              publishSyncEvent(SYNC_JOB_TOPICS.progress, job);
+            }
           },
           isCancelled() {
             return job.cancelRequested === true;
@@ -175,6 +257,13 @@ export function createSyncJobManager({ maxJobs = 100 } = {}) {
       } finally {
         job.currentFile = null;
         job.finishedAt = nowIso();
+        if (job.status === "complete") {
+          publishSyncEvent(SYNC_JOB_TOPICS.completed, job, { retain: true });
+        } else if (job.status === "failed") {
+          publishSyncEvent(SYNC_JOB_TOPICS.failed, job, { retain: true });
+        } else if (job.status === "cancelled") {
+          publishSyncEvent(SYNC_JOB_TOPICS.cancelled, job, { retain: true });
+        }
       }
     });
 
