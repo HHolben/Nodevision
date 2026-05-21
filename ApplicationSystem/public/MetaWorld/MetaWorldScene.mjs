@@ -1,8 +1,9 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/MetaWorldScene.mjs
 // MetaWorld scene system creates Three.js rooms, cameras, lights, labels, and animation hooks.
 
-import * as THREE from "/vendor/three/build/three.module.js";
-import { OrbitControls } from "/vendor/three/examples/jsm/controls/OrbitControls.js";
+// Follows Nodevision's existing vendor mapping used by legacy GameView modules.
+import * as THREE from "/lib/three/three.module.js";
+import { OrbitControls } from "/lib/three/OrbitControls.js";
 
 export class MetaWorldScene {
   constructor({ container, world }) {

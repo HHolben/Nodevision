@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects.
 
-function normalizeWorldPath(filePath) {
+export function normalizeWorldPath(filePath) {
   if (!filePath) return "";
   const normalized = filePath.replace(/\\/g, "/");
   const notebookMarker = "/Notebook/";
@@ -88,6 +88,256 @@ function parseMetaWorldDocument(htmlText) {
   return doc;
 }
 
+
+function convertMetaWorldToLegacyWorld(world) {
+  if (!world || world.worldType !== "NodevisionMetaWorld") return world;
+  const museum = world.museum || {};
+  const size = museum.size || { x: 18, y: 6, z: 14 };
+  const sx = Number.isFinite(size.x) ? size.x : 18;
+  const sy = Number.isFinite(size.y) ? size.y : 6;
+  const sz = Number.isFinite(size.z) ? size.z : 14;
+  const floorColor = museum.floorColor || "#d8dee4";
+  const wallColor = museum.wallColor || "#f7f9fb";
+  const accentColor = museum.accentColor || "#0f766e";
+  const objects = [];
+  const addBox = (id, position, boxSize, color, options = {}) => {
+    objects.push({
+      id,
+      type: "box",
+      tag: id,
+      position,
+      size: boxSize,
+      color,
+      isSolid: options.isSolid === true,
+      breakable: options.breakable === true
+    });
+  };
+  const addSphere = (id, position, radius, color, options = {}) => {
+    objects.push({
+      id,
+      type: "sphere",
+      tag: id,
+      position,
+      size: [radius],
+      color,
+      isSolid: options.isSolid === true,
+      breakable: options.breakable === true
+    });
+  };
+  const addCylinder = (id, position, radius, height, color, options = {}) => {
+    objects.push({
+      id,
+      type: "cylinder",
+      tag: id,
+      position,
+      size: [radius, height],
+      color,
+      isSolid: options.isSolid === true,
+      breakable: options.breakable === true
+    });
+  };
+  const addConsole = (id, position, demoConfig) => {
+    objects.push({
+      id,
+      tag: id,
+      type: "console",
+      position,
+      size: [0.35, 0.25, 0.35],
+      color: "#111827",
+      collider: false,
+      isSolid: false,
+      breakable: false,
+      hidden: true,
+      linkedObject: demoConfig?.linkedObject || "",
+      inputs: demoConfig?.inputs || {},
+      outputs: demoConfig?.outputs || {},
+      metaWorldDemo: demoConfig
+    });
+  };
+  const addButton = (id, position, consoleTag, options = {}) => {
+    objects.push({
+      id,
+      tag: id,
+      type: "button",
+      position,
+      size: [options.radius || 0.22, options.height || 0.12],
+      color: options.color || accentColor,
+      emissive: options.color || accentColor,
+      emissiveIntensity: 0.35,
+      isSolid: false,
+      breakable: false,
+      useRange: Number.isFinite(options.useRange) ? options.useRange : 3,
+      useAction: {
+        type: "console",
+        target: consoleTag,
+        event: options.event || "start",
+        inputs: options.inputs || {}
+      }
+    });
+  };
+  const worldY = 0;
+
+  addBox("metaworld-floor", [0, -0.06, 0], [sx, 0.12, sz], floorColor, { isSolid: true });
+  addBox("metaworld-back-wall", [0, sy / 2, -sz / 2], [sx, sy, 0.12], wallColor, { isSolid: true });
+  addBox("metaworld-left-wall", [-sx / 2, sy / 2, 0], [0.12, sy, sz], wallColor, { isSolid: true });
+  addBox("metaworld-right-wall", [sx / 2, sy / 2, 0], [0.12, sy, sz], wallColor, { isSolid: true });
+  addBox("metaworld-front-threshold", [0, 0.1, sz / 2], [sx, 0.2, 0.12], wallColor, { isSolid: true });
+
+  objects.push(
+    { type: "light", lightType: "hemisphere", position: [0, sy - 0.2, 0], color: "#ffffff", groundColor: "#b4bec8", intensity: 1.8 },
+    { type: "light", lightType: "directional", position: [5, 8, 4], color: "#ffffff", intensity: 2.2 }
+  );
+
+  for (const exhibit of world.exhibits || []) {
+    const p = exhibit.position || { x: 0, y: 0, z: 0 };
+    const baseX = Number.isFinite(p.x) ? p.x : 0;
+    const baseY = Number.isFinite(p.y) ? p.y : worldY;
+    const baseZ = Number.isFinite(p.z) ? p.z : 0;
+    const params = exhibit.parameters || {};
+    const id = exhibit.id || exhibit.type || "metaworld-exhibit";
+
+    addBox(`${id}-plinth`, [baseX, baseY + 0.08, baseZ], [2.8, 0.16, 1.6], "#d7ecdf", { isSolid: true });
+
+    if (exhibit.type === "gravity-drop") {
+      const height = Number.isFinite(params.dropHeight) ? params.dropHeight : 3.2;
+      const count = Number.isFinite(params.spheres) ? Math.max(1, Math.floor(params.spheres)) : 2;
+      addBox(`${id}-post`, [baseX - 1.1, baseY + height / 2, baseZ], [0.1, height, 0.1], "#384252", { isSolid: true });
+      addBox(`${id}-bar`, [baseX, baseY + height, baseZ], [2.2, 0.08, 0.08], "#384252", { isSolid: true });
+      for (let i = 0; i < count; i += 1) {
+        const radius = Number.isFinite(params.radius) ? params.radius : 0.22;
+        const x = count === 1 ? 0 : -0.45 + i * 0.9;
+        addSphere(`${id}-sphere-${i}`, [baseX + x, baseY + height, baseZ], radius, i % 2 ? "#2563eb" : "#e11d48", { isSolid: true, breakable: true });
+      }
+    } else if (exhibit.type === "projectile-range") {
+      addBox(`${id}-range-base`, [baseX + 1.6, baseY + 0.04, baseZ], [4.6, 0.08, 1.4], "#d7ecdf", { isSolid: true });
+      addCylinder(`${id}-launcher`, [baseX - 1.5, baseY + 0.42, baseZ], 0.08, 0.9, "#334155", { isSolid: true });
+      addSphere(`${id}-projectile`, [baseX - 1.6, baseY + 0.55, baseZ], Number.isFinite(params.radius) ? params.radius : 0.2, "#f97316", { isSolid: true, breakable: true });
+    } else if (exhibit.type === "pendulum") {
+      const pivotHeight = Number.isFinite(params.pivotHeight) ? params.pivotHeight : 3.1;
+      const length = Number.isFinite(params.length) ? params.length : 2.2;
+      addBox(`${id}-top`, [baseX, baseY + pivotHeight, baseZ], [2.4, 0.08, 0.08], "#475569", { isSolid: true });
+      addBox(`${id}-left`, [baseX - 1.2, baseY + 1.55, baseZ], [0.08, 3.1, 0.08], "#475569", { isSolid: true });
+      addBox(`${id}-right`, [baseX + 1.2, baseY + 1.55, baseZ], [0.08, 3.1, 0.08], "#475569", { isSolid: true });
+      addBox(`${id}-rod`, [baseX, baseY + pivotHeight - length / 2, baseZ], [0.035, length, 0.035], "#111827", { isSolid: false });
+      addSphere(`${id}-bob`, [baseX, baseY + pivotHeight - length, baseZ], 0.22, "#7c3aed", { isSolid: true, breakable: true });
+    } else {
+      addBox(`${id}-marker`, [baseX, baseY + 0.75, baseZ], [1.2, 1.2, 1.2], accentColor, { isSolid: true, breakable: true });
+    }
+
+    const consoleTag = `${id}-console`;
+    const buttonColor = exhibit.button?.color || accentColor;
+    const buttonPosition = Array.isArray(exhibit.button?.position)
+      ? exhibit.button.position
+      : [baseX, baseY + 0.18, baseZ + 1.05];
+    const baseDemo = {
+      id,
+      title: exhibit.title || id,
+      type: exhibit.type,
+      linkedObject: id,
+      inputs: { ...(params || {}), ...(exhibit.inputs || {}) },
+      outputs: exhibit.outputs || {}
+    };
+    if (exhibit.type === "gravity-drop") {
+      const count = Number.isFinite(params.spheres) ? Math.max(1, Math.floor(params.spheres)) : 2;
+      addConsole(consoleTag, [baseX, -0.8, baseZ], {
+        ...baseDemo,
+        sphereTags: Array.from({ length: count }, (_, i) => `${id}-sphere-${i}`),
+        dropHeight: Number.isFinite(params.dropHeight) ? params.dropHeight : 3.2,
+        floorY: baseY + 0.25
+      });
+    } else if (exhibit.type === "projectile-range") {
+      addConsole(consoleTag, [baseX, -0.8, baseZ], {
+        ...baseDemo,
+        projectileTag: `${id}-projectile`,
+        speed: Number.isFinite(params.speed) ? params.speed : 6.5,
+        angleDegrees: Number.isFinite(params.angleDegrees) ? params.angleDegrees : 38,
+        startPosition: [baseX - 1.6, baseY + 0.55, baseZ],
+        floorY: baseY + 0.25
+      });
+    } else if (exhibit.type === "pendulum") {
+      const pivotHeight = Number.isFinite(params.pivotHeight) ? params.pivotHeight : 3.1;
+      addConsole(consoleTag, [baseX, -0.8, baseZ], {
+        ...baseDemo,
+        bobTag: `${id}-bob`,
+        rodTag: `${id}-rod`,
+        pivot: [baseX, baseY + pivotHeight, baseZ],
+        length: Number.isFinite(params.length) ? params.length : 2.2,
+        initialAngleDegrees: Number.isFinite(params.initialAngleDegrees) ? params.initialAngleDegrees : 24
+      });
+    } else {
+      addConsole(consoleTag, [baseX, -0.8, baseZ], baseDemo);
+    }
+    addButton(`${id}-button`, buttonPosition, consoleTag, {
+      color: buttonColor,
+      radius: Number.isFinite(exhibit.button?.radius) ? exhibit.button.radius : 0.22,
+      height: Number.isFinite(exhibit.button?.height) ? exhibit.button.height : 0.12,
+      inputs: exhibit.button?.inputs || {}
+    });
+
+  }
+
+
+  for (const button of world.buttons || []) {
+    if (!button || typeof button !== "object") continue;
+    const id = button.id || button.tag || "metaworld-button";
+    const position = Array.isArray(button.position)
+      ? button.position
+      : [0, 0.18, 0];
+    const consoleTag = button.consoleTag || button.target || button.console || "";
+    if (!consoleTag) continue;
+    addButton(id, position, consoleTag, {
+      color: button.color || accentColor,
+      radius: Number.isFinite(button.radius) ? button.radius : 0.22,
+      height: Number.isFinite(button.height) ? button.height : 0.12,
+      useRange: Number.isFinite(button.useRange) ? button.useRange : 3,
+      event: button.event || "start",
+      inputs: button.inputs || {}
+    });
+  }
+
+
+  const spawn = world.spawnPosition || { x: 0, y: 1.75, z: Math.min(8, sz / 2 - 1) };
+  objects.push({
+    id: "metaworld-spawn",
+    type: "spawn",
+    tag: "spawn",
+    spawnId: "default",
+    position: [
+      Number.isFinite(spawn.x) ? spawn.x : 0,
+      Number.isFinite(spawn.y) ? spawn.y : 1.75,
+      Number.isFinite(spawn.z) ? spawn.z : Math.min(8, sz / 2 - 1)
+    ]
+  });
+
+  return {
+    name: world.name,
+    type: world.type,
+    worldType: world.worldType,
+    worldMode: "3d",
+    metadata: {
+      source: "NodevisionMetaWorld",
+      originalMetaWorld: JSON.parse(JSON.stringify(world)),
+      playerRules: {
+        allowFly: true,
+        allowRoll: false,
+        allowPitch: false,
+        allowPlace: true,
+        allowBreak: true,
+        allowInspect: true,
+        allowToolUse: true,
+        allowSave: false
+      },
+      environment: {
+        skyColor: "#eef2f4",
+        floorColor,
+        backgroundMode: "color",
+        backgroundImage: ""
+      }
+    },
+    objects
+  };
+}
+
 function resetLegacyWorldScene(ctx, state, worldData = null) {
   const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, waterVolumes, measurementVisuals, movementState } = ctx;
   disposeCurrentMetaWorld(ctx);
@@ -129,20 +379,46 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
   ctx.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
 }
 
-async function loadMetaWorldFromHtmlDocument(metaWorldDoc, filePath, state) {
-  const ctx = window.VRWorldContext;
-  if (!ctx?.panel) return false;
+export async function detectWorldKind(filePath) {
+  if (!filePath) return { kind: "unknown", reason: "missing path" };
+  const ext = String(filePath).split(".").pop()?.toLowerCase() || "";
+  if (ext !== "html" && ext !== "htm") return { kind: "legacy" };
+  const worldPath = normalizeWorldPath(filePath);
+  try {
+    const res = await fetch("/Notebook/" + encodeURI(worldPath), { cache: "no-store" });
+    if (!res.ok) return { kind: "unknown", reason: `fetch failed ${res.status}` };
+    const htmlText = await res.text();
+    const metaWorldDoc = parseMetaWorldDocument(htmlText);
+    if (!metaWorldDoc) return { kind: "legacy" };
+    const script = metaWorldDoc.getElementById("nodevision-metaworld");
+    const definition = JSON.parse(script.textContent || "{}");
+    if (definition?.worldType === "NodevisionMetaWorld") {
+      return { kind: "metaworld", document: metaWorldDoc, worldPath };
+    }
+    return { kind: "legacy" };
+  } catch (err) {
+    return { kind: "unknown", error: err };
+  }
+}
+
+export function disposeMetaWorldRuntime(runtime) {
+  if (!runtime?.dispose) return;
+  runtime.dispose();
+  console.log("MetaWorld runtime disposed");
+}
+
+export async function mountMetaWorldPanel({ panel, filePath, state, document: metaWorldDoc }) {
+  if (!panel || !metaWorldDoc) return null;
   const runtime = await ensureMetaWorldRuntime();
   const world = runtime.loadMetaWorldFromHtmlDocument(metaWorldDoc);
-  if (world.worldType !== "NodevisionMetaWorld") return false;
-
+  if (world.worldType !== "NodevisionMetaWorld") return null;
   console.log("Detected Nodevision MetaWorld.");
-  resetLegacyWorldScene(ctx, state, world);
-  ctx.currentWorldPath = filePath;
-  ctx.metaWorldHost = document.createElement("div");
-  ctx.metaWorldHost.className = "gameview-metaworld-host";
-  ctx.metaWorldHost.innerHTML = `<main class="gameview-metaworld-viewport" aria-label="MetaWorld viewport"></main><section class="gameview-metaworld-ui" aria-label="MetaWorld controls"></section>`;
-  Object.assign(ctx.metaWorldHost.style, {
+  panel.innerHTML = "";
+  panel.classList.add("gameview-metaworld-active");
+  const host = document.createElement("div");
+  host.className = "gameview-metaworld-host";
+  host.innerHTML = `<main class="gameview-metaworld-viewport" aria-label="MetaWorld viewport"></main><section class="gameview-metaworld-ui" aria-label="MetaWorld controls"></section>`;
+  Object.assign(host.style, {
     position: "absolute",
     inset: "0",
     display: "grid",
@@ -150,22 +426,32 @@ async function loadMetaWorldFromHtmlDocument(metaWorldDoc, filePath, state) {
     width: "100%",
     height: "100%",
     background: "#eef2f4",
-    zIndex: "5",
   });
-  const viewport = ctx.metaWorldHost.querySelector(".gameview-metaworld-viewport");
-  const uiRoot = ctx.metaWorldHost.querySelector(".gameview-metaworld-ui");
+  const viewport = host.querySelector(".gameview-metaworld-viewport");
+  const uiRoot = host.querySelector(".gameview-metaworld-ui");
   Object.assign(viewport.style, { minWidth: "0", minHeight: "0" });
   Object.assign(uiRoot.style, { minWidth: "0", minHeight: "0", overflow: "auto" });
-  ctx.panel.appendChild(ctx.metaWorldHost);
-  if (ctx.canvas) ctx.canvas.style.display = "none";
-  ctx.panel.classList.add("gameview-metaworld-active");
-  ctx.metaWorldRuntime = runtime.mountMetaWorld({
+  panel.appendChild(host);
+  const mounted = runtime.mountMetaWorld({
     viewport,
     uiRoot,
     world,
-    displayName: "Nodevision Physics Museum",
+    displayName: "Nodevision " + world.name,
   });
-  return true;
+  const wrapped = {
+    ...mounted,
+    host,
+    dispose() {
+      mounted.dispose?.();
+      host.parentNode?.removeChild(host);
+    },
+  };
+  if (state) {
+    state.currentWorldPath = filePath;
+    state.currentWorldDefinition = JSON.parse(JSON.stringify(world));
+    state.metaWorldRuntime = wrapped;
+  }
+  return wrapped;
 }
 
 async function loadStlWorld(filePath, state, THREE) {
@@ -287,20 +573,6 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     }
 
     const worldPath = normalizeWorldPath(filePath);
-    if (ext === "html" || ext === "htm") {
-      try {
-        const htmlRes = await fetch("/Notebook/" + encodeURI(worldPath), { cache: "no-store" });
-        if (htmlRes.ok) {
-          const metaWorldDoc = parseMetaWorldDocument(await htmlRes.text());
-          if (metaWorldDoc && await loadMetaWorldFromHtmlDocument(metaWorldDoc, filePath, state)) {
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("GameView: MetaWorld detection failed; falling back to legacy world loading.", err);
-      }
-    }
-
     const res = await fetch("/api/load-world", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -321,7 +593,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     }
 
     const data = await res.json();
-    const worldData = data?.worldDefinition || null;
+    let worldData = data?.worldDefinition || null;
+    if (worldData?.worldType === "NodevisionMetaWorld") {
+      worldData = convertMetaWorldToLegacyWorld(worldData);
+    }
     resetLegacyWorldScene(window.VRWorldContext, state, worldData);
     let objectDefs = worldData?.objects || null;
     if (!objectDefs) {
@@ -727,8 +1002,18 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           collider: def.collider !== false,
           color: def.color || "#33ccaa",
           objectFile: typeof def.objectFile === "string" ? def.objectFile : "",
-          linkedObject: typeof def.linkedObject === "string" ? def.linkedObject : ""
+          linkedObject: typeof def.linkedObject === "string" ? def.linkedObject : "",
+          inputs: def.inputs && typeof def.inputs === "object" ? def.inputs : {},
+          outputs: def.outputs && typeof def.outputs === "object" ? def.outputs : {},
+          metaWorldDemo: def.metaWorldDemo && typeof def.metaWorldDemo === "object" ? def.metaWorldDemo : null
         };
+      } else if (def.type === "button") {
+        const radius = Array.isArray(def.size) && Number.isFinite(def.size[0]) ? def.size[0] : 0.22;
+        const height = Array.isArray(def.size) && Number.isFinite(def.size[1]) ? def.size[1] : 0.12;
+        mesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(radius, radius, height, 32),
+          new THREE.MeshStandardMaterial(materialOpts)
+        );
       } else if (def.type === "object-file") {
         const size = Array.isArray(def.size) && def.size.length >= 3 ? def.size : [1, 1, 1];
         mesh = new THREE.Mesh(
@@ -826,6 +1111,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         mesh.userData.isSolid = def.isSolid === true;
         mesh.userData.breakable = def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true;
         mesh.userData.isWater = def.isWater === true;
+        if (def.hidden === true) mesh.visible = false;
         scene.add(mesh);
         objects.push(mesh);
         if (isPortal) {
@@ -872,6 +1158,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           const rawUseActions = def.useAction ?? def.onUse;
           const useList = Array.isArray(rawUseActions) ? rawUseActions : (rawUseActions ? [rawUseActions] : []);
           if (useList.length > 0) {
+            mesh.userData.useAction = rawUseActions;
             const actions = useList
               .map(action => normalizeAction(action, resolvedPortalTarget, sameWorld))
               .filter(Boolean);

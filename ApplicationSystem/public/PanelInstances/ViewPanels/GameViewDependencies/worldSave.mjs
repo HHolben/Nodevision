@@ -77,6 +77,7 @@ function getMeshType(mesh) {
     || hint === "torus"
     || hint === "math-function"
     || hint === "console"
+    || hint === "button"
     || hint === "object-file"
     || hint === "image-plane"
   ) return hint;
@@ -144,11 +145,20 @@ function serializeMesh(mesh) {
     def.collider = props.collider !== false;
     if (typeof props.objectFile === "string" && props.objectFile) def.objectFile = props.objectFile;
     if (typeof props.linkedObject === "string" && props.linkedObject) def.linkedObject = props.linkedObject;
+    if (props.inputs && typeof props.inputs === "object") def.inputs = props.inputs;
+    if (props.outputs && typeof props.outputs === "object") def.outputs = props.outputs;
+    if (props.metaWorldDemo && typeof props.metaWorldDemo === "object") def.metaWorldDemo = props.metaWorldDemo;
     const p = g?.parameters || {};
     def.size = [
       round3((p.width ?? 1) * sx),
       round3((p.height ?? 1) * sy),
       round3((p.depth ?? 1) * sz)
+    ];
+  } else if (type === "button") {
+    const p = g?.parameters || {};
+    def.size = [
+      round3((p.radiusTop ?? p.radius ?? 0.22) * Math.max(sx, sz)),
+      round3((p.height ?? 0.12) * sy)
     ];
   } else if (type === "object-file") {
     const p = g?.parameters || {};
@@ -199,6 +209,8 @@ function serializeMesh(mesh) {
   Object.assign(def, materialMeta(mesh));
 
   if (mesh.userData?.isWater === true) def.isWater = true;
+  if (mesh.visible === false) def.hidden = true;
+  if (mesh.userData?.useAction) def.useAction = mesh.userData.useAction;
   if (typeof mesh.userData?.tag === "string" && mesh.userData.tag) def.tag = mesh.userData.tag;
   if (typeof mesh.userData?.spawnId === "string" && mesh.userData.spawnId) def.spawnId = mesh.userData.spawnId;
   if (Number.isFinite(mesh.userData?.spawnYaw)) def.spawnYaw = mesh.userData.spawnYaw;

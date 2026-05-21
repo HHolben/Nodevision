@@ -17,7 +17,8 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     sample.style.fontFamily = family;
     sample.style.fontSize = "2rem";
     sample.style.lineHeight = "1.4";
-    sample.textContent = "Sphinx of black quartz, judge my vow. 1234567890";
+    sample.textContent = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz  1234567890";
+
     viewPanel.appendChild(sample);
   } catch (error) {
     viewPanel.innerHTML = `<p style="color:#b00020;">Unable to load font: ${error.message}</p>`;

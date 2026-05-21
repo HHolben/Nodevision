@@ -145,6 +145,8 @@ function createPlacementPanelUI() {
       color: colorInput.value || "#33ccaa",
       objectFile: String(objectInput.value || "").trim(),
       linkedObject: String(linkInput.value || "").trim(),
+      inputs: {},
+      outputs: {},
       size: [width, height, depth]
     };
   }
@@ -644,6 +646,143 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     reader.readAsDataURL(file);
   });
 
+
+  const activeDemoAnimations = new Map();
+
+  function findObjectByTag(tag) {
+    if (!tag || !scene?.traverse) return null;
+    let found = null;
+    scene.traverse((node) => {
+      if (found || !node) return;
+      if (node.userData?.tag === tag || node.name === tag) found = node;
+    });
+    return found;
+  }
+
+  function stopDemoAnimation(key) {
+    const prior = activeDemoAnimations.get(key);
+    if (prior) cancelAnimationFrame(prior);
+    activeDemoAnimations.delete(key);
+  }
+
+  function rememberConsoleOutput(consoleMesh, key, value) {
+    if (!consoleMesh?.userData?.consoleProperties) return;
+    const props = consoleMesh.userData.consoleProperties;
+    props.outputs = { ...(props.outputs || {}), [key]: value, lastRunAt: new Date().toISOString() };
+  }
+
+  function runGravityDropDemo(consoleMesh, demo, inputs) {
+    const tags = Array.isArray(demo.sphereTags) ? demo.sphereTags : [];
+    const spheres = tags.map(findObjectByTag).filter(Boolean);
+    if (spheres.length === 0) return false;
+    const height = Number.isFinite(inputs.dropHeight) ? inputs.dropHeight : Number.isFinite(demo.dropHeight) ? demo.dropHeight : 3.2;
+    const floorY = Number.isFinite(demo.floorY) ? demo.floorY : 0.25;
+    const gravity = Math.abs(Number(inputs.gravity ?? demo.inputs?.gravity ?? 9.81)) || 9.81;
+    const starts = spheres.map((mesh) => ({ mesh, x: mesh.position.x, z: mesh.position.z, radius: mesh.geometry?.parameters?.radius || 0.22 }));
+    const key = consoleMesh.userData?.tag || demo.id || "gravity-drop";
+    stopDemoAnimation(key);
+    const startMs = performance.now();
+    const durationMs = Math.max(1200, Math.sqrt((2 * height) / gravity) * 1000 + 700);
+    const tick = (now) => {
+      const t = Math.min((now - startMs) / 1000, durationMs / 1000);
+      for (const entry of starts) {
+        const y = Math.max(floorY + entry.radius, height - 0.5 * gravity * t * t);
+        entry.mesh.position.set(entry.x, y, entry.z);
+      }
+      if (now - startMs < durationMs) {
+        activeDemoAnimations.set(key, requestAnimationFrame(tick));
+      } else {
+        stopDemoAnimation(key);
+        rememberConsoleOutput(consoleMesh, "elapsedSeconds", t.toFixed(2));
+      }
+    };
+    for (const entry of starts) entry.mesh.position.set(entry.x, height, entry.z);
+    activeDemoAnimations.set(key, requestAnimationFrame(tick));
+    return true;
+  }
+
+  function runProjectileDemo(consoleMesh, demo, inputs) {
+    const projectile = findObjectByTag(demo.projectileTag);
+    if (!projectile) return false;
+    const start = Array.isArray(demo.startPosition) ? demo.startPosition : [projectile.position.x, projectile.position.y, projectile.position.z];
+    const speed = Number.isFinite(inputs.speed) ? inputs.speed : Number.isFinite(demo.speed) ? demo.speed : 6.5;
+    const angle = ((Number.isFinite(inputs.angleDegrees) ? inputs.angleDegrees : Number.isFinite(demo.angleDegrees) ? demo.angleDegrees : 38) * Math.PI) / 180;
+    const gravity = Math.abs(Number(inputs.gravity ?? demo.inputs?.gravity ?? 9.81)) || 9.81;
+    const floorY = Number.isFinite(demo.floorY) ? demo.floorY : 0.25;
+    const radius = projectile.geometry?.parameters?.radius || 0.2;
+    const vx = Math.cos(angle) * speed;
+    const vy = Math.sin(angle) * speed;
+    const key = consoleMesh.userData?.tag || demo.id || "projectile-range";
+    stopDemoAnimation(key);
+    const startMs = performance.now();
+    const tick = (now) => {
+      const t = (now - startMs) / 1000;
+      const x = start[0] + vx * t;
+      const y = Math.max(floorY + radius, start[1] + vy * t - 0.5 * gravity * t * t);
+      projectile.position.set(x, y, start[2]);
+      if (y > floorY + radius || t < 0.2) {
+        activeDemoAnimations.set(key, requestAnimationFrame(tick));
+      } else {
+        stopDemoAnimation(key);
+        rememberConsoleOutput(consoleMesh, "rangeMeters", (x - start[0]).toFixed(2));
+      }
+    };
+    projectile.position.set(start[0], start[1], start[2]);
+    activeDemoAnimations.set(key, requestAnimationFrame(tick));
+    return true;
+  }
+
+  function runPendulumDemo(consoleMesh, demo, inputs) {
+    const bob = findObjectByTag(demo.bobTag);
+    const rod = findObjectByTag(demo.rodTag);
+    if (!bob) return false;
+    const pivot = Array.isArray(demo.pivot) ? demo.pivot : [bob.position.x, bob.position.y + 2, bob.position.z];
+    const length = Number.isFinite(inputs.length) ? inputs.length : Number.isFinite(demo.length) ? demo.length : 2.2;
+    const initial = ((Number.isFinite(inputs.initialAngleDegrees) ? inputs.initialAngleDegrees : Number.isFinite(demo.initialAngleDegrees) ? demo.initialAngleDegrees : 24) * Math.PI) / 180;
+    const gravity = Math.abs(Number(inputs.gravity ?? demo.inputs?.gravity ?? 9.81)) || 9.81;
+    const period = 2 * Math.PI * Math.sqrt(length / gravity);
+    const key = consoleMesh.userData?.tag || demo.id || "pendulum";
+    stopDemoAnimation(key);
+    const startMs = performance.now();
+    const tick = (now) => {
+      const t = (now - startMs) / 1000;
+      const angle = initial * Math.cos((2 * Math.PI * t) / period) * Math.exp(-0.025 * t);
+      const bx = pivot[0] + Math.sin(angle) * length;
+      const by = pivot[1] - Math.cos(angle) * length;
+      bob.position.set(bx, by, pivot[2]);
+      if (rod) {
+        rod.position.set((pivot[0] + bx) / 2, (pivot[1] + by) / 2, pivot[2]);
+        rod.rotation.z = -angle;
+      }
+      if (t < Math.max(6, period * 3)) {
+        activeDemoAnimations.set(key, requestAnimationFrame(tick));
+      } else {
+        stopDemoAnimation(key);
+        rememberConsoleOutput(consoleMesh, "periodSeconds", period.toFixed(2));
+      }
+    };
+    activeDemoAnimations.set(key, requestAnimationFrame(tick));
+    return true;
+  }
+
+  function runConsoleAction(action = {}) {
+    const targetTag = action.target || action.consoleTag || action.tag;
+    const consoleMesh = findObjectByTag(targetTag);
+    if (!consoleMesh || String(consoleMesh.userData?.nvType || "").toLowerCase() !== "console") return false;
+    const props = consoleMesh.userData.consoleProperties || {};
+    const demo = props.metaWorldDemo;
+    const inputs = { ...(props.inputs || {}), ...(demo?.inputs || {}), ...(action.inputs || {}) };
+    if (!demo?.type) {
+      openUsePanel(consoleMesh);
+      return true;
+    }
+    if (demo.type === "gravity-drop") return runGravityDropDemo(consoleMesh, demo, inputs);
+    if (demo.type === "projectile-range") return runProjectileDemo(consoleMesh, demo, inputs);
+    if (demo.type === "pendulum") return runPendulumDemo(consoleMesh, demo, inputs);
+    openUsePanel(consoleMesh);
+    return true;
+  }
+
   placeUI.floatingPanel.__nvOnClose = () => closePlacementPanel(true);
 
   applyEnvironmentState(environment);
@@ -656,6 +795,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     openUsePanel,
     applyEnvironmentDefinition,
     getEnvironmentDefinition,
-    applyEnvironmentState
+    applyEnvironmentState,
+    runConsoleAction
   };
 }

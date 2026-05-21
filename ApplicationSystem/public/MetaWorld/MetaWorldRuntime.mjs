@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/MetaWorldRuntime.mjs
-// Shared MetaWorld runtime used by standalone pages and the GameView panel.
+// Shared MetaWorld runtime used by Nodevision panels to render passive world documents.
+// MetaWorld rendering is initiated by Nodevision panels, not by the world document itself.
+// TODO: A future explicit previewMode or query parameter could allow standalone preview when requested.
 
 import { loadMetaWorldFromDocument } from "./MetaWorldLoader.mjs";
 import { MetaWorldScene } from "./MetaWorldScene.mjs";

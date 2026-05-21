@@ -1148,6 +1148,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         movementState.velocityY = Math.max(movementState.velocityY || 0, (Number(impulse[1]) || 0) * 0.55);
       }
       movementState.isGrounded = false;
+    } else if (action.type === "console") {
+      if (!consolePanels?.runConsoleAction?.(action)) {
+        console.warn("Console action failed:", action);
+      }
     } else {
       console.warn("Unhandled collision action:", action.type, action);
     }
@@ -2239,6 +2243,18 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       movementState.grabLatch = true;
     }
     const newGrabPress = grabbing && !movementState.grabLatch && !stretchState?.dragging && !rotateState?.dragging;
+    if (newGrabPress) {
+      const clickHit = getInspectHit();
+      const clickUseRef = clickHit?.object?.userData?.useTargetRef;
+      if (clickUseRef?.actions?.length) {
+        movementState.grabLatch = true;
+        for (const action of clickUseRef.actions) {
+          applyCollisionAction(action);
+        }
+        movementState.suppressAttackUntilMs = nowMs + 220;
+        return;
+      }
+    }
     if (newGrabPress && inEditorMode) {
       movementState.grabLatch = true;
       const nowClick = nowMs;

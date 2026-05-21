@@ -67,6 +67,20 @@ const TEMPLATE = `
       <div data-job-errors style="margin-top:6px;display:none;padding:6px 8px;border-radius:6px;background:#ffecec;color:#8b1c1c;font-size:0.82em;"></div>
     </section>
 
+    <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
+        <div>
+          <div style="font-weight:600;">Live Sync Events</div>
+          <div data-sync-events-warning style="display:none;margin-top:3px;color:#8f4f00;font-size:0.78em;"></div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" data-sync-events-refresh style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:5px 9px;cursor:pointer;font-size:0.82em;">Refresh Events</button>
+          <button type="button" data-sync-events-clear style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:5px 9px;cursor:pointer;font-size:0.82em;">Clear View</button>
+        </div>
+      </div>
+      <div data-sync-events-list style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto;font-size:0.82em;"></div>
+    </section>
+
     <details data-sync-details style="border:1px solid #ddd;border-radius:8px;padding:8px;background:#fdfdfd;">
       <summary style="cursor:pointer;font-weight:600;">Latest Sync Result</summary>
       <pre data-sync-result style="margin-top:8px;max-height:260px;overflow:auto;white-space:pre-wrap;font-size:0.85em;color:#1f1f1f;"></pre>
@@ -76,8 +90,32 @@ const TEMPLATE = `
 
 const escapeHtml = (v = "") => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const shortenDeviceId = (id = "") => (String(id).length <= 16 ? String(id) : `${String(id).slice(0, 8)}...${String(id).slice(-6)}`);
+const shortenJobId = (id = "") => { const text = String(id); return text.length <= 14 ? text : text.slice(0, 8) + "..."; };
 const setStatus = (el, msg = "") => { if (el) el.textContent = String(msg); };
 function setError(el, msg = "") { if (!el) return; const t = String(msg || "").trim(); el.style.display = t ? "block" : "none"; el.textContent = t; }
+
+export function formatSyncEventBytes(done, total) {
+  const format = (value) => {
+    const num = Number(value || 0);
+    if (num < 1024) return num + " B";
+    if (num < 1024 * 1024) return (num / 1024).toFixed(1) + " KB";
+    return (num / (1024 * 1024)).toFixed(1) + " MB";
+  };
+  return format(done) + "/" + format(total);
+}
+
+export function getSyncEventType(topic = "") {
+  return String(topic).replace(/^nodevision\/sync\/?/, "");
+}
+
+function isSafeRelativePath(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (text.startsWith("/") || /^[A-Za-z]:[\\/]/.test(text)) return "";
+  if (text.split(/[\\/]+/).includes("ServerSettings")) return "";
+  return text;
+}
+
 
 async function apiFetchJson(url, init = {}) {
   const response = await fetch(url, { credentials: "include", headers: { "Content-Type": "application/json" }, ...init });
@@ -117,6 +155,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const jobProgressEl = panelElem.querySelector("[data-job-progress]");
   const jobErrorsEl = panelElem.querySelector("[data-job-errors]");
   const syncCancelBtn = panelElem.querySelector("[data-sync-cancel]");
+  const syncEventsListEl = panelElem.querySelector("[data-sync-events-list]");
+  const syncEventsWarningEl = panelElem.querySelector("[data-sync-events-warning]");
+  const syncEventsRefreshBtn = panelElem.querySelector("[data-sync-events-refresh]");
+  const syncEventsClearBtn = panelElem.querySelector("[data-sync-events-clear]");
 
   const state = {
     disposed: false,
@@ -128,6 +170,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
     candidateFolders: [],
     activeJob: null,
     activeJobId: null,
+    syncEvents: [],
+    eventsClearedAt: 0,
+    eventsPollTimer: null,
   };
 
   const renderLocalDevice = () => {
@@ -219,6 +264,68 @@ export async function setupPanel(panelElem, panelVars = {}) {
       const cancellable = status === "queued" || status === "running";
       syncCancelBtn.style.display = cancellable ? "inline-block" : "none";
       syncCancelBtn.disabled = state.busy || !cancellable;
+    }
+  };
+
+  const renderSyncEvents = () => {
+    if (!syncEventsListEl) return;
+    const events = Array.isArray(state.syncEvents) ? state.syncEvents : [];
+    if (!events.length) {
+      syncEventsListEl.innerHTML = `<div style="color:#777;">No sync broker events in this view.</div>`;
+      return;
+    }
+    syncEventsListEl.innerHTML = events.map((event) => {
+      const payload = event?.payload && typeof event.payload === "object" ? event.payload : {};
+      const topic = String(event?.topic || "");
+      const type = getSyncEventType(topic);
+      const timestamp = event?.timestamp ? new Date(event.timestamp).toLocaleTimeString() : "--:--:--";
+      const jobId = shortenJobId(payload.jobId || "");
+      const scope = isSafeRelativePath(payload.scope) || "";
+      const files = Number(payload.filesDone || 0) + "/" + Number(payload.filesTotal || 0);
+      const bytes = formatSyncEventBytes(payload.bytesDone || 0, payload.bytesTotal || 0);
+      const currentFile = isSafeRelativePath(payload.currentFile);
+      const fileLine = currentFile ? `<div style="color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(currentFile)}</div>` : "";
+      return `<div style="border:1px solid #e2e2e2;border-radius:6px;padding:7px;background:#fbfbfb;display:grid;gap:3px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+          <strong style="color:#222;">${escapeHtml(type)}</strong>
+          <span style="color:#666;font-size:0.86em;">${escapeHtml(timestamp)}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;color:#444;">
+          <span>job ${escapeHtml(jobId || "?")}</span>
+          <span>${escapeHtml(scope)}</span>
+          <span>${escapeHtml(payload.status || "")}</span>
+          <span>files ${escapeHtml(files)}</span>
+          <span>bytes ${escapeHtml(bytes)}</span>
+        </div>
+        ${fileLine}
+      </div>`;
+    }).join("");
+  };
+
+  const setSyncEventsWarning = (message = "") => {
+    if (!syncEventsWarningEl) return;
+    const text = String(message || "").trim();
+    syncEventsWarningEl.style.display = text ? "block" : "none";
+    syncEventsWarningEl.textContent = text;
+  };
+
+  const loadSyncEvents = async () => {
+    try {
+      const payload = await apiFetchJson("/api/broker/events?topicPrefix=nodevision%2Fsync%2F&limit=50", { cache: "no-store" });
+      const events = Array.isArray(payload.events) ? payload.events : [];
+      state.syncEvents = events
+        .filter((event) => String(event?.topic || "").startsWith("nodevision/sync/"))
+        .filter((event) => {
+          const ts = Date.parse(event?.timestamp || "");
+          return !Number.isFinite(ts) || ts >= state.eventsClearedAt;
+        })
+        .slice()
+        .reverse();
+      setSyncEventsWarning("");
+      renderSyncEvents();
+    } catch (err) {
+      setSyncEventsWarning(err?.message || "Live sync events are unavailable.");
+      renderSyncEvents();
     }
   };
 
@@ -346,6 +453,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
   discoverableBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : "Enabling discoverability"));
   syncDryBtn?.addEventListener("click", () => runSync(true));
   syncApplyBtn?.addEventListener("click", () => runSync(false));
+  syncEventsRefreshBtn?.addEventListener("click", () => loadSyncEvents());
+  syncEventsClearBtn?.addEventListener("click", () => { state.eventsClearedAt = Date.now(); state.syncEvents = []; renderSyncEvents(); setSyncEventsWarning(""); });
   syncCancelBtn?.addEventListener("click", async () => {
     const jobId = String(state.activeJobId || "").trim();
     if (!jobId) return;
@@ -365,10 +474,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
   sharedScopesEl?.addEventListener("click", (e) => { const b = e.target?.closest?.("[data-remove-scope]"); if (!b) return; const scope = b.getAttribute("data-remove-scope"); if (scope && scope !== "SyncTest") unshareScope(scope); });
   folderListEl?.addEventListener("click", (e) => { const b = e.target?.closest?.("[data-share-scope]"); if (!b) return; const scope = b.getAttribute("data-share-scope"); if (scope) shareScope(scope); });
 
-  panelElem.cleanup = () => { state.disposed = true; if (state.refreshTimer) clearInterval(state.refreshTimer); state.refreshTimer = null; };
+  panelElem.cleanup = () => { state.disposed = true; if (state.refreshTimer) clearInterval(state.refreshTimer); if (state.eventsPollTimer) clearInterval(state.eventsPollTimer); state.refreshTimer = null; state.eventsPollTimer = null; };
   try {
     setStatus(statusEl, "Loading sync panel...");
     await Promise.all([loadLocalDevice(), loadScopes(), loadFolders(), refreshStatus()]);
+    await loadSyncEvents();
     renderJob();
     setStatus(statusEl, "Sync panel ready.");
   } catch (err) {
@@ -380,4 +490,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
       refreshActiveJob().catch(() => {});
     }
   }, 1000);
+  state.eventsPollTimer = setInterval(() => {
+    if (!state.disposed) loadSyncEvents().catch(() => {});
+  }, 3000);
 }

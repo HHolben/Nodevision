@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/MetaWorldInteractions.mjs
 // MetaWorld interaction system raycasts scene objects and routes picks to exhibit controllers.
 
-import * as THREE from "/vendor/three/build/three.module.js";
+import * as THREE from "/lib/three/three.module.js";
 
 export class MetaWorldInteractions {
   constructor({ sceneSystem, ui, permissions }) {
