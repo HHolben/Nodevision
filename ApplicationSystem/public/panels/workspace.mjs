@@ -59,6 +59,22 @@ function normalizePanelIdentifier(value) {
   return PANEL_ALIASES[raw] || raw;
 }
 
+function toPanelCssSlug(value) {
+  return String(value || "panel")
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase() || "panel";
+}
+
+function toFlexValue(value) {
+  if (value === undefined || value === null || value === "") return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  return /\s/.test(raw) ? raw : `${raw} 1 0`;
+}
+
 function collectPanelCells(root) {
   if (!root) return [];
   if (root.classList?.contains("panel-cell")) return [root];
@@ -324,21 +340,26 @@ export function renderLayout(node, parent) {
       console.log(`📐 Inserted ${isVertical ? 'vertical' : 'horizontal'} divider(s) for ${children.length} children`);
     }
   } else if (node.instanceName || node.type === "cell") {
+    const requestedCellId = node.instanceName || node.id;
+    const normalizedCellId = normalizePanelIdentifier(requestedCellId);
+    const panelCssSlug = toPanelCssSlug(normalizedCellId || requestedCellId);
     const cell = document.createElement("div");
-    cell.className = "panel-cell";
-    Object.assign(cell.style, {
+    cell.className = `panel-cell panel-cell--${panelCssSlug}`;
+    cell.dataset.panelId = normalizedCellId || requestedCellId;
+    cell.dataset.panelSlug = panelCssSlug;
+    const cellStyles = {
       border: "1px solid #bbb",
       background: "#fafafa",
       overflow: "auto",
-      flex: node.flex ? `${node.flex} 1 0` : "1 1 0",
       display: "flex",
       flexDirection: "column",
       position: "relative",
       minHeight: "0",
       minWidth: "0",
-    });
-    const requestedCellId = node.instanceName || node.id;
-    const normalizedCellId = normalizePanelIdentifier(requestedCellId);
+    };
+    const explicitFlex = toFlexValue(node.flex);
+    if (explicitFlex) cellStyles.flex = explicitFlex;
+    Object.assign(cell.style, cellStyles);
     cell.dataset.id = normalizedCellId || requestedCellId;
     cell.dataset.panelClass = node.panelClass || "InfoPanel";
     parent.appendChild(cell);
@@ -365,7 +386,6 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
   Object.assign(divider.style, {
     flexShrink: "0",
     flexGrow: "0",
-    background: "#bbb",
     zIndex: "100",
     transition: "background 0.2s",
     ...(isVertical ? {
@@ -385,14 +405,6 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
     })
   });
   
-  // Hover effect to make divider more visible
-  divider.addEventListener("mouseenter", () => {
-    divider.style.background = "#0078d7";
-  });
-  divider.addEventListener("mouseleave", () => {
-    divider.style.background = "#666";
-  });
-
   let startPos, startLeftSize, startRightSize, totalSize;
   let stopPlaceholderMode = null;
 
@@ -650,6 +662,11 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
   cell.innerHTML = "";
 
   const resolvedFilePath = resolveActiveFilePath(panelVars.filePath);
+  if (resolvedFilePath) {
+    cell.dataset.currentFilePath = resolvedFilePath;
+  } else {
+    delete cell.dataset.currentFilePath;
+  }
   await module.setupPanel(cell, {
     ...panelVars,
     filePath: resolvedFilePath || null,

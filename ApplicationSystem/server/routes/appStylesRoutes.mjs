@@ -8,7 +8,7 @@ const ACTIVE_STYLES_FILE = "UserStyles.css";
 const DEFAULT_STYLES_FILE = "DefaultUserStyles.css";
 
 const FALLBACK_DEFAULT_STYLES =
-  `/* Auto-generated default user styles */\nbody {\n  background-color: #ffffff;\n}\n`;
+  `/* Auto-generated default user styles */\n:root {\n  --nv-layout-divider-background: linear-gradient(90deg, #d4d4d4, #8f8f8f);\n  --nv-layout-divider-vertical-background: linear-gradient(180deg, #d4d4d4, #8f8f8f);\n  --nv-layout-divider-box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);\n  --nv-layout-divider-hover-background: #0078d7;\n  --nv-layout-divider-hover-box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);\n}\n\nbody {\n  background-color: #ffffff;\n}\n\n.layout-divider {\n  background: var(--nv-layout-divider-background);\n  box-shadow: var(--nv-layout-divider-box-shadow);\n}\n\n.panel-row[data-is-vertical="1"] > .layout-divider {\n  background: var(--nv-layout-divider-vertical-background);\n}\n\n.layout-divider:hover {\n  background: var(--nv-layout-divider-hover-background);\n  box-shadow: var(--nv-layout-divider-hover-box-shadow);\n}\n`;
 
 function toSafeFileName(value) {
   const raw = String(value || "").trim();

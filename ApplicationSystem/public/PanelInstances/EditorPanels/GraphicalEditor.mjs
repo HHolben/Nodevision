@@ -284,6 +284,7 @@ export async function updateGraphicalEditor(
 
   lastEditedPath = filePath;
   cleanupEditorHost(editorDiv);
+  editorDiv.closest(".panel-cell")?.setAttribute("data-current-file-path", filePath);
   editorDiv.innerHTML = "";
 
   // Keep global "active file" state aligned with the file shown in the graphical editor.

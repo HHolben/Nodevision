@@ -112,6 +112,7 @@ export async function openCodeEditor(filePath) {
   }
 
   console.log("[CodeEditor] Replacing active cell with Code Editor:", filePath);
+  targetCell.dataset.currentFilePath = filePath;
 
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = filePath;

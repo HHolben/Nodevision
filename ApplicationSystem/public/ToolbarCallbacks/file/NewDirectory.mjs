@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/NewDirectory.mjs
 // This file defines browser-side New Directory logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { showInputDialog } from "/ui/modals/InputDialog.mjs";
 export default async function NewDirectory() {
   let parentPath = window.currentDirectoryPath;
 
@@ -8,7 +9,16 @@ export default async function NewDirectory() {
     parentPath = "";
   }
 
-  const folderName = prompt("Enter the name of the new directory:");
+  const folderName = await showInputDialog({
+    title: "Create new directory",
+    description: "Enter the name of the new directory.",
+    placeholder: "MyFolder",
+    confirmText: "Create folder",
+    cancelText: "Cancel",
+    emptyMessage: "Directory name is required.",
+    returnTrimmed: true,
+  });
+
   if (!folderName) {
     console.log("Directory creation cancelled.");
     return;

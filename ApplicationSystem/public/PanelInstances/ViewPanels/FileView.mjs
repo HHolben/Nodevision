@@ -439,6 +439,7 @@ export async function setupPanel(panel, instanceVars = {}) {
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = initialPath;
   window.currentActiveFilePath = initialPath;
+  panel.dataset.currentFilePath = initialPath;
 
   if (window.selectedFilePath !== initialPath) {
     window.selectedFilePath = initialPath;
@@ -470,6 +471,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
   }
 
   console.log("📍 FileView resolved path:", filename);
+  viewPanel.closest(".panel-cell")?.setAttribute("data-current-file-path", filename);
 
   // Skip rendering for directories (no extension or known directory names)
   const ext = resolveExtension(filename);

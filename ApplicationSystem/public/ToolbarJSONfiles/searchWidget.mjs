@@ -18,7 +18,7 @@ function escapeHTML(s) {
 
 function formatResult(result) {
   const badge = result.kind === "directory" ? "DIR" : "FILE";
-  const match = result.match === "content" ? "content" : "name";
+  const match = result.match === "active content" ? "active content" : (result.match === "content" ? "content" : "name");
   const snippet = result.snippet ? `<div style=\"font-size:12px;color:#555;white-space:normal;\">${escapeHTML(result.snippet)}</div>` : "";
 
   return `
@@ -49,6 +49,60 @@ function dirname(pathValue) {
 
 function uniqueValues(values = []) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function collectActiveContentPaths() {
+  const candidates = [
+    ...Array.from(document.querySelectorAll(".panel-cell[data-current-file-path]"))
+      .map((cell) => cell.dataset.currentFilePath),
+    window.__nvCodeEditorActivePath,
+    window.currentActiveFilePath,
+    window.NodevisionState?.activeEditorFilePath,
+    window.NodevisionState?.selectedFile,
+  ];
+
+  return uniqueValues(candidates.map(normalizePath))
+    .filter((path) => path && path.includes("."));
+}
+
+function snippetAround(content, query) {
+  const text = String(content || "");
+  const lower = text.toLowerCase();
+  const q = String(query || "").toLowerCase();
+  const idx = lower.indexOf(q);
+  if (idx === -1) return "";
+  const start = Math.max(0, idx - 60);
+  const end = Math.min(text.length, idx + q.length + 60);
+  return text.slice(start, end).replace(/\s+/g, " ").trim();
+}
+
+async function searchActiveContents(query, limit = 100) {
+  const paths = collectActiveContentPaths();
+  const results = [];
+
+  for (const path of paths) {
+    if (results.length >= limit) break;
+
+    try {
+      const url = "/api/fileCodeContent?path=" + encodeURIComponent(path);
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) continue;
+      const payload = await res.json();
+      const content = String(payload?.content || "");
+      if (!content.toLowerCase().includes(query.toLowerCase())) continue;
+
+      results.push({
+        kind: "file",
+        match: "active content",
+        path,
+        snippet: snippetAround(content, query),
+      });
+    } catch (err) {
+      console.warn(`[searchWidget] Active content search skipped ${path}:`, err);
+    }
+  }
+
+  return { results, activePathCount: paths.length };
 }
 
 function getInfoPanelTypeCandidate() {
@@ -123,6 +177,24 @@ async function runSearch(inputEl, scopeEl, resultsEl) {
   resultsEl.innerHTML = `<div style=\"padding:8px;color:#666;\">Searching...</div>`;
 
   try {
+    if (scope === "activeContent") {
+      const { results, activePathCount } = await searchActiveContents(q, 100);
+      if (activePathCount === 0) {
+        resultsEl.innerHTML = `<div style=\"padding:8px;color:#666;\">No open file viewers or editors with files were found.</div>`;
+        return;
+      }
+      if (results.length === 0) {
+        resultsEl.innerHTML = `<div style=\"padding:8px;color:#666;\">No matches found in ` + activePathCount + ` active file(s).</div>`;
+        return;
+      }
+      const rows = results.map(formatResult).join("");
+      resultsEl.innerHTML = `
+        <div style=\"padding:6px 8px;background:#f8f8f8;border-bottom:1px solid #ddd;font-size:12px;color:#555;\">` + results.length + ` active result(s) across ` + activePathCount + ` file(s)</div>
+        ` + rows + `
+      `;
+      return;
+    }
+
     const params = new URLSearchParams({
       q,
       scope,
@@ -192,6 +264,13 @@ export function initToolbarWidget(root) {
   if (!inputEl || !scopeEl || !buttonEl || !resultsEl) return;
 
   root.dataset.searchWidgetBound = "true";
+
+  if (!scopeEl.querySelector('option[value="activeContent"]')) {
+    const option = document.createElement("option");
+    option.value = "activeContent";
+    option.textContent = "Active Contents";
+    scopeEl.appendChild(option);
+  }
 
   buttonEl.addEventListener("click", () => runSearch(inputEl, scopeEl, resultsEl));
   inputEl.addEventListener("keydown", (event) => {
