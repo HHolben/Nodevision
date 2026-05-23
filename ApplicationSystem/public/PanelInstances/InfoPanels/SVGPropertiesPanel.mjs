@@ -220,6 +220,8 @@ function applyStyleToSelection(ctx, { fill, stroke, strokeWidth, opacity }) {
       else el.setAttribute("opacity", opacityValue);
     });
   }
+
+  ctx.notifyElementChanged?.();
 }
 
 function describeElement(el) {
@@ -248,14 +250,20 @@ function buildGeometryEditor({ ctx, host }) {
   const addNumberField = (label, attr) => {
     const input = makeInput("number");
     input.value = String(safeNumber(getAttr(primary, attr, "0"), 0));
-    input.addEventListener("input", () => setAttr(primary, attr, input.value));
+    input.addEventListener("input", () => {
+      setAttr(primary, attr, input.value);
+      ctx?.notifyElementChanged?.();
+    });
     rows.appendChild(makeRow(label, input));
   };
 
   const addTextField = (label, attr) => {
     const input = makeInput("text");
     input.value = getAttr(primary, attr, "");
-    input.addEventListener("change", () => setAttr(primary, attr, input.value));
+    input.addEventListener("change", () => {
+      setAttr(primary, attr, input.value);
+      ctx?.notifyElementChanged?.();
+    });
     rows.appendChild(makeRow(label, input));
   };
 
@@ -311,6 +319,7 @@ function buildGeometryEditor({ ctx, host }) {
     input.value = primary.textContent || "";
     input.addEventListener("change", () => {
       primary.textContent = input.value;
+      ctx?.notifyElementChanged?.();
     });
     rows.appendChild(makeRow("text", input));
     return;
@@ -328,7 +337,7 @@ export async function setupPanel(panel, instanceVars = {}) {
   });
 
   const header = document.createElement("div");
-  header.textContent = "SVG Properties";
+  header.textContent = "SVG Element Properties";
   Object.assign(header.style, {
     fontWeight: "800",
     borderBottom: "1px solid #d0d0d0",
@@ -343,6 +352,7 @@ export async function setupPanel(panel, instanceVars = {}) {
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);
+    window.addEventListener("nv-svg-editor-context-ready", () => setupPanel(panel, instanceVars), { once: true });
     return;
   }
 

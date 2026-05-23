@@ -12,6 +12,15 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "SVG Element Properties",
+    "panelTemplate": "SVGPropertiesPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/SVGPropertiesPanel.mjs",
+    "replaceActive": true,
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "New Layer",
     "callbackKey": "svgLayerAdd",

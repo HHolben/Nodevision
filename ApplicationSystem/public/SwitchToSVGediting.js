@@ -56,10 +56,12 @@
             return;
         }
 
-        window.SVGEditorContext = { svgRoot };
+        if (!window.SVGEditorContext?.getSelectedElement) {
+            window.SVGEditorContext = { ...(window.SVGEditorContext || {}), svgRoot };
+        }
         window.selectSVGElement = (el) => {
-            console.log('Selected SVG element:', el);
-            // Optional: highlight or store selected element
+            if (window.NVSvgEditorApi?.selectElement) window.NVSvgEditorApi.selectElement(el);
+            else console.log('Selected SVG element:', el);
         };
 
         console.log('SVG editor context initialized.');

@@ -429,6 +429,11 @@
   // Initialize Publisher-like SVG interactions and event handlers
 		  function initSVGInteractions() {
 		    let selectedElement = null;
+		    let currentStyleDefaults = {
+		      fill: '#000000',
+		      stroke: '#000000',
+		      strokeWidth: '2'
+		    };
 		    let isDragging = false;
 		    let isResizing = false;
 		    let dragOffset = { x: 0, y: 0 };
@@ -1197,23 +1202,114 @@
 	      scheduleRedraw();
 	    }
 
+    function isEditableSvgElement(element) {
+      if (!element || element === svgEditor) return false;
+      if (element.id === "grid-overlay" || element.closest?.("defs")) return false;
+      const tag = String(element.tagName || "").toLowerCase();
+      return tag && tag !== "svg" && tag !== "defs" && tag !== "pattern" && tag !== "lineargradient" && tag !== "radialgradient" && tag !== "stop";
+    }
+
+    function getSelectedElements() {
+      return selectedElement ? [selectedElement] : [];
+    }
+
+    function refreshSelectionUi(reason = "properties") {
+      if (selectedElement) {
+        updateSelectedInfo(selectedElement);
+        updateSelectionHandles();
+        updatePropertyPanel(selectedElement);
+      } else {
+        updateSelectedInfo(null);
+        hideSelectionHandles();
+        updatePropertyPanel(null);
+      }
+      window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-changed", {
+        detail: { reason, selectedElement, selectedElements: getSelectedElements() }
+      }));
+    }
+
+    function applyAttrToSelection(attr, value, { styleDefaultKey = null } = {}) {
+      const clean = String(value ?? "").trim();
+      if (styleDefaultKey && clean) currentStyleDefaults[styleDefaultKey] = clean;
+      getSelectedElements().forEach((element) => {
+        if (!element) return;
+        if (!clean) element.removeAttribute(attr);
+        else element.setAttribute(attr, clean);
+      });
+      refreshSelectionUi("properties");
+    }
+
+    function describeLayerElement(element, index) {
+      const tag = String(element?.tagName || "element").toLowerCase();
+      const id = element?.getAttribute?.("id") || "";
+      return id ? `${tag}#${id}` : `${index + 1}. ${tag}`;
+    }
+
+    function createLayersContext() {
+      let host = null;
+      function render() {
+        if (!host) return;
+        host.innerHTML = "";
+        const elements = Array.from(svgEditor.querySelectorAll("*")).filter(isEditableSvgElement);
+        if (!elements.length) {
+          const empty = document.createElement("div");
+          empty.textContent = "No editable SVG elements yet.";
+          empty.style.padding = "10px";
+          empty.style.opacity = "0.72";
+          host.appendChild(empty);
+          return;
+        }
+        const list = document.createElement("div");
+        Object.assign(list.style, { display: "grid", gap: "4px" });
+        elements.forEach((element, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = describeLayerElement(element, index);
+          Object.assign(button.style, {
+            width: "100%",
+            textAlign: "left",
+            border: "1px solid #d0d0d0",
+            borderRadius: "6px",
+            padding: "7px 8px",
+            background: element === selectedElement ? "#e8f2ff" : "#fff",
+            cursor: "pointer"
+          });
+          button.addEventListener("click", () => {
+            clearSelection();
+            selectElement(element);
+          });
+          list.appendChild(button);
+        });
+        host.appendChild(list);
+      }
+      return {
+        attachHost(nextHost) {
+          host = nextHost;
+          render();
+          return () => { if (host === nextHost) host = null; };
+        },
+        refresh: render
+      };
+    }
+
+    const layersContext = createLayersContext();
+
     function selectElement(element) {
+      if (!isEditableSvgElement(element)) return;
       selectedElement = element;
       window.selectedSVGElement = element;
-      element.classList.add('svg-selected');
-      updateSelectedInfo(element);
-      updateSelectionHandles();
-      updatePropertyPanel(element);
+      element.classList.add("svg-selected");
+      refreshSelectionUi("selection");
+      layersContext.refresh();
     }
 
     function clearSelection() {
       if (selectedElement) {
-        selectedElement.classList.remove('svg-selected');
+        selectedElement.classList.remove("svg-selected");
         selectedElement = null;
         window.selectedSVGElement = null;
-        updateSelectedInfo(null);
-        hideSelectionHandles();
-        updatePropertyPanel(null);
+        refreshSelectionUi("clear");
+        layersContext.refresh();
       }
     }
 
@@ -1223,20 +1319,50 @@
 	      selectElement,
 	      clearSelection,
 	      getSelectedElement: () => selectedElement,
+	      getSelectedElements,
 	      setTool: (tool) => {
 	        window.currentSVGTool = tool;
-	        const selectBtn = document.getElementById('svg-select-tool');
-	        const textBtn = document.getElementById('svg-text-tool');
+	        const selectBtn = document.getElementById("svg-select-tool");
+	        const textBtn = document.getElementById("svg-text-tool");
 	        if (selectBtn && textBtn) {
-	          selectBtn.classList.toggle('active', tool === 'select');
-	          textBtn.classList.toggle('active', tool === 'text');
+	          selectBtn.classList.toggle("active", tool === "select");
+	          textBtn.classList.toggle("active", tool === "text");
 	        }
 	      },
 	      setMessage: (text) => {
-	        const el = document.getElementById('svg-message');
-	        if (el) el.textContent = String(text || '');
-	      }
+	        const el = document.getElementById("svg-message");
+	        if (el) el.textContent = String(text || "");
+	      },
+	      refreshSelectionUi
 	    };
+
+    window.SVGEditorContext = {
+      filePath,
+      svgRoot: svgEditor,
+      layers: layersContext,
+      getSelectedElement: () => selectedElement,
+      getSelectedElements,
+      getCurrentStyleDefaults: () => ({ ...currentStyleDefaults }),
+      setFillColor: (value) => applyAttrToSelection("fill", value, { styleDefaultKey: "fill" }),
+      setStrokeColor: (value) => applyAttrToSelection("stroke", value, { styleDefaultKey: "stroke" }),
+      setStrokeWidth: (value) => applyAttrToSelection("stroke-width", value, { styleDefaultKey: "strokeWidth" }),
+      applyCurrentStyleToSelection: () => {
+        if (!selectedElement) return;
+        applyAttrToSelection("fill", currentStyleDefaults.fill, { styleDefaultKey: "fill" });
+        applyAttrToSelection("stroke", currentStyleDefaults.stroke, { styleDefaultKey: "stroke" });
+        applyAttrToSelection("stroke-width", currentStyleDefaults.strokeWidth, { styleDefaultKey: "strokeWidth" });
+      },
+      refreshSelectionUi,
+      notifyElementChanged: () => {
+        if (selectedElement) {
+          updateSelectedInfo(selectedElement);
+          updateSelectionHandles();
+          updatePropertyPanel(selectedElement);
+        }
+        layersContext.refresh();
+      }
+    };
+    window.dispatchEvent(new CustomEvent("nv-svg-editor-context-ready", { detail: { context: window.SVGEditorContext } }));
 
     function updateSelectedInfo(element) {
       const info = document.getElementById('selected-info');
