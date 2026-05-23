@@ -2119,7 +2119,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     if (!movementState.isFlying) {
       movementState.playerHeight = crawling ? crawlHeight : crouching ? crouchHeight : basePlayerHeight;
     }
-    if (movementState.worldMode === "2d" && Number.isFinite(movementState.planeZ)) {
+    if (movementState.worldMode === "2d" && movementState.cameraMode === "side" && Number.isFinite(movementState.planeZ)) {
       controls.getObject().position.z = movementState.planeZ;
     }
     if (!inEditorMode && grabbedState) {

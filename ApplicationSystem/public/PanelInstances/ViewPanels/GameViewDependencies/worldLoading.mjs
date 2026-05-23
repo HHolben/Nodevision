@@ -91,6 +91,68 @@ function parseMetaWorldDocument(htmlText) {
 
 function convertMetaWorldToLegacyWorld(world) {
   if (!world || world.worldType !== "NodevisionMetaWorld") return world;
+
+  const modeHint = String(world.worldMode || world.metadata?.worldMode || "3d").toLowerCase();
+  const viewHint = String(world.viewMode || world.metadata?.viewMode || "").toLowerCase();
+  const movementHint = String(world.movementMode || world.metadata?.movementMode || viewHint || "").toLowerCase();
+  const directObjects = Array.isArray(world.objects) ? world.objects : [];
+  if (directObjects.length > 0) {
+    const spawn = world.spawnPosition || { x: 0, y: 1.75, z: 0 };
+    const objects = directObjects.map((object, index) => ({
+      id: object.id || object.tag || `metaworld-object-${index}`,
+      tag: object.tag || object.id || `metaworld-object-${index}`,
+      ...object
+    }));
+    if (!objects.some((object) => object.type === "spawn" || object.tag === "spawn" || object.isSpawn === true)) {
+      objects.push({
+        id: "metaworld-spawn",
+        type: "spawn",
+        tag: "spawn",
+        spawnId: "default",
+        position: [
+          Number.isFinite(spawn.x) ? spawn.x : 0,
+          Number.isFinite(spawn.y) ? spawn.y : 1.75,
+          Number.isFinite(spawn.z) ? spawn.z : 0
+        ],
+        spawnYaw: Number.isFinite(world.spawnYaw) ? world.spawnYaw : 0
+      });
+    }
+    return {
+      name: world.name,
+      type: world.type,
+      worldType: world.worldType,
+      worldMode: modeHint === "2d" ? "2d" : "3d",
+      movementMode: movementHint,
+      metadata: {
+        ...(world.metadata || {}),
+        source: "NodevisionMetaWorld",
+        originalMetaWorld: JSON.parse(JSON.stringify(world)),
+        worldMode: modeHint === "2d" ? "2d" : "3d",
+        viewMode: viewHint,
+        movementMode: movementHint,
+        playerRules: {
+          allowFly: false,
+          allowRoll: false,
+          allowPitch: false,
+          allowPlace: false,
+          allowBreak: false,
+          allowInspect: true,
+          allowToolUse: true,
+          allowSave: false,
+          ...(world.playerRules || world.metadata?.playerRules || {})
+        },
+        environment: {
+          skyColor: "#cfe7ff",
+          floorColor: "#246a4b",
+          backgroundMode: "color",
+          backgroundImage: "",
+          ...(world.environment || world.metadata?.environment || {})
+        }
+      },
+      objects
+    };
+  }
+
   const museum = world.museum || {};
   const size = museum.size || { x: 18, y: 6, z: 14 };
   const sx = Number.isFinite(size.x) ? size.x : 18;
@@ -317,6 +379,9 @@ function convertMetaWorldToLegacyWorld(world) {
     metadata: {
       source: "NodevisionMetaWorld",
       originalMetaWorld: JSON.parse(JSON.stringify(world)),
+      worldMode: "3d",
+      viewMode: world.viewMode || world.metadata?.viewMode || "",
+      movementMode: world.movementMode || world.metadata?.movementMode || "",
       playerRules: {
         allowFly: true,
         allowRoll: false,
@@ -325,13 +390,15 @@ function convertMetaWorldToLegacyWorld(world) {
         allowBreak: true,
         allowInspect: true,
         allowToolUse: true,
-        allowSave: false
+        allowSave: false,
+        ...(world.playerRules || world.metadata?.playerRules || {})
       },
       environment: {
         skyColor: "#eef2f4",
         floorColor,
         backgroundMode: "color",
-        backgroundImage: ""
+        backgroundImage: "",
+        ...(world.environment || world.metadata?.environment || {})
       }
     },
     objects
@@ -620,6 +687,20 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     ).toLowerCase();
     if (movementState) {
       movementState.worldMode = modeHint === "2d" ? "2d" : "3d";
+      movementState.viewMode = String(
+        worldData?.viewMode
+        || worldData?.metadata?.viewMode
+        || worldData?.cameraMode
+        || worldData?.metadata?.cameraMode
+        || ""
+      ).toLowerCase();
+      movementState.movementMode = String(
+        worldData?.movementMode
+        || worldData?.metadata?.movementMode
+        || movementState.viewMode
+        || ""
+      ).toLowerCase();
+      movementState.cameraModeInitialized = false;
       movementState.requestCycleCamera = false;
 
       const rawRules = worldData?.playerRules
@@ -886,6 +967,96 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
     };
 
+    const createTileMapMesh = (def) => {
+      const rows = Array.isArray(def.tiles) ? def.tiles : [];
+      if (rows.length === 0) return null;
+      const normalizedRows = rows.map((row) => Array.isArray(row) ? row.join("") : String(row || ""));
+      const height = normalizedRows.length;
+      const width = Math.max(...normalizedRows.map((row) => row.length));
+      if (width <= 0 || height <= 0) return null;
+      const tilePixels = Number.isFinite(def.tilePixels) ? Math.max(4, Math.min(64, Math.floor(def.tilePixels))) : 16;
+      const tileSize = Number.isFinite(def.tileSize) ? Math.max(0.05, def.tileSize) : 1;
+      const canvas = document.createElement("canvas");
+      canvas.width = width * tilePixels;
+      canvas.height = height * tilePixels;
+      const context = canvas.getContext("2d");
+      const palette = def.palette && typeof def.palette === "object" ? def.palette : {};
+      const defaultTile = palette[def.defaultTile || "."] || { color: "#2477a6" };
+      const fillTile = (tile, px, py) => {
+        const entry = palette[tile] || defaultTile;
+        const color = typeof entry === "string" ? entry : entry.color || defaultTile.color || "#2477a6";
+        context.fillStyle = color;
+        context.fillRect(px, py, tilePixels, tilePixels);
+        if (entry.noise) {
+          context.fillStyle = entry.noiseColor || "rgba(255,255,255,0.12)";
+          const inset = Math.max(1, Math.floor(tilePixels / 8));
+          const dot = Math.max(1, Math.floor(tilePixels / 6));
+          context.fillRect(px + inset, py + inset, dot, dot);
+          context.fillRect(px + tilePixels - inset - dot, py + Math.floor(tilePixels * 0.58), dot, dot);
+        }
+        if (entry.edge) {
+          context.strokeStyle = entry.edge;
+          context.lineWidth = Math.max(1, Math.floor(tilePixels / 16));
+          context.strokeRect(px + 0.5, py + 0.5, tilePixels - 1, tilePixels - 1);
+        }
+      };
+      context.imageSmoothingEnabled = false;
+      for (let y = 0; y < height; y += 1) {
+        const row = normalizedRows[y].padEnd(width, def.defaultTile || ".");
+        for (let x = 0; x < width; x += 1) {
+          fillTile(row[x], x * tilePixels, y * tilePixels);
+        }
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width * tileSize, height * tileSize), material);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.userData.tileMap = { width, height, tileSize, tilePixels };
+      return mesh;
+    };
+
+    const createLabelSprite = (def) => {
+      const text = typeof def.text === "string" && def.text.trim()
+        ? def.text.trim()
+        : (typeof def.label === "string" ? def.label.trim() : "");
+      if (!text) return null;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      const fontSize = Number.isFinite(def.fontSize) ? Math.max(14, Math.min(96, def.fontSize)) : 32;
+      context.font = `700 ${fontSize}px system-ui, sans-serif`;
+      const metrics = context.measureText(text);
+      canvas.width = Math.max(128, Math.ceil(metrics.width + 36));
+      canvas.height = Math.max(48, fontSize + 24);
+      context.font = `700 ${fontSize}px system-ui, sans-serif`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      if (def.background !== false) {
+        context.fillStyle = def.backgroundColor || "rgba(255, 250, 226, 0.88)";
+        context.strokeStyle = def.borderColor || "rgba(72, 52, 24, 0.5)";
+        context.lineWidth = 4;
+        context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+        context.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+      }
+      context.fillStyle = def.color || "#2f2112";
+      context.fillText(text, canvas.width / 2, canvas.height / 2);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false
+      });
+      const sprite = new THREE.Sprite(material);
+      const scale = Number.isFinite(def.scale) ? def.scale : 1;
+      sprite.scale.set((canvas.width / 80) * scale, (canvas.height / 80) * scale, 1);
+      sprite.userData.labelText = text;
+      return sprite;
+    };
+
     const createMathFunctionMesh = (def) => {
       const equation = typeof def.equation === "string" && def.equation ? def.equation : "Math.sin(x)";
       const limits = Array.isArray(def.limits) && def.limits.length >= 2 ? def.limits : [-8, 8];
@@ -990,7 +1161,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         materialOpts.emissive = def.emissive === true ? def.color || "#888" : def.emissive;
         materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.75;
       }
-      if (def.type === "math-function") {
+      if (def.type === "tilemap") {
+        mesh = createTileMapMesh(def);
+      } else if (def.type === "label") {
+        mesh = createLabelSprite(def);
+      } else if (def.type === "math-function") {
         mesh = createMathFunctionMesh(def);
       } else if (def.type === "console") {
         const size = Array.isArray(def.size) && def.size.length >= 3 ? def.size : [0.9, 1.15, 0.7];
@@ -1248,7 +1423,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         ? chosen.position
         : [0, 0, 0];
       controls.getObject().position.set(position[0], position[1], position[2]);
-      if (movementState?.worldMode === "2d") {
+      if (movementState?.worldMode === "2d" && movementState?.movementMode !== "topdown") {
         movementState.planeZ = Number.isFinite(position[2]) ? position[2] : 0;
         controls.getObject().position.z = movementState.planeZ;
       }

@@ -72,6 +72,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     { id: "side", label: "Side Scroller" }
   ];
   let modeIndex = 0;
+  let appliedDefaultViewMode = null;
   let orbitPitch = 0;
   const minPitch = -1.0;
   const maxPitch = 0.9;
@@ -83,28 +84,44 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   const cameraPos = new THREE.Vector3();
 
   function currentMode() {
-    return modes[modeIndex];
+    return modes[modeIndex] || modes[0];
+  }
+
+  function modeIndexForViewMode(viewMode) {
+    const normalized = String(viewMode || "").toLowerCase();
+    const match = modes.findIndex((mode) => mode.id === normalized);
+    return match >= 0 ? match : 0;
+  }
+
+  function applyDefaultViewModeIfNeeded() {
+    const defaultViewMode = String(movementState?.viewMode || "").toLowerCase();
+    if (appliedDefaultViewMode === defaultViewMode && movementState?.cameraModeInitialized) return;
+    modeIndex = modeIndexForViewMode(defaultViewMode);
+    appliedDefaultViewMode = defaultViewMode;
+    if (movementState) movementState.cameraModeInitialized = true;
+    publishCameraMode();
+    applyCrosshairVisibility();
+  }
+
+  function publishCameraMode() {
+    if (movementState) movementState.cameraMode = currentMode().id;
   }
 
   function applyCrosshairVisibility() {
     if (!crosshair) return;
-    if (movementState?.worldMode === "2d") {
-      crosshair.style.display = "none";
-      return;
-    }
     crosshair.style.display = currentMode().id === "first" ? "block" : "none";
   }
 
   function cycleMode() {
-    if (movementState?.worldMode === "2d") {
-      modeIndex = modes.findIndex((m) => m.id === "side");
-      applyCrosshairVisibility();
-      return;
-    }
     modeIndex = (modeIndex + 1) % modes.length;
     const id = currentMode().id;
     if (id !== "second" && id !== "third") {
       orbitPitch = 0;
+    }
+    publishCameraMode();
+    if (id === "side" && movementState?.worldMode === "2d") {
+      const player = controls?.getObject?.();
+      if (Number.isFinite(player?.position?.z)) movementState.planeZ = player.position.z;
     }
     applyCrosshairVisibility();
     console.log(`Camera view mode: ${currentMode().label}`);
@@ -120,9 +137,10 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   }
 
   document.addEventListener("mousemove", onMouseMove);
-  applyCrosshairVisibility();
+  applyDefaultViewModeIfNeeded();
 
   function update() {
+    applyDefaultViewModeIfNeeded();
     if (movementState?.requestCycleCamera) {
       movementState.requestCycleCamera = false;
       cycleMode();
@@ -143,7 +161,8 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     avatar.position.set(player.position.x, bodyY, player.position.z);
     avatar.rotation.y = Math.atan2(forward.x, forward.z);
 
-    const mode = movementState?.worldMode === "2d" ? "side" : currentMode().id;
+    const mode = currentMode().id;
+    publishCameraMode();
     if (mode === "first") {
       avatar.visible = false;
       return;
@@ -182,7 +201,6 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   }
 
   function getActiveCamera() {
-    if (movementState?.worldMode === "2d") return followCamera;
     return currentMode().id === "first" ? playerCamera : followCamera;
   }
 

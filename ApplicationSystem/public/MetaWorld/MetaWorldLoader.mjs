@@ -56,8 +56,12 @@ export function validateMetaWorldDefinition(definition) {
 
   const physics = requireObject(world.physics ?? {}, "physics");
   const museum = requireObject(world.museum ?? {}, "museum");
+  const metadata = requireObject(world.metadata ?? {}, "metadata");
+  const playerRules = requireObject(world.playerRules ?? metadata.playerRules ?? {}, "playerRules");
+  const environment = requireObject(world.environment ?? metadata.environment ?? {}, "environment");
   const permissions = requireObject(world.interactionPermissions ?? {}, "interactionPermissions");
-  const exhibits = Array.isArray(world.exhibits) ? world.exhibits : fail("exhibits must be an array");
+  const exhibits = Array.isArray(world.exhibits) ? world.exhibits : [];
+  const objects = Array.isArray(world.objects) ? world.objects : [];
 
   return {
     name: world.name.trim(),
@@ -66,6 +70,12 @@ export function validateMetaWorldDefinition(definition) {
     gravity: readVector3(world.gravity ?? physics.gravity, "gravity", { x: 0, y: -9.81, z: 0 }),
     timestep: requireNumber(world.timestep ?? physics.timestep ?? 1 / 60, "timestep"),
     spawnPosition: readVector3(world.spawnPosition, "spawnPosition", { x: 0, y: 1.7, z: 8 }),
+    worldMode: typeof world.worldMode === "string" ? world.worldMode.trim() : "",
+    viewMode: typeof world.viewMode === "string" ? world.viewMode.trim() : "",
+    movementMode: typeof world.movementMode === "string" ? world.movementMode.trim() : "",
+    metadata,
+    playerRules,
+    environment,
     museum: {
       size: readVector3(museum.size, "museum.size", { x: 18, y: 6, z: 14 }),
       floorColor: museum.floorColor ?? "#d9dddf",
@@ -73,12 +83,38 @@ export function validateMetaWorldDefinition(definition) {
       accentColor: museum.accentColor ?? "#3b82f6",
     },
     exhibits: exhibits.map((exhibit, index) => validateExhibit(exhibit, index)),
+    objects: objects.map((object, index) => validateWorldObject(object, index)),
     interactionPermissions: {
       allowPicking: permissions.allowPicking !== false,
       allowCameraOrbit: permissions.allowCameraOrbit !== false,
       allowSimulationControls: permissions.allowSimulationControls !== false,
     },
   };
+}
+
+function validateWorldObject(object, index) {
+  requireObject(object, `objects[${index}]`);
+  if (typeof object.type !== "string" || !object.type.trim()) fail(`objects[${index}].type must be a nonempty string`);
+  const normalized = { ...object, type: object.type.trim() };
+  if (typeof object.id === "string") normalized.id = object.id.trim();
+  if (typeof object.tag === "string") normalized.tag = object.tag.trim();
+  if (object.position !== undefined) {
+    if (!Array.isArray(object.position) || object.position.length < 3) {
+      fail(`objects[${index}].position must be an array with x, y, z`);
+    }
+    normalized.position = object.position.slice(0, 3).map((value, partIndex) => {
+      return requireNumber(value, `objects[${index}].position[${partIndex}]`);
+    });
+  }
+  if (object.size !== undefined) {
+    if (!Array.isArray(object.size) || object.size.length === 0) {
+      fail(`objects[${index}].size must be a nonempty array`);
+    }
+    normalized.size = object.size.map((value, partIndex) => {
+      return requireNumber(value, `objects[${index}].size[${partIndex}]`);
+    });
+  }
+  return normalized;
 }
 
 function validateExhibit(exhibit, index) {

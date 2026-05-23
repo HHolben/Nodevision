@@ -10,7 +10,15 @@ export function applyDirectionalMovement({ THREE, controls, movementState, input
 
   const desiredMove = new THREE.Vector3();
   const is2D = movementState.worldMode === "2d";
-  if (is2D) {
+  const cameraMode = movementState.cameraMode || movementState.viewMode || "first";
+  const usesTopDownControls = is2D && cameraMode === "topdown";
+  const usesSideControls = is2D && cameraMode === "side";
+  if (usesTopDownControls) {
+    if (inputState.moveRight) desiredMove.x += 1;
+    if (inputState.moveLeft) desiredMove.x -= 1;
+    if (inputState.moveForward) desiredMove.z -= 1;
+    if (inputState.moveBackward) desiredMove.z += 1;
+  } else if (usesSideControls) {
     if (inputState.moveRight) desiredMove.x += 1;
     if (inputState.moveLeft) desiredMove.x -= 1;
   } else {
@@ -25,14 +33,14 @@ export function applyDirectionalMovement({ THREE, controls, movementState, input
   desiredMove.normalize().multiplyScalar(speed * speedMultiplier);
   const object = controls.getObject();
   const nextPosition = object.position.clone().add(desiredMove);
-  if (is2D && Number.isFinite(movementState.planeZ)) {
+  if (usesSideControls && Number.isFinite(movementState.planeZ)) {
     nextPosition.z = movementState.planeZ;
   }
   if (!wouldCollide(nextPosition)) object.position.copy(nextPosition);
   else if (!movementState.isFlying) {
     const stepPosition = nextPosition.clone();
     stepPosition.y += stepHeight;
-    if (is2D && Number.isFinite(movementState.planeZ)) {
+    if (usesSideControls && Number.isFinite(movementState.planeZ)) {
       stepPosition.z = movementState.planeZ;
     }
     if (!wouldCollide(stepPosition)) {
@@ -69,7 +77,7 @@ export function applyGroundMovement({ controls, inputState, movementState, gravi
   const object = controls.getObject();
   const nextPosition = object.position.clone();
   nextPosition.y += movementState.velocityY;
-  if (movementState.worldMode === "2d" && Number.isFinite(movementState.planeZ)) {
+  if (movementState.worldMode === "2d" && movementState.cameraMode === "side" && Number.isFinite(movementState.planeZ)) {
     nextPosition.z = movementState.planeZ;
   }
 
