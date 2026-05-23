@@ -62,6 +62,7 @@ export default async function createApp(runtimeConfig = {}) {
   const USER_DATA_DIR = ctx.userDataDir;
   const SHARED_DATA_DIR = ctx.sharedDataDir;
   const PUBLIC_DIR = ctx.publicDir;
+  const APP_LAYOUTS_DIR = path.resolve(PUBLIC_DIR, '..', 'Layouts');
   const NODE_MODULES_DIR = ctx.nodeModulesDir;
 
   const app = express();
@@ -201,6 +202,17 @@ export default async function createApp(runtimeConfig = {}) {
 
   app.use('/php', createProxyMiddleware(createPhpProxyOptions(runtimeConfig)));
   app.use('/public/data', express.static(SHARED_DATA_DIR));
+  app.use('/Layouts', express.static(APP_LAYOUTS_DIR, {
+    etag: false,
+    maxAge: 0,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.mjs') || filePath.endsWith('.js') || filePath.endsWith('.json')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
   app.use(express.static(PUBLIC_DIR, {
     etag: false,
     maxAge: 0,

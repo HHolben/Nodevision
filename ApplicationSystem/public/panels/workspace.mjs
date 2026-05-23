@@ -541,6 +541,197 @@ function hasTwoCellRowWithLayers(container, layersPanelId) {
   return cells.some((cell) => cell.dataset?.id === layersPanelId);
 }
 
+function setCellIdentity(cell, { id, panelClass = "InfoPanel", flex = null } = {}) {
+  if (!cell) return cell;
+  const normalizedId = normalizePanelIdentifier(id) || id;
+  if (normalizedId) {
+    cell.dataset.id = normalizedId;
+    cell.dataset.panelId = normalizedId;
+    cell.dataset.panelSlug = toPanelCssSlug(normalizedId);
+  }
+  cell.dataset.panelClass = panelClass || "InfoPanel";
+  if (flex) cell.style.flex = toFlexValue(flex) || flex;
+  cell.style.minHeight = "0";
+  cell.style.minWidth = "0";
+  return cell;
+}
+
+function createPanelRow(direction = "row", flex = "1 1 auto") {
+  const row = document.createElement("div");
+  const isVertical = direction === "column";
+  row.className = "panel-row";
+  Object.assign(row.style, {
+    display: "flex",
+    flexDirection: direction,
+    overflow: "hidden",
+    flex: toFlexValue(flex) || flex || "1 1 auto",
+    alignItems: "stretch",
+    minHeight: "0",
+    minWidth: "0",
+  });
+  row.dataset.direction = direction;
+  row.dataset.isVertical = isVertical ? "1" : "0";
+  return row;
+}
+
+function findExistingModeCell(id, excludeCell = null) {
+  const normalizedId = normalizePanelIdentifier(id) || id;
+  if (!normalizedId) return null;
+  const candidates = Array.from(document.querySelectorAll(".panel-cell"));
+  return candidates.find((cell) =>
+    cell !== excludeCell &&
+    !cell.contains(excludeCell) &&
+    (cell.dataset?.id === normalizedId || cell.dataset?.panelId === normalizedId)
+  ) || null;
+}
+
+function findReplacementContainer(editorCell) {
+  const parent = editorCell?.parentElement;
+  if (!parent) return null;
+  if (parent.classList?.contains?.("panel-row") && parent.dataset?.nvModeLayoutId) return parent;
+  const rowWithFileManager = editorCell.closest?.(".panel-row") || parent;
+  if (rowWithFileManager?.classList?.contains?.("panel-row")) return rowWithFileManager;
+  return editorCell;
+}
+
+async function loadPanelIntoSpecificCell(cell, panelType, panelVars = {}) {
+  if (!cell || !panelType) return;
+  const previousActiveCell = window.activeCell;
+  window.activeCell = cell;
+  try {
+    await loadPanelIntoCell(panelType, panelVars);
+  } finally {
+    window.activeCell = previousActiveCell;
+  }
+}
+
+async function importModeLayout({ userModulePath, defaultModulePath, fallbackModulePaths = [] }) {
+  const cacheBust = Date.now();
+  const candidates = [userModulePath, defaultModulePath, ...fallbackModulePaths].filter(Boolean);
+  let lastError = null;
+  for (const candidate of candidates) {
+    try {
+      const importPath = `${candidate}${candidate.includes("?") ? "&" : "?"}v=${cacheBust}`;
+      const mod = await import(importPath);
+      const layout = mod.default || mod.layout || mod.SVG_EDITOR_MODE_LAYOUT;
+      if (layout) return layout;
+    } catch (err) {
+      lastError = err;
+      console.warn(`Mode layout import failed: ${candidate}`, err);
+    }
+  }
+  if (lastError) throw lastError;
+  return null;
+}
+
+async function materializeModeLayoutNode(node, { editorCell, cellsById, panelsToLoad }) {
+  if (!node) return null;
+  const direction = node.direction || (node.type === "column" || node.type === "vertical" ? "column" : null);
+  const isContainer = direction || node.type === "row" || node.type === "vertical" || node.children;
+
+  if (isContainer && node.children) {
+    const row = createPanelRow(direction === "column" ? "column" : "row", node.flex || "1 1 auto");
+    if (node.id) row.dataset.id = node.id;
+    for (const child of node.children) {
+      const childEl = await materializeModeLayoutNode(child, { editorCell, cellsById, panelsToLoad });
+      if (childEl) row.appendChild(childEl);
+    }
+    rebuildLayoutDividersForContainer(row, row.dataset.direction === "column");
+    return row;
+  }
+
+  if (node.role === "activeEditor") {
+    setCellIdentity(editorCell, {
+      id: node.id || editorCell.dataset?.id || "GraphicalEditor",
+      panelClass: node.panelClass || "EditorPanel",
+      flex: node.flex || "1 1 auto",
+    });
+    return editorCell;
+  }
+
+  const id = normalizePanelIdentifier(node.id || node.panelType || node.instanceName) || node.id || node.panelType || node.instanceName;
+  let cell = cellsById.get(id) || findExistingModeCell(id, editorCell) || makePanelCell(node.flex || "1 1 0");
+  cellsById.set(id, cell);
+  setCellIdentity(cell, {
+    id,
+    panelClass: node.panelClass || "InfoPanel",
+    flex: node.flex || "1 1 0",
+  });
+  const panelType = normalizePanelIdentifier(node.panelType || node.instanceName || id) || node.panelType || node.instanceName || id;
+  if (!cell.isConnected || node.forceReload || !cell.childElementCount) {
+    panelsToLoad.push({
+      cell,
+      panelType,
+      panelVars: {
+        id,
+        displayName: node.displayName || id,
+        ...(node.panelVars || {}),
+      },
+    });
+  }
+  return cell;
+}
+
+export async function ensureEditorModeLayout({
+  editorCell,
+  layout,
+  modeId = layout?.id || "EditorMode",
+} = {}) {
+  const cell = resolvePanelCell(editorCell || window.activeCell);
+  if (!cell || !layout?.children?.length) return null;
+
+  const replacementTarget = findReplacementContainer(cell);
+  const targetParent = replacementTarget?.parentElement;
+  if (!replacementTarget || !targetParent) return null;
+
+  const existingCells = new Map();
+  Array.from(document.querySelectorAll(".panel-cell")).forEach((candidate) => {
+    const id = candidate.dataset?.id || candidate.dataset?.panelId;
+    if (id && candidate !== cell && !candidate.contains(cell)) existingCells.set(id, candidate);
+  });
+
+  const panelsToLoad = [];
+  const root = await materializeModeLayoutNode(layout, { editorCell: cell, cellsById: existingCells, panelsToLoad });
+  if (!root) return null;
+  root.dataset.nvModeLayoutId = modeId;
+
+  if (replacementTarget === cell) {
+    const marker = document.createComment(`Nodevision ${modeId} insertion point`);
+    targetParent.replaceChild(marker, cell);
+    targetParent.replaceChild(root, marker);
+  } else {
+    targetParent.replaceChild(root, replacementTarget);
+  }
+
+  rebuildLayoutDividersForContainer(root, root.dataset.direction === "column");
+  rebuildLayoutDividersForContainer(targetParent);
+
+  for (const panel of panelsToLoad) {
+    await loadPanelIntoSpecificCell(panel.cell, panel.panelType, panel.panelVars);
+  }
+
+  window.activeCell = cell;
+  window.highlightActiveCell?.(cell);
+
+  return {
+    root,
+    editorCell: cell,
+    cellsById: existingCells,
+  };
+}
+
+export async function ensureSvgEditorModeLayout({ editorCell } = {}) {
+  const layout = await importModeLayout({
+    userModulePath: "/UserSettings/ModeLayouts/SVGEditorMode.mjs",
+    defaultModulePath: "/Layouts/ModeLayouts/DefualtSVGEditorMode.mjs",
+  });
+  return ensureEditorModeLayout({
+    editorCell,
+    layout,
+    modeId: layout?.id || "SVGEditorMode",
+  });
+}
+
 export function ensureSvgEditingSplit({
   editorCell,
   layersPanelId = "SVGLayersPanel",

@@ -3,7 +3,7 @@
 
 import { createElementLayers } from "../ElementLayers.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
-import { ensureSvgEditingSplit, loadPanelIntoCell } from "/panels/workspace.mjs";
+import { ensureSvgEditorModeLayout } from "/panels/workspace.mjs";
 import {
   createSvgEl,
   toSvgPoint,
@@ -1573,6 +1573,14 @@ export async function renderEditor(filePath, container) {
     refreshTransformHandles();
   }
 
+  function selectionEventDetail(reason = "selection") {
+    return {
+      reason,
+      selectedElements: [...selectedElements],
+      primary: selectedElement,
+    };
+  }
+
   let selectionChangeRaf = 0;
   function notifySelectionChanged() {
     if (selectionChangeRaf) return;
@@ -1580,12 +1588,25 @@ export async function renderEditor(filePath, container) {
       selectionChangeRaf = 0;
       nodeEditor.onSelectionChanged?.(selectedElements);
       window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-changed", {
-        detail: {
-          selectedElements: [...selectedElements],
-          primary: selectedElement,
-        }
+        detail: selectionEventDetail("selection")
       }));
     });
+  }
+
+  let selectionMutationRaf = 0;
+  function notifySelectionMutated(reason = "geometry") {
+    if (selectionMutationRaf) return;
+    selectionMutationRaf = window.requestAnimationFrame(() => {
+      selectionMutationRaf = 0;
+      window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-mutated", {
+        detail: selectionEventDetail(reason)
+      }));
+    });
+  }
+
+  function refreshSelectionAfterMutation(reason = "geometry") {
+    refreshSelectionVisuals();
+    notifySelectionMutated(reason);
   }
 
   function clearSelection() {
@@ -1680,7 +1701,7 @@ export async function renderEditor(filePath, container) {
   function moveSelectionBy(dx, dy) {
     if (!selectedElements.length) return false;
     selectedElements.forEach((el) => translateElement(el, dx, dy));
-    refreshSelectionVisuals();
+    refreshSelectionAfterMutation("move");
     return true;
   }
 
@@ -2231,7 +2252,7 @@ export async function renderEditor(filePath, container) {
       }
     }
 
-    if (moved) refreshSelectionVisuals();
+    if (moved) refreshSelectionAfterMutation("move");
     return moved;
   }
 
@@ -2630,7 +2651,7 @@ export async function renderEditor(filePath, container) {
         line.setAttribute("x2", String(next.x));
         line.setAttribute("y2", String(next.y));
       }
-      refreshSelectionVisuals();
+      refreshSelectionAfterMutation("line-handle");
       e.preventDefault();
       return;
     }
@@ -2674,7 +2695,7 @@ export async function renderEditor(filePath, container) {
         baseTransform,
         `translate(${anchor.x} ${anchor.y}) scale(${sx} ${sy}) translate(${-anchor.x} ${-anchor.y})`
       );
-      refreshSelectionVisuals();
+      refreshSelectionAfterMutation("resize");
       e.preventDefault();
       return;
     }
@@ -2696,7 +2717,7 @@ export async function renderEditor(filePath, container) {
           `rotate(${angleDeg} ${rotateState.cx} ${rotateState.cy})`
         );
       }
-      refreshSelectionVisuals();
+      refreshSelectionAfterMutation("rotate");
       e.preventDefault();
       return;
     }
@@ -3066,6 +3087,32 @@ export async function renderEditor(filePath, container) {
     getSelectedElement() {
       return selectedElement;
     },
+    getSelectedBounds() {
+      if (!selectedElement) return null;
+      return getElementBBoxInRoot(selectedElement);
+    },
+    setSelectedBounds(bounds = {}) {
+      if (!selectedElement) return false;
+      const current = getElementBBoxInRoot(selectedElement);
+      if (!current || current.width <= 0 || current.height <= 0) return false;
+      const nextX = Number.isFinite(Number(bounds.x)) ? Number(bounds.x) : current.x;
+      const nextY = Number.isFinite(Number(bounds.y)) ? Number(bounds.y) : current.y;
+      const nextWidth = Number.isFinite(Number(bounds.width)) ? Math.max(0.05, Number(bounds.width)) : current.width;
+      const nextHeight = Number.isFinite(Number(bounds.height)) ? Math.max(0.05, Number(bounds.height)) : current.height;
+      const sx = nextWidth / current.width;
+      const sy = nextHeight / current.height;
+      const baseTransform = selectedElement.getAttribute("transform") || "";
+      setTransformFromBase(
+        selectedElement,
+        baseTransform,
+        `translate(${nextX} ${nextY}) scale(${sx} ${sy}) translate(${-current.x} ${-current.y})`
+      );
+      refreshSelectionAfterMutation("panel-edit");
+      return true;
+    },
+    notifyElementChanged(reason = "properties") {
+      refreshSelectionAfterMutation(reason);
+    },
     moveSelectionBy,
     deleteSelection,
     duplicateSelection,
@@ -3085,24 +3132,10 @@ export async function renderEditor(filePath, container) {
   try {
     const editorCell = container?.closest?.(".panel-cell");
     if (editorCell) {
-      const { layersCell } = ensureSvgEditingSplit({ editorCell }) || {};
-      if (layersCell) {
-        const prevActiveCell = window.activeCell;
-        window.activeCell = layersCell;
-        layersCell.dataset.id = "SVGLayersPanel";
-        layersCell.dataset.panelClass = "InfoPanel";
-        await loadPanelIntoCell("SVGLayersPanel", { id: "SVGLayersPanel", displayName: "SVG Layers" });
-        window.activeCell = editorCell;
-        window.highlightActiveCell?.(editorCell);
-        window.activeCell = editorCell;
-        if (prevActiveCell && prevActiveCell !== editorCell) {
-          // Leave focus on the editor; don't steal active cell for the layers panel.
-          window.activeCell = editorCell;
-        }
-      }
+      await ensureSvgEditorModeLayout({ editorCell });
     }
   } catch (err) {
-    console.warn("SVG editor: failed to auto-open layers panel:", err);
+    console.warn("SVG editor: failed to apply SVG editor mode layout:", err);
   }
 
   setMode(window.NodevisionState?.svgDrawTool || "select");

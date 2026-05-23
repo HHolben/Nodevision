@@ -221,7 +221,7 @@ function applyStyleToSelection(ctx, { fill, stroke, strokeWidth, opacity }) {
     });
   }
 
-  ctx.notifyElementChanged?.();
+  ctx.notifyElementChanged?.("panel-edit");
 }
 
 function describeElement(el) {
@@ -247,12 +247,48 @@ function buildGeometryEditor({ ctx, host }) {
   Object.assign(rows.style, { display: "grid", gap: "8px", marginTop: "8px" });
   host.appendChild(rows);
 
+  const bounds = ctx?.getSelectedBounds?.();
+  if (bounds) {
+    const boundsTitle = document.createElement("div");
+    boundsTitle.textContent = "Canvas Bounds";
+    Object.assign(boundsTitle.style, { fontWeight: "700", marginTop: "6px" });
+    rows.appendChild(boundsTitle);
+
+    const boundsInputs = {};
+    const commitBounds = () => {
+      ctx?.setSelectedBounds?.({
+        x: boundsInputs.x.value,
+        y: boundsInputs.y.value,
+        width: boundsInputs.width.value,
+        height: boundsInputs.height.value,
+      });
+    };
+    [
+      ["x", "x"],
+      ["y", "y"],
+      ["width", "width"],
+      ["height", "height"],
+    ].forEach(([label, key]) => {
+      const input = makeInput("number");
+      input.step = "0.1";
+      input.value = Number.isFinite(bounds[key]) ? String(Math.round(bounds[key] * 100) / 100) : "0";
+      input.addEventListener("change", commitBounds);
+      boundsInputs[key] = input;
+      rows.appendChild(makeRow(label, input));
+    });
+
+    const nativeTitle = document.createElement("div");
+    nativeTitle.textContent = "SVG Attributes";
+    Object.assign(nativeTitle.style, { fontWeight: "700", marginTop: "10px" });
+    rows.appendChild(nativeTitle);
+  }
+
   const addNumberField = (label, attr) => {
     const input = makeInput("number");
     input.value = String(safeNumber(getAttr(primary, attr, "0"), 0));
     input.addEventListener("input", () => {
       setAttr(primary, attr, input.value);
-      ctx?.notifyElementChanged?.();
+      ctx?.notifyElementChanged?.("panel-edit");
     });
     rows.appendChild(makeRow(label, input));
   };
@@ -262,7 +298,7 @@ function buildGeometryEditor({ ctx, host }) {
     input.value = getAttr(primary, attr, "");
     input.addEventListener("change", () => {
       setAttr(primary, attr, input.value);
-      ctx?.notifyElementChanged?.();
+      ctx?.notifyElementChanged?.("panel-edit");
     });
     rows.appendChild(makeRow(label, input));
   };
@@ -319,7 +355,7 @@ function buildGeometryEditor({ ctx, host }) {
     input.value = primary.textContent || "";
     input.addEventListener("change", () => {
       primary.textContent = input.value;
-      ctx?.notifyElementChanged?.();
+      ctx?.notifyElementChanged?.("panel-edit");
     });
     rows.appendChild(makeRow("text", input));
     return;
@@ -612,8 +648,13 @@ export async function setupPanel(panel, instanceVars = {}) {
   });
 
   const onSelection = () => syncFromSelection();
+  const onMutation = (event) => {
+    if (event?.detail?.reason === "panel-edit") return;
+    syncFromSelection();
+  };
   const abort = new AbortController();
   window.addEventListener("nv-svg-editor-selection-changed", onSelection, { signal: abort.signal });
+  window.addEventListener("nv-svg-editor-selection-mutated", onMutation, { signal: abort.signal });
   const disconnectObserver = new MutationObserver(() => {
     if (panel.isConnected) return;
     abort.abort();
