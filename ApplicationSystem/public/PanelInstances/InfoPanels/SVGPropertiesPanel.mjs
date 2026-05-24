@@ -226,7 +226,7 @@ function applyStyleToSelection(ctx, { fill, stroke, strokeWidth, opacity }) {
 
 function describeElement(el) {
   if (!el) return "No selection";
-  const tag = el.tagName ? el.tagName.toLowerCase() : "element";
+  const tag = window.NVInternalPng?.isInternalPng?.(el) ? "internal png" : (el.tagName ? el.tagName.toLowerCase() : "element");
   const id = el.getAttribute?.("id") || "";
   return id ? `${tag}#${id}` : tag;
 }
@@ -246,6 +246,29 @@ function buildGeometryEditor({ ctx, host }) {
   const rows = document.createElement("div");
   Object.assign(rows.style, { display: "grid", gap: "8px", marginTop: "8px" });
   host.appendChild(rows);
+
+  if (window.NVInternalPng?.isInternalPng?.(primary)) {
+    const source = primary.getAttribute("data-nodevision-source-name") || "Embedded PNG";
+    const info = document.createElement("div");
+    info.textContent = `File: ${source}`;
+    Object.assign(info.style, { fontSize: "12px", opacity: "0.78" });
+    rows.appendChild(info);
+
+    const actions = document.createElement("div");
+    Object.assign(actions.style, { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" });
+    [
+      ["Replace PNG", () => window.NVInternalPng?.replaceSelectedPng?.()],
+      ["Edit PNG", () => window.NVInternalPng?.editSelectedPng?.()],
+      ["Export PNG", () => window.NVInternalPng?.exportSelectedPng?.()],
+    ].forEach(([label, handler]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("click", handler);
+      actions.appendChild(button);
+    });
+    rows.appendChild(actions);
+  }
 
   const bounds = ctx?.getSelectedBounds?.();
   if (bounds) {

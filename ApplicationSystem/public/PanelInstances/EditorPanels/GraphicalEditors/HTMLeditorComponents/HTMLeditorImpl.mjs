@@ -3055,6 +3055,26 @@ const HTML_VOID_TAGS = new Set([
 
 const HTML_RAW_TEXT_TAGS = new Set(["script", "style", "pre", "textarea"]);
 
+function appendHtmlBodyNodesForEditing(body, wysiwyg, hidden) {
+  if (!body || !wysiwyg || !hidden) return;
+  for (const child of body.childNodes) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      if (child.tagName === "SCRIPT") {
+        const placeholder = document.createElement("div");
+        placeholder.dataset.script = child.textContent;
+        hidden.appendChild(placeholder);
+      } else {
+        wysiwyg.appendChild(child.cloneNode(true));
+      }
+      continue;
+    }
+    if (child.nodeType === Node.TEXT_NODE) {
+      if (!child.textContent || !child.textContent.trim()) continue;
+      wysiwyg.appendChild(child.cloneNode(true));
+    }
+  }
+}
+
 function formatHtmlMarkup(html = "") {
   const source = String(html || "");
   if (!source.trim()) return "";
@@ -3272,28 +3292,8 @@ export async function renderEditor(filePath, container, options = {}) {
     }
     wrapper.prepend(headClone);
 
-    // Clone <body> elements and text nodes
-    for (const child of doc.body.childNodes) {
-      if (child.nodeType === Node.ELEMENT_NODE) {
-        if (child.tagName === "SCRIPT") {
-          const placeholder = document.createElement("div");
-          placeholder.dataset.script = child.textContent;
-          hidden.appendChild(placeholder);
-        } else {
-          wysiwyg.appendChild(child.cloneNode(true));
-        }
-        continue;
-      }
-      if (child.nodeType === Node.TEXT_NODE) {
-        const textContent = child.textContent?.trim();
-        if (!textContent) continue;
-        const wrapper = document.createElement("div");
-        wrapper.textContent = textContent;
-        wrapper.classList.add("nv-text-node");
-        wysiwyg.appendChild(wrapper);
-        continue;
-      }
-    }
+    // Clone <body> nodes without wrapping inline text around <br> elements.
+    appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
 
     updateWordCount();
 
@@ -3331,15 +3331,7 @@ export async function renderEditor(filePath, container, options = {}) {
       wysiwyg.innerHTML = "";
       hidden.innerHTML = "";
 
-      for (const el of doc.body.children) {
-        if (el.tagName === "SCRIPT") {
-          const placeholder = document.createElement("div");
-          placeholder.dataset.script = el.textContent;
-          hidden.appendChild(placeholder);
-        } else {
-          wysiwyg.appendChild(el.cloneNode(true));
-        }
-      }
+      appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
 
       rehydrateLayoutCanvases(wysiwyg, filePath);
       hydrateEditorImages(wysiwyg, filePath).catch((err) => {

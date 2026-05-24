@@ -45,6 +45,15 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Edit Image Here",
+    "callbackKey": "editImageHere",
+    "modes": ["SVG Editing"],
+    "conditions": {
+      "svgImageSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "Edit Recording Here",
     "callbackKey": "editRecordingHere",
     "modes": ["HTMLediting", "EPUBediting", "GraphicalEditing"],

@@ -86,6 +86,23 @@ export function insertHtmlAtCaret(html) {
   }
 }
 
+export function pickLocalImageFile({ accept = "image/*" } = {}) {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.style.position = "fixed";
+    input.style.left = "-9999px";
+    input.addEventListener("change", () => {
+      const file = input.files?.[0] || null;
+      input.remove();
+      resolve(file);
+    }, { once: true });
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
 export async function loadModuleMapFamilies() {
   const res = await fetch("/PanelInstances/ModuleMap.csv", { cache: "no-store" });
   if (!res.ok) throw new Error(`ModuleMap.csv load failed (${res.status})`);

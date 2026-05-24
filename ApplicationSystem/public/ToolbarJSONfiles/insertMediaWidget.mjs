@@ -6,6 +6,7 @@ import { button, renderGenericLink } from "./insertMediaFamiliesBasic.mjs";
 import { renderVideo } from "./insertMediaVideo.mjs";
 import { renderSound } from "./insertMediaSound.mjs";
 import { renderSpreadsheet } from "./insertMediaSpreadsheet.mjs";
+import { renderImage } from "./insertMediaImage.mjs";
 import { openInsertMediaPanel } from "./insertMediaPanel.mjs";
 
 export async function initToolbarWidget(hostElement) {
@@ -38,6 +39,19 @@ export async function initToolbarWidget(hostElement) {
     const exts = Array.from(byFamily.get(family) || []);
 
     if (family === "Image") {
+      if (window.NodevisionState?.currentMode === "SVG Editing") {
+        const open = async () => {
+          const panel = await openInsertMediaPanel("Insert Image", "Image");
+          return renderImage(panel.mount, exts);
+        };
+        open().then(() => {
+          detail.textContent = "Opened Insert Image panel.";
+        }).catch((err) => {
+          console.warn("[insertMediaWidget] open image panel failed:", err);
+          detail.textContent = "Failed to open Insert Image panel.";
+        });
+        return;
+      }
       window.HTMLWysiwygTools?.insertImageAtCaret?.();
       detail.textContent = "Insert Image opened.";
       return;

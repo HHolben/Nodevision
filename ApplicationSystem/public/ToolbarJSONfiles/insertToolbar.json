@@ -459,14 +459,14 @@
       "heading": "Media",
       "insertGroup": "media",
       "callbackKey": "insertMedia",
-      "modes": ["HTMLediting"],
+      "modes": ["HTMLediting", "SVG Editing"],
       "icon": "icons/ImageIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
       "heading": "Insert Media Widget",
       "parentHeading": "Media",
-      "modes": ["HTMLediting"],
+      "modes": ["HTMLediting", "SVG Editing"],
       "content": "<div id=\"nv-insert-media-widget\" style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap;\"></div>",
       "script": "insertMediaWidget.mjs",
       "preventAutoSubToolbar": true
@@ -512,6 +512,14 @@
 	  "modes": ["STLediting"],
 	  "parentHeading": "Insert"
 	},
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Image",
+      "parentHeading": "Insert",
+      "callbackKey": "insertImage",
+      "modes": ["SVG Editing"],
+      "icon": "icons/ImageIcon.png"
+    },
 	{
 	  "ToolbarCategory": "Insert",
 	  "heading": "Insert Shape",

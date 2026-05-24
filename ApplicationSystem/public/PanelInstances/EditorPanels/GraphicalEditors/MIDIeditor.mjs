@@ -35,6 +35,7 @@ let playbackState = {
 
 let midiRoot = null;
 let rendererDiv = null;
+let editorAreaDiv = null;
 let statusDiv = null;
 let durationSelectEl = null;
 let melodyCaptureHost = null;
@@ -509,6 +510,29 @@ function chunkNotesForStaves(notes, formatWidth) {
   return rows.length ? rows : [[]];
 }
 
+function scrollNoteIntoView(index, { behavior = "smooth" } = {}) {
+  if (!editorAreaDiv || !rendererDiv || index < 0) return;
+  const box = renderedNoteBoxes[index];
+  if (!box) return;
+
+  window.requestAnimationFrame(() => {
+    const latestBox = renderedNoteBoxes[index];
+    if (!latestBox || !editorAreaDiv || !rendererDiv) return;
+
+    const margin = 36;
+    const targetTop = rendererDiv.offsetTop + latestBox.y - margin;
+    const targetBottom = rendererDiv.offsetTop + latestBox.y + latestBox.h + margin;
+    const viewTop = editorAreaDiv.scrollTop;
+    const viewBottom = viewTop + editorAreaDiv.clientHeight;
+
+    if (targetTop < viewTop) {
+      editorAreaDiv.scrollTo({ top: Math.max(0, targetTop), behavior });
+    } else if (targetBottom > viewBottom) {
+      editorAreaDiv.scrollTo({ top: Math.max(0, targetBottom - editorAreaDiv.clientHeight), behavior });
+    }
+  });
+}
+
 function makeVexNote(entry, index) {
   if (entry?.rest) {
     const restNote = new VF.StaveNote({
@@ -752,6 +776,7 @@ function insertNote(midi = null, duration = "q") {
   selectedElementType = "note";
 
   renderSheetMusic();
+  scrollNoteIntoView(selectedNoteIndex);
   markDirty();
   syncMIDIToolbarState();
 }
@@ -774,6 +799,7 @@ function insertRest() {
   selectedElementType = "rest";
 
   renderSheetMusic();
+  scrollNoteIntoView(selectedNoteIndex);
   markDirty();
   syncMIDIToolbarState();
 }
@@ -902,6 +928,7 @@ function insertRecordedMelody(notes, { replace = false } = {}) {
   selectionAnchorIndex = selectedStart;
   selectedElementType = "note";
   renderSheetMusic();
+  scrollNoteIntoView(selectedStart);
   markDirty();
   syncMIDIToolbarState();
   if (statusDiv) {
@@ -1184,6 +1211,7 @@ function scheduleNextNote({ resumeCurrent = false } = {}) {
   }
 
   const entry = notes[playbackState.index];
+  scrollNoteIntoView(playbackState.index, { behavior: "auto" });
   const bpm = clampNumber(playbackTempoBpm, 20, 400, 120);
   const beatSeconds = 60 / bpm;
   const beats = durationToBeats(entry?.duration);
@@ -1353,6 +1381,7 @@ export async function renderEditor(filePath, container) {
 
   const editorArea = document.createElement("div");
   editorArea.id = "midi-editing-area";
+  editorAreaDiv = editorArea;
   editorArea.style.flex = "1";
   editorArea.style.overflow = "auto";
   editorArea.style.padding = "12px";

@@ -3,6 +3,7 @@
 
 import { createElementLayers } from "../ElementLayers.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { createPanelDOM } from "/panels/panelFactory.mjs";
 import { ensureSvgEditorModeLayout } from "/panels/workspace.mjs";
 import {
   createSvgEl,
@@ -19,6 +20,7 @@ import { createBezierToolController } from "./BezierToolController.mjs";
 import { createPathNodeEditor } from "./PathNodeEditor.mjs";
 import { createSketchModeController } from "./SketchMode.mjs";
 import { createSvgUndoStack } from "./SvgUndoStack.mjs";
+import { createInternalPngController, getImageHref } from "./internalPng.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG_UI_ATTR = "data-nv-editor-ui";
@@ -42,7 +44,7 @@ export async function renderEditor(filePath, container) {
   container.appendChild(wrapper);
 
   window.NodevisionState = window.NodevisionState || {};
-  updateToolbarState({ currentMode: "SVG Editing", fileIsDirty: false });
+  updateToolbarState({ currentMode: "SVG Editing", fileIsDirty: false, svgImageSelected: false, svgImagePath: null });
 
   const status = document.createElement("div");
   status.id = "svg-message";
@@ -385,6 +387,16 @@ export async function renderEditor(filePath, container) {
     markDirty: markDocumentDirty,
     pointerToleranceInSvgUnits,
     uiAttrName: SVG_UI_ATTR,
+  });
+
+  const internalPngController = createInternalPngController({
+    svgRoot,
+    getViewBox,
+    appendElement,
+    getSelectedElement: () => selectedElement,
+    setStatus,
+    notifyChanged: refreshSelectionAfterMutation,
+    markDirty: markDocumentDirty,
   });
 
   const lineToolState = {
@@ -1573,6 +1585,64 @@ export async function renderEditor(filePath, container) {
     refreshTransformHandles();
   }
 
+  function isSvgImageElement(el) {
+    return String(el?.tagName || "").toLowerCase() === "image";
+  }
+
+  function normalizeNotebookPathInput(inputPath = "") {
+    let clean = String(inputPath || "").trim().replace(/\\/g, "/");
+    try {
+      clean = decodeURIComponent(clean);
+    } catch {
+      // keep undecoded text
+    }
+    clean = clean
+      .replace(/[?#].*$/, "")
+      .replace(/^https?:\/\/[^/]+/i, "")
+      .replace(/^\/+/, "")
+      .replace(/^.*\/Notebook\//i, "")
+      .replace(/^Notebook\//i, "");
+    return clean.replace(/\/+/g, "/");
+  }
+
+  function dirname(pathLike = "") {
+    const clean = normalizeNotebookPathInput(pathLike);
+    const idx = clean.lastIndexOf("/");
+    return idx > 0 ? clean.slice(0, idx) : "";
+  }
+
+  function selectedSvgImageContext() {
+    if (!isSvgImageElement(selectedElement)) return null;
+    const href = getImageHref(selectedElement);
+    let linkedNotebookPath = "";
+    if (href && !href.startsWith("data:") && !/^(https?:)?\/\//i.test(href)) {
+      const isNotebookPath = /^\/?Notebook\//i.test(href);
+      linkedNotebookPath = normalizeNotebookPathInput(
+        href.startsWith("/") || isNotebookPath ? href : [dirname(filePath), href].filter(Boolean).join("/")
+      );
+    } else if (href) {
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.origin === window.location.origin && url.pathname.startsWith("/Notebook/")) {
+          linkedNotebookPath = normalizeNotebookPathInput(url.pathname);
+        }
+      } catch {
+        // external image
+      }
+    }
+    return { element: selectedElement, href, linkedNotebookPath };
+  }
+
+  function updateSelectedSvgImageState() {
+    const context = selectedSvgImageContext();
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.activeSvgImageContext = context;
+    updateToolbarState({
+      svgImageSelected: Boolean(context?.element),
+      svgImagePath: context?.linkedNotebookPath || null,
+    });
+  }
+
   function selectionEventDetail(reason = "selection") {
     return {
       reason,
@@ -1587,6 +1657,7 @@ export async function renderEditor(filePath, container) {
     selectionChangeRaf = window.requestAnimationFrame(() => {
       selectionChangeRaf = 0;
       nodeEditor.onSelectionChanged?.(selectedElements);
+      updateSelectedSvgImageState();
       window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-changed", {
         detail: selectionEventDetail("selection")
       }));
@@ -2022,6 +2093,84 @@ export async function renderEditor(filePath, container) {
     if (!active) return false;
     const currentlyVisible = active.style.display !== "none";
     return setActiveLayerVisible(!currentlyVisible);
+  }
+
+  function insertInternalPng() {
+    return internalPngController.insertInternalPng();
+  }
+
+  function insertImageFromInsertion(insertion) {
+    return internalPngController.insertImageFromInsertion(insertion);
+  }
+
+  function replaceSelectedInternalPng() {
+    return internalPngController.replaceSelectedPng();
+  }
+
+  function editSelectedInternalPng() {
+    return internalPngController.editSelectedPng();
+  }
+
+  function exportSelectedInternalPng() {
+    return internalPngController.exportSelectedPng();
+  }
+
+  async function editSelectedImageHere() {
+    const context = selectedSvgImageContext();
+    if (!context?.element) {
+      alert("Select an SVG image first.");
+      return null;
+    }
+
+    if (internalPngController.isInternalPng(context.element)) {
+      return internalPngController.editSelectedPng();
+    }
+
+    const imagePath = context.linkedNotebookPath || "";
+    if (!imagePath) {
+      alert("Only embedded PNGs or linked Notebook images can be edited here.");
+      return null;
+    }
+
+    const safeId = btoa(imagePath).replace(/[^a-z0-9]/gi, "-");
+    const instanceId = `nv-svg-image-editor-${safeId}`;
+    const existing = document.querySelector(`.panel[data-instance-id="${instanceId}"]`);
+    if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+    const panelInst = await createPanelDOM(
+      "GraphicalEditor",
+      instanceId,
+      "EditorPanel",
+      { filePath: imagePath, displayName: `Edit Image: ${imagePath}` }
+    );
+
+    document.body.appendChild(panelInst.panel);
+    panelInst.panel.classList.remove("docked");
+    panelInst.panel.classList.add("undocked");
+    panelInst.panel.__nvDefaultDockCell = (
+      window.activeCell &&
+      window.activeCell.classList?.contains("panel-cell")
+    ) ? window.activeCell : null;
+
+    if (panelInst.dockBtn && typeof panelInst.dockBtn.click === "function") {
+      try {
+        panelInst.dockBtn.dispatchEvent(new MouseEvent("click", { bubbles: false, cancelable: true, view: window }));
+      } catch {
+        panelInst.dockBtn.click();
+      }
+    }
+
+    const rect = context.element.getBoundingClientRect?.() || null;
+    const left = rect ? Math.min(window.innerWidth - 80, Math.max(20, Math.round(rect.left))) : Math.max(20, Math.round(window.innerWidth * 0.18));
+    const top = rect ? Math.min(window.innerHeight - 80, Math.max(20, Math.round(rect.top))) : Math.max(20, Math.round(window.innerHeight * 0.12));
+    panelInst.panel.style.width = "min(760px, 94vw)";
+    panelInst.panel.style.height = "min(560px, 90vh)";
+    panelInst.panel.style.left = `${left}px`;
+    panelInst.panel.style.top = `${top}px`;
+    panelInst.panel.style.zIndex = "23010";
+    panelInst.panel.style.pointerEvents = "auto";
+    setStatus(`Opened image editor: ${imagePath}`);
+    return panelInst.panel;
   }
 
   function insertShape(kind) {
@@ -2674,7 +2823,8 @@ export async function renderEditor(filePath, container) {
         : (sp.y - anchor.y) / denomY;
       let sx = rawScaleX;
       let sy = rawScaleY;
-      if (e.shiftKey) {
+      const preserveAspect = element?.tagName?.toLowerCase?.() === "image" ? !e.shiftKey : e.shiftKey;
+      if (preserveAspect) {
         const cornerPoint = {
           x: corner.includes("w") ? bbox.x : bbox.x + bbox.width,
           y: corner.includes("n") ? bbox.y : bbox.y + bbox.height,
@@ -2950,6 +3100,14 @@ export async function renderEditor(filePath, container) {
     layers: layersMgr,
     setMode,
     insertShape,
+    insertInternalPng,
+    insertImageFromInsertion,
+    replaceSelectedInternalPng,
+    editSelectedInternalPng,
+    exportSelectedInternalPng,
+    editSelectedImageHere,
+    toggleSelectedImageInlineEditor: editSelectedImageHere,
+    openSelectedImageEditorUndocked: editSelectedImageHere,
     toggleLayersPanel,
     setLayersPanelVisible,
     isLayersPanelVisible() {
