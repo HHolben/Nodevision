@@ -3,13 +3,20 @@
 // delete-to-rest, and vertical drag pitch editing.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { ensureMidEditorModeLayout } from "/panels/workspace.mjs";
 import { VexFlow as VF } from "/lib/vexflow/build/esm/entry/vexflow.js";
 import { normalizeNotebookRelativePath, toNotebookAssetUrl } from "/utils/notebookPath.mjs";
+import { MelodyRecorder } from "./MIDIeditorComponents/MelodyRecorder.mjs";
+import { framesToQuantizedNotes } from "./MIDIeditorComponents/MelodyQuantizer.mjs";
+import { createMelodyPreviewPanel } from "./MIDIeditorComponents/MelodyPreviewPanel.mjs";
+import { insertMelodyEntries, melodyNotesToEditorEntries } from "./MIDIeditorComponents/MidiInsertHelpers.mjs";
 
 let currentMidiBuffer = null;
 let currentFilePath = null;
 let currentNotesData = []; // [{ midi: number|null, duration: 'q', rest: boolean }]
 let selectedNoteIndex = -1;
+let selectedNoteIndices = new Set();
+let selectionAnchorIndex = -1;
 let midiIsDirty = false;
 
 let playbackTempoBpm = 120;
@@ -30,12 +37,17 @@ let midiRoot = null;
 let rendererDiv = null;
 let statusDiv = null;
 let durationSelectEl = null;
+let melodyCaptureHost = null;
+let melodyPreviewHost = null;
+let melodyRecorder = null;
+let melodyPreview = null;
 
 let renderedNotes = [];
 let renderedNoteXs = [];
 let renderedNoteBoxes = [];
 let activeStave = null;
 let dragState = null;
+let marqueeState = null;
 let selectedElementType = null; // "note" | "rest" | "cleff" | null
 let currentClef = "treble";
 let pendingDragMidi = null;
@@ -341,18 +353,24 @@ function clearRenderEventHandlers() {
   rendererDiv.onpointerleave = null;
 }
 
-function closestRenderedIndexFromX(x) {
-  if (!renderedNoteXs.length) return -1;
+function closestRenderedIndexFromPoint(x, y) {
+  if (!renderedNoteBoxes.length) return -1;
   let bestIdx = -1;
   let bestDist = Infinity;
-  for (let i = 0; i < renderedNoteXs.length; i += 1) {
-    const d = Math.abs(renderedNoteXs[i] - x);
+  for (let i = 0; i < renderedNoteBoxes.length; i += 1) {
+    const box = renderedNoteBoxes[i];
+    if (!box) continue;
+    const centerX = box.x + box.w / 2;
+    const centerY = box.y + box.h / 2;
+    const dy = Math.abs(centerY - y);
+    if (dy > 48) continue;
+    const d = Math.abs(centerX - x) + dy * 0.5;
     if (d < bestDist) {
       bestDist = d;
       bestIdx = i;
     }
   }
-  return bestDist <= 24 ? bestIdx : -1;
+  return bestDist <= 32 ? bestIdx : -1;
 }
 
 function scheduleDragRender() {
@@ -367,6 +385,91 @@ function scheduleDragRender() {
   });
 }
 
+function isIndexSelected(index) {
+  return selectedNoteIndices.has(index);
+}
+
+function getSelectedIndices() {
+  return [...selectedNoteIndices]
+    .filter((idx) => idx >= 0 && idx < currentNotesData.length)
+    .sort((a, b) => a - b);
+}
+
+function updateSelectionType() {
+  const indices = getSelectedIndices();
+  if (!indices.length) {
+    selectedNoteIndex = -1;
+    selectedElementType = null;
+    return;
+  }
+  if (!indices.includes(selectedNoteIndex)) selectedNoteIndex = indices[indices.length - 1];
+  const selected = currentNotesData[selectedNoteIndex];
+  selectedElementType = selected ? (selected.rest ? "rest" : "note") : null;
+}
+
+function clearNoteSelection() {
+  selectedNoteIndices.clear();
+  selectedNoteIndex = -1;
+  selectionAnchorIndex = -1;
+  selectedElementType = null;
+}
+
+function selectSingleIndex(index) {
+  selectedNoteIndices = new Set([index]);
+  selectedNoteIndex = index;
+  selectionAnchorIndex = index;
+  updateSelectionType();
+}
+
+function selectRangeToIndex(index) {
+  const anchor = selectionAnchorIndex >= 0 ? selectionAnchorIndex : selectedNoteIndex;
+  if (anchor < 0) {
+    selectSingleIndex(index);
+    return;
+  }
+  const start = Math.min(anchor, index);
+  const end = Math.max(anchor, index);
+  selectedNoteIndices = new Set();
+  for (let i = start; i <= end; i += 1) selectedNoteIndices.add(i);
+  selectedNoteIndex = index;
+  updateSelectionType();
+}
+
+function setSelectionFromIndices(indices) {
+  selectedNoteIndices = new Set(indices.filter((idx) => idx >= 0 && idx < currentNotesData.length));
+  selectedNoteIndex = indices.length ? indices[indices.length - 1] : -1;
+  if (selectedNoteIndex >= 0) selectionAnchorIndex = selectedNoteIndex;
+  updateSelectionType();
+}
+
+function rectangleIntersects(a, b) {
+  return a.x <= b.x + b.w && a.x + a.w >= b.x && a.y <= b.y + b.h && a.y + a.h >= b.y;
+}
+
+function indicesInsideRect(rect) {
+  const selected = [];
+  for (let i = 0; i < renderedNoteBoxes.length && i < currentNotesData.length; i += 1) {
+    const box = renderedNoteBoxes[i];
+    if (box && rectangleIntersects(rect, box)) selected.push(i);
+  }
+  return selected;
+}
+
+function makeMarqueeElement() {
+  const el = document.createElement("div");
+  el.style.cssText = "position:absolute;border:1px solid #2b6cb0;background:rgba(43,108,176,0.14);pointer-events:none;z-index:5;";
+  return el;
+}
+
+function updateMarqueeElement(state, localX, localY) {
+  const x = Math.min(state.startX, localX);
+  const y = Math.min(state.startY, localY);
+  const w = Math.abs(localX - state.startX);
+  const h = Math.abs(localY - state.startY);
+  Object.assign(state.el.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+  return { x, y, w, h };
+}
+
 function vexBoundingBoxToObject(bb) {
   if (!bb) return null;
   const x = typeof bb.getX === "function" ? bb.getX() : bb.x;
@@ -377,68 +480,120 @@ function vexBoundingBoxToObject(bb) {
   return { x: Number(x), y: Number(y), w: Number(w), h: Number(h) };
 }
 
+function estimatedNotationWidth(entry) {
+  const duration = entry?.duration || "q";
+  if (duration === "w") return 112;
+  if (duration === "h") return 76;
+  if (duration === "8") return 38;
+  return 52;
+}
+
+function chunkNotesForStaves(notes, formatWidth) {
+  const rows = [];
+  const usableWidth = Math.max(160, Number(formatWidth) || 160);
+  let row = [];
+  let rowWidth = 0;
+
+  for (let index = 0; index < notes.length; index += 1) {
+    const noteWidth = estimatedNotationWidth(notes[index]);
+    if (row.length && rowWidth + noteWidth > usableWidth) {
+      rows.push(row);
+      row = [];
+      rowWidth = 0;
+    }
+    row.push(index);
+    rowWidth += noteWidth;
+  }
+
+  if (row.length) rows.push(row);
+  return rows.length ? rows : [[]];
+}
+
+function makeVexNote(entry, index) {
+  if (entry?.rest) {
+    const restNote = new VF.StaveNote({
+      clef: currentClef || "treble",
+      keys: ["b/4"],
+      duration: `${entry.duration || "q"}r`,
+    });
+    if (isIndexSelected(index)) {
+      restNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
+    }
+    return restNote;
+  }
+
+  const key = midiToVexKey(Number.isFinite(entry?.midi) ? entry.midi : 60);
+  const staveNote = new VF.StaveNote({
+    clef: currentClef || "treble",
+    keys: [key],
+    duration: entry?.duration || "q",
+  });
+
+  if (key.includes("#")) {
+    staveNote.addModifier(new VF.Accidental("#"), 0);
+  }
+  if (isIndexSelected(index)) {
+    staveNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
+  }
+  return staveNote;
+}
+
+
 function renderSheetMusic() {
   if (!rendererDiv || !midiRoot || !currentNotesData.length) return;
 
   try {
     rendererDiv.innerHTML = "";
+    rendererDiv.style.position = "relative";
+    rendererDiv.style.width = "100%";
     renderedNotes = [];
     renderedNoteXs = [];
     renderedNoteBoxes = [];
     activeStave = null;
 
-    const width = Math.max(640, midiRoot.clientWidth || 800);
-    const height = 220;
+    const hostWidth = rendererDiv.parentElement?.clientWidth || midiRoot.clientWidth || 800;
+    const width = Math.max(360, hostWidth - 24);
+    const staveX = 10;
+    const staveWidth = Math.max(320, width - 30);
+    const formatWidth = Math.max(180, staveWidth - 78);
+    const staffGap = 132;
+    const topOffset = 20;
+    const rows = chunkNotesForStaves(currentNotesData, formatWidth);
+    const height = Math.max(220, topOffset + rows.length * staffGap + 30);
 
     const renderer = new VF.Renderer(rendererDiv, VF.Renderer.Backends.SVG);
-    renderer.resize(width - 20, height);
+    renderer.resize(width, height);
     const ctx = renderer.getContext();
     ctx.setFont("Arial", 10);
 
-    const stave = new VF.Stave(10, 20, width - 40);
-    stave.addClef(currentClef || "treble").setContext(ctx).draw();
-    activeStave = stave;
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const indices = rows[rowIndex];
+      const staveY = topOffset + rowIndex * staffGap;
+      const stave = new VF.Stave(staveX, staveY, staveWidth);
+      stave.addClef(currentClef || "treble").setContext(ctx).draw();
+      if (!activeStave) activeStave = stave;
 
-    const maxRenderable = Math.min(40, currentNotesData.length);
-    const notesForRender = currentNotesData.slice(0, maxRenderable).map((n, idx) => {
-      if (n.rest) {
-        const restNote = new VF.StaveNote({
-          clef: currentClef || "treble",
-          keys: ["b/4"],
-          duration: `${n.duration}r`,
-        });
-        if (idx === selectedNoteIndex) {
-          restNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
-        }
-        return restNote;
-      }
-
-      const key = midiToVexKey(Number.isFinite(n.midi) ? n.midi : 60);
-      const staveNote = new VF.StaveNote({
-        clef: currentClef || "treble",
-        keys: [key],
-        duration: n.duration,
+      const notesForRow = indices.map((noteIndex) => {
+        const vexNote = makeVexNote(currentNotesData[noteIndex], noteIndex);
+        renderedNotes[noteIndex] = vexNote;
+        return vexNote;
       });
 
-      if (key.includes("#")) {
-        staveNote.addModifier(new VF.Accidental("#"), 0);
+      if (!notesForRow.length) continue;
+      const voice = new VF.Voice({ num_beats: 4, beat_value: 4 })
+        .setStrict(false)
+        .addTickables(notesForRow);
+
+      new VF.Formatter().joinVoices([voice]).format([voice], formatWidth);
+      voice.draw(ctx, stave);
+
+      for (let rowNoteIndex = 0; rowNoteIndex < notesForRow.length; rowNoteIndex += 1) {
+        const noteIndex = indices[rowNoteIndex];
+        const vexNote = notesForRow[rowNoteIndex];
+        renderedNoteXs[noteIndex] = Number(vexNote.getAbsoluteX?.() || 0);
+        renderedNoteBoxes[noteIndex] = vexBoundingBoxToObject(vexNote.getBoundingBox?.());
       }
-      if (idx === selectedNoteIndex) {
-        staveNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
-      }
-      return staveNote;
-    });
-
-    const voice = new VF.Voice({ num_beats: 4, beat_value: 4 })
-      .setStrict(false)
-      .addTickables(notesForRender);
-
-    new VF.Formatter().joinVoices([voice]).format([voice], width - 60);
-    voice.draw(ctx, stave);
-
-    renderedNotes = notesForRender;
-    renderedNoteXs = notesForRender.map((n) => Number(n.getAbsoluteX?.() || 0));
-    renderedNoteBoxes = notesForRender.map((n) => vexBoundingBoxToObject(n.getBoundingBox?.()));
+    }
 
     clearRenderEventHandlers();
 
@@ -457,34 +612,53 @@ function renderSheetMusic() {
         }
       }
 
-      if (idx < 0) {
-        idx = closestRenderedIndexFromX(localX);
-      }
+      if (idx < 0) idx = closestRenderedIndexFromPoint(localX, localY);
 
       // Note hit-testing has priority so dragging notes near the clef still works.
       if (idx < 0 && localX <= 72) {
-        selectedNoteIndex = -1;
+        clearNoteSelection();
         selectedElementType = "cleff";
         dragState = null;
+        marqueeState = null;
         renderSheetMusic();
         syncMIDIToolbarState();
         return;
       }
-      if (idx < 0) return;
 
-      selectedNoteIndex = idx;
-      const selected = currentNotesData[idx];
-      selectedElementType = selected ? (selected.rest ? "rest" : "note") : null;
-
-      if (selected && !selected.rest && Number.isFinite(selected.midi)) {
-        dragState = {
-          index: idx,
-          startY: event.clientY,
-          startMidi: selected.midi,
+      if (idx < 0) {
+        clearNoteSelection();
+        marqueeState = {
+          startX: localX,
+          startY: localY,
+          el: makeMarqueeElement(),
         };
-        if (rendererDiv.setPointerCapture && Number.isFinite(event.pointerId)) {
-          rendererDiv.setPointerCapture(event.pointerId);
-        }
+        rendererDiv.appendChild(marqueeState.el);
+        if (rendererDiv.setPointerCapture && Number.isFinite(event.pointerId)) rendererDiv.setPointerCapture(event.pointerId);
+        return;
+      }
+
+      if (event.shiftKey) {
+        selectRangeToIndex(idx);
+      } else if (!isIndexSelected(idx)) {
+        selectSingleIndex(idx);
+      } else {
+        selectedNoteIndex = idx;
+        updateSelectionType();
+      }
+
+      const selected = currentNotesData[idx];
+      if (!event.shiftKey && selected && !selected.rest && Number.isFinite(selected.midi)) {
+        const dragIndices = getSelectedIndices().filter((noteIndex) => {
+          const note = currentNotesData[noteIndex];
+          return note && !note.rest && Number.isFinite(note.midi);
+        });
+        const indices = dragIndices.length ? dragIndices : [idx];
+        dragState = {
+          indices,
+          startY: event.clientY,
+          startMidis: new Map(indices.map((noteIndex) => [noteIndex, currentNotesData[noteIndex].midi])),
+        };
+        if (rendererDiv.setPointerCapture && Number.isFinite(event.pointerId)) rendererDiv.setPointerCapture(event.pointerId);
       } else {
         dragState = null;
       }
@@ -494,44 +668,61 @@ function renderSheetMusic() {
     };
 
     rendererDiv.onpointermove = (event) => {
-      if (!dragState) return;
-      const note = currentNotesData[dragState.index];
-      if (!note || note.rest) return;
+      const svgRect = rendererDiv.getBoundingClientRect();
+      const localX = event.clientX - svgRect.left;
+      const localY = event.clientY - svgRect.top;
 
-      const newMidi = midiFromY(dragState.startMidi, event.clientY - dragState.startY);
-      if (newMidi !== note.midi) {
-        note.midi = newMidi;
-        pendingDragMidi = newMidi;
+      if (marqueeState) {
+        const rect = updateMarqueeElement(marqueeState, localX, localY);
+        setSelectionFromIndices(indicesInsideRect(rect));
+        syncMIDIToolbarState();
+        return;
+      }
+
+      if (!dragState) return;
+      let changed = false;
+      let lastMidi = null;
+      for (const noteIndex of dragState.indices || []) {
+        const note = currentNotesData[noteIndex];
+        const startMidi = dragState.startMidis?.get(noteIndex);
+        if (!note || note.rest || !Number.isFinite(startMidi)) continue;
+        const newMidi = midiFromY(startMidi, event.clientY - dragState.startY);
+        if (newMidi !== note.midi) {
+          note.midi = newMidi;
+          lastMidi = newMidi;
+          changed = true;
+        }
+      }
+      if (changed) {
+        pendingDragMidi = lastMidi;
         markDirty();
         scheduleDragRender();
       }
     };
 
-    rendererDiv.onpointerup = () => {
+    const finishDragOrMarquee = () => {
+      if (marqueeState) {
+        marqueeState.el?.remove?.();
+        marqueeState = null;
+        renderSheetMusic();
+        syncMIDIToolbarState();
+        return;
+      }
       if (dragRenderFrame !== null) {
         window.cancelAnimationFrame(dragRenderFrame);
         dragRenderFrame = null;
         renderSheetMusic();
         if (pendingDragMidi !== null && statusDiv) {
-          statusDiv.innerHTML = `<p style=\"color:#333;\">Selected note moved to ${midiToVexKey(pendingDragMidi)}.</p>`;
+          const count = getSelectedIndices().length;
+          statusDiv.innerHTML = `<p style=\"color:#333;\">Moved ${count > 1 ? `${count} notes` : `selected note to ${midiToVexKey(pendingDragMidi)}`}.</p>`;
         }
         pendingDragMidi = null;
       }
       dragState = null;
     };
 
-    rendererDiv.onpointerleave = () => {
-      if (dragRenderFrame !== null) {
-        window.cancelAnimationFrame(dragRenderFrame);
-        dragRenderFrame = null;
-        renderSheetMusic();
-        if (pendingDragMidi !== null && statusDiv) {
-          statusDiv.innerHTML = `<p style=\"color:#333;\">Selected note moved to ${midiToVexKey(pendingDragMidi)}.</p>`;
-        }
-        pendingDragMidi = null;
-      }
-      dragState = null;
-    };
+    rendererDiv.onpointerup = finishDragOrMarquee;
+    rendererDiv.onpointerleave = finishDragOrMarquee;
   } catch (err) {
     console.warn("Failed to render MIDI sheet music:", err);
     if (statusDiv) {
@@ -540,12 +731,14 @@ function renderSheetMusic() {
   }
 }
 
-function insertNote() {
+function insertNote(midi = null, duration = "q") {
   const baseMidi = selectedNoteIndex >= 0 && currentNotesData[selectedNoteIndex] && !currentNotesData[selectedNoteIndex].rest
     ? currentNotesData[selectedNoteIndex].midi
     : 60;
+  const nextMidi = Number.isFinite(Number(midi)) ? Number(midi) : baseMidi;
+  const nextDuration = DURATION_VALUES.has(duration) ? duration : "q";
 
-  const entry = { midi: Number.isFinite(baseMidi) ? baseMidi : 60, duration: "q", rest: false };
+  const entry = { midi: Number.isFinite(nextMidi) ? nextMidi : 60, duration: nextDuration, rest: false };
 
   if (selectedNoteIndex >= 0) {
     currentNotesData.splice(selectedNoteIndex + 1, 0, entry);
@@ -554,6 +747,8 @@ function insertNote() {
     currentNotesData.push(entry);
     selectedNoteIndex = currentNotesData.length - 1;
   }
+  selectedNoteIndices = new Set([selectedNoteIndex]);
+  selectionAnchorIndex = selectedNoteIndex;
   selectedElementType = "note";
 
   renderSheetMusic();
@@ -574,6 +769,8 @@ function insertRest() {
     currentNotesData.push(entry);
     selectedNoteIndex = currentNotesData.length - 1;
   }
+  selectedNoteIndices = new Set([selectedNoteIndex]);
+  selectionAnchorIndex = selectedNoteIndex;
   selectedElementType = "rest";
 
   renderSheetMusic();
@@ -582,10 +779,14 @@ function insertRest() {
 }
 
 function replaceSelectedWithRest() {
-  if (selectedNoteIndex < 0 || selectedNoteIndex >= currentNotesData.length) return;
-  const existing = currentNotesData[selectedNoteIndex];
-  const duration = DURATION_VALUES.has(existing?.duration) ? existing.duration : "q";
-  currentNotesData[selectedNoteIndex] = { midi: null, duration, rest: true };
+  const indices = getSelectedIndices();
+  if (!indices.length) return;
+  for (const index of indices) {
+    const existing = currentNotesData[index];
+    const duration = DURATION_VALUES.has(existing?.duration) ? existing.duration : "q";
+    currentNotesData[index] = { midi: null, duration, rest: true };
+  }
+  selectedNoteIndex = indices[indices.length - 1];
   selectedElementType = "rest";
   renderSheetMusic();
   markDirty();
@@ -594,10 +795,12 @@ function replaceSelectedWithRest() {
 
 function setSelectedDuration(duration) {
   if (!DURATION_VALUES.has(duration)) return;
-  if (selectedNoteIndex < 0 || selectedNoteIndex >= currentNotesData.length) return;
-  const existing = currentNotesData[selectedNoteIndex];
-  if (!existing) return;
-  existing.duration = duration;
+  const indices = getSelectedIndices();
+  if (!indices.length) return;
+  for (const index of indices) {
+    const existing = currentNotesData[index];
+    if (existing) existing.duration = duration;
+  }
   renderSheetMusic();
   markDirty();
   syncMIDIToolbarState();
@@ -607,10 +810,103 @@ function setClef(nextClef) {
   const allowed = new Set(["treble", "bass", "alto", "tenor"]);
   if (!allowed.has(nextClef)) return;
   currentClef = nextClef;
+  clearNoteSelection();
   selectedElementType = "cleff";
-  selectedNoteIndex = -1;
   renderSheetMusic();
   syncMIDIToolbarState();
+}
+
+function openMelodyRecorder() {
+  if (!melodyCaptureHost || !melodyPreviewHost) return;
+  melodyCaptureHost.innerHTML = "";
+  melodyCaptureHost.style.cssText = "border-top:1px solid #ddd;padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fbfbfb;";
+
+  const status = document.createElement("span");
+  status.style.cssText = "font:13px monospace;color:#555;";
+  status.textContent = "Melody sketch: record one note at a time, then correct the preview before inserting.";
+
+  const startBtn = document.createElement("button");
+  startBtn.type = "button";
+  startBtn.textContent = "Start Recording";
+
+  const stopBtn = document.createElement("button");
+  stopBtn.type = "button";
+  stopBtn.textContent = "Stop and Preview";
+  stopBtn.disabled = true;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.textContent = "Close";
+
+  melodyCaptureHost.append(startBtn, stopBtn, closeBtn, status);
+
+  startBtn.addEventListener("click", async () => {
+    try {
+      melodyPreviewHost.innerHTML = "";
+      melodyRecorder?.stop?.();
+      melodyRecorder = new MelodyRecorder({
+        onFrame: (frame) => {
+          if (frame.frequency) {
+            status.textContent = `Recording. Detected ${Math.round(frame.frequency)} Hz.`;
+          }
+        },
+        onStatus: (message) => { status.textContent = message; },
+      });
+      await melodyRecorder.start();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    } catch (err) {
+      status.textContent = err?.message || String(err);
+      status.style.color = "#b00020";
+    }
+  });
+
+  stopBtn.addEventListener("click", () => {
+    const frames = melodyRecorder?.stop?.() || [];
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    showMelodyPreview(frames);
+  });
+
+  closeBtn.addEventListener("click", () => {
+    melodyRecorder?.stop?.();
+    melodyRecorder = null;
+    melodyPreview?.destroy?.();
+    melodyCaptureHost.innerHTML = "";
+    melodyPreviewHost.innerHTML = "";
+  });
+}
+
+function showMelodyPreview(frames) {
+  const notes = framesToQuantizedNotes(frames, { tempoBpm: playbackTempoBpm, gridBeats: 1 });
+  melodyPreview = createMelodyPreviewPanel(melodyPreviewHost, {
+    onInsert: ({ notes: editedNotes, replace }) => insertRecordedMelody(editedNotes, { replace }),
+    onClose: () => { melodyPreviewHost.innerHTML = ""; },
+  });
+  melodyPreview.render(notes);
+  if (statusDiv) {
+    statusDiv.innerHTML = notes.length
+      ? "<p style='color:#2e7d32;'>Detected melody notes are ready to review.</p>"
+      : "<p style='color:#7a4b00;'>No clear monophonic notes were detected. Try a steadier hummed or whistled line.</p>";
+  }
+}
+
+function insertRecordedMelody(notes, { replace = false } = {}) {
+  const entries = melodyNotesToEditorEntries(notes, { tempoBpm: playbackTempoBpm });
+  if (!entries.length) return;
+  const insertAt = selectedNoteIndex >= 0 ? Math.min(currentNotesData.length, selectedNoteIndex + 1) : currentNotesData.length;
+  currentNotesData = insertMelodyEntries(currentNotesData, entries, { selectedIndex: selectedNoteIndex, replace });
+  const selectedStart = replace ? 0 : insertAt;
+  selectedNoteIndices = new Set(entries.map((_, offset) => selectedStart + offset));
+  selectedNoteIndex = selectedStart;
+  selectionAnchorIndex = selectedStart;
+  selectedElementType = "note";
+  renderSheetMusic();
+  markDirty();
+  syncMIDIToolbarState();
+  if (statusDiv) {
+    statusDiv.innerHTML = `<p style='color:#2e7d32;'>Inserted ${entries.length} melody sketch entries. Existing notes ${replace ? "were replaced" : "were preserved"}.</p>`;
+  }
 }
 
 function handleMIDIAction(callbackKey) {
@@ -655,6 +951,10 @@ function handleMIDIAction(callbackKey) {
     setClef("tenor");
     return;
   }
+  if (callbackKey === "midiRecordMelody") {
+    openMelodyRecorder();
+    return;
+  }
   if (callbackKey === "midiPlayScore") {
     window.NodevisionMIDITools?.play?.();
     return;
@@ -666,6 +966,7 @@ function handleMIDIAction(callbackKey) {
 }
 
 function syncMIDIToolbarState() {
+  updateSelectionType();
   const selected = selectedNoteIndex >= 0 ? currentNotesData[selectedNoteIndex] : null;
   const selectedType = selectedElementType || (selected ? (selected.rest ? "rest" : "note") : null);
   updateToolbarState({
@@ -673,6 +974,7 @@ function syncMIDIToolbarState() {
     activeActionHandler: handleMIDIAction,
     midiHasSelection: Boolean(selectedType),
     midiSelectedType: selectedType,
+    midiSelectionCount: getSelectedIndices().length,
     midiTempoBpm: playbackTempoBpm,
   });
 
@@ -699,7 +1001,7 @@ function registerMIDIHotkeys(filePath) {
     }
 
     if (key === "delete" || key === "backspace") {
-      if (selectedNoteIndex >= 0) {
+      if (getSelectedIndices().length) {
         e.preventDefault();
         replaceSelectedWithRest();
       }
@@ -963,9 +1265,9 @@ export async function renderEditor(filePath, container) {
   container.innerHTML = "";
   const normalizedPath = normalizeNotebookRelativePath(filePath);
   currentFilePath = normalizedPath;
-  selectedNoteIndex = -1;
+  clearNoteSelection();
   dragState = null;
-  selectedElementType = null;
+  marqueeState = null;
   currentClef = "treble";
   midiIsDirty = false;
   setTempo(playbackTempoBpm);
@@ -980,6 +1282,7 @@ export async function renderEditor(filePath, container) {
     stop: () => stopPlayback({ resetIndex: true }),
     setTempo,
     getTempo: () => playbackTempoBpm,
+    insertMidiNote: (midi, duration = durationSelectEl?.value || "q") => insertNote(midi, duration),
     status: () => ({ ...playbackState, tempoBpm: playbackTempoBpm }),
   };
   syncMIDIToolbarState();
@@ -1008,6 +1311,12 @@ export async function renderEditor(filePath, container) {
   insertRestBtn.textContent = "Insert Rest";
   insertRestBtn.addEventListener("click", insertRest);
   controls.appendChild(insertRestBtn);
+
+  const recordMelodyBtn = document.createElement("button");
+  recordMelodyBtn.type = "button";
+  recordMelodyBtn.textContent = "Record Melody";
+  recordMelodyBtn.addEventListener("click", openMelodyRecorder);
+  controls.appendChild(recordMelodyBtn);
 
   const durationSelect = document.createElement("select");
   durationSelect.title = "Selected duration";
@@ -1058,6 +1367,14 @@ export async function renderEditor(filePath, container) {
   statusDiv.style.marginTop = "1em";
   editorArea.appendChild(statusDiv);
 
+  melodyCaptureHost = document.createElement("div");
+  melodyCaptureHost.id = "midi-melody-capture";
+  editorArea.appendChild(melodyCaptureHost);
+
+  melodyPreviewHost = document.createElement("div");
+  melodyPreviewHost.id = "midi-melody-preview";
+  editorArea.appendChild(melodyPreviewHost);
+
   try {
     const res = await fetch(toNotebookAssetUrl(normalizedPath), { cache: "no-store" });
     if (!res.ok) throw new Error(res.statusText);
@@ -1085,6 +1402,15 @@ export async function renderEditor(filePath, container) {
   }
 
   registerMIDIHotkeys(normalizedPath);
+
+  try {
+    const editorCell = container?.closest?.(".panel-cell");
+    if (editorCell) {
+      await ensureMidEditorModeLayout({ editorCell });
+    }
+  } catch (err) {
+    console.warn("MIDI editor: failed to apply MIDI editor mode layout:", err);
+  }
 
   if (resizeHandler) {
     window.removeEventListener("resize", resizeHandler);

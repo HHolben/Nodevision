@@ -588,6 +588,8 @@ function findExistingModeCell(id, excludeCell = null) {
 function findReplacementContainer(editorCell) {
   const parent = editorCell?.parentElement;
   if (!parent) return null;
+  const modeRoot = editorCell.closest?.(".panel-row[data-nv-mode-layout-id]");
+  if (modeRoot) return modeRoot;
   if (parent.classList?.contains?.("panel-row") && parent.dataset?.nvModeLayoutId) return parent;
   const rowWithFileManager = editorCell.closest?.(".panel-row") || parent;
   if (rowWithFileManager?.classList?.contains?.("panel-row")) return rowWithFileManager;
@@ -613,7 +615,7 @@ async function importModeLayout({ userModulePath, defaultModulePath, fallbackMod
     try {
       const importPath = `${candidate}${candidate.includes("?") ? "&" : "?"}v=${cacheBust}`;
       const mod = await import(importPath);
-      const layout = mod.default || mod.layout || mod.SVG_EDITOR_MODE_LAYOUT;
+      const layout = mod.default || mod.layout || mod.SVG_EDITOR_MODE_LAYOUT || mod.MID_EDITOR_MODE_LAYOUT;
       if (layout) return layout;
     } catch (err) {
       lastError = err;
@@ -732,6 +734,19 @@ export async function ensureSvgEditorModeLayout({ editorCell } = {}) {
   });
 }
 
+
+export async function ensureMidEditorModeLayout({ editorCell } = {}) {
+  const layout = await importModeLayout({
+    userModulePath: "/UserSettings/ModeLayouts/MidEditorMode.mjs",
+    defaultModulePath: "/Layouts/ModeLayouts/MidEditorMode.mjs",
+  });
+  return ensureEditorModeLayout({
+    editorCell,
+    layout,
+    modeId: layout?.id || "MidEditorMode",
+  });
+}
+
 export function ensureSvgEditingSplit({
   editorCell,
   layersPanelId = "SVGLayersPanel",
@@ -818,6 +833,7 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
     `/PanelInstances/EditorPanels/${panelType}.mjs`,
     `/PanelInstances/InfoPanels/${panelType}.mjs`,
     `/PanelInstances/ViewPanels/${panelType}.mjs`,
+    `/PanelInstances/ControlPanels/${panelType}.mjs`,
     `/panels/${panelType}.mjs`,
   ];
 

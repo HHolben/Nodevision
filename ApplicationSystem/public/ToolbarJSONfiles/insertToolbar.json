@@ -546,6 +546,14 @@
 	},
 	{
 	  "ToolbarCategory": "Insert",
+	  "heading": "Record Melody",
+	  "callbackKey": "midiRecordMelody",
+  "routeToActivePanel": true,
+  "modes": ["MIDIediting"],
+  "parentHeading": "Insert"
+},
+	{
+	  "ToolbarCategory": "Insert",
 	  "heading": "Insert Note",
 	  "callbackKey": "midiInsertNote",
   "routeToActivePanel": true,
