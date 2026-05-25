@@ -95,7 +95,7 @@ async function openInternalPngEditor({ el, setStatus, notifyChanged, markDirty }
   await saveNotebookImageFromDataUrl(tempPath, source);
 
   const overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:23000;display:flex;align-items:center;justify-content:center;";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:1800;display:flex;align-items:center;justify-content:center;padding-top:calc(var(--nv-global-toolbar-height,40px) + var(--nv-sub-toolbar-height,0px));box-sizing:border-box;";
   const frame = document.createElement("div");
   frame.className = "panel nv-inline-embedded-panel";
   frame.style.cssText = "width:min(760px,94vw);height:min(560px,90vh);background:white;border:1px solid rgb(106,127,156);box-shadow:0 2px 10px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;";
