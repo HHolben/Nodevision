@@ -7,7 +7,12 @@ import { getNodevisionNavigationState } from "/NodevisionNavigationState.mjs";
 const navigationState = getNodevisionNavigationState();
 
 const TEMPLATE = `
-  <div style="display:flex;flex-direction:column;gap:10px;">
+  <div data-sync-panel-root style="display:flex;flex-direction:column;gap:10px;">
+    <div data-sync-tabs style="display:flex;gap:6px;border-bottom:1px solid #ddd;padding-bottom:6px;">
+      <button type="button" data-sync-tab="sync" style="border:1px solid #999;border-radius:6px 6px 0 0;background:#fff;padding:7px 10px;font-size:0.88em;cursor:pointer;">Sync Notebook</button>
+      <button type="button" data-sync-tab="mqtt" style="border:1px solid #ccc;border-radius:6px 6px 0 0;background:#f8f8f8;padding:7px 10px;font-size:0.88em;cursor:pointer;">MQTT Connection</button>
+    </div>
+    <div data-sync-tab-panel="sync" style="display:flex;flex-direction:column;gap:10px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
       <div>
         <h3 style="margin:0;font-size:1.1em;">Sync</h3>
@@ -103,6 +108,69 @@ const TEMPLATE = `
       <summary style="cursor:pointer;font-weight:600;">Latest Sync Result</summary>
       <pre data-sync-result style="margin-top:8px;max-height:260px;overflow:auto;white-space:pre-wrap;font-size:0.85em;color:#1f1f1f;"></pre>
     </details>
+    </div>
+
+    <div data-sync-tab-panel="mqtt" style="display:none;flex-direction:column;gap:10px;">
+      <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fafafa;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:600;">Broker Status</div>
+            <div style="color:#666;font-size:0.84em;margin-top:3px;">Internal broker status for MQTT-style Nodevision topics.</div>
+          </div>
+          <button type="button" data-mqtt-refresh style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:6px 10px;cursor:pointer;font-size:0.82em;">Refresh</button>
+        </div>
+        <div data-mqtt-status-grid style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;font-size:0.86em;"></div>
+      </section>
+
+      <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div style="font-weight:600;">Retained Topics</div>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:0.82em;color:#555;min-width:190px;">Topic prefix
+            <input data-mqtt-prefix value="nodevision/iot/" style="padding:6px;border:1px solid #bbb;border-radius:6px;font-size:1em;">
+          </label>
+        </div>
+        <div data-mqtt-retained-list style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto;font-size:0.82em;"></div>
+      </section>
+
+      <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
+        <div style="font-weight:600;margin-bottom:8px;">IoT Device Publish Test</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:0.86em;">Topic
+            <input data-iot-test-topic value="nodevision/iot/test" style="padding:7px;border:1px solid #bbb;border-radius:6px;font-size:1em;">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:0.86em;">Payload JSON
+            <textarea data-iot-test-payload rows="4" style="padding:7px;border:1px solid #bbb;border-radius:6px;font-family:monospace;font-size:0.95em;resize:vertical;">{"hello":"world"}</textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:0.86em;">Bearer token
+            <input data-iot-test-token type="password" autocomplete="off" placeholder="paste IoT token for local testing" style="padding:7px;border:1px solid #bbb;border-radius:6px;font-size:1em;">
+          </label>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <label style="display:flex;gap:6px;align-items:center;font-size:0.85em;color:#555;"><input type="checkbox" data-iot-test-retain checked>Retain</label>
+            <button type="button" data-iot-test-publish style="border:none;border-radius:6px;background:#0a84ff;color:#fff;padding:8px 12px;cursor:pointer;font-size:0.88em;">Publish Test Message</button>
+          </div>
+          <div style="color:#8f4f00;font-size:0.8em;">Device tokens are shown only when generated. Do not commit tokens to public projects.</div>
+          <pre data-iot-test-result style="display:none;margin:0;max-height:180px;overflow:auto;white-space:pre-wrap;background:#f7f7f7;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:0.82em;"></pre>
+        </div>
+      </section>
+
+      <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fafafa;">
+        <div style="font-weight:600;margin-bottom:6px;">Wokwi Connection Help</div>
+        <pre data-wokwi-help style="margin:0;white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:0.82em;user-select:text;">POST http://127.0.0.1:3000/api/iot/publish
+Content-Type: application/json
+Authorization: Bearer &lt;your-device-token&gt;</pre>
+      </section>
+
+      <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
+          <div>
+            <div style="font-weight:600;">Recent IoT Events</div>
+            <div data-mqtt-events-warning style="display:none;margin-top:3px;color:#8f4f00;font-size:0.78em;"></div>
+          </div>
+          <button type="button" data-mqtt-events-refresh style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:5px 9px;cursor:pointer;font-size:0.82em;">Refresh Events</button>
+        </div>
+        <div data-mqtt-events-list style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto;font-size:0.82em;"></div>
+      </section>
+    </div>
   </div>
 `;
 
@@ -111,6 +179,48 @@ const shortenDeviceId = (id = "") => (String(id).length <= 16 ? String(id) : `${
 const shortenJobId = (id = "") => { const text = String(id); return text.length <= 14 ? text : text.slice(0, 8) + "..."; };
 const setStatus = (el, msg = "") => { if (el) el.textContent = String(msg); };
 function setError(el, msg = "") { if (!el) return; const t = String(msg || "").trim(); el.style.display = t ? "block" : "none"; el.textContent = t; }
+
+export const DEFAULT_SYNC_PANEL_TAB = "sync";
+export const DEFAULT_IOT_TOPIC_PREFIX = "nodevision/iot/";
+
+export function getDefaultSyncPanelTab() {
+  return DEFAULT_SYNC_PANEL_TAB;
+}
+
+function scrubPreviewValue(value, depth = 0) {
+  if (depth > 3) return "[truncated]";
+  if (value === null || typeof value === "number" || typeof value === "boolean") return value;
+  if (typeof value === "string") return value.length > 240 ? value.slice(0, 240) + "..." : value;
+  if (Array.isArray(value)) return value.slice(0, 12).map((item) => scrubPreviewValue(item, depth + 1));
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [key, item] of Object.entries(value).slice(0, 30)) {
+      if (/privatekey|token|tokenhash|auth|secret/i.test(String(key || ""))) continue;
+      out[key] = scrubPreviewValue(item, depth + 1);
+    }
+    return out;
+  }
+  return undefined;
+}
+
+export function truncatePayloadPreview(value, maxLength = 220) {
+  let text = "";
+  try {
+    text = JSON.stringify(scrubPreviewValue(value));
+  } catch {
+    text = String(value ?? "");
+  }
+  if (!text || text === undefined) return "";
+  return text.length > maxLength ? text.slice(0, Math.max(0, maxLength - 3)) + "..." : text;
+}
+
+export function parseIotPublishPayload(text) {
+  const parsed = JSON.parse(String(text || ""));
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Payload must be a JSON object.");
+  }
+  return parsed;
+}
 
 export function formatSyncEventBytes(done, total) {
   const format = (value) => {
@@ -152,6 +262,23 @@ export async function setupPanel(panelElem, panelVars = {}) {
   if (typeof panelElem.cleanup === "function") { try { panelElem.cleanup(); } catch {} }
   panelElem.innerHTML = TEMPLATE;
   const titleEl = panelElem.querySelector(".panel-title"); if (titleEl) titleEl.textContent = panelVars.displayName || "Sync";
+
+  const tabButtons = [...panelElem.querySelectorAll("[data-sync-tab]")];
+  const syncTabPanel = panelElem.querySelector("[data-sync-tab-panel=\"sync\"]");
+  const mqttTabPanel = panelElem.querySelector("[data-sync-tab-panel=\"mqtt\"]");
+  const mqttRefreshBtn = panelElem.querySelector("[data-mqtt-refresh]");
+  const mqttStatusGridEl = panelElem.querySelector("[data-mqtt-status-grid]");
+  const mqttPrefixInput = panelElem.querySelector("[data-mqtt-prefix]");
+  const mqttRetainedListEl = panelElem.querySelector("[data-mqtt-retained-list]");
+  const mqttEventsListEl = panelElem.querySelector("[data-mqtt-events-list]");
+  const mqttEventsWarningEl = panelElem.querySelector("[data-mqtt-events-warning]");
+  const mqttEventsRefreshBtn = panelElem.querySelector("[data-mqtt-events-refresh]");
+  const iotTestTopicInput = panelElem.querySelector("[data-iot-test-topic]");
+  const iotTestPayloadInput = panelElem.querySelector("[data-iot-test-payload]");
+  const iotTestTokenInput = panelElem.querySelector("[data-iot-test-token]");
+  const iotTestRetainInput = panelElem.querySelector("[data-iot-test-retain]");
+  const iotTestPublishBtn = panelElem.querySelector("[data-iot-test-publish]");
+  const iotTestResultEl = panelElem.querySelector("[data-iot-test-result]");
 
   const errorEl = panelElem.querySelector("[data-error]");
   const statusEl = panelElem.querySelector("[data-status]");
@@ -197,6 +324,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
     syncEvents: [],
     eventsClearedAt: 0,
     eventsPollTimer: null,
+    activeTab: DEFAULT_SYNC_PANEL_TAB,
+    mqttPollTimer: null,
+    mqttStatus: { retainedCount: 0, eventCount: 0, lastRefresh: null },
+    mqttRetained: [],
+    mqttEvents: [],
   };
 
   const renderLocalDevice = () => {
@@ -380,6 +512,142 @@ export async function setupPanel(panelElem, panelVars = {}) {
     }
   };
 
+  const setMqttEventsWarning = (message = "") => {
+    if (!mqttEventsWarningEl) return;
+    const text = String(message || "").trim();
+    mqttEventsWarningEl.style.display = text ? "block" : "none";
+    mqttEventsWarningEl.textContent = text;
+  };
+
+  const renderMqttStatus = () => {
+    if (!mqttStatusGridEl) return;
+    const lastRefresh = state.mqttStatus.lastRefresh ? state.mqttStatus.lastRefresh.toLocaleTimeString() : "Not refreshed";
+    const items = [
+      ["Broker", "Internal broker available"],
+      ["Retained", String(state.mqttStatus.retainedCount || 0)],
+      ["Recent Events", String(state.mqttStatus.eventCount || 0)],
+      ["Last Refresh", lastRefresh],
+    ];
+    mqttStatusGridEl.innerHTML = items.map(([label, value]) => `<div style="border:1px solid #e0e0e0;border-radius:6px;background:#fff;padding:7px;"><div style="color:#666;font-size:0.78em;">${escapeHtml(label)}</div><div style="font-weight:600;color:#222;margin-top:2px;">${escapeHtml(value)}</div></div>`).join("");
+  };
+
+  const renderBrokerMessageList = (el, messages, emptyMessage) => {
+    if (!el) return;
+    const rows = Array.isArray(messages) ? messages : [];
+    if (!rows.length) {
+      el.innerHTML = `<div style="color:#777;">${escapeHtml(emptyMessage)}</div>`;
+      return;
+    }
+    el.innerHTML = rows.map((message) => {
+      const timestamp = message?.timestamp ? new Date(message.timestamp).toLocaleTimeString() : "--:--:--";
+      const payloadPreview = truncatePayloadPreview(message?.payload, 180);
+      return `<div style="border:1px solid #e2e2e2;border-radius:6px;padding:7px;background:#fbfbfb;display:grid;gap:4px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+          <strong style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(message?.topic || "")}</strong>
+          <span style="color:#666;font-size:0.86em;white-space:nowrap;">${escapeHtml(timestamp)}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;color:#555;">
+          <span>publisher ${escapeHtml(message?.publisherId || "-")}</span>
+        </div>
+        <code style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333;">${escapeHtml(payloadPreview)}</code>
+      </div>`;
+    }).join("");
+  };
+
+  const renderMqttRetained = () => renderBrokerMessageList(mqttRetainedListEl, state.mqttRetained, "No retained IoT messages for this prefix.");
+  const renderMqttEvents = () => renderBrokerMessageList(mqttEventsListEl, state.mqttEvents, "No recent IoT broker events for this prefix.");
+
+  const loadMqttData = async () => {
+    const prefix = String(mqttPrefixInput?.value || DEFAULT_IOT_TOPIC_PREFIX).trim() || DEFAULT_IOT_TOPIC_PREFIX;
+    const encodedPrefix = encodeURIComponent(prefix);
+    try {
+      const [eventsPayload, retainedPayload] = await Promise.all([
+        apiFetchJson("/api/broker/events?topicPrefix=" + encodedPrefix + "&limit=50", { cache: "no-store" }),
+        apiFetchJson("/api/broker/retained?topicPrefix=" + encodedPrefix + "&limit=50", { cache: "no-store" }),
+      ]);
+      state.mqttEvents = Array.isArray(eventsPayload.events) ? eventsPayload.events.slice().reverse() : [];
+      state.mqttRetained = Array.isArray(retainedPayload.retained) ? retainedPayload.retained.slice().reverse() : [];
+      state.mqttStatus = {
+        retainedCount: state.mqttRetained.length,
+        eventCount: state.mqttEvents.length,
+        lastRefresh: new Date(),
+      };
+      setMqttEventsWarning("");
+      renderMqttStatus();
+      renderMqttRetained();
+      renderMqttEvents();
+    } catch (err) {
+      setMqttEventsWarning(err?.message || "Broker MQTT data unavailable.");
+      renderMqttStatus();
+      renderMqttRetained();
+      renderMqttEvents();
+    }
+  };
+
+  const stopMqttPolling = () => {
+    if (state.mqttPollTimer) clearInterval(state.mqttPollTimer);
+    state.mqttPollTimer = null;
+  };
+
+  const startMqttPolling = () => {
+    stopMqttPolling();
+    state.mqttPollTimer = setInterval(() => {
+      if (!state.disposed && state.activeTab === "mqtt") loadMqttData().catch(() => {});
+    }, 3000);
+  };
+
+  const setActiveTab = (tab) => {
+    state.activeTab = tab === "mqtt" ? "mqtt" : DEFAULT_SYNC_PANEL_TAB;
+    if (syncTabPanel) syncTabPanel.style.display = state.activeTab === "sync" ? "flex" : "none";
+    if (mqttTabPanel) mqttTabPanel.style.display = state.activeTab === "mqtt" ? "flex" : "none";
+    tabButtons.forEach((button) => {
+      const selected = button.getAttribute("data-sync-tab") === state.activeTab;
+      button.style.background = selected ? "#fff" : "#f8f8f8";
+      button.style.borderColor = selected ? "#999" : "#ccc";
+      button.style.fontWeight = selected ? "600" : "400";
+    });
+    if (state.activeTab === "mqtt") {
+      loadMqttData().catch(() => {});
+      startMqttPolling();
+    } else {
+      stopMqttPolling();
+      loadSyncEvents().catch(() => {});
+    }
+  };
+
+  const showIotTestResult = (value, isError = false) => {
+    if (!iotTestResultEl) return;
+    iotTestResultEl.style.display = "block";
+    iotTestResultEl.style.borderColor = isError ? "#e0a1a1" : "#ddd";
+    iotTestResultEl.style.background = isError ? "#fff4f4" : "#f7f7f7";
+    iotTestResultEl.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  };
+
+  const publishIotTestMessage = async () => {
+    try {
+      const payload = parseIotPublishPayload(iotTestPayloadInput?.value || "");
+      const token = String(iotTestTokenInput?.value || "").trim();
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = "Bearer " + token;
+      const response = await fetch("/api/iot/publish", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({
+          topic: String(iotTestTopicInput?.value || "nodevision/iot/test").trim(),
+          payload,
+          retain: iotTestRetainInput?.checked === true,
+        }),
+      });
+      const responsePayload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(responsePayload?.error || "Publish failed");
+      showIotTestResult(responsePayload);
+      await loadMqttData().catch(() => {});
+    } catch (err) {
+      showIotTestResult(err?.message || "Invalid publish request", true);
+    }
+  };
+
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
     [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
@@ -458,6 +726,12 @@ export async function setupPanel(panelElem, panelVars = {}) {
     } finally { setBusy(false); }
   };
 
+  tabButtons.forEach((button) => button.addEventListener("click", () => setActiveTab(button.getAttribute("data-sync-tab"))));
+  mqttRefreshBtn?.addEventListener("click", () => loadMqttData().catch((err) => setMqttEventsWarning(err?.message || "Refresh failed")));
+  mqttEventsRefreshBtn?.addEventListener("click", () => loadMqttData().catch((err) => setMqttEventsWarning(err?.message || "Refresh failed")));
+  mqttPrefixInput?.addEventListener("change", () => loadMqttData().catch((err) => setMqttEventsWarning(err?.message || "Refresh failed")));
+  iotTestPublishBtn?.addEventListener("click", () => publishIotTestMessage());
+
   peerListEl?.addEventListener("click", async (e) => {
     const trustButton = e.target?.closest?.("[data-trust-peer]");
     if (trustButton) {
@@ -534,7 +808,12 @@ export async function setupPanel(panelElem, panelVars = {}) {
   sharedScopesEl?.addEventListener("click", (e) => { const b = e.target?.closest?.("[data-remove-scope]"); if (!b) return; const scope = b.getAttribute("data-remove-scope"); if (scope && scope !== "SyncTest") unshareScope(scope); });
   folderListEl?.addEventListener("click", (e) => { const b = e.target?.closest?.("[data-share-scope]"); if (!b) return; const scope = b.getAttribute("data-share-scope"); if (scope) shareScope(scope); });
 
-  panelElem.cleanup = () => { state.disposed = true; if (state.refreshTimer) clearInterval(state.refreshTimer); if (state.eventsPollTimer) clearInterval(state.eventsPollTimer); state.refreshTimer = null; state.eventsPollTimer = null; };
+  panelElem.cleanup = () => { state.disposed = true; if (state.refreshTimer) clearInterval(state.refreshTimer); if (state.eventsPollTimer) clearInterval(state.eventsPollTimer); if (state.mqttPollTimer) clearInterval(state.mqttPollTimer); state.refreshTimer = null; state.eventsPollTimer = null; state.mqttPollTimer = null; };
+  setActiveTab(DEFAULT_SYNC_PANEL_TAB);
+  renderMqttStatus();
+  renderMqttRetained();
+  renderMqttEvents();
+
   try {
     setStatus(statusEl, "Loading sync panel...");
     await Promise.all([loadLocalDevice(), loadProtection(), loadScopes(), loadFolders(), refreshStatus()]);
@@ -551,6 +830,6 @@ export async function setupPanel(panelElem, panelVars = {}) {
     }
   }, 1000);
   state.eventsPollTimer = setInterval(() => {
-    if (!state.disposed) loadSyncEvents().catch(() => {});
+    if (!state.disposed && state.activeTab === "sync") loadSyncEvents().catch(() => {});
   }, 3000);
 }
