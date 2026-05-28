@@ -21,6 +21,10 @@ function getController() {
   return window.VRWorldContext?.equationColliderController || null;
 }
 
+function getEquationPanel() {
+  return window.VRWorldContext?.equationObjectsPanel || null;
+}
+
 function makeNumber(label, value, { step = "0.1", min = null } = {}) {
   const wrap = document.createElement("label");
   wrap.className = "nv-equation-collider-field";
@@ -90,7 +94,30 @@ export function initToolbarWidget(hostElement) {
   const thickness = makeNumber("Depth", DEFAULT_PLANE.thickness, { step: "0.05", min: "0.02" });
   const collider = makeCheckbox("Collider", true);
 
-  const planeButton = makeButton("Plane", () => {
+  const panelButton = makeButton("Open Panel", () => {
+    const panel = getEquationPanel();
+    if (panel?.open) {
+      panel.open({
+        a: readNumber(a.input, DEFAULT_PLANE.a),
+        b: readNumber(b.input, DEFAULT_PLANE.b),
+        c: readNumber(c.input, DEFAULT_PLANE.c),
+        d: readNumber(d.input, DEFAULT_PLANE.d),
+        xmin: readNumber(xmin.input, DEFAULT_PLANE.xmin),
+        xmax: readNumber(xmax.input, DEFAULT_PLANE.xmax),
+        ymin: readNumber(ymin.input, DEFAULT_PLANE.ymin),
+        ymax: readNumber(ymax.input, DEFAULT_PLANE.ymax),
+        zmin: readNumber(zmin.input, DEFAULT_PLANE.zmin),
+        zmax: readNumber(zmax.input, DEFAULT_PLANE.zmax),
+        thickness: readNumber(thickness.input, DEFAULT_PLANE.thickness),
+        collider: collider.input.checked
+      });
+      setStatus("Equation Objects panel opened.");
+    } else {
+      setStatus("Open a Meta World editor before using Equation Objects.");
+    }
+  });
+
+  const planeButton = makeButton("Quick Plane", () => {
     const mesh = controller.addPlane({
       a: readNumber(a.input, DEFAULT_PLANE.a),
       b: readNumber(b.input, DEFAULT_PLANE.b),
@@ -121,6 +148,7 @@ export function initToolbarWidget(hostElement) {
     zmax.wrap,
     thickness.wrap,
     collider.wrap,
+    panelButton,
     planeButton
   ].forEach((element) => hostElement.appendChild(element));
 }

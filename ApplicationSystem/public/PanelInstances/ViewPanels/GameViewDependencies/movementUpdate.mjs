@@ -2019,6 +2019,9 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const target = hit?.object;
     if (target) {
       const type = String(target.userData?.nvType || "").toLowerCase();
+      if (type === "equation-collider-plane" && window.VRWorldContext?.equationObjectsPanel?.openForTarget) {
+        return window.VRWorldContext.equationObjectsPanel.openForTarget(target);
+      }
       if (type === "console" && consolePanels?.openInspectPanel) {
         return consolePanels.openInspectPanel(target, hit.distance, {
           onApply: (mesh, config) => {

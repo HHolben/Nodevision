@@ -15,6 +15,7 @@ import { createEquationColliderController } from "./equationColliderTool.mjs";
 import { saveCurrentWorldFile } from "./worldSave.mjs";
 import { createWorldPropertiesPanel } from "./worldPropertiesPanel.mjs";
 import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
+import { createEquationObjectsPanel } from "./equationObjectsPanel.mjs";
 import { createConsolePanels } from "./consolePanels.mjs";
 
 export function initScene({ THREE, PointerLockControls, panel, canvas, state, loadWorldFromFile, getBindings, normalizeKeyName }) {
@@ -169,6 +170,16 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   });
   panel._vrEquationColliderController = equationColliderController;
   window.VRWorldContext.equationColliderController = equationColliderController;
+
+  const equationObjectsPanel = createEquationObjectsPanel({
+    THREE,
+    controller: equationColliderController,
+    colliders,
+    hostPanel: panel,
+    canvas
+  });
+  panel._vrEquationObjectsPanel = equationObjectsPanel;
+  window.VRWorldContext.equationObjectsPanel = equationObjectsPanel;
 
   const viewController = createCameraModeController({
     THREE,
