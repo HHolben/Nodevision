@@ -10,6 +10,7 @@ import {
   validateSyncScope,
 } from "../../Sync/SyncScopes.mjs";
 import { runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
+import { loadSyncProtection, saveSyncProtection } from "../../Sync/SyncProtection.mjs";
 import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
 import {
@@ -511,9 +512,11 @@ async function resolveRequestedScope(body, options) {
   return scope;
 }
 
-function syncStateResponse(state) {
+async function syncStateResponse(state, ctx) {
+  const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot }).catch(() => ({ protectedFromPeerWrites: false }));
   return {
     ok: true,
+    protection,
     discovery: {
       scanning: Boolean(state.scanning),
       discoverable: Boolean(state.discoverable),
@@ -539,6 +542,27 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.json({ ok: true, localDevice });
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to load local device" });
+    }
+  });
+
+  app.get("/api/sync/protection", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot });
+      return res.json({ ok: true, protection });
+    } catch {
+      return res.status(500).json({ ok: false, error: "Failed to load sync protection settings" });
+    }
+  });
+
+  app.post("/api/sync/protection", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const protectedFromPeerWrites = req.body?.protectedFromPeerWrites === true;
+      const protection = await saveSyncProtection({ protectedFromPeerWrites }, { runtimeRoot: ctx?.runtimeRoot });
+      return res.json({ ok: true, protection });
+    } catch {
+      return res.status(500).json({ ok: false, error: "Failed to save sync protection settings" });
     }
   });
 
@@ -584,9 +608,9 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
-  app.get("/api/sync/status", (req, res) => {
+  app.get("/api/sync/status", async (req, res) => {
     if (!requireSession(req, res)) return;
-    return res.json(syncStateResponse(state));
+    return res.json(await syncStateResponse(state, ctx));
   });
 
   app.post("/api/sync/discovery/scanning", async (req, res) => {
@@ -602,7 +626,7 @@ export function registerSyncPanelRoutes(app, ctx) {
     try {
       if (enabled) ensureListener(state, ctx);
       else await stopListener(state);
-      return res.json(syncStateResponse(state));
+      return res.json(await syncStateResponse(state, ctx));
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to update scanning state" });
     }
@@ -621,13 +645,13 @@ export function registerSyncPanelRoutes(app, ctx) {
     try {
       if (enabled) ensureBroadcaster(state, ctx);
       else await stopBroadcaster(state);
-      return res.json(syncStateResponse(state));
+      return res.json(await syncStateResponse(state, ctx));
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to update discoverable state" });
     }
   });
 
-  app.post("/api/sync/select-peer", (req, res) => {
+  app.post("/api/sync/select-peer", async (req, res) => {
     if (!requireSession(req, res)) return;
     try {
       const deviceId = String(req.body?.deviceId ?? "").trim();
@@ -635,7 +659,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         return res.status(400).json({ ok: false, error: "deviceId is required" });
       }
       setSelectedPeerDeviceId(state, deviceId);
-      return res.json(syncStateResponse(state));
+      return res.json(await syncStateResponse(state, ctx));
     } catch {
       return res.status(400).json({ ok: false, error: "Unknown discovered peer" });
     }
@@ -823,6 +847,12 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
 
     const dryRun = body?.dryRun === undefined ? true : Boolean(body.dryRun);
+    if (!dryRun) {
+      const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot });
+      if (protection.protectedFromPeerWrites === true) {
+        return res.status(423).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
+      }
+    }
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -916,6 +946,12 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
+    if (!dryRun) {
+      const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot });
+      if (protection.protectedFromPeerWrites === true) {
+        return res.status(423).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
+      }
+    }
     const syncRunner = resolveSyncRunner(ctx);
     const discoveredPeerSnapshot = { ...discoveredPeer };
 

@@ -11,6 +11,7 @@ import { setupResizeObserver } from "./resizeObserver.mjs";
 import { createPlayerInventory } from "./playerInventory.mjs";
 import { createObjectInspector } from "./objectInspector.mjs";
 import { createTerrainToolController } from "./terrainGeneratorTool.mjs";
+import { createEquationColliderController } from "./equationColliderTool.mjs";
 import { saveCurrentWorldFile } from "./worldSave.mjs";
 import { createWorldPropertiesPanel } from "./worldPropertiesPanel.mjs";
 import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
@@ -159,6 +160,15 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   });
   panel._vrTerrainToolController = terrainToolController;
   window.VRWorldContext.terrainToolController = terrainToolController;
+
+  const equationColliderController = createEquationColliderController({
+    THREE,
+    scene,
+    objects,
+    colliders
+  });
+  panel._vrEquationColliderController = equationColliderController;
+  window.VRWorldContext.equationColliderController = equationColliderController;
 
   const viewController = createCameraModeController({
     THREE,

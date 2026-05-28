@@ -946,17 +946,22 @@
     // Hide context menu on click
     document.addEventListener('click', hideContextMenu);
 
+    function isTextEditingTarget(target) {
+      if (!target) return false;
+      const tag = String(target.tagName || "").toLowerCase();
+      return target.isContentEditable || tag === "input" || tag === "textarea" || tag === "select";
+    }
+
     // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
-      if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
+      const key = String(e.key || "").toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && !isTextEditingTarget(e.target)) {
+        switch(key) {
           case 'c':
-            e.preventDefault();
-            copyElement();
+            if (copyElement()) e.preventDefault();
             break;
           case 'v':
-            e.preventDefault();
-            pasteElement();
+            if (pasteElement()) e.preventDefault();
             break;
           case 'd':
             e.preventDefault();
@@ -1406,28 +1411,42 @@
       if (selectedElement) {
         clipboard = selectedElement.cloneNode(true);
         document.getElementById('svg-message').textContent = 'Element copied';
+        return true;
+      }
+      return false;
+    }
+
+    function offsetPastedElement(clone, dx = 20, dy = 20) {
+      const tag = String(clone.tagName || "").toLowerCase();
+      if (tag === "rect" || tag === "image" || tag === "use" || tag === "foreignobject") {
+        clone.setAttribute("x", parseFloat(clone.getAttribute("x") || 0) + dx);
+        clone.setAttribute("y", parseFloat(clone.getAttribute("y") || 0) + dy);
+      } else if (tag === "circle" || tag === "ellipse") {
+        clone.setAttribute("cx", parseFloat(clone.getAttribute("cx") || 0) + dx);
+        clone.setAttribute("cy", parseFloat(clone.getAttribute("cy") || 0) + dy);
+      } else if (tag === "line") {
+        clone.setAttribute("x1", parseFloat(clone.getAttribute("x1") || 0) + dx);
+        clone.setAttribute("y1", parseFloat(clone.getAttribute("y1") || 0) + dy);
+        clone.setAttribute("x2", parseFloat(clone.getAttribute("x2") || 0) + dx);
+        clone.setAttribute("y2", parseFloat(clone.getAttribute("y2") || 0) + dy);
+      } else {
+        const prev = (clone.getAttribute("transform") || "").trim();
+        const translate = "translate(" + dx + " " + dy + ")";
+        clone.setAttribute("transform", prev ? translate + " " + prev : translate);
       }
     }
 
     function pasteElement() {
       if (clipboard) {
         const clone = clipboard.cloneNode(true);
-        // Offset the pasted element
-        if (clone.tagName === 'rect') {
-          const x = parseFloat(clone.getAttribute('x') || 0) + 20;
-          const y = parseFloat(clone.getAttribute('y') || 0) + 20;
-          clone.setAttribute('x', x);
-          clone.setAttribute('y', y);
-        } else if (clone.tagName === 'circle') {
-          const cx = parseFloat(clone.getAttribute('cx') || 0) + 20;
-          const cy = parseFloat(clone.getAttribute('cy') || 0) + 20;
-          clone.setAttribute('cx', cx);
-          clone.setAttribute('cy', cy);
-        }
+        offsetPastedElement(clone);
         svgEditor.appendChild(clone);
+        clearSelection();
         selectElement(clone);
         document.getElementById('svg-message').textContent = 'Element pasted';
+        return true;
       }
+      return false;
     }
 
     function duplicateElement() {

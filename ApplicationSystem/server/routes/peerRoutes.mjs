@@ -13,6 +13,7 @@ import { FILE_PUSH_ALLOWED_PREFIX, MAX_FILE_PUSH_BYTES, verifySignedFileRequest,
 import { buildSyncTestManifest, verifySignedManifestRequest } from "../../Sync/SyncManifest.mjs";
 import { getLocalPeerInfo, loadTrustedPeers } from "../../Sync/TrustedPeers.mjs";
 import { buildScopeManifest, resolveScopeNotebookPath } from "../../Sync/SyncScopes.mjs";
+import { isProtectedFromPeerWrites } from "../../Sync/SyncProtection.mjs";
 import {
   isScopedPeerVerificationError,
   verifySignedScopeFilePush,
@@ -110,9 +111,9 @@ function classifyScopedStreamRequestError(err, unauthorizedError) {
       case "malformed_signature":
         return { status: 401, error: "Malformed signature", safeDetails: err.safeDetails, code: err.code };
       case "unknown_peer":
-        return { status: 401, error: "Unknown peer", safeDetails: err.safeDetails, code: err.code };
+        return { status: 401, error: "Unknown peer. Approve/trust this device on the peer serving the file.", safeDetails: err.safeDetails, code: err.code };
       case "invalid_signature":
-        return { status: 401, error: "Invalid signature", safeDetails: err.safeDetails, code: err.code };
+        return { status: 401, error: "Invalid signature. Re-approve/trust the peer on both devices.", safeDetails: err.safeDetails, code: err.code };
       default:
         return { status: 401, error: unauthorizedError, safeDetails: err.safeDetails, code: err.code };
     }
@@ -123,7 +124,7 @@ function classifyScopedStreamRequestError(err, unauthorizedError) {
   if (message.includes("relativePath") || message.includes("scoped path") || message.includes("traversal")) {
     return { status: 400, error: "Invalid scoped path", safeDetails: null, code: "invalid_scoped_path" };
   }
-  return { status: 401, error: unauthorizedError, safeDetails: null, code: "unauthorized" };
+  return { status: 401, error: unauthorizedError + ". Make sure both devices have approved/trusted each other for sync.", safeDetails: null, code: "unauthorized" };
 }
 
 function logScopedStreamAuthRejection(endpoint, classified, err) {
@@ -164,6 +165,9 @@ export function registerPeerRoutes(app, ctx) {
   });
 
   app.post("/api/peer/file-push", async (req, res) => {
+    if (await isProtectedFromPeerWrites({ runtimeRoot: ctx?.runtimeRoot })) {
+      return res.status(423).json({ ok: false, error: "This peer is protected from incoming sync writes" });
+    }
     let verified; let contentBuffer; let target;
     try {
       const { payload, signatureBase64 } = req.body || {};
@@ -283,6 +287,9 @@ export function registerPeerRoutes(app, ctx) {
   });
 
   app.post("/api/peer/scope/file-stream-push", async (req, res) => {
+    if (await isProtectedFromPeerWrites({ runtimeRoot: ctx?.runtimeRoot })) {
+      return res.status(423).json({ ok: false, error: "This peer is protected from incoming sync writes" });
+    }
     let verified;
     let scoped;
     let tempPath = null;
@@ -406,6 +413,9 @@ export function registerPeerRoutes(app, ctx) {
   });
 
   app.post("/api/peer/scope/file-push", async (req, res) => {
+    if (await isProtectedFromPeerWrites({ runtimeRoot: ctx?.runtimeRoot })) {
+      return res.status(423).json({ ok: false, error: "This peer is protected from incoming sync writes" });
+    }
     try {
       const { payload, signatureBase64 } = req.body || {};
       const verified = await verifySignedScopeFilePush({ payload, signatureBase64 }, { runtimeRoot: ctx?.runtimeRoot });

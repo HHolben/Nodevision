@@ -6,7 +6,7 @@ import { createPanelDOM } from "./../../../../panels/panelFactory.mjs";
 import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayersContext.mjs";
 import { countWords } from "../FamilyEditorCommon.mjs";
-import { setWordCount } from "/StatusBar.mjs";
+import { setStatus, setWordCount } from "/StatusBar.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico"]);
@@ -23,6 +23,31 @@ const NEW_IMAGE_MIME_BY_EXTENSION = {
 const NEW_IMAGE_DEFAULT_DISPLAY_WIDTH = 320;
 const NEW_IMAGE_DEFAULT_DISPLAY_HEIGHT = 240;
 const lastSelectionRangeByEditor = new WeakMap();
+const HTML_TEXT_STYLE_TARGET_CLASS = "nv-html-text-style-target";
+const HTML_TEXT_STYLE_SELECTOR = [
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "span",
+  "a",
+  "li",
+  "dt",
+  "dd",
+  "td",
+  "th",
+  "caption",
+  "blockquote",
+  "pre",
+  "code",
+  "label",
+  "button",
+  "figcaption",
+  ".nv-item-content"
+].join(",");
 
 function ensureHTMLLayoutStyles() {
   if (document.getElementById("nv-html-layout-style")) return;
@@ -167,6 +192,10 @@ function ensureHTMLLayoutStyles() {
     }
     #wysiwyg audio.nv-selected-audio {
       outline: 2px dashed #2f80ff;
+      outline-offset: 2px;
+    }
+    #wysiwyg .${HTML_TEXT_STYLE_TARGET_CLASS} {
+      outline: 2px solid #a855f7;
       outline-offset: 2px;
     }
     .nv-image-corner-handle {

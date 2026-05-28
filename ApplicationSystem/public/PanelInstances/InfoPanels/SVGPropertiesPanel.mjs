@@ -228,7 +228,61 @@ function describeElement(el) {
   if (!el) return "No selection";
   const tag = window.NVInternalPng?.isInternalPng?.(el) ? "internal png" : (el.tagName ? el.tagName.toLowerCase() : "element");
   const id = el.getAttribute?.("id") || "";
-  return id ? `${tag}#${id}` : tag;
+  return id ? tag + "#" + id : tag;
+}
+
+function getSvgImageHref(el) {
+  if (!el) return "";
+  return window.NVInternalPng?.getImageHref?.(el)
+    || el.getAttribute?.("href")
+    || el.getAttribute?.("xlink:href")
+    || el.getAttributeNS?.("http://www.w3.org/1999/xlink", "href")
+    || "";
+}
+
+function isPngImageElement(el) {
+  if (String(el?.tagName || "").toLowerCase() !== "image") return false;
+  const href = String(getSvgImageHref(el) || "").toLowerCase();
+  return href.startsWith("data:image/png") || href.includes(".png");
+}
+
+function getPngSizingMode(el) {
+  const stored = el?.getAttribute?.("data-nodevision-png-sizing-mode") || "";
+  if (stored === "upsize" || stored === "enlarge") return stored;
+  const rendering = String(el?.getAttribute?.("image-rendering") || el?.style?.imageRendering || "").toLowerCase();
+  return rendering === "pixelated" || rendering === "crisp-edges" || rendering === "optimizespeed" ? "enlarge" : "upsize";
+}
+
+function setPngSizingMode(el, mode) {
+  if (!el) return;
+  const next = mode === "enlarge" ? "enlarge" : "upsize";
+  el.setAttribute("data-nodevision-png-sizing-mode", next);
+  if (next === "enlarge") {
+    el.setAttribute("image-rendering", "pixelated");
+    if (el.style) el.style.imageRendering = "pixelated";
+  } else {
+    el.setAttribute("image-rendering", "auto");
+    if (el.style) el.style.imageRendering = "auto";
+  }
+}
+
+function makeRadioChoice(name, value, labelText, checked) {
+  const label = document.createElement("label");
+  Object.assign(label.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "12px",
+    lineHeight: "1.25",
+  });
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = name;
+  input.value = value;
+  input.checked = Boolean(checked);
+  label.appendChild(input);
+  label.appendChild(document.createTextNode(labelText));
+  return { label, input };
 }
 
 function buildGeometryEditor({ ctx, host }) {
@@ -268,6 +322,24 @@ function buildGeometryEditor({ ctx, host }) {
       actions.appendChild(button);
     });
     rows.appendChild(actions);
+  }
+
+  if (isPngImageElement(primary)) {
+    const mode = getPngSizingMode(primary);
+    const group = document.createElement("div");
+    Object.assign(group.style, { display: "grid", gap: "7px" });
+    const name = "nv-png-sizing-" + Math.random().toString(36).slice(2);
+    const upsize = makeRadioChoice(name, "upsize", "Upsize (smooth resampling)", mode === "upsize");
+    const enlarge = makeRadioChoice(name, "enlarge", "Enlarge pixels (same pixel count)", mode === "enlarge");
+    [upsize, enlarge].forEach(({ label, input }) => {
+      input.addEventListener("change", () => {
+        if (!input.checked) return;
+        setPngSizingMode(primary, input.value);
+        ctx?.notifyElementChanged?.("panel-edit");
+      });
+      group.appendChild(label);
+    });
+    rows.appendChild(makeRow("PNG Size Mode", group));
   }
 
   const bounds = ctx?.getSelectedBounds?.();

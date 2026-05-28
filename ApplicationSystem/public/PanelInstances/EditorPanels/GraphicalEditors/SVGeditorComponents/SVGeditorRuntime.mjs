@@ -2608,11 +2608,19 @@ export async function renderEditor(filePath, container) {
       }
     }
     if (toolState.mode !== "select") return;
+    if (key.toLowerCase() === "c" && meta) {
+      if (copySelection()) e.preventDefault();
+      return;
+    }
+    if (key.toLowerCase() === "v" && meta) {
+      if (pasteSelection().length) e.preventDefault();
+      return;
+    }
     if (key === "Delete" || key === "Backspace") {
       if (deleteSelection()) e.preventDefault();
       return;
     }
-    if (key.toLowerCase() === "d" && (e.ctrlKey || e.metaKey)) {
+    if (key.toLowerCase() === "d" && meta) {
       duplicateSelection();
       e.preventDefault();
       return;

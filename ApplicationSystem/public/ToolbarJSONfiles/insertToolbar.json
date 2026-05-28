@@ -6,6 +6,45 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Import Asset",
+      "script": "importAssetWidget.mjs",
+      "modes": ["HTMLediting", "HTMLviewing", "3D World Viewing", "VR World Editing", "Virtual World Editing"],
+      "preventDropdown": true,
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Terrain",
+      "modes": ["Virtual World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Terrain",
+      "heading": "Insert Terrain Controls",
+      "script": "terrainToolWidget.mjs",
+      "modes": ["Virtual World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Equation Object",
+      "modes": ["Virtual World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Equation Object",
+      "heading": "Equation Object Controls",
+      "script": "equationColliderWidget.mjs",
+      "modes": ["Virtual World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Equation Element",
       "modes": ["EquationEditing"],
       "preventDropdown": true

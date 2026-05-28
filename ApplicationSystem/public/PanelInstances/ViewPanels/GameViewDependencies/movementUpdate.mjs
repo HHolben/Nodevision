@@ -2,8 +2,10 @@
 // This file defines browser-side movement Update logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createCollisionChecker } from "./collisionCheck.mjs";
+import { getPlaneRayIntersection } from "./equationColliderTool.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
+import { setStatus } from "/StatusBar.mjs";
 
 export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, worldPropertiesPanel, functionPlotterPanel, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController, consolePanels, ground }) {
   const playerRadius = 0.35;
@@ -31,6 +33,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   let inventoryMenuLeftLatch = false;
   let inventoryMenuRightLatch = false;
   let inventoryMenuConfirmLatch = false;
+  let phaseToggleLatch = false;
   const raycaster = new THREE.Raycaster();
   raycaster.params.Sprite = { threshold: 0.4 }; // expand hit area for 2D sprite handles
   const raycastDirection = new THREE.Vector3();
@@ -211,14 +214,29 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return objectFileGeometryLoaderPromise;
   }
 
-  function getPlacementHit() {
+  function getPlacementHit({ maxDistance = useRangeMax } = {}) {
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const objectCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
     const candidates = [];
     if (ground?.visible) candidates.push(ground);
     candidates.push(...objectCandidates);
     const hits = raycaster.intersectObjects(candidates, false);
-    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
+    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= maxDistance && h.object?.visible) || null;
+  }
+
+  function getTerrainPaintHit() {
+    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+    const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -groundLevel);
+    const floorPoint = new THREE.Vector3();
+    const point = raycaster.ray.intersectPlane(floorPlane, floorPoint);
+    if (point) {
+      return {
+        point: floorPoint,
+        distance: raycaster.ray.origin.distanceTo(floorPoint),
+        object: ground || null
+      };
+    }
+    return getPlacementHit({ maxDistance: Infinity });
   }
 
   function buildConsoleMeshFromConfig(config) {
@@ -925,6 +943,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const fly = heldKeys[bindings.fly] || readGamepadBinding(gp, gpBindings.fly) > 0;
     const flyUp = heldKeys[bindings.flyUp] || jump;
     const flyDown = heldKeys[bindings.flyDown];
+    const phase = heldKeys[bindings.phase] || heldKeys.v;
 
     const rollLeft = heldKeys[bindings.rollLeft];
     const rollRight = heldKeys[bindings.rollRight];
@@ -961,6 +980,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       fly,
       flyUp,
       flyDown,
+      phase,
       rollLeft,
       rollRight,
       pitchUp,
@@ -1793,15 +1813,24 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return false;
   }
 
+  function tryPaintTerrain() {
+    if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowToolUse")) return false;
+    const terrainTool = terrainToolController || window.VRWorldContext?.terrainToolController;
+    if (!terrainTool?.isPaintModeActive?.()) return false;
+    const hit = getTerrainPaintHit();
+    if (!hit?.point) {
+      terrainTool?.notifyPaintMiss?.();
+      return true;
+    }
+    terrainTool.paintAtPoint?.(hit.point);
+    return true;
+  }
+
   function tryBreakTargetBlock() {
     if (movementState.worldMode === "2d") return false;
     if (!canUseAbility("allowBreak")) return false;
-    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const worldCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
-    const measureCandidates = getMeasurementVisualsStore().filter((obj) => obj?.isMesh && obj?.visible);
-    const candidates = worldCandidates.concat(measureCandidates);
-    const hits = raycaster.intersectObjects(candidates, false);
-    const hit = hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible);
+    const hit = getInspectHit({ includeMeasurements: true, allowInfinitePlanes: true });
     if (!hit?.object) return false;
     const target = hit.object;
     if (target.userData?.isMeasureEndpoint === "second") {
@@ -1811,9 +1840,12 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       updateTapeMeasurePreview();
       return true;
     }
+    const isEquationPlane = String(target.userData?.nvType || "").toLowerCase() === "equation-collider-plane";
     if (target.userData?.isPortal) return false;
-    if (target.userData?.breakable === false) return false;
-    if (!target.userData?.breakable && !target.userData?.placedByPlayer) return false;
+    if (!isEquationPlane) {
+      if (target.userData?.breakable === false) return false;
+      if (!target.userData?.breakable && !target.userData?.placedByPlayer) return false;
+    }
 
     scene.remove(target);
     const objIndex = objects.indexOf(target);
@@ -1869,11 +1901,24 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return null;
   }
 
-  function getInspectHit() {
+  function getEquationPlaneRayHits() {
+    const ray = raycaster.ray;
+    return (objects || [])
+      .filter((obj) => obj?.isMesh && obj?.visible && String(obj.userData?.nvType || "").toLowerCase() === "equation-collider-plane")
+      .map((mesh) => getPlaneRayIntersection(THREE, mesh, ray))
+      .filter((hit) => hit && Number.isFinite(hit.distance) && hit.object?.visible);
+  }
+
+  function getInspectHit(options = {}) {
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const candidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
-    const hits = raycaster.intersectObjects(candidates, false);
-    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
+    const includeMeasurements = options.includeMeasurements === true;
+    const worldCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const measureCandidates = includeMeasurements ? getMeasurementVisualsStore().filter((obj) => obj?.isMesh && obj?.visible) : [];
+    const hits = raycaster
+      .intersectObjects(worldCandidates.concat(measureCandidates), false)
+      .filter((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible);
+    const planeHits = options.allowInfinitePlanes === false ? [] : getEquationPlaneRayHits();
+    return hits.concat(planeHits).sort((a, b) => a.distance - b.distance)[0] || null;
   }
 
   function clearStlVertexMarkers() {
@@ -2094,6 +2139,18 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     inventoryMenuRightLatch = false;
     inventoryMenuConfirmLatch = false;
 
+    if (!inEditorMode && movementState.phaseThroughObjects === true) {
+      movementState.phaseThroughObjects = false;
+      setStatus("Object phasing disabled outside editor mode.");
+    }
+    if (inEditorMode && inputState.phase && !phaseToggleLatch) {
+      movementState.phaseThroughObjects = movementState.phaseThroughObjects !== true;
+      phaseToggleLatch = true;
+      setStatus(movementState.phaseThroughObjects ? "Object phasing on. World floor still blocks movement." : "Object phasing off.");
+    } else if (!inputState.phase) {
+      phaseToggleLatch = false;
+    }
+
     if (inputState.fly && !movementState.flyToggleLatch) {
       if (canUseAbility("allowFly")) {
         movementState.isFlying = !movementState.isFlying;
@@ -2196,6 +2253,15 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         groundLevel,
         wouldCollide
       });
+    }
+
+    if (movementState.phaseThroughObjects === true) {
+      const floorY = groundLevel + movementState.playerHeight;
+      if (playerPos.y < floorY) {
+        playerPos.y = floorY;
+        movementState.velocityY = Math.max(0, movementState.velocityY || 0);
+        movementState.isGrounded = true;
+      }
     }
 
     if (movementState.worldMode !== "2d" && (Math.abs(inputState.lookYaw) > 0 || Math.abs(inputState.lookPitch) > 0)) {
@@ -2351,6 +2417,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       // Same physical input can map to both use + attack (e.g. RB). Suppress attack for this press window.
       movementState.attackLatch = true;
       movementState.suppressAttackUntilMs = nowMs + 180;
+      if (tryPaintTerrain()) {
+        movementState.suppressAttackUntilMs = nowMs + 220;
+        return;
+      }
       const useHit = findUseTarget(controls.getObject().position, performance.now());
       if (useHit) {
         for (const action of useHit.actions) {

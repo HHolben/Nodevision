@@ -54,7 +54,17 @@
                 value: content,
                 language: 'javascript', // adjust by file type if needed
                 theme: 'vs-dark',
-                automaticLayout: true
+                automaticLayout: true,
+                wordWrap: "off"
+            });
+            window.monacoEditor.addAction({
+                id: "nv.toggleWordWrap",
+                label: "Toggle Word Wrap",
+                keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyZ],
+                run: (editor) => {
+                    const isWrapped = editor.getOption(monaco.editor.EditorOption.wordWrap) === "on";
+                    editor.updateOptions({ wordWrap: isWrapped ? "off" : "on" });
+                }
             });
         });
     }

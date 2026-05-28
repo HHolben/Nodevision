@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs
 // This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { normalizePlaneEquationConfig } from "./equationColliderTool.mjs";
+
 function normalizeWorldPath(filePath) {
   if (!filePath) return "";
   const normalized = String(filePath).replace(/\\/g, "/").replace(/^\/+/, "");
@@ -76,6 +78,7 @@ function getMeshType(mesh) {
     || hint === "cylinder"
     || hint === "torus"
     || hint === "math-function"
+    || hint === "equation-collider-plane"
     || hint === "console"
     || hint === "button"
     || hint === "object-file"
@@ -114,6 +117,134 @@ function materialMeta(mesh) {
   return out;
 }
 
+function stableTerrainClone(terrain = {}) {
+  const clone = {};
+  for (const [key, value] of Object.entries(terrain || {})) {
+    if (key === "tileKey" || key === "paintedAt" || key === "generator" || key === "radius" || key === "brushShape") continue;
+    clone[key] = value && typeof value === "object" ? JSON.parse(JSON.stringify(value)) : value;
+  }
+  return clone;
+}
+
+function terrainMergeKey(def) {
+  if (!def?.terrain || def.type !== "box" || !Array.isArray(def.size) || def.size.length < 3) return null;
+  const [sx, sy, sz] = def.size.map(Number);
+  if (![sx, sy, sz].every(Number.isFinite) || sx <= 0 || sy <= 0 || sz <= 0) return null;
+  const terrain = stableTerrainClone(def.terrain);
+  delete terrain.composed;
+  delete terrain.composedTiles;
+  const offsetX = ((Number(def.position?.[0] || 0) % sx) + sx) % sx;
+  const offsetZ = ((Number(def.position?.[2] || 0) % sz) + sz) % sz;
+  return JSON.stringify({
+    type: def.type,
+    color: def.color || "#888888",
+    opacity: Number.isFinite(def.opacity) ? round3(def.opacity) : null,
+    emissive: def.emissive || null,
+    emissiveIntensity: Number.isFinite(def.emissiveIntensity) ? round3(def.emissiveIntensity) : null,
+    isSolid: def.isSolid === true,
+    isWater: def.isWater === true,
+    hidden: def.hidden === true,
+    sizeY: round3(sy),
+    positionY: round3(def.position?.[1] || 0),
+    baseTileX: round3(sx),
+    baseTileZ: round3(sz),
+    offsetX: round3(offsetX),
+    offsetZ: round3(offsetZ),
+    terrain
+  });
+}
+
+function terrainCellKey(gx, gz) {
+  return String(gx) + ":" + String(gz);
+}
+
+function compactTerrainGroup(entries) {
+  const remaining = new Map();
+  for (const entry of entries) {
+    const [sx, , sz] = entry.def.size.map(Number);
+    const gx = Math.round(Number(entry.def.position?.[0] || 0) / sx);
+    const gz = Math.round(Number(entry.def.position?.[2] || 0) / sz);
+    const key = terrainCellKey(gx, gz);
+    if (!remaining.has(key)) remaining.set(key, { ...entry, gx, gz, sx, sz });
+  }
+
+  const compacted = [];
+  const sortedCells = () => Array.from(remaining.values()).sort((a, b) => (a.gz - b.gz) || (a.gx - b.gx));
+
+  while (remaining.size > 0) {
+    const start = sortedCells()[0];
+    let width = 1;
+    while (remaining.has(terrainCellKey(start.gx + width, start.gz))) width += 1;
+
+    let depth = 1;
+    let canGrow = true;
+    while (canGrow) {
+      for (let dx = 0; dx < width; dx += 1) {
+        if (!remaining.has(terrainCellKey(start.gx + dx, start.gz + depth))) {
+          canGrow = false;
+          break;
+        }
+      }
+      if (canGrow) depth += 1;
+    }
+
+    for (let dz = 0; dz < depth; dz += 1) {
+      for (let dx = 0; dx < width; dx += 1) {
+        remaining.delete(terrainCellKey(start.gx + dx, start.gz + dz));
+      }
+    }
+
+    const source = start.def;
+    if (width === 1 && depth === 1) {
+      compacted.push(source);
+      continue;
+    }
+
+    const merged = JSON.parse(JSON.stringify(source));
+    merged.size = [
+      round3(start.sx * width),
+      round3(source.size[1]),
+      round3(start.sz * depth)
+    ];
+    merged.position = [
+      round3(Number(source.position[0] || 0) + ((width - 1) * start.sx) / 2),
+      source.position[1],
+      round3(Number(source.position[2] || 0) + ((depth - 1) * start.sz) / 2)
+    ];
+    merged.terrain = {
+      ...stableTerrainClone(source.terrain),
+      composed: true,
+      composedTiles: [width, depth],
+      tileSize: round3(start.sx)
+    };
+    compacted.push(merged);
+  }
+
+  return compacted;
+}
+
+function compactTerrainDefinitions(defs = []) {
+  const passthrough = [];
+  const groups = new Map();
+
+  for (const def of defs) {
+    const key = terrainMergeKey(def);
+    if (!key) {
+      passthrough.push(def);
+      continue;
+    }
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ def });
+  }
+
+  const compactedTerrain = [];
+  for (const entries of groups.values()) {
+    compactedTerrain.push(...compactTerrainGroup(entries));
+  }
+
+  return passthrough.concat(compactedTerrain);
+}
+
 function serializeMesh(mesh) {
   if (!mesh?.isMesh) return null;
   const type = getMeshType(mesh);
@@ -140,6 +271,24 @@ function serializeMesh(mesh) {
     def.resolution = Math.max(16, Math.min(192, Math.floor(rawResolution)));
     def.limits = Array.isArray(props.limits) ? props.limits.slice(0, 2).map(round3) : [-8, 8];
     def.collider = props.collider !== false;
+  } else if (type === "equation-collider-plane") {
+    const props = normalizePlaneEquationConfig(mesh.userData?.equationCollider || {});
+    def.equationCollider = {
+      kind: "plane",
+      a: round3(props.a),
+      b: round3(props.b),
+      c: round3(props.c),
+      d: round3(props.d),
+      xmin: round3(props.xmin),
+      xmax: round3(props.xmax),
+      ymin: round3(props.ymin),
+      ymax: round3(props.ymax),
+      zmin: round3(props.zmin),
+      zmax: round3(props.zmax),
+      thickness: round3(props.thickness)
+    };
+    def.collider = mesh.userData?.colliderRef ? true : false;
+    def.isSolid = mesh.userData?.isSolid !== false;
   } else if (type === "console") {
     const props = mesh.userData?.consoleProperties || {};
     def.collider = props.collider !== false;
@@ -214,6 +363,9 @@ function serializeMesh(mesh) {
   if (typeof mesh.userData?.tag === "string" && mesh.userData.tag) def.tag = mesh.userData.tag;
   if (typeof mesh.userData?.spawnId === "string" && mesh.userData.spawnId) def.spawnId = mesh.userData.spawnId;
   if (Number.isFinite(mesh.userData?.spawnYaw)) def.spawnYaw = mesh.userData.spawnYaw;
+  if (mesh.userData?.terrain && typeof mesh.userData.terrain === "object") {
+    def.terrain = JSON.parse(JSON.stringify(mesh.userData.terrain));
+  }
 
   if (mesh.userData?.isPortal === true || type === "portal") {
     def.type = "portal";
@@ -257,9 +409,10 @@ function buildWorldDefinition({
     : {};
 
   const objectArray = objects || [];
-  const meshDefs = objectArray
+  const rawMeshDefs = objectArray
     .map(serializeMesh)
     .filter(Boolean);
+  const meshDefs = compactTerrainDefinitions(rawMeshDefs);
   const lightDefs = (lights || [])
     .map(serializeLight)
     .filter(Boolean);

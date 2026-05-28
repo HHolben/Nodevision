@@ -1,10 +1,11 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs
 // This file defines browser-side Code Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
-import { setWordCountVisibility } from "/StatusBar.mjs";
+import { setStatus, setWordCountVisibility } from "/StatusBar.mjs";
 
 let editorInstance = null;
 let editorContainer = null;
+let editorInstanceContainer = null;
 let lastEditedPath = null;
 let currentLoadedEncoding = "utf8";
 let currentLoadedBom = false;
@@ -194,8 +195,25 @@ export async function openCodeEditor(filePath) {
 /**
  * Loads the file into the Monaco editor.
  */
+function hasLiveEditorForPath(filePath) {
+  const editorDom = editorInstance?.getDomNode?.();
+  const model = editorInstance?.getModel?.();
+  return Boolean(
+    filePath &&
+    editorInstance &&
+    model &&
+    editorContainer &&
+    editorContainer.isConnected &&
+    editorInstanceContainer === editorContainer &&
+    editorDom &&
+    editorContainer.contains(editorDom) &&
+    lastEditedPath === filePath
+  );
+}
+
 export async function updateEditorPanel(filePath) {
-  if (!filePath || filePath === lastEditedPath) return;
+  if (!filePath) return;
+  if (filePath === lastEditedPath && hasLiveEditorForPath(filePath)) return;
   lastEditedPath = filePath;
 
   console.log("📝 Loading file in editor:", filePath);
@@ -220,8 +238,17 @@ export async function updateEditorPanel(filePath) {
 /**
  * Initializes Monaco Editor inside the existing editorContainer.
  */
+function toggleEditorWordWrap(editor = editorInstance) {
+  if (!editor?.getOption || !editor?.updateOptions) return;
+  const isWrapped = editor.getOption(monaco.editor.EditorOption.wordWrap) === "on";
+  const nextWordWrap = isWrapped ? "off" : "on";
+  editor.updateOptions({ wordWrap: nextWordWrap });
+  setStatus(nextWordWrap === "on" ? "Code editor word wrap on." : "Code editor word wrap off.");
+}
+
 function initializeMonaco(filePath, content) {
-  if (!editorContainer) {
+  const targetContainer = editorContainer;
+  if (!targetContainer) {
     console.error("[CodeEditor] Editor container not found.");
     return;
   }
@@ -231,9 +258,13 @@ function initializeMonaco(filePath, content) {
     editorInstance.dispose();
     editorInstance = null;
   }
+  editorInstanceContainer = null;
+  commonVarOverlay = null;
+  savedVersionId = null;
+  if (window.monacoEditor && window.monacoEditor !== editorInstance) window.monacoEditor = null;
 
   if (typeof require === "undefined") {
-    editorContainer.innerHTML = "<p style='color:red;'>Monaco Editor not loaded.</p>";
+    targetContainer.innerHTML = "<p style='color:red;'>Monaco Editor not loaded.</p>";
     return;
   }
 
@@ -255,8 +286,13 @@ function initializeMonaco(filePath, content) {
   };
 
   require(["vs/editor/editor.main"], function () {
+    if (editorContainer !== targetContainer || !targetContainer.isConnected) {
+      console.warn("[CodeEditor] Ignoring stale Monaco initialization for:", filePath);
+      return;
+    }
+
     // 3. Create the editor instance
-    editorInstance = monaco.editor.create(editorContainer, {
+    editorInstance = monaco.editor.create(targetContainer, {
       value: content || "",
       language: detectLanguage(filePath),
       theme: "vs-dark",
@@ -268,6 +304,7 @@ function initializeMonaco(filePath, content) {
 
     // 4. Register globals for the SaveFile.mjs router
     // These variables are critical for the main save function to recognize the active editor.
+    editorInstanceContainer = targetContainer;
     window.monacoEditor = editorInstance;
     window.currentActiveFilePath = filePath;
     window.currentFileEncoding = currentLoadedEncoding;
@@ -307,9 +344,11 @@ function initializeMonaco(filePath, content) {
       run: () => editorInstance.getAction("editor.foldAllMarkerRegions")?.run(),
     });
 
-    // Alt+Z word wrap toggle (explicit binding for consistency)
-    editorInstance.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyZ, () => {
-      editorInstance.getAction("editor.action.toggleWordWrap")?.run();
+    editorInstance.addAction({
+      id: "nv.toggleWordWrap",
+      label: "Toggle Word Wrap",
+      keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyZ],
+      run: () => toggleEditorWordWrap(editorInstance),
     });
 
     // Ctrl/Cmd+F: show common identifiers helper + default find

@@ -2,6 +2,7 @@
 // This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
+import { normalizePlaneEquationConfig, resizeEquationColliderPlaneMesh, syncPlaneColliderRef, makePlaneColliderRef } from "./equationColliderTool.mjs";
 
 function parseNumber(value, fallback = 0) {
   const n = Number.parseFloat(value);
@@ -88,6 +89,8 @@ function syncTargetCollider(THREE, colliders, target) {
   if (!colliderRef) return;
   if (colliderRef.type === "box") {
     colliderRef.box = new THREE.Box3().setFromObject(target);
+  } else if (colliderRef.type === "equation-plane") {
+    syncPlaneColliderRef(THREE, target);
   } else if (colliderRef.type === "sphere") {
     const sphere = new THREE.Sphere();
     new THREE.Box3().setFromObject(target).getBoundingSphere(sphere);
@@ -185,6 +188,45 @@ export function createObjectInspector({ THREE, panel, sceneObjects, colliders })
     materialSelect.appendChild(option);
   });
 
+  const planeControls = document.createElement("div");
+  planeControls.style.display = "none";
+  planeControls.style.gridColumn = "1 / -1";
+  planeControls.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
+  planeControls.style.gap = "8px";
+  planeControls.style.padding = "8px";
+  planeControls.style.border = "1px solid rgba(140,200,255,0.35)";
+  planeControls.style.borderRadius = "8px";
+  controls.appendChild(planeControls);
+
+  function labeledPlaneInput(labelText, inputEl) {
+    const box = document.createElement("label");
+    box.style.display = "flex";
+    box.style.flexDirection = "column";
+    box.style.gap = "4px";
+    box.textContent = labelText;
+    box.appendChild(inputEl);
+    planeControls.appendChild(box);
+    return inputEl;
+  }
+
+  const planeAInput = labeledPlaneInput("Plane A", document.createElement("input"));
+  const planeBInput = labeledPlaneInput("Plane B", document.createElement("input"));
+  const planeCInput = labeledPlaneInput("Plane C", document.createElement("input"));
+  const planeDInput = labeledPlaneInput("Plane D", document.createElement("input"));
+  const planeXMinInput = labeledPlaneInput("X Min", document.createElement("input"));
+  const planeXMaxInput = labeledPlaneInput("X Max", document.createElement("input"));
+  const planeYMinInput = labeledPlaneInput("Y Min", document.createElement("input"));
+  const planeYMaxInput = labeledPlaneInput("Y Max", document.createElement("input"));
+  const planeZMinInput = labeledPlaneInput("Z Min", document.createElement("input"));
+  const planeZMaxInput = labeledPlaneInput("Z Max", document.createElement("input"));
+  const planeDepthInput = labeledPlaneInput("Plane Depth", document.createElement("input"));
+  [planeAInput, planeBInput, planeCInput, planeDInput, planeXMinInput, planeXMaxInput, planeYMinInput, planeYMaxInput, planeZMinInput, planeZMaxInput, planeDepthInput].forEach((input) => {
+    input.type = "number";
+    input.step = "0.1";
+  });
+  planeDepthInput.min = "0.02";
+  planeDepthInput.step = "0.05";
+
   const buttonRow = document.createElement("div");
   buttonRow.style.display = "flex";
   buttonRow.style.gap = "8px";
@@ -264,6 +306,28 @@ export function createObjectInspector({ THREE, panel, sceneObjects, colliders })
     startPreviewLoop();
   }
 
+  function isEquationColliderPlane(target) {
+    return target?.userData?.nvType === "equation-collider-plane"
+      || target?.userData?.equationCollider?.kind === "plane";
+  }
+
+  function readPlaneInputs(target) {
+    const current = normalizePlaneEquationConfig(target?.userData?.equationCollider || {});
+    return normalizePlaneEquationConfig({
+      a: parseNumber(planeAInput.value, current.a),
+      b: parseNumber(planeBInput.value, current.b),
+      c: parseNumber(planeCInput.value, current.c),
+      d: parseNumber(planeDInput.value, current.d),
+      xmin: parseNumber(planeXMinInput.value, current.xmin),
+      xmax: parseNumber(planeXMaxInput.value, current.xmax),
+      ymin: parseNumber(planeYMinInput.value, current.ymin),
+      ymax: parseNumber(planeYMaxInput.value, current.ymax),
+      zmin: parseNumber(planeZMinInput.value, current.zmin),
+      zmax: parseNumber(planeZMaxInput.value, current.zmax),
+      thickness: parseNumber(planeDepthInput.value, current.thickness)
+    });
+  }
+
   function populateFormFromTarget(target, distance = null) {
     if (!target) return;
     sxInput.value = String(Number(target.scale?.x || 1).toFixed(3));
@@ -275,6 +339,23 @@ export function createObjectInspector({ THREE, panel, sceneObjects, colliders })
     const mat = firstMaterial(target);
     materialSelect.value = mat?.type || "MeshStandardMaterial";
 
+    const planeConfig = normalizePlaneEquationConfig(target.userData?.equationCollider || {});
+    const showPlaneControls = isEquationColliderPlane(target);
+    planeControls.style.display = showPlaneControls ? "grid" : "none";
+    if (showPlaneControls) {
+      planeAInput.value = String(planeConfig.a);
+      planeBInput.value = String(planeConfig.b);
+      planeCInput.value = String(planeConfig.c);
+      planeDInput.value = String(planeConfig.d);
+      planeXMinInput.value = String(planeConfig.xmin);
+      planeXMaxInput.value = String(planeConfig.xmax);
+      planeYMinInput.value = String(planeConfig.ymin);
+      planeYMaxInput.value = String(planeConfig.ymax);
+      planeZMinInput.value = String(planeConfig.zmin);
+      planeZMaxInput.value = String(planeConfig.zmax);
+      planeDepthInput.value = String(planeConfig.thickness);
+    }
+
     const kind = target.userData?.nvType || target.name || target.type || "Object";
     const distanceText = Number.isFinite(distance) ? ` | distance ${distance.toFixed(2)}m` : "";
     infoLine.textContent = `Target: ${kind}${distanceText}`;
@@ -282,17 +363,41 @@ export function createObjectInspector({ THREE, panel, sceneObjects, colliders })
 
   function applyFormToTarget() {
     if (!activeTarget) return;
-    activeTarget.scale.set(
-      Math.max(0.1, parseNumber(sxInput.value, activeTarget.scale.x || 1)),
-      Math.max(0.1, parseNumber(syInput.value, activeTarget.scale.y || 1)),
-      Math.max(0.1, parseNumber(szInput.value, activeTarget.scale.z || 1))
-    );
+    if (isEquationColliderPlane(activeTarget)) {
+      resizeEquationColliderPlaneMesh(THREE, activeTarget, readPlaneInputs(activeTarget));
+      activeTarget.userData.nvType = "equation-collider-plane";
+      activeTarget.userData.isSolid = physicsInput.checked;
+      activeTarget.userData.physicsEnabled = physicsInput.checked;
+    } else {
+      activeTarget.scale.set(
+        Math.max(0.1, parseNumber(sxInput.value, activeTarget.scale.x || 1)),
+        Math.max(0.1, parseNumber(syInput.value, activeTarget.scale.y || 1)),
+        Math.max(0.1, parseNumber(szInput.value, activeTarget.scale.z || 1))
+      );
+    }
 
     applyColorToTarget(activeTarget, colorInput.value);
     applyMaterialType(THREE, activeTarget, materialSelect.value, colorInput.value);
 
+    if (isEquationColliderPlane(activeTarget)) {
+      const materials = Array.isArray(activeTarget.material) ? activeTarget.material : [activeTarget.material];
+      materials.forEach((mat) => {
+        if (!mat) return;
+        mat.transparent = true;
+        if (!Number.isFinite(mat.opacity) || mat.opacity > 0.5) mat.opacity = 0.34;
+        mat.depthWrite = false;
+        mat.side = THREE.DoubleSide;
+      });
+    }
+
     if (colliderInput.checked && !activeTarget.userData?.colliderRef) {
-      addBoxColliderForTarget(THREE, colliders, activeTarget);
+      if (isEquationColliderPlane(activeTarget)) {
+        const colliderRef = makePlaneColliderRef(THREE, activeTarget);
+        colliders.push(colliderRef);
+        activeTarget.userData.colliderRef = colliderRef;
+      } else {
+        addBoxColliderForTarget(THREE, colliders, activeTarget);
+      }
     } else if (!colliderInput.checked && activeTarget.userData?.colliderRef) {
       removeColliderForTarget(colliders, activeTarget);
     }

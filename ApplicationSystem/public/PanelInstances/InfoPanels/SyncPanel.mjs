@@ -23,6 +23,24 @@ const TEMPLATE = `
       <div data-local-device style="font-size:0.9em;color:#333;">Loading...</div>
     </section>
 
+    <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:600;">Installation Protection</div>
+          <div data-protect-writes-detail style="color:#666;font-size:0.84em;margin-top:3px;">Incoming peer writes and local apply sync are blocked while protection is on. Dry runs still work.</div>
+        </div>
+        <span data-protect-writes-badge style="white-space:nowrap;border:1px solid #ccc;border-radius:999px;padding:3px 8px;font-size:0.76em;color:#555;background:#f7f7f7;">Loading</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <button type="button" data-protect-enable style="border:1px solid #b74d4d;border-radius:6px;background:#fff4f4;color:#8e2424;padding:7px 10px;cursor:pointer;font-size:0.88em;">Protect This Installation</button>
+        <button type="button" data-protect-disable style="border:1px solid #5b9d6d;border-radius:6px;background:#f1fbf3;color:#236535;padding:7px 10px;cursor:pointer;font-size:0.88em;">Allow Changes Here</button>
+        <label style="display:flex;gap:6px;align-items:center;font-size:0.82em;color:#555;">
+          <input type="checkbox" data-protect-writes>
+          <span>Protected</span>
+        </label>
+      </div>
+    </section>
+
     <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fafafa;">
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
         <button type="button" data-toggle-scanning style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.9em;">Scan for Devices</button>
@@ -138,6 +156,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const errorEl = panelElem.querySelector("[data-error]");
   const statusEl = panelElem.querySelector("[data-status]");
   const localDeviceEl = panelElem.querySelector("[data-local-device]");
+  const protectWritesEl = panelElem.querySelector("[data-protect-writes]");
+  const protectWritesDetailEl = panelElem.querySelector("[data-protect-writes-detail]");
+  const protectWritesBadgeEl = panelElem.querySelector("[data-protect-writes-badge]");
+  const protectEnableBtn = panelElem.querySelector("[data-protect-enable]");
+  const protectDisableBtn = panelElem.querySelector("[data-protect-disable]");
   const scanningBtn = panelElem.querySelector("[data-toggle-scanning]");
   const discoverableBtn = panelElem.querySelector("[data-toggle-discoverable]");
   const refreshBtn = panelElem.querySelector("[data-refresh]");
@@ -165,6 +188,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     refreshTimer: null,
     busy: false,
     localDevice: null,
+    protection: { protectedFromPeerWrites: false },
     status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null },
     scopes: ["SyncTest"],
     candidateFolders: [],
@@ -179,6 +203,33 @@ export async function setupPanel(panelElem, panelVars = {}) {
     if (!localDeviceEl) return;
     if (!state.localDevice) { localDeviceEl.textContent = "Unavailable"; return; }
     localDeviceEl.innerHTML = `<div><strong>${escapeHtml(state.localDevice.deviceName || "Unknown Device")}</strong></div><div style="font-size:0.85em;color:#666;">${escapeHtml(state.localDevice.deviceId || "")}</div>`;
+  };
+
+  const renderProtection = () => {
+    const protectedOn = state.protection?.protectedFromPeerWrites === true;
+    if (protectWritesEl) protectWritesEl.checked = protectedOn;
+    if (protectWritesDetailEl) {
+      protectWritesDetailEl.textContent = protectedOn
+        ? "Protected: incoming peer writes and local apply sync are blocked. Dry runs still work."
+        : "Incoming peer writes and local apply sync are allowed. Dry runs still work.";
+    }
+    if (protectWritesBadgeEl) {
+      protectWritesBadgeEl.textContent = protectedOn ? "Protected" : "Writable";
+      protectWritesBadgeEl.style.background = protectedOn ? "#fff4f4" : "#f1fbf3";
+      protectWritesBadgeEl.style.borderColor = protectedOn ? "#e6a3a3" : "#b9dfc2";
+      protectWritesBadgeEl.style.color = protectedOn ? "#8e2424" : "#236535";
+    }
+    if (protectEnableBtn) {
+      protectEnableBtn.disabled = state.busy || protectedOn;
+      protectEnableBtn.style.opacity = protectedOn ? "0.6" : "1";
+      protectEnableBtn.style.cursor = state.busy || protectedOn ? "not-allowed" : "pointer";
+    }
+    if (protectDisableBtn) {
+      protectDisableBtn.disabled = state.busy || !protectedOn;
+      protectDisableBtn.style.opacity = protectedOn ? "1" : "0.6";
+      protectDisableBtn.style.cursor = state.busy || !protectedOn ? "not-allowed" : "pointer";
+    }
+    if (syncApplyBtn) syncApplyBtn.disabled = state.busy || protectedOn;
   };
 
   const renderDiscoveryButtons = () => {
@@ -331,15 +382,17 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDryBtn, syncApplyBtn, foldersRefreshBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
+    renderProtection();
     if (statusMessage) setStatus(statusEl, statusMessage);
   };
 
   const loadLocalDevice = async () => { const p = await apiFetchJson("/api/sync/local-device", { cache: "no-store" }); state.localDevice = p.localDevice || null; renderLocalDevice(); };
+  const loadProtection = async () => { const p = await apiFetchJson("/api/sync/protection", { cache: "no-store" }); state.protection = p.protection || { protectedFromPeerWrites: false }; renderProtection(); };
   const loadScopes = async () => { try { const p = await apiFetchJson("/api/sync/scopes", { cache: "no-store" }); state.scopes = Array.isArray(p.syncScopes) && p.syncScopes.length ? p.syncScopes : ["SyncTest"]; } catch { state.scopes = ["SyncTest"]; } renderScopes(); renderSharedScopes(); };
   const loadFolders = async () => { try { const p = await apiFetchJson("/api/sync/notebook-folders", { cache: "no-store" }); state.candidateFolders = Array.isArray(p.folders) ? p.folders : []; } catch { state.candidateFolders = []; } renderCandidateFolders(); };
-  const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null }; renderDiscoveryButtons(); renderPeers(); };
+  const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null }; state.protection = p.protection || state.protection; renderDiscoveryButtons(); renderPeers(); renderProtection(); };
   const refreshActiveJob = async () => {
     const jobId = String(state.activeJobId || "").trim();
     if (!jobId) return;
@@ -358,6 +411,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const runToggle = async (url, enabled, label) => { setError(errorEl, ""); setBusy(true, `${label}...`); try { await apiFetchJson(url, { method: "POST", body: JSON.stringify({ enabled }) }); await refreshStatus(); setStatus(statusEl, `${label} complete.`); } catch (err) { setError(errorEl, err?.message || "Request failed"); } finally { setBusy(false); } };
   const shareScope = async (scope) => { setBusy(true, "Adding shared folder..."); try { await apiFetchJson("/api/sync/scopes", { method: "POST", body: JSON.stringify({ scope }) }); await Promise.all([loadScopes(), loadFolders()]); } catch (err) { setError(errorEl, err?.message || "Failed to add scope"); } finally { setBusy(false); } };
   const unshareScope = async (scope) => { setBusy(true, "Removing shared folder..."); try { await apiFetchJson("/api/sync/scopes", { method: "DELETE", body: JSON.stringify({ scope }) }); await Promise.all([loadScopes(), loadFolders()]); } catch (err) { setError(errorEl, err?.message || "Failed to remove scope"); } finally { setBusy(false); } };
+  const toggleProtection = async (enabled) => { setBusy(true, "Updating sync protection..."); try { const p = await apiFetchJson("/api/sync/protection", { method: "POST", body: JSON.stringify({ protectedFromPeerWrites: Boolean(enabled) }) }); state.protection = p.protection || { protectedFromPeerWrites: Boolean(enabled) }; renderProtection(); setStatus(statusEl, state.protection.protectedFromPeerWrites ? "This installation is protected from sync writes." : "Sync write protection disabled."); } catch (err) { setError(errorEl, err?.message || "Failed to update sync protection"); renderProtection(); } finally { setBusy(false); } };
 
   const runSync = async (dryRun) => {
     const deviceId = state.status.selectedPeerDeviceId;
@@ -367,6 +421,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
       return setError(errorEl, "Only trusted sync-capable peers can be selected for sync.");
     }
     const scope = scopeSelect?.value || "SyncTest";
+    if (!dryRun && state.protection?.protectedFromPeerWrites === true) {
+      return setError(errorEl, "This installation is protected from sync writes. Disable protection before applying sync here.");
+    }
     setError(errorEl, "");
     try {
       if (!dryRun) {
@@ -448,9 +505,12 @@ export async function setupPanel(panelElem, panelVars = {}) {
       setError(errorEl, err?.message || "Unable to select peer");
     }
   });
-  refreshBtn?.addEventListener("click", () => Promise.all([loadScopes(), loadFolders(), refreshStatus()]).catch((err) => setError(errorEl, err?.message || "Refresh failed")));
+  refreshBtn?.addEventListener("click", () => Promise.all([loadProtection(), loadScopes(), loadFolders(), refreshStatus()]).catch((err) => setError(errorEl, err?.message || "Refresh failed")));
   scanningBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : "Starting scan"));
   discoverableBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : "Enabling discoverability"));
+  protectWritesEl?.addEventListener("change", () => toggleProtection(protectWritesEl.checked));
+  protectEnableBtn?.addEventListener("click", () => toggleProtection(true));
+  protectDisableBtn?.addEventListener("click", () => toggleProtection(false));
   syncDryBtn?.addEventListener("click", () => runSync(true));
   syncApplyBtn?.addEventListener("click", () => runSync(false));
   syncEventsRefreshBtn?.addEventListener("click", () => loadSyncEvents());
@@ -477,7 +537,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   panelElem.cleanup = () => { state.disposed = true; if (state.refreshTimer) clearInterval(state.refreshTimer); if (state.eventsPollTimer) clearInterval(state.eventsPollTimer); state.refreshTimer = null; state.eventsPollTimer = null; };
   try {
     setStatus(statusEl, "Loading sync panel...");
-    await Promise.all([loadLocalDevice(), loadScopes(), loadFolders(), refreshStatus()]);
+    await Promise.all([loadLocalDevice(), loadProtection(), loadScopes(), loadFolders(), refreshStatus()]);
     await loadSyncEvents();
     renderJob();
     setStatus(statusEl, "Sync panel ready.");

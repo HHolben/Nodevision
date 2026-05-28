@@ -1,6 +1,144 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/editCallbacks.js
 // This file defines browser-side edit Callbacks logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+function getActiveCodeEditor() {
+    const editor = window.monacoEditor;
+    if (!editor || typeof editor.getModel !== "function" || typeof editor.getValue !== "function") return null;
+    return editor;
+}
+
+function getEditorIndentUnit(editor) {
+    const modelOptions = editor?.getModel?.()?.getOptions?.() || {};
+    const tabSize = Number(modelOptions.tabSize || 2);
+    const insertSpaces = modelOptions.insertSpaces !== false;
+    return insertSpaces ? " ".repeat(tabSize || 2) : "\t";
+}
+
+async function runMonacoDocumentFormat(editor) {
+    const action = editor?.getAction?.("editor.action.formatDocument");
+    if (!action || typeof action.run !== "function") return false;
+    await action.run();
+    return true;
+}
+
+function trimTrailingWhitespace(text) {
+    return String(text || "").replace(/[ \t]+$/gm, "").replace(/\n*$/, "\n");
+}
+
+function formatJsonText(text) {
+    return JSON.stringify(JSON.parse(text), null, 2) + "\n";
+}
+
+function countBraceDelta(line) {
+    let delta = 0;
+    let quote = null;
+    let escaped = false;
+    for (const ch of String(line || "")) {
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        if (ch === "\\") {
+            escaped = true;
+            continue;
+        }
+        if (quote) {
+            if (ch === quote) quote = null;
+            continue;
+        }
+        if (ch === "\"" || ch === "\x27" || ch === "`") {
+            quote = ch;
+            continue;
+        }
+        if (ch === "{" || ch === "(" || ch === "[") delta += 1;
+        if (ch === "}" || ch === ")" || ch === "]") delta -= 1;
+    }
+    return delta;
+}
+
+function formatBraceStructuredText(text, indentUnit) {
+    let depth = 0;
+    const output = [];
+    const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) {
+            if (output.length && output[output.length - 1]) output.push("");
+            continue;
+        }
+        if (/^[}\])]/.test(line)) depth = Math.max(0, depth - 1);
+        output.push(indentUnit.repeat(depth) + line);
+        depth = Math.max(0, depth + countBraceDelta(line));
+    }
+    return trimTrailingWhitespace(output.join("\n"));
+}
+
+function formatPythonText(text, indentUnit) {
+    let depth = 0;
+    const output = [];
+    for (const rawLine of String(text || "").replace(/\r\n?/g, "\n").split("\n")) {
+        const line = rawLine.trim();
+        if (!line) {
+            if (output.length && output[output.length - 1]) output.push("");
+            continue;
+        }
+        if (/^(elif|else|except|finally)\b/.test(line)) depth = Math.max(0, depth - 1);
+        output.push(indentUnit.repeat(depth) + line);
+        if (/[:([{]\s*(#.*)?$/.test(line)) depth += 1;
+    }
+    return trimTrailingWhitespace(output.join("\n"));
+}
+
+function fallbackFormatCode(text, language, filePath, indentUnit) {
+    const lang = String(language || "").toLowerCase();
+    const path = String(filePath || "").toLowerCase();
+    if (lang === "json" || path.endsWith(".json")) return formatJsonText(text);
+    if (lang === "python" || path.endsWith(".py")) return formatPythonText(text, indentUnit);
+    if (["javascript", "typescript", "css", "cpp", "html"].includes(lang) || /\.(mjs|js|ts|css|cpp|cc|h|hpp|html?)$/.test(path)) {
+        return formatBraceStructuredText(text, indentUnit);
+    }
+    return trimTrailingWhitespace(text);
+}
+
+async function autoFormatActiveCodeEditor() {
+    const editor = getActiveCodeEditor();
+    if (!editor) {
+        alert("Open a file in the Code Editor before auto-formatting.");
+        return;
+    }
+
+    const model = editor.getModel();
+    if (!model) return;
+    const before = model.getValue();
+    try {
+        await runMonacoDocumentFormat(editor);
+    } catch (err) {
+        console.warn("Monaco document formatter was unavailable:", err);
+    }
+
+    const afterMonaco = model.getValue();
+    if (afterMonaco !== before) {
+        console.log("Auto format completed with Monaco formatter.");
+        return;
+    }
+
+    try {
+        const language = model.getLanguageId?.() || "plaintext";
+        const formatted = fallbackFormatCode(before, language, window.currentActiveFilePath, getEditorIndentUnit(editor));
+        if (formatted !== before) {
+            model.pushEditOperations(
+                editor.getSelections?.() || [],
+                [{ range: model.getFullModelRange(), text: formatted }],
+                () => null,
+            );
+        }
+        console.log("Auto format completed with fallback formatter.");
+    } catch (err) {
+        console.error("Auto format failed:", err);
+        alert("Auto format failed: " + (err?.message || err));
+    }
+}
+
 window.editCallbacks = {
     editRASTER: () => {
         console.log("Edit RASTER callback fired.");
@@ -75,17 +213,14 @@ window.editCallbacks = {
     },
     
 
+    autoFormatFile: () => {
+        console.log("Auto Format callback fired.");
+        autoFormatActiveCodeEditor();
+    },
+
     indentFile: () => {
         console.log("Indent File callback fired.");
-
-        if (window.monacoEditor) {
-            const editor = window.monacoEditor;
-            editor.getAction('editor.action.formatDocument').run()
-                .then(() => console.log("File successfully indented."))
-                .catch(err => console.error("Failed to indent file:", err));
-        } else {
-            alert("Monaco editor is not active.");
-        }
+        autoFormatActiveCodeEditor();
     },
 
     // === New VR World Editing Callbacks ===

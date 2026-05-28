@@ -56,6 +56,8 @@ function cleanupLegacyGameView(panel, state = {}) {
   panel._vrFunctionPlotterPanel = null;
   if (panel._vrTerrainToolController?.dispose) panel._vrTerrainToolController.dispose();
   panel._vrTerrainToolController = null;
+  if (panel._vrEquationColliderController?.dispose) panel._vrEquationColliderController.dispose();
+  panel._vrEquationColliderController = null;
   if (panel._vrConsolePanels?.dispose) panel._vrConsolePanels.dispose();
   panel._vrConsolePanels = null;
   if (panel._vrSaveVirtualWorldFile && window.saveVirtualWorldFile === panel._vrSaveVirtualWorldFile) {

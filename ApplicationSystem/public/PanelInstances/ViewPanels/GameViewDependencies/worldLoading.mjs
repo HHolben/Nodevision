@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects.
 
+import { createEquationColliderPlaneMesh, makePlaneColliderRef } from "./equationColliderTool.mjs";
+
 export function normalizeWorldPath(filePath) {
   if (!filePath) return "";
   const normalized = filePath.replace(/\\/g, "/");
@@ -1145,10 +1147,12 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         color: def.color || "#888"
       };
       if (def.isWater === true) {
+        materialOpts.color = def.color || "#9bd9b6";
         materialOpts.transparent = true;
-        materialOpts.opacity = Number.isFinite(def.opacity) ? def.opacity : 0.45;
-        materialOpts.emissive = def.emissive || "#0a4b7a";
-        materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.2;
+        materialOpts.opacity = Number.isFinite(def.opacity) ? def.opacity : 0.28;
+        materialOpts.depthWrite = false;
+        materialOpts.emissive = def.emissive || "#9bd9b6";
+        materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.08;
         materialOpts.side = THREE.DoubleSide;
       }
       if (isPortal) {
@@ -1161,7 +1165,53 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         materialOpts.emissive = def.emissive === true ? def.color || "#888" : def.emissive;
         materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.75;
       }
-      if (def.type === "tilemap") {
+      if (def.type === "equation-collider-plane") {
+        const planeProps = def.equationCollider && typeof def.equationCollider === "object" ? def.equationCollider : {};
+        const size = Array.isArray(def.size) && Number.isFinite(def.size[0]) ? def.size[0] : planeProps.size;
+        const thickness = Array.isArray(def.size) && Number.isFinite(def.size[1]) ? def.size[1] : planeProps.thickness;
+        mesh = createEquationColliderPlaneMesh(THREE, {
+          ...planeProps,
+          size,
+          thickness
+        }, materialOpts);
+      } else if (def.type === "asset") {
+        const assetType = String(def.assetType || "").toLowerCase();
+        const src = typeof def.src === "string" ? def.src : "";
+        const scale = Array.isArray(def.scale) ? def.scale : [1, 1, 1];
+        if (assetType === "billboard") {
+          mesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(Number.isFinite(scale[0]) ? scale[0] : 1, Number.isFinite(scale[1]) ? scale[1] : 1),
+            new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide, transparent: true })
+          );
+          mesh.userData.imageFilePath = src;
+          void (async () => {
+            const applier = await ensureImagePlaneTextureApplier();
+            if (applier) await applier(mesh, THREE);
+          })();
+        } else if (assetType === "audio") {
+          mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.25, 24, 16),
+            new THREE.MeshStandardMaterial({ color: def.color || "#44aaff", emissive: "#113355", emissiveIntensity: 0.35 })
+          );
+          mesh.userData.audioAssetPath = src;
+        } else if (assetType === "video") {
+          mesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(Number.isFinite(scale[0]) ? scale[0] * 1.6 : 1.6, Number.isFinite(scale[1]) ? scale[1] : 1),
+            new THREE.MeshStandardMaterial({ color: def.color || "#111111", emissive: "#222222", emissiveIntensity: 0.2, side: THREE.DoubleSide })
+          );
+          mesh.userData.videoAssetPath = src;
+        } else {
+          mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(Number.isFinite(scale[0]) ? scale[0] : 1, Number.isFinite(scale[1]) ? scale[1] : 1, Number.isFinite(scale[2]) ? scale[2] : 1),
+            new THREE.MeshStandardMaterial({ color: def.color || "#8aa0b8" })
+          );
+          mesh.userData.objectFilePath = src;
+          void (async () => {
+            const applier = await ensureObjectFileGeometryApplier();
+            if (applier) await applier(mesh);
+          })();
+        }
+      } else if (def.type === "tilemap") {
         mesh = createTileMapMesh(def);
       } else if (def.type === "label") {
         mesh = createLabelSprite(def);
@@ -1278,14 +1328,19 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
 
       if (mesh) {
-        mesh.position.set(...def.position);
+        if (def.type !== "equation-collider-plane" || !(def.equationCollider && typeof def.equationCollider === "object")) {
+          mesh.position.set(...def.position);
+        }
         mesh.userData.nvType = def.type || portalShape || null;
         if (typeof def.tag === "string" && def.tag) mesh.userData.tag = def.tag;
         if (typeof def.spawnId === "string" && def.spawnId) mesh.userData.spawnId = def.spawnId;
         if (Number.isFinite(def.spawnYaw)) mesh.userData.spawnYaw = def.spawnYaw;
-        mesh.userData.isSolid = def.isSolid === true;
-        mesh.userData.breakable = def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true;
+        mesh.userData.isSolid = def.type === "equation-collider-plane" ? def.collider !== false : (def.isSolid === true || def.collidable === true);
+        mesh.userData.breakable = def.type === "equation-collider-plane" ? false : (def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true);
         mesh.userData.isWater = def.isWater === true;
+        if (def.terrain && typeof def.terrain === "object") {
+          mesh.userData.terrain = JSON.parse(JSON.stringify(def.terrain));
+        }
         if (def.hidden === true) mesh.visible = false;
         scene.add(mesh);
         objects.push(mesh);
@@ -1359,7 +1414,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           });
         }
 
-        if (def.isSolid && def.isWater !== true) {
+        if (((def.type === "equation-collider-plane" && def.collider !== false) || def.isSolid || def.collidable === true) && def.isWater !== true) {
           if (portalShape === "box") {
             const [sx, sy, sz] = def.size;
             const halfSize = new THREE.Vector3(sx / 2, sy / 2, sz / 2);
@@ -1374,7 +1429,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             const colliderRef = { type: "sphere", center, radius };
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
-          } else if (def.type === "console" || def.type === "object-file") {
+          } else if (def.type === "equation-collider-plane" && def.collider !== false) {
+            const colliderRef = makePlaneColliderRef(THREE, mesh);
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
+          } else if (def.type === "console" || def.type === "object-file" || def.type === "asset") {
             const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;

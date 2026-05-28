@@ -88,8 +88,8 @@
   },
   {
     "ToolbarCategory": "Edit",
-    "heading": "Indent File",
-    "callbackKey": "indentFile",
+    "heading": "Auto Format",
+    "callbackKey": "autoFormatFile",
     "modes": ["Code Editing"]
   },
   {

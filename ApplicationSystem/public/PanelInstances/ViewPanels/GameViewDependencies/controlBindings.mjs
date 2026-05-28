@@ -21,7 +21,8 @@ export const defaultBindings = {
   pitchUp: "arrowup",
   pitchDown: "arrowdown",
   flyUp: "space",
-  flyDown: "q"
+  flyDown: "q",
+  phase: "v"
 };
 
 export const defaultGamepadBindings = {
@@ -108,6 +109,7 @@ function buildBindingsFromScheme(scheme) {
     pitchDown: getKey("Pitch Down", defaultBindings.pitchDown),
     flyUp: getKey("Fly Up", defaultBindings.flyUp),
     flyDown: getKey("Fly Down", defaultBindings.flyDown),
+    phase: getKey("Phase Through Objects", defaultBindings.phase),
     gamepad: {
       moveForward: normalizeGamepadBinding(scheme?.["Move Forward"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.moveForward),
       moveBackward: normalizeGamepadBinding(scheme?.["Move Backward"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.moveBackward),

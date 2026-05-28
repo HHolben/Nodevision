@@ -76,4 +76,86 @@
 #sub-toolbar .nv-subtoolbar-widget .nv-mono {
   font-family: var(--nv-ui-mono-font-family, monospace);
 }
+#sub-toolbar .nv-subtoolbar-widget.nv-subtoolbar-widget--compact-script.nv-terrain-insert-toolbar {
+  gap: 8px;
+  height: auto;
+  min-height: 30px;
+  padding: 4px 6px;
+}
 
+#sub-toolbar .nv-terrain-toolbar-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+#sub-toolbar .nv-terrain-toolbar-field.nv-disabled {
+  opacity: 0.55;
+}
+
+#sub-toolbar .nv-terrain-toolbar-field select,
+#sub-toolbar .nv-terrain-toolbar-field input[type="number"] {
+  height: 24px;
+  max-width: 94px;
+  padding: 2px 4px;
+  border: 1px solid #888;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+}
+
+#sub-toolbar .nv-terrain-toolbar-radio-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
+#sub-toolbar .nv-terrain-toolbar-radio-field legend {
+  padding: 0;
+  font-size: 12px;
+}
+
+#sub-toolbar .nv-terrain-toolbar-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+}
+
+#sub-toolbar .nv-terrain-toolbar-radio-option input[type="radio"] {
+  margin: 0;
+}
+
+#sub-toolbar .nv-terrain-toolbar-field--color input[type="color"] {
+  width: 30px;
+  height: 24px;
+  padding: 1px;
+}
+
+
+#sub-toolbar .nv-subtoolbar-widget.nv-subtoolbar-widget--compact-script.nv-equation-collider-toolbar {
+  gap: 8px;
+  height: auto;
+  min-height: 30px;
+  padding: 4px 6px;
+}
+
+#sub-toolbar .nv-equation-collider-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+#sub-toolbar .nv-equation-collider-field input[type="number"] {
+  height: 24px;
+  max-width: 74px;
+  padding: 2px 4px;
+  border: 1px solid #888;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+}
