@@ -482,10 +482,25 @@ function buildDropdownFromItem(item) {
   const rootItems = subItems.filter((i) => !i.parentHeading);
   const filterByState = (items) => items.filter((subItem) => checkToolbarConditions(subItem, state));
 
-  // Prefer explicit children for this heading, but if none are valid in the
-  // current mode/state, fall back to top-level items in that toolbar file.
-  let topItems = directChildren.length ? filterByState(directChildren) : filterByState(rootItems);
-  if (!topItems.length && directChildren.length) {
+  // Toolbar files can mix root-level menu entries with direct children of the
+  // main toolbar heading. Preserve JSON order so legacy sections such as
+  // Insert Text and Media stay visible beside newer direct Insert tools.
+  const hasRootItems = rootItems.length > 0;
+  const hasDirectChildren = directChildren.length > 0;
+  let candidateTopItems = [];
+
+  if (hasRootItems && hasDirectChildren) {
+    candidateTopItems = subItems.filter((subItem) => {
+      return !subItem.parentHeading || subItem.parentHeading === item.heading;
+    });
+  } else if (hasDirectChildren) {
+    candidateTopItems = directChildren;
+  } else {
+    candidateTopItems = rootItems;
+  }
+
+  let topItems = filterByState(candidateTopItems);
+  if (!topItems.length && hasDirectChildren) {
     topItems = filterByState(rootItems);
   }
 
