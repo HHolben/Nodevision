@@ -1,7 +1,18 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
-// This file loads a world definition from the server and builds its scene objects.
+// This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
 import { createEquationColliderPlaneMesh, makePlaneColliderRef } from "./equationColliderTool.mjs";
+import {
+  clearActiveMetaWorldLayerBridge,
+  notifyMetaWorldLayersChanged,
+  setActiveMetaWorldLayerBridge,
+} from "/MetaWorld/MetaWorldLayerState.mjs";
+import {
+  createDefaultExpressionLayer,
+  createExpressionLayerObject,
+  disposeExpressionObject,
+  normalizeExpressionLayer,
+} from "/MetaWorld/Expressions/ExpressionLayerObjects.mjs";
 
 export function normalizeWorldPath(filePath) {
   if (!filePath) return "";
@@ -76,6 +87,7 @@ async function ensureImagePlaneTextureApplier() {
 }
 
 function disposeCurrentMetaWorld(ctx = window.VRWorldContext) {
+  clearActiveMetaWorldLayerBridge();
   if (ctx?.metaWorldRuntime?.dispose) {
     ctx.metaWorldRuntime.dispose();
   }
@@ -90,6 +102,217 @@ function parseMetaWorldDocument(htmlText) {
   return doc;
 }
 
+
+function readLayerObjectId(def, index) {
+  const candidates = [def?.id, def?.tag, def?.name, def?.label, def?.title];
+  const explicit = candidates.find((value) => typeof value === "string" && value.trim());
+  return explicit ? explicit.trim() : "metaworld-object-" + index;
+}
+
+function readLayerObjectName(def, objectId, index) {
+  const candidates = [def?.name, def?.title, def?.label, def?.tag, def?.id];
+  const explicit = candidates.find((value) => typeof value === "string" && value.trim());
+  return explicit ? explicit.trim() : objectId || "Object " + (index + 1);
+}
+
+function readLayerObjectType(def, object3d) {
+  if (typeof def?.layerType === "string" && def.layerType.trim()) return def.layerType.trim();
+  if (typeof def?.type === "string" && def.type.trim()) return def.type.trim();
+  if (typeof object3d?.userData?.nvType === "string" && object3d.userData.nvType.trim()) return object3d.userData.nvType.trim();
+  if (object3d?.isLight) return "light";
+  return "mesh";
+}
+
+function isExpressionLayerType(type) {
+  return type === "functionSurface" || type === "functionCurve" || type === "parametricCurve";
+}
+
+function updateDefinitionVisibility(def, visible) {
+  if (!def || typeof def !== "object") return;
+  def.visible = visible;
+  def.hidden = !visible;
+}
+
+function markMetaWorldLayersDirty(worldData) {
+  if (!worldData || typeof worldData !== "object") return;
+  if (!worldData.metadata || typeof worldData.metadata !== "object") worldData.metadata = {};
+  worldData.metadata.visibilityDirty = true;
+  worldData.metadata.layersDirty = true;
+}
+
+function updateStateWorldVisibility(state, objectId, visible) {
+  const candidates = [state?.currentWorldDefinition, window.VRWorldContext?.currentWorldDefinition];
+  candidates.forEach((world) => {
+    const objects = Array.isArray(world?.objects) ? world.objects : [];
+    const target = objects.find((entry, index) => readLayerObjectId(entry, index) === objectId);
+    updateDefinitionVisibility(target, visible);
+    markMetaWorldLayersDirty(world);
+  });
+}
+
+function syncBridgeWorldState(state, worldData) {
+  if (state) state.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+  if (window.VRWorldContext) {
+    window.VRWorldContext.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+  }
+}
+
+function removeObjectFromArray(items, value) {
+  if (!Array.isArray(items)) return;
+  const idx = items.indexOf(value);
+  if (idx !== -1) items.splice(idx, 1);
+}
+
+function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects }) {
+  if (!worldData || !Array.isArray(layerEntries)) {
+    clearActiveMetaWorldLayerBridge();
+    return;
+  }
+
+  const sourceId = "legacy-metaworld:" + (filePath || "active");
+  const attachLayerBreakHandler = (entry) => {
+    if (!entry?.object3d || !isExpressionLayerType(entry.def?.type)) return;
+    entry.object3d.userData.breakable = entry.def?.locked !== true;
+    entry.object3d.userData.placedByPlayer = true;
+    entry.object3d.userData.onBreakTarget = () => bridge.removeExpressionLayer(entry.id);
+  };
+  const bridge = {
+    sourceId,
+    sourcePath: filePath || "",
+    worldData,
+    listObjects() {
+      return layerEntries.map((entry, index) => ({
+        id: entry.id,
+        name: readLayerObjectName(entry.def, entry.id, index),
+        type: readLayerObjectType(entry.def, entry.object3d),
+        visible: entry.object3d?.visible !== false,
+        tag: entry.def?.tag || "",
+        expression: entry.def?.expression || entry.def?.equation || "",
+        domain: entry.def?.domain || null,
+        material: entry.def?.material || null,
+        collider: entry.def?.collider || null,
+        locked: entry.def?.locked === true,
+        error: entry.def?.error || "",
+        equationCollider: entry.def?.equationCollider || null,
+      }));
+    },
+    selectObject(objectId) {
+      const entry = layerEntries.find((candidate) => candidate.id === objectId);
+      if (!entry?.object3d) return false;
+      if (window.VRWorldContext?.objectInspector?.inspectTarget && Array.isArray(window.VRWorldContext.objects) && window.VRWorldContext.objects.includes(entry.object3d)) {
+        window.VRWorldContext.objectInspector.inspectTarget(entry.object3d);
+      }
+      return true;
+    },
+    setObjectVisibility(objectId, visible) {
+      const entry = layerEntries.find((candidate) => candidate.id === objectId);
+      if (!entry?.object3d) return false;
+      const nextVisible = visible !== false;
+      entry.object3d.visible = nextVisible;
+      updateDefinitionVisibility(entry.def, nextVisible);
+      markMetaWorldLayersDirty(worldData);
+      updateStateWorldVisibility(state, objectId, nextVisible);
+      // TODO: Persist visibility changes back to the selected MetaWorld HTML/JSON source definition.
+      return true;
+    },
+    addExpressionLayer(overrides = {}) {
+      if (!THREE || !scene || !Array.isArray(objects) || !worldData) return null;
+      const existing = new Set(layerEntries.map((entry) => entry.id));
+      let layer = createDefaultExpressionLayer(overrides);
+      while (existing.has(layer.id)) {
+        layer = createDefaultExpressionLayer({ ...layer, id: `expr_surface_${Date.now().toString(36)}_${Math.floor(Math.random() * 1000)}` });
+      }
+      worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
+      worldData.objects.push(layer);
+      const entry = { id: layer.id, def: layer, object3d: null };
+      layerEntries.push(entry);
+      this.regenerateExpressionLayer(layer.id);
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "expressionLayerAdded", objectId: layer.id });
+      return layer;
+    },
+    updateExpressionLayer(objectId, patch = {}) {
+      const entry = layerEntries.find((candidate) => candidate.id === objectId);
+      if (!entry?.def) return false;
+      const { domain, material, collider, ...rest } = patch || {};
+      Object.assign(entry.def, rest);
+      if (domain) entry.def.domain = { ...(entry.def.domain || {}), ...domain };
+      if (material) entry.def.material = { ...(entry.def.material || {}), ...material };
+      if (collider) entry.def.collider = { ...(entry.def.collider || {}), ...collider };
+      if (isExpressionLayerType(entry.def.type)) {
+        this.regenerateExpressionLayer(objectId);
+      }
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      // TODO: Persist expression layer edits back to the selected MetaWorld HTML/JSON source definition.
+      notifyMetaWorldLayersChanged({ reason: "expressionLayerUpdated", objectId });
+      return true;
+    },
+    regenerateExpressionLayer(objectId) {
+      const entry = layerEntries.find((candidate) => candidate.id === objectId);
+      if (!entry?.def || !THREE || !scene) return false;
+      try {
+        const normalized = normalizeExpressionLayer(entry.def);
+        Object.assign(entry.def, normalized);
+        const result = createExpressionLayerObject(THREE, entry.def);
+        Object.assign(entry.def, result.layer);
+        if (entry.object3d) {
+          scene.remove(entry.object3d);
+          removeObjectFromArray(objects, entry.object3d);
+          disposeExpressionObject(entry.object3d);
+        }
+        entry.object3d = result.object3d;
+        entry.object3d.userData.metaWorldLayerId = entry.id;
+        attachLayerBreakHandler(entry);
+        scene.add(entry.object3d);
+        objects.push(entry.object3d);
+        entry.def.error = "";
+        return true;
+      } catch (err) {
+        entry.def.error = err?.message || String(err);
+        return false;
+      }
+    },
+    removeExpressionLayer(objectId) {
+      const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
+      if (index < 0) return false;
+      const [entry] = layerEntries.splice(index, 1);
+      if (entry.object3d) {
+        scene?.remove?.(entry.object3d);
+        removeObjectFromArray(objects, entry.object3d);
+        disposeExpressionObject(entry.object3d);
+      }
+      const defs = Array.isArray(worldData?.objects) ? worldData.objects : [];
+      removeObjectFromArray(defs, entry.def);
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "expressionLayerRemoved", objectId });
+      return true;
+    },
+    moveObjectLayer(objectId, direction) {
+      const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= layerEntries.length) return false;
+      const [entry] = layerEntries.splice(index, 1);
+      layerEntries.splice(nextIndex, 0, entry);
+      const objectDefs = Array.isArray(worldData?.objects) ? worldData.objects : [];
+      const objectIndex = objectDefs.indexOf(entry.def);
+      const nextObjectIndex = objectIndex + direction;
+      if (objectIndex >= 0 && nextObjectIndex >= 0 && nextObjectIndex < objectDefs.length) {
+        const [objectDef] = objectDefs.splice(objectIndex, 1);
+        objectDefs.splice(nextObjectIndex, 0, objectDef);
+      }
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "orderChanged", objectId });
+      return true;
+    },
+  };
+
+  layerEntries.forEach(attachLayerBreakHandler);
+  setActiveMetaWorldLayerBridge(bridge);
+}
 
 function convertMetaWorldToLegacyWorld(world) {
   if (!world || world.worldType !== "NodevisionMetaWorld") return world;
@@ -669,6 +892,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     resetLegacyWorldScene(window.VRWorldContext, state, worldData);
     let objectDefs = worldData?.objects || null;
     if (!objectDefs) {
+      clearActiveMetaWorldLayerBridge();
       console.warn("World has no objects.");
       return;
     }
@@ -935,6 +1159,14 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     if (isUsdLike) {
       objectDefs = normalizeUsdObjects(objectDefs);
     }
+    if (worldData) worldData.objects = objectDefs;
+    if (state) {
+      state.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+    }
+    if (window.VRWorldContext) {
+      window.VRWorldContext.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
+    }
+    const layerEntries = [];
 
     const normalizeAction = (action, fallbackTarget, fallbackSameWorld) => {
       if (!action) return null;
@@ -1112,7 +1344,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       });
     };
 
-    for (const def of objectDefs) {
+    for (let defIndex = 0; defIndex < objectDefs.length; defIndex += 1) {
+      const def = objectDefs[defIndex];
+      const layerObjectId = readLayerObjectId(def, defIndex);
       let mesh = null;
       let light = null;
       const isPortal = def.type === "portal" || def.isPortal === true;
@@ -1215,6 +1449,23 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         mesh = createTileMapMesh(def);
       } else if (def.type === "label") {
         mesh = createLabelSprite(def);
+      } else if (isExpressionLayerType(def.type)) {
+        try {
+          if (!Array.isArray(def.position)) def.position = [0, 0, 0];
+          const result = createExpressionLayerObject(THREE, def);
+          Object.assign(def, result.layer);
+          mesh = result.object3d;
+          def.error = "";
+        } catch (err) {
+          def.error = err?.message || String(err);
+          mesh = new THREE.Group();
+          mesh.name = def.name || def.id || "Expression Layer";
+          mesh.visible = def.visible !== false;
+          mesh.userData.nvType = def.type;
+          mesh.userData.metaWorldExpressionLayer = true;
+          mesh.userData.expressionLayerId = def.id || layerObjectId;
+          if (!Array.isArray(def.position)) def.position = [0, 0, 0];
+        }
       } else if (def.type === "math-function") {
         mesh = createMathFunctionMesh(def);
       } else if (def.type === "console") {
@@ -1332,18 +1583,24 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           mesh.position.set(...def.position);
         }
         mesh.userData.nvType = def.type || portalShape || null;
+        mesh.userData.metaWorldLayerId = layerObjectId;
         if (typeof def.tag === "string" && def.tag) mesh.userData.tag = def.tag;
         if (typeof def.spawnId === "string" && def.spawnId) mesh.userData.spawnId = def.spawnId;
         if (Number.isFinite(def.spawnYaw)) mesh.userData.spawnYaw = def.spawnYaw;
-        mesh.userData.isSolid = def.type === "equation-collider-plane" ? def.collider !== false : (def.isSolid === true || def.collidable === true);
-        mesh.userData.breakable = def.type === "equation-collider-plane" ? false : (def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true);
+        mesh.userData.isSolid = isExpressionLayerType(def.type)
+          ? def.collider?.enabled === true
+          : (def.type === "equation-collider-plane" ? def.collider !== false : (def.isSolid === true || def.collidable === true));
+        mesh.userData.breakable = isExpressionLayerType(def.type)
+          ? def.locked !== true
+          : (def.type === "equation-collider-plane" ? false : (def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true));
         mesh.userData.isWater = def.isWater === true;
         if (def.terrain && typeof def.terrain === "object") {
           mesh.userData.terrain = JSON.parse(JSON.stringify(def.terrain));
         }
-        if (def.hidden === true) mesh.visible = false;
+        if (def.hidden === true || def.visible === false) mesh.visible = false;
         scene.add(mesh);
         objects.push(mesh);
+        layerEntries.push({ id: layerObjectId, def, object3d: mesh });
         if (isPortal) {
           mesh.userData.isPortal = true;
           mesh.userData.portalTarget = resolvedPortalTarget;
@@ -1448,6 +1705,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
 
       if (light) {
+        light.userData = light.userData || {};
+        light.userData.metaWorldLayerId = layerObjectId;
+        if (def.hidden === true || def.visible === false) light.visible = false;
         if (Array.isArray(def.position)) {
           light.position.set(...def.position);
         }
@@ -1457,8 +1717,12 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         }
         scene.add(light);
         if (lights) lights.push(light);
+        layerEntries.push({ id: layerObjectId, def, object3d: light });
       }
     }
+
+    registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects });
+    notifyMetaWorldLayersChanged({ reason: "worldLoaded" });
 
     if (spawnPoints) {
       spawnPoints.push(...spawnCandidates);

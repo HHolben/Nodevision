@@ -1847,6 +1847,12 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       if (!target.userData?.breakable && !target.userData?.placedByPlayer) return false;
     }
 
+    const breakHandler = target.userData?.onBreakTarget;
+    if (typeof breakHandler === "function") {
+      const handled = breakHandler({ target, scene, objects, colliders, collisionActions, useTargets }) !== false;
+      if (handled) return true;
+    }
+
     scene.remove(target);
     const objIndex = objects.indexOf(target);
     if (objIndex !== -1) objects.splice(objIndex, 1);

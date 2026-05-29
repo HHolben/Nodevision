@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/panel.mjs
 // This file defines UI helpers for the ElementLayers module in Nodevision. It builds the layers panel DOM and renders layer rows with controls for visibility, ordering, and renaming.
 
+import { createLayerPanelElement, createLayerPanelHeader, createLayerListElement, createLayerRow, createLayerWrapper } from "/PanelInstances/Common/Layers/LayerPanelSurface.mjs";
+
 function ensurePanelState(panelEl) {
   if (!panelEl) return { expandedLayers: new Map() };
   if (!panelEl.__nvElementLayersState) {
@@ -349,20 +351,9 @@ function renderLayerContents({
 }
 
 export function createPanelElement() {
-  const el = document.createElement("div");
-  el.id = "svg-layer-panel";
-  el.tabIndex = 0;
-  Object.assign(el.style, {
-    border: "1px solid #d0d0d0",
-    background: "#fafafa",
-    padding: "6px",
-    minWidth: "220px",
-    maxWidth: "280px",
-    overflow: "auto",
-    outline: "none",
-  });
-  return el;
+  return createLayerPanelElement();
 }
+
 
 function renderSketchPreviewSection({ panelEl, state, rerender } = {}) {
   const ctx = window.SVGEditorContext;
@@ -829,29 +820,10 @@ export function renderLayersPanel({
 
   panelEl.innerHTML = "";
 
-  const header = document.createElement("div");
-  header.style.display = "flex";
-  header.style.gap = "6px";
-  header.style.alignItems = "center";
-  header.style.marginBottom = "6px";
-
-  const title = document.createElement("div");
-  title.textContent = "Layers";
-  title.style.fontWeight = "700";
-  title.style.flex = "1";
-  header.appendChild(title);
-
-  const addBtn = document.createElement("button");
-  addBtn.textContent = "+";
-  addBtn.title = "Add Layer";
-  addBtn.onclick = () => createLayer?.();
-  header.appendChild(addBtn);
+  const { header } = createLayerPanelHeader({ onAddLayer: () => createLayer?.() });
   panelEl.appendChild(header);
 
-  const list = document.createElement("div");
-  list.style.display = "flex";
-  list.style.flexDirection = "column";
-  list.style.gap = "4px";
+  const list = createLayerListElement();
 
   const domOrderedLayers = getLayers();
   const currentLayerIds = new Set(domOrderedLayers.map((l) => l.id));
@@ -874,100 +846,47 @@ export function renderLayersPanel({
     const isSelectedLayer = state.selected?.type === "layer" &&
       state.selected.layerId === layer.id;
 
-    const wrapper = document.createElement("div");
-    wrapper.style.border = layer.id === activeLayerId
-      ? "1px solid #5aa9ff"
-      : "1px solid #d5d5d5";
-    wrapper.style.background = layer.id === activeLayerId ? "#eef6ff" : "#fff";
-    wrapper.style.borderRadius = "6px";
-    wrapper.draggable = true;
-    if (isSelectedLayer) {
-      wrapper.style.outline = "2px solid rgba(255, 183, 77, 0.95)";
-      wrapper.style.outlineOffset = "-2px";
-    }
-
-    const row = document.createElement("div");
-    row.style.display = "grid";
-    row.style.gridTemplateColumns = "20px 52px 1fr auto auto auto auto";
-    row.style.alignItems = "center";
-    row.style.gap = "4px";
-    row.style.padding = "3px 4px";
-
-    const expandBtn = document.createElement("button");
-    expandBtn.type = "button";
-    expandBtn.textContent = isExpanded ? "▾" : "▸";
-    expandBtn.title = isExpanded
-      ? "Collapse layer contents"
-      : "Expand layer contents";
-    expandBtn.setAttribute("aria-expanded", String(isExpanded));
-    expandBtn.onclick = () => {
-      state.expandedLayers.set(layer.id, !isExpanded);
-      rerender?.();
-    };
-    row.appendChild(expandBtn);
-
     const isVisible = layer.style.display !== "none";
-    const visBtn = document.createElement("button");
-    visBtn.type = "button";
-    visBtn.textContent = isVisible ? "Unsee" : "See";
-    visBtn.title = isVisible ? "Hide layer" : "Show layer";
-    visBtn.setAttribute("aria-pressed", String(isVisible));
-    visBtn.onclick = () => {
-      const nextVisible = layer.style.display === "none";
-      setLayerVisible?.(layer.id, nextVisible);
-      rerender?.();
-    };
-    row.appendChild(visBtn);
-
-    const nameBtn = document.createElement("button");
-    nameBtn.textContent = layer.getAttribute("data-layer-name") || layer.id;
-    nameBtn.style.textAlign = "left";
-    nameBtn.style.border = "none";
-    nameBtn.style.background = "transparent";
-    nameBtn.style.padding = "2px 3px";
-    nameBtn.title = "Select layer";
-    nameBtn.onclick = () => {
-      state.selected.type = "layer";
-      state.selected.layerId = layer.id;
-      state.selected.element = null;
-      state.selectedElements = [];
-      const ctx = window.SVGEditorContext;
-      if (ctx?.setSelection) ctx.setSelection([layer], { primary: layer });
-      panelEl?.focus?.({ preventScroll: true });
-      setActiveLayer?.(layer.id);
-      rerender?.();
-    };
-    row.appendChild(nameBtn);
-
-    const upBtn = document.createElement("button");
-    upBtn.textContent = "↑";
-    upBtn.title = "Move Up";
-    upBtn.onclick = () => moveLayer?.(layer.id, -1);
-    row.appendChild(upBtn);
-
-    const downBtn = document.createElement("button");
-    downBtn.textContent = "↓";
-    downBtn.title = "Move Down";
-    downBtn.onclick = () => moveLayer?.(layer.id, 1);
-    row.appendChild(downBtn);
-
-    const renameBtn = document.createElement("button");
-    renameBtn.textContent = "✎";
-    renameBtn.title = "Rename";
-    renameBtn.onclick = () => {
-      const oldName = layer.getAttribute("data-layer-name") || layer.id;
-      const next = prompt("Layer name:", oldName);
-      if (!next) return;
-      layer.setAttribute("data-layer-name", next.trim() || oldName);
-      rerender?.();
-    };
-    row.appendChild(renameBtn);
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "✕";
-    delBtn.title = "Delete Layer";
-    delBtn.onclick = () => removeLayer?.(layer.id);
-    row.appendChild(delBtn);
+    const wrapper = createLayerWrapper({
+      active: layer.id === activeLayerId,
+      selected: isSelectedLayer,
+      draggable: true,
+    });
+    const { row } = createLayerRow({
+      expanded: isExpanded,
+      visible: isVisible,
+      name: layer.getAttribute("data-layer-name") || layer.id,
+      onToggleExpanded: () => {
+        state.expandedLayers.set(layer.id, !isExpanded);
+        rerender?.();
+      },
+      onToggleVisible: () => {
+        const nextVisible = layer.style.display === "none";
+        setLayerVisible?.(layer.id, nextVisible);
+        rerender?.();
+      },
+      onSelect: () => {
+        state.selected.type = "layer";
+        state.selected.layerId = layer.id;
+        state.selected.element = null;
+        state.selectedElements = [];
+        const ctx = window.SVGEditorContext;
+        if (ctx?.setSelection) ctx.setSelection([layer], { primary: layer });
+        panelEl?.focus?.({ preventScroll: true });
+        setActiveLayer?.(layer.id);
+        rerender?.();
+      },
+      onMoveUp: () => moveLayer?.(layer.id, -1),
+      onMoveDown: () => moveLayer?.(layer.id, 1),
+      onRename: () => {
+        const oldName = layer.getAttribute("data-layer-name") || layer.id;
+        const next = prompt("Layer name:", oldName);
+        if (!next) return;
+        layer.setAttribute("data-layer-name", next.trim() || oldName);
+        rerender?.();
+      },
+      onDelete: () => removeLayer?.(layer.id),
+    });
 
     wrapper.appendChild(row);
 

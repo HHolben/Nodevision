@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/mathmlEquationStructureWidget.mjs
-// Renders an HTML-editing sub-toolbar for appending equation structure snippets.
+// This widget renders HTML inline equation structure tools. The toolbar reuses shared equation action metadata for snippet insertion.
+
+import { getEquationActionSnippet, renderEquationToolbarGroup } from "/Equation/EquationExpressionEditor.mjs";
 
 const MODE = "HTMLediting";
 const INLINE_EQ_SELECTOR = ".nv-inline-equation[data-nv-inline-equation]";
@@ -108,27 +110,9 @@ function appendSnippet(snippet = "") {
   root.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-function makeButton(label, snippet) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = label;
-  Object.assign(btn.style, {
-    height: "28px",
-    padding: "0 10px",
-    border: "1px solid #333",
-    borderRadius: "4px",
-    background: "#eee",
-    cursor: "pointer",
-    fontSize: "12px",
-    lineHeight: "28px",
-    whiteSpace: "nowrap",
-  });
-  btn.addEventListener("click", (evt) => {
-    evt.preventDefault();
-    evt.stopPropagation();
-    appendSnippet(snippet);
-  });
-  return btn;
+function appendAction(actionKey) {
+  const { snippet } = getEquationActionSnippet(actionKey, { dialect: "html" });
+  appendSnippet(snippet);
 }
 
 export function initToolbarWidget(hostElement) {
@@ -137,32 +121,5 @@ export function initToolbarWidget(hostElement) {
 
   const mount = hostElement.querySelector("#nv-mathml-equation-structure") || hostElement;
   mount.id = "nv-mathml-equation-structure";
-  mount.innerHTML = "";
-  mount.style.display = "flex";
-  mount.style.gap = "6px";
-  mount.style.flexWrap = "wrap";
-
-  const snippets = [
-    { label: "∫", snippet: "∫()" },
-    { label: "∫ᵃᵇ", snippet: "∫[a,b](f(x))" },
-    { label: "∬", snippet: "∬[D](f(x,y))" },
-    { label: "lim", snippet: "lim(x→∞)" },
-    { label: "Σ", snippet: "Σ()" },
-    { label: "Π", snippet: "Π()" },
-    { label: "÷", snippet: "÷" },
-    { label: "Frac Bar", snippet: "(a)/(b)" },
-    { label: "2×2 Matrix", snippet: "[[a11,a12],[a21,a22]]" },
-    { label: "3×3 Matrix", snippet: "[[a11,a12,a13],[a21,a22,a23],[a31,a32,a33]]" },
-    { label: "m×n Matrix", snippet: "[[a11,…,a1n],…,[am1,…,amn]]" },
-    { label: "!", snippet: "!" },
-    { label: "xⁿ", snippet: "^n" },
-    { label: "x̂", snippet: "^" },
-    { label: "xₙ", snippet: "_n" },
-    { label: "·", snippet: "·" },
-    { label: "×", snippet: "×" },
-  ];
-
-  snippets.forEach(({ label, snippet }) => {
-    mount.appendChild(makeButton(label, snippet));
-  });
+  renderEquationToolbarGroup(mount, { group: "elements", onAction: appendAction });
 }

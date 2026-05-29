@@ -1,9 +1,18 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/SVGLayersPanel.mjs
-// This module renders a reusable Layers panel. It was originally SVG-only,
-// but now supports any editor/viewer that exposes an attachHost(host) API.
+// This module renders a reusable Layers panel. The panel supports SVG and any editor or viewer that exposes an attachHost(host) API.
 
 function collectProviders() {
   const providers = [];
+
+  // MetaWorld editing context
+  if (window.MetaWorldLayersContext?.attachHost) {
+    providers.push({
+      id: "metaworld",
+      title: window.MetaWorldLayersContext.title || "MetaWorld Layers",
+      attachHost: window.MetaWorldLayersContext.attachHost,
+      actions: [],
+    });
+  }
 
   // GLB editing context
   if (window.GLBLayersContext?.attachHost) {
@@ -75,7 +84,7 @@ export async function setupPanel(panel, instanceVars = {}) {
   const providers = collectProviders();
   if (!providers.length) {
     const message = document.createElement("div");
-    message.textContent = "Open an SVG, HTML, or GLB document to show layers.";
+    message.textContent = "Open an SVG, HTML, GLB, or MetaWorld document to show layers.";
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);

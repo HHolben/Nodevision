@@ -6,6 +6,34 @@ import { PointerLockControls } from "/lib/three/PointerLockControls.js";
 import { defaultBindings, normalizeKeyName, loadControlScheme } from "./GameViewDependencies/controlBindings.mjs";
 import { detectWorldKind, disposeMetaWorldRuntime, loadWorldFromFile } from "./GameViewDependencies/worldLoading.mjs";
 import { initScene } from "./GameViewDependencies/initScene.mjs";
+import { ensureSvgEditingSplit, loadPanelIntoCell } from "/panels/workspace.mjs";
+import { clearActiveMetaWorldLayerBridge } from "/MetaWorld/MetaWorldLayerState.mjs";
+
+const META_WORLD_LAYERS_PANEL_ID = "MetaWorldLayersPanel";
+
+async function ensureMetaWorldLayersPanelVisible(panel) {
+  const editorCell = panel?.closest?.(".panel-cell");
+  if (!editorCell) return;
+  const { layersCell } = ensureSvgEditingSplit({
+    editorCell,
+    layersPanelId: META_WORLD_LAYERS_PANEL_ID,
+    layersPanelClass: "InfoPanel",
+    editorFlex: "0 0 74%",
+    layersFlex: "0 0 26%",
+  }) || {};
+  if (!layersCell) return;
+
+  window.activeCell = layersCell;
+  layersCell.dataset.id = META_WORLD_LAYERS_PANEL_ID;
+  layersCell.dataset.panelClass = "InfoPanel";
+  await loadPanelIntoCell(META_WORLD_LAYERS_PANEL_ID, {
+    id: META_WORLD_LAYERS_PANEL_ID,
+    displayName: "MetaWorld Layers",
+  });
+
+  window.activeCell = editorCell;
+  window.highlightActiveCell?.(editorCell);
+}
 
 function cleanupLegacyGameView(panel, state = {}) {
   if (typeof panel._vrDisposeInputHandlers === "function") {
@@ -69,6 +97,7 @@ function cleanupLegacyGameView(panel, state = {}) {
   if (window.VRWorldContext?.panel === panel) {
     window.VRWorldContext = null;
   }
+  clearActiveMetaWorldLayerBridge();
   state.legacyInitialized = false;
 }
 
@@ -174,15 +203,26 @@ export async function setupPanel(panel, instanceVars = {}) {
     await loadWorldFromFile(filePath, state, THREE);
   };
 
+  const showLayersIfEditing = async () => {
+    if (window.NodevisionState?.currentMode !== "Virtual World Editing") return;
+    await ensureMetaWorldLayersPanelVisible(panel);
+  };
+
   const listener = (e) => {
     const filePath = e.detail.filePath;
-    void loadSelectedWorld(filePath);
+    void loadSelectedWorld(filePath).then(() => showLayersIfEditing());
+  };
+
+  const editingModeListener = () => {
+    void showLayersIfEditing();
   };
 
   document.addEventListener("fileSelected", listener);
+  window.addEventListener("nodevision:metaworld-editing-enabled", editingModeListener);
 
   panel.cleanup = () => {
     document.removeEventListener("fileSelected", listener);
+    window.removeEventListener("nodevision:metaworld-editing-enabled", editingModeListener);
     state.loadToken += 1;
     cleanupMetaWorld(panel, state);
     cleanupLegacyGameView(panel, state);
@@ -194,5 +234,5 @@ export async function setupPanel(panel, instanceVars = {}) {
   window.__nodevisionGameViewCleanup = panel.cleanup;
 
   const initialPath = instanceVars.filePath || window.selectedFilePath;
-  void loadSelectedWorld(initialPath);
+  void loadSelectedWorld(initialPath).then(() => showLayersIfEditing());
 }

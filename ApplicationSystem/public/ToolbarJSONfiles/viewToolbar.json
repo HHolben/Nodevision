@@ -8,7 +8,7 @@
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGLayersPanel.mjs",
     "replaceActive": true,
-    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing"]
+    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing", "Virtual World Editing"]
   },
   {
     "ToolbarCategory": "View",

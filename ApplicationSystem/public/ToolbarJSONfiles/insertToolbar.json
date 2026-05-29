@@ -37,7 +37,7 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Equation Object",
-      "heading": "Equation Object Controls",
+      "heading": "Expression Layer Controls",
       "script": "equationColliderWidget.mjs",
       "modes": ["Virtual World Editing"],
       "preventDropdown": true
