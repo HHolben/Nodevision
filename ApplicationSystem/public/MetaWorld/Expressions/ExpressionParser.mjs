@@ -205,11 +205,15 @@ class Parser {
 
   parseMultiplicative() {
     let node = this.parsePower();
-    while (["*", "/"].includes(this.peek().type)) {
-      const op = this.consume().type;
+    while (["*", "/"].includes(this.peek().type) || this.isImplicitMultiplicationStart(this.peek())) {
+      const op = ["*", "/"].includes(this.peek().type) ? this.consume().type : "*";
       node = { type: "binary", op, left: node, right: this.parsePower() };
     }
     return node;
+  }
+
+  isImplicitMultiplicationStart(token) {
+    return token?.type === "number" || token?.type === "identifier" || token?.type === "(";
   }
 
   parsePower() {

@@ -23,6 +23,7 @@ export function createFunctionPlotterPanel() {
 
   const floatingPanel = createFloatingInventoryPanel({
     title: "Function Plotter",
+    closeBehavior: "hide",
     onRequestClose: () => {
       visible = false;
       floatingPanel.setVisible(false);

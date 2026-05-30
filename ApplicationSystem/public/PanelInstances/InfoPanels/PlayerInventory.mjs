@@ -3,7 +3,7 @@
 
 import { attachResizeEvents } from "/panels/panelResize.mjs";
 
-export function createFloatingInventoryPanel({ title = "Inventory", onRequestClose = null, defaultLayout = "overlay" } = {}) {
+export function createFloatingInventoryPanel({ title = "Inventory", onRequestClose = null, defaultLayout = "overlay", closeBehavior = "remove" } = {}) {
   let highlightedSnapTarget = null;
 
   function clearTargetHighlight() {
@@ -512,6 +512,10 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     removeWindowDragListeners();
     detachOverlayKeyHandler();
     if (typeof onRequestClose === "function") onRequestClose();
+    if (closeBehavior === "hide") {
+      panel.style.display = "none";
+      return;
+    }
     panel.remove();
   }
 

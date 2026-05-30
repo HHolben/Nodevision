@@ -32,6 +32,7 @@ function formatPoint(point) {
 function createPlacementPanelUI() {
   const floatingPanel = createFloatingInventoryPanel({
     title: "Console Placement",
+    closeBehavior: "hide",
     onRequestClose: () => {}
   });
   floatingPanel.setVisible(false);
@@ -180,6 +181,7 @@ function createPlacementPanelUI() {
 function createInspectPanelUI() {
   const floatingPanel = createFloatingInventoryPanel({
     title: "Inspect Console",
+    closeBehavior: "hide",
     onRequestClose: () => {}
   });
   floatingPanel.setVisible(false);
@@ -274,6 +276,7 @@ function createInspectPanelUI() {
 function createUsePanelUI() {
   const floatingPanel = createFloatingInventoryPanel({
     title: "Console Environment",
+    closeBehavior: "hide",
     onRequestClose: () => {}
   });
   floatingPanel.setVisible(false);

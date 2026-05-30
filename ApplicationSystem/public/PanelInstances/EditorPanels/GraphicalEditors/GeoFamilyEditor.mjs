@@ -25,6 +25,12 @@ function detectText(bytes) {
 export async function renderEditor(filePath, container) {
   resetEditorHooks();
   ensureNodevisionState("GeoFamilyEditing");
+
+  if (fileExt(filePath) === "kml") {
+    const { renderKMLEditor } = await import("/PanelInstances/ViewPanels/FileViewers/KML/KMLEditor.mjs");
+    await renderKMLEditor(filePath, container, { mode: "editor" });
+    return;
+  }
   const { status, body } = createBaseLayout(container, `Geo Editor — ${filePath}`);
 
   try {

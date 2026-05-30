@@ -117,6 +117,7 @@ function removeColliderForTarget(colliders, target) {
 export function createObjectInspector({ THREE, panel, sceneObjects, colliders }) {
   const floatingPanel = createFloatingInventoryPanel({
     title: "Inspect / Modify",
+    closeBehavior: "hide",
     onRequestClose: () => floatingPanel.setVisible(false)
   });
   floatingPanel.setVisible(false);

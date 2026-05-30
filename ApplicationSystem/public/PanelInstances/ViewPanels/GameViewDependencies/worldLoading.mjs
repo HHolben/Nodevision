@@ -163,21 +163,122 @@ function removeObjectFromArray(items, value) {
   if (idx !== -1) items.splice(idx, 1);
 }
 
-function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects }) {
+function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders }) {
   if (!worldData || !Array.isArray(layerEntries)) {
     clearActiveMetaWorldLayerBridge();
     return;
   }
 
   const sourceId = "legacy-metaworld:" + (filePath || "active");
-  const attachLayerBreakHandler = (entry) => {
-    if (!entry?.object3d || !isExpressionLayerType(entry.def?.type)) return;
-    entry.object3d.userData.breakable = entry.def?.locked !== true;
-    entry.object3d.userData.placedByPlayer = true;
-    entry.object3d.userData.onBreakTarget = () => bridge.removeExpressionLayer(entry.id);
+  const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
+  const snapshotWorldObjects = () => JSON.stringify(Array.isArray(worldData?.objects) ? worldData.objects : []);
+  const recordHistorySnapshot = () => {
+    if (history.isRestoring) return;
+    history.undoStack.push(snapshotWorldObjects());
+    if (history.undoStack.length > history.limit) history.undoStack.shift();
+    history.redoStack.length = 0;
   };
+  const attachLayerBreakHandler = (entry) => {
+    if (!entry?.object3d) return;
+    if (isExpressionLayerType(entry.def?.type)) {
+      entry.object3d.userData.breakable = entry.def?.locked !== true;
+      entry.object3d.userData.placedByPlayer = true;
+      entry.object3d.userData.onBreakTarget = () => bridge.removeExpressionLayer(entry.id);
+      return;
+    }
+    if (entry.def?.type === "equation-collider-plane") {
+      entry.object3d.userData.breakable = true;
+      entry.object3d.userData.placedByPlayer = true;
+      entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id);
+    }
+  };
+  const removeColliderRef = (object3d) => {
+    const colliderRef = object3d?.userData?.colliderRef;
+    if (!colliderRef) return;
+    removeObjectFromArray(colliders, colliderRef);
+    delete object3d.userData.colliderRef;
+  };
+  const syncExpressionLayerCollider = (entry) => {
+    if (!entry?.object3d || !isExpressionLayerType(entry.def?.type)) return;
+    removeColliderRef(entry.object3d);
+    const enabled = entry.def?.collider?.enabled === true;
+    entry.object3d.userData.isSolid = enabled;
+    entry.object3d.userData.physicsEnabled = enabled;
+    if (!enabled || !Array.isArray(colliders)) return;
+    const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(entry.object3d) };
+    colliders.push(colliderRef);
+    entry.object3d.userData.colliderRef = colliderRef;
+  };
+  const restoreWorldObjectsSnapshot = (snapshot) => {
+    let restoredDefs = [];
+    try {
+      restoredDefs = JSON.parse(snapshot || "[]");
+    } catch (err) {
+      console.warn("MetaWorld undo restore failed:", err);
+      return false;
+    }
+    if (!Array.isArray(restoredDefs)) restoredDefs = [];
+
+    const previousEntries = layerEntries.slice();
+    const previousById = new Map(previousEntries.map((entry) => [entry.id, entry]));
+    const restoredIds = new Set();
+    const nextEntries = restoredDefs.map((def, index) => {
+      const id = readLayerObjectId(def, index);
+      const existing = previousById.get(id);
+      const entry = existing || { id, def, object3d: null };
+      entry.id = id;
+      entry.def = def;
+      restoredIds.add(id);
+      return entry;
+    });
+
+    previousEntries.forEach((entry) => {
+      if (restoredIds.has(entry.id)) return;
+      if (entry.object3d && isExpressionLayerType(entry.def?.type)) {
+        removeColliderRef(entry.object3d);
+        scene?.remove?.(entry.object3d);
+        removeObjectFromArray(objects, entry.object3d);
+        disposeExpressionObject(entry.object3d);
+      }
+    });
+
+    worldData.objects = restoredDefs;
+    layerEntries.splice(0, layerEntries.length, ...nextEntries);
+    layerEntries.forEach((entry) => {
+      if (isExpressionLayerType(entry.def?.type)) {
+        bridge.regenerateExpressionLayer(entry.id);
+        return;
+      }
+      const visible = entry.def?.visible !== false && entry.def?.hidden !== true;
+      if (entry.object3d) entry.object3d.visible = visible;
+    });
+    markMetaWorldLayersDirty(worldData);
+    syncBridgeWorldState(state, worldData);
+    notifyMetaWorldLayersChanged({ reason: "historyRestored" });
+    return true;
+  };
+
   const bridge = {
     sourceId,
+    recordHistory: recordHistorySnapshot,
+    undo() {
+      if (!history.undoStack.length) return false;
+      const previous = history.undoStack.pop();
+      history.redoStack.push(snapshotWorldObjects());
+      history.isRestoring = true;
+      const restored = restoreWorldObjectsSnapshot(previous);
+      history.isRestoring = false;
+      return restored;
+    },
+    redo() {
+      if (!history.redoStack.length) return false;
+      const next = history.redoStack.pop();
+      history.undoStack.push(snapshotWorldObjects());
+      history.isRestoring = true;
+      const restored = restoreWorldObjectsSnapshot(next);
+      history.isRestoring = false;
+      return restored;
+    },
     sourcePath: filePath || "",
     worldData,
     listObjects() {
@@ -208,6 +309,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
       const entry = layerEntries.find((candidate) => candidate.id === objectId);
       if (!entry?.object3d) return false;
       const nextVisible = visible !== false;
+      this.recordHistory();
       entry.object3d.visible = nextVisible;
       updateDefinitionVisibility(entry.def, nextVisible);
       markMetaWorldLayersDirty(worldData);
@@ -218,6 +320,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
     addExpressionLayer(overrides = {}) {
       if (!THREE || !scene || !Array.isArray(objects) || !worldData) return null;
       const existing = new Set(layerEntries.map((entry) => entry.id));
+      this.recordHistory();
       let layer = createDefaultExpressionLayer(overrides);
       while (existing.has(layer.id)) {
         layer = createDefaultExpressionLayer({ ...layer, id: `expr_surface_${Date.now().toString(36)}_${Math.floor(Math.random() * 1000)}` });
@@ -236,6 +339,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
       const entry = layerEntries.find((candidate) => candidate.id === objectId);
       if (!entry?.def) return false;
       const { domain, material, collider, ...rest } = patch || {};
+      this.recordHistory();
       Object.assign(entry.def, rest);
       if (domain) entry.def.domain = { ...(entry.def.domain || {}), ...domain };
       if (material) entry.def.material = { ...(entry.def.material || {}), ...material };
@@ -258,6 +362,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
         const result = createExpressionLayerObject(THREE, entry.def);
         Object.assign(entry.def, result.layer);
         if (entry.object3d) {
+          removeColliderRef(entry.object3d);
           scene.remove(entry.object3d);
           removeObjectFromArray(objects, entry.object3d);
           disposeExpressionObject(entry.object3d);
@@ -267,6 +372,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
         attachLayerBreakHandler(entry);
         scene.add(entry.object3d);
         objects.push(entry.object3d);
+        syncExpressionLayerCollider(entry);
         entry.def.error = "";
         return true;
       } catch (err) {
@@ -277,8 +383,10 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
     removeExpressionLayer(objectId) {
       const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
       if (index < 0) return false;
+      this.recordHistory();
       const [entry] = layerEntries.splice(index, 1);
       if (entry.object3d) {
+        removeColliderRef(entry.object3d);
         scene?.remove?.(entry.object3d);
         removeObjectFromArray(objects, entry.object3d);
         disposeExpressionObject(entry.object3d);
@@ -290,10 +398,29 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
       notifyMetaWorldLayersChanged({ reason: "expressionLayerRemoved", objectId });
       return true;
     },
+    removeObjectLayer(objectId) {
+      const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
+      if (index < 0) return false;
+      this.recordHistory();
+      const [entry] = layerEntries.splice(index, 1);
+      if (entry.object3d) {
+        removeColliderRef(entry.object3d);
+        scene?.remove?.(entry.object3d);
+        removeObjectFromArray(objects, entry.object3d);
+        disposeExpressionObject(entry.object3d);
+      }
+      const defs = Array.isArray(worldData?.objects) ? worldData.objects : [];
+      removeObjectFromArray(defs, entry.def);
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "objectLayerRemoved", objectId });
+      return true;
+    },
     moveObjectLayer(objectId, direction) {
       const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
       const nextIndex = index + direction;
       if (index < 0 || nextIndex < 0 || nextIndex >= layerEntries.length) return false;
+      this.recordHistory();
       const [entry] = layerEntries.splice(index, 1);
       layerEntries.splice(nextIndex, 0, entry);
       const objectDefs = Array.isArray(worldData?.objects) ? worldData.objects : [];
@@ -1671,8 +1798,12 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           });
         }
 
-        if (((def.type === "equation-collider-plane" && def.collider !== false) || def.isSolid || def.collidable === true) && def.isWater !== true) {
-          if (portalShape === "box") {
+        if (((def.type === "equation-collider-plane" && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && def.isWater !== true) {
+          if (isExpressionLayerType(def.type) && def.collider?.enabled === true) {
+            const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
+          } else if (portalShape === "box") {
             const [sx, sy, sz] = def.size;
             const halfSize = new THREE.Vector3(sx / 2, sy / 2, sz / 2);
             const center = new THREE.Vector3(...def.position);
@@ -1721,7 +1852,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
     }
 
-    registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects });
+    registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders });
     notifyMetaWorldLayersChanged({ reason: "worldLoaded" });
 
     if (spawnPoints) {

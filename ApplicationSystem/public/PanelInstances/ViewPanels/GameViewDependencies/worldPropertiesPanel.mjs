@@ -27,6 +27,7 @@ export function createWorldPropertiesPanel({ movementState }) {
   let visible = false;
   const floatingPanel = createFloatingInventoryPanel({
     title: "World Properties",
+    closeBehavior: "hide",
     onRequestClose: () => {
       visible = false;
       floatingPanel.setVisible(false);

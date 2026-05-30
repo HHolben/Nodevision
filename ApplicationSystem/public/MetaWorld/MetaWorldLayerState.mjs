@@ -16,6 +16,7 @@ let activeBridge = null;
 let selectedMetaWorldLayerId = null;
 let metaWorldPanelEl = null;
 const expressionUpdateTimers = new Map();
+let undoRedoShortcutAttached = false;
 
 function dispatchLayerEvent(name, detail = {}) {
   window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -93,10 +94,21 @@ function debounceExpressionLayerUpdate(objectId, patch = {}, delay = 350) {
   if (!patch.material && !existing.patch?.material) delete nextPatch.material;
   if (!patch.collider && !existing.patch?.collider) delete nextPatch.collider;
   const timer = window.setTimeout(() => {
-    expressionUpdateTimers.delete(objectId);
-    updateExpressionLayer(objectId, nextPatch);
+    flushExpressionLayerUpdate(objectId);
   }, delay);
   expressionUpdateTimers.set(objectId, { timer, patch: nextPatch });
+}
+
+function flushExpressionLayerUpdate(objectId) {
+  const pending = expressionUpdateTimers.get(objectId);
+  if (!pending) return false;
+  clearTimeout(pending.timer);
+  expressionUpdateTimers.delete(objectId);
+  return updateExpressionLayer(objectId, pending.patch || {});
+}
+
+function flushAllExpressionLayerUpdates() {
+  Array.from(expressionUpdateTimers.keys()).forEach((objectId) => flushExpressionLayerUpdate(objectId));
 }
 
 function makeExpressionField(labelText, value, onInput, options = {}) {
@@ -193,6 +205,8 @@ function renderExpressionLayerDetails(wrapper, entry) {
     placeholder: "z = sin(x) * cos(y)",
     collapsedTools: true,
   });
+  expressionEditor.input.dataset.nvMetaworldExpressionId = entry.id;
+  expressionEditor.input.dataset.nvMetaworldField = "expression";
   details.appendChild(expressionEditor.root);
 
   const error = document.createElement("div");
@@ -222,6 +236,11 @@ function renderExpressionLayerDetails(wrapper, entry) {
     updateExpressionLayer(entry.id, { material: { wireframe: checked } });
   }));
   details.appendChild(materialRow);
+
+  const collider = cloneCollider(entry);
+  details.appendChild(makeInlineCheckbox("Use as collider", collider.enabled, (checked) => {
+    updateExpressionLayer(entry.id, { collider: { enabled: checked, type: checked ? "generated" : "none" } });
+  }));
 
   const domain = cloneDomain(entry);
   const domainDetails = document.createElement("details");
@@ -253,14 +272,6 @@ function renderExpressionLayerDetails(wrapper, entry) {
   addNumber("T min", domain.t[0], (value) => ({ domain: { t: [value, domain.t[1]] } }));
   addNumber("T max", domain.t[1], (value) => ({ domain: { t: [domain.t[0], value] } }));
   addNumber("Resolution", domain.resolution, (value) => ({ domain: { resolution: Math.round(value) } }), { step: "1", min: 8, max: 160 });
-
-  const collider = cloneCollider(entry);
-  const colliderWrap = document.createElement("div");
-  Object.assign(colliderWrap.style, { gridColumn: "1 / -1" });
-  colliderWrap.appendChild(makeInlineCheckbox("Collider", collider.enabled, (checked) => {
-    updateExpressionLayer(entry.id, { collider: { enabled: checked, type: checked ? "generated" : "none" } });
-  }));
-  grid.appendChild(colliderWrap);
 
   domainDetails.appendChild(grid);
   details.appendChild(domainDetails);
@@ -394,6 +405,40 @@ function renameMetaWorldLayer(objectId, nextName) {
   return true;
 }
 
+function captureMetaWorldPanelFocus(panelEl) {
+  const active = document.activeElement;
+  if (!panelEl?.contains?.(active)) return null;
+  const tagName = String(active.tagName || "").toLowerCase();
+  if (!["input", "textarea", "select"].includes(tagName)) return null;
+  return {
+    field: active.dataset?.nvMetaworldField || "",
+    expressionId: active.dataset?.nvMetaworldExpressionId || "",
+    value: typeof active.value === "string" ? active.value : "",
+    selectionStart: Number.isFinite(active.selectionStart) ? active.selectionStart : null,
+    selectionEnd: Number.isFinite(active.selectionEnd) ? active.selectionEnd : null,
+  };
+}
+
+function restoreMetaWorldPanelFocus(panelEl, focusState) {
+  if (!panelEl || !focusState?.field) return;
+  const escapeSelectorValue = (value) => String(value || "");
+  const escapedField = escapeSelectorValue(focusState.field);
+  const escapedId = escapeSelectorValue(focusState.expressionId || "");
+  const selector = focusState.expressionId
+    ? "[data-nv-metaworld-field=\"" + escapedField + "\"][data-nv-metaworld-expression-id=\"" + escapedId + "\"]"
+    : "[data-nv-metaworld-field=\"" + escapedField + "\"]";
+  const next = panelEl.querySelector(selector);
+  if (!next) return;
+  if (typeof next.value === "string" && typeof focusState.value === "string" && next.value !== focusState.value) {
+    next.value = focusState.value;
+  }
+  next.focus({ preventScroll: true });
+  if (Number.isFinite(focusState.selectionStart) && Number.isFinite(focusState.selectionEnd) && typeof next.setSelectionRange === "function") {
+    const max = String(next.value || "").length;
+    next.setSelectionRange(Math.min(focusState.selectionStart, max), Math.min(focusState.selectionEnd, max));
+  }
+}
+
 function renderMetaWorldSvgStylePanel(panelEl) {
   const bridge = getActiveMetaWorldLayerBridge();
   const entries = listMetaWorldLayerObjects();
@@ -440,7 +485,11 @@ function attachMetaWorldLayersHost(host) {
   }
   host.appendChild(metaWorldPanelEl);
 
-  const render = () => renderMetaWorldSvgStylePanel(metaWorldPanelEl);
+  const render = () => {
+    const focusState = captureMetaWorldPanelFocus(metaWorldPanelEl);
+    renderMetaWorldSvgStylePanel(metaWorldPanelEl);
+    restoreMetaWorldPanelFocus(metaWorldPanelEl, focusState);
+  };
   window.addEventListener(META_WORLD_LAYER_EVENTS.bridgeChanged, render);
   window.addEventListener(META_WORLD_LAYER_EVENTS.objectsChanged, render);
   render();
@@ -450,7 +499,34 @@ function attachMetaWorldLayersHost(host) {
   };
 }
 
+function isEditableShortcutTarget(target) {
+  const tagName = String(target?.tagName || "").toLowerCase();
+  return tagName === "input" || tagName === "textarea" || tagName === "select" || target?.isContentEditable === true;
+}
+
+function handleMetaWorldUndoRedoShortcut(event) {
+  if (!activeBridge || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+  if (isEditableShortcutTarget(event.target)) return;
+  const key = String(event.key || "").toLowerCase();
+  const wantsUndo = key === "z" && !event.shiftKey;
+  const wantsRedo = key === "y" || (key === "z" && event.shiftKey);
+  if (!wantsUndo && !wantsRedo) return;
+  const fn = wantsUndo ? activeBridge.undo : activeBridge.redo;
+  if (typeof fn !== "function") return;
+  event.preventDefault();
+  event.stopPropagation();
+  flushAllExpressionLayerUpdates();
+  fn.call(activeBridge);
+}
+
+function ensureMetaWorldUndoRedoShortcuts() {
+  if (undoRedoShortcutAttached || typeof window === "undefined") return;
+  window.addEventListener("keydown", handleMetaWorldUndoRedoShortcut, true);
+  undoRedoShortcutAttached = true;
+}
+
 export function ensureMetaWorldLayersContext() {
+  ensureMetaWorldUndoRedoShortcuts();
   window.MetaWorldLayersContext = {
     id: "metaworld",
     title: "MetaWorld Layers",

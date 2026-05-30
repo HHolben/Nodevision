@@ -48,6 +48,7 @@ export function createPlayerInventory({ panel }) {
 
   const floatingPanel = createFloatingInventoryPanel({
     title: "Player Inventory",
+    closeBehavior: "hide",
     onRequestClose: () => setMenuOpen(false)
   });
   const menu = floatingPanel.content;

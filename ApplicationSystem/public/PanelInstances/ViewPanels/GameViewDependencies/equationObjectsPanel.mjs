@@ -53,6 +53,7 @@ export function createEquationObjectsPanel({ THREE, controller, colliders, hostP
 
   const floatingPanel = createFloatingInventoryPanel({
     title: "Equation Objects",
+    closeBehavior: "hide",
     onRequestClose: () => {
       visible = false;
       activeTarget = null;

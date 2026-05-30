@@ -1827,12 +1827,22 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return true;
   }
 
+  function isEquationObjectTarget(target) {
+    const type = String(target?.userData?.nvType || "").toLowerCase();
+    return type === "equation-collider-plane"
+      || target?.userData?.metaWorldExpressionLayer === true
+      || type === "functionsurface"
+      || type === "functioncurve"
+      || type === "parametriccurve";
+  }
+
   function tryBreakTargetBlock() {
     if (movementState.worldMode === "2d") return false;
-    if (!canUseAbility("allowBreak")) return false;
     const hit = getInspectHit({ includeMeasurements: true, allowInfinitePlanes: true });
     if (!hit?.object) return false;
     const target = hit.object;
+    const isEquationObject = isEquationObjectTarget(target);
+    if (!isEquationObject && !canUseAbility("allowBreak")) return false;
     if (target.userData?.isMeasureEndpoint === "second") {
       removeMeasurementVisual(target);
       movementState.tapeMeasureSecondMarker = null;
@@ -1840,9 +1850,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       updateTapeMeasurePreview();
       return true;
     }
-    const isEquationPlane = String(target.userData?.nvType || "").toLowerCase() === "equation-collider-plane";
     if (target.userData?.isPortal) return false;
-    if (!isEquationPlane) {
+    if (!isEquationObject) {
       if (target.userData?.breakable === false) return false;
       if (!target.userData?.breakable && !target.userData?.placedByPlayer) return false;
     }
@@ -2180,7 +2189,6 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       movementState.stretchLatch = false;
     }
     if (!attacking) movementState.attackLatch = false;
-    // Allow repeated inspect/modify usage even on the same object; latch is not needed here.
     if (!inspecting) movementState.inspectLatch = false;
     if (!movementState.isFlying) {
       movementState.playerHeight = crawling ? crawlHeight : crouching ? crouchHeight : basePlayerHeight;
@@ -2458,9 +2466,9 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       }
     }
 
-    if (inspecting) {
+    if (inspecting && !movementState.inspectLatch) {
+      movementState.inspectLatch = true;
       movementState.lastInspectMs = nowMs;
-      movementState.inspectLatch = false;
       if (handleInspectAction()) return;
     }
 
