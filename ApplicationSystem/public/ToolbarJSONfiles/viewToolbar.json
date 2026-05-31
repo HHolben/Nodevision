@@ -30,6 +30,21 @@
   },
   {
     "ToolbarCategory": "View",
+    "parentHeading": "View",
+    "heading": "View Type",
+    "icon": "icons/layoutControls.png",
+    "preventDropdown": true,
+    "modes": ["KMLviewerMode", "KMLeditorMode"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "View Type",
+    "heading": "KML View Type Controls",
+    "script": "kmlViewTypeWidget.mjs",
+    "modes": ["KMLviewerMode", "KMLeditorMode"]
+  },
+  {
+    "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "New Layer",
     "callbackKey": "svgLayerAdd",

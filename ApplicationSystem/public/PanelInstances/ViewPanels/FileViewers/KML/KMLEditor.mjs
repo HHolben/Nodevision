@@ -2,7 +2,7 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { ensureKMLEditorModeLayout, ensureKMLViewerModeLayout } from "/panels/workspace.mjs";
 import { parseKML, refreshKMLRecords } from "./KMLParser.mjs";
 import { createKMLLayerTree } from "./KMLLayerTree.mjs";
-import { createKMLMapRenderer } from "./KMLMapRenderer.mjs";
+import { createKMLMapRenderer, normalizeKMLViewType } from "./KMLMapRenderer.mjs";
 import { createKMLPropertyPanel } from "./KMLPropertyPanel.mjs";
 import {
   createPlacemark,
@@ -83,6 +83,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   let state = null;
   let selectedId = null;
   let renderer = null;
+  let viewType = normalizeKMLViewType(options.viewType || window.localStorage?.getItem("nodevision.kml.viewType") || "globe");
   let layersContext = null;
   let propertiesContext = null;
   const layerHosts = new Set();
@@ -136,7 +137,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       onOptionChange: (record, key, value) => {
         updateFeatureOption(state, record, key, value);
         rerenderFromState();
-        markDirty(` updated. Save KML to persist.`);
+        markDirty(String(key || "Option") + " updated. Save KML to persist.");
       },
       onStyleChange: (record, value) => {
         updateFeatureStyleColor(state, record, value);
@@ -172,15 +173,23 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     }
   }
 
+  function flyToRecord(record) {
+    if (!record?.geometry || typeof renderer?.flyToRecord !== "function") return;
+    const run = () => renderer?.flyToRecord?.(record);
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(run);
+    else setTimeout(run, 0);
+  }
+
   function selectRecord(record, fly = false) {
-    if (!record) return;
-    selectedId = record.id;
+    const currentRecord = state?.recordsById.get(record?.id) || record;
+    if (!currentRecord) return;
+    selectedId = currentRecord.id;
     renderer?.setSelected(selectedId);
     refreshLayerHosts();
     refreshPropertyHosts();
-    if (fly && record.geometry) renderer?.flyToRecord(record);
-    dispatchKMLChange("selection", { record });
-    showStatus(status, `Selected ${record.name || record.type}`);
+    if (fly) flyToRecord(currentRecord);
+    dispatchKMLChange("selection", { record: currentRecord });
+    showStatus(status, "Selected " + (currentRecord.name || currentRecord.type));
   }
 
   function rerenderFromState({ preserveSelection = true, fit = false } = {}) {
@@ -226,6 +235,44 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   function markDirty(message = "KML changed. Save to persist.") {
     updateToolbarState({ fileIsDirty: true });
     showStatus(status, message);
+  }
+
+  async function initRenderer({ fit = false, flyToSelected = false } = {}) {
+    renderer?.destroy?.();
+    renderer = await createKMLMapRenderer(mapNode, {
+      viewType,
+      onSelect: (record) => selectRecord(record, false),
+      onGeometryChange: (record, coords) => {
+        handleCoordinates(record, coords.map((coord) => String(coord.lon) + "," + String(coord.lat) + (coord.alt !== null ? "," + String(coord.alt) : "")).join(" "));
+        markDirty("Geometry updated. Save KML to persist.");
+      },
+    });
+    renderer.render(state?.features || []);
+    renderer.setSelected(selectedId);
+    const selected = selectedRecord();
+    if (flyToSelected && selected?.geometry) renderer.flyToRecord(selected);
+    else if (fit) renderer.fitAll();
+    if (window.NodevisionState) window.NodevisionState.kmlViewType = viewType;
+    if (window.NodevisionState?.currentMode === nodevisionMode) updateToolbarState({ kmlViewType: viewType });
+    dispatchKMLChange("view-type", { viewType });
+  }
+
+  async function setViewType(nextViewType) {
+    const normalized = normalizeKMLViewType(nextViewType);
+    if (normalized === viewType) {
+      showStatus(status, "Already viewing KML as " + (normalized === "map" ? "map projection" : "globe") + ".");
+      return;
+    }
+    const hadSelection = Boolean(selectedRecord()?.geometry);
+    viewType = normalized;
+    try {
+      window.localStorage?.setItem("nodevision.kml.viewType", viewType);
+    } catch {}
+    showStatus(status, "Switching to " + (viewType === "map" ? "map projection" : "globe") + " view...");
+    await initRenderer({ fit: !hadSelection, flyToSelected: hadSelection });
+    refreshLayerHosts();
+    refreshPropertyHosts();
+    showStatus(status, "Viewing KML as " + (viewType === "map" ? "map projection" : "globe") + ".");
   }
 
   function addPlacemark() {
@@ -296,6 +343,16 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     markDirty("Feature deleted. Save KML to persist.");
   }
 
+  function flyToSelected() {
+    const record = selectedRecord();
+    if (!record?.geometry) {
+      showStatus(status, "Select a placemark, path, or polygon first.", "error");
+      return;
+    }
+    flyToRecord(record);
+    showStatus(status, "Flying to " + (record.name || record.type));
+  }
+
   function viewXml() {
     const record = selectedRecord();
     if (!record) {
@@ -315,9 +372,17 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       deleteSelected,
       fitKML: () => renderer?.fitAll(),
       fit: () => renderer?.fitAll(),
+      flyToSelected,
+      flySelected: flyToSelected,
+      flyToPin: flyToSelected,
+      flyPin: flyToSelected,
       saveKML: save,
       save,
       viewXml,
+      viewTypeGlobe: () => setViewType("globe"),
+      viewTypeMap: () => setViewType("map"),
+      setViewTypeGlobe: () => setViewType("globe"),
+      setViewTypeMap: () => setViewType("map"),
     };
     if (typeof actions[action] === "function") return actions[action]();
     return undefined;
@@ -327,13 +392,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   state = parseKML(await response.text());
 
-  renderer = await createKMLMapRenderer(mapNode, {
-    onSelect: (record) => selectRecord(record, false),
-    onGeometryChange: (record, coords) => {
-      handleCoordinates(record, coords.map((coord) => `${coord.lon},${coord.lat}${coord.alt !== null ? `,${coord.alt}` : ""}`).join(" "));
-      markDirty("Geometry updated. Save KML to persist.");
-    },
-  });
+  await initRenderer({ fit: true });
 
   layersContext = {
     id: "kml",
@@ -376,6 +435,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     refreshLayerHosts,
     refreshPropertyHosts,
     handleToolbarAction,
+    getViewType: () => viewType,
+    setViewType,
     save,
   };
   window.currentSaveKML = save;
@@ -387,10 +448,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     selectedFile: cleanPath,
     activeActionHandler: handleToolbarAction,
     fileIsDirty: false,
+    kmlViewType: viewType,
   });
 
-  renderer.render(state.features);
-  renderer.fitAll();
   refreshLayerHosts();
   refreshPropertyHosts();
   dispatchKMLChange("ready");
