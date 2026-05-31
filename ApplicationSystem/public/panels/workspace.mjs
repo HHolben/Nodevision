@@ -747,6 +747,35 @@ export async function ensureMidEditorModeLayout({ editorCell } = {}) {
   });
 }
 
+export async function ensureKMLViewerModeLayout({ viewerCell } = {}) {
+  const layout = await importModeLayout({
+    userModulePath: "/UserSettings/ModeLayouts/KMLviewerMode.mjs",
+    defaultModulePath: "/Layouts/ModeLayouts/KMLviewerMode.mjs",
+  });
+  return ensureEditorModeLayout({
+    editorCell: viewerCell,
+    layout,
+    modeId: layout?.id || "KMLviewerMode",
+  });
+}
+
+export async function ensureKMLEditingModeLayout({ editorCell } = {}) {
+  const layout = await importModeLayout({
+    userModulePath: "/UserSettings/ModeLayouts/KMLeditorMode.mjs",
+    defaultModulePath: "/Layouts/ModeLayouts/KMLeditorMode.mjs",
+    fallbackModulePaths: ["/UserSettings/ModeLayouts/KMLeditingMode.mjs"],
+  });
+  return ensureEditorModeLayout({
+    editorCell,
+    layout,
+    modeId: layout?.id || "KMLeditorMode",
+  });
+}
+
+export async function ensureKMLEditorModeLayout(options = {}) {
+  return ensureKMLEditingModeLayout(options);
+}
+
 export function ensureSvgEditingSplit({
   editorCell,
   layersPanelId = "SVGLayersPanel",

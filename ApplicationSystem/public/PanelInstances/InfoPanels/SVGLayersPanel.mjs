@@ -1,8 +1,20 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/SVGLayersPanel.mjs
 // This module renders a reusable Layers panel. The panel supports SVG and any editor or viewer that exposes an attachHost(host) API.
 
-function collectProviders() {
+function collectProviders(instanceVars = {}) {
   const providers = [];
+  const preferredContext = String(instanceVars.preferredContext || instanceVars.providerId || "").trim().toLowerCase();
+  const inKMLMode = String(window.NodevisionState?.currentMode || "").toLowerCase().startsWith("kml");
+  const shouldIncludeKML = preferredContext === "kml" || inKMLMode;
+
+  if (shouldIncludeKML && window.KMLLayersContext?.attachHost) {
+    providers.push({
+      id: "kml",
+      title: window.KMLLayersContext.title || "KML Layers",
+      attachHost: window.KMLLayersContext.attachHost,
+      actions: [],
+    });
+  }
 
   // MetaWorld editing context
   if (window.MetaWorldLayersContext?.attachHost) {
@@ -81,10 +93,10 @@ export async function setupPanel(panel, instanceVars = {}) {
     gap: "6px",
   });
 
-  const providers = collectProviders();
+  const providers = collectProviders(instanceVars);
   if (!providers.length) {
     const message = document.createElement("div");
-    message.textContent = "Open an SVG, HTML, GLB, or MetaWorld document to show layers.";
+    message.textContent = "Open an SVG, HTML, KML, GLB, or MetaWorld document to show layers.";
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);
@@ -94,7 +106,12 @@ export async function setupPanel(panel, instanceVars = {}) {
   const preferredProviderId = typeof instanceVars.providerId === "string"
     ? instanceVars.providerId.trim()
     : "";
-  let activeProvider = providers.find((provider) => provider.id === preferredProviderId) || providers[0];
+  const preferredContext = typeof instanceVars.preferredContext === "string"
+    ? instanceVars.preferredContext.trim().toLowerCase()
+    : "";
+  let activeProvider = providers.find((provider) => provider.id === preferredProviderId)
+    || providers.find((provider) => provider.id === preferredContext)
+    || providers[0];
   let teardown = null;
 
   const header = document.createElement("div");

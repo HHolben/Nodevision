@@ -134,5 +134,69 @@
     "callbackKey": "svgDeleteSelection",
     "icon": "icons/ExitIcon.png",
     "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
+    "heading": "Add Placemark",
+    "parentHeading": "KML",
+    "callbackKey": "addPlacemark",
+    "routeToActivePanel": true,
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": ["KMLeditorMode"]
+  },
+  {
+    "heading": "Draw Path",
+    "parentHeading": "KML",
+    "callbackKey": "drawPath",
+    "routeToActivePanel": true,
+    "icon": "icons/DefaultRegionImage.png",
+    "modes": ["KMLeditorMode"]
+  },
+  {
+    "heading": "Draw Polygon",
+    "parentHeading": "KML",
+    "callbackKey": "drawPolygon",
+    "routeToActivePanel": true,
+    "icon": "icons/CanvasIcon.png",
+    "modes": ["KMLeditorMode"]
+  },
+  {
+    "heading": "Edit Selected",
+    "parentHeading": "KML",
+    "callbackKey": "editSelected",
+    "routeToActivePanel": true,
+    "icon": "icons/EditIcon.png",
+    "modes": ["KMLeditorMode"]
+  },
+  {
+    "heading": "Delete Selected",
+    "parentHeading": "KML",
+    "callbackKey": "deleteSelected",
+    "routeToActivePanel": true,
+    "icon": "icons/TrashIcon.png",
+    "modes": ["KMLeditorMode"]
+  },
+  {
+    "heading": "Fit to KML",
+    "parentHeading": "KML",
+    "callbackKey": "fitKML",
+    "routeToActivePanel": true,
+    "icon": "icons/StretchArrowIcon.png",
+    "modes": ["KMLviewerMode", "KMLeditorMode"]
+  },
+  {
+    "heading": "View XML",
+    "parentHeading": "KML",
+    "callbackKey": "viewXml",
+    "routeToActivePanel": true,
+    "icon": "icons/FileIcon.png",
+    "modes": ["KMLviewerMode", "KMLeditorMode"]
+  },
+  {
+    "heading": "Save KML",
+    "parentHeading": "KML",
+    "callbackKey": "saveKML",
+    "routeToActivePanel": true,
+    "icon": "icons/SaveIcon.png",
+    "modes": ["KMLeditorMode"]
   }
 ]

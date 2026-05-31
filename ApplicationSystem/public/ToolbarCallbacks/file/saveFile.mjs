@@ -45,6 +45,7 @@ export default async function saveFile(options = {}) {
       !!document.getElementById("wysiwyg") ||
       typeof window.getEditorHTML === "function";
     const inMidiEditor = mode === "MIDIediting";
+    const inKMLEditor = mode === "KMLeditorMode" || mode === "KMLeditingMode";
     const fileExt = getFileExtension(filePath);
     const { canSaveRasterCanvas } = isRasterContext({ mode, fileExt, inWysiwygEditor });
 
@@ -99,6 +100,10 @@ export default async function saveFile(options = {}) {
     // 2) Editor-specific save hooks (guarded by mode/context).
     if (inMidiEditor && typeof window.saveMIDIFile === "function") {
       await window.saveMIDIFile(filePath);
+      return notifyFileSaved(filePath);
+    }
+    if (inKMLEditor && typeof window.currentSaveKML === "function") {
+      await window.currentSaveKML(filePath);
       return notifyFileSaved(filePath);
     }
     if (inSvgEditor && typeof window.currentSaveSVG === "function") {

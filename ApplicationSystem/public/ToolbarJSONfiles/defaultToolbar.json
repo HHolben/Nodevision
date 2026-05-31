@@ -30,6 +30,12 @@
     }
   },
   {
+    "heading": "KML",
+    "icon": "/icons/layoutControls.png",
+    "modes": ["KMLviewerMode", "KMLeditorMode"],
+    "preventDropdown": true
+  },
+  {
     "heading": "Terminal",
     "icon": "/icons/terminal.svg",
     "callbackKey": "openTerminal"

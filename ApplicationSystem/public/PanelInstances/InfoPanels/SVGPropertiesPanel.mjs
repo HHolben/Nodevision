@@ -457,6 +457,54 @@ function buildGeometryEditor({ ctx, host }) {
   }
 }
 
+function shouldUseKMLProperties(instanceVars = {}) {
+  const preferred = String(instanceVars.preferredContext || instanceVars.providerId || "").trim().toLowerCase();
+  const inKMLMode = String(window.NodevisionState?.currentMode || "").toLowerCase().startsWith("kml");
+  return preferred === "kml" || Boolean(window.KMLPropertiesContext?.attachHost && (inKMLMode || !window.SVGEditorContext));
+}
+
+function attachExternalPropertiesPanel(panel, context, instanceVars = {}) {
+  panel.innerHTML = "";
+  Object.assign(panel.style, {
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    gap: "10px",
+  });
+
+  const header = document.createElement("div");
+  header.textContent = instanceVars.title || context?.title || "Properties";
+  Object.assign(header.style, {
+    fontWeight: "800",
+    borderBottom: "1px solid #d0d0d0",
+    paddingBottom: "6px",
+  });
+  panel.appendChild(header);
+
+  const host = document.createElement("div");
+  Object.assign(host.style, {
+    flex: "1",
+    minHeight: "0",
+    overflow: "auto",
+  });
+  panel.appendChild(host);
+
+  let teardown = null;
+  if (typeof context?.attachHost === "function") {
+    teardown = context.attachHost(host);
+  } else {
+    const message = document.createElement("div");
+    message.textContent = "Open a KML file to edit feature properties.";
+    message.style.padding = "12px";
+    message.style.color = "#b00020";
+    host.appendChild(message);
+  }
+
+  panel.__nvCleanupPropertiesPanel = () => {
+    if (typeof teardown === "function") teardown();
+  };
+}
+
 export async function setupPanel(panel, instanceVars = {}) {
   if (!panel) throw new Error("Panel container required.");
   panel.innerHTML = "";
@@ -466,6 +514,20 @@ export async function setupPanel(panel, instanceVars = {}) {
     overflow: "hidden",
     gap: "10px",
   });
+
+  if (shouldUseKMLProperties(instanceVars)) {
+    if (window.KMLPropertiesContext?.attachHost) {
+      attachExternalPropertiesPanel(panel, window.KMLPropertiesContext, instanceVars);
+      return;
+    }
+    const message = document.createElement("div");
+    message.textContent = "Open a KML file to edit feature properties.";
+    message.style.padding = "12px";
+    message.style.color = "#b00020";
+    panel.appendChild(message);
+    window.addEventListener("nv-kml-context-ready", () => setupPanel(panel, instanceVars), { once: true });
+    return;
+  }
 
   const header = document.createElement("div");
   header.textContent = "SVG Element Properties";

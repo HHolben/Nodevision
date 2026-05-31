@@ -1,42 +1,118 @@
 import { formatCoordinates } from "./KMLParser.mjs";
 
+const LEAFLET_ASSETS = {
+  css: "/leaflet/leaflet.css",
+  js: "/leaflet/leaflet.js",
+  drawCss: "/leaflet-draw/leaflet.draw.css",
+  drawJs: "/leaflet-draw/leaflet.draw.js",
+};
+
 let leafletPromise = null;
 
-function loadStyle(href) {
-  if (document.querySelector(`link[href="${href}"]`)) return;
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = href;
-  document.head.appendChild(link);
+function assetError(label, href) {
+  return new Error(label + " failed to load from " + href);
 }
 
-function loadScript(src) {
+function loadStyle(href, label = "Leaflet CSS") {
+  const existing = Array.from(document.querySelectorAll("link")).find((node) => node.dataset.nvKmlAsset === href || node.getAttribute("href") === href);
+  if (existing) return Promise.resolve(existing);
+
   return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.dataset.nvKmlAsset = href;
+    link.onload = () => resolve(link);
+    link.onerror = () => reject(assetError(label, href));
+    document.head.appendChild(link);
+  });
+}
+
+function restoreGlobalDefine(previousDefine, hadDefine) {
+  if (hadDefine) {
+    window.define = previousDefine;
+    return;
+  }
+  try {
+    delete window.define;
+  } catch {
+    window.define = undefined;
+  }
+}
+
+function loadScript(href, label = "Leaflet", { suppressAMD = false } = {}) {
+  const existing = Array.from(document.querySelectorAll("script")).find((node) => node.dataset.nvKmlAsset === href || node.getAttribute("src") === href);
+  if (existing?.dataset.loaded === "true" && !suppressAMD) return Promise.resolve(existing);
+  if (existing) existing.remove();
+
+  return new Promise((resolve, reject) => {
+    const previousDefine = window.define;
+    const hadDefine = Object.prototype.hasOwnProperty.call(window, "define");
+    const shouldSuppressAMD = suppressAMD && Boolean(window.define?.amd);
+    if (shouldSuppressAMD) {
+      try {
+        delete window.define;
+      } catch {
+        window.define = undefined;
+      }
+      if (window.define?.amd) window.define = undefined;
     }
+
+    const finish = (callback) => {
+      if (shouldSuppressAMD) restoreGlobalDefine(previousDefine, hadDefine);
+      callback();
+    };
+
     const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    script.src = href;
+    script.async = false;
+    script.dataset.nvKmlAsset = href;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      finish(() => resolve(script));
+    };
+    script.onerror = () => finish(() => reject(assetError(label, href)));
     document.head.appendChild(script);
   });
 }
 
-export async function ensureLeaflet() {
-  if (window.L?.map && window.L?.Draw) return window.L;
+export async function ensureLeafletLoaded({ requireDraw = true } = {}) {
+  if (window.L?.map && (!requireDraw || (window.L.Draw && window.L.Edit?.Poly))) return window.L;
+
   if (!leafletPromise) {
     leafletPromise = (async () => {
-      loadStyle("/vendor/leaflet/leaflet.css");
-      loadStyle("/vendor/leaflet-draw/leaflet.draw.css");
-      if (!window.L?.map) await loadScript("/vendor/leaflet/leaflet.js");
-      if (!window.L?.Draw) await loadScript("/vendor/leaflet-draw/leaflet.draw.js");
+      await loadStyle(LEAFLET_ASSETS.css, "Leaflet CSS");
+      if (!window.L?.map) await loadScript(LEAFLET_ASSETS.js, "Leaflet", { suppressAMD: true });
+      if (!window.L?.map) {
+        throw new Error("Leaflet loaded from " + LEAFLET_ASSETS.js + " but did not attach window.L.map. Check for AMD/global loader conflicts.");
+      }
+
+      if (requireDraw) {
+        await loadStyle(LEAFLET_ASSETS.drawCss, "Leaflet.draw CSS");
+        if (!window.L.Draw || !window.L.Edit?.Poly) await loadScript(LEAFLET_ASSETS.drawJs, "Leaflet.draw", { suppressAMD: true });
+        if (!window.L.Draw) throw assetError("Leaflet.draw", LEAFLET_ASSETS.drawJs);
+        if (!window.L.Edit?.Poly) throw new Error("Leaflet.draw loaded from " + LEAFLET_ASSETS.drawJs + ", but edit support is unavailable.");
+      }
+
       return window.L;
     })();
   }
-  return leafletPromise;
+
+
+  try {
+    const L = await leafletPromise;
+    if (requireDraw && (!L.Draw || !L.Edit?.Poly)) {
+      leafletPromise = null;
+      return ensureLeafletLoaded({ requireDraw: true });
+    }
+    return L;
+  } catch (err) {
+    leafletPromise = null;
+    throw err;
+  }
 }
+
+export const ensureLeaflet = ensureLeafletLoaded;
 
 function latLngsFromCoords(coords = []) {
   return coords.map((coord) => [coord.lat, coord.lon]);
@@ -60,7 +136,8 @@ function markerIcon(color = "#d93b30", selected = false) {
 }
 
 export async function createKMLMapRenderer(container, { onSelect, onGeometryChange } = {}) {
-  const L = await ensureLeaflet();
+  const L = await ensureLeafletLoaded({ requireDraw: true });
+  if (!L?.map) throw new Error("Leaflet failed to initialize: window.L.map is unavailable.");
   container.innerHTML = "";
 
   const map = L.map(container, { zoomControl: true, preferCanvas: true }).setView([20, 0], 2);

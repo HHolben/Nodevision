@@ -8,7 +8,7 @@
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGLayersPanel.mjs",
     "replaceActive": true,
-    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing", "Virtual World Editing"]
+    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing", "Virtual World Editing", "KMLviewerMode", "KMLeditorMode"]
   },
   {
     "ToolbarCategory": "View",
@@ -18,6 +18,15 @@
     "panelPath": "/PanelInstances/InfoPanels/SVGPropertiesPanel.mjs",
     "replaceActive": true,
     "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "KML Feature Properties",
+    "panelTemplate": "SVGPropertiesPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/SVGPropertiesPanel.mjs",
+    "replaceActive": true,
+    "modes": ["KMLviewerMode", "KMLeditorMode"]
   },
   {
     "ToolbarCategory": "View",

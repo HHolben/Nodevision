@@ -1,7 +1,8 @@
+import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { ensureKMLEditorModeLayout, ensureKMLViewerModeLayout } from "/panels/workspace.mjs";
 import { parseKML, refreshKMLRecords } from "./KMLParser.mjs";
 import { createKMLLayerTree } from "./KMLLayerTree.mjs";
 import { createKMLMapRenderer } from "./KMLMapRenderer.mjs";
-import { createKMLEditorTools } from "./KMLEditorTools.mjs";
 import { createKMLPropertyPanel } from "./KMLPropertyPanel.mjs";
 import {
   createPlacemark,
@@ -28,6 +29,7 @@ function notebookUrl(filePath) {
 }
 
 function showStatus(node, message, tone = "") {
+  if (!node) return;
   node.textContent = message;
   node.dataset.tone = tone;
 }
@@ -37,84 +39,63 @@ function injectKMLStyles() {
   const style = document.createElement("style");
   style.id = "nv-kml-editor-styles";
   style.textContent = `
-    .nv-kml-shell{display:grid;grid-template-columns:260px minmax(320px,1fr) 310px;grid-template-rows:auto 1fr auto;width:100%;height:100%;min-height:420px;background:#eef1f4;color:#1f2933;font:13px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
-    .nv-kml-toolbar{grid-column:1/4;display:flex;gap:6px;align-items:center;padding:7px 8px;background:#202833;color:#fff;border-bottom:1px solid #111827;overflow:auto}
-    .nv-kml-toolbar button{border:1px solid #526070;background:#334155;color:#fff;border-radius:4px;padding:5px 8px;font:12px system-ui;white-space:nowrap;cursor:pointer}
-    .nv-kml-toolbar button:hover{background:#40516a}
-    .nv-kml-toolbar button:disabled{opacity:.55;cursor:wait}
-    .nv-kml-sidebar,.nv-kml-inspector{min-width:0;overflow:auto;background:#f8fafc;border-right:1px solid #c8d0da}
-    .nv-kml-inspector{border-right:0;border-left:1px solid #c8d0da}
-    .nv-kml-heading{padding:8px 10px;font-weight:700;border-bottom:1px solid #d6dde6;background:#edf2f7}
-    .nv-kml-tree{padding:6px}
+    .nv-kml-map-shell{position:relative;width:100%;height:100%;min-height:320px;background:#d9e2ec;overflow:hidden}
+    .nv-kml-map-inner{position:absolute;inset:0;background:#d9e2ec}
+    .nv-kml-status{position:absolute;left:8px;right:8px;bottom:8px;z-index:500;padding:5px 8px;background:rgba(248,250,252,.92);border:1px solid #c8d0da;border-radius:4px;color:#475569;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+    .nv-kml-status[data-tone="error"]{color:#b42318;background:rgba(255,241,240,.96)}
+    .nv-kml-tree{padding:6px;font:13px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f2933}
     .nv-kml-tree-row{display:grid;grid-template-columns:18px 42px minmax(0,1fr);align-items:center;gap:6px;width:100%;border:0;background:transparent;border-radius:4px;padding-top:5px;padding-bottom:5px;text-align:left;color:#1f2933;cursor:pointer}
     .nv-kml-tree-row:hover{background:#e6eef8}
     .nv-kml-tree-row.is-selected{background:#cfe3ff;box-shadow:inset 3px 0 0 #1d67d8}
     .nv-kml-type{font:700 10px/1 ui-monospace,SFMono-Regular,Consolas,monospace;color:#4b5563}
     .nv-kml-tree-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .nv-kml-map{min-width:0;min-height:0;position:relative}
-    .nv-kml-map-inner{width:100%;height:100%;background:#d9e2ec}
-    .nv-kml-properties{padding:10px;display:flex;flex-direction:column;gap:8px}
+    .nv-kml-properties{padding:10px;display:flex;flex-direction:column;gap:8px;font:13px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f2933;overflow:auto}
     .nv-kml-panel-title{font-weight:700;color:#111827;margin-top:3px}
     .nv-kml-field{display:flex;flex-direction:column;gap:3px}
     .nv-kml-field span{font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:.04em}
     .nv-kml-field input,.nv-kml-field textarea,.nv-kml-properties textarea{width:100%;box-sizing:border-box;border:1px solid #b8c2cf;border-radius:4px;background:#fff;color:#111827;padding:6px;font:12px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace}
     .nv-kml-field textarea,.nv-kml-properties textarea{resize:vertical;min-height:42px}
-    .nv-kml-status{grid-column:1/4;padding:5px 8px;background:#f8fafc;border-top:1px solid #c8d0da;color:#475569;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .nv-kml-status[data-tone="error"]{color:#b42318;background:#fff1f0}
     .nv-kml-empty{padding:10px;color:#64748b}
     .nv-kml-todo{font-size:11px;color:#64748b;background:#eef2f7;border-radius:4px;padding:6px}
     .nv-kml-marker-icon span{display:block;border:2px solid #242424;border-radius:50%;box-shadow:0 1px 5px rgba(0,0,0,.45)}
-    @media (max-width:900px){.nv-kml-shell{grid-template-columns:200px minmax(240px,1fr);grid-template-rows:auto minmax(260px,1fr) minmax(220px,38%) auto}.nv-kml-inspector{grid-column:1/3;border-left:0;border-top:1px solid #c8d0da}.nv-kml-toolbar,.nv-kml-status{grid-column:1/3}}
   `;
   document.head.appendChild(style);
 }
 
-export async function renderKMLEditor(filePath, container) {
+export async function renderKMLEditor(filePath, container, options = {}) {
+  if (typeof container?.__nvKMLDestroy === "function") container.__nvKMLDestroy();
   injectKMLStyles();
+  const mode = options.mode === "viewer" ? "viewer" : "editor";
+  const nodevisionMode = mode === "viewer" ? "KMLviewerMode" : "KMLeditorMode";
   const cleanPath = normalizeNotebookPath(filePath);
   container.innerHTML = "";
 
   const shell = document.createElement("div");
-  shell.className = "nv-kml-shell";
-  const toolbarNode = document.createElement("div");
-  const sidebar = document.createElement("aside");
-  sidebar.className = "nv-kml-sidebar";
-  const mapWrap = document.createElement("main");
-  mapWrap.className = "nv-kml-map";
-  const inspector = document.createElement("aside");
-  inspector.className = "nv-kml-inspector";
-  const status = document.createElement("div");
-  status.className = "nv-kml-status";
-
-  const treeHeading = document.createElement("div");
-  treeHeading.className = "nv-kml-heading";
-  treeHeading.textContent = "KML Layers";
-  const treeNode = document.createElement("div");
-  sidebar.append(treeHeading, treeNode);
-
+  shell.className = "nv-kml-map-shell";
   const mapNode = document.createElement("div");
   mapNode.className = "nv-kml-map-inner";
-  mapWrap.appendChild(mapNode);
-
-  const inspectorHeading = document.createElement("div");
-  inspectorHeading.className = "nv-kml-heading";
-  inspectorHeading.textContent = "Properties";
-  const propertiesNode = document.createElement("div");
-  inspector.append(inspectorHeading, propertiesNode);
-
-  shell.append(toolbarNode, sidebar, mapWrap, inspector, status);
+  const status = document.createElement("div");
+  status.className = "nv-kml-status";
+  shell.append(mapNode, status);
   container.appendChild(shell);
   showStatus(status, `Loading ${cleanPath}...`);
 
   let state = null;
   let selectedId = null;
-  let tree = null;
   let renderer = null;
-  let properties = null;
-  let tools = null;
+  let layersContext = null;
+  let propertiesContext = null;
+  const layerHosts = new Set();
+  const propertyHosts = new Set();
 
   function selectedRecord() {
     return selectedId ? state?.recordsById.get(selectedId) : null;
+  }
+
+  function dispatchKMLChange(reason, extra = {}) {
+    window.dispatchEvent(new CustomEvent("nv-kml-context-changed", {
+      detail: { reason, filePath: cleanPath, selectedId, ...extra },
+    }));
   }
 
   function isDescendantOf(record, parentId) {
@@ -126,13 +107,79 @@ export async function renderKMLEditor(filePath, container) {
     return false;
   }
 
+  function createLayerTree(host) {
+    const tree = createKMLLayerTree(host, {
+      onSelect: (record) => selectRecord(record, true),
+      onToggle: (record, visible) => {
+        const affected = state.treeRecords.filter((item) => item.id === record.id || isDescendantOf(item, record.id));
+        affected.forEach((item) => {
+          item.visible = visible;
+          if (item.geometry) renderer?.setRecordVisible(item, visible);
+        });
+        refreshLayerHosts();
+        showStatus(status, (visible ? "Showing " : "Hiding ") + record.name);
+      },
+    });
+    tree.render(state?.treeRecords || [], selectedId);
+    return tree;
+  }
+
+  function createProperties(host) {
+    const panel = createKMLPropertyPanel(host, {
+      onTextChange: (record, patch) => {
+        updateFeatureText(state, record, patch);
+        rerenderFromState();
+        selectRecord(state.recordsById.get(record.id) || selectedRecord());
+        markDirty("Feature text updated. Save KML to persist.");
+      },
+      onCoordinatesChange: handleCoordinates,
+      onOptionChange: (record, key, value) => {
+        updateFeatureOption(state, record, key, value);
+        rerenderFromState();
+        markDirty(` updated. Save KML to persist.`);
+      },
+      onStyleChange: (record, value) => {
+        updateFeatureStyleColor(state, record, value);
+        rerenderFromState();
+        markDirty("Style color updated. Save KML to persist.");
+      },
+    });
+    panel.render(selectedRecord());
+    return panel;
+  }
+
+  function refreshLayerHosts() {
+    for (const host of Array.from(layerHosts)) {
+      if (!host.isConnected) {
+        layerHosts.delete(host);
+        continue;
+      }
+      const tree = host.__nvKMLLayerTree || createLayerTree(host);
+      host.__nvKMLLayerTree = tree;
+      tree.render(state?.treeRecords || [], selectedId);
+    }
+  }
+
+  function refreshPropertyHosts() {
+    for (const host of Array.from(propertyHosts)) {
+      if (!host.isConnected) {
+        propertyHosts.delete(host);
+        continue;
+      }
+      const panel = host.__nvKMLPropertyPanel || createProperties(host);
+      host.__nvKMLPropertyPanel = panel;
+      panel.render(selectedRecord());
+    }
+  }
+
   function selectRecord(record, fly = false) {
     if (!record) return;
     selectedId = record.id;
-    tree?.setSelected(selectedId);
     renderer?.setSelected(selectedId);
-    properties?.render(record);
+    refreshLayerHosts();
+    refreshPropertyHosts();
     if (fly && record.geometry) renderer?.flyToRecord(record);
+    dispatchKMLChange("selection", { record });
     showStatus(status, `Selected ${record.name || record.type}`);
   }
 
@@ -144,11 +191,12 @@ export async function renderKMLEditor(filePath, container) {
       if (visibilityById.has(record.id)) record.visible = visibilityById.get(record.id);
     });
     renderer?.render(state.features);
-    tree?.render(state.treeRecords, previousId);
     const nextSelection = previousId ? state.recordsById.get(previousId) : null;
     selectedId = nextSelection?.id || null;
-    properties?.render(nextSelection || null);
     renderer?.setSelected(selectedId);
+    refreshLayerHosts();
+    refreshPropertyHosts();
+    dispatchKMLChange("records", { selectedId });
     if (fit) renderer?.fitAll();
   }
 
@@ -157,150 +205,226 @@ export async function renderKMLEditor(filePath, container) {
       updateFeatureCoordinates(state, record, coordinatesText);
       rerenderFromState();
       selectRecord(state.recordsById.get(record.id) || selectedRecord());
-      showStatus(status, "Coordinates updated.");
+      markDirty("Coordinates updated. Save KML to persist.");
     } catch (err) {
       showStatus(status, err.message, "error");
     }
   }
 
-  async function save() {
+  async function save(targetPath = cleanPath) {
     try {
-      tools?.setBusy(true);
-      await saveKMLFile(cleanPath, state);
+      await saveKMLFile(normalizeNotebookPath(targetPath) || cleanPath, state);
+      updateToolbarState({ fileIsDirty: false });
       showStatus(status, `Saved ${cleanPath}`);
+      return true;
     } catch (err) {
       showStatus(status, `Save failed: ${err.message}`, "error");
-    } finally {
-      tools?.setBusy(false);
+      return false;
     }
+  }
+
+  function markDirty(message = "KML changed. Save to persist.") {
+    updateToolbarState({ fileIsDirty: true });
+    showStatus(status, message);
+  }
+
+  function addPlacemark() {
+    if (mode === "viewer") return;
+    showStatus(status, "Click the map to place a placemark.");
+    renderer.startAddPlacemark((coordinates) => {
+      createPlacemark(state, { geometryType: "Point", coordinates, name: "New Placemark" });
+      rerenderFromState({ preserveSelection: false });
+      const added = state.features[state.features.length - 1];
+      if (added) selectRecord(added, true);
+      markDirty("Placemark added. Save KML to persist.");
+    });
+  }
+
+  function drawPath() {
+    if (mode === "viewer") return;
+    showStatus(status, "Click the map to draw a path. Double-click to finish.");
+    renderer.startDrawPath((coordinates) => {
+      if (coordinates.length < 2) {
+        showStatus(status, "A path needs at least two points.", "error");
+        return;
+      }
+      createPlacemark(state, { geometryType: "LineString", coordinates, name: "New Path" });
+      rerenderFromState({ preserveSelection: false });
+      const added = state.features[state.features.length - 1];
+      if (added) selectRecord(added, true);
+      markDirty("Path added. Save KML to persist.");
+    });
+  }
+
+  function drawPolygon() {
+    if (mode === "viewer") return;
+    showStatus(status, "Click the map to draw a polygon. Double-click to finish.");
+    renderer.startDrawPolygon((coordinates) => {
+      if (coordinates.length < 3) {
+        showStatus(status, "A polygon needs at least three points.", "error");
+        return;
+      }
+      createPlacemark(state, { geometryType: "Polygon", coordinates, name: "New Polygon" });
+      rerenderFromState({ preserveSelection: false });
+      const added = state.features[state.features.length - 1];
+      if (added) selectRecord(added, true);
+      markDirty("Polygon added. Save KML to persist.");
+    });
+  }
+
+  function editSelected() {
+    if (mode === "viewer") return;
+    const record = selectedRecord();
+    if (!record) {
+      showStatus(status, "Select a feature first.", "error");
+      return;
+    }
+    const editable = renderer.editRecord(record);
+    showStatus(status, editable ? "Editing selected feature vertices." : "Selected feature is not graphically editable.", editable ? "" : "error");
+  }
+
+  function deleteSelected() {
+    if (mode === "viewer") return;
+    const record = selectedRecord();
+    if (!record?.geometry) {
+      showStatus(status, "Select a feature to delete.", "error");
+      return;
+    }
+    deleteFeature(record);
+    selectedId = null;
+    rerenderFromState({ preserveSelection: false });
+    markDirty("Feature deleted. Save KML to persist.");
+  }
+
+  function viewXml() {
+    const record = selectedRecord();
+    if (!record) {
+      showStatus(status, "Select a feature to view XML.", "error");
+      return;
+    }
+    refreshPropertyHosts();
+    showStatus(status, "Selected feature XML is visible in the properties panel.");
+  }
+
+  function handleToolbarAction(action) {
+    const actions = {
+      addPlacemark,
+      drawPath,
+      drawPolygon,
+      editSelected,
+      deleteSelected,
+      fitKML: () => renderer?.fitAll(),
+      fit: () => renderer?.fitAll(),
+      saveKML: save,
+      save,
+      viewXml,
+    };
+    if (typeof actions[action] === "function") return actions[action]();
+    return undefined;
   }
 
   const response = await fetch(notebookUrl(cleanPath), { cache: "no-store" });
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   state = parseKML(await response.text());
 
-  tree = createKMLLayerTree(treeNode, {
-    onSelect: (record) => selectRecord(record, true),
-    onToggle: (record, visible) => {
-      const affected = state.treeRecords.filter((item) => item.id === record.id || isDescendantOf(item, record.id));
-      affected.forEach((item) => {
-        item.visible = visible;
-        if (item.geometry) renderer?.setRecordVisible(item, visible);
-      });
-      tree?.render(state.treeRecords, selectedId);
-      showStatus(status, (visible ? "Showing " : "Hiding ") + record.name);
-    },
-  });
-
-  properties = createKMLPropertyPanel(propertiesNode, {
-    onTextChange: (record, patch) => {
-      updateFeatureText(state, record, patch);
-      rerenderFromState();
-      selectRecord(state.recordsById.get(record.id) || selectedRecord());
-      showStatus(status, "Feature text updated.");
-    },
-    onCoordinatesChange: handleCoordinates,
-    onOptionChange: (record, key, value) => {
-      updateFeatureOption(state, record, key, value);
-      rerenderFromState();
-      showStatus(status, `${key} updated.`);
-    },
-    onStyleChange: (record, value) => {
-      updateFeatureStyleColor(state, record, value);
-      rerenderFromState();
-      showStatus(status, "Style color updated.");
-    },
-  });
-
   renderer = await createKMLMapRenderer(mapNode, {
     onSelect: (record) => selectRecord(record, false),
     onGeometryChange: (record, coords) => {
       handleCoordinates(record, coords.map((coord) => `${coord.lon},${coord.lat}${coord.alt !== null ? `,${coord.alt}` : ""}`).join(" "));
+      markDirty("Geometry updated. Save KML to persist.");
     },
   });
 
-  tools = createKMLEditorTools(toolbarNode, {
-    addPlacemark: () => {
-      showStatus(status, "Click the map to place a placemark.");
-      renderer.startAddPlacemark((coordinates) => {
-        createPlacemark(state, { geometryType: "Point", coordinates, name: "New Placemark" });
-        rerenderFromState({ preserveSelection: false });
-        const added = state.features[state.features.length - 1];
-        if (added) selectRecord(added, true);
-      });
+  layersContext = {
+    id: "kml",
+    title: "KML Layers",
+    attachHost(host) {
+      if (!host) return null;
+      layerHosts.add(host);
+      const tree = createLayerTree(host);
+      host.__nvKMLLayerTree = tree;
+      return () => {
+        layerHosts.delete(host);
+        if (host.__nvKMLLayerTree === tree) delete host.__nvKMLLayerTree;
+      };
     },
-    drawPath: () => {
-      showStatus(status, "Click the map to draw a path. Double-click to finish.");
-      renderer.startDrawPath((coordinates) => {
-        if (coordinates.length < 2) {
-          showStatus(status, "A path needs at least two points.", "error");
-          return;
-        }
-        createPlacemark(state, { geometryType: "LineString", coordinates, name: "New Path" });
-        rerenderFromState({ preserveSelection: false });
-        const added = state.features[state.features.length - 1];
-        if (added) selectRecord(added, true);
-      });
+  };
+
+  propertiesContext = {
+    id: "kml",
+    title: "KML Feature Properties",
+    attachHost(host) {
+      if (!host) return null;
+      propertyHosts.add(host);
+      const panel = createProperties(host);
+      host.__nvKMLPropertyPanel = panel;
+      return () => {
+        propertyHosts.delete(host);
+        if (host.__nvKMLPropertyPanel === panel) delete host.__nvKMLPropertyPanel;
+      };
     },
-    drawPolygon: () => {
-      showStatus(status, "Click the map to draw a polygon. Double-click to finish.");
-      renderer.startDrawPolygon((coordinates) => {
-        if (coordinates.length < 3) {
-          showStatus(status, "A polygon needs at least three points.", "error");
-          return;
-        }
-        createPlacemark(state, { geometryType: "Polygon", coordinates, name: "New Polygon" });
-        rerenderFromState({ preserveSelection: false });
-        const added = state.features[state.features.length - 1];
-        if (added) selectRecord(added, true);
-      });
-    },
-    editSelected: () => {
-      const record = selectedRecord();
-      if (!record) {
-        showStatus(status, "Select a feature first.", "error");
-        return;
-      }
-      const editable = renderer.editRecord(record);
-      showStatus(status, editable ? "Editing selected feature vertices." : "Selected feature is not graphically editable.", editable ? "" : "error");
-    },
-    deleteSelected: () => {
-      const record = selectedRecord();
-      if (!record?.geometry) {
-        showStatus(status, "Select a feature to delete.", "error");
-        return;
-      }
-      deleteFeature(record);
-      selectedId = null;
-      rerenderFromState({ preserveSelection: false });
-      showStatus(status, "Feature deleted. Save KML to persist.");
-    },
-    fit: () => renderer.fitAll(),
+  };
+
+  window.KMLLayersContext = layersContext;
+  window.KMLPropertiesContext = propertiesContext;
+  window.KMLEditorContext = {
+    mode,
+    filePath: cleanPath,
+    getState: () => state,
+    getSelectedRecord: selectedRecord,
+    selectRecord,
+    refreshLayerHosts,
+    refreshPropertyHosts,
+    handleToolbarAction,
     save,
-    viewXml: () => {
-      const record = selectedRecord();
-      if (!record) {
-        showStatus(status, "Select a feature to view XML.", "error");
-        return;
-      }
-      properties.render(record);
-      showStatus(status, "Selected feature XML is visible in the properties panel.");
-    },
+  };
+  window.currentSaveKML = save;
+  window.getCurrentKMLXML = () => serializeKML(state);
+  window.saveCurrentFile = save;
+
+  updateToolbarState({
+    currentMode: nodevisionMode,
+    selectedFile: cleanPath,
+    activeActionHandler: handleToolbarAction,
+    fileIsDirty: false,
   });
 
   renderer.render(state.features);
-  tree.render(state.treeRecords, selectedId);
-  properties.render(null);
   renderer.fitAll();
+  refreshLayerHosts();
+  refreshPropertyHosts();
+  dispatchKMLChange("ready");
+  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode } }));
   showStatus(status, `Loaded ${state.features.length} editable KML feature${state.features.length === 1 ? "" : "s"}.`);
 
-  window.saveCurrentFile = save;
-  window.currentSaveKML = save;
-  window.getCurrentKMLXML = () => serializeKML(state);
+  try {
+    const panelCell = container?.closest?.(".panel-cell");
+    if (panelCell) {
+      if (mode === "viewer") await ensureKMLViewerModeLayout({ viewerCell: panelCell });
+      else await ensureKMLEditorModeLayout({ editorCell: panelCell });
+    }
+  } catch (err) {
+    console.warn("KML editor: failed to apply KML mode layout:", err);
+  }
+
+  const destroy = () => {
+    renderer?.destroy();
+    layerHosts.clear();
+    propertyHosts.clear();
+    if (window.KMLEditorContext?.filePath === cleanPath) {
+      delete window.KMLEditorContext;
+      delete window.KMLLayersContext;
+      delete window.KMLPropertiesContext;
+      if (window.NodevisionState?.activeActionHandler === handleToolbarAction) {
+        updateToolbarState({ activeActionHandler: null });
+      }
+    }
+  };
+  container.__nvKMLDestroy = destroy;
 
   return {
     state,
     save,
-    destroy: () => renderer?.destroy(),
+    destroy,
   };
 }
