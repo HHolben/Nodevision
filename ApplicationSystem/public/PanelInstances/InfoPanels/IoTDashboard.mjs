@@ -109,6 +109,50 @@ async function apiFetchJson(url, init = {}) {
   return payload;
 }
 
+function formatValue(value) {
+  if (value === undefined || value === null || value === "") return "unknown";
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  return String(value);
+}
+
+function renderStatGrid(container, rows = []) {
+  if (!container) return;
+  container.innerHTML = (Array.isArray(rows) ? rows : []).map(([label, value]) =>
+    `<div style="border:1px solid #e1e1e1;border-radius:6px;background:#fff;padding:7px;min-width:0;">` +
+    `<div style="color:#666;font-size:0.78em;margin-bottom:2px;">` + escapeHtml(label) + `</div>` +
+    `<div style="font-weight:600;overflow-wrap:anywhere;">` + escapeHtml(value) + `</div>` +
+    `</div>`
+  ).join("");
+}
+
+function brokerMessagePreview(message) {
+  if (typeof message?.payloadPreview === "string") return message.payloadPreview;
+  return truncatePayloadPreview(message?.payload);
+}
+
+function renderBrokerMessageList(container, messages = [], emptyText = "No broker messages.") {
+  if (!container) return;
+  const list = Array.isArray(messages) ? messages : [];
+  if (!list.length) {
+    container.innerHTML = `<div style="color:#777;padding:6px 0;">` + escapeHtml(emptyText) + `</div>`;
+    return;
+  }
+  container.innerHTML = list.map((message) => {
+    const topic = String(message?.topic || "");
+    const preview = brokerMessagePreview(message);
+    const timestamp = message?.timestamp ? new Date(message.timestamp).toLocaleTimeString() : "";
+    const publisher = message?.publisherId ? `<div style="margin-top:4px;color:#777;font-size:0.78em;">` + escapeHtml(message.publisherId) + `</div>` : "";
+    return `<div style="border:1px solid #e1e1e1;border-radius:6px;background:#fff;padding:7px;min-width:0;">` +
+      `<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">` +
+      `<code style="font-weight:600;overflow-wrap:anywhere;white-space:normal;">` + escapeHtml(topic) + `</code>` +
+      `<span style="color:#777;font-size:0.78em;white-space:nowrap;">` + escapeHtml(timestamp) + `</span>` +
+      `</div>` +
+      `<code style="display:block;margin-top:5px;color:#333;white-space:pre-wrap;overflow-wrap:anywhere;">` + escapeHtml(preview) + `</code>` +
+      publisher +
+      `</div>`;
+  }).join("");
+}
+
 export async function setupPanel(panelElem, panelVars = {}) {
   updateToolbarState({ activePanelType: "IoTDashboard" });
   navigationState.setLastInfoPanelType("IoTDashboard");

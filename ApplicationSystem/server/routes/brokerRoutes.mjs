@@ -96,7 +96,12 @@ function safeGenericValue(value, depth = 0) {
   if (value === null || typeof value === "boolean" || typeof value === "number") return value;
   if (typeof value === "string") {
     const text = value.trim();
-    if (text.includes("ServerSettings") || text.startsWith("/") || /^[A-Za-z]:[\\/]/.test(text)) return "[redacted]";
+    if (
+      text.includes("ServerSettings") ||
+      text.startsWith("/") ||
+      /^[A-Za-z]:[\\\/]/.test(text) ||
+      /privatekey|tokenhash|auth(token)?|secret|bearer\s+/i.test(text)
+    ) return "[redacted]";
     return text.length > 240 ? text.slice(0, 240) + "..." : text;
   }
   if (Array.isArray(value)) return value.slice(0, 12).map((item) => safeGenericValue(item, depth + 1));
@@ -115,6 +120,16 @@ function safeBrokerPayloadForTopic(topic, payload) {
   return String(topic || "").startsWith("nodevision/sync/")
     ? summarizeBrokerEventPayload(payload)
     : safeGenericValue(payload);
+}
+
+function safePayloadPreview(payload) {
+  if (payload === undefined) return "";
+  if (typeof payload === "string") return payload;
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return String(payload ?? "");
+  }
 }
 
 export function summarizeBrokerEventPayload(payload) {
@@ -160,6 +175,7 @@ export function listSafeBrokerEvents(broker, { topicPrefix = "", limit = 50 } = 
       timestamp: String(event?.timestamp || ""),
       publisherId: event?.publisherId ?? null,
       payload: safeBrokerPayloadForTopic(event?.topic, event?.payload),
+      payloadPreview: safePayloadPreview(safeBrokerPayloadForTopic(event?.topic, event?.payload)),
     }));
 }
 
@@ -176,6 +192,7 @@ export function listSafeBrokerRetained(broker, { topicPrefix = "", limit = 50 } 
       timestamp: String(message?.timestamp || ""),
       publisherId: message?.publisherId ?? null,
       payload: safeBrokerPayloadForTopic(message?.topic, message?.payload),
+      payloadPreview: safePayloadPreview(safeBrokerPayloadForTopic(message?.topic, message?.payload)),
     }));
 }
 

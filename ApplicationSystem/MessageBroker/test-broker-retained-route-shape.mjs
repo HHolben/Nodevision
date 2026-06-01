@@ -2,7 +2,10 @@
 // Tests the safe /api/broker/retained projection helper used by brokerRoutes.mjs.
 
 import { createBroker } from "./BrokerCore.mjs";
+import { getBroker, resetBrokerForTests } from "./BrokerSingleton.mjs";
 import { listSafeBrokerRetained } from "../server/routes/brokerRoutes.mjs";
+import { MqttTcpServer } from "./MQTT/MqttTcpServer.mjs";
+import { encodePublishQoS0, readPacketFromBuffer } from "./MQTT/MqttPacketCodec.mjs";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -41,6 +44,41 @@ async function main() {
   assert(!text.includes("do-not-return"), "sensitive values should not be exposed");
   assert(!text.includes("ServerSettings"), "ServerSettings paths should not be exposed");
   assert(!text.includes("/home/"), "absolute paths should not be exposed");
+
+  resetBrokerForTests();
+  const singletonBroker = getBroker();
+  const mqttServer = new MqttTcpServer({ enabled: false, logger: { log() {}, warn() {}, error() {} } });
+  assert(mqttServer.broker === singletonBroker, "MQTT server should default to the singleton broker");
+
+  const mqttClient = {
+    principal: { name: "mqtt-test", allowedTopicPrefixes: ["nodevision/iot/"] },
+    clientId: "mqtt-test-client",
+    socket: { end() { throw new Error("MQTT publish should be allowed"); } },
+  };
+  const jsonPacket = readPacketFromBuffer(encodePublishQoS0({
+    topic: "nodevision/iot/test",
+    payload: "{\"hello\":\"mqtt\"}",
+    retain: true,
+  })).packet;
+  mqttServer.handlePublish(mqttClient, jsonPacket);
+
+  const textPacket = readPacketFromBuffer(encodePublishQoS0({
+    topic: "nodevision/iot/text",
+    payload: "plain mqtt",
+    retain: true,
+  })).packet;
+  mqttServer.handlePublish(mqttClient, textPacket);
+
+  const mqttFiltered = listSafeBrokerRetained(getBroker(), { topicPrefix: "nodevision/iot/", limit: 50 });
+  const mqttJson = mqttFiltered.find((message) => message.topic === "nodevision/iot/test");
+  const mqttText = mqttFiltered.find((message) => message.topic === "nodevision/iot/text");
+  assert(mqttJson, "MQTT-origin retained JSON message should appear in retained route projection");
+  assert(mqttJson.payload.hello === "mqtt", "MQTT-origin JSON payload should be parsed and retained safely");
+  assert(mqttJson.payloadPreview === "{\"hello\":\"mqtt\"}", "MQTT-origin JSON preview should be stable");
+  assert(mqttText, "MQTT-origin retained text message should appear in retained route projection");
+  assert(mqttText.payload === "plain mqtt", "MQTT-origin text payload should be retained safely");
+  assert(mqttText.payloadPreview === "plain mqtt", "MQTT-origin text preview should be stable");
+  resetBrokerForTests();
 
   console.log("PASS");
 }
