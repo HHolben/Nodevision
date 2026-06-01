@@ -83,6 +83,66 @@ function isJsonPushTooLargeError(err) {
     || message.includes("size limit");
 }
 
+function normalizeMaxFileSizeBytes(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return Math.min(Math.trunc(bytes), Number.MAX_SAFE_INTEGER);
+}
+
+function isEntryOverSizeLimit(entry, maxFileSizeBytes) {
+  if (maxFileSizeBytes === null) return false;
+  const size = Number(entry?.size);
+  return Number.isFinite(size) && size > maxFileSizeBytes;
+}
+
+function sizeLimitSkipRecord({ relativePath, operation, entry, localEntry = null, remoteEntry = null, maxFileSizeBytes }) {
+  return {
+    relativePath,
+    operation,
+    size: toNonNegativeSize(entry?.size),
+    localSize: localEntry ? toNonNegativeSize(localEntry.size) : null,
+    remoteSize: remoteEntry ? toNonNegativeSize(remoteEntry.size) : null,
+    maxFileSizeBytes,
+  };
+}
+
+function applyFileSizeLimitToPlan(plan, localEntries, remoteEntries, maxFileSizeBytes) {
+  const normalizedLimit = normalizeMaxFileSizeBytes(maxFileSizeBytes);
+  const skippedBySize = [];
+  if (normalizedLimit === null) {
+    return { plan, skippedBySize, maxFileSizeBytes: null };
+  }
+
+  const nextPlan = { onlyLocal: [], onlyRemote: [], changed: [], same: Array.from(plan.same || []) };
+  for (const relativePath of plan.onlyRemote || []) {
+    const remoteEntry = remoteEntries.get(relativePath);
+    if (isEntryOverSizeLimit(remoteEntry, normalizedLimit)) {
+      skippedBySize.push(sizeLimitSkipRecord({ relativePath, operation: "pull", entry: remoteEntry, remoteEntry, maxFileSizeBytes: normalizedLimit }));
+    } else {
+      nextPlan.onlyRemote.push(relativePath);
+    }
+  }
+  for (const relativePath of plan.onlyLocal || []) {
+    const localEntry = localEntries.get(relativePath);
+    if (isEntryOverSizeLimit(localEntry, normalizedLimit)) {
+      skippedBySize.push(sizeLimitSkipRecord({ relativePath, operation: "push", entry: localEntry, localEntry, maxFileSizeBytes: normalizedLimit }));
+    } else {
+      nextPlan.onlyLocal.push(relativePath);
+    }
+  }
+  for (const relativePath of plan.changed || []) {
+    const localEntry = localEntries.get(relativePath);
+    const remoteEntry = remoteEntries.get(relativePath);
+    if (isEntryOverSizeLimit(remoteEntry, normalizedLimit)) {
+      skippedBySize.push(sizeLimitSkipRecord({ relativePath, operation: "conflict", entry: remoteEntry, localEntry, remoteEntry, maxFileSizeBytes: normalizedLimit }));
+    } else {
+      nextPlan.changed.push(relativePath);
+    }
+  }
+  return { plan: nextPlan, skippedBySize, maxFileSizeBytes: normalizedLimit };
+}
+
 function resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath }) {
   const scopeRoot = path.resolve(notebookDir, scope);
   return path.resolve(scopeRoot, relativePath.slice(`${scope}/`.length));
@@ -259,6 +319,7 @@ export async function runScopeSyncTwoWay({
   dryRun = true,
   shouldCancel,
   onProgress,
+  maxFileSizeBytes = null,
 } = {}) {
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
   const normalizedScope = validateSyncScope(scope);
@@ -269,9 +330,11 @@ export async function runScopeSyncTwoWay({
 
   const remoteBefore = await fetchManifest(normalizedPeerUrl, normalizedScope, resolvedRuntimeRoot);
   const localBefore = await buildScopeManifest({ notebookDir, scope: normalizedScope });
-  const plan = await compareScopeManifests(localBefore, remoteBefore);
+  const rawPlan = await compareScopeManifests(localBefore, remoteBefore);
   const localEntries = toManifestEntryMap(localBefore);
   const remoteEntries = toManifestEntryMap(remoteBefore);
+  const limited = applyFileSizeLimitToPlan(rawPlan, localEntries, remoteEntries, maxFileSizeBytes);
+  const plan = limited.plan;
   const progressState = {
     filesTotal: plan.onlyRemote.length + plan.onlyLocal.length + plan.changed.length,
     filesDone: 0,
@@ -302,7 +365,7 @@ export async function runScopeSyncTwoWay({
   emitProgress("plan");
 
   if (dryRun) {
-    return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed } };
+    return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, maxFileSizeBytes: limited.maxFileSizeBytes, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed, skipped: { same: plan.same, oversized: limited.skippedBySize } } };
   }
 
   const pulled = []; const pushed = []; const conflicts = [];
@@ -474,7 +537,7 @@ export async function runScopeSyncTwoWay({
   const localAfter = await buildScopeManifest({ notebookDir, scope: normalizedScope });
   const remoteAfter = await fetchManifest(normalizedPeerUrl, normalizedScope, resolvedRuntimeRoot);
   const afterPlan = await compareScopeManifests(localAfter, remoteAfter);
-  return { ok: true, dryRun: false, scope: normalizedScope, peerUrl: normalizedPeerUrl, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan }, operations: { pulled, pushed, conflicts, skipped: { same: plan.same } }, after: { localFileCount: localAfter.files.length, remoteFileCount: remoteAfter.files.length, plan: afterPlan } };
+  return { ok: true, dryRun: false, scope: normalizedScope, peerUrl: normalizedPeerUrl, maxFileSizeBytes: limited.maxFileSizeBytes, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { pulled, pushed, conflicts, skipped: { same: plan.same, oversized: limited.skippedBySize } }, after: { localFileCount: localAfter.files.length, remoteFileCount: remoteAfter.files.length, plan: afterPlan } };
 }
 
 async function main() {

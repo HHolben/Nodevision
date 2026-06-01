@@ -270,6 +270,14 @@
       "callbackKey": "handwritingToText",
       "parentHeading": "Insert Text"
     },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Line Numbered Poetry",
+      "insertGroup": "text",
+      "callbackKey": "insertLineNumberedPoetry",
+      "parentHeading": "Insert Text",
+      "modes": ["HTMLediting"]
+    },
 
 
        {

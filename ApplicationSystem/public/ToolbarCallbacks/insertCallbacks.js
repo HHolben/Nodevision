@@ -293,6 +293,14 @@ window.insertCallbacks = {
         alert(`Failed to open Handwriting → Text panel: ${err?.message || err}`);
       });
   },
+  insertLineNumberedPoetry: () => {
+    import("/ToolbarCallbacks/insert/insertLineNumberedPoetry.mjs")
+      .then((mod) => { if (mod && typeof mod.default === "function") mod.default(); })
+      .catch((err) => {
+        console.warn("Failed to insert Line Numbered Poetry:", err);
+        alert("Failed to insert Line Numbered Poetry: " + (err && err.message ? err.message : err));
+      });
+  },
   insertH1: () => {
     document.execCommand('insertHTML', false, '<h1>Heading 1</h1>');
   },

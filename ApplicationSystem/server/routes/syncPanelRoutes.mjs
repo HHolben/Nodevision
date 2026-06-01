@@ -512,6 +512,19 @@ async function resolveRequestedScope(body, options) {
   return scope;
 }
 
+function parseMaxFileSizeBytes(body) {
+  const raw = body && typeof body === "object" && !Array.isArray(body)
+    ? body.maxFileSizeBytes
+    : undefined;
+  if (raw === undefined || raw === null || raw === "") return null;
+  const bytes = Number(raw);
+  if (!Number.isFinite(bytes) || bytes < 0 || bytes > Number.MAX_SAFE_INTEGER) {
+    throw new Error("maxFileSizeBytes must be a nonnegative safe integer");
+  }
+  const normalized = Math.trunc(bytes);
+  return normalized > 0 ? normalized : null;
+}
+
 async function syncStateResponse(state, ctx) {
   const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot }).catch(() => ({ protectedFromPeerWrites: false }));
   return {
@@ -754,6 +767,13 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
     }
 
+    let maxFileSizeBytes;
+    try {
+      maxFileSizeBytes = parseMaxFileSizeBytes(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid max file size" });
+    }
+
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -769,6 +789,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
         syncRunner,
+        syncRunnerOptions: { maxFileSizeBytes },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
       discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
@@ -853,6 +874,13 @@ export function registerSyncPanelRoutes(app, ctx) {
         return res.status(423).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
       }
     }
+    let maxFileSizeBytes;
+    try {
+      maxFileSizeBytes = parseMaxFileSizeBytes(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid max file size" });
+    }
+
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -868,6 +896,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
         syncRunner,
+        syncRunnerOptions: { maxFileSizeBytes },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
       discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
@@ -939,6 +968,13 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
     }
 
+    let maxFileSizeBytes;
+    try {
+      maxFileSizeBytes = parseMaxFileSizeBytes(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid max file size" });
+    }
+
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -970,6 +1006,7 @@ export function registerSyncPanelRoutes(app, ctx) {
             syncRunnerOptions: {
               onProgress,
               shouldCancel: isCancelled,
+              maxFileSizeBytes,
             },
           });
           maybePersistLoopbackPeerEndpoint(state, discoveredPeerSnapshot, syncResult.resolvedPeerUrl || peerUrl);

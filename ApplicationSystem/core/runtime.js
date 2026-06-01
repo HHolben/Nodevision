@@ -14,6 +14,7 @@ import {
   readRuntimeConfigFile,
   resolveRuntimeNetworkConfig,
 } from './runtimeNetworkConfig.mjs';
+import { startMqttServerFromEnv } from '../MessageBroker/MQTT/MqttTcpServer.mjs';
 
 function detectRuntimeType(config) {
   if (config.runtimeType) return config.runtimeType;
@@ -86,6 +87,7 @@ export function createRuntime(options = {}) {
   ensureServerDirectories(ctx);
 
   let server = null;
+  let mqttServer = null;
   let runtimeInstance = null;
   const phpSupervisor = createPhpServerSupervisor(ctx, {
     enabled: config.phpEnabled,
@@ -155,12 +157,19 @@ export function createRuntime(options = {}) {
     config.actualPort = listening.port;
     process.env.PORT = String(listening.port);
 
+    try {
+      mqttServer = await startMqttServerFromEnv({ runtimeRoot });
+    } catch (err) {
+      console.warn('Failed to start MQTT broker:', err?.message || err);
+    }
+
     const baseUrl = `http://${config.host}:${listening.port}`;
     console.log(`Nodevision ${runtimeMeta.type} runtime ready at ${baseUrl}`);
     runtimeInstance = {
       server,
       url: baseUrl,
       port: listening.port,
+      mqtt: mqttServer?.status?.() || null,
       php: phpSupervisor.status(),
       stop,
     };
@@ -168,14 +177,21 @@ export function createRuntime(options = {}) {
   }
 
   async function stop() {
-    if (!server) return;
-    await new Promise((resolve, reject) => {
-      server.close((err) => {
-        if (err) return reject(err);
-        resolve();
+    if (server) {
+      await new Promise((resolve, reject) => {
+        server.close((err) => {
+          if (err) return reject(err);
+          resolve();
+        });
       });
-    });
-    server = null;
+      server = null;
+    }
+    if (mqttServer) {
+      try {
+        await mqttServer.stop();
+      } catch {}
+      mqttServer = null;
+    }
     runtimeInstance = null;
     try {
       await phpSupervisor.stop();

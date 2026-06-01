@@ -4,6 +4,7 @@
 import { getBroker as getSharedBroker } from "../../MessageBroker/BrokerSingleton.mjs";
 import { validateTopicName } from "../../MessageBroker/TopicMatcher.mjs";
 import { findTokenRecord, readDeviceTokens, resolveDeviceTokensPath } from "../../MessageBroker/IoTDeviceTokens.mjs";
+import { getMqttServerStatus } from "../../MessageBroker/MQTT/MqttTcpServer.mjs";
 
 function requireSession(req, res) {
   if (!req.identity) {
@@ -184,6 +185,12 @@ export function registerBrokerRoutes(app, ctx) {
   const deviceTokensPath = resolveDeviceTokensPath({
     runtimeRoot: ctx.runtimeRoot,
     deviceTokensPath: ctx.deviceTokensPath,
+  });
+
+  app.get("/api/mqtt/status", (req, res) => {
+    if (!requireSession(req, res)) return;
+    const status = getMqttServerStatus();
+    return res.json({ ok: true, mqtt: status });
   });
 
   app.post("/api/iot/publish", async (req, res) => {
