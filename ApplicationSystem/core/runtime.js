@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/core/runtime.js
 // This file defines the runtime module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import http from 'node:http';
+import path from 'node:path';
 import createApp from '../server.mjs';
 import {
   createServerContext,
@@ -15,6 +16,8 @@ import {
   resolveRuntimeNetworkConfig,
 } from './runtimeNetworkConfig.mjs';
 import { startMqttServerFromEnv } from '../MessageBroker/MQTT/MqttTcpServer.mjs';
+import { getBroker } from '../MessageBroker/BrokerSingleton.mjs';
+import { startMqttCsvLoggers } from '../MessageBroker/MQTTCsvLogger.mjs';
 
 function detectRuntimeType(config) {
   if (config.runtimeType) return config.runtimeType;
@@ -61,6 +64,7 @@ export function createRuntime(options = {}) {
         defaults.phpPortFallbackMaxAttempts,
     ),
     resolvedConfigPath: fileConfig.path,
+    mqttCsvLoggersEnabled: runtimeConfig?.mqttCsvLoggersEnabled ?? envFlag('NODEVISION_MQTT_CSV_LOGGERS_ENABLED') ?? false,
   };
   normalizedConfig.port = normalizeRuntimePort(normalizedConfig.port, defaults.port);
   normalizedConfig.host = normalizeRuntimeHost(normalizedConfig.host, defaults.host);
@@ -88,6 +92,7 @@ export function createRuntime(options = {}) {
 
   let server = null;
   let mqttServer = null;
+  let mqttCsvCleanup = null;
   let runtimeInstance = null;
   const phpSupervisor = createPhpServerSupervisor(ctx, {
     enabled: config.phpEnabled,
@@ -163,6 +168,19 @@ export function createRuntime(options = {}) {
       console.warn('Failed to start MQTT broker:', err?.message || err);
     }
 
+    if (config.mqttCsvLoggersEnabled) {
+      try {
+        mqttCsvCleanup = await startMqttCsvLoggers({
+          broker: getBroker(),
+          notebookDir: ctx.notebookDir,
+          settingsDir: path.join(ctx.runtimeRoot, 'ServerSettings'),
+        });
+        console.log(`MQTT CSV loggers enabled: ${Number(mqttCsvCleanup?.count || 0)}`);
+      } catch (err) {
+        console.warn('Failed to start MQTT CSV loggers:', err?.message || err);
+      }
+    }
+
     const baseUrl = `http://${config.host}:${listening.port}`;
     console.log(`Nodevision ${runtimeMeta.type} runtime ready at ${baseUrl}`);
     runtimeInstance = {
@@ -185,6 +203,12 @@ export function createRuntime(options = {}) {
         });
       });
       server = null;
+    }
+    if (mqttCsvCleanup) {
+      try {
+        mqttCsvCleanup();
+      } catch {}
+      mqttCsvCleanup = null;
     }
     if (mqttServer) {
       try {

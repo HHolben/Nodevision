@@ -7,6 +7,7 @@ import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
 import { fetchDirectoryContents as fetchDirectoryContentsAPI, moveFileOrDirectory } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
+import { attachMqttGraphLayer, MQTT_GRAPH_STYLE } from './GraphManagerDependencies/MQTTGraphAdapter.mjs';
 
 let cy;
 let currentRootPath = '';
@@ -386,7 +387,7 @@ async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
     }
 
     discoveredLinks.clear();
-    cy.elements().remove();
+    cy.elements().not('.mqtt-live').remove();
     externalNodesLoaded = false;
 
     await loadExternalNodes();
@@ -789,7 +790,7 @@ function rebuildVisibleEdges() {
     }
 
     cy.batch(() => {
-        cy.edges().remove();
+        cy.edges().not('.mqtt-live').remove();
         if (edgeMap.size > 0) {
             cy.add([...edgeMap.values()]);
         }
@@ -940,7 +941,7 @@ function applyBrokenLinkBadge(sourcePath) {
     node.data('hasBrokenLinks', count > 0 ? 1 : 0);
 }
 
-export async function initGraphView({ containerId, rootPath, statusElemId }) {
+export async function initGraphView({ containerId, rootPath, statusElemId, mqttControlsId = null, mqttInspectorId = null }) {
     currentRootPath = normalizePath(rootPath);
     navigationState.setLastOpenedDirectory(currentRootPath, "GraphManager");
     discoveredLinks.clear();
@@ -1136,7 +1137,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
                     'arrow-scale': 1.2,
                     ...(edgeStyleOverrides || {})
                 }
-            }
+            },
+            ...MQTT_GRAPH_STYLE
         ],
         layout: { name: 'preset' }
     });
@@ -1180,6 +1182,13 @@ export async function initGraphView({ containerId, rootPath, statusElemId }) {
     });
 
     setupCtrlDragMoveHandlers();
+
+    attachMqttGraphLayer({
+        cy,
+        controlsEl: mqttControlsId ? document.getElementById(mqttControlsId) : null,
+        inspectorEl: mqttInspectorId ? document.getElementById(mqttInspectorId) : null,
+        relayout: queueRelayout,
+    });
 
     await loadExternalNodes();
 

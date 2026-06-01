@@ -122,6 +122,15 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "MQTT Explorer",
+    "content": "",
+    "panelTemplate": "MQTTExplorer",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/MQTTExplorer.mjs",
+    "replaceActive": true
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "Virtual World Viewing",
     "callbackKey": "VirtualWorldViewing",
     "panel": "GameView",

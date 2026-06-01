@@ -41,7 +41,11 @@ panelElem.style.flexDirection = "column";
   // 1. Create the UI Structure
   panelElem.innerHTML = `
     <div class="graph-manager" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
-      <div id="cy" style="flex-grow: 1; width: 100%; background: #ffffff; position: relative;"></div>
+      <div style="flex-grow:1;position:relative;min-height:0;">
+        <div id="cy" style="width:100%;height:100%;background:#ffffff;position:relative;"></div>
+        <div id="mqtt-graph-controls" style="position:absolute;top:10px;left:10px;z-index:5;display:flex;gap:10px;align-items:center;background:rgba(255,255,255,0.92);border:1px solid #d8dde6;border-radius:8px;padding:7px 9px;font-size:12px;"></div>
+        <div id="mqtt-device-inspector" style="display:none;position:absolute;right:10px;top:10px;z-index:5;width:min(310px,35%);max-height:70%;overflow:auto;background:rgba(255,255,255,0.96);border:1px solid #d8dde6;border-radius:8px;padding:10px;font-size:12px;box-shadow:0 8px 22px rgba(15,23,42,0.14);"></div>
+      </div>
       
       <div id="graph-error" style="color:red; padding: 10px; font-weight: bold;"></div>
     </div>
@@ -69,7 +73,9 @@ panelElem.style.flexDirection = "column";
     await mod.initGraphView({
       containerId: 'cy',
       rootPath: panelVars.currentDirectory || '',      
-      statusElemId: null
+      statusElemId: null,
+      mqttControlsId: 'mqtt-graph-controls',
+      mqttInspectorId: 'mqtt-device-inspector'
     });
     
     console.log("✅ GraphManagerCore loaded and initialized.");

@@ -34,6 +34,7 @@ let lastStatus = {
   listening: false,
   clientCount: 0,
   subscriptionCount: 0,
+  subscriptions: [],
 };
 
 function envFlag(name, defaultValue = false) {
@@ -192,7 +193,17 @@ export class MqttTcpServer {
 
   status() {
     let subscriptionCount = 0;
-    for (const client of this.clients) subscriptionCount += client.unregisters.length;
+    const subscriptions = [];
+    for (const client of this.clients) {
+      subscriptionCount += client.unregisters.length;
+      for (const topicFilter of client.subscriptions || []) {
+        subscriptions.push({
+          clientId: client.clientId || null,
+          principal: client.principal?.name || null,
+          topicFilter,
+        });
+      }
+    }
     const address = this.server?.address?.();
     return {
       enabled: this.enabled,
@@ -202,6 +213,7 @@ export class MqttTcpServer {
       listening: Boolean(this.server?.listening),
       clientCount: this.clients.size,
       subscriptionCount,
+      subscriptions,
     };
   }
 
@@ -261,6 +273,7 @@ export class MqttTcpServer {
       clientId: null,
       principal: null,
       unregisters: [],
+      subscriptions: [],
       processing: false,
       needsProcess: false,
     };
@@ -417,6 +430,7 @@ export class MqttTcpServer {
           { replayRetained: false },
         );
         client.unregisters.push(unregister);
+        client.subscriptions.push(subscription.topicFilter);
         returnCodes.push(0);
         for (const retained of this.broker.listRetained()) {
           if (topicMatchesFilter(retained.topic, subscription.topicFilter)) retainedToReplay.push(retained);
@@ -458,6 +472,7 @@ export async function startMqttServerFromEnv(options = {}) {
       listening: false,
       clientCount: 0,
       subscriptionCount: 0,
+      subscriptions: [],
     };
     return null;
   }

@@ -2,9 +2,18 @@
 // Authenticated API endpoints for the internal MQTT-style broker benchmark.
 
 import { getBroker as getSharedBroker } from "../../MessageBroker/BrokerSingleton.mjs";
-import { validateTopicName } from "../../MessageBroker/TopicMatcher.mjs";
+import { topicMatchesFilter, validateTopicName } from "../../MessageBroker/TopicMatcher.mjs";
+import path from "node:path";
 import { findTokenRecord, readDeviceTokens, resolveDeviceTokensPath } from "../../MessageBroker/IoTDeviceTokens.mjs";
 import { getMqttServerStatus } from "../../MessageBroker/MQTT/MqttTcpServer.mjs";
+import { createMqttModel } from "../../MessageBroker/MQTTModel.mjs";
+import {
+  appendCsvLoggerRow,
+  buildCsvLoggerRow,
+  loadTopicCsvLoggerConfig,
+  saveTopicCsvLoggerConfig,
+  validateTopicCsvLoggerConfig,
+} from "../../MessageBroker/MQTTCsvLogger.mjs";
 
 function requireSession(req, res) {
   if (!req.identity) {
@@ -19,6 +28,47 @@ function getBroker(ctx) {
     ctx.messageBroker = getSharedBroker();
   }
   return ctx.messageBroker;
+}
+
+function getMqttModelForContext(ctx, broker) {
+  if (!ctx.mqttModel) {
+    ctx.mqttModel = createMqttModel({ broker });
+  }
+  return ctx.mqttModel;
+}
+
+function getServerSettingsDir(ctx) {
+  return ctx.serverSettingsDir || path.join(ctx.runtimeRoot || process.env.NODEVISION_ROOT || process.cwd(), "ServerSettings");
+}
+
+function safeLoggerMetadata(logger) {
+  return {
+    id: String(logger?.id || ""),
+    name: String(logger?.name || ""),
+    enabled: logger?.enabled === true,
+    topicFilter: String(logger?.topicFilter || ""),
+    csvRelativePath: String(logger?.csvRelativePath || ""),
+    columns: Array.isArray(logger?.columns) ? logger.columns.map((column) => String(column)) : [],
+    mappings: logger?.mappings && typeof logger.mappings === "object" ? Object.fromEntries(Object.entries(logger.mappings).map(([key, value]) => [String(key), String(value)])) : {},
+    timezone: String(logger?.timezone || "local"),
+    minIntervalMs: Math.max(0, Number(logger?.minIntervalMs || 0)),
+  };
+}
+
+function sanitizeLoggerInput(value) {
+  const logger = value?.logger && typeof value.logger === "object" ? value.logger : value;
+  return {
+    id: String(logger?.id || "").trim(),
+    name: String(logger?.name || "").trim(),
+    enabled: logger?.enabled === true,
+    topicFilter: String(logger?.topicFilter || "").trim(),
+    csvRelativePath: String(logger?.csvRelativePath || "").trim(),
+    columns: Array.isArray(logger?.columns) ? logger.columns.map((column) => String(column).trim()).filter(Boolean) : [],
+    mappings: logger?.mappings && typeof logger.mappings === "object" ? Object.fromEntries(Object.entries(logger.mappings).map(([key, value]) => [String(key), String(value)])) : {},
+    timezone: String(logger?.timezone || "local"),
+    writeHeader: logger?.writeHeader !== false,
+    minIntervalMs: Math.max(0, Number(logger?.minIntervalMs || 0)),
+  };
 }
 
 const MAX_IOT_PAYLOAD_BYTES = 4096;
@@ -199,6 +249,8 @@ export function listSafeBrokerRetained(broker, { topicPrefix = "", limit = 50 } 
 
 export function registerBrokerRoutes(app, ctx) {
   const broker = getBroker(ctx);
+  const mqttModel = getMqttModelForContext(ctx, broker);
+  const serverSettingsDir = getServerSettingsDir(ctx);
   const deviceTokensPath = resolveDeviceTokensPath({
     runtimeRoot: ctx.runtimeRoot,
     deviceTokensPath: ctx.deviceTokensPath,
@@ -209,6 +261,137 @@ export function registerBrokerRoutes(app, ctx) {
     const status = getMqttServerStatus();
     return res.json({ ok: true, mqtt: status });
   });
+
+  app.get("/api/mqtt/model", (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    try {
+      const snapshot = mqttModel.getSnapshot({
+        topicPrefix: req.query?.topicPrefix || "",
+      });
+      return res.json(snapshot);
+    } catch (err) {
+      const status = err?.message === "Invalid topicPrefix" ? 400 : 500;
+      return res.status(status).json({ ok: false, error: err?.message || "Unable to read MQTT model" });
+    }
+  });
+
+  app.get("/api/mqtt/events", (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    res.status(200);
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders?.();
+
+    const send = (event) => {
+      const payload = event?.snapshot || mqttModel.getSnapshot();
+      res.write(`event: mqtt-model\n`);
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    send({ snapshot: mqttModel.getSnapshot() });
+    const unsubscribe = mqttModel.onUpdate(send);
+    const keepAlive = setInterval(() => res.write(": keep-alive\n\n"), 25000);
+    req.on("close", () => {
+      clearInterval(keepAlive);
+      unsubscribe();
+    });
+  });
+
+  app.post("/api/mqtt/publish", (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    const { topic, payload = "", retain = false } = req.body || {};
+    try {
+      const message = mqttModel.publish(topic, payload, {
+        retain: retain === true,
+        publisherId: req.identity?.user?.id || req.identity?.user?.username || req.identity?.username || "nodevision-explorer",
+      });
+      return res.json({ ok: true, topic: message.topic, retained: retain === true });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid MQTT publish request" });
+    }
+  });
+
+
+  app.get("/api/mqtt/csv-loggers", async (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    try {
+      const config = await loadTopicCsvLoggerConfig({ settingsDir: serverSettingsDir });
+      return res.json({ ok: true, loggers: config.loggers.map(safeLoggerMetadata) });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err?.message || "Unable to read MQTT CSV loggers" });
+    }
+  });
+
+  app.post("/api/mqtt/csv-loggers", async (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    try {
+      const logger = sanitizeLoggerInput(req.body || {});
+      const config = await loadTopicCsvLoggerConfig({ settingsDir: serverSettingsDir });
+      const nextLoggers = config.loggers.filter((item) => item?.id !== logger.id);
+      nextLoggers.push(logger);
+      const nextConfig = { loggers: nextLoggers };
+      validateTopicCsvLoggerConfig(nextConfig);
+      await saveTopicCsvLoggerConfig({ settingsDir: serverSettingsDir, config: nextConfig });
+      if (typeof ctx.restartMqttCsvLoggers === "function") await ctx.restartMqttCsvLoggers();
+      return res.json({ ok: true, logger: safeLoggerMetadata(logger) });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid MQTT CSV logger" });
+    }
+  });
+
+  app.post("/api/mqtt/csv-loggers/:id/test", async (req, res) => {
+    if (!requireSession(req, res)) return;
+
+    try {
+      const id = String(req.params?.id || "").trim();
+      const config = await loadTopicCsvLoggerConfig({ settingsDir: serverSettingsDir });
+      const logger = config.loggers.find((item) => item?.id === id);
+      if (!logger) return res.status(404).json({ ok: false, error: "MQTT CSV logger not found" });
+      const retained = typeof broker?.listRetained === "function" ? broker.listRetained() : [];
+      const message = retained.slice().reverse().find((item) => topicMatchesFilter(String(item?.topic || ""), logger.topicFilter));
+      if (!message) return res.status(404).json({ ok: false, error: "No retained message matches logger topicFilter" });
+      const preview = buildCsvLoggerRow({ logger, message, now: () => new Date() });
+      if (req.body?.write === true) {
+        await appendCsvLoggerRow({ notebookDir: ctx.notebookDir, logger, message, now: () => new Date() });
+      }
+      return res.json({ ok: true, preview });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Unable to test MQTT CSV logger" });
+    }
+  });
+
+  app.post("/api/mqtt/csv-loggers/:id/enable", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    return setCsvLoggerEnabled(req, res, true);
+  });
+
+  app.post("/api/mqtt/csv-loggers/:id/disable", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    return setCsvLoggerEnabled(req, res, false);
+  });
+
+  async function setCsvLoggerEnabled(req, res, enabled) {
+    try {
+      const id = String(req.params?.id || "").trim();
+      const config = await loadTopicCsvLoggerConfig({ settingsDir: serverSettingsDir });
+      const logger = config.loggers.find((item) => item?.id === id);
+      if (!logger) return res.status(404).json({ ok: false, error: "MQTT CSV logger not found" });
+      logger.enabled = enabled === true;
+      validateTopicCsvLoggerConfig(config);
+      await saveTopicCsvLoggerConfig({ settingsDir: serverSettingsDir, config });
+      if (typeof ctx.restartMqttCsvLoggers === "function") await ctx.restartMqttCsvLoggers();
+      return res.json({ ok: true, logger: safeLoggerMetadata(logger) });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Unable to update MQTT CSV logger" });
+    }
+  }
+
 
   app.post("/api/iot/publish", async (req, res) => {
     try {
