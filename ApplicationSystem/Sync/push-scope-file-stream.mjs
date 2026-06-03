@@ -48,6 +48,40 @@ function buildUploadStream(localPath, shouldCancel) {
   return guard;
 }
 
+function summarizeSignedPayloadForLog(payloadText) {
+  try {
+    const parsed = JSON.parse(String(payloadText || ""));
+    return {
+      parsed: Boolean(parsed && typeof parsed === "object" && !Array.isArray(parsed)),
+      deviceId: typeof parsed?.deviceId === "string" ? parsed.deviceId : null,
+      scope: typeof parsed?.scope === "string" ? parsed.scope : null,
+      relativePath: typeof parsed?.relativePath === "string" ? parsed.relativePath : null,
+      timestampPresent: typeof parsed?.timestamp === "string" && parsed.timestamp.length > 0,
+      size: Number.isFinite(Number(parsed?.size)) ? Number(parsed.size) : null,
+      sha256Present: typeof parsed?.sha256 === "string" && parsed.sha256.length > 0,
+    };
+  } catch {
+    return { parsed: false, deviceId: null, scope: null, relativePath: null, timestampPresent: false, size: null, sha256Present: false };
+  }
+}
+
+function logOutgoingScopedStreamRequest({ endpoint, method, url, signed, headers = [] }) {
+  try {
+    const parsedUrl = new URL(url);
+    console.debug("[sync] outgoing scoped stream request", {
+      endpoint,
+      method,
+      url: parsedUrl.origin + parsedUrl.pathname,
+      queryKeys: Array.from(parsedUrl.searchParams.keys()).sort(),
+      headers,
+      bodyFields: ["stream"],
+      payloadPresent: typeof signed?.payload === "string" && signed.payload.length > 0,
+      signaturePresent: typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
+      payloadFields: summarizeSignedPayloadForLog(signed?.payload),
+    });
+  } catch {}
+}
+
 async function readResponseError(response) {
   const payload = await response.json().catch(() => null);
   if (payload && typeof payload.error === "string" && payload.error.trim()) {
@@ -121,6 +155,14 @@ export async function pushScopeFileStream({
     const streamUrl = new URL(STREAM_UPLOAD_ENDPOINT, `${normalizedPeerUrl}/`);
     streamUrl.searchParams.set("payload", signed.payload);
     streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
+
+    logOutgoingScopedStreamRequest({
+      endpoint: "scope/file-stream-push",
+      method: "POST",
+      url: streamUrl.toString(),
+      signed,
+      headers: ["content-type", "content-length"],
+    });
 
     let response;
     try {

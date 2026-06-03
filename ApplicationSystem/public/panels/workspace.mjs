@@ -304,7 +304,7 @@ export async function loadDefaultLayout() {
 
 export function renderLayout(node, parent) {
   const isContainer = node.direction || node.type === "row" || node.type === "vertical";
-  
+
   if (isContainer && node.children) {
     const container = document.createElement("div");
     container.className = "panel-row";
@@ -322,19 +322,19 @@ export function renderLayout(node, parent) {
     container.dataset.direction = direction;
     container.dataset.isVertical = isVertical ? "1" : "0";
     parent.appendChild(container);
-    
+
     // First render all children
     node.children.forEach((child) => {
       renderLayout(child, container);
     });
-    
+
     // Now insert dividers between the children
-    const children = Array.from(container.children).filter(c => 
+    const children = Array.from(container.children).filter(c =>
       c.classList.contains("panel-cell") || c.classList.contains("panel-row")
     );
-    
+
     console.log(`📐 Adding dividers: ${children.length} children in ${direction} container`);
-    
+
     const inserted = rebuildLayoutDividersForContainer(container, isVertical);
     if (inserted > 0) {
       console.log(`📐 Inserted ${isVertical ? 'vertical' : 'horizontal'} divider(s) for ${children.length} children`);
@@ -366,13 +366,16 @@ export function renderLayout(node, parent) {
 
     window.activeCell = cell;
 
-    const requestedPanelType = node.instanceName || (node.module ? node.module.replace(/^\/PanelInstances\//, "").replace(/\.mjs$/, "") : "InfoPanel");
+    const requestedPanelType = node.panelType || node.instanceName || (node.module ? node.module.replace(/^\/PanelInstances\//, "").replace(/\.mjs$/, "") : "InfoPanel");
     const panelType = normalizePanelIdentifier(requestedPanelType) || requestedPanelType;
-    
-    loadPanelIntoCell(panelType, { 
-      id: normalizedCellId || requestedCellId,
-      ...node.panelVars 
-    });
+
+    if (node.deferLoad !== true) {
+      loadPanelIntoCell(panelType, {
+        id: normalizedCellId || requestedCellId,
+        displayName: node.displayName || normalizedCellId || requestedCellId,
+        ...node.panelVars
+      });
+    }
   }
 }
 
@@ -382,7 +385,7 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
   divider.className = "layout-divider";
   divider._leftCell = leftCell;
   divider._rightCell = rightCell;
-  
+
   Object.assign(divider.style, {
     flexShrink: "0",
     flexGrow: "0",
@@ -404,7 +407,7 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
       display: "block",
     })
   });
-  
+
   let startPos, startLeftSize, startRightSize, totalSize;
   let stopPlaceholderMode = null;
 
@@ -446,17 +449,17 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
 
     const currentPos = isVertical ? e.clientY : e.clientX;
     const delta = currentPos - startPos;
-    
+
     let newLeftSize = startLeftSize + delta;
     let newRightSize = startRightSize - delta;
-    
+
     const min = 50; // Minimum panel size
     if (newLeftSize < min) newLeftSize = min;
     if (newRightSize < min) newRightSize = min;
-    
+
     const leftPercent = (newLeftSize / totalSize) * 100;
     const rightPercent = (newRightSize / totalSize) * 100;
-    
+
     leftEl.style.flex = `0 0 ${leftPercent}%`;
     rightEl.style.flex = `0 0 ${rightPercent}%`;
   }
@@ -936,17 +939,17 @@ window.addEventListener("toolbarAction", async (e) => {
     cell.innerHTML = "";
     cell.dataset.id = normalizedId;
     cell.dataset.panelClass = panelClass;
-    
+
     // Update all active panel tracking
     window.activePanel = normalizedId;
     window.activePanelClass = panelClass;
     if (window.NodevisionState) {
       window.NodevisionState.activePanelType = panelClass;
     }
-    
+
     await loadPanelIntoCell(normalizedId, { id: normalizedId, displayName: normalizedId });
     highlightActiveCell(cell);
-    
+
     console.log(`🔄 Replaced active panel with "${normalizedId}" (${panelClass})`);
     return;
   }

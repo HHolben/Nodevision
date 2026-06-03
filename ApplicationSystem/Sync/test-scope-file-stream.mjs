@@ -15,7 +15,7 @@ import { createSignedScopeFileRequest, createSignedScopeFileStreamPush } from ".
 import { saveSyncScopes } from "./SyncScopes.mjs";
 import { pullScopeFileStream } from "./pull-scope-file-stream.mjs";
 import { pushScopeFileStream } from "./push-scope-file-stream.mjs";
-import { registerPeerRoutes } from "../server/routes/peerRoutes.mjs";
+import { extractSignedStreamAuth, registerPeerRoutes } from "../server/routes/peerRoutes.mjs";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -95,8 +95,17 @@ async function main() {
   await fs.writeFile(path.resolve(sourceNotebookDir, "Shared", "zero.bin"), Buffer.alloc(0));
   await fs.writeFile(path.resolve(sourceNotebookDir, "Shared", "retry-pull.bin"), Buffer.from("retry-pull", "utf8"));
 
+  const missingAuth = extractSignedStreamAuth({ method: "GET", path: "/api/peer/scope/file-stream", query: {}, headers: {}, body: undefined });
+  assert(missingAuth.diagnostics.payloadSource === "missing", "Expected missing payload diagnostic source");
+  assert(missingAuth.diagnostics.signatureSource === "missing", "Expected missing signature diagnostic source");
+
   const serverHandle = await startPeerServer({ runtimeRoot: sourceRoot, notebookDir: sourceNotebookDir });
   try {
+    const noAuthUrl = new URL("/api/peer/scope/file-stream", serverHandle.peerUrl + "/");
+    const noAuthResult = await fetchJson(noAuthUrl.toString());
+    assert(noAuthResult.response.status === 401, "Expected missing stream auth to be rejected");
+    assert(String(noAuthResult.payload.error || "").includes("Unauthorized peer scope file stream request"), "Expected missing stream auth error");
+
     const traversalMessage = {
       type: "nodevision.peer.scopeFileRequest",
       version: 1,
@@ -124,6 +133,19 @@ async function main() {
     validGetUrl.searchParams.set("signatureBase64", validSignedGet.signatureBase64);
     const validGetResponse = await fetch(validGetUrl.toString());
     assert(validGetResponse.ok === true, "Expected signed URL-encoded stream request to succeed");
+
+    const headerSignedGet = await createSignedScopeFileRequest(
+      { scope: "Shared", relativePath: bigRelativePath },
+      { runtimeRoot: destRoot },
+    );
+    const headerGetUrl = new URL("/api/peer/scope/file-stream", serverHandle.peerUrl + "/");
+    const headerGetResponse = await fetch(headerGetUrl.toString(), {
+      headers: {
+        "x-nodevision-peer-payload": headerSignedGet.payload,
+        "x-nodevision-peer-signature": headerSignedGet.signatureBase64,
+      },
+    });
+    assert(headerGetResponse.ok === true, "Expected signed header-carried stream request to succeed");
 
     const tamperedPayload = validSignedGet.payload.replace("big-stream.bin", "tampered.bin");
     const tamperedGetUrl = new URL("/api/peer/scope/file-stream", `${serverHandle.peerUrl}/`);

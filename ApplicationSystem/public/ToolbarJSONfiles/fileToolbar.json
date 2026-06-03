@@ -60,7 +60,7 @@
     "parentHeading": "File Manager",
     "heading": "Copy File/Directory",
     "callbackKey": "copyFile",
-    "icon": "icons/CopyIcon.png",
+    "icon": "icons/FileIcon.png",
     "routeToActivePanel": true
   },
   {
@@ -68,7 +68,7 @@
     "parentHeading": "File Manager",
     "heading": "Cut File/Directory",
     "callbackKey": "cutFile",
-    "icon": "icons/CutIcon.png",
+    "icon": "icons/FileIcon.png",
     "routeToActivePanel": true
   },
   {
@@ -124,7 +124,7 @@
     "parentHeading": "Graph Manager",
     "heading": "Update Edges",
     "callbackKey": "UpdateEdges",
-    "icon": "icons/UpdateEdgesIcon.png",
+    "icon": "icons/LinkIcon.png",
     "routeToActivePanel": true
   },
   {
@@ -132,14 +132,14 @@
     "parentHeading": "Graph Manager",
     "heading": "Export Graph",
     "script": "ExportGraph.js",
-    "icon": "icons/ExportGraph.png"
+    "icon": "icons/Download.png"
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "Refresh Graph",
     "callbackKey": "UpdateEdges",
-    "icon": "icons/RefreshIcon.png",
+    "icon": "icons/Sync.png",
     "routeToActivePanel": true
   },
   {
@@ -147,7 +147,7 @@
     "parentHeading": "Graph Manager",
     "heading": "Verify Graph",
     "callbackKey": "RefreshGraphNodes",
-    "icon": "icons/RefreshIcon.png",
+    "icon": "icons/Sync.png",
     "routeToActivePanel": true
   },
   {
@@ -173,14 +173,16 @@
     "ToolbarCategory": "File",
     "heading": "View Nodevision Document",
     "callbackKey": "viewNodevisionDocument",
-    "icon": "icons/ViewNodevisionDocumentIcon.png"
+    "icon": "icons/FileIcon.png"
   },
   {
     "ToolbarCategory": "File",
-    "heading": "Upload to Arduino",
-    "callbackKey": "uploadToArduino",
-    "icon": "icons/ArduinoUpload.png",
-    "availability": ["panelType:EditorPanel", "mode:Code Editing"]
+    "heading": "Flash Board",
+    "callbackKey": "flashBoard",
+    "icon": "icons/SaveIcon.png",
+    "conditions": {
+      "activeFileIsIno": true
+    }
   },
   {
     "ToolbarCategory": "File",
@@ -198,7 +200,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Export",
-    "icon": "icons/DownloadIcon.png"
+    "icon": "icons/Download.png"
   },
   {
     "ToolbarCategory": "File",
@@ -211,7 +213,7 @@
     "ToolbarCategory": "File",
     "heading": "Export virtual world as usd",
     "callbackKey": "ExportVirtualWorldAsUSD",
-    "icon": "icons/DownloadIcon.png",
+    "icon": "icons/Download.png",
     "availability": ["fileOpen"]
   }
 ]

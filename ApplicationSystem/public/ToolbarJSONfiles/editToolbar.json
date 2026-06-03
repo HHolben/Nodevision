@@ -242,7 +242,7 @@
   "heading": "Copy",
   "callbackKey": "svgCopy",
   "modes": ["SVG Editing"],
-  "icon": "icons/CopyIcon.png"
+  "icon": "icons/FileIcon.png"
 },
 {
   "ToolbarCategory": "Edit",

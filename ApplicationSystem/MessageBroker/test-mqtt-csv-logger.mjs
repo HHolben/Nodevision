@@ -11,6 +11,7 @@ import {
   buildCsvLoggerRow,
   loadTopicCsvLoggerConfig,
   saveTopicCsvLoggerConfig,
+  loadThingDescriptionCsvLoggers,
   startMqttCsvLoggers,
 } from "./MQTTCsvLogger.mjs";
 
@@ -127,6 +128,43 @@ async function main() {
   throttledBroker.publish(logger.topicFilter, { moisture: 2002 }, { publisherId: "mqtt-test" });
   await waitFor(async () => (await readIfExists(path.join(notebookDir, "IoTGarden", "Throttle.csv"))).includes("2002"), "row after minIntervalMs should write");
   throttledCleanup();
+
+  await saveTopicCsvLoggerConfig({ settingsDir, config: { loggers: [] } });
+  await fs.writeFile(path.join(notebookDir, "GardenBed1Controller.td.json"), JSON.stringify({
+    "@context": ["https://www.w3.org/2022/wot/td/v1.1"],
+    title: "Garden Bed 1 Controller",
+    id: "urn:nodevision:thing:garden-bed1-controller",
+    securityDefinitions: { nosec_sc: { scheme: "nosec" } },
+    security: ["nosec_sc"],
+    properties: {
+      moisture: {
+        type: "integer",
+        observable: true,
+        forms: [{ href: "mqtt://localhost/nodevision/iot/garden/bed1/moisture", op: "observeproperty" }],
+      },
+    },
+    nodevision: {
+      logging: {
+        csvLoggers: [{
+          id: "td-garden-bed1-moisture",
+          name: "TD Garden Bed 1 Moisture",
+          enabled: true,
+          property: "moisture",
+          csvRelativePath: "IoTGarden/TdMoisture.csv",
+          columns: ["Date", "Time", "Moisture Reading"],
+          mappings: { Date: "$date", Time: "$time", "Moisture Reading": "moisture" },
+        }],
+      },
+    },
+  }, null, 2), "utf8");
+  const tdLoggers = await loadThingDescriptionCsvLoggers({ notebookDir });
+  assert(tdLoggers.some((item) => item.id === "td-garden-bed1-moisture"), "TD file should generate compatible CSV logger config");
+  const tdBroker = createBroker({ maxEvents: 10 });
+  const tdCleanup = await startMqttCsvLoggers({ broker: tdBroker, notebookDir, settingsDir, now: fixedNow });
+  assert(tdCleanup.count === 1, "TD-derived logger should subscribe");
+  tdBroker.publish(logger.topicFilter, { moisture: 2222 }, { retain: true, publisherId: "mqtt-td-test" });
+  await waitFor(async () => (await readIfExists(path.join(notebookDir, "IoTGarden", "TdMoisture.csv"))).includes("2222"), "TD-derived logger should write CSV row");
+  tdCleanup();
 
   const jsonStringRow = buildCsvLoggerRow({ logger, message: { ...message, payload: '{"moisture":2111}' }, now: fixedNow });
   assert(jsonStringRow.row[2] === "2111", "JSON string payload should parse");

@@ -14,44 +14,44 @@
 
   {
     "heading": "Game Controls",
-    "icon": "/icons/terminal.svg",
+    "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "openGameControls"
   },
   {
     "heading": "Sound Settings",
-    "icon": "/icons/Settings.svg",
+    "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "callbackKey": "openSoundSettings"
   },
 
   {
     "heading": "Open Settings",
-    "icon": "/icons/terminal.svg",
+    "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "openSettingsPage"
   },
   {
     "heading": "Toggle View Mode",
-    "icon": "/icons/terminal.svg",
+    "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "toggleViewMode"
   },
   {
     "heading": "Toggle Page Preview Mode",
-    "icon": "/icons/terminal.svg",
+    "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "togglePagePreviewMode"
   },
   {
     "heading": "Edit Login Background",
-    "icon": "/icons/Settings.svg",
+    "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "callbackKey": "editLoginBackground"
   },
   {
     "heading": "App Styles",
-    "icon": "/icons/Settings.svg",
+    "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "panelTemplateId": "AppStylesPanel",
     "panelType": "InfoPanel",

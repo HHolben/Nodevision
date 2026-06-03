@@ -2,7 +2,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "View Layers",
-    "icon": "icons/layoutControls.png",
+    "icon": "icons/CanvasIcon.png",
     "callbackKey": "ViewLayers",
     "panelTemplate": "SVGLayersPanel",
     "panelType": "InfoPanel",
@@ -32,7 +32,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View",
     "heading": "View Type",
-    "icon": "icons/layoutControls.png",
+    "icon": "icons/CanvasIcon.png",
     "preventDropdown": true,
     "modes": ["KMLviewerMode", "KMLeditorMode"]
   },
@@ -176,27 +176,27 @@
     "ToolbarCategory": "View",
     "heading": "Layout Controls",
     "content": "",
-    "icon": "icons/layoutControls.png"
+    "icon": "icons/CanvasIcon.png"
   },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Close Panel",
-    "icon": "icons/closePanel.png",
+    "icon": "icons/ExitIcon.png",
     "callbackKey": "closePanel"
   },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Fullscreen Panel",
-    "icon": "icons/fullscreenPanel.png",
+    "icon": "icons/StretchArrowIcon.png",
     "callbackKey": "fullscreenPanel"
   },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Undock Panel",
-    "icon": "icons/layoutControls.png",
+    "icon": "icons/CanvasIcon.png",
     "callbackKey": "UndockPanel"
   },
 
@@ -204,55 +204,55 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Split Cell Horizontally",
-    "icon": "icons/HorizontalCellSplitting.png",
+    "icon": "icons/CanvasIcon.png",
     "callbackKey": "SplitCellHorizontally"
   },
       {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Split Cell Vertically",
-    "icon": "icons/VerticalCellSplitting.png",
+    "icon": "icons/CanvasIcon.png",
     "callbackKey": "SplitCellVertically"
   },    {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Merge Cells",
-    "icon": "icons/cellsMerging.png",
+    "icon": "icons/CanvasIcon.png",
     "callbackKey": "MergeCells"
   },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Left",
-    "icon": "icons/moveLeft.png",
+    "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelLeft"
   },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Right",
-    "icon": "icons/moveRight.png",
+    "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelRight"
   },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Up",
-    "icon": "icons/moveUp.png",
+    "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelUp"
   },
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Down",
-    "icon": "icons/moveDown.png",
+    "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelDown"
   },
     {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Save Current Layout",
-    "icon": "icons/SaveTheLayout.png",
+    "icon": "icons/SaveIcon.png",
     "callbackKey": "SaveCurrentLayout"
   }
 ]

@@ -8,8 +8,10 @@ import { fetchDirectoryContents as fetchDirectoryContentsAPI, moveFileOrDirector
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
 import { attachMqttGraphLayer, MQTT_GRAPH_STYLE } from './GraphManagerDependencies/MQTTGraphAdapter.mjs';
+import { attachThingDescriptionGraphLayer, THING_DESCRIPTION_GRAPH_STYLE } from './GraphManagerDependencies/ThingDescriptionGraphAdapter.mjs';
 
 let cy;
+let tdGraphLayer = null;
 let currentRootPath = '';
 const discoveredLinks = new Map(); // sourcePath -> Set(targetPath)
 const brokenLinksBySource = new Map(); // sourcePath -> Set(brokenTargetPath)
@@ -387,7 +389,7 @@ async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
     }
 
     discoveredLinks.clear();
-    cy.elements().not('.mqtt-live').remove();
+    cy.elements().not('.mqtt-live, .td-live').remove();
     externalNodesLoaded = false;
 
     await loadExternalNodes();
@@ -790,7 +792,7 @@ function rebuildVisibleEdges() {
     }
 
     cy.batch(() => {
-        cy.edges().not('.mqtt-live').remove();
+        cy.edges().not('.mqtt-live, .td-live').remove();
         if (edgeMap.size > 0) {
             cy.add([...edgeMap.values()]);
         }
@@ -1138,7 +1140,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                     ...(edgeStyleOverrides || {})
                 }
             },
-            ...MQTT_GRAPH_STYLE
+            ...MQTT_GRAPH_STYLE,
+            ...THING_DESCRIPTION_GRAPH_STYLE
         ],
         layout: { name: 'preset' }
     });
@@ -1187,6 +1190,12 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         cy,
         controlsEl: mqttControlsId ? document.getElementById(mqttControlsId) : null,
         inspectorEl: mqttInspectorId ? document.getElementById(mqttInspectorId) : null,
+        relayout: queueRelayout,
+    });
+
+    tdGraphLayer = attachThingDescriptionGraphLayer({
+        cy,
+        controlsEl: mqttControlsId ? document.getElementById(mqttControlsId) : null,
         relayout: queueRelayout,
     });
 
@@ -1305,6 +1314,7 @@ async function renderGraphData(files, parentPath) {
     }
 
     rebuildVisibleEdges();
+    tdGraphLayer?.refresh?.();
     // Final relayout after edges exist so connected structures pack better.
     queueRelayout({ fit: true, reason: 'edges-updated' });
 }

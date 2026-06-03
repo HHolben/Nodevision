@@ -230,6 +230,7 @@ har,DataStorage,ViewJSON.mjs,JSONFamilyEditor.mjs
 hdf5,DataStorage,ViewBinary.mjs,BinaryFamilyEditor.mjs
 hypothesis.json,DataStorage,ViewJSON.mjs,JSONFamilyEditor.mjs
 iiif.json,DataStorage,ViewIIIF.mjs,JSONFamilyEditor.mjs
+td.json,IoT,ViewThingDescription.mjs,TDEditor.mjs
 isoxml,DataStorage,ViewISOXML.mjs,XMLFamilyEditor.mjs
 json,DataStorage,ViewJSON.mjs,JSONFamilyEditor.mjs
 jsonl,DataStorage,ViewJSON.mjs,JSONFamilyEditor.mjs

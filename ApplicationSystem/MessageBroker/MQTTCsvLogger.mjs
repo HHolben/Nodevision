@@ -4,7 +4,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { topicMatchesFilter, validateTopicFilter } from "./TopicMatcher.mjs";
+import { validateTopicFilter } from "./TopicMatcher.mjs";
+import { extractCsvLoggersFromThingDescription, parseThingDescriptionText } from "../public/ThingDescription/ThingDescriptionModel.mjs";
 
 export const DEFAULT_TOPIC_CSV_LOGGERS_FILE = path.join("MQTT", "TopicCsvLoggers.json");
 
@@ -189,12 +190,58 @@ export async function appendCsvLoggerRow({ notebookDir, logger, message, now }) 
   return { headers, row, csvRelativePath: logger.csvRelativePath };
 }
 
+async function walkThingDescriptionFiles(dir, root = dir, out = []) {
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    if (entry.name === "ServerSettings" || entry.name === ".git" || entry.name === "node_modules") continue;
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await walkThingDescriptionFiles(fullPath, root, out);
+    } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".td.json")) {
+      out.push(fullPath);
+    }
+  }
+  return out;
+}
+
+export async function loadThingDescriptionCsvLoggers({ notebookDir }) {
+  if (!notebookDir) return [];
+  const files = await walkThingDescriptionFiles(notebookDir);
+  const loggers = [];
+  for (const filePath of files) {
+    try {
+      const td = parseThingDescriptionText(await fs.readFile(filePath, "utf8"));
+      for (const logger of extractCsvLoggersFromThingDescription(td)) {
+        validateLogger(logger);
+        loggers.push(logger);
+      }
+    } catch (err) {
+      const safeMessage = String(err?.message || err).replace(/token|secret|privatekey/gi, "[redacted]");
+      console.warn("[mqtt-csv] skipped TD logger config:", safeMessage);
+    }
+  }
+  return loggers;
+}
+
 export async function startMqttCsvLoggers({ broker, notebookDir, settingsDir, now = () => new Date() }) {
   if (!broker || typeof broker.subscribe !== "function") throw new Error("broker is required");
   const config = await loadTopicCsvLoggerConfig({ settingsDir });
+  const tdLoggers = await loadThingDescriptionCsvLoggers({ notebookDir });
+  const loggers = [];
+  const loggerIds = new Set();
+  for (const logger of [...config.loggers, ...tdLoggers]) {
+    if (loggerIds.has(logger.id)) continue;
+    loggerIds.add(logger.id);
+    loggers.push(logger);
+  }
   const lastWrites = new Map();
   const unsubscribes = [];
-  for (const logger of config.loggers) {
+  for (const logger of loggers) {
     if (logger.enabled !== true) continue;
     validateLogger(logger);
     const unsubscribe = broker.subscribe(logger.topicFilter, (message) => {

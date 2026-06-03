@@ -77,6 +77,7 @@ function resolveExtension(filePath) {
     if (lower.endsWith(".musicxml.xml")) return "musicxml";
     if (lower.endsWith(".tar.gz")) return "tar.gz";
     if (lower.endsWith(".nvcircuit.json")) return "nvcircuit.json";
+    if (lower.endsWith(".td.json")) return "td.json";
 
     const lastSegment = lower.split("/").pop() || lower;
     if (lastSegment.includes(".")) {

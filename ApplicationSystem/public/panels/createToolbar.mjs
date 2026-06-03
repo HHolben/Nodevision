@@ -55,6 +55,52 @@ window.NodevisionState = window.NodevisionState || {
   activeActionHandler: null,
 };
 
+function normalizeToolbarFilePath(value) {
+  let cleaned = String(value || "").trim();
+  if (!cleaned) return "";
+
+  try {
+    const parsed = new URL(cleaned, window.location.origin);
+    cleaned = parsed.pathname || cleaned;
+  } catch {
+    // Keep path-like values that are not valid URLs.
+  }
+
+  cleaned = cleaned
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^\/+/, "");
+
+  if (cleaned.toLowerCase().startsWith("notebook/")) {
+    cleaned = cleaned.slice("Notebook/".length);
+  }
+
+  return cleaned.trim();
+}
+
+function resolveToolbarActiveFilePath(state = window.NodevisionState || {}) {
+  const candidates = [
+    state.activeEditorFilePath,
+    window.currentActiveFilePath,
+    window.selectedFilePath,
+    state.selectedFile,
+    window.ActiveNode,
+    window.filePath,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeToolbarFilePath(candidate);
+    if (normalized) return normalized;
+  }
+
+  return "";
+}
+
+function isToolbarActiveFileIno(state = window.NodevisionState || {}) {
+  return resolveToolbarActiveFilePath(state).toLowerCase().endsWith(".ino");
+}
+
 if (!window.__nvShowSubToolbarEventBound) {
   window.addEventListener("nv-show-subtoolbar", (evt) => {
     const detail = evt?.detail || {};
@@ -172,9 +218,13 @@ function checkToolbarConditions(item, state) {
 
   if (item.conditions.requiresFile && !state.selectedFile) return false;
 
+  if (item.conditions.activeFileIsIno !== undefined) {
+    if (isToolbarActiveFileIno(state) !== item.conditions.activeFileIsIno) return false;
+  }
+
   // Generic condition support: any additional condition key maps to NodevisionState key.
   // Allows domain-specific toolbar gating (e.g., midiHasSelection, midiSelectedType).
-  const reserved = new Set(["activePanelType", "fileIsDirty", "requiresFile"]);
+  const reserved = new Set(["activePanelType", "fileIsDirty", "requiresFile", "activeFileIsIno"]);
   for (const [key, expected] of Object.entries(item.conditions)) {
     if (reserved.has(key)) continue;
     const actual = state[key];
@@ -222,20 +272,27 @@ async function attachToolbarScript(item, hostElement) {
 }
 
 function createToolbarIconElement(item, { allowFallback = true } = {}) {
+  const makeFallback = () => {
+    if (!allowFallback) return null;
+    const fallback = document.createElement("span");
+    fallback.setAttribute("aria-hidden", "true");
+    fallback.className = "nv-toolbar-icon-fallback";
+    return fallback;
+  };
+
   if (item?.icon) {
     const icon = document.createElement("img");
     icon.src = item.icon;
     icon.alt = item.heading || "toolbar icon";
     icon.className = "nv-toolbar-icon";
+    icon.addEventListener("error", () => {
+      const fallback = makeFallback();
+      if (fallback) icon.replaceWith(fallback);
+    }, { once: true });
     return icon;
   }
 
-  if (!allowFallback) return null;
-
-  const fallback = document.createElement("span");
-  fallback.setAttribute("aria-hidden", "true");
-  fallback.className = "nv-toolbar-icon-fallback";
-  return fallback;
+  return makeFallback();
 }
 
 function rebuildPrebuiltDropdowns() {

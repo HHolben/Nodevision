@@ -1,28 +1,28 @@
 [
   {
     "heading": "File",
-    "icon": "/icons/file.svg",
+    "icon": "icons/FileIcon.png",
     "callbackKey": "fileMenu"
   },
   {
     "heading": "Edit",
-    "icon": "/icons/edit.svg",
+    "icon": "icons/EditIcon.png",
     "callbackKey": "editMenu"
   },
   {
     "heading": "Insert",
-    "icon": "/icons/Insert.svg",
+    "icon": "icons/InsertSensitiveIcon.png",
     "callbackKey": "fileMenu",
     "modes": ["HTMLediting", "HTMLviewing", "EPUBediting", "MIDIediting", "STLediting", "SVG Editing", "CIRediting", "EquationEditing", "ICSCalendarEditing", "3D World Viewing", "VR World Editing", "Virtual World Editing"]
   },
   {
     "heading": "Draw",
-    "icon": "/icons/Draw.svg",
+    "icon": "icons/CanvasIcon.png",
     "modes": ["PNGediting", "GraphicalEditing", "SVG Editing"]
   },
   {
     "heading": "Draw",
-    "icon": "/icons/Draw.svg",
+    "icon": "icons/CanvasIcon.png",
     "mode": "HTMLediting",
     "conditions": {
       "htmlImageEditingInline": true,
@@ -31,23 +31,23 @@
   },
   {
     "heading": "KML",
-    "icon": "/icons/layoutControls.png",
+    "icon": "icons/CanvasIcon.png",
     "modes": ["KMLviewerMode", "KMLeditorMode"],
     "preventDropdown": true
   },
   {
     "heading": "Terminal",
-    "icon": "/icons/terminal.svg",
+    "icon": "icons/CodeEditor.png",
     "callbackKey": "openTerminal"
   },
   {
     "heading": "View",
-    "icon": "/icons/terminal.svg",
+    "icon": "icons/CodeEditor.png",
     "callbackKey": "openTerminal"
   },
   {
     "heading": "Settings",
-    "icon": "/icons/Settings.svg"
+    "icon": "icons/EditIcon.png"
   },
   {
     "heading": "SearchBar",
@@ -56,6 +56,6 @@
   },
   {
     "heading": "User",
-    "icon": "/icons/user.svg"
+    "icon": "icons/DefaultNodeImage.png"
   }
 ]

@@ -285,7 +285,7 @@
       "heading": "Footer",
       "insertGroup": "text",
       "callbackKey": "insertFooter",
-      "icon": "icons/InsertFooterIcon.png",
+      "icon": "icons/InsertSensitiveIcon.png",
        "parentHeading": "Insert Text"
     },
            {
@@ -293,7 +293,7 @@
       "heading": "Superscript",
       "insertGroup": "text",
       "callbackKey": "insertSuperscript",
-      "icon": "icons/InsertSuperscript.png",
+      "icon": "icons/InsertSensitiveIcon.png",
       "parentHeading": "Insert Text"
     },
     
@@ -302,7 +302,7 @@
       "heading": "Tab",
       "insertGroup": "text",
       "callbackKey": "insertTab",
-      "icon": "icons/InsertTab.png",
+      "icon": "icons/TabIcon.png",
       "parentHeading": "Insert Text"
     },
     {
@@ -451,7 +451,7 @@
       "insertGroup": "Layout",
       "callbackKey": "insertDIV",
       "modes": ["HTMLediting"],
-      "icon": "icons/InsertDivIcon.png"
+      "icon": "icons/InsertSensitiveIcon.png"
     },
         {
       "ToolbarCategory": "Insert",
@@ -459,7 +459,7 @@
       "insertGroup": "text",
       "callbackKey": "insertFootnote",
       "modes": ["HTMLediting"],
-      "icon": "icons/insertFootnoteIcon.png"
+      "icon": "icons/InsertSensitiveIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -483,7 +483,7 @@
       "insertGroup": "Layout",
       "callbackKey": "insertLayoutCanvas",
       "modes": ["HTMLediting", "EPUBediting"],
-      "icon": "icons/InsertDivIcon.png"
+      "icon": "icons/InsertSensitiveIcon.png"
     },
     {
       "ToolbarCategory": "Insert",
@@ -541,7 +541,7 @@
   "insertGroup": "3D Objects",
   "callbackKey": "insertPrism",
   "modes": ["VR World Editing"],
-  "icon": "icons/PrismIcon.png"
+  "icon": "icons/3Dmodel.png"
 },     
 {
   "ToolbarCategory": "Insert",
@@ -549,7 +549,7 @@
   "insertGroup": "3D Objects",
   "callbackKey": "insertSTL",
   "modes": ["VR World Editing"],
-  "icon": "icons/InsertSTLIcon.png"
+  "icon": "icons/3Dmodel.png"
 },
 	{
 	  "ToolbarCategory": "Insert",

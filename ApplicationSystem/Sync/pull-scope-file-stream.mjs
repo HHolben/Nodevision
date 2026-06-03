@@ -74,6 +74,38 @@ async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, att
   );
 }
 
+function summarizeSignedPayloadForLog(payloadText) {
+  try {
+    const parsed = JSON.parse(String(payloadText || ""));
+    return {
+      parsed: Boolean(parsed && typeof parsed === "object" && !Array.isArray(parsed)),
+      deviceId: typeof parsed?.deviceId === "string" ? parsed.deviceId : null,
+      scope: typeof parsed?.scope === "string" ? parsed.scope : null,
+      relativePath: typeof parsed?.relativePath === "string" ? parsed.relativePath : null,
+      timestampPresent: typeof parsed?.timestamp === "string" && parsed.timestamp.length > 0,
+    };
+  } catch {
+    return { parsed: false, deviceId: null, scope: null, relativePath: null, timestampPresent: false };
+  }
+}
+
+function logOutgoingScopedStreamRequest({ endpoint, method, url, signed }) {
+  try {
+    const parsedUrl = new URL(url);
+    console.debug("[sync] outgoing scoped stream request", {
+      endpoint,
+      method,
+      url: parsedUrl.origin + parsedUrl.pathname,
+      queryKeys: Array.from(parsedUrl.searchParams.keys()).sort(),
+      headers: [],
+      bodyFields: [],
+      payloadPresent: typeof signed?.payload === "string" && signed.payload.length > 0,
+      signaturePresent: typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
+      payloadFields: summarizeSignedPayloadForLog(signed?.payload),
+    });
+  } catch {}
+}
+
 async function readStreamErrorDetail(response) {
   const asJson = await response.json().catch(() => null);
   if (asJson?.error) return String(asJson.error);
@@ -117,6 +149,7 @@ export async function pullScopeFileStream({
     streamUrl.searchParams.set("payload", signed.payload);
     streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
 
+    logOutgoingScopedStreamRequest({ endpoint: "scope/file-stream", method: "GET", url: streamUrl.toString(), signed });
     response = await fetch(streamUrl.toString(), { method: "GET" });
     if (response.ok) break;
 

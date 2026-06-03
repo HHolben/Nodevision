@@ -21,6 +21,7 @@ import listDirectoryRouter from "./routes/api/listDirectory.js";
 import uploadRoutes from './routes/api/fileUploadRoutes.js';
 import previewRuntimeRoutes from './routes/api/previewRuntimeRoutes.js';
 import previewRuntimeControlRoutes from './routes/api/previewRuntimeControlRoutes.js';
+import arduinoFlashRoutes from './routes/api/arduinoFlashRoutes.js';
 import { createServerContext, ensureServerDirectories } from './shared/serverContext.mjs';
 
 import { createPhpProxyOptions } from "./server/phpProxy.mjs";
@@ -143,9 +144,11 @@ export default async function createApp(runtimeConfig = {}) {
     return res.status(403).json({ error: 'Forbidden' });
   });
 
-  app.use('/lib/monaco', express.static(path.join(PUBLIC_DIR, 'lib/monaco')));
-  app.use("/api", listDirectoryRouter(ctx));
-  app.use('/api/file', uploadRoutes);
+app.use('/lib/monaco', express.static(path.join(PUBLIC_DIR, 'lib/monaco')));
+app.use("/api", listDirectoryRouter(ctx));
+app.use("/api", arduinoFlashRoutes(ctx));
+app.use('/api/file', uploadRoutes);
+
 
   // Authenticated write access for curated ServerData assets.
   // Currently limited to the login background SVG.

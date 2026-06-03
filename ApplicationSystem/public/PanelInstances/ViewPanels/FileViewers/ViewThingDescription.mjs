@@ -1,145 +1,146 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewThingDescription.mjs
-// This file defines browser-side View Thing Description logic for the Nodevision UI. It renders interface components and handles user interactions.
-// Allows viewing device properties and exporting an Arduino sketch
+// W3C Web of Things Thing Description viewer for .td.json files.
 
-export async function ViewThingDescription(filename, infoPanel, serverBase) {
-  console.log("ViewThingDescription: rendering", filename);
+import {
+  deriveThingDescriptionGraph,
+  extractCsvLoggersFromThingDescription,
+  extractMqttForms,
+  parseThingDescriptionText,
+  securitySummary,
+  summarizeThingDescription,
+} from "/ThingDescription/ThingDescriptionModel.mjs";
 
-  infoPanel.innerHTML = `<h2>Thing Description</h2><p>Loading...</p>`;
+export async function renderFile(filename, viewPanel, iframe, serverBase) {
+  const url = `${serverBase}/${filename}`;
+  viewPanel.innerHTML = `<div style="padding:14px;font:13px/1.45 system-ui, sans-serif;">Loading Thing Description...</div>`;
 
   try {
-    const response = await fetch(`${serverBase}/${filename}`);
+    const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const fileContent = await response.text();
-    const td = JSON.parse(fileContent);
-
-    infoPanel.innerHTML = ""; // clear "Loading..."
-
-    const title = td.title || "Unnamed Device";
-    infoPanel.innerHTML += `<h3>${title}</h3>`;
-
-    const props = td.properties || {};
-    const propKeys = Object.keys(props);
-
-    if (propKeys.length === 0) {
-      infoPanel.innerHTML += `<p>No properties defined.</p>`;
-      return;
-    }
-
-    const table = document.createElement("table");
-    table.innerHTML = `
-      <thead>
-        <tr><th>Data Name</th><th>Description</th><th>GPIO</th><th>Type</th></tr>
-      </thead>
-      <tbody></tbody>
-    `;
-
-    const tbody = table.querySelector("tbody");
-
-    propKeys.forEach(key => {
-      const prop = props[key];
-      const desc = prop.description || "";
-      const gpioMatch = desc.match(/GPIO\s*(\d+)/i);
-      const gpio = gpioMatch ? gpioMatch[1] : "";
-      const type = prop.type || "analog";
-
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${key}</td>
-        <td>${desc}</td>
-        <td><input value="${gpio}" data-prop="${key}" class="gpio-input" size="4"></td>
-        <td>
-          <select data-prop-type="${key}">
-            <option value="analog" ${type === "analog" ? "selected" : ""}>Analog</option>
-            <option value="digital" ${type === "digital" ? "selected" : ""}>Digital</option>
-          </select>
-        </td>
-      `;
-      tbody.appendChild(row);
-    });
-
-    infoPanel.appendChild(table);
-
-    const button = document.createElement("button");
-    button.textContent = "Download Arduino Sketch";
-    button.onclick = () => downloadSketch(title, table);
-    infoPanel.appendChild(button);
-
-    // Raw JSON viewer
-    const jsonBlock = document.createElement("details");
-    jsonBlock.innerHTML = `
-      <summary style="margin-top: 1em; cursor: pointer;">Show Thing Description JSON</summary>
-      <pre style="background:#f5f5f5; border:1px solid #ccc; padding:0.5em; overflow:auto;">${escapeHTML(
-        JSON.stringify(td, null, 2)
-      )}</pre>
-    `;
-    infoPanel.appendChild(jsonBlock);
+    const td = parseThingDescriptionText(await response.text());
+    renderThingDescription(viewPanel, td);
   } catch (err) {
-    console.error("Failed to load Thing Description:", err);
-    infoPanel.innerHTML = `<p style="color:red;">Failed to load Thing Description: ${err.message}</p>`;
+    viewPanel.innerHTML = `<p style="color:#b00020;padding:14px;">Failed to load Thing Description: ${escapeHtml(err.message)}</p>`;
   }
 }
 
-// Helper to escape HTML for JSON display
-function escapeHTML(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+export async function ViewThingDescription(filename, infoPanel, serverBase) {
+  return renderFile(filename, infoPanel, null, serverBase);
 }
 
-// Generate Arduino sketch
-function downloadSketch(title, table) {
-  const rows = table.querySelectorAll("tbody tr");
-  let defines = "",
-    pinModes = "",
-    reads = "";
+function renderThingDescription(container, td) {
+  const summary = summarizeThingDescription(td);
+  const mqttForms = extractMqttForms(td);
+  const loggers = extractCsvLoggersFromThingDescription(td);
+  const graph = deriveThingDescriptionGraph(td);
+  const graphNodes = graph.filter((item) => item.group === "nodes");
+  const graphEdges = graph.filter((item) => item.group === "edges");
 
-  rows.forEach(row => {
-    const dataName = row.querySelector("td").textContent.trim();
-    const label = dataName.toUpperCase();
-    const gpio = row.querySelector("input").value.trim();
-    const type = row.querySelector("select").value;
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:14px;padding:14px;box-sizing:border-box;font:13px/1.45 system-ui, sans-serif;color:#17202a;">
+      <section style="border-bottom:1px solid #d8dde6;padding-bottom:10px;">
+        <div style="font-size:20px;font-weight:700;">${escapeHtml(summary.title)}</div>
+        <div style="color:#52606d;overflow-wrap:anywhere;">${escapeHtml(summary.id || "No id declared")}</div>
+        ${summary.description ? `<p style="max-width:820px;margin:8px 0 0;">${escapeHtml(summary.description)}</p>` : ""}
+      </section>
 
-    defines += `#define ${label} ${gpio}\n`;
-    pinModes += `  pinMode(${label}, INPUT);\n`;
+      <section>${kvTable([
+        ["@context", formatContext(summary.context)],
+        ["version", JSON.stringify(summary.version || {})],
+        ["security", securitySummary(td)],
+        ["properties", String(summary.propertyCount)],
+        ["actions", String(summary.actionCount)],
+        ["events", String(summary.eventCount)],
+      ])}</section>
 
-    reads +=
-      type === "digital"
-        ? `  int ${dataName} = digitalRead(${label});\n`
-        : `  int ${dataName} = analogRead(${label});\n`;
-  });
+      ${renderAffordanceSection("Properties", td.properties || {}, "property")}
+      ${renderAffordanceSection("Actions", td.actions || {}, "action")}
+      ${renderAffordanceSection("Events", td.events || {}, "event")}
+      ${renderMqttForms(mqttForms)}
+      ${renderPhysicalIO(summary.physicalIO)}
+      ${renderCsvLoggers(loggers)}
+      ${renderGraphPreview(graphNodes, graphEdges)}
 
-  const code = `
-// Auto-generated for ${title}
-#include <WiFi.h>
-
-${defines}
-
-void setup() {
-  Serial.begin(115200);
-  WiFi.begin("yourSSID", "yourPassword");
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting...");
-  }
-
-  Serial.println("Connected to WiFi");
-  Serial.println(WiFi.localIP());
-
-${pinModes}
+      <details>
+        <summary style="cursor:pointer;font-weight:600;">View JSON</summary>
+        <pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f8fa;border:1px solid #d8dde6;border-radius:6px;padding:10px;">${escapeHtml(JSON.stringify(td, null, 2))}</pre>
+      </details>
+    </div>
+  `;
 }
 
-void loop() {
-${reads}
-  delay(1000);
+function renderAffordanceSection(title, group, kind) {
+  const entries = Object.entries(group || {});
+  if (!entries.length) return section(title, `<div style="color:#6b7280;">None declared.</div>`);
+  const rows = entries.map(([name, value]) => {
+    const schema = kind === "action" ? value.input : kind === "event" ? value.data : value;
+    return `
+      <tr>
+        <td><strong>${escapeHtml(name)}</strong></td>
+        <td>${escapeHtml(value.title || value.description || "")}</td>
+        <td>${escapeHtml(schema?.type || value.type || "")}</td>
+        <td>${value.observable ? "observable" : ""}</td>
+        <td>${escapeHtml(value.unit || "")}</td>
+      </tr>`;
+  }).join("");
+  return section(title, `<table style="width:100%;border-collapse:collapse;">${tableHead(["Name", "Description", "Type", "Flags", "Unit"])}<tbody>${rows}</tbody></table>`);
 }
-`.trim();
 
-  const blob = new Blob([code], { type: "text/plain" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${title.replace(/\W+/g, "_")}.ino`;
-  a.click();
+function renderMqttForms(forms) {
+  if (!forms.length) return section("MQTT Forms", `<div style="color:#6b7280;">No MQTT forms declared.</div>`);
+  const rows = forms.map((form) => `
+    <tr>
+      <td>${escapeHtml(form.kind)}</td>
+      <td>${escapeHtml(form.name)}</td>
+      <td><code>${escapeHtml(form.topic)}</code></td>
+      <td>${escapeHtml(String(form.op || ""))}</td>
+      <td><code>${escapeHtml(form.href)}</code></td>
+    </tr>`).join("");
+  return section("MQTT Forms", `<table style="width:100%;border-collapse:collapse;">${tableHead(["Kind", "Affordance", "Topic", "Operation", "Href"])}<tbody>${rows}</tbody></table>`);
+}
+
+function renderPhysicalIO(items) {
+  if (!items.length) return section("Nodevision Physical I/O", `<div style="color:#6b7280;">No physical I/O extension declared.</div>`);
+  const rows = items.map((item) => `
+    <tr><td>${escapeHtml(item.name || "")}</td><td>${escapeHtml(item.kind || "")}</td><td>${escapeHtml(item.pin || "")}</td><td>${escapeHtml(item.unit || "")}</td><td>${escapeHtml(item.description || "")}</td></tr>`).join("");
+  return section("Nodevision Physical I/O", `<table style="width:100%;border-collapse:collapse;">${tableHead(["Name", "Kind", "Pin", "Unit", "Description"])}<tbody>${rows}</tbody></table>`);
+}
+
+function renderCsvLoggers(loggers) {
+  if (!loggers.length) return section("Nodevision Logging", `<div style="color:#6b7280;">No CSV logging extension declared.</div>`);
+  const rows = loggers.map((logger) => `
+    <tr><td>${escapeHtml(logger.name)}</td><td>${escapeHtml(logger.topicFilter)}</td><td>${escapeHtml(logger.csvRelativePath)}</td><td>${escapeHtml(logger.columns.join(", "))}</td></tr>`).join("");
+  return section("Nodevision Logging", `<table style="width:100%;border-collapse:collapse;">${tableHead(["Name", "Topic Filter", "CSV", "Columns"])}<tbody>${rows}</tbody></table>`);
+}
+
+function renderGraphPreview(nodes, edges) {
+  const nodeHtml = nodes.slice(0, 16).map((node) => `<li>${escapeHtml(node.data.type)}: ${escapeHtml(node.data.label)}</li>`).join("");
+  const edgeHtml = edges.slice(0, 16).map((edge) => `<li>${escapeHtml(edge.data.source)} -> ${escapeHtml(edge.data.target)} <em>${escapeHtml(edge.data.label)}</em></li>`).join("");
+  return section("Graph Relationships Preview", `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;">
+      <div><strong>${nodes.length} derived node(s)</strong><ul>${nodeHtml || "<li>None</li>"}</ul></div>
+      <div><strong>${edges.length} derived edge(s)</strong><ul>${edgeHtml || "<li>None</li>"}</ul></div>
+    </div>`);
+}
+
+function section(title, body) {
+  return `<section style="border:1px solid #d8dde6;border-radius:8px;padding:10px;background:#fff;"><h3 style="font-size:14px;margin:0 0 8px;">${escapeHtml(title)}</h3>${body}</section>`;
+}
+
+function tableHead(labels) {
+  return `<thead><tr>${labels.map((label) => `<th style="text-align:left;border-bottom:1px solid #d8dde6;padding:5px;">${escapeHtml(label)}</th>`).join("")}</tr></thead>`;
+}
+
+function kvTable(rows) {
+  return `<table style="width:100%;border-collapse:collapse;">${rows.map(([key, value]) => `<tr><th style="text-align:left;width:130px;padding:4px;border-bottom:1px solid #eef1f5;color:#52606d;">${escapeHtml(key)}</th><td style="padding:4px;border-bottom:1px solid #eef1f5;overflow-wrap:anywhere;">${escapeHtml(value)}</td></tr>`).join("")}</table>`;
+}
+
+function formatContext(context) {
+  if (Array.isArray(context)) return context.map((item) => typeof item === "string" ? item : JSON.stringify(item)).join(", ");
+  if (context && typeof context === "object") return JSON.stringify(context);
+  return String(context || "");
+}
+
+function escapeHtml(value = "") {
+  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
