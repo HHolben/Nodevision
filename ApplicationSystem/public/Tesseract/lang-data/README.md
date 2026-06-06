@@ -1,8 +1,8 @@
 # Tesseract language data (offline)
 
-This folder is intentionally empty in the repo.
+This folder contains local language data used by the Handwriting -> Text panel.
 
-For the **Handwriting → Text** panel to run fully offline, place language data files here, for example:
+For the panel to run fully offline, keep language data files here, for example:
 
 - `eng.traineddata.gz` (English)
 

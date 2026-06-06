@@ -274,23 +274,11 @@ window.insertCallbacks = {
     console.log("Insert Text callback triggered.");
   },
   handwritingToText: () => {
-    import("/PanelInstances/InfoPanels/HandwritingOcrPanel.mjs")
-      .then((mod) => {
-        mod.openHandwritingOcrPanel({
-          onInsertText: (text) => {
-            const t = String(text || "");
-            if (!t) return;
-            try {
-              document.execCommand("insertText", false, t);
-            } catch (_) {
-              document.execCommand("insertHTML", false, t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
-            }
-          }
-        });
-      })
+    import("/ToolbarCallbacks/insert/handwritingToText.mjs")
+      .then((mod) => mod.default?.())
       .catch((err) => {
-        console.warn("Failed to open Handwriting → Text panel:", err);
-        alert(`Failed to open Handwriting → Text panel: ${err?.message || err}`);
+        console.warn("Failed to open Handwriting control panel:", err);
+        alert(`Failed to open Handwriting control panel: ${err?.message || err}`);
       });
   },
   insertLineNumberedPoetry: () => {

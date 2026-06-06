@@ -11,6 +11,7 @@ const PDF_MARGIN_TOP = 40;
 const PDF_MARGIN_BOTTOM = 40;
 const PDF_FONT_SIZE = 10;
 const PDF_LINE_HEIGHT = 14;
+const RENDERED_HTML_EXTENSIONS = new Set(["html", "htm", "xhtml"]);
 
 const textEncoder = new TextEncoder();
 
@@ -24,6 +25,43 @@ function normalizeSelectedPath(pathValue) {
     .replace(/\\/g, "/")
     .replace(/[?#].*$/, "")
     .replace(/^\/+/, "");
+}
+
+function getFileExtension(pathValue) {
+  const clean = normalizeSelectedPath(pathValue);
+  const leaf = clean.split("/").pop() || "";
+  const dot = leaf.lastIndexOf(".");
+  if (dot < 0) return "";
+  return leaf.slice(dot + 1).toLowerCase();
+}
+
+function toNotebookRelativePath(pathValue) {
+  const clean = normalizeSelectedPath(pathValue);
+  if (!clean) return "";
+  return clean.toLowerCase().startsWith("notebook/")
+    ? clean.slice("Notebook/".length)
+    : clean;
+}
+
+function encodeNotebookPath(pathValue) {
+  return toNotebookRelativePath(pathValue)
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function buildNotebookFileUrl(pathValue) {
+  const encodedPath = encodeNotebookPath(pathValue);
+  if (!encodedPath) return "";
+  return `${window.location.origin}/Notebook/${encodedPath}`;
+}
+
+function buildNotebookBaseUrl(pathValue) {
+  const encodedPath = encodeNotebookPath(pathValue);
+  const parts = encodedPath.split("/").filter(Boolean);
+  parts.pop();
+  return `${window.location.origin}/Notebook/${parts.join("/")}${parts.length ? "/" : ""}`;
 }
 
 function derivePdfFileName(pathValue) {
@@ -160,9 +198,9 @@ function buildPdfDocument(text) {
     } >>\nstream\n${stream}\nendstream`;
   }
 
-  objects[2] = `<< /Type /Pages /Kids [${
-    pageRefs.join(" ")
-  }] /Count ${pages.length} >>`;
+  objects[2] = `<< /Type /Pages /Kids ${
+    `[${pageRefs.join(" ")}]`
+  } /Count ${pages.length} >>`;
 
   const objectCount = nextObjectNumber - 1;
   const offsets = new Array(objectCount + 1).fill(0);
@@ -218,6 +256,61 @@ function downloadPdf(pdfText, fileName) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+async function getCurrentRenderedHtml(pathValue) {
+  if (typeof window.getEditorHTML === "function") {
+    return window.getEditorHTML();
+  }
+  return await fetchSelectedFileContent(pathValue);
+}
+
+async function printRenderedDocument(pathValue) {
+  const url = buildNotebookFileUrl(pathValue);
+  if (!url) throw new Error("Selected file path is invalid.");
+
+  const printWindow = window.open(url, "_blank", "width=1100,height=800");
+  if (!printWindow) {
+    throw new Error("Popup blocked. Allow popups for Nodevision and try again.");
+  }
+
+  await new Promise((resolve) => {
+    let printed = false;
+    const triggerPrint = () => {
+      if (printed) return;
+      printed = true;
+      try {
+        printWindow.document.title = derivePdfFileName(pathValue);
+      } catch (_) {
+        // Ignore browser cross-window access restrictions.
+      }
+      printWindow.focus();
+      printWindow.print();
+      resolve(true);
+    };
+
+    printWindow.addEventListener?.("load", () => setTimeout(triggerPrint, 250), { once: true });
+    setTimeout(triggerPrint, 1500);
+  });
+}
+
+async function exportRenderedHtmlAsPdf(pathValue) {
+  const electronExporter = window.nodevisionElectron?.exportHtmlToPdf;
+  if (typeof electronExporter !== "function") {
+    await printRenderedDocument(pathValue);
+    return;
+  }
+
+  const html = await getCurrentRenderedHtml(pathValue);
+  const result = await electronExporter({
+    html,
+    baseUrl: buildNotebookBaseUrl(pathValue),
+    defaultPath: derivePdfFileName(pathValue),
+    pageSize: "Letter",
+  });
+
+  if (result?.canceled) return;
+  console.log("Exported rendered HTML PDF:", result?.filePath || derivePdfFileName(pathValue));
+}
+
 export default async function ExportSelectedFileAsPDF() {
   const selectedPath = resolveFilePath();
   if (!selectedPath) {
@@ -232,6 +325,12 @@ export default async function ExportSelectedFileAsPDF() {
   }
 
   try {
+    const selectedExt = getFileExtension(normalizedPath);
+    if (RENDERED_HTML_EXTENSIONS.has(selectedExt)) {
+      await exportRenderedHtmlAsPdf(normalizedPath);
+      return;
+    }
+
     const fileText = await fetchSelectedFileContent(normalizedPath);
     const printableText = `File: ${normalizedPath}\n\n${fileText}`;
     const pdfText = buildPdfDocument(printableText);
