@@ -13,6 +13,7 @@ import { ensureDeviceIdentity, signMessage } from "./DeviceIdentity.mjs";
 import { addTrustedPeer } from "./TrustedPeers.mjs";
 import { createSignedScopeFileRequest, createSignedScopeFileStreamPush } from "./ScopePeerSync.mjs";
 import { saveSyncScopes } from "./SyncScopes.mjs";
+import { saveSyncProtection } from "./SyncProtection.mjs";
 import { pullScopeFileStream } from "./pull-scope-file-stream.mjs";
 import { pushScopeFileStream } from "./push-scope-file-stream.mjs";
 import { extractSignedStreamAuth, registerPeerRoutes } from "../server/routes/peerRoutes.mjs";
@@ -69,6 +70,7 @@ async function fetchJson(url, options = {}) {
 async function main() {
   const sourceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "nodevision-scope-stream-source-"));
   const destRoot = await fs.mkdtemp(path.join(os.tmpdir(), "nodevision-scope-stream-dest-"));
+  const untrustedRoot = await fs.mkdtemp(path.join(os.tmpdir(), "nodevision-scope-stream-untrusted-"));
   const sourceNotebookDir = path.resolve(sourceRoot, "Notebook");
   const destNotebookDir = path.resolve(destRoot, "Notebook");
   await fs.mkdir(path.resolve(sourceNotebookDir, "Shared"), { recursive: true });
@@ -76,9 +78,13 @@ async function main() {
 
   await saveSyncScopes(["SyncTest", "Shared"], { runtimeRoot: sourceRoot });
   await saveSyncScopes(["SyncTest", "Shared"], { runtimeRoot: destRoot });
+  await saveSyncScopes(["SyncTest", "Shared"], { runtimeRoot: untrustedRoot });
+  await saveSyncProtection({ protectedFromPeerWrites: true }, { runtimeRoot: sourceRoot });
+  await saveSyncProtection({ protectedFromPeerWrites: false }, { runtimeRoot: destRoot });
 
   const sourceIdentity = await ensureDeviceIdentity({ runtimeRoot: sourceRoot, deviceName: "stream-source" });
   const destIdentity = await ensureDeviceIdentity({ runtimeRoot: destRoot, deviceName: "stream-dest" });
+  const untrustedIdentity = await ensureDeviceIdentity({ runtimeRoot: untrustedRoot, deviceName: "stream-untrusted" });
   await addTrustedPeer(
     {
       deviceId: destIdentity.deviceId,
@@ -94,6 +100,11 @@ async function main() {
   await fs.writeFile(bigSourceFilePath, bigData);
   await fs.writeFile(path.resolve(sourceNotebookDir, "Shared", "zero.bin"), Buffer.alloc(0));
   await fs.writeFile(path.resolve(sourceNotebookDir, "Shared", "retry-pull.bin"), Buffer.from("retry-pull", "utf8"));
+  const specialRelativePath = "Shared/Codex3ProjectNotebook/Tome1CreativeWriting/Collection3TimesMadness/LongLiveIcarus/12_31_24, 2_09\u202fPM Microsoft Lens(19).jpg";
+  const specialSourceData = Buffer.from("special-path-stream-content", "utf8");
+  const specialSourcePath = path.resolve(sourceNotebookDir, specialRelativePath);
+  await fs.mkdir(path.dirname(specialSourcePath), { recursive: true });
+  await fs.writeFile(specialSourcePath, specialSourceData);
 
   const missingAuth = extractSignedStreamAuth({ method: "GET", path: "/api/peer/scope/file-stream", query: {}, headers: {}, body: undefined });
   assert(missingAuth.diagnostics.payloadSource === "missing", "Expected missing payload diagnostic source");
@@ -179,6 +190,44 @@ async function main() {
     assert(expiredGet.response.status === 401, "Expected expired GET request to be rejected");
     assert(String(expiredGet.payload.error || "").includes("Expired request"), "Expected expired GET error");
 
+    const untrustedSignedGet = await createSignedScopeFileRequest(
+      { scope: "Shared", relativePath: bigRelativePath },
+      { runtimeRoot: untrustedRoot },
+    );
+    const untrustedGetUrl = new URL("/api/peer/scope/file-stream", `${serverHandle.peerUrl}/`);
+    untrustedGetUrl.searchParams.set("payload", untrustedSignedGet.payload);
+    untrustedGetUrl.searchParams.set("signatureBase64", untrustedSignedGet.signatureBase64);
+    const untrustedGet = await fetchJson(untrustedGetUrl.toString());
+    assert(untrustedGet.response.status === 401, "Expected untrusted stream requester to be rejected");
+    assert(String(untrustedGet.payload.error || "").includes("Unknown peer"), "Expected unknown peer stream error");
+
+    await addTrustedPeer(
+      {
+        deviceId: destIdentity.deviceId,
+        deviceName: destIdentity.deviceName,
+        publicKey: untrustedIdentity.publicKey,
+      },
+      { runtimeRoot: sourceRoot },
+    );
+    const staleKeySignedGet = await createSignedScopeFileRequest(
+      { scope: "Shared", relativePath: bigRelativePath },
+      { runtimeRoot: destRoot },
+    );
+    const staleKeyGetUrl = new URL("/api/peer/scope/file-stream", `${serverHandle.peerUrl}/`);
+    staleKeyGetUrl.searchParams.set("payload", staleKeySignedGet.payload);
+    staleKeyGetUrl.searchParams.set("signatureBase64", staleKeySignedGet.signatureBase64);
+    const staleKeyGet = await fetchJson(staleKeyGetUrl.toString());
+    assert(staleKeyGet.response.status === 401, "Expected stale trusted public key to reject stream request");
+    assert(String(staleKeyGet.payload.error || "").includes("Invalid signature"), "Expected stale key signature error");
+    await addTrustedPeer(
+      {
+        deviceId: destIdentity.deviceId,
+        deviceName: destIdentity.deviceName,
+        publicKey: destIdentity.publicKey,
+      },
+      { runtimeRoot: sourceRoot },
+    );
+
     const pullReport = await pullScopeFileStream({
       peerUrl: serverHandle.peerUrl,
       scope: "Shared",
@@ -206,6 +255,16 @@ async function main() {
     const zeroPulledStat = await fs.stat(path.resolve(destNotebookDir, "Shared", "zero.bin"));
     assert(zeroPulledStat.size === 0, "Expected 0-byte pulled target size");
 
+    const specialPullReport = await pullScopeFileStream({
+      peerUrl: serverHandle.peerUrl,
+      scope: "Shared",
+      relativePath: specialRelativePath,
+      runtimeRoot: destRoot,
+    });
+    assert(specialPullReport.ok === true, "Expected protected peer stream pull with special path to succeed");
+    const specialPulledBuffer = await fs.readFile(path.resolve(destNotebookDir, specialRelativePath));
+    assert(sha256OfBuffer(specialPulledBuffer) === sha256OfBuffer(specialSourceData), "Expected special path streamed content to match");
+
     let pullRetrySignCount = 0;
     const pullRetryReport = await pullScopeFileStream({
       peerUrl: serverHandle.peerUrl,
@@ -222,6 +281,8 @@ async function main() {
     });
     assert(pullRetrySignCount === 2, "Expected pull stream 401 to retry once with fresh signature");
     assert(pullRetryReport.ok === true, "Expected pull retry flow to succeed");
+
+    await saveSyncProtection({ protectedFromPeerWrites: false }, { runtimeRoot: sourceRoot });
 
     const uploadCreatedData = Buffer.from("upload-created", "utf8");
     await fs.writeFile(path.resolve(destNotebookDir, "Shared", "upload-created.bin"), uploadCreatedData);

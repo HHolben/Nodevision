@@ -61,17 +61,37 @@ async function hashFile(filePath) {
   return hasher.digest("hex");
 }
 
-async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, attempt, createSignedRequest }) {
-  if (typeof createSignedRequest === "function") {
-    return createSignedRequest(
-      { scope, relativePath },
-      { runtimeRoot, attempt },
+
+function createStreamSigningError(err, endpointLabel) {
+  const detail = err?.message || String(err);
+  const message = String(detail || "unknown signing error");
+  if (/device identity|device private key|partial device identity|private\.pem|public\.pem|device\.json/i.test(message)) {
+    const wrapped = new Error(
+      `Local device identity is missing or incomplete; cannot sign peer ${endpointLabel} request. ${message}`,
     );
+    wrapped.cause = err;
+    return wrapped;
   }
-  return createSignedScopeFileRequest(
-    { scope, relativePath },
-    { runtimeRoot },
-  );
+  const wrapped = new Error(`Unable to sign peer ${endpointLabel} request. ${message}`);
+  wrapped.cause = err;
+  return wrapped;
+}
+
+async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, attempt, createSignedRequest }) {
+  try {
+    if (typeof createSignedRequest === "function") {
+      return await createSignedRequest(
+        { scope, relativePath },
+        { runtimeRoot, attempt },
+      );
+    }
+    return await createSignedScopeFileRequest(
+      { scope, relativePath },
+      { runtimeRoot },
+    );
+  } catch (err) {
+    throw createStreamSigningError(err, "scope file-stream");
+  }
 }
 
 function summarizeSignedPayloadForLog(payloadText) {
@@ -92,16 +112,24 @@ function summarizeSignedPayloadForLog(payloadText) {
 function logOutgoingScopedStreamRequest({ endpoint, method, url, signed }) {
   try {
     const parsedUrl = new URL(url);
+    const payloadFields = summarizeSignedPayloadForLog(signed?.payload);
     console.debug("[sync] outgoing scoped stream request", {
       endpoint,
       method,
-      url: parsedUrl.origin + parsedUrl.pathname,
+      peerUrl: parsedUrl.origin,
+      requestPath: parsedUrl.pathname,
+      scope: payloadFields.scope,
+      relativePath: payloadFields.relativePath,
+      deviceId: payloadFields.deviceId,
+      signed: typeof signed?.payload === "string" && signed.payload.length > 0
+        && typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
+      timestampPresent: Boolean(payloadFields.timestampPresent),
       queryKeys: Array.from(parsedUrl.searchParams.keys()).sort(),
       headers: [],
       bodyFields: [],
       payloadPresent: typeof signed?.payload === "string" && signed.payload.length > 0,
       signaturePresent: typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
-      payloadFields: summarizeSignedPayloadForLog(signed?.payload),
+      payloadFields,
     });
   } catch {}
 }
