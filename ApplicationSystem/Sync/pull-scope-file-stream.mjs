@@ -62,16 +62,24 @@ async function hashFile(filePath) {
 }
 
 async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, attempt, createSignedRequest }) {
-  if (typeof createSignedRequest === "function") {
-    return createSignedRequest(
+  try {
+    if (typeof createSignedRequest === "function") {
+      return await createSignedRequest(
+        { scope, relativePath },
+        { runtimeRoot, attempt },
+      );
+    }
+    return await createSignedScopeFileRequest(
       { scope, relativePath },
-      { runtimeRoot, attempt },
+      { runtimeRoot },
     );
+  } catch (err) {
+    const message = String(err?.message || err || "");
+    if (message.includes("Device identity") || message.includes("Device private key") || message.includes("Partial device identity")) {
+      throw new Error("Local device identity is missing or incomplete; cannot sign scoped file-stream request. " + message);
+    }
+    throw err;
   }
-  return createSignedScopeFileRequest(
-    { scope, relativePath },
-    { runtimeRoot },
-  );
 }
 
 function summarizeSignedPayloadForLog(payloadText) {
@@ -89,19 +97,32 @@ function summarizeSignedPayloadForLog(payloadText) {
   }
 }
 
-function logOutgoingScopedStreamRequest({ endpoint, method, url, signed }) {
+function encodePayloadHeader(payload) {
+  return Buffer.from(String(payload || ""), "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function logOutgoingScopedStreamRequest({ endpoint, method, url, signed, headers = [] }) {
   try {
     const parsedUrl = new URL(url);
+    const payloadFields = summarizeSignedPayloadForLog(signed?.payload);
+    const signedOk = typeof signed?.payload === "string"
+      && signed.payload.length > 0
+      && typeof signed?.signatureBase64 === "string"
+      && signed.signatureBase64.length > 0;
     console.debug("[sync] outgoing scoped stream request", {
       endpoint,
       method,
-      url: parsedUrl.origin + parsedUrl.pathname,
-      queryKeys: Array.from(parsedUrl.searchParams.keys()).sort(),
-      headers: [],
-      bodyFields: [],
-      payloadPresent: typeof signed?.payload === "string" && signed.payload.length > 0,
-      signaturePresent: typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
-      payloadFields: summarizeSignedPayloadForLog(signed?.payload),
+      peerUrl: parsedUrl.origin,
+      scope: payloadFields.scope,
+      relativePath: payloadFields.relativePath,
+      deviceIdUsed: payloadFields.deviceId,
+      signed: signedOk,
+      timestampPresent: Boolean(payloadFields.timestampPresent),
+      headers,
     });
   } catch {}
 }
@@ -146,11 +167,14 @@ export async function pullScopeFileStream({
       createSignedRequest,
     });
     const streamUrl = new URL("/api/peer/scope/file-stream", `${normalizedPeerUrl}/`);
-    streamUrl.searchParams.set("payload", signed.payload);
-    streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
-
-    logOutgoingScopedStreamRequest({ endpoint: "scope/file-stream", method: "GET", url: streamUrl.toString(), signed });
-    response = await fetch(streamUrl.toString(), { method: "GET" });
+    logOutgoingScopedStreamRequest({ endpoint: "scope/file-stream", method: "GET", url: streamUrl.toString(), signed, headers: ["x-nodevision-peer-payload-base64", "x-nodevision-peer-signature"] });
+    response = await fetch(streamUrl.toString(), {
+      method: "GET",
+      headers: {
+        "x-nodevision-peer-payload-base64": encodePayloadHeader(signed.payload),
+        "x-nodevision-peer-signature": signed.signatureBase64,
+      },
+    });
     if (response.ok) break;
 
     const detail = await readStreamErrorDetail(response);

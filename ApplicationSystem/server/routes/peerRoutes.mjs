@@ -127,40 +127,43 @@ function classifyScopedStreamRequestError(err, unauthorizedError) {
   return { status: 401, error: unauthorizedError + ". Make sure both devices have approved/trusted each other for sync.", safeDetails: null, code: "unauthorized" };
 }
 
-function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {}, knownTrustedDeviceIds = []) {
-  const safe = classified?.safeDetails && typeof classified.safeDetails === "object"
-    ? classified.safeDetails
-    : {};
+function logScopedStreamAuthResult(endpoint, safeDetails = {}, status = 0, reason = "") {
+  const safe = safeDetails && typeof safeDetails === "object" ? safeDetails : {};
   const logLine = {
     endpoint,
-    errorCode: classified?.code || "unauthorized",
-    deviceId: safe.deviceId ?? null,
-    scope: safe.scope ?? null,
-    relativePath: safe.relativePath ?? null,
+    deviceIdPresent: typeof safe.deviceId === "string" && safe.deviceId.length > 0,
+    scopePresent: typeof safe.scope === "string" && safe.scope.length > 0,
+    relativePathPresent: typeof safe.relativePath === "string" && safe.relativePath.length > 0,
     timestampAgeMs: safe.timestampAgeMs ?? null,
     trustedPeerFound: Boolean(safe.trustedPeerFound),
     signatureVerified: Boolean(safe.signatureVerified),
-    status: Number(classified?.status || 0),
-    reason: String(classified?.error || err?.message || "unauthorized"),
-    authFieldSources: {
-      payload: diagnostics?.payloadSource || "unknown",
-      signature: diagnostics?.signatureSource || "unknown",
-    },
-    request: {
-      method: diagnostics?.method || null,
-      path: diagnostics?.path || null,
-      queryKeys: Array.isArray(diagnostics?.queryKeys) ? diagnostics.queryKeys : [],
-      bodyKeys: Array.isArray(diagnostics?.bodyKeys) ? diagnostics.bodyKeys : [],
-      headerKeys: Array.isArray(diagnostics?.headerKeys) ? diagnostics.headerKeys : [],
-      payloadParsed: Boolean(diagnostics?.payloadFields?.parsed),
-      payloadDeviceId: diagnostics?.payloadFields?.deviceId ?? null,
-      payloadScope: diagnostics?.payloadFields?.scope ?? null,
-      payloadRelativePath: diagnostics?.payloadFields?.relativePath ?? null,
-      payloadTimestampPresent: Boolean(diagnostics?.payloadFields?.timestamp),
-    },
-    knownTrustedDeviceIds: Array.isArray(knownTrustedDeviceIds) ? knownTrustedDeviceIds : [],
+    status: Number(status || 0),
+    reason: String(reason || ""),
   };
-  console.warn("[peerRoutes] Rejected scoped stream request: %s", JSON.stringify(logLine));
+  const level = Number(status || 0) >= 400 ? "warn" : "debug";
+  console[level]("[peerRoutes] scoped stream auth", logLine);
+}
+
+function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {}) {
+  const safe = classified?.safeDetails && typeof classified.safeDetails === "object"
+    ? classified.safeDetails
+    : {};
+  const fallback = diagnostics?.payloadFields && typeof diagnostics.payloadFields === "object"
+    ? {
+      deviceId: diagnostics.payloadFields.deviceId ?? null,
+      scope: diagnostics.payloadFields.scope ?? null,
+      relativePath: diagnostics.payloadFields.relativePath ?? null,
+      timestampAgeMs: null,
+      trustedPeerFound: false,
+      signatureVerified: false,
+    }
+    : {};
+  logScopedStreamAuthResult(
+    endpoint,
+    Object.keys(safe).length ? safe : fallback,
+    Number(classified?.status || 0),
+    String(classified?.error || err?.message || "unauthorized"),
+  );
 }
 
 function firstValue(value) {
@@ -180,6 +183,19 @@ function firstNonEmpty(values = []) {
 function headerValue(req, name) {
   if (!req?.headers) return undefined;
   return req.headers[name.toLowerCase()];
+}
+
+function decodeBase64UrlHeaderValue(value) {
+  const raw = firstValue(value);
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  const text = raw.trim();
+  if (!/^[A-Za-z0-9_-]+={0,2}$/.test(text)) return undefined;
+  const padded = text.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(text.length / 4) * 4, "=");
+  try {
+    return Buffer.from(padded, "base64").toString("utf8");
+  } catch {
+    return undefined;
+  }
 }
 
 function safePayloadFieldSummary(payloadText) {
@@ -204,6 +220,7 @@ export function extractSignedStreamAuth(req) {
   const body = req?.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
   const payload = firstNonEmpty([
     { source: "query", value: req?.query?.payload },
+    { source: "header:x-nodevision-peer-payload-base64", value: decodeBase64UrlHeaderValue(headerValue(req, "x-nodevision-peer-payload-base64")) },
     { source: "header:x-nodevision-peer-payload", value: headerValue(req, "x-nodevision-peer-payload") },
     { source: "header:x-nodevision-payload", value: headerValue(req, "x-nodevision-payload") },
     { source: "body", value: body.payload },
@@ -233,18 +250,6 @@ export function extractSignedStreamAuth(req) {
       payloadFields: safePayloadFieldSummary(payload.value),
     },
   };
-}
-
-async function safeTrustedDeviceIds(options = {}) {
-  try {
-    const store = await loadTrustedPeers(options);
-    return (store.trustedPeers || [])
-      .map((peer) => String(peer?.deviceId || "").trim())
-      .filter(Boolean)
-      .sort();
-  } catch {
-    return [];
-  }
 }
 
 export function registerPeerRoutes(app, ctx) {
@@ -341,6 +346,7 @@ export function registerPeerRoutes(app, ctx) {
           maxFutureSkewMs: STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS,
         },
       );
+      logScopedStreamAuthResult("scope/file-stream", verified.safeDetails, 200, "authorized");
       const scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
       const stat = await fs.stat(scoped.targetPath);
       if (!stat.isFile()) return res.status(404).json({ ok: false, error: "File not found" });
@@ -375,7 +381,7 @@ export function registerPeerRoutes(app, ctx) {
       if (msg.includes("not found") || err?.code === "ENOENT") return res.status(404).json({ ok: false, error: "File not found" });
       const classified = classifyScopedStreamRequestError(err, "Unauthorized peer scope file stream request");
       if (classified.status === 401 || classified.status === 400 || classified.status === 403) {
-        logScopedStreamAuthRejection("scope/file-stream", classified, err, streamAuthDiagnostics, await safeTrustedDeviceIds({ runtimeRoot: ctx?.runtimeRoot }));
+        logScopedStreamAuthRejection("scope/file-stream", classified, err, streamAuthDiagnostics);
       }
       return res.status(classified.status).json({ ok: false, error: classified.error });
     }
@@ -400,12 +406,13 @@ export function registerPeerRoutes(app, ctx) {
           maxFutureSkewMs: STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS,
         },
       );
+      logScopedStreamAuthResult("scope/file-stream-push", verified.safeDetails, 200, "authorized");
       scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
       tempPath = `${scoped.targetPath}.nodevision-upload`;
     } catch (err) {
       const classified = classifyScopedStreamRequestError(err, "Unauthorized peer scope file stream push");
       if (classified.status === 401 || classified.status === 400 || classified.status === 403) {
-        logScopedStreamAuthRejection("scope/file-stream-push", classified, err, streamAuthDiagnostics, await safeTrustedDeviceIds({ runtimeRoot: ctx?.runtimeRoot }));
+        logScopedStreamAuthRejection("scope/file-stream-push", classified, err, streamAuthDiagnostics);
       }
       return res.status(classified.status).json({ ok: false, error: classified.error });
     }
