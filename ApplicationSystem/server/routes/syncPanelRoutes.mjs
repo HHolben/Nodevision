@@ -9,7 +9,7 @@ import {
   removeSyncScope,
   validateSyncScope,
 } from "../../Sync/SyncScopes.mjs";
-import { runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
+import { normalizeSyncDirection, runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
 import { loadSyncProtection, saveSyncProtection } from "../../Sync/SyncProtection.mjs";
 import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
@@ -35,6 +35,7 @@ const DEFAULT_PEER_PORT_RECOVERY_TIMEOUT_MS = 650;
 const DEFAULT_PEER_ENDPOINT_REDISCOVERY_TIMEOUT_MS = 11_000;
 const DEFAULT_PEER_ENDPOINT_REDISCOVERY_POLL_MS = 150;
 const DEFAULT_PEER_URL_FALLBACK_PROBE_TIMEOUT_MS = 900;
+const PEER_WRITE_BLOCKED_MESSAGE = "Peer is protected from incoming sync writes. Use Pull mode from the receiving device or disable protection on the peer.";
 
 function requireSession(req, res) {
   if (!req.identity) {
@@ -105,9 +106,23 @@ function classifySyncRunError(err) {
     };
   }
   if (name === "PeerSyncHttpError") {
+    const status = Number(err?.status ?? err?.statusCode);
+    const payloadError = String(err?.responsePayload?.error || err?.message || "");
+    if (status === 403 && payloadError.toLowerCase().includes("protected from incoming sync writes")) {
+      return {
+        statusCode: 409,
+        error: PEER_WRITE_BLOCKED_MESSAGE,
+      };
+    }
     return {
       statusCode: 502,
       error: "Selected peer returned an error",
+    };
+  }
+  if (name === "PeerSyncDirectionBlockedError") {
+    return {
+      statusCode: Number(err?.statusCode) || 409,
+      error: PEER_WRITE_BLOCKED_MESSAGE,
     };
   }
   return {
@@ -244,11 +259,13 @@ async function runScopeSyncWithPeerUrlFallback({
   runtimeRoot,
   dryRun,
   syncRunner,
+  syncDirection = "sync",
   syncRunnerOptions = null,
 } = {}) {
   const candidates = buildPeerUrlCandidates(discoveredPeer);
   const expectedDeviceId = String(discoveredPeer?.deviceId ?? "").trim();
   const attemptedPeerUrls = [];
+  const normalizedSyncDirection = normalizeSyncDirection(syncDirection);
   let lastNetworkError = null;
 
   for (const peerUrl of candidates) {
@@ -267,17 +284,21 @@ async function runScopeSyncWithPeerUrlFallback({
     }
 
     try {
+      const peerCapabilities = await enforcePeerSyncDirectionCapabilities({ peerUrl, syncDirection: normalizedSyncDirection });
       const sync = await syncRunner({
         peerUrl,
         scope,
         runtimeRoot,
         dryRun,
         ...(syncRunnerOptions && typeof syncRunnerOptions === "object" ? syncRunnerOptions : {}),
+        syncDirection: normalizedSyncDirection,
       });
       return {
         sync,
         resolvedPeerUrl: peerUrl,
         attemptedPeerUrls: [...new Set(attemptedPeerUrls)],
+        peerCapabilities,
+        syncDirection: normalizedSyncDirection,
       };
     } catch (err) {
       if (err?.name === "PeerSyncNetworkError") {
@@ -427,8 +448,11 @@ function getRequestSourceForSyncJobCreation(req) {
 }
 
 function getRequestedSyncDirection(body) {
-  const direction = String(body?.direction || body?.syncDirection || "two-way").trim();
-  return direction || "two-way";
+  try {
+    return parseSyncDirection(body);
+  } catch {
+    return normalizeSyncDirection(body?.direction || body?.syncDirection || "sync");
+  }
 }
 
 function getRequestedSyncMode(body, dryRun) {
@@ -522,6 +546,19 @@ function ensureBroadcaster(state, ctx) {
   const broadcasterFactory = resolvePeerDiscoveryBroadcasterFactory(ctx);
   state.broadcasterHandle = broadcasterFactory({
     runtimeRoot: ctx?.runtimeRoot,
+    async capabilities() {
+      const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot })
+        .catch(() => ({ protectedFromPeerWrites: false }));
+      const protectedFromIncomingWrites = protection?.protectedFromPeerWrites === true;
+      return {
+        sync: true,
+        conflictResolution: true,
+        protectedFromIncomingWrites,
+        acceptsIncomingSyncWrites: !protectedFromIncomingWrites,
+        allowsOutgoingSyncReads: true,
+        supportedSyncModes: protectedFromIncomingWrites ? ["pull"] : ["pull", "push", "sync"],
+      };
+    },
     onError(err) {
       console.warn("Sync discovery broadcaster error:", err?.message || String(err));
     },
@@ -566,6 +603,64 @@ function parseOnFileErrorMode(body) {
   const mode = String(raw || "fail").trim().toLowerCase();
   if (mode === "fail" || mode === "pause" || mode === "skip") return mode;
   throw new Error("onFileError must be one of: fail, pause, skip");
+}
+
+function parseSyncDirection(body) {
+  const raw = body && typeof body === "object" && !Array.isArray(body)
+    ? (body.syncDirection ?? body.direction ?? "sync")
+    : "sync";
+  const text = String(raw || "sync").trim().toLowerCase();
+  const accepted = new Set(["pull", "pull-from-peer", "peer-to-local", "push", "push-to-peer", "local-to-peer", "sync", "two-way", "two-way-sync"]);
+  if (!accepted.has(text)) throw new Error("syncDirection must be one of: pull, push, sync");
+  return normalizeSyncDirection(text);
+}
+
+function syncDirectionRequiresPeerWrites(syncDirection) {
+  const direction = normalizeSyncDirection(syncDirection);
+  return direction === "push" || direction === "sync";
+}
+
+function createPeerWriteBlockedError(peerCapabilities, syncDirection) {
+  const err = new Error(PEER_WRITE_BLOCKED_MESSAGE);
+  err.name = "PeerSyncDirectionBlockedError";
+  err.statusCode = 409;
+  err.syncDirection = normalizeSyncDirection(syncDirection);
+  err.peerCapabilities = peerCapabilities || null;
+  return err;
+}
+
+async function fetchPeerSyncCapabilities(peerUrl) {
+  try {
+    const peerBaseUrl = String(peerUrl || "").endsWith("/") ? String(peerUrl || "") : String(peerUrl || "") + "/";
+    const response = await fetch(new URL("/api/peer/status", peerBaseUrl).toString(), { method: "GET" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.ok === false) return null;
+    const localDevice = payload?.localDevice && typeof payload.localDevice === "object" ? payload.localDevice : {};
+    const protectedFromIncomingWrites = payload?.protectedFromIncomingWrites === true || localDevice.protectedFromIncomingWrites === true;
+    const acceptsRaw = payload?.acceptsIncomingSyncWrites ?? localDevice.acceptsIncomingSyncWrites;
+    const allowsReadsRaw = payload?.allowsOutgoingSyncReads ?? localDevice.allowsOutgoingSyncReads;
+    const supported = Array.isArray(payload?.supportedSyncModes)
+      ? payload.supportedSyncModes
+      : Array.isArray(localDevice.supportedSyncModes) ? localDevice.supportedSyncModes : null;
+    return {
+      deviceId: String(localDevice.deviceId || payload?.deviceId || ""),
+      deviceName: String(localDevice.deviceName || payload?.deviceName || ""),
+      protectedFromIncomingWrites,
+      acceptsIncomingSyncWrites: acceptsRaw === undefined ? true : acceptsRaw !== false,
+      allowsOutgoingSyncReads: allowsReadsRaw === undefined ? true : allowsReadsRaw !== false,
+      supportedSyncModes: supported,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function enforcePeerSyncDirectionCapabilities({ peerUrl, syncDirection }) {
+  const peerCapabilities = await fetchPeerSyncCapabilities(peerUrl);
+  if (syncDirectionRequiresPeerWrites(syncDirection) && peerCapabilities?.acceptsIncomingSyncWrites === false) {
+    throw createPeerWriteBlockedError(peerCapabilities, syncDirection);
+  }
+  return peerCapabilities;
 }
 
 async function syncStateResponse(state, ctx) {
@@ -821,6 +916,12 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch (err) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid file error mode" });
     }
+    let syncDirection;
+    try {
+      syncDirection = parseSyncDirection(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid sync direction" });
+    }
 
     let peerUrl;
     try {
@@ -837,6 +938,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
         syncRunner,
+        syncDirection,
         syncRunnerOptions: { maxFileSizeBytes },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
@@ -857,6 +959,8 @@ export function registerSyncPanelRoutes(app, ctx) {
         },
         scope,
         dryRun: true,
+        syncDirection,
+        peerCapabilities: syncResult.peerCapabilities || null,
         sync: syncResult.sync,
       });
     } catch (err) {
@@ -928,6 +1032,12 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch (err) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid file error mode" });
     }
+    let syncDirection;
+    try {
+      syncDirection = parseSyncDirection(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid sync direction" });
+    }
 
     let peerUrl;
     try {
@@ -944,6 +1054,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
         syncRunner,
+        syncDirection,
         syncRunnerOptions: { maxFileSizeBytes, onFileError: onFileError === "pause" ? "fail" : onFileError },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
@@ -962,6 +1073,8 @@ export function registerSyncPanelRoutes(app, ctx) {
         },
         scope,
         dryRun,
+        syncDirection,
+        peerCapabilities: syncResult.peerCapabilities || null,
         sync: syncResult.sync,
       });
     } catch (err) {
@@ -1068,6 +1181,18 @@ export function registerSyncPanelRoutes(app, ctx) {
       });
       return res.status(400).json({ ok: false, error: err?.message || "Invalid file error mode" });
     }
+    let syncDirection;
+    try {
+      syncDirection = parseSyncDirection(body);
+    } catch (err) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 400,
+        reason: err?.message || "Invalid sync direction",
+        selectedPeerDeviceId: deviceId,
+        scope,
+      });
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid sync direction" });
+    }
 
     let peerUrl;
     try {
@@ -1083,6 +1208,39 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
     const syncRunner = resolveSyncRunner(ctx);
+
+    let peerCapabilities = null;
+    try {
+      const capabilityPreflight = await runScopeSyncWithPeerUrlFallback({
+        discoveredPeer,
+        scope,
+        runtimeRoot: ctx?.runtimeRoot,
+        dryRun: true,
+        syncRunner: async () => ({ ok: true, dryRun: true, scope, syncDirection }),
+        syncDirection,
+      });
+      peerCapabilities = capabilityPreflight.peerCapabilities || null;
+      peerUrl = capabilityPreflight.resolvedPeerUrl || peerUrl;
+      discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
+    } catch (err) {
+      const classified = classifySyncRunError(err);
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: classified.statusCode,
+        reason: err?.message || classified.error,
+        selectedPeerDeviceId: deviceId,
+        scope,
+        peerUrl,
+        syncDirection,
+      });
+      return res.status(classified.statusCode).json({
+        ok: false,
+        error: classified.error,
+        details: getSafeSyncRunErrorDetails(err),
+        syncDirection,
+        peerCapabilities: err?.peerCapabilities || peerCapabilities,
+      });
+    }
+
     const discoveredPeerSnapshot = { ...discoveredPeer };
 
     try {
@@ -1097,6 +1255,7 @@ export function registerSyncPanelRoutes(app, ctx) {
             runtimeRoot: ctx?.runtimeRoot,
             dryRun,
             syncRunner,
+            syncDirection,
             syncRunnerOptions: {
               onProgress,
               shouldCancel: isCancelled,
@@ -1117,8 +1276,10 @@ export function registerSyncPanelRoutes(app, ctx) {
         jobId: started.jobId,
         maxFileSizeBytes,
         onFileError,
+        syncDirection,
+        peerCapabilities,
       });
-      return res.status(202).json({ ok: true, jobId: started.jobId, job: started });
+      return res.status(202).json({ ok: true, jobId: started.jobId, job: started, syncDirection, peerCapabilities });
     } catch (err) {
       logSyncJobCreationDecision(req, body, protection, "rejected", {
         statusCode: 500,

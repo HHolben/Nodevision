@@ -116,7 +116,55 @@ async function main() {
     assert(zeroStat.isFile(), "Expected 0-byte remote file");
     assert(zeroStat.size === 0, "Expected remote 0-byte file size");
 
+    const pushConflictRelativePath = "Shared/direction-mode/push-conflict.txt";
+    await writeScopedFile(sourceNotebookDir, pushConflictRelativePath, Buffer.from("local push conflict", "utf8"));
+    await writeScopedFile(destNotebookDir, pushConflictRelativePath, Buffer.from("remote push conflict", "utf8"));
+    const pushConflictSync = await runScopeSyncTwoWay({
+      peerUrl: peerServer.peerUrl,
+      scope: "Shared",
+      runtimeRoot: sourceRoot,
+      dryRun: false,
+      syncDirection: "push",
+    });
+    assert(pushConflictSync.ok === true, "Expected push mode conflict sync to succeed against writable peer");
+    assert(Array.isArray(pushConflictSync?.operations?.pulled) && pushConflictSync.operations.pulled.length === 0, "Expected push mode to generate no pulls");
+    const pushedConflictReport = pushConflictSync?.operations?.conflicts?.find((item) => item?.originalRelativePath === pushConflictRelativePath);
+    assert(pushedConflictReport?.direction === "push", "Expected push mode conflict to report direction=push");
+    assert(typeof pushedConflictReport?.conflictRelativePath === "string" && pushedConflictReport.conflictRelativePath.includes("/.conflicts/"), "Expected push mode conflict copy on remote peer");
+    const remotePushConflictCopy = await fs.readFile(path.resolve(destNotebookDir, "Shared", pushedConflictReport.conflictRelativePath.slice("Shared/".length)), "utf8");
+    assert(remotePushConflictCopy === "local push conflict", "Expected remote push conflict copy to contain local content");
+    await fs.rm(path.resolve(sourceNotebookDir, pushConflictRelativePath), { force: true });
+    await fs.rm(path.resolve(destNotebookDir, pushConflictRelativePath), { force: true });
+    await fs.rm(path.resolve(destNotebookDir, "Shared", pushedConflictReport.conflictRelativePath.slice("Shared/".length)), { force: true });
+
     await saveSyncProtection({ protectedFromPeerWrites: true }, { runtimeRoot: destRoot });
+
+    const pullModeLocalOnly = "Shared/direction-mode/local-only.txt";
+    const pullModeRemoteOnly = "Shared/direction-mode/remote-only.txt";
+    await writeScopedFile(sourceNotebookDir, pullModeLocalOnly, Buffer.from("local should not push in pull mode", "utf8"));
+    await writeScopedFile(destNotebookDir, pullModeRemoteOnly, Buffer.from("remote should pull in pull mode", "utf8"));
+    const pullModeSync = await runScopeSyncTwoWay({
+      peerUrl: peerServer.peerUrl,
+      scope: "Shared",
+      runtimeRoot: sourceRoot,
+      dryRun: false,
+      syncDirection: "pull",
+    });
+    assert(pullModeSync.ok === true, "Expected pull mode against protected peer to succeed");
+    assert(Array.isArray(pullModeSync?.operations?.pushed) && pullModeSync.operations.pushed.length === 0, "Expected pull mode to generate no pushes");
+    assert(pullModeSync?.operations?.pulled?.some((item) => item?.relativePath === pullModeRemoteOnly), "Expected pull mode to pull remote-only file");
+    assert((await fs.readFile(path.resolve(sourceNotebookDir, pullModeRemoteOnly), "utf8")) === "remote should pull in pull mode", "Expected pull mode remote file locally");
+    try {
+      await fs.stat(path.resolve(destNotebookDir, pullModeLocalOnly));
+      throw new Error("Expected pull mode local-only file to remain unpushed");
+    } catch (err) {
+      if (err?.code !== "ENOENT") throw err;
+    }
+    const directionSkipped = pullModeSync?.operations?.skipped?.direction || [];
+    assert(directionSkipped.some((entry) => entry?.operation === "push" && entry?.relativePath === pullModeLocalOnly), "Expected pull mode to record skipped push operation");
+    await fs.rm(path.resolve(sourceNotebookDir, pullModeLocalOnly), { force: true });
+    await fs.rm(path.resolve(sourceNotebookDir, pullModeRemoteOnly), { force: true });
+    await fs.rm(path.resolve(destNotebookDir, pullModeRemoteOnly), { force: true });
 
     const conflictTextRelativePath = "Shared/conflict-cases/conflicting-text.txt";
     const conflictJpgRelativePath = "Shared/conflict-cases/conflicting-large.jpg";

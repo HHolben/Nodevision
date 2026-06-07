@@ -57,15 +57,30 @@ function normalizePublicKey(value, fieldName = "publicKey") {
 
 function normalizeCapabilities(raw) {
   const input = isPlainObject(raw) ? raw : {};
+  const protectedFromIncomingWrites = input.protectedFromIncomingWrites === true || input.protectedFromPeerWrites === true;
+  const supportedSyncModes = Array.isArray(input.supportedSyncModes)
+    ? input.supportedSyncModes.map((item) => String(item || "").trim()).filter(Boolean)
+    : null;
   return {
     sync: Boolean(input.sync),
     conflictResolution: Boolean(input.conflictResolution),
+    protectedFromIncomingWrites,
+    acceptsIncomingSyncWrites: input.acceptsIncomingSyncWrites === undefined ? !protectedFromIncomingWrites : input.acceptsIncomingSyncWrites !== false,
+    allowsOutgoingSyncReads: input.allowsOutgoingSyncReads === undefined ? true : input.allowsOutgoingSyncReads !== false,
+    supportedSyncModes,
   };
 }
 
 function capabilitiesSignature(raw) {
   const normalized = normalizeCapabilities(raw);
-  return `${normalized.sync ? 1 : 0}:${normalized.conflictResolution ? 1 : 0}`;
+  return [
+    normalized.sync ? 1 : 0,
+    normalized.conflictResolution ? 1 : 0,
+    normalized.protectedFromIncomingWrites ? 1 : 0,
+    normalized.acceptsIncomingSyncWrites ? 1 : 0,
+    normalized.allowsOutgoingSyncReads ? 1 : 0,
+    Array.isArray(normalized.supportedSyncModes) ? normalized.supportedSyncModes.join(",") : "",
+  ].join(":");
 }
 
 function normalizeDiscoveryAddress(value) {
@@ -314,6 +329,13 @@ export function createDiscoveryDeduper(options = {}) {
   };
 }
 
+async function resolveDiscoveryCapabilities(options = {}) {
+  const configured = typeof options.capabilities === "function"
+    ? await options.capabilities()
+    : options.capabilities;
+  return configured ?? { sync: true, conflictResolution: true };
+}
+
 export async function createDiscoveryBeacon(options = {}) {
   const identity = await ensureDeviceIdentity(options);
   const message = normalizeDiscoveryMessage({
@@ -324,7 +346,7 @@ export async function createDiscoveryBeacon(options = {}) {
     port: resolveAdvertisedPort(options),
     timestamp: options.timestamp ?? new Date().toISOString(),
     publicKey: String(identity.publicKey ?? "").trim(),
-    capabilities: options.capabilities ?? { sync: true, conflictResolution: true },
+    capabilities: await resolveDiscoveryCapabilities(options),
   });
 
   const { payload, signatureBase64 } = await signMessage(message, options);

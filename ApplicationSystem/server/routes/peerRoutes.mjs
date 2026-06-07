@@ -822,11 +822,25 @@ export function registerPeerRoutes(app, ctx) {
 
   app.get("/api/peer/status", async (req, res) => {
     try {
-      if (!req.identity && !isLocalhostRequest(req)) return res.status(401).json({ ok: false, error: "Authentication required" });
+      const includePrivatePeerStatus = Boolean(req.identity || isLocalhostRequest(req));
       const options = { runtimeRoot: ctx?.runtimeRoot };
       const localDevice = await getLocalPeerInfo(options);
-      const store = await loadTrustedPeers(options);
-      return res.json({ ok: true, localDevice, trustedPeers: store.trustedPeers.map(toTrustedPeerStatus) });
+      const protectedFromIncomingWrites = await isProtectedFromPeerWrites(options);
+      const syncCapabilities = {
+        protectedFromIncomingWrites,
+        acceptsIncomingSyncWrites: !protectedFromIncomingWrites,
+        allowsOutgoingSyncReads: true,
+        supportedSyncModes: protectedFromIncomingWrites ? ["pull"] : ["pull", "push", "sync"],
+      };
+      const store = includePrivatePeerStatus ? await loadTrustedPeers(options) : { trustedPeers: [] };
+      return res.json({
+        ok: true,
+        deviceId: localDevice.deviceId,
+        deviceName: localDevice.deviceName,
+        localDevice: { ...localDevice, ...syncCapabilities },
+        ...syncCapabilities,
+        trustedPeers: store.trustedPeers.map(toTrustedPeerStatus),
+      });
     } catch { return res.status(500).json({ ok: false, error: "Failed to load peer status" }); }
   });
 }

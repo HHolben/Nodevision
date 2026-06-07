@@ -24,9 +24,17 @@ function normalizePort(value, fieldName = "port") {
 
 function normalizeCapabilities(raw) {
   const source = isPlainObject(raw) ? raw : {};
+  const protectedFromIncomingWrites = source.protectedFromIncomingWrites === true || source.protectedFromPeerWrites === true;
+  const supportedSyncModes = Array.isArray(source.supportedSyncModes)
+    ? source.supportedSyncModes.map((item) => String(item || "").trim()).filter(Boolean)
+    : null;
   return {
     sync: Boolean(source.sync),
     conflictResolution: Boolean(source.conflictResolution),
+    protectedFromIncomingWrites,
+    acceptsIncomingSyncWrites: source.acceptsIncomingSyncWrites === undefined ? !protectedFromIncomingWrites : source.acceptsIncomingSyncWrites !== false,
+    allowsOutgoingSyncReads: source.allowsOutgoingSyncReads === undefined ? true : source.allowsOutgoingSyncReads !== false,
+    supportedSyncModes,
   };
 }
 

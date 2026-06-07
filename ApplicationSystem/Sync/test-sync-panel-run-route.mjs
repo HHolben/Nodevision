@@ -14,15 +14,18 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function createReachablePeerServer(getDeviceId = () => "nv_dev_reachable_probe") {
+function createReachablePeerServer(getDeviceId = () => "nv_dev_reachable_probe", getStatusFields = () => ({}), onManifest = () => {}) {
   return http.createServer((req, res) => {
     if (req.url === "/api/peer/status") {
       const deviceId = String(getDeviceId?.() ?? "").trim() || "nv_dev_reachable_probe";
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ ok: true, localDevice: { deviceId } }));
+      const statusFields = getStatusFields?.() || {};
+      const localDevice = { deviceId, ...(statusFields.localDevice && typeof statusFields.localDevice === "object" ? statusFields.localDevice : {}) };
+      res.end(JSON.stringify({ ok: true, ...statusFields, localDevice }));
       return;
     }
     if (req.url === "/api/peer/scope/manifest") {
+      onManifest?.();
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({
         ok: true,
@@ -123,7 +126,21 @@ async function main() {
   assert(String(unreachableRun.payload?.details || "").includes("http://localhost:65534"), "Expected localhost fallback URL in attempted URL details");
 
   let reachableProbeDeviceId = "nv_dev_trusted_same_machine";
-  const reachableProbeServer = createReachablePeerServer(() => reachableProbeDeviceId);
+  let reachableProbeProtected = false;
+  let reachableManifestRequests = 0;
+  const reachableProbeServer = createReachablePeerServer(
+    () => reachableProbeDeviceId,
+    () => {
+      const protectedFromIncomingWrites = reachableProbeProtected === true;
+      return {
+        protectedFromIncomingWrites,
+        acceptsIncomingSyncWrites: !protectedFromIncomingWrites,
+        allowsOutgoingSyncReads: true,
+        supportedSyncModes: protectedFromIncomingWrites ? ["pull"] : ["pull", "push", "sync"],
+      };
+    },
+    () => { reachableManifestRequests += 1; },
+  );
   const reachableProbePort = await new Promise((resolve, reject) => {
     reachableProbeServer.once("error", reject);
     reachableProbeServer.listen(0, "127.0.0.1", () => {
@@ -157,6 +174,32 @@ async function main() {
     assert(sameMachinePreflight.payload?.preflight === true, "Expected preflight marker in payload");
     assert(sameMachinePreflight.payload?.ready === true, "Expected preflight ready=true");
     assert(sameMachinePreflight.payload?.dryRun === true, "Expected preflight dryRun=true");
+
+    reachableProbeProtected = true;
+    const manifestRequestsBeforeProtectedPush = reachableManifestRequests;
+    const protectedPeerPushPreflight = await app.request("POST", "/api/sync/preflight", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", syncDirection: "push" },
+    });
+    assert(protectedPeerPushPreflight.statusCode === 409, "Expected protected peer push preflight to be blocked");
+    assert(protectedPeerPushPreflight.payload?.ok === false, "Expected protected peer push preflight ok=false");
+    assert(String(protectedPeerPushPreflight.payload?.error || "").includes("Peer is protected from incoming sync writes"), "Expected protected peer push preflight explanation");
+    assert(reachableManifestRequests === manifestRequestsBeforeProtectedPush, "Expected protected peer push preflight to avoid manifest/file processing");
+
+    const protectedPeerSyncJobStart = await app.request("POST", "/api/sync/jobs/start", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", syncDirection: "sync", dryRun: false, onFileError: "fail" },
+    });
+    assert(protectedPeerSyncJobStart.statusCode === 409, "Expected protected peer sync job start to be blocked");
+    assert(protectedPeerSyncJobStart.payload?.ok === false, "Expected protected peer sync job start ok=false");
+    assert(!protectedPeerSyncJobStart.payload?.jobId, "Expected protected peer sync job start to avoid job creation");
+    assert(reachableManifestRequests === manifestRequestsBeforeProtectedPush, "Expected protected peer sync job start to avoid manifest/file processing");
+
+    const protectedPeerPullPreflight = await app.request("POST", "/api/sync/preflight", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", syncDirection: "pull" },
+    });
+    assert(protectedPeerPullPreflight.statusCode === 200, "Expected protected peer pull preflight to be allowed");
+    assert(protectedPeerPullPreflight.payload?.ok === true, "Expected protected peer pull preflight ok=true");
+    assert(protectedPeerPullPreflight.payload?.syncDirection === "pull", "Expected protected peer pull preflight direction=pull");
+    reachableProbeProtected = false;
 
     await saveSyncProtection({ protectedFromPeerWrites: true }, { runtimeRoot });
     const protectedSameMachinePreflight = await app.request("POST", "/api/sync/preflight", {

@@ -28,7 +28,7 @@ const TEMPLATE = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">
         <div>
           <div style="font-weight:600;">Installation Protection</div>
-          <div data-protect-writes-detail style="color:#666;font-size:0.84em;margin-top:3px;">Incoming peer writes are blocked while protection is on. Locally started sync can still run.</div>
+          <div data-protect-writes-detail style="color:#666;font-size:0.84em;margin-top:3px;">Protected: other devices may read from this installation, but may not write changes into it.</div>
         </div>
         <span data-protect-writes-badge style="white-space:nowrap;border:1px solid #ccc;border-radius:999px;padding:3px 8px;font-size:0.76em;color:#555;background:#f7f7f7;">Loading</span>
       </div>
@@ -70,6 +70,13 @@ const TEMPLATE = `
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
         <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;">Scope
           <select data-scope-select style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:150px;"></select>
+        </label>
+        <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;">Direction
+          <select data-sync-direction style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:170px;">
+            <option value="pull">Pull from peer</option>
+            <option value="push">Push to peer</option>
+            <option value="sync">Two-way sync</option>
+          </select>
         </label>
         <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;">Max file size (MB)
           <input data-sync-max-file-mb type="number" min="0" step="1" placeholder="No limit" style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:130px;">
@@ -149,6 +156,7 @@ function normalizeMaxFileSizeMb(value) {
 
 const SYNC_MAX_FILE_SIZE_MB_STORAGE_KEY = "nodevision.sync.maxFileSizeMb";
 const SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY = "nodevision.sync.pauseOnFileError";
+const SYNC_DIRECTION_STORAGE_KEY = "nodevision.sync.direction";
 
 function readStoredMaxFileSizeMb() {
   try {
@@ -164,6 +172,29 @@ function readStoredPauseOnFileError() {
   } catch {
     return false;
   }
+}
+
+function normalizeSyncDirection(value) {
+  const direction = String(value || "sync").trim().toLowerCase();
+  if (direction === "pull" || direction === "pull-from-peer" || direction === "peer-to-local") return "pull";
+  if (direction === "push" || direction === "push-to-peer" || direction === "local-to-peer") return "push";
+  if (direction === "sync" || direction === "two-way" || direction === "two-way-sync") return "sync";
+  return "sync";
+}
+
+function readStoredSyncDirection() {
+  try {
+    return normalizeSyncDirection(window.localStorage?.getItem(SYNC_DIRECTION_STORAGE_KEY));
+  } catch {
+    return "sync";
+  }
+}
+
+function syncDirectionLabel(direction) {
+  const normalized = normalizeSyncDirection(direction);
+  if (normalized === "pull") return "Pull from peer";
+  if (normalized === "push") return "Push to peer";
+  return "Two-way sync";
 }
 
 function maxFileSizeBytesFromMb(mb) {
@@ -226,6 +257,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const peerCountEl = panelElem.querySelector("[data-peer-count]");
   const peerListEl = panelElem.querySelector("[data-peer-list]");
   const scopeSelect = panelElem.querySelector("[data-scope-select]");
+  const syncDirectionSelect = panelElem.querySelector("[data-sync-direction]");
   const maxFileSizeInput = panelElem.querySelector("[data-sync-max-file-mb]");
   const pauseOnFileErrorInput = panelElem.querySelector("[data-sync-pause-on-error]");
   const syncDryBtn = panelElem.querySelector("[data-sync-dry]");
@@ -260,12 +292,15 @@ export async function setupPanel(panelElem, panelVars = {}) {
     syncEvents: [],
     maxFileSizeMb: readStoredMaxFileSizeMb(),
     pauseOnFileError: readStoredPauseOnFileError(),
+    syncDirection: readStoredSyncDirection(),
+    defaultedProtectedPeerDeviceId: null,
     eventsClearedAt: 0,
     eventsPollTimer: null,
   };
 
   if (maxFileSizeInput && state.maxFileSizeMb !== null) maxFileSizeInput.value = String(state.maxFileSizeMb);
   if (pauseOnFileErrorInput) pauseOnFileErrorInput.checked = state.pauseOnFileError;
+  if (syncDirectionSelect) syncDirectionSelect.value = state.syncDirection;
 
   const getMaxFileSizeBytes = () => {
     const mb = normalizeMaxFileSizeMb(maxFileSizeInput?.value);
@@ -278,8 +313,42 @@ export async function setupPanel(panelElem, panelVars = {}) {
     return maxFileSizeBytesFromMb(mb);
   };
 
+  const getSelectedPeer = () => {
+    const deviceId = state.status.selectedPeerDeviceId;
+    return (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
+  };
+
+  const peerRejectsIncomingWrites = (peer) => peer?.capabilities?.acceptsIncomingSyncWrites === false
+    || peer?.capabilities?.protectedFromIncomingWrites === true
+    || peer?.acceptsIncomingSyncWrites === false
+    || peer?.protectedFromIncomingWrites === true;
+
+  const setSyncDirection = (value, { persist = true } = {}) => {
+    state.syncDirection = normalizeSyncDirection(value);
+    if (syncDirectionSelect) syncDirectionSelect.value = state.syncDirection;
+    if (persist) {
+      try { window.localStorage?.setItem(SYNC_DIRECTION_STORAGE_KEY, state.syncDirection); } catch {}
+    }
+    renderSyncDirection();
+  };
+
+  const maybeDefaultDirectionForSelectedPeer = () => {
+    const selectedPeer = getSelectedPeer();
+    if (peerRejectsIncomingWrites(selectedPeer) && state.syncDirection !== "pull" && state.defaultedProtectedPeerDeviceId !== selectedPeer?.deviceId) {
+      state.defaultedProtectedPeerDeviceId = selectedPeer?.deviceId || null;
+      setSyncDirection("pull");
+      setStatus(statusEl, "Selected peer is protected from incoming writes. Direction set to Pull from peer.");
+    }
+  };
+
+  const renderSyncDirection = () => {
+    if (syncDirectionSelect && syncDirectionSelect.value !== state.syncDirection) syncDirectionSelect.value = state.syncDirection;
+    if (syncDryBtn) syncDryBtn.textContent = "Dry Run " + syncDirectionLabel(state.syncDirection);
+    if (syncApplyBtn) syncApplyBtn.textContent = state.syncDirection === "pull" ? "Start Pull" : state.syncDirection === "push" ? "Start Push" : "Start Sync";
+  };
+
   const syncRunBody = ({ deviceId, scope, dryRun }) => {
-    const body = { deviceId, scope, dryRun: Boolean(dryRun) };
+    const body = { deviceId, scope, dryRun: Boolean(dryRun), syncDirection: state.syncDirection, direction: state.syncDirection };
     const maxFileSizeBytes = getMaxFileSizeBytes();
     if (maxFileSizeBytes !== null) body.maxFileSizeBytes = maxFileSizeBytes;
     body.onFileError = state.pauseOnFileError ? "pause" : "fail";
@@ -297,8 +366,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
     if (protectWritesEl) protectWritesEl.checked = protectedOn;
     if (protectWritesDetailEl) {
       protectWritesDetailEl.textContent = protectedOn
-        ? "Protected: incoming peer writes are blocked. Locally started sync and dry runs can still run."
-        : "Incoming peer writes are allowed. Locally started sync and dry runs can run.";
+        ? "Protected: other devices may read from this installation, but may not write changes into it."
+        : "Other devices may read from and write changes into this installation when trusted.";
     }
     if (protectWritesBadgeEl) {
       protectWritesBadgeEl.textContent = protectedOn ? "Protected" : "Writable";
@@ -316,6 +385,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
       protectDisableBtn.style.opacity = protectedOn ? "1" : "0.6";
       protectDisableBtn.style.cursor = state.busy || !protectedOn ? "not-allowed" : "pointer";
     }
+    renderSyncDirection();
     if (syncApplyBtn) syncApplyBtn.disabled = state.busy;
   };
 
@@ -520,7 +590,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
     if (statusMessage) setStatus(statusEl, statusMessage);
@@ -530,7 +600,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const loadProtection = async () => { const p = await apiFetchJson("/api/sync/protection", { cache: "no-store" }); state.protection = p.protection || { protectedFromPeerWrites: false }; renderProtection(); };
   const loadScopes = async () => { try { const p = await apiFetchJson("/api/sync/scopes", { cache: "no-store" }); state.scopes = Array.isArray(p.syncScopes) && p.syncScopes.length ? p.syncScopes : ["SyncTest"]; } catch { state.scopes = ["SyncTest"]; } renderScopes(); renderSharedScopes(); };
   const loadFolders = async () => { try { const p = await apiFetchJson("/api/sync/notebook-folders", { cache: "no-store" }); state.candidateFolders = Array.isArray(p.folders) ? p.folders : []; } catch { state.candidateFolders = []; } renderCandidateFolders(); };
-  const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null }; state.protection = p.protection || state.protection; renderDiscoveryButtons(); renderPeers(); renderProtection(); };
+  const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null }; state.protection = p.protection || state.protection; maybeDefaultDirectionForSelectedPeer(); renderDiscoveryButtons(); renderPeers(); renderProtection(); };
   const refreshActiveJob = async () => {
     const jobId = String(state.activeJobId || "").trim();
     if (!jobId) return;
@@ -555,9 +625,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const runSync = async (dryRun) => {
     const scope = scopeSelect?.value || "SyncTest";
     const deviceId = state.status.selectedPeerDeviceId;
-    const selectedPeer = (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
+    const selectedPeer = getSelectedPeer();
     const protectedOn = state.protection?.protectedFromPeerWrites === true;
-    const direction = "two-way";
+    const direction = state.syncDirection;
     const mode = dryRun ? "dry-run" : "apply";
     let requestOptions = null;
     let jobCreationRequestSent = false;
@@ -679,6 +749,13 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
 
   maxFileSizeInput?.addEventListener("change", () => { getMaxFileSizeBytes(); });
+  syncDirectionSelect?.addEventListener("change", () => {
+    setSyncDirection(syncDirectionSelect.value);
+    const selectedPeer = getSelectedPeer();
+    if (peerRejectsIncomingWrites(selectedPeer) && state.syncDirection !== "pull") {
+      setStatus(statusEl, "Selected peer is protected from incoming writes. Preflight will block Push or Two-way Sync.");
+    }
+  });
   pauseOnFileErrorInput?.addEventListener("change", () => {
     state.pauseOnFileError = Boolean(pauseOnFileErrorInput.checked);
     try { window.localStorage?.setItem(SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY, state.pauseOnFileError ? "true" : "false"); } catch {}
