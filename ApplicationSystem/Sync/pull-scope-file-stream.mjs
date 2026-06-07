@@ -61,6 +61,22 @@ async function hashFile(filePath) {
   return hasher.digest("hex");
 }
 
+
+function createStreamSigningError(err, endpointLabel) {
+  const detail = err?.message || String(err);
+  const message = String(detail || "unknown signing error");
+  if (/device identity|device private key|partial device identity|private\.pem|public\.pem|device\.json/i.test(message)) {
+    const wrapped = new Error(
+      `Local device identity is missing or incomplete; cannot sign peer ${endpointLabel} request. ${message}`,
+    );
+    wrapped.cause = err;
+    return wrapped;
+  }
+  const wrapped = new Error(`Unable to sign peer ${endpointLabel} request. ${message}`);
+  wrapped.cause = err;
+  return wrapped;
+}
+
 async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, attempt, createSignedRequest }) {
   try {
     if (typeof createSignedRequest === "function") {
@@ -74,11 +90,7 @@ async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, att
       { runtimeRoot },
     );
   } catch (err) {
-    const message = String(err?.message || err || "");
-    if (message.includes("Device identity") || message.includes("Device private key") || message.includes("Partial device identity")) {
-      throw new Error("Local device identity is missing or incomplete; cannot sign scoped file-stream request. " + message);
-    }
-    throw err;
+    throw createStreamSigningError(err, "scope file-stream");
   }
 }
 
@@ -97,32 +109,27 @@ function summarizeSignedPayloadForLog(payloadText) {
   }
 }
 
-function encodePayloadHeader(payload) {
-  return Buffer.from(String(payload || ""), "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
-function logOutgoingScopedStreamRequest({ endpoint, method, url, signed, headers = [] }) {
+function logOutgoingScopedStreamRequest({ endpoint, method, url, signed }) {
   try {
     const parsedUrl = new URL(url);
     const payloadFields = summarizeSignedPayloadForLog(signed?.payload);
-    const signedOk = typeof signed?.payload === "string"
-      && signed.payload.length > 0
-      && typeof signed?.signatureBase64 === "string"
-      && signed.signatureBase64.length > 0;
     console.debug("[sync] outgoing scoped stream request", {
       endpoint,
       method,
       peerUrl: parsedUrl.origin,
+      requestPath: parsedUrl.pathname,
       scope: payloadFields.scope,
       relativePath: payloadFields.relativePath,
-      deviceIdUsed: payloadFields.deviceId,
-      signed: signedOk,
+      deviceId: payloadFields.deviceId,
+      signed: typeof signed?.payload === "string" && signed.payload.length > 0
+        && typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
       timestampPresent: Boolean(payloadFields.timestampPresent),
-      headers,
+      queryKeys: Array.from(parsedUrl.searchParams.keys()).sort(),
+      headers: [],
+      bodyFields: [],
+      payloadPresent: typeof signed?.payload === "string" && signed.payload.length > 0,
+      signaturePresent: typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
+      payloadFields,
     });
   } catch {}
 }
@@ -167,14 +174,11 @@ export async function pullScopeFileStream({
       createSignedRequest,
     });
     const streamUrl = new URL("/api/peer/scope/file-stream", `${normalizedPeerUrl}/`);
-    logOutgoingScopedStreamRequest({ endpoint: "scope/file-stream", method: "GET", url: streamUrl.toString(), signed, headers: ["x-nodevision-peer-payload-base64", "x-nodevision-peer-signature"] });
-    response = await fetch(streamUrl.toString(), {
-      method: "GET",
-      headers: {
-        "x-nodevision-peer-payload-base64": encodePayloadHeader(signed.payload),
-        "x-nodevision-peer-signature": signed.signatureBase64,
-      },
-    });
+    streamUrl.searchParams.set("payload", signed.payload);
+    streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
+
+    logOutgoingScopedStreamRequest({ endpoint: "scope/file-stream", method: "GET", url: streamUrl.toString(), signed });
+    response = await fetch(streamUrl.toString(), { method: "GET" });
     if (response.ok) break;
 
     const detail = await readStreamErrorDetail(response);

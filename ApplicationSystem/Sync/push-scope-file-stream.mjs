@@ -65,32 +65,27 @@ function summarizeSignedPayloadForLog(payloadText) {
   }
 }
 
-function encodePayloadHeader(payload) {
-  return Buffer.from(String(payload || ""), "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
 function logOutgoingScopedStreamRequest({ endpoint, method, url, signed, headers = [] }) {
   try {
     const parsedUrl = new URL(url);
     const payloadFields = summarizeSignedPayloadForLog(signed?.payload);
-    const signedOk = typeof signed?.payload === "string"
-      && signed.payload.length > 0
-      && typeof signed?.signatureBase64 === "string"
-      && signed.signatureBase64.length > 0;
     console.debug("[sync] outgoing scoped stream request", {
       endpoint,
       method,
       peerUrl: parsedUrl.origin,
+      requestPath: parsedUrl.pathname,
       scope: payloadFields.scope,
       relativePath: payloadFields.relativePath,
-      deviceIdUsed: payloadFields.deviceId,
-      signed: signedOk,
+      deviceId: payloadFields.deviceId,
+      signed: typeof signed?.payload === "string" && signed.payload.length > 0
+        && typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
       timestampPresent: Boolean(payloadFields.timestampPresent),
+      queryKeys: Array.from(parsedUrl.searchParams.keys()).sort(),
       headers,
+      bodyFields: ["stream"],
+      payloadPresent: typeof signed?.payload === "string" && signed.payload.length > 0,
+      signaturePresent: typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
+      payloadFields,
     });
   } catch {}
 }
@@ -111,6 +106,22 @@ async function hashFile(localPath) {
   return hasher.digest("hex");
 }
 
+
+function createStreamSigningError(err, endpointLabel) {
+  const detail = err?.message || String(err);
+  const message = String(detail || "unknown signing error");
+  if (/device identity|device private key|partial device identity|private\.pem|public\.pem|device\.json/i.test(message)) {
+    const wrapped = new Error(
+      `Local device identity is missing or incomplete; cannot sign peer ${endpointLabel} request. ${message}`,
+    );
+    wrapped.cause = err;
+    return wrapped;
+  }
+  const wrapped = new Error(`Unable to sign peer ${endpointLabel} request. ${message}`);
+  wrapped.cause = err;
+  return wrapped;
+}
+
 async function createSignedStreamPushRequest({ scope, relativePath, size, sha256, runtimeRoot, attempt, createSignedRequest }) {
   try {
     if (typeof createSignedRequest === "function") {
@@ -124,11 +135,7 @@ async function createSignedStreamPushRequest({ scope, relativePath, size, sha256
       { runtimeRoot },
     );
   } catch (err) {
-    const message = String(err?.message || err || "");
-    if (message.includes("Device identity") || message.includes("Device private key") || message.includes("Partial device identity")) {
-      throw new Error("Local device identity is missing or incomplete; cannot sign scoped file-stream-push request. " + message);
-    }
-    throw err;
+    throw createStreamSigningError(err, "scope file-stream-push");
   }
 }
 
@@ -174,12 +181,15 @@ export async function pushScopeFileStream({
     });
 
     const streamUrl = new URL(STREAM_UPLOAD_ENDPOINT, `${normalizedPeerUrl}/`);
+    streamUrl.searchParams.set("payload", signed.payload);
+    streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
+
     logOutgoingScopedStreamRequest({
       endpoint: "scope/file-stream-push",
       method: "POST",
       url: streamUrl.toString(),
       signed,
-      headers: ["content-type", "content-length", "x-nodevision-peer-payload-base64", "x-nodevision-peer-signature"],
+      headers: ["content-type", "content-length"],
     });
 
     let response;
@@ -189,8 +199,6 @@ export async function pushScopeFileStream({
         headers: {
           "content-type": "application/octet-stream",
           "content-length": String(size),
-          "x-nodevision-peer-payload-base64": encodePayloadHeader(signed.payload),
-          "x-nodevision-peer-signature": signed.signatureBase64,
         },
         body: buildUploadStream(localPath, shouldCancel),
         duplex: "half",
