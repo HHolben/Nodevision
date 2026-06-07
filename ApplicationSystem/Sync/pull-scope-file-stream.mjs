@@ -14,7 +14,9 @@ import { resolveScopeNotebookPath, validateSyncScope } from "./SyncScopes.mjs";
 import { normalizePeerUrl, resolveRuntimeRoot } from "./sync-sync-test-two-way.mjs";
 
 const DOWNLOAD_SUFFIX = ".nodevision-download";
+const STREAM_DOWNLOAD_ENDPOINT = "/api/peer/scope/file-stream";
 const USAGE = "Usage: node ApplicationSystem/Sync/pull-scope-file-stream.mjs <peerUrl> <scope> <relativePath>";
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 function toNotebookDir(runtimeRoot, notebookDir) {
   if (notebookDir) return path.resolve(String(notebookDir));
@@ -94,6 +96,42 @@ async function createSignedStreamRequest({ scope, relativePath, runtimeRoot, att
   }
 }
 
+function encodeBase64Url(text) {
+  return Buffer.from(String(text), "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function decodeBase64UrlText(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+  const padded = text.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(text.length / 4) * 4, "=");
+  try {
+    return Buffer.from(padded, "base64").toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeHeaderValue(value, fallback = "unknown") {
+  const text = String(value || fallback).trim() || fallback;
+  return text.replace(/[^\t\x20-\x7e]+/g, "?").slice(0, 120);
+}
+
+function buildSignedStreamHeaders({ signed, operation, caller, attempt, accept = "application/octet-stream" }) {
+  return {
+    accept,
+    "x-nodevision-peer-payload-base64": encodeBase64Url(signed.payload),
+    "x-nodevision-peer-signature": signed.signatureBase64,
+    "x-nodevision-sync-operation": sanitizeHeaderValue(operation),
+    "x-nodevision-sync-caller": sanitizeHeaderValue(caller),
+    "x-nodevision-sync-attempt": String(Number.isFinite(Number(attempt)) ? Math.trunc(Number(attempt)) : 0),
+    "x-nodevision-sync-retry": attempt > 0 ? "true" : "false",
+  };
+}
+
 function summarizeSignedPayloadForLog(payloadText) {
   try {
     const parsed = JSON.parse(String(payloadText || ""));
@@ -109,27 +147,74 @@ function summarizeSignedPayloadForLog(payloadText) {
   }
 }
 
-function logOutgoingScopedStreamRequest({ endpoint, method, url, signed }) {
+function extensionSummary(relativePath) {
+  const ext = path.posix.extname(String(relativePath || "")).toLowerCase();
+  return {
+    extension: ext || null,
+    image: IMAGE_EXTENSIONS.has(ext),
+  };
+}
+
+function logOutgoingScopedStreamRequest({
+  endpoint,
+  method,
+  url,
+  signed,
+  headers = [],
+  operation = "pull",
+  caller = "normal pull",
+  attempt = 0,
+  rawRelativePath = null,
+  normalizedRelativePath = null,
+}) {
   try {
     const parsedUrl = new URL(url);
     const payloadFields = summarizeSignedPayloadForLog(signed?.payload);
+    const normalizedPath = normalizedRelativePath || payloadFields.relativePath || "";
+    const ext = extensionSummary(normalizedPath);
     console.debug("[sync] outgoing scoped stream request", {
       endpoint,
       method,
       peerUrl: parsedUrl.origin,
       requestPath: parsedUrl.pathname,
+      operation,
+      caller,
+      retry: Number(attempt) > 0,
+      attempt: Number.isFinite(Number(attempt)) ? Math.trunc(Number(attempt)) : 0,
+      extension: ext.extension,
+      image: ext.image,
+      contentType: null,
       scope: payloadFields.scope,
       relativePath: payloadFields.relativePath,
       deviceId: payloadFields.deviceId,
+      deviceIdPresent: typeof payloadFields.deviceId === "string" && payloadFields.deviceId.length > 0,
       signed: typeof signed?.payload === "string" && signed.payload.length > 0
         && typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
       timestampPresent: Boolean(payloadFields.timestampPresent),
       queryKeys: Array.from(parsedUrl.searchParams.keys()).sort(),
-      headers: [],
+      headers,
       bodyFields: [],
       payloadPresent: typeof signed?.payload === "string" && signed.payload.length > 0,
       signaturePresent: typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
+      relativePathRawLength: typeof rawRelativePath === "string" ? rawRelativePath.length : null,
+      relativePathNormalizedLength: typeof normalizedPath === "string" ? normalizedPath.length : null,
       payloadFields,
+    });
+  } catch {}
+}
+
+function logScopedStreamResponse({ operation, caller, response, relativePath }) {
+  try {
+    const ext = extensionSummary(relativePath);
+    console.debug("[sync] scoped stream response", {
+      operation,
+      caller,
+      relativePath,
+      extension: ext.extension,
+      image: ext.image,
+      status: response?.status ?? null,
+      contentType: response?.headers?.get?.("content-type") || null,
+      contentLength: response?.headers?.get?.("content-length") || null,
     });
   } catch {}
 }
@@ -140,30 +225,24 @@ async function readStreamErrorDetail(response) {
   return `HTTP ${response.status}`;
 }
 
-export async function pullScopeFileStream({
+export async function signedPeerScopeFileStream({
   peerUrl,
   scope,
   relativePath,
   runtimeRoot,
-  notebookDir,
   shouldCancel,
-  onByteDelta,
-  peerLabel,
   createSignedRequest,
+  operation = "pull",
+  caller = "normal pull",
 } = {}) {
+  const rawRelativePath = typeof relativePath === "string" ? relativePath : String(relativePath ?? "");
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
   const normalizedScope = validateSyncScope(scope);
   const normalizedRelativePath = validateScopedRelativePath(relativePath, normalizedScope);
   const resolvedRuntimeRoot = resolveRuntimeRoot({ runtimeRoot });
-  const resolvedNotebookDir = toNotebookDir(resolvedRuntimeRoot, notebookDir);
-  const scopeRoot = resolveScopeNotebookPath({ notebookDir: resolvedNotebookDir, scope: normalizedScope });
-  const targetPath = path.resolve(scopeRoot, normalizedRelativePath.slice(`${normalizedScope}/`.length));
-  ensureSafeScopeTarget(scopeRoot, targetPath, "target path");
-  const tempPath = `${targetPath}${DOWNLOAD_SUFFIX}`;
 
   if (shouldCancel?.()) throw createCancelledError();
 
-  let response = null;
   let lastError = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const signed = await createSignedStreamRequest({
@@ -173,13 +252,33 @@ export async function pullScopeFileStream({
       attempt,
       createSignedRequest,
     });
-    const streamUrl = new URL("/api/peer/scope/file-stream", `${normalizedPeerUrl}/`);
-    streamUrl.searchParams.set("payload", signed.payload);
-    streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
+    const streamUrl = new URL(STREAM_DOWNLOAD_ENDPOINT, `${normalizedPeerUrl}/`);
+    const headers = buildSignedStreamHeaders({ signed, operation, caller, attempt });
 
-    logOutgoingScopedStreamRequest({ endpoint: "scope/file-stream", method: "GET", url: streamUrl.toString(), signed });
-    response = await fetch(streamUrl.toString(), { method: "GET" });
-    if (response.ok) break;
+    logOutgoingScopedStreamRequest({
+      endpoint: "scope/file-stream",
+      method: "GET",
+      url: streamUrl.toString(),
+      signed,
+      headers: Object.keys(headers).sort(),
+      operation,
+      caller,
+      attempt,
+      rawRelativePath,
+      normalizedRelativePath,
+    });
+
+    const response = await fetch(streamUrl.toString(), { method: "GET", headers });
+    if (response.ok) {
+      logScopedStreamResponse({ operation, caller, response, relativePath: normalizedRelativePath });
+      return {
+        response,
+        normalizedPeerUrl,
+        normalizedScope,
+        normalizedRelativePath,
+        resolvedRuntimeRoot,
+      };
+    }
 
     const detail = await readStreamErrorDetail(response);
     const requestError = new Error(`scope file-stream failed (${response.status}): ${detail}`);
@@ -192,12 +291,50 @@ export async function pullScopeFileStream({
     throw requestError;
   }
 
-  if (!response || !response.ok) {
-    throw lastError || new Error("scope file-stream failed");
-  }
+  throw lastError || new Error("scope file-stream failed");
+}
+
+export async function pullScopeFileStream({
+  peerUrl,
+  scope,
+  relativePath,
+  runtimeRoot,
+  notebookDir,
+  shouldCancel,
+  onByteDelta,
+  peerLabel,
+  createSignedRequest,
+  operation = "pull",
+  caller = "normal pull",
+  saveMode = "auto",
+} = {}) {
+  const {
+    response,
+    normalizedPeerUrl,
+    normalizedScope,
+    normalizedRelativePath,
+    resolvedRuntimeRoot,
+  } = await signedPeerScopeFileStream({
+    peerUrl,
+    scope,
+    relativePath,
+    runtimeRoot,
+    shouldCancel,
+    createSignedRequest,
+    operation,
+    caller,
+  });
+
+  const resolvedNotebookDir = toNotebookDir(resolvedRuntimeRoot, notebookDir);
+  const scopeRoot = resolveScopeNotebookPath({ notebookDir: resolvedNotebookDir, scope: normalizedScope });
+  const targetPath = path.resolve(scopeRoot, normalizedRelativePath.slice(`${normalizedScope}/`.length));
+  ensureSafeScopeTarget(scopeRoot, targetPath, "target path");
+  const tempPath = `${targetPath}${DOWNLOAD_SUFFIX}`;
+
   if (!response.body) throw new Error("scope file-stream response body is missing");
 
-  const returnedRelativePath = String(response.headers.get("x-nodevision-relative-path") || "").trim();
+  const returnedRelativePath = decodeBase64UrlText(response.headers.get("x-nodevision-relative-path-base64"))
+    || String(response.headers.get("x-nodevision-relative-path") || "").trim();
   if (returnedRelativePath && returnedRelativePath !== normalizedRelativePath) {
     throw new Error("scope file-stream returned mismatched relative path");
   }
@@ -278,7 +415,21 @@ export async function pullScopeFileStream({
     }
   } catch (err) {
     if (err?.code === "ENOENT") {
-      await fs.rename(tempPath, targetPath);
+      if (saveMode === "conflict") {
+        mode = "conflict";
+        conflictRelativePath = buildScopedConflictRelativePath(
+          normalizedRelativePath,
+          peerLabel || new URL(normalizedPeerUrl).hostname,
+          new Date().toISOString(),
+        );
+        const conflictTargetPath = path.resolve(scopeRoot, conflictRelativePath.slice(`${normalizedScope}/`.length));
+        ensureSafeScopeTarget(scopeRoot, conflictTargetPath, "conflict path");
+        await fs.mkdir(path.dirname(conflictTargetPath), { recursive: true });
+        await fs.rename(tempPath, conflictTargetPath);
+        savedRelativePath = conflictRelativePath;
+      } else {
+        await fs.rename(tempPath, targetPath);
+      }
     } else {
       await fs.rm(tempPath, { force: true }).catch(() => {});
       throw err;
@@ -296,6 +447,8 @@ export async function pullScopeFileStream({
     bytesDownloaded,
     sha256: downloadedSha,
     expectedSha256: expectedSha,
+    operation,
+    caller,
   };
 }
 

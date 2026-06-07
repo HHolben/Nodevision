@@ -292,11 +292,21 @@ function logScopedStreamAuthAccepted(endpoint, verified, diagnostics = {}) {
     const safe = verified?.safeDetails && typeof verified.safeDetails === "object" ? verified.safeDetails : {};
     const logLine = {
       endpoint,
+      operation: diagnostics?.headers?.syncOperation || "unknown",
+      caller: diagnostics?.headers?.syncCaller || "unknown",
+      retry: String(diagnostics?.headers?.syncRetry || "").toLowerCase() === "true",
+      attempt: diagnostics?.headers?.syncAttempt || null,
       errorCode: null,
       deviceId: safe.deviceId ?? verified?.message?.deviceId ?? null,
       scope: safe.scope ?? verified?.message?.scope ?? null,
       relativePath: safe.relativePath ?? verified?.message?.relativePath ?? null,
       timestampAgeMs: safe.timestampAgeMs ?? null,
+      present: {
+        deviceId: Boolean(safe.deviceId),
+        scope: Boolean(safe.scope),
+        relativePath: Boolean(safe.relativePath),
+        timestamp: Boolean(safe.timestamp),
+      },
       trustedPeerFound: Boolean(safe.trustedPeerFound),
       signatureVerified: Boolean(safe.signatureVerified),
       status: 200,
@@ -316,6 +326,11 @@ function logScopedStreamAuthAccepted(endpoint, verified, diagnostics = {}) {
         payloadScope: diagnostics?.payloadFields?.scope ?? null,
         payloadRelativePath: diagnostics?.payloadFields?.relativePath ?? null,
         payloadTimestampPresent: Boolean(diagnostics?.payloadFields?.timestamp),
+        contentType: diagnostics?.headers?.contentType || null,
+        accept: diagnostics?.headers?.accept || null,
+        syncOperation: diagnostics?.headers?.syncOperation || null,
+        syncCaller: diagnostics?.headers?.syncCaller || null,
+        syncRetry: diagnostics?.headers?.syncRetry || null,
       },
     };
     console.debug("[peerRoutes] Accepted scoped stream request: %s", JSON.stringify(logLine));
@@ -331,11 +346,21 @@ function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {
       : {};
     const logLine = {
       endpoint,
+      operation: diagnostics?.headers?.syncOperation || "unknown",
+      caller: diagnostics?.headers?.syncCaller || "unknown",
+      retry: String(diagnostics?.headers?.syncRetry || "").toLowerCase() === "true",
+      attempt: diagnostics?.headers?.syncAttempt || null,
       errorCode: classified?.code || "unauthorized",
       deviceId: safe.deviceId ?? null,
       scope: safe.scope ?? null,
       relativePath: safe.relativePath ?? null,
       timestampAgeMs: safe.timestampAgeMs ?? null,
+      present: {
+        deviceId: Boolean(safe.deviceId),
+        scope: Boolean(safe.scope),
+        relativePath: Boolean(safe.relativePath),
+        timestamp: Boolean(safe.timestamp),
+      },
       trustedPeerFound: Boolean(safe.trustedPeerFound),
       signatureVerified: Boolean(safe.signatureVerified),
       status: Number(classified?.status || 0),
@@ -355,6 +380,11 @@ function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {
         payloadScope: diagnostics?.payloadFields?.scope ?? null,
         payloadRelativePath: diagnostics?.payloadFields?.relativePath ?? null,
         payloadTimestampPresent: Boolean(diagnostics?.payloadFields?.timestamp),
+        contentType: diagnostics?.headers?.contentType || null,
+        accept: diagnostics?.headers?.accept || null,
+        syncOperation: diagnostics?.headers?.syncOperation || null,
+        syncCaller: diagnostics?.headers?.syncCaller || null,
+        syncRetry: diagnostics?.headers?.syncRetry || null,
       },
       knownTrustedDeviceIds: Array.isArray(knownTrustedDeviceIds) ? knownTrustedDeviceIds : [],
     };
@@ -416,6 +446,18 @@ function decodeBase64UrlHeaderValue(value) {
   }
 }
 
+function encodeBase64UrlHeaderValue(value) {
+  return Buffer.from(String(value), "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function isSafeHttpHeaderValue(value) {
+  return /^[\t\x20-\x7e]*$/.test(String(value || ""));
+}
+
 function safePayloadFieldSummary(payloadText) {
   if (typeof payloadText !== "string" || !payloadText.trim()) {
     return { parsed: false, deviceId: null, scope: null, relativePath: null, timestamp: null };
@@ -465,6 +507,14 @@ export function extractSignedStreamAuth(req) {
       headerKeys: Object.keys(req?.headers || {})
         .filter((key) => key.toLowerCase().startsWith("x-nodevision"))
         .sort(),
+      headers: {
+        contentType: firstValue(headerValue(req, "content-type")) || null,
+        accept: firstValue(headerValue(req, "accept")) || null,
+        syncOperation: firstValue(headerValue(req, "x-nodevision-sync-operation")) || null,
+        syncCaller: firstValue(headerValue(req, "x-nodevision-sync-caller")) || null,
+        syncAttempt: firstValue(headerValue(req, "x-nodevision-sync-attempt")) || null,
+        syncRetry: firstValue(headerValue(req, "x-nodevision-sync-retry")) || null,
+      },
       payloadFields: safePayloadFieldSummary(payload.value),
     },
   };
@@ -575,12 +625,16 @@ export function registerPeerRoutes(app, ctx) {
         knownSha = sha256(fileBuffer);
       }
 
-      res.set({
+      const streamHeaders = {
         "cache-control": "no-store",
         "content-length": String(stat.size),
         "content-type": "application/octet-stream",
-        "x-nodevision-relative-path": scoped.normalizedRelativePath,
-      });
+        "x-nodevision-relative-path-base64": encodeBase64UrlHeaderValue(scoped.normalizedRelativePath),
+      };
+      if (isSafeHttpHeaderValue(scoped.normalizedRelativePath)) {
+        streamHeaders["x-nodevision-relative-path"] = scoped.normalizedRelativePath;
+      }
+      res.set(streamHeaders);
       if (knownSha) {
         res.set("x-nodevision-sha256", knownSha);
       }

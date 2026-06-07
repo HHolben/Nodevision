@@ -314,6 +314,33 @@ async function main() {
     const specialPulledBuffer = await fs.readFile(path.resolve(destNotebookDir, specialRelativePath));
     assert(sha256OfBuffer(specialPulledBuffer) === sha256OfBuffer(specialSourceData), "Expected special path streamed content to match");
 
+    const protectionMatrix = [
+      { sourceProtected: true, destProtected: false, label: "protected-source-unprotected-dest" },
+      { sourceProtected: false, destProtected: true, label: "unprotected-source-protected-dest" },
+      { sourceProtected: true, destProtected: true, label: "both-protected" },
+      { sourceProtected: false, destProtected: false, label: "both-unprotected" },
+    ];
+    for (const item of protectionMatrix) {
+      await saveSyncProtection({ protectedFromPeerWrites: item.sourceProtected }, { runtimeRoot: sourceRoot });
+      await saveSyncProtection({ protectedFromPeerWrites: item.destProtected }, { runtimeRoot: destRoot });
+      const matrixRelativePath = `Shared/protection-matrix/${item.label}.bin`;
+      const matrixData = Buffer.from(`matrix-${item.label}`, "utf8");
+      const matrixSourcePath = path.resolve(sourceNotebookDir, matrixRelativePath);
+      await fs.mkdir(path.dirname(matrixSourcePath), { recursive: true });
+      await fs.writeFile(matrixSourcePath, matrixData);
+      const matrixReport = await pullScopeFileStream({
+        peerUrl: serverHandle.peerUrl,
+        scope: "Shared",
+        relativePath: matrixRelativePath,
+        runtimeRoot: destRoot,
+      });
+      assert(matrixReport.ok === true, `Expected protected-mode matrix pull to succeed for ${item.label}`);
+      const matrixPulledBuffer = await fs.readFile(path.resolve(destNotebookDir, matrixRelativePath));
+      assert(sha256OfBuffer(matrixPulledBuffer) === sha256OfBuffer(matrixData), `Expected protected-mode matrix content to match for ${item.label}`);
+    }
+    await saveSyncProtection({ protectedFromPeerWrites: true }, { runtimeRoot: sourceRoot });
+    await saveSyncProtection({ protectedFromPeerWrites: false }, { runtimeRoot: destRoot });
+
     let pullRetrySignCount = 0;
     const pullRetryReport = await pullScopeFileStream({
       peerUrl: serverHandle.peerUrl,

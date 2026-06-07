@@ -13,6 +13,7 @@ import { createCancelledError, pullScopeFileStream } from "./pull-scope-file-str
 import { pushScopeFileStream } from "./push-scope-file-stream.mjs";
 
 const hash = (b) => createHash("sha256").update(b).digest("hex");
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const postJson = async (peerUrl, endpointPath, body) => {
   let r;
   try {
@@ -37,6 +38,56 @@ const postJson = async (peerUrl, endpointPath, body) => {
   }
   return p;
 };
+
+function extensionSummary(relativePath) {
+  const ext = path.posix.extname(String(relativePath || "")).toLowerCase();
+  return {
+    extension: ext || null,
+    image: IMAGE_EXTENSIONS.has(ext),
+  };
+}
+
+function summarizeSignedPayloadForLog(payloadText) {
+  try {
+    const parsed = JSON.parse(String(payloadText || ""));
+    return {
+      parsed: Boolean(parsed && typeof parsed === "object" && !Array.isArray(parsed)),
+      deviceId: typeof parsed?.deviceId === "string" ? parsed.deviceId : null,
+      scope: typeof parsed?.scope === "string" ? parsed.scope : null,
+      relativePath: typeof parsed?.relativePath === "string" ? parsed.relativePath : null,
+      timestampPresent: typeof parsed?.timestamp === "string" && parsed.timestamp.length > 0,
+    };
+  } catch {
+    return { parsed: false, deviceId: null, scope: null, relativePath: null, timestampPresent: false };
+  }
+}
+
+function logSignedScopeFileFetchStart({ endpoint, method, operation, caller, transferMode, signed, rawRelativePath, normalizedRelativePath }) {
+  try {
+    const payloadFields = summarizeSignedPayloadForLog(signed?.payload);
+    const normalizedPath = normalizedRelativePath || payloadFields.relativePath || "";
+    const ext = extensionSummary(normalizedPath);
+    console.debug("[sync] signed scope file fetch start", {
+      endpoint,
+      method,
+      operation,
+      caller,
+      transferMode,
+      extension: ext.extension,
+      image: ext.image,
+      contentType: transferMode === "json" ? "application/json" : null,
+      scope: payloadFields.scope,
+      relativePath: payloadFields.relativePath,
+      deviceId: payloadFields.deviceId,
+      signed: typeof signed?.payload === "string" && signed.payload.length > 0
+        && typeof signed?.signatureBase64 === "string" && signed.signatureBase64.length > 0,
+      deviceIdPresent: typeof payloadFields.deviceId === "string" && payloadFields.deviceId.length > 0,
+      timestampPresent: Boolean(payloadFields.timestampPresent),
+      relativePathRawLength: typeof rawRelativePath === "string" ? rawRelativePath.length : null,
+      relativePathNormalizedLength: typeof normalizedPath === "string" ? normalizedPath.length : null,
+    });
+  } catch {}
+}
 
 function buildScopedConflictRelativePath(originalRelativePath, peerDeviceId, timestamp) {
   const parsed = path.posix.parse(originalRelativePath);
@@ -188,15 +239,26 @@ async function fetchManifest(peerUrl, scope, runtimeRoot) {
   return body.manifest;
 }
 
-async function fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot) {
+async function fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { operation = "pull", caller = "normal pull" } = {}) {
+  const rawRelativePath = typeof relativePath === "string" ? relativePath : String(relativePath ?? "");
   const signed = await createSignedScopeFileRequest({ scope, relativePath }, { runtimeRoot });
+  logSignedScopeFileFetchStart({
+    endpoint: "scope/file-get",
+    method: "POST",
+    operation,
+    caller,
+    transferMode: "json",
+    signed,
+    rawRelativePath,
+    normalizedRelativePath: rawRelativePath,
+  });
   const body = await postJson(peerUrl, "/api/peer/scope/file-get", signed);
   if (!body?.ok || !body?.file) throw new Error("missing file payload");
   return body.file;
 }
 
 async function pullOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot }) {
-  const remote = await fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot);
+  const remote = await fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { operation: "pull", caller: "normal pull" });
   if (remote.relativePath !== relativePath) throw new Error("mismatched relativePath");
   const buf = Buffer.from(String(remote.contentBase64 || ""), "base64");
   if (buf.toString("base64") !== remote.contentBase64) throw new Error("invalid base64");
@@ -275,7 +337,7 @@ async function pushOneStream({ peerUrl, scope, relativePath, notebookDir, runtim
 }
 
 async function pullConflict({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, peerDeviceId }) {
-  const remote = await fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot);
+  const remote = await fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { operation: "conflict", caller: "conflict resolver" });
   const buf = Buffer.from(String(remote.contentBase64 || ""), "base64");
   const expected = String(remote.sha256 || "");
   const actual = hash(buf);
@@ -308,6 +370,9 @@ async function pullConflictStream({
     runtimeRoot,
     shouldCancel,
     peerLabel: "peer",
+    operation: "conflict",
+    caller: "conflict resolver",
+    saveMode: "conflict",
     onByteDelta,
   });
   if (!report?.ok) throw new Error("stream conflict pull did not complete");

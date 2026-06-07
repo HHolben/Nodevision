@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/Sync/push-scope-file-stream.mjs
-// This module streams one scoped local file to a trusted peer using signed query auth, without loading full file content into memory.
+// This module streams one scoped local file to a trusted peer using signed header auth, without loading full file content into memory.
 
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
@@ -24,6 +24,30 @@ function ensureSafeScopeTarget(scopeRoot, candidatePath, label) {
   if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
     throw new Error(`${label} escaped scope root`);
   }
+}
+
+function encodeBase64Url(text) {
+  return Buffer.from(String(text), "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function sanitizeHeaderValue(value, fallback = "unknown") {
+  const text = String(value || fallback).trim() || fallback;
+  return text.replace(/[^\t\x20-\x7e]+/g, "?").slice(0, 120);
+}
+
+function buildSignedStreamPushHeaders({ signed, operation, caller, attempt }) {
+  return {
+    "x-nodevision-peer-payload-base64": encodeBase64Url(signed.payload),
+    "x-nodevision-peer-signature": signed.signatureBase64,
+    "x-nodevision-sync-operation": sanitizeHeaderValue(operation),
+    "x-nodevision-sync-caller": sanitizeHeaderValue(caller),
+    "x-nodevision-sync-attempt": String(Number.isFinite(Number(attempt)) ? Math.trunc(Number(attempt)) : 0),
+    "x-nodevision-sync-retry": attempt > 0 ? "true" : "false",
+  };
 }
 
 function buildUploadStream(localPath, shouldCancel) {
@@ -65,7 +89,7 @@ function summarizeSignedPayloadForLog(payloadText) {
   }
 }
 
-function logOutgoingScopedStreamRequest({ endpoint, method, url, signed, headers = [] }) {
+function logOutgoingScopedStreamRequest({ endpoint, method, url, signed, headers = [], operation = "push", caller = "normal push", attempt = 0 }) {
   try {
     const parsedUrl = new URL(url);
     const payloadFields = summarizeSignedPayloadForLog(signed?.payload);
@@ -74,6 +98,10 @@ function logOutgoingScopedStreamRequest({ endpoint, method, url, signed, headers
       method,
       peerUrl: parsedUrl.origin,
       requestPath: parsedUrl.pathname,
+      operation,
+      caller,
+      retry: Number(attempt) > 0,
+      attempt: Number.isFinite(Number(attempt)) ? Math.trunc(Number(attempt)) : 0,
       scope: payloadFields.scope,
       relativePath: payloadFields.relativePath,
       deviceId: payloadFields.deviceId,
@@ -148,6 +176,8 @@ export async function pushScopeFileStream({
   shouldCancel,
   onByteDelta,
   createSignedRequest,
+  operation = "push",
+  caller = "normal push",
 } = {}) {
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
   const normalizedScope = validateSyncScope(scope);
@@ -181,15 +211,17 @@ export async function pushScopeFileStream({
     });
 
     const streamUrl = new URL(STREAM_UPLOAD_ENDPOINT, `${normalizedPeerUrl}/`);
-    streamUrl.searchParams.set("payload", signed.payload);
-    streamUrl.searchParams.set("signatureBase64", signed.signatureBase64);
+    const authHeaders = buildSignedStreamPushHeaders({ signed, operation, caller, attempt });
 
     logOutgoingScopedStreamRequest({
       endpoint: "scope/file-stream-push",
       method: "POST",
       url: streamUrl.toString(),
       signed,
-      headers: ["content-type", "content-length"],
+      headers: [...Object.keys(authHeaders), "content-type", "content-length"].sort(),
+      operation,
+      caller,
+      attempt,
     });
 
     let response;
@@ -197,6 +229,7 @@ export async function pushScopeFileStream({
       response = await fetch(streamUrl.toString(), {
         method: "POST",
         headers: {
+          ...authHeaders,
           "content-type": "application/octet-stream",
           "content-length": String(size),
         },

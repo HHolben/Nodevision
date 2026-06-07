@@ -12,6 +12,7 @@ import { Buffer } from "node:buffer";
 import { ensureDeviceIdentity } from "./DeviceIdentity.mjs";
 import { addTrustedPeer } from "./TrustedPeers.mjs";
 import { saveSyncScopes } from "./SyncScopes.mjs";
+import { saveSyncProtection } from "./SyncProtection.mjs";
 import { runScopeSyncTwoWay } from "./sync-scope-two-way.mjs";
 import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
 import { registerPeerRoutes } from "../server/routes/peerRoutes.mjs";
@@ -22,6 +23,13 @@ function assert(condition, message) {
 
 function sha256OfBuffer(buffer) {
   return createHash("sha256").update(buffer).digest("hex");
+}
+
+async function writeScopedFile(notebookDir, relativePath, content) {
+  const filePath = path.resolve(notebookDir, relativePath);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, content);
+  return filePath;
 }
 
 async function startPeerServer(ctx) {
@@ -107,6 +115,109 @@ async function main() {
     const zeroStat = await fs.stat(path.resolve(destNotebookDir, "Shared", "zero-local.bin"));
     assert(zeroStat.isFile(), "Expected 0-byte remote file");
     assert(zeroStat.size === 0, "Expected remote 0-byte file size");
+
+    await saveSyncProtection({ protectedFromPeerWrites: true }, { runtimeRoot: destRoot });
+
+    const conflictTextRelativePath = "Shared/conflict-cases/conflicting-text.txt";
+    const conflictJpgRelativePath = "Shared/conflict-cases/conflicting-large.jpg";
+    const conflictPngRelativePath = "Shared/conflict-cases/conflicting-large.png";
+    const specialConflictRelativePath = "Shared/conflict-cases/12_31_24, 2_09\u202fPM Microsoft Lens(6).jpg";
+    const remoteJpgData = Buffer.alloc(MAX_FILE_PUSH_BYTES + 8192, 0x11);
+    const remotePngData = Buffer.alloc(MAX_FILE_PUSH_BYTES + 4096, 0x22);
+    const remoteSpecialData = Buffer.alloc(MAX_FILE_PUSH_BYTES + 2048, 0x33);
+
+    await writeScopedFile(sourceNotebookDir, conflictTextRelativePath, Buffer.from("local text conflict", "utf8"));
+    await writeScopedFile(destNotebookDir, conflictTextRelativePath, Buffer.from("remote text conflict", "utf8"));
+    await writeScopedFile(sourceNotebookDir, conflictJpgRelativePath, Buffer.from("local jpg conflict", "utf8"));
+    await writeScopedFile(destNotebookDir, conflictJpgRelativePath, remoteJpgData);
+    await writeScopedFile(sourceNotebookDir, conflictPngRelativePath, Buffer.from("local png conflict", "utf8"));
+    await writeScopedFile(destNotebookDir, conflictPngRelativePath, remotePngData);
+    await writeScopedFile(sourceNotebookDir, specialConflictRelativePath, Buffer.from("local special image conflict", "utf8"));
+    await writeScopedFile(destNotebookDir, specialConflictRelativePath, remoteSpecialData);
+
+    const originalConsoleDebug = console.debug;
+    const outgoingStreamLogs = [];
+    const jsonFetchLogs = [];
+    const acceptedStreamLogs = [];
+    try {
+      console.debug = (message, detail) => {
+        const text = String(message || "");
+        if (text.includes("[sync] outgoing scoped stream request") && detail && typeof detail === "object") {
+          outgoingStreamLogs.push(detail);
+          return;
+        }
+        if (text.includes("[sync] signed scope file fetch start") && detail && typeof detail === "object") {
+          jsonFetchLogs.push(detail);
+          return;
+        }
+        if (text.includes("Accepted scoped stream request") && typeof detail === "string") {
+          try { acceptedStreamLogs.push(JSON.parse(detail)); } catch {}
+        }
+      };
+
+      const conflictSync = await runScopeSyncTwoWay({
+        peerUrl: peerServer.peerUrl,
+        scope: "Shared",
+        runtimeRoot: sourceRoot,
+        dryRun: false,
+      });
+      assert(conflictSync.ok === true, "Expected protected conflict sync to succeed");
+      const conflictReports = Array.isArray(conflictSync?.operations?.conflicts) ? conflictSync.operations.conflicts : [];
+      for (const relativePath of [conflictTextRelativePath, conflictJpgRelativePath, conflictPngRelativePath, specialConflictRelativePath]) {
+        const report = conflictReports.find((item) => item?.originalRelativePath === relativePath);
+        assert(report, `Expected conflict report for ${relativePath}`);
+        assert(typeof report.conflictRelativePath === "string" && report.conflictRelativePath.includes("/.conflicts/"), "Expected conflict copy path");
+        const conflictCopyPath = path.resolve(sourceNotebookDir, "Shared", report.conflictRelativePath.slice("Shared/".length));
+        const conflictCopy = await fs.readFile(conflictCopyPath);
+        const expectedRemote = relativePath === conflictJpgRelativePath
+          ? remoteJpgData
+          : relativePath === conflictPngRelativePath
+            ? remotePngData
+            : relativePath === specialConflictRelativePath
+              ? remoteSpecialData
+              : Buffer.from("remote text conflict", "utf8");
+        assert(sha256OfBuffer(conflictCopy) === sha256OfBuffer(expectedRemote), `Expected conflict copy to match remote for ${relativePath}`);
+      }
+      assert((await fs.readFile(path.resolve(sourceNotebookDir, conflictTextRelativePath), "utf8")) === "local text conflict", "Expected local text original to remain unchanged");
+      assert((await fs.readFile(path.resolve(sourceNotebookDir, conflictJpgRelativePath), "utf8")) === "local jpg conflict", "Expected local jpg original to remain unchanged");
+      assert((await fs.readFile(path.resolve(sourceNotebookDir, conflictPngRelativePath), "utf8")) === "local png conflict", "Expected local png original to remain unchanged");
+      assert((await fs.readFile(path.resolve(sourceNotebookDir, specialConflictRelativePath), "utf8")) === "local special image conflict", "Expected local special image original to remain unchanged");
+    } finally {
+      console.debug = originalConsoleDebug;
+    }
+
+    const conflictJsonLog = jsonFetchLogs.find((entry) => entry?.operation === "conflict" && entry?.relativePath === conflictTextRelativePath);
+    assert(conflictJsonLog?.signed === true, "Expected text conflict JSON fetch to be signed");
+    assert(conflictJsonLog?.deviceIdPresent === true, "Expected text conflict JSON fetch to include deviceId");
+
+    for (const relativePath of [conflictJpgRelativePath, conflictPngRelativePath, specialConflictRelativePath]) {
+      const outgoing = outgoingStreamLogs.find((entry) => entry?.operation === "conflict" && entry?.relativePath === relativePath);
+      assert(outgoing, `Expected outgoing stream conflict log for ${relativePath}`);
+      assert(outgoing.caller === "conflict resolver", "Expected stream conflict caller diagnostic");
+      assert(outgoing.signed === true, "Expected stream conflict request to be signed");
+      assert(outgoing.deviceIdPresent === true, "Expected stream conflict request to include deviceId");
+      assert(Array.isArray(outgoing.headers) && outgoing.headers.includes("x-nodevision-peer-payload-base64"), "Expected stream conflict auth payload header");
+      assert(Array.isArray(outgoing.queryKeys) && outgoing.queryKeys.length === 0, "Expected stream conflict auth to avoid query encoding");
+      assert(outgoing.relativePathRawLength === relativePath.length, "Expected raw relativePath length diagnostic");
+      assert(outgoing.relativePathNormalizedLength === relativePath.length, "Expected normalized relativePath length diagnostic");
+    }
+
+    const specialOutgoing = outgoingStreamLogs.find((entry) => entry?.relativePath === specialConflictRelativePath);
+    assert(specialConflictRelativePath.includes("\u202f"), "Expected special filename to contain narrow no-break space");
+    assert(specialOutgoing?.relativePath === specialConflictRelativePath, "Expected signed special relativePath to preserve Unicode exactly");
+
+    const acceptedConflict = acceptedStreamLogs.filter((entry) => entry?.operation === "conflict");
+    assert(acceptedConflict.length >= 3, "Expected peer route to accept signed stream conflict requests");
+    for (const entry of acceptedConflict) {
+      assert(entry.caller === "conflict resolver", "Expected server conflict caller diagnostic");
+      assert(entry.signatureVerified === true, "Expected server to verify conflict stream signature");
+      assert(entry.trustedPeerFound === true, "Expected server to find trusted peer for conflict stream");
+      assert(entry.present?.deviceId === true, "Expected server diagnostic deviceId present");
+      assert(entry.present?.scope === true, "Expected server diagnostic scope present");
+      assert(entry.present?.relativePath === true, "Expected server diagnostic relativePath present");
+      assert(entry.request?.contentType === null, "Expected stream GET content-type diagnostic to be null");
+      assert(String(entry.request?.accept || "").includes("application/octet-stream"), "Expected stream GET accept diagnostic");
+    }
   } finally {
     await peerServer.close();
   }
