@@ -170,8 +170,29 @@ async function main() {
     const validGetUrl = new URL("/api/peer/scope/file-stream", `${serverHandle.peerUrl}/`);
     validGetUrl.searchParams.set("payload", validSignedGet.payload);
     validGetUrl.searchParams.set("signatureBase64", validSignedGet.signatureBase64);
-    const validGetResponse = await fetch(validGetUrl.toString());
-    assert(validGetResponse.ok === true, "Expected signed URL-encoded stream request to succeed");
+    const originalConsoleDebug = console.debug;
+    let acceptedStreamDiagnostic = null;
+    try {
+      console.debug = (message, detail) => {
+        if (String(message || "").includes("Accepted scoped stream request") && typeof detail === "string") {
+          acceptedStreamDiagnostic = JSON.parse(detail);
+        }
+      };
+      const validGetResponse = await fetch(validGetUrl.toString());
+      assert(validGetResponse.ok === true, "Expected signed query-only stream request to succeed");
+      await validGetResponse.arrayBuffer();
+    } finally {
+      console.debug = originalConsoleDebug;
+    }
+    assert(acceptedStreamDiagnostic, "Expected accepted stream auth diagnostic");
+    assert(acceptedStreamDiagnostic.deviceId === destIdentity.deviceId, "Expected accepted stream diagnostic deviceId from parsed payload");
+    assert(acceptedStreamDiagnostic.scope === "Shared", "Expected accepted stream diagnostic scope from parsed payload");
+    assert(acceptedStreamDiagnostic.relativePath === bigRelativePath, "Expected accepted stream diagnostic relativePath from parsed payload");
+    assert(acceptedStreamDiagnostic.trustedPeerFound === true, "Expected accepted query-only stream request to find trusted peer");
+    assert(acceptedStreamDiagnostic.signatureVerified === true, "Expected accepted query-only stream request signature verification");
+    assert(Array.isArray(acceptedStreamDiagnostic.request?.queryKeys) && acceptedStreamDiagnostic.request.queryKeys.includes("payload"), "Expected query payload auth");
+    assert(Array.isArray(acceptedStreamDiagnostic.request?.bodyKeys) && acceptedStreamDiagnostic.request.bodyKeys.length === 0, "Expected no body auth fields");
+    assert(Array.isArray(acceptedStreamDiagnostic.request?.headerKeys) && acceptedStreamDiagnostic.request.headerKeys.length === 0, "Expected no auth headers");
 
     const headerSignedGet = await createSignedScopeFileRequest(
       { scope: "Shared", relativePath: bigRelativePath },

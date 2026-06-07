@@ -8,14 +8,16 @@ import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { verifyMessage } from "../../Sync/DeviceIdentity.mjs";
 import { createSignedHello, verifySignedHello } from "../../Sync/PeerHello.mjs";
 import { FILE_PUSH_ALLOWED_PREFIX, MAX_FILE_PUSH_BYTES, verifySignedFileRequest, verifySignedFilePush } from "../../Sync/PeerFileTransfer.mjs";
 import { buildSyncTestManifest, verifySignedManifestRequest } from "../../Sync/SyncManifest.mjs";
-import { getLocalPeerInfo, loadTrustedPeers } from "../../Sync/TrustedPeers.mjs";
-import { buildScopeManifest, resolveScopeNotebookPath } from "../../Sync/SyncScopes.mjs";
+import { findTrustedPeer, getLocalPeerInfo, loadTrustedPeers } from "../../Sync/TrustedPeers.mjs";
+import { buildScopeManifest, loadSyncScopes, resolveScopeNotebookPath } from "../../Sync/SyncScopes.mjs";
 import { isProtectedFromPeerWrites } from "../../Sync/SyncProtection.mjs";
 import {
   isScopedPeerVerificationError,
+  validateScopeFileRequestMessage,
   verifySignedScopeFilePush,
   verifySignedScopeFileRequest,
   verifySignedScopeFileStreamPush,
@@ -138,6 +140,188 @@ function classifyScopedStreamRequestError(err, unauthorizedError) {
     return { status: 400, error: "Invalid scoped path", safeDetails: null, code: "invalid_scoped_path" };
   }
   return { status: 401, error: unauthorizedError + ". Make sure both devices have approved/trusted each other for sync.", safeDetails: null, code: "unauthorized" };
+}
+
+function createScopedStreamVerificationError(code, message, safeDetails = {}) {
+  const err = new Error(String(message || "Unauthorized peer scope file stream request"));
+  err.name = "ScopedPeerVerificationError";
+  err.code = String(code || "unauthorized");
+  err.safeDetails = {
+    deviceId: safeDetails.deviceId ?? null,
+    scope: safeDetails.scope ?? null,
+    relativePath: safeDetails.relativePath ?? null,
+    timestamp: safeDetails.timestamp ?? null,
+    timestampAgeMs: Number.isFinite(Number(safeDetails.timestampAgeMs)) ? Math.trunc(Number(safeDetails.timestampAgeMs)) : null,
+    trustedPeerFound: Boolean(safeDetails.trustedPeerFound),
+    signatureVerified: Boolean(safeDetails.signatureVerified),
+  };
+  return err;
+}
+
+function requireRawString(value, fieldName, safeDetails) {
+  if (typeof value !== "string" || value.length === 0) {
+    throw createScopedStreamVerificationError("malformed_request", `${fieldName} must be a nonempty string`, safeDetails);
+  }
+  return value;
+}
+
+function parseSignedStreamPayload(payloadText, safeDetails) {
+  try {
+    const parsed = JSON.parse(payloadText);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      safeDetails.deviceId = typeof parsed.deviceId === "string" ? parsed.deviceId.trim() || null : null;
+      safeDetails.scope = typeof parsed.scope === "string" ? parsed.scope.trim() || null : null;
+      safeDetails.relativePath = typeof parsed.relativePath === "string" ? parsed.relativePath.trim() || null : null;
+      safeDetails.timestamp = typeof parsed.timestamp === "string" ? parsed.timestamp.trim() || null : null;
+    }
+    return parsed;
+  } catch {
+    throw createScopedStreamVerificationError("malformed_payload", "Malformed payload", safeDetails);
+  }
+}
+
+function decodeSignatureBase64ForStream(signatureBase64, safeDetails) {
+  try {
+    const decoded = Buffer.from(signatureBase64, "base64");
+    if (decoded.length === 0 || decoded.toString("base64") !== signatureBase64) {
+      throw new Error("invalid base64");
+    }
+  } catch {
+    throw createScopedStreamVerificationError("malformed_signature", "Malformed signature", safeDetails);
+  }
+}
+
+function resolveStreamNowMs(options = {}) {
+  const now = options?.now;
+  if (typeof now === "number" && Number.isFinite(now)) return now;
+  if (typeof now === "string") {
+    const parsed = Date.parse(now);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  if (now instanceof Date) {
+    const parsed = now.getTime();
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return Date.now();
+}
+
+async function verifySignedScopeFileStreamGetRequest({ payload, signatureBase64 }, options = {}) {
+  const safeDetails = {
+    deviceId: null,
+    scope: null,
+    relativePath: null,
+    timestamp: null,
+    timestampAgeMs: null,
+    trustedPeerFound: false,
+    signatureVerified: false,
+  };
+  const payloadText = requireRawString(payload, "payload", safeDetails);
+  const signatureText = requireRawString(signatureBase64, "signatureBase64", safeDetails);
+  const parsedPayload = parseSignedStreamPayload(payloadText, safeDetails);
+
+  let message;
+  try {
+    message = validateScopeFileRequestMessage(parsedPayload);
+    safeDetails.deviceId = message.deviceId;
+    safeDetails.scope = message.scope;
+    safeDetails.relativePath = message.relativePath;
+    safeDetails.timestamp = message.timestamp;
+  } catch (err) {
+    throw createScopedStreamVerificationError("invalid_payload", err?.message || "Invalid payload", safeDetails);
+  }
+
+  const timestampMs = Date.parse(message.timestamp);
+  safeDetails.timestampAgeMs = Number.isNaN(timestampMs) ? null : Math.trunc(resolveStreamNowMs(options) - timestampMs);
+  const maxMessageAgeMs = Number(options.maxMessageAgeMs);
+  const maxFutureSkewMs = Number.isFinite(Number(options.maxFutureSkewMs)) ? Number(options.maxFutureSkewMs) : STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS;
+  if (Number.isFinite(maxMessageAgeMs) && maxMessageAgeMs >= 0) {
+    if (safeDetails.timestampAgeMs === null) {
+      throw createScopedStreamVerificationError("invalid_timestamp", "Invalid timestamp", safeDetails);
+    }
+    if (safeDetails.timestampAgeMs > maxMessageAgeMs) {
+      throw createScopedStreamVerificationError("expired_request", "Expired request", safeDetails);
+    }
+    if (safeDetails.timestampAgeMs < -maxFutureSkewMs) {
+      throw createScopedStreamVerificationError("invalid_timestamp", "Request timestamp is too far in the future", safeDetails);
+    }
+  }
+
+  try {
+    const loaded = await loadSyncScopes(options);
+    if (!loaded.syncScopes.includes(message.scope)) {
+      throw new Error(`Scope is not enabled: ${message.scope}`);
+    }
+  } catch (err) {
+    if (String(err?.message || "").startsWith("Scope is not enabled:")) {
+      throw createScopedStreamVerificationError("scope_not_enabled", err.message, safeDetails);
+    }
+    throw err;
+  }
+
+  const peer = await findTrustedPeer(message.deviceId, options);
+  safeDetails.trustedPeerFound = Boolean(peer);
+  if (!peer) {
+    throw createScopedStreamVerificationError("unknown_peer", "Unknown peer", safeDetails);
+  }
+
+  decodeSignatureBase64ForStream(signatureText, safeDetails);
+  let verified = false;
+  try {
+    verified = await verifyMessage(payloadText, signatureText, peer.publicKey);
+  } catch {
+    throw createScopedStreamVerificationError("invalid_signature", "Invalid signature", safeDetails);
+  }
+  safeDetails.signatureVerified = Boolean(verified);
+  if (!verified) {
+    throw createScopedStreamVerificationError("invalid_signature", "Invalid signature", safeDetails);
+  }
+
+  return {
+    ok: true,
+    peer: {
+      deviceId: peer.deviceId,
+      deviceName: peer.deviceName,
+    },
+    message,
+    safeDetails,
+  };
+}
+
+function logScopedStreamAuthAccepted(endpoint, verified, diagnostics = {}) {
+  try {
+    const safe = verified?.safeDetails && typeof verified.safeDetails === "object" ? verified.safeDetails : {};
+    const logLine = {
+      endpoint,
+      errorCode: null,
+      deviceId: safe.deviceId ?? verified?.message?.deviceId ?? null,
+      scope: safe.scope ?? verified?.message?.scope ?? null,
+      relativePath: safe.relativePath ?? verified?.message?.relativePath ?? null,
+      timestampAgeMs: safe.timestampAgeMs ?? null,
+      trustedPeerFound: Boolean(safe.trustedPeerFound),
+      signatureVerified: Boolean(safe.signatureVerified),
+      status: 200,
+      reason: "accepted",
+      authFieldSources: {
+        payload: diagnostics?.payloadSource || "unknown",
+        signature: diagnostics?.signatureSource || "unknown",
+      },
+      request: {
+        method: diagnostics?.method || null,
+        path: diagnostics?.path || null,
+        queryKeys: Array.isArray(diagnostics?.queryKeys) ? diagnostics.queryKeys : [],
+        bodyKeys: Array.isArray(diagnostics?.bodyKeys) ? diagnostics.bodyKeys : [],
+        headerKeys: Array.isArray(diagnostics?.headerKeys) ? diagnostics.headerKeys : [],
+        payloadParsed: Boolean(diagnostics?.payloadFields?.parsed),
+        payloadDeviceId: diagnostics?.payloadFields?.deviceId ?? null,
+        payloadScope: diagnostics?.payloadFields?.scope ?? null,
+        payloadRelativePath: diagnostics?.payloadFields?.relativePath ?? null,
+        payloadTimestampPresent: Boolean(diagnostics?.payloadFields?.timestamp),
+      },
+    };
+    console.debug("[peerRoutes] Accepted scoped stream request: %s", JSON.stringify(logLine));
+  } catch {
+    // Accepted auth logging is diagnostic-only and must not affect streaming.
+  }
 }
 
 function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {}, knownTrustedDeviceIds = []) {
@@ -372,7 +556,7 @@ export function registerPeerRoutes(app, ctx) {
     try {
       const { payload, signatureBase64, diagnostics } = extractSignedStreamAuth(req);
       streamAuthDiagnostics = diagnostics;
-      const verified = await verifySignedScopeFileRequest(
+      const verified = await verifySignedScopeFileStreamGetRequest(
         { payload, signatureBase64 },
         {
           runtimeRoot: ctx?.runtimeRoot,
@@ -380,6 +564,7 @@ export function registerPeerRoutes(app, ctx) {
           maxFutureSkewMs: STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS,
         },
       );
+      logScopedStreamAuthAccepted("scope/file-stream", verified, streamAuthDiagnostics);
       const scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
       const stat = await fs.stat(scoped.targetPath);
       if (!stat.isFile()) return res.status(404).json({ ok: false, error: "File not found" });
