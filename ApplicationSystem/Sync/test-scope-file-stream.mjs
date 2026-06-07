@@ -11,7 +11,7 @@ import { Buffer } from "node:buffer";
 
 import { ensureDeviceIdentity, signMessage } from "./DeviceIdentity.mjs";
 import { addTrustedPeer } from "./TrustedPeers.mjs";
-import { createSignedScopeFileRequest, createSignedScopeFileStreamPush } from "./ScopePeerSync.mjs";
+import { createSignedScopeFileRequest, createSignedScopeFileStreamPush, createSignedScopeManifestRequest } from "./ScopePeerSync.mjs";
 import { saveSyncScopes } from "./SyncScopes.mjs";
 import { saveSyncProtection } from "./SyncProtection.mjs";
 import { pullScopeFileStream } from "./pull-scope-file-stream.mjs";
@@ -112,6 +112,22 @@ async function main() {
 
   const serverHandle = await startPeerServer({ runtimeRoot: sourceRoot, notebookDir: sourceNotebookDir });
   try {
+    const protectedManifestSigned = await createSignedScopeManifestRequest(
+      { scope: "Shared" },
+      { runtimeRoot: destRoot },
+    );
+    const protectedManifestUrl = new URL("/api/peer/scope/manifest", `${serverHandle.peerUrl}/`);
+    const protectedManifestResult = await fetchJson(protectedManifestUrl.toString(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        payload: protectedManifestSigned.payload,
+        signatureBase64: protectedManifestSigned.signatureBase64,
+      }),
+    });
+    assert(protectedManifestResult.response.status === 200, "Expected protected trusted scope manifest pull to succeed");
+    assert(Array.isArray(protectedManifestResult.payload?.manifest?.files), "Expected protected manifest listing files");
+
     const noAuthUrl = new URL("/api/peer/scope/file-stream", serverHandle.peerUrl + "/");
     const originalConsoleWarn = console.warn;
     let diagnosticWarnCalls = 0;
@@ -210,7 +226,7 @@ async function main() {
     untrustedGetUrl.searchParams.set("payload", untrustedSignedGet.payload);
     untrustedGetUrl.searchParams.set("signatureBase64", untrustedSignedGet.signatureBase64);
     const untrustedGet = await fetchJson(untrustedGetUrl.toString());
-    assert(untrustedGet.response.status === 401, "Expected untrusted stream requester to be rejected");
+    assert(untrustedGet.response.status === 401, "Expected protected peer to reject untrusted stream requester");
     assert(String(untrustedGet.payload.error || "").includes("Unknown peer"), "Expected unknown peer stream error");
 
     await addTrustedPeer(
@@ -294,6 +310,31 @@ async function main() {
     assert(pullRetrySignCount === 2, "Expected pull stream 401 to retry once with fresh signature");
     assert(pullRetryReport.ok === true, "Expected pull retry flow to succeed");
 
+    const protectedPushData = Buffer.from("protected-write-should-not-land", "utf8");
+    const protectedPushRelativePath = "Shared/protected-write-reject.bin";
+    await fs.writeFile(path.resolve(destNotebookDir, "Shared", "protected-write-reject.bin"), protectedPushData);
+    const protectedPushSigned = await createSignedScopeFileStreamPush(
+      {
+        scope: "Shared",
+        relativePath: protectedPushRelativePath,
+        size: protectedPushData.length,
+        sha256: sha256OfBuffer(protectedPushData),
+      },
+      { runtimeRoot: destRoot },
+    );
+    const protectedPushUrl = new URL("/api/peer/scope/file-stream-push", `${serverHandle.peerUrl}/`);
+    protectedPushUrl.searchParams.set("payload", protectedPushSigned.payload);
+    protectedPushUrl.searchParams.set("signatureBase64", protectedPushSigned.signatureBase64);
+    const protectedPushResult = await fetchJson(protectedPushUrl.toString(), {
+      method: "POST",
+      headers: { "content-type": "application/octet-stream" },
+      body: protectedPushData,
+    });
+    assert(protectedPushResult.response.status === 403, "Expected protected trusted stream push to be rejected with 403");
+    assert(String(protectedPushResult.payload.error || "").includes("protected from incoming sync writes"), "Expected protected write rejection error");
+    assert((await exists(path.resolve(sourceNotebookDir, "Shared", "protected-write-reject.bin"))) === false, "Expected protected stream push not to create target file");
+    assert((await exists(path.resolve(sourceNotebookDir, "Shared", "protected-write-reject.bin.nodevision-upload"))) === false, "Expected protected stream push not to leave temp file");
+
     await saveSyncProtection({ protectedFromPeerWrites: false }, { runtimeRoot: sourceRoot });
 
     const uploadCreatedData = Buffer.from("upload-created", "utf8");
@@ -304,7 +345,7 @@ async function main() {
       relativePath: "Shared/upload-created.bin",
       runtimeRoot: destRoot,
     });
-    assert(pushCreatedReport.ok === true, "Expected stream push created to succeed");
+    assert(pushCreatedReport.ok === true, "Expected unprotected normal stream push to succeed");
     assert(pushCreatedReport.mode === "created", "Expected stream push created mode");
     const createdOnSourcePath = path.resolve(sourceNotebookDir, "Shared", "upload-created.bin");
     const createdOnSource = await fs.readFile(createdOnSourcePath);

@@ -26,6 +26,7 @@ import {
 const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 const STREAM_SIGNED_REQUEST_MAX_AGE_MS = 45 * 60 * 1000;
 const STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
+const PROTECTED_PEER_WRITE_ERROR = "This peer is protected from incoming sync writes";
 
 function isLocalhostRequest(req) { return [String(req.ip || ""), String(req.socket?.remoteAddress || ""), String(req.connection?.remoteAddress || "")].filter(Boolean).map((x) => x.replace(/^::ffff:/, "")).some((x) => x === "127.0.0.1" || x === "::1"); }
 function toTrustedPeerStatus(peer) { return { deviceId: peer.deviceId, deviceName: peer.deviceName, status: peer.status, lastSeen: peer.lastSeen, lastHelloSuccess: peer.lastHelloSuccess }; }
@@ -70,6 +71,18 @@ async function hashFileByStream(filePath) {
     hasher.update(chunk);
   }
   return hasher.digest("hex");
+}
+
+async function rejectProtectedPeerWriteIfNeeded(res, { runtimeRoot, endpoint, peerDeviceId } = {}) {
+  if (!(await isProtectedFromPeerWrites({ runtimeRoot }))) return false;
+  try {
+    console.warn("[peerRoutes] Blocked protected peer write", {
+      endpoint: endpoint || "unknown",
+      peerDeviceId: peerDeviceId || null,
+    });
+  } catch {}
+  res.status(403).json({ ok: false, error: PROTECTED_PEER_WRITE_ERROR });
+  return true;
 }
 
 function buildScopedConflictRelativePath(originalRelativePath, peerDeviceId, timestamp) {
@@ -284,13 +297,13 @@ export function registerPeerRoutes(app, ctx) {
   });
 
   app.post("/api/peer/file-push", async (req, res) => {
-    if (await isProtectedFromPeerWrites({ runtimeRoot: ctx?.runtimeRoot })) {
-      return res.status(423).json({ ok: false, error: "This peer is protected from incoming sync writes" });
-    }
     let verified; let contentBuffer; let target;
     try {
       const { payload, signatureBase64 } = req.body || {};
       verified = await verifySignedFilePush({ payload, signatureBase64 }, { runtimeRoot: ctx?.runtimeRoot });
+    } catch { return res.status(401).json({ ok: false, error: "Unauthorized peer file push" }); }
+    if (await rejectProtectedPeerWriteIfNeeded(res, { runtimeRoot: ctx?.runtimeRoot, endpoint: "file-push", peerDeviceId: verified?.peer?.deviceId })) return;
+    try {
       contentBuffer = decodeFilePushContent(verified.message.contentBase64);
       target = resolveSyncTestTarget(ctx?.notebookDir, verified.message.relativePath);
     } catch { return res.status(401).json({ ok: false, error: "Unauthorized peer file push" }); }
@@ -408,9 +421,6 @@ export function registerPeerRoutes(app, ctx) {
   });
 
   app.post("/api/peer/scope/file-stream-push", async (req, res) => {
-    if (await isProtectedFromPeerWrites({ runtimeRoot: ctx?.runtimeRoot })) {
-      return res.status(423).json({ ok: false, error: "This peer is protected from incoming sync writes" });
-    }
     let streamAuthDiagnostics = {};
     let verified;
     let scoped;
@@ -426,6 +436,7 @@ export function registerPeerRoutes(app, ctx) {
           maxFutureSkewMs: STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS,
         },
       );
+      if (await rejectProtectedPeerWriteIfNeeded(res, { runtimeRoot: ctx?.runtimeRoot, endpoint: "scope/file-stream-push", peerDeviceId: verified?.peer?.deviceId })) return;
       scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
       tempPath = `${scoped.targetPath}.nodevision-upload`;
     } catch (err) {
@@ -536,12 +547,11 @@ export function registerPeerRoutes(app, ctx) {
   });
 
   app.post("/api/peer/scope/file-push", async (req, res) => {
-    if (await isProtectedFromPeerWrites({ runtimeRoot: ctx?.runtimeRoot })) {
-      return res.status(423).json({ ok: false, error: "This peer is protected from incoming sync writes" });
-    }
+    let verified;
     try {
       const { payload, signatureBase64 } = req.body || {};
-      const verified = await verifySignedScopeFilePush({ payload, signatureBase64 }, { runtimeRoot: ctx?.runtimeRoot });
+      verified = await verifySignedScopeFilePush({ payload, signatureBase64 }, { runtimeRoot: ctx?.runtimeRoot });
+      if (await rejectProtectedPeerWriteIfNeeded(res, { runtimeRoot: ctx?.runtimeRoot, endpoint: "scope/file-push", peerDeviceId: verified?.peer?.deviceId })) return;
       const scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
       const incoming = decodeFilePushContent(verified.message.contentBase64);
       const incomingHash = sha256(incoming);

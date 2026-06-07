@@ -871,7 +871,7 @@ export function registerSyncPanelRoutes(app, ctx) {
     if (!dryRun) {
       const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot });
       if (protection.protectedFromPeerWrites === true) {
-        return res.status(423).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
+        return res.status(403).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
       }
     }
     let maxFileSizeBytes;
@@ -985,7 +985,7 @@ export function registerSyncPanelRoutes(app, ctx) {
     if (!dryRun) {
       const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot });
       if (protection.protectedFromPeerWrites === true) {
-        return res.status(423).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
+        return res.status(403).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
       }
     }
     const syncRunner = resolveSyncRunner(ctx);
