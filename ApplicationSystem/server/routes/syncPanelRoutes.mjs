@@ -422,6 +422,40 @@ function logSyncRunExecutionError(err) {
   console.error("[/api/sync/run] Sync execution failed:", err);
 }
 
+function getRequestSourceForSyncJobCreation(req) {
+  return req?.identity ? "local-ui-session" : "peer-api-or-unauthenticated";
+}
+
+function getRequestedSyncDirection(body) {
+  const direction = String(body?.direction || body?.syncDirection || "two-way").trim();
+  return direction || "two-way";
+}
+
+function getRequestedSyncMode(body, dryRun) {
+  const mode = String(body?.mode || body?.syncMode || (dryRun ? "dry-run" : "apply")).trim();
+  return mode || (dryRun ? "dry-run" : "apply");
+}
+
+function logSyncJobCreationDecision(req, body, protection, decision, details = {}) {
+  try {
+    const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
+    console.info("[/api/sync/jobs/start] Sync job creation", {
+      decision,
+      protectedFromPeerWrites: protection?.protectedFromPeerWrites === true,
+      direction: getRequestedSyncDirection(body),
+      mode: getRequestedSyncMode(body, dryRun),
+      dryRun,
+      requestSource: getRequestSourceForSyncJobCreation(req),
+      userId: req?.identity?.userId || null,
+      requestedDeviceId: body?.deviceId ? String(body.deviceId) : null,
+      requestedScope: body?.scope ? String(body.scope) : null,
+      ...details,
+    });
+  } catch {
+    // Job creation logging is diagnostic-only.
+  }
+}
+
 function installShutdownHookIfNeeded(state) {
   if (state.shutdownHookInstalled) return;
   state.shutdownHookInstalled = true;
@@ -882,12 +916,6 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
 
     const dryRun = body?.dryRun === undefined ? true : Boolean(body.dryRun);
-    if (!dryRun) {
-      const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot });
-      if (protection.protectedFromPeerWrites === true) {
-        return res.status(403).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
-      }
-    }
     let maxFileSizeBytes;
     try {
       maxFileSizeBytes = parseMaxFileSizeBytes(body);
@@ -963,21 +991,44 @@ export function registerSyncPanelRoutes(app, ctx) {
   });
 
   app.post("/api/sync/jobs/start", async (req, res) => {
-    if (!requireSession(req, res)) return;
-
     const body = req.body && typeof req.body === "object" && !Array.isArray(req.body)
       ? req.body
       : {};
+    const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot })
+      .catch(() => ({ protectedFromPeerWrites: false }));
+
+    if (!req.identity) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 401,
+        reason: "authentication_required",
+      });
+      return res.status(401).json({ ok: false, error: "Authentication required" });
+    }
+
     const deviceId = getSelectedOrRequestedDeviceId(state, body);
     if (!deviceId) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 400,
+        reason: "deviceId is required",
+      });
       return res.status(400).json({ ok: false, error: "deviceId is required" });
     }
 
     let discoveredPeer = getDiscoveredPeer(state, deviceId);
     if (!discoveredPeer) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 404,
+        reason: "Discovered peer not found",
+        selectedPeerDeviceId: deviceId,
+      });
       return res.status(404).json({ ok: false, error: "Discovered peer not found" });
     }
     if (!canRunSyncWithDiscoveredPeer(state, deviceId)) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 403,
+        reason: "Only trusted sync-capable peers can be synced",
+        selectedPeerDeviceId: deviceId,
+      });
       return res.status(403).json({ ok: false, error: "Only trusted sync-capable peers can be synced" });
     }
 
@@ -985,6 +1036,11 @@ export function registerSyncPanelRoutes(app, ctx) {
     try {
       scope = await resolveRequestedScope(body, { runtimeRoot: ctx?.runtimeRoot });
     } catch (err) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 400,
+        reason: err?.message || "Invalid scope",
+        selectedPeerDeviceId: deviceId,
+      });
       return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
     }
 
@@ -992,12 +1048,24 @@ export function registerSyncPanelRoutes(app, ctx) {
     try {
       maxFileSizeBytes = parseMaxFileSizeBytes(body);
     } catch (err) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 400,
+        reason: err?.message || "Invalid max file size",
+        selectedPeerDeviceId: deviceId,
+        scope,
+      });
       return res.status(400).json({ ok: false, error: err?.message || "Invalid max file size" });
     }
     let onFileError;
     try {
       onFileError = parseOnFileErrorMode(body);
     } catch (err) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 400,
+        reason: err?.message || "Invalid file error mode",
+        selectedPeerDeviceId: deviceId,
+        scope,
+      });
       return res.status(400).json({ ok: false, error: err?.message || "Invalid file error mode" });
     }
 
@@ -1005,15 +1073,15 @@ export function registerSyncPanelRoutes(app, ctx) {
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
     } catch {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 403,
+        reason: "Selected peer is not eligible for sync",
+        selectedPeerDeviceId: deviceId,
+        scope,
+      });
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
-    if (!dryRun) {
-      const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot });
-      if (protection.protectedFromPeerWrites === true) {
-        return res.status(403).json({ ok: false, error: "This installation is protected from sync writes. Disable protection before applying sync here." });
-      }
-    }
     const syncRunner = resolveSyncRunner(ctx);
     const discoveredPeerSnapshot = { ...discoveredPeer };
 
@@ -1041,8 +1109,24 @@ export function registerSyncPanelRoutes(app, ctx) {
           return syncResult.sync;
         },
       });
+      logSyncJobCreationDecision(req, body, protection, "created", {
+        statusCode: 202,
+        selectedPeerDeviceId: deviceId,
+        scope,
+        peerUrl,
+        jobId: started.jobId,
+        maxFileSizeBytes,
+        onFileError,
+      });
       return res.status(202).json({ ok: true, jobId: started.jobId, job: started });
     } catch (err) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 500,
+        reason: err?.message || "Failed to start sync job",
+        selectedPeerDeviceId: deviceId,
+        scope,
+        peerUrl,
+      });
       return res.status(500).json({ ok: false, error: err?.message || "Failed to start sync job" });
     }
   });

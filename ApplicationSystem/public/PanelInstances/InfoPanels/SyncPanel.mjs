@@ -28,7 +28,7 @@ const TEMPLATE = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">
         <div>
           <div style="font-weight:600;">Installation Protection</div>
-          <div data-protect-writes-detail style="color:#666;font-size:0.84em;margin-top:3px;">Incoming peer writes and local apply sync are blocked while protection is on. Dry runs still work.</div>
+          <div data-protect-writes-detail style="color:#666;font-size:0.84em;margin-top:3px;">Incoming peer writes are blocked while protection is on. Locally started sync can still run.</div>
         </div>
         <span data-protect-writes-badge style="white-space:nowrap;border:1px solid #ccc;border-radius:999px;padding:3px 8px;font-size:0.76em;color:#555;background:#f7f7f7;">Loading</span>
       </div>
@@ -123,6 +123,7 @@ const shortenDeviceId = (id = "") => (String(id).length <= 16 ? String(id) : `${
 const shortenJobId = (id = "") => { const text = String(id); return text.length <= 14 ? text : text.slice(0, 8) + "..."; };
 const setStatus = (el, msg = "") => { if (el) el.textContent = String(msg); };
 function setError(el, msg = "") { if (!el) return; const t = String(msg || "").trim(); el.style.display = t ? "block" : "none"; el.textContent = t; }
+function logSyncPanelDebug(message, details = {}) { try { console.debug("[SyncPanel] " + String(message || ""), details); } catch {} }
 
 export function formatSyncEventBytes(done, total) {
   const format = (value) => {
@@ -179,13 +180,26 @@ function isSafeRelativePath(value) {
 }
 
 
-async function apiFetchJson(url, init = {}) {
+async function fetchJsonWithStatus(url, init = {}) {
   const response = await fetch(url, { credentials: "include", headers: { "Content-Type": "application/json" }, ...init });
   const payload = await response.json().catch(() => ({}));
+  return { response, payload };
+}
+
+function createJsonResponseError(response, payload) {
+  const status = response && typeof response.status === "number" ? response.status : 0;
+  const baseError = String(payload?.error || ("Request failed (" + status + ")")).trim();
+  const details = String(payload?.details || "").trim();
+  const err = new Error(details ? (baseError + ": " + details) : baseError);
+  err.status = status;
+  err.payload = payload;
+  return err;
+}
+
+async function apiFetchJson(url, init = {}) {
+  const { response, payload } = await fetchJsonWithStatus(url, init);
   if (!response.ok) {
-    const baseError = String(payload?.error || `Request failed (${response.status})`).trim();
-    const details = String(payload?.details || "").trim();
-    throw new Error(details ? `${baseError}: ${details}` : baseError);
+    throw createJsonResponseError(response, payload);
   }
   return payload;
 }
@@ -283,8 +297,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
     if (protectWritesEl) protectWritesEl.checked = protectedOn;
     if (protectWritesDetailEl) {
       protectWritesDetailEl.textContent = protectedOn
-        ? "Protected: incoming peer writes and local apply sync are blocked. Dry runs still work."
-        : "Incoming peer writes and local apply sync are allowed. Dry runs still work.";
+        ? "Protected: incoming peer writes are blocked. Locally started sync and dry runs can still run."
+        : "Incoming peer writes are allowed. Locally started sync and dry runs can run.";
     }
     if (protectWritesBadgeEl) {
       protectWritesBadgeEl.textContent = protectedOn ? "Protected" : "Writable";
@@ -302,7 +316,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
       protectDisableBtn.style.opacity = protectedOn ? "1" : "0.6";
       protectDisableBtn.style.cursor = state.busy || !protectedOn ? "not-allowed" : "pointer";
     }
-    if (syncApplyBtn) syncApplyBtn.disabled = state.busy || protectedOn;
+    if (syncApplyBtn) syncApplyBtn.disabled = state.busy;
   };
 
   const renderDiscoveryButtons = () => {
@@ -539,25 +553,90 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const toggleProtection = async (enabled) => { setBusy(true, "Updating sync protection..."); try { const p = await apiFetchJson("/api/sync/protection", { method: "POST", body: JSON.stringify({ protectedFromPeerWrites: Boolean(enabled) }) }); state.protection = p.protection || { protectedFromPeerWrites: Boolean(enabled) }; renderProtection(); setStatus(statusEl, state.protection.protectedFromPeerWrites ? "This installation is protected from sync writes." : "Sync write protection disabled."); } catch (err) { setError(errorEl, err?.message || "Failed to update sync protection"); renderProtection(); } finally { setBusy(false); } };
 
   const runSync = async (dryRun) => {
+    const scope = scopeSelect?.value || "SyncTest";
     const deviceId = state.status.selectedPeerDeviceId;
-    if (!deviceId) return setError(errorEl, "Select a discovered peer before running sync.");
     const selectedPeer = (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
+    const protectedOn = state.protection?.protectedFromPeerWrites === true;
+    const direction = "two-way";
+    const mode = dryRun ? "dry-run" : "apply";
+    let requestOptions = null;
+    let jobCreationRequestSent = false;
+
+    if (!dryRun) {
+      logSyncPanelDebug("Apply Sync button clicked", {
+        protectedFromPeerWrites: protectedOn,
+        selectedPeerDeviceId: deviceId || null,
+        selectedPeer: selectedPeer ? {
+          deviceId: selectedPeer.deviceId || null,
+          deviceName: selectedPeer.deviceName || null,
+          trusted: selectedPeer.trusted === true,
+          syncCapable: selectedPeer?.capabilities?.sync === true,
+        } : null,
+        selectedScope: scope,
+        direction,
+        mode,
+        requestedSyncOptions: requestOptions,
+        jobCreationRequestSent: false,
+      });
+    }
+
+    if (!deviceId) {
+      if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "no_selected_peer", jobCreationRequestSent: false });
+      return setError(errorEl, "Select a discovered peer before running sync.");
+    }
     if (!selectedPeer || selectedPeer.trusted !== true || selectedPeer?.capabilities?.sync !== true) {
+      if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "peer_not_trusted_or_sync_capable", jobCreationRequestSent: false });
       return setError(errorEl, "Only trusted sync-capable peers can be selected for sync.");
     }
-    const scope = scopeSelect?.value || "SyncTest";
-    if (!dryRun && state.protection?.protectedFromPeerWrites === true) {
-      return setError(errorEl, "This installation is protected from sync writes. Disable protection before applying sync here.");
+
+    requestOptions = syncRunBody({ deviceId, scope, dryRun });
+    if (!dryRun) {
+      logSyncPanelDebug("Apply Sync options prepared", {
+        protectedFromPeerWrites: protectedOn,
+        selectedPeerDeviceId: deviceId || null,
+        selectedPeer: selectedPeer.deviceId || null,
+        selectedScope: scope,
+        direction,
+        mode,
+        requestedSyncOptions: requestOptions,
+        jobCreationRequestSent: false,
+      });
     }
+
     setError(errorEl, "");
     try {
       if (!dryRun) {
         setBusy(true, "Running preflight checks...");
-        const preflight = await apiFetchJson("/api/sync/preflight", { method: "POST", body: JSON.stringify(syncRunBody({ deviceId, scope, dryRun: true })) });
+        const preflight = await apiFetchJson("/api/sync/preflight", { method: "POST", body: JSON.stringify({ ...requestOptions, dryRun: true }) });
         if (syncResultEl) syncResultEl.textContent = JSON.stringify(preflight, null, 2);
         if (syncDetailsEl) syncDetailsEl.open = true;
         setBusy(true, "Starting sync job...");
-        const started = await apiFetchJson("/api/sync/jobs/start", { method: "POST", body: JSON.stringify(syncRunBody({ deviceId, scope, dryRun: false })) });
+        jobCreationRequestSent = true;
+        logSyncPanelDebug("Apply Sync job creation request sent", {
+          protectedFromPeerWrites: protectedOn,
+          selectedPeerDeviceId: deviceId || null,
+          selectedPeer: selectedPeer.deviceId || null,
+          selectedScope: scope,
+          direction,
+          mode,
+          requestedSyncOptions: requestOptions,
+          jobCreationRequestSent: true,
+        });
+        const startedResult = await fetchJsonWithStatus("/api/sync/jobs/start", { method: "POST", body: JSON.stringify(requestOptions) });
+        const started = startedResult.payload;
+        logSyncPanelDebug("Apply Sync job creation response received", {
+          protectedFromPeerWrites: protectedOn,
+          selectedPeerDeviceId: deviceId || null,
+          selectedPeer: selectedPeer.deviceId || null,
+          selectedScope: scope,
+          direction,
+          mode,
+          requestedSyncOptions: requestOptions,
+          jobCreationRequestSent: true,
+          responseStatus: startedResult.response.status,
+          responseBody: started,
+        });
+        if (!startedResult.response.ok) throw createJsonResponseError(startedResult.response, started);
         state.activeJobId = started.jobId || null;
         state.activeJob = started.job || null;
         renderJob();
@@ -566,15 +645,30 @@ export async function setupPanel(panelElem, panelVars = {}) {
         return;
       }
       setBusy(true, dryRun ? "Running dry-run sync..." : "Running sync...");
-      const payload = await apiFetchJson("/api/sync/run", { method: "POST", body: JSON.stringify(syncRunBody({ deviceId, scope, dryRun })) });
+      const payload = await apiFetchJson("/api/sync/run", { method: "POST", body: JSON.stringify(requestOptions) });
       if (syncResultEl) syncResultEl.textContent = JSON.stringify(payload, null, 2);
       if (syncDetailsEl) syncDetailsEl.open = true;
       await refreshStatus();
       setStatus(statusEl, dryRun ? "Dry-run sync completed." : "Sync completed.");
     } catch (err) {
+      if (!dryRun) {
+        logSyncPanelDebug("Apply Sync failed", {
+          protectedFromPeerWrites: protectedOn,
+          selectedPeerDeviceId: deviceId || null,
+          selectedPeer: selectedPeer?.deviceId || null,
+          selectedScope: scope,
+          direction,
+          mode,
+          requestedSyncOptions: requestOptions,
+          jobCreationRequestSent,
+          error: err?.message || "Sync failed",
+          responseStatus: err?.status || null,
+          responseBody: err?.payload || null,
+        });
+      }
       const msg = String(err?.message || "Sync failed");
       if (msg.includes("Scope is not enabled:")) {
-        setError(errorEl, `${msg}. Scope "${scope}" must be shared on both devices before sync can run.`);
+        setError(errorEl, msg + ". Scope \"" + scope + "\" must be shared on both devices before sync can run.");
       } else if (msg.includes("Scope not yet supported")) {
         setError(errorEl, "This scope is configured, but generalized sync execution is not enabled yet.");
       } else {

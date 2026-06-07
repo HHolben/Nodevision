@@ -8,6 +8,7 @@ import path from "node:path";
 
 import { createSyncPanelState, getDiscoveredPeer, upsertDiscoveredPeer } from "./SyncPanelState.mjs";
 import { registerSyncPanelRoutes } from "../server/routes/syncPanelRoutes.mjs";
+import { saveSyncProtection } from "./SyncProtection.mjs";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -156,6 +157,28 @@ async function main() {
     assert(sameMachinePreflight.payload?.preflight === true, "Expected preflight marker in payload");
     assert(sameMachinePreflight.payload?.ready === true, "Expected preflight ready=true");
     assert(sameMachinePreflight.payload?.dryRun === true, "Expected preflight dryRun=true");
+
+    await saveSyncProtection({ protectedFromPeerWrites: true }, { runtimeRoot });
+    const protectedSameMachinePreflight = await app.request("POST", "/api/sync/preflight", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest" },
+    });
+    assert(protectedSameMachinePreflight.statusCode === 200, "Expected protected local preflight to succeed");
+    assert(protectedSameMachinePreflight.payload?.ok === true, "Expected protected local preflight payload ok=true");
+    assert(protectedSameMachinePreflight.payload?.preflight === true, "Expected protected local preflight marker");
+
+    const protectedSameMachineJobStart = await app.request("POST", "/api/sync/jobs/start", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", dryRun: false, onFileError: "fail" },
+    });
+    assert(protectedSameMachineJobStart.statusCode === 202, "Expected protected local job start to return 202");
+    assert(protectedSameMachineJobStart.payload?.ok === true, "Expected protected local job start ok=true");
+    assert(typeof protectedSameMachineJobStart.payload?.jobId === "string" && protectedSameMachineJobStart.payload.jobId.length > 0, "Expected protected local job id");
+
+    const protectedSameMachineRun = await app.request("POST", "/api/sync/run", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", dryRun: false, onFileError: "fail" },
+    });
+    assert(protectedSameMachineRun.statusCode === 200, "Expected protected local apply run to be allowed");
+    assert(protectedSameMachineRun.payload?.ok === true, "Expected protected local apply run ok=true");
+    await saveSyncProtection({ protectedFromPeerWrites: false }, { runtimeRoot });
 
     reachableProbeDeviceId = "nv_dev_trusted_same_machine";
     const sameMachineFallbackRun = await app.request("POST", "/api/sync/run", {
