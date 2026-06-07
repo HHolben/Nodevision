@@ -127,20 +127,6 @@ function classifyScopedStreamRequestError(err, unauthorizedError) {
   return { status: 401, error: unauthorizedError + ". Make sure both devices have approved/trusted each other for sync.", safeDetails: null, code: "unauthorized" };
 }
 
-async function safeTrustedDeviceIds(options = {}) {
-  try {
-    const store = await loadTrustedPeers(options);
-    return Array.isArray(store?.trustedPeers)
-      ? store.trustedPeers
-        .map((peer) => String(peer?.deviceId || "").trim())
-        .filter(Boolean)
-        .sort()
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {}, knownTrustedDeviceIds = []) {
   try {
     const safe = classified?.safeDetails && typeof classified.safeDetails === "object"
@@ -178,6 +164,26 @@ function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {
     console.warn("[peerRoutes] Rejected scoped stream request: %s", JSON.stringify(logLine));
   } catch {
     // Auth diagnostics are best effort; never let logging change the route result.
+  }
+}
+
+async function logScopedStreamAuthRejectionSafely(endpoint, classified, err, diagnostics = {}, options = {}) {
+  try {
+    let knownTrustedDeviceIds = [];
+    try {
+      const store = await loadTrustedPeers(options);
+      knownTrustedDeviceIds = Array.isArray(store?.trustedPeers)
+        ? store.trustedPeers
+          .map((peer) => String(peer?.deviceId || "").trim())
+          .filter(Boolean)
+          .sort()
+        : [];
+    } catch {
+      knownTrustedDeviceIds = [];
+    }
+    logScopedStreamAuthRejection(endpoint, classified, err, diagnostics, knownTrustedDeviceIds);
+  } catch {
+    // Auth rejection logging is diagnostic-only and must not affect the HTTP response.
   }
 }
 
@@ -395,7 +401,7 @@ export function registerPeerRoutes(app, ctx) {
       if (msg.includes("not found") || err?.code === "ENOENT") return res.status(404).json({ ok: false, error: "File not found" });
       const classified = classifyScopedStreamRequestError(err, "Unauthorized peer scope file stream request");
       if (classified.status === 401 || classified.status === 400 || classified.status === 403) {
-        logScopedStreamAuthRejection("scope/file-stream", classified, err, streamAuthDiagnostics, await safeTrustedDeviceIds({ runtimeRoot: ctx?.runtimeRoot }));
+        await logScopedStreamAuthRejectionSafely("scope/file-stream", classified, err, streamAuthDiagnostics, { runtimeRoot: ctx?.runtimeRoot });
       }
       return res.status(classified.status).json({ ok: false, error: classified.error });
     }
@@ -425,7 +431,7 @@ export function registerPeerRoutes(app, ctx) {
     } catch (err) {
       const classified = classifyScopedStreamRequestError(err, "Unauthorized peer scope file stream push");
       if (classified.status === 401 || classified.status === 400 || classified.status === 403) {
-        logScopedStreamAuthRejection("scope/file-stream-push", classified, err, streamAuthDiagnostics, await safeTrustedDeviceIds({ runtimeRoot: ctx?.runtimeRoot }));
+        await logScopedStreamAuthRejectionSafely("scope/file-stream-push", classified, err, streamAuthDiagnostics, { runtimeRoot: ctx?.runtimeRoot });
       }
       return res.status(classified.status).json({ ok: false, error: classified.error });
     }
