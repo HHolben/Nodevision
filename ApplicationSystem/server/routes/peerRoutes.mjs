@@ -127,40 +127,58 @@ function classifyScopedStreamRequestError(err, unauthorizedError) {
   return { status: 401, error: unauthorizedError + ". Make sure both devices have approved/trusted each other for sync.", safeDetails: null, code: "unauthorized" };
 }
 
+async function safeTrustedDeviceIds(options = {}) {
+  try {
+    const store = await loadTrustedPeers(options);
+    return Array.isArray(store?.trustedPeers)
+      ? store.trustedPeers
+        .map((peer) => String(peer?.deviceId || "").trim())
+        .filter(Boolean)
+        .sort()
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function logScopedStreamAuthRejection(endpoint, classified, err, diagnostics = {}, knownTrustedDeviceIds = []) {
-  const safe = classified?.safeDetails && typeof classified.safeDetails === "object"
-    ? classified.safeDetails
-    : {};
-  const logLine = {
-    endpoint,
-    errorCode: classified?.code || "unauthorized",
-    deviceId: safe.deviceId ?? null,
-    scope: safe.scope ?? null,
-    relativePath: safe.relativePath ?? null,
-    timestampAgeMs: safe.timestampAgeMs ?? null,
-    trustedPeerFound: Boolean(safe.trustedPeerFound),
-    signatureVerified: Boolean(safe.signatureVerified),
-    status: Number(classified?.status || 0),
-    reason: String(classified?.error || err?.message || "unauthorized"),
-    authFieldSources: {
-      payload: diagnostics?.payloadSource || "unknown",
-      signature: diagnostics?.signatureSource || "unknown",
-    },
-    request: {
-      method: diagnostics?.method || null,
-      path: diagnostics?.path || null,
-      queryKeys: Array.isArray(diagnostics?.queryKeys) ? diagnostics.queryKeys : [],
-      bodyKeys: Array.isArray(diagnostics?.bodyKeys) ? diagnostics.bodyKeys : [],
-      headerKeys: Array.isArray(diagnostics?.headerKeys) ? diagnostics.headerKeys : [],
-      payloadParsed: Boolean(diagnostics?.payloadFields?.parsed),
-      payloadDeviceId: diagnostics?.payloadFields?.deviceId ?? null,
-      payloadScope: diagnostics?.payloadFields?.scope ?? null,
-      payloadRelativePath: diagnostics?.payloadFields?.relativePath ?? null,
-      payloadTimestampPresent: Boolean(diagnostics?.payloadFields?.timestamp),
-    },
-    knownTrustedDeviceIds: Array.isArray(knownTrustedDeviceIds) ? knownTrustedDeviceIds : [],
-  };
-  console.warn("[peerRoutes] Rejected scoped stream request: %s", JSON.stringify(logLine));
+  try {
+    const safe = classified?.safeDetails && typeof classified.safeDetails === "object"
+      ? classified.safeDetails
+      : {};
+    const logLine = {
+      endpoint,
+      errorCode: classified?.code || "unauthorized",
+      deviceId: safe.deviceId ?? null,
+      scope: safe.scope ?? null,
+      relativePath: safe.relativePath ?? null,
+      timestampAgeMs: safe.timestampAgeMs ?? null,
+      trustedPeerFound: Boolean(safe.trustedPeerFound),
+      signatureVerified: Boolean(safe.signatureVerified),
+      status: Number(classified?.status || 0),
+      reason: String(classified?.error || err?.message || "unauthorized"),
+      authFieldSources: {
+        payload: diagnostics?.payloadSource || "unknown",
+        signature: diagnostics?.signatureSource || "unknown",
+      },
+      request: {
+        method: diagnostics?.method || null,
+        path: diagnostics?.path || null,
+        queryKeys: Array.isArray(diagnostics?.queryKeys) ? diagnostics.queryKeys : [],
+        bodyKeys: Array.isArray(diagnostics?.bodyKeys) ? diagnostics.bodyKeys : [],
+        headerKeys: Array.isArray(diagnostics?.headerKeys) ? diagnostics.headerKeys : [],
+        payloadParsed: Boolean(diagnostics?.payloadFields?.parsed),
+        payloadDeviceId: diagnostics?.payloadFields?.deviceId ?? null,
+        payloadScope: diagnostics?.payloadFields?.scope ?? null,
+        payloadRelativePath: diagnostics?.payloadFields?.relativePath ?? null,
+        payloadTimestampPresent: Boolean(diagnostics?.payloadFields?.timestamp),
+      },
+      knownTrustedDeviceIds: Array.isArray(knownTrustedDeviceIds) ? knownTrustedDeviceIds : [],
+    };
+    console.warn("[peerRoutes] Rejected scoped stream request: %s", JSON.stringify(logLine));
+  } catch {
+    // Auth diagnostics are best effort; never let logging change the route result.
+  }
 }
 
 function firstValue(value) {

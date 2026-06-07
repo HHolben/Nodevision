@@ -113,9 +113,21 @@ async function main() {
   const serverHandle = await startPeerServer({ runtimeRoot: sourceRoot, notebookDir: sourceNotebookDir });
   try {
     const noAuthUrl = new URL("/api/peer/scope/file-stream", serverHandle.peerUrl + "/");
-    const noAuthResult = await fetchJson(noAuthUrl.toString());
-    assert(noAuthResult.response.status === 401, "Expected missing stream auth to be rejected");
-    assert(String(noAuthResult.payload.error || "").includes("Unauthorized peer scope file stream request"), "Expected missing stream auth error");
+    const originalConsoleWarn = console.warn;
+    let diagnosticWarnCalls = 0;
+    try {
+      console.warn = () => {
+        diagnosticWarnCalls += 1;
+        throw new ReferenceError("diagnostic logging should not escape file-stream route");
+      };
+      const noAuthResult = await fetchJson(noAuthUrl.toString());
+      assert(noAuthResult.response.status !== 500, "Expected diagnostic logging failure not to become HTTP 500");
+      assert(noAuthResult.response.status === 401, "Expected missing stream auth to be rejected");
+      assert(String(noAuthResult.payload.error || "").includes("Unauthorized peer scope file stream request"), "Expected missing stream auth error");
+    } finally {
+      console.warn = originalConsoleWarn;
+    }
+    assert(diagnosticWarnCalls >= 1, "Expected rejected file-stream request to exercise diagnostic logging");
 
     const traversalMessage = {
       type: "nodevision.peer.scopeFileRequest",
