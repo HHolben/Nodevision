@@ -62,6 +62,16 @@ function normalizeSyncErrorMessage(err) {
   return text || "Sync operation failed";
 }
 
+function normalizeSyncErrorStatusCode(err) {
+  const parsed = Number(err?.status ?? err?.statusCode ?? err?.response?.status);
+  return Number.isFinite(parsed) && parsed >= 100 && parsed <= 599 ? Math.trunc(parsed) : null;
+}
+
+function normalizeFileErrorMode(value) {
+  const mode = String(value || "fail").trim().toLowerCase();
+  return mode === "pause" || mode === "skip" ? mode : "fail";
+}
+
 function shouldUseStreamTransfer(manifestEntry) {
   if (manifestEntry?.transferMode === "stream" || manifestEntry?.tooLargeForJson === true) return true;
   const size = Number(manifestEntry?.size);
@@ -319,6 +329,8 @@ export async function runScopeSyncTwoWay({
   dryRun = true,
   shouldCancel,
   onProgress,
+  onFileError = "fail",
+  onFileErrorControl,
   maxFileSizeBytes = null,
 } = {}) {
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
@@ -338,10 +350,14 @@ export async function runScopeSyncTwoWay({
   const progressState = {
     filesTotal: plan.onlyRemote.length + plan.onlyLocal.length + plan.changed.length,
     filesDone: 0,
+    filesSkipped: 0,
     bytesTotal: 0,
     bytesDone: 0,
+    bytesSkipped: 0,
     currentFile: null,
   };
+  const fileErrorMode = normalizeFileErrorMode(onFileError);
+  const skippedOperations = [];
   const emitProgress = (event, details = {}) => {
     if (typeof onProgress !== "function") return;
     onProgress({
@@ -369,166 +385,265 @@ export async function runScopeSyncTwoWay({
   }
 
   const pulled = []; const pushed = []; const conflicts = [];
+  const estimateBytes = (operation, relativePath) => {
+    const entry = operation === "push" ? localEntries.get(relativePath) : remoteEntries.get(relativePath);
+    return toNonNegativeSize(entry?.size);
+  };
+  const recordSkippedOperation = ({ operation, relativePath, err, retryCount }) => {
+    const skipped = {
+      operation,
+      type: operation,
+      scope: normalizedScope,
+      peerUrl: normalizedPeerUrl,
+      relativePath,
+      error: normalizeSyncErrorMessage(err),
+      statusCode: normalizeSyncErrorStatusCode(err),
+      retryCount: toNonNegativeSize(retryCount),
+      safelyRetryable: true,
+      bytes: estimateBytes(operation, relativePath),
+      timestamp: new Date().toISOString(),
+    };
+    skippedOperations.push(skipped);
+    progressState.filesSkipped = skippedOperations.length;
+    progressState.bytesSkipped += toNonNegativeSize(skipped.bytes);
+    return skipped;
+  };
+  const handleFailedFile = async ({ operation, relativePath, err, retryCount, bytesBefore, emitSkippedProgress = true }) => {
+    progressState.bytesDone = bytesBefore;
+    const statusCode = normalizeSyncErrorStatusCode(err);
+    emitProgress("file-error", {
+      operation,
+      relativePath,
+      error: normalizeSyncErrorMessage(err),
+      statusCode,
+      retryCount,
+      safelyRetryable: true,
+      scope: normalizedScope,
+      peerUrl: normalizedPeerUrl,
+    });
+    if (fileErrorMode === "fail") throw err;
+    if (fileErrorMode === "skip") {
+      const skipped = recordSkippedOperation({ operation, relativePath, err, retryCount });
+      if (emitSkippedProgress) emitProgress("file-skipped", skipped);
+      return "skip";
+    }
+    if (typeof onFileErrorControl !== "function") throw err;
+    const decision = await onFileErrorControl({
+      operation,
+      scope: normalizedScope,
+      peerUrl: normalizedPeerUrl,
+      relativePath,
+      error: normalizeSyncErrorMessage(err),
+      statusCode,
+      retryCount,
+      safelyRetryable: true,
+      bytes: estimateBytes(operation, relativePath),
+      progress: { ...progressState },
+      timestamp: new Date().toISOString(),
+    });
+    const action = String(decision?.action || "").toLowerCase();
+    if (action === "retry") return "retry";
+    if (action === "skip") {
+      const skipped = recordSkippedOperation({ operation, relativePath, err, retryCount: decision?.retryCount ?? retryCount });
+      return "skip";
+    }
+    const cancelled = createCancelledError("Sync job aborted after file error");
+    cancelled.name = "SyncJobCancelledError";
+    throw cancelled;
+  };
   for (const rp of plan.onlyRemote) {
     ensureNotCancelled();
     progressState.currentFile = rp;
     emitProgress("file-start", { operation: "pull", relativePath: rp });
-    try {
-      const remoteEntry = remoteEntries.get(rp);
-      let useStream = shouldUseStreamTransfer(remoteEntry);
-      let pulledReport;
+    let retryCount = 0;
+    while (true) {
+      const bytesBefore = progressState.bytesDone;
       try {
-        pulledReport = useStream
-          ? await pullOneStream({
-            peerUrl: normalizedPeerUrl,
-            scope: normalizedScope,
-            relativePath: rp,
-            notebookDir,
-            runtimeRoot: resolvedRuntimeRoot,
-            shouldCancel,
-            onByteDelta(delta) {
-              progressState.bytesDone += toNonNegativeSize(delta);
-              emitProgress("file-progress", { operation: "pull", relativePath: rp });
-            },
-          })
-          : await pullOne({
-            peerUrl: normalizedPeerUrl,
-            scope: normalizedScope,
-            relativePath: rp,
-            notebookDir,
-            runtimeRoot: resolvedRuntimeRoot,
-          });
-      } catch (err) {
-        if (!useStream && isJsonPullTooLargeError(err)) {
-          useStream = true;
-          pulledReport = await pullOneStream({
-            peerUrl: normalizedPeerUrl,
-            scope: normalizedScope,
-            relativePath: rp,
-            notebookDir,
-            runtimeRoot: resolvedRuntimeRoot,
-            shouldCancel,
-            onByteDelta(delta) {
-              progressState.bytesDone += toNonNegativeSize(delta);
-              emitProgress("file-progress", { operation: "pull", relativePath: rp });
-            },
-          });
-        } else {
-          throw err;
+        const remoteEntry = remoteEntries.get(rp);
+        let useStream = shouldUseStreamTransfer(remoteEntry);
+        let pulledReport;
+        try {
+          pulledReport = useStream
+            ? await pullOneStream({
+              peerUrl: normalizedPeerUrl,
+              scope: normalizedScope,
+              relativePath: rp,
+              notebookDir,
+              runtimeRoot: resolvedRuntimeRoot,
+              shouldCancel,
+              onByteDelta(delta) {
+                progressState.bytesDone += toNonNegativeSize(delta);
+                emitProgress("file-progress", { operation: "pull", relativePath: rp });
+              },
+            })
+            : await pullOne({
+              peerUrl: normalizedPeerUrl,
+              scope: normalizedScope,
+              relativePath: rp,
+              notebookDir,
+              runtimeRoot: resolvedRuntimeRoot,
+            });
+        } catch (err) {
+          if (!useStream && isJsonPullTooLargeError(err)) {
+            useStream = true;
+            pulledReport = await pullOneStream({
+              peerUrl: normalizedPeerUrl,
+              scope: normalizedScope,
+              relativePath: rp,
+              notebookDir,
+              runtimeRoot: resolvedRuntimeRoot,
+              shouldCancel,
+              onByteDelta(delta) {
+                progressState.bytesDone += toNonNegativeSize(delta);
+                emitProgress("file-progress", { operation: "pull", relativePath: rp });
+              },
+            });
+          } else {
+            throw err;
+          }
         }
+        if (!useStream) {
+          progressState.bytesDone += toNonNegativeSize(pulledReport?.bytes);
+        }
+        progressState.filesDone += 1;
+        pulled.push(pulledReport);
+        emitProgress("file-complete", { operation: "pull", relativePath: rp });
+        break;
+      } catch (err) {
+        const action = await handleFailedFile({ operation: "pull", relativePath: rp, err, retryCount, bytesBefore });
+        if (action === "retry") {
+          retryCount += 1;
+          ensureNotCancelled();
+          emitProgress("file-retry", { operation: "pull", relativePath: rp, retryCount });
+          continue;
+        }
+        if (action === "skip") break;
       }
-      if (!useStream) {
-        progressState.bytesDone += toNonNegativeSize(pulledReport?.bytes);
-      }
-      progressState.filesDone += 1;
-      pulled.push(pulledReport);
-      emitProgress("file-complete", { operation: "pull", relativePath: rp });
-    } catch (err) {
-      emitProgress("file-error", { operation: "pull", relativePath: rp, error: normalizeSyncErrorMessage(err) });
-      throw err;
     }
   }
   for (const rp of plan.onlyLocal) {
     ensureNotCancelled();
     progressState.currentFile = rp;
     emitProgress("file-start", { operation: "push", relativePath: rp });
-    try {
-      const localEntry = localEntries.get(rp);
-      let useStream = await shouldUseStreamPushForLocalFile({
-        manifestEntry: localEntry,
-        notebookDir,
-        scope: normalizedScope,
-        relativePath: rp,
-      });
-      let pushedReport;
+    let retryCount = 0;
+    while (true) {
+      const bytesBefore = progressState.bytesDone;
       try {
-        pushedReport = useStream
-          ? await pushOneStream({
-            peerUrl: normalizedPeerUrl,
-            scope: normalizedScope,
-            relativePath: rp,
-            notebookDir,
-            runtimeRoot: resolvedRuntimeRoot,
-            shouldCancel,
-            onByteDelta(delta) {
-              progressState.bytesDone += toNonNegativeSize(delta);
-              emitProgress("file-progress", { operation: "push", relativePath: rp });
-            },
-          })
-          : await pushOne({
-            peerUrl: normalizedPeerUrl,
-            scope: normalizedScope,
-            relativePath: rp,
-            notebookDir,
-            runtimeRoot: resolvedRuntimeRoot,
-          });
-      } catch (err) {
-        if (!useStream && isJsonPushTooLargeError(err)) {
-          useStream = true;
-          pushedReport = await pushOneStream({
-            peerUrl: normalizedPeerUrl,
-            scope: normalizedScope,
-            relativePath: rp,
-            notebookDir,
-            runtimeRoot: resolvedRuntimeRoot,
-            shouldCancel,
-            onByteDelta(delta) {
-              progressState.bytesDone += toNonNegativeSize(delta);
-              emitProgress("file-progress", { operation: "push", relativePath: rp });
-            },
-          });
-        } else {
-          throw err;
+        const localEntry = localEntries.get(rp);
+        let useStream = await shouldUseStreamPushForLocalFile({
+          manifestEntry: localEntry,
+          notebookDir,
+          scope: normalizedScope,
+          relativePath: rp,
+        });
+        let pushedReport;
+        try {
+          pushedReport = useStream
+            ? await pushOneStream({
+              peerUrl: normalizedPeerUrl,
+              scope: normalizedScope,
+              relativePath: rp,
+              notebookDir,
+              runtimeRoot: resolvedRuntimeRoot,
+              shouldCancel,
+              onByteDelta(delta) {
+                progressState.bytesDone += toNonNegativeSize(delta);
+                emitProgress("file-progress", { operation: "push", relativePath: rp });
+              },
+            })
+            : await pushOne({
+              peerUrl: normalizedPeerUrl,
+              scope: normalizedScope,
+              relativePath: rp,
+              notebookDir,
+              runtimeRoot: resolvedRuntimeRoot,
+            });
+        } catch (err) {
+          if (!useStream && isJsonPushTooLargeError(err)) {
+            useStream = true;
+            pushedReport = await pushOneStream({
+              peerUrl: normalizedPeerUrl,
+              scope: normalizedScope,
+              relativePath: rp,
+              notebookDir,
+              runtimeRoot: resolvedRuntimeRoot,
+              shouldCancel,
+              onByteDelta(delta) {
+                progressState.bytesDone += toNonNegativeSize(delta);
+                emitProgress("file-progress", { operation: "push", relativePath: rp });
+              },
+            });
+          } else {
+            throw err;
+          }
         }
+        if (!useStream) {
+          progressState.bytesDone += toNonNegativeSize(pushedReport?.bytes);
+        }
+        progressState.filesDone += 1;
+        pushed.push(pushedReport);
+        emitProgress("file-complete", { operation: "push", relativePath: rp });
+        break;
+      } catch (err) {
+        const action = await handleFailedFile({ operation: "push", relativePath: rp, err, retryCount, bytesBefore });
+        if (action === "retry") {
+          retryCount += 1;
+          ensureNotCancelled();
+          emitProgress("file-retry", { operation: "push", relativePath: rp, retryCount });
+          continue;
+        }
+        if (action === "skip") break;
       }
-      if (!useStream) {
-        progressState.bytesDone += toNonNegativeSize(pushedReport?.bytes);
-      }
-      progressState.filesDone += 1;
-      pushed.push(pushedReport);
-      emitProgress("file-complete", { operation: "push", relativePath: rp });
-    } catch (err) {
-      emitProgress("file-error", { operation: "push", relativePath: rp, error: normalizeSyncErrorMessage(err) });
-      throw err;
     }
   }
   for (const rp of plan.changed) {
     ensureNotCancelled();
     progressState.currentFile = rp;
     emitProgress("file-start", { operation: "conflict", relativePath: rp });
-    try {
-      const remoteEntry = remoteEntries.get(rp);
-      const useStream = shouldUseStreamTransfer(remoteEntry);
-      const conflictReport = useStream
-        ? await pullConflictStream({
-          peerUrl: normalizedPeerUrl,
-          scope: normalizedScope,
-          relativePath: rp,
-          notebookDir,
-          runtimeRoot: resolvedRuntimeRoot,
-          shouldCancel,
-          onByteDelta(delta) {
-            progressState.bytesDone += toNonNegativeSize(delta);
-            emitProgress("file-progress", { operation: "conflict", relativePath: rp });
-          },
-        })
-        : await pullConflict({
-          peerUrl: normalizedPeerUrl,
-          scope: normalizedScope,
-          relativePath: rp,
-          notebookDir,
-          runtimeRoot: resolvedRuntimeRoot,
-          peerDeviceId: "peer",
-        });
-      if (!useStream) {
-        progressState.bytesDone += toNonNegativeSize(conflictReport?.bytes);
+    let retryCount = 0;
+    while (true) {
+      const bytesBefore = progressState.bytesDone;
+      try {
+        const remoteEntry = remoteEntries.get(rp);
+        const useStream = shouldUseStreamTransfer(remoteEntry);
+        const conflictReport = useStream
+          ? await pullConflictStream({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+            shouldCancel,
+            onByteDelta(delta) {
+              progressState.bytesDone += toNonNegativeSize(delta);
+              emitProgress("file-progress", { operation: "conflict", relativePath: rp });
+            },
+          })
+          : await pullConflict({
+            peerUrl: normalizedPeerUrl,
+            scope: normalizedScope,
+            relativePath: rp,
+            notebookDir,
+            runtimeRoot: resolvedRuntimeRoot,
+            peerDeviceId: "peer",
+          });
+        if (!useStream) {
+          progressState.bytesDone += toNonNegativeSize(conflictReport?.bytes);
+        }
+        progressState.filesDone += 1;
+        conflicts.push(conflictReport);
+        emitProgress("file-complete", { operation: "conflict", relativePath: rp });
+        break;
+      } catch (err) {
+        const action = await handleFailedFile({ operation: "conflict", relativePath: rp, err, retryCount, bytesBefore });
+        if (action === "retry") {
+          retryCount += 1;
+          ensureNotCancelled();
+          emitProgress("file-retry", { operation: "conflict", relativePath: rp, retryCount });
+          continue;
+        }
+        if (action === "skip") break;
       }
-      progressState.filesDone += 1;
-      conflicts.push(conflictReport);
-      emitProgress("file-complete", { operation: "conflict", relativePath: rp });
-    } catch (err) {
-      emitProgress("file-error", { operation: "conflict", relativePath: rp, error: normalizeSyncErrorMessage(err) });
-      throw err;
     }
   }
   progressState.currentFile = null;
@@ -537,7 +652,34 @@ export async function runScopeSyncTwoWay({
   const localAfter = await buildScopeManifest({ notebookDir, scope: normalizedScope });
   const remoteAfter = await fetchManifest(normalizedPeerUrl, normalizedScope, resolvedRuntimeRoot);
   const afterPlan = await compareScopeManifests(localAfter, remoteAfter);
-  return { ok: true, dryRun: false, scope: normalizedScope, peerUrl: normalizedPeerUrl, maxFileSizeBytes: limited.maxFileSizeBytes, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { pulled, pushed, conflicts, skipped: { same: plan.same, oversized: limited.skippedBySize } }, after: { localFileCount: localAfter.files.length, remoteFileCount: remoteAfter.files.length, plan: afterPlan } };
+  const partial = skippedOperations.length > 0;
+  return {
+    ok: true,
+    partial,
+    status: partial ? "completed_with_skips" : "completed",
+    dryRun: false,
+    scope: normalizedScope,
+    peerUrl: normalizedPeerUrl,
+    maxFileSizeBytes: limited.maxFileSizeBytes,
+    before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan },
+    operations: {
+      pulled,
+      pushed,
+      conflicts,
+      skipped: { same: plan.same, oversized: limited.skippedBySize },
+      skippedOperations,
+    },
+    skippedFiles: skippedOperations.map((entry) => ({
+      relativePath: entry.relativePath,
+      operation: entry.operation,
+      error: entry.error,
+      statusCode: entry.statusCode,
+      retryCount: entry.retryCount,
+    })),
+    filesSkipped: skippedOperations.length,
+    bytesSkipped: skippedOperations.reduce((sum, entry) => sum + toNonNegativeSize(entry.bytes), 0),
+    after: { localFileCount: localAfter.files.length, remoteFileCount: remoteAfter.files.length, plan: afterPlan },
+  };
 }
 
 async function main() {

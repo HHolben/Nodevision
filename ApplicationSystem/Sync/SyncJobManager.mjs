@@ -4,11 +4,15 @@
 import { randomUUID } from "node:crypto";
 import { getBroker } from "../MessageBroker/BrokerSingleton.mjs";
 
-const FINAL_STATUSES = new Set(["complete", "failed", "cancelled"]);
+const FINAL_STATUSES = new Set(["complete", "completed", "failed", "cancelled"]);
 const PROGRESS_PUBLISH_INTERVAL_MS = 250;
 const SYNC_JOB_TOPICS = {
   started: "nodevision/sync/job/started",
   progress: "nodevision/sync/job/progress",
+  paused: "nodevision/sync/job/paused",
+  retried: "nodevision/sync/job/retried",
+  skipped: "nodevision/sync/job/skipped",
+  aborted: "nodevision/sync/job/aborted",
   completed: "nodevision/sync/job/completed",
   failed: "nodevision/sync/job/failed",
   cancelled: "nodevision/sync/job/cancelled",
@@ -28,6 +32,20 @@ function normalizeErrorMessage(err) {
   return String(err);
 }
 
+function normalizeStatusCode(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 100 && parsed <= 599 ? Math.trunc(parsed) : null;
+}
+
+function extractErrorStatus(err) {
+  return normalizeStatusCode(err?.status ?? err?.statusCode ?? err?.response?.status);
+}
+
+function toNonNegativeInteger(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
+}
+
 function cloneJob(job) {
   return {
     jobId: job.jobId,
@@ -42,8 +60,16 @@ function cloneJob(job) {
     filesDone: job.filesDone,
     bytesTotal: job.bytesTotal,
     bytesDone: job.bytesDone,
+    filesSkipped: job.filesSkipped,
+    bytesSkipped: job.bytesSkipped,
+    pauseReason: job.pauseReason,
+    pausedOperation: job.pausedOperation ? { ...job.pausedOperation } : null,
+    pausedError: job.pausedError ? { ...job.pausedError } : null,
+    retryCount: job.retryCount,
+    skippedOperations: job.skippedOperations.map((entry) => ({ ...entry })),
     errors: [...job.errors],
     operations: [...job.operations],
+    result: job.result,
   };
 }
 
@@ -61,9 +87,18 @@ function createJobRecord({ scope, peerUrl, dryRun }) {
     filesDone: 0,
     bytesTotal: 0,
     bytesDone: 0,
+    filesSkipped: 0,
+    bytesSkipped: 0,
+    pauseReason: null,
+    pausedOperation: null,
+    pausedError: null,
+    retryCount: 0,
+    skippedOperations: [],
     errors: [],
     operations: [],
+    result: null,
     cancelRequested: false,
+    pauseControl: null,
   };
 }
 
@@ -97,6 +132,15 @@ function sanitizePeerUrl(value) {
   }
 }
 
+function sanitizePausedOperation(value) {
+  if (!value || typeof value !== "object") return null;
+  return {
+    ...value,
+    peerUrl: sanitizePeerUrl(value.peerUrl),
+    relativePath: sanitizeCurrentFile(value.relativePath),
+  };
+}
+
 function createSyncEventPayload(job, status = job.status) {
   return {
     jobId: job.jobId,
@@ -107,7 +151,13 @@ function createSyncEventPayload(job, status = job.status) {
     filesTotal: job.filesTotal,
     bytesDone: job.bytesDone,
     bytesTotal: job.bytesTotal,
+    filesSkipped: job.filesSkipped,
+    bytesSkipped: job.bytesSkipped,
     currentFile: sanitizeCurrentFile(job.currentFile),
+    pauseReason: job.pauseReason,
+    pausedOperation: sanitizePausedOperation(job.pausedOperation),
+    pausedError: job.pausedError,
+    retryCount: job.retryCount,
     timestamp: nowIso(),
   };
 }
@@ -127,6 +177,8 @@ function applyProgressUpdate(job, update) {
   if (update.filesDone !== undefined && Number.isFinite(Number(update.filesDone))) job.filesDone = Math.max(0, Math.trunc(Number(update.filesDone)));
   if (update.bytesTotal !== undefined && Number.isFinite(Number(update.bytesTotal))) job.bytesTotal = Math.max(0, Math.trunc(Number(update.bytesTotal)));
   if (update.bytesDone !== undefined && Number.isFinite(Number(update.bytesDone))) job.bytesDone = Math.max(0, Math.trunc(Number(update.bytesDone)));
+  if (update.filesSkipped !== undefined && Number.isFinite(Number(update.filesSkipped))) job.filesSkipped = Math.max(0, Math.trunc(Number(update.filesSkipped)));
+  if (update.bytesSkipped !== undefined && Number.isFinite(Number(update.bytesSkipped))) job.bytesSkipped = Math.max(0, Math.trunc(Number(update.bytesSkipped)));
   if (update.event === "file-error") {
     const message = normalizeErrorMessage(update.error || update.details || update.message);
     const op = update.operation ? String(update.operation) : "file";
@@ -140,6 +192,24 @@ function applyProgressUpdate(job, update) {
       relativePath: String(update.relativePath),
       at: nowIso(),
     });
+  }
+  if (update.event === "file-skipped" && update.relativePath) {
+    const skipped = {
+      type: String(update.operation || "file"),
+      operation: String(update.operation || "file"),
+      scope: update.scope ? String(update.scope) : job.scope,
+      peerUrl: sanitizePeerUrl(update.peerUrl || job.peerUrl),
+      relativePath: String(update.relativePath),
+      error: normalizeErrorMessage(update.error || update.message),
+      statusCode: normalizeStatusCode(update.statusCode),
+      retryCount: toNonNegativeInteger(update.retryCount),
+      safelyRetryable: update.safelyRetryable !== false,
+      bytes: toNonNegativeInteger(update.bytes || update.size),
+      at: nowIso(),
+    };
+    job.skippedOperations.push(skipped);
+    job.filesSkipped = Math.max(job.filesSkipped, job.skippedOperations.length);
+    if (skipped.bytes > 0) job.bytesSkipped += skipped.bytes;
   }
 }
 
@@ -161,6 +231,59 @@ function applyResultOperations(job, result) {
   if (operations.length) {
     job.operations = operations;
   }
+  const skippedOperations = Array.isArray(result?.operations?.skippedOperations)
+    ? result.operations.skippedOperations
+    : Array.isArray(result?.skippedOperations)
+      ? result.skippedOperations
+      : [];
+  if (skippedOperations.length) {
+    job.skippedOperations = skippedOperations.map((entry) => ({ ...entry }));
+    job.filesSkipped = job.skippedOperations.length;
+    job.bytesSkipped = job.skippedOperations.reduce((sum, entry) => sum + toNonNegativeInteger(entry?.bytes || entry?.size), 0);
+  }
+}
+
+function normalizePausedOperation(input = {}, job) {
+  const operation = String(input.operation || input.type || "file");
+  const relativePath = String(input.relativePath || job.currentFile || "");
+  return {
+    operation,
+    type: operation,
+    scope: String(input.scope || job.scope),
+    peerUrl: sanitizePeerUrl(input.peerUrl || job.peerUrl),
+    relativePath,
+    statusCode: normalizeStatusCode(input.statusCode),
+    retryCount: toNonNegativeInteger(input.retryCount),
+    safelyRetryable: input.safelyRetryable !== false,
+    bytes: toNonNegativeInteger(input.bytes || input.size),
+    timestamp: nowIso(),
+    progress: {
+      filesDone: job.filesDone,
+      filesTotal: job.filesTotal,
+      bytesDone: job.bytesDone,
+      bytesTotal: job.bytesTotal,
+      filesSkipped: job.filesSkipped,
+      bytesSkipped: job.bytesSkipped,
+    },
+  };
+}
+
+function createPausedError(input = {}) {
+  return {
+    message: normalizeErrorMessage(input.error || input.message),
+    statusCode: normalizeStatusCode(input.statusCode),
+    timestamp: nowIso(),
+  };
+}
+
+function createSkippedOperationFromPause(job) {
+  return {
+    ...(job.pausedOperation || {}),
+    error: job.pausedError?.message || "Skipped",
+    statusCode: normalizeStatusCode(job.pausedError?.statusCode ?? job.pausedOperation?.statusCode),
+    retryCount: toNonNegativeInteger(job.retryCount),
+    skippedAt: nowIso(),
+  };
 }
 
 export function createSyncJobManager({ maxJobs = 100, broker = getBroker() } = {}) {
@@ -194,12 +317,64 @@ export function createSyncJobManager({ maxJobs = 100, broker = getBroker() } = {
     if (!job) return null;
     if (isFinalStatus(job.status)) return cloneJob(job);
     job.cancelRequested = true;
+    if (job.status === "paused" && job.pauseControl) {
+      job.status = "cancelled";
+      publishSyncEvent(SYNC_JOB_TOPICS.aborted, job, { status: "cancelled", retain: true });
+      job.pauseControl.resolve({ action: "abort" });
+      job.pauseControl = null;
+      return cloneJob(job);
+    }
     if (job.status === "queued") {
       job.status = "cancelled";
       job.finishedAt = nowIso();
       job.currentFile = null;
       publishSyncEvent(SYNC_JOB_TOPICS.cancelled, job, { retain: true });
     }
+    return cloneJob(job);
+  }
+
+  function abortJob(jobId) {
+    const job = jobs.get(String(jobId || ""));
+    if (!job) return null;
+    if (isFinalStatus(job.status)) return cloneJob(job);
+    job.cancelRequested = true;
+    if (job.status === "paused" && job.pauseControl) {
+      job.status = "cancelled";
+      publishSyncEvent(SYNC_JOB_TOPICS.aborted, job, { status: "cancelled", retain: true });
+      job.pauseControl.resolve({ action: "abort" });
+      job.pauseControl = null;
+      return cloneJob(job);
+    }
+    return cancelJob(jobId);
+  }
+
+  function retryPausedJob(jobId) {
+    const job = jobs.get(String(jobId || ""));
+    if (!job) return null;
+    if (job.status !== "paused" || !job.pauseControl) return cloneJob(job);
+    job.retryCount += 1;
+    if (job.pausedOperation) job.pausedOperation.retryCount = job.retryCount;
+    job.status = "running";
+    job.pauseReason = null;
+    publishSyncEvent(SYNC_JOB_TOPICS.retried, job, { status: "running" });
+    job.pauseControl.resolve({ action: "retry", retryCount: job.retryCount });
+    job.pauseControl = null;
+    return cloneJob(job);
+  }
+
+  function skipPausedJob(jobId) {
+    const job = jobs.get(String(jobId || ""));
+    if (!job) return null;
+    if (job.status !== "paused" || !job.pauseControl) return cloneJob(job);
+    const skipped = createSkippedOperationFromPause(job);
+    job.skippedOperations.push(skipped);
+    job.filesSkipped = job.skippedOperations.length;
+    if (skipped.bytes > 0) job.bytesSkipped += skipped.bytes;
+    job.status = "running";
+    job.pauseReason = null;
+    publishSyncEvent(SYNC_JOB_TOPICS.skipped, job, { status: "running" });
+    job.pauseControl.resolve({ action: "skip", skippedOperation: skipped });
+    job.pauseControl = null;
     return cloneJob(job);
   }
 
@@ -240,11 +415,29 @@ export function createSyncJobManager({ maxJobs = 100, broker = getBroker() } = {
           isCancelled() {
             return job.cancelRequested === true;
           },
+          async onFileError(details = {}) {
+            const normalized = {
+              ...details,
+              statusCode: normalizeStatusCode(details.statusCode ?? extractErrorStatus(details.error)),
+              error: normalizeErrorMessage(details.error || details.message),
+            };
+            job.currentFile = normalized.relativePath ? String(normalized.relativePath) : job.currentFile;
+            job.pausedOperation = normalizePausedOperation(normalized, job);
+            job.pausedError = createPausedError(normalized);
+            job.pauseReason = "file-error";
+            job.retryCount = toNonNegativeInteger(normalized.retryCount);
+            job.status = "paused";
+            return await new Promise((resolve) => {
+              job.pauseControl = { resolve };
+              publishSyncEvent(SYNC_JOB_TOPICS.paused, job, { status: "paused", retain: true });
+            });
+          },
         });
         if (job.cancelRequested) {
           job.status = "cancelled";
         } else {
-          job.status = "complete";
+          job.status = "completed";
+          job.result = result && typeof result === "object" ? result : null;
           applyResultOperations(job, result);
         }
       } catch (err) {
@@ -255,9 +448,9 @@ export function createSyncJobManager({ maxJobs = 100, broker = getBroker() } = {
           job.errors.push(normalizeErrorMessage(err));
         }
       } finally {
-        job.currentFile = null;
+        if (job.status !== "paused") job.currentFile = null;
         job.finishedAt = nowIso();
-        if (job.status === "complete") {
+        if (job.status === "completed" || job.status === "complete") {
           publishSyncEvent(SYNC_JOB_TOPICS.completed, job, { retain: true });
         } else if (job.status === "failed") {
           publishSyncEvent(SYNC_JOB_TOPICS.failed, job, { retain: true });
@@ -274,5 +467,8 @@ export function createSyncJobManager({ maxJobs = 100, broker = getBroker() } = {
     startJob,
     getJobStatus,
     cancelJob,
+    abortJob,
+    retryPausedJob,
+    skipPausedJob,
   };
 }

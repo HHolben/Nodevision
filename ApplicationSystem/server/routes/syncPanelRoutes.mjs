@@ -525,6 +525,15 @@ function parseMaxFileSizeBytes(body) {
   return normalized > 0 ? normalized : null;
 }
 
+function parseOnFileErrorMode(body) {
+  const raw = body && typeof body === "object" && !Array.isArray(body)
+    ? body.onFileError
+    : undefined;
+  const mode = String(raw || "fail").trim().toLowerCase();
+  if (mode === "fail" || mode === "pause" || mode === "skip") return mode;
+  throw new Error("onFileError must be one of: fail, pause, skip");
+}
+
 async function syncStateResponse(state, ctx) {
   const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot }).catch(() => ({ protectedFromPeerWrites: false }));
   return {
@@ -773,6 +782,11 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch (err) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid max file size" });
     }
+    try {
+      parseOnFileErrorMode(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid file error mode" });
+    }
 
     let peerUrl;
     try {
@@ -880,6 +894,12 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch (err) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid max file size" });
     }
+    let onFileError;
+    try {
+      onFileError = parseOnFileErrorMode(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid file error mode" });
+    }
 
     let peerUrl;
     try {
@@ -896,7 +916,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
         syncRunner,
-        syncRunnerOptions: { maxFileSizeBytes },
+        syncRunnerOptions: { maxFileSizeBytes, onFileError: onFileError === "pause" ? "fail" : onFileError },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
       discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
@@ -974,6 +994,12 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch (err) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid max file size" });
     }
+    let onFileError;
+    try {
+      onFileError = parseOnFileErrorMode(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid file error mode" });
+    }
 
     let peerUrl;
     try {
@@ -996,7 +1022,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         scope,
         peerUrl,
         dryRun,
-        async run({ onProgress, isCancelled }) {
+        async run({ onProgress, isCancelled, onFileError: onFileErrorControl }) {
           const syncResult = await runScopeSyncWithPeerUrlFallback({
             discoveredPeer: discoveredPeerSnapshot,
             scope,
@@ -1006,6 +1032,8 @@ export function registerSyncPanelRoutes(app, ctx) {
             syncRunnerOptions: {
               onProgress,
               shouldCancel: isCancelled,
+              onFileError,
+              onFileErrorControl,
               maxFileSizeBytes,
             },
           });
@@ -1042,6 +1070,33 @@ export function registerSyncPanelRoutes(app, ctx) {
     if (!job) {
       return res.status(404).json({ ok: false, error: "Sync job not found" });
     }
+    return res.json({ ok: true, job });
+  });
+
+  app.post("/api/sync/jobs/:jobId/retry", (req, res) => {
+    if (!requireSession(req, res)) return;
+    const jobId = String(req.params?.jobId || "").trim();
+    if (!jobId) return res.status(400).json({ ok: false, error: "jobId is required" });
+    const job = syncJobManager.retryPausedJob(jobId);
+    if (!job) return res.status(404).json({ ok: false, error: "Sync job not found" });
+    return res.json({ ok: true, job });
+  });
+
+  app.post("/api/sync/jobs/:jobId/skip", (req, res) => {
+    if (!requireSession(req, res)) return;
+    const jobId = String(req.params?.jobId || "").trim();
+    if (!jobId) return res.status(400).json({ ok: false, error: "jobId is required" });
+    const job = syncJobManager.skipPausedJob(jobId);
+    if (!job) return res.status(404).json({ ok: false, error: "Sync job not found" });
+    return res.json({ ok: true, job });
+  });
+
+  app.post("/api/sync/jobs/:jobId/abort", (req, res) => {
+    if (!requireSession(req, res)) return;
+    const jobId = String(req.params?.jobId || "").trim();
+    if (!jobId) return res.status(400).json({ ok: false, error: "jobId is required" });
+    const job = syncJobManager.abortJob(jobId);
+    if (!job) return res.status(404).json({ ok: false, error: "Sync job not found" });
     return res.json({ ok: true, job });
   });
 }

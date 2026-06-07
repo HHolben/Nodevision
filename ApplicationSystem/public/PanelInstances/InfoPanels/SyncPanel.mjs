@@ -75,6 +75,10 @@ const TEMPLATE = `
           <input data-sync-max-file-mb type="number" min="0" step="1" placeholder="No limit" style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:130px;">
           <span style="font-size:0.78em;color:#666;">Blank or 0 syncs all sizes.</span>
         </label>
+        <label style="display:flex;gap:6px;align-items:center;font-size:0.86em;color:#444;padding-bottom:8px;">
+          <input type="checkbox" data-sync-pause-on-error>
+          <span>Pause on file errors</span>
+        </label>
         <button type="button" data-sync-dry style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.9em;">Dry Run Sync</button>
         <button type="button" data-sync-apply style="border:none;border-radius:6px;background:#0a84ff;color:#fff;padding:8px 12px;cursor:pointer;font-size:0.9em;">Apply Sync</button>
       </div>
@@ -87,6 +91,8 @@ const TEMPLATE = `
       </div>
       <div data-job-status style="margin-top:6px;font-size:0.88em;color:#333;">No active sync job.</div>
       <div data-job-progress style="margin-top:4px;font-size:0.82em;color:#555;"></div>
+      <div data-job-pause-card style="display:none;margin-top:8px;border:1px solid #e1b24f;border-radius:8px;background:#fff8e8;padding:9px;color:#4d3710;font-size:0.84em;"></div>
+      <div data-job-skipped style="display:none;margin-top:8px;border:1px solid #d8d8d8;border-radius:8px;background:#fff;padding:8px;font-size:0.82em;color:#333;"></div>
       <div data-job-errors style="margin-top:6px;display:none;padding:6px 8px;border-radius:6px;background:#ffecec;color:#8b1c1c;font-size:0.82em;"></div>
     </section>
 
@@ -141,12 +147,21 @@ function normalizeMaxFileSizeMb(value) {
 }
 
 const SYNC_MAX_FILE_SIZE_MB_STORAGE_KEY = "nodevision.sync.maxFileSizeMb";
+const SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY = "nodevision.sync.pauseOnFileError";
 
 function readStoredMaxFileSizeMb() {
   try {
     return normalizeMaxFileSizeMb(window.localStorage?.getItem(SYNC_MAX_FILE_SIZE_MB_STORAGE_KEY));
   } catch {
     return null;
+  }
+}
+
+function readStoredPauseOnFileError() {
+  try {
+    return window.localStorage?.getItem(SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY) === "true";
+  } catch {
+    return false;
   }
 }
 
@@ -198,6 +213,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const peerListEl = panelElem.querySelector("[data-peer-list]");
   const scopeSelect = panelElem.querySelector("[data-scope-select]");
   const maxFileSizeInput = panelElem.querySelector("[data-sync-max-file-mb]");
+  const pauseOnFileErrorInput = panelElem.querySelector("[data-sync-pause-on-error]");
   const syncDryBtn = panelElem.querySelector("[data-sync-dry]");
   const syncApplyBtn = panelElem.querySelector("[data-sync-apply]");
   const syncResultEl = panelElem.querySelector("[data-sync-result]");
@@ -207,6 +223,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const folderListEl = panelElem.querySelector("[data-folder-list]");
   const jobStatusEl = panelElem.querySelector("[data-job-status]");
   const jobProgressEl = panelElem.querySelector("[data-job-progress]");
+  const jobPauseCardEl = panelElem.querySelector("[data-job-pause-card]");
+  const jobSkippedEl = panelElem.querySelector("[data-job-skipped]");
   const jobErrorsEl = panelElem.querySelector("[data-job-errors]");
   const syncCancelBtn = panelElem.querySelector("[data-sync-cancel]");
   const syncEventsListEl = panelElem.querySelector("[data-sync-events-list]");
@@ -227,11 +245,13 @@ export async function setupPanel(panelElem, panelVars = {}) {
     activeJobId: null,
     syncEvents: [],
     maxFileSizeMb: readStoredMaxFileSizeMb(),
+    pauseOnFileError: readStoredPauseOnFileError(),
     eventsClearedAt: 0,
     eventsPollTimer: null,
   };
 
   if (maxFileSizeInput && state.maxFileSizeMb !== null) maxFileSizeInput.value = String(state.maxFileSizeMb);
+  if (pauseOnFileErrorInput) pauseOnFileErrorInput.checked = state.pauseOnFileError;
 
   const getMaxFileSizeBytes = () => {
     const mb = normalizeMaxFileSizeMb(maxFileSizeInput?.value);
@@ -248,6 +268,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const body = { deviceId, scope, dryRun: Boolean(dryRun) };
     const maxFileSizeBytes = getMaxFileSizeBytes();
     if (maxFileSizeBytes !== null) body.maxFileSizeBytes = maxFileSizeBytes;
+    body.onFileError = state.pauseOnFileError ? "pause" : "fail";
     return body;
   };
 
@@ -332,7 +353,52 @@ export async function setupPanel(panelElem, panelVars = {}) {
     folderListEl.innerHTML = state.candidateFolders.length ? state.candidateFolders.map((folder) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #e2e2e2;border-radius:6px;padding:6px;background:#fff;"><div><div style="font-size:0.9em;color:#222;">${escapeHtml(folder.name || folder.relativePath || "")}</div><div style="font-size:0.78em;color:#666;">${escapeHtml(folder.relativePath || "")}</div></div><button type="button" data-share-scope="${escapeHtml(folder.relativePath || "")}" ${folder.syncEnabled ? "disabled" : ""} style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:5px 8px;font-size:0.8em;${folder.syncEnabled ? "opacity:0.6;cursor:not-allowed;" : "cursor:pointer;"}">${folder.syncEnabled ? "Shared" : "Share"}</button></div>`).join("") : `<div style="font-size:0.88em;color:#777;">No eligible top-level Notebook folders found.</div>`;
   };
 
-  const isFinalJobStatus = (status) => ["complete", "failed", "cancelled"].includes(String(status || ""));
+  const isFinalJobStatus = (status) => ["complete", "completed", "failed", "cancelled"].includes(String(status || ""));
+  const renderSkippedOperations = (job) => {
+    if (!jobSkippedEl) return;
+    const skipped = Array.isArray(job?.skippedOperations) ? job.skippedOperations : [];
+    if (!skipped.length) {
+      jobSkippedEl.style.display = "none";
+      jobSkippedEl.innerHTML = "";
+      return;
+    }
+    jobSkippedEl.style.display = "block";
+    const rows = skipped.slice(0, 25).map((entry) => {
+      const path = isSafeRelativePath(entry?.relativePath) || String(entry?.relativePath || "");
+      const operation = String(entry?.operation || entry?.type || "file");
+      const error = String(entry?.error || "Skipped");
+      return `<li style="margin:3px 0;"><strong>${escapeHtml(operation)}:</strong> ${escapeHtml(path)}<br><span style="color:#666;">${escapeHtml(error)}</span></li>`;
+    }).join("");
+    const more = skipped.length > 25 ? `<div style="margin-top:5px;color:#666;">${escapeHtml(skipped.length - 25)} more skipped operation${skipped.length - 25 === 1 ? "" : "s"} in the job result.</div>` : "";
+    jobSkippedEl.innerHTML = `<div style="font-weight:600;margin-bottom:4px;">Skipped files (${escapeHtml(skipped.length)})</div><ul style="margin:0;padding-left:18px;">${rows}</ul>${more}`;
+  };
+  const renderPauseCard = (job, status) => {
+    if (!jobPauseCardEl) return;
+    if (status !== "paused") {
+      jobPauseCardEl.style.display = "none";
+      jobPauseCardEl.innerHTML = "";
+      return;
+    }
+    const op = job.pausedOperation && typeof job.pausedOperation === "object" ? job.pausedOperation : {};
+    const err = job.pausedError && typeof job.pausedError === "object" ? job.pausedError : {};
+    const relativePath = isSafeRelativePath(op.relativePath || job.currentFile) || String(op.relativePath || job.currentFile || "");
+    const statusCode = err.statusCode || op.statusCode || "";
+    jobPauseCardEl.style.display = "block";
+    jobPauseCardEl.innerHTML = `
+      <div style="font-weight:600;margin-bottom:5px;">Sync paused on file error</div>
+      <div style="display:grid;gap:3px;">
+        <div><strong>File:</strong> ${escapeHtml(relativePath || "Unknown file")}</div>
+        <div><strong>Operation:</strong> ${escapeHtml(op.operation || op.type || "file")}</div>
+        <div><strong>Error:</strong> ${escapeHtml(err.message || job.pauseReason || "Unknown error")}</div>
+        ${statusCode ? `<div><strong>Status:</strong> ${escapeHtml(statusCode)}</div>` : ""}
+        <div><strong>Retries:</strong> ${escapeHtml(job.retryCount || op.retryCount || 0)}</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;">
+        <button type="button" data-job-retry style="border:1px solid #8a6d1d;border-radius:6px;background:#fff;padding:6px 9px;cursor:pointer;">Retry file</button>
+        <button type="button" data-job-skip style="border:1px solid #8a6d1d;border-radius:6px;background:#fff;padding:6px 9px;cursor:pointer;">Skip file and continue</button>
+        <button type="button" data-job-abort style="border:1px solid #a33;border-radius:6px;background:#fff4f4;color:#8b1c1c;padding:6px 9px;cursor:pointer;">Abort sync</button>
+      </div>`;
+  };
   const renderJob = () => {
     const job = state.activeJob && typeof state.activeJob === "object" ? state.activeJob : null;
     if (!job) {
@@ -343,6 +409,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
         jobErrorsEl.textContent = "";
       }
       if (syncCancelBtn) syncCancelBtn.style.display = "none";
+      renderPauseCard(null, "");
+      renderSkippedOperations(null);
       return;
     }
     const status = String(job.status || "unknown");
@@ -356,15 +424,19 @@ export async function setupPanel(panelElem, panelVars = {}) {
       jobStatusEl.textContent = currentFile ? `${base} Current file: ${currentFile}` : base;
     }
     if (jobProgressEl) {
-      jobProgressEl.textContent = `Files ${filesDone}/${filesTotal} | Bytes ${bytesDone}/${bytesTotal}`;
+      const filesSkipped = Number(job.filesSkipped || 0);
+      const bytesSkipped = Number(job.bytesSkipped || 0);
+      jobProgressEl.textContent = `Files ${filesDone}/${filesTotal} | Skipped ${filesSkipped} | Bytes ${bytesDone}/${bytesTotal} | Bytes skipped ${bytesSkipped}`;
     }
+    renderPauseCard(job, status);
+    renderSkippedOperations(job);
     const errors = Array.isArray(job.errors) ? job.errors.filter(Boolean) : [];
     if (jobErrorsEl) {
       jobErrorsEl.style.display = errors.length ? "block" : "none";
       jobErrorsEl.textContent = errors.length ? errors.join("\n") : "";
     }
     if (syncCancelBtn) {
-      const cancellable = status === "queued" || status === "running";
+      const cancellable = status === "queued" || status === "running" || status === "paused";
       syncCancelBtn.style.display = cancellable ? "inline-block" : "none";
       syncCancelBtn.disabled = state.busy || !cancellable;
     }
@@ -434,7 +506,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, maxFileSizeInput, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
     if (statusMessage) setStatus(statusEl, statusMessage);
@@ -454,9 +526,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
     state.activeJob = payload.job || null;
     renderJob();
     if (syncResultEl && state.activeJob && isFinalJobStatus(state.activeJob.status)) {
-      syncResultEl.textContent = JSON.stringify({ ok: state.activeJob.status === "complete", job: state.activeJob }, null, 2);
+      const completed = state.activeJob.status === "complete" || state.activeJob.status === "completed";
+      syncResultEl.textContent = JSON.stringify({ ok: completed, partial: Number(state.activeJob.filesSkipped || 0) > 0, job: state.activeJob }, null, 2);
       if (syncDetailsEl) syncDetailsEl.open = true;
-      setStatus(statusEl, state.activeJob.status === "complete" ? "Sync job completed." : `Sync job ${state.activeJob.status}.`);
+      setStatus(statusEl, completed ? (Number(state.activeJob.filesSkipped || 0) > 0 ? "Sync job completed with skipped files." : "Sync job completed.") : `Sync job ${state.activeJob.status}.`);
     }
   };
 
@@ -512,6 +585,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
 
   maxFileSizeInput?.addEventListener("change", () => { getMaxFileSizeBytes(); });
+  pauseOnFileErrorInput?.addEventListener("change", () => {
+    state.pauseOnFileError = Boolean(pauseOnFileErrorInput.checked);
+    try { window.localStorage?.setItem(SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY, state.pauseOnFileError ? "true" : "false"); } catch {}
+  });
 
   peerListEl?.addEventListener("click", async (e) => {
     const trustButton = e.target?.closest?.("[data-trust-peer]");
@@ -568,6 +645,24 @@ export async function setupPanel(panelElem, panelVars = {}) {
   protectDisableBtn?.addEventListener("click", () => toggleProtection(false));
   syncDryBtn?.addEventListener("click", () => runSync(true));
   syncApplyBtn?.addEventListener("click", () => runSync(false));
+  jobPauseCardEl?.addEventListener("click", async (event) => {
+    const button = event.target?.closest?.("[data-job-retry],[data-job-skip],[data-job-abort]");
+    if (!button) return;
+    const jobId = String(state.activeJobId || "").trim();
+    if (!jobId) return;
+    const action = button.hasAttribute("data-job-retry") ? "retry" : button.hasAttribute("data-job-skip") ? "skip" : "abort";
+    setBusy(true, action === "retry" ? "Retrying file..." : action === "skip" ? "Skipping file..." : "Aborting sync...");
+    try {
+      const payload = await apiFetchJson(`/api/sync/jobs/${encodeURIComponent(jobId)}/${action}`, { method: "POST", body: JSON.stringify({}) });
+      state.activeJob = payload.job || state.activeJob;
+      renderJob();
+      setStatus(statusEl, action === "retry" ? "Retrying paused file." : action === "skip" ? "Skipped paused file; sync continuing." : "Sync aborted.");
+    } catch (err) {
+      setError(errorEl, err?.message || `Failed to ${action} sync job`);
+    } finally {
+      setBusy(false);
+    }
+  });
   syncEventsRefreshBtn?.addEventListener("click", () => loadSyncEvents());
   syncEventsClearBtn?.addEventListener("click", () => { state.eventsClearedAt = Date.now(); state.syncEvents = []; renderSyncEvents(); setSyncEventsWarning(""); });
   syncCancelBtn?.addEventListener("click", async () => {

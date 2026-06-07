@@ -16,7 +16,17 @@ async function waitForFinalStatus(manager, jobId, timeoutMs = 3000) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     const job = manager.getJobStatus(jobId);
-    if (job && ["complete", "failed", "cancelled"].includes(job.status)) return job;
+    if (job && ["complete", "completed", "failed", "cancelled"].includes(job.status)) return job;
+    await delay(20);
+  }
+  return manager.getJobStatus(jobId);
+}
+
+async function waitForStatus(manager, jobId, expectedStatus, timeoutMs = 3000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const job = manager.getJobStatus(jobId);
+    if (job?.status === expectedStatus) return job;
     await delay(20);
   }
   return manager.getJobStatus(jobId);
@@ -55,7 +65,7 @@ async function main() {
   });
 
   const completeJob = await waitForFinalStatus(manager, startedComplete.jobId);
-  assert(completeJob?.status === "complete", "job should complete");
+  assert(completeJob?.status === "completed", "job should complete");
 
   const started = received.find((message) => message.topic === "nodevision/sync/job/started");
   const progress = received.find((message) => message.topic === "nodevision/sync/job/progress");
@@ -104,6 +114,37 @@ async function main() {
   const cancelled = received.find((message) => message.topic === "nodevision/sync/job/cancelled" && message.payload.jobId === startedCancelled.jobId);
   assert(cancelled, "cancelled event should publish");
   assertSafePayload(cancelled.payload);
+
+  let pauseAttempts = 0;
+  const startedPaused = manager.startJob({
+    scope: "Shared",
+    peerUrl: "http://127.0.0.1:3001",
+    async run({ onProgress, onFileError }) {
+      onProgress({ event: "plan", filesTotal: 1, bytesTotal: 10, filesDone: 0, bytesDone: 0 });
+      while (true) {
+        onProgress({ event: "file-start", operation: "pull", relativePath: "Shared/pause.bin", currentFile: "Shared/pause.bin" });
+        pauseAttempts += 1;
+        const decision = await onFileError({ operation: "pull", relativePath: "Shared/pause.bin", error: "stream failed", statusCode: 500, retryCount: pauseAttempts - 1, bytes: 10 });
+        if (decision.action === "retry") continue;
+        if (decision.action === "skip") return { partial: true, operations: { pulled: [], pushed: [], conflicts: [], skippedOperations: [decision.skippedOperation] } };
+      }
+    },
+  });
+  assert((await waitForStatus(manager, startedPaused.jobId, "paused"))?.status === "paused", "paused job should pause on file error");
+  manager.retryPausedJob(startedPaused.jobId);
+  assert((await waitForStatus(manager, startedPaused.jobId, "paused"))?.status === "paused", "retried job should pause again on repeated file error");
+  manager.skipPausedJob(startedPaused.jobId);
+  const skippedJob = await waitForFinalStatus(manager, startedPaused.jobId);
+  assert(skippedJob?.filesSkipped === 1, "paused skipped job should record skipped file");
+  const paused = received.find((message) => message.topic === "nodevision/sync/job/paused" && message.payload.jobId === startedPaused.jobId);
+  const retried = received.find((message) => message.topic === "nodevision/sync/job/retried" && message.payload.jobId === startedPaused.jobId);
+  const skipped = received.find((message) => message.topic === "nodevision/sync/job/skipped" && message.payload.jobId === startedPaused.jobId);
+  assert(paused, "paused event should publish");
+  assert(retried, "retried event should publish");
+  assert(skipped, "skipped event should publish");
+  assertSafePayload(paused.payload);
+  assertSafePayload(retried.payload);
+  assertSafePayload(skipped.payload);
 
   console.log("PASS");
 }
