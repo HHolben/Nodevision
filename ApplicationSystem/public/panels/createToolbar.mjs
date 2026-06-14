@@ -277,6 +277,11 @@ function createToolbarIconElement(item, { allowFallback = true } = {}) {
     const fallback = document.createElement("span");
     fallback.setAttribute("aria-hidden", "true");
     fallback.className = "nv-toolbar-icon-fallback";
+    const fallbackLabel = String(item?.shortLabel || item?.label || "").trim();
+    if (fallbackLabel) {
+      fallback.textContent = fallbackLabel.slice(0, 3);
+      fallback.title = item?.heading || fallbackLabel;
+    }
     return fallback;
   };
 
@@ -567,6 +572,13 @@ function buildDropdownFromItem(item) {
     topItems = topItems.filter((subItem) => {
       const modes = Array.isArray(subItem?.modes) ? subItem.modes : (subItem?.modes ? [subItem.modes] : []);
       return modes.includes("MIDIediting");
+    });
+  }
+
+  if (state.currentMode === "ArduinoBlockEditing" && item.heading === "Insert") {
+    topItems = topItems.filter((subItem) => {
+      const modes = Array.isArray(subItem?.modes) ? subItem.modes : (subItem?.modes ? [subItem.modes] : []);
+      return modes.includes("ArduinoBlockEditing");
     });
   }
 

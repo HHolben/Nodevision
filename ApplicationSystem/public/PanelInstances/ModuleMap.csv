@@ -164,6 +164,7 @@ cpp,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 css,ProgrammingLanguage,ViewCSS.mjs,TextFamilyEditor.mjs
 go,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 h,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
+ino,ProgrammingLanguage,ViewText.mjs,ArduinoBlocksEditor.mjs
 java,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 lean,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 mjs,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs

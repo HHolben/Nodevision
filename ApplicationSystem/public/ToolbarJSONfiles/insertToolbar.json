@@ -109,6 +109,321 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Loop",
+      "callbackKey": "arduinoShowLoopBlocks",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Pins",
+      "callbackKey": "arduinoShowPinBlocks",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Timing",
+      "callbackKey": "arduinoShowTimingBlocks",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Logic",
+      "callbackKey": "arduinoShowLogicBlocks",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Serial",
+      "callbackKey": "arduinoShowSerialBlocks",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Variables",
+      "callbackKey": "arduinoShowVariableBlocks",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Math",
+      "callbackKey": "arduinoShowMathBlocks",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Loop",
+      "heading": "Comment",
+      "shortLabel": "//",
+      "callbackKey": "arduinoInsertComment",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Loop",
+      "heading": "Delay",
+      "shortLabel": "DL",
+      "callbackKey": "arduinoInsertDelay",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Loop",
+      "heading": "If",
+      "shortLabel": "IF",
+      "callbackKey": "arduinoInsertIf",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Loop",
+      "heading": "If Else",
+      "shortLabel": "IE",
+      "callbackKey": "arduinoInsertIfElse",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Pins",
+      "heading": "Pin Mode",
+      "shortLabel": "PM",
+      "callbackKey": "arduinoInsertPinMode",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Pins",
+      "heading": "Digital Write",
+      "shortLabel": "DW",
+      "callbackKey": "arduinoInsertDigitalWrite",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Pins",
+      "heading": "Analog Write",
+      "shortLabel": "AW",
+      "callbackKey": "arduinoInsertAnalogWrite",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Pins",
+      "heading": "Digital Read",
+      "shortLabel": "DR",
+      "callbackKey": "arduinoInsertDigitalRead",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Pins",
+      "heading": "Analog Read",
+      "shortLabel": "AR",
+      "callbackKey": "arduinoInsertAnalogRead",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Timing",
+      "heading": "Delay",
+      "shortLabel": "DL",
+      "callbackKey": "arduinoInsertDelay",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Timing",
+      "heading": "Millis",
+      "shortLabel": "MS",
+      "callbackKey": "arduinoInsertMillis",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Logic",
+      "heading": "If",
+      "shortLabel": "IF",
+      "callbackKey": "arduinoInsertIf",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Logic",
+      "heading": "If Else",
+      "shortLabel": "IE",
+      "callbackKey": "arduinoInsertIfElse",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Logic",
+      "heading": "Compare",
+      "shortLabel": "==",
+      "callbackKey": "arduinoInsertCompare",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Logic",
+      "heading": "And Or",
+      "shortLabel": "&&",
+      "callbackKey": "arduinoInsertLogicOp",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Logic",
+      "heading": "Not",
+      "shortLabel": "!",
+      "callbackKey": "arduinoInsertNot",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Serial",
+      "heading": "Serial Begin",
+      "shortLabel": "SB",
+      "callbackKey": "arduinoInsertSerialBegin",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Serial",
+      "heading": "Serial Print",
+      "shortLabel": "SP",
+      "callbackKey": "arduinoInsertSerialPrint",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Serial",
+      "heading": "Serial Println",
+      "shortLabel": "SL",
+      "callbackKey": "arduinoInsertSerialPrintln",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Variables",
+      "heading": "Define Variable",
+      "shortLabel": "DV",
+      "callbackKey": "arduinoInsertDefineVariable",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Variables",
+      "heading": "Set Variable",
+      "shortLabel": "SV",
+      "callbackKey": "arduinoInsertSetVariable",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Variables",
+      "heading": "Change Variable",
+      "shortLabel": "CV",
+      "callbackKey": "arduinoInsertChangeVariable",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Variables",
+      "heading": "Get Variable",
+      "shortLabel": "GV",
+      "callbackKey": "arduinoInsertGetVariable",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Math",
+      "heading": "Number",
+      "shortLabel": "#",
+      "callbackKey": "arduinoInsertNumber",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Math",
+      "heading": "Text",
+      "shortLabel": "TXT",
+      "callbackKey": "arduinoInsertText",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Math",
+      "heading": "Arithmetic",
+      "shortLabel": "+-",
+      "callbackKey": "arduinoInsertArithmetic",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Math",
+      "heading": "Map",
+      "shortLabel": "MAP",
+      "callbackKey": "arduinoInsertMap",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Math",
+      "heading": "Constrain",
+      "shortLabel": "CON",
+      "callbackKey": "arduinoInsertConstrain",
+      "routeToActivePanel": true,
+      "modes": ["ArduinoBlockEditing"]
+    },
+    {
+      "ToolbarCategory": "Insert",
       "parentHeading": "Circuit Element",
       "heading": "Resistor",
       "callbackKey": "cirInsertResistor",

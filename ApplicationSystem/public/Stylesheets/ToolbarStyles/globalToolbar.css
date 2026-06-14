@@ -104,6 +104,10 @@
   background: linear-gradient(135deg, #f2f2f2 0%, #cfcfcf 100%);
   box-sizing: border-box;
   display: inline-block;
+  color: #111;
+  font: 700 8px/14px system-ui, sans-serif;
+  text-align: center;
+  overflow: hidden;
 }
 
 /* === Dropdown Panel === */
