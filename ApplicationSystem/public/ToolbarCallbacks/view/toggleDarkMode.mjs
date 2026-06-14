@@ -5,18 +5,33 @@
 
 const STORAGE_KEY = "nodevision_theme";
 
+function readStoredTheme() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === "dark" || stored === "light" ? stored : "";
+  } catch {
+    return "";
+  }
+}
+
 function getCurrentTheme() {
   const theme = document.documentElement?.dataset?.nvTheme;
   if (theme === "dark" || theme === "light") return theme;
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "dark" || stored === "light") return stored;
-  return "light";
+  return readStoredTheme() || "light";
 }
 
 function applyTheme(theme) {
   document.documentElement.dataset.nvTheme = theme;
   document.documentElement.style.colorScheme = theme;
-  localStorage.setItem(STORAGE_KEY, theme);
+  document.body?.classList.toggle("dark-mode", theme === "dark");
+  if (window.NodevisionState) {
+    window.NodevisionState.theme = theme;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // Dark mode still applies for the current page even if storage is blocked.
+  }
   window.dispatchEvent(new CustomEvent("nv-theme-changed", { detail: { theme } }));
 }
 

@@ -39,7 +39,7 @@ function sanitizeHeaderValue(value, fallback = "unknown") {
   return text.replace(/[^\t\x20-\x7e]+/g, "?").slice(0, 120);
 }
 
-function buildSignedStreamPushHeaders({ signed, operation, caller, attempt }) {
+function buildSignedStreamPushHeaders({ signed, operation, caller, attempt, saveMode = "auto", recoveryJobId = null }) {
   return {
     "x-nodevision-peer-payload-base64": encodeBase64Url(signed.payload),
     "x-nodevision-peer-signature": signed.signatureBase64,
@@ -47,6 +47,8 @@ function buildSignedStreamPushHeaders({ signed, operation, caller, attempt }) {
     "x-nodevision-sync-caller": sanitizeHeaderValue(caller),
     "x-nodevision-sync-attempt": String(Number.isFinite(Number(attempt)) ? Math.trunc(Number(attempt)) : 0),
     "x-nodevision-sync-retry": attempt > 0 ? "true" : "false",
+    "x-nodevision-sync-save-mode": sanitizeHeaderValue(saveMode, "auto"),
+    ...(recoveryJobId ? { "x-nodevision-sync-job-id": sanitizeHeaderValue(recoveryJobId, "sync") } : {}),
   };
 }
 
@@ -150,16 +152,16 @@ function createStreamSigningError(err, endpointLabel) {
   return wrapped;
 }
 
-async function createSignedStreamPushRequest({ scope, relativePath, size, sha256, runtimeRoot, attempt, createSignedRequest }) {
+async function createSignedStreamPushRequest({ scope, relativePath, size, sha256, mtimeMs, runtimeRoot, attempt, createSignedRequest }) {
   try {
     if (typeof createSignedRequest === "function") {
       return await createSignedRequest(
-        { scope, relativePath, size, sha256 },
+        { scope, relativePath, size, sha256, mtimeMs },
         { runtimeRoot, attempt },
       );
     }
     return await createSignedScopeFileStreamPush(
-      { scope, relativePath, size, sha256 },
+      { scope, relativePath, size, sha256, mtimeMs },
       { runtimeRoot },
     );
   } catch (err) {
@@ -178,6 +180,8 @@ export async function pushScopeFileStream({
   createSignedRequest,
   operation = "push",
   caller = "normal push",
+  saveMode = "auto",
+  recoveryJobId = null,
 } = {}) {
   const normalizedPeerUrl = normalizePeerUrl(peerUrl);
   const normalizedScope = validateSyncScope(scope);
@@ -195,6 +199,7 @@ export async function pushScopeFileStream({
     throw new Error("local file has invalid size");
   }
   const sha256 = await hashFile(localPath);
+  const mtimeMs = Math.trunc(stat.mtimeMs);
 
   if (shouldCancel?.()) throw createCancelledError();
 
@@ -205,13 +210,14 @@ export async function pushScopeFileStream({
       relativePath: normalizedRelativePath,
       size,
       sha256,
+      mtimeMs,
       runtimeRoot: resolvedRuntimeRoot,
       attempt,
       createSignedRequest,
     });
 
     const streamUrl = new URL(STREAM_UPLOAD_ENDPOINT, `${normalizedPeerUrl}/`);
-    const authHeaders = buildSignedStreamPushHeaders({ signed, operation, caller, attempt });
+    const authHeaders = buildSignedStreamPushHeaders({ signed, operation, caller, attempt, saveMode, recoveryJobId });
 
     logOutgoingScopedStreamRequest({
       endpoint: "scope/file-stream-push",

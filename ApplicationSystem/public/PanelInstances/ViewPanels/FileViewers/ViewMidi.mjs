@@ -963,6 +963,13 @@ function installPlaybackTools(viewState, noteRanges) {
         console.warn("[ViewMIDI] play failed:", err);
       }
     },
+    restart: () => {
+      try {
+        schedule();
+      } catch (err) {
+        console.warn("[ViewMIDI] restart failed:", err);
+      }
+    },
     pause: () => {
       stopAll();
     },

@@ -81,7 +81,11 @@ export function applyGroundMovement({ controls, inputState, movementState, gravi
     nextPosition.z = movementState.planeZ;
   }
 
-  if (nextPosition.y - movementState.playerHeight <= groundLevel) {
+  const footY = nextPosition.y - movementState.playerHeight;
+  const snapDistance = Number.isFinite(movementState.groundSnapDistance) ? movementState.groundSnapDistance : 0.55;
+  const canSnapDown = movementState.isGrounded === true && movementState.velocityY <= 0 && footY <= groundLevel + snapDistance;
+
+  if (footY <= groundLevel || canSnapDown) {
     nextPosition.y = groundLevel + movementState.playerHeight;
     movementState.velocityY = 0;
     movementState.isGrounded = true;

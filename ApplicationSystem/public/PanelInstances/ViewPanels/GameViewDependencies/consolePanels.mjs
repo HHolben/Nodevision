@@ -4,8 +4,8 @@
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 
 const DEFAULT_ENVIRONMENT = {
-  skyColor: "#0f1c2b",
-  floorColor: "#333333",
+  skyColor: "#ffffff",
+  floorColor: "#d8dee4",
   backgroundMode: "color",
   backgroundImage: "",
   floorImage: ""
@@ -357,8 +357,8 @@ function createUsePanelUI() {
     fileInput,
     setStatus: (msg) => { statusLine.textContent = msg || ""; },
     setFields: (env) => {
-      skyInput.value = env.skyColor || "#0f1c2b";
-      floorInput.value = env.floorColor || "#333333";
+      skyInput.value = env.skyColor || "#ffffff";
+      floorInput.value = env.floorColor || "#d8dee4";
     }
   };
 }

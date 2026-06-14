@@ -9,6 +9,7 @@ import {
 } from "/MetaWorld/MetaWorldLayerState.mjs";
 import {
   createDefaultExpressionLayer,
+  createExpressionLayerColliderRef,
   createExpressionLayerObject,
   disposeExpressionObject,
   normalizeExpressionLayer,
@@ -127,6 +128,15 @@ function isExpressionLayerType(type) {
   return type === "functionSurface" || type === "functionCurve" || type === "parametricCurve";
 }
 
+function readExpressionRenderDistance(camera) {
+  const far = Number(camera?.far);
+  return Number.isFinite(far) && far > 0 ? far : 1000;
+}
+
+function getExpressionLayerOptions(camera) {
+  return { renderDistance: readExpressionRenderDistance(camera) };
+}
+
 function updateDefinitionVisibility(def, visible) {
   if (!def || typeof def !== "object") return;
   def.visible = visible;
@@ -163,7 +173,7 @@ function removeObjectFromArray(items, value) {
   if (idx !== -1) items.splice(idx, 1);
 }
 
-function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders }) {
+export function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, camera }) {
   if (!worldData || !Array.isArray(layerEntries)) {
     clearActiveMetaWorldLayerBridge();
     return;
@@ -171,6 +181,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
 
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
+  const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
   const snapshotWorldObjects = () => JSON.stringify(Array.isArray(worldData?.objects) ? worldData.objects : []);
   const recordHistorySnapshot = () => {
     if (history.isRestoring) return;
@@ -205,7 +216,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
     entry.object3d.userData.isSolid = enabled;
     entry.object3d.userData.physicsEnabled = enabled;
     if (!enabled || !Array.isArray(colliders)) return;
-    const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(entry.object3d) };
+    const colliderRef = createExpressionLayerColliderRef(THREE, entry.object3d, entry.def, readBridgeExpressionOptions()) || { type: "box", box: new THREE.Box3().setFromObject(entry.object3d) };
     colliders.push(colliderRef);
     entry.object3d.userData.colliderRef = colliderRef;
   };
@@ -321,9 +332,9 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
       if (!THREE || !scene || !Array.isArray(objects) || !worldData) return null;
       const existing = new Set(layerEntries.map((entry) => entry.id));
       this.recordHistory();
-      let layer = createDefaultExpressionLayer(overrides);
+      let layer = createDefaultExpressionLayer(overrides, readBridgeExpressionOptions());
       while (existing.has(layer.id)) {
-        layer = createDefaultExpressionLayer({ ...layer, id: `expr_surface_${Date.now().toString(36)}_${Math.floor(Math.random() * 1000)}` });
+        layer = createDefaultExpressionLayer({ ...layer, id: "expr_surface_" + Date.now().toString(36) + "_" + Math.floor(Math.random() * 1000) }, readBridgeExpressionOptions());
       }
       worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
       worldData.objects.push(layer);
@@ -357,9 +368,9 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
       const entry = layerEntries.find((candidate) => candidate.id === objectId);
       if (!entry?.def || !THREE || !scene) return false;
       try {
-        const normalized = normalizeExpressionLayer(entry.def);
+        const normalized = normalizeExpressionLayer(entry.def, readBridgeExpressionOptions());
         Object.assign(entry.def, normalized);
-        const result = createExpressionLayerObject(THREE, entry.def);
+        const result = createExpressionLayerObject(THREE, entry.def, readBridgeExpressionOptions());
         Object.assign(entry.def, result.layer);
         if (entry.object3d) {
           removeColliderRef(entry.object3d);
@@ -369,6 +380,7 @@ function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries
         }
         entry.object3d = result.object3d;
         entry.object3d.userData.metaWorldLayerId = entry.id;
+        entry.object3d.userData.expressionLayerDefinition = entry.def;
         attachLayerBreakHandler(entry);
         scene.add(entry.object3d);
         objects.push(entry.object3d);
@@ -494,8 +506,8 @@ function convertMetaWorldToLegacyWorld(world) {
           ...(world.playerRules || world.metadata?.playerRules || {})
         },
         environment: {
-          skyColor: "#cfe7ff",
-          floorColor: "#246a4b",
+          skyColor: "#ffffff",
+          floorColor: "#d8dee4",
           backgroundMode: "color",
           backgroundImage: "",
           ...(world.environment || world.metadata?.environment || {})
@@ -746,7 +758,7 @@ function convertMetaWorldToLegacyWorld(world) {
         ...(world.playerRules || world.metadata?.playerRules || {})
       },
       environment: {
-        skyColor: "#eef2f4",
+        skyColor: "#ffffff",
         floorColor,
         backgroundMode: "color",
         backgroundImage: "",
@@ -1017,14 +1029,15 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       worldData = convertMetaWorldToLegacyWorld(worldData);
     }
     resetLegacyWorldScene(window.VRWorldContext, state, worldData);
-    let objectDefs = worldData?.objects || null;
-    if (!objectDefs) {
+    if (!worldData || typeof worldData !== "object") {
       clearActiveMetaWorldLayerBridge();
-      console.warn("World has no objects.");
+      console.warn("World has no definition.");
       return;
     }
+    let objectDefs = Array.isArray(worldData.objects) ? worldData.objects : [];
+    worldData.objects = objectDefs;
 
-    const { scene, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, waterVolumes, measurementVisuals, controls, movementState } = window.VRWorldContext;
+    const { scene, camera, objects, colliders, lights, portals, collisionActions, useTargets, spawnPoints, waterVolumes, measurementVisuals, controls, movementState } = window.VRWorldContext;
     if (state) {
       state.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
     }
@@ -1579,7 +1592,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       } else if (isExpressionLayerType(def.type)) {
         try {
           if (!Array.isArray(def.position)) def.position = [0, 0, 0];
-          const result = createExpressionLayerObject(THREE, def);
+          const result = createExpressionLayerObject(THREE, def, getExpressionLayerOptions(camera || window.VRWorldContext?.camera));
           Object.assign(def, result.layer);
           mesh = result.object3d;
           def.error = "";
@@ -1800,7 +1813,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
         if (((def.type === "equation-collider-plane" && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && def.isWater !== true) {
           if (isExpressionLayerType(def.type) && def.collider?.enabled === true) {
-            const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            const colliderRef = createExpressionLayerColliderRef(THREE, mesh, def, getExpressionLayerOptions(camera || window.VRWorldContext?.camera)) || { type: "box", box: new THREE.Box3().setFromObject(mesh) };
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (portalShape === "box") {
@@ -1852,7 +1865,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
     }
 
-    registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders });
+    registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, camera });
     notifyMetaWorldLayersChanged({ reason: "worldLoaded" });
 
     if (spawnPoints) {

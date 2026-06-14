@@ -31,6 +31,7 @@
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
       "heading": "Equation Object",
+      "script": "equationColliderWidget.mjs",
       "modes": ["Virtual World Editing"],
       "preventDropdown": true
     },

@@ -12,8 +12,8 @@ function normalizeWorldPath(filePath) {
 }
 
 const DEFAULT_ENVIRONMENT = {
-  skyColor: "#0f1c2b",
-  floorColor: "#333333",
+  skyColor: "#ffffff",
+  floorColor: "#d8dee4",
   backgroundMode: "color",
   backgroundImage: ""
 };
@@ -72,6 +72,9 @@ function vec3(v) {
 function getMeshType(mesh) {
   const hint = String(mesh?.userData?.nvType || "").toLowerCase();
   if (hint === "portal") return "portal";
+  if (hint === "functionsurface") return "functionSurface";
+  if (hint === "functioncurve") return "functionCurve";
+  if (hint === "parametriccurve") return "parametricCurve";
   if (
     hint === "box"
     || hint === "sphere"
@@ -249,6 +252,18 @@ function serializeMesh(mesh) {
   if (!mesh?.isMesh) return null;
   const type = getMeshType(mesh);
   if (!type) return null;
+
+  if (mesh.userData?.metaWorldExpressionLayer === true || ["functionSurface", "functionCurve", "parametricCurve"].includes(type)) {
+    const source = mesh.userData?.expressionLayerDefinition && typeof mesh.userData.expressionLayerDefinition === "object"
+      ? mesh.userData.expressionLayerDefinition
+      : {};
+    const def = JSON.parse(JSON.stringify(source));
+    def.id = def.id || mesh.userData?.expressionLayerId || mesh.userData?.metaWorldLayerId || mesh.uuid;
+    def.type = type;
+    def.position = vec3(mesh.position);
+    def.visible = mesh.visible !== false;
+    return def;
+  }
 
   const def = {
     type,

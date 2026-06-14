@@ -20,6 +20,37 @@ function signedPlaneDistance(collider, point) {
   return ((a * point.x) + (b * point.y) + (c * point.z) + d) / len;
 }
 
+function expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY) {
+  if (collider.target?.visible === false || typeof collider.sampleGroundY !== "function") return false;
+
+  const colliderId = collider.layerId || collider.target?.uuid || "expression-heightfield";
+  const activeSurface = movementState?.isGrounded === true
+    && movementState?.activeExpressionTerrainColliderId
+    && movementState.activeExpressionTerrainColliderId === colliderId;
+  if (activeSurface) return false;
+
+  const stepAllowance = Number.isFinite(movementState?.groundSnapDistance)
+    ? Math.max(0.12, movementState.groundSnapDistance)
+    : 0.55;
+  const headPadding = 0.04;
+  const sampleRadius = Math.max(0, playerRadius * 0.65);
+  const offsets = [
+    [0, 0],
+    [sampleRadius, 0],
+    [-sampleRadius, 0],
+    [0, sampleRadius],
+    [0, -sampleRadius]
+  ];
+
+  for (const [dx, dz] of offsets) {
+    const surfaceY = collider.sampleGroundY(nextPosition.x + dx, nextPosition.z + dz);
+    if (!Number.isFinite(surfaceY)) continue;
+    if (surfaceY <= playerMinY + stepAllowance) continue;
+    if (surfaceY < playerMaxY - headPadding) return true;
+  }
+  return false;
+}
+
 export function createCollisionChecker({ colliders, movementState, playerRadius }) {
   return function wouldCollide(nextPosition) {
     if (movementState?.phaseThroughObjects === true) return false;
@@ -50,6 +81,8 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
         if (collider.center.y < playerMinY) dy = playerMinY - collider.center.y;
         else if (collider.center.y > playerMaxY) dy = collider.center.y - playerMaxY;
         if (dx * dx + dy * dy + dz * dz <= totalRadius * totalRadius) return true;
+      } else if (collider.type === "expression-heightfield") {
+        if (expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY)) return true;
       }
     }
     return false;

@@ -11,6 +11,7 @@ import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
 import { createSignedScopeFilePush, createSignedScopeFileRequest, createSignedScopeManifestRequest } from "./ScopePeerSync.mjs";
 import { createCancelledError, pullScopeFileStream } from "./pull-scope-file-stream.mjs";
 import { pushScopeFileStream } from "./push-scope-file-stream.mjs";
+import { createPreOverwriteRecoverySnapshot, createSyncRecoveryJobId } from "./SyncRecovery.mjs";
 
 const hash = (b) => createHash("sha256").update(b).digest("hex");
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
@@ -318,22 +319,49 @@ async function fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { oper
   return body.file;
 }
 
-async function pullOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot }) {
+async function pullOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, saveMode = "auto", recoveryJobId = null, sourceDevice = null, destinationDevice = null, incomingEntry = null }) {
   const remote = await fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { operation: "pull", caller: "normal pull" });
   if (remote.relativePath !== relativePath) throw new Error("mismatched relativePath");
   const buf = Buffer.from(String(remote.contentBase64 || ""), "base64");
   if (buf.toString("base64") !== remote.contentBase64) throw new Error("invalid base64");
   if (buf.length > MAX_FILE_PUSH_BYTES) throw new Error("file too large");
-  if (hash(buf) !== String(remote.sha256 || "")) throw new Error("sha mismatch");
+  const incomingSha = hash(buf);
+  if (incomingSha !== String(remote.sha256 || "")) throw new Error("sha mismatch");
   const scopeRoot = path.resolve(notebookDir, scope);
   const target = path.resolve(scopeRoot, relativePath.slice(`${scope}/`.length));
   if (!isPathInsideScope({ relativePath, scope })) throw new Error("scope escape");
+  const incoming = {
+    size: buf.length,
+    sha256: incomingSha,
+    mtimeMs: Number.isFinite(Number(incomingEntry?.mtimeMs ?? remote.mtimeMs)) ? Math.trunc(Number(incomingEntry?.mtimeMs ?? remote.mtimeMs)) : null,
+  };
   await fs.mkdir(path.dirname(target), { recursive: true });
+  try {
+    const existing = await fs.readFile(target);
+    const existingSha = hash(existing);
+    if (existingSha === incomingSha) {
+      return { relativePath, bytes: buf.length, sha256: incomingSha, mode: "noop", savedRelativePath: relativePath };
+    }
+    await createPreOverwriteRecoverySnapshot({
+      runtimeRoot,
+      jobId: recoveryJobId,
+      scope,
+      relativePath,
+      targetPath: target,
+      operation: saveMode === "replace" ? "replace" : "write",
+      mode: "pull",
+      sourceDevice,
+      destinationDevice,
+      incoming,
+    });
+  } catch (err) {
+    if (err?.code !== "ENOENT") throw err;
+  }
   await fs.writeFile(target, buf);
-  return { relativePath, bytes: buf.length, sha256: hash(buf) };
+  return { relativePath, bytes: buf.length, sha256: incomingSha, mode: saveMode === "replace" ? "replaced" : "created", savedRelativePath: relativePath };
 }
 
-async function pullOneStream({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, shouldCancel, onByteDelta }) {
+async function pullOneStream({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, shouldCancel, onByteDelta, saveMode = "auto", recoveryJobId = null, sourceDevice = null, destinationDevice = null, incomingEntry = null }) {
   const report = await pullScopeFileStream({
     peerUrl,
     scope,
@@ -343,6 +371,11 @@ async function pullOneStream({ peerUrl, scope, relativePath, notebookDir, runtim
     shouldCancel,
     onByteDelta,
     peerLabel: "peer",
+    saveMode,
+    recoveryJobId,
+    sourceDevice,
+    destinationDevice,
+    incomingEntry,
   });
   if (!report?.ok) throw new Error("stream pull did not complete");
   return {
@@ -356,7 +389,7 @@ async function pullOneStream({ peerUrl, scope, relativePath, notebookDir, runtim
   };
 }
 
-async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot }) {
+async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, saveMode = "auto", recoveryJobId = null }) {
   const localPath = resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath });
   const stat = await fs.stat(localPath);
   if (!stat.isFile()) throw new Error("local path is not a file");
@@ -367,11 +400,13 @@ async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot 
       relativePath,
       notebookDir,
       runtimeRoot,
+      saveMode,
+      recoveryJobId,
     });
   }
   const buf = await fs.readFile(localPath);
-  const signed = await createSignedScopeFilePush({ scope, relativePath, contentBase64: buf.toString("base64"), contentType: "application/octet-stream" }, { runtimeRoot });
-  const body = await postJson(peerUrl, "/api/peer/scope/file-push", signed);
+  const signed = await createSignedScopeFilePush({ scope, relativePath, contentBase64: buf.toString("base64"), contentType: "application/octet-stream", mtimeMs: Math.trunc(stat.mtimeMs) }, { runtimeRoot });
+  const body = await postJson(peerUrl, "/api/peer/scope/file-push", { ...signed, saveMode, recoveryJobId });
   const saved = body?.saved && typeof body.saved === "object" ? body.saved : {};
   return {
     relativePath,
@@ -384,7 +419,7 @@ async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot 
   };
 }
 
-async function pushOneStream({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, shouldCancel, onByteDelta }) {
+async function pushOneStream({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, shouldCancel, onByteDelta, saveMode = "auto", recoveryJobId = null }) {
   const report = await pushScopeFileStream({
     peerUrl,
     scope,
@@ -393,6 +428,8 @@ async function pushOneStream({ peerUrl, scope, relativePath, notebookDir, runtim
     runtimeRoot,
     shouldCancel,
     onByteDelta,
+    saveMode,
+    recoveryJobId,
   });
   if (!report?.ok) throw new Error("stream push did not complete");
   return {

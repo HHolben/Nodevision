@@ -365,6 +365,7 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
     "/ToolbarJSONfiles/defaultToolbar.json",
     "/ToolbarJSONfiles/fileToolbar.json",
     "/ToolbarJSONfiles/editToolbar.json",
+    "/ToolbarJSONfiles/stylesToolbar.json",
     "/ToolbarJSONfiles/insertToolbar.json",
     "/ToolbarJSONfiles/settingsToolbar.json",
     "/ToolbarJSONfiles/viewToolbar.json",

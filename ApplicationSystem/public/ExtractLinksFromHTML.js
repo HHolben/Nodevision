@@ -4,16 +4,39 @@
 // Purpose: TODO: Add description of module purpose
 
 
-    // Function to extract hyperlinks from HTML content
+    function shouldIgnoreLink(rawLink) {
+      const link = String(rawLink || '').trim();
+      if (!link || link.startsWith('#')) return true;
+      return /^(data|javascript|mailto|file):/i.test(link) || /^\/\//.test(link);
+    }
+
+    function dedupeLinks(links) {
+      const seen = new Set();
+      return links
+        .map(link => String(link || '').trim())
+        .filter(link => {
+          if (shouldIgnoreLink(link) || seen.has(link)) return false;
+          seen.add(link);
+          return true;
+        });
+    }
+
+    // Function to extract hyperlinks and CSS asset references from HTML content
     function extractHyperlinks(htmlContent) 
     {
-      // Regular expression to match anchor tags with href attributes
-      const anchorTags = htmlContent.match(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi) || [];
-      return anchorTags.map(tag => {
-          const match = tag.match(/href=(["'])(.*?)\1/);
-          return match ? match[2] : null;
-      }).filter(Boolean); // Filter out nulls
+      const links = [];
+      const attrRegex = /(?:href|src|data-nodevision-font-src|data-nodevision-font-stylesheet)\s*=\s*(["'])(.*?)\1/gi;
+      for (const match of htmlContent.matchAll(attrRegex)) {
+        links.push(match[2]);
+      }
+      const cssUrlRegex = /url\(\s*(?:"([^"]+)"|'([^']+)'|([^'"\)]+))\s*\)/gi;
+      for (const match of htmlContent.matchAll(cssUrlRegex)) {
+        links.push(match[1] || match[2] || match[3]);
+      }
+      // External http(s) URLs are left in the result. TODO: create external graph nodes when supported.
+      return dedupeLinks(links);
     }
+
     
 
 

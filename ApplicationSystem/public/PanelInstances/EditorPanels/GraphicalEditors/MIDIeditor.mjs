@@ -1,6 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/MIDIeditor.mjs
 // This file defines browser-side MIDIeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
-// delete-to-rest, and vertical drag pitch editing.
+// note deletion, and vertical drag pitch editing.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { ensureMidEditorModeLayout } from "/panels/workspace.mjs";
@@ -27,8 +27,14 @@ let playbackState = {
   noteStartedAt: 0,
   noteDurationMs: 0,
   currentEntry: null,
+  activeIndex: -1,
   timeoutId: null,
   ctx: null,
+  osc: null,
+  gain: null,
+};
+
+let notePreviewState = {
   osc: null,
   gain: null,
 };
@@ -59,6 +65,8 @@ let resizeHandler = null;
 
 const NOTE_NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
 const DURATION_VALUES = new Set(["w", "h", "q", "8"]);
+const SELECTED_NOTE_STYLE = { fillStyle: "#ff8c00", strokeStyle: "#ff8c00" };
+const PLAYING_NOTE_STYLE = { fillStyle: "#1976d2", strokeStyle: "#1976d2" };
 const MIDI_TICKS_PER_QUARTER = 480;
 const DURATION_TO_TICKS = {
   w: MIDI_TICKS_PER_QUARTER * 4,
@@ -390,6 +398,22 @@ function isIndexSelected(index) {
   return selectedNoteIndices.has(index);
 }
 
+function isIndexPlaying(index) {
+  return playbackState.status === "playing" && playbackState.activeIndex === index;
+}
+
+function applyNoteStyle(vexNote, style) {
+  if (!style || !vexNote) return;
+  vexNote.setStyle(style);
+}
+
+function setPlaybackActiveIndex(index, { rerender = true } = {}) {
+  const next = Number.isInteger(index) && index >= 0 ? index : -1;
+  if (playbackState.activeIndex === next) return;
+  playbackState.activeIndex = next;
+  if (rerender && rendererDiv?.isConnected) renderSheetMusic();
+}
+
 function getSelectedIndices() {
   return [...selectedNoteIndices]
     .filter((idx) => idx >= 0 && idx < currentNotesData.length)
@@ -538,15 +562,18 @@ function makeVexNote(entry, index) {
     const restNote = new VF.StaveNote({
       clef: currentClef || "treble",
       keys: ["b/4"],
-      duration: `${entry.duration || "q"}r`,
+      duration: String(entry.duration || "q") + "r",
     });
     if (isIndexSelected(index)) {
-      restNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
+      applyNoteStyle(restNote, SELECTED_NOTE_STYLE);
     }
     return restNote;
   }
 
   const key = midiToVexKey(Number.isFinite(entry?.midi) ? entry.midi : 60);
+  const style = isIndexPlaying(index)
+    ? PLAYING_NOTE_STYLE
+    : (isIndexSelected(index) ? SELECTED_NOTE_STYLE : null);
   const staveNote = new VF.StaveNote({
     clef: currentClef || "treble",
     keys: [key],
@@ -554,17 +581,17 @@ function makeVexNote(entry, index) {
   });
 
   if (key.includes("#")) {
-    staveNote.addModifier(new VF.Accidental("#"), 0);
+    const accidental = new VF.Accidental("#");
+    if (style && typeof accidental.setStyle === "function") accidental.setStyle(style);
+    staveNote.addModifier(accidental, 0);
   }
-  if (isIndexSelected(index)) {
-    staveNote.setStyle({ fillStyle: "#ff8c00", strokeStyle: "#ff8c00" });
-  }
+  applyNoteStyle(staveNote, style);
   return staveNote;
 }
 
 
 function renderSheetMusic() {
-  if (!rendererDiv || !midiRoot || !currentNotesData.length) return;
+  if (!rendererDiv || !midiRoot) return;
 
   try {
     rendererDiv.innerHTML = "";
@@ -671,6 +698,7 @@ function renderSheetMusic() {
       }
 
       const selected = currentNotesData[idx];
+      previewNoteEntry(selected);
       if (!event.shiftKey && selected && !selected.rest && Number.isFinite(selected.midi)) {
         const dragIndices = getSelectedIndices().filter((noteIndex) => {
           const note = currentNotesData[noteIndex];
@@ -804,19 +832,33 @@ function insertRest() {
   syncMIDIToolbarState();
 }
 
-function replaceSelectedWithRest() {
+function deleteSelectedNotes() {
   const indices = getSelectedIndices();
   if (!indices.length) return;
-  for (const index of indices) {
-    const existing = currentNotesData[index];
-    const duration = DURATION_VALUES.has(existing?.duration) ? existing.duration : "q";
-    currentNotesData[index] = { midi: null, duration, rest: true };
+
+  if (playbackState.status !== "stopped") {
+    stopPlayback({ resetIndex: false, rerender: false });
   }
-  selectedNoteIndex = indices[indices.length - 1];
-  selectedElementType = "rest";
+
+  const deleteSet = new Set(indices);
+  const firstDeleted = indices[0];
+  currentNotesData = currentNotesData.filter((_, index) => !deleteSet.has(index));
+
+  const nextIndex = currentNotesData.length ? Math.min(firstDeleted, currentNotesData.length - 1) : -1;
+  if (nextIndex >= 0) {
+    selectSingleIndex(nextIndex);
+  } else {
+    clearNoteSelection();
+  }
+
   renderSheetMusic();
+  if (nextIndex >= 0) scrollNoteIntoView(nextIndex);
   markDirty();
   syncMIDIToolbarState();
+  if (statusDiv) {
+    const count = indices.length;
+    statusDiv.textContent = "Deleted " + (count > 1 ? count + " notes" : "selected note") + ".";
+  }
 }
 
 function setSelectedDuration(duration) {
@@ -990,6 +1032,10 @@ function handleMIDIAction(callbackKey) {
     window.NodevisionMIDITools?.pause?.();
     return;
   }
+  if (callbackKey === "midiRestartScore") {
+    window.NodevisionMIDITools?.restart?.();
+    return;
+  }
 }
 
 function syncMIDIToolbarState() {
@@ -1017,6 +1063,9 @@ function registerMIDIHotkeys(filePath) {
   }
 
   keydownHandler = (e) => {
+    const target = e.target;
+    if (target?.closest?.("input, textarea, select, [contenteditable='true']")) return;
+
     const key = String(e.key || "").toLowerCase();
 
     if ((e.ctrlKey || e.metaKey) && key === "s") {
@@ -1030,7 +1079,7 @@ function registerMIDIHotkeys(filePath) {
     if (key === "delete" || key === "backspace") {
       if (getSelectedIndices().length) {
         e.preventDefault();
-        replaceSelectedWithRest();
+        deleteSelectedNotes();
       }
     }
   };
@@ -1172,7 +1221,56 @@ function durationToBeats(duration) {
   return 1;
 }
 
-function stopPlayback({ resetIndex = false } = {}) {
+function stopNotePreview() {
+  try {
+    if (notePreviewState.osc) notePreviewState.osc.stop();
+  } catch {}
+  try {
+    notePreviewState.gain?.disconnect?.();
+  } catch {}
+  notePreviewState.osc = null;
+  notePreviewState.gain = null;
+}
+
+function previewNoteEntry(entry, { durationMs = 240 } = {}) {
+  if (entry?.rest || !Number.isFinite(entry?.midi)) return;
+
+  try {
+    const ctx = ensureAudio();
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+
+    stopNotePreview();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    const end = now + Math.max(0.04, durationMs / 1000);
+
+    osc.type = "sine";
+    osc.frequency.value = midiToFrequency(entry.midi);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
+    gain.gain.linearRampToValueAtTime(0, Math.max(now + 0.03, end - 0.02));
+    osc.connect(gain).connect(ctx.destination);
+    notePreviewState.osc = osc;
+    notePreviewState.gain = gain;
+    osc.onended = () => {
+      if (notePreviewState.osc === osc) {
+        notePreviewState.osc = null;
+        notePreviewState.gain = null;
+      }
+      try { gain.disconnect(); } catch {}
+    };
+    osc.start(now);
+    osc.stop(end);
+  } catch (err) {
+    console.warn("MIDI note preview failed:", err);
+  }
+}
+
+function stopPlayback({ resetIndex = false, rerender = true } = {}) {
+  const hadActiveIndex = playbackState.activeIndex >= 0;
   if (playbackState.timeoutId) {
     clearTimeout(playbackState.timeoutId);
     playbackState.timeoutId = null;
@@ -1186,7 +1284,9 @@ function stopPlayback({ resetIndex = false } = {}) {
   playbackState.currentEntry = null;
   playbackState.noteStartedAt = 0;
   playbackState.noteDurationMs = 0;
+  playbackState.activeIndex = -1;
   playbackState.status = "stopped";
+  if (hadActiveIndex && rerender && rendererDiv?.isConnected) renderSheetMusic();
 }
 
 function ensureAudio() {
@@ -1205,12 +1305,13 @@ function scheduleNextNote({ resumeCurrent = false } = {}) {
   if (playbackState.index < 0) playbackState.index = 0;
   if (playbackState.index >= notes.length) {
     stopPlayback({ resetIndex: true });
-    if (statusDiv) statusDiv.innerHTML = "<p style='color:#2e7d32;'>Playback finished.</p>";
+    if (statusDiv) statusDiv.textContent = "Playback finished.";
     syncMIDIToolbarState();
     return;
   }
 
   const entry = notes[playbackState.index];
+  setPlaybackActiveIndex(entry?.rest || !Number.isFinite(entry?.midi) ? -1 : playbackState.index);
   scrollNoteIntoView(playbackState.index, { behavior: "auto" });
   const bpm = clampNumber(playbackTempoBpm, 20, 400, 120);
   const beatSeconds = 60 / bpm;
@@ -1254,7 +1355,34 @@ function scheduleNextNote({ resumeCurrent = false } = {}) {
   }, playMs);
 }
 
+function getSelectedPlaybackStartIndex() {
+  const indices = getSelectedIndices();
+  return indices.length ? indices[0] : -1;
+}
+
+function startPlaybackFromIndex(index) {
+  const notes = Array.isArray(currentNotesData) ? currentNotesData : [];
+  if (!notes.length) {
+    stopPlayback({ resetIndex: true });
+    syncMIDIToolbarState();
+    return;
+  }
+
+  const startIndex = Math.max(0, Math.min(notes.length - 1, Math.floor(Number(index) || 0)));
+  stopPlayback({ resetIndex: false, rerender: false });
+  playbackState.index = startIndex;
+  playbackState.status = "playing";
+  scheduleNextNote();
+  syncMIDIToolbarState();
+}
+
 function playScore() {
+  const selectedStart = getSelectedPlaybackStartIndex();
+  if (selectedStart >= 0) {
+    startPlaybackFromIndex(selectedStart);
+    return;
+  }
+
   if (playbackState.status === "playing") return;
   const wasPaused = playbackState.status === "paused";
   playbackState.status = "playing";
@@ -1264,6 +1392,10 @@ function playScore() {
     scheduleNextNote();
   }
   syncMIDIToolbarState();
+}
+
+function restartScore() {
+  startPlaybackFromIndex(0);
 }
 
 function pauseScore() {
@@ -1280,6 +1412,7 @@ function pauseScore() {
   const elapsed = performance.now() - (playbackState.noteStartedAt || 0);
   playbackState.remainingMs = Math.max(0, (playbackState.noteDurationMs || 0) - elapsed);
   playbackState.status = "paused";
+  setPlaybackActiveIndex(-1);
   syncMIDIToolbarState();
 }
 
@@ -1307,6 +1440,7 @@ export async function renderEditor(filePath, container) {
   window.NodevisionMIDITools = {
     play: playScore,
     pause: pauseScore,
+    restart: restartScore,
     stop: () => stopPlayback({ resetIndex: true }),
     setTempo,
     getTempo: () => playbackTempoBpm,
@@ -1376,7 +1510,7 @@ export async function renderEditor(filePath, container) {
 
   const controlsHint = document.createElement("div");
   controlsHint.style.cssText = "font:12px monospace;color:#555;";
-  controlsHint.textContent = "Click note to select, Delete/Backspace to turn selected note into a rest, drag selected note up/down to change pitch.";
+  controlsHint.textContent = "Click note to select, Delete/Backspace to delete selected notes, drag selected note up/down to change pitch.";
   controls.appendChild(controlsHint);
 
   const editorArea = document.createElement("div");
@@ -1416,7 +1550,7 @@ export async function renderEditor(filePath, container) {
       }
       renderSheetMusic();
       syncMIDIToolbarState();
-      statusDiv.innerHTML = "<p style='color:green;'>MIDI loaded. Insert notes/rests, click to select, delete to rest, drag notes vertically.</p>";
+      statusDiv.innerHTML = "<p style='color:green;'>MIDI loaded. Insert notes/rests, click to select, delete notes, drag notes vertically.</p>";
     } catch (parseErr) {
       console.warn("MIDI parse/render fallback:", parseErr);
       currentNotesData = [{ midi: 60, duration: "q", rest: false }];

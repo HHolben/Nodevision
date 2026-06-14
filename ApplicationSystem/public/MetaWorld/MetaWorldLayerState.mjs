@@ -265,10 +265,10 @@ function renderExpressionLayerDetails(wrapper, entry) {
     grid.appendChild(field.label);
   };
 
-  addNumber("X min", domain.x[0], (value) => ({ domain: { x: [value, domain.x[1]] } }));
-  addNumber("X max", domain.x[1], (value) => ({ domain: { x: [domain.x[0], value] } }));
-  addNumber("Y min", domain.y[0], (value) => ({ domain: { y: [value, domain.y[1]] } }));
-  addNumber("Y max", domain.y[1], (value) => ({ domain: { y: [domain.y[0], value] } }));
+  addNumber("X min", domain.x[0], (value) => ({ domain: { x: [value, domain.x[1]], autoSize: false } }));
+  addNumber("X max", domain.x[1], (value) => ({ domain: { x: [domain.x[0], value], autoSize: false } }));
+  addNumber("Y min", domain.y[0], (value) => ({ domain: { y: [value, domain.y[1]], autoSize: false } }));
+  addNumber("Y max", domain.y[1], (value) => ({ domain: { y: [domain.y[0], value], autoSize: false } }));
   addNumber("T min", domain.t[0], (value) => ({ domain: { t: [value, domain.t[1]] } }));
   addNumber("T max", domain.t[1], (value) => ({ domain: { t: [domain.t[0], value] } }));
   addNumber("Resolution", domain.resolution, (value) => ({ domain: { resolution: Math.round(value) } }), { step: "1", min: 8, max: 160 });

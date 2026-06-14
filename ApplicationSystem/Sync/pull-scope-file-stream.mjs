@@ -12,6 +12,7 @@ import { Readable, Transform } from "node:stream";
 import { createSignedScopeFileRequest, validateScopedRelativePath } from "./ScopePeerSync.mjs";
 import { resolveScopeNotebookPath, validateSyncScope } from "./SyncScopes.mjs";
 import { normalizePeerUrl, resolveRuntimeRoot } from "./sync-sync-test-two-way.mjs";
+import { createPreOverwriteRecoverySnapshot } from "./SyncRecovery.mjs";
 
 const DOWNLOAD_SUFFIX = ".nodevision-download";
 const STREAM_DOWNLOAD_ENDPOINT = "/api/peer/scope/file-stream";
@@ -307,6 +308,10 @@ export async function pullScopeFileStream({
   operation = "pull",
   caller = "normal pull",
   saveMode = "auto",
+  recoveryJobId = null,
+  sourceDevice = null,
+  destinationDevice = null,
+  incomingEntry = null,
 } = {}) {
   const {
     response,
@@ -385,6 +390,11 @@ export async function pullScopeFileStream({
   }
 
   const downloadedSha = streamHash.digest("hex");
+  const incomingMetadata = {
+    size: bytesDownloaded,
+    sha256: downloadedSha,
+    mtimeMs: Number.isFinite(Number(incomingEntry?.mtimeMs)) ? Math.trunc(Number(incomingEntry.mtimeMs)) : null,
+  };
   if (expectedSha && downloadedSha !== expectedSha) {
     await fs.rm(tempPath, { force: true }).catch(() => {});
     throw new Error("scope file-stream sha256 header mismatch");
@@ -400,6 +410,21 @@ export async function pullScopeFileStream({
     if (existingSha === downloadedSha) {
       mode = "noop";
       await fs.rm(tempPath, { force: true });
+    } else if (saveMode === "replace") {
+      await createPreOverwriteRecoverySnapshot({
+        runtimeRoot: resolvedRuntimeRoot,
+        jobId: recoveryJobId,
+        scope: normalizedScope,
+        relativePath: normalizedRelativePath,
+        targetPath,
+        operation: "replace",
+        mode: "pull",
+        sourceDevice,
+        destinationDevice,
+        incoming: incomingMetadata,
+      });
+      await fs.rename(tempPath, targetPath);
+      mode = "replaced";
     } else {
       mode = "conflict";
       conflictRelativePath = buildScopedConflictRelativePath(
@@ -410,6 +435,18 @@ export async function pullScopeFileStream({
       const conflictTargetPath = path.resolve(scopeRoot, conflictRelativePath.slice(`${normalizedScope}/`.length));
       ensureSafeScopeTarget(scopeRoot, conflictTargetPath, "conflict path");
       await fs.mkdir(path.dirname(conflictTargetPath), { recursive: true });
+      await createPreOverwriteRecoverySnapshot({
+        runtimeRoot: resolvedRuntimeRoot,
+        jobId: recoveryJobId,
+        scope: normalizedScope,
+        relativePath: conflictRelativePath,
+        targetPath: conflictTargetPath,
+        operation: "conflict-write",
+        mode: "pull",
+        sourceDevice,
+        destinationDevice,
+        incoming: incomingMetadata,
+      });
       await fs.rename(tempPath, conflictTargetPath);
       savedRelativePath = conflictRelativePath;
     }
@@ -425,6 +462,18 @@ export async function pullScopeFileStream({
         const conflictTargetPath = path.resolve(scopeRoot, conflictRelativePath.slice(`${normalizedScope}/`.length));
         ensureSafeScopeTarget(scopeRoot, conflictTargetPath, "conflict path");
         await fs.mkdir(path.dirname(conflictTargetPath), { recursive: true });
+        await createPreOverwriteRecoverySnapshot({
+          runtimeRoot: resolvedRuntimeRoot,
+          jobId: recoveryJobId,
+          scope: normalizedScope,
+          relativePath: conflictRelativePath,
+          targetPath: conflictTargetPath,
+          operation: "conflict-write",
+          mode: "pull",
+          sourceDevice,
+          destinationDevice,
+          incoming: incomingMetadata,
+        });
         await fs.rename(tempPath, conflictTargetPath);
         savedRelativePath = conflictRelativePath;
       } else {

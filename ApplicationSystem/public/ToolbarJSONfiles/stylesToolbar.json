@@ -1,0 +1,16 @@
+[
+  {
+    "ToolbarCategory": "Styles",
+    "heading": "Font",
+    "modes": ["HTMLediting"],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Styles",
+    "parentHeading": "Font",
+    "heading": "Font Controls",
+    "modes": ["HTMLediting"],
+    "content": "<div id=\"nv-html-font-toolbar\"></div>",
+    "script": "htmlFontToolbar.mjs"
+  }
+]

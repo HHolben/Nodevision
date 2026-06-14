@@ -9,6 +9,7 @@ const DEFAULT_DOMAIN = {
   t: [0, Math.PI * 6],
   resolution: 80,
 };
+const DEFAULT_RENDER_DISTANCE = 1000;
 
 function clampNumber(value, fallback, min = -Infinity, max = Infinity) {
   const n = Number(value);
@@ -23,7 +24,39 @@ function readRange(value, fallback) {
   return a === b ? [...fallback] : [Math.min(a, b), Math.max(a, b)];
 }
 
-export function createDefaultExpressionLayer(overrides = {}) {
+function readRenderDistance(options = {}) {
+  const value = Number(options.renderDistance ?? options.camera?.far);
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_RENDER_DISTANCE;
+  return Math.max(10, Math.min(10000, value));
+}
+
+function rangeMatches(value, fallback) {
+  if (!Array.isArray(value) || value.length < 2) return true;
+  const range = readRange(value, fallback);
+  return Math.abs(range[0] - fallback[0]) < 1e-6 && Math.abs(range[1] - fallback[1]) < 1e-6;
+}
+
+function shouldAutoSizeFunctionDomain(domain = {}) {
+  if (domain?.autoSize === true) return true;
+  if (domain?.autoSize === false) return false;
+  return rangeMatches(domain?.x, DEFAULT_DOMAIN.x) && rangeMatches(domain?.y, DEFAULT_DOMAIN.y);
+}
+
+function createExpressionDomain(overrides = {}, options = {}) {
+  const domain = overrides.domain && typeof overrides.domain === "object" ? overrides.domain : {};
+  const autoSize = shouldAutoSizeFunctionDomain(domain);
+  const distance = readRenderDistance(options);
+  const autoRange = [-distance, distance];
+  return {
+    x: autoSize ? [...autoRange] : readRange(domain.x, DEFAULT_DOMAIN.x),
+    y: autoSize ? [...autoRange] : readRange(domain.y, DEFAULT_DOMAIN.y),
+    t: readRange(domain.t, DEFAULT_DOMAIN.t),
+    resolution: clampNumber(domain.resolution, DEFAULT_DOMAIN.resolution, 8, 160),
+    autoSize,
+  };
+}
+
+export function createDefaultExpressionLayer(overrides = {}, options = {}) {
   const id = overrides.id || `expr_surface_${Date.now().toString(36)}`;
   return {
     id,
@@ -32,12 +65,7 @@ export function createDefaultExpressionLayer(overrides = {}) {
     visible: overrides.visible !== false,
     locked: overrides.locked === true,
     expression: overrides.expression || "z = sin(x) * cos(y)",
-    domain: {
-      x: readRange(overrides.domain?.x, DEFAULT_DOMAIN.x),
-      y: readRange(overrides.domain?.y, DEFAULT_DOMAIN.y),
-      t: readRange(overrides.domain?.t, DEFAULT_DOMAIN.t),
-      resolution: clampNumber(overrides.domain?.resolution, DEFAULT_DOMAIN.resolution, 8, 160),
-    },
+    domain: createExpressionDomain(overrides, options),
     material: {
       color: overrides.material?.color || "#44aa88",
       wireframe: overrides.material?.wireframe === true,
@@ -50,8 +78,72 @@ export function createDefaultExpressionLayer(overrides = {}) {
   };
 }
 
-export function normalizeExpressionLayer(layer = {}) {
-  return createDefaultExpressionLayer(layer);
+export function normalizeExpressionLayer(layer = {}, options = {}) {
+  return createDefaultExpressionLayer(layer, options);
+}
+
+export function createExpressionLayerColliderRef(THREE, object3d, rawLayer = {}, options = {}) {
+  const layer = normalizeExpressionLayer(rawLayer, options);
+  if (!THREE || !object3d?.geometry || layer.type !== "functionSurface") return null;
+
+  const attr = object3d.geometry.getAttribute?.("position");
+  if (!attr || !Number.isFinite(attr.count) || attr.count < 4) return null;
+
+  const inferredResolution = Math.round(Math.sqrt(attr.count)) - 1;
+  const resolution = inferredResolution > 0 && ((inferredResolution + 1) * (inferredResolution + 1) === attr.count)
+    ? inferredResolution
+    : Math.floor(clampNumber(layer.domain?.resolution, DEFAULT_DOMAIN.resolution, 8, 160));
+  const stride = resolution + 1;
+  if (attr.count < stride * stride) return null;
+
+  const [xMin, xMax] = readRange(layer.domain?.x, DEFAULT_DOMAIN.x);
+  const [zMin, zMax] = readRange(layer.domain?.y, DEFAULT_DOMAIN.y);
+  const xSpan = xMax - xMin;
+  const zSpan = zMax - zMin;
+  if (Math.abs(xSpan) < 1e-9 || Math.abs(zSpan) < 1e-9) return null;
+
+  const localPoint = new THREE.Vector3();
+  const worldPoint = new THREE.Vector3();
+  const vertexHeight = (xIndex, zIndex) => attr.getY(zIndex * stride + xIndex);
+
+  function sampleLocalHeight(localX, localZ) {
+    const u = ((localX - xMin) / xSpan) * resolution;
+    const v = ((localZ - zMin) / zSpan) * resolution;
+    if (u < 0 || v < 0 || u > resolution || v > resolution) return null;
+
+    const xIndex = Math.min(resolution - 1, Math.max(0, Math.floor(u)));
+    const zIndex = Math.min(resolution - 1, Math.max(0, Math.floor(v)));
+    const fx = Math.max(0, Math.min(1, u - xIndex));
+    const fz = Math.max(0, Math.min(1, v - zIndex));
+
+    const h00 = vertexHeight(xIndex, zIndex);
+    const h10 = vertexHeight(xIndex + 1, zIndex);
+    const h01 = vertexHeight(xIndex, zIndex + 1);
+    const h11 = vertexHeight(xIndex + 1, zIndex + 1);
+    if (![h00, h10, h01, h11].every(Number.isFinite)) return null;
+
+    if (fx + fz <= 1) {
+      return h00 + fx * (h10 - h00) + fz * (h01 - h00);
+    }
+    return ((1 - fz) * h10) + ((1 - fx) * h01) + ((fx + fz - 1) * h11);
+  }
+
+  return {
+    type: "expression-heightfield",
+    target: object3d,
+    layerId: layer.id,
+    sampleGroundY(worldX, worldZ) {
+      if (object3d.visible === false) return null;
+      object3d.updateMatrixWorld?.(true);
+      localPoint.set(worldX, 0, worldZ);
+      object3d.worldToLocal(localPoint);
+      const localHeight = sampleLocalHeight(localPoint.x, localPoint.z);
+      if (!Number.isFinite(localHeight)) return null;
+      worldPoint.set(localPoint.x, localHeight, localPoint.z);
+      object3d.localToWorld(worldPoint);
+      return Number.isFinite(worldPoint.y) ? worldPoint.y : null;
+    }
+  };
 }
 
 function createMaterial(THREE, layer) {
@@ -149,8 +241,8 @@ export function disposeExpressionObject(object3d) {
   else object3d.material?.dispose?.();
 }
 
-export function createExpressionLayerObject(THREE, rawLayer = {}) {
-  const layer = normalizeExpressionLayer(rawLayer);
+export function createExpressionLayerObject(THREE, rawLayer = {}, options = {}) {
+  const layer = normalizeExpressionLayer(rawLayer, options);
   const parsed = parseExpressionLayerExpression(layer.expression);
   layer.type = parsed.kind;
   let object3d = null;
@@ -165,6 +257,7 @@ export function createExpressionLayerObject(THREE, rawLayer = {}) {
   object3d.userData.nvType = layer.type;
   object3d.userData.metaWorldExpressionLayer = true;
   object3d.userData.expressionLayerId = layer.id;
+  object3d.userData.expressionLayerDefinition = layer;
   object3d.userData.isSolid = layer.collider?.enabled === true;
   object3d.userData.breakable = layer.locked !== true;
   object3d.userData.placedByPlayer = true;

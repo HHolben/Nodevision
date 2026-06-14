@@ -885,6 +885,46 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   movementState.playerHeight = basePlayerHeight;
   const wouldCollide = createCollisionChecker({ colliders, movementState, playerRadius });
 
+  function sampleExpressionTerrainGroundLevel(position, fallbackGroundLevel = groundLevel) {
+    let best = fallbackGroundLevel;
+    let bestColliderId = null;
+    if (!Array.isArray(colliders) || !position) {
+      movementState.pendingExpressionTerrainColliderId = null;
+      return best;
+    }
+
+    const footY = position.y - movementState.playerHeight;
+    const snapDistance = Number.isFinite(movementState.groundSnapDistance) ? movementState.groundSnapDistance : 0.55;
+    const maxStepUp = Math.max(stepHeight, snapDistance) + 0.05;
+    const activeColliderId = movementState.isGrounded === true
+      ? movementState.activeExpressionTerrainColliderId
+      : null;
+    const offsets = [
+      [0, 0],
+      [playerRadius * 0.65, 0],
+      [-playerRadius * 0.65, 0],
+      [0, playerRadius * 0.65],
+      [0, -playerRadius * 0.65]
+    ];
+
+    for (const collider of colliders) {
+      if (collider?.type !== "expression-heightfield" || typeof collider.sampleGroundY !== "function") continue;
+      const colliderId = collider.layerId || collider.target?.uuid || "expression-heightfield";
+      const isActiveSurface = activeColliderId && activeColliderId === colliderId;
+      for (const [dx, dz] of offsets) {
+        const y = collider.sampleGroundY(position.x + dx, position.z + dz);
+        const canStepOnto = Number.isFinite(y) && y <= footY + maxStepUp;
+        if ((canStepOnto || isActiveSurface) && Number.isFinite(y) && y > best) {
+          best = y;
+          bestColliderId = colliderId;
+        }
+      }
+    }
+
+    movementState.pendingExpressionTerrainColliderId = bestColliderId;
+    return best;
+  }
+
   function getPrimaryGamepad() {
     if (typeof navigator === "undefined" || typeof navigator.getGamepads !== "function") return null;
     const pads = navigator.getGamepads();
@@ -2247,6 +2287,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       allowVerticalMovement: movementState.isFlying || swimActive
     });
 
+    const movementGroundLevel = sampleExpressionTerrainGroundLevel(controls.getObject().position, groundLevel);
+
     if (movementState.isFlying || swimActive) {
       const buoyancyBase = Number.isFinite(movementState.playerBuoyancy) ? movementState.playerBuoyancy : 0;
       const waterScale = swimActive && Number.isFinite(activeWaterVolume?.buoyancyScale) ? activeWaterVolume.buoyancyScale : 1;
@@ -2267,13 +2309,22 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         crouchJumpMultiplier: Number.isFinite(movementState.crouchJumpMultiplier)
           ? movementState.crouchJumpMultiplier
           : defaultCrouchJumpMultiplier,
-        groundLevel,
+        groundLevel: movementGroundLevel,
         wouldCollide
       });
     }
 
+    if (!movementState.isFlying && !swimActive) {
+      const onExpressionGround = movementState.isGrounded === true
+        && movementState.pendingExpressionTerrainColliderId
+        && movementGroundLevel > groundLevel + 0.001;
+      movementState.activeExpressionTerrainColliderId = onExpressionGround
+        ? movementState.pendingExpressionTerrainColliderId
+        : null;
+    }
+
     if (movementState.phaseThroughObjects === true) {
-      const floorY = groundLevel + movementState.playerHeight;
+      const floorY = movementGroundLevel + movementState.playerHeight;
       if (playerPos.y < floorY) {
         playerPos.y = floorY;
         movementState.velocityY = Math.max(0, movementState.velocityY || 0);

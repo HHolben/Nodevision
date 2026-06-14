@@ -3,6 +3,7 @@
 
 export function createSceneBase({ THREE, panel, canvas }) {
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color("#ffffff");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1);
   renderer.setSize(panel.clientWidth, panel.clientHeight, false);
@@ -21,7 +22,7 @@ export function createSceneBase({ THREE, panel, canvas }) {
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(50, 50),
-    new THREE.MeshStandardMaterial({ color: 0x444444 })
+    new THREE.MeshStandardMaterial({ color: 0xd8dee4 })
   );
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);

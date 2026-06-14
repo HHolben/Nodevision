@@ -10,6 +10,11 @@
     "callbackKey": "editMenu"
   },
   {
+    "heading": "Styles",
+    "icon": "icons/EditIcon.png",
+    "modes": ["HTMLediting"]
+  },
+  {
     "heading": "Insert",
     "icon": "icons/InsertSensitiveIcon.png",
     "callbackKey": "fileMenu",

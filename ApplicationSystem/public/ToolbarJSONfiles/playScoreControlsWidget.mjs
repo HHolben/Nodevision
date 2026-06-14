@@ -29,6 +29,7 @@ export function initToolbarWidget(hostElement) {
 
   const playBtn = hostElement.querySelector('[data-nv-midi-action="play"]');
   const pauseBtn = hostElement.querySelector('[data-nv-midi-action="pause"]');
+  const restartBtn = hostElement.querySelector('[data-nv-midi-action="restart"]');
   const tempoInput = hostElement.querySelector("[data-nv-midi-tempo]");
   const clickToggle = hostElement.querySelector("[data-nv-midi-click]");
 
@@ -59,6 +60,18 @@ export function initToolbarWidget(hostElement) {
       const tools = getTools();
       if (tools?.pause) tools.pause();
       else tryRouteToActivePanel("midiPauseScore");
+    });
+  }
+
+  if (restartBtn) {
+    restartBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const tools = getTools();
+      if (tools?.restart) tools.restart();
+      else if (tools?.stop && tools?.play) {
+        tools.stop();
+        tools.play();
+      } else tryRouteToActivePanel("midiRestartScore");
     });
   }
 

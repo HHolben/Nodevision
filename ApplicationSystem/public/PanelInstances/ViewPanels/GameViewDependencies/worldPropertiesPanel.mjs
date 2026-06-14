@@ -4,8 +4,8 @@
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 
 const DEFAULT_ENVIRONMENT = {
-  skyColor: "#0f1c2b",
-  floorColor: "#333333",
+  skyColor: "#ffffff",
+  floorColor: "#d8dee4",
   backgroundMode: "color",
   backgroundImage: "",
   floorImage: ""

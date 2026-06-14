@@ -395,6 +395,410 @@ function registerCaretTracking(wysiwyg) {
   };
 }
 
+
+function markHtmlEditorDirty(wysiwyg, filePath = "") {
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.fileIsDirty = true;
+  if (filePath) {
+    window.NodevisionState.selectedFile = filePath;
+    window.NodevisionState.activeEditorFilePath = filePath;
+  }
+  try {
+    wysiwyg?.dispatchEvent?.(new Event("input", { bubbles: true }));
+  } catch {
+    // Older browsers may not support Event options in all contexts.
+  }
+  try {
+    window.dispatchEvent(new CustomEvent("nodevision-editor-dirty", {
+      detail: { filePath: filePath || window.NodevisionState.selectedFile || "" },
+    }));
+  } catch {
+    // Non-critical notification only.
+  }
+}
+
+function sanitizeCssFontValue(value) {
+  const clean = String(value || "").trim();
+  if (!clean) throw new Error("Choose a font family.");
+  if (/[;{}<>]/.test(clean) || /javascript:/i.test(clean) || /<\/?[a-z][\s\S]*>/i.test(clean)) {
+    throw new Error("Font family contains unsafe characters.");
+  }
+  return clean.replace(/\s+/g, " ").slice(0, 220);
+}
+
+function sanitizeSingleFontFamily(value) {
+  const clean = String(value || "").trim().replace(/^['"]|['"]$/g, "");
+  if (!clean) return "";
+  if (/[,;{}<>]/.test(clean) || /javascript:/i.test(clean) || /<\/?[a-z][\s\S]*>/i.test(clean)) {
+    throw new Error("Font family contains unsafe characters.");
+  }
+  return clean.replace(/["']/g, "").replace(/\s+/g, " ").slice(0, 90);
+}
+
+function cssQuote(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/[\n\r]/g, " ");
+}
+
+function cssUrlQuote(value) {
+  return String(value || "")
+    .replace(/\\/g, "/")
+    .replace(/"/g, "%22")
+    .replace(/[\n\r]/g, "");
+}
+
+function quoteFontFamilyIfNeeded(value) {
+  const family = sanitizeSingleFontFamily(value);
+  if (!family) return "";
+  if (/^(serif|sans-serif|monospace|cursive|fantasy|system-ui|inherit|initial|unset)$/i.test(family)) {
+    return family;
+  }
+  if (/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(family)) return family;
+  return `'${family.replace(/'/g, "\\'")}'`;
+}
+
+function buildFontStack(fontFamilyOrStack, fallback = "") {
+  const stack = sanitizeCssFontValue(fontFamilyOrStack);
+  const safeFallback = fallback ? sanitizeSingleFontFamily(fallback) : "";
+  if (!safeFallback || stack.includes(",")) return stack;
+  if (stack.toLowerCase() === safeFallback.toLowerCase()) return stack;
+  return `${quoteFontFamilyIfNeeded(stack)}, ${safeFallback}`;
+}
+
+function extensionFromFontUrl(value) {
+  const clean = String(value || "").split(/[?#]/)[0].trim().toLowerCase();
+  const match = clean.match(/\.(ttf|otf|woff2?|tff)$/);
+  return match ? `.${match[1]}` : "";
+}
+
+function cssFormatFromFontUrl(value) {
+  const ext = extensionFromFontUrl(value);
+  if (ext === ".ttf") return "truetype";
+  if (ext === ".otf") return "opentype";
+  if (ext === ".woff") return "woff";
+  if (ext === ".woff2") return "woff2";
+  return "";
+}
+
+function sanitizeFontUrl(value) {
+  const clean = String(value || "").trim().replace(/\\/g, "/");
+  if (!clean) throw new Error("Missing font URL.");
+  if (/^(javascript|file|data|mailto):/i.test(clean)) throw new Error("Unsupported font URL protocol.");
+  if (/^\/\//.test(clean)) throw new Error("Use a full http:// or https:// URL.");
+  if (/^[a-z]:\//i.test(clean)) throw new Error("Absolute local font paths are not portable.");
+  if (/[<>{}"';\n\r]/.test(clean)) throw new Error("Font URL contains unsafe characters.");
+  if (/^[a-z][a-z0-9+.-]*:/i.test(clean) && !/^https?:\/\//i.test(clean)) {
+    throw new Error("Only relative, http://, and https:// font URLs are supported.");
+  }
+  return clean;
+}
+
+function shortStableHash(value) {
+  const text = String(value || "");
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash).toString(36).slice(0, 4) || "0";
+}
+
+function basenameWithoutFontExtension(value) {
+  const clean = String(value || "").split(/[?#]/)[0].replace(/\\/g, "/");
+  const name = clean.split("/").filter(Boolean).pop() || "Font";
+  return name.replace(/\.[^.]+$/, "") || "Font";
+}
+
+function createSafeFontFamilyName(sourcePathOrUrl, prefix = "NodevisionFont") {
+  const base = basenameWithoutFontExtension(sourcePathOrUrl)
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "Font";
+  return sanitizeSingleFontFamily(`${prefix}-${base}`);
+}
+
+function createHashedFontFamilyName(sourcePathOrUrl, prefix = "NodevisionFont") {
+  return sanitizeSingleFontFamily(`${createSafeFontFamilyName(sourcePathOrUrl, prefix)}-${shortStableHash(sourcePathOrUrl)}`);
+}
+
+function parseFontFaceEntries(headContainer) {
+  const entries = [];
+  if (!headContainer) return entries;
+  const styles = Array.from(headContainer.querySelectorAll?.("style") || []);
+  for (const style of styles) {
+    const text = style.textContent || "";
+    for (const match of text.matchAll(/@font-face\s*\{[\s\S]*?\}/gi)) {
+      const block = match[0] || "";
+      const familyMatch = block.match(/font-family\s*:\s*(?:"([^"]+)"|'([^']+)'|([^;\n}]+))/i);
+      const srcMatch = block.match(/url\(\s*(?:"([^"]+)"|'([^']+)'|([^\s)]+))\s*\)/i);
+      const family = (familyMatch?.[1] || familyMatch?.[2] || familyMatch?.[3] || "").trim();
+      const src = (srcMatch?.[1] || srcMatch?.[2] || srcMatch?.[3] || "").trim();
+      if (family || src) entries.push({ family, src, block, style });
+    }
+  }
+  return entries;
+}
+
+function ensureNodevisionFontStyleBlock(headContainer) {
+  if (!headContainer) throw new Error("HTML document head is not available.");
+  let style = headContainer.querySelector?.("style[data-nodevision-fonts]");
+  if (!style) {
+    style = document.createElement("style");
+    style.setAttribute("data-nodevision-fonts", "");
+    headContainer.appendChild(style);
+  }
+  return style;
+}
+
+function ensureFontFaceRule(headContainer, options = {}) {
+  const src = sanitizeFontUrl(options.src || options.url || "");
+  const format = String(options.format || cssFormatFromFontUrl(src) || "").trim().toLowerCase();
+  const prefix = options.sourceKind === "web" ? "NodevisionWebFont" : "NodevisionFont";
+  const entries = parseFontFaceEntries(headContainer);
+  const existingBySrc = entries.find((entry) => entry.src === src);
+  if (existingBySrc?.family) return sanitizeSingleFontFamily(existingBySrc.family);
+
+  const namingSource = options.sourceName || src;
+  const uniqueSource = options.src || options.url || namingSource;
+  let family = sanitizeSingleFontFamily(options.fontFamily || createSafeFontFamilyName(namingSource, prefix));
+  if (entries.some((entry) => entry.family === family && entry.src && entry.src !== src)) {
+    family = createHashedFontFamilyName(`${namingSource}-${uniqueSource}`, prefix);
+  }
+
+  const style = ensureNodevisionFontStyleBlock(headContainer);
+  const formatHint = format ? ` format("${cssQuote(format)}")` : "";
+  const rule = `@font-face {\n  font-family: "${cssQuote(family)}";\n  src: url("${cssUrlQuote(src)}")${formatHint};\n}`;
+  const current = (style.textContent || "").trim();
+  style.textContent = current ? `${current}\n\n${rule}\n` : `${rule}\n`;
+  return family;
+}
+
+function inferGoogleFontFamilyFromHref(href) {
+  try {
+    const parsed = new URL(href, window.location.href);
+    const family = parsed.searchParams.get("family");
+    if (!family) return "";
+    return sanitizeSingleFontFamily(family.split(":")[0].replace(/\+/g, " "));
+  } catch {
+    return "";
+  }
+}
+
+function ensureFontStylesheetLink(headContainer, options = {}) {
+  if (!headContainer) throw new Error("HTML document head is not available.");
+  const href = sanitizeFontUrl(options.href || options.url || "");
+  const existing = Array.from(headContainer.querySelectorAll?.('link[rel~="stylesheet"]') || [])
+    .find((link) => link.getAttribute("href") === href);
+  if (existing) {
+    existing.setAttribute("data-nodevision-font-stylesheet", "");
+    if (options.fontFamily) existing.setAttribute("data-nodevision-font-family", sanitizeSingleFontFamily(options.fontFamily));
+    return existing;
+  }
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  link.setAttribute("data-nodevision-font-stylesheet", "");
+  if (options.fontFamily) link.setAttribute("data-nodevision-font-family", sanitizeSingleFontFamily(options.fontFamily));
+  headContainer.appendChild(link);
+  return link;
+}
+
+function restoreEditorSelectionForStyle(wysiwyg) {
+  const preferredRange = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
+  const range = isRangeInsideEditor(wysiwyg, preferredRange) ? preferredRange.cloneRange() : null;
+  if (!range) return null;
+  applySelectionRange(range);
+  wysiwyg.focus();
+  return range;
+}
+
+function nearestStyleTargetForRange(wysiwyg, range) {
+  if (!range) return null;
+  let node = range.startContainer;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+  if (!(node instanceof Element)) node = node?.parentElement || null;
+  if (!node || !wysiwyg.contains(node)) return null;
+  return node.closest?.("span,a,b,strong,i,em,u,s,small,mark,p,li,div,h1,h2,h3,h4,h5,h6") || wysiwyg;
+}
+
+function applyFontStackToFragment(fragment, fontStack) {
+  const textNodes = [];
+  const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_ACCEPT;
+      if (["STYLE", "SCRIPT"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (parent.closest?.("[contenteditable='false']")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  for (const node of textNodes) {
+    const span = document.createElement("span");
+    span.style.fontFamily = fontStack;
+    node.parentNode.insertBefore(span, node);
+    span.appendChild(node);
+  }
+
+  if (!textNodes.length && fragment.childNodes.length) {
+    const span = document.createElement("span");
+    span.style.fontFamily = fontStack;
+    while (fragment.firstChild) span.appendChild(fragment.firstChild);
+    fragment.appendChild(span);
+  }
+}
+
+function applyFontFamilyToWysiwygSelection(wysiwyg, fontFamilyOrStack, fallback = "") {
+  const fontStack = buildFontStack(fontFamilyOrStack, fallback);
+  const range = restoreEditorSelectionForStyle(wysiwyg);
+  if (!range) throw new Error("Select text in the HTML editor first.");
+
+  if (range.collapsed) {
+    const target = nearestStyleTargetForRange(wysiwyg, range);
+    if (!target) throw new Error("No editable text target found.");
+    target.style.fontFamily = fontStack;
+    markHtmlEditorDirty(wysiwyg);
+    rememberCurrentSelectionRange(wysiwyg);
+    return;
+  }
+
+  const fragment = range.extractContents();
+  applyFontStackToFragment(fragment, fontStack);
+  const container = document.createElement("span");
+  container.setAttribute("data-nv-temp-font-selection", "");
+  container.appendChild(fragment);
+  range.insertNode(container);
+
+  const firstInserted = container.firstChild;
+  const lastInserted = container.lastChild;
+  while (container.firstChild) container.parentNode.insertBefore(container.firstChild, container);
+  if (firstInserted && lastInserted && firstInserted.parentNode && lastInserted.parentNode) {
+    const newRange = document.createRange();
+    newRange.setStartBefore(firstInserted);
+    newRange.setEndAfter(lastInserted);
+    applySelectionRange(newRange);
+  }
+  container.remove();
+  rememberCurrentSelectionRange(wysiwyg);
+  markHtmlEditorDirty(wysiwyg);
+}
+
+function removeFontFamilyFromElement(el) {
+  if (!(el instanceof Element)) return;
+  if (el.style?.fontFamily) el.style.fontFamily = "";
+  if (el.getAttribute("style") === "") el.removeAttribute("style");
+  if (el.tagName === "FONT" && el.hasAttribute("face")) el.removeAttribute("face");
+}
+
+function unwrapStyleEmptySpans(root) {
+  const spans = Array.from(root.querySelectorAll?.("span") || []);
+  for (const span of spans) {
+    if (span.attributes.length > 0) continue;
+    const parent = span.parentNode;
+    if (!parent) continue;
+    while (span.firstChild) parent.insertBefore(span.firstChild, span);
+    span.remove();
+  }
+}
+
+function removeFontFamilyInTree(root) {
+  if (root instanceof Element) removeFontFamilyFromElement(root);
+  const elements = Array.from(root.querySelectorAll?.("[style],font") || []);
+  elements.forEach(removeFontFamilyFromElement);
+  unwrapStyleEmptySpans(root);
+}
+
+function removeFontFamilyFromWysiwygSelection(wysiwyg) {
+  const range = restoreEditorSelectionForStyle(wysiwyg);
+  if (!range) throw new Error("Select text in the HTML editor first.");
+
+  if (range.collapsed) {
+    const target = nearestStyleTargetForRange(wysiwyg, range);
+    if (target) removeFontFamilyFromElement(target);
+    markHtmlEditorDirty(wysiwyg);
+    rememberCurrentSelectionRange(wysiwyg);
+    return;
+  }
+
+  const fragment = range.extractContents();
+  removeFontFamilyInTree(fragment);
+  const container = document.createElement("span");
+  container.setAttribute("data-nv-temp-font-selection", "");
+  container.appendChild(fragment);
+  range.insertNode(container);
+
+  const firstInserted = container.firstChild;
+  const lastInserted = container.lastChild;
+  while (container.firstChild) container.parentNode.insertBefore(container.firstChild, container);
+  if (firstInserted && lastInserted && firstInserted.parentNode && lastInserted.parentNode) {
+    const newRange = document.createRange();
+    newRange.setStartBefore(firstInserted);
+    newRange.setEndAfter(lastInserted);
+    applySelectionRange(newRange);
+  }
+  container.remove();
+  rememberCurrentSelectionRange(wysiwyg);
+  markHtmlEditorDirty(wysiwyg);
+}
+
+function collectDocumentFonts(headContainer, wysiwyg) {
+  const fonts = [];
+  const add = (family, stack = "") => {
+    const safe = sanitizeSingleFontFamily(family || "");
+    if (!safe) return;
+    if (fonts.some((item) => item.family === safe)) return;
+    fonts.push({ family: safe, label: safe, stack: stack || quoteFontFamilyIfNeeded(safe) });
+  };
+
+  parseFontFaceEntries(headContainer).forEach((entry) => add(entry.family));
+  Array.from(headContainer?.querySelectorAll?.("link[data-nodevision-font-stylesheet],link[rel~='stylesheet']") || [])
+    .forEach((link) => add(link.getAttribute("data-nodevision-font-family") || inferGoogleFontFamilyFromHref(link.getAttribute("href") || "")));
+  Array.from(wysiwyg?.querySelectorAll?.("[style]") || [])
+    .forEach((el) => {
+      const stack = el.style?.fontFamily || "";
+      if (!stack) return;
+      const first = stack.split(",")[0].replace(/^['"]|['"]$/g, "");
+      add(first, stack);
+    });
+  return fonts;
+}
+
+function applyFontReferenceToWysiwygSelection({ wysiwyg, headContainer, filePath = "", ref = {} } = {}) {
+  if (!ref || typeof ref !== "object") throw new Error("Missing font reference.");
+  let family = "";
+  let fallback = ref.fallback || "sans-serif";
+
+  if (ref.kind === "notebook-font") {
+    family = ensureFontFaceRule(headContainer, {
+      src: ref.src,
+      format: ref.format,
+      sourceName: ref.sourceName || ref.notebookPath || ref.src,
+      fontFamily: ref.fontFamily,
+      sourceKind: "notebook",
+    });
+  } else if (ref.kind === "web-font-file") {
+    family = ensureFontFaceRule(headContainer, {
+      src: ref.src || ref.url,
+      format: ref.format,
+      sourceName: ref.sourceName || ref.url || ref.src,
+      fontFamily: ref.fontFamily,
+      sourceKind: "web",
+    });
+  } else if (ref.kind === "web-font-stylesheet") {
+    family = sanitizeSingleFontFamily(ref.fontFamily || inferGoogleFontFamilyFromHref(ref.href || ""));
+    if (!family) throw new Error("Missing web font family name.");
+    ensureFontStylesheetLink(headContainer, { href: ref.href, fontFamily: family });
+  } else {
+    throw new Error("Unsupported font reference.");
+  }
+
+  applyFontFamilyToWysiwygSelection(wysiwyg, quoteFontFamilyIfNeeded(family), fallback);
+  markHtmlEditorDirty(wysiwyg, filePath);
+  return family;
+}
+
 function getActiveLayoutCanvas(wysiwyg) {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
@@ -3328,6 +3732,11 @@ export async function renderEditor(filePath, container, options = {}) {
   const editorMode = options?.mode || "HTMLediting";
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.currentMode = editorMode;
+  window.NodevisionState.selectedFile = filePath;
+  window.NodevisionState.activeEditorFilePath = filePath;
+  window.currentActiveFilePath = filePath;
+  window.filePath = filePath;
+  window.selectedFilePath = filePath;
   // Reset any previous layer context before creating a fresh one for this document.
   window.HTMLLayersContext = null;
   updateToolbarState({
@@ -3459,6 +3868,34 @@ export async function renderEditor(filePath, container, options = {}) {
     appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
     ensureWrappingForEditableText(wysiwyg);
 
+    window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
+      saveCurrentSelection: () => {
+        rememberCurrentSelectionRange(wysiwyg);
+        return true;
+      },
+      restoreSavedSelection: () => {
+        const range = getRememberedSelectionRange(wysiwyg);
+        if (!range) return false;
+        applySelectionRange(range);
+        wysiwyg.focus();
+        return true;
+      },
+      applyFontFamilyToSelection: (fontFamilyOrStack, fallback = "") => {
+        applyFontFamilyToWysiwygSelection(wysiwyg, fontFamilyOrStack, fallback);
+      },
+      removeFontFamilyFromSelection: () => {
+        removeFontFamilyFromWysiwygSelection(wysiwyg);
+      },
+      applyFontReferenceToSelection: (ref) => applyFontReferenceToWysiwygSelection({
+        wysiwyg,
+        headContainer: headClone,
+        filePath,
+        ref,
+      }),
+      getDocumentFonts: () => collectDocumentFonts(headClone, wysiwyg),
+      markDirty: () => markHtmlEditorDirty(wysiwyg, filePath),
+    });
+
     updateWordCount();
 
     // Saving function
@@ -3494,6 +3931,16 @@ export async function renderEditor(filePath, container, options = {}) {
       const doc = parser.parseFromString(html, "text/html");
       wysiwyg.innerHTML = "";
       hidden.innerHTML = "";
+      headClone.innerHTML = "";
+      for (const el of doc.head.children) {
+        if (el.tagName === "SCRIPT") {
+          const placeholder = document.createElement("div");
+          placeholder.dataset.script = el.textContent;
+          hidden.appendChild(placeholder);
+        } else {
+          headClone.appendChild(el.cloneNode(true));
+        }
+      }
 
       appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
       ensureWrappingForEditableText(wysiwyg);

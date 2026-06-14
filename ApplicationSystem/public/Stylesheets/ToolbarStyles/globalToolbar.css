@@ -55,6 +55,26 @@
   background: #ddd;
 }
 
+.toolbar-dropdown-button {
+  width: 100%;
+  min-width: 160px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #111;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.toolbar-dropdown-button:hover {
+  background: #e5e5e5;
+}
+
 /* Disabled state */
 .toolbar-main-button:disabled {
   opacity: 0.45;
@@ -141,4 +161,17 @@ html[data-nv-theme="dark"] .toolbar-main-button:hover {
 html[data-nv-theme="dark"] .toolbar-dropdown-panel {
   background: #0f172a;
   border: 1px solid #334155;
+}
+
+html[data-nv-theme="dark"] .toolbar-dropdown-button {
+  background: transparent;
+  color: #f5f5f5;
+}
+
+html[data-nv-theme="dark"] .toolbar-dropdown-button:hover {
+  background: #1f2937;
+}
+
+html[data-nv-theme="dark"] .toolbar-button[data-heading="dark mode"] .toolbar-dropdown-button {
+  color: #fff;
 }

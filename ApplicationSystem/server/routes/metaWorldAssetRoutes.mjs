@@ -60,6 +60,20 @@ function defaultWorld(fileName) {
     worldType: "NodevisionMetaWorld",
     name: path.basename(fileName || "Meta World"),
     type: "meta-world",
+    metadata: {
+      environment: {
+        skyColor: "#ffffff",
+        floorColor: "#d8dee4",
+        backgroundMode: "color",
+        backgroundImage: "",
+      },
+    },
+    environment: {
+      skyColor: "#ffffff",
+      floorColor: "#d8dee4",
+      backgroundMode: "color",
+      backgroundImage: "",
+    },
     objects: [],
   };
 }
