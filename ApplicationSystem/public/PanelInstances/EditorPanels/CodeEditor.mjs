@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs
 // This file defines browser-side Code Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
+import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus, setWordCountVisibility } from "/StatusBar.mjs";
 
 let editorInstance = null;
@@ -118,6 +119,9 @@ export async function openCodeEditor(filePath) {
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = filePath;
   window.NodevisionState.activeEditorFilePath = filePath;
+  window.NodevisionState.currentMode = "CodeEditing";
+  window.NodevisionState.activeActionHandler = null;
+  updateToolbarState({ currentMode: "CodeEditing", selectedFile: filePath, activeEditorFilePath: filePath, activeActionHandler: null });
 
   // 🧹 Clear existing content of the selected cell (but keep the element itself)
   targetCell.innerHTML = "";

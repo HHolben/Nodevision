@@ -2,7 +2,7 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { ensureKMLEditorModeLayout, ensureKMLViewerModeLayout } from "/panels/workspace.mjs";
 import { parseKML, refreshKMLRecords } from "./KMLParser.mjs";
 import { createKMLLayerTree } from "./KMLLayerTree.mjs";
-import { createKMLMapRenderer, normalizeKMLViewType } from "./KMLMapRenderer.mjs";
+import { createKMLMapRenderer, normalizeKMLViewType, KML_VIEW_TYPES } from "./KMLMapRenderer.mjs";
 import { createKMLPropertyPanel } from "./KMLPropertyPanel.mjs";
 import {
   createPlacemark,
@@ -43,6 +43,13 @@ function injectKMLStyles() {
     .nv-kml-map-inner{position:absolute;inset:0;background:#d9e2ec}
     .nv-kml-status{position:absolute;left:8px;right:8px;bottom:8px;z-index:500;padding:5px 8px;background:rgba(248,250,252,.92);border:1px solid #c8d0da;border-radius:4px;color:#475569;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
     .nv-kml-status[data-tone="error"]{color:#b42318;background:rgba(255,241,240,.96)}
+    .nv-kml-aviation-status{position:absolute;left:8px;top:8px;z-index:510;max-width:min(560px,calc(100% - 16px));padding:6px 8px;background:rgba(248,250,252,.94);border:1px solid #c8d0da;border-radius:4px;color:#334155;font:12px/1.35 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 1px 6px rgba(15,23,42,.16);display:none;pointer-events:none}
+    .nv-kml-aviation-status[data-visible="true"]{display:block}
+    .nv-kml-aviation-status[data-tone="warning"]{background:rgba(255,251,235,.96);border-color:#f59e0b;color:#92400e}
+    .nv-kml-aviation-status[data-tone="error"]{background:rgba(255,241,240,.96);border-color:#fda29b;color:#b42318}
+    .nv-kml-aviation-inline{max-width:280px;padding:7px 9px;background:rgba(248,250,252,.96);border:1px solid #c8d0da;border-radius:4px;color:#334155;font:12px/1.35 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 1px 6px rgba(15,23,42,.18)}
+    .nv-kml-aviation-inline-warning{background:rgba(255,251,235,.96);border-color:#f59e0b;color:#92400e}
+    .nv-kml-aviation-inline-error{background:rgba(255,241,240,.96);border-color:#fda29b;color:#b42318}
     .nv-kml-tree{padding:6px;font:13px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f2933}
     .nv-kml-tree-row{display:grid;grid-template-columns:18px 42px minmax(0,1fr);align-items:center;gap:6px;width:100%;border:0;background:transparent;border-radius:4px;padding-top:5px;padding-bottom:5px;text-align:left;color:#1f2933;cursor:pointer}
     .nv-kml-tree-row:hover{background:#e6eef8}
@@ -76,7 +83,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   mapNode.className = "nv-kml-map-inner";
   const status = document.createElement("div");
   status.className = "nv-kml-status";
-  shell.append(mapNode, status);
+  const aviationStatus = document.createElement("div");
+  aviationStatus.className = "nv-kml-aviation-status";
+  shell.append(mapNode, aviationStatus, status);
   container.appendChild(shell);
   showStatus(status, `Loading ${cleanPath}...`);
 
@@ -84,6 +93,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   let selectedId = null;
   let renderer = null;
   let viewType = normalizeKMLViewType(options.viewType || window.localStorage?.getItem("nodevision.kml.viewType") || "globe");
+  let aviationChartPackPath = normalizeNotebookPath(options.aviationChartPackPath || "");
+  if (!aviationChartPackPath) {
+    try {
+      aviationChartPackPath = normalizeNotebookPath(window.sessionStorage?.getItem("nodevision.kml.aviationChartPackPath") || "");
+    } catch {}
+  }
+  let aviationChartStatus = null;
   let layersContext = null;
   let propertiesContext = null;
   const layerHosts = new Set();
@@ -91,6 +107,49 @@ export async function renderKMLEditor(filePath, container, options = {}) {
 
   function selectedRecord() {
     return selectedId ? state?.recordsById.get(selectedId) : null;
+  }
+
+  function viewTypeLabel(type) {
+    const normalized = normalizeKMLViewType(type);
+    if (normalized === KML_VIEW_TYPES.AVIATION) return "aviation map";
+    if (normalized === KML_VIEW_TYPES.MAP) return "street map";
+    return "globe";
+  }
+
+  function renderAviationStatus(info = aviationChartStatus) {
+    if (viewType !== KML_VIEW_TYPES.AVIATION) {
+      aviationStatus.dataset.visible = "false";
+      aviationStatus.textContent = "";
+      return;
+    }
+
+    const statusInfo = info || {
+      state: aviationChartPackPath ? "loading" : "empty",
+      tone: aviationChartPackPath ? "info" : "warning",
+      message: aviationChartPackPath ? "Loading aviation chart layer..." : "No aviation chart layer loaded. Import or select an aviation chart pack.",
+    };
+    const chartPack = statusInfo.chartPack;
+    if (chartPack) {
+      aviationStatus.textContent = "Chart: " + chartPack.name + " | Effective: " + (chartPack.effectiveDate || "Unknown") + " | Expires: " + (chartPack.expirationDate || "Unknown") + " | " + (statusInfo.message || "Verify chart currency before flight.");
+    } else {
+      aviationStatus.textContent = statusInfo.message || "No aviation chart layer loaded. Import or select an aviation chart pack.";
+    }
+    aviationStatus.dataset.tone = statusInfo.tone || "info";
+    aviationStatus.dataset.visible = "true";
+  }
+
+  function handleBasemapStatus(info = {}) {
+    aviationChartStatus = info;
+    renderAviationStatus(info);
+    if (viewType === KML_VIEW_TYPES.AVIATION && info.message) {
+      const prefix = info.state === "loaded" && info.chartPack?.name ? "Aviation chart: " + info.chartPack.name + ". " : "";
+      showStatus(status, prefix + info.message, info.tone === "error" ? "error" : "");
+    }
+    updateToolbarState({
+      kmlAviationChartPackPath: aviationChartPackPath,
+      kmlAviationChartState: info.state || "",
+    });
+    dispatchKMLChange("aviation-chart", { aviationChartPackPath, aviationChartStatus: info });
   }
 
   function dispatchKMLChange(reason, extra = {}) {
@@ -239,8 +298,22 @@ export async function renderKMLEditor(filePath, container, options = {}) {
 
   async function initRenderer({ fit = false, flyToSelected = false } = {}) {
     renderer?.destroy?.();
+    if (viewType === KML_VIEW_TYPES.AVIATION) {
+      aviationChartStatus = {
+        state: "loading",
+        tone: aviationChartPackPath ? "info" : "warning",
+        message: aviationChartPackPath ? "Loading aviation chart layer..." : "No aviation chart layer loaded. Import or select an aviation chart pack.",
+        chartPack: null,
+      };
+      renderAviationStatus(aviationChartStatus);
+    } else {
+      aviationChartStatus = null;
+      renderAviationStatus(null);
+    }
     renderer = await createKMLMapRenderer(mapNode, {
       viewType,
+      aviationChartPackPath,
+      onBasemapStatus: handleBasemapStatus,
       onSelect: (record) => selectRecord(record, false),
       onGeometryChange: (record, coords) => {
         handleCoordinates(record, coords.map((coord) => String(coord.lon) + "," + String(coord.lat) + (coord.alt !== null ? "," + String(coord.alt) : "")).join(" "));
@@ -253,14 +326,16 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     if (flyToSelected && selected?.geometry) renderer.flyToRecord(selected);
     else if (fit) renderer.fitAll();
     if (window.NodevisionState) window.NodevisionState.kmlViewType = viewType;
-    if (window.NodevisionState?.currentMode === nodevisionMode) updateToolbarState({ kmlViewType: viewType });
-    dispatchKMLChange("view-type", { viewType });
+    if (window.NodevisionState?.currentMode === nodevisionMode) updateToolbarState({ kmlViewType: viewType, kmlAviationChartPackPath: aviationChartPackPath });
+    dispatchKMLChange("view-type", { viewType, aviationChartPackPath });
   }
 
   async function setViewType(nextViewType) {
     const normalized = normalizeKMLViewType(nextViewType);
+    const label = viewTypeLabel(normalized);
     if (normalized === viewType) {
-      showStatus(status, "Already viewing KML as " + (normalized === "map" ? "map projection" : "globe") + ".");
+      renderAviationStatus();
+      showStatus(status, "Already viewing KML as " + label + ".");
       return;
     }
     const hadSelection = Boolean(selectedRecord()?.geometry);
@@ -268,11 +343,55 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     try {
       window.localStorage?.setItem("nodevision.kml.viewType", viewType);
     } catch {}
-    showStatus(status, "Switching to " + (viewType === "map" ? "map projection" : "globe") + " view...");
+    showStatus(status, "Switching to " + label + " view...");
     await initRenderer({ fit: !hadSelection, flyToSelected: hadSelection });
     refreshLayerHosts();
     refreshPropertyHosts();
-    showStatus(status, "Viewing KML as " + (viewType === "map" ? "map projection" : "globe") + ".");
+    if (viewType === KML_VIEW_TYPES.AVIATION && aviationChartStatus?.message) {
+      showStatus(status, aviationChartStatus.message, aviationChartStatus.tone === "error" ? "error" : "");
+    } else {
+      showStatus(status, "Viewing KML as " + label + ".");
+    }
+  }
+
+  async function setAviationChartPackPath(nextPath = "") {
+    const next = normalizeNotebookPath(nextPath);
+    aviationChartPackPath = next;
+    try {
+      if (next) window.sessionStorage?.setItem("nodevision.kml.aviationChartPackPath", next);
+      else window.sessionStorage?.removeItem("nodevision.kml.aviationChartPackPath");
+    } catch {}
+    updateToolbarState({ kmlAviationChartPackPath: aviationChartPackPath });
+    dispatchKMLChange("aviation-chart-pack-path", { aviationChartPackPath });
+
+    if (viewType === KML_VIEW_TYPES.AVIATION) {
+      showStatus(status, next ? "Loading aviation chart pack " + next + "..." : "Cleared aviation chart pack.");
+      await initRenderer({ fit: false, flyToSelected: Boolean(selectedRecord()?.geometry) });
+      if (!next) showStatus(status, "No aviation chart layer loaded. Import or select an aviation chart pack.");
+      return true;
+    }
+
+    showStatus(status, next ? "Aviation chart pack selected: " + next : "Aviation chart pack cleared.");
+    return true;
+  }
+
+  function selectAviationChartPack() {
+    if (typeof window.prompt !== "function") {
+      showStatus(status, "Enter a Notebook-relative chart-pack.json path from the Aviation toolbar controls.", "error");
+      return false;
+    }
+    const next = window.prompt("Notebook path to chart-pack.json", aviationChartPackPath || "Aviation/Charts/FAA_Sectional_Example/chart-pack.json");
+    if (next === null || typeof next === "undefined") return false;
+    return setAviationChartPackPath(next);
+  }
+
+  function clearAviationChartPack() {
+    return setAviationChartPackPath("");
+  }
+
+  function showAviationChartImportPlaceholder() {
+    showStatus(status, "Aviation chart import will convert FAA GeoTIFF, geospatial PDF, or MBTiles sources into a local Nodevision chart pack. This phase currently supports loading existing chart-pack.json tile packs.");
+    return true;
   }
 
   function addPlacemark() {
@@ -364,6 +483,10 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   }
 
   function handleToolbarAction(action) {
+    const actionKey = String(action || "");
+    if (actionKey.startsWith("setAviationChartPack:")) {
+      return setAviationChartPackPath(actionKey.slice("setAviationChartPack:".length));
+    }
     const actions = {
       addPlacemark,
       drawPath,
@@ -381,10 +504,18 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       viewXml,
       viewTypeGlobe: () => setViewType("globe"),
       viewTypeMap: () => setViewType("map"),
+      viewTypeStreet: () => setViewType("map"),
+      viewTypeAviation: () => setViewType("aviation"),
       setViewTypeGlobe: () => setViewType("globe"),
       setViewTypeMap: () => setViewType("map"),
+      setViewTypeStreet: () => setViewType("map"),
+      setViewTypeAviation: () => setViewType("aviation"),
+      selectAviationChartPack,
+      clearAviationChartPack,
+      showAviationChartImportPlaceholder,
+      aviationChartImportPlaceholder: showAviationChartImportPlaceholder,
     };
-    if (typeof actions[action] === "function") return actions[action]();
+    if (typeof actions[actionKey] === "function") return actions[actionKey]();
     return undefined;
   }
 
@@ -437,6 +568,10 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     handleToolbarAction,
     getViewType: () => viewType,
     setViewType,
+    getAviationChartPackPath: () => aviationChartPackPath,
+    setAviationChartPackPath,
+    selectAviationChartPack,
+    clearAviationChartPack,
     save,
   };
   window.currentSaveKML = save;
@@ -449,12 +584,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     activeActionHandler: handleToolbarAction,
     fileIsDirty: false,
     kmlViewType: viewType,
+    kmlAviationChartPackPath: aviationChartPackPath,
   });
 
   refreshLayerHosts();
   refreshPropertyHosts();
   dispatchKMLChange("ready");
-  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode } }));
+  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode, viewType, aviationChartPackPath } }));
   showStatus(status, `Loaded ${state.features.length} editable KML feature${state.features.length === 1 ? "" : "s"}.`);
 
   try {

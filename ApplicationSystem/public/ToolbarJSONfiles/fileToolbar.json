@@ -25,6 +25,27 @@
   },
   {
     "ToolbarCategory": "File",
+    "heading": "New File",
+    "callbackKey": "NewFile",
+    "icon": "icons/DefaultNodeImage.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Create from Template",
+    "callbackKey": "CreateFromTemplate",
+    "icon": "icons/FileIcon.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Save As Template",
+    "callbackKey": "SaveAsTemplate",
+    "icon": "icons/SaveIcon.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "New File",
     "callbackKey": "NewFile",
@@ -208,6 +229,15 @@
     "heading": "Export as PDF",
     "callbackKey": "ExportSelectedFileAsPDF",
     "icon": "icons/FileIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "heading": "Convert to EPUB",
+    "callbackKey": "ConvertToEPUB",
+    "icon": "icons/FileIcon.png",
+    "conditions": {
+      "activeFileCanConvertToEpub": true
+    }
   },
   {
     "ToolbarCategory": "File",

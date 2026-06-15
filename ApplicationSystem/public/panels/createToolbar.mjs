@@ -101,6 +101,24 @@ function isToolbarActiveFileIno(state = window.NodevisionState || {}) {
   return resolveToolbarActiveFilePath(state).toLowerCase().endsWith(".ino");
 }
 
+function isToolbarActiveFileHtml(state = window.NodevisionState || {}) {
+  return new Set(["html", "htm", "xhtml"]).has((resolveToolbarActiveFilePath(state).split(".").pop() || "").toLowerCase());
+}
+
+function isToolbarActiveFileDirectory(state = window.NodevisionState || {}) {
+  const activePath = normalizeToolbarFilePath(resolveToolbarActiveFilePath(state));
+  if (!activePath) return false;
+  const fileManagerItems = document.querySelectorAll("#file-list a.file, #file-list a.folder");
+  for (const item of fileManagerItems) {
+    if (normalizeToolbarFilePath(item?.dataset?.fullPath) === activePath && item?.dataset?.isDirectory === "true") return true;
+  }
+  return false;
+}
+
+function canToolbarActiveFileConvertToEpub(state = window.NodevisionState || {}) {
+  return isToolbarActiveFileHtml(state) || isToolbarActiveFileDirectory(state);
+}
+
 if (!window.__nvShowSubToolbarEventBound) {
   window.addEventListener("nv-show-subtoolbar", (evt) => {
     const detail = evt?.detail || {};
@@ -222,9 +240,17 @@ function checkToolbarConditions(item, state) {
     if (isToolbarActiveFileIno(state) !== item.conditions.activeFileIsIno) return false;
   }
 
+  if (item.conditions.activeFileIsHtml !== undefined) {
+    if (isToolbarActiveFileHtml(state) !== item.conditions.activeFileIsHtml) return false;
+  }
+
+  if (item.conditions.activeFileCanConvertToEpub !== undefined) {
+    if (canToolbarActiveFileConvertToEpub(state) !== item.conditions.activeFileCanConvertToEpub) return false;
+  }
+
   // Generic condition support: any additional condition key maps to NodevisionState key.
   // Allows domain-specific toolbar gating (e.g., midiHasSelection, midiSelectedType).
-  const reserved = new Set(["activePanelType", "fileIsDirty", "requiresFile", "activeFileIsIno"]);
+  const reserved = new Set(["activePanelType", "fileIsDirty", "requiresFile", "activeFileIsIno", "activeFileIsHtml", "activeFileCanConvertToEpub"]);
   for (const [key, expected] of Object.entries(item.conditions)) {
     if (reserved.has(key)) continue;
     const actual = state[key];

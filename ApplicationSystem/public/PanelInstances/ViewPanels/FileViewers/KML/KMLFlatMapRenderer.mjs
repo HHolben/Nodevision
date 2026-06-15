@@ -1,4 +1,5 @@
 import { formatCoordinates } from "./KMLParser.mjs";
+import { createAviationBaseLayerManager, createStreetBaseLayer, KML_BASEMAP_TYPES } from "./KMLBaseLayerManager.mjs";
 
 const LEAFLET_ASSETS = {
   css: "/leaflet/leaflet.css",
@@ -137,18 +138,29 @@ function markerIcon(color = "#d93b30", selected = false) {
   });
 }
 
-export async function createKMLFlatMapRenderer(container, { onSelect, onGeometryChange } = {}) {
+export async function createKMLFlatMapRenderer(container, { onSelect, onGeometryChange, basemapType = KML_BASEMAP_TYPES.STREET, aviationChartPackPath = "", onBasemapStatus } = {}) {
   const L = await ensureLeafletLoaded({ requireDraw: true });
   if (!L?.map) throw new Error("Leaflet failed to initialize: window.L.map is unavailable.");
   container.innerHTML = "";
 
   const map = L.map(container, { zoomControl: true, preferCanvas: true }).setView([20, 0], 2);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap contributors",
-  }).addTo(map);
+  let baseLayerManager = null;
+  if (basemapType === KML_BASEMAP_TYPES.AVIATION) {
+    baseLayerManager = await createAviationBaseLayerManager(L, map, {
+      chartPackPath: aviationChartPackPath,
+      onStatus: onBasemapStatus,
+    });
+  } else {
+    const streetLayer = createStreetBaseLayer(L).addTo(map);
+    baseLayerManager = {
+      destroy() {
+        if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+      },
+    };
+  }
 
   const group = L.featureGroup().addTo(map);
+  if (group.bringToFront) group.bringToFront();
   const layersById = new Map();
   let selectedId = null;
   let editHandler = null;
@@ -203,6 +215,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
       group.addLayer(layer);
     });
     setSelected(selectedId);
+    if (group.bringToFront) group.bringToFront();
   }
 
   function setSelected(id) {
@@ -317,6 +330,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     startDrawPolygon: (callback) => startDraw("polygon", callback),
     destroy() {
       disableEdit();
+      baseLayerManager?.destroy?.();
       map.remove();
     },
   };

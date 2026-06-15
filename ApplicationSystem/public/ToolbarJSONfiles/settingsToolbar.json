@@ -19,6 +19,12 @@
     "callbackKey": "openGameControls"
   },
   {
+    "heading": "Connect Bluetooth Controller",
+    "icon": "icons/CodeEditor.png",
+    "ToolbarCategory": "settings",
+    "callbackKey": "connectBluetoothController"
+  },
+  {
     "heading": "Sound Settings",
     "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",

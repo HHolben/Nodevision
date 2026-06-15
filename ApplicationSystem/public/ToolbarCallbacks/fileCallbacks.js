@@ -196,61 +196,8 @@ saveFile: async () => {
 
 
 NewFile: async () => {
-  const currentPath = window.currentDirectoryPath;
-  if (!currentPath) {
-    console.warn("No directory is currently selected.");
-    return;
-  }
-
-  const showInputDialog = await loadInputDialog();
-  if (!showInputDialog) {
-    alert("Unable to open the new file dialog.");
-    return;
-  }
-
-  const fileName = await showInputDialog({
-    title: 'Create new file',
-    description: 'Enter the name of the new file (include extension)',
-    placeholder: 'example.txt',
-    confirmText: 'Create file',
-    cancelText: 'Cancel',
-    emptyMessage: 'A file name is required.',
-    returnTrimmed: true,
-  });
-
-  if (!fileName) {
-    console.log("File creation cancelled.");
-    return;
-  }
-
-  const relativePath = currentPath ? `${currentPath}/${fileName}` : fileName;
-
-  try {
-    const response = await fetch('/api/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: relativePath })
-    });
-
-    // Read response body whether OK or not
-    const textOrJson = await response.text();
-    const payload = (() => {
-      try { return JSON.parse(textOrJson); }
-      catch { return textOrJson; }
-    })();
-
-    if (!response.ok) {
-      // include status and any body text
-      throw new Error(`(${response.status}) ${payload}`);
-    }
-
-    console.log('File created successfully:', payload);
-    // refresh listing
-    window.fetchDirectoryContents(currentPath);
-  } catch (err) {
-    console.error('Failed to create file:', err);
-    alert(`Failed to create file: ${err.message}`);
-  }
+  const module = await import("/TemplateSystem/NewDocumentController.mjs");
+  await module.default();
 },
 
 

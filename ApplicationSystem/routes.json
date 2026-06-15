@@ -5,6 +5,7 @@
     { "name": "fileRoutes", "path": "./routes/api/files.js" },
     { "name": "folderRoutes", "path": "./routes/api/folderRoutes.js" },
     { "name": "fileSaveRoutes", "path": "./routes/api/fileSaveRoutes.js" },
+    { "name": "templateRoutes", "path": "./Templates/TemplateRoutes.mjs" },
     { "name": "regenerateNodesRoutes", "path": "./routes/api/regenerateNodesRoutes.js" },
     { "name": "generateEdgesRoutes", "path": "./routes/api/generateEdgesRoutes.js" },
     { "name": "extractEdges", "path": "./routes/api/extractEdges.js" },

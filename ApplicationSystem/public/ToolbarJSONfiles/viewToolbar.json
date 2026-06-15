@@ -45,6 +45,22 @@
   },
   {
     "ToolbarCategory": "View",
+    "parentHeading": "View Type",
+    "heading": "Select Aviation Chart Pack",
+    "callbackKey": "selectAviationChartPack",
+    "routeToActivePanel": true,
+    "modes": ["KMLviewerMode", "KMLeditorMode"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "View Type",
+    "heading": "Clear Aviation Chart Pack",
+    "callbackKey": "clearAviationChartPack",
+    "routeToActivePanel": true,
+    "modes": ["KMLviewerMode", "KMLeditorMode"]
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "dark mode",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "toggleDarkMode",

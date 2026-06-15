@@ -140,6 +140,8 @@ export function renderFiles(state, files) {
     const link = document.createElement("a");
 
     link.href = "#";
+    link.classList.add(file.isDirectory ? "folder" : "file");
+    link.dataset.isDirectory = String(Boolean(file.isDirectory));
     link.dataset.fullPath =
       state.currentPath ? `${state.currentPath}/${file.name}` : file.name;
 

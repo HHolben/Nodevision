@@ -6,11 +6,28 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Insert Template",
+      "callbackKey": "InsertTemplate",
+      "modes": ["CodeEditing", "GraphicalEditing", "HTMLediting", "HTMLviewing", "EPUBediting"],
+      "icon": "icons/FileIcon.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Import Asset",
       "script": "importAssetWidget.mjs",
       "modes": ["HTMLediting", "HTMLviewing", "3D World Viewing", "VR World Editing", "Virtual World Editing"],
       "preventDropdown": true,
       "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Aviation Chart",
+      "callbackKey": "showAviationChartImportPlaceholder",
+      "routeToActivePanel": true,
+      "modes": ["KMLviewerMode", "KMLeditorMode"],
+      "preventDropdown": true
     },
     {
       "ToolbarCategory": "Insert",

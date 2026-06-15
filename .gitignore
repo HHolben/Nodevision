@@ -19,7 +19,7 @@ ApplicationSystem/public/GeneratedRegions.js
 ApplicationSystem/public/GeneratedEdges.js
 ApplicationSystem/public/AllNodes.js
 # Ignore shared data storage
-UserData/data
+UserData
 
 
 # Ignore User Settings
