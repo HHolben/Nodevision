@@ -191,11 +191,22 @@ async function recoverDiscoveredPeerPort(state, discoveredPeer) {
   return null;
 }
 
-function buildPeerUrlCandidates(discoveredPeer) {
+function buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl = "") {
   const address = String(discoveredPeer?.address ?? "").trim();
   const port = Number(discoveredPeer?.port);
   if (!address || !isValidPort(port)) return [];
   const candidates = [];
+  const addUrl = (peerUrl) => {
+    const text = String(peerUrl || "").trim();
+    if (!text) return;
+    try {
+      const parsed = new URL(text);
+      if ((parsed.protocol === "http:" || parsed.protocol === "https:") && parsed.hostname && !candidates.includes(parsed.origin)) candidates.push(parsed.origin);
+    } catch {
+      // ignore invalid preferred peer URL
+    }
+  };
+  addUrl(preferredPeerUrl);
   const add = (candidateAddress) => {
     try {
       const peerUrl = buildDiscoveredPeerUrl({ address: candidateAddress, port });
@@ -261,8 +272,9 @@ async function runScopeSyncWithPeerUrlFallback({
   syncRunner,
   syncDirection = "sync",
   syncRunnerOptions = null,
+  preferredPeerUrl = "",
 } = {}) {
-  const candidates = buildPeerUrlCandidates(discoveredPeer);
+  const candidates = buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl);
   const expectedDeviceId = String(discoveredPeer?.deviceId ?? "").trim();
   const attemptedPeerUrls = [];
   const normalizedSyncDirection = normalizeSyncDirection(syncDirection);
@@ -879,6 +891,18 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
+  const getRequestedPeerUrl = (body) => {
+    const text = String(body?.peerUrl || "").trim();
+    if (!text) return "";
+    try {
+      const parsed = new URL(text);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+      return parsed.origin;
+    } catch {
+      return "";
+    }
+  };
+
   app.post("/api/sync/preflight", async (req, res) => {
     if (!requireSession(req, res)) return;
 
@@ -929,11 +953,13 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
+    const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncRunner = resolveSyncRunner(ctx);
 
     try {
       const syncResult = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
+        preferredPeerUrl: requestedPeerUrl,
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
@@ -1045,11 +1071,13 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
+    const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncRunner = resolveSyncRunner(ctx);
 
     try {
       const syncResult = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
+        preferredPeerUrl: requestedPeerUrl,
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
@@ -1207,12 +1235,14 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
+    const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncRunner = resolveSyncRunner(ctx);
 
     let peerCapabilities = null;
     try {
       const capabilityPreflight = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
+        preferredPeerUrl: requestedPeerUrl,
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
@@ -1251,6 +1281,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         async run({ onProgress, isCancelled, onFileError: onFileErrorControl }) {
           const syncResult = await runScopeSyncWithPeerUrlFallback({
             discoveredPeer: discoveredPeerSnapshot,
+            preferredPeerUrl: requestedPeerUrl,
             scope,
             runtimeRoot: ctx?.runtimeRoot,
             dryRun,

@@ -72,9 +72,6 @@ export async function renderEditor(filePath, container) {
       case "scadRender":
         controller.renderOpenSCAD?.().catch(() => {});
         break;
-      case "scadOpenCode":
-        controller.ui.openCodeDialog?.();
-        break;
       default:
         break;
     }

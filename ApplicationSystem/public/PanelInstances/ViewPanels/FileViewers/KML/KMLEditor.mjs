@@ -100,6 +100,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     } catch {}
   }
   let aviationChartStatus = null;
+  let userLocationEnabled = false;
+  let userLocationWatchId = null;
   let layersContext = null;
   let propertiesContext = null;
   const layerHosts = new Set();
@@ -156,6 +158,69 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     window.dispatchEvent(new CustomEvent("nv-kml-context-changed", {
       detail: { reason, filePath: cleanPath, selectedId, ...extra },
     }));
+  }
+
+  function stopUserLocationTelemetry() {
+    const geolocation = globalThis.navigator?.geolocation;
+    if (userLocationWatchId !== null && geolocation?.clearWatch) {
+      geolocation.clearWatch(userLocationWatchId);
+    }
+    userLocationWatchId = null;
+    renderer?.clearUserLocation?.();
+  }
+
+  function publishUserLocationState(reason = "user-location") {
+    updateToolbarState({ kmlUserLocationEnabled: userLocationEnabled });
+    dispatchKMLChange(reason, { userLocationEnabled });
+  }
+
+  function startUserLocationTelemetry() {
+    if (!userLocationEnabled || userLocationWatchId !== null) return;
+    const geolocation = globalThis.navigator?.geolocation;
+    if (!geolocation?.watchPosition) {
+      userLocationEnabled = false;
+      stopUserLocationTelemetry();
+      publishUserLocationState();
+      showStatus(status, "User location is unavailable in this browser.", "error");
+      return;
+    }
+
+    userLocationWatchId = geolocation.watchPosition(
+      (position) => {
+        if (!userLocationEnabled) return;
+        const coords = position?.coords || {};
+        renderer?.setUserLocation?.({
+          lat: Number(coords.latitude),
+          lon: Number(coords.longitude),
+          accuracy: Number(coords.accuracy),
+        });
+        showStatus(status, "Showing your location on the " + viewTypeLabel(viewType) + ".");
+      },
+      (err) => {
+        userLocationEnabled = false;
+        stopUserLocationTelemetry();
+        publishUserLocationState();
+        showStatus(status, "User location is off: " + (err?.message || "location permission was not granted") + ".", "error");
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+    );
+  }
+
+  function setUserLocationEnabled(enabled) {
+    const next = Boolean(enabled);
+    if (!next) {
+      userLocationEnabled = false;
+      stopUserLocationTelemetry();
+      publishUserLocationState();
+      showStatus(status, "User location is hidden. No position telemetry is active in the KML viewer.");
+      return true;
+    }
+
+    userLocationEnabled = true;
+    publishUserLocationState();
+    showStatus(status, "Requesting your location...");
+    startUserLocationTelemetry();
+    return true;
   }
 
   function isDescendantOf(record, parentId) {
@@ -298,6 +363,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
 
   async function initRenderer({ fit = false, flyToSelected = false } = {}) {
     renderer?.destroy?.();
+    renderer = null;
     if (viewType === KML_VIEW_TYPES.AVIATION) {
       aviationChartStatus = {
         state: "loading",
@@ -322,6 +388,11 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     });
     renderer.render(state?.features || []);
     renderer.setSelected(selectedId);
+    if (userLocationEnabled) {
+      stopUserLocationTelemetry();
+      userLocationEnabled = true;
+      startUserLocationTelemetry();
+    }
     const selected = selectedRecord();
     if (flyToSelected && selected?.geometry) renderer.flyToRecord(selected);
     else if (fit) renderer.fitAll();
@@ -506,6 +577,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       viewTypeMap: () => setViewType("map"),
       viewTypeStreet: () => setViewType("map"),
       viewTypeAviation: () => setViewType("aviation"),
+      enableUserLocation: () => setUserLocationEnabled(true),
+      disableUserLocation: () => setUserLocationEnabled(false),
+      toggleUserLocation: () => setUserLocationEnabled(!userLocationEnabled),
       setViewTypeGlobe: () => setViewType("globe"),
       setViewTypeMap: () => setViewType("map"),
       setViewTypeStreet: () => setViewType("map"),
@@ -570,6 +644,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     setViewType,
     getAviationChartPackPath: () => aviationChartPackPath,
     setAviationChartPackPath,
+    getUserLocationEnabled: () => userLocationEnabled,
+    setUserLocationEnabled,
     selectAviationChartPack,
     clearAviationChartPack,
     save,
@@ -585,12 +661,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     fileIsDirty: false,
     kmlViewType: viewType,
     kmlAviationChartPackPath: aviationChartPackPath,
+    kmlUserLocationEnabled: userLocationEnabled,
   });
 
   refreshLayerHosts();
   refreshPropertyHosts();
   dispatchKMLChange("ready");
-  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode, viewType, aviationChartPackPath } }));
+  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode, viewType, aviationChartPackPath, userLocationEnabled } }));
   showStatus(status, `Loaded ${state.features.length} editable KML feature${state.features.length === 1 ? "" : "s"}.`);
 
   try {
@@ -604,6 +681,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   }
 
   const destroy = () => {
+    userLocationEnabled = false;
+    stopUserLocationTelemetry();
     renderer?.destroy();
     layerHosts.clear();
     propertyHosts.clear();

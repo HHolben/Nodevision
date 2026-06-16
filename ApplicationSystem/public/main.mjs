@@ -6,6 +6,7 @@ import "/KeyboardShortcuts/ShortcutSave.js"; // installs Ctrl+S shortcut handler
 import { createToolbar } from './panels/createToolbar.mjs';
 import { ensureWorkspace, loadDefaultLayout, renderLayout } from "./panels/workspace.mjs";
 import { initStatusBar } from "./StatusBar.mjs";
+import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
 
 
 //Initialize the status bar: 
@@ -30,6 +31,9 @@ async function initNodevision() {
     }
 
     addDividers();
+    setTimeout(() => {
+      handleDesktopOpenStartup().catch((err) => console.error("Desktop open startup failed:", err));
+    }, 250);
   } catch (err) {
     console.error("Error during initialization:", err);
   }

@@ -5,6 +5,17 @@ import * as THREE from "/lib/three/three.module.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
 
+function isEmptySTLBuffer(arrayBuffer) {
+  if (!arrayBuffer || arrayBuffer.byteLength === 0) return true;
+  try {
+    const preview = new TextDecoder().decode(new Uint8Array(arrayBuffer.slice(0, Math.min(arrayBuffer.byteLength, 2048))));
+    const text = preview.trim().toLowerCase();
+    return text.startsWith("solid") && text.includes("endsolid") && !text.includes("facet");
+  } catch {
+    return false;
+  }
+}
+
 export class STLViewer {
   constructor(container) {
     this.container = container;
@@ -59,10 +70,38 @@ export class STLViewer {
 
     this.overlayRenderer = new THREE.WebGLRenderer({ alpha: true });
     this.overlayRenderer.setSize(100, 100);
-    this.overlayRenderer.domElement.style.position = "absolute";
-    this.overlayRenderer.domElement.style.top = "10px";
-    this.overlayRenderer.domElement.style.right = "10px";
+    this.overlayRenderer.domElement.title = "Drag to rotate view";
+    this.overlayRenderer.domElement.style.cssText = "position:absolute;top:10px;right:10px;width:100px;height:100px;cursor:grab;border-radius:8px;background:rgba(255,255,255,0.72);box-shadow:0 1px 6px rgba(15,23,42,0.2);z-index:4;";
     container.appendChild(this.overlayRenderer.domElement);
+
+    this.gizmoDragging = false;
+    this.gizmoLastX = 0;
+    this.gizmoLastY = 0;
+    this.overlayRenderer.domElement.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.gizmoDragging = true;
+      this.gizmoLastX = event.clientX;
+      this.gizmoLastY = event.clientY;
+      this.overlayRenderer.domElement.style.cursor = "grabbing";
+      this.overlayRenderer.domElement.setPointerCapture?.(event.pointerId);
+    });
+    this.overlayRenderer.domElement.addEventListener("pointermove", (event) => {
+      if (!this.gizmoDragging) return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.rotateCameraFromGizmo(event.clientX - this.gizmoLastX, event.clientY - this.gizmoLastY);
+      this.gizmoLastX = event.clientX;
+      this.gizmoLastY = event.clientY;
+    });
+    const endGizmoDrag = (event) => {
+      if (!this.gizmoDragging) return;
+      this.gizmoDragging = false;
+      this.overlayRenderer.domElement.style.cursor = "grab";
+      if (event?.pointerId !== undefined) this.overlayRenderer.domElement.releasePointerCapture?.(event.pointerId);
+    };
+    this.overlayRenderer.domElement.addEventListener("pointerup", endGizmoDrag);
+    this.overlayRenderer.domElement.addEventListener("pointercancel", endGizmoDrag);
 
     this.resizeHandler = () => this.handleResize();
     window.addEventListener("resize", this.resizeHandler);
@@ -86,9 +125,29 @@ export class STLViewer {
     this.renderer.setSize(w, h);
   }
 
+  rotateCameraFromGizmo(deltaX, deltaY) {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.theta -= deltaX * 0.01;
+    spherical.phi = Math.max(0.08, Math.min(Math.PI - 0.08, spherical.phi - deltaY * 0.01));
+    offset.setFromSpherical(spherical);
+    this.camera.position.copy(this.controls.target).add(offset);
+    this.camera.lookAt(this.controls.target);
+    this.controls.update();
+  }
+
+  syncViewGizmo() {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    if (offset.lengthSq() < 0.0001) offset.set(1, 1, 1);
+    this.overlayCamera.position.copy(offset).setLength(50);
+    this.overlayCamera.up.copy(this.camera.up);
+    this.overlayCamera.lookAt(0, 0, 0);
+  }
+
   animate() {
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
+    this.syncViewGizmo();
     this.overlayRenderer.render(this.overlayScene, this.overlayCamera);
   }
 
@@ -118,66 +177,95 @@ export class STLViewer {
     this.container.appendChild(errorEl);
   }
 
-  loadSTL(filePath, serverBase) {
+  showNotice(message) {
+    const existing = this.container.querySelector(".stl-viewer-error");
+    if (existing) existing.remove();
+    const noticeEl = document.createElement("div");
+    noticeEl.className = "stl-viewer-error";
+    noticeEl.style.position = "absolute";
+    noticeEl.style.left = "10px";
+    noticeEl.style.bottom = "10px";
+    noticeEl.style.maxWidth = "80%";
+    noticeEl.style.padding = "8px 10px";
+    noticeEl.style.background = "rgba(15,23,42,0.78)";
+    noticeEl.style.color = "#fff";
+    noticeEl.style.fontFamily = "sans-serif";
+    noticeEl.style.fontSize = "12px";
+    noticeEl.style.borderRadius = "4px";
+    noticeEl.textContent = message;
+    this.container.appendChild(noticeEl);
+  }
+
+  async loadSTL(filePath, serverBase = "") {
     this.clearModel();
     const oldError = this.container.querySelector(".stl-viewer-error");
     if (oldError) oldError.remove();
 
-    const loader = new STLLoader();
-    loader.load(
-      `${serverBase}/${encodeURIComponent(filePath)}`,
-      (geometry) => {
-        geometry.computeBoundingBox();
+    let base = String(serverBase || "");
+    while (base.endsWith("/")) base = base.slice(0, -1);
+    const path = String(filePath || "")
+      .split("/")
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join("/");
+    const url = (base ? base : "") + "/" + path;
 
-        const center = new THREE.Vector3();
-        geometry.boundingBox.getCenter(center);
-
-        const size = new THREE.Vector3();
-        geometry.boundingBox.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z);
-
-        const material = new THREE.MeshPhongMaterial({
-          color: 0xadd8e6,
-          transparent: true,
-          opacity: 0.9,
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.sub(center);
-        mesh.userData.isModel = true;
-        this.scene.add(mesh);
-
-        const fov = this.camera.fov * (Math.PI / 180);
-        const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.6;
-        this.camera.position.set(dist, dist, dist);
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(String(response.status) + " " + String(response.statusText || "STL load failed"));
+      const arrayBuffer = await response.arrayBuffer();
+      if (isEmptySTLBuffer(arrayBuffer)) {
+        this.camera.position.set(200, 200, 200);
         this.controls.target.set(0, 0, 0);
         this.controls.update();
+        this.showNotice("Empty STL file. Open the graphical STL editor to add vertices and faces.");
+        return;
+      }
 
-        const edges = new THREE.EdgesGeometry(geometry);
-        const edgeLines = new THREE.LineSegments(
-          edges,
-          new THREE.LineBasicMaterial({ color: 0x008800 }),
-        );
-        edgeLines.position.sub(center);
-        edgeLines.userData.isEdge = true;
-        this.scene.add(edgeLines);
-
-        const verticesMaterial = new THREE.PointsMaterial({
-          size: maxDim * 0.05,
-          color: 0xffcc00,
-        });
-        const pointCloud = new THREE.Points(geometry, verticesMaterial);
-        pointCloud.position.sub(center);
-        pointCloud.userData.isVertex = true;
-        this.scene.add(pointCloud);
-      },
-      undefined,
-      (err) => {
-        console.error("[ViewSTL] Failed to load STL:", err);
-        const message = err?.message || "Unknown STL load error.";
-        this.showError(`Failed to load STL model: ${message}`);
-      },
-    );
+      const loader = new STLLoader();
+      const geometry = loader.parse(arrayBuffer);
+      const position = geometry.getAttribute("position");
+      if (!position || position.count === 0) {
+        this.showNotice("Empty STL file. Open the graphical STL editor to add vertices and faces.");
+        return;
+      }
+      geometry.computeBoundingBox();
+      const center = new THREE.Vector3();
+      geometry.boundingBox.getCenter(center);
+      const size = new THREE.Vector3();
+      geometry.boundingBox.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const material = new THREE.MeshPhongMaterial({
+        color: 0xadd8e6,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.sub(center);
+      mesh.userData.isModel = true;
+      this.scene.add(mesh);
+      const fov = this.camera.fov * (Math.PI / 180);
+      const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.6;
+      this.camera.position.set(dist, dist, dist);
+      this.controls.target.set(0, 0, 0);
+      this.controls.update();
+      const edges = new THREE.EdgesGeometry(geometry);
+      const edgeLines = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x008800 }));
+      edgeLines.position.sub(center);
+      edgeLines.userData.isEdge = true;
+      this.scene.add(edgeLines);
+      const verticesMaterial = new THREE.PointsMaterial({
+        size: Math.max(0.4, maxDim * 0.05),
+        color: 0xffcc00,
+      });
+      const pointCloud = new THREE.Points(geometry, verticesMaterial);
+      pointCloud.position.sub(center);
+      pointCloud.userData.isVertex = true;
+      this.scene.add(pointCloud);
+    } catch (err) {
+      console.error("[ViewSTL] Failed to load STL:", err);
+      const message = err?.message || "Unknown STL load error.";
+      this.showError("Failed to load STL model: " + message);
+    }
   }
 }
-

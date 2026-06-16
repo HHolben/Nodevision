@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Nodevision
+Comment=Nodevision Desktop App with sync enabled
+Exec=/home/henry/Nodevision/ApplicationSystem/Desktop/nodevision-open.sh %F
+Icon=/home/henry/Nodevision/UserSettings/Icons/nodevision.svg
+Terminal=false
+Categories=Development;Education;
+StartupNotify=true
+Path=/home/henry/Nodevision
+MimeType=text/plain;text/html;text/css;text/csv;application/json;application/pdf;image/png;image/jpeg;image/svg+xml;audio/mpeg;audio/wav;audio/x-wav;video/mp4;model/stl;application/sla;application/xml;text/xml;

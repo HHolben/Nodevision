@@ -47,6 +47,163 @@ function resolveActiveFilePath(preferredPath = null) {
   return "";
 }
 
+
+const PANEL_EDGE_SPLIT_HOTZONE_PX = 12;
+const PANEL_EDGE_SPLIT_MIN_DRAG_PX = 18;
+const PANEL_SPLIT_MIN_PERCENT = 10;
+const PANEL_SPLIT_MAX_PERCENT = 90;
+
+function isPanelSplitGesture(event) {
+  return Boolean(event?.ctrlKey || event?.metaKey);
+}
+
+function clampPanelSplitPercent(value) {
+  return Math.max(PANEL_SPLIT_MIN_PERCENT, Math.min(PANEL_SPLIT_MAX_PERCENT, value));
+}
+
+function getPanelEdgeFromPointer(cell, event) {
+  if (!cell || !event) return null;
+  const rect = cell.getBoundingClientRect();
+  const distances = {
+    left: Math.abs(event.clientX - rect.left),
+    right: Math.abs(rect.right - event.clientX),
+    top: Math.abs(event.clientY - rect.top),
+    bottom: Math.abs(rect.bottom - event.clientY),
+  };
+  const [edge, distance] = Object.entries(distances).sort((a, b) => a[1] - b[1])[0] || [];
+  return distance <= PANEL_EDGE_SPLIT_HOTZONE_PX ? edge : null;
+}
+
+function buildSplitCell(sourceCell, flex = "1 1 0") {
+  const cell = makePanelCell(flex);
+  const sourceId = sourceCell?.dataset?.id || sourceCell?.dataset?.panelId || "Panel";
+  setCellIdentity(cell, {
+    id: `${sourceId}Split`,
+    panelClass: sourceCell?.dataset?.panelClass || "InfoPanel",
+  });
+  const placeholder = document.createElement("div");
+  placeholder.className = "panel-split-placeholder";
+  placeholder.textContent = "New panel";
+  Object.assign(placeholder.style, {
+    margin: "auto",
+    padding: "0.65rem 0.9rem",
+    border: "1px dashed rgba(0, 0, 0, 0.28)",
+    borderRadius: "8px",
+    color: "rgba(0, 0, 0, 0.58)",
+    font: "13px system-ui, sans-serif",
+    pointerEvents: "none",
+    userSelect: "none",
+  });
+  cell.appendChild(placeholder);
+  return cell;
+}
+
+function insertSplitCellInParent(cell, newCell, direction, edge, splitPercent) {
+  const parent = cell?.parentElement;
+  if (!parent) return null;
+
+  const placeBefore = edge === "left" || edge === "top";
+  const newPercent = placeBefore ? splitPercent : 100 - splitPercent;
+  const existingPercent = 100 - newPercent;
+  const targetFlex = `0 0 ${existingPercent}%`;
+  const splitFlex = `0 0 ${newPercent}%`;
+
+  if (parent.classList?.contains?.("panel-row") && parent.dataset?.direction === direction) {
+    cell.style.flex = targetFlex;
+    newCell.style.flex = splitFlex;
+    if (placeBefore) parent.insertBefore(newCell, cell);
+    else parent.insertBefore(newCell, cell.nextSibling);
+    rebuildLayoutDividersForContainer(parent, direction === "column");
+    return parent;
+  }
+
+  const originalFlex = cell.style.flex || "1 1 0";
+  const wrapper = createPanelRow(direction, originalFlex);
+  parent.replaceChild(wrapper, cell);
+  cell.style.flex = targetFlex;
+  newCell.style.flex = splitFlex;
+  if (placeBefore) {
+    wrapper.appendChild(newCell);
+    wrapper.appendChild(cell);
+  } else {
+    wrapper.appendChild(cell);
+    wrapper.appendChild(newCell);
+  }
+  rebuildLayoutDividersForContainer(wrapper, direction === "column");
+  rebuildLayoutDividersForContainer(parent);
+  return wrapper;
+}
+
+function splitPanelCellFromEdge(cell, edge, splitPercent = 50) {
+  if (!cell || !edge) return null;
+  const direction = edge === "top" || edge === "bottom" ? "column" : "row";
+  const newCell = buildSplitCell(cell);
+  const container = insertSplitCellInParent(cell, newCell, direction, edge, clampPanelSplitPercent(splitPercent));
+  window.activeCell = newCell;
+  highlightActiveCell(newCell);
+  setStatus("Panel split", `Created ${edge} panel`);
+  return { container, newCell };
+}
+
+function createSplitGhost(direction) {
+  const ghost = document.createElement("div");
+  ghost.className = "panel-split-ghost-divider";
+  Object.assign(ghost.style, {
+    position: "fixed",
+    pointerEvents: "none",
+    zIndex: "10000",
+    background: "rgba(74, 144, 226, 0.92)",
+    boxShadow: "0 0 0 2px rgba(255, 255, 255, 0.85), 0 0 12px rgba(74, 144, 226, 0.55)",
+    ...(direction === "column" ? { height: "6px" } : { width: "6px" }),
+  });
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function positionSplitGhost(ghost, cell, direction, event) {
+  const rect = cell.getBoundingClientRect();
+  if (direction === "column") {
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.top = `${Math.max(rect.top, Math.min(rect.bottom, event.clientY)) - 3}px`;
+  } else {
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.left = `${Math.max(rect.left, Math.min(rect.right, event.clientX)) - 3}px`;
+  }
+}
+
+function startPanelSplitDrag(cell, edge, event) {
+  if (!cell || !edge) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const direction = edge === "top" || edge === "bottom" ? "column" : "row";
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const rect = cell.getBoundingClientRect();
+  const ghost = createSplitGhost(direction);
+  positionSplitGhost(ghost, cell, direction, event);
+
+  const onMouseMove = (moveEvent) => {
+    positionSplitGhost(ghost, cell, direction, moveEvent);
+  };
+
+  const onMouseUp = (upEvent) => {
+    ghost.remove();
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    const moved = Math.hypot(upEvent.clientX - startX, upEvent.clientY - startY);
+    if (moved < PANEL_EDGE_SPLIT_MIN_DRAG_PX) return;
+    const rawPercent = direction === "column"
+      ? ((upEvent.clientY - rect.top) / Math.max(rect.height, 1)) * 100
+      : ((upEvent.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
+    splitPanelCellFromEdge(cell, edge, rawPercent);
+  };
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+}
+
 const PANEL_ALIASES = Object.freeze({
   ViewPanel: "FileView",
   FileViewer: "FileView",
@@ -236,6 +393,11 @@ function createDivider(leftCell, rightCell) {
   let stopPlaceholderMode = null;
 
   divider.addEventListener("mousedown", (e) => {
+    if (isPanelSplitGesture(e)) {
+      startPanelSplitDrag(rightCell || leftCell, "left", e);
+      return;
+    }
+
     e.preventDefault();
     startX = e.clientX;
 
@@ -412,10 +574,17 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
   let stopPlaceholderMode = null;
 
   divider.addEventListener("mousedown", (e) => {
-    e.preventDefault();
     const leftEl = divider._leftCell;
     const rightEl = divider._rightCell;
     if (!leftEl || !rightEl) return;
+
+    if (isPanelSplitGesture(e)) {
+      const splitTarget = rightEl || leftEl;
+      startPanelSplitDrag(splitTarget, isVertical ? "top" : "left", e);
+      return;
+    }
+
+    e.preventDefault();
 
     const container = divider.parentElement;
     const leftRect = leftEl.getBoundingClientRect();
@@ -1055,6 +1224,17 @@ function setupActivePanelTracking() {
     handlePanelActivation(cell);
   };
 
+  const splitGestureHandler = (event) => {
+    if (!isPanelSplitGesture(event)) return;
+    const cell = event?.target?.closest?.(".panel-cell");
+    if (!cell) return;
+    const edge = getPanelEdgeFromPointer(cell, event);
+    if (!edge) return;
+    handlePanelActivation(cell);
+    startPanelSplitDrag(cell, edge, event);
+  };
+
+  document.addEventListener("mousedown", splitGestureHandler, true);
   document.addEventListener("click", activateHandler, true);
 }
 

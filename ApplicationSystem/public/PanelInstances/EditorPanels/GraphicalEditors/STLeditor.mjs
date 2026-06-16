@@ -27,9 +27,25 @@ function cloneVertices(vertices) {
   return vertices.map((v) => v.clone());
 }
 
+function createEmptyTopology() {
+  return { vertices: [], faces: [], customEdges: [] };
+}
+
+function isEmptySTLBuffer(arrayBuffer) {
+  if (!arrayBuffer || arrayBuffer.byteLength === 0) return true;
+  try {
+    const preview = new TextDecoder().decode(new Uint8Array(arrayBuffer.slice(0, Math.min(arrayBuffer.byteLength, 2048))));
+    const text = preview.trim().toLowerCase();
+    return text.startsWith("solid") && text.includes("endsolid") && !text.includes("facet");
+  } catch {
+    return false;
+  }
+}
+
 function buildTopologyFromGeometry(geometry) {
   const nonIndexed = geometry.index ? geometry.toNonIndexed() : geometry;
   const pos = nonIndexed.getAttribute("position");
+  if (!pos || !Number.isFinite(pos.count) || pos.count === 0) return createEmptyTopology();
   const vertices = [];
   const faces = [];
   const weldMap = new Map();
@@ -157,13 +173,74 @@ export async function renderEditor(
   const overlayScene = new THREE.Scene();
   const overlayCamera = new THREE.PerspectiveCamera(50, 1, 1, 100);
   overlayCamera.position.set(50, 50, 50);
-  overlayScene.add(new THREE.AxesHelper(20));
+  const overlayAxes = new THREE.AxesHelper(20);
+  overlayScene.add(overlayAxes);
 
   const overlayRenderer = new THREE.WebGLRenderer({ alpha: true });
   overlayRenderer.setSize(100, 100);
-  overlayRenderer.domElement.style.cssText =
-    "position:absolute;top:10px;right:10px;pointer-events:none;";
+  overlayRenderer.domElement.title = "Drag to rotate view";
+  overlayRenderer.domElement.style.cssText = [
+    "position:absolute",
+    "top:10px",
+    "right:10px",
+    "width:100px",
+    "height:100px",
+    "cursor:grab",
+    "border-radius:8px",
+    "background:rgba(255,255,255,0.72)",
+    "box-shadow:0 1px 6px rgba(15,23,42,0.2)",
+    "z-index:4",
+  ].join(";");
   viewport.appendChild(overlayRenderer.domElement);
+
+  let gizmoDragging = false;
+  let gizmoLastX = 0;
+  let gizmoLastY = 0;
+
+  function rotateCameraFromGizmo(deltaX, deltaY) {
+    const offset = camera.position.clone().sub(controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.theta -= deltaX * 0.01;
+    spherical.phi = Math.max(0.08, Math.min(Math.PI - 0.08, spherical.phi - deltaY * 0.01));
+    offset.setFromSpherical(spherical);
+    camera.position.copy(controls.target).add(offset);
+    camera.lookAt(controls.target);
+    controls.update();
+  }
+
+  function syncViewGizmo() {
+    const offset = camera.position.clone().sub(controls.target);
+    if (offset.lengthSq() < 0.0001) offset.set(1, 1, 1);
+    overlayCamera.position.copy(offset).setLength(50);
+    overlayCamera.up.copy(camera.up);
+    overlayCamera.lookAt(0, 0, 0);
+  }
+
+  overlayRenderer.domElement.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    gizmoDragging = true;
+    gizmoLastX = event.clientX;
+    gizmoLastY = event.clientY;
+    overlayRenderer.domElement.style.cursor = "grabbing";
+    overlayRenderer.domElement.setPointerCapture?.(event.pointerId);
+  });
+  overlayRenderer.domElement.addEventListener("pointermove", (event) => {
+    if (!gizmoDragging) return;
+    event.preventDefault();
+    event.stopPropagation();
+    rotateCameraFromGizmo(event.clientX - gizmoLastX, event.clientY - gizmoLastY);
+    gizmoLastX = event.clientX;
+    gizmoLastY = event.clientY;
+  });
+  const endGizmoDrag = (event) => {
+    if (!gizmoDragging) return;
+    gizmoDragging = false;
+    overlayRenderer.domElement.style.cursor = "grab";
+    if (event?.pointerId !== undefined) overlayRenderer.domElement.releasePointerCapture?.(event.pointerId);
+  };
+  overlayRenderer.domElement.addEventListener("pointerup", endGizmoDrag);
+  overlayRenderer.domElement.addEventListener("pointercancel", endGizmoDrag);
 
   const raycaster = new THREE.Raycaster();
   raycaster.params.Points.threshold = 0.18;
@@ -705,10 +782,7 @@ export async function renderEditor(
   }
 
   async function saveSTL(pathOverride = filePath) {
-    if (!state.topology) {
-      alert("No STL topology loaded.");
-      return;
-    }
+    if (!state.topology) state.topology = createEmptyTopology();
     const content = serializeTopologyToAsciiSTL(state.topology);
     const res = await fetch(SAVE_ENDPOINT, {
       method: "POST",
@@ -730,13 +804,23 @@ export async function renderEditor(
   }
 
   async function loadModel() {
+    const response = await fetch(notebookUrl(filePath), { cache: "no-store" });
+    if (!response.ok) throw new Error(String(response.status) + " " + String(response.statusText || "STL load failed"));
+    const arrayBuffer = await response.arrayBuffer();
+    if (isEmptySTLBuffer(arrayBuffer)) {
+      state.topology = createEmptyTopology();
+      recenterCameraToTopology();
+      rebuildDisplayGeometry();
+      setModeLabel("empty STL");
+      return;
+    }
+
     const loader = new STLLoader();
-    const geometry = await new Promise((resolve, reject) => {
-      loader.load(notebookUrl(filePath), resolve, undefined, reject);
-    });
+    const geometry = loader.parse(arrayBuffer);
     state.topology = buildTopologyFromGeometry(geometry);
     recenterCameraToTopology();
     rebuildDisplayGeometry();
+    if (state.topology.vertices.length === 0 && state.topology.faces.length === 0) setModeLabel("empty STL");
   }
 
   toolbar.append(
@@ -781,6 +865,7 @@ export async function renderEditor(
     if (state.destroyed) return;
     controls.update();
     renderer.render(scene, camera);
+    syncViewGizmo();
     overlayRenderer.render(overlayScene, overlayCamera);
   });
 

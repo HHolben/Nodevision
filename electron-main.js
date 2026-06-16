@@ -12,10 +12,13 @@ if (!process.env.NODEVISION_ROOT) {
 const ELECTRON_ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PRELOAD_PATH = path.join(ELECTRON_ROOT, 'electron-preload.cjs');
 
+const desktopOpenArgs = process.argv.slice(2);
+
 const runtime = createRuntime({
   port: 3000,
-  host: '127.0.0.1',
+  host: process.env.HOST || '127.0.0.1',
   dev: false,
+  desktopOpenArgs,
 });
 
 let runtimeInstance = null;
@@ -126,6 +129,11 @@ async function exportHtmlToPdf(_event, payload = {}) {
 export function setupElectronHandlers() {
   ipcMain.handle('nodevision:export-html-to-pdf', exportHtmlToPdf);
 
+  if (!app.requestSingleInstanceLock()) {
+    app.quit();
+    return;
+  }
+
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
     startElectronApp().catch((err) => {
@@ -146,6 +154,14 @@ export function setupElectronHandlers() {
     if (process.platform !== 'darwin') {
       app.quit();
     }
+  });
+
+  app.on('second-instance', (_event, argv) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+    console.log('[electron-main] Additional desktop-open arguments require a new launcher process:', argv.slice(2));
   });
 
   app.on('before-quit', () => {

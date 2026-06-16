@@ -261,6 +261,8 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
   scene.add(featureGroup);
   const drawGroup = new THREE.Group();
   scene.add(drawGroup);
+  const userLocationGroup = new THREE.Group();
+  scene.add(userLocationGroup);
 
   const raycaster = new THREE.Raycaster();
   raycaster.params.Line.threshold = 0.035;
@@ -354,6 +356,42 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
       if (node.userData?.pickable) pickables.push(node);
     });
     return root;
+  }
+
+  function clearUserLocation() {
+    clearGroup(userLocationGroup);
+  }
+
+  function setUserLocation(location) {
+    const lat = Number(location?.lat);
+    const lon = Number(location?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      clearUserLocation();
+      return;
+    }
+
+    clearUserLocation();
+    const coord = { lat, lon, alt: null };
+    const point = pointFromCoord(coord, EARTH_RADIUS + 0.05);
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(0.024, 24, 16),
+      new THREE.MeshStandardMaterial({ color: new THREE.Color("#0a84ff"), emissive: new THREE.Color("#062f73"), roughness: 0.32 }),
+    );
+    marker.position.copy(point);
+    userLocationGroup.add(marker);
+
+    const halo = new THREE.Mesh(
+      new THREE.SphereGeometry(0.038, 24, 16),
+      new THREE.MeshBasicMaterial({ color: "#66b8ff", transparent: true, opacity: 0.24, depthWrite: false }),
+    );
+    halo.position.copy(point);
+    userLocationGroup.add(halo);
+
+    const label = makeSpriteLabel("My Location");
+    if (label) {
+      label.position.copy(point.clone().multiplyScalar(1.035));
+      userLocationGroup.add(label);
+    }
   }
 
   function render(records = []) {
@@ -573,7 +611,10 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
     startAddPlacemark: (callback) => startDraw("marker", callback),
     startDrawPath: (callback) => startDraw("polyline", callback),
     startDrawPolygon: (callback) => startDraw("polygon", callback),
+    setUserLocation,
+    clearUserLocation,
     destroy() {
+      clearUserLocation();
       rendererDestroyed = true;
       cancelFlyAnimation();
       if (animationFrame) cancelAnimationFrame(animationFrame);

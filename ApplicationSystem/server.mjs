@@ -39,6 +39,7 @@ import { registerMetaWorldAssetRoutes } from "./server/routes/metaWorldAssetRout
 import { registerPeerRoutes } from "./server/routes/peerRoutes.mjs";
 import { registerSyncPanelRoutes } from "./server/routes/syncPanelRoutes.mjs";
 import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
+import { createDesktopOpenState, registerDesktopOpenRoutes } from "./Desktop/DesktopOpenHandler.mjs";
 
 export default async function createApp(runtimeConfig = {}) {
   const ctx = createServerContext(runtimeConfig);
@@ -67,6 +68,11 @@ export default async function createApp(runtimeConfig = {}) {
   const APP_LAYOUTS_DIR = path.resolve(PUBLIC_DIR, '..', 'Layouts');
   const NODE_MODULES_DIR = ctx.nodeModulesDir;
 
+  const desktopOpenState = runtimeConfig.desktopOpenState || await createDesktopOpenState({
+    notebookDir: ctx.notebookDir,
+    argv: runtimeConfig.desktopOpenArgs || [],
+  });
+
   const app = express();
 
   // Middleware setup (configure body size limits first)
@@ -79,6 +85,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerPeerRoutes(app, ctx);
   registerSyncPanelRoutes(app, ctx);
   registerBrokerRoutes(app, ctx);
+  registerDesktopOpenRoutes(app, ctx, desktopOpenState);
 
 
   // Public login background asset (optional).

@@ -140,6 +140,7 @@ function buildApproximateGroup(sceneTree, parameters = {}) {
 export function createSCADViewer(containerEl, opts = {}) {
   const width = containerEl.clientWidth || 640;
   const height = containerEl.clientHeight || 400;
+  if (getComputedStyle(containerEl).position === "static") containerEl.style.position = "relative";
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf0f0f0);
@@ -156,6 +157,78 @@ export function createSCADViewer(containerEl, opts = {}) {
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
   controls.target.set(0, 0, 0);
+
+  const overlayScene = new THREE.Scene();
+  const overlayCamera = new THREE.PerspectiveCamera(50, 1, 1, 100);
+  const overlayAxes = new THREE.AxesHelper(22);
+  overlayScene.add(overlayAxes);
+  const overlayRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  overlayRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  overlayRenderer.setSize(96, 96);
+  overlayRenderer.domElement.title = "Drag to rotate view";
+  overlayRenderer.domElement.style.cssText = [
+    "position:absolute",
+    "top:10px",
+    "right:10px",
+    "width:96px",
+    "height:96px",
+    "cursor:grab",
+    "border-radius:8px",
+    "background:rgba(255,255,255,0.72)",
+    "box-shadow:0 1px 6px rgba(15,23,42,0.2)",
+    "z-index:4",
+  ].join(";");
+  containerEl.appendChild(overlayRenderer.domElement);
+
+  let gizmoDragging = false;
+  let gizmoLastX = 0;
+  let gizmoLastY = 0;
+
+  function rotateCameraFromGizmo(deltaX, deltaY) {
+    const offset = camera.position.clone().sub(controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.theta -= deltaX * 0.01;
+    spherical.phi = Math.max(0.08, Math.min(Math.PI - 0.08, spherical.phi - deltaY * 0.01));
+    offset.setFromSpherical(spherical);
+    camera.position.copy(controls.target).add(offset);
+    camera.lookAt(controls.target);
+    controls.update();
+  }
+
+  function syncViewGizmo() {
+    const offset = camera.position.clone().sub(controls.target);
+    if (offset.lengthSq() < 0.0001) offset.set(1, 1, 1);
+    overlayCamera.position.copy(offset).setLength(50);
+    overlayCamera.up.copy(camera.up);
+    overlayCamera.lookAt(0, 0, 0);
+    overlayRenderer.render(overlayScene, overlayCamera);
+  }
+
+  overlayRenderer.domElement.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    gizmoDragging = true;
+    gizmoLastX = event.clientX;
+    gizmoLastY = event.clientY;
+    overlayRenderer.domElement.style.cursor = "grabbing";
+    overlayRenderer.domElement.setPointerCapture?.(event.pointerId);
+  });
+  overlayRenderer.domElement.addEventListener("pointermove", (event) => {
+    if (!gizmoDragging) return;
+    event.preventDefault();
+    event.stopPropagation();
+    rotateCameraFromGizmo(event.clientX - gizmoLastX, event.clientY - gizmoLastY);
+    gizmoLastX = event.clientX;
+    gizmoLastY = event.clientY;
+  });
+  const endGizmoDrag = (event) => {
+    if (!gizmoDragging) return;
+    gizmoDragging = false;
+    overlayRenderer.domElement.style.cursor = "grab";
+    if (event?.pointerId !== undefined) overlayRenderer.domElement.releasePointerCapture?.(event.pointerId);
+  };
+  overlayRenderer.domElement.addEventListener("pointerup", endGizmoDrag);
+  overlayRenderer.domElement.addEventListener("pointercancel", endGizmoDrag);
 
   scene.add(new THREE.GridHelper(120, 24));
   scene.add(new THREE.AxesHelper(60));
@@ -308,6 +381,7 @@ export function createSCADViewer(containerEl, opts = {}) {
     raf = requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
+    syncViewGizmo();
   }
   animate();
 
@@ -321,6 +395,7 @@ export function createSCADViewer(containerEl, opts = {}) {
     }
     clearHighlight();
     renderer.dispose();
+    overlayRenderer.dispose();
     containerEl.innerHTML = "";
   }
 

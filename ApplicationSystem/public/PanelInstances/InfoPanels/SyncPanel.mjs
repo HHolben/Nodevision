@@ -3,6 +3,7 @@
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { getNodevisionNavigationState } from "/NodevisionNavigationState.mjs";
+import { getActivePeerUrl, normalizeSyncTransport } from "/SyncTransportSettings.mjs";
 
 const navigationState = getNodevisionNavigationState();
 
@@ -54,6 +55,18 @@ const TEMPLATE = `
         <div style="font-weight:600;">Discovered Devices</div>
         <span data-peer-count style="font-size:0.85em;color:#666;">0 peers</span>
       </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0 10px;">
+        <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;">Connection Type
+          <select data-sync-transport style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:150px;">
+            <option value="wireless">Wireless</option>
+            <option value="usb">USB Cable</option>
+          </select>
+        </label>
+        <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;flex:1;min-width:230px;">Peer URL
+          <input data-peer-url type="url" inputmode="url" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
+        </label>
+      </div>
+      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Cable mode uses the existing peer sync system over a USB network interface. Connect the computers by USB, enable USB networking/tethering if needed, then enter the USB peer address, for example http://192.168.50.2:3000.</div>
       <div data-peer-list style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;"></div>
     </section>
 
@@ -157,6 +170,43 @@ function normalizeMaxFileSizeMb(value) {
 const SYNC_MAX_FILE_SIZE_MB_STORAGE_KEY = "nodevision.sync.maxFileSizeMb";
 const SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY = "nodevision.sync.pauseOnFileError";
 const SYNC_DIRECTION_STORAGE_KEY = "nodevision.sync.direction";
+const SYNC_TRANSPORT_STORAGE_KEY = "nodevision.sync.syncTransport";
+const SYNC_PEER_URL_STORAGE_KEY = "nodevision.sync.peerUrl";
+const SYNC_WIRELESS_PEER_URL_STORAGE_KEY = "nodevision.sync.wirelessPeerUrl";
+const SYNC_USB_PEER_URL_STORAGE_KEY = "nodevision.sync.usbPeerUrl";
+const WIRELESS_PEER_URL_PLACEHOLDER = "http://10.0.0.42:3000";
+const USB_PEER_URL_PLACEHOLDER = "http://192.168.50.2:3000";
+
+function readStoredSyncTransportSettings() {
+  try {
+    const peerUrl = String(window.localStorage?.getItem(SYNC_PEER_URL_STORAGE_KEY) || "").trim();
+    let wirelessPeerUrl = String(window.localStorage?.getItem(SYNC_WIRELESS_PEER_URL_STORAGE_KEY) || "").trim();
+    if (!wirelessPeerUrl && peerUrl) {
+      wirelessPeerUrl = peerUrl;
+      window.localStorage?.setItem(SYNC_WIRELESS_PEER_URL_STORAGE_KEY, wirelessPeerUrl);
+    }
+    return {
+      syncTransport: normalizeSyncTransport(window.localStorage?.getItem(SYNC_TRANSPORT_STORAGE_KEY)),
+      peerUrl,
+      wirelessPeerUrl,
+      usbPeerUrl: String(window.localStorage?.getItem(SYNC_USB_PEER_URL_STORAGE_KEY) || "").trim(),
+    };
+  } catch {
+    return { syncTransport: "wireless", peerUrl: "", wirelessPeerUrl: "", usbPeerUrl: "" };
+  }
+}
+
+function persistSyncTransportSettings(settings = {}) {
+  try {
+    window.localStorage?.setItem(SYNC_TRANSPORT_STORAGE_KEY, normalizeSyncTransport(settings.syncTransport));
+    window.localStorage?.setItem(SYNC_WIRELESS_PEER_URL_STORAGE_KEY, String(settings.wirelessPeerUrl || "").trim());
+    window.localStorage?.setItem(SYNC_USB_PEER_URL_STORAGE_KEY, String(settings.usbPeerUrl || "").trim());
+  } catch {}
+}
+
+function syncTransportLabel(value) {
+  return normalizeSyncTransport(value) === "usb" ? "USB Cable" : "Wireless";
+}
 
 function readStoredMaxFileSizeMb() {
   try {
@@ -256,6 +306,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const refreshBtn = panelElem.querySelector("[data-refresh]");
   const peerCountEl = panelElem.querySelector("[data-peer-count]");
   const peerListEl = panelElem.querySelector("[data-peer-list]");
+  const syncTransportSelect = panelElem.querySelector("[data-sync-transport]");
+  const peerUrlInput = panelElem.querySelector("[data-peer-url]");
+  const usbHelpEl = panelElem.querySelector("[data-usb-help]");
   const scopeSelect = panelElem.querySelector("[data-scope-select]");
   const syncDirectionSelect = panelElem.querySelector("[data-sync-direction]");
   const maxFileSizeInput = panelElem.querySelector("[data-sync-max-file-mb]");
@@ -293,6 +346,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     maxFileSizeMb: readStoredMaxFileSizeMb(),
     pauseOnFileError: readStoredPauseOnFileError(),
     syncDirection: readStoredSyncDirection(),
+    syncSettings: readStoredSyncTransportSettings(),
     defaultedProtectedPeerDeviceId: null,
     eventsClearedAt: 0,
     eventsPollTimer: null,
@@ -301,6 +355,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   if (maxFileSizeInput && state.maxFileSizeMb !== null) maxFileSizeInput.value = String(state.maxFileSizeMb);
   if (pauseOnFileErrorInput) pauseOnFileErrorInput.checked = state.pauseOnFileError;
   if (syncDirectionSelect) syncDirectionSelect.value = state.syncDirection;
+  if (syncTransportSelect) syncTransportSelect.value = state.syncSettings.syncTransport;
 
   const getMaxFileSizeBytes = () => {
     const mb = normalizeMaxFileSizeMb(maxFileSizeInput?.value);
@@ -311,6 +366,32 @@ export async function setupPanel(panelElem, panelVars = {}) {
     } catch {}
     if (maxFileSizeInput && mb !== null) maxFileSizeInput.value = String(mb);
     return maxFileSizeBytesFromMb(mb);
+  };
+
+  const renderTransportSettings = () => {
+    state.syncSettings.syncTransport = normalizeSyncTransport(state.syncSettings.syncTransport);
+    if (syncTransportSelect && syncTransportSelect.value !== state.syncSettings.syncTransport) syncTransportSelect.value = state.syncSettings.syncTransport;
+    if (peerUrlInput) {
+      peerUrlInput.value = getActivePeerUrl(state.syncSettings);
+      peerUrlInput.placeholder = state.syncSettings.syncTransport === "usb" ? USB_PEER_URL_PLACEHOLDER : WIRELESS_PEER_URL_PLACEHOLDER;
+    }
+    if (usbHelpEl) usbHelpEl.style.display = state.syncSettings.syncTransport === "usb" ? "block" : "none";
+  };
+
+  const setActivePeerUrl = (value) => {
+    const peerUrl = String(value || "").trim();
+    if (normalizeSyncTransport(state.syncSettings.syncTransport) === "usb") state.syncSettings.usbPeerUrl = peerUrl;
+    else state.syncSettings.wirelessPeerUrl = peerUrl;
+    persistSyncTransportSettings(state.syncSettings);
+  };
+
+  const getValidatedActivePeerUrl = () => {
+    const peerUrl = getActivePeerUrl(state.syncSettings);
+    if (!peerUrl) {
+      setError(errorEl, "Enter a " + syncTransportLabel(state.syncSettings.syncTransport) + " peer URL.");
+      return "";
+    }
+    return peerUrl;
   };
 
   const getSelectedPeer = () => {
@@ -348,7 +429,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   };
 
   const syncRunBody = ({ deviceId, scope, dryRun }) => {
-    const body = { deviceId, scope, dryRun: Boolean(dryRun), syncDirection: state.syncDirection, direction: state.syncDirection };
+    const body = { deviceId, scope, peerUrl: getActivePeerUrl(state.syncSettings), syncTransport: state.syncSettings.syncTransport, dryRun: Boolean(dryRun), syncDirection: state.syncDirection, direction: state.syncDirection };
     const maxFileSizeBytes = getMaxFileSizeBytes();
     if (maxFileSizeBytes !== null) body.maxFileSizeBytes = maxFileSizeBytes;
     body.onFileError = state.pauseOnFileError ? "pause" : "fail";
@@ -590,7 +671,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
     if (statusMessage) setStatus(statusEl, statusMessage);
@@ -650,6 +731,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
       });
     }
 
+    const activePeerUrl = getValidatedActivePeerUrl();
+    if (!activePeerUrl) {
+      if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "missing_peer_url", transport: state.syncSettings.syncTransport, jobCreationRequestSent: false });
+      return;
+    }
     if (!deviceId) {
       if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "no_selected_peer", jobCreationRequestSent: false });
       return setError(errorEl, "Select a discovered peer before running sync.");
@@ -747,6 +833,17 @@ export async function setupPanel(panelElem, panelVars = {}) {
     } finally { setBusy(false); }
   };
 
+
+  renderTransportSettings();
+
+  syncTransportSelect?.addEventListener("change", () => {
+    state.syncSettings.syncTransport = normalizeSyncTransport(syncTransportSelect.value);
+    persistSyncTransportSettings(state.syncSettings);
+    renderTransportSettings();
+    setError(errorEl, "");
+  });
+  peerUrlInput?.addEventListener("input", () => { setActivePeerUrl(peerUrlInput.value); });
+  peerUrlInput?.addEventListener("change", () => { setActivePeerUrl(peerUrlInput.value); renderTransportSettings(); });
 
   maxFileSizeInput?.addEventListener("change", () => { getMaxFileSizeBytes(); });
   syncDirectionSelect?.addEventListener("change", () => {

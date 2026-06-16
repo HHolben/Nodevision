@@ -164,6 +164,8 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
   const layersById = new Map();
   let selectedId = null;
   let editHandler = null;
+  let userLocationMarker = null;
+  let userLocationAccuracyCircle = null;
 
   function defaultPathStyle(record, selected = false) {
     return {
@@ -272,6 +274,57 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     setSelected(selectedId);
   }
 
+  function clearUserLocation() {
+    if (userLocationMarker && map.hasLayer(userLocationMarker)) map.removeLayer(userLocationMarker);
+    if (userLocationAccuracyCircle && map.hasLayer(userLocationAccuracyCircle)) map.removeLayer(userLocationAccuracyCircle);
+    userLocationMarker = null;
+    userLocationAccuracyCircle = null;
+  }
+
+  function setUserLocation(location) {
+    const lat = Number(location?.lat);
+    const lon = Number(location?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      clearUserLocation();
+      return;
+    }
+    const latLng = [lat, lon];
+    const accuracy = Number(location?.accuracy);
+    if (!userLocationMarker) {
+      userLocationMarker = L.circleMarker(latLng, {
+        radius: 8,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#0a84ff",
+        fillOpacity: 0.95,
+        interactive: false,
+      }).addTo(map);
+    } else {
+      userLocationMarker.setLatLng(latLng);
+    }
+    userLocationMarker.bringToFront?.();
+
+    if (Number.isFinite(accuracy) && accuracy > 0) {
+      if (!userLocationAccuracyCircle) {
+        userLocationAccuracyCircle = L.circle(latLng, {
+          radius: accuracy,
+          color: "#0a84ff",
+          weight: 1,
+          fillColor: "#0a84ff",
+          fillOpacity: 0.12,
+          interactive: false,
+        }).addTo(map);
+      } else {
+        userLocationAccuracyCircle.setLatLng(latLng);
+        userLocationAccuracyCircle.setRadius(accuracy);
+      }
+      userLocationAccuracyCircle.bringToBack?.();
+    } else if (userLocationAccuracyCircle) {
+      map.removeLayer(userLocationAccuracyCircle);
+      userLocationAccuracyCircle = null;
+    }
+  }
+
   function disableEdit() {
     if (editHandler?.disable) editHandler.disable();
     editHandler = null;
@@ -328,7 +381,10 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     startAddPlacemark: (callback) => startDraw("marker", callback),
     startDrawPath: (callback) => startDraw("polyline", callback),
     startDrawPolygon: (callback) => startDraw("polygon", callback),
+    setUserLocation,
+    clearUserLocation,
     destroy() {
+      clearUserLocation();
       disableEdit();
       baseLayerManager?.destroy?.();
       map.remove();

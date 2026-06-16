@@ -84,7 +84,7 @@ function chooseSCADOpenMode(container, { scadPath, projectPath, reason }) {
             No parametric project file found (<b>${escapeHTML(projectPath)}</b>).
           </div>
           <div style="margin-top:6px;">
-            Visual (parametric) mode can only import a restricted subset of SCAD (primitives/transforms/booleans).
+            Visual parametric mode can import a restricted subset of SCAD. Unsupported code starts from an editable parametric model instead.
           </div>
           ${reason ? `<div style="margin-top:6px; color:#8a1c1c;">Import reason: ${escapeHTML(String(reason))}</div>` : ""}
         </div>
@@ -92,10 +92,6 @@ function chooseSCADOpenMode(container, { scadPath, projectPath, reason }) {
           <button id="nvOpenParametric"
             style="padding:8px 10px; border:1px solid #ccc; border-radius:10px; background:#fff; cursor:pointer; font:12px monospace;">
             Start parametric model
-          </button>
-          <button id="nvOpenCode"
-            style="padding:8px 10px; border:1px solid #ccc; border-radius:10px; background:#fff; cursor:pointer; font:12px monospace;">
-            Edit raw SCAD code
           </button>
         </div>
         <div style="color:#666; margin-top:12px;">
@@ -105,9 +101,7 @@ function chooseSCADOpenMode(container, { scadPath, projectPath, reason }) {
     `;
 
     const btnParametric = container.querySelector("#nvOpenParametric");
-    const btnCode = container.querySelector("#nvOpenCode");
     btnParametric?.addEventListener("click", () => resolve("parametric"));
-    btnCode?.addEventListener("click", () => resolve("code"));
   });
 }
 
@@ -157,7 +151,6 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
         parameters: projectJson.parameters || {},
         sceneTree: projectJson.sceneTree || structuredClone(DEFAULT_ROOT),
         scadCode: projectJson.scadCode || "",
-        manualCode: false,
       };
     }
 
@@ -169,17 +162,6 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
           parameters: parsedProject.parameters,
           sceneTree: parsedProject.sceneTree,
           scadCode,
-          manualCode: false,
-        };
-      }
-
-      if (openMode === "code") {
-        return {
-          filePath: scadPath,
-          parameters: parseParametersFromSCAD(scadText),
-          sceneTree: structuredClone(DEFAULT_ROOT),
-          scadCode: scadText,
-          manualCode: true,
         };
       }
 
@@ -190,12 +172,11 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
         parameters: starter.parameters,
         sceneTree: starter.sceneTree,
         scadCode: starter.scadCode,
-        manualCode: false,
       };
     }
 
     const example = makeExampleProject();
-    return { filePath: scadPath, ...example, manualCode: false };
+    return { filePath: scadPath, ...example };
   })();
 
   const ui = createSCADGraphicalEditorUI(container, initialState);
@@ -217,7 +198,6 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
   }
 
   function regenFromTreeIfNeeded() {
-    if (ui.state.manualCode) return;
     const scad = generateSCAD(ui.state.sceneTree, ui.state.parameters);
     ui.setSCADCode(scad);
   }
@@ -234,7 +214,8 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
 
   async function requestOpenSCADRender(reason) {
     const token = ++latestRenderToken;
-    const scadCode = ui.state.scadCode || "";
+    const scadCode = generateSCAD(ui.state.sceneTree, ui.state.parameters);
+    ui.setSCADCode(scadCode);
     if (!String(scadCode).trim()) {
       ui.setStatus("Nothing to render.");
       return;
@@ -295,24 +276,9 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
     requestOpenSCADRender("manual").catch((err) => ui.setStatus(`Render error: ${err?.message || String(err)}`));
   });
 
-  ui.events.addEventListener("manualCodeToggled", () => {
-    regenFromTreeIfNeeded();
-    scheduleOpenSCADRender("mode");
-    ui.setStatus(ui.state.manualCode ? "Manual code mode (scene tree not updated from code)." : "Generated code mode.");
-  });
-
-  ui.events.addEventListener("manualCodeChanged", (e) => {
-    const code = e.detail?.scadCode ?? ui.state.scadCode;
-    const parsed = parseParametersFromSCAD(code);
-    ui.setProjectJSON({ parameters: parsed, sceneTree: ui.state.sceneTree, scadCode: code });
-    ui.setStatus("Manual code updated. Parameters parsed; scene tree unchanged.");
-    viewer.setApproximateFromTree(ui.state.sceneTree, ui.state.parameters, { fit: false });
-    scheduleOpenSCADRender("code");
-  });
-
   ui.events.addEventListener("saveSCADRequested", async () => {
     try {
-      const scad = ui.state.manualCode ? (ui.state.scadCode || "") : generateSCAD(ui.state.sceneTree, ui.state.parameters);
+      const scad = generateSCAD(ui.state.sceneTree, ui.state.parameters);
       ui.setSCADCode(scad);
       await postSave({ path: scadPath, content: scad, encoding: "utf8" });
       ui.setStatus("Saved .scad.");
@@ -323,7 +289,7 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
 
   ui.events.addEventListener("saveProjectRequested", async () => {
     try {
-      const scad = ui.state.manualCode ? (ui.state.scadCode || "") : generateSCAD(ui.state.sceneTree, ui.state.parameters);
+      const scad = generateSCAD(ui.state.sceneTree, ui.state.parameters);
       ui.setSCADCode(scad);
       await postSave({ path: scadPath, content: scad, encoding: "utf8" });
 
@@ -353,9 +319,9 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
     viewer,
     scadPath,
     projectPath,
-    generateSCAD: () => (ui.state.manualCode ? (ui.state.scadCode || "") : generateSCAD(ui.state.sceneTree, ui.state.parameters)),
+    generateSCAD: () => generateSCAD(ui.state.sceneTree, ui.state.parameters),
     saveSCAD: async (path = scadPath) => {
-      const code = ui.state.manualCode ? (ui.state.scadCode || "") : generateSCAD(ui.state.sceneTree, ui.state.parameters);
+      const code = generateSCAD(ui.state.sceneTree, ui.state.parameters);
       ui.setSCADCode(code);
       await postSave({ path, content: code, encoding: "utf8" });
     },

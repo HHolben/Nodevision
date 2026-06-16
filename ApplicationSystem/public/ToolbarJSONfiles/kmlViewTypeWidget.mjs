@@ -18,6 +18,10 @@ function currentChartPackPath() {
   return String(window.KMLEditorContext?.getAviationChartPackPath?.() || window.NodevisionState?.kmlAviationChartPackPath || "");
 }
 
+function currentUserLocationEnabled() {
+  return window.KMLEditorContext?.getUserLocationEnabled?.() === true;
+}
+
 function dispatchAction(action) {
   const handler = window.NodevisionState?.activeActionHandler;
   if (typeof handler === "function") return handler(action);
@@ -46,6 +50,7 @@ function render(hostElement) {
         "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"globe\" /> Globe</label>" +
         "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"aviation\" /> Aviation</label>" +
       "</fieldset>" +
+      "<label style=\"display:flex;align-items:center;gap:5px;\"><input data-nv-kml-user-location type=\"checkbox\" /> My Location</label>" +
       "<span aria-hidden=\"true\" style=\"width:1px;height:20px;background:#c8d0da;\"></span>" +
       "<label style=\"display:flex;align-items:center;gap:6px;min-width:min(380px,100%);\">Chart Pack" +
         "<input data-nv-kml-chart-path type=\"text\" placeholder=\"Aviation/Charts/FAA_Sectional_Example/chart-pack.json\" style=\"height:24px;min-width:260px;width:32vw;max-width:420px;box-sizing:border-box;border:1px solid #aeb9c8;border-radius:4px;padding:2px 6px;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;\" />" +
@@ -63,6 +68,8 @@ function sync(hostElement) {
   });
   const input = hostElement.querySelector("[data-nv-kml-chart-path]");
   if (input && document.activeElement !== input) input.value = currentChartPackPath();
+  const userLocationInput = hostElement.querySelector("[data-nv-kml-user-location]");
+  if (userLocationInput) userLocationInput.checked = currentUserLocationEnabled();
 }
 
 export function initToolbarWidget(hostElement) {
@@ -76,6 +83,9 @@ export function initToolbarWidget(hostElement) {
   hostElement.querySelector("[data-nv-kml-chart-apply]")?.addEventListener("click", () => applyChartPackPath(hostElement));
   hostElement.querySelector("[data-nv-kml-chart-select]")?.addEventListener("click", () => dispatchAction("selectAviationChartPack"));
   hostElement.querySelector("[data-nv-kml-chart-clear]")?.addEventListener("click", () => dispatchAction("clearAviationChartPack"));
+  hostElement.querySelector("[data-nv-kml-user-location]")?.addEventListener("change", (event) => {
+    dispatchAction(event.currentTarget?.checked ? "enableUserLocation" : "disableUserLocation");
+  });
   hostElement.querySelector("[data-nv-kml-chart-path]")?.addEventListener("keydown", (event) => {
     if (event.key === "Enter") applyChartPackPath(hostElement);
   });

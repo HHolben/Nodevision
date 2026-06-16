@@ -130,7 +130,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
    *  parameters: Record<string,string|number>,
    *  sceneTree: any,
    *  scadCode: string,
-   *  manualCode: boolean,
    *  selectedId: string|null,
    * }} */
   const state = {
@@ -138,7 +137,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
     parameters: normalizeParameters(initialState.parameters || {}),
     sceneTree: initialState.sceneTree || structuredClone(DEFAULT_ROOT),
     scadCode: initialState.scadCode || "",
-    manualCode: !!initialState.manualCode,
     selectedId: initialState.selectedId || (initialState.sceneTree?.id ?? null),
   };
 
@@ -172,7 +170,7 @@ export function createSCADGraphicalEditorUI(container, initialState) {
   });
   container.appendChild(root);
 
-  // Overlay container (used for "Add Node" and "Code" dialogs)
+  // Overlay container for model-editing dialogs
   const overlay = el("div", {
     style: [
       "position:absolute",
@@ -208,7 +206,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
       smallBtn("Render (OpenSCAD)", () => emit("renderRequested", {})),
       smallBtn("Save .scad", () => emit("saveSCADRequested", {})),
       smallBtn("Save Project", () => emit("saveProjectRequested", {})),
-      smallBtn("Code", () => emit("codeDialogRequested", {})),
     ]),
   ]);
   root.appendChild(header);
@@ -259,7 +256,7 @@ export function createSCADGraphicalEditorUI(container, initialState) {
   const statusBar = el("div", { style: "padding:8px 10px; border-top:1px solid #eee; font:12px/1.2 monospace; color:#555;" }, ["Ready."]);
   mid.appendChild(statusBar);
 
-  // Right side: tree + node props + code
+  // Right side: tree + node props
   const treeHeader = el("div", { style: "padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between; gap:10px;" }, [
     el("div", { style: "font:600 12px/1.2 monospace; color:#111;" }, ["Geometry Tree"]),
     el("div", { style: "display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;" }, [
@@ -286,29 +283,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
 
   const propsBody = el("div", { style: "padding:10px; overflow:auto; max-height:220px; border-bottom:1px solid #eee;" });
   right.appendChild(propsBody);
-
-  // Code editor (shown in overlay; model-first UI keeps code out of the main layout)
-  const codeArea = el("textarea", {
-    style: [
-      "width:100%",
-      "min-height:55vh",
-      "max-height:75vh",
-      "box-sizing:border-box",
-      "padding:10px",
-      "border:1px solid #ddd",
-      "border-radius:10px",
-      "outline:none",
-      "resize:vertical",
-      "font:12px/1.35 monospace",
-      "background:#fafafa",
-    ].join(";"),
-  });
-
-  codeArea.addEventListener("input", () => {
-    if (!state.manualCode) return;
-    state.scadCode = codeArea.value;
-    emit("manualCodeChanged", { scadCode: state.scadCode });
-  });
 
   function openAddDialog() {
     const card = el("div", { style: "width:520px; max-width:90vw; background:#fff; border-radius:12px; border:1px solid #ddd; padding:12px;" });
@@ -345,43 +319,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
       }),
     ]);
     card.appendChild(footer);
-    openOverlay(card);
-  }
-
-  function openCodeDialog() {
-    redrawCode();
-    const card = el("div", { style: "width:860px; max-width:95vw; background:#fff; border-radius:12px; border:1px solid #ddd; padding:12px; box-sizing:border-box;" });
-
-    const titleBar = el("div", { style: "display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;" }, [
-      el("div", { style: "font:600 12px/1.3 monospace; color:#111;" }, ["OpenSCAD Code"]),
-      smallBtn("Close", closeOverlay),
-    ]);
-    card.appendChild(titleBar);
-
-    const manualRow = el("div", { style: "display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;" }, [
-      el("div", { style: "font:12px/1.35 monospace; color:#555;" }, [
-        state.manualCode ? "Manual mode: editing code updates parameters (best effort)." : "Generated mode: code is read-only output from the model tree.",
-      ]),
-      el("label", { style: "display:flex; gap:6px; align-items:center; font:12px/1 monospace; color:#333; user-select:none;" }, [
-        (() => {
-          const cb = el("input", { type: "checkbox" });
-          cb.checked = state.manualCode;
-          cb.addEventListener("change", () => {
-            state.manualCode = cb.checked;
-            emit("manualCodeToggled", { enabled: state.manualCode });
-            redrawCode();
-            manualRow.firstChild.textContent = state.manualCode
-              ? "Manual mode: editing code updates parameters (best effort)."
-              : "Generated mode: code is read-only output from the model tree.";
-          });
-          return cb;
-        })(),
-        el("span", {}, ["Manual edit"]),
-      ]),
-    ]);
-    card.appendChild(manualRow);
-
-    card.appendChild(codeArea);
     openOverlay(card);
   }
 
@@ -585,12 +522,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
     propsBody.appendChild(el("div", { style: "margin-top:8px; display:flex; justify-content:flex-end;" }, [apply]));
   }
 
-  function redrawCode() {
-    codeArea.readOnly = !state.manualCode;
-    codeArea.style.background = state.manualCode ? "#fff" : "#fafafa";
-    codeArea.value = state.scadCode || "";
-  }
-
   function redraw() {
     redrawParameters();
     redrawTree();
@@ -608,7 +539,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
   // Public API
   function setSCADCode(scadCode) {
     state.scadCode = scadCode || "";
-    redrawCode();
   }
 
   function setStatus(text) {
@@ -633,7 +563,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
 
   // Wire add dialog
   events.addEventListener("addNodeRequested", openAddDialog);
-  events.addEventListener("codeDialogRequested", openCodeDialog);
 
   redraw();
 
@@ -646,7 +575,6 @@ export function createSCADGraphicalEditorUI(container, initialState) {
     getProjectJSON,
     setProjectJSON,
     openAddDialog,
-    openCodeDialog,
     selectNode,
     addNodeOfType,
     deleteSelected,
