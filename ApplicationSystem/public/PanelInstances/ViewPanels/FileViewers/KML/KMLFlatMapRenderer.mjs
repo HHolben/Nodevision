@@ -132,9 +132,18 @@ function markerIcon(color = "#d93b30", selected = false) {
   const size = selected ? 18 : 14;
   return window.L.divIcon({
     className: "nv-kml-marker-icon",
-    html: `<span style="width:${size}px;height:${size}px;background:${color};border-color:${selected ? "#fff" : "#242424"}"></span>`,
+    html: '<span style="width:' + size + 'px;height:' + size + 'px;background:' + color + ';border-color:' + (selected ? '#fff' : '#242424') + '"></span>',
     iconSize: [size + 6, size + 6],
     iconAnchor: [(size + 6) / 2, (size + 6) / 2],
+  });
+}
+
+function userLocationIcon() {
+  return window.L.divIcon({
+    className: "nv-kml-user-location-icon",
+    html: "<span></span>",
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
   });
 }
 
@@ -235,6 +244,14 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     map.fitBounds(group.getBounds().pad(0.2), { maxZoom: 16 });
   }
 
+  function flyToLocation(location) {
+    const lat = Number(location?.lat);
+    const lon = Number(location?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    map.invalidateSize({ pan: false });
+    map.flyTo([lat, lon], Math.max(map.getZoom(), 13), { duration: 0.45 });
+  }
+
   function flyToRecord(record) {
     map.invalidateSize({ pan: false });
     const layer = layersById.get(record?.id);
@@ -291,18 +308,16 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     const latLng = [lat, lon];
     const accuracy = Number(location?.accuracy);
     if (!userLocationMarker) {
-      userLocationMarker = L.circleMarker(latLng, {
-        radius: 8,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: "#0a84ff",
-        fillOpacity: 0.95,
+      userLocationMarker = L.marker(latLng, {
+        icon: userLocationIcon(),
         interactive: false,
+        keyboard: false,
+        zIndexOffset: 10000,
       }).addTo(map);
     } else {
       userLocationMarker.setLatLng(latLng);
     }
-    userLocationMarker.bringToFront?.();
+    userLocationMarker.setZIndexOffset?.(10000);
 
     if (Number.isFinite(accuracy) && accuracy > 0) {
       if (!userLocationAccuracyCircle) {
@@ -376,6 +391,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     setSelected,
     fitAll,
     flyToRecord,
+    flyToLocation,
     setRecordVisible,
     editRecord,
     startAddPlacemark: (callback) => startDraw("marker", callback),

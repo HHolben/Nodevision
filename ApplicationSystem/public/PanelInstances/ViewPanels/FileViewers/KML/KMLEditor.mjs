@@ -65,6 +65,10 @@ function injectKMLStyles() {
     .nv-kml-empty{padding:10px;color:#64748b}
     .nv-kml-todo{font-size:11px;color:#64748b;background:#eef2f7;border-radius:4px;padding:6px}
     .nv-kml-marker-icon span{display:block;border:2px solid #242424;border-radius:50%;box-shadow:0 1px 5px rgba(0,0,0,.45)}
+    .nv-kml-user-location-icon{position:relative;width:34px;height:34px;pointer-events:none}
+    .nv-kml-user-location-icon span{position:absolute;inset:6px;border:3px solid #fff;border-radius:50%;background:#0a84ff;box-shadow:0 2px 10px rgba(15,23,42,.38)}
+    .nv-kml-user-location-icon span::before{content:"";position:absolute;inset:-9px;border:2px solid rgba(10,132,255,.5);border-radius:50%;background:rgba(10,132,255,.13)}
+    .nv-kml-user-location-icon span::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;transform:translate(-50%,-50%);border-radius:50%;background:#fff}
   `;
   document.head.appendChild(style);
 }
@@ -102,6 +106,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   let aviationChartStatus = null;
   let userLocationEnabled = false;
   let userLocationWatchId = null;
+  let userLocationLastPosition = null;
+  let userLocationHasCentered = false;
+  let userLocationRequestId = 0;
   let layersContext = null;
   let propertiesContext = null;
   const layerHosts = new Set();
@@ -166,6 +173,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       geolocation.clearWatch(userLocationWatchId);
     }
     userLocationWatchId = null;
+    userLocationRequestId += 1;
+    userLocationLastPosition = null;
+    userLocationHasCentered = false;
     renderer?.clearUserLocation?.();
   }
 
@@ -174,36 +184,139 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     dispatchKMLChange(reason, { userLocationEnabled });
   }
 
-  function startUserLocationTelemetry() {
-    if (!userLocationEnabled || userLocationWatchId !== null) return;
-    const geolocation = globalThis.navigator?.geolocation;
-    if (!geolocation?.watchPosition) {
+  function applyUserLocationPosition(position, { center = false } = {}) {
+    if (!userLocationEnabled) return false;
+    const coords = position?.coords || position || {};
+    const location = {
+      lat: Number(coords.latitude ?? coords.lat),
+      lon: Number(coords.longitude ?? coords.lon),
+      accuracy: Number(coords.accuracy),
+    };
+    if (!Number.isFinite(location.lat) || !Number.isFinite(location.lon)) {
+      renderer?.clearUserLocation?.();
+      showStatus(status, "User location did not include valid coordinates.", "error");
+      return false;
+    }
+
+    userLocationLastPosition = location;
+    renderer?.setUserLocation?.(location);
+    if (center || !userLocationHasCentered) {
+      renderer?.flyToLocation?.(location);
+      userLocationHasCentered = true;
+    }
+    const accuracyLabel = Number.isFinite(location.accuracy) && location.accuracy > 0 ? " (accuracy " + Math.round(location.accuracy) + " m)" : "";
+    showStatus(status, "Showing your location on the " + viewTypeLabel(viewType) + ": " + location.lat.toFixed(5) + ", " + location.lon.toFixed(5) + accuracyLabel + ".");
+    return true;
+  }
+
+  function browserLocationHelpMessage(err) {
+    const message = String(err?.message || "location permission was not granted").trim();
+    if (globalThis.isSecureContext === false) {
+      return "Browser location requires localhost, HTTPS, or a secure context. Open Nodevision as http://localhost:3000 or allow location for this site.";
+    }
+    if (err?.code === 1) {
+      return "Location permission is blocked for this site. Allow location in the browser site settings, then try My Location again.";
+    }
+    return message;
+  }
+
+  function handleUserLocationFailure(err, { fatal = false } = {}) {
+    if (fatal) {
       userLocationEnabled = false;
       stopUserLocationTelemetry();
       publishUserLocationState();
-      showStatus(status, "User location is unavailable in this browser.", "error");
+    } else {
+      publishUserLocationState();
+    }
+    showStatus(status, "User location is waiting: " + browserLocationHelpMessage(err), "error");
+  }
+
+  function startUserLocationTelemetry() {
+    if (!userLocationEnabled) return;
+    if (userLocationWatchId !== null) {
+      if (userLocationLastPosition) applyUserLocationPosition(userLocationLastPosition, { center: true });
+      return;
+    }
+    const geolocation = globalThis.navigator?.geolocation;
+    if (!geolocation?.getCurrentPosition && !geolocation?.watchPosition) {
+      handleUserLocationFailure(new Error("User location is unavailable in this browser."));
       return;
     }
 
-    userLocationWatchId = geolocation.watchPosition(
+    const requestId = ++userLocationRequestId;
+    const quickOptions = { enableHighAccuracy: false, maximumAge: 300000, timeout: 30000 };
+    const watchOptions = { enableHighAccuracy: true, maximumAge: 60000, timeout: 60000 };
+
+    if (geolocation.getCurrentPosition) {
+      geolocation.getCurrentPosition(
+        (position) => {
+          if (requestId === userLocationRequestId) applyUserLocationPosition(position, { center: true });
+        },
+        (err) => {
+          if (requestId === userLocationRequestId && !geolocation.watchPosition) handleUserLocationFailure(err);
+        },
+        quickOptions,
+      );
+    }
+
+    if (geolocation.watchPosition && userLocationWatchId === null) {
+      userLocationWatchId = geolocation.watchPosition(
+        (position) => {
+          if (requestId === userLocationRequestId) applyUserLocationPosition(position);
+        },
+        (err) => {
+          if (requestId === userLocationRequestId) handleUserLocationFailure(err);
+        },
+        watchOptions,
+      );
+    }
+  }
+
+  function centerUserLocation() {
+    if (userLocationLastPosition) {
+      return applyUserLocationPosition(userLocationLastPosition, { center: true });
+    }
+
+    if (!userLocationEnabled) {
+      userLocationEnabled = true;
+      userLocationHasCentered = false;
+      publishUserLocationState();
+    }
+
+    const geolocation = globalThis.navigator?.geolocation;
+    if (!geolocation?.getCurrentPosition) {
+      startUserLocationTelemetry();
+      return true;
+    }
+
+    const requestId = ++userLocationRequestId;
+    const quickOptions = { enableHighAccuracy: false, maximumAge: 300000, timeout: 30000 };
+    const watchOptions = { enableHighAccuracy: true, maximumAge: 60000, timeout: 60000 };
+    showStatus(status, "Finding your location...");
+
+    geolocation.getCurrentPosition(
       (position) => {
-        if (!userLocationEnabled) return;
-        const coords = position?.coords || {};
-        renderer?.setUserLocation?.({
-          lat: Number(coords.latitude),
-          lon: Number(coords.longitude),
-          accuracy: Number(coords.accuracy),
-        });
-        showStatus(status, "Showing your location on the " + viewTypeLabel(viewType) + ".");
+        if (requestId === userLocationRequestId) applyUserLocationPosition(position, { center: true });
       },
       (err) => {
-        userLocationEnabled = false;
-        stopUserLocationTelemetry();
-        publishUserLocationState();
-        showStatus(status, "User location is off: " + (err?.message || "location permission was not granted") + ".", "error");
+        if (requestId === userLocationRequestId) handleUserLocationFailure(err);
       },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+      quickOptions,
     );
+
+    if (geolocation.watchPosition && userLocationWatchId === null) {
+      userLocationWatchId = geolocation.watchPosition(
+        (position) => {
+          if (requestId === userLocationRequestId) applyUserLocationPosition(position);
+        },
+        (err) => {
+          if (requestId === userLocationRequestId) handleUserLocationFailure(err);
+        },
+        watchOptions,
+      );
+    }
+
+    return true;
   }
 
   function setUserLocationEnabled(enabled) {
@@ -217,6 +330,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     }
 
     userLocationEnabled = true;
+    userLocationLastPosition = null;
+    userLocationHasCentered = false;
     publishUserLocationState();
     showStatus(status, "Requesting your location...");
     startUserLocationTelemetry();
@@ -580,6 +695,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       enableUserLocation: () => setUserLocationEnabled(true),
       disableUserLocation: () => setUserLocationEnabled(false),
       toggleUserLocation: () => setUserLocationEnabled(!userLocationEnabled),
+      centerUserLocation,
+      locateUserLocation: centerUserLocation,
+      zoomToUserLocation: centerUserLocation,
       setViewTypeGlobe: () => setViewType("globe"),
       setViewTypeMap: () => setViewType("map"),
       setViewTypeStreet: () => setViewType("map"),

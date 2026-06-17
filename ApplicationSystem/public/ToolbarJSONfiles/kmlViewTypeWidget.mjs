@@ -18,14 +18,34 @@ function currentChartPackPath() {
   return String(window.KMLEditorContext?.getAviationChartPackPath?.() || window.NodevisionState?.kmlAviationChartPackPath || "");
 }
 
+let requestedUserLocationEnabled = null;
+
 function currentUserLocationEnabled() {
-  return window.KMLEditorContext?.getUserLocationEnabled?.() === true;
+  const fromContext = window.KMLEditorContext?.getUserLocationEnabled?.();
+  if (typeof fromContext === "boolean") return fromContext;
+  if (typeof requestedUserLocationEnabled === "boolean") return requestedUserLocationEnabled;
+  return window.NodevisionState?.kmlUserLocationEnabled === true;
 }
 
 function dispatchAction(action) {
+  const contextHandler = window.KMLEditorContext?.handleToolbarAction;
+  if (typeof contextHandler === "function") {
+    const result = contextHandler(action);
+    if (typeof result !== "undefined") return result;
+  }
+
   const handler = window.NodevisionState?.activeActionHandler;
-  if (typeof handler === "function") return handler(action);
-  return window.KMLEditorContext?.handleToolbarAction?.(action);
+  if (typeof handler === "function") {
+    const result = handler(action);
+    if (typeof result !== "undefined" && result !== null && result !== false) return result;
+  }
+
+  if (action === "enableUserLocation" || action === "disableUserLocation" || action === "centerUserLocation") {
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.kmlUserLocationEnabled = action !== "disableUserLocation";
+    return true;
+  }
+  return undefined;
 }
 
 function setViewType(viewType) {
@@ -50,7 +70,10 @@ function render(hostElement) {
         "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"globe\" /> Globe</label>" +
         "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"aviation\" /> Aviation</label>" +
       "</fieldset>" +
-      "<label style=\"display:flex;align-items:center;gap:5px;\"><input data-nv-kml-user-location type=\"checkbox\" /> My Location</label>" +
+      "<span style=\"display:flex;align-items:center;gap:4px;\">" +
+        "<input data-nv-kml-user-location type=\"checkbox\" aria-label=\"Enable My Location\" />" +
+        "<button type=\"button\" data-nv-kml-user-location-center title=\"Zoom to my location\" style=\"height:24px;padding:0 8px;border:1px solid #aeb9c8;border-radius:4px;background:#fff;color:#1f2933;font:12px system-ui,-apple-system,Segoe UI,sans-serif;cursor:pointer;\">My Location</button>" +
+      "</span>" +
       "<span aria-hidden=\"true\" style=\"width:1px;height:20px;background:#c8d0da;\"></span>" +
       "<label style=\"display:flex;align-items:center;gap:6px;min-width:min(380px,100%);\">Chart Pack" +
         "<input data-nv-kml-chart-path type=\"text\" placeholder=\"Aviation/Charts/FAA_Sectional_Example/chart-pack.json\" style=\"height:24px;min-width:260px;width:32vw;max-width:420px;box-sizing:border-box;border:1px solid #aeb9c8;border-radius:4px;padding:2px 6px;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;\" />" +
@@ -69,7 +92,20 @@ function sync(hostElement) {
   const input = hostElement.querySelector("[data-nv-kml-chart-path]");
   if (input && document.activeElement !== input) input.value = currentChartPackPath();
   const userLocationInput = hostElement.querySelector("[data-nv-kml-user-location]");
-  if (userLocationInput) userLocationInput.checked = currentUserLocationEnabled();
+  if (userLocationInput) {
+    const fromContext = window.KMLEditorContext?.getUserLocationEnabled?.();
+    if (typeof fromContext === "boolean") {
+      if (typeof requestedUserLocationEnabled === "boolean" && fromContext !== requestedUserLocationEnabled) {
+        window.KMLEditorContext?.setUserLocationEnabled?.(requestedUserLocationEnabled);
+        userLocationInput.checked = requestedUserLocationEnabled;
+        return;
+      }
+      if (typeof requestedUserLocationEnabled === "boolean") requestedUserLocationEnabled = null;
+      userLocationInput.checked = fromContext;
+      return;
+    }
+    userLocationInput.checked = currentUserLocationEnabled();
+  }
 }
 
 export function initToolbarWidget(hostElement) {
@@ -84,7 +120,13 @@ export function initToolbarWidget(hostElement) {
   hostElement.querySelector("[data-nv-kml-chart-select]")?.addEventListener("click", () => dispatchAction("selectAviationChartPack"));
   hostElement.querySelector("[data-nv-kml-chart-clear]")?.addEventListener("click", () => dispatchAction("clearAviationChartPack"));
   hostElement.querySelector("[data-nv-kml-user-location]")?.addEventListener("change", (event) => {
-    dispatchAction(event.currentTarget?.checked ? "enableUserLocation" : "disableUserLocation");
+    requestedUserLocationEnabled = event.currentTarget?.checked === true;
+    dispatchAction(requestedUserLocationEnabled ? "enableUserLocation" : "disableUserLocation");
+  });
+  hostElement.querySelector("[data-nv-kml-user-location-center]")?.addEventListener("click", () => {
+    requestedUserLocationEnabled = true;
+    dispatchAction("centerUserLocation");
+    sync(hostElement);
   });
   hostElement.querySelector("[data-nv-kml-chart-path]")?.addEventListener("keydown", (event) => {
     if (event.key === "Enter") applyChartPackPath(hostElement);

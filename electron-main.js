@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, dialog, ipcMain, session } from 'electron';
 import { createRuntime } from './ApplicationSystem/core/runtime.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -24,9 +24,41 @@ const runtime = createRuntime({
 let runtimeInstance = null;
 let mainWindow = null;
 
+function isNodevisionRuntimeUrl(rawUrl) {
+  try {
+    if (!runtimeInstance?.url) return false;
+    const requested = new URL(String(rawUrl || ""));
+    const runtimeUrl = new URL(runtimeInstance.url);
+    return requested.protocol === runtimeUrl.protocol
+      && requested.hostname === runtimeUrl.hostname
+      && requested.port === runtimeUrl.port;
+  } catch {
+    return false;
+  }
+}
+
+function installPermissionHandlers() {
+  const allowGeolocation = (webContents, rawUrl) => isNodevisionRuntimeUrl(rawUrl || webContents?.getURL?.());
+
+  if (typeof session.defaultSession.setPermissionCheckHandler === "function") {
+    session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+      return permission === "geolocation" && allowGeolocation(webContents, requestingOrigin);
+    });
+  }
+
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details = {}) => {
+    if (permission === "geolocation") {
+      callback(allowGeolocation(webContents, details.requestingUrl));
+      return;
+    }
+    callback(false);
+  });
+}
+
 export async function startElectronApp() {
   if (!runtimeInstance) {
     runtimeInstance = await runtime.start();
+    installPermissionHandlers();
   }
   if (!mainWindow) {
     mainWindow = new BrowserWindow({

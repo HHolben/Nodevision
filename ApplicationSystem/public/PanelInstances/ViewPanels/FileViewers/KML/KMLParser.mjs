@@ -1,6 +1,7 @@
 let nextRecordId = 1;
 
 const GEOMETRY_TYPES = ["Point", "LineString", "Polygon"];
+const EMPTY_KML_DOCUMENT = '<kml xmlns="http://www.opengis.net/kml/2.2"><Document/></kml>';
 
 function localName(node) {
   return node?.localName || node?.nodeName || "";
@@ -193,7 +194,9 @@ function parseErrorMessage(xmlDoc) {
 
 export function parseKML(kmlText = "") {
   nextRecordId = 1;
-  const xmlDoc = new DOMParser().parseFromString(kmlText, "application/xml");
+  const sourceText = String(kmlText ?? "");
+  const xmlText = sourceText.trim() ? sourceText : EMPTY_KML_DOCUMENT;
+  const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
   const parseError = parseErrorMessage(xmlDoc);
   if (parseError) throw new Error(parseError.split("\n")[0] || "Invalid KML/XML.");
 
@@ -203,7 +206,7 @@ export function parseKML(kmlText = "") {
   const state = {
     xmlDoc,
     root,
-    sourceText: kmlText,
+    sourceText,
     styles: collectStyles(xmlDoc),
     treeRecords: [],
     features: [],

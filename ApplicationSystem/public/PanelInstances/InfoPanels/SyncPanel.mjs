@@ -208,6 +208,19 @@ function syncTransportLabel(value) {
   return normalizeSyncTransport(value) === "usb" ? "USB Cable" : "Wireless";
 }
 
+function peerUrlFromDiscoveredPeer(peer) {
+  const address = String(peer?.address || "").trim();
+  const port = Number(peer?.port);
+  if (!address || !Number.isInteger(port) || port < 1 || port > 65535) return "";
+  try {
+    const host = address.includes(":") && !address.startsWith("[") ? "[" + address + "]" : address;
+    const parsed = new URL("http://" + host + ":" + port);
+    return parsed.protocol + "//" + parsed.host;
+  } catch {
+    return "";
+  }
+}
+
 function readStoredMaxFileSizeMb() {
   try {
     return normalizeMaxFileSizeMb(window.localStorage?.getItem(SYNC_MAX_FILE_SIZE_MB_STORAGE_KEY));
@@ -397,6 +410,14 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const getSelectedPeer = () => {
     const deviceId = state.status.selectedPeerDeviceId;
     return (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
+  };
+
+  const autofillPeerUrlFromPeer = (peer) => {
+    const peerUrl = peerUrlFromDiscoveredPeer(peer);
+    if (!peerUrl) return "";
+    setActivePeerUrl(peerUrl);
+    renderTransportSettings();
+    return peerUrl;
   };
 
   const peerRejectsIncomingWrites = (peer) => peer?.capabilities?.acceptsIncomingSyncWrites === false
@@ -901,6 +922,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
     try {
       await apiFetchJson("/api/sync/select-peer", { method: "POST", body: JSON.stringify({ deviceId }) });
       await refreshStatus();
+      const peerUrl = autofillPeerUrlFromPeer(getSelectedPeer() || selectedPeer);
+      const peerName = String(selectedPeer.deviceName || "peer");
+      setStatus(statusEl, peerUrl ? "Selected " + peerName + ". Peer URL set to " + peerUrl + "." : "Selected " + peerName + ".");
     } catch (err) {
       setError(errorEl, err?.message || "Unable to select peer");
     }

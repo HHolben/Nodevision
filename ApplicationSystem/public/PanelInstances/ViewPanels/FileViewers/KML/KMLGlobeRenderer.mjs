@@ -372,19 +372,29 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
 
     clearUserLocation();
     const coord = { lat, lon, alt: null };
-    const point = pointFromCoord(coord, EARTH_RADIUS + 0.05);
+    const surfacePoint = pointFromCoord(coord, EARTH_RADIUS + 0.012);
+    const point = pointFromCoord(coord, EARTH_RADIUS + 0.075);
+    const stem = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([surfacePoint, point]),
+      new THREE.LineBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.95, depthTest: false }),
+    );
+    stem.renderOrder = 20;
+    userLocationGroup.add(stem);
+
     const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(0.024, 24, 16),
-      new THREE.MeshStandardMaterial({ color: new THREE.Color("#0a84ff"), emissive: new THREE.Color("#062f73"), roughness: 0.32 }),
+      new THREE.SphereGeometry(0.045, 32, 20),
+      new THREE.MeshStandardMaterial({ color: new THREE.Color("#0a84ff"), emissive: new THREE.Color("#0a4fb5"), emissiveIntensity: 0.9, roughness: 0.28 }),
     );
     marker.position.copy(point);
+    marker.renderOrder = 21;
     userLocationGroup.add(marker);
 
     const halo = new THREE.Mesh(
-      new THREE.SphereGeometry(0.038, 24, 16),
-      new THREE.MeshBasicMaterial({ color: "#66b8ff", transparent: true, opacity: 0.24, depthWrite: false }),
+      new THREE.SphereGeometry(0.075, 32, 20),
+      new THREE.MeshBasicMaterial({ color: "#66b8ff", transparent: true, opacity: 0.26, depthWrite: false }),
     );
     halo.position.copy(point);
+    halo.renderOrder = 19;
     userLocationGroup.add(halo);
 
     const label = makeSpriteLabel("My Location");
@@ -475,6 +485,13 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
     const center = recordCenter(record) || firstCoord(record);
     if (!center) return;
     flyCameraToCoord(center, record.geometry?.type === "Point" ? 1.75 : 2.25);
+  }
+
+  function flyToLocation(location) {
+    const lat = Number(location?.lat);
+    const lon = Number(location?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    flyCameraToCoord({ lat, lon, alt: null }, 1.75);
   }
 
   function removePickablesForRecord(recordId) {
@@ -606,6 +623,7 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
     setSelected,
     fitAll,
     flyToRecord,
+    flyToLocation,
     setRecordVisible,
     editRecord,
     startAddPlacemark: (callback) => startDraw("marker", callback),
