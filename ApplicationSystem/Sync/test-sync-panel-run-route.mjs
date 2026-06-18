@@ -232,6 +232,42 @@ async function main() {
     assert(sameMachineFallbackRun.payload?.discoveredPeer?.url === `http://localhost:${reachableProbePort}`, "Expected localhost URL fallback selection");
     assert(getDiscoveredPeer(state, "nv_dev_trusted_same_machine")?.address === "localhost", "Expected same-machine fallback to persist localhost endpoint");
 
+    const usbMissingPeerUrlRun = await app.request("POST", "/api/sync/run", {
+      body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", dryRun: true, syncTransport: "usb" },
+    });
+    assert(usbMissingPeerUrlRun.statusCode === 400, "Expected USB run without peerUrl to be rejected");
+    assert(String(usbMissingPeerUrlRun.payload?.error || "").includes("USB Cable sync requires a peer URL"), "Expected USB missing peer URL explanation");
+
+    upsertDiscoveredPeer(state, {
+      deviceId: "nv_dev_trusted_usb_strict",
+      deviceName: "Trusted USB Strict Peer",
+      trusted: true,
+      address: "127.0.0.1",
+      port: reachableProbePort,
+      lastSeen: "2026-05-10T04:00:22.000Z",
+      capabilities: { sync: true, conflictResolution: true },
+      publicKey: "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA6666666666666666666666666666666666666666666=\n-----END PUBLIC KEY-----",
+    });
+
+    reachableProbeDeviceId = "nv_dev_trusted_usb_strict";
+    const deadUsbPeerUrl = "http://127.0.0.1:65533";
+    const usbStrictNoFallbackRun = await app.request("POST", "/api/sync/run", {
+      body: { deviceId: "nv_dev_trusted_usb_strict", scope: "SyncTest", dryRun: true, syncTransport: "usb", peerUrl: deadUsbPeerUrl },
+    });
+    assert(usbStrictNoFallbackRun.statusCode === 502, "Expected dead USB URL to fail instead of falling back to discovered endpoint");
+    assert(usbStrictNoFallbackRun.payload?.ok === false, "Expected dead USB URL run ok=false");
+    assert(String(usbStrictNoFallbackRun.payload?.details || "").includes(deadUsbPeerUrl), "Expected attempted URLs to include only the explicit USB URL");
+    assert(!String(usbStrictNoFallbackRun.payload?.details || "").includes(`http://127.0.0.1:${reachableProbePort}`), "Expected USB mode not to attempt discovered reachable endpoint");
+
+    const usbStrictRun = await app.request("POST", "/api/sync/run", {
+      body: { deviceId: "nv_dev_trusted_usb_strict", scope: "SyncTest", dryRun: true, syncTransport: "usb", peerUrl: `http://127.0.0.1:${reachableProbePort}` },
+    });
+    assert(usbStrictRun.statusCode === 200, "Expected explicit USB peer URL to succeed");
+    assert(usbStrictRun.payload?.ok === true, "Expected explicit USB peer URL payload ok=true");
+    assert(usbStrictRun.payload?.syncTransport === "usb", "Expected USB transport to be echoed");
+    assert(usbStrictRun.payload?.discoveredPeer?.url === `http://127.0.0.1:${reachableProbePort}`, "Expected USB run to report explicit USB URL");
+    assert(getDiscoveredPeer(state, "nv_dev_trusted_usb_strict")?.address === "127.0.0.1", "Expected USB run not to rewrite discovered endpoint beyond existing record");
+
     upsertDiscoveredPeer(state, {
       deviceId: "nv_dev_trusted_port_recovery",
       deviceName: "Trusted Peer Port Recovery",

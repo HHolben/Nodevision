@@ -743,6 +743,200 @@ function removeFontFamilyFromWysiwygSelection(wysiwyg) {
   markHtmlEditorDirty(wysiwyg);
 }
 
+const HTML_TEXT_STYLE_PROPERTIES = new Set([
+  "color",
+  "backgroundColor",
+  "webkitTextStrokeColor",
+  "webkitTextStrokeWidth",
+  "textShadow",
+]);
+
+function normalizeTextStyleProperties(styles = {}) {
+  const normalized = {};
+  for (const [property, value] of Object.entries(styles || {})) {
+    if (!HTML_TEXT_STYLE_PROPERTIES.has(property)) continue;
+    normalized[property] = String(value ?? "").trim();
+  }
+  return normalized;
+}
+
+function applyTextStylesToElement(el, styles = {}) {
+  if (!(el instanceof HTMLElement)) return;
+  const normalized = normalizeTextStyleProperties(styles);
+  for (const [property, value] of Object.entries(normalized)) {
+    el.style[property] = value;
+  }
+  if (el.getAttribute("style") === "") el.removeAttribute("style");
+}
+
+function applyTextStylesInFragment(fragment, styles = {}) {
+  const textNodes = [];
+  const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_ACCEPT;
+      if (["STYLE", "SCRIPT"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (parent.closest?.("[contenteditable='false']")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  for (const node of textNodes) {
+    const span = document.createElement("span");
+    applyTextStylesToElement(span, styles);
+    node.parentNode.insertBefore(span, node);
+    span.appendChild(node);
+  }
+
+  if (!textNodes.length && fragment.childNodes.length) {
+    const span = document.createElement("span");
+    applyTextStylesToElement(span, styles);
+    while (fragment.firstChild) span.appendChild(fragment.firstChild);
+    fragment.appendChild(span);
+  }
+}
+
+function clearTextStyleTarget(wysiwyg) {
+  if (!wysiwyg) return;
+  wysiwyg.querySelectorAll(`.${HTML_TEXT_STYLE_TARGET_CLASS}`).forEach((el) => {
+    el.classList.remove(HTML_TEXT_STYLE_TARGET_CLASS);
+  });
+}
+
+function findTextStyleTargetFromRange(wysiwyg, range) {
+  if (!range || !wysiwyg) return null;
+  const node = range.commonAncestorContainer;
+  const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  if (!element || !wysiwyg.contains(element)) return null;
+  const target = element.closest?.(HTML_TEXT_STYLE_SELECTOR) || nearestStyleTargetForRange(wysiwyg, range);
+  if (!target || !wysiwyg.contains(target)) return null;
+  if (target === wysiwyg) return null;
+  return target instanceof HTMLElement ? target : null;
+}
+
+function updateTextStyleSelectionState(wysiwyg, target = null) {
+  clearTextStyleTarget(wysiwyg);
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activeHtmlTextStyleTarget = target || null;
+  window.NodevisionState.htmlTextSelected = Boolean(target);
+  if (target instanceof HTMLElement) target.classList.add(HTML_TEXT_STYLE_TARGET_CLASS);
+}
+
+function selectTextStyleTargetForCurrentSelection(wysiwyg) {
+  const range = restoreEditorSelectionForStyle(wysiwyg);
+  if (!range) throw new Error("Select text in the HTML editor first.");
+  const target = findTextStyleTargetFromRange(wysiwyg, range);
+  updateTextStyleSelectionState(wysiwyg, target);
+  return target;
+}
+
+function applyTextStylesToWysiwygSelection(wysiwyg, styles = {}) {
+  const normalized = normalizeTextStyleProperties(styles);
+  if (!Object.keys(normalized).length) return;
+  const range = restoreEditorSelectionForStyle(wysiwyg);
+  if (!range) throw new Error("Select text in the HTML editor first.");
+
+  if (range.collapsed) {
+    const target = selectTextStyleTargetForCurrentSelection(wysiwyg) || nearestStyleTargetForRange(wysiwyg, range);
+    if (!target) throw new Error("No editable text target found.");
+    applyTextStylesToElement(target, normalized);
+    updateTextStyleSelectionState(wysiwyg, target);
+    markHtmlEditorDirty(wysiwyg);
+    rememberCurrentSelectionRange(wysiwyg);
+    return;
+  }
+
+  const fragment = range.extractContents();
+  applyTextStylesInFragment(fragment, normalized);
+  const container = document.createElement("span");
+  container.setAttribute("data-nv-temp-text-style-selection", "");
+  container.appendChild(fragment);
+  range.insertNode(container);
+
+  const firstInserted = container.firstChild;
+  const lastInserted = container.lastChild;
+  while (container.firstChild) container.parentNode.insertBefore(container.firstChild, container);
+  if (firstInserted && lastInserted && firstInserted.parentNode && lastInserted.parentNode) {
+    const newRange = document.createRange();
+    newRange.setStartBefore(firstInserted);
+    newRange.setEndAfter(lastInserted);
+    applySelectionRange(newRange);
+  }
+  container.remove();
+  const target = findTextStyleTargetFromRange(wysiwyg, getCurrentSelectionRangeInEditor(wysiwyg));
+  updateTextStyleSelectionState(wysiwyg, target);
+  rememberCurrentSelectionRange(wysiwyg);
+  markHtmlEditorDirty(wysiwyg);
+}
+
+function removeTextStylesFromElement(el) {
+  if (!(el instanceof HTMLElement)) return;
+  el.style.color = "";
+  el.style.backgroundColor = "";
+  el.style.webkitTextStrokeColor = "";
+  el.style.webkitTextStrokeWidth = "";
+  el.style.textShadow = "";
+  if (el.getAttribute("style") === "") el.removeAttribute("style");
+}
+
+function removeTextStylesInTree(root) {
+  if (root instanceof HTMLElement) removeTextStylesFromElement(root);
+  Array.from(root.querySelectorAll?.("[style]") || []).forEach(removeTextStylesFromElement);
+  unwrapStyleEmptySpans(root);
+}
+
+function removeTextStylesFromWysiwygSelection(wysiwyg) {
+  const range = restoreEditorSelectionForStyle(wysiwyg);
+  if (!range) throw new Error("Select text in the HTML editor first.");
+
+  if (range.collapsed) {
+    const target = selectTextStyleTargetForCurrentSelection(wysiwyg) || nearestStyleTargetForRange(wysiwyg, range);
+    if (target) removeTextStylesFromElement(target);
+    updateTextStyleSelectionState(wysiwyg, target);
+    markHtmlEditorDirty(wysiwyg);
+    rememberCurrentSelectionRange(wysiwyg);
+    return;
+  }
+
+  const fragment = range.extractContents();
+  removeTextStylesInTree(fragment);
+  const container = document.createElement("span");
+  container.setAttribute("data-nv-temp-text-style-selection", "");
+  container.appendChild(fragment);
+  range.insertNode(container);
+
+  const firstInserted = container.firstChild;
+  const lastInserted = container.lastChild;
+  while (container.firstChild) container.parentNode.insertBefore(container.firstChild, container);
+  if (firstInserted && lastInserted && firstInserted.parentNode && lastInserted.parentNode) {
+    const newRange = document.createRange();
+    newRange.setStartBefore(firstInserted);
+    newRange.setEndAfter(lastInserted);
+    applySelectionRange(newRange);
+  }
+  container.remove();
+  const target = findTextStyleTargetFromRange(wysiwyg, getCurrentSelectionRangeInEditor(wysiwyg));
+  updateTextStyleSelectionState(wysiwyg, target);
+  rememberCurrentSelectionRange(wysiwyg);
+  markHtmlEditorDirty(wysiwyg);
+}
+
+function readTextStyleSelection(wysiwyg) {
+  const range = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
+  const target = findTextStyleTargetFromRange(wysiwyg, range) || window.NodevisionState?.activeHtmlTextStyleTarget || null;
+  if (!(target instanceof HTMLElement)) return {};
+  const computed = window.getComputedStyle(target);
+  return {
+    color: target.style.color || computed.color || "",
+    backgroundColor: target.style.backgroundColor || computed.backgroundColor || "",
+    outlineColor: target.style.webkitTextStrokeColor || computed.webkitTextStrokeColor || "",
+    outlineWidth: target.style.webkitTextStrokeWidth || computed.webkitTextStrokeWidth || "",
+    shadow: target.style.textShadow || computed.textShadow || "",
+  };
+}
+
 function collectDocumentFonts(headContainer, wysiwyg) {
   const fonts = [];
   const add = (family, stack = "") => {
@@ -3743,6 +3937,7 @@ export async function renderEditor(filePath, container, options = {}) {
     currentMode: editorMode,
     htmlImageSelected: false,
     htmlAudioSelected: false,
+    htmlTextSelected: false,
     htmlImagePath: null,
     htmlAudioPath: null,
   });
@@ -3892,6 +4087,16 @@ export async function renderEditor(filePath, container, options = {}) {
         filePath,
         ref,
       }),
+      selectTextStyleTarget: () => selectTextStyleTargetForCurrentSelection(wysiwyg),
+      applyTextStylesToSelection: (styles) => {
+        applyTextStylesToWysiwygSelection(wysiwyg, styles);
+        markHtmlEditorDirty(wysiwyg, filePath);
+      },
+      removeTextStylesFromSelection: () => {
+        removeTextStylesFromWysiwygSelection(wysiwyg);
+        markHtmlEditorDirty(wysiwyg, filePath);
+      },
+      readTextStyleSelection: () => readTextStyleSelection(wysiwyg),
       getDocumentFonts: () => collectDocumentFonts(headClone, wysiwyg),
       markDirty: () => markHtmlEditorDirty(wysiwyg, filePath),
     });
@@ -3986,4 +4191,19 @@ export async function renderEditor(filePath, container, options = {}) {
   container.__cleanupHTMLImageTools = imageTools.destroy;
   container.__cleanupHTMLCaretTracking = registerCaretTracking(wysiwyg);
   container.__cleanupHTMLTextWrapping = registerEditableTextWrapping(wysiwyg);
+  const updateTextTargetFromSelection = () => {
+    const range = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
+    updateTextStyleSelectionState(wysiwyg, findTextStyleTargetFromRange(wysiwyg, range));
+  };
+  wysiwyg.addEventListener("mouseup", updateTextTargetFromSelection);
+  wysiwyg.addEventListener("keyup", updateTextTargetFromSelection);
+  wysiwyg.addEventListener("focus", updateTextTargetFromSelection);
+  const previousCleanupTextWrapping = container.__cleanupHTMLTextWrapping;
+  container.__cleanupHTMLTextWrapping = () => {
+    previousCleanupTextWrapping?.();
+    wysiwyg.removeEventListener("mouseup", updateTextTargetFromSelection);
+    wysiwyg.removeEventListener("keyup", updateTextTargetFromSelection);
+    wysiwyg.removeEventListener("focus", updateTextTargetFromSelection);
+    updateTextStyleSelectionState(wysiwyg, null);
+  };
 }

@@ -191,10 +191,10 @@ async function recoverDiscoveredPeerPort(state, discoveredPeer) {
   return null;
 }
 
-function buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl = "") {
+function buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl = "", options = {}) {
   const address = String(discoveredPeer?.address ?? "").trim();
   const port = Number(discoveredPeer?.port);
-  if (!address || !isValidPort(port)) return [];
+  const strictPreferredPeerUrl = options?.strictPreferredPeerUrl === true;
   const candidates = [];
   const addUrl = (peerUrl) => {
     const text = String(peerUrl || "").trim();
@@ -207,6 +207,8 @@ function buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl = "") {
     }
   };
   addUrl(preferredPeerUrl);
+  if (strictPreferredPeerUrl) return candidates;
+  if (!address || !isValidPort(port)) return candidates;
   const add = (candidateAddress) => {
     try {
       const peerUrl = buildDiscoveredPeerUrl({ address: candidateAddress, port });
@@ -273,8 +275,9 @@ async function runScopeSyncWithPeerUrlFallback({
   syncDirection = "sync",
   syncRunnerOptions = null,
   preferredPeerUrl = "",
+  strictPreferredPeerUrl = false,
 } = {}) {
-  const candidates = buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl);
+  const candidates = buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl, { strictPreferredPeerUrl });
   const expectedDeviceId = String(discoveredPeer?.deviceId ?? "").trim();
   const attemptedPeerUrls = [];
   const normalizedSyncDirection = normalizeSyncDirection(syncDirection);
@@ -349,6 +352,11 @@ function maybePersistLoopbackPeerEndpoint(state, discoveredPeer, resolvedPeerUrl
   } catch {
     return discoveredPeer;
   }
+}
+
+function maybePersistResolvedPeerEndpointForTransport(state, discoveredPeer, resolvedPeerUrl, syncTransport) {
+  if (syncTransportRequiresExplicitPeerUrl(syncTransport)) return discoveredPeer;
+  return maybePersistLoopbackPeerEndpoint(state, discoveredPeer, resolvedPeerUrl);
 }
 
 function getPeerEndpointSnapshot(peer) {
@@ -472,6 +480,52 @@ function getRequestedSyncMode(body, dryRun) {
   return mode || (dryRun ? "dry-run" : "apply");
 }
 
+function parseSyncTransport(body) {
+  const raw = body && typeof body === "object" && !Array.isArray(body)
+    ? (body.syncTransport ?? body.transport ?? "wireless")
+    : "wireless";
+  const text = String(raw || "wireless").trim().toLowerCase();
+  if (text === "usb" || text === "usb-cable" || text === "usb cable") return "usb";
+  return "wireless";
+}
+
+function syncTransportRequiresExplicitPeerUrl(syncTransport) {
+  return parseSyncTransport({ syncTransport }) === "usb";
+}
+
+function shouldRecoverPeerEndpointForTransport(syncTransport) {
+  return !syncTransportRequiresExplicitPeerUrl(syncTransport);
+}
+
+function parsePeerUrlOrigin(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  try {
+    const parsed = new URL(text);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+    return parsed.origin;
+  } catch {
+    return "";
+  }
+}
+
+function getDiscoveryOptionsFromRequestBody(body) {
+  const syncTransport = parseSyncTransport(body);
+  const options = { syncTransport };
+  if (syncTransportRequiresExplicitPeerUrl(syncTransport)) {
+    const peerUrl = parsePeerUrlOrigin(body?.peerUrl || body?.usbPeerUrl || "");
+    if (peerUrl) {
+      try {
+        const parsed = new URL(peerUrl);
+        options.extraTargetAddresses = [parsed.hostname];
+      } catch {
+        // Keep USB discovery usable without a known peer URL.
+      }
+    }
+  }
+  return options;
+}
+
 function logSyncJobCreationDecision(req, body, protection, decision, details = {}) {
   try {
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
@@ -553,10 +607,11 @@ function ensureListener(state, ctx) {
   setScanningEnabled(state, true);
 }
 
-function ensureBroadcaster(state, ctx) {
+function ensureBroadcaster(state, ctx, discoveryOptions = {}) {
   if (state.broadcasterHandle) return;
   const broadcasterFactory = resolvePeerDiscoveryBroadcasterFactory(ctx);
   state.broadcasterHandle = broadcasterFactory({
+    ...discoveryOptions,
     runtimeRoot: ctx?.runtimeRoot,
     async capabilities() {
       const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot })
@@ -806,7 +861,7 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
 
     try {
-      if (enabled) ensureBroadcaster(state, ctx);
+      if (enabled) ensureBroadcaster(state, ctx, getDiscoveryOptionsFromRequestBody(req.body));
       else await stopBroadcaster(state);
       return res.json(await syncStateResponse(state, ctx));
     } catch {
@@ -891,17 +946,7 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
-  const getRequestedPeerUrl = (body) => {
-    const text = String(body?.peerUrl || "").trim();
-    if (!text) return "";
-    try {
-      const parsed = new URL(text);
-      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
-      return parsed.origin;
-    } catch {
-      return "";
-    }
-  };
+  const getRequestedPeerUrl = (body) => parsePeerUrlOrigin(body?.peerUrl || "");
 
   app.post("/api/sync/preflight", async (req, res) => {
     if (!requireSession(req, res)) return;
@@ -954,12 +999,17 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
     const requestedPeerUrl = getRequestedPeerUrl(body);
+    const syncTransport = parseSyncTransport(body);
+    if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
+      return res.status(400).json({ ok: false, preflight: true, ready: false, error: "USB Cable sync requires a peer URL on the USB network" });
+    }
     const syncRunner = resolveSyncRunner(ctx);
 
     try {
       const syncResult = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
         preferredPeerUrl: requestedPeerUrl,
+        strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
@@ -968,7 +1018,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         syncRunnerOptions: { maxFileSizeBytes },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
-      discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
+      discoveredPeer = maybePersistResolvedPeerEndpointForTransport(state, discoveredPeer, peerUrl, syncTransport);
       return res.json({
         ok: true,
         preflight: true,
@@ -986,11 +1036,12 @@ export function registerSyncPanelRoutes(app, ctx) {
         scope,
         dryRun: true,
         syncDirection,
+        syncTransport,
         peerCapabilities: syncResult.peerCapabilities || null,
         sync: syncResult.sync,
       });
     } catch (err) {
-      if (err?.name === "PeerSyncNetworkError") {
+      if (err?.name === "PeerSyncNetworkError" && shouldRecoverPeerEndpointForTransport(syncTransport)) {
         const recovered = await recoverDiscoveredPeerPort(state, discoveredPeer)
           || await recoverDiscoveredPeerEndpoint(state, discoveredPeer, ctx);
         if (recovered?.recoveredPeer && recovered?.recoveredPeerUrl) {
@@ -1072,12 +1123,17 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
     const requestedPeerUrl = getRequestedPeerUrl(body);
+    const syncTransport = parseSyncTransport(body);
+    if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
+      return res.status(400).json({ ok: false, error: "USB Cable sync requires a peer URL on the USB network" });
+    }
     const syncRunner = resolveSyncRunner(ctx);
 
     try {
       const syncResult = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
         preferredPeerUrl: requestedPeerUrl,
+        strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
@@ -1086,7 +1142,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         syncRunnerOptions: { maxFileSizeBytes, onFileError: onFileError === "pause" ? "fail" : onFileError },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
-      discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
+      discoveredPeer = maybePersistResolvedPeerEndpointForTransport(state, discoveredPeer, peerUrl, syncTransport);
       return res.json({
         ok: true,
         discoveredPeer: {
@@ -1102,11 +1158,12 @@ export function registerSyncPanelRoutes(app, ctx) {
         scope,
         dryRun,
         syncDirection,
+        syncTransport,
         peerCapabilities: syncResult.peerCapabilities || null,
         sync: syncResult.sync,
       });
     } catch (err) {
-      if (err?.name === "PeerSyncNetworkError") {
+      if (err?.name === "PeerSyncNetworkError" && shouldRecoverPeerEndpointForTransport(syncTransport)) {
         const recovered = await recoverDiscoveredPeerPort(state, discoveredPeer)
           || await recoverDiscoveredPeerEndpoint(state, discoveredPeer, ctx);
         if (recovered?.recoveredPeer && recovered?.recoveredPeerUrl) {
@@ -1236,6 +1293,16 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
     const requestedPeerUrl = getRequestedPeerUrl(body);
+    const syncTransport = parseSyncTransport(body);
+    if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 400,
+        reason: "USB Cable sync requires a peer URL on the USB network",
+        selectedPeerDeviceId: deviceId,
+        scope,
+      });
+      return res.status(400).json({ ok: false, error: "USB Cable sync requires a peer URL on the USB network" });
+    }
     const syncRunner = resolveSyncRunner(ctx);
 
     let peerCapabilities = null;
@@ -1243,6 +1310,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       const capabilityPreflight = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
         preferredPeerUrl: requestedPeerUrl,
+        strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
@@ -1251,7 +1319,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       });
       peerCapabilities = capabilityPreflight.peerCapabilities || null;
       peerUrl = capabilityPreflight.resolvedPeerUrl || peerUrl;
-      discoveredPeer = maybePersistLoopbackPeerEndpoint(state, discoveredPeer, peerUrl);
+      discoveredPeer = maybePersistResolvedPeerEndpointForTransport(state, discoveredPeer, peerUrl, syncTransport);
     } catch (err) {
       const classified = classifySyncRunError(err);
       logSyncJobCreationDecision(req, body, protection, "rejected", {
@@ -1282,6 +1350,7 @@ export function registerSyncPanelRoutes(app, ctx) {
           const syncResult = await runScopeSyncWithPeerUrlFallback({
             discoveredPeer: discoveredPeerSnapshot,
             preferredPeerUrl: requestedPeerUrl,
+            strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
             scope,
             runtimeRoot: ctx?.runtimeRoot,
             dryRun,
@@ -1295,7 +1364,7 @@ export function registerSyncPanelRoutes(app, ctx) {
               maxFileSizeBytes,
             },
           });
-          maybePersistLoopbackPeerEndpoint(state, discoveredPeerSnapshot, syncResult.resolvedPeerUrl || peerUrl);
+          maybePersistResolvedPeerEndpointForTransport(state, discoveredPeerSnapshot, syncResult.resolvedPeerUrl || peerUrl, syncTransport);
           return syncResult.sync;
         },
       });
@@ -1308,9 +1377,10 @@ export function registerSyncPanelRoutes(app, ctx) {
         maxFileSizeBytes,
         onFileError,
         syncDirection,
+        syncTransport,
         peerCapabilities,
       });
-      return res.status(202).json({ ok: true, jobId: started.jobId, job: started, syncDirection, peerCapabilities });
+      return res.status(202).json({ ok: true, jobId: started.jobId, job: started, syncDirection, syncTransport, peerCapabilities });
     } catch (err) {
       logSyncJobCreationDecision(req, body, protection, "rejected", {
         statusCode: 500,

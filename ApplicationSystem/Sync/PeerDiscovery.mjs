@@ -89,6 +89,20 @@ function normalizeDiscoveryAddress(value) {
   return text;
 }
 
+function normalizeOptionalDiscoveryAddresses(values) {
+  const source = Array.isArray(values) ? values : [];
+  const normalized = [];
+  for (const value of source) {
+    try {
+      const address = normalizeDiscoveryAddress(value);
+      if (!normalized.includes(address)) normalized.push(address);
+    } catch {
+      // Ignore malformed optional discovery targets.
+    }
+  }
+  return normalized;
+}
+
 function decodeBase64Signature(signatureBase64) {
   if (typeof signatureBase64 !== "string") return null;
   if (!signatureBase64.trim() || signatureBase64 !== signatureBase64.trim()) return null;
@@ -562,6 +576,7 @@ export function startPeerDiscoveryBroadcaster(options = {}) {
   const multicastGroup = normalizeDiscoveryAddress(options.multicastGroup ?? DEFAULT_MULTICAST_GROUP);
   const bindAddress = normalizeDiscoveryAddress(options.bindAddress ?? DEFAULT_BIND_ADDRESS);
   const broadcastAddress = normalizeDiscoveryAddress(options.broadcastAddress ?? DEFAULT_BROADCAST_ADDRESS);
+  const extraTargetAddresses = normalizeOptionalDiscoveryAddresses(options.extraTargetAddresses);
   const intervalMs = Number(options.intervalMs ?? DEFAULT_BROADCAST_INTERVAL_MS);
   if (!Number.isFinite(intervalMs) || intervalMs < 1_000) {
     throw new Error("intervalMs must be at least 1000ms");
@@ -614,6 +629,15 @@ export function startPeerDiscoveryBroadcaster(options = {}) {
       debugLog(debugEnabled, "Multicast beacon send failed; attempting IPv4 broadcast fallback", asErrorMessage(multicastErr));
       await sendDatagram(payloadBuffer, broadcastAddress);
       debugLog(debugEnabled, "Beacon sent via broadcast fallback", `target=${broadcastAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
+    }
+
+    for (const targetAddress of extraTargetAddresses) {
+      try {
+        await sendDatagram(payloadBuffer, targetAddress);
+        debugLog(debugEnabled, "Beacon sent via extra discovery target", `target=${targetAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
+      } catch (targetErr) {
+        debugLog(debugEnabled, "Extra discovery target send failed", `target=${targetAddress}:${discoveryPort}`, asErrorMessage(targetErr));
+      }
     }
   }
 

@@ -66,7 +66,7 @@ const TEMPLATE = `
           <input data-peer-url type="url" inputmode="url" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
         </label>
       </div>
-      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Cable mode uses the existing peer sync system over a USB network interface. Connect the computers by USB, enable USB networking/tethering if needed, then enter the USB peer address, for example http://192.168.50.2:3000.</div>
+      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Cable mode uses the peer sync system over a USB network interface. With Wi-Fi off, enable Scan for USB Devices on one or both computers and Make This Device Discoverable over USB on the other. If you know the other computer's USB network address, enter it here, for example http://192.168.50.2:3000.</div>
       <div data-peer-list style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;"></div>
     </section>
 
@@ -495,8 +495,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
     if (!scanningBtn || !discoverableBtn) return;
     const scanning = state.status.discovery?.scanning === true;
     const discoverable = state.status.discovery?.discoverable === true;
-    scanningBtn.textContent = scanning ? "Stop Scanning" : "Scan for Devices";
-    discoverableBtn.textContent = discoverable ? "Stop Discoverability" : "Make This Device Discoverable";
+    const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
+    scanningBtn.textContent = scanning ? "Stop Scanning" : (usbMode ? "Scan for USB Devices" : "Scan for Devices");
+    discoverableBtn.textContent = discoverable ? "Stop Discoverability" : (usbMode ? "Make This Device Discoverable over USB" : "Make This Device Discoverable");
   };
 
   const renderPeers = () => {
@@ -719,7 +720,26 @@ export async function setupPanel(panelElem, panelVars = {}) {
     }
   };
 
-  const runToggle = async (url, enabled, label) => { setError(errorEl, ""); setBusy(true, `${label}...`); try { await apiFetchJson(url, { method: "POST", body: JSON.stringify({ enabled }) }); await refreshStatus(); setStatus(statusEl, `${label} complete.`); } catch (err) { setError(errorEl, err?.message || "Request failed"); } finally { setBusy(false); } };
+  const runToggle = async (url, enabled, label) => {
+    setError(errorEl, "");
+    setBusy(true, `${label}...`);
+    try {
+      await apiFetchJson(url, {
+        method: "POST",
+        body: JSON.stringify({
+          enabled,
+          syncTransport: state.syncSettings.syncTransport,
+          peerUrl: getActivePeerUrl(state.syncSettings),
+        }),
+      });
+      await refreshStatus();
+      setStatus(statusEl, `${label} complete.`);
+    } catch (err) {
+      setError(errorEl, err?.message || "Request failed");
+    } finally {
+      setBusy(false);
+    }
+  };
   const shareScope = async (scope) => { setBusy(true, "Adding shared folder..."); try { await apiFetchJson("/api/sync/scopes", { method: "POST", body: JSON.stringify({ scope }) }); await Promise.all([loadScopes(), loadFolders()]); } catch (err) { setError(errorEl, err?.message || "Failed to add scope"); } finally { setBusy(false); } };
   const unshareScope = async (scope) => { setBusy(true, "Removing shared folder..."); try { await apiFetchJson("/api/sync/scopes", { method: "DELETE", body: JSON.stringify({ scope }) }); await Promise.all([loadScopes(), loadFolders()]); } catch (err) { setError(errorEl, err?.message || "Failed to remove scope"); } finally { setBusy(false); } };
   const toggleProtection = async (enabled) => { setBusy(true, "Updating sync protection..."); try { const p = await apiFetchJson("/api/sync/protection", { method: "POST", body: JSON.stringify({ protectedFromPeerWrites: Boolean(enabled) }) }); state.protection = p.protection || { protectedFromPeerWrites: Boolean(enabled) }; renderProtection(); setStatus(statusEl, state.protection.protectedFromPeerWrites ? "This installation is protected from sync writes." : "Sync write protection disabled."); } catch (err) { setError(errorEl, err?.message || "Failed to update sync protection"); renderProtection(); } finally { setBusy(false); } };
@@ -861,6 +881,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     state.syncSettings.syncTransport = normalizeSyncTransport(syncTransportSelect.value);
     persistSyncTransportSettings(state.syncSettings);
     renderTransportSettings();
+    renderDiscoveryButtons();
     setError(errorEl, "");
   });
   peerUrlInput?.addEventListener("input", () => { setActivePeerUrl(peerUrlInput.value); });
@@ -930,8 +951,14 @@ export async function setupPanel(panelElem, panelVars = {}) {
     }
   });
   refreshBtn?.addEventListener("click", () => Promise.all([loadProtection(), loadScopes(), loadFolders(), refreshStatus()]).catch((err) => setError(errorEl, err?.message || "Refresh failed")));
-  scanningBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : "Starting scan"));
-  discoverableBtn?.addEventListener("click", () => runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : "Enabling discoverability"));
+  scanningBtn?.addEventListener("click", () => {
+    const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
+    runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : (usbMode ? "Starting USB scan" : "Starting scan"));
+  });
+  discoverableBtn?.addEventListener("click", () => {
+    const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
+    runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : (usbMode ? "Enabling USB discoverability" : "Enabling discoverability"));
+  });
   protectWritesEl?.addEventListener("change", () => toggleProtection(protectWritesEl.checked));
   protectEnableBtn?.addEventListener("click", () => toggleProtection(true));
   protectDisableBtn?.addEventListener("click", () => toggleProtection(false));
