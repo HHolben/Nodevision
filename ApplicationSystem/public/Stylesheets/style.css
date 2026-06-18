@@ -47,6 +47,45 @@ background-color: #ffffff;
   color: #333;
 }
 
+.file-manager {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 10px;
+  background: #0b0018;
+  color: #fff;
+}
+
+.file-manager h3,
+.file-manager #loading,
+.file-manager #fm-path,
+.file-manager .file-list,
+.file-manager .file-list li {
+  color: #fff;
+}
+
+.file-manager a,
+.file-manager .file-list a.file,
+.file-manager .file-list a.folder {
+  color: #fff;
+}
+
+.file-manager .file-list a.file,
+.file-manager .file-list a.folder {
+  background: #140024;
+  border-color: #3b1b55;
+}
+
+.file-manager .file-list a.file:hover,
+.file-manager .file-list a.folder:hover,
+.file-manager .file-list a.selected {
+  background: #3d1768;
+  border-color: #7f52c9;
+  color: #fff;
+}
+
 
 /* style.css */
 

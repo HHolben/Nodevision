@@ -218,6 +218,13 @@
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
+    "heading": "Fullscreen Workspace",
+    "icon": "icons/StretchArrowIcon.png",
+    "callbackKey": "fullscreenWorkspace"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
     "heading": "Undock Panel",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "UndockPanel"

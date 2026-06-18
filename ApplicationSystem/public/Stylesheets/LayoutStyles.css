@@ -195,6 +195,15 @@ html[data-nv-theme="dark"] .panel-header {
   box-sizing: border-box;
   overflow: hidden;
 }
+
+#workspace:fullscreen,
+#workspace:-webkit-full-screen,
+#workspace:-ms-fullscreen {
+  width: 100vw;
+  height: 100vh;
+  padding: 0.3%;
+  background: #fff;
+}
   
 
 

@@ -213,18 +213,18 @@ function playFileItemHoverSound() {
 function applyFileItemVisualState(link, state = "base") {
   if (!link) return;
   const base = {
-    backgroundColor: "#ffffff",
-    borderColor: "#c9d1dc",
-    color: "#1f2937"
+    backgroundColor: "#140024",
+    borderColor: "#3b1b55",
+    color: "#ffffff"
   };
   const hover = {
-    backgroundColor: "#2f6fe5",
-    borderColor: "#2f6fe5",
+    backgroundColor: "#3d1768",
+    borderColor: "#7f52c9",
     color: "#ffffff"
   };
   const selected = {
-    backgroundColor: "#2f6fe5",
-    borderColor: "#2f6fe5",
+    backgroundColor: "#3d1768",
+    borderColor: "#7f52c9",
     color: "#ffffff"
   };
   const palette = state === "selected" ? selected : state === "hover" ? hover : base;
@@ -360,7 +360,7 @@ export function displayFiles(files, currentPath) {
       width: "100%",
       minHeight: "24px",
       padding: "2px 8px",
-      border: "1px solid #c9d1dc",
+      border: "1px solid #3b1b55",
       borderRadius: "0",
       textDecoration: "none",
       fontSize: "12px",
@@ -386,8 +386,8 @@ export function displayFiles(files, currentPath) {
     link.addEventListener("dragenter", e => {
       if (!hasDragPayload(e)) return;
       e.preventDefault();
-      link.style.backgroundColor = "#e8f4ff";
-      link.style.outline = "1px dashed #4b7fd1";
+      link.style.backgroundColor = "#2a0b45";
+      link.style.outline = "1px dashed #c9a7ff";
     });
     link.addEventListener("dragover", e => {
       if (!hasDragPayload(e)) return;
@@ -448,7 +448,7 @@ export function displayFiles(files, currentPath) {
     link.style.width = "100%";
     link.style.minHeight = "24px";
     link.style.padding = "2px 8px";
-    link.style.border = "1px solid #c9d1dc";
+    link.style.border = "1px solid #3b1b55";
     link.style.borderRadius = "0";
     link.style.textDecoration = "none";
     link.style.fontSize = "12px";
@@ -522,8 +522,8 @@ export function displayFiles(files, currentPath) {
       link.addEventListener("dragenter", e => {
         if (!hasDragPayload(e)) return;
         e.preventDefault();
-        link.style.backgroundColor = "#e8f4ff";
-        link.style.outline = "1px dashed #4b7fd1";
+        link.style.backgroundColor = "#2a0b45";
+        link.style.outline = "1px dashed #c9a7ff";
       });
       link.addEventListener("dragover", e => {
         if (!hasDragPayload(e)) return;

@@ -26,9 +26,9 @@ export function setupPanel(panelElem, panelVars = {}) {
     <div class="file-manager">
       <h3>File Manager</h3>
       <div id="loading" style="display:none;">Loading...</div>
-      <div id="error" style="color:red;"></div>
+      <div id="error" style="color:#fff;"></div>
       <ul id="file-list" class="file-list"></ul>
-      <div id="fm-path" style="margin-top:8px; font-size:0.9em; color:#555;"></div>
+      <div id="fm-path" style="margin-top:8px; font-size:0.9em; color:#fff;"></div>
     </div>
   `;
 
