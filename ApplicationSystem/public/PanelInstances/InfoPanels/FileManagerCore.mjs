@@ -212,25 +212,45 @@ function playFileItemHoverSound() {
 
 function applyFileItemVisualState(link, state = "base") {
   if (!link) return;
+  const paletteRoot = link.closest(".file-manager") || document.documentElement;
+  const styles = getComputedStyle(paletteRoot);
+  const read = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
   const base = {
-    backgroundColor: "#140024",
-    borderColor: "#3b1b55",
-    color: "#ffffff"
+    backgroundColor: read("--nv-file-manager-item-bg", "#ffffff"),
+    borderColor: read("--nv-file-manager-item-border", "#d7d7d7"),
+    color: read("--nv-file-manager-item-text", "#111827")
   };
   const hover = {
-    backgroundColor: "#3d1768",
-    borderColor: "#7f52c9",
-    color: "#ffffff"
+    backgroundColor: read("--nv-file-manager-item-hover-bg", "#e5e5e5"),
+    borderColor: read("--nv-file-manager-item-hover-border", "#c8c8c8"),
+    color: read("--nv-file-manager-item-hover-text", "#111827")
   };
   const selected = {
-    backgroundColor: "#3d1768",
-    borderColor: "#7f52c9",
-    color: "#ffffff"
+    backgroundColor: read("--nv-file-manager-item-selected-bg", "#f0e6ff"),
+    borderColor: read("--nv-file-manager-item-selected-border", "#9f7aea"),
+    color: read("--nv-file-manager-item-selected-text", "#1f1630")
   };
   const palette = state === "selected" ? selected : state === "hover" ? hover : base;
   link.style.backgroundColor = palette.backgroundColor;
   link.style.borderColor = palette.borderColor;
   link.style.color = palette.color;
+}
+
+function applyFileDropTargetVisualState(link) {
+  if (!link) return;
+  const paletteRoot = link.closest(".file-manager") || document.documentElement;
+  const styles = getComputedStyle(paletteRoot);
+  const backgroundColor = styles.getPropertyValue("--nv-file-manager-drop-bg").trim() || "#f0e6ff";
+  const outlineColor = styles.getPropertyValue("--nv-file-manager-drop-outline").trim() || "#7f52c9";
+  link.style.backgroundColor = backgroundColor;
+  link.style.outline = "1px dashed " + outlineColor;
+}
+
+function refreshFileItemVisualStates() {
+  const allItems = document.querySelectorAll("#file-list a.file, #file-list a.folder");
+  allItems.forEach((item) => {
+    applyFileItemVisualState(item, item.classList.contains("selected") ? "selected" : "base");
+  });
 }
 
 function markSelectedFileItem(selectedLink) {
@@ -360,7 +380,7 @@ export function displayFiles(files, currentPath) {
       width: "100%",
       minHeight: "24px",
       padding: "2px 8px",
-      border: "1px solid #3b1b55",
+      border: "1px solid var(--nv-file-manager-item-border)",
       borderRadius: "0",
       textDecoration: "none",
       fontSize: "12px",
@@ -386,8 +406,7 @@ export function displayFiles(files, currentPath) {
     link.addEventListener("dragenter", e => {
       if (!hasDragPayload(e)) return;
       e.preventDefault();
-      link.style.backgroundColor = "#2a0b45";
-      link.style.outline = "1px dashed #c9a7ff";
+      applyFileDropTargetVisualState(link);
     });
     link.addEventListener("dragover", e => {
       if (!hasDragPayload(e)) return;
@@ -448,7 +467,7 @@ export function displayFiles(files, currentPath) {
     link.style.width = "100%";
     link.style.minHeight = "24px";
     link.style.padding = "2px 8px";
-    link.style.border = "1px solid #3b1b55";
+    link.style.border = "1px solid var(--nv-file-manager-item-border)";
     link.style.borderRadius = "0";
     link.style.textDecoration = "none";
     link.style.fontSize = "12px";
@@ -522,8 +541,7 @@ export function displayFiles(files, currentPath) {
       link.addEventListener("dragenter", e => {
         if (!hasDragPayload(e)) return;
         e.preventDefault();
-        link.style.backgroundColor = "#2a0b45";
-        link.style.outline = "1px dashed #c9a7ff";
+        applyFileDropTargetVisualState(link);
       });
       link.addEventListener("dragover", e => {
         if (!hasDragPayload(e)) return;
@@ -889,3 +907,8 @@ function registerFileManagerClipboardShortcuts() {
 }
 
 registerFileManagerClipboardShortcuts();
+
+if (!window.__nvFileManagerThemeRefreshBound) {
+  window.addEventListener("nv-theme-changed", refreshFileItemVisualStates);
+  window.__nvFileManagerThemeRefreshBound = true;
+}

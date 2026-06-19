@@ -7,6 +7,25 @@ margin: 0;
 padding: 0;
 background-color: #ffffff;
 }
+
+:root {
+  --nv-toolbar-dropdown-bg: #f5f5f5;
+  --nv-file-manager-bg: var(--nv-toolbar-dropdown-bg, #f5f5f5);
+  --nv-file-manager-text: #1f2933;
+  --nv-file-manager-muted-text: #4b5563;
+  --nv-file-manager-link: #1f2933;
+  --nv-file-manager-item-bg: #ffffff;
+  --nv-file-manager-item-border: #d7d7d7;
+  --nv-file-manager-item-text: #111827;
+  --nv-file-manager-item-hover-bg: #e5e5e5;
+  --nv-file-manager-item-hover-border: #c8c8c8;
+  --nv-file-manager-item-hover-text: #111827;
+  --nv-file-manager-item-selected-bg: #f0e6ff;
+  --nv-file-manager-item-selected-border: #9f7aea;
+  --nv-file-manager-item-selected-text: #1f1630;
+  --nv-file-manager-drop-bg: #f0e6ff;
+  --nv-file-manager-drop-outline: #7f52c9;
+}
 #settings-section {
   width: 100%;
   margin-bottom: 20px;
@@ -54,8 +73,8 @@ background-color: #ffffff;
   box-sizing: border-box;
   overflow: auto;
   padding: 10px;
-  background: #0b0018;
-  color: #fff;
+  background: var(--nv-file-manager-bg);
+  color: var(--nv-file-manager-text);
 }
 
 .file-manager h3,
@@ -63,27 +82,33 @@ background-color: #ffffff;
 .file-manager #fm-path,
 .file-manager .file-list,
 .file-manager .file-list li {
-  color: #fff;
+  color: var(--nv-file-manager-text);
 }
 
 .file-manager a,
 .file-manager .file-list a.file,
 .file-manager .file-list a.folder {
-  color: #fff;
+  color: var(--nv-file-manager-link);
 }
 
 .file-manager .file-list a.file,
 .file-manager .file-list a.folder {
-  background: #140024;
-  border-color: #3b1b55;
+  background: var(--nv-file-manager-item-bg);
+  border-color: var(--nv-file-manager-item-border);
+  color: var(--nv-file-manager-item-text);
 }
 
 .file-manager .file-list a.file:hover,
-.file-manager .file-list a.folder:hover,
+.file-manager .file-list a.folder:hover {
+  background: var(--nv-file-manager-item-hover-bg);
+  border-color: var(--nv-file-manager-item-hover-border);
+  color: var(--nv-file-manager-item-hover-text);
+}
+
 .file-manager .file-list a.selected {
-  background: #3d1768;
-  border-color: #7f52c9;
-  color: #fff;
+  background: var(--nv-file-manager-item-selected-bg);
+  border-color: var(--nv-file-manager-item-selected-border);
+  color: var(--nv-file-manager-item-selected-text);
 }
 
 
@@ -112,6 +137,24 @@ background-color: #ffffff;
 html[data-nv-theme="dark"] body {
   background-color: #050505;
   color: #f5f5f5;
+}
+
+html[data-nv-theme="dark"] {
+  --nv-file-manager-bg: #0b0018;
+  --nv-file-manager-text: #ffffff;
+  --nv-file-manager-muted-text: #f5f5f5;
+  --nv-file-manager-link: #ffffff;
+  --nv-file-manager-item-bg: #140024;
+  --nv-file-manager-item-border: #3b1b55;
+  --nv-file-manager-item-text: #ffffff;
+  --nv-file-manager-item-hover-bg: #3d1768;
+  --nv-file-manager-item-hover-border: #7f52c9;
+  --nv-file-manager-item-hover-text: #ffffff;
+  --nv-file-manager-item-selected-bg: #3d1768;
+  --nv-file-manager-item-selected-border: #7f52c9;
+  --nv-file-manager-item-selected-text: #ffffff;
+  --nv-file-manager-drop-bg: #2a0b45;
+  --nv-file-manager-drop-outline: #c9a7ff;
 }
 
 html[data-nv-theme="dark"] .file a {
