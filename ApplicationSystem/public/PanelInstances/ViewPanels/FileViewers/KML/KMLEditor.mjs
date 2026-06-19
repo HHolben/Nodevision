@@ -4,6 +4,7 @@ import { parseKML, refreshKMLRecords } from "./KMLParser.mjs";
 import { createKMLLayerTree } from "./KMLLayerTree.mjs";
 import { createKMLMapRenderer, normalizeKMLViewType, KML_VIEW_TYPES } from "./KMLMapRenderer.mjs";
 import { createKMLPropertyPanel } from "./KMLPropertyPanel.mjs";
+import { DEFAULT_CELESTIAL_OPTIONS } from "./CelestialBackdrop.mjs";
 import {
   createPlacemark,
   deleteFeature,
@@ -28,10 +29,43 @@ function notebookUrl(filePath) {
   return `/Notebook/${normalizeNotebookPath(filePath).split("/").map(encodeURIComponent).join("/")}`;
 }
 
+const USER_LOCATION_MAP_ZOOM = 16;
+const USER_LOCATION_GLOBE_DISTANCE = 1.45;
+const CELESTIAL_OPTIONS_STORAGE_KEY = "nodevision.kml.celestialOptions";
+
+function normalizeCelestialOptions(options = {}) {
+  const merged = { ...DEFAULT_CELESTIAL_OPTIONS, ...options };
+  return {
+    ...merged,
+    showStars: merged.showStars !== false,
+    showSun: merged.showSun !== false,
+    showMoon: merged.showMoon !== false,
+    showLabels: merged.showLabels === true,
+    useCurrentTime: merged.useCurrentTime !== false,
+    useSunLight: merged.useSunLight !== false,
+    observationTime: merged.observationTime || null,
+  };
+}
+
+function loadCelestialOptions(overrides = {}) {
+  let stored = {};
+  try {
+    stored = JSON.parse(window.localStorage?.getItem(CELESTIAL_OPTIONS_STORAGE_KEY) || "{}");
+  } catch {}
+  return normalizeCelestialOptions({ ...stored, ...overrides });
+}
+
+function celestialTimeLabel(options = {}) {
+  const date = options.observationTime ? new Date(options.observationTime) : new Date();
+  return Number.isNaN(date.getTime()) ? "current time" : date.toLocaleString();
+}
+
 function showStatus(node, message, tone = "") {
   if (!node) return;
-  node.textContent = message;
+  const text = String(message ?? "");
+  node.textContent = text;
   node.dataset.tone = tone;
+  node.hidden = text.length === 0;
 }
 
 function injectKMLStyles() {
@@ -104,6 +138,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     } catch {}
   }
   let aviationChartStatus = null;
+  let celestialOptions = loadCelestialOptions(options.celestialOptions || {});
   let userLocationEnabled = false;
   let userLocationWatchId = null;
   let userLocationLastPosition = null;
@@ -116,6 +151,21 @@ export async function renderKMLEditor(filePath, container, options = {}) {
 
   function selectedRecord() {
     return selectedId ? state?.recordsById.get(selectedId) : null;
+  }
+
+  function coordinateForRecord(record) {
+    const coordinates = Array.isArray(record?.geometry?.coordinates) ? record.geometry.coordinates : [];
+    const finite = coordinates
+      .map((coord) => ({ lat: Number(coord?.lat), lon: Number(coord?.lon) }))
+      .filter((coord) => Number.isFinite(coord.lat) && Number.isFinite(coord.lon));
+    if (!finite.length) return null;
+    if (record?.geometry?.type === "Point") return finite[0];
+    const totals = finite.reduce((acc, coord) => {
+      acc.lat += coord.lat;
+      acc.lon += coord.lon;
+      return acc;
+    }, { lat: 0, lon: 0 });
+    return { lat: totals.lat / finite.length, lon: totals.lon / finite.length };
   }
 
   function viewTypeLabel(type) {
@@ -167,6 +217,45 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     }));
   }
 
+  function persistCelestialOptions() {
+    try {
+      window.localStorage?.setItem(CELESTIAL_OPTIONS_STORAGE_KEY, JSON.stringify(celestialOptions));
+    } catch {}
+  }
+
+  function publishCelestialState(reason = "celestial-options") {
+    const optionsSnapshot = { ...celestialOptions };
+    updateToolbarState({ kmlCelestialOptions: optionsSnapshot });
+    dispatchKMLChange(reason, { celestialOptions: optionsSnapshot });
+  }
+
+  function setCelestialOptions(nextOptions = {}, { announce = true } = {}) {
+    celestialOptions = normalizeCelestialOptions({ ...celestialOptions, ...nextOptions });
+    if (celestialOptions.useCurrentTime === false && !celestialOptions.observationTime) {
+      celestialOptions = normalizeCelestialOptions({ ...celestialOptions, observationTime: new Date().toISOString() });
+    }
+    const appliedOptions = renderer?.setCelestialOptions?.(celestialOptions);
+    if (appliedOptions) celestialOptions = normalizeCelestialOptions(appliedOptions);
+    persistCelestialOptions();
+    publishCelestialState();
+    if (announce) showStatus(status, "Sky updated for " + (celestialOptions.useCurrentTime ? "current time" : celestialTimeLabel(celestialOptions)) + ".");
+    return true;
+  }
+
+  function setCelestialOption(key, value) {
+    if (!Object.prototype.hasOwnProperty.call(DEFAULT_CELESTIAL_OPTIONS, key)) return false;
+    return setCelestialOptions({ [key]: Boolean(value) });
+  }
+
+  function refreshCelestialNow() {
+    const refreshed = renderer?.refreshCelestialNow?.() || { ...celestialOptions, observationTime: new Date().toISOString() };
+    celestialOptions = normalizeCelestialOptions(refreshed);
+    persistCelestialOptions();
+    publishCelestialState("celestial-refresh");
+    showStatus(status, "Sky refreshed for " + celestialTimeLabel(celestialOptions) + ".");
+    return true;
+  }
+
   function stopUserLocationTelemetry() {
     const geolocation = globalThis.navigator?.geolocation;
     if (userLocationWatchId !== null && geolocation?.clearWatch) {
@@ -182,6 +271,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   function publishUserLocationState(reason = "user-location") {
     updateToolbarState({ kmlUserLocationEnabled: userLocationEnabled });
     dispatchKMLChange(reason, { userLocationEnabled });
+  }
+
+  function flyToUserLocation(location) {
+    renderer?.flyToLocation?.(location, {
+      zoom: USER_LOCATION_MAP_ZOOM,
+      distance: USER_LOCATION_GLOBE_DISTANCE,
+    });
   }
 
   function applyUserLocationPosition(position, { center = false } = {}) {
@@ -201,7 +297,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     userLocationLastPosition = location;
     renderer?.setUserLocation?.(location);
     if (center || !userLocationHasCentered) {
-      renderer?.flyToLocation?.(location);
+      flyToUserLocation(location);
       userLocationHasCentered = true;
     }
     const accuracyLabel = Number.isFinite(location.accuracy) && location.accuracy > 0 ? " (accuracy " + Math.round(location.accuracy) + " m)" : "";
@@ -289,10 +385,10 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       return true;
     }
 
-    const requestId = ++userLocationRequestId;
-    const quickOptions = { enableHighAccuracy: false, maximumAge: 300000, timeout: 30000 };
+    const requestId = userLocationRequestId;
+    const quickOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 };
     const watchOptions = { enableHighAccuracy: true, maximumAge: 60000, timeout: 60000 };
-    showStatus(status, "Finding your location...");
+    showStatus(status, "Finding and zooming to your location...");
 
     geolocation.getCurrentPosition(
       (position) => {
@@ -325,7 +421,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       userLocationEnabled = false;
       stopUserLocationTelemetry();
       publishUserLocationState();
-      showStatus(status, "User location is hidden. No position telemetry is active in the KML viewer.");
+      showStatus(status, "");
       return true;
     }
 
@@ -494,6 +590,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     renderer = await createKMLMapRenderer(mapNode, {
       viewType,
       aviationChartPackPath,
+      celestialOptions,
       onBasemapStatus: handleBasemapStatus,
       onSelect: (record) => selectRecord(record, false),
       onGeometryChange: (record, coords) => {
@@ -502,6 +599,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       },
     });
     renderer.render(state?.features || []);
+    const appliedCelestialOptions = renderer.setCelestialOptions?.(celestialOptions);
+    if (appliedCelestialOptions) celestialOptions = normalizeCelestialOptions(appliedCelestialOptions);
     renderer.setSelected(selectedId);
     if (userLocationEnabled) {
       stopUserLocationTelemetry();
@@ -512,7 +611,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     if (flyToSelected && selected?.geometry) renderer.flyToRecord(selected);
     else if (fit) renderer.fitAll();
     if (window.NodevisionState) window.NodevisionState.kmlViewType = viewType;
-    if (window.NodevisionState?.currentMode === nodevisionMode) updateToolbarState({ kmlViewType: viewType, kmlAviationChartPackPath: aviationChartPackPath });
+    if (window.NodevisionState?.currentMode === nodevisionMode) updateToolbarState({ kmlViewType: viewType, kmlAviationChartPackPath: aviationChartPackPath, kmlCelestialOptions: { ...celestialOptions } });
     dispatchKMLChange("view-type", { viewType, aviationChartPackPath });
   }
 
@@ -578,6 +677,64 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   function showAviationChartImportPlaceholder() {
     showStatus(status, "Aviation chart import will convert FAA GeoTIFF, geospatial PDF, or MBTiles sources into a local Nodevision chart pack. This phase currently supports loading existing chart-pack.json tile packs.");
     return true;
+  }
+
+  async function searchLocation(query = "") {
+    const cleanQuery = String(query || "").trim();
+    if (!cleanQuery) {
+      showStatus(status, "Enter a location to search.", "error");
+      return false;
+    }
+
+    try {
+      showStatus(status, "Searching for " + cleanQuery + "...");
+      const response = await fetch("/api/kml/geocode?q=" + encodeURIComponent(cleanQuery), { cache: "no-store" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload?.error || "Location search failed (" + response.status + ").");
+      const result = Array.isArray(payload?.results) ? payload.results[0] : null;
+      const location = { lat: Number(result?.lat), lon: Number(result?.lon) };
+      if (!Number.isFinite(location.lat) || !Number.isFinite(location.lon)) {
+        throw new Error("No matching location was found.");
+      }
+      flyToUserLocation(location);
+      showStatus(status, "Found " + (result?.displayName || cleanQuery) + ".");
+      return true;
+    } catch (err) {
+      showStatus(status, "Location search failed: " + (err?.message || err), "error");
+      return false;
+    }
+  }
+
+  async function downloadSectionalForSelectedPin() {
+    const record = selectedRecord();
+    if (!record?.geometry) {
+      showStatus(status, "Select a pin or KML feature first.", "error");
+      return false;
+    }
+    const coordinate = coordinateForRecord(record);
+    if (!coordinate) {
+      showStatus(status, "Selected feature does not have usable coordinates.", "error");
+      return false;
+    }
+
+    const label = record.name || record.type || "selected feature";
+    try {
+      showStatus(status, "Downloading FAA sectional for " + label + "...");
+      const response = await fetch("/api/kml/aviation/download-sectional", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat: coordinate.lat, lon: coordinate.lon, name: label }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload?.error || "Sectional download failed (" + response.status + ").");
+      const chartName = payload?.chartName || "FAA sectional";
+      const resourcePath = payload?.path || "Notebook/Resources/Aviation/Sectionals";
+      showStatus(status, "Downloaded " + chartName + " sectional to " + resourcePath + ". Convert to a chart pack before display.");
+      return true;
+    } catch (err) {
+      showStatus(status, "Sectional download failed: " + (err?.message || err), "error");
+      return false;
+    }
   }
 
   function addPlacemark() {
@@ -673,6 +830,18 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     if (actionKey.startsWith("setAviationChartPack:")) {
       return setAviationChartPackPath(actionKey.slice("setAviationChartPack:".length));
     }
+    if (actionKey.startsWith("searchLocation:")) {
+      const encodedQuery = actionKey.slice("searchLocation:".length);
+      try {
+        return searchLocation(decodeURIComponent(encodedQuery));
+      } catch {
+        return searchLocation(encodedQuery);
+      }
+    }
+    if (actionKey.startsWith("setCelestialOption:")) {
+      const [, key, rawValue] = actionKey.split(":");
+      return setCelestialOption(key, rawValue === "true" || rawValue === "1" || rawValue === "yes");
+    }
     const actions = {
       addPlacemark,
       drawPath,
@@ -706,6 +875,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       clearAviationChartPack,
       showAviationChartImportPlaceholder,
       aviationChartImportPlaceholder: showAviationChartImportPlaceholder,
+      searchLocation,
+      downloadSectionalForSelectedPin,
+      refreshCelestialNow,
     };
     if (typeof actions[actionKey] === "function") return actions[actionKey]();
     return undefined;
@@ -764,8 +936,14 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     setAviationChartPackPath,
     getUserLocationEnabled: () => userLocationEnabled,
     setUserLocationEnabled,
+    centerUserLocation,
     selectAviationChartPack,
     clearAviationChartPack,
+    searchLocation,
+    downloadSectionalForSelectedPin,
+    getCelestialOptions: () => ({ ...celestialOptions }),
+    setCelestialOptions,
+    refreshCelestialNow,
     save,
   };
   window.currentSaveKML = save;
@@ -780,12 +958,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     kmlViewType: viewType,
     kmlAviationChartPackPath: aviationChartPackPath,
     kmlUserLocationEnabled: userLocationEnabled,
+    kmlCelestialOptions: { ...celestialOptions },
   });
 
   refreshLayerHosts();
   refreshPropertyHosts();
   dispatchKMLChange("ready");
-  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode, viewType, aviationChartPackPath, userLocationEnabled } }));
+  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode, viewType, aviationChartPackPath, userLocationEnabled, celestialOptions: { ...celestialOptions } } }));
   showStatus(status, `Loaded ${state.features.length} editable KML feature${state.features.length === 1 ? "" : "s"}.`);
 
   try {

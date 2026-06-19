@@ -244,12 +244,23 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     map.fitBounds(group.getBounds().pad(0.2), { maxZoom: 16 });
   }
 
-  function flyToLocation(location) {
+  function flyToLocation(location, options = {}) {
     const lat = Number(location?.lat);
     const lon = Number(location?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    const requestedZoom = Number(options?.zoom);
+    const targetZoom = Math.max(map.getZoom(), Number.isFinite(requestedZoom) ? requestedZoom : 13);
     map.invalidateSize({ pan: false });
-    map.flyTo([lat, lon], Math.max(map.getZoom(), 13), { duration: 0.45 });
+    map.stop?.();
+    map.flyTo([lat, lon], targetZoom, { duration: 0.45 });
+    globalThis.setTimeout?.(() => {
+      const center = map.getCenter();
+      const latDelta = Math.abs(Number(center?.lat) - lat);
+      const lonDelta = Math.abs(Number(center?.lng) - lon);
+      if (latDelta > 0.0001 || lonDelta > 0.0001 || map.getZoom() < targetZoom - 0.1) {
+        map.setView([lat, lon], targetZoom, { animate: false });
+      }
+    }, 560);
   }
 
   function flyToRecord(record) {

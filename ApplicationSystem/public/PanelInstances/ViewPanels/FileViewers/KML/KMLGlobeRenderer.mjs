@@ -1,6 +1,7 @@
 import { formatCoordinates } from "./KMLParser.mjs";
 import * as THREE from "/lib/three/three.module.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
+import { createCelestialBackdrop } from "./CelestialBackdrop.mjs";
 
 const EARTH_RADIUS = 1;
 const POINT_SIZE = 0.018;
@@ -202,7 +203,7 @@ function makeSpriteLabel(text) {
   return sprite;
 }
 
-export async function createKMLGlobeRenderer(container, { onSelect, onGeometryChange } = {}) {
+export async function createKMLGlobeRenderer(container, { onSelect, onGeometryChange, celestialOptions = {} } = {}) {
   container.innerHTML = "";
 
   const scene = new THREE.Scene();
@@ -226,10 +227,12 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
   controls.rotateSpeed = 0.6;
   controls.zoomSpeed = 0.8;
 
-  scene.add(new THREE.HemisphereLight("#dceeff", "#07111f", 2.2));
-  const sun = new THREE.DirectionalLight("#ffffff", 2.4);
-  sun.position.set(3, 2, 4);
-  scene.add(sun);
+  const fillLight = new THREE.HemisphereLight("#dceeff", "#07111f", 1.55);
+  scene.add(fillLight);
+  const defaultSunLight = new THREE.DirectionalLight("#ffffff", 0.95);
+  defaultSunLight.position.set(3, 2, 4);
+  scene.add(defaultSunLight);
+  const celestialBackdrop = createCelestialBackdrop(scene, celestialOptions);
 
   let rendererDestroyed = false;
   const globeMaterial = new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0.0 });
@@ -487,11 +490,13 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
     flyCameraToCoord(center, record.geometry?.type === "Point" ? 1.75 : 2.25);
   }
 
-  function flyToLocation(location) {
+  function flyToLocation(location, options = {}) {
     const lat = Number(location?.lat);
     const lon = Number(location?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-    flyCameraToCoord({ lat, lon, alt: null }, 1.75);
+    const requestedDistance = Number(options?.distance);
+    const distance = Number.isFinite(requestedDistance) ? requestedDistance : 1.75;
+    flyCameraToCoord({ lat, lon, alt: null }, distance);
   }
 
   function removePickablesForRecord(recordId) {
@@ -610,6 +615,7 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
   renderer.domElement.addEventListener("contextmenu", onContextMenu);
 
   function animate() {
+    celestialBackdrop.tick();
     controls.update();
     renderer.render(scene, camera);
     animationFrame = requestAnimationFrame(animate);
@@ -631,6 +637,9 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
     startDrawPolygon: (callback) => startDraw("polygon", callback),
     setUserLocation,
     clearUserLocation,
+    setCelestialOptions: (nextOptions) => celestialBackdrop.setOptions(nextOptions),
+    getCelestialOptions: () => celestialBackdrop.getOptions(),
+    refreshCelestialNow: () => celestialBackdrop.refreshNow(),
     destroy() {
       clearUserLocation();
       rendererDestroyed = true;
@@ -641,6 +650,7 @@ export async function createKMLGlobeRenderer(container, { onSelect, onGeometryCh
       renderer.domElement.removeEventListener("dblclick", onDoubleClick);
       renderer.domElement.removeEventListener("contextmenu", onContextMenu);
       controls.dispose();
+      celestialBackdrop.destroy();
       clearGroup(featureGroup);
       clearGroup(drawGroup);
       globe.geometry?.dispose?.();
