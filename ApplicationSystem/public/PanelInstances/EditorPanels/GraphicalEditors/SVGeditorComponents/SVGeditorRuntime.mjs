@@ -1789,7 +1789,12 @@ export async function renderEditor(filePath, container) {
 
   function setTransformFromBase(el, baseTransform, operation) {
     const base = String(baseTransform || "").trim();
-    el.setAttribute("transform", base ? `${base} ${operation}` : operation);
+    el.setAttribute("transform", base ? base + " " + operation : operation);
+  }
+
+  function setParentSpaceTransformFromBase(el, baseTransform, operation) {
+    const base = String(baseTransform || "").trim();
+    el.setAttribute("transform", base ? operation + " " + base : operation);
   }
 
   function deleteSelection() {
@@ -2405,16 +2410,80 @@ export async function renderEditor(filePath, container) {
     return moved;
   }
 
-  function findNearestLineAtPoint(point, tolerance) {
+  function isLayerGroupElement(el) {
+    return Boolean(el?.getAttribute?.("data-layer") === "true");
+  }
+
+  function shouldPreferGeometryHit(target) {
+    if (!(target instanceof SVGElement)) return true;
+    if (target === svgRoot || target === overlayLayer || target === selectionBox || target === marqueeBox) return true;
+    const tag = target.tagName.toLowerCase();
+    return tag === "svg" || tag === "g" || isLayerGroupElement(target);
+  }
+
+  function allowsGeometryHitTesting(el) {
+    let node = el;
+    while (node && node !== svgRoot) {
+      const attr = typeof node.getAttribute === "function" ? node.getAttribute("pointer-events") : null;
+      const styleValue = node.style?.pointerEvents || "";
+      const pointerEvents = String(attr || styleValue || "").trim().toLowerCase();
+      if (pointerEvents === "none") return false;
+      node = node.parentNode;
+    }
+    return true;
+  }
+
+  function distanceToGeometryStrokeInRoot(el, point, tolerance) {
+    if (!el || !Number.isFinite(tolerance) || tolerance < 0) return Infinity;
+    const tag = el.tagName.toLowerCase();
+
+    if (tag === "line") {
+      const a = elementPointToRootPoint(el, getAttrNumber(el, "x1", 0), getAttrNumber(el, "y1", 0));
+      const b = elementPointToRootPoint(el, getAttrNumber(el, "x2", 0), getAttrNumber(el, "y2", 0));
+      return distancePointToSegment(point, a, b);
+    }
+
+    if (typeof el.getTotalLength !== "function" || typeof el.getPointAtLength !== "function") return Infinity;
+
+    let length = 0;
+    try {
+      length = Number(el.getTotalLength());
+    } catch {
+      return Infinity;
+    }
+    if (!Number.isFinite(length) || length <= 1e-6) return Infinity;
+
+    const step = Math.max(1, tolerance * 0.5);
+    const samples = Math.max(12, Math.min(260, Math.ceil(length / step)));
+    let bestDistance = Infinity;
+    for (let i = 0; i <= samples; i += 1) {
+      let localPoint = null;
+      try {
+        localPoint = el.getPointAtLength((length * i) / samples);
+      } catch {
+        break;
+      }
+      if (!localPoint) continue;
+      const rootPoint = elementPointToRootPoint(el, localPoint.x, localPoint.y);
+      const dx = rootPoint.x - point.x;
+      const dy = rootPoint.y - point.y;
+      const d = Math.hypot(dx, dy);
+      if (d < bestDistance) bestDistance = d;
+      if (bestDistance <= 1e-6) break;
+    }
+    return bestDistance;
+  }
+
+  function findNearestGeometryAtPoint(point, tolerance) {
     let hit = null;
     let bestDistance = Infinity;
+    const geometryTags = new Set(["line", "path", "polyline", "polygon", "rect", "circle", "ellipse"]);
     getSelectableElements().forEach((el) => {
-      if (el.tagName.toLowerCase() !== "line") return;
-      const a = { x: getAttrNumber(el, "x1", 0), y: getAttrNumber(el, "y1", 0) };
-      const b = { x: getAttrNumber(el, "x2", 0), y: getAttrNumber(el, "y2", 0) };
-      const d = distancePointToSegment(point, a, b);
-      if (d <= tolerance && d < bestDistance) {
-        bestDistance = d;
+      const tag = el.tagName.toLowerCase();
+      if (!geometryTags.has(tag) || !allowsGeometryHitTesting(el)) return;
+      const distance = distanceToGeometryStrokeInRoot(el, point, tolerance);
+      if (distance <= tolerance && distance < bestDistance) {
+        bestDistance = distance;
         hit = el;
       }
     });
@@ -2557,7 +2626,13 @@ export async function renderEditor(filePath, container) {
     }
     if (toolState.mode === "sketch") {
       if (key === "Enter") {
-        sketchController.finalizeSketch();
+        const element = sketchController.finalizeSketch();
+        if (element) {
+          window.NodevisionState = window.NodevisionState || {};
+          window.NodevisionState.svgDrawTool = "select";
+          setMode("select");
+          setSelection([element], { primary: element });
+        }
         e.preventDefault();
         return;
       }
@@ -2643,8 +2718,11 @@ export async function renderEditor(filePath, container) {
 
     if (toolState.mode === "select") {
       let target = e.target instanceof SVGElement ? e.target : null;
-      if (!target || !isSelectableElement(target)) {
-        target = findNearestLineAtPoint(p, pointerToleranceInSvgUnits(8));
+      const geometryHit = findNearestGeometryAtPoint(p, pointerToleranceInSvgUnits(10));
+      if (geometryHit && (!target || !isSelectableElement(target) || shouldPreferGeometryHit(target))) {
+        target = geometryHit;
+      } else if (!target || !isSelectableElement(target)) {
+        target = null;
       }
       if (target && isSelectableElement(target)) {
         if (e.shiftKey) {
@@ -2816,7 +2894,7 @@ export async function renderEditor(filePath, container) {
     if (resizeState && resizeState.pointerId === e.pointerId) {
       const { bbox, corner, element, baseTransform, space } = resizeState;
       const sp = clientToElementPoint(space || svgRoot, e.clientX, e.clientY);
-      const minSize = 0.05;
+      const minScaleMagnitude = 0.05;
       const anchor = {
         x: corner.includes("w") ? bbox.x + bbox.width : bbox.x,
         y: corner.includes("n") ? bbox.y + bbox.height : bbox.y
@@ -2846,9 +2924,14 @@ export async function renderEditor(filePath, container) {
           sy = s;
         }
       }
-      sx = Math.max(minSize, sx);
-      sy = Math.max(minSize, sy);
-      setTransformFromBase(
+      const keepScaleOutsideDeadZone = (scale) => {
+        if (!Number.isFinite(scale)) return 1;
+        if (Math.abs(scale) >= minScaleMagnitude) return scale;
+        return scale < 0 ? -minScaleMagnitude : minScaleMagnitude;
+      };
+      sx = keepScaleOutsideDeadZone(sx);
+      sy = keepScaleOutsideDeadZone(sy);
+      setParentSpaceTransformFromBase(
         element,
         baseTransform,
         `translate(${anchor.x} ${anchor.y}) scale(${sx} ${sy}) translate(${-anchor.x} ${-anchor.y})`
@@ -3140,7 +3223,14 @@ export async function renderEditor(filePath, container) {
       return flipCanvas("v");
     },
     finalizeSketch() {
-      return sketchController.finalizeSketch();
+      const element = sketchController.finalizeSketch();
+      if (element) {
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.svgDrawTool = "select";
+        setMode("select");
+        setSelection([element], { primary: element });
+      }
+      return element;
     },
     renderSketchPreview(previewId, options = {}) {
       return sketchController.renderSketchPreview(previewId, options);

@@ -11,6 +11,7 @@ import {
 import { fitTwoSegmentAngleHypothesis } from "./PencilSketchAngleFit.mjs";
 import { fitStraightLineHypothesis } from "./PencilSketchLineFit.mjs";
 import { fitTriangleHypothesis } from "./PencilSketchTriangleFit.mjs";
+import { fitQuadrilateralHypothesis } from "./PencilSketchQuadrilateralFit.mjs";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -150,6 +151,7 @@ export function createSketchModeController(deps = {}) {
       "stroke-linecap": "round",
       "stroke-linejoin": "round",
       opacity: "0.95",
+      "pointer-events": "none",
       display: "none",
       d: "",
     });
@@ -164,6 +166,7 @@ export function createSketchModeController(deps = {}) {
       "stroke-linecap": "round",
       "stroke-linejoin": "round",
       opacity: String(state.roughOpacity),
+      "pointer-events": "none",
       d: "",
     });
   }
@@ -227,6 +230,7 @@ export function createSketchModeController(deps = {}) {
       "data-nv-sketch-session": "true",
       "data-nv-sketch-preview-id": id,
       "data-element-name": previewName,
+      "pointer-events": "none",
     });
     const previewPath = createPreviewPath();
     group.appendChild(previewPath);
@@ -569,7 +573,93 @@ export function createSketchModeController(deps = {}) {
       confidenceThreshold: 0.58,
       twoSegmentError: angleFit.bestTwoLineError,
     });
-    const triangleBeatsOpenAngle = triangleFit.triangle;
+    const quadrilateralFit = fitQuadrilateralHypothesis(preview.rawStrokes, {
+      minClosureTolerance: toleranceFromScreenPixels(12, 12),
+      minSideLength: Math.max(toleranceFromScreenPixels(18, 18), minimumStrokeLength() * 1.45),
+      minSideLengthRatio: 0.12,
+      closureDiagonalRatio: 0.10,
+      assignmentDiagonalRatio: 0.10,
+      parallelToleranceDegrees: 15,
+      rightAngleToleranceDegrees: 15,
+      minCornerAngleDegrees: 18,
+      minClosureScore: 0.38,
+      confidenceThreshold: 0.56,
+      maxTriangleErrorRatio: 1.18,
+      triangleError: triangleFit.threeSegmentError,
+    });
+    const triangleIgnoredFourthSideSupport = quadrilateralFit.quadrilateral
+      ? Math.max(
+        Number(quadrilateralFit.sideLengthA) || 0,
+        Number(quadrilateralFit.sideLengthB) || 0,
+        Number(quadrilateralFit.sideLengthC) || 0,
+        Number(quadrilateralFit.sideLengthD) || 0,
+      )
+      : 0;
+    const quadrilateralBeatsTriangle = quadrilateralFit.quadrilateral && (
+      !triangleFit.triangle ||
+      quadrilateralFit.confidence >= triangleFit.confidence - 0.10 ||
+      triangleIgnoredFourthSideSupport > Math.max(toleranceFromScreenPixels(20, 20), quadrilateralFit.closureTolerance * 1.5)
+    );
+    const triangleBeatsOpenAngle = triangleFit.triangle && !quadrilateralBeatsTriangle;
+    if (quadrilateralBeatsTriangle) {
+      const previousAngularMode = preview.angularPathState?.mode || angleFit.winningHypothesis;
+      preview.straightLineState = null;
+      preview.angularPathState = {
+        mode: quadrilateralFit.rectangleLike ? "rectangle" : "quadrilateral",
+        points: quadrilateralFit.points.map((pt) => ({ ...pt })),
+        strokeCount: quadrilateralFit.strokeCount,
+        confidence: quadrilateralFit.confidence,
+      };
+      preview.hypotheses = {
+        mode: quadrilateralFit.rectangleLike ? "rectangle" : "quadrilateral",
+        strokeCount: quadrilateralFit.strokeCount,
+        activeSegmentCount: quadrilateralFit.activeSegmentCount,
+        pointCount: quadrilateralFit.pointCount,
+        confidence: quadrilateralFit.confidence,
+        triangleConfidence: triangleFit.confidence,
+        quadrilateralConfidence: quadrilateralFit.confidence,
+        rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        triangleIgnoredStrokeCount: Number(triangleFit.rejectedStrokes?.length) || 0,
+        triangleIgnoredStrokeSupportLength: triangleIgnoredFourthSideSupport,
+        triangleReason: triangleFit.reason,
+        quadrilateralReason: quadrilateralFit.reason,
+        triangleClosureScore: triangleFit.closureScore,
+        closureScore: quadrilateralFit.closureScore,
+        closureError: quadrilateralFit.closureError,
+        closureTolerance: quadrilateralFit.closureTolerance,
+        assignmentTolerance: quadrilateralFit.assignmentTolerance,
+        fourSegmentError: quadrilateralFit.fourSegmentError,
+        threeSegmentError: triangleFit.threeSegmentError,
+        improvementRatio: quadrilateralFit.improvementRatio,
+        parallelScore: quadrilateralFit.parallelScore,
+        rightAngleScore: quadrilateralFit.rightAngleScore,
+        sideAngles: quadrilateralFit.sideAngles,
+        cornerAngles: quadrilateralFit.cornerAngles,
+        detectedSideCount: quadrilateralFit.detectedSideCount,
+        supportA: quadrilateralFit.supportA,
+        supportB: quadrilateralFit.supportB,
+        supportC: quadrilateralFit.supportC,
+        supportD: quadrilateralFit.supportD,
+        sideLengthA: quadrilateralFit.sideLengthA,
+        sideLengthB: quadrilateralFit.sideLengthB,
+        sideLengthC: quadrilateralFit.sideLengthC,
+        sideLengthD: quadrilateralFit.sideLengthD,
+        strokeAssignments: quadrilateralFit.strokeAssignments,
+        rejectedStrokes: quadrilateralFit.rejectedStrokes,
+        vertices: quadrilateralFit.vertices,
+        winningHypothesis: quadrilateralFit.winningHypothesis,
+        previousWinningHypothesis: previousAngularMode,
+        triangleWouldHaveWon: Boolean(triangleFit.triangle),
+        quadrilateralBeatsTriangle,
+        discontinuities: 4,
+        closed: true,
+      };
+      if (globalThis?.NodevisionDebug?.pencilSketchQuadrilateralFit || globalThis?.NodevisionDebug?.pencilSketchTriangleFit) {
+        console.debug("[PencilSketchQuadrilateralFit]", preview.hypotheses);
+      }
+      return [quadrilateralFit.points];
+    }
+
     if (triangleBeatsOpenAngle) {
       const previousAngularMode = preview.angularPathState?.mode || angleFit.winningHypothesis;
       preview.straightLineState = null;
@@ -585,6 +675,18 @@ export function createSketchModeController(deps = {}) {
         activeSegmentCount: triangleFit.activeSegmentCount,
         pointCount: triangleFit.pointCount,
         confidence: triangleFit.confidence,
+        triangleConfidence: triangleFit.confidence,
+        quadrilateralConfidence: quadrilateralFit.confidence,
+        rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        quadrilateralReason: quadrilateralFit.reason,
+        quadrilateralRejectedReason: quadrilateralFit.reason,
+        quadrilateralSideSupportA: quadrilateralFit.supportA,
+        quadrilateralSideSupportB: quadrilateralFit.supportB,
+        quadrilateralSideSupportC: quadrilateralFit.supportC,
+        quadrilateralSideSupportD: quadrilateralFit.supportD,
+        quadrilateralStrokeAssignments: quadrilateralFit.strokeAssignments,
+        quadrilateralRejectedStrokes: quadrilateralFit.rejectedStrokes,
+        triangleIgnoredStrokeSupportLength: triangleIgnoredFourthSideSupport,
         twoSegmentError: triangleFit.twoSegmentError,
         threeSegmentError: triangleFit.threeSegmentError,
         improvementRatio: triangleFit.improvementRatio,
@@ -841,6 +943,32 @@ export function createSketchModeController(deps = {}) {
         supportC: triangleFit.supportC,
         vertices: triangleFit.vertices,
         reason: triangleFit.reason,
+      });
+    }
+    if (globalThis?.NodevisionDebug?.pencilSketchQuadrilateralFit) {
+      console.debug("[PencilSketchQuadrilateralFit:rejected]", {
+        winningHypothesis: quadrilateralFit.winningHypothesis,
+        strokeCount: quadrilateralFit.strokeCount,
+        activeSegmentCount: quadrilateralFit.activeSegmentCount,
+        triangleConfidence: triangleFit.confidence,
+        quadrilateralConfidence: quadrilateralFit.confidence,
+        rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        fourSegmentError: quadrilateralFit.fourSegmentError,
+        threeSegmentError: triangleFit.threeSegmentError,
+        closureScore: quadrilateralFit.closureScore,
+        parallelScore: quadrilateralFit.parallelScore,
+        rightAngleScore: quadrilateralFit.rightAngleScore,
+        detectedSideCount: quadrilateralFit.detectedSideCount,
+        sideAngles: quadrilateralFit.sideAngles,
+        cornerAngles: quadrilateralFit.cornerAngles,
+        supportA: quadrilateralFit.supportA,
+        supportB: quadrilateralFit.supportB,
+        supportC: quadrilateralFit.supportC,
+        supportD: quadrilateralFit.supportD,
+        strokeAssignments: quadrilateralFit.strokeAssignments,
+        rejectedStrokes: quadrilateralFit.rejectedStrokes,
+        vertices: quadrilateralFit.vertices,
+        reason: quadrilateralFit.reason,
       });
     }
     preview.straightLineState = null;
