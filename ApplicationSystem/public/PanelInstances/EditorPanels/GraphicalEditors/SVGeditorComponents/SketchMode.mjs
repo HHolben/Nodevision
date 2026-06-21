@@ -8,6 +8,7 @@ import {
   pointsToPathD,
   strokeLength,
 } from "./SketchStrokeMath.mjs";
+import { fitTwoSegmentAngleHypothesis } from "./PencilSketchAngleFit.mjs";
 import { fitStraightLineHypothesis } from "./PencilSketchLineFit.mjs";
 
 function clamp(value, min, max) {
@@ -546,6 +547,48 @@ export function createSketchModeController(deps = {}) {
       minProjectedLength: minimumStrokeLength() * 1.1,
       previousLine: preview.straightLineState,
     });
+    const angleFit = fitTwoSegmentAngleHypothesis(preview.rawStrokes, {
+      minAllowedError: Math.max(toleranceFromScreenPixels(8, 8), lineFitAllowedError()),
+      errorLengthRatio: 0.08,
+      minAngleDegrees: 25,
+      maxImprovementRatio: 0.65,
+      minSegmentLength: minimumStrokeLength() * 1.35,
+      confidenceThreshold: 0.6,
+    });
+    const angleBeatsStraight = angleFit.angle && (
+      !straightLineFit.straight ||
+      (angleFit.improvementRatio <= 0.58 &&
+        angleFit.confidence >= Math.max(0.62, straightLineFit.confidence - 0.08))
+    );
+    if (angleBeatsStraight) {
+      preview.straightLineState = null;
+      preview.hypotheses = {
+        mode: "two-segment-angle",
+        strokeCount: angleFit.strokeCount,
+        pointCount: angleFit.pointCount,
+        confidence: angleFit.confidence,
+        oneLineError: angleFit.oneLineError,
+        bestTwoLineError: angleFit.bestTwoLineError,
+        improvementRatio: angleFit.improvementRatio,
+        angleBetweenSegments: angleFit.angleBetweenSegments,
+        cornerPoint: angleFit.cornerPoint,
+        segmentLengthA: angleFit.segmentLengthA,
+        segmentLengthB: angleFit.segmentLengthB,
+        supportA: angleFit.supportA,
+        supportB: angleFit.supportB,
+        splitIndex: angleFit.splitIndex,
+        winningHypothesis: angleFit.winningHypothesis,
+        previousWinningHypothesis: straightLineFit.previousWinningHypothesis,
+        straightLineConfidence: straightLineFit.confidence,
+        straightLineReason: straightLineFit.reason,
+        discontinuities: 1,
+      };
+      if (globalThis?.NodevisionDebug?.pencilSketchAngleFit) {
+        console.debug("[PencilSketchAngleFit]", preview.hypotheses);
+      }
+      return [angleFit.points];
+    }
+
     if (straightLineFit.straight) {
       preview.hypotheses = {
         mode: "open-straight-line",
@@ -600,6 +643,21 @@ export function createSketchModeController(deps = {}) {
         confidence: straightLineFit.confidence,
         latestStrongViolation: straightLineFit.latestStrongViolation,
         reason: straightLineFit.reason,
+      });
+    }
+    if (globalThis?.NodevisionDebug?.pencilSketchAngleFit) {
+      console.debug("[PencilSketchAngleFit:rejected]", {
+        winningHypothesis: angleFit.winningHypothesis,
+        strokeCount: angleFit.strokeCount,
+        oneLineError: angleFit.oneLineError,
+        bestTwoLineError: angleFit.bestTwoLineError,
+        improvementRatio: angleFit.improvementRatio,
+        cornerPoint: angleFit.cornerPoint,
+        angleBetweenSegments: angleFit.angleBetweenSegments,
+        segmentLengthA: angleFit.segmentLengthA,
+        segmentLengthB: angleFit.segmentLengthB,
+        confidence: angleFit.confidence,
+        reason: angleFit.reason,
       });
     }
     preview.straightLineState = null;
@@ -728,7 +786,7 @@ export function createSketchModeController(deps = {}) {
         (sum, points) => sum + points.length,
         0,
       ),
-      discontinuities: 0,
+      discontinuities: Number(preview.hypotheses?.discontinuities) || 0,
       hypothesis: preview.hypotheses?.mode || "none",
     };
 

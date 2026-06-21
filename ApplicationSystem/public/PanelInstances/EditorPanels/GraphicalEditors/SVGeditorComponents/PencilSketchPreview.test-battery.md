@@ -1,31 +1,42 @@
-# Pencil Sketch Preview Straight-Line Test Battery
+# Pencil Sketch Preview Angle Test Battery
 
-Use this battery for the active sketch preview layer. Raw pencil strokes should remain visible underneath the ghost preview until the user accepts/renders the preview. These cases focus only on the open straight-line hypothesis.
+Use this battery for the active sketch preview layer. Raw pencil strokes should remain visible underneath the ghost preview until the user accepts/renders the preview. These cases focus only on the two-segment angular polyline hypothesis.
 
-1. Straight line, single stroke
-   - Draw one diagonal or horizontal stroke.
-   - Expected: the preview preserves the raw stroke and does not auto-straighten.
+1. One straight-ish stroke
+   - Draw a single rough diagonal or angled stroke.
+   - Expected: the preview preserves the raw stroke and does not auto-convert it into an angle.
 
-2. Several short strokes from lower-left to upper-right
-   - Draw multiple nearby strokes along one shared diagonal axis.
-   - Expected: one clean diagonal ghost line spans the min/max projected endpoints.
+2. Multiple rough strokes along one direction
+   - Draw several nearby strokes along a single shared axis.
+   - Expected: one straight-line ghost preview, not an angle.
 
-3. Add a short stroke slightly below the established line
-   - Draw the diagonal line first, then add one nearby parallel stroke below it.
-   - Expected: the preview remains one clean diagonal line. It may shift slightly, but must not bend, kink, or collapse into the local stroke.
+3. Add multiple rough strokes forming a second direction from an apex
+   - Draw one segment toward a corner, then draw enough strokes leaving the corner in another direction.
+   - Expected: the preview changes to one clean two-segment angle.
 
-4. Add a short stroke slightly above the established line
-   - Draw the diagonal line first, then add one nearby parallel stroke above it.
-   - Expected: the preview remains one clean diagonal line. It may shift slightly, but must not bend, kink, or collapse into the local stroke.
+4. Lower-left to upper apex, then upper apex to lower-right
+   - Draw an inverted V / roof-like angle as one sketch preview.
+   - Expected: one clean `M start L corner L end` ghost path with a preserved sharp corner.
 
-5. Add a short stroke extending the line farther along the same axis
-   - Draw a short compatible stroke beyond one projected endpoint.
-   - Expected: the preview remains a clean line and extends in that direction.
+5. Add extra rough strokes near either segment
+   - Reinforce either side of the angle with nearby strokes.
+   - Expected: each segment may adjust slightly, but the shared corner remains stable.
 
-6. Add a short stroke crossing the line at a very different angle
-   - Draw a crossing stroke that clearly violates the established direction.
-   - Expected: straight-line confidence drops; the line hypothesis should not be forced if the conflict is strong.
+6. Add a small accidental hook near one segment
+   - Add one short hook that does not have enough length/support to be a real second segment.
+   - Expected: do not turn the whole sketch into an angle from the hook.
 
 7. Accept the preview
-   - Render/accept the straight-line preview.
-   - Expected: final SVG geometry is a simple `<line>` or an `M/L` path with two endpoints, not a Bezier path with many handles.
+   - Render/accept the angular preview.
+   - Expected: final SVG geometry is one simple polyline/path with `M-L-L` commands and no Bezier handles.
+
+Debug fields to watch when enabled:
+- `winningHypothesis`
+- `oneLineError`
+- `bestTwoLineError`
+- `improvementRatio`
+- `cornerPoint`
+- `angleBetweenSegments`
+- `segmentLengthA`
+- `segmentLengthB`
+- `confidence`
