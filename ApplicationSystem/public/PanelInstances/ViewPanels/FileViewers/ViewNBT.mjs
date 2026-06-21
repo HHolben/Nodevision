@@ -3,6 +3,7 @@
 
 import { NBTViewer } from "./ViewNBT/NBTViewer.mjs";
 import { parseNBT } from "./ViewNBT/parseNBT.mjs";
+import { normalizeNotebookRelativePath, toNotebookAssetUrl } from "/utils/notebookPath.mjs";
 
 const viewers = new WeakMap();
 
@@ -18,7 +19,7 @@ export async function renderFile(filePath, viewPanel, iframe, serverBase) {
       viewers.set(viewPanel, viewer);
     }
 
-    const url = `/Notebook/${encodeURIComponent(filePath)}`;
+    const url = toNotebookAssetUrl(normalizeNotebookRelativePath(filePath));
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to load NBT file (${response.status})`);
 
@@ -41,7 +42,13 @@ export async function renderFile(filePath, viewPanel, iframe, serverBase) {
     viewer.loadStructure(nbt);
 
   } catch (err) {
-    console.error('[ViewNBT] Error:', err);
-    viewPanel.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+    console.error("[ViewNBT] Error:", err);
+    viewers.delete(viewPanel);
+    viewPanel.innerHTML = "";
+    const message = document.createElement("p");
+    message.style.color = "red";
+    const detail = err && err.message ? err.message : "Unable to parse NBT file";
+    message.textContent = "Error: " + detail;
+    viewPanel.appendChild(message);
   }
 }

@@ -3,6 +3,9 @@
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus, setWordCountVisibility } from "/StatusBar.mjs";
+import { normalizeNotebookRelativePath, toNotebookAssetUrl } from "/utils/notebookPath.mjs";
+import { parseNBT } from "../ViewPanels/FileViewers/ViewNBT/parseNBT.mjs";
+import { serializeNBT } from "../ViewPanels/FileViewers/ViewNBT/serializeNBT.mjs";
 
 let editorInstance = null;
 let editorContainer = null;
@@ -11,6 +14,10 @@ let lastEditedPath = null;
 let currentLoadedEncoding = "utf8";
 let currentLoadedBom = false;
 let currentLoadedIsBinary = false;
+let currentLoadedFileFormat = "text";
+let currentLoadedNbtWasGzip = false;
+let currentNbtTagPath = "/";
+let nbtTagContextListeners = new Set();
 let previewOutputEl = null;
 let previewStatusEl = null;
 let commonVarOverlay = null;
@@ -18,6 +25,640 @@ let commonVarData = [];
 let savedVersionId = null;
 let unsavedPromptEl = null;
 let unsavedPromptOpen = false;
+
+const TAG_END = 0;
+const TAG_BYTE = 1;
+const TAG_SHORT = 2;
+const TAG_INT = 3;
+const TAG_LONG = 4;
+const TAG_FLOAT = 5;
+const TAG_DOUBLE = 6;
+const TAG_BYTE_ARRAY = 7;
+const TAG_STRING = 8;
+const TAG_LIST = 9;
+const TAG_COMPOUND = 10;
+const TAG_INT_ARRAY = 11;
+const TAG_LONG_ARRAY = 12;
+
+const NBT_TAG_NAME_BY_ID = Object.freeze({
+  [TAG_END]: "End",
+  [TAG_BYTE]: "Byte",
+  [TAG_SHORT]: "Short",
+  [TAG_INT]: "Int",
+  [TAG_LONG]: "Long",
+  [TAG_FLOAT]: "Float",
+  [TAG_DOUBLE]: "Double",
+  [TAG_BYTE_ARRAY]: "Byte_Array",
+  [TAG_STRING]: "String",
+  [TAG_LIST]: "List",
+  [TAG_COMPOUND]: "Compound",
+  [TAG_INT_ARRAY]: "Int_Array",
+  [TAG_LONG_ARRAY]: "Long_Array",
+});
+
+const NBT_TAG_ID_BY_NAME = Object.freeze({
+  end: TAG_END,
+  byte: TAG_BYTE,
+  short: TAG_SHORT,
+  int: TAG_INT,
+  integer: TAG_INT,
+  long: TAG_LONG,
+  float: TAG_FLOAT,
+  double: TAG_DOUBLE,
+  bytearray: TAG_BYTE_ARRAY,
+  string: TAG_STRING,
+  list: TAG_LIST,
+  compound: TAG_COMPOUND,
+  intarray: TAG_INT_ARRAY,
+  integerarray: TAG_INT_ARRAY,
+  longarray: TAG_LONG_ARRAY,
+});
+
+function isNbtFilePath(filePath) {
+  return String(filePath || "").trim().replace(/[?#].*$/, "").toLowerCase().endsWith(".nbt");
+}
+
+function nbtNotebookUrl(filePath) {
+  return toNotebookAssetUrl(normalizeNotebookRelativePath(filePath));
+}
+
+function normalizeTagName(name) {
+  return String(name || "")
+    .trim()
+    .replace(/[\s_-]+/g, "")
+    .toLowerCase();
+}
+
+function tagIdFromName(name, fallback = TAG_STRING) {
+  if (typeof name === "number" && NBT_TAG_NAME_BY_ID[name]) return name;
+  const normalized = normalizeTagName(name);
+  return NBT_TAG_ID_BY_NAME[normalized] ?? fallback;
+}
+
+function tagNameFromId(id) {
+  return NBT_TAG_NAME_BY_ID[id] || "String";
+}
+
+function attachNbtMeta(value, meta) {
+  if (!value || typeof value !== "object") return value;
+  Object.defineProperty(value, "__nbtMeta", {
+    value: { ...(value.__nbtMeta || {}), ...meta },
+    enumerable: false,
+    configurable: true,
+  });
+  return value;
+}
+
+function inferNbtTagType(value) {
+  if (Array.isArray(value)) return value.__nbtMeta?.tagType || TAG_LIST;
+  if (value && typeof value === "object") return TAG_COMPOUND;
+  if (typeof value === "string") return TAG_STRING;
+  if (typeof value === "bigint") return TAG_LONG;
+  if (typeof value === "boolean") return TAG_BYTE;
+  if (Number.isInteger(value)) return TAG_INT;
+  if (typeof value === "number") return TAG_DOUBLE;
+  return TAG_STRING;
+}
+
+function inferNbtListItemType(values = []) {
+  const metaType = values.__nbtMeta?.itemType;
+  if (metaType !== undefined) return metaType;
+  const first = values.find((value) => value !== undefined && value !== null);
+  return first === undefined ? TAG_END : inferNbtTagType(first);
+}
+
+function toTaggedNbtNode(value, forcedType = null) {
+  const type = forcedType ?? value?.__nbtMeta?.tagType ?? inferNbtTagType(value);
+  if (type === TAG_COMPOUND) {
+    const tagTypes = value?.__nbtMeta?.tagTypes || {};
+    const out = {};
+    for (const [key, child] of Object.entries(value || {})) {
+      if (child === undefined || typeof child === "function") continue;
+      out[key] = toTaggedNbtNode(child, tagTypes[key] ?? null);
+    }
+    return { type: "Compound", value: out };
+  }
+  if (type === TAG_LIST) {
+    const values = Array.isArray(value) ? value : [];
+    const itemType = inferNbtListItemType(values);
+    return {
+      type: "List",
+      itemType: tagNameFromId(itemType),
+      value: values.map((item) => toTaggedNbtNode(item, itemType)),
+    };
+  }
+  if (type === TAG_BYTE_ARRAY || type === TAG_INT_ARRAY || type === TAG_LONG_ARRAY) {
+    return { type: tagNameFromId(type), value: Array.isArray(value) ? [...value] : [] };
+  }
+  return { type: tagNameFromId(type), value };
+}
+
+function nbtToEditableJson(root) {
+  return JSON.stringify({
+    format: "Nodevision NBT Tags",
+    rootName: root?.__nbtMeta?.rootName || "",
+    littleEndian: Boolean(root?.__nbtMeta?.littleEndian),
+    root: toTaggedNbtNode(root, TAG_COMPOUND),
+  }, null, 2) + "\n";
+}
+
+function coercePrimitiveNbtValue(type, value) {
+  if (type === TAG_BYTE) return value === true ? 1 : Number(value) || 0;
+  if (type === TAG_SHORT || type === TAG_INT) return Math.trunc(Number(value) || 0);
+  if (type === TAG_LONG) return typeof value === "bigint" ? value : String(value ?? "0");
+  if (type === TAG_FLOAT || type === TAG_DOUBLE) return Number(value) || 0;
+  if (type === TAG_STRING) return String(value ?? "");
+  return value;
+}
+
+function taggedNbtNodeToValue(node, expectedType = null) {
+  const isWrappedNode = node && typeof node === "object" && !Array.isArray(node) && Object.prototype.hasOwnProperty.call(node, "type");
+  const type = expectedType !== null && expectedType !== undefined ? expectedType : tagIdFromName(isWrappedNode ? node.type : null, TAG_STRING);
+  const rawValue = isWrappedNode ? node.value : node;
+
+  if (type === TAG_COMPOUND) {
+    const obj = {};
+    const tagTypes = {};
+    for (const [key, child] of Object.entries(rawValue || {})) {
+      const childType = tagIdFromName(child?.type, inferNbtTagType(child?.value ?? child));
+      tagTypes[key] = childType;
+      obj[key] = taggedNbtNodeToValue(child, childType);
+    }
+    return attachNbtMeta(obj, { tagType: TAG_COMPOUND, tagTypes });
+  }
+
+  if (type === TAG_LIST) {
+    const values = Array.isArray(rawValue) ? rawValue : [];
+    let itemType = tagIdFromName(isWrappedNode ? node.itemType : null, values[0]?.type ? tagIdFromName(values[0].type) : TAG_END);
+    if (itemType === TAG_END && values.length > 0) itemType = TAG_STRING;
+    const arr = values.map((item) => taggedNbtNodeToValue(item, itemType));
+    return attachNbtMeta(arr, { tagType: TAG_LIST, itemType });
+  }
+
+  if (type === TAG_BYTE_ARRAY || type === TAG_INT_ARRAY || type === TAG_LONG_ARRAY) {
+    const arrayItemType = type === TAG_BYTE_ARRAY ? TAG_BYTE : (type === TAG_LONG_ARRAY ? TAG_LONG : TAG_INT);
+    const arr = Array.isArray(rawValue) ? rawValue.map((item) => coercePrimitiveNbtValue(arrayItemType, item)) : [];
+    return attachNbtMeta(arr, { tagType: type });
+  }
+
+  return coercePrimitiveNbtValue(type, rawValue);
+}
+
+function editableJsonToNbt(text) {
+  const doc = JSON.parse(text);
+  const rootNode = doc?.root || doc;
+  const root = taggedNbtNodeToValue(rootNode, TAG_COMPOUND);
+  return attachNbtMeta(root, {
+    rootName: String(doc?.rootName || ""),
+    littleEndian: Boolean(doc?.littleEndian),
+  });
+}
+
+async function fetchNbtForCodeEditor(filePath) {
+  const response = await fetch(nbtNotebookUrl(filePath));
+  if (!response.ok) throw new Error(`Failed to load NBT file (${response.status})`);
+  const blob = await response.blob();
+  try {
+    const ds = new DecompressionStream("gzip");
+    const buffer = await new Response(blob.stream().pipeThrough(ds)).arrayBuffer();
+    return { buffer, gzip: true };
+  } catch {
+    return { buffer: await blob.arrayBuffer(), gzip: false };
+  }
+}
+
+async function gzipNbtBuffer(buffer) {
+  if (typeof CompressionStream === "undefined") return buffer;
+  const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
+  return new Response(stream).arrayBuffer();
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function loadNbtCodeContent(filePath) {
+  const { buffer, gzip } = await fetchNbtForCodeEditor(filePath);
+  const root = parseNBT(buffer);
+  currentLoadedEncoding = "utf8";
+  currentLoadedBom = false;
+  currentLoadedIsBinary = false;
+  currentLoadedFileFormat = "nbt";
+  currentLoadedNbtWasGzip = gzip;
+  window.currentFileEncoding = currentLoadedEncoding;
+  window.currentFileBom = currentLoadedBom;
+  return nbtToEditableJson(root);
+}
+
+async function saveNbtCodeFile(path = window.__nvCodeEditorActivePath || window.currentActiveFilePath) {
+  if (!editorInstance?.getValue) throw new Error("NBT code editor is not ready.");
+  const root = editableJsonToNbt(editorInstance.getValue());
+  let buffer = serializeNBT(root);
+  if (currentLoadedNbtWasGzip) buffer = await gzipNbtBuffer(buffer);
+  const response = await fetch("/api/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      path,
+      content: arrayBufferToBase64(buffer),
+      encoding: "base64",
+      mimeType: "application/x-nbt",
+    }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.success) {
+    throw new Error(data?.error || data?.message || `Failed to save NBT file (${response.status})`);
+  }
+  markEditorClean();
+  window.dispatchEvent(new CustomEvent("nodevision-file-saved", { detail: { filePath: path } }));
+  setStatus("NBT", "Tags saved");
+  return true;
+}
+
+
+const NBT_TAG_EDITOR_TYPES = [
+  "Byte",
+  "Short",
+  "Int",
+  "Long",
+  "Float",
+  "Double",
+  "Byte_Array",
+  "String",
+  "List",
+  "Compound",
+  "Int_Array",
+  "Long_Array",
+];
+
+function normalizedEditableTagType(type, fallback = "String") {
+  return tagNameFromId(tagIdFromName(type, tagIdFromName(fallback, TAG_STRING)));
+}
+
+function normalizedEditableListItemType(type) {
+  const normalized = normalizedEditableTagType(type, "String");
+  return normalized === "End" ? "String" : normalized;
+}
+
+function escapeNbtTagPathPart(part) {
+  return String(part).replace(/~/g, "~0").replace(/\//g, "~1");
+}
+
+function unescapeNbtTagPathPart(part) {
+  return String(part).replace(/~1/g, "/").replace(/~0/g, "~");
+}
+
+function splitNbtTagPath(path = "/") {
+  const clean = String(path || "/");
+  if (clean === "/") return [];
+  return clean.replace(/^\//, "").split("/").map(unescapeNbtTagPathPart);
+}
+
+function joinNbtTagPath(parts = []) {
+  return parts.length ? "/" + parts.map(escapeNbtTagPathPart).join("/") : "/";
+}
+
+function parentNbtTagPath(path = "/") {
+  const parts = splitNbtTagPath(path);
+  parts.pop();
+  return joinNbtTagPath(parts);
+}
+
+function labelNbtTagPath(path = "/") {
+  const parts = splitNbtTagPath(path);
+  return parts.length ? `root/${parts.join("/")}` : "root";
+}
+
+function defaultEditableTagValue(type) {
+  const normalized = normalizedEditableTagType(type, "String");
+  if (normalized === "Compound") return {};
+  if (normalized === "List" || normalized.endsWith("_Array")) return [];
+  if (normalized === "String") return "";
+  if (normalized === "Long") return "0";
+  return 0;
+}
+
+function ensureEditableTagNode(node, fallbackType = "String") {
+  if (node && typeof node === "object" && !Array.isArray(node) && Object.prototype.hasOwnProperty.call(node, "type")) {
+    const type = normalizedEditableTagType(node.type, fallbackType);
+    const next = { ...node, type };
+    if (type === "List") next.itemType = normalizedEditableListItemType(node.itemType);
+    if (next.value === undefined) next.value = defaultEditableTagValue(type);
+    return next;
+  }
+  const type = normalizedEditableTagType(fallbackType, "String");
+  return { type, value: node ?? defaultEditableTagValue(type) };
+}
+
+function defaultEditableTagNode(type = "String") {
+  const normalized = normalizedEditableTagType(type, "String");
+  const node = { type: normalized, value: defaultEditableTagValue(normalized) };
+  if (normalized === "List") node.itemType = "String";
+  return node;
+}
+
+function normalizeEditableNbtDocument(doc) {
+  const normalized = doc && typeof doc === "object" && !Array.isArray(doc) ? doc : {};
+  normalized.format = normalized.format || "Nodevision NBT Tags";
+  normalized.rootName = String(normalized.rootName || "");
+  normalized.littleEndian = Boolean(normalized.littleEndian);
+  normalized.root = ensureEditableTagNode(normalized.root, "Compound");
+  normalized.root.type = "Compound";
+  if (!normalized.root.value || typeof normalized.root.value !== "object" || Array.isArray(normalized.root.value)) {
+    normalized.root.value = {};
+  }
+  return normalized;
+}
+
+function parseEditableNbtDocumentFromEditor() {
+  const text = editorInstance?.getValue?.() || "{}";
+  return normalizeEditableNbtDocument(JSON.parse(text));
+}
+
+function setEditableNbtDocumentInEditor(doc) {
+  if (!editorInstance?.setValue) return;
+  editorInstance.setValue(JSON.stringify(normalizeEditableNbtDocument(doc), null, 2) + "\n");
+  updateDirtyState();
+}
+
+function collectEditableNbtTagPaths(node, path = "/", out = []) {
+  const tagNode = ensureEditableTagNode(node, path === "/" ? "Compound" : "String");
+  const type = normalizedEditableTagType(tagNode.type);
+  out.push({ path, label: labelNbtTagPath(path), type });
+  if (type === "Compound") {
+    const children = tagNode.value && typeof tagNode.value === "object" && !Array.isArray(tagNode.value) ? tagNode.value : {};
+    for (const key of Object.keys(children)) {
+      collectEditableNbtTagPaths(children[key], joinNbtTagPath([...splitNbtTagPath(path), key]), out);
+    }
+  } else if (type === "List") {
+    const children = Array.isArray(tagNode.value) ? tagNode.value : [];
+    children.forEach((child, index) => {
+      collectEditableNbtTagPaths(child, joinNbtTagPath([...splitNbtTagPath(path), String(index)]), out);
+    });
+  }
+  return out;
+}
+
+function resolveEditableNbtTag(doc, path = "/") {
+  const normalized = normalizeEditableNbtDocument(doc);
+  const parts = splitNbtTagPath(path);
+  let node = normalized.root;
+  let parent = null;
+  let parentContainer = null;
+  let key = null;
+  for (const part of parts) {
+    const parentNode = ensureEditableTagNode(node, "Compound");
+    const type = normalizedEditableTagType(parentNode.type);
+    parent = parentNode;
+    key = part;
+    if (type === "Compound") {
+      parentContainer = parentNode.value && typeof parentNode.value === "object" && !Array.isArray(parentNode.value) ? parentNode.value : {};
+      parentNode.value = parentContainer;
+      node = parentContainer[part];
+    } else if (type === "List") {
+      parentContainer = Array.isArray(parentNode.value) ? parentNode.value : [];
+      parentNode.value = parentContainer;
+      node = parentContainer[Number(part)];
+    } else {
+      return null;
+    }
+    if (!node) return null;
+  }
+  return { doc: normalized, node: ensureEditableTagNode(node, parts.length ? "String" : "Compound"), parent, parentContainer, key, path };
+}
+
+function coerceEditableTagValue(type, value) {
+  const normalized = normalizedEditableTagType(type, "String");
+  if (normalized === "Compound") return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  if (normalized === "List" || normalized.endsWith("_Array")) return Array.isArray(value) ? value : [];
+  if (normalized === "String") return String(value ?? "");
+  if (normalized === "Long") return String(value ?? "0");
+  if (normalized === "Float" || normalized === "Double") return Number(value) || 0;
+  return Math.trunc(Number(value) || 0);
+}
+
+function retagEditableNbtNode(node, nextType) {
+  const type = normalizedEditableTagType(nextType, "String");
+  const current = ensureEditableTagNode(node, type);
+  const next = { type, value: coerceEditableTagValue(type, current.value) };
+  if (type === "List") next.itemType = normalizedEditableListItemType(current.itemType);
+  return next;
+}
+
+function nextCompoundChildName(children, base = "newTag") {
+  let candidate = base;
+  let index = 1;
+  while (Object.prototype.hasOwnProperty.call(children, candidate)) {
+    candidate = `${base}${index}`;
+    index += 1;
+  }
+  return candidate;
+}
+
+function getNbtTagEditorState() {
+  if (currentLoadedFileFormat !== "nbt" || !editorInstance?.getValue) {
+    return { id: "nbt-tags", title: "NBT Tag Properties", error: "Open an NBT file in the code editor to edit tags." };
+  }
+  try {
+    const doc = parseEditableNbtDocumentFromEditor();
+    const paths = collectEditableNbtTagPaths(doc.root);
+    if (!paths.some((entry) => entry.path === currentNbtTagPath)) currentNbtTagPath = "/";
+    const resolved = resolveEditableNbtTag(doc, currentNbtTagPath) || resolveEditableNbtTag(doc, "/");
+    const node = ensureEditableTagNode(resolved?.node, currentNbtTagPath === "/" ? "Compound" : "String");
+    const type = normalizedEditableTagType(node.type);
+    const pathParts = splitNbtTagPath(currentNbtTagPath);
+    const tagName = pathParts.length ? pathParts[pathParts.length - 1] : "root";
+    return {
+      id: "nbt-tags",
+      title: "NBT Tag Properties",
+      mode: "tags",
+      filePath: window.__nvCodeEditorActivePath || window.currentActiveFilePath || "",
+      rootName: doc.rootName || "",
+      littleEndian: Boolean(doc.littleEndian),
+      paths,
+      tagTypes: [...NBT_TAG_EDITOR_TYPES],
+      selectedPath: currentNbtTagPath,
+      selectedTag: {
+        path: currentNbtTagPath,
+        label: labelNbtTagPath(currentNbtTagPath),
+        name: tagName,
+        type,
+        itemType: type === "List" ? normalizedEditableListItemType(node.itemType) : "String",
+        valueText: JSON.stringify(node.value ?? defaultEditableTagValue(type), null, 2),
+        canRename: currentNbtTagPath !== "/" && resolved?.parent?.type === "Compound",
+        canDelete: currentNbtTagPath !== "/",
+        canAddChild: type === "Compound" || type === "List",
+      },
+    };
+  } catch (err) {
+    return {
+      id: "nbt-tags",
+      title: "NBT Tag Properties",
+      filePath: window.__nvCodeEditorActivePath || window.currentActiveFilePath || "",
+      error: err?.message || "Invalid NBT tag JSON.",
+      selectedPath: currentNbtTagPath,
+      paths: [],
+      tagTypes: [...NBT_TAG_EDITOR_TYPES],
+    };
+  }
+}
+
+function notifyNbtTagContext(reason = "change") {
+  if (currentLoadedFileFormat !== "nbt") return;
+  const state = getNbtTagEditorState();
+  for (const listener of nbtTagContextListeners) listener(state);
+  window.dispatchEvent(new CustomEvent("nv-nbt-context-changed", { detail: { ...state, reason } }));
+}
+
+function applyNbtTagEditorPatch(patch = {}) {
+  const doc = parseEditableNbtDocumentFromEditor();
+  if (patch.rootName !== undefined) doc.rootName = String(patch.rootName || "");
+  if (patch.littleEndian !== undefined) doc.littleEndian = Boolean(patch.littleEndian);
+  const resolved = resolveEditableNbtTag(doc, currentNbtTagPath) || resolveEditableNbtTag(doc, "/");
+  if (!resolved) return { ok: false, reason: "Selected tag was not found." };
+  let node = ensureEditableTagNode(resolved.node, currentNbtTagPath === "/" ? "Compound" : "String");
+  let nextPath = currentNbtTagPath;
+  if (currentNbtTagPath !== "/" && patch.name !== undefined && resolved.parent?.type === "Compound") {
+    const nextName = String(patch.name || "").trim();
+    if (!nextName) return { ok: false, reason: "Tag name is required." };
+    if (nextName !== resolved.key && Object.prototype.hasOwnProperty.call(resolved.parentContainer, nextName)) {
+      return { ok: false, reason: `A tag named "${nextName}" already exists here.` };
+    }
+    if (nextName !== resolved.key) {
+      delete resolved.parentContainer[resolved.key];
+      resolved.parentContainer[nextName] = node;
+      const parts = splitNbtTagPath(currentNbtTagPath);
+      parts[parts.length - 1] = nextName;
+      nextPath = joinNbtTagPath(parts);
+    }
+  }
+  if (patch.type !== undefined && currentNbtTagPath !== "/") node = retagEditableNbtNode(node, patch.type);
+  if (normalizedEditableTagType(node.type) === "List" && patch.itemType !== undefined) node.itemType = normalizedEditableTagType(patch.itemType, "String");
+  if (patch.valueText !== undefined) {
+    let parsedValue;
+    try {
+      parsedValue = JSON.parse(patch.valueText || "null");
+    } catch (err) {
+      return { ok: false, reason: err?.message || "Value must be valid JSON." };
+    }
+    node.value = coerceEditableTagValue(node.type, parsedValue);
+  }
+  if (currentNbtTagPath === "/") {
+    doc.root = node;
+    doc.root.type = "Compound";
+  } else if (Array.isArray(resolved.parentContainer)) {
+    resolved.parentContainer[Number(resolved.key)] = node;
+  } else {
+    const nextParts = splitNbtTagPath(nextPath);
+    const lastKey = nextParts[nextParts.length - 1];
+    resolved.parentContainer[lastKey] = node;
+  }
+  currentNbtTagPath = nextPath;
+  setEditableNbtDocumentInEditor(doc);
+  notifyNbtTagContext("tag-updated");
+  return { ok: true };
+}
+
+function addNbtTagChild() {
+  const doc = parseEditableNbtDocumentFromEditor();
+  const resolved = resolveEditableNbtTag(doc, currentNbtTagPath) || resolveEditableNbtTag(doc, "/");
+  if (!resolved) return { ok: false, reason: "Selected tag was not found." };
+  const node = ensureEditableTagNode(resolved.node, "Compound");
+  const type = normalizedEditableTagType(node.type);
+  if (type === "Compound") {
+    const children = node.value && typeof node.value === "object" && !Array.isArray(node.value) ? node.value : {};
+    node.value = children;
+    const key = nextCompoundChildName(children);
+    children[key] = defaultEditableTagNode("String");
+    currentNbtTagPath = joinNbtTagPath([...splitNbtTagPath(currentNbtTagPath), key]);
+  } else if (type === "List") {
+    const children = Array.isArray(node.value) ? node.value : [];
+    node.value = children;
+    const childType = normalizedEditableListItemType(node.itemType);
+    children.push(defaultEditableTagNode(childType));
+    currentNbtTagPath = joinNbtTagPath([...splitNbtTagPath(currentNbtTagPath), String(children.length - 1)]);
+  } else {
+    return { ok: false, reason: "Only Compound and List tags can contain child tags." };
+  }
+  setEditableNbtDocumentInEditor(doc);
+  notifyNbtTagContext("tag-added");
+  return { ok: true };
+}
+
+function deleteSelectedNbtTag() {
+  if (currentNbtTagPath === "/") return { ok: false, reason: "The root tag cannot be deleted." };
+  const doc = parseEditableNbtDocumentFromEditor();
+  const resolved = resolveEditableNbtTag(doc, currentNbtTagPath);
+  if (!resolved?.parentContainer) return { ok: false, reason: "Selected tag was not found." };
+  const previousParentPath = parentNbtTagPath(currentNbtTagPath);
+  if (Array.isArray(resolved.parentContainer)) {
+    resolved.parentContainer.splice(Number(resolved.key), 1);
+  } else {
+    delete resolved.parentContainer[resolved.key];
+  }
+  currentNbtTagPath = previousParentPath;
+  setEditableNbtDocumentInEditor(doc);
+  notifyNbtTagContext("tag-deleted");
+  return { ok: true };
+}
+
+function formatNbtTagDocument() {
+  const doc = parseEditableNbtDocumentFromEditor();
+  setEditableNbtDocumentInEditor(doc);
+  notifyNbtTagContext("format");
+  return { ok: true };
+}
+
+function installNbtTagEditorContext(filePath) {
+  currentNbtTagPath = "/";
+  const context = {
+    id: "nbt-tags",
+    title: "NBT Tag Properties",
+    getState: getNbtTagEditorState,
+    setSelectedTagPath(path) {
+      currentNbtTagPath = String(path || "/");
+      notifyNbtTagContext("selection");
+    },
+    updateSelectedTag(patch) {
+      return applyNbtTagEditorPatch(patch);
+    },
+    addChild() {
+      return addNbtTagChild();
+    },
+    deleteSelectedTag() {
+      return deleteSelectedNbtTag();
+    },
+    formatTags() {
+      return formatNbtTagDocument();
+    },
+    save(path = filePath) {
+      return saveNbtCodeFile(path);
+    },
+    subscribe(listener) {
+      if (typeof listener !== "function") return () => {};
+      nbtTagContextListeners.add(listener);
+      listener(getNbtTagEditorState());
+      return () => nbtTagContextListeners.delete(listener);
+    },
+  };
+  window.NBTTagEditorContext = context;
+  window.dispatchEvent(new CustomEvent("nv-nbt-context-ready", { detail: getNbtTagEditorState() }));
+  updateToolbarState({ nbtTagEditorActive: true, activeEditorFilePath: filePath, selectedFile: filePath });
+}
+
+function clearNbtTagEditorContext() {
+  if (window.NBTTagEditorContext) delete window.NBTTagEditorContext;
+  nbtTagContextListeners = new Set();
+  currentNbtTagPath = "/";
+  window.dispatchEvent(new CustomEvent("nv-nbt-context-cleared", { detail: { mode: "tags" } }));
+  updateToolbarState({ nbtTagEditorActive: false });
+}
 
 function inferPreviewLanguage(filePath) {
   const lower = String(filePath || "").toLowerCase();
@@ -223,6 +864,16 @@ export async function updateEditorPanel(filePath) {
   console.log("📝 Loading file in editor:", filePath);
 
   try {
+    if (isNbtFilePath(filePath)) {
+      const content = await loadNbtCodeContent(filePath);
+      initializeMonaco(filePath, content);
+      return;
+    }
+
+    currentLoadedFileFormat = "text";
+    currentLoadedNbtWasGzip = false;
+    clearNbtTagEditorContext();
+
     const res = await fetch(`/api/fileCodeContent?path=${encodeURIComponent(filePath)}`);
     if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
     const data = await res.json();
@@ -313,6 +964,16 @@ function initializeMonaco(filePath, content) {
     window.currentActiveFilePath = filePath;
     window.currentFileEncoding = currentLoadedEncoding;
     window.currentFileBom = currentLoadedBom;
+    if (currentLoadedFileFormat === "nbt") {
+      window.saveCodeFile = saveNbtCodeFile;
+      window.__nvCodeEditorSaveFormat = "nbt";
+      installNbtTagEditorContext(filePath);
+      setStatus("NBT", "Tags loaded as editable JSON");
+    } else if (window.__nvCodeEditorSaveFormat === "nbt") {
+      window.saveCodeFile = null;
+      window.__nvCodeEditorSaveFormat = null;
+      clearNbtTagEditorContext();
+    }
     console.log("🧠 Monaco editor registered globally for saving:", filePath);
 
     if (currentLoadedIsBinary) {
@@ -367,6 +1028,7 @@ function initializeMonaco(filePath, content) {
         refreshCommonVarOverlay();
       }
       updateDirtyState();
+      if (currentLoadedFileFormat === "nbt") notifyNbtTagContext("content");
     });
 
     const model = editorInstance.getModel();
@@ -396,6 +1058,7 @@ function detectLanguage(filePath) {
       html: "html",
       css: "css",
       json: "json",
+      nbt: "json",
       py: "python",
       cpp: "cpp",
       cc: "cpp",

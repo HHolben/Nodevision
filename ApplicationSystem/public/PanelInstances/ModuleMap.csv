@@ -195,7 +195,7 @@ shp,GeographicalData,ViewShapefile.mjs,GeoFamilyEditor.mjs
 blend,Scene,ViewBinary.mjs,BinaryFamilyEditor.mjs
 bullet,Scene,ViewPhysicsWorld.mjs,ModelFamilyEditor.mjs
 tscn,Scene,ViewGodotScene.mjs,ModelFamilyEditor.mjs
-nbt,Game,ViewNBT.mjs,ModelFamilyEditor.mjs
+nbt,Game,ViewNBT.mjs,NBTEditor.mjs
 pgn,Game,ViewPGN.mjs,DocumentFamilyEditor.mjs
 sav,Game,ViewBinary.mjs,BinaryFamilyEditor.mjs
 bz2,Archive,ViewArchive.mjs,BinaryFamilyEditor.mjs

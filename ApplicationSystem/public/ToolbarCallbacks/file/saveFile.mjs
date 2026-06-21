@@ -76,6 +76,10 @@ export default async function saveFile(options = {}) {
     if (canSaveRasterCanvas && (await saveRasterCanvas(filePath))) {
       return notifyFileSaved(filePath);
     }
+    if (mode === "CodeEditing" && typeof window.saveCodeFile === "function") {
+      await window.saveCodeFile(filePath);
+      return notifyFileSaved(filePath);
+    }
     if (window.monacoEditor && typeof window.monacoEditor.getValue === "function") {
       const content = window.monacoEditor.getValue();
       await saveViaApi({

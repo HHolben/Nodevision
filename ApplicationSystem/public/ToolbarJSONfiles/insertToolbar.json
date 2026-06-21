@@ -38,6 +38,22 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Shape",
+      "modes": ["Virtual World Editing", "VR World Editing"],
+      "preventDropdown": true,
+      "icon": "icons/3Dmodel.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Shape",
+      "heading": "3D Shape Controls",
+      "script": "worldShapeWidget.mjs",
+      "modes": ["Virtual World Editing", "VR World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
       "parentHeading": "Terrain",
       "heading": "Insert Terrain Controls",
       "script": "terrainToolWidget.mjs",

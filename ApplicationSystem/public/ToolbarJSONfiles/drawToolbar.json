@@ -1,5 +1,72 @@
 [
   {
+    "heading": "NBT Blocks",
+    "parentHeading": "Draw",
+    "preventDropdown": true,
+    "modes": ["NBTediting"],
+    "shortLabel": "NBT"
+  },
+  {
+    "heading": "NBT Block Controls",
+    "parentHeading": "NBT Blocks",
+    "script": "nbtBlockToolWidget.mjs",
+    "modes": ["NBTediting"]
+  },
+  {
+    "heading": "Select Block",
+    "parentHeading": "NBT Blocks",
+    "ToolbarCategory": "draw",
+    "callbackKey": "nbtModeSelect",
+    "routeToActivePanel": true,
+    "modes": ["NBTediting"],
+    "shortLabel": "Sel"
+  },
+  {
+    "heading": "Place Block",
+    "parentHeading": "NBT Blocks",
+    "ToolbarCategory": "draw",
+    "callbackKey": "nbtModePlace",
+    "routeToActivePanel": true,
+    "modes": ["NBTediting"],
+    "shortLabel": "Plc"
+  },
+  {
+    "heading": "Delete Tool",
+    "parentHeading": "NBT Blocks",
+    "ToolbarCategory": "draw",
+    "callbackKey": "nbtModeDelete",
+    "routeToActivePanel": true,
+    "modes": ["NBTediting"],
+    "shortLabel": "Del"
+  },
+  {
+    "heading": "Add Block",
+    "parentHeading": "NBT Blocks",
+    "ToolbarCategory": "draw",
+    "callbackKey": "nbtAddBlock",
+    "routeToActivePanel": true,
+    "modes": ["NBTediting"],
+    "shortLabel": "Add"
+  },
+  {
+    "heading": "Delete Block",
+    "parentHeading": "NBT Blocks",
+    "ToolbarCategory": "draw",
+    "callbackKey": "nbtDeleteBlock",
+    "routeToActivePanel": true,
+    "modes": ["NBTediting"],
+    "shortLabel": "Rm"
+  },
+  {
+    "heading": "Save NBT",
+    "parentHeading": "NBT Blocks",
+    "ToolbarCategory": "draw",
+    "callbackKey": "nbtSave",
+    "routeToActivePanel": true,
+    "modes": ["NBTediting"],
+    "shortLabel": "Sav"
+  },
+  {
     "heading": "Color",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",

@@ -3,7 +3,7 @@
 
 import * as THREE from "/lib/three/three.module.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
-import { blockColor, centerGroup, extractBlocks } from "./nbtBlocks.mjs";
+import { blockColor, centerGroup, createBlockObject, extractBlocks } from "./nbtBlocks.mjs";
 
 export class NBTViewer {
   constructor(container) {
@@ -68,10 +68,10 @@ export class NBTViewer {
   loadStructure(nbt) {
     this.clear();
 
+    this.group.position.set(0, 0, 0);
     const blocks = extractBlocks(nbt);
     if (!blocks.length) return;
 
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
     const materials = {};
 
     for (const block of blocks) {
@@ -83,9 +83,7 @@ export class NBTViewer {
         });
       }
 
-      const mesh = new THREE.Mesh(geometry, materials[block.id]);
-      mesh.position.set(block.x, block.y, block.z);
-      this.group.add(mesh);
+      this.group.add(createBlockObject(block, materials[block.id]));
     }
 
     centerGroup(this.group);

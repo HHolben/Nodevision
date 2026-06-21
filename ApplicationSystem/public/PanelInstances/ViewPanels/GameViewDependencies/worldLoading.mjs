@@ -173,6 +173,81 @@ function removeObjectFromArray(items, value) {
   if (idx !== -1) items.splice(idx, 1);
 }
 
+const PRIMITIVE_WORLD_OBJECT_TYPES = new Set(["box", "sphere", "cylinder", "torus", "cone", "pyramid"]);
+
+function ensurePrimitiveSize(def) {
+  const type = String(def?.type || "box").toLowerCase();
+  if (Array.isArray(def.size) && def.size.length > 0) return def.size;
+  if (type === "box") def.size = [1, 1, 1];
+  else if (type === "sphere") def.size = [0.5];
+  else if (type === "cylinder") def.size = [0.5, 1];
+  else if (type === "torus") def.size = [1, 0.25];
+  else if (type === "cone" || type === "pyramid") def.size = [0.5, 1];
+  return def.size;
+}
+
+function createPrimitiveWorldMesh(THREE, def, materialOpts = null) {
+  if (!THREE || !def || typeof def !== "object") return null;
+  const type = String(def.type || "box").toLowerCase();
+  if (!PRIMITIVE_WORLD_OBJECT_TYPES.has(type)) return null;
+  const size = ensurePrimitiveSize(def);
+  const material = new THREE.MeshStandardMaterial(materialOpts || { color: def.color || "#888" });
+
+  if (type === "box") {
+    return new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+  }
+  if (type === "sphere") {
+    return new THREE.Mesh(new THREE.SphereGeometry(size[0], 32, 32), material);
+  }
+  if (type === "cylinder") {
+    const radius = size[0];
+    const height = size[1];
+    return new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, 24), material);
+  }
+  if (type === "cone") {
+    const radius = size[0];
+    const height = size[1];
+    return new THREE.Mesh(new THREE.ConeGeometry(radius, height, 32), material);
+  }
+  if (type === "pyramid") {
+    const radius = size[0];
+    const height = size[1];
+    const mesh = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 4), material);
+    mesh.rotation.y = Math.PI / 4;
+    return mesh;
+  }
+  if (type === "torus") {
+    const radius = size[0];
+    const tube = size[1];
+    return new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 16, 64), material);
+  }
+  return null;
+}
+
+function makeObjectColliderRef(THREE, mesh, def, shape) {
+  if (!THREE || !mesh || def?.isWater === true) return null;
+  if (def?.isSolid !== true && def?.collidable !== true) return null;
+  if (shape === "sphere") {
+    const center = new THREE.Vector3(...def.position);
+    const radius = Array.isArray(def.size) && Number.isFinite(def.size[0]) ? def.size[0] : 0.5;
+    return { type: "sphere", center, radius };
+  }
+  mesh.updateWorldMatrix?.(true, false);
+  return { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+}
+
+function makeUniqueObjectId(layerEntries, preferredId, type) {
+  const existing = new Set(layerEntries.map((entry) => entry.id));
+  const base = String(preferredId || "shape-" + (type || "object") + "-" + Date.now().toString(36)).trim();
+  let candidate = base;
+  let index = 1;
+  while (existing.has(candidate)) {
+    candidate = base + "-" + index;
+    index += 1;
+  }
+  return candidate;
+}
+
 export function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, camera }) {
   if (!worldData || !Array.isArray(layerEntries)) {
     clearActiveMetaWorldLayerBridge();
@@ -409,6 +484,47 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       syncBridgeWorldState(state, worldData);
       notifyMetaWorldLayersChanged({ reason: "expressionLayerRemoved", objectId });
       return true;
+    },
+    addObjectLayer(objectDef = {}) {
+      if (!THREE || !scene || !Array.isArray(objects) || !worldData) return null;
+      const def = objectDef && typeof objectDef === "object" ? JSON.parse(JSON.stringify(objectDef)) : {};
+      def.type = String(def.type || "box").toLowerCase();
+      if (!Array.isArray(def.position) || def.position.length < 3) def.position = [0, 0.5, -2];
+      ensurePrimitiveSize(def);
+      const objectId = makeUniqueObjectId(layerEntries, def.id || def.tag || def.name, def.type);
+      def.id = objectId;
+      def.tag = typeof def.tag === "string" && def.tag.trim() ? def.tag.trim() : objectId;
+      def.name = typeof def.name === "string" && def.name.trim() ? def.name.trim() : readLayerObjectName(def, objectId, layerEntries.length);
+      if (!def.color) def.color = "#888888";
+      if (def.isSolid !== false) def.isSolid = true;
+      if (def.breakable !== false) def.breakable = true;
+
+      const materialOpts = { color: def.color || "#888888" };
+      const mesh = createPrimitiveWorldMesh(THREE, def, materialOpts);
+      if (!mesh) return null;
+      this.recordHistory();
+      worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
+      worldData.objects.push(def);
+      mesh.position.set(...def.position);
+      mesh.userData.nvType = def.type;
+      mesh.userData.metaWorldLayerId = objectId;
+      mesh.userData.tag = def.tag;
+      mesh.userData.isSolid = def.isSolid === true || def.collidable === true;
+      mesh.userData.breakable = def.breakable !== false;
+      mesh.userData.placedByPlayer = true;
+      if (def.hidden === true || def.visible === false) mesh.visible = false;
+      scene.add(mesh);
+      objects.push(mesh);
+      const colliderRef = makeObjectColliderRef(THREE, mesh, def, def.type);
+      if (colliderRef && Array.isArray(colliders)) {
+        colliders.push(colliderRef);
+        mesh.userData.colliderRef = colliderRef;
+      }
+      layerEntries.push({ id: objectId, def, object3d: mesh });
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "objectLayerAdded", objectId });
+      return def;
     },
     removeObjectLayer(objectId) {
       const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
@@ -1515,6 +1631,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         if (portalShape === "box") def.size = [1, 1, 1];
         else if (portalShape === "sphere") def.size = [0.5];
         else if (portalShape === "cylinder") def.size = [0.5, 1];
+        else if (portalShape === "cone" || portalShape === "pyramid") def.size = [0.5, 1];
         else if (portalShape === "torus") def.size = [1, 0.25];
       }
       const materialOpts = {
@@ -1687,6 +1804,21 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           new THREE.CylinderGeometry(radius, radius, height, 24),
           new THREE.MeshStandardMaterial(materialOpts)
         );
+      } else if (portalShape === "cone") {
+        const radius = def.size[0];
+        const height = def.size[1];
+        mesh = new THREE.Mesh(
+          new THREE.ConeGeometry(radius, height, 32),
+          new THREE.MeshStandardMaterial(materialOpts)
+        );
+      } else if (portalShape === "pyramid") {
+        const radius = def.size[0];
+        const height = def.size[1];
+        mesh = new THREE.Mesh(
+          new THREE.ConeGeometry(radius, height, 4),
+          new THREE.MeshStandardMaterial(materialOpts)
+        );
+        mesh.rotation.y = Math.PI / 4;
       } else if (portalShape === "torus") {
         const radius = def.size[0];
         const tube = def.size[1];
@@ -1828,6 +1960,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             const center = new THREE.Vector3(...def.position);
             const radius = def.size[0];
             const colliderRef = { type: "sphere", center, radius };
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
+          } else if (["cylinder", "cone", "pyramid", "torus"].includes(portalShape)) {
+            const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (def.type === "equation-collider-plane" && def.collider !== false) {

@@ -1,6 +1,25 @@
 [
   {
     "ToolbarCategory": "View",
+    "heading": "NBT Block Properties",
+    "panelTemplate": "NBTPropertiesPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/NBTPropertiesPanel.mjs",
+    "replaceActive": true,
+    "modes": ["NBTediting"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "NBT Tag Properties",
+    "panelTemplate": "NBTPropertiesPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/NBTPropertiesPanel.mjs",
+    "replaceActive": true,
+    "modes": ["CodeEditing"],
+    "conditions": { "nbtTagEditorActive": true }
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "View Layers",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "ViewLayers",

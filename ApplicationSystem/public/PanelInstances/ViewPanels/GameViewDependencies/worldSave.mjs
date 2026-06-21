@@ -79,6 +79,8 @@ function getMeshType(mesh) {
     hint === "box"
     || hint === "sphere"
     || hint === "cylinder"
+    || hint === "cone"
+    || hint === "pyramid"
     || hint === "torus"
     || hint === "math-function"
     || hint === "equation-collider-plane"
@@ -91,6 +93,7 @@ function getMeshType(mesh) {
   if (gType === "BoxGeometry") return "box";
   if (gType === "SphereGeometry") return "sphere";
   if (gType === "CylinderGeometry") return "cylinder";
+  if (gType === "ConeGeometry") return mesh?.geometry?.parameters?.radialSegments === 4 ? "pyramid" : "cone";
   if (gType === "TorusGeometry") return "torus";
   return null;
 }
@@ -100,6 +103,7 @@ function getGeometryShape(mesh) {
   if (gType === "BoxGeometry") return "box";
   if (gType === "SphereGeometry") return "sphere";
   if (gType === "CylinderGeometry") return "cylinder";
+  if (gType === "ConeGeometry") return mesh?.geometry?.parameters?.radialSegments === 4 ? "pyramid" : "cone";
   if (gType === "TorusGeometry") return "torus";
   return "box";
 }
@@ -359,6 +363,13 @@ function serializeMesh(mesh) {
     const rScale = Math.max(sx, sz);
     def.size = [
       round3((p.radiusTop ?? p.radius ?? 0.5) * rScale),
+      round3((p.height ?? 1) * sy)
+    ];
+  } else if (shape === "cone" || shape === "pyramid") {
+    const p = g?.parameters || {};
+    const rScale = Math.max(sx, sz);
+    def.size = [
+      round3((p.radius ?? 0.5) * rScale),
       round3((p.height ?? 1) * sy)
     ];
   } else if (shape === "torus") {
