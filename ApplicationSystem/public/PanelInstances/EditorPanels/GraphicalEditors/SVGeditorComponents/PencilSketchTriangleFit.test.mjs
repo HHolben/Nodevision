@@ -10,10 +10,11 @@ function stroke(points) {
 
 function fit(strokes, twoSegmentError = 18) {
   return fitTriangleHypothesis(strokes, {
-    minClosureTolerance: 10,
+    minClosureTolerance: 12,
     minSideLength: 20,
     minSideLengthRatio: 0.15,
-    closureDiagonalRatio: 0.08,
+    closureDiagonalRatio: 0.10,
+    rightAngleToleranceDegrees: 15,
     minCornerAngleDegrees: 20,
     maxImprovementRatio: 0.75,
     confidenceThreshold: 0.58,
@@ -72,4 +73,48 @@ const triangle = [
     stroke([[94, 110], [62, 113], [30, 111], [0, 108]]),
   ]);
   assert.equal(offsetBottom.triangle, true, "slightly offset bottom side should still close a triangle");
+}
+
+const rightTriangle = [
+  stroke([[0, 100], [0, 68], [0, 32], [1, 2]]),
+  stroke([[2, 100], [38, 104], [78, 106], [122, 108]]),
+  stroke([[122, 108], [88, 76], [48, 38], [1, 2]]),
+];
+
+{
+  const result = fit(rightTriangle, 24);
+  assert.equal(result.triangle, true, "asymmetric right triangle should recognize as a triangle");
+  assert.equal(result.rightTriangleCompatible, true, "right-triangle-compatible angle should be detected");
+  assert.ok(result.rightAngleScore > 0, "right-angle score should be positive");
+  assert.equal(result.detectedSideCount, 3, "all three right-triangle sides need support");
+}
+
+{
+  const gappedRightTriangle = fit([
+    stroke([[0, 96], [0, 62], [1, 28]]),
+    stroke([[8, 102], [46, 105], [86, 107], [116, 108]]),
+    stroke([[112, 104], [78, 72], [40, 34], [6, 8]]),
+  ], 24);
+  assert.equal(gappedRightTriangle.triangle, true, "right triangle with corner gaps should still close");
+  assert.equal(gappedRightTriangle.rightTriangleCompatible, true);
+}
+
+{
+  const choppyVerticalRightTriangle = fit([
+    stroke([[0, 100], [0, 78]]),
+    stroke([[1, 70], [1, 42]]),
+    stroke([[0, 34], [1, 4]]),
+    stroke([[2, 100], [38, 104], [78, 106], [122, 108]]),
+    stroke([[122, 108], [88, 76], [48, 38], [1, 2]]),
+  ], 24);
+  assert.equal(choppyVerticalRightTriangle.triangle, true, "separate vertical leg strokes should assign to one side");
+  assert.equal(choppyVerticalRightTriangle.detectedSideCount, 3);
+}
+
+{
+  const twoSidesOnly = fit([
+    stroke([[0, 100], [0, 68], [0, 32], [1, 2]]),
+    stroke([[2, 100], [38, 104], [78, 106], [122, 108]]),
+  ], 24);
+  assert.equal(twoSidesOnly.triangle, false, "two sides of a right triangle should not upgrade to triangle");
 }

@@ -37,3 +37,43 @@ Debug fields to watch when enabled:
 - `segmentBFarthestProjectedEndpoint`
 - `segmentBEndpointSourceStrokeId`
 - `assignmentTolerance` / `roughAssignmentTolerance`
+
+
+## Triangle / Right Triangle Battery
+
+1. Draw an isosceles triangle.
+   - Expected: still recognizes a closed triangle.
+
+2. Draw a right triangle with a vertical left leg, lower horizontal or shallow leg, and slanted hypotenuse.
+   - Expected: preview is `M vertexA L vertexB L vertexC Z`.
+
+3. Draw the same right triangle with small gaps at all corners.
+   - Expected: still recognizes a triangle when closure is plausible.
+
+4. Draw the vertical leg with several separate choppy strokes.
+   - Expected: vertical strokes are assigned to one triangle side and the side extends fully.
+
+5. Draw the hypotenuse lightly or with choppy strokes.
+   - Expected: compatible upper slanted evidence is assigned as the third side.
+
+6. Draw only two sides of the right triangle.
+   - Expected: remains a two-segment angle, not a triangle.
+
+7. Add the third side.
+   - Expected: upgrades to a closed triangle without warping existing sides.
+
+8. Accept the preview.
+   - Expected: final SVG is a simple polygon/path, not a Bezier curve.
+
+Right-triangle debug fields:
+- `rightTriangleCandidateEvaluated`
+- `rightTriangleCompatible`
+- `detectedSideCount`
+- `sideAngles`
+- `cornerAngles`
+- `rightAngleScore`
+- `closureScore`
+- `confidence`
+- `supportA` / `supportB` / `supportC`
+- `strokeAssignments`
+- `rejectedStrokes`
