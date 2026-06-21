@@ -858,6 +858,335 @@ export function createSketchModeController(deps = {}) {
     return distance(first, last) <= closureTolerance * 3.5;
   }
 
+  function polygonFitLine(points = []) {
+    if (points.length < 2) return null;
+    const centroid = averagePoint(points);
+    let sxx = 0;
+    let syy = 0;
+    let sxy = 0;
+    points.forEach((pt) => {
+      const dx = pt.x - centroid.x;
+      const dy = pt.y - centroid.y;
+      sxx += dx * dx;
+      syy += dy * dy;
+      sxy += dx * dy;
+    });
+    const trace = sxx + syy;
+    if (!Number.isFinite(trace) || trace <= 1e-6) return null;
+    const diff = sxx - syy;
+    const root = Math.sqrt((diff * diff) + (4 * sxy * sxy));
+    const major = (trace + root) / 2;
+    let axis = null;
+    if (Math.abs(sxy) > 1e-6) axis = unitVector({ x: 0, y: 0 }, { x: major - syy, y: sxy });
+    else axis = sxx >= syy ? { x: 1, y: 0, len: 1 } : { x: 0, y: 1, len: 1 };
+    if (!axis) return null;
+    return { centroid, axis: { x: axis.x, y: axis.y } };
+  }
+
+  function polygonPerpendicularDistance(point, line) {
+    const dx = point.x - line.centroid.x;
+    const dy = point.y - line.centroid.y;
+    return Math.abs((dx * -line.axis.y) + (dy * line.axis.x));
+  }
+
+  function polygonLineIntersection(a, b) {
+    const cross = (a.axis.x * b.axis.y) - (a.axis.y * b.axis.x);
+    if (Math.abs(cross) <= 1e-6) return null;
+    const dx = b.centroid.x - a.centroid.x;
+    const dy = b.centroid.y - a.centroid.y;
+    const t = ((dx * b.axis.y) - (dy * b.axis.x)) / cross;
+    return { x: a.centroid.x + a.axis.x * t, y: a.centroid.y + a.axis.y * t };
+  }
+
+  function polygonAngleBetween(a, b) {
+    const dot = Math.max(-1, Math.min(1, (a.x * b.x) + (a.y * b.y)));
+    return Math.acos(dot) * 180 / Math.PI;
+  }
+
+  function polygonAxisAngle(a, b) {
+    const dot = Math.abs((a.x * b.x) + (a.y * b.y));
+    return Math.acos(Math.max(0, Math.min(1, dot))) * 180 / Math.PI;
+  }
+
+  function polygonInternalAngles(vertices = []) {
+    return vertices.map((vertex, index) => {
+      const prev = vertices[(index + vertices.length - 1) % vertices.length];
+      const next = vertices[(index + 1) % vertices.length];
+      const a = unitVector(vertex, prev);
+      const b = unitVector(vertex, next);
+      if (!a || !b) return 0;
+      return polygonAngleBetween(a, b);
+    });
+  }
+
+  function polygonArea(points = []) {
+    if (points.length < 3) return 0;
+    let area = 0;
+    points.forEach((point, index) => {
+      const next = points[(index + 1) % points.length];
+      area += point.x * next.y - next.x * point.y;
+    });
+    return Math.abs(area) / 2;
+  }
+
+  function polygonTurnAngleAt(samples, index, windowSize = 3) {
+    const count = samples.length;
+    if (count < windowSize * 2 + 1) return 0;
+    const center = ((index % count) + count) % count;
+    const prev = samples[(center - windowSize + count) % count];
+    const here = samples[center];
+    const next = samples[(center + windowSize) % count];
+    const a = unitVector(prev, here);
+    const b = unitVector(here, next);
+    if (!a || !b) return 0;
+    return polygonAngleBetween(a, b);
+  }
+
+  function polygonTypeForSideCount(sideCount) {
+    if (sideCount === 3) return "triangle";
+    if (sideCount === 4) return "quadrilateral";
+    if (sideCount === 5) return "pentagon";
+    if (sideCount === 6) return "hexagon";
+    return "polygon";
+  }
+
+  function polygonBuildSamples(strokes = []) {
+    const samples = [];
+    const boundaries = [];
+    strokes.forEach((stroke, strokeIndex) => {
+      const pts = Array.isArray(stroke.points) ? stroke.points : [];
+      pts.forEach((pt) => samples.push({ x: pt.x, y: pt.y, strokeIndex }));
+      if (strokeIndex < strokes.length - 1 && samples.length) boundaries.push(samples.length);
+    });
+    return { samples, boundaries };
+  }
+
+  function polygonCornerCandidates(samples, strokeBoundaries, maxCandidates) {
+    const count = samples.length;
+    const candidates = new Map();
+    const add = (index, score) => {
+      const i = Math.round(Number(index) || 0);
+      if (i < 3 || i > count - 3) return;
+      candidates.set(i, Math.max(Number(candidates.get(i)) || 0, score));
+    };
+    strokeBoundaries.forEach((index) => add(index, 0.34));
+    for (let n = 3; n <= 8; n += 1) {
+      for (let i = 1; i < n; i += 1) add((count * i) / n, 0.05);
+    }
+    const windowSize = Math.max(2, Math.min(4, Math.floor(count / 36)));
+    for (let i = 3; i <= count - 3; i += 1) {
+      const turn = polygonTurnAngleAt(samples, i, windowSize);
+      if (turn >= 22) add(i, Math.min(0.34, turn / 180));
+    }
+    return [...candidates.entries()].map(([index, score]) => ({ index, score: score + clamp((polygonTurnAngleAt(samples, index, windowSize) - 18) / 65, 0, 1) * 0.34 }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .slice(0, maxCandidates)
+      .map((entry) => entry.index)
+      .sort((a, b) => a - b);
+  }
+
+  function polygonSplitSets(samples, sideCount, candidates, maxSets) {
+    const total = samples.length;
+    const minSegmentPoints = 3;
+    const sets = [];
+    const seen = new Set();
+    const add = (splits) => {
+      if (splits.length !== sideCount - 1) return;
+      const sorted = [...splits].sort((a, b) => a - b);
+      let prev = 0;
+      for (const split of sorted) {
+        if (split - prev < minSegmentPoints) return;
+        prev = split;
+      }
+      if (total - prev < minSegmentPoints) return;
+      const key = sorted.join(",");
+      if (seen.has(key)) return;
+      seen.add(key);
+      sets.push(sorted);
+    };
+    const uniform = [];
+    for (let i = 1; i < sideCount; i += 1) uniform.push(Math.round((total * i) / sideCount));
+    add(uniform);
+    const nearest = [];
+    for (let i = 1; i < sideCount; i += 1) {
+      const target = (total * i) / sideCount;
+      const best = [...candidates].sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0];
+      if (Number.isFinite(best)) nearest.push(best);
+    }
+    add(nearest);
+    const pool = [...candidates].slice(0, 14);
+    function walk(startIndex, chosen) {
+      if (sets.length >= maxSets) return;
+      if (chosen.length === sideCount - 1) {
+        add(chosen);
+        return;
+      }
+      for (let i = startIndex; i < pool.length; i += 1) {
+        const split = pool[i];
+        const prev = chosen[chosen.length - 1] || 0;
+        if (split - prev < minSegmentPoints) continue;
+        const remaining = sideCount - 1 - chosen.length - 1;
+        if (total - split < (remaining + 1) * minSegmentPoints) continue;
+        walk(i + 1, [...chosen, split]);
+        if (sets.length >= maxSets) return;
+      }
+    }
+    walk(0, []);
+    return sets.slice(0, maxSets);
+  }
+
+  function polygonEvaluateCandidate(samples, splits, sideCount, diagonal) {
+    const boundaries = [0, ...splits, samples.length];
+    const groups = [];
+    for (let i = 0; i < sideCount; i += 1) groups.push(samples.slice(boundaries[i], boundaries[i + 1]));
+    const lines = groups.map((group) => polygonFitLine(group));
+    if (lines.some((line) => !line)) return null;
+    const adjacentAngles = lines.map((line, index) => polygonAxisAngle(line.axis, lines[(index + 1) % lines.length].axis));
+    if (Math.min(...adjacentAngles) < 16) return null;
+    const fallbacks = [averagePoint([...samples.slice(0, 5), ...samples.slice(Math.max(0, samples.length - 5))])];
+    splits.forEach((split) => fallbacks.push(averagePoint(samples.slice(Math.max(0, split - 4), Math.min(samples.length, split + 4)))));
+    const vertices = lines.map((line, index) => polygonLineIntersection(lines[(index + lines.length - 1) % lines.length], line) || fallbacks[index]);
+    const sideLengths = vertices.map((vertex, index) => distance(vertex, vertices[(index + 1) % vertices.length]));
+    const minSideLength = Math.max(toleranceFromScreenPixels(12, 12), diagonal * 0.055);
+    if (Math.min(...sideLengths) < minSideLength) return null;
+    const angles = polygonInternalAngles(vertices);
+    if (Math.min(...angles) < 8 || Math.max(...angles) > 172) return null;
+    const area = polygonArea(vertices);
+    if (area < Math.max(toleranceFromScreenPixels(12, 12) ** 2, diagonal * diagonal * 0.025)) return null;
+    const tolerance = Math.max(toleranceFromScreenPixels(14, 14), diagonal * 0.10);
+    const sideSupport = Array(sideCount).fill(0);
+    let explained = 0;
+    const sideStrokeSets = Array.from({ length: sideCount }, () => new Set());
+    const allStrokeIndexes = new Set();
+    const explainedStrokeIndexes = new Set();
+    let fitSum = 0;
+    samples.forEach((pt) => {
+      if (Number.isFinite(pt.strokeIndex)) allStrokeIndexes.add(pt.strokeIndex);
+      let bestSide = -1;
+      let bestDistance = Infinity;
+      lines.forEach((line, index) => {
+        const a = vertices[index];
+        const b = vertices[(index + 1) % vertices.length];
+        const axis = unitVector(a, b);
+        if (!axis) return;
+        const projection = ((pt.x - a.x) * axis.x) + ((pt.y - a.y) * axis.y);
+        const span = distance(a, b);
+        const inSpan = projection >= -tolerance * 1.4 && projection <= span + tolerance * 1.4;
+        const d = polygonPerpendicularDistance(pt, line);
+        if (inSpan && d < bestDistance) {
+          bestDistance = d;
+          bestSide = index;
+        }
+      });
+      if (bestSide >= 0 && bestDistance <= tolerance) {
+        explained += 1;
+        sideSupport[bestSide] += 1;
+        fitSum += bestDistance * bestDistance;
+        if (Number.isFinite(pt.strokeIndex)) {
+          sideStrokeSets[bestSide].add(pt.strokeIndex);
+          explainedStrokeIndexes.add(pt.strokeIndex);
+        }
+      }
+    });
+    const explainedEvidenceScore = explained / Math.max(1, samples.length);
+    const fitError = explained ? Math.sqrt(fitSum / explained) : Infinity;
+    const fitErrorScore = clamp(1 - fitError / Math.max(1, tolerance * 1.35), 0, 1);
+    const closureError = vertices.reduce((sum, vertex, index) => sum + distance(vertex, fallbacks[index]), 0) / sideCount;
+    const closureTolerance = Math.max(toleranceFromScreenPixels(12, 12), diagonal * 0.10);
+    const closureScore = clamp(1 - closureError / Math.max(1, closureTolerance * 3.5), 0, 1);
+    const supportedSides = sideSupport.filter((count) => count >= Math.max(2, samples.length * 0.015)).length;
+    const sideSupportScore = supportedSides / sideCount;
+    const turnWindow = Math.max(2, Math.min(4, Math.floor(samples.length / 36)));
+    const splitTurnAngles = [0, ...splits].map((split) => polygonTurnAngleAt(samples, split, turnWindow));
+    const cornerEvidenceScore = splitTurnAngles.reduce((sum, angle) => sum + clamp((angle - 18) / 55, 0, 1), 0) / sideCount;
+    const cornerAngleScore = clamp((Math.min(...angles) - 8) / 35, 0, 1) * clamp((172 - Math.max(...angles)) / 35, 0, 1);
+    const complexityPenalty = Math.max(0, sideCount - 4) * 0.035 + Math.max(0, sideCount - 6) * 0.018;
+    let confidence = 0.12 + sideSupportScore * 0.18 + closureScore * 0.16 + fitErrorScore * 0.18 + explainedEvidenceScore * 0.20 + cornerEvidenceScore * 0.14 + cornerAngleScore * 0.07 - complexityPenalty;
+    confidence = clamp(confidence, 0, 1);
+    const score = confidence + explainedEvidenceScore * 0.10 + cornerEvidenceScore * 0.07 - complexityPenalty;
+    return { sideCount, type: polygonTypeForSideCount(sideCount), points: vertices, vertices, splits, confidence, score, sideSupport, supportedSides, sideSupportScore, explainedEvidenceScore, fitError, fitErrorScore, closureError, closureScore, closureTolerance, cornerEvidenceScore, cornerAngleScore, complexityPenalty, sideAngles: lines.map((line) => Math.atan2(line.axis.y, line.axis.x) * 180 / Math.PI), cornerAngles: angles, sideLengths, splitTurnAngles, assignedStrokes: sideStrokeSets.map((set) => [...set]), ignoredStrokes: [...allStrokeIndexes].filter((strokeIndex) => !explainedStrokeIndexes.has(strokeIndex)) };
+  }
+
+  function fitClosedPolygonHypothesis(strokes = [], options = {}) {
+    const strokeCount = strokes.filter((stroke) => Array.isArray(stroke.points) && stroke.points.length >= 2).length;
+    if (strokeCount < 3) return { polygon: false, reason: "not-enough-strokes", strokeCount };
+    const built = polygonBuildSamples(strokes);
+    const samples = built.samples;
+    const pointCount = samples.length;
+    if (pointCount < 9) return { polygon: false, reason: "not-enough-points", strokeCount, pointCount };
+    const evidenceBox = sketchEvidenceSummary(strokes);
+    const diagonal = evidenceBox.diagonal || 0;
+    if (diagonal < Math.max(toleranceFromScreenPixels(32, 32), minimumStrokeLength() * 2)) return { polygon: false, reason: "bounds-too-small", strokeCount, pointCount, diagonal };
+    const maxSides = Math.max(3, Math.min(8, Number(options.maxPolygonSides) || 8));
+    const maxCornerCandidates = Math.max(8, Math.min(20, Number(options.maxCornerCandidates) || 16));
+    const maxPerN = Math.max(8, Number(options.maxPolygonCandidatesPerN) || 40);
+    const maxTotal = Math.max(maxPerN, Number(options.maxTotalPolygonCandidates) || 160);
+    const cornerCandidates = polygonCornerCandidates(samples, built.boundaries, maxCornerCandidates);
+    const sideScores = {};
+    const sideReasons = {};
+    let candidateCount = 0;
+    let best = null;
+    for (let sideCount = 3; sideCount <= maxSides; sideCount += 1) {
+      if (pointCount < sideCount * 3) {
+        sideReasons[sideCount] = "not-enough-points-for-side-count";
+        continue;
+      }
+      const budget = Math.min(maxPerN, maxTotal - candidateCount);
+      if (budget <= 0) {
+        sideReasons[sideCount] = "candidate-budget-exhausted";
+        break;
+      }
+      const splitSets = polygonSplitSets(samples, sideCount, cornerCandidates, budget);
+      let bestForN = null;
+      splitSets.forEach((splits) => {
+        if (candidateCount >= maxTotal) return;
+        candidateCount += 1;
+        const candidate = polygonEvaluateCandidate(samples, splits, sideCount, diagonal);
+        if (!candidate) return;
+        if (!bestForN || candidate.score > bestForN.score) bestForN = candidate;
+      });
+      if (!bestForN) {
+        sideReasons[sideCount] = "no-supported-candidate";
+        continue;
+      }
+      sideReasons[sideCount] = "evaluated";
+      sideScores[sideCount] = { score: bestForN.score, confidence: bestForN.confidence, explainedEvidenceScore: bestForN.explainedEvidenceScore, closureScore: bestForN.closureScore, cornerEvidenceScore: bestForN.cornerEvidenceScore, complexityPenalty: bestForN.complexityPenalty, supportedSides: bestForN.supportedSides };
+      if (!best || bestForN.score > best.score) best = bestForN;
+    }
+    if (!best) return { polygon: false, reason: "no-supported-polygon", strokeCount, pointCount, candidateCount, cornerCandidates, sideScores, sideReasons };
+    const enoughConfidence = best.confidence >= 0.52;
+    const enoughClosure = best.closureScore >= 0.32;
+    const enoughEvidence = best.explainedEvidenceScore >= 0.52;
+    const enoughSides = best.supportedSides >= Math.max(3, Math.ceil(best.sideCount * 0.72));
+    const angularEnough = best.cornerEvidenceScore >= (best.sideCount >= 5 ? 0.24 : 0.16);
+    const polygon = enoughConfidence && enoughClosure && enoughEvidence && enoughSides && angularEnough;
+    const reason = !enoughClosure ? "closure-too-weak" : !enoughEvidence ? "explains-too-little-evidence" : !enoughSides ? "not-enough-side-support" : !angularEnough ? "corner-evidence-too-weak" : !enoughConfidence ? "confidence-too-low" : "accepted";
+    const comparisonReason = best.sideCount === 6 ? "hexagon explained more angular evidence after complexity penalty" : best.sideCount === 4 ? "quadrilateral stayed simpler or explained comparable evidence" : "best side count selected by polygon score";
+    return { polygon, reason, winningHypothesis: polygon ? best.type : "none", type: best.type, sideCount: best.sideCount, selectedSideCount: best.sideCount, points: best.points, vertices: best.vertices, strokeCount, pointCount, confidence: best.confidence, score: best.score, candidateCount, cornerCandidates, sideScores, sideReasons, bestNSidedCandidate: best.sideCount, closureScore: best.closureScore, closureError: best.closureError, closureTolerance: best.closureTolerance, explainedEvidenceScore: best.explainedEvidenceScore, fitError: best.fitError, fitErrorScore: best.fitErrorScore, complexityPenalty: best.complexityPenalty, cornerEvidenceScore: best.cornerEvidenceScore, sideSupportScore: best.sideSupportScore, supportCounts: best.sideSupport, assignedStrokes: best.assignedStrokes, ignoredStrokes: best.ignoredStrokes, detectedSideCount: best.supportedSides, sideAngles: best.sideAngles, cornerAngles: best.cornerAngles, sideLengths: best.sideLengths, splitTurnAngles: best.splitTurnAngles, quadrilateralScore: sideScores[4]?.score ?? null, hexagonScore: sideScores[6]?.score ?? null, comparisonReason, closed: true };
+  }
+
+  function polygonDebugSummary(polygonFit = {}) {
+    return {
+      polygonReason: polygonFit.reason,
+      polygonConfidence: polygonFit.confidence,
+      polygonScore: polygonFit.score,
+      bestNSidedCandidate: polygonFit.bestNSidedCandidate,
+      polygonSelectedSideCount: polygonFit.selectedSideCount,
+      polygonSideScores: polygonFit.sideScores,
+      polygonSideReasons: polygonFit.sideReasons,
+      polygonClosureScore: polygonFit.closureScore,
+      polygonExplainedEvidenceScore: polygonFit.explainedEvidenceScore,
+      polygonComplexityPenalty: polygonFit.complexityPenalty,
+      polygonCornerEvidenceScore: polygonFit.cornerEvidenceScore,
+      polygonDetectedSideCount: polygonFit.detectedSideCount,
+      polygonSupportCounts: polygonFit.supportCounts,
+      polygonVertices: polygonFit.vertices,
+      polygonAssignedStrokes: polygonFit.assignedStrokes,
+      polygonIgnoredStrokes: polygonFit.ignoredStrokes,
+      polygonComparisonReason: polygonFit.comparisonReason,
+    };
+  }
+
   function buildPreviewTracks(preview) {
     if (!preview) return [];
     if (preview.rawStrokes.length === 0) return [];
@@ -939,6 +1268,16 @@ export function createSketchModeController(deps = {}) {
     })
       : { quadrilateral: false, rectangleLike: false, reason: "precheck-gate", strokeCount: recognitionStrokes.length, activeSegmentCount: 0 };
     timing.quadrilateralRecognizerMs = nowMs() - recognizerStart;
+    recognizerStart = nowMs();
+    const polygonFit = closedShapePossible && recognitionStrokes.length >= 3
+      ? fitClosedPolygonHypothesis(recognitionStrokes, {
+        maxPolygonSides: Number(globalThis?.NodevisionSketchSettings?.maxPolygonSides) || 8,
+        maxCornerCandidates: Number(globalThis?.NodevisionSketchSettings?.maxCornerCandidates) || 16,
+        maxPolygonCandidatesPerN: Number(globalThis?.NodevisionSketchSettings?.maxPolygonCandidatesPerN) || 40,
+        maxTotalPolygonCandidates: Number(globalThis?.NodevisionSketchSettings?.maxTotalPolygonCandidates) || 160,
+      })
+      : { polygon: false, reason: "closure-gate", strokeCount: recognitionStrokes.length };
+    timing.polygonRecognizerMs = nowMs() - recognizerStart;
     const angleExplainedStrokes = countExplainedAngleStrokes(angleFit);
     const lineExplainedStrokes = Number(straightLineFit.supportedStrokeCount) || (straightLineFit.straight ? 1 : 0);
     const totalRecognitionStrokes = Math.max(1, recognitionStrokes.length);
@@ -956,6 +1295,11 @@ export function createSketchModeController(deps = {}) {
       multiSideBandEvidence,
       quadrilateralPrecheck,
       evidenceSummary,
+      polygonReason: polygonFit.reason,
+      polygonConfidence: polygonFit.confidence,
+      polygonScore: polygonFit.score,
+      polygonSelectedSideCount: polygonFit.selectedSideCount,
+      polygonSideScores: polygonFit.sideScores,
     };
     const triangleIgnoredFourthSideSupport = quadrilateralFit.quadrilateral
       ? Math.max(
@@ -970,7 +1314,91 @@ export function createSketchModeController(deps = {}) {
       quadrilateralFit.confidence >= triangleFit.confidence - 0.10 ||
       triangleIgnoredFourthSideSupport > Math.max(toleranceFromScreenPixels(20, 20), quadrilateralFit.closureTolerance * 1.5)
     );
-    const triangleBeatsOpenAngle = triangleFit.triangle && !quadrilateralBeatsTriangle;
+    const polygonScoreForFourSides = Number(polygonFit.sideScores?.[4]?.score) || 0;
+    const polygonEvidenceForFourSides = Number(polygonFit.sideScores?.[4]?.explainedEvidenceScore) || 0;
+    const polygonBeatsLowerSideCount = polygonFit.polygon &&
+      polygonFit.sideCount >= 5 &&
+      polygonFit.detectedSideCount >= Math.max(4, Math.ceil(polygonFit.sideCount * 0.72)) &&
+      polygonFit.cornerEvidenceScore >= 0.24 && (
+        polygonFit.score >= polygonScoreForFourSides + 0.035 ||
+        polygonFit.explainedEvidenceScore >= polygonEvidenceForFourSides + 0.12 ||
+        (quadrilateralFit.quadrilateral && polygonFit.confidence >= quadrilateralFit.confidence - 0.04) ||
+        (!quadrilateralFit.quadrilateral && polygonFit.confidence >= 0.54)
+      );
+    const triangleBeatsOpenAngle = triangleFit.triangle && !quadrilateralBeatsTriangle && !polygonBeatsLowerSideCount;
+    if (polygonBeatsLowerSideCount) {
+      const previousAngularMode = preview.angularPathState?.mode || angleFit.winningHypothesis;
+      preview.straightLineState = null;
+      preview.angularPathState = {
+        mode: polygonFit.type,
+        points: polygonFit.points.map((pt) => ({ ...pt })),
+        strokeCount: polygonFit.strokeCount,
+        confidence: polygonFit.confidence,
+      };
+      preview.hypotheses = {
+        mode: polygonFit.type,
+        strokeCount: polygonFit.strokeCount,
+        pointCount: polygonFit.pointCount,
+        confidence: polygonFit.confidence,
+        winningHypothesis: polygonFit.winningHypothesis,
+        previousWinningHypothesis: previousAngularMode,
+        bestNSidedCandidate: polygonFit.bestNSidedCandidate,
+        selectedSideCount: polygonFit.selectedSideCount,
+        sideCount: polygonFit.sideCount,
+        triangleConfidence: triangleFit.confidence,
+        quadrilateralConfidence: quadrilateralFit.confidence,
+        rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        ...polygonDebugSummary(polygonFit),
+        polygonConfidence: polygonFit.confidence,
+        polygonScore: polygonFit.score,
+        scoresBySideCount: polygonFit.sideScores,
+        sideReasons: polygonFit.sideReasons,
+        triangleScore: polygonFit.sideScores?.[3]?.score ?? null,
+        quadrilateralScore: polygonFit.quadrilateralScore,
+        pentagonScore: polygonFit.sideScores?.[5]?.score ?? null,
+        hexagonScore: polygonFit.hexagonScore,
+        sideSupport: polygonFit.supportCounts,
+        detectedSideCount: polygonFit.detectedSideCount,
+        assignedStrokes: polygonFit.assignedStrokes,
+        ignoredStrokes: polygonFit.ignoredStrokes,
+        assignedStrokeCount: polygonFit.detectedSideCount,
+        ignoredStrokeCount: Math.max(0, recognitionStrokes.length - polygonFit.detectedSideCount),
+        closureScore: polygonFit.closureScore,
+        closureError: polygonFit.closureError,
+        closureTolerance: polygonFit.closureTolerance,
+        fitError: polygonFit.fitError,
+        fitErrorScore: polygonFit.fitErrorScore,
+        explainedEvidenceScore: polygonFit.explainedEvidenceScore,
+        ignoredEvidencePenalty: 1 - polygonFit.explainedEvidenceScore,
+        complexityPenalty: polygonFit.complexityPenalty,
+        cornerEvidenceScore: polygonFit.cornerEvidenceScore,
+        sideAngles: polygonFit.sideAngles,
+        internalAngles: polygonFit.cornerAngles,
+        sideLengths: polygonFit.sideLengths,
+        splitTurnAngles: polygonFit.splitTurnAngles,
+        vertices: polygonFit.vertices,
+        cornerCandidates: polygonFit.cornerCandidates,
+        candidateCount: polygonFit.candidateCount,
+        reason: polygonFit.reason,
+        comparisonReason: polygonFit.comparisonReason,
+        quadrilateralReason: quadrilateralFit.reason,
+        polygonBeatsLowerSideCount,
+        endpointClosurePossible,
+        multiSideBandEvidence,
+        quadrilateralPrecheck,
+        evidenceSummary,
+        angleExplainedStrokes,
+        lineExplainedStrokes,
+        simpleHypothesisBlockedByGlobalEvidence,
+        discontinuities: polygonFit.sideCount,
+        closed: true,
+      };
+      if (globalThis?.NodevisionDebug?.pencilSketchPolygonFit) {
+        console.debug("[PencilSketchPolygonFit]", preview.hypotheses);
+      }
+      return [polygonFit.points];
+    }
+
     if (quadrilateralBeatsTriangle) {
       const previousAngularMode = preview.angularPathState?.mode || angleFit.winningHypothesis;
       preview.straightLineState = null;
@@ -989,6 +1417,7 @@ export function createSketchModeController(deps = {}) {
         triangleConfidence: triangleFit.confidence,
         quadrilateralConfidence: quadrilateralFit.confidence,
         rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        ...polygonDebugSummary(polygonFit),
         triangleIgnoredStrokeCount: Number(triangleFit.rejectedStrokes?.length) || 0,
         triangleIgnoredStrokeSupportLength: triangleIgnoredFourthSideSupport,
         triangleReason: triangleFit.reason,
@@ -1021,6 +1450,7 @@ export function createSketchModeController(deps = {}) {
         previousWinningHypothesis: previousAngularMode,
         triangleWouldHaveWon: Boolean(triangleFit.triangle),
         quadrilateralBeatsTriangle,
+        polygonBeatsLowerSideCount,
         endpointClosurePossible,
         multiSideBandEvidence,
         quadrilateralPrecheck,
@@ -1055,6 +1485,7 @@ export function createSketchModeController(deps = {}) {
         triangleConfidence: triangleFit.confidence,
         quadrilateralConfidence: quadrilateralFit.confidence,
         rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        ...polygonDebugSummary(polygonFit),
         quadrilateralReason: quadrilateralFit.reason,
         quadrilateralRejectedReason: quadrilateralFit.reason,
         quadrilateralSideSupportA: quadrilateralFit.supportA,
@@ -1211,6 +1642,7 @@ export function createSketchModeController(deps = {}) {
         candidateTriangleConfidence: triangleFit.confidence,
         quadrilateralConfidence: quadrilateralFit.confidence,
         rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        ...polygonDebugSummary(polygonFit),
         quadrilateralReason: quadrilateralFit.reason,
         endpointClosurePossible,
         multiSideBandEvidence,
@@ -1356,6 +1788,7 @@ export function createSketchModeController(deps = {}) {
         triangleConfidence: triangleFit.confidence,
         quadrilateralConfidence: quadrilateralFit.confidence,
         rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        ...polygonDebugSummary(polygonFit),
         fourSegmentError: quadrilateralFit.fourSegmentError,
         threeSegmentError: triangleFit.threeSegmentError,
         closureScore: quadrilateralFit.closureScore,
@@ -1377,6 +1810,21 @@ export function createSketchModeController(deps = {}) {
     preview.straightLineState = null;
     preview.angularPathState = null;
 
+    if (globalThis?.NodevisionDebug?.pencilSketchPolygonFit) {
+      console.debug("[PencilSketchPolygonFit:rejected]", {
+        ...polygonDebugSummary(polygonFit),
+        polygonBeatsLowerSideCount,
+        closedShapePossible,
+        endpointClosurePossible,
+        multiSideBandEvidence,
+        candidateCount: polygonFit.candidateCount,
+        cornerCandidates: polygonFit.cornerCandidates,
+        selectedSideCount: polygonFit.selectedSideCount,
+        sideCount: polygonFit.sideCount,
+        reason: polygonFit.reason,
+      });
+    }
+
     if (simpleHypothesisBlockedByGlobalEvidence) {
       preview.hypotheses = {
         mode: "global-evidence-unresolved",
@@ -1387,6 +1835,7 @@ export function createSketchModeController(deps = {}) {
         triangleConfidence: triangleFit.confidence,
         quadrilateralConfidence: quadrilateralFit.confidence,
         rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        ...polygonDebugSummary(polygonFit),
         quadrilateralReason: quadrilateralFit.reason,
         reason: "simple-hypothesis-explains-too-little-global-evidence",
         endpointClosurePossible,
