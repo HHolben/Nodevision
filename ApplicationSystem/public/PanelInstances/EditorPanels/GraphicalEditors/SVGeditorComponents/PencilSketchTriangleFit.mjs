@@ -515,6 +515,7 @@ export function fitTriangleHypothesis(rawStrokes = [], options = {}) {
     pt.sampleIndex = sampleIndex;
   });
   const minSegmentPoints = Number(options.minSegmentPoints) || 5;
+  const maxTriangleCandidates = Math.max(8, Number(options.maxTriangleCandidates) || 40);
   if (samples.length < minSegmentPoints * 3) {
     return { triangle: false, reason: "not-enough-points", strokeCount };
   }
@@ -539,13 +540,18 @@ export function fitTriangleHypothesis(rawStrokes = [], options = {}) {
   const twoSegmentError = Number(options.twoSegmentError) || Infinity;
 
   let best = null;
+  let candidateCount = 0;
   let rightTriangleCandidateEvaluated = false;
+  const splitStep = samples.length <= 64
+    ? 1
+    : Math.max(1, Math.ceil(samples.length / Math.sqrt(maxTriangleCandidates)));
   const firstStart = minSegmentPoints;
   const firstEnd = samples.length - minSegmentPoints * 2;
-  for (let splitA = firstStart; splitA <= firstEnd; splitA += 1) {
+  for (let splitA = firstStart; splitA <= firstEnd; splitA += splitStep) {
     const secondStart = splitA + minSegmentPoints;
     const secondEnd = samples.length - minSegmentPoints;
-    for (let splitB = secondStart; splitB <= secondEnd; splitB += 1) {
+    for (let splitB = secondStart; splitB <= secondEnd; splitB += splitStep) {
+      candidateCount += 1;
       const aPoints = samples.slice(0, splitA);
       const bPoints = samples.slice(splitA, splitB);
       const cPoints = samples.slice(splitB);
@@ -679,6 +685,7 @@ export function fitTriangleHypothesis(rawStrokes = [], options = {}) {
       closureTolerance,
       assignmentTolerance,
       rightTriangleCandidateEvaluated,
+      candidateCount,
     };
   }
 
@@ -735,5 +742,6 @@ export function fitTriangleHypothesis(rawStrokes = [], options = {}) {
     cornerAngles: best.angles,
     splitA: best.splitA,
     splitB: best.splitB,
+    candidateCount,
   };
 }

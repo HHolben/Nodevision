@@ -472,6 +472,47 @@ function rightCornerScore(angles, tolerance) {
   return mean(angles.map((angle) => angleScoreNear(angle, 90, tolerance)));
 }
 
+function rankedSplitCandidates(totalPointCount, minSegmentPoints, strokeEvidence, maxCandidates) {
+  const candidates = new Map();
+  const addCandidate = (rawIndex, boundaryBonus = 0) => {
+    const index = Math.round(Number(rawIndex) || 0);
+    if (
+      index < minSegmentPoints ||
+      index > totalPointCount - minSegmentPoints
+    ) {
+      return;
+    }
+    candidates.set(index, Math.max(Number(candidates.get(index)) || 0, boundaryBonus));
+  };
+
+  let running = 0;
+  strokeEvidence.forEach((stroke, strokeIndex) => {
+    running += stroke.samples?.length || 0;
+    if (strokeIndex < strokeEvidence.length - 1) addCandidate(running, 0.14);
+  });
+
+  [0.18, 0.25, 0.33, 0.5, 0.67, 0.75, 0.82].forEach((ratio) => {
+    addCandidate(totalPointCount * ratio, 0);
+  });
+
+  const uniformCount = Math.max(6, Math.min(12, maxCandidates));
+  for (let i = 1; i < uniformCount; i += 1) {
+    addCandidate((totalPointCount * i) / uniformCount, 0);
+  }
+
+  const targets = [0.18, 0.25, 0.33, 0.5, 0.67, 0.75, 0.82];
+  const ranked = [...candidates.entries()].map(([index, boundaryBonus]) => {
+    const ratio = index / Math.max(1, totalPointCount);
+    const targetDistance = Math.min(...targets.map((target) => Math.abs(target - ratio)));
+    return { index, score: targetDistance - boundaryBonus };
+  }).sort((a, b) => a.score - b.score || a.index - b.index);
+
+  return ranked
+    .slice(0, Math.max(6, maxCandidates))
+    .map((entry) => entry.index)
+    .sort((a, b) => a - b);
+}
+
 export function fitQuadrilateralHypothesis(rawStrokes = [], options = {}) {
   const strokeCount = rawStrokes.filter((stroke) =>
     Array.isArray(stroke?.points) && stroke.points.length >= 2
@@ -487,7 +528,9 @@ export function fitQuadrilateralHypothesis(rawStrokes = [], options = {}) {
     pt.sampleIndex = sampleIndex;
   });
   const minSegmentPoints = Number(options.minSegmentPoints) || 4;
-  const splitStep = Math.max(1, Number(options.splitStep) || Math.floor(samples.length / 64));
+  const maxQuadrilateralCandidates = Math.max(12, Number(options.maxQuadrilateralCandidates) || 60);
+  const defaultSplitCandidateCount = Math.ceil(Math.cbrt(maxQuadrilateralCandidates) * 3);
+  const maxSplitCandidates = Math.max(8, Math.min(12, Number(options.maxCornerCandidates) || defaultSplitCandidateCount));
   if (samples.length < minSegmentPoints * 4) {
     return { quadrilateral: false, rectangleLike: false, reason: "not-enough-points", strokeCount };
   }
@@ -513,15 +556,20 @@ export function fitQuadrilateralHypothesis(rawStrokes = [], options = {}) {
   const triangleError = Number(options.triangleError) || Infinity;
 
   let best = null;
-  const firstStart = minSegmentPoints;
-  const firstEnd = samples.length - minSegmentPoints * 3;
-  for (let splitA = firstStart; splitA <= firstEnd; splitA += splitStep) {
-    const secondStart = splitA + minSegmentPoints;
-    const secondEnd = samples.length - minSegmentPoints * 2;
-    for (let splitB = secondStart; splitB <= secondEnd; splitB += splitStep) {
-      const thirdStart = splitB + minSegmentPoints;
-      const thirdEnd = samples.length - minSegmentPoints;
-      for (let splitC = thirdStart; splitC <= thirdEnd; splitC += splitStep) {
+  let candidateCount = 0;
+  const splitCandidates = rankedSplitCandidates(
+    samples.length,
+    minSegmentPoints,
+    strokeEvidence,
+    maxSplitCandidates,
+  );
+  for (const splitA of splitCandidates) {
+    for (const splitB of splitCandidates) {
+      if (splitB < splitA + minSegmentPoints) continue;
+      for (const splitC of splitCandidates) {
+        if (splitC < splitB + minSegmentPoints) continue;
+        if (samples.length - splitC < minSegmentPoints) continue;
+        candidateCount += 1;
         const groups = [
           samples.slice(0, splitA),
           samples.slice(splitA, splitB),
@@ -646,6 +694,8 @@ export function fitQuadrilateralHypothesis(rawStrokes = [], options = {}) {
       triangleError,
       closureTolerance,
       assignmentTolerance,
+      candidateCount,
+      splitCandidates,
     };
   }
 
@@ -701,5 +751,7 @@ export function fitQuadrilateralHypothesis(rawStrokes = [], options = {}) {
     splitA: best.splitA,
     splitB: best.splitB,
     splitC: best.splitC,
+    candidateCount,
+    splitCandidates,
   };
 }

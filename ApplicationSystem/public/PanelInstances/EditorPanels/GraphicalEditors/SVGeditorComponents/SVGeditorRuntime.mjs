@@ -3260,6 +3260,12 @@ export async function renderEditor(filePath, container) {
     setSketchSmoothingLevel(value) {
       return sketchController.setSmoothingLevel(value);
     },
+    setSketchStrokeOrderColors(value) {
+      return sketchController.setStrokeOrderColorsEnabled(value);
+    },
+    getSketchStrokeOrderColors() {
+      return sketchController.getStrokeOrderColorsEnabled();
+    },
     getSketchPreviews() {
       return sketchController.getSketchPreviews();
     },
@@ -3299,6 +3305,7 @@ export async function renderEditor(filePath, container) {
         strokeCount: sketchController.getStrokeCount(),
         previewPointCount: sketchController.getPreviewPointCount(),
         keepConstruction: sketchController.getKeepConstruction(),
+        enableSketchStrokeOrderColors: sketchController.getStrokeOrderColorsEnabled(),
         previewCount: previews.length,
         activePreviewId: sketchController.getActiveSketchPreviewId(),
         drawing: sketchController.isDrawing(),

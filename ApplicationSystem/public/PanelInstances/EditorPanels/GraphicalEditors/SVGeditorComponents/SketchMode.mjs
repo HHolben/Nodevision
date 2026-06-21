@@ -28,8 +28,19 @@ function safeBool(value, fallback = false) {
   return fallback;
 }
 
+const NORMAL_SKETCH_STROKE_COLOR = "#808080";
+
+function getStrokeOrderColor(index, total) {
+  const count = Math.max(1, Number.parseInt(total, 10) || 1);
+  if (count <= 1) return "hsl(270, 90%, 60%)";
+  const safeIndex = clamp(Number.parseInt(index, 10) || 0, 0, count - 1);
+  const t = safeIndex / (count - 1);
+  const hue = Math.round(270 * t);
+  return "hsl(" + hue + ", 90%, 58%)";
+}
+
 function makeSketchPreviewId() {
-  return `sketch-preview-${Math.random().toString(36).slice(2, 10)}`;
+  return "sketch-preview-" + Math.random().toString(36).slice(2, 10);
 }
 
 export function createSketchModeController(deps = {}) {
@@ -61,6 +72,10 @@ export function createSketchModeController(deps = {}) {
     smoothingLevel: 2,
     keepConstruction: false,
     constructionVisible: true,
+    enableStrokeOrderColors: Boolean(
+      globalThis?.NodevisionState?.enableSketchStrokeOrderColors ||
+        globalThis?.NodevisionSketchSettings?.enableSketchStrokeOrderColors,
+    ),
     previewCounter: 1,
     previews: [],
     activePreviewId: null,
@@ -86,11 +101,36 @@ export function createSketchModeController(deps = {}) {
     }
   }
 
+  function sketchPerformanceSettings() {
+    const user = globalThis?.NodevisionSketchSettings || {};
+    return {
+      recognitionDebounceMs: Number(user.recognitionDebounceMs) || 100,
+      maxAnalysisPointsPerStroke: Number(user.maxAnalysisPointsPerStroke) || 64,
+      maxAnalysisPointsPerPreview: Number(user.maxAnalysisPointsPerPreview) || 512,
+      minPointerSampleDistancePx: Number(user.minPointerSampleDistancePx) || 1.5,
+      recognitionSimplifyTolerancePx: Number(user.recognitionSimplifyTolerancePx) || 3,
+      maxTriangleCandidates: Number(user.maxTriangleCandidates) || 40,
+      maxQuadrilateralCandidates: Number(user.maxQuadrilateralCandidates) || 60,
+      enableSketchDebugOverlay: Boolean(user.enableSketchDebugOverlay),
+    };
+  }
+
+  function sketchPerfLogEnabled() {
+    return Boolean(globalThis?.NodevisionDebug?.pencilSketchPerformance);
+  }
+
+  function nowMs() {
+    return typeof performance !== "undefined" && typeof performance.now === "function"
+      ? performance.now()
+      : Date.now();
+  }
+
   function spacingThreshold() {
+    const px = sketchPerformanceSettings().minPointerSampleDistancePx;
     const next = typeof pointerToleranceInSvgUnits === "function"
-      ? pointerToleranceInSvgUnits(0.7)
-      : 0.7;
-    return Math.max(0.08, Number(next) || 0.7);
+      ? pointerToleranceInSvgUnits(px)
+      : px;
+    return Math.max(0.08, Number(next) || px);
   }
 
   function minimumStrokeLength() {
@@ -116,10 +156,11 @@ export function createSketchModeController(deps = {}) {
   }
 
   function simplifyThreshold() {
+    const px = sketchPerformanceSettings().recognitionSimplifyTolerancePx;
     const next = typeof pointerToleranceInSvgUnits === "function"
-      ? pointerToleranceInSvgUnits(0.45)
-      : 0.45;
-    return Math.max(0, Number(next) || 0.45);
+      ? pointerToleranceInSvgUnits(px)
+      : px;
+    return Math.max(0, Number(next) || px);
   }
 
   function smoothingPasses() {
@@ -161,7 +202,7 @@ export function createSketchModeController(deps = {}) {
     return createSvgEl("path", {
       [uiAttrName]: "sketch-rough-stroke",
       fill: "none",
-      stroke: "#808080",
+      stroke: NORMAL_SKETCH_STROKE_COLOR,
       "stroke-width": "1.0",
       "stroke-linecap": "round",
       "stroke-linejoin": "round",
@@ -169,6 +210,39 @@ export function createSketchModeController(deps = {}) {
       "pointer-events": "none",
       d: "",
     });
+  }
+
+  function colorForStrokeIndex(index, total) {
+    return state.enableStrokeOrderColors
+      ? getStrokeOrderColor(index, total)
+      : NORMAL_SKETCH_STROKE_COLOR;
+  }
+
+  function applyStrokeVisualStyle(pathEl, index, total) {
+    if (!pathEl) return;
+    pathEl.setAttribute("stroke", colorForStrokeIndex(index, total));
+    pathEl.setAttribute("opacity", String(state.roughOpacity));
+    pathEl.setAttribute("data-nv-sketch-stroke-index", String(index));
+    pathEl.setAttribute("data-nv-sketch-stroke-count", String(total));
+  }
+
+  function applyPreviewStrokeColors(preview, options = {}) {
+    if (!preview) return;
+    const activeStroke = options.activeStroke || null;
+    const includeActive = activeStroke && activeStroke.previewId === preview.id;
+    const total = preview.rawStrokes.length + (includeActive ? 1 : 0);
+    preview.rawStrokes.forEach((stroke, index) => {
+      applyStrokeVisualStyle(stroke.pathEl, index, Math.max(1, total));
+    });
+    if (includeActive) {
+      applyStrokeVisualStyle(activeStroke.pathEl, total - 1, Math.max(1, total));
+    }
+  }
+
+  function applyAllStrokeColors() {
+    state.previews.forEach((preview) => applyPreviewStrokeColors(preview, {
+      activeStroke: state.currentStroke,
+    }));
   }
 
   function getPreviewById(previewId) {
@@ -252,6 +326,13 @@ export function createSketchModeController(deps = {}) {
       layerEl: layer,
       layerId: layer?.id || null,
       lastPreviewD: "",
+      recognitionDirty: false,
+      lastRecognizedStrokeCount: 0,
+      lastRecognizedPointCount: 0,
+      recognitionVersion: 0,
+      recognitionTimer: null,
+      recognitionRunning: false,
+      analysisPointCount: 0,
     };
 
     state.previews.push(preview);
@@ -346,6 +427,15 @@ export function createSketchModeController(deps = {}) {
     preview.straightLineState = null;
     preview.angularPathState = null;
     preview.lastPreviewD = "";
+    preview.recognitionDirty = false;
+    preview.lastRecognizedStrokeCount = 0;
+    preview.lastRecognizedPointCount = 0;
+    preview.recognitionVersion = (Number(preview.recognitionVersion) || 0) + 1;
+    preview.analysisPointCount = 0;
+    if (preview.recognitionTimer) {
+      clearTimeout(preview.recognitionTimer);
+      preview.recognitionTimer = null;
+    }
     if (preview.previewPathEl) {
       preview.previewPathEl.setAttribute("d", "");
       preview.previewPathEl.setAttribute("display", "none");
@@ -420,6 +510,139 @@ export function createSketchModeController(deps = {}) {
     stroke.pathEl.setAttribute("d", pointsToPathD(stroke.points));
   }
 
+  function scheduleStrokePathUpdate(stroke) {
+    if (!stroke?.pathEl) return;
+    if (stroke.rafId) return;
+    const start = nowMs();
+    const run = () => {
+      stroke.rafId = null;
+      const renderStart = nowMs();
+      updateStrokePath(stroke);
+      const renderMs = nowMs() - renderStart;
+      if (sketchPerfLogEnabled() && renderMs > 4) {
+        console.warn("[PencilSketchPerformance] active stroke render slow", { renderMs, pointCount: stroke.points.length });
+      }
+    };
+    if (typeof requestAnimationFrame === "function") {
+      stroke.rafId = requestAnimationFrame(run);
+    } else {
+      run();
+    }
+    const captureMs = nowMs() - start;
+    if (sketchPerfLogEnabled() && captureMs > 4) {
+      console.warn("[PencilSketchPerformance] pointermove capture slow", { captureMs, pointCount: stroke.points.length });
+    }
+  }
+
+  function flushStrokePathUpdate(stroke) {
+    if (!stroke) return;
+    if (stroke.rafId && typeof cancelAnimationFrame === "function") {
+      try {
+        cancelAnimationFrame(stroke.rafId);
+      } catch {
+        // ignore cancel failures
+      }
+    }
+    stroke.rafId = null;
+    updateStrokePath(stroke);
+  }
+
+  function simplifyPointsForRecognition(points = [], tolerance = simplifyThreshold(), maxPoints = 64) {
+    if (!Array.isArray(points) || points.length <= 2) return points.map((pt) => ({ ...pt }));
+    const simplified = [];
+    let last = null;
+    points.forEach((pt, index) => {
+      const isEndpoint = index === 0 || index === points.length - 1;
+      if (isEndpoint || !last || distance(last, pt) >= tolerance) {
+        simplified.push({ ...pt });
+        last = pt;
+      }
+    });
+    if (simplified.length < 2) {
+      return [points[0], points[points.length - 1]].map((pt) => ({ ...pt }));
+    }
+    const cap = Math.max(2, Number.parseInt(maxPoints, 10) || 64);
+    if (simplified.length <= cap) return simplified;
+    const capped = [];
+    for (let i = 0; i < cap; i += 1) {
+      const sourceIndex = Math.round((i * (simplified.length - 1)) / (cap - 1));
+      capped.push({ ...simplified[sourceIndex] });
+    }
+    return capped;
+  }
+
+  function computeStrokeSummary(points = [], analysisPoints = []) {
+    const start = points[0] || null;
+    const end = points[points.length - 1] || null;
+    const midpoint = start && end ? { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 } : null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    points.forEach((pt) => {
+      minX = Math.min(minX, pt.x);
+      minY = Math.min(minY, pt.y);
+      maxX = Math.max(maxX, pt.x);
+      maxY = Math.max(maxY, pt.y);
+    });
+    const dx = end && start ? end.x - start.x : 0;
+    const dy = end && start ? end.y - start.y : 0;
+    return {
+      start,
+      end,
+      midpoint,
+      bbox: Number.isFinite(minX) ? { minX, minY, maxX, maxY } : null,
+      directionAngle: Math.atan2(dy, dx) * 180 / Math.PI,
+      rawPointCount: points.length,
+      analysisPointCount: analysisPoints.length,
+    };
+  }
+
+  function createAnalysisStroke(stroke, maxPointsOverride = null) {
+    const settings = sketchPerformanceSettings();
+    const maxPoints = maxPointsOverride || settings.maxAnalysisPointsPerStroke;
+    const analysisPoints = simplifyPointsForRecognition(stroke.points || [], simplifyThreshold(), maxPoints);
+    return {
+      points: analysisPoints,
+      length: stroke.length,
+      rawPointCount: stroke.points?.length || 0,
+      analysisPointCount: analysisPoints.length,
+      summary: computeStrokeSummary(stroke.points || [], analysisPoints),
+    };
+  }
+
+  function getRecognitionStrokes(preview) {
+    const rawStrokes = preview?.rawStrokes || [];
+    const settings = sketchPerformanceSettings();
+    const perStrokeCap = Math.max(2, Math.min(
+      settings.maxAnalysisPointsPerStroke,
+      Math.floor(settings.maxAnalysisPointsPerPreview / Math.max(1, rawStrokes.length)),
+    ));
+    const analysisStrokes = rawStrokes.map((stroke) => {
+      const base = Array.isArray(stroke.analysisPoints)
+        ? { ...stroke, points: stroke.analysisPoints }
+        : createAnalysisStroke(stroke, perStrokeCap);
+      const points = simplifyPointsForRecognition(base.points || [], simplifyThreshold(), perStrokeCap);
+      return {
+        ...stroke,
+        points,
+        length: stroke.length,
+        rawPointCount: stroke.points?.length || 0,
+        analysisPointCount: points.length,
+        summary: stroke.summary || computeStrokeSummary(stroke.points || [], points),
+      };
+    });
+    const analysisPointCount = analysisStrokes.reduce((sum, stroke) => sum + (stroke.points?.length || 0), 0);
+    if (sketchPerfLogEnabled() && analysisPointCount > settings.maxAnalysisPointsPerPreview) {
+      console.warn("[PencilSketchPerformance] analysis point cap exceeded", {
+        analysisPointCount,
+        maxAnalysisPointsPerPreview: settings.maxAnalysisPointsPerPreview,
+      });
+    }
+    preview.analysisPointCount = analysisPointCount;
+    return analysisStrokes;
+  }
+
   function resetCurrentStroke() {
     state.currentStroke = null;
     state.activePointerId = null;
@@ -427,6 +650,13 @@ export function createSketchModeController(deps = {}) {
 
   function discardCurrentStroke() {
     if (!state.currentStroke) return false;
+    if (state.currentStroke.rafId && typeof cancelAnimationFrame === "function") {
+      try {
+        cancelAnimationFrame(state.currentStroke.rafId);
+      } catch {
+        // ignore cancel failures
+      }
+    }
     try {
       state.currentStroke.pathEl?.remove();
     } catch {
@@ -531,6 +761,103 @@ export function createSketchModeController(deps = {}) {
     return [avgStart, avgEnd];
   }
 
+  function sketchEvidenceSummary(strokes = []) {
+    const allPoints = strokes.flatMap((stroke) => stroke.points || []);
+    if (!allPoints.length) {
+      return { sideRegionCount: 0, dominantDirectionCount: 0, sideSupport: {}, diagonal: 0, bbox: null };
+    }
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    allPoints.forEach((pt) => {
+      minX = Math.min(minX, pt.x);
+      minY = Math.min(minY, pt.y);
+      maxX = Math.max(maxX, pt.x);
+      maxY = Math.max(maxY, pt.y);
+    });
+    const width = Math.max(0, maxX - minX);
+    const height = Math.max(0, maxY - minY);
+    const diagonal = Math.hypot(width, height);
+    const band = Math.max(toleranceFromScreenPixels(14, 14), diagonal * 0.18);
+    const sideSupport = { left: 0, right: 0, top: 0, bottom: 0 };
+    const directionBuckets = new Set();
+
+    strokes.forEach((stroke) => {
+      const pts = stroke.points || [];
+      if (pts.length < 2) return;
+      let sMinX = Infinity;
+      let sMinY = Infinity;
+      let sMaxX = -Infinity;
+      let sMaxY = -Infinity;
+      pts.forEach((pt) => {
+        sMinX = Math.min(sMinX, pt.x);
+        sMinY = Math.min(sMinY, pt.y);
+        sMaxX = Math.max(sMaxX, pt.x);
+        sMaxY = Math.max(sMaxY, pt.y);
+      });
+      const midX = (sMinX + sMaxX) / 2;
+      const midY = (sMinY + sMaxY) / 2;
+      const sideHits = [];
+      if (midX <= minX + band || sMinX <= minX + band * 0.65) sideHits.push("left");
+      if (midX >= maxX - band || sMaxX >= maxX - band * 0.65) sideHits.push("right");
+      if (midY <= minY + band || sMinY <= minY + band * 0.65) sideHits.push("top");
+      if (midY >= maxY - band || sMaxY >= maxY - band * 0.65) sideHits.push("bottom");
+      sideHits.forEach((side) => { sideSupport[side] += 1; });
+
+      const start = pts[0];
+      const end = pts[pts.length - 1];
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const len = Math.hypot(dx, dy);
+      if (len > 1e-6) {
+        const ax = Math.abs(dx / len);
+        const ay = Math.abs(dy / len);
+        if (ax >= 0.72) directionBuckets.add("horizontal");
+        if (ay >= 0.72) directionBuckets.add("vertical");
+        if (ax < 0.72 && ay < 0.72) directionBuckets.add("diagonal");
+      }
+    });
+
+    const sideRegionCount = Object.values(sideSupport).filter((count) => count > 0).length;
+    return {
+      sideRegionCount,
+      dominantDirectionCount: directionBuckets.size,
+      sideSupport,
+      diagonal,
+      bbox: { minX, minY, maxX, maxY, width, height },
+    };
+  }
+
+  function countExplainedAngleStrokes(angleFit) {
+    if (!Array.isArray(angleFit?.strokeAssignments)) return 0;
+    return angleFit.strokeAssignments.filter((entry) => entry.assignedSegment && entry.assignedSegment !== "rejected").length;
+  }
+
+  function hasClosureEvidence(strokes = []) {
+    if (strokes.length < 3) return false;
+    const first = strokes[0]?.points?.[0];
+    const lastStroke = strokes[strokes.length - 1];
+    const lastPoints = lastStroke?.points || [];
+    const last = lastPoints[lastPoints.length - 1];
+    if (!first || !last) return false;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    strokes.forEach((stroke) => {
+      (stroke.points || []).forEach((pt) => {
+        minX = Math.min(minX, pt.x);
+        minY = Math.min(minY, pt.y);
+        maxX = Math.max(maxX, pt.x);
+        maxY = Math.max(maxY, pt.y);
+      });
+    });
+    const diagonal = Number.isFinite(minX) ? Math.hypot(maxX - minX, maxY - minY) : 0;
+    const closureTolerance = Math.max(toleranceFromScreenPixels(12, 12), diagonal * 0.10);
+    return distance(first, last) <= closureTolerance * 3.5;
+  }
+
   function buildPreviewTracks(preview) {
     if (!preview) return [];
     if (preview.rawStrokes.length === 0) return [];
@@ -539,7 +866,19 @@ export function createSketchModeController(deps = {}) {
       return Array.isArray(first) && first.length >= 2 ? [first] : [];
     }
 
-    const straightLineFit = fitStraightLineHypothesis(preview.rawStrokes, {
+    const recognitionStrokes = getRecognitionStrokes(preview);
+    const recognitionPointCount = recognitionStrokes.reduce((sum, stroke) => sum + (stroke.points?.length || 0), 0);
+    const evidenceSummary = sketchEvidenceSummary(recognitionStrokes);
+    const endpointClosurePossible = hasClosureEvidence(recognitionStrokes);
+    const multiSideBandEvidence = evidenceSummary.sideRegionCount >= 3 && evidenceSummary.dominantDirectionCount >= 2;
+    const closedShapePossible = endpointClosurePossible || multiSideBandEvidence;
+    const quadrilateralPrecheck = recognitionStrokes.length >= 4 &&
+      evidenceSummary.sideRegionCount >= 3 &&
+      evidenceSummary.diagonal >= Math.max(toleranceFromScreenPixels(32, 32), minimumStrokeLength() * 2);
+    const timing = {};
+
+    let recognizerStart = nowMs();
+    const straightLineFit = fitStraightLineHypothesis(recognitionStrokes, {
       minAllowedError: lineFitAllowedError(),
       errorLengthRatio: 0.08,
       directionToleranceDegrees: 24,
@@ -554,7 +893,9 @@ export function createSketchModeController(deps = {}) {
       minProjectedLength: minimumStrokeLength() * 1.1,
       previousLine: preview.straightLineState,
     });
-    const angleFit = fitTwoSegmentAngleHypothesis(preview.rawStrokes, {
+    timing.lineRecognizerMs = nowMs() - recognizerStart;
+    recognizerStart = nowMs();
+    const angleFit = fitTwoSegmentAngleHypothesis(recognitionStrokes, {
       minAllowedError: Math.max(toleranceFromScreenPixels(8, 8), lineFitAllowedError()),
       errorLengthRatio: 0.08,
       minAngleDegrees: 25,
@@ -562,7 +903,10 @@ export function createSketchModeController(deps = {}) {
       minSegmentLength: minimumStrokeLength() * 1.35,
       confidenceThreshold: 0.6,
     });
-    const triangleFit = fitTriangleHypothesis(preview.rawStrokes, {
+    timing.angleRecognizerMs = nowMs() - recognizerStart;
+    recognizerStart = nowMs();
+    const triangleFit = closedShapePossible && recognitionStrokes.length >= 3
+      ? fitTriangleHypothesis(recognitionStrokes, {
       minClosureTolerance: toleranceFromScreenPixels(12, 12),
       minSideLength: Math.max(toleranceFromScreenPixels(20, 20), minimumStrokeLength() * 1.8),
       minSideLengthRatio: 0.15,
@@ -572,8 +916,13 @@ export function createSketchModeController(deps = {}) {
       maxImprovementRatio: 0.75,
       confidenceThreshold: 0.58,
       twoSegmentError: angleFit.bestTwoLineError,
-    });
-    const quadrilateralFit = fitQuadrilateralHypothesis(preview.rawStrokes, {
+      maxTriangleCandidates: Number(globalThis?.NodevisionSketchSettings?.maxTriangleCandidates) || 40,
+    })
+      : { triangle: false, reason: "closure-gate", strokeCount: recognitionStrokes.length, activeSegmentCount: 0 };
+    timing.triangleRecognizerMs = nowMs() - recognizerStart;
+    recognizerStart = nowMs();
+    const quadrilateralFit = quadrilateralPrecheck
+      ? fitQuadrilateralHypothesis(recognitionStrokes, {
       minClosureTolerance: toleranceFromScreenPixels(12, 12),
       minSideLength: Math.max(toleranceFromScreenPixels(18, 18), minimumStrokeLength() * 1.45),
       minSideLengthRatio: 0.12,
@@ -586,7 +935,28 @@ export function createSketchModeController(deps = {}) {
       confidenceThreshold: 0.56,
       maxTriangleErrorRatio: 1.18,
       triangleError: triangleFit.threeSegmentError,
-    });
+      maxQuadrilateralCandidates: Number(globalThis?.NodevisionSketchSettings?.maxQuadrilateralCandidates) || 60,
+    })
+      : { quadrilateral: false, rectangleLike: false, reason: "precheck-gate", strokeCount: recognitionStrokes.length, activeSegmentCount: 0 };
+    timing.quadrilateralRecognizerMs = nowMs() - recognizerStart;
+    const angleExplainedStrokes = countExplainedAngleStrokes(angleFit);
+    const lineExplainedStrokes = Number(straightLineFit.supportedStrokeCount) || (straightLineFit.straight ? 1 : 0);
+    const totalRecognitionStrokes = Math.max(1, recognitionStrokes.length);
+    const angleExplainedRatio = angleExplainedStrokes / totalRecognitionStrokes;
+    const lineExplainedRatio = lineExplainedStrokes / totalRecognitionStrokes;
+    const simpleHypothesisBlockedByGlobalEvidence = quadrilateralPrecheck &&
+      evidenceSummary.sideRegionCount >= 3 &&
+      Math.max(angleExplainedRatio, lineExplainedRatio) < 0.68;
+
+    preview.recognitionTiming = {
+      ...timing,
+      analysisPointCount: recognitionPointCount,
+      closedShapePossible,
+      endpointClosurePossible,
+      multiSideBandEvidence,
+      quadrilateralPrecheck,
+      evidenceSummary,
+    };
     const triangleIgnoredFourthSideSupport = quadrilateralFit.quadrilateral
       ? Math.max(
         Number(quadrilateralFit.sideLengthA) || 0,
@@ -651,6 +1021,13 @@ export function createSketchModeController(deps = {}) {
         previousWinningHypothesis: previousAngularMode,
         triangleWouldHaveWon: Boolean(triangleFit.triangle),
         quadrilateralBeatsTriangle,
+        endpointClosurePossible,
+        multiSideBandEvidence,
+        quadrilateralPrecheck,
+        evidenceSummary,
+        angleExplainedStrokes,
+        lineExplainedStrokes,
+        simpleHypothesisBlockedByGlobalEvidence,
         discontinuities: 4,
         closed: true,
       };
@@ -687,6 +1064,13 @@ export function createSketchModeController(deps = {}) {
         quadrilateralStrokeAssignments: quadrilateralFit.strokeAssignments,
         quadrilateralRejectedStrokes: quadrilateralFit.rejectedStrokes,
         triangleIgnoredStrokeSupportLength: triangleIgnoredFourthSideSupport,
+        endpointClosurePossible,
+        multiSideBandEvidence,
+        quadrilateralPrecheck,
+        evidenceSummary,
+        angleExplainedStrokes,
+        lineExplainedStrokes,
+        simpleHypothesisBlockedByGlobalEvidence,
         twoSegmentError: triangleFit.twoSegmentError,
         threeSegmentError: triangleFit.threeSegmentError,
         improvementRatio: triangleFit.improvementRatio,
@@ -774,7 +1158,7 @@ export function createSketchModeController(deps = {}) {
       return [previousAngleState.points.map((pt) => ({ ...pt }))];
     }
 
-    const angleBeatsStraight = angleFit.angle && (
+    const angleBeatsStraight = angleFit.angle && !simpleHypothesisBlockedByGlobalEvidence && (
       !straightLineFit.straight ||
       (angleFit.improvementRatio <= 0.58 &&
         angleFit.confidence >= Math.max(0.62, straightLineFit.confidence - 0.08))
@@ -825,6 +1209,16 @@ export function createSketchModeController(deps = {}) {
         straightLineReason: straightLineFit.reason,
         candidateTriangleReason: triangleFit.reason,
         candidateTriangleConfidence: triangleFit.confidence,
+        quadrilateralConfidence: quadrilateralFit.confidence,
+        rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        quadrilateralReason: quadrilateralFit.reason,
+        endpointClosurePossible,
+        multiSideBandEvidence,
+        quadrilateralPrecheck,
+        evidenceSummary,
+        angleExplainedStrokes,
+        lineExplainedStrokes,
+        simpleHypothesisBlockedByGlobalEvidence,
         discontinuities: 1,
       };
       if (globalThis?.NodevisionDebug?.pencilSketchAngleFit) {
@@ -833,7 +1227,7 @@ export function createSketchModeController(deps = {}) {
       return [angleFit.points];
     }
 
-    if (straightLineFit.straight) {
+    if (straightLineFit.straight && !simpleHypothesisBlockedByGlobalEvidence) {
       preview.hypotheses = {
         mode: "open-straight-line",
         strokeCount: straightLineFit.strokeCount,
@@ -865,6 +1259,15 @@ export function createSketchModeController(deps = {}) {
         coverageRatio: straightLineFit.coverageRatio,
         maxGapRatio: straightLineFit.maxGapRatio,
         winningHypothesis: straightLineFit.winningHypothesis,
+        quadrilateralConfidence: quadrilateralFit.confidence,
+        quadrilateralReason: quadrilateralFit.reason,
+        endpointClosurePossible,
+        multiSideBandEvidence,
+        quadrilateralPrecheck,
+        evidenceSummary,
+        angleExplainedStrokes,
+        lineExplainedStrokes,
+        simpleHypothesisBlockedByGlobalEvidence,
         discontinuities: 0,
       };
       preview.straightLineState = straightLineFit.state;
@@ -974,7 +1377,41 @@ export function createSketchModeController(deps = {}) {
     preview.straightLineState = null;
     preview.angularPathState = null;
 
-    const lineConsensus = averageLineConsensus(preview.rawStrokes);
+    if (simpleHypothesisBlockedByGlobalEvidence) {
+      preview.hypotheses = {
+        mode: "global-evidence-unresolved",
+        strokeCount: preview.rawStrokes.length,
+        confidence: 0,
+        lineConfidence: straightLineFit.confidence,
+        angleConfidence: angleFit.confidence,
+        triangleConfidence: triangleFit.confidence,
+        quadrilateralConfidence: quadrilateralFit.confidence,
+        rectangleSubtypeConfidence: quadrilateralFit.rectangleSubtypeConfidence,
+        quadrilateralReason: quadrilateralFit.reason,
+        reason: "simple-hypothesis-explains-too-little-global-evidence",
+        endpointClosurePossible,
+        multiSideBandEvidence,
+        quadrilateralPrecheck,
+        evidenceSummary,
+        angleExplainedStrokes,
+        lineExplainedStrokes,
+        totalRecognitionStrokes,
+        ignoredStrokeCount: Math.max(
+          0,
+          totalRecognitionStrokes - Math.max(angleExplainedStrokes, lineExplainedStrokes),
+        ),
+        discontinuities: 0,
+      };
+      if (
+        globalThis?.NodevisionDebug?.pencilSketchAngleFit ||
+        globalThis?.NodevisionDebug?.pencilSketchQuadrilateralFit
+      ) {
+        console.debug("[PencilSketchGlobalEvidence:blocked-local]", preview.hypotheses);
+      }
+      return [];
+    }
+
+    const lineConsensus = averageLineConsensus(recognitionStrokes);
     if (lineConsensus) {
       preview.hypotheses = {
         mode: "line-consensus",
@@ -985,7 +1422,7 @@ export function createSketchModeController(deps = {}) {
       return [lineConsensus];
     }
 
-    const strokePointLists = preview.rawStrokes.map((stroke) => stroke.points);
+    const strokePointLists = recognitionStrokes.map((stroke) => stroke.points);
     const sharedOptions = {
       sampleCount: 44,
       minLength: minimumStrokeLength(),
@@ -1115,9 +1552,65 @@ export function createSketchModeController(deps = {}) {
     setPreviewVisible(preview.previewPathEl, visible);
   }
 
-  function refreshActivePreview() {
-    const preview = ensureActivePreview();
+  function markRecognitionDirty(preview) {
+    if (!preview) return 0;
+    preview.recognitionDirty = true;
+    preview.recognitionVersion = (Number(preview.recognitionVersion) || 0) + 1;
+    return preview.recognitionVersion;
+  }
+
+  function scheduleRecognition(preview, reason = "schedule") {
+    if (!preview) return false;
+    const version = Number(preview.recognitionVersion) || markRecognitionDirty(preview);
+    if (preview.recognitionTimer) clearTimeout(preview.recognitionTimer);
+    const delay = Math.max(0, sketchPerformanceSettings().recognitionDebounceMs);
+    preview.recognitionTimer = setTimeout(() => {
+      preview.recognitionTimer = null;
+      const run = () => {
+        const latest = getPreviewById(preview.id);
+        if (!latest || version !== latest.recognitionVersion || state.currentStroke) return;
+        refreshPreviewRecognition(latest, { expectedVersion: version, reason });
+      };
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(run, { timeout: 120 });
+      } else {
+        run();
+      }
+    }, delay);
+    return true;
+  }
+
+  function refreshPreviewRecognition(preview, options = {}) {
     if (!preview) return;
+    const expectedVersion = Number(options.expectedVersion) || null;
+    if (expectedVersion && expectedVersion !== preview.recognitionVersion) return;
+    if (preview.recognitionTimer) {
+      clearTimeout(preview.recognitionTimer);
+      preview.recognitionTimer = null;
+    }
+    const recognitionStart = nowMs();
+    preview.recognitionRunning = true;
+    const finishRecognition = (eventReason) => {
+      preview.recognitionDirty = false;
+      preview.lastRecognizedStrokeCount = preview.rawStrokes.length;
+      preview.lastRecognizedPointCount = preview.rawStrokes.reduce((sum, stroke) => sum + (stroke.points?.length || 0), 0);
+      preview.recognitionRunning = false;
+      const recognitionMs = nowMs() - recognitionStart;
+      preview.lastRecognitionMs = recognitionMs;
+      if (sketchPerfLogEnabled() || recognitionMs > 20) {
+        const payload = {
+          recognitionMs,
+          strokeCount: preview.rawStrokes.length,
+          rawPointCount: preview.lastRecognizedPointCount,
+          analysisPointCount: preview.analysisPointCount || 0,
+          hypothesis: preview.hypotheses?.mode || "none",
+          timing: preview.recognitionTiming || null,
+          reason: eventReason || options.reason || "refresh",
+        };
+        if (recognitionMs > 20) console.warn("[PencilSketchPerformance] recognition slow", payload);
+        else console.debug("[PencilSketchPerformance] recognition", payload);
+      }
+    };
 
     if (!preview.rawStrokes.length) {
       preview.activePreviewGeometry = null;
@@ -1127,6 +1620,7 @@ export function createSketchModeController(deps = {}) {
       preview.lastPreviewD = "";
       preview.previewPathEl?.setAttribute("d", "");
       setPreviewVisible(preview.previewPathEl, false);
+      finishRecognition("refresh-preview-empty");
       emitSketchPreviewsChanged("refresh-preview-empty");
       return;
     }
@@ -1153,12 +1647,20 @@ export function createSketchModeController(deps = {}) {
       };
       preview.straightLineState = null;
       preview.angularPathState = null;
+      finishRecognition("refresh-preview-stable");
       emitSketchPreviewsChanged("refresh-preview-stable");
       return;
     }
 
     setPreviewTracks(preview, tracks);
+    finishRecognition("refresh-preview");
     emitSketchPreviewsChanged("refresh-preview");
+  }
+
+  function refreshActivePreview() {
+    const preview = ensureActivePreview();
+    if (!preview) return;
+    refreshPreviewRecognition(preview, { reason: "sync-refresh" });
   }
 
   function resolvePreviewLayer(preview) {
@@ -1218,6 +1720,10 @@ export function createSketchModeController(deps = {}) {
     const preservePreview = "preservePreview" in options
       ? safeBool(options.preservePreview, true)
       : true;
+
+    if (preview.recognitionDirty) {
+      refreshPreviewRecognition(preview, { reason: "render-sync" });
+    }
 
     if (
       !preview.activePreviewGeometry ||
@@ -1328,6 +1834,7 @@ export function createSketchModeController(deps = {}) {
       force: true,
     });
     updateStrokePath(stroke);
+    applyPreviewStrokeColors(preview, { activeStroke: stroke });
 
     state.currentStroke = stroke;
     state.activePointerId = event?.pointerId ?? 0;
@@ -1344,7 +1851,7 @@ export function createSketchModeController(deps = {}) {
       { force: false },
     );
     if (!changed) return true;
-    updateStrokePath(state.currentStroke);
+    scheduleStrokePathUpdate(state.currentStroke);
     return true;
   }
 
@@ -1355,7 +1862,7 @@ export function createSketchModeController(deps = {}) {
     pushStrokePoint(state.currentStroke, createStrokePoint(rootPoint, event), {
       force: true,
     });
-    updateStrokePath(state.currentStroke);
+    flushStrokePathUpdate(state.currentStroke);
 
     const preview = getPreviewById(state.currentStroke.previewId);
     if (!preview) {
@@ -1370,20 +1877,29 @@ export function createSketchModeController(deps = {}) {
     ) {
       discardCurrentStroke();
       status("Sketch stroke ignored (too short)");
-      refreshActivePreview();
       return true;
     }
 
+    const rawPoints = state.currentStroke.points.map((pt) => ({ ...pt }));
+    const analysisPoints = simplifyPointsForRecognition(
+      rawPoints,
+      simplifyThreshold(),
+      sketchPerformanceSettings().maxAnalysisPointsPerStroke,
+    );
     preview.rawStrokes.push({
       pathEl: state.currentStroke.pathEl,
-      points: state.currentStroke.points.map((pt) => ({ ...pt })),
+      points: rawPoints,
+      analysisPoints,
       length: len,
+      summary: computeStrokeSummary(rawPoints, analysisPoints),
     });
 
     preview.accepted = false;
+    applyPreviewStrokeColors(preview);
+    markRecognitionDirty(preview);
     resetCurrentStroke();
-    refreshActivePreview();
-    status(`${preview.name}: ${preview.rawStrokes.length} stroke(s)`);
+    scheduleRecognition(preview, "stroke-complete");
+    status(preview.name + ": " + preview.rawStrokes.length + " stroke(s)");
     return true;
   }
 
@@ -1405,8 +1921,10 @@ export function createSketchModeController(deps = {}) {
       // ignore DOM removal errors
     }
 
-    refreshActivePreview();
-    status(`${preview.name}: ${preview.rawStrokes.length} stroke(s)`);
+    applyPreviewStrokeColors(preview);
+    markRecognitionDirty(preview);
+    scheduleRecognition(preview, "undo-stroke");
+    status(preview.name + ": " + preview.rawStrokes.length + " stroke(s)");
     return true;
   }
 
@@ -1477,20 +1995,28 @@ export function createSketchModeController(deps = {}) {
     return true;
   }
 
+  function setStrokeOrderColorsEnabled(nextValue) {
+    state.enableStrokeOrderColors = safeBool(nextValue, !state.enableStrokeOrderColors);
+    globalThis.NodevisionState = globalThis.NodevisionState || {};
+    globalThis.NodevisionState.enableSketchStrokeOrderColors = state.enableStrokeOrderColors;
+    globalThis.NodevisionSketchSettings = globalThis.NodevisionSketchSettings || {};
+    globalThis.NodevisionSketchSettings.enableSketchStrokeOrderColors = state.enableStrokeOrderColors;
+    applyAllStrokeColors();
+    emitSketchPreviewsChanged("stroke-order-colors");
+    status(
+      state.enableStrokeOrderColors
+        ? "Sketch stroke order colors ON"
+        : "Sketch stroke order colors OFF",
+    );
+    return state.enableStrokeOrderColors;
+  }
+
   function setRoughOpacity(value) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return state.roughOpacity;
     state.roughOpacity = clamp(parsed, 0.05, 1);
 
-    state.previews.forEach((preview) => {
-      preview.rawStrokes.forEach((stroke) => {
-        stroke.pathEl?.setAttribute("opacity", String(state.roughOpacity));
-      });
-    });
-    state.currentStroke?.pathEl?.setAttribute(
-      "opacity",
-      String(state.roughOpacity),
-    );
+    applyAllStrokeColors();
     return state.roughOpacity;
   }
 
@@ -1536,6 +2062,8 @@ export function createSketchModeController(deps = {}) {
     undoLastStroke,
     setKeepConstruction,
     toggleConstructionVisibility,
+    setStrokeOrderColorsEnabled,
+    getStrokeOrderColorsEnabled: () => state.enableStrokeOrderColors,
     setRoughOpacity,
     setSmoothingLevel,
     hasSketchContent,

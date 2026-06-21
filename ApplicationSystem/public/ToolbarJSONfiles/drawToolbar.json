@@ -189,6 +189,12 @@
     "modes": ["SVG Editing", "GraphicalEditing"]
   },
   {
+    "heading": "Color stroke order",
+    "parentHeading": "Pencil Sketching",
+    "script": "sketchStrokeOrderWidget.mjs",
+    "modes": ["SVG Editing", "GraphicalEditing"]
+  },
+  {
     "heading": "SVG Styles",
     "parentHeading": "Vector Draw",
     "script": "svgStyleWidget.mjs",
