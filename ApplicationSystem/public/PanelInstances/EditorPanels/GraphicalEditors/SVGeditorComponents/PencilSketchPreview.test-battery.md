@@ -1,42 +1,39 @@
-# Pencil Sketch Preview Angle Test Battery
+# Pencil Sketch Preview Two-Segment Angle Test Battery
 
-Use this battery for the active sketch preview layer. Raw pencil strokes should remain visible underneath the ghost preview until the user accepts/renders the preview. These cases focus only on the two-segment angular polyline hypothesis.
+Use this battery for the active sketch preview layer. Raw pencil strokes should remain visible underneath the ghost preview until the user accepts/renders the preview. These cases focus only on the open two-segment angle hypothesis and full endpoint extension.
 
-1. One straight-ish stroke
-   - Draw a single rough diagonal or angled stroke.
-   - Expected: the preview preserves the raw stroke and does not auto-convert it into an angle.
+1. Lower-left to upper apex, choppy strokes
+   - Draw several rough strokes along the first side.
+   - Expected: first segment spans all compatible supporting strokes.
 
-2. Multiple rough strokes along one direction
-   - Draw several nearby strokes along a single shared axis.
-   - Expected: one straight-line ghost preview, not an angle.
+2. Apex to lower-right, choppy strokes
+   - Draw several rough strokes along the second side.
+   - Expected: second segment spans all compatible supporting strokes, not just points near the apex.
 
-3. Add multiple rough strokes forming a second direction from an apex
-   - Draw one segment toward a corner, then draw enough strokes leaving the corner in another direction.
-   - Expected: the preview changes to one clean two-segment angle.
+3. Second side with a gap
+   - Leave a gap between second-side stroke fragments, then continue farther down/right along the same axis.
+   - Expected: the second side still extends to the farthest compatible evidence.
 
-4. Lower-left to upper apex, then upper apex to lower-right
-   - Draw an inverted V / roof-like angle as one sketch preview.
-   - Expected: one clean `M start L corner L end` ghost path with a preserved sharp corner.
+4. One short accidental mark near the second side
+   - Add one small mark that is not direction/perpendicular compatible with the second side.
+   - Expected: do not extend the segment to that mark.
 
-5. Add extra rough strokes near either segment
-   - Reinforce either side of the angle with nearby strokes.
-   - Expected: each segment may adjust slightly, but the shared corner remains stable.
-
-6. Add a small accidental hook near one segment
-   - Add one short hook that does not have enough length/support to be a real second segment.
-   - Expected: do not turn the whole sketch into an angle from the hook.
-
-7. Accept the preview
-   - Render/accept the angular preview.
-   - Expected: final SVG geometry is one simple polyline/path with `M-L-L` commands and no Bezier handles.
+5. Full angle
+   - Draw the complete lower-left to apex to lower-right angle.
+   - Expected: preview is one clean `M outerEndpointA L corner L outerEndpointB` path with a stable corner and both sides fully extended.
 
 Debug fields to watch when enabled:
 - `winningHypothesis`
-- `oneLineError`
-- `bestTwoLineError`
-- `improvementRatio`
 - `cornerPoint`
-- `angleBetweenSegments`
-- `segmentLengthA`
-- `segmentLengthB`
-- `confidence`
+- `assignedCountA`
+- `assignedCountB`
+- `projectionMinA` / `projectionMaxA`
+- `projectionMinB` / `projectionMaxB`
+- `endpointA`
+- `endpointB`
+- `rejectedFarPointsA` / `rejectedFarPointsB`
+- `strokeAssignments` with each stroke id, assigned segment, direction compatibility, midpoint distances, projected distances, support ratios, and rejection reason
+- `segmentAAssignedStrokeCount` / `segmentBAssignedStrokeCount`
+- `segmentBFarthestProjectedEndpoint`
+- `segmentBEndpointSourceStrokeId`
+- `assignmentTolerance` / `roughAssignmentTolerance`

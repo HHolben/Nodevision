@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "id": "external:https%3A%2F%2Fhholben.github.io",
+    "label": "hholben.github.io",
+    "url": "https://hholben.github.io",
+    "type": "external",
+    "category": "website",
+    "description": "External link to hholben.github.io",
+    "createdAt": "2026-06-21T05:14:52.577Z",
+    "source": "link-scan"
+  },
+  {
+    "id": "external:https%3A%2F%2Fwww.linkedin.com%2Fin%2Fhenry-holben-14529b161",
+    "label": "www.linkedin.com",
+    "url": "https://www.linkedin.com/in/henry-holben-14529b161",
+    "type": "external",
+    "category": "website",
+    "description": "External link to www.linkedin.com",
+    "createdAt": "2026-06-21T05:14:52.600Z",
+    "source": "link-scan"
+  }
+]
