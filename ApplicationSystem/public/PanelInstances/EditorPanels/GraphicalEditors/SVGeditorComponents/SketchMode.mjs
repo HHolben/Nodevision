@@ -8,6 +8,7 @@ import {
   pointsToPathD,
   strokeLength,
 } from "./SketchStrokeMath.mjs";
+import { fitStraightLineHypothesis } from "./PencilSketchLineFit.mjs";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -94,6 +95,21 @@ export function createSketchModeController(deps = {}) {
       ? pointerToleranceInSvgUnits(8)
       : 8;
     return Math.max(0.4, Number(next) || 8);
+  }
+
+  function toleranceFromScreenPixels(px, fallback = px) {
+    const next = typeof pointerToleranceInSvgUnits === "function"
+      ? pointerToleranceInSvgUnits(px)
+      : fallback;
+    return Math.max(0.01, Number(next) || fallback);
+  }
+
+  function lineFitAllowedError() {
+    const style = typeof currentStyleDefaults === "function"
+      ? (currentStyleDefaults() || {})
+      : {};
+    const strokeWidth = Number.parseFloat(style.strokeWidth) || 1;
+    return Math.max(toleranceFromScreenPixels(6, 6), strokeWidth * 2.5);
   }
 
   function simplifyThreshold() {
@@ -222,6 +238,7 @@ export function createSketchModeController(deps = {}) {
       rawStrokes: [],
       hypotheses: {},
       activePreviewGeometry: null,
+      straightLineState: null,
       accepted: false,
       groupEl: group,
       previewPathEl: previewPath,
@@ -319,6 +336,7 @@ export function createSketchModeController(deps = {}) {
     preview.rawStrokes = [];
     preview.hypotheses = {};
     preview.activePreviewGeometry = null;
+    preview.straightLineState = null;
     preview.lastPreviewD = "";
     if (preview.previewPathEl) {
       preview.previewPathEl.setAttribute("d", "");
@@ -513,6 +531,79 @@ export function createSketchModeController(deps = {}) {
       return Array.isArray(first) && first.length >= 2 ? [first] : [];
     }
 
+    const straightLineFit = fitStraightLineHypothesis(preview.rawStrokes, {
+      minAllowedError: lineFitAllowedError(),
+      errorLengthRatio: 0.08,
+      directionToleranceDegrees: 24,
+      linearityThreshold: 0.34,
+      confidenceThreshold: 0.56,
+      minDirectionAgreement: 0.78,
+      existingLineDirectionToleranceDegrees: 20,
+      highConfidenceMinAllowedOffset: Math.max(
+        toleranceFromScreenPixels(10, 10),
+        lineFitAllowedError() * 1.25,
+      ),
+      minProjectedLength: minimumStrokeLength() * 1.1,
+      previousLine: preview.straightLineState,
+    });
+    if (straightLineFit.straight) {
+      preview.hypotheses = {
+        mode: "open-straight-line",
+        strokeCount: straightLineFit.strokeCount,
+        pointCount: straightLineFit.pointCount,
+        confidence: straightLineFit.confidence,
+        fittedLineAngle: straightLineFit.angleDegrees,
+        projectedLength: straightLineFit.projectedLength,
+        perpendicularRmsError: straightLineFit.perpendicularRmsError,
+        allowedError: straightLineFit.allowedError,
+        allowedOffset: straightLineFit.allowedOffset,
+        linearity: straightLineFit.linearity,
+        directionAgreement: straightLineFit.directionAgreement,
+        alignedRatio: straightLineFit.alignedRatio,
+        supportRatio: straightLineFit.supportRatio,
+        supportedStrokeCount: straightLineFit.supportedStrokeCount,
+        outlierPointCount: straightLineFit.outlierPointCount,
+        allPointRmsError: straightLineFit.allPointRmsError,
+        reinforcementClassification: straightLineFit.reinforcementClassification,
+        reinforcementOverlapRatio: straightLineFit.reinforcementOverlapRatio,
+        reinforcementRmsError: straightLineFit.reinforcementRmsError,
+        previousWinningHypothesis: straightLineFit.previousWinningHypothesis,
+        currentWinningHypothesis: straightLineFit.currentWinningHypothesis,
+        stablePreviousLine: straightLineFit.stablePreviousLine,
+        latestStrokeCompatible: straightLineFit.latestStrokeCompatible,
+        latestDirectionCompatible: straightLineFit.latestDirectionCompatible,
+        latestOffsetCompatible: straightLineFit.latestOffsetCompatible,
+        latestSpanCompatible: straightLineFit.latestSpanCompatible,
+        latestStrongViolation: straightLineFit.latestStrongViolation,
+        coverageRatio: straightLineFit.coverageRatio,
+        maxGapRatio: straightLineFit.maxGapRatio,
+        winningHypothesis: straightLineFit.winningHypothesis,
+        discontinuities: 0,
+      };
+      preview.straightLineState = straightLineFit.state;
+      if (globalThis?.NodevisionDebug?.pencilSketchLineFit) {
+        console.debug("[PencilSketchLineFit]", preview.hypotheses);
+      }
+      return [straightLineFit.points];
+    }
+
+    if (globalThis?.NodevisionDebug?.pencilSketchLineFit) {
+      console.debug("[PencilSketchLineFit:rejected]", {
+        previousWinningHypothesis: straightLineFit.previousWinningHypothesis,
+        currentWinningHypothesis: straightLineFit.currentWinningHypothesis,
+        strokeCount: straightLineFit.strokeCount,
+        fittedLineAngle: straightLineFit.angleDegrees,
+        directionAgreement: straightLineFit.directionAgreement,
+        perpendicularRmsError: straightLineFit.perpendicularRmsError,
+        allowedOffset: straightLineFit.allowedOffset,
+        projectedLength: straightLineFit.projectedLength,
+        confidence: straightLineFit.confidence,
+        latestStrongViolation: straightLineFit.latestStrongViolation,
+        reason: straightLineFit.reason,
+      });
+    }
+    preview.straightLineState = null;
+
     const lineConsensus = averageLineConsensus(preview.rawStrokes);
     if (lineConsensus) {
       preview.hypotheses = {
@@ -638,6 +729,7 @@ export function createSketchModeController(deps = {}) {
         0,
       ),
       discontinuities: 0,
+      hypothesis: preview.hypotheses?.mode || "none",
     };
 
     const d = primaryTrack ? pointsToPathD(primaryTrack) : "";
@@ -656,6 +748,7 @@ export function createSketchModeController(deps = {}) {
     if (!preview.rawStrokes.length) {
       preview.activePreviewGeometry = null;
       preview.hypotheses = {};
+      preview.straightLineState = null;
       preview.lastPreviewD = "";
       preview.previewPathEl?.setAttribute("d", "");
       setPreviewVisible(preview.previewPathEl, false);
@@ -683,6 +776,7 @@ export function createSketchModeController(deps = {}) {
         pointCount: 0,
         discontinuities: 0,
       };
+      preview.straightLineState = null;
       emitSketchPreviewsChanged("refresh-preview-stable");
       return;
     }
@@ -703,10 +797,28 @@ export function createSketchModeController(deps = {}) {
     return byId || getActiveLayer?.() || svgRoot;
   }
 
-  function renderTracksToPathElement(tracks = []) {
+  function renderTracksToPathElement(tracks = [], preview = null) {
     const style = typeof currentStyleDefaults === "function"
       ? (currentStyleDefaults() || {})
       : {};
+    const isStraightLine = preview?.hypotheses?.mode === "open-straight-line" &&
+      tracks.length === 1 &&
+      Array.isArray(tracks[0]) &&
+      tracks[0].length === 2;
+    if (isStraightLine) {
+      const [start, end] = tracks[0];
+      return createSvgEl("line", {
+        x1: start.x,
+        y1: start.y,
+        x2: end.x,
+        y2: end.y,
+        fill: "none",
+        stroke: "#000000",
+        "stroke-width": style.strokeWidth || "1",
+        "stroke-linecap": "round",
+      });
+    }
+
     const d = tracks.map((points) => pointsToPathD(points)).filter(Boolean)
       .join(" ");
     if (!d) return null;
@@ -741,7 +853,7 @@ export function createSketchModeController(deps = {}) {
     }
 
     const tracks = preview.activePreviewGeometry?.tracks || [];
-    const element = renderTracksToPathElement(tracks);
+    const element = renderTracksToPathElement(tracks, preview);
     if (!element) {
       status(`${preview.name}: unable to render`);
       return null;
