@@ -26,5 +26,19 @@
     "modes": ["HTMLediting"],
     "content": "<div id=\"nv-html-text-style-toolbar\"></div>",
     "script": "htmlTextStyleToolbar.mjs"
+  },
+  {
+    "ToolbarCategory": "Styles",
+    "heading": "Document",
+    "modes": ["HTMLediting"],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Styles",
+    "parentHeading": "Document",
+    "heading": "Document Style Controls",
+    "modes": ["HTMLediting"],
+    "content": "<div id=\"nv-html-document-style-toolbar\"></div>",
+    "script": "htmlDocumentStyleToolbar.mjs"
   }
 ]

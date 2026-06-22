@@ -6,6 +6,9 @@ import {
   distance,
   inferStrokeTracks,
   pointsToPathD,
+  resampleStroke,
+  simplifyByMinDistance,
+  smoothPolyline,
   strokeLength,
 } from "./SketchStrokeMath.mjs";
 import { fitTwoSegmentAngleHypothesis } from "./PencilSketchAngleFit.mjs";
@@ -29,6 +32,16 @@ function safeBool(value, fallback = false) {
 }
 
 const NORMAL_SKETCH_STROKE_COLOR = "#808080";
+const SKETCH_PREDICTION_MODES = new Set(["raw", "shape", "curve", "function-curve"]);
+const DEFAULT_SKETCH_PREDICTION_MODE = "shape";
+
+function normalizePredictionMode(value) {
+  const mode = String(value || "").trim().toLowerCase();
+  if (mode === "raw-pencil") return "raw";
+  if (mode === "graph-curve" || mode === "function" || mode === "function curve") return "function-curve";
+  return SKETCH_PREDICTION_MODES.has(mode) ? mode : DEFAULT_SKETCH_PREDICTION_MODE;
+}
+
 
 function getStrokeOrderColor(index, total) {
   const count = Math.max(1, Number.parseInt(total, 10) || 1);
@@ -70,6 +83,11 @@ export function createSketchModeController(deps = {}) {
     currentStroke: null,
     roughOpacity: 0.28,
     smoothingLevel: 2,
+    defaultPredictionMode: normalizePredictionMode(
+      globalThis?.NodevisionSketchSettings?.predictionMode ||
+        globalThis?.NodevisionState?.sketchPredictionMode ||
+        DEFAULT_SKETCH_PREDICTION_MODE,
+    ),
     keepConstruction: false,
     constructionVisible: true,
     enableStrokeOrderColors: Boolean(
@@ -267,6 +285,9 @@ export function createSketchModeController(deps = {}) {
       name: preview.name,
       visible: safeBool(preview.visible, true),
       locked: safeBool(preview.locked, false),
+      predictionMode: normalizePredictionMode(preview.predictionMode),
+      state: preview.state || "raw-sketch",
+      bezierRefinementPathId: preview.bezierRefinementPathId || null,
       rawStrokes: preview.rawStrokes.map((stroke) => ({
         pointCount: stroke.points.length,
         length: stroke.length,
@@ -315,9 +336,13 @@ export function createSketchModeController(deps = {}) {
       name: previewName,
       visible: true,
       locked: false,
+      predictionMode: normalizePredictionMode(options.predictionMode || state.defaultPredictionMode),
       rawStrokes: [],
-      hypotheses: {},
       activePreviewGeometry: null,
+      bezierRefinementPathId: null,
+      bezierRefinementPathEl: null,
+      state: "raw-sketch",
+      hypotheses: {},
       straightLineState: null,
       angularPathState: null,
       accepted: false,
@@ -422,8 +447,11 @@ export function createSketchModeController(deps = {}) {
       }
     });
     preview.rawStrokes = [];
+    preview.state = "raw-sketch";
     preview.hypotheses = {};
     preview.activePreviewGeometry = null;
+    preview.bezierRefinementPathId = null;
+    preview.bezierRefinementPathEl = null;
     preview.straightLineState = null;
     preview.angularPathState = null;
     preview.lastPreviewD = "";
@@ -1187,7 +1215,7 @@ export function createSketchModeController(deps = {}) {
     };
   }
 
-  function buildPreviewTracks(preview) {
+  function buildShapePreviewTracks(preview) {
     if (!preview) return [];
     if (preview.rawStrokes.length === 0) return [];
     if (preview.rawStrokes.length === 1) {
@@ -1970,6 +1998,244 @@ export function createSketchModeController(deps = {}) {
     return [chosen.points];
   }
 
+
+  function orientSamplesLikeReference(reference = [], candidate = []) {
+    if (reference.length < 2 || candidate.length < 2) return candidate;
+    const refStart = reference[0];
+    const refEnd = reference[reference.length - 1];
+    const candStart = candidate[0];
+    const candEnd = candidate[candidate.length - 1];
+    const same = distance(refStart, candStart) + distance(refEnd, candEnd);
+    const reversed = distance(refStart, candEnd) + distance(refEnd, candStart);
+    return reversed < same ? [...candidate].reverse() : candidate;
+  }
+
+  function chooseCurveAnchorPoints(points = [], maxAnchors = 9) {
+    const clean = simplifyByMinDistance(points, Math.max(0.01, simplifyThreshold() * 0.8));
+    if (clean.length <= maxAnchors) return clean;
+    const anchors = [];
+    const count = Math.max(2, Number(maxAnchors) || 9);
+    for (let i = 0; i < count; i += 1) {
+      const index = Math.round((i * (clean.length - 1)) / (count - 1));
+      anchors.push({ ...clean[index] });
+    }
+    return anchors;
+  }
+
+  function bezierPathDFromPolyline(points = [], options = {}) {
+    const anchors = chooseCurveAnchorPoints(points, options.maxAnchors || 9);
+    if (anchors.length < 2) return pointsToPathD(points);
+    let d = `M ${anchors[0].x} ${anchors[0].y}`;
+    const tension = Number(options.tension) || 1;
+    for (let i = 0; i < anchors.length - 1; i += 1) {
+      const p0 = anchors[Math.max(0, i - 1)];
+      const p1 = anchors[i];
+      const p2 = anchors[i + 1];
+      const p3 = anchors[Math.min(anchors.length - 1, i + 2)];
+      const c1 = {
+        x: p1.x + ((p2.x - p0.x) / 6) * tension,
+        y: p1.y + ((p2.y - p0.y) / 6) * tension,
+      };
+      const c2 = {
+        x: p2.x - ((p3.x - p1.x) / 6) * tension,
+        y: p2.y - ((p3.y - p1.y) / 6) * tension,
+      };
+      d += ` C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`;
+    }
+    return d;
+  }
+
+  function averageResampledCurveStrokes(strokes = [], options = {}) {
+    const sampleCount = Math.max(16, Number(options.sampleCount) || 56);
+    const candidates = strokes
+      .map((stroke) => Array.isArray(stroke?.points) ? stroke.points : [])
+      .filter((points) => points.length >= 2 && strokeLength(points) >= minimumStrokeLength() * 0.35);
+    if (!candidates.length) return [];
+    const reference = [...candidates].sort((a, b) => strokeLength(b) - strokeLength(a))[0];
+    const referenceSamples = resampleStroke(reference, sampleCount);
+    if (referenceSamples.length < 2) return [];
+    const sampleSets = candidates.map((points) => {
+      const samples = resampleStroke(points, sampleCount);
+      return orientSamplesLikeReference(referenceSamples, samples);
+    }).filter((samples) => samples.length === sampleCount);
+    if (!sampleSets.length) return [];
+    const averaged = [];
+    for (let i = 0; i < sampleCount; i += 1) {
+      let sx = 0;
+      let sy = 0;
+      let n = 0;
+      sampleSets.forEach((samples) => {
+        const pt = samples[i];
+        if (!pt) return;
+        sx += pt.x;
+        sy += pt.y;
+        n += 1;
+      });
+      if (n) averaged.push({ x: sx / n, y: sy / n });
+    }
+    const smooth = smoothPolyline(averaged, 2, Math.max(1, Math.min(3, smoothingPasses())));
+    return simplifyByMinDistance(smooth, Math.max(0.01, simplifyThreshold() * 0.5));
+  }
+
+  function buildCurvePreviewTracks(preview, options = {}) {
+    const recognitionStrokes = getRecognitionStrokes(preview);
+    const curve = averageResampledCurveStrokes(recognitionStrokes, {
+      sampleCount: Number(globalThis?.NodevisionSketchSettings?.curveSketchSampleCount) || 56,
+    });
+    if (curve.length < 2) {
+      preview.straightLineState = null;
+      preview.angularPathState = null;
+      preview.hypotheses = {
+        mode: "curve-average",
+        strokeCount: preview.rawStrokes.length,
+        confidence: 0,
+        reason: "not-enough-curve-evidence",
+        discontinuities: 0,
+        closed: false,
+        fallbackReason: options.fallbackReason || null,
+      };
+      return [];
+    }
+    preview.straightLineState = null;
+    preview.angularPathState = null;
+    preview.hypotheses = {
+      mode: "curve-average",
+      strokeCount: preview.rawStrokes.length,
+      confidence: 1,
+      pointCount: curve.length,
+      discontinuities: 0,
+      closed: false,
+      pathD: bezierPathDFromPolyline(curve, { maxAnchors: Number(globalThis?.NodevisionSketchSettings?.curveSketchBezierAnchors) || 9 }),
+      fallbackReason: options.fallbackReason || null,
+    };
+    return [curve];
+  }
+
+  function sortedMedian(values = []) {
+    if (!values.length) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  function functionCurveFallbackReason(strokes = [], xRange = 0, yRange = 0, binStats = []) {
+    if (xRange < Math.max(toleranceFromScreenPixels(18, 18), yRange * 0.12)) return "x-range-too-small";
+    let reversalCount = 0;
+    let directionalSegments = 0;
+    strokes.forEach((stroke) => {
+      const pts = stroke.points || [];
+      let previousSign = 0;
+      for (let i = 1; i < pts.length; i += 1) {
+        const dx = pts[i].x - pts[i - 1].x;
+        if (Math.abs(dx) < Math.max(0.01, xRange * 0.01)) continue;
+        const sign = dx > 0 ? 1 : -1;
+        directionalSegments += 1;
+        if (previousSign && sign !== previousSign) reversalCount += 1;
+        previousSign = sign;
+      }
+    });
+    const reversalRatio = directionalSegments ? reversalCount / directionalSegments : 0;
+    const wideBins = binStats.filter((stat) => stat.count >= 3 && stat.ySpread > Math.max(toleranceFromScreenPixels(24, 24), yRange * 0.42));
+    if (wideBins.length >= Math.max(2, Math.ceil(binStats.length * 0.16))) return "multiple-y-values-per-x-bin";
+    if (reversalRatio > 0.32) return "curve-doubles-back-in-x";
+    return "";
+  }
+
+  function buildFunctionCurvePreviewTracks(preview) {
+    const recognitionStrokes = getRecognitionStrokes(preview);
+    const allPoints = recognitionStrokes.flatMap((stroke) => stroke.points || []);
+    if (allPoints.length < 4) {
+      preview.hypotheses = {
+        mode: "function-curve-average",
+        strokeCount: preview.rawStrokes.length,
+        confidence: 0,
+        reason: "not-enough-points",
+        discontinuities: 0,
+        closed: false,
+      };
+      return [];
+    }
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    allPoints.forEach((pt) => {
+      minX = Math.min(minX, pt.x);
+      maxX = Math.max(maxX, pt.x);
+      minY = Math.min(minY, pt.y);
+      maxY = Math.max(maxY, pt.y);
+    });
+    const xRange = maxX - minX;
+    const yRange = maxY - minY;
+    const binCount = Math.max(12, Math.min(64, Number(globalThis?.NodevisionSketchSettings?.functionCurveBins) || 48));
+    const bins = Array.from({ length: binCount }, () => []);
+    allPoints.forEach((pt) => {
+      const t = xRange > 1e-6 ? (pt.x - minX) / xRange : 0;
+      const index = clamp(Math.floor(t * binCount), 0, binCount - 1);
+      bins[index].push(pt.y);
+    });
+    const binStats = bins.map((ys, index) => ({
+      index,
+      count: ys.length,
+      ySpread: ys.length ? Math.max(...ys) - Math.min(...ys) : 0,
+    })).filter((stat) => stat.count > 0);
+    const fallbackReason = functionCurveFallbackReason(recognitionStrokes, xRange, yRange, binStats);
+    if (fallbackReason) {
+      if (globalThis?.NodevisionDebug?.pencilSketchFunctionCurve) {
+        console.debug("[PencilSketchFunctionCurve:fallback]", { fallbackReason, xRange, yRange, binStats });
+      }
+      return buildCurvePreviewTracks(preview, { fallbackReason });
+    }
+    const averaged = [];
+    bins.forEach((ys, index) => {
+      if (!ys.length) return;
+      const center = minX + ((index + 0.5) / binCount) * xRange;
+      averaged.push({ x: center, y: sortedMedian(ys) });
+    });
+    if (averaged.length < 3) {
+      return buildCurvePreviewTracks(preview, { fallbackReason: "not-enough-populated-x-bins" });
+    }
+    const smooth = smoothPolyline(averaged, 2, Math.max(1, Math.min(3, smoothingPasses())));
+    const curve = simplifyByMinDistance(smooth, Math.max(0.01, simplifyThreshold() * 0.45));
+    preview.straightLineState = null;
+    preview.angularPathState = null;
+    preview.hypotheses = {
+      mode: "function-curve-average",
+      strokeCount: preview.rawStrokes.length,
+      confidence: 1,
+      pointCount: curve.length,
+      binCount,
+      populatedBinCount: averaged.length,
+      discontinuities: 0,
+      closed: false,
+      pathD: bezierPathDFromPolyline(curve, { maxAnchors: Number(globalThis?.NodevisionSketchSettings?.functionCurveBezierAnchors) || 10 }),
+    };
+    return [curve];
+  }
+
+  function buildRawPreviewTracks(preview) {
+    preview.straightLineState = null;
+    preview.angularPathState = null;
+    preview.hypotheses = {
+      mode: "raw-pencil",
+      strokeCount: preview.rawStrokes.length,
+      confidence: 1,
+      noPreview: true,
+      discontinuities: 0,
+      closed: false,
+    };
+    return [];
+  }
+
+  function buildPreviewTracks(preview) {
+    const mode = normalizePredictionMode(preview?.predictionMode || state.defaultPredictionMode);
+    if (preview) preview.predictionMode = mode;
+    if (mode === "raw") return buildRawPreviewTracks(preview);
+    if (mode === "curve") return buildCurvePreviewTracks(preview);
+    if (mode === "function-curve") return buildFunctionCurvePreviewTracks(preview);
+    return buildShapePreviewTracks(preview);
+  }
+
   function setPreviewTracks(preview, tracks = []) {
     const safeTracks = tracks.filter((points) =>
       Array.isArray(points) && points.length >= 2
@@ -1978,8 +2244,12 @@ export function createSketchModeController(deps = {}) {
       ? [...safeTracks].sort((a, b) => strokeLength(b) - strokeLength(a))[0]
       : null;
     const normalizedTracks = primaryTrack ? [primaryTrack] : [];
+    const explicitPathD = typeof preview.hypotheses?.pathD === "string"
+      ? preview.hypotheses.pathD
+      : "";
     preview.activePreviewGeometry = {
       tracks: normalizedTracks,
+      pathD: explicitPathD,
       pointCount: normalizedTracks.reduce(
         (sum, points) => sum + points.length,
         0,
@@ -1987,11 +2257,14 @@ export function createSketchModeController(deps = {}) {
       discontinuities: Number(preview.hypotheses?.discontinuities) || 0,
       hypothesis: preview.hypotheses?.mode || "none",
     };
+    if (!["bezier-refinement", "finalized"].includes(preview.state)) {
+      preview.state = normalizedTracks.length ? "preview-suggested" : "raw-sketch";
+    }
 
     const closedPreview = Boolean(preview.hypotheses?.closed) &&
       Array.isArray(primaryTrack) && primaryTrack.length >= 3;
     const d = primaryTrack
-      ? `${pointsToPathD(primaryTrack)}${closedPreview ? " Z" : ""}`
+      ? (explicitPathD || `${pointsToPathD(primaryTrack)}${closedPreview ? " Z" : ""}`)
       : "";
     preview.lastPreviewD = d;
     preview.previewPathEl?.setAttribute("d", d);
@@ -2079,7 +2352,7 @@ export function createSketchModeController(deps = {}) {
 
     if (!tracks.length) {
       // Stability guard for transient recognition dips.
-      if (previousD && preview.rawStrokes.length >= 2) {
+      if (!preview.hypotheses?.noPreview && previousD && preview.rawStrokes.length >= 2) {
         preview.previewPathEl?.setAttribute("d", previousD);
         setPreviewVisible(
           preview.previewPathEl,
@@ -2091,9 +2364,14 @@ export function createSketchModeController(deps = {}) {
       }
       preview.activePreviewGeometry = {
         tracks: [],
+        pathD: "",
         pointCount: 0,
         discontinuities: 0,
+        hypothesis: preview.hypotheses?.mode || "none",
       };
+      if (!["bezier-refinement", "finalized"].includes(preview.state)) {
+        preview.state = "raw-sketch";
+      }
       preview.straightLineState = null;
       preview.angularPathState = null;
       finishRecognition("refresh-preview-stable");
@@ -2143,6 +2421,20 @@ export function createSketchModeController(deps = {}) {
         stroke: "#000000",
         "stroke-width": style.strokeWidth || "1",
         "stroke-linecap": "round",
+      });
+    }
+
+    const explicitPathD = typeof preview?.activePreviewGeometry?.pathD === "string"
+      ? preview.activePreviewGeometry.pathD
+      : "";
+    if (explicitPathD) {
+      return createSvgEl("path", {
+        d: explicitPathD,
+        fill: "none",
+        stroke: "#000000",
+        "stroke-width": style.strokeWidth || "1",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
       });
     }
 
@@ -2420,6 +2712,110 @@ export function createSketchModeController(deps = {}) {
     return clearSketch();
   }
 
+
+  function setPredictionMode(nextMode, options = {}) {
+    const mode = normalizePredictionMode(nextMode);
+    state.defaultPredictionMode = mode;
+    globalThis.NodevisionState = globalThis.NodevisionState || {};
+    globalThis.NodevisionState.sketchPredictionMode = mode;
+    globalThis.NodevisionSketchSettings = globalThis.NodevisionSketchSettings || {};
+    globalThis.NodevisionSketchSettings.predictionMode = mode;
+
+    const preview = options.previewId ? getPreviewById(options.previewId) : ensureActivePreview();
+    if (preview) {
+      preview.predictionMode = mode;
+      preview.state = preview.rawStrokes.length ? "preview-suggested" : "raw-sketch";
+      markRecognitionDirty(preview);
+      refreshPreviewRecognition(preview, { reason: "prediction-mode-change" });
+    }
+    emitSketchPreviewsChanged("prediction-mode-change");
+    status(`Sketch prediction mode: ${mode}`);
+    return mode;
+  }
+
+  function getPredictionMode() {
+    const preview = getActivePreview();
+    return normalizePredictionMode(preview?.predictionMode || state.defaultPredictionMode);
+  }
+
+  function endCurveAndStartNew() {
+    const current = ensureActivePreview();
+    if (current && current.rawStrokes.length && current.state !== "bezier-refinement") {
+      current.state = current.activePreviewGeometry?.pointCount ? "preview-suggested" : "raw-sketch";
+    }
+    const mode = normalizePredictionMode(current?.predictionMode || state.defaultPredictionMode);
+    const summary = createSketchPreview(null, { activate: true, predictionMode: mode });
+    status(`Started ${summary.name} (${mode})`);
+    return summary;
+  }
+
+  function convertPreviewToBezier() {
+    const preview = ensureActivePreview();
+    if (!preview) {
+      status("No active sketch preview");
+      return null;
+    }
+    if (preview.recognitionDirty || !preview.activePreviewGeometry?.tracks?.length) {
+      refreshPreviewRecognition(preview, { reason: "convert-preview-to-bezier" });
+    }
+    const geometry = preview.activePreviewGeometry;
+    const d = geometry?.pathD || (geometry?.tracks?.[0] ? bezierPathDFromPolyline(geometry.tracks[0]) : "");
+    if (!d) {
+      status(`${preview.name}: no curve preview to convert`);
+      return null;
+    }
+    const style = typeof currentStyleDefaults === "function"
+      ? (currentStyleDefaults() || {})
+      : {};
+    const pathEl = createSvgEl("path", {
+      id: `sketch-bezier-${Math.random().toString(36).slice(2, 9)}`,
+      d,
+      fill: "none",
+      stroke: style.stroke || "#000000",
+      "stroke-width": style.strokeWidth || "1",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round",
+      "data-element-name": `${preview.name} Bezier`,
+    });
+    const layer = resolvePreviewLayer(preview);
+    if (typeof appendElement === "function" && layer === getActiveLayer?.()) {
+      appendElement(pathEl);
+    } else {
+      layer.appendChild(pathEl);
+    }
+    preview.bezierRefinementPathId = pathEl.id || null;
+    preview.bezierRefinementPathEl = pathEl;
+    preview.state = "bezier-refinement";
+    preview.accepted = false;
+    if (typeof markDirty === "function") markDirty(true);
+    emitSketchPreviewsChanged("convert-preview-to-bezier");
+    status(`${preview.name}: Bezier refinement path created`);
+    return pathEl;
+  }
+
+  function finalizeBezierRefinement(options = {}) {
+    const preview = getActivePreview();
+    if (!preview?.bezierRefinementPathEl) {
+      status("No Bezier refinement path to finalize");
+      return null;
+    }
+    const element = preview.bezierRefinementPathEl;
+    const previewName = preview.name;
+    const preservePreview = "preservePreview" in options
+      ? safeBool(options.preservePreview, true)
+      : safeBool(state.keepConstruction, false);
+    preview.state = "finalized";
+    preview.accepted = true;
+    if (!preservePreview) {
+      deleteSketchPreview(preview.id);
+    } else {
+      emitSketchPreviewsChanged("finalize-bezier-refinement");
+    }
+    if (typeof markDirty === "function") markDirty(true);
+    status(`${previewName}: Bezier finalized`);
+    return element;
+  }
+
   function setKeepConstruction(nextValue) {
     state.keepConstruction = safeBool(nextValue, !state.keepConstruction);
     status(
@@ -2509,6 +2905,11 @@ export function createSketchModeController(deps = {}) {
     cancelSketchMode,
     cancelSketchSession,
     undoLastStroke,
+    setPredictionMode,
+    getPredictionMode,
+    endCurveAndStartNew,
+    convertPreviewToBezier,
+    finalizeBezierRefinement,
     setKeepConstruction,
     toggleConstructionVisibility,
     setStrokeOrderColorsEnabled,

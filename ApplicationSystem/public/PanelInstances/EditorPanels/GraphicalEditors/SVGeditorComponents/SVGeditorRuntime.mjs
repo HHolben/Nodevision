@@ -3266,6 +3266,31 @@ export async function renderEditor(filePath, container) {
     getSketchStrokeOrderColors() {
       return sketchController.getStrokeOrderColorsEnabled();
     },
+    setSketchPredictionMode(mode, options = {}) {
+      return sketchController.setPredictionMode(mode, options);
+    },
+    getSketchPredictionMode() {
+      return sketchController.getPredictionMode();
+    },
+    endSketchCurveAndStartNew() {
+      return sketchController.endCurveAndStartNew();
+    },
+    convertSketchPreviewToBezier() {
+      const element = sketchController.convertPreviewToBezier();
+      if (element) {
+        setSelection([element], { primary: element });
+        nodeEditor.enter(element);
+      }
+      return element;
+    },
+    finalizeSketchBezier() {
+      const element = sketchController.finalizeBezierRefinement();
+      if (element) {
+        nodeEditor.exit?.();
+        setSelection([element], { primary: element });
+      }
+      return element;
+    },
     getSketchPreviews() {
       return sketchController.getSketchPreviews();
     },
@@ -3306,6 +3331,7 @@ export async function renderEditor(filePath, container) {
         previewPointCount: sketchController.getPreviewPointCount(),
         keepConstruction: sketchController.getKeepConstruction(),
         enableSketchStrokeOrderColors: sketchController.getStrokeOrderColorsEnabled(),
+        predictionMode: sketchController.getPredictionMode(),
         previewCount: previews.length,
         activePreviewId: sketchController.getActiveSketchPreviewId(),
         drawing: sketchController.isDrawing(),

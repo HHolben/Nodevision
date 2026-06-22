@@ -24,6 +24,14 @@ const NEW_IMAGE_DEFAULT_DISPLAY_WIDTH = 320;
 const NEW_IMAGE_DEFAULT_DISPLAY_HEIGHT = 240;
 const lastSelectionRangeByEditor = new WeakMap();
 const HTML_TEXT_STYLE_TARGET_CLASS = "nv-html-text-style-target";
+const HTML_DOCUMENT_BACKGROUND_PROPERTIES = [
+  "backgroundColor",
+  "backgroundImage",
+  "backgroundSize",
+  "backgroundPosition",
+  "backgroundRepeat",
+  "backgroundAttachment",
+];
 const HTML_TEXT_STYLE_SELECTOR = [
   "p",
   "h1",
@@ -447,6 +455,124 @@ function cssUrlQuote(value) {
     .replace(/\\/g, "/")
     .replace(/"/g, "%22")
     .replace(/[\n\r]/g, "");
+}
+
+
+function sanitizeDocumentBackgroundImageSource(value) {
+  const clean = String(value || "").trim();
+  if (!clean) return "";
+  if (/[<>{}]/.test(clean) || /javascript:/i.test(clean) || /<\/?[a-z][\s\S]*>/i.test(clean)) {
+    throw new Error("Background picture source is unsafe.");
+  }
+  if (/^data:/i.test(clean) && !/^data:image\/[a-z0-9.+-]+;base64,/i.test(clean)) {
+    throw new Error("Only image data URLs are supported.");
+  }
+  if (/^(https?:)?\/\//i.test(clean)) return clean;
+  return clean.replace(/\\/g, "/");
+}
+
+function applyDocumentBackgroundPreview(wysiwyg, styleSource) {
+  if (!wysiwyg) return;
+  for (const property of HTML_DOCUMENT_BACKGROUND_PROPERTIES) {
+    wysiwyg.style[property] = styleSource?.[property] || "";
+  }
+}
+
+function documentBackgroundStyleTextFromEditor(wysiwyg) {
+  const style = document.createElement("div").style;
+  for (const property of HTML_DOCUMENT_BACKGROUND_PROPERTIES) {
+    style[property] = wysiwyg?.style?.[property] || "";
+  }
+  return style.cssText || "";
+}
+
+function updateStoredDocumentBackgroundStyle(wysiwyg) {
+  if (!wysiwyg) return;
+  const cssText = documentBackgroundStyleTextFromEditor(wysiwyg);
+  if (cssText) {
+    wysiwyg.dataset.nvDocumentBodyStyle = cssText;
+  } else {
+    delete wysiwyg.dataset.nvDocumentBodyStyle;
+  }
+}
+
+function applyInitialDocumentBodyBackground(wysiwyg, body) {
+  if (!wysiwyg || !body) return;
+  const style = document.createElement("div").style;
+  const bodyStyle = body.style || {};
+  for (const property of HTML_DOCUMENT_BACKGROUND_PROPERTIES) {
+    style[property] = bodyStyle[property] || "";
+  }
+
+  const legacyBgColor = body.getAttribute("bgcolor");
+  if (legacyBgColor && !style.backgroundColor) style.backgroundColor = legacyBgColor;
+
+  const legacyBackground = body.getAttribute("background");
+  if (legacyBackground && !style.backgroundImage) {
+    style.backgroundImage = `url("${cssUrlQuote(legacyBackground)}")`;
+    style.backgroundSize = style.backgroundSize || "cover";
+    style.backgroundPosition = style.backgroundPosition || "center center";
+    style.backgroundRepeat = style.backgroundRepeat || "no-repeat";
+  }
+
+  applyDocumentBackgroundPreview(wysiwyg, style);
+  updateStoredDocumentBackgroundStyle(wysiwyg);
+}
+
+function applyDocumentBackgroundToWysiwyg(wysiwyg, options = {}) {
+  if (!wysiwyg) throw new Error("No active WYSIWYG editor.");
+  const mode = String(options?.mode || "color").toLowerCase();
+
+  if (mode === "clear") {
+    for (const property of HTML_DOCUMENT_BACKGROUND_PROPERTIES) {
+      wysiwyg.style[property] = "";
+    }
+    updateStoredDocumentBackgroundStyle(wysiwyg);
+    markHtmlEditorDirty(wysiwyg);
+    return;
+  }
+
+  if (mode === "image") {
+    const src = sanitizeDocumentBackgroundImageSource(options?.image || options?.src || "");
+    if (!src) throw new Error("Choose a background picture.");
+    wysiwyg.style.backgroundImage = `url("${cssUrlQuote(src)}")`;
+    wysiwyg.style.backgroundSize = String(options?.size || "cover");
+    wysiwyg.style.backgroundPosition = "center center";
+    wysiwyg.style.backgroundRepeat = "no-repeat";
+    wysiwyg.style.backgroundAttachment = "local";
+    if (options?.color) wysiwyg.style.backgroundColor = String(options.color);
+  } else {
+    const color = String(options?.color || "#ffffff").trim();
+    wysiwyg.style.backgroundColor = color;
+    wysiwyg.style.backgroundImage = "";
+    wysiwyg.style.backgroundSize = "";
+    wysiwyg.style.backgroundPosition = "";
+    wysiwyg.style.backgroundRepeat = "";
+    wysiwyg.style.backgroundAttachment = "";
+  }
+
+  updateStoredDocumentBackgroundStyle(wysiwyg);
+  markHtmlEditorDirty(wysiwyg);
+}
+
+function readDocumentBackgroundFromWysiwyg(wysiwyg) {
+  if (!wysiwyg) return {};
+  const imageCss = wysiwyg.style.backgroundImage || "";
+  const match = imageCss.match(/^url\((["']?)(.*?)\1\)$/i);
+  return {
+    mode: imageCss && imageCss !== "none" ? "image" : "color",
+    color: wysiwyg.style.backgroundColor || "#ffffff",
+    image: match ? match[2] : "",
+    size: wysiwyg.style.backgroundSize || "cover",
+  };
+}
+
+function escapeHtmlAttribute(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function quoteFontFamilyIfNeeded(value) {
@@ -3875,18 +4001,19 @@ function formatHtmlMarkup(html = "") {
   return lines.join("\n");
 }
 
-function serializeHtmlDocumentForSave(headContent = "", bodyContent = "", scripts = "") {
+function serializeHtmlDocumentForSave(headContent = "", bodyContent = "", scripts = "", bodyAttributes = "") {
   const head = String(headContent || "").trim();
   const body = String(bodyContent || "");
   const scriptContent = String(scripts || "").trim();
   const fullBody = scriptContent ? body + "\n" + scriptContent : body;
+  const bodyOpen = `body${bodyAttributes ? ` ${bodyAttributes}` : ""}`;
   return [
     "<!DOCTYPE html>",
     "<html>",
     "<head>",
     head,
     "</head>",
-    "<body>",
+    `<${bodyOpen}>`,
     fullBody,
     "</body>",
     "</html>",
@@ -4060,6 +4187,7 @@ export async function renderEditor(filePath, container, options = {}) {
     wrapper.prepend(headClone);
 
     // Clone <body> nodes without wrapping inline text around <br> elements.
+    applyInitialDocumentBodyBackground(wysiwyg, doc.body);
     appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
     ensureWrappingForEditableText(wysiwyg);
 
@@ -4098,6 +4226,8 @@ export async function renderEditor(filePath, container, options = {}) {
       },
       readTextStyleSelection: () => readTextStyleSelection(wysiwyg),
       getDocumentFonts: () => collectDocumentFonts(headClone, wysiwyg),
+      applyDocumentBackground: (options) => applyDocumentBackgroundToWysiwyg(wysiwyg, options),
+      readDocumentBackground: () => readDocumentBackgroundFromWysiwyg(wysiwyg),
       markDirty: () => markHtmlEditorDirty(wysiwyg, filePath),
     });
 
@@ -4120,12 +4250,14 @@ export async function renderEditor(filePath, container, options = {}) {
       });
       removeFormattingWhitespaceTextNodes(bodyClone);
       const bodyContent = bodyClone.innerHTML;
+      const bodyStyle = wysiwyg.dataset.nvDocumentBodyStyle || documentBackgroundStyleTextFromEditor(wysiwyg);
+      const bodyAttributes = bodyStyle ? `style="${escapeHtmlAttribute(bodyStyle)}"` : "";
 
       const scripts = Array.from(hidden.children)
         .map(el => `<script>${el.dataset.script}</script>`)
         .join("\n");
 
-      const serialized = serializeHtmlDocumentForSave(headContent, bodyContent, scripts);
+      const serialized = serializeHtmlDocumentForSave(headContent, bodyContent, scripts, bodyAttributes);
       hydrateEditorImages(wysiwyg, filePath).catch((err) => {
         console.warn("Failed to rehydrate images after generating HTML:", err);
       });
@@ -4147,6 +4279,7 @@ export async function renderEditor(filePath, container, options = {}) {
         }
       }
 
+      applyInitialDocumentBodyBackground(wysiwyg, doc.body);
       appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
       ensureWrappingForEditableText(wysiwyg);
 
