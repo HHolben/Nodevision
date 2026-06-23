@@ -23,7 +23,7 @@
   {
     "heading": "Draw",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["PNGediting", "GraphicalEditing", "SVG Editing", "NBTediting"]
+    "modes": ["PNGediting", "GraphicalEditing", "SVG Editing", "NBTediting", "STLediting"]
   },
   {
     "heading": "Draw",

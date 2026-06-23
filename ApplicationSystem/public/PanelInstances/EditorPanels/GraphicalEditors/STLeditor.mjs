@@ -5,9 +5,23 @@ import * as THREE from "/lib/three/three.module.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { setStatus as setNodevisionStatus } from "/StatusBar.mjs";
 
 const SAVE_ENDPOINT = "/api/save";
 const WELD_EPSILON = 1e-5;
+
+function ensureStyles() {
+  if (document.getElementById("nv-stl-editor-styles")) return;
+  const style = document.createElement("style");
+  style.id = "nv-stl-editor-styles";
+  style.textContent = `
+    .nv-stl-editor { position:relative; width:100%; height:100%; min-width:0; min-height:0; overflow:hidden; background:#fff; }
+    .nv-stl-viewport { position:absolute; inset:0; min-width:0; min-height:0; outline:none; }
+    .nv-stl-viewport canvas { display:block; width:100%; height:100%; }
+    .nv-stl-error { margin:12px; color:#b00020; }
+  `;
+  document.head.appendChild(style);
+}
 
 function notebookUrl(path = "") {
   return `/Notebook/${
@@ -111,11 +125,13 @@ export async function renderEditor(
   serverBase = "",
 ) {
   if (!container) throw new Error("Container required");
+  ensureStyles();
   container.innerHTML = "";
-  container.style.display = "flex";
-  container.style.flexDirection = "column";
+  container.classList.add("nv-stl-editor");
+  container.style.display = "block";
   container.style.height = "100%";
   container.style.position = "relative";
+  container.style.overflow = "hidden";
   container.tabIndex = 0;
 
   const state = {
@@ -123,28 +139,16 @@ export async function renderEditor(
     selection: new Set(),
     mode: "idle", // idle | grab | scale
     actionSnapshot: null,
+    actionChanged: false,
     maxDim: 100,
     destroyed: false,
+    dirty: false,
     lastPointerClient: { x: 0, y: 0 },
   };
 
-  const toolbar = document.createElement("div");
-  toolbar.style.cssText =
-    "display:flex;gap:8px;padding:6px;background:#eee;border-bottom:1px solid #ccc;align-items:center;flex-wrap:wrap;";
-  container.appendChild(toolbar);
-
-  const modeBadge = document.createElement("span");
-  modeBadge.style.cssText =
-    "font:12px monospace;color:#333;padding:2px 6px;border:1px solid #aaa;background:#fff;";
-  modeBadge.textContent = "Mode: Idle";
-
-  const hint = document.createElement("span");
-  hint.style.cssText = "font:12px monospace;color:#555;";
-  hint.textContent =
-    "Click vertices (Shift=multi). G=grab, E=extrude, S=stretch, F=fill/edge.";
-
   const viewport = document.createElement("div");
-  viewport.style.cssText = "flex:1;position:relative;min-height:0;";
+  viewport.className = "nv-stl-viewport";
+  viewport.tabIndex = 0;
   container.appendChild(viewport);
 
   const scene = new THREE.Scene();
@@ -159,6 +163,9 @@ export async function renderEditor(
     Math.max(1, viewport.clientWidth),
     Math.max(1, viewport.clientHeight),
   );
+  renderer.domElement.style.display = "block";
+  renderer.domElement.style.width = "100%";
+  renderer.domElement.style.height = "100%";
   viewport.appendChild(renderer.domElement);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -252,20 +259,30 @@ export async function renderEditor(
   let selectedVertexPoints = null;
   let customEdgeLines = null;
 
-  function button(label, action) {
-    const b = document.createElement("button");
-    b.textContent = label;
-    b.style.cssText =
-      "padding:4px 10px;border:1px solid #999;background:#fafafa;cursor:pointer;";
-    b.addEventListener("click", action);
-    return b;
-  }
-
   function setModeLabel(extra = "") {
     const suffix = extra ? ` (${extra})` : "";
-    modeBadge.textContent = `Mode: ${state.mode[0].toUpperCase()}${
+    setNodevisionStatus("STL", `Mode: ${state.mode[0].toUpperCase()}${
       state.mode.slice(1)
-    }${suffix}`;
+    }${suffix}`);
+  }
+
+  function notifyToolbarState(extra = {}) {
+    updateToolbarState({
+      currentMode: "STLediting",
+      activePanelType: "GraphicalEditor",
+      selectedFile: filePath,
+      activeEditorFilePath: filePath,
+      activeActionHandler: handleSTLToolbarAction,
+      fileIsDirty: state.dirty,
+      stlHasSelection: state.selection.size > 0,
+      ...extra,
+    });
+  }
+
+  function markDirty(message = "Changed") {
+    state.dirty = true;
+    notifyToolbarState({ fileIsDirty: true });
+    setNodevisionStatus("STL", message);
   }
 
   function computeBounds() {
@@ -502,13 +519,17 @@ export async function renderEditor(
       startMouse,
       plane,
     };
+    state.actionChanged = false;
   }
 
   function commitAction() {
+    const changed = state.actionChanged;
     state.mode = "idle";
     state.actionSnapshot = null;
+    state.actionChanged = false;
     controls.enabled = true;
     setModeLabel();
+    if (changed) markDirty("Selection transformed");
   }
 
   function cancelAction() {
@@ -517,6 +538,7 @@ export async function renderEditor(
       return;
     }
     state.topology.vertices = cloneVertices(state.actionSnapshot.startVertices);
+    state.actionChanged = false;
     rebuildDisplayGeometry();
     commitAction();
   }
@@ -548,6 +570,7 @@ export async function renderEditor(
         state.topology.vertices[vi].copy(snap.startVertices[vi]).add(delta);
       });
       rebuildDisplayGeometry();
+      state.actionChanged = true;
       return;
     }
 
@@ -561,6 +584,7 @@ export async function renderEditor(
         state.topology.vertices[vi].copy(snap.centroid).add(offset);
       });
       rebuildDisplayGeometry();
+      state.actionChanged = true;
     }
   }
 
@@ -586,6 +610,7 @@ export async function renderEditor(
         state.topology.vertices[vi].add(dir);
       });
       rebuildDisplayGeometry();
+      markDirty("Selection extruded");
       return;
     }
 
@@ -596,7 +621,6 @@ export async function renderEditor(
     if (normal.lengthSq() < 1e-12) normal.set(0, 0, 1);
     normal.normalize().multiplyScalar(distance);
 
-    const selectedFaceSet = new Set(selectedFaces);
     const oldToNew = new Map();
     selectedFaces.forEach((fi) => {
       const f = state.topology.faces[fi];
@@ -640,6 +664,7 @@ export async function renderEditor(
     state.selection = new Set(oldToNew.values());
     rebuildDisplayGeometry();
     setModeLabel("extruded");
+    markDirty("Selection extruded");
   }
 
   function fillOrConnectSelection() {
@@ -654,6 +679,7 @@ export async function renderEditor(
       if (!exists) state.topology.customEdges.push([a, b]);
       rebuildCustomEdgesDisplay();
       setModeLabel("edge added");
+      markDirty("Edge added");
       return;
     }
 
@@ -666,6 +692,7 @@ export async function renderEditor(
     }
     rebuildDisplayGeometry();
     setModeLabel("face fill");
+    markDirty("Face filled");
   }
 
   function addVertexAtCameraFocus() {
@@ -680,12 +707,45 @@ export async function renderEditor(
     state.maxDim = computeBounds().maxDim;
     rebuildDisplayGeometry();
     setModeLabel("vertex added");
+    markDirty("Vertex added");
   }
 
   function handleSTLToolbarAction(callbackKey) {
-    if (callbackKey === "stlAddVertex") {
-      addVertexAtCameraFocus();
+    const actions = {
+      stlAddVertex: () => addVertexAtCameraFocus(),
+      stlRecenter: () => {
+        recenterCameraToTopology();
+        setModeLabel("view centered");
+      },
+      stlClearSelection: () => {
+        state.selection.clear();
+        rebuildSelectionDisplay();
+        setModeLabel();
+        notifyToolbarState();
+      },
+      stlGrab: () => {
+        if (state.selection.size > 0) startActionMode("grab");
+      },
+      stlScale: () => {
+        if (state.selection.size > 0) startActionMode("scale");
+      },
+      stlExtrude: () => extrudeSelection(),
+      stlFillOrConnect: () => fillOrConnectSelection(),
+      stlSave: async () => {
+        try {
+          await saveSTL(filePath);
+          setNodevisionStatus("STL", "Saved");
+        } catch (err) {
+          console.error("[STLeditor] Save failed:", err);
+          alert("Failed to save STL: " + (err?.message || err));
+        }
+      },
+    };
+    if (typeof actions[callbackKey] === "function") {
+      actions[callbackKey]();
+      return true;
     }
+    return false;
   }
 
   function pickVertex(evt) {
@@ -699,6 +759,7 @@ export async function renderEditor(
       if (!evt.shiftKey) {
         state.selection.clear();
         rebuildSelectionDisplay();
+        notifyToolbarState();
       }
       return;
     }
@@ -713,6 +774,7 @@ export async function renderEditor(
       state.selection.add(pointIndex);
     }
     rebuildSelectionDisplay();
+    notifyToolbarState();
   }
 
   function onPointerDown(evt) {
@@ -791,8 +853,10 @@ export async function renderEditor(
     });
     const json = await res.json().catch(() => null);
     if (!res.ok || !json?.success) {
-      throw new Error(json?.error || `${res.status} ${res.statusText}`);
+      throw new Error(json?.error || (String(res.status) + " " + String(res.statusText || "STL save failed")));
     }
+    state.dirty = false;
+    notifyToolbarState({ fileIsDirty: false });
   }
 
   function onResize() {
@@ -801,6 +865,14 @@ export async function renderEditor(
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
+  }
+
+  let resizeObserver = null;
+  if (typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(() => onResize());
+    resizeObserver.observe(viewport);
+  } else {
+    window.addEventListener("resize", onResize);
   }
 
   async function loadModel() {
@@ -821,45 +893,27 @@ export async function renderEditor(
     recenterCameraToTopology();
     rebuildDisplayGeometry();
     if (state.topology.vertices.length === 0 && state.topology.faces.length === 0) setModeLabel("empty STL");
+    else setModeLabel("loaded");
   }
-
-  toolbar.append(
-    button("Recenter", () => {
-      recenterCameraToTopology();
-      setModeLabel();
-    }),
-    button("Clear Sel", () => {
-      state.selection.clear();
-      rebuildSelectionDisplay();
-      setModeLabel();
-    }),
-    button("Save", async () => {
-      try {
-        await saveSTL(filePath);
-        alert("STL saved successfully.");
-      } catch (err) {
-        console.error("[STLeditor] Save failed:", err);
-        alert(`Failed to save STL: ${err.message}`);
-      }
-    }),
-    modeBadge,
-    hint,
-  );
 
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activeActionHandler = handleSTLToolbarAction;
-  updateToolbarState({
-    currentMode: "STLediting",
-    activeActionHandler: handleSTLToolbarAction,
-  });
+  notifyToolbarState();
+  window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+    detail: { heading: "STL Mesh", force: true, toggle: false },
+  }));
   window.saveWYSIWYGFile = async (path = filePath) => {
     await saveSTL(path);
+  };
+  window.STLEditorContext = {
+    filePath,
+    handleToolbarAction: handleSTLToolbarAction,
+    save: saveSTL,
   };
 
   renderer.domElement.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("keydown", onKeyDown, true);
-  window.addEventListener("resize", onResize);
 
   renderer.setAnimationLoop(() => {
     if (state.destroyed) return;
@@ -874,8 +928,11 @@ export async function renderEditor(
     onResize();
   } catch (err) {
     console.error("[STLeditor] Failed to load model:", err);
-    container.innerHTML =
-      `<em style="color:#b00020;">Failed to load STL model: ${err.message}</em>`;
+    container.innerHTML = "";
+    const message = document.createElement("em");
+    message.className = "nv-stl-error";
+    message.textContent = "Failed to load STL model: " + (err?.message || err);
+    container.appendChild(message);
   }
 
   return {
@@ -885,13 +942,18 @@ export async function renderEditor(
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("keydown", onKeyDown, true);
-      window.removeEventListener("resize", onResize);
+      if (resizeObserver) resizeObserver.disconnect();
+      else window.removeEventListener("resize", onResize);
       controls.dispose();
       renderer.dispose();
       overlayRenderer.dispose();
       if (window.NodevisionState?.activeActionHandler === handleSTLToolbarAction) {
         window.NodevisionState.activeActionHandler = null;
       }
+      if (window.STLEditorContext?.handleToolbarAction === handleSTLToolbarAction) {
+        delete window.STLEditorContext;
+      }
+      container.classList.remove("nv-stl-editor");
       container.innerHTML = "";
     },
   };

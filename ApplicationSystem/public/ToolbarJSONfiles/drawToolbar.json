@@ -67,6 +67,76 @@
     "shortLabel": "Sav"
   },
   {
+    "heading": "STL Mesh",
+    "parentHeading": "Draw",
+    "preventDropdown": true,
+    "modes": ["STLediting"],
+    "shortLabel": "STL"
+  },
+  {
+    "heading": "Recenter View",
+    "parentHeading": "STL Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "stlRecenter",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "shortLabel": "Ctr"
+  },
+  {
+    "heading": "Clear Selection",
+    "parentHeading": "STL Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "stlClearSelection",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "shortLabel": "Clr"
+  },
+  {
+    "heading": "Grab",
+    "parentHeading": "STL Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "stlGrab",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "shortLabel": "G"
+  },
+  {
+    "heading": "Stretch",
+    "parentHeading": "STL Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "stlScale",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "shortLabel": "S"
+  },
+  {
+    "heading": "Extrude",
+    "parentHeading": "STL Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "stlExtrude",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "shortLabel": "Ext"
+  },
+  {
+    "heading": "Fill or Edge",
+    "parentHeading": "STL Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "stlFillOrConnect",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "shortLabel": "F"
+  },
+  {
+    "heading": "Save STL",
+    "parentHeading": "STL Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "stlSave",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "shortLabel": "Sav"
+  },
+  {
     "heading": "Color",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",

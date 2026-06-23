@@ -901,13 +901,14 @@
   "icon": "icons/3Dmodel.png"
 },
 	{
-	  "ToolbarCategory": "Insert",
-	  "heading": "Add Vertex",
-	  "callbackKey": "stlAddVertex",
-	  "routeToActivePanel": true,
-	  "modes": ["STLediting"],
-	  "parentHeading": "Insert"
-	},
+      "ToolbarCategory": "Insert",
+      "heading": "Vertex",
+      "callbackKey": "stlAddVertex",
+      "routeToActivePanel": true,
+      "modes": ["STLediting"],
+      "parentHeading": "Insert",
+      "shortLabel": "Vtx"
+    },
     {
       "ToolbarCategory": "Insert",
       "heading": "Image",
