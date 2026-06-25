@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/server/routes/syncPanelRoutes.mjs
 // This file registers authenticated Sync Panel API endpoints that manage in-memory discovery state, expose safe local/discovery status, and run trusted scope-limited sync operations only after explicit user actions.
 
-import { addTrustedPeer, getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
+import { addTrustedPeer, findTrustedPeer, getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
 import {
   addSyncScope,
   listCandidateNotebookFolders,
@@ -526,6 +526,77 @@ function getDiscoveryOptionsFromRequestBody(body) {
   return options;
 }
 
+function extractPeerStatusCapabilities(payload = {}) {
+  const localDevice = payload?.localDevice && typeof payload.localDevice === "object"
+    ? payload.localDevice
+    : {};
+  const protectedFromIncomingWrites = payload?.protectedFromIncomingWrites === true
+    || localDevice.protectedFromIncomingWrites === true;
+  const acceptsIncomingSyncWrites = payload?.acceptsIncomingSyncWrites ?? localDevice.acceptsIncomingSyncWrites;
+  const allowsOutgoingSyncReads = payload?.allowsOutgoingSyncReads ?? localDevice.allowsOutgoingSyncReads;
+  const supportedSyncModes = Array.isArray(payload?.supportedSyncModes)
+    ? payload.supportedSyncModes
+    : Array.isArray(localDevice.supportedSyncModes) ? localDevice.supportedSyncModes : null;
+  return {
+    sync: true,
+    conflictResolution: true,
+    protectedFromIncomingWrites,
+    acceptsIncomingSyncWrites: acceptsIncomingSyncWrites === undefined ? !protectedFromIncomingWrites : acceptsIncomingSyncWrites !== false,
+    allowsOutgoingSyncReads: allowsOutgoingSyncReads === undefined ? true : allowsOutgoingSyncReads !== false,
+    supportedSyncModes,
+  };
+}
+
+async function discoverPeerFromHttpStatusUrl(state, peerUrl, ctx) {
+  const origin = parsePeerUrlOrigin(peerUrl);
+  if (!origin) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEFAULT_PEER_URL_FALLBACK_PROBE_TIMEOUT_MS);
+  try {
+    const response = await fetch(new URL("/api/peer/status", origin + "/").toString(), {
+      method: "GET",
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.ok === false) return null;
+
+    const parsed = new URL(origin);
+    const localDevice = payload?.localDevice && typeof payload.localDevice === "object"
+      ? payload.localDevice
+      : {};
+    const deviceId = String(localDevice.deviceId || payload?.deviceId || "").trim();
+    const deviceName = String(localDevice.deviceName || payload?.deviceName || "Unknown Device").trim();
+    const publicKey = String(localDevice.publicKey || payload?.publicKey || "").trim();
+    if (!deviceId || !deviceName || !publicKey) return null;
+
+    const localPeerInfo = await getLocalPeerInfo({ runtimeRoot: ctx?.runtimeRoot }).catch(() => null);
+    if (String(localPeerInfo?.deviceId || "").trim() === deviceId) return null;
+
+    const trustedPeer = await findTrustedPeer(deviceId, { runtimeRoot: ctx?.runtimeRoot }).catch(() => null);
+    const trusted = Boolean(
+      trustedPeer
+      && String(trustedPeer.publicKey || "").trim()
+      && String(trustedPeer.publicKey || "").trim() === publicKey,
+    );
+
+    return upsertDiscoveredPeer(state, {
+      deviceId,
+      deviceName,
+      trusted,
+      address: parsed.hostname,
+      port: Number(parsed.port) || (parsed.protocol === "https:" ? 443 : 80),
+      lastSeen: new Date().toISOString(),
+      publicKey,
+      capabilities: extractPeerStatusCapabilities(payload),
+    });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function logSyncJobCreationDecision(req, body, protection, decision, details = {}) {
   try {
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
@@ -842,8 +913,15 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
 
     try {
-      if (enabled) ensureListener(state, ctx);
-      else await stopListener(state);
+      if (enabled) {
+        ensureListener(state, ctx);
+        const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body);
+        if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
+          await discoverPeerFromHttpStatusUrl(state, req.body?.peerUrl || req.body?.usbPeerUrl || "", ctx);
+        }
+      } else {
+        await stopListener(state);
+      }
       return res.json(await syncStateResponse(state, ctx));
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to update scanning state" });
@@ -861,8 +939,15 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
 
     try {
-      if (enabled) ensureBroadcaster(state, ctx, getDiscoveryOptionsFromRequestBody(req.body));
-      else await stopBroadcaster(state);
+      if (enabled) {
+        const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body);
+        ensureBroadcaster(state, ctx, discoveryOptions);
+        if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
+          await discoverPeerFromHttpStatusUrl(state, req.body?.peerUrl || req.body?.usbPeerUrl || "", ctx);
+        }
+      } else {
+        await stopBroadcaster(state);
+      }
       return res.json(await syncStateResponse(state, ctx));
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to update discoverable state" });

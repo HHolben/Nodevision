@@ -111,6 +111,17 @@
       if (!shape || (tool !== 'insert' && tool !== 'draw')) return;
       if (e.button !== 0) return;
 
+      if (tool === 'draw' && shape === 'bezier' && typeof window.SVGEditorContext?.setMode === 'function') {
+        e.preventDefault(); e.stopPropagation();
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.svgDrawTool = 'bezier';
+        window.SVGEditorContext.setMode('bezier');
+        drawState.shape = null;
+        window.currentDrawShape = null;
+        window.currentSVGTool = 'select';
+        return;
+      }
+
       const pt = clientToSvg(svgRoot, e.clientX, e.clientY);
 
       if (shape === 'freeform' && tool === 'draw') {

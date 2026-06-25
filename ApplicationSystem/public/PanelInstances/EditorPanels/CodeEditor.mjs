@@ -25,6 +25,8 @@ let commonVarData = [];
 let savedVersionId = null;
 let unsavedPromptEl = null;
 let unsavedPromptOpen = false;
+let editorLoadRequestId = 0;
+let pendingEditedPath = null;
 
 const TAG_END = 0;
 const TAG_BYTE = 1;
@@ -76,6 +78,18 @@ const NBT_TAG_ID_BY_NAME = Object.freeze({
 
 function isNbtFilePath(filePath) {
   return String(filePath || "").trim().replace(/[?#].*$/, "").toLowerCase().endsWith(".nbt");
+}
+
+function normalizeEditorPath(filePath) {
+  return String(filePath || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .replace(/^\/+/, "");
+}
+
+function isLatestEditorLoad(requestId, filePath) {
+  return requestId === editorLoadRequestId && normalizeEditorPath(pendingEditedPath) === normalizeEditorPath(filePath);
 }
 
 function nbtNotebookUrl(filePath) {
@@ -246,14 +260,7 @@ function arrayBufferToBase64(buffer) {
 async function loadNbtCodeContent(filePath) {
   const { buffer, gzip } = await fetchNbtForCodeEditor(filePath);
   const root = parseNBT(buffer);
-  currentLoadedEncoding = "utf8";
-  currentLoadedBom = false;
-  currentLoadedIsBinary = false;
-  currentLoadedFileFormat = "nbt";
-  currentLoadedNbtWasGzip = gzip;
-  window.currentFileEncoding = currentLoadedEncoding;
-  window.currentFileBom = currentLoadedBom;
-  return nbtToEditableJson(root);
+  return { content: nbtToEditableJson(root), gzip };
 }
 
 async function saveNbtCodeFile(path = window.__nvCodeEditorActivePath || window.currentActiveFilePath) {
@@ -852,21 +859,33 @@ function hasLiveEditorForPath(filePath) {
     editorInstanceContainer === editorContainer &&
     editorDom &&
     editorContainer.contains(editorDom) &&
-    lastEditedPath === filePath
+    normalizeEditorPath(lastEditedPath) === normalizeEditorPath(filePath)
   );
 }
 
 export async function updateEditorPanel(filePath) {
   if (!filePath) return;
-  if (filePath === lastEditedPath && hasLiveEditorForPath(filePath)) return;
-  lastEditedPath = filePath;
+  if (normalizeEditorPath(filePath) === normalizeEditorPath(lastEditedPath) && hasLiveEditorForPath(filePath)) return;
+  const loadRequestId = ++editorLoadRequestId;
+  pendingEditedPath = filePath;
 
   console.log("📝 Loading file in editor:", filePath);
 
   try {
     if (isNbtFilePath(filePath)) {
-      const content = await loadNbtCodeContent(filePath);
-      initializeMonaco(filePath, content);
+      const nbtData = await loadNbtCodeContent(filePath);
+      if (!isLatestEditorLoad(loadRequestId, filePath)) {
+        console.warn("[CodeEditor] Ignoring stale NBT load for:", filePath);
+        return;
+      }
+      currentLoadedEncoding = "utf8";
+      currentLoadedBom = false;
+      currentLoadedIsBinary = false;
+      currentLoadedFileFormat = "nbt";
+      currentLoadedNbtWasGzip = nbtData.gzip;
+      window.currentFileEncoding = currentLoadedEncoding;
+      window.currentFileBom = currentLoadedBom;
+      initializeMonaco(filePath, nbtData.content, loadRequestId);
       return;
     }
 
@@ -877,13 +896,21 @@ export async function updateEditorPanel(filePath) {
     const res = await fetch(`/api/fileCodeContent?path=${encodeURIComponent(filePath)}`);
     if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
     const data = await res.json();
+    if (!isLatestEditorLoad(loadRequestId, filePath)) {
+      console.warn("[CodeEditor] Ignoring stale file load for:", filePath);
+      return;
+    }
     currentLoadedEncoding = data.encoding || "utf8";
     currentLoadedBom = Boolean(data.bom);
     currentLoadedIsBinary = Boolean(data.isBinary);
     window.currentFileEncoding = currentLoadedEncoding;
     window.currentFileBom = currentLoadedBom;
-    initializeMonaco(filePath, data.content);
+    initializeMonaco(filePath, data.content, loadRequestId);
   } catch (err) {
+    if (!isLatestEditorLoad(loadRequestId, filePath)) {
+      console.warn("[CodeEditor] Ignoring stale load error for:", filePath, err);
+      return;
+    }
     console.error("[CodeEditor] Error loading file:", err);
     if (editorContainer)
       editorContainer.innerHTML = `<pre style="color:red;">${err.message}</pre>`;
@@ -901,10 +928,14 @@ function toggleEditorWordWrap(editor = editorInstance) {
   setStatus(nextWordWrap === "on" ? "Code editor word wrap on." : "Code editor word wrap off.");
 }
 
-function initializeMonaco(filePath, content) {
+function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId) {
   const targetContainer = editorContainer;
   if (!targetContainer) {
     console.error("[CodeEditor] Editor container not found.");
+    return;
+  }
+  if (!isLatestEditorLoad(loadRequestId, filePath)) {
+    console.warn("[CodeEditor] Skipping stale Monaco initialization for:", filePath);
     return;
   }
 
@@ -941,7 +972,7 @@ function initializeMonaco(filePath, content) {
   };
 
   require(["vs/editor/editor.main"], function () {
-    if (editorContainer !== targetContainer || !targetContainer.isConnected) {
+    if (editorContainer !== targetContainer || !targetContainer.isConnected || !isLatestEditorLoad(loadRequestId, filePath)) {
       console.warn("[CodeEditor] Ignoring stale Monaco initialization for:", filePath);
       return;
     }
@@ -1035,6 +1066,7 @@ function initializeMonaco(filePath, content) {
     savedVersionId = model?.getAlternativeVersionId?.() || null;
     window.__nvCodeEditorDirty = false;
     window.__nvCodeEditorActivePath = filePath;
+    lastEditedPath = filePath;
 
     window.addEventListener("nodevision-file-saved", (evt) => {
       const savedPath = evt?.detail?.filePath;

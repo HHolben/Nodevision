@@ -33,11 +33,23 @@
   }
 
   function setDrawShape(shape) {
+    const contextMode = shape === "bezier" ? "bezier" : (shape === "freeform" ? "freehand" : null);
+    if (contextMode && typeof window.SVGEditorContext?.setMode === "function") {
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.svgDrawTool = contextMode;
+      window.SVGEditorContext.setMode(contextMode);
+      drawState.shape = null;
+      window.currentDrawShape = null;
+      window.currentSVGTool = "select";
+      window.NVSvgEditorApi?.setMessage?.("Draw: " + shape);
+      window.dispatchEvent(new CustomEvent("nv-svg-insert-shape", { detail: { shape, mode: "draw" } }));
+      return;
+    }
     drawState.shape = shape;
     window.currentDrawShape = shape;
-    window.currentSVGTool = 'draw';
-    window.NVSvgEditorApi?.setMessage?.(`Draw: ${shape} (click canvas)`);
-    window.dispatchEvent(new CustomEvent('nv-svg-insert-shape', { detail: { shape, mode: 'draw' } }));
+    window.currentSVGTool = "draw";
+    window.NVSvgEditorApi?.setMessage?.("Draw: " + shape + " (click canvas)");
+    window.dispatchEvent(new CustomEvent("nv-svg-insert-shape", { detail: { shape, mode: "draw" } }));
   }
 
   function ensureUi() {

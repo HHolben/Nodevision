@@ -3,6 +3,29 @@
 
 import { ensureTemplateSystemStyles } from "./TemplatePicker.mjs";
 
+function getTemplateFormModule(template) {
+  const html = String(template?.content || "");
+  if (!html) return "";
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const node = doc.querySelector("[data-nodevision-template-form-module]");
+    return node?.getAttribute("data-nodevision-template-form-module") || "";
+  } catch (err) {
+    console.warn("[templates] Could not inspect template form module.", err);
+    return "";
+  }
+}
+
+async function loadTemplateEnhancer(template) {
+  const modulePath = getTemplateFormModule(template);
+  if (!modulePath) return null;
+  const mod = await import(modulePath);
+  if (typeof mod.enhanceTemplateForm !== "function") {
+    throw new Error("Template form module " + modulePath + " does not export enhanceTemplateForm().");
+  }
+  return mod.enhanceTemplateForm;
+}
+
 function defaultFieldValue(field) {
   if (field.type === "checkbox") return field.defaultValue === "true" ? "true" : "false";
   return field.defaultValue ?? "";
@@ -164,6 +187,8 @@ export function showTemplateFormDialog(template, options = {}) {
       form.appendChild(createFieldControl(field, values));
     }
 
+    let templateEnhancer = null;
+
     const error = document.createElement("div");
     error.className = "nodevision-template-error";
     form.appendChild(error);
@@ -183,6 +208,24 @@ export function showTemplateFormDialog(template, options = {}) {
     dialog.append(title, description, form);
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
+
+    loadTemplateEnhancer(template)
+      .then((enhanceTemplateForm) => {
+        if (!enhanceTemplateForm) return;
+        templateEnhancer = enhanceTemplateForm({
+          template,
+          options,
+          form,
+          values,
+          fields,
+          dialog,
+          setError,
+        }) || null;
+      })
+      .catch((err) => {
+        console.error("[templates] Failed to load template form module:", err);
+        setError(err?.message || String(err));
+      });
 
     const cleanup = () => {
       document.removeEventListener("keydown", handleKeydown, true);
@@ -206,10 +249,15 @@ export function showTemplateFormDialog(template, options = {}) {
     });
     document.addEventListener("keydown", handleKeydown, true);
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       setError("");
       if (!form.reportValidity()) return;
+
+      if (templateEnhancer?.beforeSubmit) {
+        const ok = await templateEnhancer.beforeSubmit({ values, form, setError });
+        if (ok === false) return;
+      }
 
       const filename = filenameInput?.value?.trim() || "";
       if (options.includeFilename && !filename) {

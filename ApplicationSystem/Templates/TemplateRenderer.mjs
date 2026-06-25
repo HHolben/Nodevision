@@ -180,7 +180,13 @@ export function parseFormTemplate(html) {
 export function renderTemplateContent(html, values = {}) {
   const parsed = parseFormTemplate(html);
   const submitted = values && typeof values === "object" ? values : {};
-  const rendered = parsed.outputTemplate.replace(/{{\s*([A-Za-z0-9_.-]+)\s*}}/g, (_, name) => {
+  const withRawValues = parsed.outputTemplate.replace(/{{{\s*([A-Za-z0-9_.-]+)\s*}}}/g, (_, name) => {
+    const field = parsed.fields.find((candidate) => candidate.name === name);
+    const fallback = field?.defaultValue ?? "";
+    const value = Object.prototype.hasOwnProperty.call(submitted, name) ? submitted[name] : fallback;
+    return String(value ?? "");
+  });
+  const rendered = withRawValues.replace(/{{\s*([A-Za-z0-9_.-]+)\s*}}/g, (_, name) => {
     const field = parsed.fields.find((candidate) => candidate.name === name);
     const fallback = field?.defaultValue ?? "";
     const value = Object.prototype.hasOwnProperty.call(submitted, name) ? submitted[name] : fallback;

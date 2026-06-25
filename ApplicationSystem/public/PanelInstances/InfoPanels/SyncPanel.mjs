@@ -66,7 +66,7 @@ const TEMPLATE = `
           <input data-peer-url type="url" inputmode="url" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
         </label>
       </div>
-      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Cable mode uses the peer sync system over a USB network interface. With Wi-Fi off, enable Scan for USB Devices on one or both computers and Make This Device Discoverable over USB on the other. If you know the other computer's USB network address, enter it here, for example http://192.168.50.2:3000.</div>
+      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Cable mode uses the peer sync system over a USB network interface. With Wi-Fi off, enable Scan for USB Devices on one or both computers and Make This Device Discoverable over USB on the other. If you know the other computer's USB network address, enter it here, for example http://192.168.50.2:3000. Scan for USB Devices will also try that URL directly.</div>
       <div data-peer-list style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;"></div>
     </section>
 
