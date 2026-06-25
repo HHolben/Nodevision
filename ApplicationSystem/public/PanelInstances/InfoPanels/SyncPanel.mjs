@@ -3,7 +3,7 @@
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { getNodevisionNavigationState } from "/NodevisionNavigationState.mjs";
-import { getActivePeerUrl, normalizeSyncTransport } from "/SyncTransportSettings.mjs";
+import { getActivePeerUrl, normalizeSyncTransport, withActivePeerUrlFromDiscoveredPeer } from "/SyncTransportSettings.mjs";
 
 const navigationState = getNodevisionNavigationState();
 
@@ -208,19 +208,6 @@ function syncTransportLabel(value) {
   return normalizeSyncTransport(value) === "usb" ? "USB Cable" : "Wireless";
 }
 
-function peerUrlFromDiscoveredPeer(peer) {
-  const address = String(peer?.address || "").trim();
-  const port = Number(peer?.port);
-  if (!address || !Number.isInteger(port) || port < 1 || port > 65535) return "";
-  try {
-    const host = address.includes(":") && !address.startsWith("[") ? "[" + address + "]" : address;
-    const parsed = new URL("http://" + host + ":" + port);
-    return parsed.protocol + "//" + parsed.host;
-  } catch {
-    return "";
-  }
-}
-
 function readStoredMaxFileSizeMb() {
   try {
     return normalizeMaxFileSizeMb(window.localStorage?.getItem(SYNC_MAX_FILE_SIZE_MB_STORAGE_KEY));
@@ -398,26 +385,27 @@ export async function setupPanel(panelElem, panelVars = {}) {
     persistSyncTransportSettings(state.syncSettings);
   };
 
-  const getValidatedActivePeerUrl = () => {
-    const peerUrl = getActivePeerUrl(state.syncSettings);
-    if (!peerUrl) {
-      setError(errorEl, "Enter a " + syncTransportLabel(state.syncSettings.syncTransport) + " peer URL.");
-      return "";
-    }
-    return peerUrl;
-  };
-
   const getSelectedPeer = () => {
     const deviceId = state.status.selectedPeerDeviceId;
     return (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
   };
 
   const autofillPeerUrlFromPeer = (peer) => {
-    const peerUrl = peerUrlFromDiscoveredPeer(peer);
-    if (!peerUrl) return "";
-    setActivePeerUrl(peerUrl);
+    const result = withActivePeerUrlFromDiscoveredPeer(state.syncSettings, peer);
+    if (!result.peerUrl) return "";
+    state.syncSettings = result.settings;
+    persistSyncTransportSettings(state.syncSettings);
     renderTransportSettings();
-    return peerUrl;
+    return result.peerUrl;
+  };
+
+  const ensureActivePeerUrlForSelectedPeer = (peer) => {
+    const existingPeerUrl = getActivePeerUrl(state.syncSettings);
+    if (existingPeerUrl) return existingPeerUrl;
+    const discoveredPeerUrl = autofillPeerUrlFromPeer(peer);
+    if (discoveredPeerUrl) return discoveredPeerUrl;
+    setError(errorEl, "Enter a " + syncTransportLabel(state.syncSettings.syncTransport) + " peer URL.");
+    return "";
   };
 
   const peerRejectsIncomingWrites = (peer) => peer?.capabilities?.acceptsIncomingSyncWrites === false
@@ -772,11 +760,6 @@ export async function setupPanel(panelElem, panelVars = {}) {
       });
     }
 
-    const activePeerUrl = getValidatedActivePeerUrl();
-    if (!activePeerUrl) {
-      if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "missing_peer_url", transport: state.syncSettings.syncTransport, jobCreationRequestSent: false });
-      return;
-    }
     if (!deviceId) {
       if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "no_selected_peer", jobCreationRequestSent: false });
       return setError(errorEl, "Select a discovered peer before running sync.");
@@ -784,6 +767,12 @@ export async function setupPanel(panelElem, panelVars = {}) {
     if (!selectedPeer || selectedPeer.trusted !== true || selectedPeer?.capabilities?.sync !== true) {
       if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "peer_not_trusted_or_sync_capable", jobCreationRequestSent: false });
       return setError(errorEl, "Only trusted sync-capable peers can be selected for sync.");
+    }
+
+    const activePeerUrl = ensureActivePeerUrlForSelectedPeer(selectedPeer);
+    if (!activePeerUrl) {
+      if (!dryRun) logSyncPanelDebug("Apply Sync blocked before request", { reason: "missing_peer_url", transport: state.syncSettings.syncTransport, selectedPeerDeviceId: deviceId || null, jobCreationRequestSent: false });
+      return;
     }
 
     requestOptions = syncRunBody({ deviceId, scope, dryRun });
@@ -879,7 +868,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   syncTransportSelect?.addEventListener("change", () => {
     state.syncSettings.syncTransport = normalizeSyncTransport(syncTransportSelect.value);
-    persistSyncTransportSettings(state.syncSettings);
+    const selectedPeer = getSelectedPeer();
+    if (selectedPeer) autofillPeerUrlFromPeer(selectedPeer);
+    else persistSyncTransportSettings(state.syncSettings);
     renderTransportSettings();
     renderDiscoveryButtons();
     setError(errorEl, "");

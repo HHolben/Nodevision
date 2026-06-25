@@ -679,11 +679,79 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     return true;
   }
 
+  function parseCoordinateSearch(query = "") {
+    const text = String(query || "").trim();
+    if (!text) return null;
+
+    const labeledLat = text.match(/\b(?:lat|latitude)\s*[:=]\s*([-+]?\d+(?:\.\d+)?)/i);
+    const labeledLon = text.match(/\b(?:lon|lng|long|longitude)\s*[:=]\s*([-+]?\d+(?:\.\d+)?)/i);
+    if (labeledLat && labeledLon) {
+      const lat = Number(labeledLat[1]);
+      const lon = Number(labeledLon[1]);
+      return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 ? { lat, lon } : null;
+    }
+
+    const hasCoordinateSeparator = /[,;]/.test(text);
+    const hasCardinalCoordinate = /(?:^|[\s,;])(?:[NSEW]\s*[-+]?\d|[-+]?\d+(?:\.\d+)?\s*[NSEW])(?:$|[\s,;])/i.test(text);
+    const numericOnlyCoordinateText = text.replace(/[-+\d.\s,;°]/g, "").trim() === "";
+    if (!hasCoordinateSeparator && !hasCardinalCoordinate && !numericOnlyCoordinateText) return null;
+
+    const tokens = text.match(/[NSEW]\s*[-+]?\d+(?:\.\d+)?|[-+]?\d+(?:\.\d+)?\s*[NSEW]?/gi) || [];
+    if (tokens.length < 2) return null;
+
+    const parseToken = (token) => {
+      const raw = String(token || "").trim().toUpperCase();
+      const numberMatch = raw.match(/[-+]?\d+(?:\.\d+)?/);
+      if (!numberMatch) return null;
+      let value = Number(numberMatch[0]);
+      if (!Number.isFinite(value)) return null;
+      const direction = raw.match(/[NSEW]/)?.[0] || "";
+      if (direction === "S" || direction === "W") value = -Math.abs(value);
+      if (direction === "N" || direction === "E") value = Math.abs(value);
+      return { value, direction };
+    };
+
+    const first = parseToken(tokens[0]);
+    const second = parseToken(tokens[1]);
+    if (!first || !second) return null;
+
+    let lat = null;
+    let lon = null;
+    if (first.direction === "N" || first.direction === "S") lat = first.value;
+    if (first.direction === "E" || first.direction === "W") lon = first.value;
+    if (second.direction === "N" || second.direction === "S") lat = second.value;
+    if (second.direction === "E" || second.direction === "W") lon = second.value;
+
+    if (lat === null || lon === null) {
+      const a = first.value;
+      const b = second.value;
+      if (Math.abs(a) > 90 && Math.abs(b) <= 90) {
+        lon = a;
+        lat = b;
+      } else if (a < 0 && b > 0 && Math.abs(a) <= 180 && Math.abs(b) <= 90) {
+        lon = a;
+        lat = b;
+      } else {
+        lat = a;
+        lon = b;
+      }
+    }
+
+    return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 ? { lat, lon } : null;
+  }
+
   async function searchLocation(query = "") {
     const cleanQuery = String(query || "").trim();
     if (!cleanQuery) {
       showStatus(status, "Enter a location to search.", "error");
       return false;
+    }
+
+    const coordinates = parseCoordinateSearch(cleanQuery);
+    if (coordinates) {
+      flyToUserLocation(coordinates);
+      showStatus(status, "Showing coordinates " + coordinates.lat.toFixed(5) + ", " + coordinates.lon.toFixed(5) + ".");
+      return true;
     }
 
     try {
@@ -735,6 +803,18 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       showStatus(status, "Sectional download failed: " + (err?.message || err), "error");
       return false;
     }
+  }
+
+  function addWaypoint() {
+    if (mode === "viewer") return;
+    showStatus(status, "Click the map to place a waypoint.");
+    renderer.startAddPlacemark((coordinates) => {
+      createPlacemark(state, { geometryType: "Point", coordinates, name: "New Waypoint" });
+      rerenderFromState({ preserveSelection: false });
+      const added = state.features[state.features.length - 1];
+      if (added) selectRecord(added, true);
+      markDirty("Waypoint added. Save KML to persist.");
+    });
   }
 
   function addPlacemark() {
@@ -843,6 +923,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       return setCelestialOption(key, rawValue === "true" || rawValue === "1" || rawValue === "yes");
     }
     const actions = {
+      addWaypoint,
+      insertWaypoint: addWaypoint,
+      waypoint: addWaypoint,
       addPlacemark,
       drawPath,
       drawPolygon,
@@ -939,6 +1022,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     centerUserLocation,
     selectAviationChartPack,
     clearAviationChartPack,
+    addWaypoint,
     searchLocation,
     downloadSectionalForSelectedPin,
     getCelestialOptions: () => ({ ...celestialOptions }),

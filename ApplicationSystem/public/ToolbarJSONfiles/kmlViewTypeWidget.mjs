@@ -96,7 +96,7 @@ function render(hostElement) {
       "</span>" +
       "<span aria-hidden=\"true\" style=\"width:1px;height:20px;background:#c8d0da;\"></span>" +
       "<label style=\"display:flex;align-items:center;gap:6px;min-width:min(330px,100%);\">Search" +
-        "<input data-nv-kml-location-search type=\"search\" placeholder=\"Airport, city, address\" style=\"height:24px;min-width:220px;width:28vw;max-width:380px;box-sizing:border-box;border:1px solid #aeb9c8;border-radius:4px;padding:2px 6px;font:12px system-ui,-apple-system,Segoe UI,sans-serif;\" />" +
+        "<input data-nv-kml-location-search type=\"search\" placeholder=\"Coordinates or address\" style=\"height:24px;min-width:220px;width:28vw;max-width:380px;box-sizing:border-box;border:1px solid #aeb9c8;border-radius:4px;padding:2px 6px;font:12px system-ui,-apple-system,Segoe UI,sans-serif;\" />" +
       "</label>" +
       "<button type=\"button\" data-nv-kml-location-search-run style=\"height:24px;padding:0 8px;\">Go</button>" +
       "<button type=\"button\" data-nv-kml-sectional-download title=\"Download FAA sectional for selected pin\" style=\"height:24px;padding:0 8px;\">Get Sectional</button>" +

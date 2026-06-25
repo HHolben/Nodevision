@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/JSONFamilyEditor.mjs
-// This file defines browser-side JSONFamily Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
+// Graphical JSON editor that displays JSON files as top-down tree structures.
+
 import {
   resetEditorHooks,
   ensureNodevisionState,
@@ -7,85 +8,174 @@ import {
   fetchText,
   saveText,
 } from "./FamilyEditorCommon.mjs";
+import {
+  formatJsonText,
+  parseJsonText,
+  renderJsonTree,
+} from "/PanelInstances/ViewPanels/FileViewers/jsonTreeRenderer.mjs";
+import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 export async function renderEditor(filePath, container) {
   resetEditorHooks();
   ensureNodevisionState("JSONFamilyEditing");
-  const { status, body } = createBaseLayout(container, `JSON Editor — ${filePath}`);
+  const { status, body } = createBaseLayout(container, `JSON Tree Editor - ${filePath}`);
+  body.style.overflow = "hidden";
+
+  const root = document.createElement("div");
+  root.style.cssText = "display:flex;flex-direction:column;height:100%;min-height:0;gap:8px;";
+  body.appendChild(root);
 
   const toolbar = document.createElement("div");
-  toolbar.style.cssText = "display:flex;gap:8px;align-items:center;";
+  toolbar.style.cssText = "display:flex;gap:8px;align-items:center;flex-wrap:wrap;";
+  toolbar.innerHTML = `
+    <button type="button" data-action="tree">Tree</button>
+    <button type="button" data-action="raw">Raw JSON</button>
+    <button type="button" data-action="apply">Apply Raw to Tree</button>
+    <button type="button" data-action="format">Format Raw</button>
+    <button type="button" data-action="save">Save</button>
+    <span data-field="status" style="font:12px monospace;color:#52606d;"></span>
+  `;
+  root.appendChild(toolbar);
 
-  const formatBtn = document.createElement("button");
-  formatBtn.textContent = "Format JSON";
-  formatBtn.style.cssText = "padding:6px 10px;cursor:pointer;";
-  toolbar.appendChild(formatBtn);
+  const treeHost = document.createElement("div");
+  treeHost.style.cssText = "flex:1;min-height:0;overflow:auto;border:1px solid #d8dde6;border-radius:8px;background:#f8fafc;";
+  root.appendChild(treeHost);
 
-  const validateLabel = document.createElement("span");
-  validateLabel.style.cssText = "font:12px monospace;color:#555;";
-  validateLabel.textContent = "Waiting for input...";
-  toolbar.appendChild(validateLabel);
-
-  body.appendChild(toolbar);
-
-  const textarea = document.createElement("textarea");
-  textarea.id = "markdown-editor";
-  textarea.spellcheck = false;
-  textarea.style.cssText = [
-    "width:100%",
-    "height:calc(100% - 40px)",
-    "min-height:240px",
+  const rawEditor = document.createElement("textarea");
+  rawEditor.id = "markdown-editor";
+  rawEditor.spellcheck = false;
+  rawEditor.style.cssText = [
+    "display:none",
+    "flex:1",
+    "min-height:0",
     "resize:none",
     "padding:12px",
     "box-sizing:border-box",
-    "font:13px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    "font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace",
     "border:1px solid #c9c9c9",
     "border-radius:8px",
     "background:#fff",
     "color:#111",
   ].join(";");
-  body.appendChild(textarea);
+  root.appendChild(rawEditor);
 
-  const validate = () => {
-    try {
-      JSON.parse(textarea.value || "{}");
-      validateLabel.textContent = "Valid JSON";
-      validateLabel.style.color = "#166534";
-      return true;
-    } catch (err) {
-      validateLabel.textContent = `Invalid JSON: ${err.message}`;
-      validateLabel.style.color = "#b00020";
-      return false;
+  let currentData = {};
+  let dirty = false;
+
+  const localStatus = toolbar.querySelector("[data-field=\"status\"]");
+  const setEditorStatus = (message, isError = false) => {
+    status.textContent = message;
+    if (localStatus) {
+      localStatus.textContent = message;
+      localStatus.style.color = isError ? "#b00020" : "#166534";
     }
   };
 
-  formatBtn.addEventListener("click", () => {
+  const markDirty = (message = "JSON changed") => {
+    dirty = true;
+    updateToolbarState({ fileIsDirty: true });
+    setEditorStatus(message);
+  };
+
+  const syncRawFromTree = () => {
+    rawEditor.value = formatJsonText(currentData);
+  };
+
+  const renderTree = () => {
+    renderJsonTree(treeHost, currentData, {
+      filePath,
+      editable: true,
+      onChange(nextData) {
+        currentData = nextData;
+        syncRawFromTree();
+        renderTree();
+        markDirty("Tree updated");
+      },
+    });
+  };
+
+  const showTree = () => {
+    treeHost.style.display = "block";
+    rawEditor.style.display = "none";
+    setEditorStatus(dirty ? "Tree view - unsaved changes" : "Tree view");
+  };
+
+  const showRaw = () => {
+    syncRawFromTree();
+    treeHost.style.display = "none";
+    rawEditor.style.display = "block";
+    setEditorStatus("Raw JSON view");
+  };
+
+  const applyRawToTree = () => {
     try {
-      const obj = JSON.parse(textarea.value || "{}");
-      textarea.value = JSON.stringify(obj, null, 2);
-      validate();
+      currentData = parseJsonText(rawEditor.value, filePath);
+      syncRawFromTree();
+      renderTree();
+      showTree();
+      markDirty("Raw JSON applied to tree");
     } catch (err) {
-      validateLabel.textContent = `Format failed: ${err.message}`;
-      validateLabel.style.color = "#b00020";
+      setEditorStatus(`Invalid JSON: ${err.message}`, true);
     }
+  };
+
+  const formatRaw = () => {
+    try {
+      rawEditor.value = formatJsonText(parseJsonText(rawEditor.value, filePath));
+      setEditorStatus("Raw JSON formatted");
+    } catch (err) {
+      setEditorStatus(`Format failed: ${err.message}`, true);
+    }
+  };
+
+  const getText = () => {
+    if (rawEditor.style.display !== "none") {
+      currentData = parseJsonText(rawEditor.value, filePath);
+      syncRawFromTree();
+      renderTree();
+    }
+    return formatJsonText(currentData);
+  };
+
+  const save = async (path = filePath) => {
+    await saveText(path, getText());
+    dirty = false;
+    updateToolbarState({ fileIsDirty: false });
+    setEditorStatus("JSON saved");
+  };
+
+  toolbar.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const action = target.dataset.action;
+    if (action === "tree") showTree();
+    if (action === "raw") showRaw();
+    if (action === "apply") applyRawToTree();
+    if (action === "format") formatRaw();
+    if (action === "save") save().catch((err) => setEditorStatus(`Save failed: ${err.message}`, true));
   });
 
-  textarea.addEventListener("input", validate);
+  rawEditor.addEventListener("input", () => markDirty("Raw JSON edited"));
 
   try {
     const text = await fetchText(filePath);
-    textarea.value = text;
-    validate();
+    currentData = parseJsonText(text, filePath);
+    syncRawFromTree();
+    renderTree();
 
-    window.getEditorMarkdown = () => textarea.value;
-    window.saveMDFile = async (path = filePath) => {
-      JSON.parse(textarea.value || "{}");
-      await saveText(path, textarea.value);
-    };
+    window.getEditorMarkdown = getText;
+    window.saveMDFile = save;
 
-    status.textContent = "JSON loaded";
+    updateToolbarState({
+      currentMode: "JSONFamilyEditing",
+      activePanelType: "GraphicalEditor",
+      selectedFile: filePath,
+      activeEditorFilePath: filePath,
+      fileIsDirty: false,
+    });
+    setEditorStatus("JSON tree loaded");
   } catch (err) {
-    body.innerHTML = `<div style="color:#b00020;font:13px monospace;">Failed to load JSON: ${err.message}</div>`;
-    status.textContent = "Load failed";
+    treeHost.innerHTML = `<div style="color:#b00020;font:13px monospace;padding:12px;">Failed to load JSON: ${err.message}</div>`;
+    setEditorStatus("Load failed", true);
   }
 }

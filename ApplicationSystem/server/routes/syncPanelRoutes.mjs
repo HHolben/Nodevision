@@ -946,7 +946,7 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
-  const getRequestedPeerUrl = (body) => parsePeerUrlOrigin(body?.peerUrl || "");
+  const getRequestedPeerUrl = (body) => parsePeerUrlOrigin(body?.peerUrl || body?.usbPeerUrl || "");
 
   app.post("/api/sync/preflight", async (req, res) => {
     if (!requireSession(req, res)) return;

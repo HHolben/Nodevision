@@ -266,6 +266,13 @@ async function main() {
     assert(usbStrictRun.payload?.ok === true, "Expected explicit USB peer URL payload ok=true");
     assert(usbStrictRun.payload?.syncTransport === "usb", "Expected USB transport to be echoed");
     assert(usbStrictRun.payload?.discoveredPeer?.url === `http://127.0.0.1:${reachableProbePort}`, "Expected USB run to report explicit USB URL");
+
+    const usbStrictRunWithUsbPeerUrl = await app.request("POST", "/api/sync/run", {
+      body: { deviceId: "nv_dev_trusted_usb_strict", scope: "SyncTest", dryRun: true, syncTransport: "usb", usbPeerUrl: `http://127.0.0.1:${reachableProbePort}` },
+    });
+    assert(usbStrictRunWithUsbPeerUrl.statusCode === 200, "Expected explicit usbPeerUrl to satisfy USB sync URL requirement");
+    assert(usbStrictRunWithUsbPeerUrl.payload?.ok === true, "Expected usbPeerUrl run ok=true");
+    assert(usbStrictRunWithUsbPeerUrl.payload?.discoveredPeer?.url === `http://127.0.0.1:${reachableProbePort}`, "Expected USB run to report explicit usbPeerUrl");
     assert(getDiscoveredPeer(state, "nv_dev_trusted_usb_strict")?.address === "127.0.0.1", "Expected USB run not to rewrite discovered endpoint beyond existing record");
 
     upsertDiscoveredPeer(state, {

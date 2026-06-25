@@ -60,6 +60,13 @@ function main() {
   assertIncludes(insertion7, "poem-lines-every-7", "different intervals should coexist by class");
   assert(insertion3.includes("poem-lines-every-3") && insertion7.includes("poem-lines-every-7"), "multiple interval blocks should be distinct");
 
+  const poemWithStanzaBreak = buildLineNumberedPoemHtml(2, { lines: ["one", "", "two", "   ", "three"] });
+  const countedLines = (poemWithStanzaBreak.match(/class="poem-line"/g) || []).length;
+  const stanzaBreaks = (poemWithStanzaBreak.match(/class="stanza-break"/g) || []).length;
+  assert(countedLines === 3, "blank lines should not be emitted as counted poem lines");
+  assert(stanzaBreaks === 2, "blank lines should become stanza breaks");
+  assertIncludes(buildPoemStyleCss(2), ".stanza-break", "stanza break CSS missing");
+
   assertThrows("invalid interval class", () => poemClassForInterval(0));
   assertThrows("invalid interval CSS", () => buildPoemStyleCss("nope"));
 

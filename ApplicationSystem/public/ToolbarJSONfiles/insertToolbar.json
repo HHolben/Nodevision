@@ -23,6 +23,15 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Waypoint",
+      "callbackKey": "insertWaypoint",
+      "routeToActivePanel": true,
+      "modes": ["KMLeditorMode"],
+      "icon": "icons/DefaultNodeImage.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Aviation Chart",
       "callbackKey": "showAviationChartImportPlaceholder",
       "routeToActivePanel": true,
@@ -618,6 +627,14 @@
       "insertGroup": "text",
       "callbackKey": "handwritingToText",
       "parentHeading": "Insert Text"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "heading": "Unicode Symbol",
+      "insertGroup": "text",
+      "callbackKey": "insertSymbol",
+      "parentHeading": "Insert Text",
+      "shortLabel": "Ω"
     },
     {
       "ToolbarCategory": "Insert",

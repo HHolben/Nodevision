@@ -104,8 +104,41 @@ function closestPoemLineFromSelection(wysiwyg) {
   return line && wysiwyg.contains(line) ? line : null;
 }
 
+function isBlankPoemLine(line) {
+  const text = String(line?.textContent || "").replace(/\u00a0/g, " ").trim();
+  return text === "";
+}
+
+function makeEmptyPoemLine() {
+  const line = document.createElement("span");
+  line.className = "poem-line";
+  line.appendChild(document.createElement("br"));
+  return line;
+}
+
+function makeStanzaBreak() {
+  const breakEl = document.createElement("div");
+  breakEl.className = "stanza-break";
+  breakEl.appendChild(document.createElement("br"));
+  return breakEl;
+}
+
+function convertBlankLineToStanzaBreak(line) {
+  const breakEl = makeStanzaBreak();
+  line.replaceWith(breakEl);
+  return breakEl;
+}
+
+function normalizeBlankPoemLines(root) {
+  root?.querySelectorAll?.(".nodevision-poem .poem-line").forEach((line) => {
+    if (isBlankPoemLine(line)) convertBlankLineToStanzaBreak(line);
+  });
+}
+
 function installPoemEditingBehavior(wysiwyg) {
-  if (!wysiwyg || wysiwyg[POEM_ENTER_HANDLER_FLAG]) return;
+  if (!wysiwyg) return;
+  normalizeBlankPoemLines(wysiwyg);
+  if (wysiwyg[POEM_ENTER_HANDLER_FLAG]) return;
   wysiwyg[POEM_ENTER_HANDLER_FLAG] = true;
   wysiwyg.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" || event.shiftKey) return;
@@ -117,6 +150,14 @@ function installPoemEditingBehavior(wysiwyg) {
 
     event.preventDefault();
     if (!range.collapsed) range.deleteContents();
+
+    if (isBlankPoemLine(line)) {
+      const stanzaBreak = convertBlankLineToStanzaBreak(line);
+      const nextLine = makeEmptyPoemLine();
+      stanzaBreak.after(nextLine);
+      placeCaretAtStart(nextLine);
+      return;
+    }
 
     const trailingRange = document.createRange();
     trailingRange.setStart(range.startContainer, range.startOffset);
