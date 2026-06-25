@@ -10,6 +10,19 @@ import {
   saveViaApi,
 } from "./saveFile/utils.mjs";
 
+function normalizeSavePath(pathValue) {
+  return String(pathValue || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .replace(/^\/+/, "")
+    .replace(/^Notebook\//i, "");
+}
+
+function sameSavePath(a, b) {
+  return normalizeSavePath(a) === normalizeSavePath(b);
+}
+
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
@@ -77,10 +90,26 @@ export default async function saveFile(options = {}) {
       return notifyFileSaved(filePath);
     }
     if (mode === "CodeEditing" && typeof window.saveCodeFile === "function") {
+      const codeEditorPath = window.__nvCodeEditorActivePath || window.currentActiveFilePath;
+      if (codeEditorPath && !sameSavePath(codeEditorPath, filePath)) {
+        console.error("[saveFile] Refusing to save Code Editor buffer into a different path.", {
+          editorPath: codeEditorPath,
+          savePath: filePath,
+        });
+        return false;
+      }
       await window.saveCodeFile(filePath);
       return notifyFileSaved(filePath);
     }
     if (window.monacoEditor && typeof window.monacoEditor.getValue === "function") {
+      const monacoPath = window.__nvCodeEditorActivePath || window.currentActiveFilePath;
+      if (monacoPath && !sameSavePath(monacoPath, filePath)) {
+        console.error("[saveFile] Refusing to save Monaco buffer into a different path.", {
+          editorPath: monacoPath,
+          savePath: filePath,
+        });
+        return false;
+      }
       const content = window.monacoEditor.getValue();
       await saveViaApi({
         path: filePath,
