@@ -27,9 +27,10 @@ export function createBezierToolController(deps) {
     dragMoved: false,
     dragStart: null,
     dragAnchor: null,
+    draggingFirstHandle: false,
     dragVector: { x: 0, y: 0 },
   };
-  function reset() { state.active = false; state.model = null; state.layer = null; state.draggingId = null; state.dragMoved = false; state.dragStart = null; if (state.pathEl) { try { state.pathEl.remove(); } catch {} } state.pathEl = null; hidePreview(); }
+  function reset() { state.active = false; state.model = null; state.layer = null; state.draggingId = null; state.dragMoved = false; state.dragStart = null; state.dragAnchor = null; state.draggingFirstHandle = false; if (state.pathEl) { try { state.pathEl.remove(); } catch {} } state.pathEl = null; hidePreview(); }
   function hidePreview() { overlayPath?.setAttribute("display", "none"); }
   function showPreview(pathD) { if (!overlayPath) return; overlayPath.setAttribute("d", pathD || ""); overlayPath.setAttribute("display", ""); }
 
@@ -62,15 +63,25 @@ export function createBezierToolController(deps) {
     setStatus?.("Bezier: click to add, drag to curve, Enter to finish, Esc to cancel");
   }
 
+  function beginAnchorDrag(e, pointRoot, draggingFirstHandle = false) {
+    state.draggingId = e.pointerId;
+    state.dragMoved = false;
+    state.dragStart = pointRoot;
+    state.dragAnchor = pointRoot;
+    state.draggingFirstHandle = draggingFirstHandle;
+    state.dragVector = { x: 0, y: 0 };
+    try { svgRoot.setPointerCapture(e.pointerId); } catch {}
+  }
+
   function commitNode(anchor, curved, dragVec) {
     if (!state.model) return;
     const beforeD = state.pathEl?.getAttribute("d") || "";
     const nodes = state.model.nodes;
-    const prev = nodes[nodes.length - 1];
     const node = { x: anchor.x, y: anchor.y, inHandle: null, outHandle: null, type: curved ? "smooth" : "corner" };
     if (curved) {
       const v = dragVec || { x: 0, y: 0 };
-      node.inHandle = { x: anchor.x + v.x, y: anchor.y + v.y };
+      node.inHandle = { x: anchor.x - v.x, y: anchor.y - v.y };
+      node.outHandle = { x: anchor.x + v.x, y: anchor.y + v.y };
     }
     nodes.push(node);
     setPathFromModel(state.pathEl, state.model);
@@ -103,6 +114,8 @@ export function createBezierToolController(deps) {
     state.draggingId = null;
     state.dragMoved = false;
     state.dragStart = null;
+    state.dragAnchor = null;
+    state.draggingFirstHandle = false;
     setSelection?.([state.pathEl], { primary: state.pathEl });
     setStatus?.("Bezier finished");
     return true;
@@ -116,14 +129,10 @@ export function createBezierToolController(deps) {
   function onPointerDown(e, pointRoot) {
     if (!state.active) {
       startPath(pointRoot);
+      beginAnchorDrag(e, pointRoot, true);
       return true;
     }
-    state.draggingId = e.pointerId;
-    state.dragMoved = false;
-    state.dragStart = pointRoot;
-    state.dragAnchor = pointRoot;
-    state.dragVector = { x: 0, y: 0 };
-    try { svgRoot.setPointerCapture(e.pointerId); } catch {}
+    beginAnchorDrag(e, pointRoot, false);
     return true;
   }
 
@@ -141,10 +150,16 @@ export function createBezierToolController(deps) {
     if (Math.hypot(dx, dy) > tol) state.dragMoved = true;
     state.dragVector = { x: pointRoot.x - state.dragAnchor.x, y: pointRoot.y - state.dragAnchor.y };
     const last = state.model?.nodes[state.model.nodes.length - 1];
+    if (state.draggingFirstHandle) {
+      const anchor = state.dragAnchor;
+      const v = state.dragVector;
+      showPreview(state.dragMoved ? "M " + anchor.x + " " + anchor.y + " L " + (anchor.x + v.x) + " " + (anchor.y + v.y) : "");
+      return true;
+    }
     if (state.dragMoved) {
       const anchor = state.dragAnchor;
       const v = state.dragVector;
-      const inH = { x: anchor.x + v.x, y: anchor.y + v.y };
+      const inH = { x: anchor.x - v.x, y: anchor.y - v.y };
       const h1 = last?.outHandle || last || anchor;
       const d = `M ${last.x} ${last.y} C ${h1.x} ${h1.y} ${inH.x} ${inH.y} ${anchor.x} ${anchor.y}`;
       showPreview(d);
@@ -163,13 +178,20 @@ export function createBezierToolController(deps) {
     const end = snapped || pointRoot;
     const anchor = state.dragAnchor || end;
     const vec = state.dragVector || { x: 0, y: 0 };
-    if (!maybeClosePath(anchor, tol)) {
+    if (state.draggingFirstHandle) {
+      const first = state.model.nodes[0];
+      if (state.dragMoved && first) {
+        first.outHandle = { x: first.x + vec.x, y: first.y + vec.y };
+        first.type = "smooth";
+      }
+    } else if (!maybeClosePath(anchor, tol)) {
       commitNode(anchor, state.dragMoved, vec);
     }
     state.dragMoved = false;
     state.dragVector = { x: 0, y: 0 };
     state.dragStart = null;
     state.dragAnchor = null;
+    state.draggingFirstHandle = false;
     state.draggingId = null;
     hidePreview();
     try { svgRoot.releasePointerCapture(e.pointerId); } catch {}

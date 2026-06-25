@@ -46,6 +46,21 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Character",
+      "modes": ["Virtual World Editing", "VR World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Character",
+      "heading": "Character Controls",
+      "script": "worldCharacterWidget.mjs",
+      "modes": ["Virtual World Editing", "VR World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
       "parentHeading": "Shape",
       "heading": "3D Shape Controls",
       "script": "worldShapeWidget.mjs",

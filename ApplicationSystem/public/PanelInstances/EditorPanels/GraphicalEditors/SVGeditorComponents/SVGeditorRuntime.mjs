@@ -2222,6 +2222,10 @@ export async function renderEditor(filePath, container) {
     if (mode !== "select" && nodeEditor.isActive?.()) {
       nodeEditor.exit?.();
     }
+    if (["select", "line", "freehand", "bezier", "sketch"].includes(mode)) {
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.svgDrawTool = mode;
+    }
     toolState.mode = mode;
     toolState.drawing = false;
     toolState.tempShape = null;

@@ -574,7 +574,12 @@ async function renderFile(filename, viewPanel, serverBase) {
     }
 
     // Call viewer
-    await viewer.renderFile(cleanPath, viewPanel, iframe, serverBase);
+    const renderResult = await viewer.renderFile(cleanPath, viewPanel, iframe, serverBase);
+    if (renderResult === false) {
+      console.warn(`⚠️ Viewer reported render failure: ${viewerFile}`);
+      return false;
+    }
+
     console.log(`✅ Rendered with ${viewerFile}`);
     return true;
 

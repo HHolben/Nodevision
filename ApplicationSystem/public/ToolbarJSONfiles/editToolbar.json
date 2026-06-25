@@ -300,7 +300,212 @@
   "heading": "Send to Back",
   "callbackKey": "svgSendToBack",
   "modes": ["SVG Editing"]
-}
-
-
+},
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "JSON Tools",
+    "modes": ["JSONEditing"],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Add Property",
+    "shortLabel": "+K",
+    "callbackKey": "jsonAddProperty",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"],
+    "conditions": { "jsonSelectedType": "object" }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Add Array Item",
+    "shortLabel": "+[]",
+    "callbackKey": "jsonAddItem",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"],
+    "conditions": { "jsonSelectedType": "array" }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Rename Key",
+    "shortLabel": "Key",
+    "callbackKey": "jsonRenameKey",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"],
+    "conditions": { "jsonCanRenameSelection": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Delete Node",
+    "shortLabel": "Del",
+    "callbackKey": "jsonDeleteNode",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"],
+    "conditions": { "jsonCanDeleteSelection": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Format",
+    "shortLabel": "Fmt",
+    "callbackKey": "jsonFormat",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Source",
+    "shortLabel": "Src",
+    "callbackKey": "jsonToggleSource",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Apply Source",
+    "shortLabel": "Apply",
+    "callbackKey": "jsonApplySource",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"],
+    "conditions": { "jsonSourceDirty": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Fit Tree",
+    "shortLabel": "Fit",
+    "callbackKey": "jsonFitTree",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "JSON Tools",
+    "heading": "Save JSON",
+    "shortLabel": "Save",
+    "callbackKey": "jsonSave",
+    "routeToActivePanel": true,
+    "modes": ["JSONEditing"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Sculpt",
+    "modes": ["STLediting"],
+    "preventDropdown": true,
+    "shortLabel": "Scp"
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Draw Brush",
+    "shortLabel": "Drw",
+    "callbackKey": "stlSculptDraw",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Smooth Brush",
+    "shortLabel": "Sm",
+    "callbackKey": "stlSculptSmooth",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Flatten Brush",
+    "shortLabel": "Flt",
+    "callbackKey": "stlSculptFlatten",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Inflate Brush",
+    "shortLabel": "Inf",
+    "callbackKey": "stlSculptInflate",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Deflate Brush",
+    "shortLabel": "Def",
+    "callbackKey": "stlSculptDeflate",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Pinch Brush",
+    "shortLabel": "Pch",
+    "callbackKey": "stlSculptPinch",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Grab Brush",
+    "shortLabel": "Grb",
+    "callbackKey": "stlSculptGrab",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Radius -",
+    "shortLabel": "R-",
+    "callbackKey": "stlSculptRadiusDown",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Radius +",
+    "shortLabel": "R+",
+    "callbackKey": "stlSculptRadiusUp",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Strength -",
+    "shortLabel": "S-",
+    "callbackKey": "stlSculptStrengthDown",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Strength +",
+    "shortLabel": "S+",
+    "callbackKey": "stlSculptStrengthUp",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Sculpt",
+    "heading": "Exit Sculpt",
+    "shortLabel": "Off",
+    "callbackKey": "stlSculptOff",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"]
+  }
 ]

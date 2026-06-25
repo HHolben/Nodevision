@@ -19,6 +19,7 @@ function ensureStyles() {
     .nv-stl-viewport { position:absolute; inset:0; min-width:0; min-height:0; outline:none; }
     .nv-stl-viewport canvas { display:block; width:100%; height:100%; }
     .nv-stl-error { margin:12px; color:#b00020; }
+    .nv-stl-editor.nv-stl-sculpt-active .nv-stl-viewport canvas { cursor: crosshair; }
   `;
   document.head.appendChild(style);
 }
@@ -144,6 +145,12 @@ export async function renderEditor(
     destroyed: false,
     dirty: false,
     lastPointerClient: { x: 0, y: 0 },
+    sculpt: {
+      tool: "select",
+      radius: 1,
+      strength: 0.35,
+      stroke: null,
+    },
   };
 
   const viewport = document.createElement("div");
@@ -258,6 +265,7 @@ export async function renderEditor(
   let vertexPoints = null;
   let selectedVertexPoints = null;
   let customEdgeLines = null;
+  let brushRing = null;
 
   function setModeLabel(extra = "") {
     const suffix = extra ? ` (${extra})` : "";
@@ -275,6 +283,9 @@ export async function renderEditor(
       activeActionHandler: handleSTLToolbarAction,
       fileIsDirty: state.dirty,
       stlHasSelection: state.selection.size > 0,
+      stlSculptTool: state.sculpt.tool,
+      stlSculptRadius: state.sculpt.radius,
+      stlSculptStrength: state.sculpt.strength,
       ...extra,
     });
   }
@@ -710,6 +721,223 @@ export async function renderEditor(
     markDirty("Vertex added");
   }
 
+
+  function isSculptToolActive() {
+    return state.sculpt.tool && state.sculpt.tool !== "select";
+  }
+
+  function sculptStatusLabel() {
+    return `${state.sculpt.tool} r=${state.sculpt.radius.toFixed(2)} strength=${state.sculpt.strength.toFixed(2)}`;
+  }
+
+  function resetSculptBrushForBounds() {
+    state.sculpt.radius = Math.max(WELD_EPSILON * 100, state.maxDim * 0.06);
+    state.sculpt.strength = Math.max(0.05, Math.min(1, state.sculpt.strength || 0.35));
+  }
+
+  function setSculptTool(tool) {
+    if (state.mode === "grab" || state.mode === "scale") commitAction();
+    state.sculpt.stroke = null;
+    state.sculpt.tool = tool;
+    controls.enabled = !isSculptToolActive();
+    container.classList.toggle("nv-stl-sculpt-active", isSculptToolActive());
+    if (!isSculptToolActive() && brushRing) brushRing.visible = false;
+    setModeLabel(isSculptToolActive() ? `sculpt ${sculptStatusLabel()}` : "sculpt off");
+    notifyToolbarState();
+  }
+
+  function adjustSculptRadius(factor) {
+    state.sculpt.radius = Math.max(WELD_EPSILON * 100, Math.min(state.maxDim * 2, state.sculpt.radius * factor));
+    setModeLabel(isSculptToolActive() ? `sculpt ${sculptStatusLabel()}` : `brush radius ${state.sculpt.radius.toFixed(2)}`);
+    notifyToolbarState();
+  }
+
+  function adjustSculptStrength(delta) {
+    state.sculpt.strength = Math.max(0.02, Math.min(1, state.sculpt.strength + delta));
+    setModeLabel(isSculptToolActive() ? `sculpt ${sculptStatusLabel()}` : `brush strength ${state.sculpt.strength.toFixed(2)}`);
+    notifyToolbarState();
+  }
+
+  function ensureBrushRing() {
+    if (brushRing) return brushRing;
+    const points = [];
+    const segments = 80;
+    for (let i = 0; i < segments; i++) {
+      const a = (i / segments) * Math.PI * 2;
+      points.push(new THREE.Vector3(Math.cos(a), Math.sin(a), 0));
+    }
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color: 0xff7a00, transparent: true, opacity: 0.95, depthTest: false });
+    brushRing = new THREE.LineLoop(geometry, material);
+    brushRing.visible = false;
+    brushRing.renderOrder = 10;
+    scene.add(brushRing);
+    return brushRing;
+  }
+
+  function surfaceHitFromEvent(evt) {
+    if (!mesh || !state.topology) return null;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    pointerNdc.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+    pointerNdc.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointerNdc, camera);
+    const hits = raycaster.intersectObject(mesh, false);
+    if (!hits.length) return null;
+    const hit = hits[0];
+    const normal = (hit.face?.normal || new THREE.Vector3(0, 0, 1)).clone();
+    normal.transformDirection(mesh.matrixWorld).normalize();
+    return { point: hit.point.clone(), normal, faceIndex: hit.faceIndex };
+  }
+
+  function updateBrushRing(hit) {
+    if (!isSculptToolActive()) return;
+    const ring = ensureBrushRing();
+    if (!hit) {
+      ring.visible = false;
+      return;
+    }
+    ring.visible = true;
+    ring.position.copy(hit.point).addScaledVector(hit.normal, state.sculpt.radius * 0.01);
+    ring.scale.setScalar(state.sculpt.radius);
+    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), hit.normal.clone().normalize());
+  }
+
+  function brushFalloff(distance) {
+    const t = Math.max(0, 1 - distance / Math.max(WELD_EPSILON, state.sculpt.radius));
+    return t * t * (3 - 2 * t);
+  }
+
+  function brushedVertices(hit) {
+    if (!state.topology || !hit) return [];
+    const affected = [];
+    state.topology.vertices.forEach((v, index) => {
+      const distance = v.distanceTo(hit.point);
+      if (distance <= state.sculpt.radius) affected.push({ index, falloff: brushFalloff(distance) });
+    });
+    return affected;
+  }
+
+  function buildVertexNeighbors() {
+    const count = state.topology?.vertices?.length || 0;
+    const neighbors = Array.from({ length: count }, () => new Set());
+    for (const [a, b, c] of state.topology.faces) {
+      neighbors[a]?.add(b); neighbors[a]?.add(c);
+      neighbors[b]?.add(a); neighbors[b]?.add(c);
+      neighbors[c]?.add(a); neighbors[c]?.add(b);
+    }
+    return neighbors;
+  }
+
+  function applySculptBrush(hit) {
+    if (!state.topology || !hit) return false;
+    const affected = brushedVertices(hit);
+    if (!affected.length) return false;
+    const tool = state.sculpt.tool;
+    const amount = state.sculpt.radius * state.sculpt.strength * 0.08;
+    const original = cloneVertices(state.topology.vertices);
+    const bounds = computeBounds();
+
+    if (tool === "smooth") {
+      const neighbors = buildVertexNeighbors();
+      affected.forEach(({ index, falloff }) => {
+        const linked = Array.from(neighbors[index] || []);
+        if (!linked.length) return;
+        const average = new THREE.Vector3();
+        linked.forEach((i) => average.add(original[i]));
+        average.multiplyScalar(1 / linked.length);
+        state.topology.vertices[index].lerp(average, Math.min(1, state.sculpt.strength * falloff * 0.65));
+      });
+    } else if (tool === "flatten") {
+      const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(hit.normal, hit.point);
+      affected.forEach(({ index, falloff }) => {
+        const distance = plane.distanceToPoint(state.topology.vertices[index]);
+        state.topology.vertices[index].addScaledVector(hit.normal, -distance * state.sculpt.strength * falloff);
+      });
+    } else if (tool === "pinch") {
+      affected.forEach(({ index, falloff }) => {
+        const direction = new THREE.Vector3().subVectors(hit.point, state.topology.vertices[index]);
+        state.topology.vertices[index].addScaledVector(direction, state.sculpt.strength * falloff * 0.12);
+      });
+    } else if (tool === "inflate" || tool === "deflate") {
+      const sign = tool === "inflate" ? 1 : -1;
+      affected.forEach(({ index, falloff }) => {
+        const direction = new THREE.Vector3().subVectors(state.topology.vertices[index], bounds.center);
+        if (direction.lengthSq() < 1e-12) direction.copy(hit.normal);
+        direction.normalize();
+        state.topology.vertices[index].addScaledVector(direction, sign * amount * falloff);
+      });
+    } else {
+      affected.forEach(({ index, falloff }) => {
+        state.topology.vertices[index].addScaledVector(hit.normal, amount * falloff);
+      });
+    }
+
+    rebuildDisplayGeometry();
+    updateBrushRing(hit);
+    return true;
+  }
+
+  function beginSculptStroke(evt) {
+    if (!isSculptToolActive() || evt.button !== 0) return false;
+    const hit = surfaceHitFromEvent(evt);
+    updateBrushRing(hit);
+    if (!hit) return false;
+    evt.preventDefault();
+    controls.enabled = false;
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    const stroke = {
+      tool: state.sculpt.tool,
+      startVertices: cloneVertices(state.topology.vertices),
+      startHit: hit.point.clone(),
+      affected: brushedVertices(hit),
+      dragPlane: new THREE.Plane().setFromNormalAndCoplanarPoint(camDir.clone().normalize(), hit.point),
+      changed: false,
+    };
+    state.sculpt.stroke = stroke;
+    if (stroke.tool !== "grab") stroke.changed = applySculptBrush(hit) || stroke.changed;
+    return true;
+  }
+
+  function continueSculptStroke(evt) {
+    const stroke = state.sculpt.stroke;
+    if (!stroke) return false;
+    if (stroke.tool === "grab") {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNdc.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNdc.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointerNdc, camera);
+      const point = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(stroke.dragPlane, point)) return true;
+      const delta = new THREE.Vector3().subVectors(point, stroke.startHit);
+      stroke.affected.forEach(({ index, falloff }) => {
+        state.topology.vertices[index].copy(stroke.startVertices[index]).addScaledVector(delta, falloff);
+      });
+      rebuildDisplayGeometry();
+      updateBrushRing({ point, normal: stroke.dragPlane.normal.clone() });
+      stroke.changed = true;
+      return true;
+    }
+    const hit = surfaceHitFromEvent(evt);
+    updateBrushRing(hit);
+    stroke.changed = applySculptBrush(hit) || stroke.changed;
+    return true;
+  }
+
+  function endSculptStroke() {
+    const stroke = state.sculpt.stroke;
+    if (!stroke) return;
+    state.sculpt.stroke = null;
+    controls.enabled = !isSculptToolActive();
+    if (stroke.changed) markDirty(`Sculpt ${stroke.tool}`);
+  }
+
+  function handleSculptHover(evt) {
+    if (!isSculptToolActive() || state.sculpt.stroke) return;
+    updateBrushRing(surfaceHitFromEvent(evt));
+  }
+
   function handleSTLToolbarAction(callbackKey) {
     const actions = {
       stlAddVertex: () => addVertexAtCameraFocus(),
@@ -724,13 +952,27 @@ export async function renderEditor(
         notifyToolbarState();
       },
       stlGrab: () => {
+        if (isSculptToolActive()) setSculptTool("select");
         if (state.selection.size > 0) startActionMode("grab");
       },
       stlScale: () => {
+        if (isSculptToolActive()) setSculptTool("select");
         if (state.selection.size > 0) startActionMode("scale");
       },
       stlExtrude: () => extrudeSelection(),
       stlFillOrConnect: () => fillOrConnectSelection(),
+      stlSculptDraw: () => setSculptTool("draw"),
+      stlSculptSmooth: () => setSculptTool("smooth"),
+      stlSculptFlatten: () => setSculptTool("flatten"),
+      stlSculptInflate: () => setSculptTool("inflate"),
+      stlSculptDeflate: () => setSculptTool("deflate"),
+      stlSculptPinch: () => setSculptTool("pinch"),
+      stlSculptGrab: () => setSculptTool("grab"),
+      stlSculptOff: () => setSculptTool("select"),
+      stlSculptRadiusDown: () => adjustSculptRadius(0.8),
+      stlSculptRadiusUp: () => adjustSculptRadius(1.25),
+      stlSculptStrengthDown: () => adjustSculptStrength(-0.08),
+      stlSculptStrengthUp: () => adjustSculptStrength(0.08),
       stlSave: async () => {
         try {
           await saveSTL(filePath);
@@ -786,14 +1028,29 @@ export async function renderEditor(
       return;
     }
     if (evt.button !== 0) return;
+    if (isSculptToolActive()) {
+      beginSculptStroke(evt);
+      return;
+    }
     pickVertex(evt);
   }
 
   function onPointerMove(evt) {
     state.lastPointerClient.x = evt.clientX;
     state.lastPointerClient.y = evt.clientY;
-    if (state.mode !== "grab" && state.mode !== "scale") return;
-    applyActionMove(evt.clientX, evt.clientY);
+    if (state.mode === "grab" || state.mode === "scale") {
+      applyActionMove(evt.clientX, evt.clientY);
+      return;
+    }
+    if (state.sculpt.stroke) {
+      continueSculptStroke(evt);
+      return;
+    }
+    handleSculptHover(evt);
+  }
+
+  function onPointerUp() {
+    endSculptStroke();
   }
 
   function onKeyDown(evt) {
@@ -809,7 +1066,13 @@ export async function renderEditor(
 
     if (key === "escape") {
       evt.preventDefault();
-      cancelAction();
+      if (state.sculpt.stroke) {
+        endSculptStroke();
+      } else if (isSculptToolActive()) {
+        setSculptTool("select");
+      } else {
+        cancelAction();
+      }
       return;
     }
 
@@ -818,6 +1081,8 @@ export async function renderEditor(
       commitAction();
       return;
     }
+
+    if (isSculptToolActive()) return;
 
     if (key === "g") {
       evt.preventDefault();
@@ -882,6 +1147,7 @@ export async function renderEditor(
     if (isEmptySTLBuffer(arrayBuffer)) {
       state.topology = createEmptyTopology();
       recenterCameraToTopology();
+      resetSculptBrushForBounds();
       rebuildDisplayGeometry();
       setModeLabel("empty STL");
       return;
@@ -891,6 +1157,7 @@ export async function renderEditor(
     const geometry = loader.parse(arrayBuffer);
     state.topology = buildTopologyFromGeometry(geometry);
     recenterCameraToTopology();
+    resetSculptBrushForBounds();
     rebuildDisplayGeometry();
     if (state.topology.vertices.length === 0 && state.topology.faces.length === 0) setModeLabel("empty STL");
     else setModeLabel("loaded");
@@ -913,6 +1180,8 @@ export async function renderEditor(
 
   renderer.domElement.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
   window.addEventListener("keydown", onKeyDown, true);
 
   renderer.setAnimationLoop(() => {
@@ -941,10 +1210,18 @@ export async function renderEditor(
       renderer.setAnimationLoop(null);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
       window.removeEventListener("keydown", onKeyDown, true);
       if (resizeObserver) resizeObserver.disconnect();
       else window.removeEventListener("resize", onResize);
       controls.dispose();
+      if (brushRing) {
+        scene.remove(brushRing);
+        brushRing.geometry.dispose();
+        brushRing.material.dispose();
+        brushRing = null;
+      }
       renderer.dispose();
       overlayRenderer.dispose();
       if (window.NodevisionState?.activeActionHandler === handleSTLToolbarAction) {
