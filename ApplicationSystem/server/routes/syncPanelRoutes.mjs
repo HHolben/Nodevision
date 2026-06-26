@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/server/routes/syncPanelRoutes.mjs
 // This file registers authenticated Sync Panel API endpoints that manage in-memory discovery state, expose safe local/discovery status, and run trusted scope-limited sync operations only after explicit user actions.
 
+import os from "node:os";
+import net from "node:net";
 import { addTrustedPeer, findTrustedPeer, getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
 import {
   addSyncScope,
@@ -35,6 +37,18 @@ const DEFAULT_PEER_PORT_RECOVERY_TIMEOUT_MS = 650;
 const DEFAULT_PEER_ENDPOINT_REDISCOVERY_TIMEOUT_MS = 11_000;
 const DEFAULT_PEER_ENDPOINT_REDISCOVERY_POLL_MS = 150;
 const DEFAULT_PEER_URL_FALLBACK_PROBE_TIMEOUT_MS = 900;
+const DEFAULT_USB_DISCOVERY_PROBE_CONCURRENCY = 16;
+const COMMON_USB_PEER_HOSTS = [
+  "192.168.42.129",
+  "192.168.42.1",
+  "192.168.43.1",
+  "172.20.10.1",
+  "172.20.10.2",
+  "192.168.7.1",
+  "192.168.7.2",
+  "192.168.55.1",
+  "192.168.55.100",
+];
 const PEER_WRITE_BLOCKED_MESSAGE = "Peer is protected from incoming sync writes. Use Pull mode from the receiving device or disable protection on the peer.";
 
 function requireSession(req, res) {
@@ -509,6 +523,116 @@ function parsePeerUrlOrigin(value) {
   }
 }
 
+function normalizeUsbDiscoveryPort(value) {
+  const port = Number(value);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : null;
+}
+
+function addParsedPeerUrlOrigin(targets, value) {
+  const origin = parsePeerUrlOrigin(value);
+  if (origin && !targets.includes(origin)) targets.push(origin);
+}
+
+function parseIpv4Octets(address) {
+  const parts = String(address || "").split(".").map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return null;
+  return parts;
+}
+
+function buildIpv4Address(parts) {
+  if (!Array.isArray(parts) || parts.length !== 4) return "";
+  if (parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return "";
+  return parts.join(".");
+}
+
+function addUsbCandidateHost(hosts, host, localAddress = "") {
+  const text = String(host || "").trim();
+  if (!text || text === String(localAddress || "").trim()) return;
+  if (net.isIP(text) !== 4) return;
+  if (!hosts.includes(text)) hosts.push(text);
+}
+
+function addUsbCandidateHostsFromLocalAddress(hosts, localAddress) {
+  const octets = parseIpv4Octets(localAddress);
+  if (!octets) return;
+  const prefix = octets.slice(0, 3);
+  const last = octets[3];
+  for (const suffix of [1, 2, 129, 254, last - 1, last + 1]) {
+    if (suffix < 1 || suffix > 254) continue;
+    addUsbCandidateHost(hosts, buildIpv4Address([...prefix, suffix]), localAddress);
+  }
+}
+
+function getLocalUsbCandidateHosts(ctx = {}) {
+  const hosts = [];
+  const configuredInterfaces = ctx?.networkInterfaces && typeof ctx.networkInterfaces === "object"
+    ? ctx.networkInterfaces
+    : os.networkInterfaces();
+  for (const entries of Object.values(configuredInterfaces || {})) {
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      if (!entry || entry.family !== "IPv4" || entry.internal === true) continue;
+      addUsbCandidateHostsFromLocalAddress(hosts, entry.address);
+    }
+  }
+  for (const host of COMMON_USB_PEER_HOSTS) addUsbCandidateHost(hosts, host);
+  return hosts;
+}
+
+function getUsbDiscoveryPorts(body, ctx = {}) {
+  const ports = [];
+  const addPort = (value) => {
+    const port = normalizeUsbDiscoveryPort(value);
+    if (port && !ports.includes(port)) ports.push(port);
+  };
+  for (const value of [body?.peerUrl, body?.usbPeerUrl]) {
+    try { addPort(new URL(String(value || "")).port); } catch {}
+  }
+  addPort(ctx?.port);
+  addPort(process.env.PORT);
+  addPort(3000);
+  return ports;
+}
+
+function getUsbPeerDiscoveryCandidateUrls(body, ctx = {}) {
+  if (Array.isArray(ctx?.usbPeerCandidateUrls)) {
+    const urls = [];
+    for (const peerUrl of ctx.usbPeerCandidateUrls) addParsedPeerUrlOrigin(urls, peerUrl);
+    return urls;
+  }
+
+  const urls = [];
+  addParsedPeerUrlOrigin(urls, body?.peerUrl);
+  addParsedPeerUrlOrigin(urls, body?.usbPeerUrl);
+
+  const hosts = getLocalUsbCandidateHosts(ctx);
+  const ports = getUsbDiscoveryPorts(body, ctx);
+  for (const host of hosts) {
+    for (const port of ports) {
+      try {
+        const peerUrl = buildDiscoveredPeerUrl({ address: host, port });
+        if (!urls.includes(peerUrl)) urls.push(peerUrl);
+      } catch {
+        // Ignore malformed USB candidates.
+      }
+    }
+  }
+  return urls;
+}
+
+async function discoverPeersFromUsbCandidates(state, body, ctx) {
+  const candidates = getUsbPeerDiscoveryCandidateUrls(body, ctx);
+  const discovered = [];
+  for (let index = 0; index < candidates.length; index += DEFAULT_USB_DISCOVERY_PROBE_CONCURRENCY) {
+    const batch = candidates.slice(index, index + DEFAULT_USB_DISCOVERY_PROBE_CONCURRENCY);
+    const results = await Promise.all(batch.map((peerUrl) => discoverPeerFromHttpStatusUrl(state, peerUrl, ctx)));
+    for (const peer of results) {
+      if (peer && !discovered.some((item) => item.deviceId === peer.deviceId)) discovered.push(peer);
+    }
+  }
+  return discovered;
+}
+
 function getDiscoveryOptionsFromRequestBody(body) {
   const syncTransport = parseSyncTransport(body);
   const options = { syncTransport };
@@ -917,7 +1041,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         ensureListener(state, ctx);
         const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body);
         if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
-          await discoverPeerFromHttpStatusUrl(state, req.body?.peerUrl || req.body?.usbPeerUrl || "", ctx);
+          await discoverPeersFromUsbCandidates(state, req.body, ctx);
         }
       } else {
         await stopListener(state);
@@ -943,7 +1067,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body);
         ensureBroadcaster(state, ctx, discoveryOptions);
         if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
-          await discoverPeerFromHttpStatusUrl(state, req.body?.peerUrl || req.body?.usbPeerUrl || "", ctx);
+          await discoverPeersFromUsbCandidates(state, req.body, ctx);
         }
       } else {
         await stopBroadcaster(state);

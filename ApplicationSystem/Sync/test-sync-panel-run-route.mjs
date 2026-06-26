@@ -86,9 +86,11 @@ async function main() {
   const state = createSyncPanelState();
   const app = createMockApp();
   let injectedRediscoveryPeer = null;
+  const usbPeerCandidateUrls = [];
   registerSyncPanelRoutes(app, {
     runtimeRoot,
     syncPanelState: state,
+    usbPeerCandidateUrls,
     peerEndpointRediscoveryTimeoutMs: 120,
     peerDiscoveryListenerFactory(options = {}) {
       const timer = setTimeout(() => {
@@ -133,6 +135,10 @@ async function main() {
     () => {
       const protectedFromIncomingWrites = reachableProbeProtected === true;
       return {
+        localDevice: {
+          deviceName: "Reachable Probe Peer",
+          publicKey: "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA7777777777777777777777777777777777777777777=\n-----END PUBLIC KEY-----",
+        },
         protectedFromIncomingWrites,
         acceptsIncomingSyncWrites: !protectedFromIncomingWrites,
         allowsOutgoingSyncReads: true,
@@ -155,6 +161,23 @@ async function main() {
   assert(reachableProbePort > 1, "Expected probe port > 1 for fallback-port recovery test");
 
   try {
+    reachableProbeDeviceId = "nv_dev_usb_probe_discovered";
+    usbPeerCandidateUrls.splice(0, usbPeerCandidateUrls.length, `http://127.0.0.1:${reachableProbePort}`);
+    const usbDiscoveryScan = await app.request("POST", "/api/sync/discovery/scanning", {
+      body: { enabled: true, syncTransport: "usb" },
+    });
+    assert(usbDiscoveryScan.statusCode === 200, "Expected USB scanning without peerUrl to succeed");
+    const usbDiscoveredPeer = (usbDiscoveryScan.payload?.discoveredPeers || []).find((peer) => peer?.deviceId === "nv_dev_usb_probe_discovered");
+    assert(usbDiscoveredPeer, "Expected USB scanning without peerUrl to discover candidate peer");
+    assert(usbDiscoveredPeer.address === "127.0.0.1", "Expected USB-discovered peer address from probed URL");
+    assert(usbDiscoveredPeer.port === reachableProbePort, "Expected USB-discovered peer port from probed URL");
+    assert(usbDiscoveredPeer.trusted === false, "Expected USB-discovered HTTP status peer to start untrusted");
+    await app.request("POST", "/api/sync/discovery/scanning", {
+      body: { enabled: false },
+    });
+    usbPeerCandidateUrls.splice(0, usbPeerCandidateUrls.length);
+    reachableProbeDeviceId = "nv_dev_trusted_same_machine";
+
     upsertDiscoveredPeer(state, {
       deviceId: "nv_dev_trusted_same_machine",
       deviceName: "Trusted Same-Machine Peer",
