@@ -545,6 +545,14 @@ function buildIpv4Address(parts) {
   return parts.join(".");
 }
 
+function calculateIpv4BroadcastAddress(address, netmask) {
+  const addressOctets = parseIpv4Octets(address);
+  const maskOctets = parseIpv4Octets(netmask);
+  if (!addressOctets || !maskOctets) return "";
+  const broadcastOctets = addressOctets.map((part, index) => part | (255 - maskOctets[index]));
+  return buildIpv4Address(broadcastOctets);
+}
+
 function addUsbCandidateHost(hosts, host, localAddress = "") {
   const text = String(host || "").trim();
   if (!text || text === String(localAddress || "").trim()) return;
@@ -563,11 +571,15 @@ function addUsbCandidateHostsFromLocalAddress(hosts, localAddress) {
   }
 }
 
-function getLocalUsbCandidateHosts(ctx = {}) {
-  const hosts = [];
-  const configuredInterfaces = ctx?.networkInterfaces && typeof ctx.networkInterfaces === "object"
+function getConfiguredNetworkInterfaces(ctx = {}) {
+  return ctx?.networkInterfaces && typeof ctx.networkInterfaces === "object"
     ? ctx.networkInterfaces
     : os.networkInterfaces();
+}
+
+function getLocalUsbCandidateHosts(ctx = {}) {
+  const hosts = [];
+  const configuredInterfaces = getConfiguredNetworkInterfaces(ctx);
   for (const entries of Object.values(configuredInterfaces || {})) {
     if (!Array.isArray(entries)) continue;
     for (const entry of entries) {
@@ -577,6 +589,23 @@ function getLocalUsbCandidateHosts(ctx = {}) {
   }
   for (const host of COMMON_USB_PEER_HOSTS) addUsbCandidateHost(hosts, host);
   return hosts;
+}
+
+function getLocalUsbDiscoveryTargetAddresses(ctx = {}) {
+  const targets = [];
+  const addTarget = (address) => addUsbCandidateHost(targets, address);
+  const configuredInterfaces = getConfiguredNetworkInterfaces(ctx);
+  for (const entries of Object.values(configuredInterfaces || {})) {
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      if (!entry || entry.family !== "IPv4" || entry.internal === true) continue;
+      const broadcast = calculateIpv4BroadcastAddress(entry.address, entry.netmask);
+      if (broadcast && broadcast !== "255.255.255.255") addTarget(broadcast);
+      addUsbCandidateHostsFromLocalAddress(targets, entry.address);
+    }
+  }
+  for (const host of COMMON_USB_PEER_HOSTS) addTarget(host);
+  return targets;
 }
 
 function getUsbDiscoveryPorts(body, ctx = {}) {
@@ -633,19 +662,21 @@ async function discoverPeersFromUsbCandidates(state, body, ctx) {
   return discovered;
 }
 
-function getDiscoveryOptionsFromRequestBody(body) {
+function getDiscoveryOptionsFromRequestBody(body, ctx = {}) {
   const syncTransport = parseSyncTransport(body);
   const options = { syncTransport };
   if (syncTransportRequiresExplicitPeerUrl(syncTransport)) {
+    const targets = getLocalUsbDiscoveryTargetAddresses(ctx);
     const peerUrl = parsePeerUrlOrigin(body?.peerUrl || body?.usbPeerUrl || "");
     if (peerUrl) {
       try {
         const parsed = new URL(peerUrl);
-        options.extraTargetAddresses = [parsed.hostname];
+        if (parsed.hostname && !targets.includes(parsed.hostname)) targets.unshift(parsed.hostname);
       } catch {
         // Keep USB discovery usable without a known peer URL.
       }
     }
+    options.extraTargetAddresses = targets;
   }
   return options;
 }
@@ -1039,7 +1070,7 @@ export function registerSyncPanelRoutes(app, ctx) {
     try {
       if (enabled) {
         ensureListener(state, ctx);
-        const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body);
+        const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body, ctx);
         if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
           await discoverPeersFromUsbCandidates(state, req.body, ctx);
         }
@@ -1064,7 +1095,7 @@ export function registerSyncPanelRoutes(app, ctx) {
 
     try {
       if (enabled) {
-        const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body);
+        const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body, ctx);
         ensureBroadcaster(state, ctx, discoveryOptions);
         if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
           await discoverPeersFromUsbCandidates(state, req.body, ctx);

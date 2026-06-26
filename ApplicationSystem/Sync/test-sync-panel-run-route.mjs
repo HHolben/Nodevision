@@ -87,10 +87,21 @@ async function main() {
   const app = createMockApp();
   let injectedRediscoveryPeer = null;
   const usbPeerCandidateUrls = [];
+  const usbNetworkInterfaces = {
+    usb0: [{ family: "IPv4", address: "192.168.50.2", netmask: "255.255.255.0", internal: false }],
+  };
+  const broadcasterStarts = [];
   registerSyncPanelRoutes(app, {
     runtimeRoot,
     syncPanelState: state,
     usbPeerCandidateUrls,
+    networkInterfaces: usbNetworkInterfaces,
+    peerDiscoveryBroadcasterFactory(options = {}) {
+      broadcasterStarts.push(options);
+      return {
+        stop() {},
+      };
+    },
     peerEndpointRediscoveryTimeoutMs: 120,
     peerDiscoveryListenerFactory(options = {}) {
       const timer = setTimeout(() => {
@@ -173,6 +184,18 @@ async function main() {
     assert(usbDiscoveredPeer.port === reachableProbePort, "Expected USB-discovered peer port from probed URL");
     assert(usbDiscoveredPeer.trusted === false, "Expected USB-discovered HTTP status peer to start untrusted");
     await app.request("POST", "/api/sync/discovery/scanning", {
+      body: { enabled: false },
+    });
+    const usbDiscoverable = await app.request("POST", "/api/sync/discovery/discoverable", {
+      body: { enabled: true, syncTransport: "usb" },
+    });
+    assert(usbDiscoverable.statusCode === 200, "Expected USB discoverable to start");
+    const usbBroadcasterOptions = broadcasterStarts.at(-1) || {};
+    assert(
+      Array.isArray(usbBroadcasterOptions.extraTargetAddresses) && usbBroadcasterOptions.extraTargetAddresses.includes("192.168.50.255"),
+      "Expected USB discoverability to include subnet broadcast target",
+    );
+    await app.request("POST", "/api/sync/discovery/discoverable", {
       body: { enabled: false },
     });
     usbPeerCandidateUrls.splice(0, usbPeerCandidateUrls.length);
