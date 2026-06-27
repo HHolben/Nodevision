@@ -94,24 +94,6 @@ export function buildPoemStyleCss() {
   max-width: 70ch;
 }
 
-.nv-poem .nv-poem-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 0.75em 0;
-}
-
-.nv-poem .nv-poem-controls button {
-  border: 1px solid #9aa4b2;
-  background: #f7f8fa;
-  color: #20242a;
-  border-radius: 4px;
-  padding: 3px 8px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
 .nv-poem .nv-poem-stanza {
   margin: 0 0 1em 0;
 }
@@ -125,8 +107,7 @@ export function buildPoemStyleCss() {
 }
 
 .nv-poem .nv-poem-line-number {
-  display: inline-block;
-  min-width: 3em;
+  grid-column: 1;
   text-align: right;
   color: #6b7280;
   user-select: none;
@@ -139,6 +120,7 @@ export function buildPoemStyleCss() {
 }
 
 .nv-poem .nv-poem-line-text {
+  grid-column: 2;
   min-width: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -167,12 +149,6 @@ export function buildPoemStyleCss() {
 .nv-poem .nv-poem-heading .nv-poem-line-number,
 .nv-poem .nv-poem-rhyme-note .nv-poem-line-number {
   display: none;
-}
-
-@media print {
-  .nv-poem .nv-poem-controls {
-    display: none !important;
-  }
 }`;
 }
 
@@ -193,7 +169,7 @@ export function buildLineNumberedPoemHtml(interval, options = {}) {
     const visible = shouldShowLineNumber(actualLineNumber, normalized);
     return [
       `    <div class="nv-poem-line" data-poem-line="true" data-poem-line-number="${actualLineNumber}">`,
-      `      <span class="nv-poem-line-number" contenteditable="false" data-visible="${visible ? "true" : "false"}"${visible ? "" : " aria-hidden=\"true\""}>${visible ? actualLineNumber : ""}</span>`,
+      `      <span class="nv-poem-line-number" contenteditable="false" data-visible="${visible ? "true" : "false"}" aria-hidden="true">${visible ? actualLineNumber : ""}</span>`,
       `      <span class="nv-poem-line-text">${escapeHtml(line)}</span>`,
       "    </div>",
     ].join("\n");
@@ -214,19 +190,35 @@ function elementTextWithoutLineNumber(el) {
   return String(clone.textContent || "").replace(/\u00a0/g, " ").trim();
 }
 
+function lineTextContent(line) {
+  const textSpan = line?.querySelector?.(":scope > .nv-poem-line-text") || null;
+  return String(textSpan?.textContent || "").replace(/\u00a0/g, " ").trim();
+}
+
 function ensureLineTextSpan(line) {
   let textSpan = line.querySelector?.(":scope > .nv-poem-line-text") || null;
-  if (textSpan) return textSpan;
-  textSpan = line.ownerDocument.createElement("span");
-  textSpan.className = "nv-poem-line-text";
-  const keep = [];
+  if (!textSpan) {
+    textSpan = line.ownerDocument.createElement("span");
+    textSpan.className = "nv-poem-line-text";
+  }
+  const textSpans = Array.from(line.querySelectorAll?.(":scope > .nv-poem-line-text") || []);
+  textSpans.forEach((extra) => {
+    if (extra === textSpan) return;
+    while (extra.firstChild) textSpan.appendChild(extra.firstChild);
+    extra.remove();
+  });
+  const movable = [];
   Array.from(line.childNodes).forEach((child) => {
     if (child.nodeType === Node.ELEMENT_NODE && child.classList?.contains("nv-poem-line-number")) return;
-    keep.push(child);
+    if (child === textSpan) return;
+    if (child.nodeType === Node.TEXT_NODE && isBlankPoemLine(child.nodeValue || "")) {
+      child.remove();
+      return;
+    }
+    movable.push(child);
   });
-  keep.forEach((child) => textSpan.appendChild(child));
-  if (!textSpan.childNodes.length) textSpan.appendChild(line.ownerDocument.createElement("br"));
-  line.appendChild(textSpan);
+  movable.forEach((child) => textSpan.appendChild(child));
+  if (textSpan.parentNode !== line) line.appendChild(textSpan);
   return textSpan;
 }
 
@@ -240,7 +232,12 @@ function ensureLineNumberSpan(line) {
     numberSpan.remove();
     line.insertBefore(numberSpan, line.firstChild || null);
   }
+  const numberSpans = Array.from(line.querySelectorAll?.(":scope > .nv-poem-line-number") || []);
+  numberSpans.forEach((extra) => {
+    if (extra !== numberSpan) extra.remove();
+  });
   numberSpan.setAttribute("contenteditable", "false");
+  numberSpan.setAttribute("aria-hidden", "true");
   return numberSpan;
 }
 
@@ -248,6 +245,7 @@ function removeLineNumbersFromNoncounted(poemElement) {
   poemElement.querySelectorAll?.(POEM_NONCOUNTED_SELECTOR).forEach((el) => {
     if (el.matches?.(POEM_LINE_SELECTOR)) return;
     el.querySelectorAll?.(".nv-poem-line-number").forEach((numberSpan) => numberSpan.remove());
+    el.removeAttribute("data-poem-line-number");
   });
 }
 
@@ -257,6 +255,36 @@ function markNoncounted(el) {
   el.removeAttribute("data-poem-line-number");
   el.classList.remove("nv-poem-line");
   el.querySelectorAll?.(".nv-poem-line-number").forEach((numberSpan) => numberSpan.remove());
+}
+
+function normalizeNoncountedTextWrapper(el, className) {
+  if (!el?.ownerDocument) return;
+  let textSpan = el.querySelector?.(`:scope > .${className}`) || null;
+  if (!textSpan) {
+    textSpan = el.ownerDocument.createElement("span");
+    textSpan.className = className;
+  }
+  const extras = Array.from(el.querySelectorAll?.(`:scope > .${className}`) || []);
+  extras.forEach((extra) => {
+    if (extra === textSpan) return;
+    while (extra.firstChild) textSpan.appendChild(extra.firstChild);
+    extra.remove();
+  });
+  const movable = [];
+  Array.from(el.childNodes || []).forEach((child) => {
+    if (child === textSpan) return;
+    if (child.nodeType === Node.ELEMENT_NODE && child.classList?.contains("nv-poem-line-number")) {
+      child.remove();
+      return;
+    }
+    if (child.nodeType === Node.TEXT_NODE && isBlankPoemLine(child.nodeValue || "")) {
+      child.remove();
+      return;
+    }
+    movable.push(child);
+  });
+  movable.forEach((child) => textSpan.appendChild(child));
+  if (textSpan.parentNode !== el) el.appendChild(textSpan);
 }
 
 function convertElementToStanzaBreak(el) {
@@ -288,7 +316,27 @@ function normalizeLegacyLine(el) {
   ensureLineNumberSpan(el);
 }
 
-export function refreshPoemLineNumbers(poemElement) {
+function normalizePoemLineElement(line, { convertEmptyLines = true } = {}) {
+  line.classList.add("nv-poem-line");
+  line.setAttribute("data-poem-line", "true");
+  line.removeAttribute("data-poem-noncounted");
+  const numberSpan = ensureLineNumberSpan(line);
+  const textSpan = ensureLineTextSpan(line);
+  if (line.firstChild !== numberSpan) line.insertBefore(numberSpan, line.firstChild || null);
+  if (numberSpan.nextSibling !== textSpan) line.insertBefore(textSpan, numberSpan.nextSibling || null);
+  numberSpan.setAttribute("contenteditable", "false");
+  numberSpan.setAttribute("aria-hidden", "true");
+  if (
+    convertEmptyLines &&
+    line.getAttribute("data-poem-intentional-blank") !== "true" &&
+    isBlankPoemLine(lineTextContent(line))
+  ) {
+    return convertElementToStanzaBreak(line);
+  }
+  return line;
+}
+
+function refreshPoemLineNumbersOnly(poemElement) {
   if (!poemElement?.querySelectorAll) return poemElement;
   const interval = normalizeLineNumberInterval(
     poemElement.getAttribute("data-line-number-step") || poemElement.getAttribute("data-line-numbering"),
@@ -302,8 +350,20 @@ export function refreshPoemLineNumbers(poemElement) {
 
   removeLineNumbersFromNoncounted(poemElement);
   const lines = Array.from(poemElement.querySelectorAll(POEM_LINE_SELECTOR));
-  lines.forEach((line, index) => {
-    const actualLineNumber = index + 1;
+  let actualLineNumber = 0;
+  lines.forEach((line) => {
+    const hasPoeticText = !isBlankPoemLine(lineTextContent(line));
+    if (!hasPoeticText && line.getAttribute("data-poem-intentional-blank") !== "true") {
+      line.removeAttribute("data-poem-line-number");
+      const numberSpan = ensureLineNumberSpan(line);
+      ensureLineTextSpan(line);
+      numberSpan.textContent = "";
+      numberSpan.dataset.visible = "false";
+      numberSpan.setAttribute("contenteditable", "false");
+      numberSpan.setAttribute("aria-hidden", "true");
+      return;
+    }
+    actualLineNumber += 1;
     line.setAttribute("data-poem-line-number", String(actualLineNumber));
     const numberSpan = ensureLineNumberSpan(line);
     ensureLineTextSpan(line);
@@ -311,17 +371,24 @@ export function refreshPoemLineNumbers(poemElement) {
     numberSpan.textContent = visible ? String(actualLineNumber) : "";
     numberSpan.dataset.visible = visible ? "true" : "false";
     numberSpan.setAttribute("contenteditable", "false");
-    if (visible) {
-      numberSpan.removeAttribute("aria-hidden");
-    } else {
-      numberSpan.setAttribute("aria-hidden", "true");
-    }
+    numberSpan.setAttribute("aria-hidden", "true");
   });
   return poemElement;
 }
 
-export function normalizePoemBlock(poemElement) {
+export function refreshPoemLineNumbers(poemElement, options = {}) {
   if (!poemElement?.querySelectorAll) return poemElement;
+  if (options.skipNormalize) return refreshPoemLineNumbersOnly(poemElement);
+  normalizePoemBlock(poemElement, {
+    convertEmptyLines: options.convertEmptyLines !== false,
+    skipRefresh: true,
+  });
+  return refreshPoemLineNumbersOnly(poemElement);
+}
+
+export function normalizePoemBlock(poemElement, options = {}) {
+  if (!poemElement?.querySelectorAll) return poemElement;
+  const convertEmptyLines = options.convertEmptyLines !== false;
   poemElement.classList?.add(POEM_ROOT_CLASS);
   poemElement.classList?.add(LEGACY_POEM_ROOT_CLASS);
   const interval = normalizeLineNumberInterval(
@@ -331,30 +398,35 @@ export function normalizePoemBlock(poemElement) {
   poemElement.setAttribute("data-line-number-step", String(interval));
   poemElement.setAttribute("data-line-numbering", String(interval));
 
+  poemElement.querySelectorAll?.(".nv-poem-controls").forEach((controls) => controls.remove());
   poemElement.querySelectorAll?.(".stanza").forEach((stanza) => stanza.classList.add("nv-poem-stanza"));
   poemElement.querySelectorAll?.(".stanza-break, .nv-poem-stanza-break").forEach((el) => {
     el.classList.add("nv-poem-stanza-break", "stanza-break");
     markNoncounted(el);
     el.setAttribute("aria-hidden", "true");
   });
-  poemElement.querySelectorAll?.(".nv-poem-heading").forEach(markNoncounted);
-  poemElement.querySelectorAll?.(".nv-poem-rhyme-note").forEach(markNoncounted);
+  poemElement.querySelectorAll?.(".nv-poem-heading").forEach((el) => {
+    markNoncounted(el);
+    normalizeNoncountedTextWrapper(el, "nv-poem-heading-text");
+  });
+  poemElement.querySelectorAll?.(".nv-poem-rhyme-note").forEach((el) => {
+    markNoncounted(el);
+    normalizeNoncountedTextWrapper(el, "nv-poem-rhyme-note-text");
+  });
   poemElement.querySelectorAll?.("[data-poem-noncounted=\"true\"]").forEach((el) => {
     if (!el.matches?.(POEM_LINE_SELECTOR)) markNoncounted(el);
   });
   poemElement.querySelectorAll?.(".poem-line").forEach(normalizeLegacyLine);
   poemElement.querySelectorAll?.(POEM_LINE_SELECTOR).forEach((line) => {
-    line.classList.add("nv-poem-line");
-    ensureLineTextSpan(line);
-    ensureLineNumberSpan(line);
+    normalizePoemLineElement(line, { convertEmptyLines });
   });
 
-  return refreshPoemLineNumbers(poemElement);
+  return options.skipRefresh ? poemElement : refreshPoemLineNumbers(poemElement, { skipNormalize: true });
 }
 
-export function normalizeAllPoemBlocks(root) {
+export function normalizeAllPoemBlocks(root, options = {}) {
   if (!root?.querySelectorAll) return [];
   const poems = Array.from(root.querySelectorAll(".nv-poem, .nodevision-poem"));
-  poems.forEach(normalizePoemBlock);
+  poems.forEach((poem) => normalizePoemBlock(poem, options));
   return poems;
 }

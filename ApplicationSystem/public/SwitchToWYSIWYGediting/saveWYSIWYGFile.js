@@ -23,7 +23,12 @@
       return showError('Editor not found');
     }
 
-    const raw = editor.innerHTML;
+    const clone = editor.cloneNode(true);
+    if (window.NodevisionPoetry?.normalizeAllPoemBlocks) {
+      window.NodevisionPoetry.normalizeAllPoemBlocks(clone);
+    }
+    clone.querySelectorAll?.('.nv-poem-controls').forEach((el) => el.remove());
+    const raw = clone.innerHTML;
     const content = (typeof window.formatHtml === 'function')
       ? window.formatHtml(raw)
       : raw;

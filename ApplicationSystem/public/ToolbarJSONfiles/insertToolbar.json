@@ -659,6 +659,15 @@
       "parentHeading": "Insert Text",
       "modes": ["HTMLediting"]
     },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Poetry",
+      "heading": "Poetry Controls",
+      "content": "<div id=\"nv-poetry-toolbar\"></div>",
+      "script": "poetryToolbar.mjs",
+      "modes": ["HTMLediting"],
+      "preventDropdown": true
+    },
 
 
        {

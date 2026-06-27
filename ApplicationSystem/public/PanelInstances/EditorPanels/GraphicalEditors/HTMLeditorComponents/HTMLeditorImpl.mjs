@@ -4206,6 +4206,7 @@ export async function renderEditor(filePath, container, options = {}) {
     // Clone <body> nodes without wrapping inline text around <br> elements.
     applyInitialDocumentBodyBackground(wysiwyg, doc.body);
     appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
+    window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
     ensureWrappingForEditableText(wysiwyg);
 
     window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
@@ -4258,6 +4259,8 @@ export async function renderEditor(filePath, container, options = {}) {
         .join("\n");
 
       const bodyClone = wysiwyg.cloneNode(true);
+      window.NodevisionPoetry?.normalizeAllPoemBlocks?.(bodyClone);
+      bodyClone.querySelectorAll(".nv-poem-controls").forEach((el) => el.remove());
       bodyClone.querySelectorAll(".nv-editor-only").forEach((el) => el.remove());
       bodyClone.querySelectorAll("[data-nv-interactive]").forEach((el) => {
         el.removeAttribute("data-nv-interactive");
@@ -4298,6 +4301,7 @@ export async function renderEditor(filePath, container, options = {}) {
 
       applyInitialDocumentBodyBackground(wysiwyg, doc.body);
       appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
+      window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
       ensureWrappingForEditableText(wysiwyg);
 
       rehydrateLayoutCanvases(wysiwyg, filePath);

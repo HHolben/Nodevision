@@ -90,7 +90,8 @@ function ensurePoemStyleBlock(wysiwyg) {
     if (style) wysiwyg.insertBefore(style, wysiwyg.firstChild || null);
     return style;
   }
-  if (!String(style.textContent || "").includes(".nv-poem .nv-poem-line")) {
+  const currentCss = String(style.textContent || "");
+  if (!currentCss.includes(".nv-poem .nv-poem-line") || currentCss.includes(".nv-poem-controls")) {
     style.setAttribute(POEM_STYLE_DATA_ATTR, "semantic");
     style.textContent = buildPoemStyleCss();
   }
@@ -195,10 +196,20 @@ function ensureTextSpan(line) {
       if (child.nodeType === Node.ELEMENT_NODE && child.classList?.contains("nv-poem-line-number")) return;
       textSpan.appendChild(child);
     });
-    if (!textSpan.childNodes.length) textSpan.appendChild(document.createElement("br"));
+    if (!textSpan.childNodes.length) textSpan.appendChild(document.createTextNode(""));
     line.appendChild(textSpan);
   }
   return textSpan;
+}
+
+function ensureEditableTextNode(textSpan) {
+  if (!textSpan) return null;
+  const existing = Array.from(textSpan.childNodes || []).find((node) => node.nodeType === Node.TEXT_NODE);
+  if (existing) return existing;
+  textSpan.querySelectorAll?.("br").forEach((br) => br.remove());
+  const node = document.createTextNode("");
+  textSpan.appendChild(node);
+  return node;
 }
 
 function setTextSpanText(textSpan, text = "") {
@@ -206,14 +217,13 @@ function setTextSpanText(textSpan, text = "") {
   textSpan.textContent = "";
   const value = String(text ?? "");
   if (value) textSpan.textContent = value;
-  else textSpan.appendChild(document.createElement("br"));
+  else textSpan.appendChild(document.createTextNode(""));
 }
 
 function makePoemLine(text = "") {
   const line = document.createElement("div");
   line.className = "nv-poem-line";
   line.setAttribute("data-poem-line", "true");
-  line.setAttribute("data-poem-line-number", "");
 
   const number = document.createElement("span");
   number.className = "nv-poem-line-number";
@@ -238,10 +248,13 @@ function makeStanzaBreak() {
 }
 
 function makePoemHeading(text = "Canto I") {
-  const heading = document.createElement("header");
+  const heading = document.createElement("div");
   heading.className = "nv-poem-heading";
   heading.setAttribute("data-poem-noncounted", "true");
-  heading.textContent = text || "Canto I";
+  const textSpan = document.createElement("span");
+  textSpan.className = "nv-poem-heading-text";
+  textSpan.textContent = text || "Canto I";
+  heading.appendChild(textSpan);
   return heading;
 }
 
@@ -249,31 +262,51 @@ function makeRhymeNote(text = "ABAB") {
   const note = document.createElement("div");
   note.className = "nv-poem-rhyme-note";
   note.setAttribute("data-poem-noncounted", "true");
-  note.textContent = text || "ABAB";
+  const textSpan = document.createElement("span");
+  textSpan.className = "nv-poem-rhyme-note-text";
+  textSpan.textContent = text || "ABAB";
+  note.appendChild(textSpan);
   return note;
 }
 
 
+function poemCaretTarget(el) {
+  if (el?.matches?.(POEM_LINE_SELECTOR)) return ensureTextSpan(el);
+  return el?.querySelector?.(":scope > .nv-poem-heading-text, :scope > .nv-poem-rhyme-note-text") || el;
+}
+
 function placeCaretAtStart(el) {
-  const target = el?.matches?.(POEM_LINE_SELECTOR) ? ensureTextSpan(el) : el;
+  const target = poemCaretTarget(el);
   if (!target) return;
   const selection = window.getSelection();
   if (!selection) return;
   const range = document.createRange();
-  range.selectNodeContents(target);
-  range.collapse(true);
+  if (target.classList?.contains("nv-poem-line-text") && !String(target.textContent || "")) {
+    const node = ensureEditableTextNode(target);
+    range.setStart(node, 0);
+    range.collapse(true);
+  } else {
+    range.selectNodeContents(target);
+    range.collapse(true);
+  }
   selection.removeAllRanges();
   selection.addRange(range);
 }
 
 function placeCaretAtEnd(el) {
-  const target = el?.matches?.(POEM_LINE_SELECTOR) ? ensureTextSpan(el) : el;
+  const target = poemCaretTarget(el);
   if (!target) return;
   const selection = window.getSelection();
   if (!selection) return;
   const range = document.createRange();
-  range.selectNodeContents(target);
-  range.collapse(false);
+  if (target.classList?.contains("nv-poem-line-text") && !String(target.textContent || "")) {
+    const node = ensureEditableTextNode(target);
+    range.setStart(node, 0);
+    range.collapse(true);
+  } else {
+    range.selectNodeContents(target);
+    range.collapse(false);
+  }
   selection.removeAllRanges();
   selection.addRange(range);
 }
@@ -320,7 +353,7 @@ function replacePoemLineRangeWithPlainText(line, range, text) {
   line.replaceWith(...nodes);
   const lastLine = nodes.slice().reverse().find((node) => node.matches?.(POEM_LINE_SELECTOR)) || nodes[nodes.length - 1];
   const poem = nodes[0]?.closest?.(".nv-poem, .nodevision-poem");
-  if (poem) refreshPoemLineNumbers(poem);
+  if (poem) refreshPoemLineNumbers(poem, { convertEmptyLines: false });
   placeCaretAtEnd(lastLine);
   return true;
 }
@@ -339,18 +372,18 @@ function splitPoemLineAtRange(line, range) {
   const trailing = trailingRange.extractContents();
   trailingRange.detach?.();
 
-  if (!textSpan.childNodes.length) textSpan.appendChild(document.createElement("br"));
+  if (!textSpan.childNodes.length) textSpan.appendChild(document.createTextNode(""));
 
   const nextLine = makePoemLine();
   const nextText = ensureTextSpan(nextLine);
   nextText.textContent = "";
   nextText.appendChild(trailing);
-  if (!nextText.childNodes.length) nextText.appendChild(document.createElement("br"));
+  if (!nextText.childNodes.length) nextText.appendChild(document.createTextNode(""));
   line.after(nextLine);
   return nextLine;
 }
 
-function insertPoemNodeAfterCurrent(wysiwyg, poem, node) {
+function insertPoemNodeAfterCurrent(wysiwyg, poem, node, options = {}) {
   const row = closestPoemRowFromSelection(wysiwyg);
   if (row && poem.contains(row)) {
     row.after(node);
@@ -358,50 +391,33 @@ function insertPoemNodeAfterCurrent(wysiwyg, poem, node) {
     const stanza = poem.querySelector?.(":scope > .nv-poem-stanza") || poem.querySelector?.(".nv-poem-stanza") || poem;
     stanza.appendChild(node);
   }
-  refreshPoemLineNumbers(poem);
-  placeCaretAtStart(node);
+  refreshPoemLineNumbers(poem, { convertEmptyLines: false });
+  if (options.placeCaret !== false) placeCaretAtStart(node);
   notifyEditorChanged(wysiwyg);
 }
 
-function ensurePoemControls(poem) {
-  if (!poem?.querySelector) return null;
-  let controls = poem.querySelector(":scope > .nv-poem-controls");
-  if (controls) return controls;
-  controls = document.createElement("div");
-  controls.className = "nv-poem-controls nv-editor-only";
-  controls.setAttribute("data-editor-only", "true");
-  controls.setAttribute("contenteditable", "false");
-  const actions = [
-    ["line", "Add poem line"],
-    ["break", "Add stanza break"],
-    ["heading", "Add heading"],
-    ["rhyme", "Add rhyme note"],
-    ["interval", "Change line interval"],
-  ];
-  actions.forEach(([action, label]) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.nvPoemAction = action;
-    button.textContent = label;
-    button.title = label;
-    controls.appendChild(button);
-  });
-  poem.insertBefore(controls, poem.firstChild || null);
-  return controls;
+function activePoemForToolbar(wysiwyg) {
+  if (!wysiwyg) return null;
+  const poem = closestPoemFromSelection(wysiwyg);
+  return poem && wysiwyg.contains(poem) ? poem : null;
 }
 
-function handlePoemAction(wysiwyg, actionButton) {
-  const poem = actionButton.closest?.(".nv-poem");
-  if (!poem || !wysiwyg.contains(poem)) return;
-  normalizePoemBlock(poem);
-  ensurePoemControls(poem);
-  const action = actionButton.dataset.nvPoemAction;
+function handlePoemAction(wysiwyg, action) {
+  const poem = activePoemForToolbar(wysiwyg);
+  if (!poem) return;
+  normalizePoemBlock(poem, { convertEmptyLines: false });
   if (action === "line") {
-    insertPoemNodeAfterCurrent(wysiwyg, poem, makePoemLine("poem"));
+    insertPoemNodeAfterCurrent(wysiwyg, poem, makePoemLine(""));
     return;
   }
   if (action === "break") {
-    insertPoemNodeAfterCurrent(wysiwyg, poem, makeStanzaBreak());
+    const breakEl = makeStanzaBreak();
+    insertPoemNodeAfterCurrent(wysiwyg, poem, breakEl, { placeCaret: false });
+    const nextLine = makePoemLine("");
+    breakEl.after(nextLine);
+    refreshPoemLineNumbers(poem, { convertEmptyLines: false });
+    placeCaretAtStart(nextLine);
+    notifyEditorChanged(wysiwyg);
     return;
   }
   if (action === "heading") {
@@ -425,10 +441,64 @@ function handlePoemAction(wysiwyg, actionButton) {
     poem.setAttribute("data-line-number-step", String(interval));
     poem.setAttribute("data-line-numbering", String(interval));
     storeInterval(interval);
-    refreshPoemLineNumbers(poem);
+    refreshPoemLineNumbers(poem, { convertEmptyLines: false });
     notifyEditorChanged(wysiwyg);
   }
 }
+
+export function performPoemToolbarAction(action, wysiwyg = getWysiwyg()) {
+  if (typeof window !== "undefined" && typeof window.HTMLWysiwygTools?.restoreSavedSelection === "function") {
+    window.HTMLWysiwygTools.restoreSavedSelection();
+  }
+  handlePoemAction(wysiwyg, action);
+}
+
+function hidePoetrySubToolbar() {
+  const subToolbar = document.getElementById("sub-toolbar");
+  if (!subToolbar?.querySelector?.("#nv-poetry-toolbar")) return;
+  subToolbar.style.display = "none";
+  subToolbar.innerHTML = "";
+}
+
+function showPoetrySubToolbar() {
+  window.dispatchEvent?.(new CustomEvent("nv-show-subtoolbar", {
+    detail: { heading: "Poetry", force: true, toggle: false },
+  }));
+}
+
+function isRangeAtStartOfNode(range, node) {
+  if (!range || !node) return false;
+  const probe = document.createRange();
+  probe.selectNodeContents(node);
+  probe.setEnd(range.startContainer, range.startOffset);
+  const before = probe.toString();
+  probe.detach?.();
+  return before.replace(/\u00a0/g, " ").trim() === "";
+}
+
+function isNodeTextEmpty(node) {
+  return String(node?.textContent || "").replace(/\u00a0/g, " ").trim() === "";
+}
+
+function insertInitialTextIntoPoemLine(line, text = "") {
+  const value = String(text ?? "");
+  if (!line?.isConnected || !value) return false;
+  const textSpan = ensureTextSpan(line);
+  if (!textSpan) return false;
+  textSpan.textContent = value;
+  const textNode = textSpan.firstChild;
+  const selection = window.getSelection();
+  if (selection && textNode?.nodeType === Node.TEXT_NODE) {
+    const range = document.createRange();
+    range.setStart(textNode, value.length);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+  window.HTMLWysiwygTools?.saveCurrentSelection?.();
+  return true;
+}
+
 
 export function installPoemEditingBehavior(wysiwyg) {
   if (!wysiwyg) return () => {};
@@ -437,6 +507,17 @@ export function installPoemEditingBehavior(wysiwyg) {
 
   let pendingRefresh = false;
   let pendingPoem = null;
+  let pendingTextEntryLine = null;
+
+  const reinforcePendingTextEntryLine = () => {
+    if (!pendingTextEntryLine?.isConnected) {
+      pendingTextEntryLine = null;
+      return false;
+    }
+    placeCaretAtStart(pendingTextEntryLine);
+    window.HTMLWysiwygTools?.saveCurrentSelection?.();
+    return true;
+  };
   const scheduleRefresh = (poem = null) => {
     if (poem) pendingPoem = poem;
     if (pendingRefresh) return;
@@ -445,8 +526,28 @@ export function installPoemEditingBehavior(wysiwyg) {
       pendingRefresh = false;
       const poemToRefresh = pendingPoem;
       pendingPoem = null;
-      if (poemToRefresh?.isConnected) refreshPoemLineNumbers(poemToRefresh);
+      if (poemToRefresh?.isConnected) refreshPoemLineNumbers(poemToRefresh, { convertEmptyLines: false });
     });
+  };
+
+  const onBeforeInput = (event) => {
+    if (!pendingTextEntryLine) return;
+    const inputType = String(event.inputType || "");
+    if (inputType === "insertText" && event.data) {
+      event.preventDefault();
+      event.stopPropagation();
+      const line = pendingTextEntryLine;
+      pendingTextEntryLine = null;
+      if (insertInitialTextIntoPoemLine(line, event.data)) {
+        const poem = line.closest?.(".nv-poem, .nodevision-poem");
+        if (poem) refreshPoemLineNumbers(poem, { convertEmptyLines: false });
+        notifyEditorChanged(wysiwyg);
+      }
+      return;
+    }
+    if (!inputType.startsWith("insert") || inputType === "insertParagraph" || inputType === "insertLineBreak") return;
+    reinforcePendingTextEntryLine();
+    pendingTextEntryLine = null;
   };
 
   const onPaste = (event) => {
@@ -464,50 +565,96 @@ export function installPoemEditingBehavior(wysiwyg) {
   };
 
   const onKeyDown = (event) => {
-    if (event.key !== "Enter" || event.shiftKey) return;
     const row = closestPoemRowFromSelection(wysiwyg);
     if (!row) return;
     const poem = row.closest?.(".nv-poem, .nodevision-poem");
     if (!poem || !poem.classList?.contains("nv-poem")) return;
-    event.preventDefault();
     const selection = window.getSelection();
     const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-    const nextLine = row.matches?.(POEM_LINE_SELECTOR)
-      ? splitPoemLineAtRange(row, range)
-      : makePoemLine("poem");
-    if (!row.matches?.(POEM_LINE_SELECTOR)) row.after(nextLine);
-    refreshPoemLineNumbers(poem);
-    placeCaretAtStart(nextLine);
-    notifyEditorChanged(wysiwyg);
-  };
 
-  const onClick = (event) => {
-    const button = event.target?.closest?.("[data-nv-poem-action]");
-    if (button && wysiwyg.contains(button)) {
+    if (event.key === "Backspace") {
+      const line = row.matches?.(POEM_LINE_SELECTOR) ? row : null;
+      const textSpan = line ? ensureTextSpan(line) : null;
+      if (!line || !textSpan || !range?.collapsed || !isRangeAtStartOfNode(range, textSpan) || !isNodeTextEmpty(textSpan)) return;
       event.preventDefault();
-      handlePoemAction(wysiwyg, button);
+      const previousLine = line.previousElementSibling?.matches?.(POEM_LINE_SELECTOR)
+        ? line.previousElementSibling
+        : line.previousElementSibling?.previousElementSibling?.matches?.(POEM_LINE_SELECTOR)
+          ? line.previousElementSibling.previousElementSibling
+          : null;
+      pendingTextEntryLine = null;
+      line.remove();
+      refreshPoemLineNumbers(poem, { convertEmptyLines: false });
+      if (previousLine) placeCaretAtEnd(previousLine);
+      notifyEditorChanged(wysiwyg);
       return;
     }
-    const poem = event.target?.closest?.(".nv-poem");
-    if (poem && wysiwyg.contains(poem)) ensurePoemControls(poem);
+
+    if (event.key !== "Enter" || event.shiftKey) {
+      if (pendingTextEntryLine && event.key && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        reinforcePendingTextEntryLine();
+      }
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const nextLine = row.matches?.(POEM_LINE_SELECTOR)
+      ? splitPoemLineAtRange(row, range)
+      : makePoemLine("");
+    if (!row.matches?.(POEM_LINE_SELECTOR)) row.after(nextLine);
+    refreshPoemLineNumbers(poem, { convertEmptyLines: false });
+    pendingTextEntryLine = nextLine;
+    reinforcePendingTextEntryLine();
+    notifyEditorChanged(wysiwyg);
+    queueMicrotask(reinforcePendingTextEntryLine);
+    requestAnimationFrame(reinforcePendingTextEntryLine);
+  };
+
+  let lastToolbarPoem = null;
+  const syncPoetryToolbar = () => {
+    if (document.activeElement?.closest?.("#nv-poetry-toolbar")) return;
+    const poem = closestPoemFromSelection(wysiwyg);
+    if (poem && poem !== lastToolbarPoem) {
+      lastToolbarPoem = poem;
+      showPoetrySubToolbar();
+      return;
+    }
+    if (!poem && lastToolbarPoem) {
+      lastToolbarPoem = null;
+      hidePoetrySubToolbar();
+    }
   };
 
   const onInput = () => {
+    if (pendingTextEntryLine && String(ensureTextSpan(pendingTextEntryLine)?.textContent || "")) {
+      pendingTextEntryLine = null;
+    }
     const poem = closestPoemFromSelection(wysiwyg);
     if (!poem || !poem.classList?.contains("nv-poem")) return;
     scheduleRefresh(poem);
+    syncPoetryToolbar();
   };
 
+  normalizeAllPoemBlocks(wysiwyg);
+  wysiwyg.addEventListener("beforeinput", onBeforeInput);
   wysiwyg.addEventListener("paste", onPaste);
   wysiwyg.addEventListener("keydown", onKeyDown);
-  wysiwyg.addEventListener("click", onClick);
   wysiwyg.addEventListener("input", onInput);
+  wysiwyg.addEventListener("mouseup", syncPoetryToolbar);
+  wysiwyg.addEventListener("keyup", syncPoetryToolbar);
+  wysiwyg.addEventListener("focus", syncPoetryToolbar);
+  document.addEventListener("selectionchange", syncPoetryToolbar);
 
   const cleanup = () => {
+    wysiwyg.removeEventListener("beforeinput", onBeforeInput);
     wysiwyg.removeEventListener("paste", onPaste);
     wysiwyg.removeEventListener("keydown", onKeyDown);
-    wysiwyg.removeEventListener("click", onClick);
     wysiwyg.removeEventListener("input", onInput);
+    wysiwyg.removeEventListener("mouseup", syncPoetryToolbar);
+    wysiwyg.removeEventListener("keyup", syncPoetryToolbar);
+    wysiwyg.removeEventListener("focus", syncPoetryToolbar);
+    document.removeEventListener("selectionchange", syncPoetryToolbar);
+    hidePoetrySubToolbar();
     installedPoemEditors.delete(wysiwyg);
   };
   installedPoemEditors.set(wysiwyg, cleanup);
@@ -531,8 +678,8 @@ function insertHtmlAtSelection(wysiwyg, html, preferredRange = null) {
   }
   const insertedPoem = poem && wysiwyg.contains(poem) ? poem : wysiwyg.querySelector(".nv-poem:last-of-type");
   if (insertedPoem) {
-    normalizePoemBlock(insertedPoem);
-    ensurePoemControls(insertedPoem);
+    normalizePoemBlock(insertedPoem, { convertEmptyLines: false });
+    showPoetrySubToolbar();
   }
   const firstLine = insertedPoem?.querySelector?.(POEM_LINE_SELECTOR) || insertedPoem;
   placeCaretAtStart(firstLine);
@@ -568,5 +715,6 @@ if (typeof window !== "undefined") {
     normalizeAllPoemBlocks,
     normalizePoemBlock,
     refreshPoemLineNumbers,
+    performPoemToolbarAction,
   });
 }
