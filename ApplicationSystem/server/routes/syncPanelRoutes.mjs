@@ -3,6 +3,7 @@
 
 import os from "node:os";
 import net from "node:net";
+import multer from "multer";
 import { addTrustedPeer, findTrustedPeer, getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
 import {
   addSyncScope,
@@ -12,6 +13,7 @@ import {
   validateSyncScope,
 } from "../../Sync/SyncScopes.mjs";
 import { normalizeSyncDirection, runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
+import { applyLocalSyncPackage, createLocalSyncPackage, inspectLocalSyncPackage } from "../../Sync/LocalSyncPackageTransport.mjs";
 import { loadSyncProtection, saveSyncProtection } from "../../Sync/SyncProtection.mjs";
 import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
@@ -38,6 +40,7 @@ const DEFAULT_PEER_ENDPOINT_REDISCOVERY_TIMEOUT_MS = 11_000;
 const DEFAULT_PEER_ENDPOINT_REDISCOVERY_POLL_MS = 150;
 const DEFAULT_PEER_URL_FALLBACK_PROBE_TIMEOUT_MS = 900;
 const DEFAULT_USB_DISCOVERY_PROBE_CONCURRENCY = 16;
+const DEFAULT_SYNC_PACKAGE_MAX_BYTES = 512 * 1024 * 1024;
 const COMMON_USB_PEER_HOSTS = [
   "192.168.42.129",
   "192.168.42.1",
@@ -499,7 +502,8 @@ function parseSyncTransport(body) {
     ? (body.syncTransport ?? body.transport ?? "wireless")
     : "wireless";
   const text = String(raw || "wireless").trim().toLowerCase();
-  if (text === "usb" || text === "usb-cable" || text === "usb cable") return "usb";
+  if (text === "usb" || text === "usb-cable" || text === "usb cable" || text === "usb-network" || text === "usb network") return "usb";
+  if (text === "offline" || text === "offline-package" || text === "offline package" || text === "package") return "offline-package";
   return "wireless";
 }
 
@@ -772,6 +776,14 @@ function logSyncJobCreationDecision(req, body, protection, decision, details = {
   }
 }
 
+function syncPackageResultStatus(result, fallback = 400) {
+  if (result?.ok !== false) return 200;
+  const reason = String(result?.reason || "");
+  if (reason === "untrusted_peer" || reason === "invalid_signature") return 403;
+  if (reason === "invalid_package" || reason === "invalid_path") return 400;
+  return fallback;
+}
+
 function installShutdownHookIfNeeded(state) {
   if (state.shutdownHookInstalled) return;
   state.shutdownHookInstalled = true;
@@ -956,6 +968,62 @@ async function enforcePeerSyncDirectionCapabilities({ peerUrl, syncDirection }) 
   return peerCapabilities;
 }
 
+function interfaceNameLooksWireless(name) {
+  return /(?:wi-?fi|wifi|wlan|airport|wireless|^wl)/i.test(String(name || ""));
+}
+
+function getDetectedNonWifiNetworkInterfaces(ctx = {}) {
+  const detected = [];
+  const configuredInterfaces = getConfiguredNetworkInterfaces(ctx);
+  for (const [name, entries] of Object.entries(configuredInterfaces || {})) {
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      if (!entry || entry.family !== "IPv4" || entry.internal === true) continue;
+      if (interfaceNameLooksWireless(name)) continue;
+      detected.push({
+        name,
+        address: String(entry.address || ""),
+        netmask: String(entry.netmask || ""),
+        mac: String(entry.mac || ""),
+        family: "IPv4",
+      });
+    }
+  }
+  return detected;
+}
+
+function getListeningAddressSnapshot(ctx = {}) {
+  const host = String(ctx?.host || ctx?.hostname || ctx?.listenHost || process.env.HOST || "0.0.0.0").trim() || "0.0.0.0";
+  const port = normalizeUsbDiscoveryPort(ctx?.port) || normalizeUsbDiscoveryPort(process.env.PORT) || 3000;
+  return {
+    host,
+    port,
+    listensOnAllInterfaces: host === "0.0.0.0" || host === "::",
+    loopbackOnly: host === "127.0.0.1" || host === "localhost" || host === "::1",
+  };
+}
+
+function getUsbNetworkDiagnostics(ctx = {}) {
+  const interfaces = getDetectedNonWifiNetworkInterfaces(ctx);
+  const listening = getListeningAddressSnapshot(ctx);
+  const candidatePeerProbeUrls = getUsbPeerDiscoveryCandidateUrls({}, ctx).slice(0, 80);
+  const noUsbNetworkInterfaceDetected = interfaces.length === 0;
+  const messages = [];
+  if (noUsbNetworkInterfaceDetected) {
+    messages.push("No USB network interface detected. The operating system has not created a network link over this cable. Use a USB Ethernet adapter, Thunderbolt networking, USB tethering, or Offline Package mode.");
+  }
+  if (listening.loopbackOnly) {
+    messages.push("Nodevision appears to be listening only on loopback. Peers cannot reach this device unless the server listens on 0.0.0.0 or the USB network interface address.");
+  }
+  return {
+    interfaces,
+    listening,
+    candidatePeerProbeUrls,
+    noUsbNetworkInterfaceDetected,
+    message: messages.join(" "),
+  };
+}
+
 async function syncStateResponse(state, ctx) {
   const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot }).catch(() => ({ protectedFromPeerWrites: false }));
   return {
@@ -967,6 +1035,7 @@ async function syncStateResponse(state, ctx) {
     },
     discoveredPeers: listDiscoveredPeers(state),
     selectedPeerDeviceId: state.selectedPeerDeviceId || null,
+    usbNetworkDiagnostics: getUsbNetworkDiagnostics(ctx),
   };
 }
 
@@ -978,6 +1047,16 @@ export function registerSyncPanelRoutes(app, ctx) {
   const syncJobManager = ctx?.syncJobManager && typeof ctx.syncJobManager === "object"
     ? ctx.syncJobManager
     : createSyncJobManager();
+  const syncPackageUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: Number(ctx?.syncPackageMaxBytes) || DEFAULT_SYNC_PACKAGE_MAX_BYTES },
+  }).single("package");
+  const handleSyncPackageUpload = (req, res, next) => {
+    syncPackageUpload(req, res, (err) => {
+      if (err) return res.status(400).json({ ok: false, error: err?.message || "Failed to read sync package upload" });
+      return next();
+    });
+  };
 
   app.get("/api/sync/local-device", async (req, res) => {
     if (!requireSession(req, res)) return;
@@ -1055,6 +1134,65 @@ export function registerSyncPanelRoutes(app, ctx) {
   app.get("/api/sync/status", async (req, res) => {
     if (!requireSession(req, res)) return;
     return res.json(await syncStateResponse(state, ctx));
+  });
+
+  app.get("/api/sync/package/export", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    let scope;
+    try {
+      scope = await resolveRequestedScope(req.query || {}, { runtimeRoot: ctx?.runtimeRoot });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
+    }
+    try {
+      const exported = await createLocalSyncPackage({
+        runtimeRoot: ctx?.runtimeRoot,
+        scope,
+        syncMode: "offline-package",
+      });
+      res.setHeader("Content-Type", "application/octet-stream");
+      res.setHeader("Content-Disposition", "attachment; filename=\"" + exported.filename + "\"");
+      res.setHeader("X-Nodevision-Sync-Files", String(exported.filesExported || 0));
+      return res.send(exported.packageBuffer);
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err?.message || "Failed to export sync package" });
+    }
+  });
+
+  app.post("/api/sync/package/preview", handleSyncPackageUpload, async (req, res) => {
+    if (!requireSession(req, res)) return;
+    if (!req.file?.buffer) return res.status(400).json({ ok: false, error: "Sync package file is required" });
+    try {
+      const preview = await inspectLocalSyncPackage({
+        packageBuffer: req.file.buffer,
+        runtimeRoot: ctx?.runtimeRoot,
+        targetScope: req.body?.scope,
+      });
+      return res.status(200).json({ ...preview, preview: true });
+    } catch (err) {
+      return res.status(400).json({ ok: false, preview: true, error: err?.message || "Failed to preview sync package" });
+    }
+  });
+
+  app.post("/api/sync/package/import", handleSyncPackageUpload, async (req, res) => {
+    if (!requireSession(req, res)) return;
+    if (!req.file?.buffer) return res.status(400).json({ ok: false, error: "Sync package file is required" });
+    try {
+      const imported = await applyLocalSyncPackage({
+        packageBuffer: req.file.buffer,
+        runtimeRoot: ctx?.runtimeRoot,
+        targetScope: req.body?.scope,
+      });
+      return res.status(syncPackageResultStatus(imported, 409)).json({ ...imported, imported: imported.ok !== false });
+    } catch (err) {
+      const statusCode = Number(err?.statusCode) || Number(err?.status) || 400;
+      return res.status(statusCode >= 400 && statusCode <= 599 ? statusCode : 400).json({
+        ok: false,
+        imported: false,
+        error: err?.message || "Failed to import sync package",
+        trust: err?.trust || null,
+      });
+    }
   });
 
   app.post("/api/sync/discovery/scanning", async (req, res) => {
@@ -1240,8 +1378,11 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
     const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncTransport = parseSyncTransport(body);
+    if (syncTransport === "offline-package") {
+      return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
+    }
     if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
-      return res.status(400).json({ ok: false, preflight: true, ready: false, error: "USB Cable sync requires a peer URL on the USB network" });
+      return res.status(400).json({ ok: false, preflight: true, ready: false, error: "USB Network sync requires a peer URL on the USB network" });
     }
     const syncRunner = resolveSyncRunner(ctx);
 
@@ -1364,8 +1505,11 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
     const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncTransport = parseSyncTransport(body);
+    if (syncTransport === "offline-package") {
+      return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
+    }
     if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
-      return res.status(400).json({ ok: false, error: "USB Cable sync requires a peer URL on the USB network" });
+      return res.status(400).json({ ok: false, error: "USB Network sync requires a peer URL on the USB network" });
     }
     const syncRunner = resolveSyncRunner(ctx);
 
@@ -1534,14 +1678,17 @@ export function registerSyncPanelRoutes(app, ctx) {
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
     const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncTransport = parseSyncTransport(body);
+    if (syncTransport === "offline-package") {
+      return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
+    }
     if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
       logSyncJobCreationDecision(req, body, protection, "rejected", {
         statusCode: 400,
-        reason: "USB Cable sync requires a peer URL on the USB network",
+        reason: "USB Network sync requires a peer URL on the USB network",
         selectedPeerDeviceId: deviceId,
         scope,
       });
-      return res.status(400).json({ ok: false, error: "USB Cable sync requires a peer URL on the USB network" });
+      return res.status(400).json({ ok: false, error: "USB Network sync requires a peer URL on the USB network" });
     }
     const syncRunner = resolveSyncRunner(ctx);
 

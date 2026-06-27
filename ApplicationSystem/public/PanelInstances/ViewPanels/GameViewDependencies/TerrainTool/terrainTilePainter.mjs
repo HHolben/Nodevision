@@ -2,6 +2,12 @@
 // This file creates and replaces hidden Meta World terrain tiles for the terrain painting tool.
 
 import { createTerrainMaterial } from "./terrainMaterial.mjs";
+import {
+  createTerrainSurfaceColliderRef,
+  createTerrainSurfaceMesh,
+  pointInsideTerrainSurface,
+  sculptTerrainSurface
+} from "./terrainSurfaceMesh.mjs";
 
 function round3(value) {
   return Math.round(value * 1000) / 1000;
@@ -17,6 +23,7 @@ function buildTileKey(gridX, gridZ, tileSize) {
 
 export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
   const paintedTiles = new Map();
+  const paintedSurfaces = new Set();
 
   function detachMesh(mesh) {
     if (!mesh) return;
@@ -30,6 +37,7 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
     }
     const key = mesh.userData?.terrain?.tileKey;
     if (key && paintedTiles.get(key) === mesh) paintedTiles.delete(key);
+    if (paintedSurfaces.has(mesh)) paintedSurfaces.delete(mesh);
   }
 
   function findExistingTile(key) {
@@ -39,6 +47,114 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
     const existing = objects.find((obj) => obj?.isMesh && obj.userData?.terrain?.tileKey === key);
     if (existing) paintedTiles.set(key, existing);
     return existing || null;
+  }
+
+  function findExistingSurface(point) {
+    for (const mesh of paintedSurfaces) {
+      if (mesh?.parent && pointInsideTerrainSurface(mesh, point)) return mesh;
+    }
+    for (const mesh of objects) {
+      if (
+        mesh?.isMesh
+        && mesh.parent
+        && String(mesh.userData?.nvType || "").toLowerCase() === "terrain-surface"
+        && pointInsideTerrainSurface(mesh, point)
+      ) {
+        paintedSurfaces.add(mesh);
+        return mesh;
+      }
+    }
+    return null;
+  }
+
+  function createSurfaceForPoint({
+    point,
+    tileSize,
+    elevation,
+    baseY,
+    color,
+    isSolid,
+    texture,
+    metadata
+  }) {
+    const radius = Math.max(0, Number(metadata.radius) || 0);
+    const cells = Math.max(6, Math.ceil(((radius > 0 ? radius * 2 : tileSize * 6) + tileSize * 2) / tileSize));
+    const columns = cells + (cells % 2);
+    const rows = columns;
+    const centerX = Math.round((Number(point.x) || 0) / tileSize) * tileSize;
+    const centerZ = Math.round((Number(point.z) || 0) / tileSize) * tileSize;
+    const mesh = createTerrainSurfaceMesh(THREE, {
+      columns,
+      rows,
+      tileSize,
+      color,
+      texture,
+      kind: metadata.kind || "grass",
+      isSolid,
+      metadata: {
+        ...metadata,
+        mode: "sculpted",
+        baseY: round3(Number(baseY) || 0),
+        elevation: round3(Number(elevation) || 0)
+      },
+      position: { x: centerX, y: Number(baseY) || 0, z: centerZ }
+    });
+    scene.add(mesh);
+    objects.push(mesh);
+    paintedSurfaces.add(mesh);
+
+    const colliderRef = createTerrainSurfaceColliderRef(THREE, mesh);
+    if (colliderRef) {
+      colliders.push(colliderRef);
+      mesh.userData.colliderRef = colliderRef;
+    }
+    return mesh;
+  }
+
+  function paintPolygonalTerrainSurface({
+    point,
+    tileSize = 1,
+    elevation = 0.6,
+    baseY = 0,
+    color = "#3f8f46",
+    isSolid = true,
+    texture = "solid",
+    metadata = {}
+  }) {
+    if (!point) return null;
+    const safeTileSize = Math.max(0.1, Number(tileSize) || 1);
+    const height = Math.max(0.05, Number(elevation) || 0.6);
+    let mesh = findExistingSurface(point);
+    if (!mesh) {
+      mesh = createSurfaceForPoint({
+        point,
+        tileSize: safeTileSize,
+        elevation: height,
+        baseY,
+        color,
+        isSolid,
+        texture,
+        metadata
+      });
+    }
+
+    const changed = sculptTerrainSurface(THREE, mesh, point, {
+      radius: Math.max(safeTileSize, Number(metadata.radius) || safeTileSize),
+      elevation: height,
+      color
+    });
+    if (!changed) return null;
+    mesh.userData.terrain = {
+      ...mesh.userData.terrain,
+      ...metadata,
+      mode: "sculpted",
+      kind: metadata.kind || mesh.userData.terrain?.kind || "grass",
+      color,
+      texture,
+      baseY: round3(Number(baseY) || 0),
+      paintedAt: metadata.paintedAt || mesh.userData.terrain?.paintedAt || null
+    };
+    return { mesh, colliderRef: mesh.userData?.colliderRef || null, key: mesh.uuid };
   }
 
   function paintTerrainTile({
@@ -54,6 +170,18 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
     metadata = {}
   }) {
     if (!point) return null;
+    if (geometryMode === "polygonal") {
+      return paintPolygonalTerrainSurface({
+        point,
+        tileSize,
+        elevation,
+        baseY,
+        color,
+        isSolid,
+        texture,
+        metadata
+      });
+    }
     const safeTileSize = Math.max(0.1, Number(tileSize) || 1);
     const height = Math.max(0.05, Number(elevation) || 0.6);
     const gridX = snapKey(Number(point.x) || 0, safeTileSize);
@@ -111,6 +239,7 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
 
   return {
     paintTerrainTile,
+    paintPolygonalTerrainSurface,
     removeTerrainTile(entry) {
       detachMesh(entry?.mesh || entry);
     }

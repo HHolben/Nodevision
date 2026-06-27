@@ -14,6 +14,8 @@ import {
 } from "./TerrainTool/terrainPresets.mjs";
 import { createTerrainTilePainter } from "./TerrainTool/terrainTilePainter.mjs";
 import { createTerrainMaterial } from "./TerrainTool/terrainMaterial.mjs";
+import { getActiveMetaWorldLayerBridge } from "/MetaWorld/MetaWorldLayerState.mjs";
+import { createTerrainSurfaceColliderRef, createTerrainSurfaceDefinition, createTerrainSurfaceMesh } from "./TerrainTool/terrainSurfaceMesh.mjs";
 
 export function createTerrainToolController({ THREE, scene, objects, colliders }) {
   const root = document.createElement("div");
@@ -22,6 +24,14 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   const terrainPainter = createTerrainTilePainter({ THREE, scene, objects, colliders });
   let paintModeActive = false;
   let lastPaintStatusAt = 0;
+
+  function syncTerrainSurfaceLayer(mesh, reason = "terrainSurfaceChanged") {
+    if (!mesh?.isMesh || String(mesh.userData?.nvType || "").toLowerCase() !== "terrain-surface") return;
+    const bridge = getActiveMetaWorldLayerBridge?.();
+    if (typeof bridge?.upsertObjectLayerFromMesh !== "function") return;
+    const def = createTerrainSurfaceDefinition(mesh);
+    bridge.upsertObjectLayerFromMesh({ mesh, def, reason });
+  }
 
   function hash2D(x, z, seed) {
     const text = `${seed}:${x}:${z}`;
@@ -133,7 +143,13 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     while (generatedRefs.length > 0) {
       const entry = generatedRefs.pop();
       if (!entry) continue;
-      terrainPainter.removeTerrainTile(entry);
+      const layerId = entry.mesh?.userData?.metaWorldLayerId;
+      const bridge = getActiveMetaWorldLayerBridge?.();
+      if (layerId && typeof bridge?.removeObjectLayer === "function") {
+        bridge.removeObjectLayer(layerId);
+      } else {
+        terrainPainter.removeTerrainTile(entry);
+      }
     }
   }
 
@@ -369,6 +385,71 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
       clearGeneratedTerrain();
     }
 
+    if (brushSettings.geometryMode === "polygonal") {
+      const heights = [];
+      const colors = [];
+      for (let iz = 0; iz <= tilesZ; iz += 1) {
+        for (let ix = 0; ix <= tilesX; ix += 1) {
+          const noise = fractalNoise2D(ix, iz, {
+            seed,
+            noiseScale,
+            octaves,
+            persistence,
+            lacunarity
+          });
+          const height = brushSettings.kind === "water"
+            ? Math.max(0.05, brushSettings.depth)
+            : baseHeight + maxRaise * intensity * noise;
+          heights.push(height);
+          colors.push(brushSettings.kind === "water"
+            ? brushSettings.color
+            : "#" + blendColor(colorLow, colorHigh, noise).toString(16).padStart(6, "0"));
+        }
+      }
+
+      const mesh = createTerrainSurfaceMesh(THREE, {
+        columns: tilesX,
+        rows: tilesZ,
+        tileSize,
+        heights,
+        colors,
+        color: brushSettings.color,
+        texture: brushSettings.texture,
+        kind: brushSettings.kind,
+        isSolid,
+        metadata: {
+          mode: "generated",
+          kind: brushSettings.kind,
+          biome: brushSettings.biome,
+          temperature: brushSettings.temperature,
+          moisture: brushSettings.moisture,
+          geometryMode: brushSettings.geometryMode,
+          texture: brushSettings.texture,
+          elevation: Math.round(Math.max(...heights) * 1000) / 1000,
+          depth: brushSettings.kind === "water" ? Math.round(brushSettings.depth * 1000) / 1000 : null,
+          baseY: Math.round(centerY * 1000) / 1000,
+          generator: { seed, noiseScale, octaves, persistence, lacunarity }
+        },
+        position: { x: centerX, y: centerY, z: centerZ }
+      });
+      scene.add(mesh);
+      objects.push(mesh);
+
+      let colliderRef = null;
+      if (mesh.userData.isSolid) {
+        colliderRef = createTerrainSurfaceColliderRef(THREE, mesh);
+        if (colliderRef) {
+          colliders.push(colliderRef);
+          mesh.userData.colliderRef = colliderRef;
+        }
+      }
+      generatedRefs.push({ mesh, colliderRef });
+      syncTerrainSurfaceLayer(mesh, "terrainSurfaceGenerated");
+      status.textContent = "Generated polygonal terrain surface.";
+      setStatus(status.textContent);
+      return;
+    }
+
     for (let ix = 0; ix < tilesX; ix += 1) {
       for (let iz = 0; iz < tilesZ; iz += 1) {
         const noise = fractalNoise2D(ix, iz, {
@@ -463,6 +544,34 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     const centerGridZ = Math.round((Number(point?.z) || 0) / tileSize);
     const paintedAt = new Date().toISOString();
     let paintedCount = 0;
+
+    if (settings.geometryMode === "polygonal") {
+      const result = terrainPainter.paintPolygonalTerrainSurface({
+        point,
+        tileSize,
+        elevation: settings.kind === "water" ? settings.depth : settings.elevation,
+        baseY: settings.baseY,
+        color: settings.color,
+        isSolid: solidInput.checked,
+        texture: settings.texture,
+        metadata: {
+          mode: "sculpted",
+          kind: settings.kind,
+          biome: settings.biome,
+          temperature: settings.temperature,
+          moisture: settings.moisture,
+          radius: Math.round(Math.max(radius, tileSize) * 1000) / 1000,
+          brushShape: settings.brushShape,
+          depth: settings.kind === "water" ? Math.round(settings.depth * 1000) / 1000 : null,
+          paintedAt
+        }
+      });
+      if (!result) return false;
+      syncTerrainSurfaceLayer(result.mesh, "terrainSurfaceSculpted");
+      status.textContent = "Sculpted polygonal " + settings.kind + " terrain.";
+      setStatus(status.textContent);
+      return true;
+    }
 
     for (let dx = -extent; dx <= extent; dx += 1) {
       for (let dz = -extent; dz <= extent; dz += 1) {

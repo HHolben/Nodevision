@@ -88,6 +88,7 @@ function getMeshType(mesh) {
     || hint === "button"
     || hint === "object-file"
     || hint === "image-plane"
+    || hint === "terrain-surface"
   ) return hint;
   const gType = mesh?.geometry?.type;
   if (gType === "BoxGeometry") return "box";
@@ -347,6 +348,19 @@ function serializeMesh(mesh) {
     if (typeof mesh.userData?.imageFilePath === "string" && mesh.userData.imageFilePath) {
       def.imageFile = mesh.userData.imageFilePath;
     }
+  } else if (type === "terrain-surface") {
+    const terrain = mesh.userData?.terrain || {};
+    def.size = [
+      round3(Number(terrain.width) || 1),
+      round3(Number(terrain.depth) || 1)
+    ];
+    def.columns = Math.max(1, Math.floor(Number(terrain.columns) || 1));
+    def.rows = Math.max(1, Math.floor(Number(terrain.rows) || 1));
+    def.tileSize = round3(Number(terrain.tileSize) || 1);
+    def.texture = terrain.texture || "solid";
+    def.kind = terrain.kind || "grass";
+    if (Array.isArray(terrain.heights)) def.heights = terrain.heights.map(round3);
+    if (Array.isArray(terrain.vertexColors)) def.vertexColors = terrain.vertexColors.slice();
   } else if (shape === "box") {
     const p = g?.parameters || {};
     def.size = [

@@ -3916,6 +3916,19 @@ function registerEditableTextWrapping(wysiwyg) {
   };
 }
 
+async function installLineNumberedPoetryTools(wysiwyg) {
+  if (!wysiwyg) return () => {};
+  try {
+    const poetry = await import("/ToolbarCallbacks/insert/insertLineNumberedPoetry.mjs");
+    if (typeof poetry.installPoemEditingBehavior === "function") {
+      return poetry.installPoemEditingBehavior(wysiwyg) || (() => {});
+    }
+  } catch (err) {
+    console.warn("Failed to initialize line numbered poetry tools:", err);
+  }
+  return () => {};
+}
+
 function appendHtmlBodyNodesForEditing(body, wysiwyg, hidden) {
   if (!body || !wysiwyg || !hidden) return;
   for (const child of body.childNodes) {
@@ -4045,6 +4058,10 @@ export async function renderEditor(filePath, container, options = {}) {
   if (typeof container.__cleanupHTMLTextWrapping === "function") {
     container.__cleanupHTMLTextWrapping();
     container.__cleanupHTMLTextWrapping = null;
+  }
+  if (typeof container.__cleanupHTMLPoetry === "function") {
+    container.__cleanupHTMLPoetry();
+    container.__cleanupHTMLPoetry = null;
   }
   container.innerHTML = "";
   ensureHTMLLayoutStyles();
@@ -4324,6 +4341,7 @@ export async function renderEditor(filePath, container, options = {}) {
   container.__cleanupHTMLImageTools = imageTools.destroy;
   container.__cleanupHTMLCaretTracking = registerCaretTracking(wysiwyg);
   container.__cleanupHTMLTextWrapping = registerEditableTextWrapping(wysiwyg);
+  container.__cleanupHTMLPoetry = await installLineNumberedPoetryTools(wysiwyg);
   const updateTextTargetFromSelection = () => {
     const range = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
     updateTextStyleSelectionState(wysiwyg, findTextStyleTargetFromRange(wysiwyg, range));

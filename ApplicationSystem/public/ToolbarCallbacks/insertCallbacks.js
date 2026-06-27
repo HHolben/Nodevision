@@ -491,10 +491,12 @@ insertFootnote: () => {
     document.execCommand('insertHTML', false, `<del>strikethrough</del>`);
   },
   insertSensitive: () => {
-    const text = document.getSelection().toString() || prompt("Enter the sensitive text:");
-    const sensitiveElement = `<style>@media print { .sensitive { display: none; } }</style>
-      <div class="sensitive" style="padding: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; margin: 10px 0;" onload="this.innerHTML='Content hidden for privacy';">${text}</div>`;
-    document.execCommand('insertHTML', false, sensitiveElement);
+    import("/ToolbarCallbacks/insert/insertSensitive.mjs")
+      .then((mod) => { if (mod && typeof mod.default === "function") mod.default(); })
+      .catch((err) => {
+        console.warn("Failed to insert sensitive text:", err);
+        alert("Failed to insert sensitive text: " + (err && err.message ? err.message : err));
+      });
   },
 
 

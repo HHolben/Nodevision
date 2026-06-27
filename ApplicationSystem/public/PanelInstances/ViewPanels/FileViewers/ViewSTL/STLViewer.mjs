@@ -63,6 +63,10 @@ export class STLViewer {
     d.position.set(1, 1, 1).normalize();
     this.scene.add(d);
 
+    this.floorGridVisible = true;
+    this.floorGrid = this.createFloorGrid(400, 40);
+    this.scene.add(this.floorGrid);
+
     this.overlayScene = new THREE.Scene();
     this.overlayCamera = new THREE.PerspectiveCamera(50, 1, 1, 100);
     this.overlayCamera.position.set(50, 50, 50);
@@ -109,8 +113,55 @@ export class STLViewer {
     this.renderer.setAnimationLoop(() => this.animate());
   }
 
+  createFloorGrid(size = 400, divisions = 40, zPosition = 0) {
+    const grid = new THREE.GridHelper(size, divisions, 0xb7b7b7, 0xd8d8d8);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = Number.isFinite(zPosition) ? zPosition : 0;
+    grid.userData.isFloorGrid = true;
+    grid.visible = this.floorGridVisible !== false;
+    const material = grid.material;
+    if (material) {
+      material.transparent = true;
+      material.opacity = 0.62;
+      material.depthWrite = false;
+    }
+    return grid;
+  }
+
+  updateFloorGridForModelSize(maxDim = 200, zPosition = 0) {
+    const normalizedDim = Math.max(100, Number(maxDim) || 100);
+    const gridSize = Math.max(200, normalizedDim * 2.5);
+    const divisions = Math.max(20, Math.min(120, Math.round(gridSize / Math.max(5, normalizedDim / 16))));
+    const visible = this.getFloorGridVisible();
+    if (this.floorGrid) {
+      this.scene.remove(this.floorGrid);
+      this.floorGrid.geometry?.dispose?.();
+      if (Array.isArray(this.floorGrid.material)) this.floorGrid.material.forEach((mat) => mat.dispose?.());
+      else this.floorGrid.material?.dispose?.();
+    }
+    this.floorGrid = this.createFloorGrid(gridSize, divisions, zPosition);
+    this.floorGrid.visible = visible;
+    this.scene.add(this.floorGrid);
+  }
+
+  setFloorGridVisible(visible) {
+    this.floorGridVisible = Boolean(visible);
+    if (this.floorGrid) this.floorGrid.visible = this.floorGridVisible;
+    window.dispatchEvent(new CustomEvent("nv-stl-viewer-grid-changed", { detail: { visible: this.floorGridVisible } }));
+    return this.floorGridVisible;
+  }
+
+  getFloorGridVisible() {
+    return this.floorGridVisible !== false;
+  }
+
   destroy() {
     window.removeEventListener("resize", this.resizeHandler);
+    if (this.floorGrid) {
+      this.floorGrid.geometry?.dispose?.();
+      if (Array.isArray(this.floorGrid.material)) this.floorGrid.material.forEach((mat) => mat.dispose?.());
+      else this.floorGrid.material?.dispose?.();
+    }
     this.renderer.dispose();
     this.overlayRenderer.dispose();
   }
@@ -235,6 +286,7 @@ export class STLViewer {
       const size = new THREE.Vector3();
       geometry.boundingBox.getSize(size);
       const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      this.updateFloorGridForModelSize(maxDim, -center.z);
       const material = new THREE.MeshPhongMaterial({
         color: 0xadd8e6,
         transparent: true,

@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewSTL.mjs
 // This file defines browser-side View STL logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { STLViewer } from "./ViewSTL/STLViewer.mjs";
 
 const viewers = new WeakMap(); // one viewer per container
@@ -13,6 +14,8 @@ export function renderSTL(filePath, container, serverBase) {
     viewers.set(container, viewer);
   }
 
+  window.__nvStlViewerApi = viewer;
+  updateToolbarState({ currentMode: "STLviewing", activePanelType: "ViewPanel", stlViewerActive: true });
   viewer.loadSTL(filePath, serverBase);
 }
 

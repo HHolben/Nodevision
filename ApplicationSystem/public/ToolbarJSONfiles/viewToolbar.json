@@ -80,6 +80,22 @@
   },
   {
     "ToolbarCategory": "View",
+    "parentHeading": "View",
+    "heading": "STL viewport",
+    "icon": "icons/CanvasIcon.png",
+    "shortLabel": "STL",
+    "preventDropdown": true,
+    "modes": ["STLviewing"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "STL viewport",
+    "heading": "Controls",
+    "script": "stlViewportWidget.mjs",
+    "modes": ["STLviewing"]
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "dark mode",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "toggleDarkMode",

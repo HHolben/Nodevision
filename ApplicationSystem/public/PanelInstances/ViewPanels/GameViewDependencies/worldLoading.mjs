@@ -2,6 +2,7 @@
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
 import { createEquationColliderPlaneMesh, makePlaneColliderRef } from "./equationColliderTool.mjs";
+import { createTerrainSurfaceColliderRef, createTerrainSurfaceMesh } from "./TerrainTool/terrainSurfaceMesh.mjs";
 import {
   clearActiveMetaWorldLayerBridge,
   notifyMetaWorldLayersChanged,
@@ -525,6 +526,42 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       syncBridgeWorldState(state, worldData);
       notifyMetaWorldLayersChanged({ reason: "objectLayerAdded", objectId });
       return def;
+    },
+    upsertObjectLayerFromMesh({ mesh, def, reason = "objectLayerUpserted" } = {}) {
+      if (!mesh?.isMesh || !def || typeof def !== "object" || !worldData) return null;
+      worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
+      const existingId = mesh.userData?.metaWorldLayerId || def.id || null;
+      let entry = existingId ? layerEntries.find((candidate) => candidate.id === existingId) : null;
+      const objectId = entry?.id || makeUniqueObjectId(layerEntries, def.id || def.tag || def.name, def.type || mesh.userData?.nvType || "object");
+      const nextDef = JSON.parse(JSON.stringify({ ...def, id: objectId }));
+      nextDef.name = typeof nextDef.name === "string" && nextDef.name.trim()
+        ? nextDef.name.trim()
+        : readLayerObjectName(nextDef, objectId, layerEntries.length);
+      if (nextDef.terrain && typeof nextDef.terrain === "object") {
+        nextDef.terrain.id = objectId;
+        nextDef.terrain.name = nextDef.name;
+      }
+      if (!entry) {
+        entry = { id: objectId, def: nextDef, object3d: mesh };
+        layerEntries.push(entry);
+        if (!worldData.objects.includes(nextDef)) worldData.objects.push(nextDef);
+      } else {
+        const defs = Array.isArray(worldData.objects) ? worldData.objects : [];
+        const defIndex = defs.indexOf(entry.def);
+        entry.def = nextDef;
+        entry.object3d = mesh;
+        if (defIndex >= 0) defs[defIndex] = nextDef;
+        else defs.push(nextDef);
+      }
+      mesh.userData.metaWorldLayerId = objectId;
+      if (mesh.userData.terrain && typeof mesh.userData.terrain === "object") {
+        mesh.userData.terrain.id = objectId;
+        mesh.userData.terrain.name = nextDef.name;
+      }
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason, objectId });
+      return nextDef;
     },
     removeObjectLayer(objectId) {
       const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
@@ -1787,6 +1824,20 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             }
           })();
         }
+      } else if (def.type === "terrain-surface") {
+        const terrain = def.terrain && typeof def.terrain === "object" ? def.terrain : {};
+        mesh = createTerrainSurfaceMesh(THREE, {
+          columns: Number.isFinite(def.columns) ? def.columns : terrain.columns,
+          rows: Number.isFinite(def.rows) ? def.rows : terrain.rows,
+          tileSize: Number.isFinite(def.tileSize) ? def.tileSize : terrain.tileSize,
+          heights: Array.isArray(def.heights) ? def.heights : terrain.heights,
+          colors: Array.isArray(def.vertexColors) ? def.vertexColors : terrain.vertexColors,
+          color: def.color || terrain.color || "#3f8f46",
+          texture: def.texture || terrain.texture || "solid",
+          kind: def.kind || terrain.kind || "grass",
+          isSolid: def.isSolid === true || def.collidable === true,
+          metadata: terrain
+        });
       } else if (portalShape === "box") {
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(...def.size),
@@ -1867,7 +1918,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           : (def.type === "equation-collider-plane" ? false : (def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true));
         mesh.userData.isWater = def.isWater === true;
         if (def.terrain && typeof def.terrain === "object") {
-          mesh.userData.terrain = JSON.parse(JSON.stringify(def.terrain));
+          const restoredTerrain = JSON.parse(JSON.stringify(def.terrain));
+          mesh.userData.terrain = def.type === "terrain-surface"
+            ? { ...mesh.userData.terrain, ...restoredTerrain }
+            : restoredTerrain;
         }
         if (def.hidden === true || def.visible === false) mesh.visible = false;
         scene.add(mesh);
@@ -1946,6 +2000,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         if (((def.type === "equation-collider-plane" && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && def.isWater !== true) {
           if (isExpressionLayerType(def.type) && def.collider?.enabled === true) {
             const colliderRef = createExpressionLayerColliderRef(THREE, mesh, def, getExpressionLayerOptions(camera || window.VRWorldContext?.camera)) || { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            colliders.push(colliderRef);
+            mesh.userData.colliderRef = colliderRef;
+          } else if (def.type === "terrain-surface") {
+            const colliderRef = createTerrainSurfaceColliderRef(THREE, mesh) || { type: "box", box: new THREE.Box3().setFromObject(mesh) };
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (portalShape === "box") {

@@ -8,38 +8,13 @@ import { createHash } from "node:crypto";
 import { buildScopeManifest, compareScopeManifests, isPathInsideScope, loadSyncScopes, validateSyncScope } from "./SyncScopes.mjs";
 import { normalizePeerUrl, resolveRuntimeRoot } from "./sync-sync-test-two-way.mjs";
 import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
-import { createSignedScopeFilePush, createSignedScopeFileRequest, createSignedScopeManifestRequest } from "./ScopePeerSync.mjs";
 import { createCancelledError, pullScopeFileStream } from "./pull-scope-file-stream.mjs";
 import { pushScopeFileStream } from "./push-scope-file-stream.mjs";
 import { createPreOverwriteRecoverySnapshot, createSyncRecoveryJobId } from "./SyncRecovery.mjs";
+import { HttpSyncTransport } from "./SyncTransport.mjs";
 
 const hash = (b) => createHash("sha256").update(b).digest("hex");
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
-const postJson = async (peerUrl, endpointPath, body) => {
-  let r;
-  try {
-    r = await fetch(new URL(endpointPath, `${peerUrl}/`).toString(), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  } catch (err) {
-    const networkError = new Error(`Unable to reach peer at ${peerUrl}: ${err?.message || "network request failed"}`);
-    networkError.name = "PeerSyncNetworkError";
-    networkError.peerUrl = peerUrl;
-    networkError.endpointPath = endpointPath;
-    networkError.cause = err;
-    throw networkError;
-  }
-  const p = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    const peerHttpError = new Error(`${endpointPath} failed (${r.status}): ${p?.error || "request failed"}`);
-    peerHttpError.name = "PeerSyncHttpError";
-    peerHttpError.status = r.status;
-    peerHttpError.peerUrl = peerUrl;
-    peerHttpError.endpointPath = endpointPath;
-    peerHttpError.responsePayload = p;
-    throw peerHttpError;
-  }
-  return p;
-};
-
 function extensionSummary(relativePath) {
   const ext = path.posix.extname(String(relativePath || "")).toLowerCase();
   return {
@@ -294,33 +269,27 @@ async function saveScopedConflictCopy({ notebookDir, scope, originalRelativePath
   return { relativePath: conflictRelativePath, bytes: contentBuffer.length };
 }
 
-async function fetchManifest(peerUrl, scope, runtimeRoot) {
-  const signed = await createSignedScopeManifestRequest({ scope }, { runtimeRoot });
-  const body = await postJson(peerUrl, "/api/peer/scope/manifest", signed);
-  if (!body?.ok || !body?.manifest) throw new Error("missing manifest");
-  return body.manifest;
+async function fetchManifest(transport, scope) {
+  return transport.listFiles(scope);
 }
 
-async function fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { operation = "pull", caller = "normal pull" } = {}) {
+async function fetchRemoteFile(transport, scope, relativePath, { operation = "pull", caller = "normal pull" } = {}) {
   const rawRelativePath = typeof relativePath === "string" ? relativePath : String(relativePath ?? "");
-  const signed = await createSignedScopeFileRequest({ scope, relativePath }, { runtimeRoot });
   logSignedScopeFileFetchStart({
-    endpoint: "scope/file-get",
-    method: "POST",
+    endpoint: "transport:getFile",
+    method: transport?.kind || "transport",
     operation,
     caller,
     transferMode: "json",
-    signed,
+    signed: null,
     rawRelativePath,
     normalizedRelativePath: rawRelativePath,
   });
-  const body = await postJson(peerUrl, "/api/peer/scope/file-get", signed);
-  if (!body?.ok || !body?.file) throw new Error("missing file payload");
-  return body.file;
+  return transport.getFile(scope, relativePath);
 }
 
-async function pullOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, saveMode = "auto", recoveryJobId = null, sourceDevice = null, destinationDevice = null, incomingEntry = null }) {
-  const remote = await fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { operation: "pull", caller: "normal pull" });
+async function pullOne({ transport, scope, relativePath, notebookDir, runtimeRoot, saveMode = "auto", recoveryJobId = null, sourceDevice = null, destinationDevice = null, incomingEntry = null }) {
+  const remote = await fetchRemoteFile(transport, scope, relativePath, { operation: "pull", caller: "normal pull" });
   if (remote.relativePath !== relativePath) throw new Error("mismatched relativePath");
   const buf = Buffer.from(String(remote.contentBase64 || ""), "base64");
   if (buf.toString("base64") !== remote.contentBase64) throw new Error("invalid base64");
@@ -389,7 +358,7 @@ async function pullOneStream({ peerUrl, scope, relativePath, notebookDir, runtim
   };
 }
 
-async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, saveMode = "auto", recoveryJobId = null }) {
+async function pushOne({ transport, peerUrl, scope, relativePath, notebookDir, runtimeRoot, saveMode = "auto", recoveryJobId = null }) {
   const localPath = resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath });
   const stat = await fs.stat(localPath);
   if (!stat.isFile()) throw new Error("local path is not a file");
@@ -405,8 +374,12 @@ async function pushOne({ peerUrl, scope, relativePath, notebookDir, runtimeRoot,
     });
   }
   const buf = await fs.readFile(localPath);
-  const signed = await createSignedScopeFilePush({ scope, relativePath, contentBase64: buf.toString("base64"), contentType: "application/octet-stream", mtimeMs: Math.trunc(stat.mtimeMs) }, { runtimeRoot });
-  const body = await postJson(peerUrl, "/api/peer/scope/file-push", { ...signed, saveMode, recoveryJobId });
+  const body = await transport.putFile(scope, relativePath, buf, {
+    contentType: "application/octet-stream",
+    mtimeMs: Math.trunc(stat.mtimeMs),
+    saveMode,
+    recoveryJobId,
+  });
   const saved = body?.saved && typeof body.saved === "object" ? body.saved : {};
   return {
     relativePath,
@@ -443,8 +416,8 @@ async function pushOneStream({ peerUrl, scope, relativePath, notebookDir, runtim
   };
 }
 
-async function pullConflict({ peerUrl, scope, relativePath, notebookDir, runtimeRoot, peerDeviceId }) {
-  const remote = await fetchRemoteFile(peerUrl, scope, relativePath, runtimeRoot, { operation: "conflict", caller: "conflict resolver" });
+async function pullConflict({ transport, scope, relativePath, notebookDir, runtimeRoot, peerDeviceId }) {
+  const remote = await fetchRemoteFile(transport, scope, relativePath, { operation: "conflict", caller: "conflict resolver" });
   const buf = Buffer.from(String(remote.contentBase64 || ""), "base64");
   const expected = String(remote.sha256 || "");
   const actual = hash(buf);
@@ -519,15 +492,17 @@ export async function runScopeSyncTwoWay({
   onFileErrorControl,
   maxFileSizeBytes = null,
   syncDirection = "sync",
+  transport = null,
 } = {}) {
-  const normalizedPeerUrl = normalizePeerUrl(peerUrl);
-  const normalizedScope = validateSyncScope(scope);
   const resolvedRuntimeRoot = resolveRuntimeRoot({ runtimeRoot });
+  const syncTransport = transport || new HttpSyncTransport({ peerUrl, runtimeRoot: resolvedRuntimeRoot });
+  const normalizedPeerUrl = syncTransport.peerUrl ? normalizePeerUrl(syncTransport.peerUrl) : String(peerUrl || syncTransport.kind || "sync-transport");
+  const normalizedScope = validateSyncScope(scope);
   const loaded = await loadSyncScopes({ runtimeRoot: resolvedRuntimeRoot });
   if (!loaded.syncScopes.includes(normalizedScope)) throw new Error(`Scope is not enabled: ${normalizedScope}`);
   const notebookDir = path.resolve(resolvedRuntimeRoot, "Notebook");
 
-  const remoteBefore = await fetchManifest(normalizedPeerUrl, normalizedScope, resolvedRuntimeRoot);
+  const remoteBefore = await fetchManifest(syncTransport, normalizedScope);
   const localBefore = await buildScopeManifest({ notebookDir, scope: normalizedScope });
   const rawPlan = await compareScopeManifests(localBefore, remoteBefore);
   const localEntries = toManifestEntryMap(localBefore);
@@ -669,6 +644,7 @@ export async function runScopeSyncTwoWay({
               },
             })
             : await pullOne({
+              transport: syncTransport,
               peerUrl: normalizedPeerUrl,
               scope: normalizedScope,
               relativePath: rp,
@@ -744,6 +720,7 @@ export async function runScopeSyncTwoWay({
               },
             })
             : await pushOne({
+              transport: syncTransport,
               peerUrl: normalizedPeerUrl,
               scope: normalizedScope,
               relativePath: rp,
@@ -822,6 +799,7 @@ export async function runScopeSyncTwoWay({
                 },
               })
               : await pushOne({
+                transport: syncTransport,
                 peerUrl: normalizedPeerUrl,
                 scope: normalizedScope,
                 relativePath: rp,
@@ -864,6 +842,7 @@ export async function runScopeSyncTwoWay({
               },
             })
             : await pullConflict({
+              transport: syncTransport,
               peerUrl: normalizedPeerUrl,
               scope: normalizedScope,
               relativePath: rp,
@@ -895,7 +874,7 @@ export async function runScopeSyncTwoWay({
   emitProgress("sync-complete");
 
   const localAfter = await buildScopeManifest({ notebookDir, scope: normalizedScope });
-  const remoteAfter = await fetchManifest(normalizedPeerUrl, normalizedScope, resolvedRuntimeRoot);
+  const remoteAfter = await fetchManifest(syncTransport, normalizedScope);
   const afterPlan = await compareScopeManifests(localAfter, remoteAfter);
   const partial = skippedOperations.length > 0;
   return {

@@ -58,15 +58,18 @@ const TEMPLATE = `
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0 10px;">
         <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;">Connection Type
           <select data-sync-transport style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:150px;">
-            <option value="wireless">Wireless</option>
-            <option value="usb">USB Cable</option>
+            <option value="wireless">Wireless / LAN</option>
+            <option value="usb">USB Network</option>
+            <option value="offline-package">Offline Package</option>
           </select>
         </label>
         <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;flex:1;min-width:230px;">Peer URL
           <input data-peer-url type="url" inputmode="url" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
         </label>
       </div>
-      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Cable mode uses the peer sync system over a USB network interface. With Wi-Fi off, enable Scan for USB Devices on one or both computers and Make This Device Discoverable over USB on the other. If you know the other computer's USB network address, enter it here, for example http://192.168.50.2:3000. Scan for USB Devices will also try that URL directly.</div>
+      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Network mode uses normal Nodevision peer sync over an operating-system network interface created by USB, Thunderbolt, USB tethering, or a USB Ethernet adapter. If no USB network interface exists, Nodevision cannot discover the peer.</div>
+      <div data-offline-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f4f0ff;color:#4b367c;font-size:0.82em;line-height:1.35;">Offline Package mode exports signed sync bundles that can be moved by USB drive, external disk, SD card, or another trusted physical medium without using wireless networking.</div>
+      <div data-usb-diagnostics style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f8fbff;border:1px solid #d6e6f7;color:#24425f;font-size:0.8em;line-height:1.35;"></div>
       <div data-peer-list style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;"></div>
     </section>
 
@@ -77,6 +80,19 @@ const TEMPLATE = `
       </div>
       <div data-shared-scopes style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
       <div data-folder-list style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow:auto;"></div>
+    </section>
+
+    <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="font-weight:600;">Offline Transfer</div>
+        <span style="font-size:0.78em;color:#666;">Export or import a signed sync package</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <button type="button" data-package-export style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Export Sync Package</button>
+        <button type="button" data-package-import style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Import Sync Package</button>
+        <input data-package-file type="file" accept=".nodevisionsync,.zip,application/zip,application/octet-stream" style="display:none;">
+      </div>
+      <div data-package-status style="margin-top:7px;color:#555;font-size:0.82em;"></div>
     </section>
 
     <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
@@ -176,6 +192,7 @@ const SYNC_WIRELESS_PEER_URL_STORAGE_KEY = "nodevision.sync.wirelessPeerUrl";
 const SYNC_USB_PEER_URL_STORAGE_KEY = "nodevision.sync.usbPeerUrl";
 const WIRELESS_PEER_URL_PLACEHOLDER = "http://10.0.0.42:3000";
 const USB_PEER_URL_PLACEHOLDER = "http://192.168.50.2:3000";
+const OFFLINE_PEER_URL_PLACEHOLDER = "No peer URL needed";
 
 function readStoredSyncTransportSettings() {
   try {
@@ -205,7 +222,10 @@ function persistSyncTransportSettings(settings = {}) {
 }
 
 function syncTransportLabel(value) {
-  return normalizeSyncTransport(value) === "usb" ? "USB Cable" : "Wireless";
+  const transport = normalizeSyncTransport(value);
+  if (transport === "usb") return "USB Network";
+  if (transport === "offline-package") return "Offline Package";
+  return "Wireless / LAN";
 }
 
 function readStoredMaxFileSizeMb() {
@@ -261,6 +281,24 @@ function isSafeRelativePath(value) {
 }
 
 
+function renderUsbDiagnosticsHtml(diagnostics) {
+  if (!diagnostics || typeof diagnostics !== "object") return "";
+  const interfaces = Array.isArray(diagnostics.interfaces) ? diagnostics.interfaces : [];
+  const candidates = Array.isArray(diagnostics.candidatePeerProbeUrls) ? diagnostics.candidatePeerProbeUrls.slice(0, 10) : [];
+  const listening = diagnostics.listening && typeof diagnostics.listening === "object" ? diagnostics.listening : {};
+  const interfaceRows = interfaces.length
+    ? interfaces.map((item) => `<li>${escapeHtml(item.name || "interface")}: ${escapeHtml(item.address || "")}${item.netmask ? ` / ${escapeHtml(item.netmask)}` : ""}</li>`).join("")
+    : `<li>No non-Wi-Fi IPv4 interfaces detected.</li>`;
+  const candidateRows = candidates.length
+    ? candidates.map((url) => `<li>${escapeHtml(url)}</li>`).join("")
+    : `<li>No candidate peer probe URLs available.</li>`;
+  const listenText = listening.host
+    ? `${String(listening.host)}:${String(listening.port || "?")}${listening.listensOnAllInterfaces ? " (all interfaces)" : listening.loopbackOnly ? " (loopback only)" : ""}`
+    : "Unknown";
+  const message = String(diagnostics.message || "").trim();
+  return `<div><strong>USB Network Diagnostics</strong></div><div>Listening: ${escapeHtml(listenText)}</div><div style="margin-top:4px;">Interfaces:</div><ul style="margin:3px 0 6px;padding-left:18px;">${interfaceRows}</ul><div>Candidate peer probe URLs:</div><ul style="margin:3px 0 0;padding-left:18px;">${candidateRows}</ul>${message ? `<div style="margin-top:6px;color:#8f4f00;">${escapeHtml(message)}</div>` : ""}`;
+}
+
 async function fetchJsonWithStatus(url, init = {}) {
   const response = await fetch(url, { credentials: "include", headers: { "Content-Type": "application/json" }, ...init });
   const payload = await response.json().catch(() => ({}));
@@ -279,6 +317,15 @@ function createJsonResponseError(response, payload) {
 
 async function apiFetchJson(url, init = {}) {
   const { response, payload } = await fetchJsonWithStatus(url, init);
+  if (!response.ok) {
+    throw createJsonResponseError(response, payload);
+  }
+  return payload;
+}
+
+async function apiFetchFormJson(url, formData) {
+  const response = await fetch(url, { method: "POST", credentials: "include", body: formData });
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw createJsonResponseError(response, payload);
   }
@@ -309,11 +356,17 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const syncTransportSelect = panelElem.querySelector("[data-sync-transport]");
   const peerUrlInput = panelElem.querySelector("[data-peer-url]");
   const usbHelpEl = panelElem.querySelector("[data-usb-help]");
+  const offlineHelpEl = panelElem.querySelector("[data-offline-help]");
+  const usbDiagnosticsEl = panelElem.querySelector("[data-usb-diagnostics]");
   const scopeSelect = panelElem.querySelector("[data-scope-select]");
   const syncDirectionSelect = panelElem.querySelector("[data-sync-direction]");
   const maxFileSizeInput = panelElem.querySelector("[data-sync-max-file-mb]");
   const pauseOnFileErrorInput = panelElem.querySelector("[data-sync-pause-on-error]");
   const syncDryBtn = panelElem.querySelector("[data-sync-dry]");
+  const packageExportBtn = panelElem.querySelector("[data-package-export]");
+  const packageImportBtn = panelElem.querySelector("[data-package-import]");
+  const packageFileInput = panelElem.querySelector("[data-package-file]");
+  const packageStatusEl = panelElem.querySelector("[data-package-status]");
   const syncApplyBtn = panelElem.querySelector("[data-sync-apply]");
   const syncResultEl = panelElem.querySelector("[data-sync-result]");
   const syncDetailsEl = panelElem.querySelector("[data-sync-details]");
@@ -337,7 +390,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     busy: false,
     localDevice: null,
     protection: { protectedFromPeerWrites: false },
-    status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null },
+    status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null, usbNetworkDiagnostics: null },
     scopes: ["SyncTest"],
     candidateFolders: [],
     activeJob: null,
@@ -370,17 +423,27 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const renderTransportSettings = () => {
     state.syncSettings.syncTransport = normalizeSyncTransport(state.syncSettings.syncTransport);
-    if (syncTransportSelect && syncTransportSelect.value !== state.syncSettings.syncTransport) syncTransportSelect.value = state.syncSettings.syncTransport;
+    const transport = state.syncSettings.syncTransport;
+    if (syncTransportSelect && syncTransportSelect.value !== transport) syncTransportSelect.value = transport;
     if (peerUrlInput) {
       peerUrlInput.value = getActivePeerUrl(state.syncSettings);
-      peerUrlInput.placeholder = state.syncSettings.syncTransport === "usb" ? USB_PEER_URL_PLACEHOLDER : WIRELESS_PEER_URL_PLACEHOLDER;
+      peerUrlInput.placeholder = transport === "offline-package" ? OFFLINE_PEER_URL_PLACEHOLDER : transport === "usb" ? USB_PEER_URL_PLACEHOLDER : WIRELESS_PEER_URL_PLACEHOLDER;
+      peerUrlInput.disabled = state.busy || transport === "offline-package";
     }
-    if (usbHelpEl) usbHelpEl.style.display = state.syncSettings.syncTransport === "usb" ? "block" : "none";
+    if (usbHelpEl) usbHelpEl.style.display = transport === "usb" ? "block" : "none";
+    if (offlineHelpEl) offlineHelpEl.style.display = transport === "offline-package" ? "block" : "none";
+    if (usbDiagnosticsEl) {
+      const html = transport === "usb" ? renderUsbDiagnosticsHtml(state.status.usbNetworkDiagnostics) : "";
+      usbDiagnosticsEl.style.display = html ? "block" : "none";
+      usbDiagnosticsEl.innerHTML = html;
+    }
   };
 
   const setActivePeerUrl = (value) => {
     const peerUrl = String(value || "").trim();
-    if (normalizeSyncTransport(state.syncSettings.syncTransport) === "usb") state.syncSettings.usbPeerUrl = peerUrl;
+    const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
+    if (transport === "offline-package") return;
+    if (transport === "usb") state.syncSettings.usbPeerUrl = peerUrl;
     else state.syncSettings.wirelessPeerUrl = peerUrl;
     persistSyncTransportSettings(state.syncSettings);
   };
@@ -392,11 +455,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const autofillPeerUrlFromPeer = (peer) => {
     const result = withActivePeerUrlFromDiscoveredPeer(state.syncSettings, peer);
-    if (!result.peerUrl) return "";
     state.syncSettings = result.settings;
     persistSyncTransportSettings(state.syncSettings);
     renderTransportSettings();
-    return result.peerUrl;
+    return result.peerUrl || "";
   };
 
   const ensureActivePeerUrlForSelectedPeer = (peer) => {
@@ -476,16 +538,22 @@ export async function setupPanel(panelElem, panelVars = {}) {
       protectDisableBtn.style.cursor = state.busy || !protectedOn ? "not-allowed" : "pointer";
     }
     renderSyncDirection();
-    if (syncApplyBtn) syncApplyBtn.disabled = state.busy;
+    const packageMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "offline-package";
+    if (syncDryBtn) syncDryBtn.disabled = state.busy || packageMode;
+    if (syncApplyBtn) syncApplyBtn.disabled = state.busy || packageMode;
   };
 
   const renderDiscoveryButtons = () => {
     if (!scanningBtn || !discoverableBtn) return;
     const scanning = state.status.discovery?.scanning === true;
     const discoverable = state.status.discovery?.discoverable === true;
-    const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
-    scanningBtn.textContent = scanning ? "Stop Scanning" : (usbMode ? "Scan for USB Devices" : "Scan for Devices");
-    discoverableBtn.textContent = discoverable ? "Stop Discoverability" : (usbMode ? "Make This Device Discoverable over USB" : "Make This Device Discoverable");
+    const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
+    const usbMode = transport === "usb";
+    const offlineMode = transport === "offline-package";
+    scanningBtn.textContent = offlineMode ? "Peer Scan Unused" : scanning ? "Stop Scanning" : (usbMode ? "Scan USB Network" : "Scan for Devices");
+    discoverableBtn.textContent = offlineMode ? "Discoverability Unused" : discoverable ? "Stop Discoverability" : (usbMode ? "Make Discoverable on USB Network" : "Make This Device Discoverable");
+    scanningBtn.disabled = state.busy || offlineMode;
+    discoverableBtn.disabled = state.busy || offlineMode;
   };
 
   const renderPeers = () => {
@@ -681,9 +749,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
+    renderTransportSettings();
+    renderDiscoveryButtons();
     if (statusMessage) setStatus(statusEl, statusMessage);
   };
 
@@ -691,7 +761,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const loadProtection = async () => { const p = await apiFetchJson("/api/sync/protection", { cache: "no-store" }); state.protection = p.protection || { protectedFromPeerWrites: false }; renderProtection(); };
   const loadScopes = async () => { try { const p = await apiFetchJson("/api/sync/scopes", { cache: "no-store" }); state.scopes = Array.isArray(p.syncScopes) && p.syncScopes.length ? p.syncScopes : ["SyncTest"]; } catch { state.scopes = ["SyncTest"]; } renderScopes(); renderSharedScopes(); };
   const loadFolders = async () => { try { const p = await apiFetchJson("/api/sync/notebook-folders", { cache: "no-store" }); state.candidateFolders = Array.isArray(p.folders) ? p.folders : []; } catch { state.candidateFolders = []; } renderCandidateFolders(); };
-  const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null }; state.protection = p.protection || state.protection; maybeDefaultDirectionForSelectedPeer(); renderDiscoveryButtons(); renderPeers(); renderProtection(); };
+  const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null, usbNetworkDiagnostics: p.usbNetworkDiagnostics || null }; state.protection = p.protection || state.protection; maybeDefaultDirectionForSelectedPeer(); renderDiscoveryButtons(); renderPeers(); renderProtection(); renderTransportSettings(); };
   const refreshActiveJob = async () => {
     const jobId = String(state.activeJobId || "").trim();
     if (!jobId) return;
@@ -732,6 +802,159 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const unshareScope = async (scope) => { setBusy(true, "Removing shared folder..."); try { await apiFetchJson("/api/sync/scopes", { method: "DELETE", body: JSON.stringify({ scope }) }); await Promise.all([loadScopes(), loadFolders()]); } catch (err) { setError(errorEl, err?.message || "Failed to remove scope"); } finally { setBusy(false); } };
   const toggleProtection = async (enabled) => { setBusy(true, "Updating sync protection..."); try { const p = await apiFetchJson("/api/sync/protection", { method: "POST", body: JSON.stringify({ protectedFromPeerWrites: Boolean(enabled) }) }); state.protection = p.protection || { protectedFromPeerWrites: Boolean(enabled) }; renderProtection(); setStatus(statusEl, state.protection.protectedFromPeerWrites ? "This installation is protected from sync writes." : "Sync write protection disabled."); } catch (err) { setError(errorEl, err?.message || "Failed to update sync protection"); renderProtection(); } finally { setBusy(false); } };
 
+
+  const setPackageStatus = (message = "", options = {}) => {
+    if (!packageStatusEl) return;
+    if (options.html === true) packageStatusEl.innerHTML = String(message || "");
+    else packageStatusEl.textContent = String(message || "");
+  };
+
+  const packageRecords = (result, key) => Array.isArray(result && result[key]) ? result[key] : [];
+
+  const renderPackageRecordList = (label, records, pathKey = "relativePath") => {
+    const list = Array.isArray(records) ? records : [];
+    if (!list.length) return "";
+    const rows = list.slice(0, 8).map((entry) => {
+      const path = (entry && (entry[pathKey] || entry.relativePath || entry.originalRelativePath)) || "";
+      const reason = (entry && (entry.reason || entry.error)) || "";
+      return "<li>" + escapeHtml(path) + (reason ? " (" + escapeHtml(reason) + ")" : "") + "</li>";
+    }).join("");
+    const more = list.length > 8 ? "<li>" + escapeHtml(list.length - 8) + " more...</li>" : "";
+    return "<div style=\"margin-top:6px;\"><strong>" + escapeHtml(label) + " (" + escapeHtml(list.length) + ")</strong><ul style=\"margin:3px 0 0;padding-left:18px;\">" + rows + more + "</ul></div>";
+  };
+
+  const renderPackageResultHtml = (result = {}, phase = "preview") => {
+    const counts = result.counts || {};
+    const countValue = (primary, alias) => Number(counts[primary] !== undefined ? counts[primary] : (alias && counts[alias] !== undefined ? counts[alias] : 0));
+    const notices = [];
+    if (result.packageValid === false || result.packageValidity?.valid === false) notices.push("This package is invalid or contains unsafe paths.");
+    if (result.signatureVerified === false || result.signatureValid === false) notices.push("This package is invalid or unsigned: its signature could not be verified.");
+    if ((result.signatureVerified === true || result.signatureValid === true) && result.trusted !== true) notices.push("This package is signed but not from a trusted peer.");
+    if (result.reason === "target_scope_mismatch") notices.push("This package is from a trusted peer but targets a different scope.");
+    if (result.protectedMode?.blocked === true) notices.push("Protected mode prevents this import.");
+    if (phase === "import" && packageRecords(result, "conflicts").length) notices.push("Some files conflict and were copied to .conflicts.");
+    if (phase === "import" && result.ok !== false && !notices.length) notices.push("Import completed successfully.");
+    if (phase === "preview" && result.ok !== false && !notices.length) notices.push("Package preview is ready to import.");
+    const summary = [
+      "Created " + countValue("created", "wouldCreate"),
+      "Updated " + countValue("updated", "wouldUpdate"),
+      "Skipped " + countValue("skipped"),
+      "Conflicts " + countValue("conflicts", "wouldSaveConflicts"),
+      "Blocked " + countValue("blocked"),
+      "Errors " + countValue("errors"),
+    ].join(" | ");
+    const noticeHtml = notices.map((notice) => "<div style=\"margin-top:4px;\">" + escapeHtml(notice) + "</div>").join("");
+    const errors = (Array.isArray(result.errors) ? result.errors : []).map((error) => ({ relativePath: String(error), reason: "error" }));
+    return "<div style=\"font-weight:600;margin-bottom:4px;\">" + escapeHtml(phase === "import" ? "Offline Package Import" : "Offline Package Preview") + ": " + escapeHtml(result.status || (result.ok === false ? "blocked" : "ready")) + "</div>"
+      + "<div>" + escapeHtml(summary) + "</div>"
+      + noticeHtml
+      + renderPackageRecordList("Created", packageRecords(result, "created"))
+      + renderPackageRecordList("Updated", packageRecords(result, "updated"))
+      + renderPackageRecordList("Skipped", packageRecords(result, "skipped"))
+      + renderPackageRecordList("Conflicts", packageRecords(result, "conflicts"), "originalRelativePath")
+      + renderPackageRecordList("Blocked", packageRecords(result, "blocked"))
+      + renderPackageRecordList("Errors", errors);
+  };
+
+  const showPackageResult = (result, phase = "preview") => {
+    if (syncResultEl) syncResultEl.textContent = JSON.stringify(result, null, 2);
+    if (syncDetailsEl) syncDetailsEl.open = true;
+    setPackageStatus(renderPackageResultHtml(result, phase), { html: true });
+  };
+
+  const selectedPackageScope = () => scopeSelect?.value || "SyncTest";
+
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename || "nodevision.nodevisionsync";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const exportSyncPackage = async () => {
+    const scope = selectedPackageScope();
+    setError(errorEl, "");
+    setPackageStatus("");
+    setBusy(true, "Exporting sync package...");
+    try {
+      const response = await fetch(`/api/sync/package/export?scope=${encodeURIComponent(scope)}`, { credentials: "include" });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw createJsonResponseError(response, payload);
+      }
+      const blob = await response.blob();
+      const disposition = String(response.headers.get("content-disposition") || "");
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      const filename = match ? match[1] : `${scope.split("/").pop() || "notebook"}.nodevisionsync`;
+      downloadBlob(blob, filename);
+      const count = String(response.headers.get("x-nodevision-sync-files") || "").trim();
+      setPackageStatus(count ? `Exported ${count} file${count === "1" ? "" : "s"} to ${filename}.` : `Exported ${filename}.`);
+      setStatus(statusEl, "Sync package exported.");
+    } catch (err) {
+      setError(errorEl, err?.message || "Failed to export sync package");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const importSyncPackageFile = async (file) => {
+    if (!file) return;
+    setError(errorEl, "");
+    setPackageStatus("");
+    setBusy(true, "Previewing sync package...");
+    try {
+      const previewForm = new FormData();
+      previewForm.append("package", file);
+      previewForm.append("scope", selectedPackageScope());
+      const preview = await apiFetchFormJson("/api/sync/package/preview", previewForm);
+      showPackageResult(preview, "preview");
+      if (preview.ok === false || preview.status === "blocked") {
+        setStatus(statusEl, "Sync package preview blocked.");
+        return;
+      }
+
+      const counts = preview.counts || {};
+      const confirmed = window.confirm(
+        "Import sync package from " + String(preview.sourceDevice?.deviceName || "Unknown Device")
+          + " into " + String(preview.targetScope || preview.scope || "scope") + "?\n\n"
+          + "Created: " + Number(counts.created || counts.wouldCreate || 0) + "\n"
+          + "Updated: " + Number(counts.updated || counts.wouldUpdate || 0) + "\n"
+          + "Conflicts: " + Number(counts.conflicts || counts.wouldSaveConflicts || 0) + "\n"
+          + "Skipped: " + Number(counts.skipped || 0),
+      );
+      if (!confirmed) {
+        setPackageStatus("Import cancelled after preview.");
+        return;
+      }
+
+      setBusy(true, "Importing sync package...");
+      const importForm = new FormData();
+      importForm.append("package", file);
+      importForm.append("scope", selectedPackageScope());
+      const imported = await apiFetchFormJson("/api/sync/package/import", importForm);
+      showPackageResult(imported, "import");
+      if (imported.ok === false || imported.status === "blocked" || imported.status === "failed") {
+        setStatus(statusEl, "Sync package import blocked.");
+        return;
+      }
+      setStatus(statusEl, imported.partial ? "Sync package imported with skipped or blocked files." : "Sync package imported.");
+      await Promise.all([loadScopes(), loadFolders(), refreshStatus()]).catch(() => {});
+    } catch (err) {
+      if (err?.payload && typeof err.payload === "object") {
+        showPackageResult(err.payload, err.payload.imported === false ? "import" : "preview");
+      }
+      setError(errorEl, err?.message || "Failed to import sync package");
+    } finally {
+      if (packageFileInput) packageFileInput.value = "";
+      setBusy(false);
+    }
+  };
+
+
   const runSync = async (dryRun) => {
     const scope = scopeSelect?.value || "SyncTest";
     const deviceId = state.status.selectedPeerDeviceId;
@@ -758,6 +981,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
         requestedSyncOptions: requestOptions,
         jobCreationRequestSent: false,
       });
+    }
+
+    if (normalizeSyncTransport(state.syncSettings.syncTransport) === "offline-package") {
+      return setError(errorEl, "Offline Package mode uses Export Sync Package and Import Sync Package instead of peer sync.");
     }
 
     if (!deviceId) {
@@ -873,6 +1100,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     else persistSyncTransportSettings(state.syncSettings);
     renderTransportSettings();
     renderDiscoveryButtons();
+    renderProtection();
     setError(errorEl, "");
   });
   peerUrlInput?.addEventListener("input", () => { setActivePeerUrl(peerUrlInput.value); });
@@ -944,17 +1172,20 @@ export async function setupPanel(panelElem, panelVars = {}) {
   refreshBtn?.addEventListener("click", () => Promise.all([loadProtection(), loadScopes(), loadFolders(), refreshStatus()]).catch((err) => setError(errorEl, err?.message || "Refresh failed")));
   scanningBtn?.addEventListener("click", () => {
     const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
-    runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : (usbMode ? "Starting USB scan" : "Starting scan"));
+    runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : (usbMode ? "Starting USB Network scan" : "Starting scan"));
   });
   discoverableBtn?.addEventListener("click", () => {
     const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
-    runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : (usbMode ? "Enabling USB discoverability" : "Enabling discoverability"));
+    runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : (usbMode ? "Enabling USB Network discoverability" : "Enabling discoverability"));
   });
   protectWritesEl?.addEventListener("change", () => toggleProtection(protectWritesEl.checked));
   protectEnableBtn?.addEventListener("click", () => toggleProtection(true));
   protectDisableBtn?.addEventListener("click", () => toggleProtection(false));
   syncDryBtn?.addEventListener("click", () => runSync(true));
   syncApplyBtn?.addEventListener("click", () => runSync(false));
+  packageExportBtn?.addEventListener("click", () => exportSyncPackage());
+  packageImportBtn?.addEventListener("click", () => packageFileInput?.click());
+  packageFileInput?.addEventListener("change", () => importSyncPackageFile(packageFileInput.files?.[0] || null));
   jobPauseCardEl?.addEventListener("click", async (event) => {
     const button = event.target?.closest?.("[data-job-retry],[data-job-skip],[data-job-abort]");
     if (!button) return;
