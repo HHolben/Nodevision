@@ -14,6 +14,13 @@ import {
 } from "../../Sync/SyncScopes.mjs";
 import { normalizeSyncDirection, runScopeSyncTwoWay } from "../../Sync/sync-scope-two-way.mjs";
 import { applyLocalSyncPackage, createLocalSyncPackage, inspectLocalSyncPackage } from "../../Sync/LocalSyncPackageTransport.mjs";
+import {
+  importOfflineInboxPackage,
+  listOfflineSyncInbox,
+  previewOfflineInboxPackage,
+  previewOfflinePushPackage,
+  pushOfflinePackageToMountedReceiver,
+} from "../../Sync/OfflineSyncInbox.mjs";
 import { loadSyncProtection, saveSyncProtection } from "../../Sync/SyncProtection.mjs";
 import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
@@ -1191,6 +1198,93 @@ export function registerSyncPanelRoutes(app, ctx) {
         imported: false,
         error: err?.message || "Failed to import sync package",
         trust: err?.trust || null,
+      });
+    }
+  });
+
+  app.post("/api/sync/offline/push-preview", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    let scope;
+    try {
+      scope = await resolveRequestedScope(req.body || {}, { runtimeRoot: ctx?.runtimeRoot });
+    } catch (err) {
+      return res.status(400).json({ ok: false, preview: true, error: err?.message || "Invalid scope" });
+    }
+    try {
+      const preview = await previewOfflinePushPackage({
+        runtimeRoot: ctx?.runtimeRoot,
+        scope,
+        receiverDropPath: req.body?.receiverDropPath,
+      });
+      return res.json(preview);
+    } catch (err) {
+      const message = err?.message || "Failed to preview mounted receiver push";
+      const status = /does not exist|not a directory|not writable|required|invalid/i.test(message) ? 400 : 500;
+      return res.status(status).json({ ok: false, preview: true, error: message });
+    }
+  });
+
+  app.post("/api/sync/offline/push-package", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    let scope;
+    try {
+      scope = await resolveRequestedScope(req.body || {}, { runtimeRoot: ctx?.runtimeRoot });
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid scope" });
+    }
+    try {
+      const written = await pushOfflinePackageToMountedReceiver({
+        runtimeRoot: ctx?.runtimeRoot,
+        scope,
+        receiverDropPath: req.body?.receiverDropPath,
+      });
+      return res.json(written);
+    } catch (err) {
+      const message = err?.message || "Failed to write sync package to mounted receiver";
+      const status = /does not exist|not a directory|not writable|required|invalid/i.test(message) ? 400 : 500;
+      return res.status(status).json({ ok: false, error: message });
+    }
+  });
+
+  app.get("/api/sync/offline/inbox", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const inbox = await listOfflineSyncInbox({ runtimeRoot: ctx?.runtimeRoot });
+      return res.json(inbox);
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err?.message || "Failed to list Offline Sync Inbox" });
+    }
+  });
+
+  app.post("/api/sync/offline/inbox/preview", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const preview = await previewOfflineInboxPackage({
+        runtimeRoot: ctx?.runtimeRoot,
+        filename: req.body?.filename,
+        targetScope: req.body?.scope,
+      });
+      return res.status(200).json(preview);
+    } catch (err) {
+      return res.status(400).json({ ok: false, preview: true, error: err?.message || "Failed to preview inbox package" });
+    }
+  });
+
+  app.post("/api/sync/offline/inbox/import", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    try {
+      const imported = await importOfflineInboxPackage({
+        runtimeRoot: ctx?.runtimeRoot,
+        filename: req.body?.filename,
+        targetScope: req.body?.scope,
+      });
+      return res.status(syncPackageResultStatus(imported, 409)).json(imported);
+    } catch (err) {
+      const statusCode = Number(err?.statusCode) || Number(err?.status) || 400;
+      return res.status(statusCode >= 400 && statusCode <= 599 ? statusCode : 400).json({
+        ok: false,
+        imported: false,
+        error: err?.message || "Failed to import inbox package",
       });
     }
   });

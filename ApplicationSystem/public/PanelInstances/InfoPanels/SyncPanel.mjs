@@ -85,12 +85,36 @@ const TEMPLATE = `
     <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
         <div style="font-weight:600;">Offline Transfer</div>
-        <span style="font-size:0.78em;color:#666;">Export or import a signed sync package</span>
+        <span style="font-size:0.78em;color:#666;">Export, import, or push a signed sync package</span>
       </div>
+      <div style="margin:0 0 10px;color:#555;font-size:0.82em;line-height:1.35;">Direct Offline Push writes a sync package into a mounted receiver folder. It does not use Wi-Fi, Bluetooth, IP networking, or peer discovery. The receiving computer must expose or mount a writable folder, then import the package from its Offline Sync Inbox.</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-        <button type="button" data-package-export style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Export Sync Package</button>
-        <button type="button" data-package-import style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Import Sync Package</button>
-        <input data-package-file type="file" accept=".nodevisionsync,.zip,application/zip,application/octet-stream" style="display:none;">
+        <button type="button" data-package-export style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Export Package to File</button>
+        <button type="button" data-package-import style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Import Package from File</button>
+        <input data-package-file type="file" accept=".nodevisionsync,.nodevisionsync.zip,.zip,application/zip,application/octet-stream" style="display:none;">
+      </div>
+      <div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-weight:600;font-size:0.9em;">Push Package to Mounted Receiver</div>
+        <label style="display:flex;flex-direction:column;font-size:0.86em;gap:4px;">Receiver Drop Folder
+          <input data-receiver-drop-path type="text" placeholder="/mounted/path/OfflineSyncInbox" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
+        </label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <button type="button" data-push-preview style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Preview Push</button>
+          <button type="button" data-push-package style="border:none;border-radius:6px;background:#0a84ff;color:#fff;padding:8px 12px;cursor:pointer;font-size:0.88em;">Write Package</button>
+        </div>
+        <div data-push-status style="color:#555;font-size:0.82em;"></div>
+      </div>
+      <div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div style="font-weight:600;font-size:0.9em;">Incoming Packages</div>
+          <button type="button" data-inbox-refresh style="border:1px solid #bbb;border-radius:6px;background:#fff;padding:5px 9px;cursor:pointer;font-size:0.82em;">Refresh Inbox</button>
+        </div>
+        <select data-inbox-list size="4" style="width:100%;box-sizing:border-box;border:1px solid #bbb;border-radius:6px;padding:6px;font-size:0.84em;"></select>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <button type="button" data-inbox-preview style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.88em;">Preview Selected</button>
+          <button type="button" data-inbox-import style="border:none;border-radius:6px;background:#2e8b57;color:#fff;padding:8px 12px;cursor:pointer;font-size:0.88em;">Import Selected</button>
+        </div>
+        <div data-inbox-status style="color:#555;font-size:0.82em;"></div>
       </div>
       <div data-package-status style="margin-top:7px;color:#555;font-size:0.82em;"></div>
     </section>
@@ -190,6 +214,7 @@ const SYNC_TRANSPORT_STORAGE_KEY = "nodevision.sync.syncTransport";
 const SYNC_PEER_URL_STORAGE_KEY = "nodevision.sync.peerUrl";
 const SYNC_WIRELESS_PEER_URL_STORAGE_KEY = "nodevision.sync.wirelessPeerUrl";
 const SYNC_USB_PEER_URL_STORAGE_KEY = "nodevision.sync.usbPeerUrl";
+const OFFLINE_RECEIVER_DROP_PATH_STORAGE_KEY = "nodevision.sync.offlineReceiverDropPath";
 const WIRELESS_PEER_URL_PLACEHOLDER = "http://10.0.0.42:3000";
 const USB_PEER_URL_PLACEHOLDER = "http://192.168.50.2:3000";
 const OFFLINE_PEER_URL_PLACEHOLDER = "No peer URL needed";
@@ -367,6 +392,15 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const packageImportBtn = panelElem.querySelector("[data-package-import]");
   const packageFileInput = panelElem.querySelector("[data-package-file]");
   const packageStatusEl = panelElem.querySelector("[data-package-status]");
+  const receiverDropPathInput = panelElem.querySelector("[data-receiver-drop-path]");
+  const pushPreviewBtn = panelElem.querySelector("[data-push-preview]");
+  const pushPackageBtn = panelElem.querySelector("[data-push-package]");
+  const pushStatusEl = panelElem.querySelector("[data-push-status]");
+  const inboxRefreshBtn = panelElem.querySelector("[data-inbox-refresh]");
+  const inboxListEl = panelElem.querySelector("[data-inbox-list]");
+  const inboxPreviewBtn = panelElem.querySelector("[data-inbox-preview]");
+  const inboxImportBtn = panelElem.querySelector("[data-inbox-import]");
+  const inboxStatusEl = panelElem.querySelector("[data-inbox-status]");
   const syncApplyBtn = panelElem.querySelector("[data-sync-apply]");
   const syncResultEl = panelElem.querySelector("[data-sync-result]");
   const syncDetailsEl = panelElem.querySelector("[data-sync-details]");
@@ -400,6 +434,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
     pauseOnFileError: readStoredPauseOnFileError(),
     syncDirection: readStoredSyncDirection(),
     syncSettings: readStoredSyncTransportSettings(),
+    inboxPackages: [],
+    selectedInboxPackage: "",
     defaultedProtectedPeerDeviceId: null,
     eventsClearedAt: 0,
     eventsPollTimer: null,
@@ -409,6 +445,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
   if (pauseOnFileErrorInput) pauseOnFileErrorInput.checked = state.pauseOnFileError;
   if (syncDirectionSelect) syncDirectionSelect.value = state.syncDirection;
   if (syncTransportSelect) syncTransportSelect.value = state.syncSettings.syncTransport;
+  if (receiverDropPathInput) {
+    try { receiverDropPathInput.value = String(window.localStorage?.getItem(OFFLINE_RECEIVER_DROP_PATH_STORAGE_KEY) || ""); } catch {}
+  }
 
   const getMaxFileSizeBytes = () => {
     const mb = normalizeMaxFileSizeMb(maxFileSizeInput?.value);
@@ -749,7 +788,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, receiverDropPathInput, pushPreviewBtn, pushPackageBtn, inboxRefreshBtn, inboxListEl, inboxPreviewBtn, inboxImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
     renderTransportSettings();
@@ -950,6 +989,209 @@ export async function setupPanel(panelElem, panelVars = {}) {
       setError(errorEl, err?.message || "Failed to import sync package");
     } finally {
       if (packageFileInput) packageFileInput.value = "";
+      setBusy(false);
+    }
+  };
+
+
+  const formatPackageBytes = (bytes) => {
+    const value = Number(bytes || 0);
+    if (!Number.isFinite(value) || value < 0) return "0 B";
+    if (value < 1024) return `${Math.trunc(value)} B`;
+    if (value < 1024 * 1024) return `${Math.round(value / 102.4) / 10} KB`;
+    return `${Math.round(value / 1024 / 102.4) / 10} MB`;
+  };
+
+  const setPushStatus = (message = "", options = {}) => {
+    if (!pushStatusEl) return;
+    if (options.html === true) pushStatusEl.innerHTML = String(message || "");
+    else pushStatusEl.textContent = String(message || "");
+  };
+
+  const setInboxStatus = (message = "", options = {}) => {
+    if (!inboxStatusEl) return;
+    if (options.html === true) inboxStatusEl.innerHTML = String(message || "");
+    else inboxStatusEl.textContent = String(message || "");
+  };
+
+  const receiverDropPath = () => String(receiverDropPathInput?.value || "").trim();
+
+  const persistReceiverDropPath = () => {
+    try { window.localStorage?.setItem(OFFLINE_RECEIVER_DROP_PATH_STORAGE_KEY, receiverDropPath()); } catch {}
+  };
+
+  const renderPushResultHtml = (result = {}, phase = "preview") => {
+    const receiverName = result.receiver?.deviceName ? `Receiver identified as: ${result.receiver.deviceName}` : "Receiver not identified";
+    const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+    const warningHtml = warnings.map((warning) => `<div style="margin-top:4px;color:#8f4f00;">${escapeHtml(warning)}</div>`).join("");
+    const fileCount = Number(result.estimatedFileCount || 0);
+    const fileLine = `${fileCount} file${fileCount === 1 ? "" : "s"}, ${formatPackageBytes(result.estimatedByteCount || 0)}`;
+    const writtenLine = result.packageFilename ? `<div style="margin-top:4px;">Package: ${escapeHtml(result.packageFilename)}</div>` : "";
+    const messageLine = result.message ? `<div style="margin-top:4px;">${escapeHtml(result.message)}</div>` : "";
+    return `<div style="font-weight:600;margin-bottom:4px;">${phase === "write" ? "Mounted Receiver Package Written" : "Mounted Receiver Push Preview"}</div>`
+      + `<div>Scope ${escapeHtml(result.scope || selectedPackageScope())} | ${escapeHtml(fileLine)}</div>`
+      + `<div style="margin-top:4px;">${escapeHtml(receiverName)}</div>`
+      + `<div style="margin-top:4px;">Receiver Drop Folder: ${escapeHtml(result.receiverDropPath || receiverDropPath())}</div>`
+      + warningHtml
+      + writtenLine
+      + messageLine;
+  };
+
+  const previewMountedPush = async () => {
+    persistReceiverDropPath();
+    setError(errorEl, "");
+    setPushStatus("");
+    setBusy(true, "Previewing mounted receiver push...");
+    try {
+      const preview = await apiFetchJson("/api/sync/offline/push-preview", {
+        method: "POST",
+        body: JSON.stringify({ scope: selectedPackageScope(), receiverDropPath: receiverDropPath() }),
+      });
+      if (syncResultEl) syncResultEl.textContent = JSON.stringify(preview, null, 2);
+      if (syncDetailsEl) syncDetailsEl.open = true;
+      setPushStatus(renderPushResultHtml(preview, "preview"), { html: true });
+      setStatus(statusEl, "Mounted receiver push preview ready.");
+    } catch (err) {
+      setError(errorEl, err?.message || "Failed to preview mounted receiver push");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const writeMountedPush = async () => {
+    persistReceiverDropPath();
+    setError(errorEl, "");
+    setPushStatus("");
+    setBusy(true, "Writing package to mounted receiver...");
+    try {
+      const written = await apiFetchJson("/api/sync/offline/push-package", {
+        method: "POST",
+        body: JSON.stringify({ scope: selectedPackageScope(), receiverDropPath: receiverDropPath() }),
+      });
+      if (syncResultEl) syncResultEl.textContent = JSON.stringify(written, null, 2);
+      if (syncDetailsEl) syncDetailsEl.open = true;
+      setPushStatus(renderPushResultHtml(written, "write"), { html: true });
+      setStatus(statusEl, written.message || "Package was written successfully.");
+    } catch (err) {
+      setError(errorEl, err?.message || "Failed to write package to mounted receiver");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const renderInboxPackages = () => {
+    if (!inboxListEl) return;
+    const selected = state.selectedInboxPackage || inboxListEl.value;
+    inboxListEl.innerHTML = "";
+    const packages = Array.isArray(state.inboxPackages) ? state.inboxPackages : [];
+    if (!packages.length) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No complete offline sync packages found.";
+      inboxListEl.appendChild(option);
+      inboxListEl.value = "";
+      state.selectedInboxPackage = "";
+      return;
+    }
+    for (const item of packages) {
+      const option = document.createElement("option");
+      option.value = item.filename || "";
+      const deviceName = item.sourceDevice?.deviceName || "Unknown device";
+      const scope = item.scope || "unknown scope";
+      const trust = item.trustStatus || "unknown";
+      option.textContent = `${item.filename} | ${scope} | ${deviceName} | ${formatPackageBytes(item.size)} | ${trust}`;
+      inboxListEl.appendChild(option);
+    }
+    inboxListEl.value = packages.some((item) => item.filename === selected) ? selected : (packages[0]?.filename || "");
+    state.selectedInboxPackage = inboxListEl.value;
+  };
+
+  const refreshInbox = async () => {
+    setError(errorEl, "");
+    setBusy(true, "Refreshing Offline Sync Inbox...");
+    try {
+      const inbox = await apiFetchJson("/api/sync/offline/inbox", { cache: "no-store" });
+      state.inboxPackages = Array.isArray(inbox.packages) ? inbox.packages : [];
+      renderInboxPackages();
+      const count = state.inboxPackages.length;
+      const receiver = inbox.marker?.deviceName ? ` Local inbox: ${inbox.marker.deviceName}.` : "";
+      setInboxStatus(`${count} complete package${count === 1 ? "" : "s"} in Offline Sync Inbox.${receiver}`);
+    } catch (err) {
+      setError(errorEl, err?.message || "Failed to refresh Offline Sync Inbox");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const selectedInboxFilename = () => String(inboxListEl?.value || state.selectedInboxPackage || "").trim();
+
+  const previewInboxSelected = async () => {
+    const filename = selectedInboxFilename();
+    if (!filename) return setInboxStatus("Select an incoming package first.");
+    setError(errorEl, "");
+    setBusy(true, "Previewing inbox package...");
+    try {
+      const preview = await apiFetchJson("/api/sync/offline/inbox/preview", {
+        method: "POST",
+        body: JSON.stringify({ filename, scope: selectedPackageScope() }),
+      });
+      showPackageResult(preview, "preview");
+      setInboxStatus(preview.ok === false || preview.status === "blocked" ? "Inbox package preview blocked." : "Inbox package preview ready.");
+    } catch (err) {
+      if (err?.payload && typeof err.payload === "object") showPackageResult(err.payload, "preview");
+      setError(errorEl, err?.message || "Failed to preview inbox package");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const importInboxSelected = async () => {
+    const filename = selectedInboxFilename();
+    if (!filename) return setInboxStatus("Select an incoming package first.");
+    setError(errorEl, "");
+    setBusy(true, "Previewing inbox package...");
+    try {
+      const preview = await apiFetchJson("/api/sync/offline/inbox/preview", {
+        method: "POST",
+        body: JSON.stringify({ filename, scope: selectedPackageScope() }),
+      });
+      showPackageResult(preview, "preview");
+      if (preview.ok === false || preview.status === "blocked") {
+        setInboxStatus("Inbox package preview blocked.");
+        setStatus(statusEl, "Sync package preview blocked.");
+        return;
+      }
+      const counts = preview.counts || {};
+      const confirmed = window.confirm(
+        "Import selected inbox package from " + String(preview.sourceDevice?.deviceName || "Unknown Device")
+          + " into " + String(preview.targetScope || preview.scope || "scope") + "?\n\n"
+          + "Created: " + Number(counts.created || counts.wouldCreate || 0) + "\n"
+          + "Updated: " + Number(counts.updated || counts.wouldUpdate || 0) + "\n"
+          + "Conflicts: " + Number(counts.conflicts || counts.wouldSaveConflicts || 0) + "\n"
+          + "Skipped: " + Number(counts.skipped || 0),
+      );
+      if (!confirmed) {
+        setInboxStatus("Inbox import cancelled after preview.");
+        return;
+      }
+      setBusy(true, "Importing inbox package...");
+      const imported = await apiFetchJson("/api/sync/offline/inbox/import", {
+        method: "POST",
+        body: JSON.stringify({ filename, scope: selectedPackageScope() }),
+      });
+      showPackageResult(imported, "import");
+      if (imported.ok === false || imported.status === "blocked" || imported.status === "failed") {
+        setInboxStatus("Inbox package import blocked.");
+        setStatus(statusEl, "Sync package import blocked.");
+        return;
+      }
+      setInboxStatus("Inbox package imported and moved to Imported.");
+      setStatus(statusEl, imported.partial ? "Sync package imported with skipped or blocked files." : "Sync package imported.");
+      await Promise.all([loadScopes(), loadFolders(), refreshStatus(), refreshInbox()]).catch(() => {});
+    } catch (err) {
+      if (err?.payload && typeof err.payload === "object") showPackageResult(err.payload, err.payload.imported === false ? "import" : "preview");
+      setError(errorEl, err?.message || "Failed to import inbox package");
+    } finally {
       setBusy(false);
     }
   };
@@ -1186,6 +1428,14 @@ export async function setupPanel(panelElem, panelVars = {}) {
   packageExportBtn?.addEventListener("click", () => exportSyncPackage());
   packageImportBtn?.addEventListener("click", () => packageFileInput?.click());
   packageFileInput?.addEventListener("change", () => importSyncPackageFile(packageFileInput.files?.[0] || null));
+  receiverDropPathInput?.addEventListener("change", () => persistReceiverDropPath());
+  receiverDropPathInput?.addEventListener("blur", () => persistReceiverDropPath());
+  pushPreviewBtn?.addEventListener("click", () => previewMountedPush());
+  pushPackageBtn?.addEventListener("click", () => writeMountedPush());
+  inboxRefreshBtn?.addEventListener("click", () => refreshInbox());
+  inboxListEl?.addEventListener("change", () => { state.selectedInboxPackage = selectedInboxFilename(); });
+  inboxPreviewBtn?.addEventListener("click", () => previewInboxSelected());
+  inboxImportBtn?.addEventListener("click", () => importInboxSelected());
   jobPauseCardEl?.addEventListener("click", async (event) => {
     const button = event.target?.closest?.("[data-job-retry],[data-job-skip],[data-job-abort]");
     if (!button) return;
@@ -1230,7 +1480,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   try {
     setStatus(statusEl, "Loading sync panel...");
-    await Promise.all([loadLocalDevice(), loadProtection(), loadScopes(), loadFolders(), refreshStatus()]);
+    await Promise.all([loadLocalDevice(), loadProtection(), loadScopes(), loadFolders(), refreshStatus(), refreshInbox()]);
     await loadSyncEvents();
     renderJob();
     setStatus(statusEl, "Sync panel ready.");

@@ -301,6 +301,22 @@ export async function listTemplates(ctx = BASE_CONTEXT) {
   return templates;
 }
 
+export async function resolveTemplateAssetFile(relativePath, ctx = BASE_CONTEXT) {
+  const root = getTemplateRoot(ctx);
+  const resolved = resolveInside(root, relativePath, "Template asset path");
+  const stat = await fs.lstat(resolved.absolute);
+  if (!stat.isFile()) {
+    const err = new Error("Template asset path must point to a file.");
+    err.status = 400;
+    throw err;
+  }
+  return {
+    absolute: resolved.absolute,
+    relativePath: resolved.clean,
+    size: stat.size,
+  };
+}
+
 export async function readTemplate(relativePath, ctx = BASE_CONTEXT) {
   const root = getTemplateRoot(ctx);
   const resolved = resolveInside(root, relativePath, "Template path");
@@ -395,6 +411,67 @@ export async function createFromTemplate(options = {}, ctx = BASE_CONTEXT) {
     path: destination.relativePath,
     template,
     outputExtension: template.outputExtension,
+  };
+}
+
+
+export function sanitizeGlbOutputFilename(value = "") {
+  const raw = String(value || "").trim();
+  const fallback = "NewHumanCharacter.glb";
+  const withoutPath = raw.split(/[\\/]+/).filter(Boolean).pop() || fallback;
+  const stem = withoutPath.replace(/\.[^.]*$/, "")
+    .replace(/[^A-Za-z0-9_. -]+/g, "")
+    .replace(/\s+/g, "")
+    .replace(/^\.+/, "")
+    .trim() || "NewHumanCharacter";
+  return `${stem}.glb`;
+}
+
+function cleanNotebookGlbTargetPath(value) {
+  const raw = String(value ?? "").replace(/\\/g, "/").trim().replace(/^\/+/, "");
+  const withoutPrefix = raw.replace(/^Notebook\/?/i, "");
+  if (!withoutPrefix) {
+    const err = new Error("Target path is required.");
+    err.status = 400;
+    throw err;
+  }
+  const directory = path.posix.dirname(withoutPrefix);
+  const base = path.posix.basename(withoutPrefix);
+  const safeFilename = sanitizeGlbOutputFilename(base);
+  return directory && directory !== "."
+    ? `${cleanRelativePath(directory, "Target directory")}/${safeFilename}`
+    : safeFilename;
+}
+
+export function resolveTemplateBinarySaveTarget(targetPath, ctx = BASE_CONTEXT) {
+  const relativePath = cleanNotebookGlbTargetPath(targetPath);
+  const absolute = path.resolve(ctx.notebookDir, relativePath);
+  if (!isWithin(ctx.notebookDir, absolute)) {
+    const err = new Error("Export path must stay inside the Notebook.");
+    err.status = 403;
+    throw err;
+  }
+  return { absolute, relativePath };
+}
+
+export async function saveTemplateBinaryFile(options = {}, ctx = BASE_CONTEXT) {
+  const { targetPath, fileBuffer } = options;
+  if (!Buffer.isBuffer(fileBuffer) || fileBuffer.length === 0) {
+    const err = new Error("A binary .glb file upload is required.");
+    err.status = 400;
+    throw err;
+  }
+  const destination = resolveTemplateBinarySaveTarget(targetPath, ctx);
+  const parent = path.dirname(destination.absolute);
+  await assertNotebookAncestorIsSafe(ctx, parent);
+  await fs.mkdir(parent, { recursive: true });
+  await assertNotebookParentIsSafe(ctx, destination);
+  await fs.writeFile(destination.absolute, fileBuffer, { flag: "wx" });
+  return {
+    success: true,
+    path: destination.relativePath,
+    bytes: fileBuffer.length,
+    outputExtension: "glb",
   };
 }
 
