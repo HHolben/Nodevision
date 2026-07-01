@@ -144,8 +144,8 @@ iges,Model,ViewText.mjs,TextFamilyEditor.mjs
 mesh,Model,ViewText.mjs,TextFamilyEditor.mjs
 obj,Model,ViewOBJ.mjs,ModelFamilyEditor.mjs
 ply,Model,ViewPLY.mjs,ModelFamilyEditor.mjs
-scad,Model,ViewSCAD.mjs,ModelFamilyEditor.mjs
-scad,Model,ViewSCAD.mjs,ModelFamilyEditor.mjs
+scad,Model,ViewSCAD.mjs,SCADeditor.mjs
+scad,Model,ViewSCAD.mjs,SCADeditor.mjs
 step,Model,ViewSTEP.mjs,ModelFamilyEditor.mjs
 stl,Model,ViewSTL.mjs,STLeditor.mjs
 unv,Model,ViewText.mjs,TextFamilyEditor.mjs

@@ -145,6 +145,13 @@ function extractPlainTextFromNode(node, parts) {
   Array.from(node.childNodes || []).forEach((child) => extractPlainTextFromNode(child, parts));
 }
 
+function nonblankLineCount(text = "") {
+  return String(text || "")
+    .split("\n")
+    .filter((line) => !isBlankPoemText(line))
+    .length;
+}
+
 function plainTextFromRange(range) {
   if (!range) return "";
   const fragment = range.cloneContents();
@@ -152,9 +159,11 @@ function plainTextFromRange(range) {
   extractPlainTextFromNode(fragment, parts);
   const extracted = parts.join("");
   const fallback = range.toString();
-  const extractedBreaks = (extracted.match(/\n/g) || []).length;
-  const fallbackBreaks = (fallback.match(/\n/g) || []).length;
-  return fallbackBreaks > extractedBreaks ? fallback : extracted;
+  const extractedNonblank = nonblankLineCount(extracted);
+  const fallbackNonblank = nonblankLineCount(fallback);
+
+  if (fallbackNonblank > extractedNonblank) return fallback;
+  return extractedNonblank > 0 ? extracted : fallback;
 }
 
 function poemLinesFromRange(range) {

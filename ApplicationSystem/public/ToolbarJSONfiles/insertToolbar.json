@@ -735,6 +735,60 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "parentHeading": "Table",
+      "heading": "Insert Row Above",
+      "shortLabel": "R+",
+      "callbackKey": "tableInsertRowAbove",
+      "modes": ["HTMLediting", "CSVediting"],
+      "conditions": { "htmlTableSelected": true }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Table",
+      "heading": "Insert Row Below",
+      "shortLabel": "+R",
+      "callbackKey": "tableInsertRowBelow",
+      "modes": ["HTMLediting", "CSVediting"],
+      "conditions": { "htmlTableSelected": true }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Table",
+      "heading": "Insert Column Left",
+      "shortLabel": "C+",
+      "callbackKey": "tableInsertColumnLeft",
+      "modes": ["HTMLediting", "CSVediting"],
+      "conditions": { "htmlTableSelected": true }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Table",
+      "heading": "Insert Column Right",
+      "shortLabel": "+C",
+      "callbackKey": "tableInsertColumnRight",
+      "modes": ["HTMLediting", "CSVediting"],
+      "conditions": { "htmlTableSelected": true }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Table",
+      "heading": "Delete Row",
+      "shortLabel": "R-",
+      "callbackKey": "tableDeleteRow",
+      "modes": ["HTMLediting", "CSVediting"],
+      "conditions": { "htmlTableSelected": true }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Table",
+      "heading": "Delete Column",
+      "shortLabel": "C-",
+      "callbackKey": "tableDeleteColumn",
+      "modes": ["HTMLediting", "CSVediting"],
+      "conditions": { "htmlTableSelected": true }
+    },
+    {
+      "ToolbarCategory": "Insert",
       "heading": "OrderedList",
       "insertGroup": "text",
       "callbackKey": "insertOrderedList",
