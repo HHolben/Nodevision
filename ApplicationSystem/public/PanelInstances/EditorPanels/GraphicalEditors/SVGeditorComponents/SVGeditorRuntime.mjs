@@ -27,8 +27,35 @@ const SVG_UI_ATTR = "data-nv-editor-ui";
 const SVG_RULER_THICKNESS = 26;
 const SVG_RULER_SIDE = 34;
 
+function normalizeEditorSavePath(pathValue) {
+  return String(pathValue || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .split(/[?#]/)[0]
+    .replace(/^\/+/, "")
+    .replace(/^Notebook\//i, "");
+}
+
+function sameEditorSavePath(a, b) {
+  return normalizeEditorSavePath(a) === normalizeEditorSavePath(b);
+}
+
+function resolveEditorHookSavePath(editorLabel, editorPath, requestedPath) {
+  const targetPath = requestedPath || editorPath;
+  if (targetPath && editorPath && !sameEditorSavePath(targetPath, editorPath)) {
+    console.error(editorLabel + ": refusing to save editor content into a different path.", {
+      editorPath,
+      savePath: targetPath,
+    });
+    throw new Error(editorLabel + " save path mismatch");
+  }
+  return targetPath;
+}
+
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
+  const renderToken = Symbol("svg-editor:" + filePath);
+  container.__nvEditorRenderToken = renderToken;
   container.innerHTML = "";
 
   const wrapper = document.createElement("div");
@@ -42,8 +69,11 @@ export async function renderEditor(filePath, container) {
   });
   wrapper.tabIndex = 0;
   container.appendChild(wrapper);
+  const isCurrentRender = () =>
+    container.__nvEditorRenderToken === renderToken && wrapper.isConnected;
 
   window.NodevisionState = window.NodevisionState || {};
+  window.__nvHtmlEditorActivePath = null;
   updateToolbarState({ currentMode: "SVG Editing", fileIsDirty: false, svgImageSelected: false, svgImagePath: null });
 
   const status = document.createElement("div");
@@ -138,6 +168,7 @@ export async function renderEditor(filePath, container) {
   if (filePath) {
     try {
       svgText = await fetchSvgText(filePath);
+      if (!isCurrentRender()) return;
     } catch (err) {
       loadError = err;
     }
@@ -1536,21 +1567,22 @@ export async function renderEditor(filePath, container) {
 
   function refreshTransformHandles() {
     hideTransformHandles();
-    if (toolState.drawing) return;
-    if (selectedElements.length !== 1) return;
-    const el = selectedElements[0];
-    if (!el) return;
-    const tag = el.tagName.toLowerCase();
-    if (tag === "line") {
-      updateLineEndpointHandles(el);
-      return;
+    if (toolState.drawing || !selectedElements.length) return;
+    if (selectedElements.length === 1) {
+      const el = selectedElements[0];
+      if (!el) return;
+      const tag = el.tagName.toLowerCase();
+      if (tag === "line") {
+        updateLineEndpointHandles(el);
+        return;
+      }
     }
     try {
-      const bbox = getElementBBoxInRoot(el);
+      const bbox = getSelectedUnionBBox();
       if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height)) return;
       updateResizeHandles(bbox);
     } catch {
-      // element cannot be resized via bbox handles
+      // Selection cannot be resized via bbox handles.
     }
   }
 
@@ -2530,21 +2562,37 @@ export async function renderEditor(filePath, container) {
   }
 
   function startResizeInteraction(corner, pointerId) {
-    if (selectedElements.length !== 1) return;
-    const el = selectedElements[0];
-    if (!el || el.tagName.toLowerCase() === "line") return;
+    if (!selectedElements.length) return;
     try {
-      const space = getDragSpaceForElement(el);
-      const bbox = getElementBBoxInSpace(el, space);
-      if (!bbox || bbox.width <= 0 || bbox.height <= 0) return;
-      resizeState = {
-        pointerId,
-        element: el,
-        corner,
-        bbox,
-        space,
-        baseTransform: el.getAttribute("transform") || ""
-      };
+      if (selectedElements.length === 1) {
+        const el = selectedElements[0];
+        if (!el || el.tagName.toLowerCase() === "line") return;
+        const space = getDragSpaceForElement(el);
+        const bbox = getElementBBoxInSpace(el, space);
+        if (!bbox || bbox.width <= 0 || bbox.height <= 0) return;
+        resizeState = {
+          pointerId,
+          element: el,
+          corner,
+          bbox,
+          space,
+          baseTransform: el.getAttribute("transform") || ""
+        };
+      } else {
+        const bbox = getSelectedUnionBBox();
+        if (!bbox || bbox.width <= 0 || bbox.height <= 0) return;
+        resizeState = {
+          pointerId,
+          multi: true,
+          corner,
+          bbox,
+          items: selectedElements.filter(Boolean).map((el) => ({
+            element: el,
+            space: getDragSpaceForElement(el),
+            baseTransform: el.getAttribute("transform") || ""
+          }))
+        };
+      }
       try {
         svgRoot.setPointerCapture(pointerId);
       } catch {
@@ -2729,6 +2777,13 @@ export async function renderEditor(filePath, container) {
         target = null;
       }
       if (target && isSelectableElement(target)) {
+        const additiveSelection = e.ctrlKey || e.metaKey;
+        if (additiveSelection) {
+          toggleSelection(target);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         if (e.shiftKey) {
           if (!selectedElements.includes(target) || selectedElements.length !== 1) {
             setSelection([target], { primary: target });
@@ -2738,8 +2793,6 @@ export async function renderEditor(filePath, container) {
             return;
           }
         } else if (!selectedElements.includes(target)) {
-          setSelection([target], { primary: target });
-        } else if (selectedElements.length > 1) {
           setSelection([target], { primary: target });
         }
 
@@ -2760,13 +2813,14 @@ export async function renderEditor(filePath, container) {
         return;
       }
 
+      const additiveMarquee = e.shiftKey || e.ctrlKey || e.metaKey;
       marqueeState = {
         pointerId: e.pointerId,
         start: p,
         current: p,
-        baseSelection: e.shiftKey ? [...selectedElements] : []
+        baseSelection: additiveMarquee ? [...selectedElements] : []
       };
-      if (!e.shiftKey) clearSelection();
+      if (!additiveMarquee) clearSelection();
       setMarqueeBox(p, p);
       try {
         svgRoot.setPointerCapture(e.pointerId);
@@ -2896,8 +2950,10 @@ export async function renderEditor(filePath, container) {
     }
 
     if (resizeState && resizeState.pointerId === e.pointerId) {
-      const { bbox, corner, element, baseTransform, space } = resizeState;
-      const sp = clientToElementPoint(space || svgRoot, e.clientX, e.clientY);
+      const { bbox, corner } = resizeState;
+      const sp = resizeState.multi
+        ? p
+        : clientToElementPoint(resizeState.space || svgRoot, e.clientX, e.clientY);
       const minScaleMagnitude = 0.05;
       const anchor = {
         x: corner.includes("w") ? bbox.x + bbox.width : bbox.x,
@@ -2913,7 +2969,10 @@ export async function renderEditor(filePath, container) {
         : (sp.y - anchor.y) / denomY;
       let sx = rawScaleX;
       let sy = rawScaleY;
-      const preserveAspect = element?.tagName?.toLowerCase?.() === "image" ? !e.shiftKey : e.shiftKey;
+      const element = resizeState.element || resizeState.items?.[0]?.element || null;
+      const preserveAspect = resizeState.multi
+        ? e.shiftKey
+        : element?.tagName?.toLowerCase?.() === "image" ? !e.shiftKey : e.shiftKey;
       if (preserveAspect) {
         const cornerPoint = {
           x: corner.includes("w") ? bbox.x : bbox.x + bbox.width,
@@ -2935,11 +2994,25 @@ export async function renderEditor(filePath, container) {
       };
       sx = keepScaleOutsideDeadZone(sx);
       sy = keepScaleOutsideDeadZone(sy);
-      setParentSpaceTransformFromBase(
-        element,
-        baseTransform,
-        `translate(${anchor.x} ${anchor.y}) scale(${sx} ${sy}) translate(${-anchor.x} ${-anchor.y})`
-      );
+      if (resizeState.multi) {
+        resizeState.items?.forEach((item) => {
+          if (!item?.element) return;
+          const itemAnchor = item.space && item.space !== svgRoot
+            ? rootPointToElementPoint(item.space, anchor)
+            : anchor;
+          setParentSpaceTransformFromBase(
+            item.element,
+            item.baseTransform,
+            `translate(${itemAnchor.x} ${itemAnchor.y}) scale(${sx} ${sy}) translate(${-itemAnchor.x} ${-itemAnchor.y})`
+          );
+        });
+      } else {
+        setParentSpaceTransformFromBase(
+          element,
+          resizeState.baseTransform,
+          `translate(${anchor.x} ${anchor.y}) scale(${sx} ${sy}) translate(${-anchor.x} ${-anchor.y})`
+        );
+      }
       refreshSelectionAfterMutation("resize");
       e.preventDefault();
       return;
@@ -3137,6 +3210,9 @@ export async function renderEditor(filePath, container) {
   });
 
   // Nodevision hooks
+  if (!isCurrentRender()) return;
+  window.__nvSvgEditorActivePath = filePath;
+  window.__nvWysiwygActivePath = filePath;
   window.getEditorHTML = () => {
     const clone = svgRoot.cloneNode(true);
     clone.querySelectorAll(`[${SVG_UI_ATTR}]`).forEach((el) => el.remove());
@@ -3179,17 +3255,19 @@ export async function renderEditor(filePath, container) {
   };
 
   window.saveWYSIWYGFile = async (path) => {
+    const targetPath = resolveEditorHookSavePath("SVG Editor", filePath, path);
     const content = window.getEditorHTML();
     await fetch("/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: path || filePath, content })
+      body: JSON.stringify({ path: targetPath, content })
     });
     markDocumentDirty(false);
-    setStatus(`Saved: ${path || filePath}`);
+    setStatus("Saved: " + targetPath);
   };
 
   window.selectSVGElement = selectElement;
+  window.toggleSVGElementSelection = toggleSelection;
   window.SVGEditorContext = {
     svgRoot,
     layers: layersMgr,
@@ -3377,6 +3455,7 @@ export async function renderEditor(filePath, container) {
     toggleActiveLayerVisible,
     clearSelection,
     setSelection,
+    toggleSelection,
     getSelectedElements() {
       return [...selectedElements];
     },
@@ -3384,12 +3463,11 @@ export async function renderEditor(filePath, container) {
       return selectedElement;
     },
     getSelectedBounds() {
-      if (!selectedElement) return null;
-      return getElementBBoxInRoot(selectedElement);
+      return getSelectedUnionBBox();
     },
     setSelectedBounds(bounds = {}) {
-      if (!selectedElement) return false;
-      const current = getElementBBoxInRoot(selectedElement);
+      if (!selectedElements.length) return false;
+      const current = getSelectedUnionBBox();
       if (!current || current.width <= 0 || current.height <= 0) return false;
       const nextX = Number.isFinite(Number(bounds.x)) ? Number(bounds.x) : current.x;
       const nextY = Number.isFinite(Number(bounds.y)) ? Number(bounds.y) : current.y;
@@ -3397,12 +3475,21 @@ export async function renderEditor(filePath, container) {
       const nextHeight = Number.isFinite(Number(bounds.height)) ? Math.max(0.05, Number(bounds.height)) : current.height;
       const sx = nextWidth / current.width;
       const sy = nextHeight / current.height;
-      const baseTransform = selectedElement.getAttribute("transform") || "";
-      setTransformFromBase(
-        selectedElement,
-        baseTransform,
-        `translate(${nextX} ${nextY}) scale(${sx} ${sy}) translate(${-current.x} ${-current.y})`
-      );
+      selectedElements.forEach((el) => {
+        const baseTransform = el.getAttribute("transform") || "";
+        const space = getDragSpaceForElement(el);
+        const origin = space && space !== svgRoot
+          ? rootPointToElementPoint(space, { x: current.x, y: current.y })
+          : { x: current.x, y: current.y };
+        const nextOrigin = space && space !== svgRoot
+          ? rootPointToElementPoint(space, { x: nextX, y: nextY })
+          : { x: nextX, y: nextY };
+        setParentSpaceTransformFromBase(
+          el,
+          baseTransform,
+          `translate(${nextOrigin.x} ${nextOrigin.y}) scale(${sx} ${sy}) translate(${-origin.x} ${-origin.y})`
+        );
+      });
       refreshSelectionAfterMutation("panel-edit");
       return true;
     },

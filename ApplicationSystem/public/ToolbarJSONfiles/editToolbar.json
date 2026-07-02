@@ -507,5 +507,111 @@
     "callbackKey": "stlSculptOff",
     "routeToActivePanel": true,
     "modes": ["STLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "SCAD Shape",
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true },
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Extrude",
+    "callbackKey": "scadExtrude",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Cut out",
+    "callbackKey": "scadCutout",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Union",
+    "callbackKey": "scadUnion",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Difference",
+    "callbackKey": "scadDifference",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Intersection",
+    "callbackKey": "scadIntersection",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Translate",
+    "callbackKey": "scadTranslate",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Rotate",
+    "callbackKey": "scadRotate",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Scale",
+    "callbackKey": "scadScale",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Rename",
+    "callbackKey": "scadRename",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Duplicate",
+    "callbackKey": "scadDuplicate",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "SCAD Shape",
+    "heading": "Delete",
+    "callbackKey": "scadDelete",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
   }
 ]

@@ -294,23 +294,16 @@ function renderLayerContents({
       const ctx = window.SVGEditorContext;
       const mod = e.ctrlKey || e.metaKey;
       let nextSelected = [child];
-      if (ctx?.setSelection) {
-        if (mod && ctx.getSelectedElements) {
-          const current = ctx.getSelectedElements().filter((el) =>
-            el?.isConnected
-          );
-          const currentInLayer = current.filter(
-            (el) =>
-              el?.closest?.("g[data-layer='true']")?.id === rootLayerId &&
-              !(isLayerGroupElement(el) && el.id === rootLayerId),
-          );
-          if (currentInLayer.includes(child)) {
-            nextSelected = currentInLayer.filter((el) => el !== child);
-          } else {
-            nextSelected = [...currentInLayer, child];
-          }
-        }
+      if (ctx?.toggleSelection && mod) {
+        ctx.toggleSelection(child);
+        nextSelected = ctx.getSelectedElements
+          ? ctx.getSelectedElements().filter((el) => el?.isConnected)
+          : [];
+      } else if (ctx?.setSelection) {
         ctx.setSelection(nextSelected, { primary: child });
+        nextSelected = ctx.getSelectedElements
+          ? ctx.getSelectedElements().filter((el) => el?.isConnected)
+          : nextSelected;
       } else if (mod && selectedElements.length) {
         if (selectedElements.includes(child)) {
           nextSelected = selectedElements.filter((el) => el !== child);
@@ -322,9 +315,11 @@ function renderLayerContents({
         state.selectedElements = nextSelected;
       }
       if (state?.selected) {
-        const primary = nextSelected[nextSelected.length - 1] || null;
+        const primary = ctx?.getSelectedElement?.() || nextSelected[0] || null;
         state.selected.type = primary ? "element" : null;
-        state.selected.layerId = primary ? rootLayerId || null : null;
+        state.selected.layerId = primary
+          ? primary.closest?.("g[data-layer='true']")?.id || rootLayerId || null
+          : null;
         state.selected.element = primary;
       }
       panelEl?.focus?.({ preventScroll: true });

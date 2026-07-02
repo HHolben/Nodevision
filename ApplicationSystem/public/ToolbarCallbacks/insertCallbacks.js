@@ -138,7 +138,7 @@ function ensureTableToolsInstalled() {
     for (let i = 0; i < columnCount; i++) {
       const tag = row.cells[i]?.tagName || "TD";
       const newCell = document.createElement(tag);
-      newCell.textContent = "Cell";
+      newCell.textContent = "";
       newCell.style.border = row.cells[i]?.style.border || "1px solid #444";
       newCell.style.padding = row.cells[i]?.style.padding || "6px 8px";
       newRow.appendChild(newCell);
@@ -162,7 +162,7 @@ function ensureTableToolsInstalled() {
       const refCell = row.cells[colIndex] || row.cells[row.cells.length - 1];
       const tag = refCell?.tagName || "TD";
       const newCell = document.createElement(tag);
-      newCell.textContent = "Cell";
+      newCell.textContent = "";
       newCell.style.border = refCell?.style.border || "1px solid #444";
       newCell.style.padding = refCell?.style.padding || "6px 8px";
       if (direction === "left") {

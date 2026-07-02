@@ -12,6 +12,20 @@ const RASTER_EDITING_MODES = new Set([
 
 const RASTER_FILE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp", "ico"]);
 
+export function normalizeSavePath(pathValue) {
+  return String(pathValue || "")
+    .trim()
+    .split(String.fromCharCode(92)).join("/")
+    .split(/[?#]/)[0]
+    .replace(/^\/+/, "")
+    .replace(/^Notebook\//i, "");
+}
+
+export function sameSavePath(a, b) {
+  return normalizeSavePath(a) === normalizeSavePath(b);
+}
+
+
 export function resolveFilePath(preferredPath) {
   return (
     preferredPath ||

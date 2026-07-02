@@ -1,9 +1,16 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVeditor.mjs
 // This file defines browser-side CSVeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // CSVeditor.mjs
+import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
+  if (typeof container.__cleanupCSVTableToolbar === "function") {
+    container.__cleanupCSVTableToolbar();
+    container.__cleanupCSVTableToolbar = null;
+  }
   container.innerHTML = "";
+  updateToolbarState({ currentMode: "CSVediting", htmlTableSelected: false });
 
   const wrapper = document.createElement("div");
   wrapper.id = "editor-root";
@@ -24,6 +31,45 @@ export async function renderEditor(filePath, container) {
   table.style.width = "100%";
   table.style.tableLayout = "fixed";
   tableWrapper.appendChild(table);
+  window.__nvTableEditorRoot = tableWrapper;
+
+  let lastCsvTableSelected = false;
+  const findTableCellFromNode = (node) => {
+    const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    const cell = el?.closest?.("td, th") || null;
+    return cell && tableWrapper.contains(cell) ? cell : null;
+  };
+  const publishTableSelection = (cell) => {
+    const activeCell = setActiveTableCell(cell);
+    const selected = Boolean(activeCell);
+    if (selected !== lastCsvTableSelected) {
+      lastCsvTableSelected = selected;
+      updateToolbarState({ htmlTableSelected: selected });
+    }
+  };
+  const updateTableSelectionFromSelection = () => {
+    const selection = window.getSelection?.();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    if (!range || !tableWrapper.contains(range.commonAncestorContainer)) return;
+    publishTableSelection(findTableCellFromNode(range.startContainer));
+  };
+  const updateTableSelectionFromEvent = (event) => {
+    publishTableSelection(findTableCellFromNode(event.target));
+  };
+  table.addEventListener("pointerdown", updateTableSelectionFromEvent);
+  table.addEventListener("click", updateTableSelectionFromEvent);
+  table.addEventListener("keyup", updateTableSelectionFromSelection);
+  table.addEventListener("focusin", updateTableSelectionFromSelection);
+  document.addEventListener("selectionchange", updateTableSelectionFromSelection);
+  container.__cleanupCSVTableToolbar = () => {
+    document.removeEventListener("selectionchange", updateTableSelectionFromSelection);
+    if (window.__nvTableEditorRoot === tableWrapper) window.__nvTableEditorRoot = null;
+    if (window.__nvHtmlTableActiveCell && tableWrapper.contains(window.__nvHtmlTableActiveCell)) {
+      window.__nvHtmlTableActiveCell = null;
+      window.__nvHtmlTableActiveTable = null;
+    }
+    updateToolbarState({ htmlTableSelected: false });
+  };
 
   // Helper to create a cell
   function createCell(value = "") {

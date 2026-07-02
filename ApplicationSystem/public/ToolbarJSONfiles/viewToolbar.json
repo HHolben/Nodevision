@@ -27,7 +27,16 @@
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGLayersPanel.mjs",
     "replaceActive": true,
-    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing", "Virtual World Editing", "KMLviewerMode", "KMLeditorMode"]
+    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing", "Virtual World Editing", "KMLviewerMode", "KMLeditorMode", "SCADediting"]
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "SCAD Timeline",
+    "panelTemplate": "ScadTimelinePanel",
+    "panelType": "ControlPanel",
+    "panelPath": "/PanelInstances/ControlPanels/ScadTimelinePanel.mjs",
+    "replaceActive": true,
+    "modes": ["SCADediting"]
   },
   {
     "ToolbarCategory": "View",

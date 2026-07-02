@@ -7,6 +7,7 @@ import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayersContext.mjs";
 import { countWords } from "../FamilyEditorCommon.mjs";
 import { setStatus, setWordCount } from "/StatusBar.mjs";
+import { setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico"]);
@@ -4033,6 +4034,31 @@ function serializeHtmlDocumentForSave(headContent = "", bodyContent = "", script
   ].filter((line) => line !== "").join("\n");
 }
 
+function normalizeEditorSavePath(pathValue) {
+  return String(pathValue || "")
+    .trim()
+    .split(String.fromCharCode(92)).join("/")
+    .split(/[?#]/)[0]
+    .replace(/^\/+/, "")
+    .replace(/^Notebook\//i, "");
+}
+
+function sameEditorSavePath(a, b) {
+  return normalizeEditorSavePath(a) === normalizeEditorSavePath(b);
+}
+
+function resolveEditorHookSavePath(editorLabel, editorPath, requestedPath) {
+  const targetPath = requestedPath || editorPath;
+  if (targetPath && editorPath && !sameEditorSavePath(targetPath, editorPath)) {
+    console.error(editorLabel + ": refusing to save editor content into a different path.", {
+      editorPath,
+      savePath: targetPath,
+    });
+    throw new Error(editorLabel + " save path mismatch");
+  }
+  return targetPath;
+}
+
 // --------------------------------------------------
 // Main HTML Editor
 // --------------------------------------------------
@@ -4063,6 +4089,12 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLPoetry();
     container.__cleanupHTMLPoetry = null;
   }
+  if (typeof container.__cleanupHTMLTableToolbar === "function") {
+    container.__cleanupHTMLTableToolbar();
+    container.__cleanupHTMLTableToolbar = null;
+  }
+  const renderToken = Symbol("html-editor:" + filePath);
+  container.__nvEditorRenderToken = renderToken;
   container.innerHTML = "";
   ensureHTMLLayoutStyles();
 
@@ -4075,6 +4107,7 @@ export async function renderEditor(filePath, container, options = {}) {
   window.currentActiveFilePath = filePath;
   window.filePath = filePath;
   window.selectedFilePath = filePath;
+  window.__nvSvgEditorActivePath = null;
   // Reset any previous layer context before creating a fresh one for this document.
   window.HTMLLayersContext = null;
   updateToolbarState({
@@ -4084,6 +4117,7 @@ export async function renderEditor(filePath, container, options = {}) {
     htmlTextSelected: false,
     htmlImagePath: null,
     htmlAudioPath: null,
+    htmlTableSelected: false,
   });
 
 
@@ -4095,6 +4129,8 @@ export async function renderEditor(filePath, container, options = {}) {
   wrapper.style.height = "100%";
   wrapper.style.width = "100%";
   container.appendChild(wrapper);
+  const isCurrentRender = () =>
+    container.__nvEditorRenderToken === renderToken && wrapper.isConnected;
 
   // WYSIWYG editable area
   const wysiwyg = document.createElement("div");
@@ -4106,6 +4142,7 @@ export async function renderEditor(filePath, container, options = {}) {
   wysiwyg.style.overflowWrap = "anywhere";
   wysiwyg.style.wordBreak = "break-word";
   wrapper.appendChild(wysiwyg);
+  window.__nvTableEditorRoot = wysiwyg;
 
   // Hidden script container
   const hidden = document.createElement("div");
@@ -4115,6 +4152,45 @@ export async function renderEditor(filePath, container, options = {}) {
   const updateWordCount = () => setWordCount(countWords(wysiwyg.innerText || ""));
   updateWordCount();
   wysiwyg.addEventListener("input", updateWordCount);
+
+  let lastHtmlTableSelected = false;
+  const findTableCellFromNode = (node) => {
+    const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    const cell = el?.closest?.("td, th") || null;
+    return cell && wysiwyg.contains(cell) ? cell : null;
+  };
+  const publishTableSelection = (cell) => {
+    const activeCell = setActiveTableCell(cell);
+    const selected = Boolean(activeCell);
+    if (selected !== lastHtmlTableSelected) {
+      lastHtmlTableSelected = selected;
+      updateToolbarState({ htmlTableSelected: selected });
+    }
+  };
+  const updateTableSelectionFromSelection = () => {
+    const selection = window.getSelection?.();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    if (!range) return;
+    if (!wysiwyg.contains(range.commonAncestorContainer)) return;
+    publishTableSelection(findTableCellFromNode(range.startContainer));
+  };
+  const updateTableSelectionFromEvent = (event) => {
+    publishTableSelection(findTableCellFromNode(event.target));
+  };
+  wysiwyg.addEventListener("pointerdown", updateTableSelectionFromEvent);
+  wysiwyg.addEventListener("click", updateTableSelectionFromEvent);
+  wysiwyg.addEventListener("keyup", updateTableSelectionFromSelection);
+  wysiwyg.addEventListener("focusin", updateTableSelectionFromSelection);
+  document.addEventListener("selectionchange", updateTableSelectionFromSelection);
+  container.__cleanupHTMLTableToolbar = () => {
+    document.removeEventListener("selectionchange", updateTableSelectionFromSelection);
+    if (window.__nvTableEditorRoot === wysiwyg) window.__nvTableEditorRoot = null;
+    if (window.__nvHtmlTableActiveCell && wysiwyg.contains(window.__nvHtmlTableActiveCell)) {
+      window.__nvHtmlTableActiveCell = null;
+      window.__nvHtmlTableActiveTable = null;
+    }
+    updateToolbarState({ htmlTableSelected: false });
+  };
 
   // Expose a layer context so the Layers panel can toggle HTML elements.
   window.HTMLLayersContext = createHtmlLayersContext(wysiwyg, { title: "HTML Layers" });
@@ -4185,6 +4261,7 @@ export async function renderEditor(filePath, container, options = {}) {
     const res = await fetch(notebookUrl, { cache: 'no-cache' });
     if (!res.ok) throw new Error(res.statusText);
     const htmlText = await res.text();
+    if (!isCurrentRender()) return;
 
     // Parse HTML
     const parser = new DOMParser();
@@ -4252,6 +4329,9 @@ export async function renderEditor(filePath, container, options = {}) {
     updateWordCount();
 
     // Saving function
+    if (!isCurrentRender()) return;
+    window.__nvWysiwygActivePath = filePath;
+    window.__nvHtmlEditorActivePath = filePath;
     window.getEditorHTML = () => {
       restoreSavedImageSources(wysiwyg);
       const headContent = Array.from(headClone.children)
@@ -4314,13 +4394,14 @@ export async function renderEditor(filePath, container, options = {}) {
     };
 
     window.saveWYSIWYGFile = async (path) => {
+      const targetPath = resolveEditorHookSavePath("HTML/WYSIWYG Editor", filePath, path);
       const content = window.getEditorHTML();
       await fetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: path || filePath, content }),
+        body: JSON.stringify({ path: targetPath, content }),
       });
-      console.log("Saved WYSIWYG file:", path || filePath);
+      console.log("Saved WYSIWYG file:", targetPath);
     };
 
   } catch (err) {

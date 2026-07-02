@@ -6,10 +6,13 @@ export default function ViewLayers() {
     window.SVGEditorContext?.layers ||
     window.HTMLLayersContext?.attachHost ||
     window.HTMLViewLayersContext?.attachHost ||
-    window.MetaWorldLayersContext?.attachHost;
+    window.KMLLayersContext?.attachHost ||
+    window.GLBLayersContext?.attachHost ||
+    window.MetaWorldLayersContext?.attachHost ||
+    window.SCADLayersContext?.attachHost;
 
   if (!hasContext) {
-    alert("Open an SVG, HTML, GLB, or MetaWorld document to use the Layers panel.");
+    alert("Open an SVG, HTML, KML, GLB, SCAD, or MetaWorld document to use the Layers panel.");
     return;
   }
 

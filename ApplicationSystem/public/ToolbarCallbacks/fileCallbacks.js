@@ -16,9 +16,38 @@ const loadInputDialog = (() => {
   };
 })();
 
+function normalizeLegacySavePath(pathValue) {
+  return String(pathValue || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .split(/[?#]/)[0]
+    .replace(/^\/+/, "")
+    .replace(/^Notebook\//i, "");
+}
+
+function sameLegacySavePath(a, b) {
+  return normalizeLegacySavePath(a) === normalizeLegacySavePath(b);
+}
+
+function firstLegacySavePath(...paths) {
+  return paths.find((path) => String(path || "").trim()) || "";
+}
+
+function refuseLegacyMismatchedSave(editorLabel, editorPath, savePath) {
+  if (!editorPath || !savePath || sameLegacySavePath(editorPath, savePath)) return false;
+  console.error("Refusing to save " + editorLabel + " buffer into a different path.", {
+    editorPath,
+    savePath,
+  });
+  return true;
+}
+
 window.fileCallbacks = {
 saveFile: async () => {
-  const filePath = window.currentActiveFilePath || window.filePath;
+  const filePath =
+    window.NodevisionState?.activeEditorFilePath ||
+    window.currentActiveFilePath ||
+    window.filePath;
   const mode = window.NodevisionState?.currentMode || window.currentMode || "";
   const ext = (() => {
     const rawPath = String(filePath || "").trim();
@@ -118,13 +147,17 @@ saveFile: async () => {
   // Check if we're in SVG editing mode first
   const svgEditor = document.getElementById("svg-editor");
   if (svgEditor && window.currentSaveSVG && typeof window.currentSaveSVG === 'function') {
+    const editorPath = firstLegacySavePath(window.__nvSvgEditorActivePath);
+    if (refuseLegacyMismatchedSave("SVG Editor", editorPath, filePath)) return;
     console.log("Saving SVG file using Publisher-style editor");
-    window.currentSaveSVG();
+    window.currentSaveSVG(filePath);
     return;
   }
 
   // Check for legacy SVG editing mode
   if (svgEditor) {
+    const editorPath = firstLegacySavePath(window.__nvSvgEditorActivePath);
+    if (refuseLegacyMismatchedSave("SVG Editor", editorPath, filePath)) return;
     console.log("Saving SVG file using direct method");
     const svgContent = svgEditor.outerHTML;
     
@@ -164,6 +197,8 @@ saveFile: async () => {
 
   // Prefer Monaco Editor if active
   if (window.monacoEditor && typeof window.monacoEditor.getValue === 'function') {
+    const editorPath = firstLegacySavePath(window.__nvCodeEditorActivePath);
+    if (refuseLegacyMismatchedSave("Monaco Editor", editorPath, filePath)) return;
     const content = window.monacoEditor.getValue();
     fetch('/api/save', {
       method: 'POST',
@@ -187,6 +222,12 @@ saveFile: async () => {
 
   // Otherwise, fallback to WYSIWYG save
   if (typeof window.saveWYSIWYGFile === 'function') {
+    const editorPath = firstLegacySavePath(
+      window.__nvWysiwygActivePath,
+      window.__nvHtmlEditorActivePath,
+      window.__nvSvgEditorActivePath,
+    );
+    if (refuseLegacyMismatchedSave("HTML/WYSIWYG Editor", editorPath, filePath)) return;
     window.saveWYSIWYGFile(filePath);
     return;
   }

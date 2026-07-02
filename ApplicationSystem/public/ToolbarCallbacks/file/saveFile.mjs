@@ -6,21 +6,38 @@ import {
   isRasterContext,
   notifyFileSaved,
   resolveFilePath,
+  sameSavePath,
   saveRasterCanvas,
   saveViaApi,
 } from "./saveFile/utils.mjs";
 
-function normalizeSavePath(pathValue) {
-  return String(pathValue || "")
-    .trim()
-    .replace(/\\/g, "/")
-    .replace(/[?#].*$/, "")
-    .replace(/^\/+/, "")
-    .replace(/^Notebook\//i, "");
+function firstSavePath(...paths) {
+  return paths.find((path) => String(path || "").trim()) || "";
 }
 
-function sameSavePath(a, b) {
-  return normalizeSavePath(a) === normalizeSavePath(b);
+function refuseMismatchedEditorSave(editorLabel, editorPath, savePath) {
+  if (!editorPath || !savePath || sameSavePath(editorPath, savePath)) return false;
+  console.error("[saveFile] Refusing to save " + editorLabel + " buffer into a different path.", {
+    editorPath,
+    savePath,
+  });
+  return true;
+}
+
+function markdownEditorPath() {
+  return firstSavePath(window.__nvMarkdownActivePath, window.__nvCodeEditorActivePath);
+}
+
+function htmlEditorPath() {
+  return firstSavePath(
+    window.__nvWysiwygActivePath,
+    window.__nvHtmlEditorActivePath,
+    window.__nvSvgEditorActivePath,
+  );
+}
+
+function svgEditorPath() {
+  return firstSavePath(window.__nvSvgEditorActivePath);
 }
 
 export default async function saveFile(options = {}) {
@@ -81,6 +98,8 @@ export default async function saveFile(options = {}) {
     }
 
     if (mode === "EPUBediting" && typeof window.saveWYSIWYGFile === "function") {
+      const editorPath = htmlEditorPath();
+      if (refuseMismatchedEditorSave("EPUB Editor", editorPath, filePath)) return false;
       await window.saveWYSIWYGFile(filePath);
       return notifyFileSaved(filePath);
     }
@@ -120,11 +139,15 @@ export default async function saveFile(options = {}) {
       return notifyFileSaved(filePath);
     }
     if (typeof window.getEditorMarkdown === "function") {
+      const editorPath = markdownEditorPath();
+      if (refuseMismatchedEditorSave("Markdown Editor", editorPath, filePath)) return false;
       const content = window.getEditorMarkdown();
       await saveViaApi({ path: filePath, content });
       return notifyFileSaved(filePath);
     }
     if (inWysiwygEditor && typeof window.getEditorHTML === "function") {
+      const editorPath = htmlEditorPath();
+      if (refuseMismatchedEditorSave("HTML/WYSIWYG Editor", editorPath, filePath)) return false;
       const content = window.getEditorHTML();
       await saveViaApi({ path: filePath, content });
       return notifyFileSaved(filePath);
@@ -140,14 +163,20 @@ export default async function saveFile(options = {}) {
       return notifyFileSaved(filePath);
     }
     if (inSvgEditor && typeof window.currentSaveSVG === "function") {
+      const editorPath = svgEditorPath();
+      if (refuseMismatchedEditorSave("SVG Editor", editorPath, filePath)) return false;
       await window.currentSaveSVG(filePath);
       return notifyFileSaved(filePath);
     }
     if ((inMarkdownEditor || inGraphicalEditor) && typeof window.saveMDFile === "function") {
+      const editorPath = markdownEditorPath();
+      if (refuseMismatchedEditorSave("Markdown Editor", editorPath, filePath)) return false;
       await window.saveMDFile(filePath);
       return notifyFileSaved(filePath);
     }
     if ((inWysiwygEditor || inGraphicalEditor) && typeof window.saveWYSIWYGFile === "function") {
+      const editorPath = htmlEditorPath();
+      if (refuseMismatchedEditorSave("HTML/WYSIWYG Editor", editorPath, filePath)) return false;
       await window.saveWYSIWYGFile(filePath);
       return notifyFileSaved(filePath);
     }

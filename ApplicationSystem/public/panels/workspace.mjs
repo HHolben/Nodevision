@@ -850,6 +850,7 @@ export async function ensureEditorModeLayout({
   editorCell,
   layout,
   modeId = layout?.id || "EditorMode",
+  preserveExistingPanelIds = [],
 } = {}) {
   const cell = resolvePanelCell(editorCell || window.activeCell);
   if (!cell || !layout?.children?.length) return null;
@@ -869,15 +870,36 @@ export async function ensureEditorModeLayout({
   if (!root) return null;
   root.dataset.nvModeLayoutId = modeId;
 
+  const preserveIds = new Set((preserveExistingPanelIds || [])
+    .map((id) => normalizePanelIdentifier(id) || id)
+    .filter(Boolean));
+  const preservedCells = preserveIds.size
+    ? Array.from(replacementTarget.querySelectorAll?.(".panel-cell") || []).filter((candidate) => {
+      const candidateId = normalizePanelIdentifier(candidate.dataset?.id || candidate.dataset?.panelId) || candidate.dataset?.id || candidate.dataset?.panelId;
+      return candidateId && preserveIds.has(candidateId) && candidate !== cell && !root.contains(candidate);
+    })
+    : [];
+  let rootToInsert = root;
+  if (preservedCells.length) {
+    const wrapper = createPanelRow("row", replacementTarget.style?.flex || root.style.flex || "1 1 auto");
+    wrapper.dataset.nvModeLayoutId = modeId;
+    delete root.dataset.nvModeLayoutId;
+    preservedCells.forEach((preservedCell) => wrapper.appendChild(preservedCell));
+    wrapper.appendChild(root);
+    rebuildLayoutDividersForContainer(wrapper, false);
+    rootToInsert = wrapper;
+  }
+
   if (replacementTarget === cell) {
     const marker = document.createComment(`Nodevision ${modeId} insertion point`);
     targetParent.replaceChild(marker, cell);
-    targetParent.replaceChild(root, marker);
+    targetParent.replaceChild(rootToInsert, marker);
   } else {
-    targetParent.replaceChild(root, replacementTarget);
+    targetParent.replaceChild(rootToInsert, replacementTarget);
   }
 
   rebuildLayoutDividersForContainer(root, root.dataset.direction === "column");
+  rebuildLayoutDividersForContainer(rootToInsert, rootToInsert.dataset.direction === "column");
   rebuildLayoutDividersForContainer(targetParent);
 
   for (const panel of panelsToLoad) {
@@ -916,6 +938,19 @@ export async function ensureMidEditorModeLayout({ editorCell } = {}) {
     editorCell,
     layout,
     modeId: layout?.id || "MidEditorMode",
+  });
+}
+
+export async function ensureScadEditorModeLayout({ editorCell } = {}) {
+  const layout = await importModeLayout({
+    userModulePath: "/UserSettings/ModeLayouts/ScadEditorMode.mjs",
+    defaultModulePath: "/Layouts/ModeLayouts/ScadEditorMode.mjs",
+  });
+  return ensureEditorModeLayout({
+    editorCell,
+    layout,
+    modeId: layout?.id || "ScadEditorMode",
+    preserveExistingPanelIds: ["FileManager"],
   });
 }
 
