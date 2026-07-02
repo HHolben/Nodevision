@@ -41,6 +41,62 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "SCAD Primitive",
+      "modes": ["SCADediting"],
+      "preventDropdown": true,
+      "icon": "icons/3Dmodel.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "SCAD Primitive",
+      "heading": "Select",
+      "callbackKey": "scadSelectTool",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "SCAD Primitive",
+      "heading": "Vertex",
+      "callbackKey": "scadInsertVertex",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "SCAD Primitive",
+      "heading": "Circle",
+      "callbackKey": "scadInsertCircle",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "SCAD Primitive",
+      "heading": "Rectangle",
+      "callbackKey": "scadInsertRectangle",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "SCAD Primitive",
+      "heading": "Triangle",
+      "callbackKey": "scadInsertTriangle",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "SCAD Primitive",
+      "heading": "Polygon",
+      "callbackKey": "scadInsertPolygon",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Terrain",
       "modes": ["Virtual World Editing"],
       "preventDropdown": true
@@ -726,12 +782,12 @@
 
     {
       "ToolbarCategory": "Insert",
-      "heading": "table",
+      "parentHeading": "Insert",
+      "heading": "Insert Table",
       "insertGroup": "table",
       "callbackKey": "insertTable",
       "icon": "icons/SpreadsheetIcon.png",
-       "parentHeading": "Insert Text"
-
+      "modes": ["HTMLediting"]
     },
     {
       "ToolbarCategory": "Insert",

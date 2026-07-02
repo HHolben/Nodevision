@@ -4,6 +4,7 @@
 import * as THREE from "/lib/three/three.module.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
+import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
 
 function isEmptySTLBuffer(arrayBuffer) {
   if (!arrayBuffer || arrayBuffer.byteLength === 0) return true;
@@ -67,45 +68,22 @@ export class STLViewer {
     this.floorGrid = this.createFloorGrid(400, 40);
     this.scene.add(this.floorGrid);
 
-    this.overlayScene = new THREE.Scene();
-    this.overlayCamera = new THREE.PerspectiveCamera(50, 1, 1, 100);
-    this.overlayCamera.position.set(50, 50, 50);
-    this.overlayScene.add(new THREE.AxesHelper(20));
-
-    this.overlayRenderer = new THREE.WebGLRenderer({ alpha: true });
-    this.overlayRenderer.setSize(100, 100);
-    this.overlayRenderer.domElement.title = "Drag to rotate view";
-    this.overlayRenderer.domElement.style.cssText = "position:absolute;top:10px;right:10px;width:100px;height:100px;cursor:grab;border-radius:8px;background:rgba(255,255,255,0.72);box-shadow:0 1px 6px rgba(15,23,42,0.2);z-index:4;";
-    container.appendChild(this.overlayRenderer.domElement);
-
-    this.gizmoDragging = false;
-    this.gizmoLastX = 0;
-    this.gizmoLastY = 0;
-    this.overlayRenderer.domElement.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      this.gizmoDragging = true;
-      this.gizmoLastX = event.clientX;
-      this.gizmoLastY = event.clientY;
-      this.overlayRenderer.domElement.style.cursor = "grabbing";
-      this.overlayRenderer.domElement.setPointerCapture?.(event.pointerId);
+    this.orientationWidget = new ViewportOrientationWidget({
+      container,
+      THREE,
+      camera: this.camera,
+      controls: this.controls,
+      viewAdapter: {
+        getCamera: () => this.camera,
+        getControls: () => this.controls,
+        getViewportElement: () => this.container,
+        requestRender: () => {
+          this.renderer.render(this.scene, this.camera);
+          return true;
+        },
+      },
     });
-    this.overlayRenderer.domElement.addEventListener("pointermove", (event) => {
-      if (!this.gizmoDragging) return;
-      event.preventDefault();
-      event.stopPropagation();
-      this.rotateCameraFromGizmo(event.clientX - this.gizmoLastX, event.clientY - this.gizmoLastY);
-      this.gizmoLastX = event.clientX;
-      this.gizmoLastY = event.clientY;
-    });
-    const endGizmoDrag = (event) => {
-      if (!this.gizmoDragging) return;
-      this.gizmoDragging = false;
-      this.overlayRenderer.domElement.style.cursor = "grab";
-      if (event?.pointerId !== undefined) this.overlayRenderer.domElement.releasePointerCapture?.(event.pointerId);
-    };
-    this.overlayRenderer.domElement.addEventListener("pointerup", endGizmoDrag);
-    this.overlayRenderer.domElement.addEventListener("pointercancel", endGizmoDrag);
+    this.orientationWidget.mount();
 
     this.resizeHandler = () => this.handleResize();
     window.addEventListener("resize", this.resizeHandler);
@@ -163,7 +141,7 @@ export class STLViewer {
       else this.floorGrid.material?.dispose?.();
     }
     this.renderer.dispose();
-    this.overlayRenderer.dispose();
+    this.orientationWidget?.destroy?.();
   }
 
   handleResize() {
@@ -176,30 +154,10 @@ export class STLViewer {
     this.renderer.setSize(w, h);
   }
 
-  rotateCameraFromGizmo(deltaX, deltaY) {
-    const offset = this.camera.position.clone().sub(this.controls.target);
-    const spherical = new THREE.Spherical().setFromVector3(offset);
-    spherical.theta -= deltaX * 0.01;
-    spherical.phi = Math.max(0.08, Math.min(Math.PI - 0.08, spherical.phi - deltaY * 0.01));
-    offset.setFromSpherical(spherical);
-    this.camera.position.copy(this.controls.target).add(offset);
-    this.camera.lookAt(this.controls.target);
-    this.controls.update();
-  }
-
-  syncViewGizmo() {
-    const offset = this.camera.position.clone().sub(this.controls.target);
-    if (offset.lengthSq() < 0.0001) offset.set(1, 1, 1);
-    this.overlayCamera.position.copy(offset).setLength(50);
-    this.overlayCamera.up.copy(this.camera.up);
-    this.overlayCamera.lookAt(0, 0, 0);
-  }
-
   animate() {
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
-    this.syncViewGizmo();
-    this.overlayRenderer.render(this.overlayScene, this.overlayCamera);
+    this.orientationWidget?.sync?.();
   }
 
   clearModel() {

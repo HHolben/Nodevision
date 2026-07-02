@@ -6,6 +6,8 @@ import { STLLoader } from "/lib/three/STLLoader.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus as setNodevisionStatus } from "/StatusBar.mjs";
+import { mountWidget } from "/Widgets/WidgetHost.mjs";
+import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
 
 const SAVE_ENDPOINT = "/api/save";
 const WELD_EPSILON = 1e-5;
@@ -20,6 +22,7 @@ function ensureStyles() {
     .nv-stl-viewport canvas { display:block; width:100%; height:100%; }
     .nv-stl-error { margin:12px; color:#b00020; }
     .nv-stl-editor.nv-stl-sculpt-active .nv-stl-viewport canvas { cursor: crosshair; }
+    .nv-stl-selection-box { position:fixed; border:1px solid #f59e0b; background:rgba(245,158,11,0.14); pointer-events:none; z-index:10000; display:none; }
   `;
   document.head.appendChild(style);
 }
@@ -99,6 +102,25 @@ function faceNormal(vertices, face) {
   return new THREE.Vector3().crossVectors(ab, ac).normalize();
 }
 
+function verticesAreCoplanar(vertices, epsilon = WELD_EPSILON * 100) {
+  if (!Array.isArray(vertices) || vertices.length < 3) return false;
+  const origin = vertices[0];
+  let normal = null;
+
+  for (let i = 1; i < vertices.length - 1; i++) {
+    const ab = new THREE.Vector3().subVectors(vertices[i], origin);
+    const ac = new THREE.Vector3().subVectors(vertices[i + 1], origin);
+    const candidate = new THREE.Vector3().crossVectors(ab, ac);
+    if (candidate.lengthSq() > epsilon * epsilon) {
+      normal = candidate.normalize();
+      break;
+    }
+  }
+
+  if (!normal) return false;
+  return vertices.every((vertex) => Math.abs(new THREE.Vector3().subVectors(vertex, origin).dot(normal)) <= epsilon);
+}
+
 function serializeTopologyToAsciiSTL(topology) {
   const lines = ["solid nodevision"];
   for (const face of topology.faces) {
@@ -145,6 +167,7 @@ export async function renderEditor(
     destroyed: false,
     dirty: false,
     lastPointerClient: { x: 0, y: 0 },
+    selectionBox: null,
     sculpt: {
       tool: "select",
       radius: 1,
@@ -178,83 +201,28 @@ export async function renderEditor(
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
+  controls.enableRotate = false;
 
   scene.add(new THREE.AmbientLight(0x606060));
   const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
   keyLight.position.set(1, 1, 1).normalize();
   scene.add(keyLight);
 
-  const overlayScene = new THREE.Scene();
-  const overlayCamera = new THREE.PerspectiveCamera(50, 1, 1, 100);
-  overlayCamera.position.set(50, 50, 50);
-  const overlayAxes = new THREE.AxesHelper(20);
-  overlayScene.add(overlayAxes);
-
-  const overlayRenderer = new THREE.WebGLRenderer({ alpha: true });
-  overlayRenderer.setSize(100, 100);
-  overlayRenderer.domElement.title = "Drag to rotate view";
-  overlayRenderer.domElement.style.cssText = [
-    "position:absolute",
-    "top:10px",
-    "right:10px",
-    "width:100px",
-    "height:100px",
-    "cursor:grab",
-    "border-radius:8px",
-    "background:rgba(255,255,255,0.72)",
-    "box-shadow:0 1px 6px rgba(15,23,42,0.2)",
-    "z-index:4",
-  ].join(";");
-  viewport.appendChild(overlayRenderer.domElement);
-
-  let gizmoDragging = false;
-  let gizmoLastX = 0;
-  let gizmoLastY = 0;
-
-  function rotateCameraFromGizmo(deltaX, deltaY) {
-    const offset = camera.position.clone().sub(controls.target);
-    const spherical = new THREE.Spherical().setFromVector3(offset);
-    spherical.theta -= deltaX * 0.01;
-    spherical.phi = Math.max(0.08, Math.min(Math.PI - 0.08, spherical.phi - deltaY * 0.01));
-    offset.setFromSpherical(spherical);
-    camera.position.copy(controls.target).add(offset);
-    camera.lookAt(controls.target);
-    controls.update();
-  }
-
-  function syncViewGizmo() {
-    const offset = camera.position.clone().sub(controls.target);
-    if (offset.lengthSq() < 0.0001) offset.set(1, 1, 1);
-    overlayCamera.position.copy(offset).setLength(50);
-    overlayCamera.up.copy(camera.up);
-    overlayCamera.lookAt(0, 0, 0);
-  }
-
-  overlayRenderer.domElement.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    gizmoDragging = true;
-    gizmoLastX = event.clientX;
-    gizmoLastY = event.clientY;
-    overlayRenderer.domElement.style.cursor = "grabbing";
-    overlayRenderer.domElement.setPointerCapture?.(event.pointerId);
+  const orientationWidget = await mountWidget(ViewportOrientationWidget, {
+    container: viewport,
+    THREE,
+    camera,
+    controls,
+    viewAdapter: {
+      getCamera: () => camera,
+      getControls: () => controls,
+      getViewportElement: () => viewport,
+      requestRender: () => {
+        renderer.render(scene, camera);
+        return true;
+      },
+    },
   });
-  overlayRenderer.domElement.addEventListener("pointermove", (event) => {
-    if (!gizmoDragging) return;
-    event.preventDefault();
-    event.stopPropagation();
-    rotateCameraFromGizmo(event.clientX - gizmoLastX, event.clientY - gizmoLastY);
-    gizmoLastX = event.clientX;
-    gizmoLastY = event.clientY;
-  });
-  const endGizmoDrag = (event) => {
-    if (!gizmoDragging) return;
-    gizmoDragging = false;
-    overlayRenderer.domElement.style.cursor = "grab";
-    if (event?.pointerId !== undefined) overlayRenderer.domElement.releasePointerCapture?.(event.pointerId);
-  };
-  overlayRenderer.domElement.addEventListener("pointerup", endGizmoDrag);
-  overlayRenderer.domElement.addEventListener("pointercancel", endGizmoDrag);
 
   const raycaster = new THREE.Raycaster();
   raycaster.params.Points.threshold = 0.18;
@@ -483,6 +451,14 @@ export async function renderEditor(
     scene.add(customEdgeLines);
   }
 
+  function selectAllVertices() {
+    if (!state.topology?.vertices?.length) return;
+    state.selection = new Set(state.topology.vertices.map((_, index) => index));
+    rebuildSelectionDisplay();
+    setModeLabel("all selected");
+    notifyToolbarState();
+  }
+
   function selectedCentroid(fromVertices = null) {
     const source = fromVertices || state.topology?.vertices;
     if (!source || state.selection.size === 0) return new THREE.Vector3();
@@ -691,6 +667,12 @@ export async function renderEditor(
       rebuildCustomEdgesDisplay();
       setModeLabel("edge added");
       markDirty("Edge added");
+      return;
+    }
+
+    const vertices = selected.map((index) => state.topology.vertices[index]).filter(Boolean);
+    if (!verticesAreCoplanar(vertices)) {
+      setModeLabel("selection is not coplanar");
       return;
     }
 
@@ -951,6 +933,7 @@ export async function renderEditor(
         setModeLabel();
         notifyToolbarState();
       },
+      stlSelectAll: () => selectAllVertices(),
       stlGrab: () => {
         if (isSculptToolActive()) setSculptTool("select");
         if (state.selection.size > 0) startActionMode("grab");
@@ -988,6 +971,90 @@ export async function renderEditor(
       return true;
     }
     return false;
+  }
+
+  function ensureSelectionBoxElement() {
+    if (state.selectionBox?.el) return state.selectionBox.el;
+    const el = document.createElement("div");
+    el.className = "nv-stl-selection-box";
+    document.body.appendChild(el);
+    if (state.selectionBox) state.selectionBox.el = el;
+    return el;
+  }
+
+  function updateSelectionBoxElement() {
+    const box = state.selectionBox;
+    if (!box) return;
+    const el = ensureSelectionBoxElement();
+    const left = Math.min(box.startX, box.currentX);
+    const top = Math.min(box.startY, box.currentY);
+    const width = Math.abs(box.currentX - box.startX);
+    const height = Math.abs(box.currentY - box.startY);
+    box.moved = box.moved || width > 4 || height > 4;
+    Object.assign(el.style, {
+      display: box.moved ? "block" : "none",
+      left: String(left) + "px",
+      top: String(top) + "px",
+      width: String(width) + "px",
+      height: String(height) + "px",
+    });
+  }
+
+  function startSelectionBox(evt) {
+    state.selectionBox = {
+      startX: evt.clientX,
+      startY: evt.clientY,
+      currentX: evt.clientX,
+      currentY: evt.clientY,
+      moved: false,
+      shiftKey: evt.shiftKey,
+      el: null,
+    };
+    updateSelectionBoxElement();
+  }
+
+  function updateSelectionBox(evt) {
+    const box = state.selectionBox;
+    if (!box) return false;
+    box.currentX = evt.clientX;
+    box.currentY = evt.clientY;
+    updateSelectionBoxElement();
+    return true;
+  }
+
+  function selectVerticesInBox(box) {
+    if (!state.topology?.vertices?.length) return;
+    const left = Math.min(box.startX, box.currentX);
+    const right = Math.max(box.startX, box.currentX);
+    const top = Math.min(box.startY, box.currentY);
+    const bottom = Math.max(box.startY, box.currentY);
+    const rect = renderer.domElement.getBoundingClientRect();
+    const next = box.shiftKey ? new Set(state.selection) : new Set();
+    camera.updateMatrixWorld?.();
+    state.topology.vertices.forEach((vertex, index) => {
+      const point = vertex.clone().project(camera);
+      if (point.z < -1 || point.z > 1) return;
+      const x = rect.left + (point.x * 0.5 + 0.5) * rect.width;
+      const y = rect.top + (-point.y * 0.5 + 0.5) * rect.height;
+      if (x >= left && x <= right && y >= top && y <= bottom) next.add(index);
+    });
+    state.selection = next;
+    rebuildSelectionDisplay();
+    notifyToolbarState();
+  }
+
+  function finishSelectionBox(evt) {
+    const box = state.selectionBox;
+    if (!box) return false;
+    box.currentX = evt.clientX;
+    box.currentY = evt.clientY;
+    updateSelectionBoxElement();
+    const moved = box.moved;
+    if (moved) selectVerticesInBox(box);
+    box.el?.remove?.();
+    state.selectionBox = null;
+    if (!moved) pickVertex(evt);
+    return true;
   }
 
   function pickVertex(evt) {
@@ -1032,7 +1099,7 @@ export async function renderEditor(
       beginSculptStroke(evt);
       return;
     }
-    pickVertex(evt);
+    startSelectionBox(evt);
   }
 
   function onPointerMove(evt) {
@@ -1042,6 +1109,7 @@ export async function renderEditor(
       applyActionMove(evt.clientX, evt.clientY);
       return;
     }
+    if (updateSelectionBox(evt)) return;
     if (state.sculpt.stroke) {
       continueSculptStroke(evt);
       return;
@@ -1049,7 +1117,8 @@ export async function renderEditor(
     handleSculptHover(evt);
   }
 
-  function onPointerUp() {
+  function onPointerUp(evt) {
+    if (finishSelectionBox(evt)) return;
     endSculptStroke();
   }
 
@@ -1087,6 +1156,12 @@ export async function renderEditor(
     if (key === "g") {
       evt.preventDefault();
       if (state.selection.size > 0) startActionMode("grab", evt);
+      return;
+    }
+
+    if (key === "a") {
+      evt.preventDefault();
+      selectAllVertices();
       return;
     }
 
@@ -1188,8 +1263,7 @@ export async function renderEditor(
     if (state.destroyed) return;
     controls.update();
     renderer.render(scene, camera);
-    syncViewGizmo();
-    overlayRenderer.render(overlayScene, overlayCamera);
+    orientationWidget?.sync?.();
   });
 
   try {
@@ -1215,6 +1289,8 @@ export async function renderEditor(
       window.removeEventListener("keydown", onKeyDown, true);
       if (resizeObserver) resizeObserver.disconnect();
       else window.removeEventListener("resize", onResize);
+      state.selectionBox?.el?.remove?.();
+      state.selectionBox = null;
       controls.dispose();
       if (brushRing) {
         scene.remove(brushRing);
@@ -1223,7 +1299,7 @@ export async function renderEditor(
         brushRing = null;
       }
       renderer.dispose();
-      overlayRenderer.dispose();
+      orientationWidget?.destroy?.();
       if (window.NodevisionState?.activeActionHandler === handleSTLToolbarAction) {
         window.NodevisionState.activeActionHandler = null;
       }

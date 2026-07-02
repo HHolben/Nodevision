@@ -258,7 +258,8 @@ scxml,DataStorage,ViewSCXML.mjs,XMLFamilyEditor.mjs
 sfd,DataStorage,ViewFont.mjs,BinaryFamilyEditor.mjs
 sqlite,DataStorage,ViewBinary.mjs,BinaryFamilyEditor.mjs
 tei.xml,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
-ttf,DataStorage,ViewFont.mjs,BinaryFamilyEditor.mjs
+tff,DataStorage,ViewFont.mjs,FontEditor.mjs
+ttf,DataStorage,ViewFont.mjs,FontEditor.mjs
 wlf,DataStorage,ViewBinary.mjs,BinaryFamilyEditor.mjs
 woff,DataStorage,ViewFont.mjs,BinaryFamilyEditor.mjs
 woff2,DataStorage,ViewFont.mjs,BinaryFamilyEditor.mjs

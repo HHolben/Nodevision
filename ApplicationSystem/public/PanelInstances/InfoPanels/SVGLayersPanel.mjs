@@ -56,6 +56,16 @@ function collectProviders(instanceVars = {}) {
     });
   }
 
+  // SCAD graphical editing context
+  if (window.SCADLayersContext?.attachHost) {
+    providers.push({
+      id: "scad",
+      title: window.SCADLayersContext.title || "SCAD Layers",
+      attachHost: window.SCADLayersContext.attachHost,
+      actions: [],
+    });
+  }
+
   // SVG editing context (original behavior)
   const svgCtx = window.SVGEditorContext;
   if (svgCtx?.layers?.attachHost) {
@@ -96,7 +106,7 @@ export async function setupPanel(panel, instanceVars = {}) {
   const providers = collectProviders(instanceVars);
   if (!providers.length) {
     const message = document.createElement("div");
-    message.textContent = "Open an SVG, HTML, KML, GLB, or MetaWorld document to show layers.";
+    message.textContent = "Open an SVG, HTML, KML, GLB, SCAD, or MetaWorld document to show layers.";
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);

@@ -2,15 +2,15 @@
 // Graphical parametric OpenSCAD editor for .scad files.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { ensureScadEditorModeLayout } from "/panels/workspace.mjs";
 import { fetchText, resetEditorHooks, saveText } from "./GraphicalEditors/FamilyEditorCommon.mjs";
 import { parseScadText } from "/ScadEditor/ScadParser.mjs";
 import { serializeScadModel } from "/ScadEditor/ScadSerializer.mjs";
-import { addObject, addLayer as modelAddLayer, deleteLayer as modelDeleteLayer, moveObjectToLayer, reorderLayer as modelReorderLayer, setLayerLocked, setLayerVisibility, renameTimelineStep, setTimelineStepDisabled, deleteTimelineStep, updateObject, isObjectEditable } from "/ScadEditor/ScadModel.mjs";
+import { addObject, renameTimelineStep, setTimelineStepDisabled, deleteTimelineStep, isObjectEditable } from "/ScadEditor/ScadModel.mjs";
 import { shapeFromTool, polygonFromPoints } from "/ScadEditor/ScadShapeTools.mjs";
 import { addBooleanOperation, deleteObjects, duplicateObjects, extrudeObjects, renameObject } from "/ScadEditor/ScadOperations.mjs";
 import { createScadSceneRenderer } from "/ScadEditor/ScadSceneRenderer.mjs";
-import { renderScadTimelinePanel } from "./ScadTimelinePanel.mjs";
-import { renderScadLayersPanel } from "./ScadLayersPanel.mjs";
+import { clearScadLayersContext, ensureScadLayersContext, notifyScadLayersChanged, notifyScadSelectionChanged } from "/ScadEditor/ScadLayerPanelContext.mjs";
 
 const SCAD_MODE = "SCADediting";
 
@@ -18,64 +18,9 @@ function normalizePath(path = "") {
   return String(path || "").trim().replace(/\\/g, "/").replace(/[?#].*$/, "").replace(/^\/+/, "").replace(/^Notebook\//i, "");
 }
 
-function button(label, onClick, title = "") {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = label;
-  btn.title = title || label;
-  Object.assign(btn.style, {
-    font: "12px/1 system-ui, sans-serif",
-    padding: "7px 9px",
-    border: "1px solid #cfd7e3",
-    borderRadius: "6px",
-    background: "#fff",
-    color: "#172033",
-    cursor: "pointer",
-  });
-  btn.addEventListener("click", onClick);
-  return btn;
-}
-
-function labeledInput(label, value, onChange, attrs = {}) {
-  const wrap = document.createElement("label");
-  Object.assign(wrap.style, { display: "grid", gap: "4px", font: "11px/1.25 system-ui,sans-serif", color: "#4b5563" });
-  const span = document.createElement("span");
-  span.textContent = label;
-  const input = document.createElement("input");
-  input.value = value ?? "";
-  Object.assign(input, attrs);
-  Object.assign(input.style, { minWidth: "0", padding: "6px", border: "1px solid #cfd7e3", borderRadius: "5px", font: "12px/1.2 system-ui,sans-serif" });
-  input.addEventListener("change", () => onChange(input.value));
-  wrap.append(span, input);
-  return wrap;
-}
-
 function selectedObjects(model, ids) {
   const set = new Set(ids || []);
   return model.objects.filter((obj) => set.has(obj.id));
-}
-
-function vecInput(label, values, onChange) {
-  const wrap = document.createElement("div");
-  Object.assign(wrap.style, { display: "grid", gap: "4px", font: "11px/1.25 system-ui,sans-serif", color: "#4b5563" });
-  const span = document.createElement("span");
-  span.textContent = label;
-  const row = document.createElement("div");
-  Object.assign(row.style, { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px" });
-  [0, 1, 2].forEach((i) => {
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = "0.1";
-    input.value = Number(values?.[i] ?? (label === "Scale" ? 1 : 0));
-    Object.assign(input.style, { minWidth: "0", padding: "5px", border: "1px solid #cfd7e3", borderRadius: "5px" });
-    input.addEventListener("change", () => {
-      const next = [0, 1, 2].map((idx) => Number(row.children[idx].value || (label === "Scale" ? 1 : 0)));
-      onChange(next);
-    });
-    row.appendChild(input);
-  });
-  wrap.append(span, row);
-  return wrap;
 }
 
 function clientToModelPoint(event, element) {
@@ -83,6 +28,47 @@ function clientToModelPoint(event, element) {
   const x = ((event.clientX - rect.left) / Math.max(1, rect.width) - 0.5) * 100;
   const y = (0.5 - (event.clientY - rect.top) / Math.max(1, rect.height)) * 100;
   return [Number(x.toFixed(2)), Number(y.toFixed(2))];
+}
+
+function isTypingTarget(target) {
+  const tag = target?.tagName?.toLowerCase?.() || "";
+  return ["input", "textarea", "select"].includes(tag) || Boolean(target?.isContentEditable);
+}
+
+function numberOrZero(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function scadVertexWorldPoint(obj) {
+  if (obj?.type !== "vertexPath") return null;
+  const points = Array.isArray(obj.params?.points) ? obj.params.points : [];
+  if (points.length !== 1 || !Array.isArray(points[0])) return null;
+  const point = points[0];
+  const translate = Array.isArray(obj.transform?.translate) ? obj.transform.translate : [0, 0, 0];
+  const scale = Array.isArray(obj.transform?.scale) ? obj.transform.scale : [1, 1, 1];
+  return {
+    id: obj.id,
+    x: numberOrZero(translate[0]) + numberOrZero(point[0]) * (Number(scale[0]) || 1),
+    y: numberOrZero(translate[1]) + numberOrZero(point[1]) * (Number(scale[1]) || 1),
+    z: numberOrZero(translate[2]) + numberOrZero(point[2]) * (Number(scale[2]) || 1),
+  };
+}
+
+function scadVerticesAreCoplanar(vertices, epsilon = 1e-5) {
+  if (!Array.isArray(vertices) || vertices.length < 3) return false;
+  const z = vertices[0]?.z ?? 0;
+  return vertices.every((vertex) => Math.abs((vertex?.z ?? 0) - z) <= epsilon);
+}
+
+function polygonArea(points) {
+  let area = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    area += (a.x * b.y) - (b.x * a.y);
+  }
+  return Math.abs(area) / 2;
 }
 
 export async function renderEditor(filePath, container) {
@@ -127,50 +113,26 @@ export async function renderEditor(filePath, container) {
   Object.assign(shell.style, { display: "flex", flexDirection: "column", width: "100%", height: "100%", minHeight: "0", background: "#f5f7fb" });
   container.appendChild(shell);
 
-  const header = document.createElement("div");
-  Object.assign(header.style, { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", padding: "8px 10px", borderBottom: "1px solid #d6dce5", background: "#fff" });
-  const title = document.createElement("div");
-  title.textContent = `Graphical SCAD - ${scadPath || "untitled.scad"}`;
-  Object.assign(title.style, { font: "600 13px/1.3 system-ui,sans-serif", color: "#111827" });
-  const headerActions = document.createElement("div");
-  Object.assign(headerActions.style, { display: "flex", gap: "6px", flexWrap: "wrap" });
-  headerActions.append(
-    button("Select", () => setTool("select")),
-    button("Circle", () => setTool("circle")),
-    button("Rectangle", () => setTool("rectangle")),
-    button("Triangle", () => setTool("triangle")),
-    button("Polygon", () => setTool("polygon")),
-    button("Save SCAD", () => saveCurrent()),
-    button("Code SCAD", () => showCodeNotice()),
-  );
-  header.append(title, headerActions);
-  shell.appendChild(header);
-
   const notice = document.createElement("div");
   Object.assign(notice.style, { display: parseResult.warnings?.length ? "block" : "none", padding: "8px 10px", borderBottom: "1px solid #f2d39b", background: "#fff7e6", color: "#7c4a03", font: "12px/1.35 system-ui,sans-serif" });
   notice.textContent = parseResult.warnings?.[0] || "";
   shell.appendChild(notice);
 
   const main = document.createElement("div");
-  Object.assign(main.style, { display: "grid", gridTemplateColumns: "minmax(420px,1fr) 280px 270px", flex: "1", minHeight: "0" });
+  Object.assign(main.style, { display: "flex", flex: "1", minHeight: "0" });
   shell.appendChild(main);
 
   const center = document.createElement("div");
-  Object.assign(center.style, { display: "flex", flexDirection: "column", minWidth: "0", minHeight: "0" });
+  Object.assign(center.style, { display: "flex", flexDirection: "column", flex: "1", minWidth: "0", minHeight: "0" });
   const previewMount = document.createElement("div");
+  previewMount.tabIndex = 0;
   Object.assign(previewMount.style, { flex: "1", minHeight: "0", position: "relative", overflow: "hidden", background: "#f7f8fb" });
   const status = document.createElement("div");
   Object.assign(status.style, { padding: "6px 10px", font: "12px/1.3 system-ui,sans-serif", color: "#4b5563", borderTop: "1px solid #d6dce5", background: "#fff" });
   status.textContent = "Select or insert a SCAD primitive.";
   center.append(previewMount, status);
 
-  const inspector = document.createElement("div");
-  Object.assign(inspector.style, { borderLeft: "1px solid #d6dce5", background: "#fff", overflow: "auto", padding: "10px", display: "flex", flexDirection: "column", gap: "10px" });
-  const layersMount = document.createElement("div");
-  main.append(center, inspector, layersMount);
-
-  const timelineMount = document.createElement("div");
-  shell.appendChild(timelineMount);
+  main.append(center);
 
   function setStatus(text) {
     status.textContent = text;
@@ -182,15 +144,97 @@ export async function renderEditor(filePath, container) {
     setStatus(tool === "polygon" ? "Click points to build a polygon. Double-click to close it." : `Tool: ${tool}`);
   }
 
+  function setActiveLayer(id) {
+    if (id && model.layers.some((layer) => layer.id === id)) activeLayerId = id;
+  }
+
   function selectObject(id, event = null) {
     const obj = model.objects.find((item) => item.id === id);
     if (!obj || !isObjectEditable(model, obj)) return;
-    if (event?.ctrlKey || event?.metaKey) {
+    if (event?.shiftKey || event?.ctrlKey || event?.metaKey) {
       selectedIds = selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id];
     } else {
       selectedIds = [id];
     }
     renderer?.setSelectedId(selectedIds[0] || null);
+    refresh();
+  }
+
+  function selectObjects(ids = [], event = null) {
+    const editable = ids.filter((id) => {
+      const obj = model.objects.find((item) => item.id === id);
+      return obj && isObjectEditable(model, obj);
+    });
+    if (event?.shiftKey || event?.ctrlKey || event?.metaKey) {
+      const next = new Set(selectedIds);
+      editable.forEach((id) => next.add(id));
+      selectedIds = [...next];
+    } else {
+      selectedIds = editable;
+    }
+    refresh();
+  }
+
+  function selectAllObjects() {
+    const ids = model.objects
+      .filter((obj) => isObjectEditable(model, obj))
+      .map((obj) => obj.id);
+    selectedIds = ids;
+    renderer?.setSelectedIds?.(selectedIds);
+    setStatus(ids.length ? "Selected " + ids.length + " object(s)." : "No editable objects to select.");
+    refresh();
+  }
+
+  function selectedScadVertices() {
+    const selected = selectedObjects(model, selectedIds);
+    return selected.map(scadVertexWorldPoint).filter(Boolean);
+  }
+
+  function fillOrConnectSelectedVertices() {
+    if (selectedIds.length < 2) {
+      setStatus("Select two or more vertices first.");
+      return;
+    }
+    const vertices = selectedScadVertices();
+    if (vertices.length !== selectedIds.length) {
+      setStatus("F works on selected vertex objects only.");
+      return;
+    }
+
+    if (vertices.length === 2) {
+      const [a, b] = vertices;
+      const edge = addObject(model, {
+        type: "vertexPath",
+        name: "Edge",
+        params: { points: [[a.x, a.y], [b.x, b.y]], closed: false },
+        transform: { translate: [0, 0, a.z] },
+      }, { activeLayerId });
+      selectedIds = [edge.id];
+      markDirty();
+      setStatus("Edge created.");
+      refresh();
+      return;
+    }
+
+    if (!scadVerticesAreCoplanar(vertices)) {
+      setStatus("Selected vertices must be in the same plane.");
+      return;
+    }
+    if (polygonArea(vertices) <= 1e-6) {
+      setStatus("Selected vertices do not define a face.");
+      return;
+    }
+
+    const z = vertices[0].z || 0;
+    const face = addObject(model, {
+      type: "polygon",
+      name: "Face",
+      params: { points: vertices.map((point) => [point.x, point.y]), closed: true },
+      transform: { translate: [0, 0, z] },
+    }, { activeLayerId });
+    selectedIds = [face.id];
+    markDirty();
+    setStatus("Face created.");
     refresh();
   }
 
@@ -211,75 +255,13 @@ export async function renderEditor(filePath, container) {
   function refresh() {
     if (disposed) return;
     renderer?.renderModel(model);
-    renderer?.setSelectedId(selectedIds[0] || null);
-    renderInspector();
-    renderScadLayersPanel(layersMount, { model, selectedIds, activeLayerId }, layerActions);
-    renderScadTimelinePanel(timelineMount, { model, selectedIds }, timelineActions);
+    if (typeof renderer?.setSelectedIds === "function") renderer.setSelectedIds(selectedIds);
+    else renderer?.setSelectedId(selectedIds[0] || null);
+    notifyScadLayersChanged();
+    notifyScadSelectionChanged();
     window.NodevisionState.scadShapeSelected = selectedIds.length > 0;
     updateToolbarState({ currentMode: SCAD_MODE, scadShapeSelected: selectedIds.length > 0 });
     window.dispatchEvent(new CustomEvent("nv-scad-model-changed", { detail: { model, selectedIds } }));
-  }
-
-  function renderInspector() {
-    inspector.innerHTML = "";
-    const heading = document.createElement("div");
-    heading.textContent = "Shape";
-    Object.assign(heading.style, { font: "600 13px/1.3 system-ui,sans-serif", color: "#111827" });
-    inspector.appendChild(heading);
-
-    const selected = selectedObjects(model, selectedIds);
-    if (!selected.length) {
-      const empty = document.createElement("div");
-      empty.textContent = "No shape selected.";
-      Object.assign(empty.style, { font: "12px/1.35 system-ui,sans-serif", color: "#6b7280" });
-      inspector.appendChild(empty);
-      inspector.appendChild(button("Add Layer", () => { const layer = modelAddLayer(model); activeLayerId = layer.id; markDirty(); refresh(); }));
-      appendScadOutput();
-      return;
-    }
-
-    if (selected.length > 1) {
-      const info = document.createElement("div");
-      info.textContent = `${selected.length} shapes selected`;
-      Object.assign(info.style, { font: "12px/1.35 system-ui,sans-serif", color: "#374151" });
-      inspector.appendChild(info);
-      inspector.append(button("Union", () => runBoolean("union")), button("Difference", () => runBoolean("difference")), button("Intersection", () => runBoolean("intersection")), button("Cut out", () => runBoolean("cutout")), button("Duplicate", () => runDuplicate()), button("Delete", () => runDelete()));
-      appendScadOutput();
-      return;
-    }
-
-    const obj = selected[0];
-    inspector.appendChild(labeledInput("Name", obj.name, (value) => { renameObject(model, obj.id, value); markDirty(); refresh(); }));
-    inspector.appendChild(vecInput("Translate", obj.transform.translate, (value) => { updateObject(model, obj.id, { transform: { translate: value } }); markDirty(); refresh(); }));
-    inspector.appendChild(vecInput("Rotate", obj.transform.rotate, (value) => { updateObject(model, obj.id, { transform: { rotate: value } }); markDirty(); refresh(); }));
-    inspector.appendChild(vecInput("Scale", obj.transform.scale, (value) => { updateObject(model, obj.id, { transform: { scale: value } }); markDirty(); refresh(); }));
-
-    if (obj.type === "circle") inspector.appendChild(labeledInput("Radius", obj.params.radius, (value) => { updateObject(model, obj.id, { params: { radius: Number(value) || 1 } }); markDirty(); refresh(); }, { type: "number", step: "0.1" }));
-    if (obj.type === "rectangle") {
-      inspector.appendChild(labeledInput("Width", obj.params.width, (value) => { updateObject(model, obj.id, { params: { width: Number(value) || 1 } }); markDirty(); refresh(); }, { type: "number", step: "0.1" }));
-      inspector.appendChild(labeledInput("Height", obj.params.height, (value) => { updateObject(model, obj.id, { params: { height: Number(value) || 1 } }); markDirty(); refresh(); }, { type: "number", step: "0.1" }));
-    }
-    if (["triangle", "polygon", "vertexPath"].includes(obj.type)) {
-      inspector.appendChild(labeledInput("Vertices JSON", JSON.stringify(obj.params.points || []), (value) => {
-        try { updateObject(model, obj.id, { params: { points: JSON.parse(value) } }); markDirty(); refresh(); }
-        catch (err) { alert(`Invalid vertices JSON: ${err?.message || err}`); }
-      }));
-    }
-
-    const extrude = (obj.operations || []).find((op) => op.type === "extrude");
-    inspector.appendChild(labeledInput("Extrusion height", extrude?.params?.height || "", (value) => { extrudeObjects(model, [obj.id], Number(value) || 1); markDirty(); refresh(); }, { type: "number", step: "0.1", placeholder: "none" }));
-    inspector.append(button("Extrude", () => runExtrude()), button("Duplicate", () => runDuplicate()), button("Delete", () => runDelete()));
-    appendScadOutput();
-  }
-
-  function appendScadOutput() {
-    const label = document.createElement("div");
-    label.textContent = "Generated SCAD";
-    Object.assign(label.style, { font: "600 12px/1.3 system-ui,sans-serif", color: "#111827", marginTop: "6px" });
-    const pre = document.createElement("pre");
-    pre.textContent = serializeScadModel(model).split("*/").slice(1).join("*/").trim();
-    Object.assign(pre.style, { margin: "0", padding: "8px", background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "6px", overflow: "auto", maxHeight: "220px", font: "11px/1.35 ui-monospace,monospace", whiteSpace: "pre-wrap" });
-    inspector.append(label, pre);
   }
 
   function runExtrude() {
@@ -312,18 +294,6 @@ export async function renderEditor(filePath, container) {
     markDirty();
     refresh();
   }
-
-  const layerActions = {
-    addLayer() { const layer = modelAddLayer(model); activeLayerId = layer.id; markDirty(); refresh(); },
-    setActiveLayer(id) { activeLayerId = id; refresh(); },
-    renameLayer(id, name) { const layer = model.layers.find((item) => item.id === id); if (layer) layer.name = name || layer.name; markDirty(); refresh(); },
-    deleteLayer(id) { if (modelDeleteLayer(model, id)) { activeLayerId = model.layers[0]?.id || null; markDirty(); refresh(); } },
-    reorderLayer(id, direction) { if (modelReorderLayer(model, id, direction)) { markDirty(); refresh(); } },
-    toggleLayerVisible(id) { const layer = model.layers.find((item) => item.id === id); if (layer && setLayerVisibility(model, id, !layer.visible)) { markDirty(); refresh(); } },
-    toggleLayerLocked(id) { const layer = model.layers.find((item) => item.id === id); if (layer && setLayerLocked(model, id, !layer.locked)) { markDirty(); refresh(); } },
-    selectObject,
-    moveSelectionToLayer(id) { selectedIds.forEach((objId) => moveObjectToLayer(model, objId, id)); markDirty(); refresh(); },
-  };
 
   const timelineActions = {
     selectStep(step) { selectedIds = (step.objectIds || []).filter((id) => model.objects.some((obj) => obj.id === id)); refresh(); },
@@ -368,9 +338,9 @@ export async function renderEditor(filePath, container) {
     if (key === "scadUnion") return runBoolean("union");
     if (key === "scadDifference") return runBoolean("difference");
     if (key === "scadIntersection") return runBoolean("intersection");
-    if (key === "scadTranslate") return setStatus("Edit Translate values in the Shape inspector.");
-    if (key === "scadRotate") return setStatus("Edit Rotate values in the Shape inspector.");
-    if (key === "scadScale") return setStatus("Edit Scale values in the Shape inspector.");
+    if (key === "scadTranslate") return setStatus("Select a shape, then edit translation from the SCAD properties controls.");
+    if (key === "scadRotate") return setStatus("Select a shape, then edit rotation from the SCAD properties controls.");
+    if (key === "scadScale") return setStatus("Select a shape, then edit scale from the SCAD properties controls.");
     if (key === "scadRename") {
       const obj = selectedObjects(model, selectedIds)[0];
       if (!obj) return alert("Select a shape to rename.");
@@ -381,9 +351,26 @@ export async function renderEditor(filePath, container) {
     if (key === "scadDuplicate") return runDuplicate();
     if (key === "scadDelete") return runDelete();
     if (key === "scadSave") return saveCurrent();
+    if (key === "scadOpenCode") return showCodeNotice();
+  }
+
+  function handleEditorKeyDown(event) {
+    if (disposed || window.GraphicalScadEditorContext?.handleToolbarAction !== handleToolbarAction) return;
+    if (event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) return;
+    const key = String(event.key || "").toLowerCase();
+    if (key === "a") {
+      event.preventDefault();
+      selectAllObjects();
+      return;
+    }
+    if (key === "f") {
+      event.preventDefault();
+      fillOrConnectSelectedVertices();
+    }
   }
 
   previewMount.addEventListener("pointerdown", (event) => {
+    previewMount.focus?.();
     if (activeTool === "select") return;
     dragStart = clientToModelPoint(event, previewMount);
   });
@@ -413,6 +400,7 @@ export async function renderEditor(filePath, container) {
 
   renderer = await createScadSceneRenderer(previewMount);
   renderer.setPickHandler(selectObject);
+  renderer.setBoxSelectHandler?.(selectObjects);
 
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.currentMode = SCAD_MODE;
@@ -422,16 +410,42 @@ export async function renderEditor(filePath, container) {
   window.NodevisionState.activeActionHandler = handleToolbarAction;
   window.NodevisionState.scadShapeSelected = selectedIds.length > 0;
   updateToolbarState({ currentMode: SCAD_MODE, selectedFile: scadPath, activeEditorFilePath: scadPath, activeActionHandler: handleToolbarAction, scadShapeSelected: false });
+  window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+    detail: { heading: "SCAD Primitive", force: true, toggle: false },
+  }));
 
-  window.GraphicalScadEditorContext = {
+  const scadController = {
     getModel: () => model,
     getSelectedIds: () => [...selectedIds],
+    getActiveLayerId: () => activeLayerId,
+    setActiveLayer,
     setTool,
     selectObject,
+    selectAll: selectAllObjects,
+    fillSelection: fillOrConnectSelectedVertices,
+    markDirty,
+    refresh,
     save: saveCurrent,
     serialize: () => serializeScadModel(model),
     handleToolbarAction,
+    selectTimelineStep: timelineActions.selectStep,
+    toggleTimelineStep: timelineActions.toggleStep,
+    renameTimelineStep: timelineActions.renameStep,
+    deleteTimelineStep: timelineActions.deleteStep,
   };
+
+  window.GraphicalScadEditorContext = scadController;
+  ensureScadLayersContext(scadController);
+  window.addEventListener("keydown", handleEditorKeyDown, true);
+
+  try {
+    const editorCell = container?.closest?.(".panel-cell");
+    if (editorCell) {
+      await ensureScadEditorModeLayout({ editorCell });
+    }
+  } catch (err) {
+    console.warn("SCAD editor: failed to apply SCAD editor mode layout:", err);
+  }
 
   window.getEditorMarkdown = () => serializeScadModel(model);
   window.getEditorHTML = () => serializeScadModel(model);
@@ -443,7 +457,9 @@ export async function renderEditor(filePath, container) {
   return {
     destroy() {
       disposed = true;
+      window.removeEventListener("keydown", handleEditorKeyDown, true);
       renderer?.dispose?.();
+      clearScadLayersContext(scadController);
       if (window.NodevisionState?.activeActionHandler === handleToolbarAction) {
         window.NodevisionState.activeActionHandler = null;
         updateToolbarState({ activeActionHandler: null, scadShapeSelected: false });
