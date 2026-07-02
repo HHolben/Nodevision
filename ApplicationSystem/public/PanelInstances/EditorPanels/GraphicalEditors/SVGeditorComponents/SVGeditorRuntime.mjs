@@ -3276,6 +3276,9 @@ export async function renderEditor(filePath, container) {
     getSketchPredictionMode() {
       return sketchController.getPredictionMode();
     },
+    beginSketchFocalPointPlacement() {
+      return sketchController.beginFocalPointPlacement();
+    },
     endSketchCurveAndStartNew() {
       return sketchController.endCurveAndStartNew();
     },

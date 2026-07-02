@@ -3,9 +3,10 @@
 
 const MODE_OPTIONS = [
   { value: "raw", label: "Raw Pencil" },
-  { value: "shape", label: "Shape" },
-  { value: "curve", label: "Curve" },
+  { value: "shape", label: "Shape Sketch" },
+  { value: "curve", label: "Curve Sketch" },
   { value: "function-curve", label: "Function Curve" },
+  { value: "irregular-shape", label: "Irregular Shape" },
 ];
 
 function getSketchContext() {
@@ -18,6 +19,9 @@ function normalizeMode(value) {
   if (mode === "curve") return "curve";
   if (mode === "function" || mode === "function-curve" || mode === "graph" || mode === "graph-curve") {
     return "function-curve";
+  }
+  if (mode === "irregular" || mode === "irregular-shape" || mode === "irregular shape" || mode === "blob" || mode === "radial-shape") {
+    return "irregular-shape";
   }
   return "shape";
 }
@@ -82,7 +86,7 @@ export function initToolbarWidget(hostElement) {
     alignItems: "center",
     gap: "6px",
     flexWrap: "wrap",
-    maxWidth: "360px",
+    maxWidth: "460px",
   });
 
   const label = document.createElement("label");
@@ -119,6 +123,7 @@ export function initToolbarWidget(hostElement) {
   wrapper.append(
     label,
     actionButton("End Curve / New Curve", "Finalize the current curve preview and start a new sketch preview", "endSketchCurveAndStartNew"),
+    actionButton("Set Focal Point", "Click in the sketch preview to set or replace the Irregular Shape focal point", "beginSketchFocalPointPlacement"),
     actionButton("Convert Preview to Bezier", "Create an editable Bezier path from the current preview while keeping pencil strokes visible", "convertSketchPreviewToBezier"),
     actionButton("Finalize Bezier", "Commit the current Bezier refinement path as normal SVG geometry", "finalizeSketchBezier"),
   );
