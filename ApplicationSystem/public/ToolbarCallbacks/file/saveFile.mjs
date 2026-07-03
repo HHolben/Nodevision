@@ -28,11 +28,23 @@ function markdownEditorPath() {
   return firstSavePath(window.__nvMarkdownActivePath, window.__nvCodeEditorActivePath);
 }
 
+function activeHtmlEditorContext() {
+  const activeCellContext = window.activeCell?.__nvHtmlEditorContext || null;
+  const focusedCellContext = document.activeElement?.closest?.(".panel-cell")?.__nvHtmlEditorContext || null;
+  const globalContext = window.__nvActiveHtmlEditorContext || null;
+  for (const context of [activeCellContext, focusedCellContext, globalContext]) {
+    if (context?.kind !== "html" || !context.filePath) continue;
+    if (typeof context.activate === "function") context.activate();
+    return context;
+  }
+  return null;
+}
+
 function htmlEditorPath() {
   return firstSavePath(
+    activeHtmlEditorContext()?.filePath,
     window.__nvWysiwygActivePath,
     window.__nvHtmlEditorActivePath,
-    window.__nvSvgEditorActivePath,
   );
 }
 
@@ -43,7 +55,8 @@ function svgEditorPath() {
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
-  const filePath = resolveFilePath(requestedPath);
+  const activeHtmlContext = activeHtmlEditorContext();
+  const filePath = resolveFilePath(requestedPath || activeHtmlContext?.filePath);
   if (!filePath) {
     console.error("[saveFile] Cannot save: file path is missing.");
     return false;
@@ -97,10 +110,11 @@ export default async function saveFile(options = {}) {
       }
     }
 
-    if (mode === "EPUBediting" && typeof window.saveWYSIWYGFile === "function") {
-      const editorPath = htmlEditorPath();
+    if (mode === "EPUBediting" && (activeHtmlContext?.save || typeof window.saveWYSIWYGFile === "function")) {
+      const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
       if (refuseMismatchedEditorSave("EPUB Editor", editorPath, filePath)) return false;
-      await window.saveWYSIWYGFile(filePath);
+      if (activeHtmlContext?.save) await activeHtmlContext.save(filePath);
+      else await window.saveWYSIWYGFile(filePath);
       return notifyFileSaved(filePath);
     }
 
@@ -145,10 +159,11 @@ export default async function saveFile(options = {}) {
       await saveViaApi({ path: filePath, content });
       return notifyFileSaved(filePath);
     }
-    if (inWysiwygEditor && typeof window.getEditorHTML === "function") {
-      const editorPath = htmlEditorPath();
+    if (inWysiwygEditor && (activeHtmlContext?.getHTML || typeof window.getEditorHTML === "function")) {
+      const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
       if (refuseMismatchedEditorSave("HTML/WYSIWYG Editor", editorPath, filePath)) return false;
-      const content = window.getEditorHTML();
+      const getHTML = activeHtmlContext?.getHTML || window.getEditorHTML;
+      const content = getHTML();
       await saveViaApi({ path: filePath, content });
       return notifyFileSaved(filePath);
     }
@@ -174,10 +189,11 @@ export default async function saveFile(options = {}) {
       await window.saveMDFile(filePath);
       return notifyFileSaved(filePath);
     }
-    if ((inWysiwygEditor || inGraphicalEditor) && typeof window.saveWYSIWYGFile === "function") {
-      const editorPath = htmlEditorPath();
+    if ((inWysiwygEditor || inGraphicalEditor) && (activeHtmlContext?.save || typeof window.saveWYSIWYGFile === "function")) {
+      const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
       if (refuseMismatchedEditorSave("HTML/WYSIWYG Editor", editorPath, filePath)) return false;
-      await window.saveWYSIWYGFile(filePath);
+      if (activeHtmlContext?.save) await activeHtmlContext.save(filePath);
+      else await window.saveWYSIWYGFile(filePath);
       return notifyFileSaved(filePath);
     }
 

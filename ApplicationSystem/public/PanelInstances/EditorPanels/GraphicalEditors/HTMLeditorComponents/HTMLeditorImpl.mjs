@@ -4085,6 +4085,10 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLTextWrapping();
     container.__cleanupHTMLTextWrapping = null;
   }
+  if (typeof container.__cleanupHTMLActiveContext === "function") {
+    container.__cleanupHTMLActiveContext();
+    container.__cleanupHTMLActiveContext = null;
+  }
   if (typeof container.__cleanupHTMLPoetry === "function") {
     container.__cleanupHTMLPoetry();
     container.__cleanupHTMLPoetry = null;
@@ -4332,7 +4336,7 @@ export async function renderEditor(filePath, container, options = {}) {
     if (!isCurrentRender()) return;
     window.__nvWysiwygActivePath = filePath;
     window.__nvHtmlEditorActivePath = filePath;
-    window.getEditorHTML = () => {
+    const getHtmlForSave = () => {
       restoreSavedImageSources(wysiwyg);
       const headContent = Array.from(headClone.children)
         .map(el => el.outerHTML)
@@ -4364,6 +4368,56 @@ export async function renderEditor(filePath, container, options = {}) {
       return serialized;
     };
 
+    const saveHtmlForPath = async (path) => {
+      const targetPath = resolveEditorHookSavePath("HTML/WYSIWYG Editor", filePath, path);
+      const content = getHtmlForSave();
+      await fetch("/api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: targetPath, content }),
+      });
+      console.log("Saved WYSIWYG file:", targetPath);
+    };
+
+    let htmlEditorContext = null;
+    const activateHtmlEditorContext = () => {
+      if (!isCurrentRender()) return false;
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.currentMode = editorMode;
+      window.NodevisionState.selectedFile = filePath;
+      window.NodevisionState.activeEditorFilePath = filePath;
+      window.currentActiveFilePath = filePath;
+      window.filePath = filePath;
+      window.selectedFilePath = filePath;
+      window.__nvWysiwygActivePath = filePath;
+      window.__nvHtmlEditorActivePath = filePath;
+      window.__nvActiveHtmlEditorContext = htmlEditorContext;
+      window.getEditorHTML = getHtmlForSave;
+      window.saveWYSIWYGFile = saveHtmlForPath;
+      return true;
+    };
+
+    htmlEditorContext = {
+      kind: "html",
+      filePath,
+      getHTML: getHtmlForSave,
+      save: saveHtmlForPath,
+      activate: activateHtmlEditorContext,
+    };
+    container.__nvHtmlEditorContext = htmlEditorContext;
+    const htmlEditorCell = container.closest?.(".panel-cell") || null;
+    if (htmlEditorCell) htmlEditorCell.__nvHtmlEditorContext = htmlEditorContext;
+    wrapper.addEventListener("pointerdown", activateHtmlEditorContext, true);
+    wrapper.addEventListener("focusin", activateHtmlEditorContext, true);
+    container.__cleanupHTMLActiveContext = () => {
+      wrapper.removeEventListener("pointerdown", activateHtmlEditorContext, true);
+      wrapper.removeEventListener("focusin", activateHtmlEditorContext, true);
+      if (container.__nvHtmlEditorContext === htmlEditorContext) container.__nvHtmlEditorContext = null;
+      if (htmlEditorCell?.__nvHtmlEditorContext === htmlEditorContext) htmlEditorCell.__nvHtmlEditorContext = null;
+      if (window.__nvActiveHtmlEditorContext === htmlEditorContext) window.__nvActiveHtmlEditorContext = null;
+    };
+    activateHtmlEditorContext();
+
     window.setEditorHTML = (html) => {
       const doc = parser.parseFromString(html, "text/html");
       wysiwyg.innerHTML = "";
@@ -4393,16 +4447,7 @@ export async function renderEditor(filePath, container, options = {}) {
       updateWordCount();
     };
 
-    window.saveWYSIWYGFile = async (path) => {
-      const targetPath = resolveEditorHookSavePath("HTML/WYSIWYG Editor", filePath, path);
-      const content = window.getEditorHTML();
-      await fetch("/api/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: targetPath, content }),
-      });
-      console.log("Saved WYSIWYG file:", targetPath);
-    };
+    window.saveWYSIWYGFile = saveHtmlForPath;
 
   } catch (err) {
     wrapper.innerHTML =

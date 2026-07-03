@@ -7,6 +7,11 @@ import path from 'node:path';
 import { createServerContext } from '../../shared/serverContext.mjs';
 import { normalizeClientPath, resolveNotebookPath, resolveUserSettingsPath } from "./fileSaveRoutes/paths.js";
 import { deleteOrTrashPath } from "./fileSaveRoutes/trash.js";
+import {
+  backupNotebookFileBeforeSave,
+  loadNotebookBackupSettings,
+  saveNotebookBackupSettings,
+} from "./fileSaveRoutes/notebookBackups.js";
 import { writePayloadToFile } from "./fileSaveRoutes/writePayload.js";
 
 const BASE_CONTEXT = createServerContext();
@@ -37,15 +42,45 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
 
     try {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
+      const backup = await backupNotebookFileBeforeSave({
+        notebookRoot: NOTEBOOK_ROOT,
+        userSettingsRoot: USER_SETTINGS_ROOT,
+        filePath,
+        relativePath,
+      });
       await writePayloadToFile({ filePath, content, encoding, mimeType, bom, logPath: relativePath });
 
-      res.json({ success: true, path: relativePath });
+      res.json({
+        success: true,
+        path: relativePath,
+        backupCreated: Boolean(backup.backupPath),
+      });
     } catch (err) {
       if (err?.code === "UNSUPPORTED_ENCODING") {
         return res.status(400).json({ error: err.message });
       }
       console.error("Error saving file:", err);
       res.status(500).json({ error: "Error saving file" });
+    }
+  });
+
+  router.get('/notebook-backup-settings', async (req, res) => {
+    try {
+      const { settings } = await loadNotebookBackupSettings(USER_SETTINGS_ROOT);
+      res.json(settings);
+    } catch (err) {
+      console.error('Error loading notebook backup settings:', err);
+      res.status(500).json({ error: 'Error loading notebook backup settings' });
+    }
+  });
+
+  router.post('/notebook-backup-settings', async (req, res) => {
+    try {
+      const { settings } = await saveNotebookBackupSettings(USER_SETTINGS_ROOT, req.body || {});
+      res.json({ success: true, settings });
+    } catch (err) {
+      console.error('Error saving notebook backup settings:', err);
+      res.status(500).json({ success: false, error: 'Error saving notebook backup settings' });
     }
   });
 
