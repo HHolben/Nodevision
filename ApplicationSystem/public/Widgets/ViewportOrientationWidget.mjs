@@ -3,9 +3,10 @@
 
 const WIDGET_ID = "ViewportOrientationWidget";
 const STYLE_ID = "nv-widget-viewport-orientation-styles";
-const GIZMO_SIZE = 100;
-const AXIS_LENGTH = 23;
+const GIZMO_SIZE = 88;
+const AXIS_LENGTH = 19;
 const ROTATION_STEP = Math.PI / 8;
+const AXIS_DRAG_HIT_RADIUS = 8;
 const AXIS_TIPS = [
   { id: "+X", title: "View from +X", vector: [1, 0, 0], axis: "x" },
   { id: "-X", title: "View from -X", vector: [-1, 0, 0], axis: "x" },
@@ -15,12 +16,18 @@ const AXIS_TIPS = [
   { id: "-Z", title: "View from -Z", vector: [0, 0, -1], axis: "z" },
 ];
 const ROTATION_ARCS = [
-  { id: "rot-x-pos", title: "Rotate around X", axis: [1, 0, 0], direction: 1, from: "+Y", to: "+Z", tone: "x" },
-  { id: "rot-x-neg", title: "Rotate around X reverse", axis: [1, 0, 0], direction: -1, from: "-Y", to: "-Z", tone: "x" },
-  { id: "rot-y-pos", title: "Rotate around Y", axis: [0, 1, 0], direction: 1, from: "+Z", to: "+X", tone: "y" },
-  { id: "rot-y-neg", title: "Rotate around Y reverse", axis: [0, 1, 0], direction: -1, from: "-Z", to: "-X", tone: "y" },
-  { id: "rot-z-pos", title: "Rotate around Z", axis: [0, 0, 1], direction: 1, from: "+X", to: "+Y", tone: "z" },
-  { id: "rot-z-neg", title: "Rotate around Z reverse", axis: [0, 0, 1], direction: -1, from: "-X", to: "-Y", tone: "z" },
+  { id: "rot-x-yp-zp", title: "Rotate around X", axis: [1, 0, 0], direction: 1, from: "+Y", to: "+Z", tone: "x" },
+  { id: "rot-x-zp-yn", title: "Rotate around X", axis: [1, 0, 0], direction: 1, from: "+Z", to: "-Y", tone: "x" },
+  { id: "rot-x-yn-zn", title: "Rotate around X reverse", axis: [1, 0, 0], direction: -1, from: "-Y", to: "-Z", tone: "x" },
+  { id: "rot-x-zn-yp", title: "Rotate around X reverse", axis: [1, 0, 0], direction: -1, from: "-Z", to: "+Y", tone: "x" },
+  { id: "rot-y-zp-xp", title: "Rotate around Y", axis: [0, 1, 0], direction: 1, from: "+Z", to: "+X", tone: "y" },
+  { id: "rot-y-xp-zn", title: "Rotate around Y", axis: [0, 1, 0], direction: 1, from: "+X", to: "-Z", tone: "y" },
+  { id: "rot-y-zn-xn", title: "Rotate around Y reverse", axis: [0, 1, 0], direction: -1, from: "-Z", to: "-X", tone: "y" },
+  { id: "rot-y-xn-zp", title: "Rotate around Y reverse", axis: [0, 1, 0], direction: -1, from: "-X", to: "+Z", tone: "y" },
+  { id: "rot-z-xp-yp", title: "Rotate around Z", axis: [0, 0, 1], direction: 1, from: "+X", to: "+Y", tone: "z" },
+  { id: "rot-z-yp-xn", title: "Rotate around Z", axis: [0, 0, 1], direction: 1, from: "+Y", to: "-X", tone: "z" },
+  { id: "rot-z-xn-yn", title: "Rotate around Z reverse", axis: [0, 0, 1], direction: -1, from: "-X", to: "-Y", tone: "z" },
+  { id: "rot-z-yn-xp", title: "Rotate around Z reverse", axis: [0, 0, 1], direction: -1, from: "-Y", to: "+X", tone: "z" },
 ];
 
 function ensureStyles() {
@@ -31,13 +38,13 @@ function ensureStyles() {
     ".nv-widget{box-sizing:border-box;font-family:system-ui,sans-serif;}",
     ".nv-widget *,.nv-widget *::before,.nv-widget *::after{box-sizing:inherit;}",
     ".nv-widget-viewport-orientation{position:absolute;top:10px;right:10px;width:100px;height:100px;z-index:4;pointer-events:auto;user-select:none;}",
-    ".nv-orientation-gizmo{position:relative;width:100px;height:100px;border-radius:8px;background:rgba(255,255,255,0.72);box-shadow:0 1px 6px rgba(15,23,42,0.2);overflow:hidden;cursor:grab;}",
+    ".nv-orientation-gizmo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88px;height:88px;border-radius:8px;background:rgba(255,255,255,0.72);box-shadow:0 1px 6px rgba(15,23,42,0.2);overflow:hidden;cursor:grab;}",
     ".nv-orientation-gizmo canvas{display:block;width:100%;height:100%;}",
     ".nv-orientation-gizmo.is-dragging{cursor:grabbing;}",
     ".nv-orientation-controls{position:absolute;inset:0;pointer-events:none;}",
     ".nv-orientation-tip-button{position:absolute;min-width:19px;height:17px;transform:translate(-50%,-50%);border:1px solid rgba(148,163,184,0.78);border-radius:999px;background:rgba(255,255,255,0.9);padding:0 3px;font:700 9px/1 system-ui,sans-serif;cursor:pointer;pointer-events:auto;box-shadow:0 1px 3px rgba(15,23,42,0.18);}",
     ".nv-orientation-tip-button:hover,.nv-orientation-tip-button:focus-visible{border-color:#f59e0b;background:#fff7e6;outline:none;}",
-    ".nv-orientation-arc-layer{position:absolute;inset:0;width:100px;height:100px;pointer-events:auto;}",
+    ".nv-orientation-arc-layer{position:absolute;inset:0;width:88px;height:88px;pointer-events:auto;}",
     ".nv-orientation-arc-hit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke;cursor:pointer;}",
     ".nv-orientation-arc{fill:none;stroke-width:2.2;stroke-linecap:round;opacity:0.78;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(15,23,42,0.18));}",
     ".nv-orientation-arc-hit:hover + .nv-orientation-arc{stroke-width:3.2;opacity:1;}",
@@ -103,6 +110,8 @@ export class ViewportOrientationWidget {
     this.lastY = 0;
     this.unsubscribeCameraChanged = null;
     this.arcDrag = null;
+    this.axisDrag = null;
+    this.suppressTipClick = false;
     this.destroyed = false;
     this.boundPointerDown = (event) => this.onPointerDown(event);
     this.boundPointerMove = (event) => this.onPointerMove(event);
@@ -210,9 +219,17 @@ export class ViewportOrientationWidget {
       button.textContent = tip.id;
       button.title = tip.title;
       button.className = `nv-orientation-tip-button ${classForAxis(tip.axis)}`;
+      button.addEventListener("pointerdown", (event) => this.onAxisTipPointerDown(event, tip));
+      button.addEventListener("pointermove", (event) => this.onPointerMove(event));
+      button.addEventListener("pointerup", (event) => this.onPointerUp(event));
+      button.addEventListener("pointercancel", (event) => this.onPointerUp(event));
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (this.suppressTipClick) {
+          this.suppressTipClick = false;
+          return;
+        }
         this.setView(tip.vector, tip.id);
       });
       this.controlsLayer.appendChild(button);
@@ -283,7 +300,8 @@ export class ViewportOrientationWidget {
     let out = { x: mid.x - center.x, y: mid.y - center.y };
     const len = Math.max(1, Math.hypot(out.x, out.y));
     out = { x: out.x / len, y: out.y / len };
-    const control = { x: mid.x + out.x * 20, y: mid.y + out.y * 20 };
+    const arcBulge = GIZMO_SIZE * 0.18;
+    const control = { x: mid.x + out.x * arcBulge, y: mid.y + out.y * arcBulge };
     return `M ${svgPoint(from)} Q ${svgPoint(control)} ${svgPoint(to)}`;
   }
 
@@ -373,6 +391,86 @@ export class ViewportOrientationWidget {
     this.requestRender();
   }
 
+  pointerLocalPoint(event) {
+    const rect = this.gizmoEl?.getBoundingClientRect?.();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * GIZMO_SIZE,
+      y: ((event.clientY - rect.top) / rect.height) * GIZMO_SIZE,
+    };
+  }
+
+  trackballVectorFromEvent(event) {
+    const THREE = this.THREE;
+    const point = this.pointerLocalPoint(event);
+    const camera = this.currentCamera();
+    if (!THREE || !point || !camera) return null;
+    let x = (point.x / GIZMO_SIZE) * 2 - 1;
+    let y = -((point.y / GIZMO_SIZE) * 2 - 1);
+    const r2 = x * x + y * y;
+    let z = 0;
+    if (r2 <= 1) {
+      z = Math.sqrt(1 - r2);
+    } else {
+      const len = Math.sqrt(r2);
+      x /= len;
+      y /= len;
+    }
+
+    const forward = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    const up = camera.up.clone().normalize();
+    const right = new THREE.Vector3().crossVectors(forward, up).normalize();
+    if (right.lengthSq() < 1e-9) right.set(1, 0, 0);
+    return right.multiplyScalar(x)
+      .add(up.multiplyScalar(y))
+      .add(forward.multiplyScalar(-z))
+      .normalize();
+  }
+
+  distanceToSegment(point, a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy;
+    if (len2 <= 1e-9) return Math.hypot(point.x - a.x, point.y - a.y);
+    const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / len2));
+    return Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t));
+  }
+
+  findAxisHit(event) {
+    const point = this.pointerLocalPoint(event);
+    if (!point) return null;
+    const axes = [
+      { axis: "x", vector: [1, 0, 0] },
+      { axis: "y", vector: [0, 1, 0] },
+      { axis: "z", vector: [0, 0, 1] },
+    ];
+    let best = null;
+    axes.forEach((item) => {
+      const positive = this.projectAxisPoint(item.vector, AXIS_LENGTH);
+      const negative = this.projectAxisPoint(item.vector.map((value) => -value), AXIS_LENGTH);
+      const distance = this.distanceToSegment(point, negative, positive);
+      if (distance > AXIS_DRAG_HIT_RADIUS) return;
+      if (!best || distance < best.distance) best = { ...item, distance };
+    });
+    return best;
+  }
+
+  beginAxisDrag(event, axisHit) {
+    const lastVector = this.trackballVectorFromEvent(event);
+    if (!axisHit || !lastVector) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    this.axisDrag = { axis: axisHit.axis, lastVector, moved: false, captureTarget: event.currentTarget || this.gizmoEl };
+    this.dragging = false;
+    this.gizmoEl?.classList.add("is-dragging");
+    this.axisDrag.captureTarget?.setPointerCapture?.(event.pointerId);
+    return true;
+  }
+
+  onAxisTipPointerDown(event, tip) {
+    this.beginAxisDrag(event, { axis: tip.axis, vector: tip.vector });
+  }
+
   pointerAngle(event) {
     const rect = this.gizmoEl?.getBoundingClientRect?.();
     if (!rect) return 0;
@@ -412,6 +510,8 @@ export class ViewportOrientationWidget {
 
   onPointerDown(event) {
     if (event.target?.closest?.("button,path")) return;
+    const axisHit = this.findAxisHit(event);
+    if (axisHit && this.beginAxisDrag(event, axisHit)) return;
     event.preventDefault();
     event.stopPropagation();
     this.dragging = true;
@@ -422,6 +522,23 @@ export class ViewportOrientationWidget {
   }
 
   onPointerMove(event) {
+    if (this.axisDrag) {
+      event.preventDefault();
+      event.stopPropagation();
+      const nextVector = this.trackballVectorFromEvent(event);
+      if (!nextVector) return;
+      const dot = Math.max(-1, Math.min(1, nextVector.dot(this.axisDrag.lastVector)));
+      if (dot > 0.9999) return;
+      const rotation = new this.THREE.Quaternion().setFromUnitVectors(nextVector, this.axisDrag.lastVector);
+      if (this.applyCameraOrbitRotation(rotation)) {
+        this.requestRender();
+        this.axisDrag.lastVector = this.trackballVectorFromEvent(event) || nextVector;
+      } else {
+        this.axisDrag.lastVector = nextVector;
+      }
+      this.axisDrag.moved = true;
+      return;
+    }
     if (!this.dragging) return;
     event.preventDefault();
     event.stopPropagation();
@@ -431,6 +548,14 @@ export class ViewportOrientationWidget {
   }
 
   onPointerUp(event) {
+    if (this.axisDrag) {
+      const captureTarget = this.axisDrag.captureTarget;
+      if (this.axisDrag.moved && captureTarget?.tagName?.toLowerCase?.() === "button") this.suppressTipClick = true;
+      if (event?.pointerId !== undefined) captureTarget?.releasePointerCapture?.(event.pointerId);
+      this.axisDrag = null;
+      this.gizmoEl?.classList.remove("is-dragging");
+      return;
+    }
     if (!this.dragging) return;
     this.dragging = false;
     this.gizmoEl?.classList.remove("is-dragging");
