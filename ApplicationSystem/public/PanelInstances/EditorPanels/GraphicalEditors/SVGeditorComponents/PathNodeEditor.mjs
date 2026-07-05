@@ -17,6 +17,7 @@ export function createPathNodeEditor(deps) {
     setStatus,
     history,
   } = deps;
+  const focusEditor = typeof deps.focusEditor === "function" ? deps.focusEditor : () => {};
   const setAttrs = (el, attrs) => Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
   const state = {
     active: false,
@@ -55,6 +56,7 @@ export function createPathNodeEditor(deps) {
 
   function startDrag(e, idx, kind) {
     if (!state.active) return;
+    focusEditor();
     state.selectedNode = idx;
     state.drag = { pointerId: e.pointerId, kind, idx, base: cloneModel(state.model), baseD: modelToPathD(state.model) };
     try { svgRoot.setPointerCapture(e.pointerId); } catch {}
@@ -164,7 +166,7 @@ export function createPathNodeEditor(deps) {
       history?.pushPathChange(state.pathEl, beforeD, modelToPathD(state.model));
       return true;
     }
-    if (state.selectedNode >= 0) {
+    if (state.selectedNode >= 0 && (key === "1" || key === "2" || key === "3")) {
       const node = state.model.nodes[state.selectedNode];
       const beforeD = modelToPathD(state.model);
       if (key === "1") ensureNodeType(node, "corner");
@@ -178,6 +180,15 @@ export function createPathNodeEditor(deps) {
     return false;
   }
 
+  function getSelectedNodeExtrudeContext() {
+    if (!state.active || state.selectedNode < 0 || !state.model?.nodes?.[state.selectedNode]) return null;
+    const node = state.model.nodes[state.selectedNode];
+    return {
+      rootPoint: { x: node.x, y: node.y },
+      sourceElement: state.pathEl || null,
+    };
+  }
+
   return {
     enter,
     exit,
@@ -187,6 +198,7 @@ export function createPathNodeEditor(deps) {
     onPointerUp,
     onSelectionChanged,
     onKeyDown,
+    getSelectedNodeExtrudeContext,
     isActive: () => state.active,
   };
 }

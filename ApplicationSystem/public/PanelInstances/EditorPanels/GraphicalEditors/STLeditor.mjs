@@ -11,6 +11,8 @@ import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mj
 
 const SAVE_ENDPOINT = "/api/save";
 const WELD_EPSILON = 1e-5;
+const NODEVISION_TOPOLOGY_PREFIX = "  // nodevision-topology: ";
+const STL_ACTION_AXIS_TYPES = new Set(["x", "y", "z"]);
 
 function ensureStyles() {
   if (document.getElementById("nv-stl-editor-styles")) return;
@@ -93,6 +95,65 @@ function buildTopologyFromGeometry(geometry) {
   return { vertices, faces, customEdges: [] };
 }
 
+function serializeNodevisionTopology(topology) {
+  const vertices = Array.isArray(topology?.vertices)
+    ? topology.vertices.map((v) => [v?.x || 0, v?.y || 0, v?.z || 0])
+    : [];
+  const faces = Array.isArray(topology?.faces)
+    ? topology.faces.filter((face) => Array.isArray(face) && face.length >= 3).map((face) => face.slice(0, 3))
+    : [];
+  const customEdges = Array.isArray(topology?.customEdges)
+    ? topology.customEdges.filter((edge) => Array.isArray(edge) && edge.length >= 2).map((edge) => edge.slice(0, 2))
+    : [];
+  return JSON.stringify({ version: 1, vertices, faces, customEdges });
+}
+
+function topologyFromNodevisionMetadata(rawValue) {
+  let data = null;
+  try {
+    data = JSON.parse(String(rawValue || ""));
+  } catch {
+    return null;
+  }
+  if (!data || !Array.isArray(data.vertices)) return null;
+  const vertices = data.vertices
+    .map((v) => Array.isArray(v) && v.length >= 3 ? new THREE.Vector3(Number(v[0]), Number(v[1]), Number(v[2])) : null)
+    .filter((v) => v && Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z));
+  const validIndex = (index) => Number.isInteger(index) && index >= 0 && index < vertices.length;
+  const faces = Array.isArray(data.faces)
+    ? data.faces.map((face) => Array.isArray(face) ? face.slice(0, 3).map((n) => Number(n)) : [])
+      .filter((face) => face.length === 3 && face.every(validIndex) && new Set(face).size === 3)
+    : [];
+  const customEdges = Array.isArray(data.customEdges)
+    ? data.customEdges.map((edge) => Array.isArray(edge) ? edge.slice(0, 2).map((n) => Number(n)) : [])
+      .filter((edge) => edge.length === 2 && edge.every(validIndex) && edge[0] !== edge[1])
+    : [];
+  return { vertices, faces, customEdges };
+}
+
+function parseNodevisionTopologyMetadata(text) {
+  const prefix = NODEVISION_TOPOLOGY_PREFIX.trim();
+  const line = String(text || "").split(/\r?\n/).find((entry) => entry.trim().startsWith(prefix));
+  if (!line) return null;
+  return topologyFromNodevisionMetadata(line.trim().slice(prefix.length).trim());
+}
+
+function isExactBinarySTLBuffer(arrayBuffer) {
+  if (!arrayBuffer || arrayBuffer.byteLength < 84) return false;
+  try {
+    const reader = new DataView(arrayBuffer);
+    const faces = reader.getUint32(80, true);
+    return 84 + faces * 50 === reader.byteLength;
+  } catch {
+    return false;
+  }
+}
+
+function looksLikeAsciiSTLText(text) {
+  const normalized = String(text || "").replace(/^\uFEFF/, "").trimStart().toLowerCase();
+  return normalized.startsWith("solid") && normalized.includes("endsolid");
+}
+
 function faceNormal(vertices, face) {
   const a = vertices[face[0]];
   const b = vertices[face[1]];
@@ -121,8 +182,20 @@ function verticesAreCoplanar(vertices, epsilon = WELD_EPSILON * 100) {
   return vertices.every((vertex) => Math.abs(new THREE.Vector3().subVectors(vertex, origin).dot(normal)) <= epsilon);
 }
 
-function serializeTopologyToAsciiSTL(topology) {
-  const lines = ["solid nodevision"];
+function stlSolidNameFromPath(pathValue) {
+  const fallback = "stl";
+  const base = String(pathValue || "")
+    .split(/[\\/]/)
+    .filter(Boolean)
+    .pop() || fallback;
+  const withoutExt = base.replace(/\.[^.]*$/, "") || base || fallback;
+  return withoutExt.replace(/[^A-Za-z0-9_.-]+/g, "_") || fallback;
+}
+
+function serializeTopologyToAsciiSTL(topology, nameValue = "") {
+  const solidName = stlSolidNameFromPath(nameValue);
+  const lines = ["solid " + solidName];
+  lines.push(NODEVISION_TOPOLOGY_PREFIX + serializeNodevisionTopology(topology));
   for (const face of topology.faces) {
     const a = topology.vertices[face[0]];
     const b = topology.vertices[face[1]];
@@ -137,7 +210,7 @@ function serializeTopologyToAsciiSTL(topology) {
     lines.push("  endloop");
     lines.push("endfacet");
   }
-  lines.push("endsolid nodevision");
+  lines.push("endsolid " + solidName);
   return lines.join("\n");
 }
 
@@ -160,13 +233,15 @@ export async function renderEditor(
   const state = {
     topology: null,
     selection: new Set(),
-    mode: "idle", // idle | grab | scale
+    mode: "idle", // idle | grab | scale | rotate
     actionSnapshot: null,
     actionChanged: false,
     maxDim: 100,
     destroyed: false,
     dirty: false,
     lastPointerClient: { x: 0, y: 0 },
+    commandBuffer: "",
+    commandTimer: null,
     selectionBox: null,
     sculpt: {
       tool: "select",
@@ -474,18 +549,91 @@ export async function renderEditor(
     return c;
   }
 
+  function parseActionDistanceNumber(rawValue) {
+    const n = Number.parseFloat(String(rawValue || "").trim());
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function actionAxisConstraintLabel(axis, snap = state.actionSnapshot) {
+    if (!STL_ACTION_AXIS_TYPES.has(axis)) return "free";
+    const side = getActionAxisDirectionSign(snap) < 0 ? "-" : "+";
+    return axis.toUpperCase() + " " + side;
+  }
+
+  function getActionAxisVector(axis) {
+    if (axis === "x") return new THREE.Vector3(1, 0, 0);
+    if (axis === "y") return new THREE.Vector3(0, 1, 0);
+    if (axis === "z") return new THREE.Vector3(0, 0, 1);
+    return null;
+  }
+
+  function actionAngleUnit(snap = state.actionSnapshot) {
+    return snap?.angleUnit === "rad" ? "rad" : "deg";
+  }
+
+  function actionAngleValueToRadians(value, unit = actionAngleUnit()) {
+    if (!Number.isFinite(value)) return null;
+    return unit === "rad" ? value : (value * Math.PI) / 180;
+  }
+
+  function actionAngleRadiansToValue(angleRad, unit = actionAngleUnit()) {
+    if (!Number.isFinite(angleRad)) return null;
+    return unit === "rad" ? angleRad : (angleRad * 180) / Math.PI;
+  }
+
+  function formatActionAngleNumber(value) {
+    if (!Number.isFinite(value)) return "";
+    return Number(value.toFixed(6)).toString();
+  }
+
+  function actionRotationConstraintLabel(axis, snap = state.actionSnapshot) {
+    if (!STL_ACTION_AXIS_TYPES.has(axis)) return "";
+    const side = getActionAxisDirectionSign(snap) < 0 ? "-" : "+";
+    const radians = Number.isFinite(snap?.angleFixedRadians) ? snap.angleFixedRadians : 0;
+    const value = actionAngleRadiansToValue(Math.abs(radians), actionAngleUnit(snap));
+    return axis.toUpperCase() + " " + side + formatActionAngleNumber(value || 0) + " " + actionAngleUnit(snap);
+  }
+
+  function actionModeInstruction(mode, axis = null) {
+    if (mode === "grab") {
+      const axisText = axis ? ", " + actionAxisConstraintLabel(axis) + " locked" : "";
+      return "move mouse" + axisText + ", X/Y/Z lock axis, click/Enter confirm, Esc cancel";
+    }
+    if (mode === "rotate") {
+      const axisText = axis ? " around " + actionAxisConstraintLabel(axis) : "";
+      return "rotate" + axisText + ", X/Y/Z axis, type angle, Tab deg/rad, Enter confirm, Esc cancel";
+    }
+    return "move mouse, click/Enter confirm, Esc cancel";
+  }
+
+  function selectedRotationPivot(fromVertices = null) {
+    const source = fromVertices || state.topology?.vertices;
+    const selected = Array.from(state.selection || []);
+    if (selected.length === 1 && Array.isArray(state.topology?.customEdges)) {
+      const selectedIndex = selected[0];
+      const edge = state.topology.customEdges.find((candidate) => Array.isArray(candidate) && candidate.includes(selectedIndex));
+      if (edge) {
+        const otherIndex = edge[0] === selectedIndex ? edge[1] : edge[0];
+        const other = source?.[otherIndex];
+        if (other) return other.clone();
+      }
+    }
+    return selectedCentroid(source);
+  }
+
   function startActionMode(mode, mouseEvt) {
     if (!state.topology || state.selection.size === 0) return;
     state.mode = mode;
-    setModeLabel(
-      mode === "grab"
-        ? "move mouse, click/Enter confirm, Esc cancel"
-        : "move mouse, click/Enter confirm, Esc cancel",
-    );
+    setModeLabel(actionModeInstruction(mode));
     controls.enabled = false;
 
-    const startVertices = cloneVertices(state.topology.vertices);
-    const centroid = selectedCentroid(startVertices);
+    const startVertices = Array.isArray(mouseEvt?.startVerticesOverride)
+      ? cloneVertices(mouseEvt.startVerticesOverride)
+      : cloneVertices(state.topology.vertices);
+    const centroid = mouseEvt?.centroidOverride?.isVector3
+      ? mouseEvt.centroidOverride.clone()
+      : selectedCentroid(startVertices);
+    const rotationPivot = mode === "rotate" ? selectedRotationPivot(startVertices) : centroid.clone();
     const startMouse = new THREE.Vector2(
       Number.isFinite(mouseEvt?.clientX)
         ? mouseEvt.clientX
@@ -505,11 +653,28 @@ export async function renderEditor(
       centroid,
       startMouse,
       plane,
+      axisLock: null,
+      axisDistanceBuffer: "",
+      axisDirectionSign: 1,
+      axisFixedDistance: null,
+      axisFixedPosition: null,
+      axisInputMode: "distance",
+      rotationPivot,
+      angleUnit: "deg",
+      angleInputBuffer: "",
+      angleFixedRadians: null,
     };
     state.actionChanged = false;
   }
 
+  function clearPendingCommand() {
+    state.commandBuffer = "";
+    if (state.commandTimer) window.clearTimeout(state.commandTimer);
+    state.commandTimer = null;
+  }
+
   function commitAction() {
+    clearPendingCommand();
     const changed = state.actionChanged;
     state.mode = "idle";
     state.actionSnapshot = null;
@@ -520,6 +685,7 @@ export async function renderEditor(
   }
 
   function cancelAction() {
+    clearPendingCommand();
     if (!state.actionSnapshot || !state.topology) {
       commitAction();
       return;
@@ -528,6 +694,204 @@ export async function renderEditor(
     state.actionChanged = false;
     rebuildDisplayGeometry();
     commitAction();
+  }
+
+  function getActionAxisDirectionSign(snap = state.actionSnapshot) {
+    return snap?.axisDirectionSign === -1 ? -1 : 1;
+  }
+
+  function applyActionAxisDistance(distance) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "grab" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    if (!Number.isFinite(distance)) return false;
+    const axisVector = getActionAxisVector(snap.axisLock);
+    if (!axisVector) return false;
+    const signedDistance = Math.abs(distance) * getActionAxisDirectionSign(snap);
+    snap.axisFixedDistance = signedDistance;
+    state.selection.forEach((vi) => {
+      state.topology.vertices[vi].copy(snap.startVertices[vi]).addScaledVector(axisVector, signedDistance);
+    });
+    rebuildDisplayGeometry();
+    state.actionChanged = true;
+    setModeLabel("moved " + actionAxisConstraintLabel(snap.axisLock) + " " + signedDistance);
+    return true;
+  }
+
+  function applyActionAxisPosition(position) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "grab" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    if (!Number.isFinite(position)) return false;
+    snap.axisFixedPosition = position;
+    snap.axisFixedDistance = null;
+    state.selection.forEach((vi) => {
+      const base = snap.startVertices[vi];
+      const target = state.topology.vertices[vi];
+      if (!base || !target) return;
+      target.copy(base);
+      target[snap.axisLock] = position;
+    });
+    rebuildDisplayGeometry();
+    state.actionChanged = true;
+    setModeLabel("set " + snap.axisLock.toUpperCase() + " position to " + position);
+    return true;
+  }
+
+  function reapplyActionAxisDistanceBuffer() {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "grab" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    const value = parseActionDistanceNumber(snap.axisDistanceBuffer);
+    if (value !== null) {
+      return snap.axisInputMode === "position"
+        ? applyActionAxisPosition(value)
+        : applyActionAxisDistance(value);
+    }
+    snap.axisFixedDistance = null;
+    snap.axisFixedPosition = null;
+    applyActionMove(state.lastPointerClient.x, state.lastPointerClient.y);
+    const inputText = snap.axisInputMode === "position" ? ", type absolute position" : "";
+    setModeLabel(actionModeInstruction("grab", snap.axisLock) + inputText);
+    return true;
+  }
+
+  function setActionAxisDirectionSign(sign) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "grab" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    snap.axisDirectionSign = sign < 0 ? -1 : 1;
+    return reapplyActionAxisDistanceBuffer();
+  }
+
+  function toggleActionAxisDirection() {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "grab" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    snap.axisDirectionSign = getActionAxisDirectionSign(snap) < 0 ? 1 : -1;
+    return reapplyActionAxisDistanceBuffer();
+  }
+
+  function setActionAxisConstraint(axis, { inputMode = "distance" } = {}) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "grab" || !snap || !STL_ACTION_AXIS_TYPES.has(axis)) return false;
+    if (snap.axisLock === axis) {
+      snap.axisLock = null;
+      snap.axisDistanceBuffer = "";
+      snap.axisDirectionSign = 1;
+      snap.axisFixedDistance = null;
+      snap.axisFixedPosition = null;
+      snap.axisInputMode = "distance";
+      setModeLabel(actionModeInstruction("grab"));
+      applyActionMove(state.lastPointerClient.x, state.lastPointerClient.y);
+      return true;
+    }
+    snap.axisLock = axis;
+    snap.axisDistanceBuffer = "";
+    snap.axisDirectionSign = 1;
+    snap.axisFixedDistance = null;
+    snap.axisFixedPosition = null;
+    snap.axisInputMode = inputMode === "position" ? "position" : "distance";
+    const inputText = snap.axisInputMode === "position" ? ", type absolute position" : "";
+    setModeLabel(actionModeInstruction("grab", snap.axisLock) + inputText);
+    applyActionMove(state.lastPointerClient.x, state.lastPointerClient.y);
+    return true;
+  }
+
+  function restoreSelectedActionVertices() {
+    const snap = state.actionSnapshot;
+    if (!snap || !state.topology) return false;
+    state.selection.forEach((vi) => {
+      const base = snap.startVertices[vi];
+      if (base && state.topology.vertices[vi]) state.topology.vertices[vi].copy(base);
+    });
+    rebuildDisplayGeometry();
+    return true;
+  }
+
+  function applyActionRotation(angleRadians) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "rotate" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    if (!Number.isFinite(angleRadians)) return false;
+    const axisVector = getActionAxisVector(snap.axisLock);
+    if (!axisVector) return false;
+    const signedAngle = Math.abs(angleRadians) * getActionAxisDirectionSign(snap);
+    snap.angleFixedRadians = signedAngle;
+    const pivot = snap.rotationPivot || snap.centroid || new THREE.Vector3();
+    state.selection.forEach((vi) => {
+      const base = snap.startVertices[vi];
+      const target = state.topology.vertices[vi];
+      if (!base || !target) return;
+      const offset = new THREE.Vector3().subVectors(base, pivot).applyAxisAngle(axisVector, signedAngle);
+      target.copy(pivot).add(offset);
+    });
+    rebuildDisplayGeometry();
+    state.actionChanged = Math.abs(signedAngle) > 1e-12;
+    setModeLabel("rotated " + actionRotationConstraintLabel(snap.axisLock, snap));
+    return true;
+  }
+
+  function reapplyActionRotationBuffer() {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "rotate" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    const value = parseActionDistanceNumber(snap.angleInputBuffer);
+    if (value !== null) return applyActionRotation(actionAngleValueToRadians(Math.abs(value), actionAngleUnit(snap)));
+    snap.angleFixedRadians = 0;
+    restoreSelectedActionVertices();
+    state.actionChanged = false;
+    setModeLabel("rotate " + actionAxisConstraintLabel(snap.axisLock, snap) + " locked, type angle in " + actionAngleUnit(snap));
+    return true;
+  }
+
+  function setActionRotationDirectionSign(sign) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "rotate" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    snap.axisDirectionSign = sign < 0 ? -1 : 1;
+    return reapplyActionRotationBuffer();
+  }
+
+  function toggleActionRotationDirection() {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "rotate" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    snap.axisDirectionSign = getActionAxisDirectionSign(snap) < 0 ? 1 : -1;
+    return reapplyActionRotationBuffer();
+  }
+
+  function toggleActionRotationUnit() {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "rotate" || !snap) return false;
+    const fromUnit = actionAngleUnit(snap);
+    const toUnit = fromUnit === "deg" ? "rad" : "deg";
+    const value = parseActionDistanceNumber(snap.angleInputBuffer);
+    if (value !== null) {
+      const angleRad = actionAngleValueToRadians(Math.abs(value), fromUnit);
+      const nextValue = actionAngleRadiansToValue(angleRad, toUnit);
+      snap.angleInputBuffer = formatActionAngleNumber(Math.abs(nextValue || 0));
+    }
+    snap.angleUnit = toUnit;
+    if (!STL_ACTION_AXIS_TYPES.has(snap.axisLock)) {
+      setModeLabel("rotate, angle unit " + actionAngleUnit(snap) + ", choose X/Y/Z axis");
+      return true;
+    }
+    return reapplyActionRotationBuffer();
+  }
+
+  function setActionRotationAxisConstraint(axis) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "rotate" || !snap || !STL_ACTION_AXIS_TYPES.has(axis)) return false;
+    if (snap.axisLock === axis) {
+      snap.axisLock = null;
+      snap.angleInputBuffer = "";
+      snap.axisDirectionSign = 1;
+      snap.angleFixedRadians = 0;
+      restoreSelectedActionVertices();
+      state.actionChanged = false;
+      setModeLabel(actionModeInstruction("rotate"));
+      return true;
+    }
+    snap.axisLock = axis;
+    snap.angleInputBuffer = "";
+    snap.axisDirectionSign = 1;
+    snap.angleFixedRadians = 0;
+    restoreSelectedActionVertices();
+    state.actionChanged = false;
+    setModeLabel("rotate " + actionAxisConstraintLabel(snap.axisLock, snap) + " locked, type angle in " + actionAngleUnit(snap));
+    return true;
   }
 
   function applyActionMove(clientX, clientY) {
@@ -552,7 +916,28 @@ export async function renderEditor(
       const hitB = endRay.ray.intersectPlane(snap.plane, endPoint);
       if (!hitA || !hitB) return;
 
-      const delta = new THREE.Vector3().subVectors(endPoint, startPoint);
+      let delta = new THREE.Vector3().subVectors(endPoint, startPoint);
+      const axisVector = getActionAxisVector(snap.axisLock);
+      if (axisVector) {
+        const fixedPosition = Number.isFinite(snap.axisFixedPosition) ? snap.axisFixedPosition : null;
+        if (fixedPosition !== null) {
+          state.selection.forEach((vi) => {
+            const base = snap.startVertices[vi];
+            const target = state.topology.vertices[vi];
+            if (!base || !target) return;
+            target.copy(base);
+            target[snap.axisLock] = fixedPosition;
+          });
+          rebuildDisplayGeometry();
+          state.actionChanged = true;
+          return;
+        }
+        const fixedDistance = Number.isFinite(snap.axisFixedDistance) ? snap.axisFixedDistance : null;
+        const axisDistance = fixedDistance !== null
+          ? fixedDistance
+          : delta.dot(axisVector) * getActionAxisDirectionSign(snap);
+        delta = axisVector.multiplyScalar(axisDistance);
+      }
       state.selection.forEach((vi) => {
         state.topology.vertices[vi].copy(snap.startVertices[vi]).add(delta);
       });
@@ -575,8 +960,142 @@ export async function renderEditor(
     }
   }
 
+  function handleActionAxisDistanceKey(evt) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "grab" || !snap || !STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+    if (evt.ctrlKey || evt.metaKey || evt.altKey) return false;
+
+    const rawKey = String(evt.key || "");
+    const isPositionMode = snap.axisInputMode === "position";
+    if (rawKey === "Backspace") {
+      snap.axisDistanceBuffer = String(snap.axisDistanceBuffer || "").slice(0, -1);
+      return reapplyActionAxisDistanceBuffer();
+    }
+
+    if (isPositionMode && (rawKey === "-" || rawKey === "+")) {
+      const current = String(snap.axisDistanceBuffer || "");
+      if (current.startsWith("-")) {
+        snap.axisDistanceBuffer = rawKey === "-" ? current.slice(1) : current;
+      } else if (rawKey === "-") {
+        snap.axisDistanceBuffer = "-" + current;
+      }
+      return reapplyActionAxisDistanceBuffer();
+    }
+
+    if (rawKey === "=" || rawKey === "-") return toggleActionAxisDirection();
+    if (rawKey === "+") return setActionAxisDirectionSign(1);
+
+    if (!"0123456789.".includes(rawKey)) return false;
+    if (rawKey === "." && String(snap.axisDistanceBuffer || "").includes(".")) return false;
+
+    snap.axisDistanceBuffer = String(snap.axisDistanceBuffer || "") + rawKey;
+    return reapplyActionAxisDistanceBuffer();
+  }
+
+  function handleActionRotationKey(evt) {
+    const snap = state.actionSnapshot;
+    if (state.mode !== "rotate" || !snap) return false;
+    if (evt.ctrlKey || evt.metaKey || evt.altKey) return false;
+
+    const rawKey = String(evt.key || "");
+    const key = rawKey.toLowerCase();
+    if (rawKey === "Tab") return toggleActionRotationUnit();
+    if (STL_ACTION_AXIS_TYPES.has(key)) return setActionRotationAxisConstraint(key);
+    if (!STL_ACTION_AXIS_TYPES.has(snap.axisLock)) return false;
+
+    if (rawKey === "Backspace") {
+      snap.angleInputBuffer = String(snap.angleInputBuffer || "").slice(0, -1);
+      return reapplyActionRotationBuffer();
+    }
+
+    if (rawKey === "=" || rawKey === "-") return toggleActionRotationDirection();
+    if (rawKey === "+") return setActionRotationDirectionSign(1);
+
+    if (!"0123456789.".includes(rawKey)) return false;
+    if (rawKey === "." && String(snap.angleInputBuffer || "").includes(".")) return false;
+
+    snap.angleInputBuffer = String(snap.angleInputBuffer || "") + rawKey;
+    return reapplyActionRotationBuffer();
+  }
+
+  function clientPointFromWorldPoint(point) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    camera.updateMatrixWorld?.();
+    const projected = point.clone().project(camera);
+    return {
+      x: rect.left + (projected.x * 0.5 + 0.5) * rect.width,
+      y: rect.top + (-projected.y * 0.5 + 0.5) * rect.height,
+    };
+  }
+
+  function pointFromLastCursorOnCameraPlane(planePoint) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    const clientX = Number.isFinite(state.lastPointerClient.x) && state.lastPointerClient.x !== 0
+      ? state.lastPointerClient.x
+      : rect.left + rect.width * 0.5;
+    const clientY = Number.isFinite(state.lastPointerClient.y) && state.lastPointerClient.y !== 0
+      ? state.lastPointerClient.y
+      : rect.top + rect.height * 0.5;
+    pointerNdc.x = ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+    pointerNdc.y = -((clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+    camera.updateMatrixWorld?.();
+    raycaster.setFromCamera(pointerNdc, camera);
+    const cameraDir = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDir, planePoint);
+    const point = new THREE.Vector3();
+    return raycaster.ray.intersectPlane(plane, point) ? point : null;
+  }
+
+  function fallbackExtrudePointFrom(source) {
+    const distance = Math.max(WELD_EPSILON * 100, state.maxDim * 0.06, 0.001);
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    if (right.lengthSq() < 1e-12) right.set(1, 0, 0);
+    return source.clone().addScaledVector(right.normalize(), distance);
+  }
+
+  function extrudeSingleVertex(sourceIndex) {
+    if (!state.topology || !Number.isInteger(sourceIndex)) return false;
+    const source = state.topology.vertices[sourceIndex];
+    if (!source) return false;
+
+    let target = pointFromLastCursorOnCameraPlane(source);
+    const minDistance = Math.max(WELD_EPSILON * 100, state.maxDim * 0.004, 0.001);
+    if (!target || target.distanceTo(source) <= minDistance) {
+      target = fallbackExtrudePointFrom(source);
+    }
+
+    const newIndex = state.topology.vertices.length;
+    state.topology.vertices.push(target.clone());
+    state.topology.customEdges = Array.isArray(state.topology.customEdges) ? state.topology.customEdges : [];
+    const key = edgeKey(sourceIndex, newIndex);
+    const exists = state.topology.customEdges.some((edge) => edgeKey(edge[0], edge[1]) === key);
+    if (!exists) state.topology.customEdges.push([sourceIndex, newIndex]);
+
+    state.selection.clear();
+    state.selection.add(newIndex);
+    state.maxDim = computeBounds().maxDim;
+    rebuildDisplayGeometry();
+    markDirty("Vertex extruded");
+    const grabStartVertices = cloneVertices(state.topology.vertices);
+    grabStartVertices[newIndex] = source.clone();
+    const sourceClient = clientPointFromWorldPoint(source);
+    startActionMode("grab", {
+      clientX: sourceClient.x,
+      clientY: sourceClient.y,
+      startVerticesOverride: grabStartVertices,
+      centroidOverride: source,
+    });
+    applyActionMove(state.lastPointerClient.x, state.lastPointerClient.y);
+    return true;
+  }
+
   function extrudeSelection() {
     if (!state.topology || state.selection.size === 0) return;
+    if (state.selection.size === 1) {
+      const [sourceIndex] = Array.from(state.selection);
+      extrudeSingleVertex(sourceIndex);
+      return;
+    }
     const selectedFaces = [];
     state.topology.faces.forEach((f, i) => {
       if (
@@ -688,6 +1207,61 @@ export async function renderEditor(
     markDirty("Face filled");
   }
 
+  function deleteSelectedVertices() {
+    if (!state.topology || state.selection.size === 0 || state.mode !== "idle") return false;
+
+    const removed = new Set(
+      Array.from(state.selection).filter((index) =>
+        Number.isInteger(index) && index >= 0 && index < state.topology.vertices.length
+      ),
+    );
+    if (removed.size === 0) {
+      state.selection.clear();
+      rebuildSelectionDisplay();
+      notifyToolbarState();
+      return false;
+    }
+
+    const indexMap = new Map();
+    const vertices = [];
+    state.topology.vertices.forEach((vertex, index) => {
+      if (removed.has(index)) return;
+      indexMap.set(index, vertices.length);
+      vertices.push(vertex);
+    });
+
+    const faces = [];
+    for (const face of state.topology.faces) {
+      if (!Array.isArray(face) || face.some((index) => removed.has(index))) continue;
+      const mapped = face.map((index) => indexMap.get(index));
+      if (mapped.every((index) => Number.isInteger(index)) && new Set(mapped).size === 3) faces.push(mapped);
+    }
+
+    const customEdges = [];
+    const seenEdges = new Set();
+    for (const edge of state.topology.customEdges || []) {
+      if (!Array.isArray(edge) || edge.length < 2 || edge.some((index) => removed.has(index))) continue;
+      const a = indexMap.get(edge[0]);
+      const b = indexMap.get(edge[1]);
+      if (!Number.isInteger(a) || !Number.isInteger(b) || a === b) continue;
+      const key = edgeKey(a, b);
+      if (seenEdges.has(key)) continue;
+      seenEdges.add(key);
+      customEdges.push([a, b]);
+    }
+
+    state.topology.vertices = vertices;
+    state.topology.faces = faces;
+    state.topology.customEdges = customEdges;
+    state.selection.clear();
+    state.maxDim = computeBounds().maxDim;
+    rebuildDisplayGeometry();
+    setModeLabel("deleted " + removed.size + " point" + (removed.size === 1 ? "" : "s"));
+    markDirty("Deleted " + removed.size + " STL point" + (removed.size === 1 ? "" : "s"));
+    notifyToolbarState();
+    return true;
+  }
+
   function addVertexAtCameraFocus() {
     if (!state.topology) return;
     const direction = camera.getWorldDirection(new THREE.Vector3());
@@ -718,7 +1292,7 @@ export async function renderEditor(
   }
 
   function setSculptTool(tool) {
-    if (state.mode === "grab" || state.mode === "scale") commitAction();
+    if (state.mode === "grab" || state.mode === "scale" || state.mode === "rotate") commitAction();
     state.sculpt.stroke = null;
     state.sculpt.tool = tool;
     controls.enabled = !isSculptToolActive();
@@ -1090,7 +1664,7 @@ export async function renderEditor(
     container.focus();
     state.lastPointerClient.x = evt.clientX;
     state.lastPointerClient.y = evt.clientY;
-    if (state.mode === "grab" || state.mode === "scale") {
+    if (state.mode === "grab" || state.mode === "scale" || state.mode === "rotate") {
       commitAction();
       return;
     }
@@ -1109,6 +1683,7 @@ export async function renderEditor(
       applyActionMove(evt.clientX, evt.clientY);
       return;
     }
+    if (state.mode === "rotate") return;
     if (updateSelectionBox(evt)) return;
     if (state.sculpt.stroke) {
       continueSculptStroke(evt);
@@ -1120,6 +1695,28 @@ export async function renderEditor(
   function onPointerUp(evt) {
     if (finishSelectionBox(evt)) return;
     endSculptStroke();
+  }
+
+  function handlePositionCommand(evt, key) {
+    if (evt.ctrlKey || evt.metaKey || evt.altKey || key.length !== 1) return false;
+    if (state.commandBuffer === "p") {
+      clearPendingCommand();
+      if (!STL_ACTION_AXIS_TYPES.has(key) || state.mode !== "idle" || state.selection.size === 0) return false;
+      if (isSculptToolActive()) setSculptTool("select");
+      startActionMode("grab", evt);
+      setActionAxisConstraint(key, { inputMode: "position" });
+      return true;
+    }
+    if (key !== "p" || state.mode !== "idle" || state.selection.size === 0) return false;
+    clearPendingCommand();
+    state.commandBuffer = "p";
+    state.commandTimer = window.setTimeout(() => {
+      if (state.commandBuffer !== "p") return;
+      clearPendingCommand();
+      if (state.mode === "idle") setModeLabel();
+    }, 650);
+    setModeLabel("position command: px, py, or pz");
+    return true;
   }
 
   function onKeyDown(evt) {
@@ -1145,9 +1742,36 @@ export async function renderEditor(
       return;
     }
 
-    if (key === "enter" && (state.mode === "grab" || state.mode === "scale")) {
+    if (handleActionRotationKey(evt)) {
+      evt.preventDefault();
+      return;
+    }
+
+    if (handleActionAxisDistanceKey(evt)) {
+      evt.preventDefault();
+      return;
+    }
+
+    if (key === "enter" && (state.mode === "grab" || state.mode === "scale" || state.mode === "rotate")) {
       evt.preventDefault();
       commitAction();
+      return;
+    }
+
+    if (handlePositionCommand(evt, key)) {
+      evt.preventDefault();
+      return;
+    }
+
+    if (state.mode === "grab" && STL_ACTION_AXIS_TYPES.has(key)) {
+      evt.preventDefault();
+      setActionAxisConstraint(key);
+      return;
+    }
+
+    if ((key === "delete" || key === "del" || key === "backspace") && state.mode === "idle") {
+      evt.preventDefault();
+      deleteSelectedVertices();
       return;
     }
 
@@ -1171,6 +1795,12 @@ export async function renderEditor(
       return;
     }
 
+    if (key === "r") {
+      evt.preventDefault();
+      if (state.selection.size > 0) startActionMode("rotate", evt);
+      return;
+    }
+
     if (key === "e") {
       evt.preventDefault();
       extrudeSelection();
@@ -1185,7 +1815,7 @@ export async function renderEditor(
 
   async function saveSTL(pathOverride = filePath) {
     if (!state.topology) state.topology = createEmptyTopology();
-    const content = serializeTopologyToAsciiSTL(state.topology);
+    const content = serializeTopologyToAsciiSTL(state.topology, pathOverride);
     const res = await fetch(SAVE_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1219,6 +1849,17 @@ export async function renderEditor(
     const response = await fetch(notebookUrl(filePath), { cache: "no-store" });
     if (!response.ok) throw new Error(String(response.status) + " " + String(response.statusText || "STL load failed"));
     const arrayBuffer = await response.arrayBuffer();
+    const text = new TextDecoder().decode(arrayBuffer);
+    const metadataTopology = parseNodevisionTopologyMetadata(text);
+    if (metadataTopology) {
+      state.topology = metadataTopology;
+      recenterCameraToTopology();
+      resetSculptBrushForBounds();
+      rebuildDisplayGeometry();
+      if (state.topology.vertices.length === 0 && state.topology.faces.length === 0) setModeLabel("empty STL");
+      else setModeLabel("loaded");
+      return;
+    }
     if (isEmptySTLBuffer(arrayBuffer)) {
       state.topology = createEmptyTopology();
       recenterCameraToTopology();
@@ -1229,7 +1870,9 @@ export async function renderEditor(
     }
 
     const loader = new STLLoader();
-    const geometry = loader.parse(arrayBuffer);
+    const geometry = looksLikeAsciiSTLText(text) && !isExactBinarySTLBuffer(arrayBuffer)
+      ? loader.parse(text)
+      : loader.parse(arrayBuffer);
     state.topology = buildTopologyFromGeometry(geometry);
     recenterCameraToTopology();
     resetSculptBrushForBounds();

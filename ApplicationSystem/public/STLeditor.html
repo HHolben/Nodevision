@@ -44,6 +44,7 @@
     let mode = 'add';
     let edgeMoveMode = false;
     let isBoxSelecting = false;
+    let lastPointer = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
     let dragStart = { x: 0, y: 0 };
     const selectionBox = document.getElementById('selectionBox');
 
@@ -101,14 +102,25 @@
         clearSelection();
         updateInfo();
       }
+      if (e.key === "Delete" || e.key === "Del" || e.key === "Backspace") {
+        e.preventDefault();
+        deleteSelectedVertices();
+        return;
+      }
       if (e.key === 'g' || e.key === 'G') {
         edgeMoveMode = !edgeMoveMode;
         clearSelection(); updateInfo();
+      }
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        extrudeSelectedVertex();
+        return;
       }
     }
 
     function onPointerDown(event) {
       event.preventDefault();
+      lastPointer = { x: event.clientX, y: event.clientY };
       controls.enableRotate = event.ctrlKey;
       dragStart = { x: event.clientX, y: event.clientY };
 
@@ -130,6 +142,7 @@
     }
 
     function onPointerMove(event) {
+      lastPointer = { x: event.clientX, y: event.clientY };
       if (mode === 'select' && isBoxSelecting) {
         const x = Math.min(event.clientX, dragStart.x);
         const y = Math.min(event.clientY, dragStart.y);
@@ -180,6 +193,36 @@
       }
     }
 
+    function pointFromLastCursorOnCameraPlane(planePoint) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((lastPointer.x - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+      mouse.y = -((lastPointer.y - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+      camera.updateMatrixWorld?.();
+      raycaster.setFromCamera(mouse, camera);
+      const cameraDir = camera.getWorldDirection(new THREE.Vector3()).normalize();
+      const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDir, planePoint);
+      const point = new THREE.Vector3();
+      return raycaster.ray.intersectPlane(plane, point) ? point : null;
+    }
+
+    function extrudeSelectedVertex() {
+      if (vertSelection.length !== 1) return;
+      const sourceIndex = vertSelection[0];
+      const source = vertices[sourceIndex];
+      if (!source) return;
+      let target = pointFromLastCursorOnCameraPlane(source);
+      if (!target || target.distanceTo(source) <= 0.001) {
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+        if (right.lengthSq() < 1e-12) right.set(1, 0, 0);
+        target = source.clone().addScaledVector(right.normalize(), 6);
+      }
+      const newIndex = addVertex(target);
+      addEdge(sourceIndex, newIndex);
+      clearSelection();
+      selectVertex(newIndex);
+      updateInfo();
+    }
+
     function addVertex(pos) {
       const marker = new THREE.Mesh(
         new THREE.SphereGeometry(1.5, 12, 12),
@@ -190,6 +233,7 @@
       markers.push(marker);
       vertices.push(pos.clone());
       updateInfo();
+      return vertices.length - 1;
     }
 
     function selectVertex(i) {
@@ -206,12 +250,62 @@
       vertSelection.forEach(i => markers[i]?.material.color.set(0xff0000)); vertSelection = [];
     }
 
+    function deleteSelectedVertices() {
+      if (!vertSelection.length) return;
+      const removed = new Set(vertSelection);
+      const indexMap = new Map();
+      const nextVertices = [];
+      const nextMarkers = [];
+
+      vertices.forEach((vertex, index) => {
+        if (removed.has(index)) {
+          scene.remove(markers[index]);
+          markers[index]?.geometry?.dispose?.();
+          markers[index]?.material?.dispose?.();
+          return;
+        }
+        indexMap.set(index, nextVertices.length);
+        nextVertices.push(vertex);
+        nextMarkers.push(markers[index]);
+      });
+
+      for (let i = faces.length - 1; i >= 0; i--) {
+        const indices = faces[i].userData.vertexIndices || [];
+        if (indices.some(index => removed.has(index))) {
+          scene.remove(faces[i]);
+          faces[i].geometry?.dispose?.();
+          faces[i].material?.dispose?.();
+          faces.splice(i, 1);
+        } else {
+          faces[i].userData.vertexIndices = indices.map(index => indexMap.get(index));
+        }
+      }
+
+      for (let i = edges.length - 1; i >= 0; i--) {
+        const indices = edges[i].userData.vertexIndices || [];
+        if (indices.some(index => removed.has(index))) {
+          scene.remove(edges[i]);
+          edges[i].geometry?.dispose?.();
+          edges[i].material?.dispose?.();
+          edges.splice(i, 1);
+        } else {
+          edges[i].userData.vertexIndices = indices.map(index => indexMap.get(index));
+        }
+      }
+
+      vertices.length = 0; vertices.push(...nextVertices);
+      markers.length = 0; markers.push(...nextMarkers);
+      vertSelection = [];
+      updateInfo();
+    }
+
     function addEdge(i1, i2) {
       const v1 = vertices[i1], v2 = vertices[i2];
       const geom = new THREE.BufferGeometry().setAttribute(
         'position', new THREE.Float32BufferAttribute([v1.x, v1.y, v1.z, v2.x, v2.y, v2.z], 3)
       );
       const line = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0x00ff00 }));
+      line.userData.vertexIndices = [i1, i2];
       scene.add(line); edges.push(line); updateInfo();
     }
 
@@ -225,6 +319,7 @@
       geom.setIndex([0, 1, 2]);
       geom.computeVertexNormals();
       const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0x9999ff, side: THREE.DoubleSide }));
+      mesh.userData.vertexIndices = idxs.slice();
       scene.add(mesh); faces.push(mesh); updateInfo();
     }
 
