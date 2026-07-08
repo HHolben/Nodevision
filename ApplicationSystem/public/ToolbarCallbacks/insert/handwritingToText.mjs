@@ -2,9 +2,7 @@
 // Opens the handwriting OCR control panel and streams recognized text into the active editor.
 
 import {
-  loadPanelIntoCell,
-  rebuildLayoutDividersForContainer,
-  renderLayout,
+  ensureHandwritingOcrModeLayout,
 } from "/panels/workspace.mjs";
 
 const PANEL_ID = "HandwritingOcrPanel";
@@ -183,75 +181,47 @@ function createLiveTextSink(snapshot) {
   return { apply };
 }
 
-function findHandwritingPanelCell() {
-  return document.querySelector(
-    `.panel-cell[data-id="${PANEL_ID}"], .panel-cell[data-panel-id="${PANEL_ID}"]`
+async function removeLegacyHandwritingPanelRows() {
+  const cleanups = [];
+  document.querySelectorAll(".panel-row--handwriting-control").forEach((row) => {
+    row.querySelectorAll(".panel-cell").forEach((cell) => {
+      if (typeof cell.cleanup === "function") {
+        try {
+          const result = cell.cleanup();
+          if (result?.then) cleanups.push(result.catch((err) => console.warn("Handwriting panel cleanup failed:", err)));
+        } catch (err) {
+          console.warn("Handwriting panel cleanup failed:", err);
+        }
+      }
+    });
+    row.remove();
+  });
+  if (cleanups.length) await Promise.all(cleanups);
+}
+
+function findHandwritingPanelCell(result = null) {
+  return result?.cellsById?.get?.(PANEL_ID) || document.querySelector(
+    ".panel-cell[data-id=\"" + PANEL_ID + "\"], .panel-cell[data-panel-id=\"" + PANEL_ID + "\"]"
   );
 }
 
-function isColumnLayoutContainer(container) {
-  const direction = container?.dataset?.direction;
-  if (direction) return direction === "column";
-  const isVertical = container?.dataset?.isVertical;
-  if (isVertical !== undefined) return isVertical === "1" || isVertical === "true";
-  return true;
-}
+function findEditorCellForElement(editorEl) {
+  const fromEditor = editorEl?.closest?.(".panel-cell");
+  if (fromEditor) return fromEditor;
 
-function ensureHandwritingPanelCell(workspace) {
-  const existing = findHandwritingPanelCell();
-  if (existing) {
-    rebuildLayoutDividersForContainer(existing.parentElement, existing.parentElement?.dataset?.direction === "column");
-    rebuildLayoutDividersForContainer(workspace, true);
-    return existing;
+  const activeCell = window.activeCell?.closest?.(".panel-cell");
+  if (activeCell?.dataset?.panelClass === "EditorPanel" || activeCell?.dataset?.id === "GraphicalEditor") {
+    return activeCell;
   }
 
-  const row = document.createElement("div");
-  row.className = "panel-row panel-row--handwriting-control";
-  Object.assign(row.style, {
-    display: "flex",
-    flexDirection: "row",
-    overflow: "hidden",
-    flex: "0 0 34%",
-    minHeight: "160px",
-    minWidth: "0",
-    alignItems: "stretch",
-  });
-  row.dataset.direction = "row";
-  row.dataset.isVertical = "0";
-  workspace.appendChild(row);
-
-  renderLayout({
-    type: "cell",
-    id: PANEL_ID,
-    panelType: PANEL_ID,
-    panelClass: "ControlPanel",
-    displayName: "Handwriting",
-    flex: "1 1 0",
-    deferLoad: true,
-  }, row);
-
-  rebuildLayoutDividersForContainer(row, false);
-  rebuildLayoutDividersForContainer(workspace, true);
-  return findHandwritingPanelCell();
-}
-
-
-async function loadHandwritingPanel(cell, panelVars) {
-  const previousActiveCell = window.activeCell;
-  window.activeCell = cell;
-  try {
-    await loadPanelIntoCell(PANEL_ID, {
-      id: PANEL_ID,
-      displayName: "Handwriting",
-      ...panelVars,
-    });
-  } finally {
-    window.activeCell = previousActiveCell;
-  }
+  return document.querySelector(
+    `.panel-cell[data-id="GraphicalEditor"], .panel-cell[data-panel-id="GraphicalEditor"]`
+  );
 }
 
 export default async function handwritingToText() {
-  const snapshot = captureSelection(findActiveEditorElement());
+  const editorEl = findActiveEditorElement();
+  const snapshot = captureSelection(editorEl);
   const sink = createLiveTextSink(snapshot);
   const workspace = document.getElementById("workspace");
   if (!workspace) {
@@ -259,7 +229,28 @@ export default async function handwritingToText() {
     return;
   }
 
-  const cell = ensureHandwritingPanelCell(workspace);
+  const editorCell = findEditorCellForElement(editorEl);
+  if (!editorCell) {
+    alert("Open an editor before using handwriting OCR.");
+    return;
+  }
+
+  await removeLegacyHandwritingPanelRows();
+
+  const result = await ensureHandwritingOcrModeLayout({
+    editorCell,
+    panelVars: {
+      liveInsert: true,
+      onLiveText: (text) => {
+        if (!sink.apply(text)) console.warn("handwritingToText: No supported editor found for live text.");
+      },
+      onInsertText: (text) => {
+        if (!sink.apply(text)) console.warn("handwritingToText: No supported editor found to insert text.");
+      },
+    },
+  });
+
+  const cell = findHandwritingPanelCell(result);
   if (!cell) {
     alert("Could not create the Handwriting control panel.");
     return;
@@ -270,22 +261,6 @@ export default async function handwritingToText() {
   window.activePanel = PANEL_ID;
   window.activePanelClass = "ControlPanel";
   window.NodevisionState = window.NodevisionState || {};
-  window.NodevisionState.activePanelType = "ControlPanel";
-  window.highlightActiveCell?.(cell);
-
-  await loadHandwritingPanel(cell, {
-    liveInsert: true,
-    onLiveText: (text) => {
-      if (!sink.apply(text)) console.warn("handwritingToText: No supported editor found for live text.");
-    },
-    onInsertText: (text) => {
-      if (!sink.apply(text)) console.warn("handwritingToText: No supported editor found to insert text.");
-    },
-  });
-
-  window.activeCell = cell;
-  window.activePanel = PANEL_ID;
-  window.activePanelClass = "ControlPanel";
   window.NodevisionState.activePanelType = "ControlPanel";
   window.highlightActiveCell?.(cell);
 }

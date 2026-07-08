@@ -3,10 +3,26 @@
 
 export function applyDirectionalMovement({ THREE, controls, movementState, inputState, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight, allowVerticalMovement = false }) {
   if (!(inputState.moveForward || inputState.moveBackward || inputState.moveLeft || inputState.moveRight)) return;
+  const object = controls.getObject();
   controls.getDirection(forward);
   if (!allowVerticalMovement) forward.y = 0;
+  if (forward.lengthSq() < 1e-8) {
+    object.updateMatrixWorld?.();
+    forward.setFromMatrixColumn(object.matrixWorld, 2).negate();
+    if (!allowVerticalMovement) forward.y = 0;
+  }
+  if (forward.lengthSq() < 1e-8) forward.set(0, 0, -1);
   forward.normalize();
-  right.crossVectors(forward, up).normalize();
+
+  if (allowVerticalMovement) {
+    object.updateMatrixWorld?.();
+    right.setFromMatrixColumn(object.matrixWorld, 0);
+    if (right.lengthSq() < 1e-8) right.set(1, 0, 0).applyQuaternion(object.quaternion);
+  } else {
+    right.crossVectors(forward, up);
+  }
+  if (right.lengthSq() < 1e-8) right.set(1, 0, 0);
+  right.normalize();
 
   const desiredMove = new THREE.Vector3();
   const is2D = movementState.worldMode === "2d";
@@ -31,7 +47,6 @@ export function applyDirectionalMovement({ THREE, controls, movementState, input
 
   const speedMultiplier = crawling ? 0.45 : crouching ? 0.7 : 1;
   desiredMove.normalize().multiplyScalar(speed * speedMultiplier);
-  const object = controls.getObject();
   const nextPosition = object.position.clone().add(desiredMove);
   if (usesSideControls && Number.isFinite(movementState.planeZ)) {
     nextPosition.z = movementState.planeZ;

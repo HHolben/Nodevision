@@ -1048,11 +1048,14 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const minPolar = Number.isFinite(controls.minPolarAngle) ? controls.minPolarAngle : 0;
     const maxPolar = Number.isFinite(controls.maxPolarAngle) ? controls.maxPolarAngle : Math.PI;
 
-    mouseLikeEuler.setFromQuaternion(camera.quaternion);
-    mouseLikeEuler.y -= dx * 0.002 * pointerSpeed;
-    mouseLikeEuler.x -= dy * 0.002 * pointerSpeed;
-    mouseLikeEuler.x = Math.max(halfPi - maxPolar, Math.min(halfPi - minPolar, mouseLikeEuler.x));
-    camera.quaternion.setFromEuler(mouseLikeEuler);
+    const lookScale = 0.002 * pointerSpeed;
+    if (dx !== 0) camera.rotateY(-dx * lookScale);
+    if (dy !== 0) {
+      camera.rotateX(-dy * lookScale);
+      mouseLikeEuler.setFromQuaternion(camera.quaternion, "YXZ");
+      mouseLikeEuler.x = Math.max(halfPi - maxPolar, Math.min(halfPi - minPolar, mouseLikeEuler.x));
+      camera.quaternion.setFromEuler(mouseLikeEuler);
+    }
   }
 
   function isSameWorldTarget(value) {

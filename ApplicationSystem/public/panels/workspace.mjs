@@ -787,7 +787,11 @@ async function importModeLayout({ userModulePath, defaultModulePath, fallbackMod
     try {
       const importPath = `${candidate}${candidate.includes("?") ? "&" : "?"}v=${cacheBust}`;
       const mod = await import(importPath);
-      const layout = mod.default || mod.layout || mod.SVG_EDITOR_MODE_LAYOUT || mod.MID_EDITOR_MODE_LAYOUT;
+      const layout = mod.default
+        || mod.layout
+        || mod.SVG_EDITOR_MODE_LAYOUT
+        || mod.MID_EDITOR_MODE_LAYOUT
+        || mod.HANDWRITING_OCR_MODE_LAYOUT;
       if (layout) return layout;
     } catch (err) {
       lastError = err;
@@ -844,6 +848,38 @@ async function materializeModeLayoutNode(node, { editorCell, cellsById, panelsTo
     });
   }
   return cell;
+}
+
+function cloneModeLayoutWithPanelVars(layout, panelId, panelVars = {}) {
+  const normalizedTarget = normalizePanelIdentifier(panelId) || panelId;
+  const hasPanelVars = panelVars && Object.keys(panelVars).length > 0;
+  if (!layout || !hasPanelVars) return layout;
+
+  const cloneNode = (node) => {
+    if (!node || typeof node !== "object") return node;
+    const clone = { ...node };
+    if (Array.isArray(node.children)) {
+      clone.children = node.children.map(cloneNode);
+    }
+
+    const nodeId = normalizePanelIdentifier(node.id || node.panelType || node.instanceName)
+      || node.id
+      || node.panelType
+      || node.instanceName;
+    const nodePanelType = normalizePanelIdentifier(node.panelType || node.instanceName)
+      || node.panelType
+      || node.instanceName;
+    if (nodeId === normalizedTarget || nodePanelType === normalizedTarget) {
+      clone.forceReload = true;
+      clone.panelVars = {
+        ...(node.panelVars || {}),
+        ...panelVars,
+      };
+    }
+    return clone;
+  };
+
+  return cloneNode(layout);
 }
 
 export async function ensureEditorModeLayout({
@@ -938,6 +974,19 @@ export async function ensureMidEditorModeLayout({ editorCell } = {}) {
     editorCell,
     layout,
     modeId: layout?.id || "MidEditorMode",
+  });
+}
+
+export async function ensureHandwritingOcrModeLayout({ editorCell, panelVars = {} } = {}) {
+  const layout = await importModeLayout({
+    userModulePath: "/UserSettings/ModeLayouts/HandwritingOcrMode.mjs",
+    defaultModulePath: "/Layouts/ModeLayouts/HandwritingOcrMode.mjs",
+  });
+  const layoutWithVars = cloneModeLayoutWithPanelVars(layout, "HandwritingOcrPanel", panelVars);
+  return ensureEditorModeLayout({
+    editorCell,
+    layout: layoutWithVars,
+    modeId: layoutWithVars?.id || "HandwritingOcrMode",
   });
 }
 

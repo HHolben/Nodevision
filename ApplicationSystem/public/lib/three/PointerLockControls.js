@@ -99,14 +99,16 @@ function onMouseMove(event) {
   const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
   const camera = this.camera;
-  _euler.setFromQuaternion(camera.quaternion);
+  const lookScale = 0.002 * this.pointerSpeed;
 
-  _euler.y -= movementX * 0.002 * this.pointerSpeed;
-  _euler.x -= movementY * 0.002 * this.pointerSpeed;
-
-  _euler.x = Math.max(_PI_2 - this.maxPolarAngle, Math.min(_PI_2 - this.minPolarAngle, _euler.x));
-
-  camera.quaternion.setFromEuler(_euler);
+  // Rotate around the camera local axes so look stays relative after roll or pitch.
+  if (movementX !== 0) camera.rotateY(-movementX * lookScale);
+  if (movementY !== 0) {
+    camera.rotateX(-movementY * lookScale);
+    _euler.setFromQuaternion(camera.quaternion, 'YXZ');
+    _euler.x = Math.max(_PI_2 - this.maxPolarAngle, Math.min(_PI_2 - this.minPolarAngle, _euler.x));
+    camera.quaternion.setFromEuler(_euler);
+  }
 
   this.dispatchEvent(_changeEvent);
 }
