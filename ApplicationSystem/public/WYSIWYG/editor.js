@@ -96,13 +96,20 @@ function formatHtml(html) {
 // Function to save file contents with formatted HTML
 function saveFileContents() {
     const editor = document.getElementById('editor');
+    if (!editor) {
+        document.getElementById('errorMessage').textContent = 'Editor not found.';
+        return;
+    }
+
+    const rawContent = editor.innerHTML;
+    const formattedContent = typeof formatHtml === 'function' ? formatHtml(rawContent) : rawContent;
 
     fetch('/api/save', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ path: filePath, content: formattedContent })
+        body: JSON.stringify({ path: filePath, sourcePath: filePath, content: formattedContent })
     })
     .then(response => response.text())
     .then(data => {

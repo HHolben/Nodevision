@@ -51,6 +51,26 @@ function expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, 
   return false;
 }
 
+function boxCutsPlayer(box, nextPosition, playerRadius, playerMinY, playerMaxY) {
+  if (!box) return false;
+  const minX = box.min.x - playerRadius;
+  const maxX = box.max.x + playerRadius;
+  const minZ = box.min.z - playerRadius;
+  const maxZ = box.max.z + playerRadius;
+  const overlapsY = playerMaxY >= box.min.y && playerMinY <= box.max.y;
+  return nextPosition.x >= minX && nextPosition.x <= maxX && nextPosition.z >= minZ && nextPosition.z <= maxZ && overlapsY;
+}
+
+function compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, playerMaxY) {
+  if (collider.target?.visible === false) return false;
+  if (typeof collider.update === "function") collider.update();
+  const boxes = Array.isArray(collider.boxes) ? collider.boxes : [];
+  for (const part of boxes) {
+    if (boxCutsPlayer(part?.box, nextPosition, playerRadius, playerMinY, playerMaxY)) return true;
+  }
+  return false;
+}
+
 export function createCollisionChecker({ colliders, movementState, playerRadius }) {
   return function wouldCollide(nextPosition) {
     if (movementState?.phaseThroughObjects === true) return false;
@@ -58,12 +78,9 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
     const playerMaxY = nextPosition.y;
     for (const collider of colliders) {
       if (collider.type === "box") {
-        const minX = collider.box.min.x - playerRadius;
-        const maxX = collider.box.max.x + playerRadius;
-        const minZ = collider.box.min.z - playerRadius;
-        const maxZ = collider.box.max.z + playerRadius;
-        const overlapsY = playerMaxY >= collider.box.min.y && playerMinY <= collider.box.max.y;
-        if (nextPosition.x >= minX && nextPosition.x <= maxX && nextPosition.z >= minZ && nextPosition.z <= maxZ && overlapsY) return true;
+        if (boxCutsPlayer(collider.box, nextPosition, playerRadius, playerMinY, playerMaxY)) return true;
+      } else if (collider.type === "compound") {
+        if (compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, playerMaxY)) return true;
       } else if (collider.type === "equation-plane") {
         if (collider.target?.visible === false) continue;
         const threshold = playerRadius + Math.max(0.02, Number(collider.thickness) || 0.2) / 2;

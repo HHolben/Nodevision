@@ -121,6 +121,7 @@ saveFile: async () => {
   })();
   const isRasterPath = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "ico"].includes(ext);
   const isRasterMode = ["PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting"].includes(mode);
+  const isSvgPath = ext === "svg";
 
   if (!filePath) {
     console.error("Cannot save: filePath is missing.");
@@ -149,8 +150,12 @@ saveFile: async () => {
   if (svgEditor && window.currentSaveSVG && typeof window.currentSaveSVG === 'function') {
     const editorPath = firstLegacySavePath(window.__nvSvgEditorActivePath);
     if (refuseLegacyMismatchedSave("SVG Editor", editorPath, filePath)) return;
+    if (!isSvgPath) {
+      console.error("Refusing to save SVG Editor buffer into a non-SVG path.", { savePath: filePath });
+      return;
+    }
     console.log("Saving SVG file using Publisher-style editor");
-    window.currentSaveSVG(filePath);
+    await window.currentSaveSVG(filePath);
     return;
   }
 
@@ -158,13 +163,22 @@ saveFile: async () => {
   if (svgEditor) {
     const editorPath = firstLegacySavePath(window.__nvSvgEditorActivePath);
     if (refuseLegacyMismatchedSave("SVG Editor", editorPath, filePath)) return;
+    if (!isSvgPath) {
+      console.error("Refusing to save SVG Editor buffer into a non-SVG path.", { savePath: filePath });
+      return;
+    }
     console.log("Saving SVG file using direct method");
-    const svgContent = svgEditor.outerHTML;
+    const svgSource = svgEditor instanceof SVGElement ? svgEditor : svgEditor.querySelector?.("svg");
+    if (!svgSource) {
+      console.error("Cannot save SVG: SVG editor root is missing an SVG element.");
+      return;
+    }
+    const svgContent = new XMLSerializer().serializeToString(svgSource);
     
     fetch('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, content: svgContent })
+      body: JSON.stringify({ path: filePath, sourcePath: editorPath || filePath, content: svgContent })
     })
     .then(response => response.json())
     .then(data => {
@@ -205,6 +219,7 @@ saveFile: async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         path: filePath,
+        sourcePath: editorPath || filePath,
         content: content,
         encoding: window.currentFileEncoding || 'utf8',
         bom: Boolean(window.currentFileBom)
@@ -228,7 +243,14 @@ saveFile: async () => {
       window.__nvSvgEditorActivePath,
     );
     if (refuseLegacyMismatchedSave("HTML/WYSIWYG Editor", editorPath, filePath)) return;
-    window.saveWYSIWYGFile(filePath);
+    if (isSvgPath && !document.getElementById("svg-editor")) {
+      console.error("Refusing to save HTML/WYSIWYG content into an SVG path.", {
+        editorPath,
+        savePath: filePath,
+      });
+      return;
+    }
+    await window.saveWYSIWYGFile(filePath);
     return;
   }
 
@@ -287,6 +309,7 @@ NewFile: async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         path: filePath,
+        sourcePath: filePath,
         content,
         encoding: window.currentFileEncoding || 'utf8',
         bom: Boolean(window.currentFileBom)

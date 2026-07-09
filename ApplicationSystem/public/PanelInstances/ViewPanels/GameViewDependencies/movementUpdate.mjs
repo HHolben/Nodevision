@@ -56,6 +56,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const doubleClickMs = 350;
   let stlVertexMarkers = [];
   const lastGrabDir = new THREE.Vector3(0, 0, -1);
+  const boundsPickBox = new THREE.Box3();
+  const boundsPickPoint = new THREE.Vector3();
 
   function getFacingDirection(out = new THREE.Vector3()) {
     const ctrlObj = controls?.getObject?.();
@@ -214,14 +216,58 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return objectFileGeometryLoaderPromise;
   }
 
+  function shouldUseBoundsPicking(target) {
+    if (!target?.isMesh) return false;
+    if (target.userData?.objectFileUseBoundsPicking === true) return true;
+    const objectPath = String(target.userData?.objectFilePath || "").toLowerCase().split(/[?#]/)[0];
+    return objectPath.endsWith(".stl");
+  }
+
+  function boundsPickHit(target) {
+    if (!target?.isMesh || target.visible === false) return null;
+    target.updateMatrixWorld?.(true);
+    boundsPickBox.setFromObject(target);
+    if (boundsPickBox.isEmpty()) return null;
+    const point = boundsPickBox.containsPoint(raycaster.ray.origin)
+      ? boundsPickPoint.copy(raycaster.ray.origin)
+      : raycaster.ray.intersectBox(boundsPickBox, boundsPickPoint);
+    if (!point) return null;
+    const distance = raycaster.ray.origin.distanceTo(point);
+    if (!Number.isFinite(distance) || distance > useRangeMax) return null;
+    return {
+      distance,
+      point: point.clone(),
+      object: target,
+      boundsPick: true
+    };
+  }
+
+  function splitBoundsPickCandidates(candidates = []) {
+    const bounds = [];
+    const raycast = [];
+    for (const candidate of candidates) {
+      if (shouldUseBoundsPicking(candidate)) bounds.push(candidate);
+      else raycast.push(candidate);
+    }
+    return { bounds, raycast };
+  }
+
   function getPlacementHit({ maxDistance = useRangeMax } = {}) {
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const objectCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const split = splitBoundsPickCandidates(objectCandidates);
     const candidates = [];
     if (ground?.visible) candidates.push(ground);
-    candidates.push(...objectCandidates);
-    const hits = raycaster.intersectObjects(candidates, false);
-    return hits.find((h) => Number.isFinite(h.distance) && h.distance <= maxDistance && h.object?.visible) || null;
+    candidates.push(...split.raycast);
+    const meshHits = raycaster.intersectObjects(candidates, false);
+    const boundsHits = split.bounds
+      .map(boundsPickHit)
+      .filter(Boolean)
+      .filter((h) => Number.isFinite(h.distance) && h.distance <= maxDistance && h.object?.visible);
+    return meshHits
+      .concat(boundsHits)
+      .filter((h) => Number.isFinite(h.distance) && h.distance <= maxDistance && h.object?.visible)
+      .sort((a, b) => a.distance - b.distance)[0] || null;
   }
 
   function getTerrainPaintHit() {
@@ -337,16 +383,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     obj.position.copy(pos);
     if (grabbedState.rotation) obj.quaternion.copy(grabbedState.rotation);
 
-    const ref = grabbedState.colliderRef;
-    if (ref?.type === "box" && ref.box) {
-      const half = resolveHalfExtents(ref);
-      ref.box.min.set(pos.x - half.x, pos.y - half.y, pos.z - half.z);
-      ref.box.max.set(pos.x + half.x, pos.y + half.y, pos.z + half.z);
-    } else if (ref?.type === "sphere" && ref.center) {
-      ref.center.copy(pos);
-    } else if (ref?.type === "cylinder") {
-      ref.center = pos.clone();
-    }
+    updateColliderForTarget(obj);
   }
 
   function handleGrabScroll(event) {
@@ -511,6 +548,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       const sz = Math.max(0.1, Math.min(50, target.scale.z * (1 + axis.z * delta)));
       target.scale.set(sx, sy, sz);
     }
+    updateColliderForTarget(target);
     e.preventDefault();
   }
 
@@ -640,6 +678,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   function updateColliderForTarget(target) {
     const ref = target?.userData?.colliderRef;
     if (!ref) return;
+    if (ref.type === "compound" && typeof ref.update === "function") {
+      ref.update();
+      return;
+    }
     const pos = target.position;
     if (ref.type === "box" && ref.box) {
       const half = resolveHalfExtents(ref);
@@ -822,6 +864,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       const half = placement.collider.half;
       const colliderRef = {
         type: "box",
+        half: half.clone?.() || half,
         box: new THREE.Box3(
           new THREE.Vector3(placePos.x - half.x, placePos.y - half.y, placePos.z - half.z),
           new THREE.Vector3(placePos.x + half.x, placePos.y + half.y, placePos.z + half.z)
@@ -829,6 +872,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       };
       colliders.push(colliderRef);
       mesh.userData.colliderRef = colliderRef;
+      mesh.userData.objectFileColliderFactory?.(colliderRef);
     }
 
     const inventory = window.VRWorldContext?.inventory;
@@ -972,7 +1016,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const useBindingIsMouse0 = useBinding === "mouse0";
     const use = (!useBindingIsMouse0 && heldKeys[bindings.use]) || heldKeys.r || readGamepadBinding(gp, gpBindings.use) > 0 || rightBumperPressed; // place
     const grab = heldKeys.mouse0; // left click (translate select / grab on double)
-    const stretch = heldKeys.g; // keyboard stretch toggle (double right-click handled separately)
+    const stretch = heldKeys.g || (heldKeys.shift && heldKeys.s); // scale/stretch toggle
     const rotate = heldKeys.mouse2; // right click
     const attackBinding = String(bindings.attack || "").toLowerCase();
     const attackIsMouse = attackBinding === "mouse2" || attackBinding === "mouse1" || attackBinding === "mouse0";
@@ -1508,6 +1552,29 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
           new THREE.Vector3(position.x + shape.half.x, position.y + shape.half.y, position.z + shape.half.z)
         );
         if (boxesPenetrate(newBox, collider.box)) return true;
+      } else if (collider.type === "compound") {
+        if (typeof collider.update === "function") collider.update();
+        const parts = Array.isArray(collider.boxes) ? collider.boxes : [];
+        for (const part of parts) {
+          if (!part?.box) continue;
+          if (shape.type === "box") {
+            const newBox = new THREE.Box3(
+              new THREE.Vector3(position.x - shape.half.x, position.y - shape.half.y, position.z - shape.half.z),
+              new THREE.Vector3(position.x + shape.half.x, position.y + shape.half.y, position.z + shape.half.z)
+            );
+            if (boxesPenetrate(newBox, part.box)) return true;
+          } else if (shape.type === "sphere" || shape.type === "cylinder") {
+            const radius = shape.radius || 0.5;
+            const x = Math.max(part.box.min.x, Math.min(position.x, part.box.max.x));
+            const y = Math.max(part.box.min.y, Math.min(position.y, part.box.max.y));
+            const z = Math.max(part.box.min.z, Math.min(position.z, part.box.max.z));
+            const dx = position.x - x;
+            const dy = position.y - y;
+            const dz = position.z - z;
+            const r = Math.max(0, radius - overlapEpsilon);
+            if (dx * dx + dy * dy + dz * dz < r * r) return true;
+          }
+        }
       } else if (shape.type === "sphere" && collider.type === "sphere") {
         const dx = position.x - collider.center.x;
         const dy = position.y - collider.center.y;
@@ -1765,6 +1832,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       const half = placement.collider.half;
       const colliderRef = {
         type: "box",
+        half: half.clone?.() || half,
         box: new THREE.Box3(
           new THREE.Vector3(placePos.x - half.x, placePos.y - half.y, placePos.z - half.z),
           new THREE.Vector3(placePos.x + half.x, placePos.y + half.y, placePos.z + half.z)
@@ -1772,6 +1840,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       };
       colliders.push(colliderRef);
       mesh.userData.colliderRef = colliderRef;
+      mesh.userData.objectFileColliderFactory?.(colliderRef);
     } else if (placement.collider?.type === "sphere" || placement.collider?.type === "cylinder") {
       const colliderRef = {
         type: "sphere",
@@ -1969,11 +2038,15 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const includeMeasurements = options.includeMeasurements === true;
     const worldCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
     const measureCandidates = includeMeasurements ? getMeasurementVisualsStore().filter((obj) => obj?.isMesh && obj?.visible) : [];
-    const hits = raycaster
-      .intersectObjects(worldCandidates.concat(measureCandidates), false)
+    const split = splitBoundsPickCandidates(worldCandidates);
+    const meshHits = raycaster
+      .intersectObjects(split.raycast.concat(measureCandidates), false)
       .filter((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible);
+    const boundsHits = split.bounds
+      .map(boundsPickHit)
+      .filter(Boolean);
     const planeHits = options.allowInfinitePlanes === false ? [] : getEquationPlaneRayHits();
-    return hits.concat(planeHits).sort((a, b) => a.distance - b.distance)[0] || null;
+    return meshHits.concat(boundsHits, planeHits).sort((a, b) => a.distance - b.distance)[0] || null;
   }
 
   function clearStlVertexMarkers() {
@@ -2054,10 +2127,12 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(target) };
       colliders.push(colliderRef);
       target.userData.colliderRef = colliderRef;
+      target.userData.objectFileColliderFactory?.(colliderRef);
       return;
     }
     if (enabled && existing) {
-      existing.box = new THREE.Box3().setFromObject(target);
+      if (existing.type === "compound" && typeof existing.update === "function") existing.update();
+      else existing.box = new THREE.Box3().setFromObject(target);
     }
   }
 

@@ -2032,6 +2032,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
+            mesh.userData.objectFileColliderFactory?.(colliderRef);
           } else if (def.type === "math-function" && def.collider !== false) {
             const sphere = new THREE.Sphere();
             new THREE.Box3().setFromObject(mesh).getBoundingSphere(sphere);

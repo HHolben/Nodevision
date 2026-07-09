@@ -4047,6 +4047,12 @@ function sameEditorSavePath(a, b) {
   return normalizeEditorSavePath(a) === normalizeEditorSavePath(b);
 }
 
+function isSvgEditorSavePath(pathValue) {
+  const normalized = normalizeEditorSavePath(pathValue).toLowerCase();
+  const name = normalized.split("/").pop() || normalized;
+  return name.endsWith(".svg");
+}
+
 function resolveEditorHookSavePath(editorLabel, editorPath, requestedPath) {
   const targetPath = requestedPath || editorPath;
   if (targetPath && editorPath && !sameEditorSavePath(targetPath, editorPath)) {
@@ -4370,12 +4376,25 @@ export async function renderEditor(filePath, container, options = {}) {
 
     const saveHtmlForPath = async (path) => {
       const targetPath = resolveEditorHookSavePath("HTML/WYSIWYG Editor", filePath, path);
+      if (isSvgEditorSavePath(targetPath)) {
+        throw new Error("HTML/WYSIWYG Editor cannot save HTML content into SVG files.");
+      }
       const content = getHtmlForSave();
-      await fetch("/api/save", {
+      const response = await fetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: targetPath, content }),
+        body: JSON.stringify({ path: targetPath, sourcePath: filePath, content }),
       });
+      if (!response.ok) {
+        let detail = response.statusText || `HTTP ${response.status}`;
+        try {
+          const data = await response.json();
+          detail = data?.error || detail;
+        } catch {
+          // Keep the HTTP status text.
+        }
+        throw new Error(detail);
+      }
       console.log("Saved WYSIWYG file:", targetPath);
     };
 

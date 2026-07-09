@@ -13,6 +13,8 @@ import {
   saveNotebookBackupSettings,
 } from "./fileSaveRoutes/notebookBackups.js";
 import { writePayloadToFile } from "./fileSaveRoutes/writePayload.js";
+import { validateSvgSavePayload } from "./fileSaveRoutes/svgSaveGuard.js";
+import { validateSaveSourcePath } from "./fileSaveRoutes/saveSourceGuard.js";
 
 const BASE_CONTEXT = createServerContext();
 
@@ -28,7 +30,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
       content,
       encoding = 'utf8',
       mimeType,
-      bom = false
+      bom = false,
+      sourcePath
     } = req.body;
 
     if (!relativePath) {
@@ -36,6 +39,24 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     }
     if (content === undefined) {
       return res.status(400).json({ error: "File content is required" });
+    }
+
+    const sourceValidation = validateSaveSourcePath({ relativePath, sourcePath });
+    if (!sourceValidation.ok) {
+      return res.status(409).json({
+        error: sourceValidation.error,
+        code: sourceValidation.code,
+        sourcePath: sourceValidation.sourcePath,
+        targetPath: sourceValidation.targetPath,
+      });
+    }
+
+    const svgValidation = validateSvgSavePayload({ relativePath, content, encoding });
+    if (!svgValidation.ok) {
+      return res.status(400).json({
+        error: svgValidation.error,
+        code: svgValidation.code,
+      });
     }
 
     const filePath = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath });
@@ -54,6 +75,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
         success: true,
         path: relativePath,
         backupCreated: Boolean(backup.backupPath),
+        backupFolder: backup.backupPath ? backup.backupFolder : null,
+        backupPath: backup.backupRelativePath || null,
       });
     } catch (err) {
       if (err?.code === "UNSUPPORTED_ENCODING") {

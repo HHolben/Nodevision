@@ -467,6 +467,7 @@ function buildWorldDefinition({
 
   const finalMeshDefs = shouldFallbackToExistingObjects ? existing.objects : meshDefs;
   const worldRules = movementState?.worldRules || {};
+  const environment = buildEnvironmentMeta(movementState);
   const metadata = {
     ...(existing.metadata || {}),
     source: existing?.metadata?.source || "GameView",
@@ -481,27 +482,42 @@ function buildWorldDefinition({
       allowToolUse: worldRules.allowToolUse === true,
       allowSave: worldRules.allowSave === true
     },
-    environment: buildEnvironmentMeta(movementState)
+    environment
   };
 
   return {
     ...existing,
     worldMode: movementState?.worldMode === "2d" ? "2d" : "3d",
+    environment,
     metadata,
     objects: finalMeshDefs.concat(lightDefs)
   };
 }
 
+function makeWorldDefinitionScript(worldDefinition) {
+  return `<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+${JSON.stringify(worldDefinition, null, 2)}
+</script>`;
+}
+
 function injectWorldDefinitionIntoHtml(html, worldDefinition) {
-  const scriptBlock = `<script type="application/json">\n${JSON.stringify(worldDefinition, null, 2)}\n</script>`;
-  const scriptRegex = /<script\s+type=["']application\/json["']\s*>[\s\S]*?<\/script>/i;
-  if (scriptRegex.test(html)) {
-    return html.replace(scriptRegex, scriptBlock);
+  const scriptBlock = makeWorldDefinitionScript(worldDefinition);
+  const scriptPatterns = [
+    /<script\b(?=[^>]*\bdata-nodevision-meta-world\b)[^>]*>[\s\S]*?<\/script>/i,
+    /<script\b(?=[^>]*\bid=["']nodevision-metaworld["'])[^>]*>[\s\S]*?<\/script>/i,
+    /<script\b(?=[^>]*\btype=["']application\/json["'])[^>]*>[\s\S]*?<\/script>/i
+  ];
+
+  for (const pattern of scriptPatterns) {
+    if (pattern.test(html)) return html.replace(pattern, scriptBlock);
   }
   if (/<\/body>/i.test(html)) {
-    return html.replace(/<\/body>/i, `  ${scriptBlock}\n</body>`);
+    return html.replace(/<\/body>/i, `  ${scriptBlock}
+</body>`);
   }
-  return `${html}\n${scriptBlock}\n`;
+  return `${html}
+${scriptBlock}
+`;
 }
 
 export async function saveCurrentWorldFile({
@@ -530,7 +546,7 @@ export async function saveCurrentWorldFile({
       const saveRes = await fetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: worldPath, content: stlContent })
+        body: JSON.stringify({ path: worldPath, sourcePath: worldPath, content: stlContent })
       });
       const payload = await saveRes.json().catch(() => ({}));
       if (!saveRes.ok || !payload?.success) {
@@ -568,7 +584,7 @@ export async function saveCurrentWorldFile({
     const saveRes = await fetch("/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: worldPath, content: updatedHtml })
+      body: JSON.stringify({ path: worldPath, sourcePath: worldPath, content: updatedHtml })
     });
     const payload = await saveRes.json().catch(() => ({}));
     if (!saveRes.ok || !payload?.success) {

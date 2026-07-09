@@ -1827,6 +1827,7 @@
       },
       body: JSON.stringify({
         path: filePath,
+        sourcePath: filePath,
         content: svgContent
       })
     })

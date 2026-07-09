@@ -143,9 +143,10 @@ export async function backupNotebookFileBeforeSave({ notebookRoot, userSettingsR
   }
 
   let backupPath = null;
+  let backupRelativePath = null;
   if (stat?.isFile?.()) {
-    const backupRelative = backupRelativePathForNotebookPath(relativePath);
-    backupPath = path.join(backupRoot, backupRelative);
+    backupRelativePath = backupRelativePathForNotebookPath(relativePath);
+    backupPath = path.join(backupRoot, backupRelativePath);
     if (!isWithin(backupRoot, backupPath)) throw new Error("Backup path escaped NotebookBackups root");
     if (!isWithin(notebookRoot, filePath)) throw new Error("Saved file path escaped Notebook root");
     await fs.mkdir(path.dirname(backupPath), { recursive: true });
@@ -156,6 +157,8 @@ export async function backupNotebookFileBeforeSave({ notebookRoot, userSettingsR
 
   return {
     backupPath,
+    backupRelativePath,
+    backupFolder: NOTEBOOK_BACKUP_DIRNAME,
     retentionHours: settings.retentionHours,
   };
 }

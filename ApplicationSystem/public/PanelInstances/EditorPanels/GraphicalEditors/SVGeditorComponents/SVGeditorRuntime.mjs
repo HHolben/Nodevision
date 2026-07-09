@@ -3768,11 +3768,21 @@ export async function renderEditor(filePath, container) {
   window.saveWYSIWYGFile = async (path) => {
     const targetPath = resolveEditorHookSavePath("SVG Editor", filePath, path);
     const content = window.getEditorHTML();
-    await fetch("/api/save", {
+    const response = await fetch("/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: targetPath, content })
+      body: JSON.stringify({ path: targetPath, sourcePath: filePath, content })
     });
+    if (!response.ok) {
+      let detail = response.statusText || `HTTP ${response.status}`;
+      try {
+        const data = await response.json();
+        detail = data?.error || detail;
+      } catch {
+        // Keep the HTTP status text.
+      }
+      throw new Error(detail);
+    }
     markDocumentDirty(false);
     setStatus("Saved: " + targetPath);
   };

@@ -142,6 +142,7 @@ h5,Model,ViewHDF5.mjs,ModelFamilyEditor.mjs
 ifc,Model,ViewIFC.mjs,ModelFamilyEditor.mjs
 iges,Model,ViewText.mjs,TextFamilyEditor.mjs
 mesh,Model,ViewText.mjs,TextFamilyEditor.mjs
+mtl,Model,ViewMTL.mjs,MTLeditor.mjs
 obj,Model,ViewOBJ.mjs,ModelFamilyEditor.mjs
 ply,Model,ViewPLY.mjs,ModelFamilyEditor.mjs
 scad,Model,ViewSCAD.mjs,SCADeditor.mjs

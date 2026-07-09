@@ -120,7 +120,7 @@ export async function renderEditor(filePath, container) {
       await fetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: path || filePath, content }),
+        body: JSON.stringify({ path: path || filePath, sourcePath: filePath, content }),
       });
       console.log("Saved CSV file:", path || filePath);
     };

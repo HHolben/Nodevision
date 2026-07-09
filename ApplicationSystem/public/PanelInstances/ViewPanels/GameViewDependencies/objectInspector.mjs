@@ -87,7 +87,9 @@ function applyMaterialType(THREE, target, typeName, colorHex) {
 function syncTargetCollider(THREE, colliders, target) {
   const colliderRef = target?.userData?.colliderRef;
   if (!colliderRef) return;
-  if (colliderRef.type === "box") {
+  if (colliderRef.type === "compound" && typeof colliderRef.update === "function") {
+    colliderRef.update();
+  } else if (colliderRef.type === "box") {
     colliderRef.box = new THREE.Box3().setFromObject(target);
   } else if (colliderRef.type === "equation-plane") {
     syncPlaneColliderRef(THREE, target);
@@ -104,6 +106,7 @@ function addBoxColliderForTarget(THREE, colliders, target) {
   const colliderRef = { type: "box", box };
   colliders.push(colliderRef);
   target.userData.colliderRef = colliderRef;
+  target.userData.objectFileColliderFactory?.(colliderRef);
 }
 
 function removeColliderForTarget(colliders, target) {

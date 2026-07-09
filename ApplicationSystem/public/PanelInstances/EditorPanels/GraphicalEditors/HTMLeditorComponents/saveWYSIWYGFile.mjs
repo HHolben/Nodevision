@@ -30,6 +30,7 @@ export async function saveWYSIWYGFile(filePath) {
   const content =
     typeof window.formatHtml === "function" ? window.formatHtml(raw) : raw;
 
+  const sourcePath = window.__nvWysiwygActivePath || window.__nvHtmlEditorActivePath || window.currentActiveFilePath || filePath;
   console.log("💾 Saving WYSIWYG file:", filePath);
   console.log("📄 Content being sent:", content.slice(0, 300) + "...");
 
@@ -37,7 +38,7 @@ export async function saveWYSIWYGFile(filePath) {
     const response = await fetch("/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: filePath, content }),
+      body: JSON.stringify({ path: filePath, sourcePath, content }),
     });
 
     if (!response.ok) {

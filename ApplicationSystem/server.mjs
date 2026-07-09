@@ -39,6 +39,15 @@ import { registerSoundSettingsRoutes } from "./server/routes/soundSettingsRoutes
 import { registerAppStylesRoutes } from "./server/routes/appStylesRoutes.mjs";
 import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
 import { registerMetaWorldAssetRoutes } from "./server/routes/metaWorldAssetRoutes.mjs";
+import { validateSvgSavePayload } from "./routes/api/fileSaveRoutes/svgSaveGuard.js";
+import { validateSaveSourcePath } from "./routes/api/fileSaveRoutes/saveSourceGuard.js";
+import { isWithin } from "./routes/api/fileSaveRoutes/paths.js";
+import {
+  NOTEBOOK_BACKUP_DIRNAME,
+  backupRelativePathForNotebookPath,
+  loadNotebookBackupSettings,
+  pruneOldNotebookBackups,
+} from "./routes/api/fileSaveRoutes/notebookBackups.js";
 import { registerPeerRoutes } from "./server/routes/peerRoutes.mjs";
 import { registerSyncPanelRoutes } from "./server/routes/syncPanelRoutes.mjs";
 import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
@@ -421,6 +430,39 @@ export default async function createApp(runtimeConfig = {}) {
     });
   });
 
+  async function backupServerDataFileBeforeSave(filePath, relativePath) {
+    const backupRoot = path.join(ctx.userSettingsDir, NOTEBOOK_BACKUP_DIRNAME);
+    const { settings } = await loadNotebookBackupSettings(ctx.userSettingsDir);
+    await fs.mkdir(backupRoot, { recursive: true });
+
+    let stat = null;
+    try {
+      stat = await fs.stat(filePath);
+    } catch (err) {
+      if (err?.code !== 'ENOENT') throw err;
+    }
+
+    let backupPath = null;
+    let backupRelativePath = null;
+    if (stat?.isFile?.()) {
+      backupRelativePath = backupRelativePathForNotebookPath(relativePath);
+      backupPath = path.join(backupRoot, backupRelativePath);
+      if (!isWithin(backupRoot, backupPath)) throw new Error('Backup path escaped NotebookBackups root');
+      if (!isWithin(ctx.serverDataDir, filePath)) throw new Error('ServerData save path escaped ServerData root');
+      await fs.mkdir(path.dirname(backupPath), { recursive: true });
+      await fs.copyFile(filePath, backupPath);
+    }
+
+    await pruneOldNotebookBackups({ backupRoot, retentionHours: settings.retentionHours });
+
+    return {
+      backupPath,
+      backupRelativePath,
+      backupFolder: NOTEBOOK_BACKUP_DIRNAME,
+      retentionHours: settings.retentionHours,
+    };
+  }
+
   app.use(/^\/ServerSettings(\/|$)/i, (req, res) => {
     return res.status(403).json({ error: 'Forbidden' });
   });
@@ -443,6 +485,7 @@ app.use('/api/file', uploadRoutes);
       content,
       encoding = 'utf8',
       bom = false,
+      sourcePath,
     } = req.body || {};
 
     if (content === undefined) {
@@ -461,9 +504,28 @@ app.use('/api/file', uploadRoutes);
       return res.status(400).json({ error: 'Invalid ServerData save path' });
     }
 
+    const sourceValidation = validateSaveSourcePath({ relativePath: normalized, sourcePath });
+    if (!sourceValidation.ok) {
+      return res.status(409).json({
+        error: sourceValidation.error,
+        code: sourceValidation.code,
+        sourcePath: sourceValidation.sourcePath,
+        targetPath: sourceValidation.targetPath,
+      });
+    }
+
+    const svgValidation = validateSvgSavePayload({ relativePath: normalized, content, encoding });
+    if (!svgValidation.ok) {
+      return res.status(400).json({
+        error: svgValidation.error,
+        code: svgValidation.code,
+      });
+    }
+
     const filePath = path.join(ctx.serverDataDir, 'NotebookLoginBackground.svg');
     try {
       await fs.mkdir(ctx.serverDataDir, { recursive: true });
+      const backup = await backupServerDataFileBeforeSave(filePath, 'ServerData/NotebookLoginBackground.svg');
 
       let buf;
       if (encoding === 'base64') {
@@ -478,7 +540,13 @@ app.use('/api/file', uploadRoutes);
       }
 
       await fs.writeFile(filePath, buf);
-      return res.json({ success: true, path: normalized });
+      return res.json({
+        success: true,
+        path: normalized,
+        backupCreated: Boolean(backup.backupPath),
+        backupFolder: backup.backupPath ? backup.backupFolder : null,
+        backupPath: backup.backupRelativePath || null,
+      });
     } catch (err) {
       console.error('Error saving ServerData asset:', err);
       return res.status(500).json({ error: 'Error saving ServerData asset' });

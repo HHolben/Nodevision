@@ -75,9 +75,14 @@ export default async function saveFile(options = {}) {
     const inGraphicalEditor =
       window.NodevisionState?.activePanelType === "GraphicalEditor" ||
       !!document.getElementById("graphical-editor");
+    const svgEditorElement =
+      document.getElementById("svg-editor-root") ||
+      document.getElementById("svg-editor");
+    const activeSvgPath = svgEditorPath();
     const inSvgEditor =
-      !!document.getElementById("svg-editor-root") ||
-      !!document.getElementById("svg-editor");
+      !!svgEditorElement &&
+      (String(mode).toLowerCase().includes("svg") ||
+        (activeSvgPath && sameSavePath(activeSvgPath, filePath)));
     const inMarkdownEditor =
       mode === "MDediting" ||
       !!document.getElementById("markdown-editor") ||
@@ -146,6 +151,7 @@ export default async function saveFile(options = {}) {
       const content = window.monacoEditor.getValue();
       await saveViaApi({
         path: filePath,
+        sourcePath: monacoPath || filePath,
         content,
         encoding: window.currentFileEncoding || "utf8",
         bom: Boolean(window.currentFileBom),
@@ -156,15 +162,48 @@ export default async function saveFile(options = {}) {
       const editorPath = markdownEditorPath();
       if (refuseMismatchedEditorSave("Markdown Editor", editorPath, filePath)) return false;
       const content = window.getEditorMarkdown();
-      await saveViaApi({ path: filePath, content });
+      await saveViaApi({ path: filePath, sourcePath: editorPath || filePath, content });
+      return notifyFileSaved(filePath);
+    }
+    if (inSvgEditor && typeof window.currentSaveSVG === "function") {
+      const editorPath = svgEditorPath();
+      if (refuseMismatchedEditorSave("SVG Editor", editorPath, filePath)) return false;
+      if (fileExt !== "svg") {
+        console.error("[saveFile] Refusing to save SVG Editor buffer into a non-SVG path.", { savePath: filePath });
+        return false;
+      }
+      await window.currentSaveSVG(filePath);
+      return notifyFileSaved(filePath);
+    }
+    if (inSvgEditor) {
+      const editorPath = svgEditorPath();
+      if (refuseMismatchedEditorSave("SVG Editor", editorPath, filePath)) return false;
+      if (fileExt !== "svg") {
+        console.error("[saveFile] Refusing to save SVG Editor buffer into a non-SVG path.", { savePath: filePath });
+        return false;
+      }
+      const svgSource =
+        svgEditorElement instanceof SVGElement
+          ? svgEditorElement
+          : svgEditorElement?.querySelector?.("svg");
+      if (!svgSource) throw new Error("SVG editor root is missing an SVG element.");
+      const svgContent = new XMLSerializer().serializeToString(svgSource);
+      await saveViaApi({ path: filePath, sourcePath: editorPath || filePath, content: svgContent });
       return notifyFileSaved(filePath);
     }
     if (inWysiwygEditor && (activeHtmlContext?.getHTML || typeof window.getEditorHTML === "function")) {
       const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
       if (refuseMismatchedEditorSave("HTML/WYSIWYG Editor", editorPath, filePath)) return false;
+      if (fileExt === "svg") {
+        console.error("[saveFile] Refusing to save HTML/WYSIWYG content into an SVG path.", {
+          editorPath,
+          savePath: filePath,
+        });
+        return false;
+      }
       const getHTML = activeHtmlContext?.getHTML || window.getEditorHTML;
       const content = getHTML();
-      await saveViaApi({ path: filePath, content });
+      await saveViaApi({ path: filePath, sourcePath: editorPath || filePath, content });
       return notifyFileSaved(filePath);
     }
 
@@ -177,12 +216,6 @@ export default async function saveFile(options = {}) {
       await window.currentSaveKML(filePath);
       return notifyFileSaved(filePath);
     }
-    if (inSvgEditor && typeof window.currentSaveSVG === "function") {
-      const editorPath = svgEditorPath();
-      if (refuseMismatchedEditorSave("SVG Editor", editorPath, filePath)) return false;
-      await window.currentSaveSVG(filePath);
-      return notifyFileSaved(filePath);
-    }
     if ((inMarkdownEditor || inGraphicalEditor) && typeof window.saveMDFile === "function") {
       const editorPath = markdownEditorPath();
       if (refuseMismatchedEditorSave("Markdown Editor", editorPath, filePath)) return false;
@@ -192,28 +225,22 @@ export default async function saveFile(options = {}) {
     if ((inWysiwygEditor || inGraphicalEditor) && (activeHtmlContext?.save || typeof window.saveWYSIWYGFile === "function")) {
       const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
       if (refuseMismatchedEditorSave("HTML/WYSIWYG Editor", editorPath, filePath)) return false;
+      if (fileExt === "svg") {
+        console.error("[saveFile] Refusing to save HTML/WYSIWYG content into an SVG path.", {
+          editorPath,
+          savePath: filePath,
+        });
+        return false;
+      }
       if (activeHtmlContext?.save) await activeHtmlContext.save(filePath);
       else await window.saveWYSIWYGFile(filePath);
       return notifyFileSaved(filePath);
     }
 
-    // 3) Generic SVG fallback.
-    if (inSvgEditor) {
-      const svgEditor =
-        document.getElementById("svg-editor-root") ||
-        document.getElementById("svg-editor");
-      const svgContent =
-        svgEditor instanceof SVGElement
-          ? new XMLSerializer().serializeToString(svgEditor)
-          : svgEditor.outerHTML;
-      await saveViaApi({ path: filePath, content: svgContent });
-      return notifyFileSaved(filePath);
-    }
-
-    // 4) Generic text fallback for simple editors.
+    // 3) Generic text fallback for simple editors.
     const markdownEl = document.getElementById("markdown-editor");
     if (markdownEl && "value" in markdownEl) {
-      await saveViaApi({ path: filePath, content: markdownEl.value });
+      await saveViaApi({ path: filePath, sourcePath: filePath, content: markdownEl.value });
       return notifyFileSaved(filePath);
     }
 
