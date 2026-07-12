@@ -21,6 +21,18 @@ import { createPathNodeEditor } from "./PathNodeEditor.mjs";
 import { createSketchModeController } from "./SketchMode.mjs";
 import { createSvgUndoStack } from "./SvgUndoStack.mjs";
 import { createInternalPngController, getImageHref } from "./internalPng.mjs";
+import { getDrawingAssistSettings, readDrawingAssistMetadata, rememberBrushSize, setDrawingAssistSettings, writeDrawingAssistMetadata } from "./DrawingAssistSettings.mjs";
+import { normalizePointerSample } from "./PointerInput.mjs";
+import { stabilizeStroke } from "./StrokeStabilizer.mjs";
+import { createSvgElementFromSpec, recognizeShape, shapeToSvgSpec } from "./ShapeRecognition.mjs";
+import { createShapeCorrectionPreviewController } from "./ShapeCorrectionPreview.mjs";
+import { buildVectorBrushSpec } from "./VectorBrushRenderer.mjs";
+import { getBrushPreset, getBrushPresets as listBrushPresets } from "./VectorBrushPresets.mjs";
+import { createQuickMenuWidget } from "./QuickMenuWidget.mjs";
+import { applyEyedropperSample, createEyedropperIndicator, sampleSvgPaint } from "./EyedropperTool.mjs";
+import { createDrawingGuidesController } from "./DrawingGuides.mjs";
+import { createSymmetryOutputs, expandSymmetryClones } from "./SymmetryGenerator.mjs";
+import { addClipPath, addMask, detachMaskOrClip, releaseClipPath, setMaskOrClipEnabled, useSelectedObjectAsClipPath, useSelectedObjectAsMask } from "./SvgMaskClipCommands.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG_UI_ATTR = "data-nv-editor-ui";
@@ -230,6 +242,11 @@ export async function renderEditor(filePath, container) {
     strokeWidth: "0.1"
   };
 
+  let drawingAssistSettings = setDrawingAssistSettings({
+    ...getDrawingAssistSettings(window),
+    ...(readDrawingAssistMetadata(svgRoot) || {}),
+  }, window);
+
   const toolState = {
     mode: "select",
     drawing: false,
@@ -242,7 +259,7 @@ export async function renderEditor(filePath, container) {
   function syncModeFromToolbarState() {
     const desired = window.NodevisionState?.svgDrawTool;
     if (typeof desired !== "string" || !desired) return false;
-    if (!["select", "line", "freehand", "bezier", "sketch"].includes(desired)) return false;
+    if (!["select", "line", "freehand", "bezier", "sketch", "eyedropper", "eraser"].includes(desired)) return false;
     if (desired === toolState.mode) return false;
     if (toolState.drawing || dragState || marqueeState || lineHandleDragState || resizeState || rotateState) return false;
     setMode(desired);
@@ -259,6 +276,10 @@ export async function renderEditor(filePath, container) {
   let lineHandleDragState = null;
   let resizeState = null;
   let rotateState = null;
+  let freehandStrokeState = null;
+  let freehandRenderRaf = 0;
+  let lastPointerClient = null;
+  let eyedropperHoldState = null;
 
   const overlayLayer = createSvgEl("g", { [SVG_UI_ATTR]: "overlay" });
   overlayLayer.style.pointerEvents = "none";
@@ -380,6 +401,17 @@ export async function renderEditor(filePath, container) {
   overlayLayer.appendChild(lineToolLengthLabel);
   overlayLayer.appendChild(lineToolAngleLabel);
 
+  const brushCursor = createSvgEl("circle", {
+    [SVG_UI_ATTR]: "brush-cursor",
+    "data-nv-brush-cursor": "true",
+    fill: "none",
+    stroke: "rgba(17,24,39,0.72)",
+    "stroke-width": "1",
+    display: "none",
+  });
+  brushCursor.style.pointerEvents = "none";
+  overlayLayer.appendChild(brushCursor);
+
   // === Bezier tool preview ===
   const bezierToolPreviewPath = createSvgEl("path", {
     [SVG_UI_ATTR]: "bezier-tool-preview",
@@ -453,6 +485,40 @@ export async function renderEditor(filePath, container) {
     setStatus,
     notifyChanged: refreshSelectionAfterMutation,
     markDirty: markDocumentDirty,
+  });
+
+  const shapeCorrectionPreview = createShapeCorrectionPreviewController({
+    overlayLayer,
+    createSvgEl,
+    uiAttrName: SVG_UI_ATTR,
+    onCommit: () => commitFreehandStroke({ preferCorrection: true }),
+    onCancel: () => cancelShapeCorrectionPreview(),
+    onRestore: () => restoreOriginalFreehandPreview(),
+  });
+
+  const eyedropperIndicator = createEyedropperIndicator();
+
+  const drawingGuidesController = createDrawingGuidesController({
+    svgRoot,
+    overlayLayer,
+    createSvgEl,
+    getViewBox,
+    uiAttrName: SVG_UI_ATTR,
+    markDirty: markDocumentDirty,
+  });
+  drawingGuidesController.render(drawingAssistSettings);
+
+  const quickMenu = createQuickMenuWidget({
+    actionHandlers: {
+      brush: () => setMode("freehand"),
+      eraser: () => setMode("eraser"),
+      eyedropper: () => setMode("eyedropper"),
+      select: () => setMode("select"),
+      transform: () => setMode("select"),
+      duplicate: () => runSvgSnapshotOperation("duplicate", () => duplicateSelection()),
+      bringForward: () => runSvgSnapshotOperation("bring-forward", () => arrangeSelection("front")),
+      sendBackward: () => runSvgSnapshotOperation("send-backward", () => arrangeSelection("back")),
+    },
   });
 
   const lineToolState = {
@@ -1638,10 +1704,11 @@ export async function renderEditor(filePath, container) {
     }
   }
 
-  function isSelectableElement(el) {
+  function isSelectableElement(el, options = {}) {
     if (!(el instanceof SVGElement)) return false;
     if (el === svgRoot || el === overlayLayer || el === selectionBox || el === marqueeBox) return false;
     if (el.closest(`[${SVG_UI_ATTR}]`)) return false;
+    if (!options.allowLocked && el.closest("[data-nv-locked='true']")) return false;
     const tag = el.tagName.toLowerCase();
     if (["defs", "desc", "metadata", "title"].includes(tag)) return false;
     return true;
@@ -2210,7 +2277,7 @@ export async function renderEditor(filePath, container) {
   function setSelection(elements = [], options = {}) {
     const unique = [];
     elements.forEach((el) => {
-      if (isSelectableElement(el) && !unique.includes(el)) unique.push(el);
+      if (isSelectableElement(el, options) && !unique.includes(el)) unique.push(el);
     });
     if (options.append) {
       const merged = [...selectedElements];
@@ -2229,8 +2296,8 @@ export async function renderEditor(filePath, container) {
     notifySelectionChanged();
   }
 
-  function toggleSelection(el) {
-    if (!isSelectableElement(el)) return;
+  function toggleSelection(el, options = {}) {
+    if (!isSelectableElement(el, options)) return;
     if (selectedElements.includes(el)) {
       selectedElements = selectedElements.filter((x) => x !== el);
     } else {
@@ -2420,12 +2487,372 @@ export async function renderEditor(filePath, container) {
     return true;
   }
 
+  function selectedGraphicsDescendants() {
+    const out = [];
+    selectedElements.forEach((root) => {
+      Array.from(root?.querySelectorAll?.("*") || []).forEach((child) => {
+        if (isSelectableElement(child) && !out.includes(child)) out.push(child);
+      });
+    });
+    return out;
+  }
+
+  function setSelectionLocked(locked = true) {
+    if (!selectedElements.length) return false;
+    selectedElements.forEach((el) => {
+      if (!el) return;
+      if (locked) {
+        el.setAttribute("data-nv-locked", "true");
+        el.style.pointerEvents = "none";
+      } else {
+        el.removeAttribute("data-nv-locked");
+        if (el.style?.pointerEvents === "none") el.style.pointerEvents = "";
+      }
+    });
+    refreshSelectionAfterMutation(locked ? "lock" : "unlock");
+    setStatus(locked ? "Locked selection" : "Unlocked selection");
+    return true;
+  }
+
+  function toggleSelectionLocked() {
+    if (!selectedElements.length) return false;
+    const shouldLock = selectedElements.some((el) => el?.getAttribute?.("data-nv-locked") !== "true");
+    return setSelectionLocked(shouldLock);
+  }
+
+  function selectSelectionContents() {
+    const descendants = selectedGraphicsDescendants();
+    if (!descendants.length) return false;
+    setSelection(descendants, { primary: descendants[0] || null });
+    setStatus("Selected layer/group contents");
+    return descendants;
+  }
+
+  function restoreSoloHiddenElements() {
+    const hidden = Array.from(svgRoot.querySelectorAll("[data-nv-solo-hidden=\"true\"]"));
+    hidden.forEach((el) => {
+      const prevDisplay = el.getAttribute("data-nv-solo-prev-display");
+      if (el.style) el.style.display = prevDisplay || "";
+      el.removeAttribute("data-nv-solo-prev-display");
+      el.removeAttribute("data-nv-solo-hidden");
+    });
+    return hidden.length > 0;
+  }
+
+  function soloSelection() {
+    if (restoreSoloHiddenElements()) {
+      refreshSelectionAfterMutation("solo-off");
+      setStatus("Solo cleared");
+      return true;
+    }
+    if (!selectedElements.length) return false;
+    const selectedSet = new Set(selectedElements);
+    const layers = getLayers();
+    layers.forEach((layer) => {
+      const hasSelection = selectedElements.some((el) => el === layer || layer.contains(el));
+      if (!hasSelection) {
+        layer.setAttribute("data-nv-solo-hidden", "true");
+        layer.setAttribute("data-nv-solo-prev-display", layer.style?.display || "");
+        if (layer.style) layer.style.display = "none";
+        return;
+      }
+      Array.from(layer.children || []).forEach((child) => {
+        if (child.getAttribute?.(SVG_UI_ATTR)) return;
+        const keep = selectedSet.has(child) || selectedElements.some((el) => child.contains?.(el));
+        if (keep) return;
+        child.setAttribute("data-nv-solo-hidden", "true");
+        child.setAttribute("data-nv-solo-prev-display", child.style?.display || "");
+        if (child.style) child.style.display = "none";
+      });
+    });
+    refreshSelectionAfterMutation("solo-on");
+    setStatus("Soloed selection");
+    return true;
+  }
+
   function currentStyleDefaults() {
     return {
       fill: styleState.fill || "#80c0ff",
       stroke: styleState.stroke || "#000000",
       strokeWidth: styleState.strokeWidth || "0.1"
     };
+  }
+
+  function createElementFromSpec(spec) {
+    return createSvgElementFromSpec(createSvgEl, spec);
+  }
+
+  function currentBrushPreset() {
+    return getBrushPreset(drawingAssistSettings.defaultBrushPreset, window.NodevisionVectorBrushPresets || []);
+  }
+
+  function refreshDrawingAssistSettings(patch = {}) {
+    drawingAssistSettings = setDrawingAssistSettings({ ...drawingAssistSettings, ...(patch || {}) }, window);
+    drawingGuidesController.setSettings(drawingAssistSettings);
+    writeDrawingAssistMetadata(svgRoot, drawingAssistSettings);
+    if (lastPointerRoot) updateBrushCursor(lastPointerRoot);
+    return drawingAssistSettings;
+  }
+
+  function stabilizedFreehandSamples(samples = null) {
+    const source = samples || freehandStrokeState?.samples || [];
+    return stabilizeStroke(source, {
+      mode: drawingAssistSettings.stabilizationMode,
+      strength: drawingAssistSettings.stabilizationStrength,
+      smoothing: drawingAssistSettings.smoothing,
+      minimumPointDistance: drawingAssistSettings.minimumPointDistance,
+      curveSimplification: drawingAssistSettings.curveSimplification,
+      preserveCorners: drawingAssistSettings.preserveCorners,
+    }).samples;
+  }
+
+  function updateBrushCursor(rootPoint) {
+    if (!rootPoint || !drawingAssistSettings.showBrushCursor || !["freehand", "eraser"].includes(toolState.mode)) {
+      brushCursor.setAttribute("display", "none");
+      return;
+    }
+    const radius = Math.max(0.05, Number(drawingAssistSettings.brushSize) || 1) / 2;
+    brushCursor.setAttribute("cx", String(rootPoint.x));
+    brushCursor.setAttribute("cy", String(rootPoint.y));
+    brushCursor.setAttribute("r", String(radius));
+    brushCursor.setAttribute("display", "");
+  }
+
+  function clearFreehandHoldTimer() {
+    if (freehandStrokeState?.holdTimer) window.clearTimeout(freehandStrokeState.holdTimer);
+    if (freehandStrokeState) freehandStrokeState.holdTimer = 0;
+  }
+
+  function scheduleFreehandHold() {
+    if (!freehandStrokeState || !drawingAssistSettings.shapeCorrectionEnabled) return;
+    clearFreehandHoldTimer();
+    freehandStrokeState.holdTimer = window.setTimeout(() => {
+      if (!freehandStrokeState || freehandStrokeState.shapeActive) return;
+      triggerShapeCorrectionPreview();
+    }, Math.max(120, Number(drawingAssistSettings.shapeHoldDelayMs) || 450));
+  }
+
+  function renderFreehandPreviewNow() {
+    freehandRenderRaf = 0;
+    const session = freehandStrokeState;
+    if (!session?.previewEl) return;
+    const preset = currentBrushPreset();
+    const spec = buildVectorBrushSpec(session.samples, session.style, drawingAssistSettings, {
+      preset,
+      stabilizedSamples: stabilizedFreehandSamples(session.samples),
+    });
+    if (!spec?.attrs) return;
+    const keep = new Set([SVG_UI_ATTR, "data-nv-freehand-preview"]);
+    Array.from(session.previewEl.attributes || []).forEach((attr) => {
+      if (!keep.has(attr.name)) session.previewEl.removeAttribute(attr.name);
+    });
+    Object.entries(spec.attrs).forEach(([key, value]) => {
+      if (key.startsWith("data-nv-brush")) return;
+      session.previewEl.setAttribute(key, value);
+    });
+    session.previewEl.setAttribute(SVG_UI_ATTR, "freehand-preview");
+    session.previewEl.setAttribute("data-nv-freehand-preview", "true");
+    session.previewEl.setAttribute("pointer-events", "none");
+    if (session.shapeActive) session.previewEl.setAttribute("opacity", "0.38");
+  }
+
+  function scheduleFreehandRender() {
+    if (freehandRenderRaf) return;
+    freehandRenderRaf = window.requestAnimationFrame(renderFreehandPreviewNow);
+  }
+
+  function triggerShapeCorrectionPreview() {
+    const session = freehandStrokeState;
+    if (!session || session.samples.length < 3) return false;
+    const samples = stabilizedFreehandSamples(session.samples);
+    const result = recognizeShape(samples, {
+      sensitivity: drawingAssistSettings.shapeRecognitionSensitivity,
+      minSize: Math.max(0.5, pointerToleranceInSvgUnits(3)),
+    });
+    if (!result?.recognized) return false;
+    session.shapeActive = true;
+    session.shapeResult = result;
+    shapeCorrectionPreview.show(result, session.style, session.shapeOptions || {});
+    renderFreehandPreviewNow();
+    setStatus("Shape correction preview: " + result.type + " (" + Math.round(result.confidence * 100) + "%)");
+    return true;
+  }
+
+  function updateShapeCorrectionFromStroke() {
+    const session = freehandStrokeState;
+    if (!session?.shapeActive) return;
+    const result = recognizeShape(stabilizedFreehandSamples(session.samples), {
+      sensitivity: drawingAssistSettings.shapeRecognitionSensitivity,
+      minSize: Math.max(0.5, pointerToleranceInSvgUnits(3)),
+    });
+    if (!result?.recognized) return;
+    session.shapeResult = result;
+    shapeCorrectionPreview.update(result, session.style);
+  }
+
+  function cleanupFreehandStroke() {
+    clearFreehandHoldTimer();
+    if (freehandRenderRaf) window.cancelAnimationFrame(freehandRenderRaf);
+    freehandRenderRaf = 0;
+    freehandStrokeState?.previewEl?.remove();
+    freehandStrokeState = null;
+    toolState.drawing = false;
+    toolState.tempShape = null;
+    shapeCorrectionPreview.hide();
+  }
+
+  function restoreOriginalFreehandPreview() {
+    if (!freehandStrokeState) return false;
+    freehandStrokeState.shapeActive = false;
+    freehandStrokeState.shapeResult = null;
+    shapeCorrectionPreview.hide();
+    renderFreehandPreviewNow();
+    setStatus("Shape correction canceled; original stroke retained");
+    return true;
+  }
+
+  function cancelShapeCorrectionPreview() {
+    return restoreOriginalFreehandPreview();
+  }
+
+  function appendCommittedElement(el, created) {
+    if (!el) return;
+    const layer = getActiveLayer() || svgRoot;
+    layer.appendChild(el);
+    created.push(el);
+    const symmetry = createSymmetryOutputs(el, {
+      svgRoot,
+      createSvgEl,
+      settings: drawingAssistSettings,
+      getViewBox,
+    });
+    created.push(...symmetry);
+  }
+
+  function commitFreehandStroke(options = {}) {
+    const session = freehandStrokeState;
+    if (!session) return false;
+    const created = [];
+    const useCorrection = options.preferCorrection !== false && session.shapeActive && session.shapeResult?.recognized;
+    if (useCorrection && drawingAssistSettings.preserveOriginalStrokeAfterShapeCorrection) {
+      const originalSpec = buildVectorBrushSpec(session.samples, session.style, drawingAssistSettings, {
+        preset: currentBrushPreset(),
+        stabilizedSamples: stabilizedFreehandSamples(session.samples),
+      });
+      appendCommittedElement(createElementFromSpec(originalSpec), created);
+    }
+    if (useCorrection) {
+      const spec = shapeToSvgSpec(session.shapeResult, session.style, shapeCorrectionPreview.getOptions());
+      const corrected = createElementFromSpec(spec);
+      if (corrected) corrected.setAttribute("data-nv-shape-correction", session.shapeResult.type || "shape");
+      appendCommittedElement(corrected, created);
+    } else {
+      const spec = buildVectorBrushSpec(session.samples, session.style, drawingAssistSettings, {
+        preset: currentBrushPreset(),
+        stabilizedSamples: stabilizedFreehandSamples(session.samples),
+      });
+      appendCommittedElement(createElementFromSpec(spec), created);
+    }
+    cleanupFreehandStroke();
+    if (!created.length) return false;
+    history.pushElementCreate(created);
+    markDocumentDirty(true);
+    setSelection([created[0]], { primary: created[0] });
+    setStatus(useCorrection ? "Corrected shape committed" : "Brush stroke committed");
+    return true;
+  }
+
+  function cancelFreehandStroke() {
+    cleanupFreehandStroke();
+    setStatus("Stroke canceled");
+    return true;
+  }
+
+  function startFreehandStroke(event, rootPoint) {
+    const style = currentStyleDefaults();
+    const point = drawingGuidesController.snapPoint(rootPoint);
+    const sample = normalizePointerSample(event, point, null, drawingAssistSettings);
+    if (!sample) return false;
+    const previewEl = createSvgEl("path", {
+      [SVG_UI_ATTR]: "freehand-preview",
+      "data-nv-freehand-preview": "true",
+      d: "M " + sample.x + " " + sample.y,
+      fill: "none",
+      stroke: style.stroke,
+      "stroke-width": String(drawingAssistSettings.brushSize || style.strokeWidth || 1),
+    });
+    previewEl.style.pointerEvents = "none";
+    overlayLayer.appendChild(previewEl);
+    freehandStrokeState = {
+      pointerId: event.pointerId,
+      samples: [sample],
+      previewEl,
+      style,
+      shapeActive: false,
+      shapeResult: null,
+      shapeOptions: {},
+      holdTimer: 0,
+    };
+    toolState.drawing = true;
+    toolState.tempShape = previewEl;
+    scheduleFreehandHold();
+    scheduleFreehandRender();
+    return true;
+  }
+
+  function appendFreehandSample(event, rootPoint) {
+    const session = freehandStrokeState;
+    if (!session || session.pointerId !== event.pointerId) return false;
+    const point = drawingGuidesController.snapPoint(rootPoint);
+    const previous = session.samples[session.samples.length - 1] || null;
+    const sample = normalizePointerSample(event, point, previous, drawingAssistSettings);
+    if (!sample) return false;
+    const moved = !previous || Math.hypot(sample.x - previous.x, sample.y - previous.y) > Math.max(0.05, pointerToleranceInSvgUnits(2));
+    if (moved) {
+      session.samples.push(sample);
+      if (session.shapeActive) updateShapeCorrectionFromStroke();
+      scheduleFreehandHold();
+    } else {
+      session.samples[session.samples.length - 1] = sample;
+    }
+    scheduleFreehandRender();
+    return true;
+  }
+
+
+  function cancelEyedropperHold() {
+    if (eyedropperHoldState?.timer) window.clearTimeout(eyedropperHoldState.timer);
+    eyedropperHoldState = null;
+  }
+
+  function scheduleEyedropperHold(event, target, rootPoint) {
+    if (!drawingAssistSettings.gestureLongPressEyedropper || !target || toolState.mode !== "select") return false;
+    const sampleTarget = target;
+    const start = { x: rootPoint.x, y: rootPoint.y, clientX: event.clientX, clientY: event.clientY };
+    cancelEyedropperHold();
+    eyedropperHoldState = {
+      pointerId: event.pointerId,
+      start,
+      target: sampleTarget,
+      timer: window.setTimeout(() => {
+        if (!eyedropperHoldState || eyedropperHoldState.pointerId !== event.pointerId) return;
+        const sample = sampleSvgPaint(sampleTarget);
+        if (sample && applyEyedropperSample(window.SVGEditorContext, sample, drawingAssistSettings.eyedropperTarget)) {
+          eyedropperIndicator.show(start.clientX, start.clientY, sample);
+          setStatus("Sampled SVG paint");
+        }
+        cancelEyedropperHold();
+      }, Math.max(180, Number(drawingAssistSettings.shapeHoldDelayMs) || 450)),
+    };
+    return true;
+  }
+
+  function cancelEyedropperHoldIfMoved(rootPoint) {
+    if (!eyedropperHoldState || !rootPoint) return;
+    const start = eyedropperHoldState.start;
+    if (Math.hypot(rootPoint.x - start.x, rootPoint.y - start.y) > Math.max(0.05, pointerToleranceInSvgUnits(4))) {
+      cancelEyedropperHold();
+    }
   }
 
   function applyCurrentStyleToSelection() {
@@ -2725,6 +3152,9 @@ export async function renderEditor(filePath, container) {
   }
 
   function setMode(mode) {
+    if (toolState.mode === "freehand" && mode !== "freehand" && freehandStrokeState) {
+      cancelFreehandStroke();
+    }
     if (toolState.mode === "sketch" && mode !== "sketch") {
       sketchController.onModeExit();
     }
@@ -2742,7 +3172,7 @@ export async function renderEditor(filePath, container) {
     if (mode !== "select" && nodeEditor.isActive?.()) {
       nodeEditor.exit?.();
     }
-    if (["select", "line", "freehand", "bezier", "sketch"].includes(mode)) {
+    if (["select", "line", "freehand", "bezier", "sketch", "eyedropper", "eraser"].includes(mode)) {
       window.NodevisionState = window.NodevisionState || {};
       window.NodevisionState.svgDrawTool = mode;
     }
@@ -2757,12 +3187,14 @@ export async function renderEditor(filePath, container) {
       sketchController.onModeEnter();
     }
     const cursor = mode === "select" ? "default" : "crosshair";
-    svgRoot.style.cursor = cursor;
+    svgRoot.style.cursor = mode === "eyedropper" ? "copy" : (mode === "eraser" ? "not-allowed" : cursor);
+    updateBrushCursor(lastPointerRoot);
     try {
       wrapper.focus({ preventScroll: true });
     } catch {
       try {
         wrapper.focus();
+
       } catch {
         // ignore
       }
@@ -3156,6 +3588,41 @@ export async function renderEditor(filePath, container) {
   wrapper.addEventListener("keydown", (e) => {
     const key = String(e.key || "");
     const meta = e.ctrlKey || e.metaKey;
+    if (freehandStrokeState) {
+      if (key === "Escape") {
+        if (freehandStrokeState.shapeActive) restoreOriginalFreehandPreview();
+        else cancelFreehandStroke();
+        e.preventDefault();
+        return;
+      }
+      if (key === "Enter" && freehandStrokeState.shapeActive) {
+        commitFreehandStroke({ preferCorrection: true });
+        e.preventDefault();
+        return;
+      }
+      if (meta && key.toLowerCase() === "z") {
+        restoreOriginalFreehandPreview();
+        e.preventDefault();
+        return;
+      }
+    }
+    const shortcut = String(drawingAssistSettings.quickMenuShortcut || "q").toLowerCase();
+    if (!meta && !e.altKey && !e.shiftKey && key.toLowerCase() === shortcut) {
+      const rect = svgRoot.getBoundingClientRect();
+      quickMenu.show(lastPointerClient?.x || rect.left + 40, lastPointerClient?.y || rect.top + 40, drawingAssistSettings);
+      e.preventDefault();
+      return;
+    }
+    if (!meta && !e.altKey && (key === "[" || key === "]")) {
+      const delta = key === "]" ? 1 : -1;
+      const factor = e.shiftKey ? 4 : 1;
+      const nextSize = Math.max(0.1, (Number(drawingAssistSettings.brushSize) || 1) + delta * factor);
+      drawingAssistSettings = rememberBrushSize(nextSize, window);
+      writeDrawingAssistMetadata(svgRoot, drawingAssistSettings);
+      updateBrushCursor(lastPointerRoot);
+      e.preventDefault();
+      return;
+    }
     if (toolState.mode === "sketch" && meta && key.toLowerCase() === "z") {
       if (!e.shiftKey) sketchController.undoLastStroke();
       e.preventDefault();
@@ -3249,24 +3716,24 @@ export async function renderEditor(filePath, container) {
       return;
     }
     if (key.toLowerCase() === "v" && meta) {
-      if (pasteSelection().length) e.preventDefault();
+      if (runSvgSnapshotOperation("paste-selection", () => pasteSelection()).length) e.preventDefault();
       return;
     }
     if (key === "Delete" || key === "Backspace") {
-      if (deleteSelection()) e.preventDefault();
+      if (runSvgSnapshotOperation("delete-selection", () => deleteSelection())) e.preventDefault();
       return;
     }
     if (key.toLowerCase() === "d" && meta) {
-      duplicateSelection();
+      runSvgSnapshotOperation("duplicate-selection", () => duplicateSelection());
       e.preventDefault();
       return;
     }
     if (key.startsWith("Arrow")) {
       const step = e.shiftKey ? 10 : 1;
-      if (key === "ArrowLeft") moveSelectionBy(-step, 0);
-      if (key === "ArrowRight") moveSelectionBy(step, 0);
-      if (key === "ArrowUp") moveSelectionBy(0, -step);
-      if (key === "ArrowDown") moveSelectionBy(0, step);
+      if (key === "ArrowLeft") runSvgSnapshotOperation("move-selection", () => moveSelectionBy(-step, 0));
+      if (key === "ArrowRight") runSvgSnapshotOperation("move-selection", () => moveSelectionBy(step, 0));
+      if (key === "ArrowUp") runSvgSnapshotOperation("move-selection", () => moveSelectionBy(0, -step));
+      if (key === "ArrowDown") runSvgSnapshotOperation("move-selection", () => moveSelectionBy(0, step));
       e.preventDefault();
     }
   });
@@ -3275,7 +3742,17 @@ export async function renderEditor(filePath, container) {
     syncModeFromToolbarState();
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
     lastPointerRoot = p;
+    lastPointerClient = { x: e.clientX, y: e.clientY };
+    quickMenu.cancelLongPress();
     wrapper.focus();
+    const barrelQuickMenu = e.pointerType === "pen" && drawingAssistSettings.gestureBarrelButtonQuickMenu && ((e.buttons & 32) || e.button === 5);
+    const rightQuickMenu = e.button === 2 && drawingAssistSettings.gestureRightClickQuickMenu;
+    if ((barrelQuickMenu || rightQuickMenu) && !toolState.drawing) {
+      quickMenu.show(e.clientX, e.clientY, drawingAssistSettings);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (toolState.mode !== "sketch" && nodeEditor.isActive?.() && nodeEditor.onPointerDown?.(e, e.target, p)) return;
 
     if (toolState.mode === "select") {
@@ -3287,6 +3764,7 @@ export async function renderEditor(filePath, container) {
         target = null;
       }
       if (target && isSelectableElement(target)) {
+        scheduleEyedropperHold(e, target, p);
         const additiveSelection = e.ctrlKey || e.metaKey;
         if (additiveSelection) {
           toggleSelection(target);
@@ -3323,6 +3801,7 @@ export async function renderEditor(filePath, container) {
         return;
       }
 
+      quickMenu.scheduleLongPress(e, drawingAssistSettings, () => e.button === 0 && !toolState.drawing);
       const additiveMarquee = e.shiftKey || e.ctrlKey || e.metaKey;
       marqueeState = {
         pointerId: e.pointerId,
@@ -3395,16 +3874,46 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
+    if (toolState.mode === "eyedropper") {
+      const target = e.target instanceof SVGElement ? e.target : null;
+      const sample = sampleSvgPaint(target);
+      if (sample && applyEyedropperSample(window.SVGEditorContext, sample, drawingAssistSettings.eyedropperTarget)) {
+        eyedropperIndicator.show(e.clientX, e.clientY, sample);
+        setStatus("Sampled SVG paint");
+      } else {
+        setStatus("No SVG paint to sample");
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    if (toolState.mode === "eraser") {
+      const hit = findNearestGeometryAtPoint(p, pointerToleranceInSvgUnits(Math.max(8, Number(drawingAssistSettings.brushSize) || 8)));
+      const target = hit || (e.target instanceof SVGElement && isSelectableElement(e.target) ? e.target : null);
+      if (!target) {
+        setStatus("Eraser: no SVG object under pointer");
+      } else if (drawingAssistSettings.eraserMode && drawingAssistSettings.eraserMode !== "delete-object") {
+        setStatus("This eraser mode is scaffolded; falling back to object delete for unsupported SVG geometry");
+        history.pushElementRemoval(target);
+        target.remove();
+        clearSelection();
+        markDocumentDirty(true);
+      } else {
+        history.pushElementRemoval(target);
+        target.remove();
+        clearSelection();
+        markDocumentDirty(true);
+        setStatus("Deleted SVG object");
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     if (toolState.mode === "freehand") {
-      const style = currentStyleDefaults();
-      toolState.drawing = true;
-      toolState.tempShape = createSvgEl("path", {
-        d: `M ${p.x} ${p.y}`,
-        fill: "none",
-        stroke: style.stroke,
-        "stroke-width": style.strokeWidth
-      });
-      appendElement(toolState.tempShape);
+      if (!startFreehandStroke(e, p)) return;
+      clearSelection();
       try {
         svgRoot.setPointerCapture(e.pointerId);
       } catch {
@@ -3414,11 +3923,16 @@ export async function renderEditor(filePath, container) {
       e.stopPropagation();
       return;
     }
+
   });
 
   svgRoot.addEventListener("pointermove", (e) => {
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
     lastPointerRoot = p;
+    lastPointerClient = { x: e.clientX, y: e.clientY };
+    quickMenu.onPointerMove(e);
+    updateBrushCursor(p);
+    cancelEyedropperHoldIfMoved(p);
     if (toolState.mode === "select" && nodeEditor.onPointerMove?.(e)) return;
 
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
@@ -3607,15 +4121,18 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
-    if (!toolState.drawing || !toolState.tempShape) return;
-    if (toolState.mode === "freehand") {
-      const d = toolState.tempShape.getAttribute("d") || "";
-      toolState.tempShape.setAttribute("d", `${d} L ${p.x} ${p.y}`);
+    if (toolState.mode === "freehand" && freehandStrokeState) {
+      appendFreehandSample(e, p);
+      e.preventDefault();
+      return;
     }
+    if (!toolState.drawing || !toolState.tempShape) return;
     e.preventDefault();
   });
 
   svgRoot.addEventListener("pointerup", (e) => {
+    quickMenu.cancelLongPress();
+    cancelEyedropperHold();
     if (toolState.mode !== "sketch" && nodeEditor.onPointerUp?.(e)) return;
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
       lineHandleDragState = null;
@@ -3685,6 +4202,17 @@ export async function renderEditor(filePath, container) {
       e.preventDefault();
       return;
     }
+    if (toolState.mode === "freehand" && freehandStrokeState?.pointerId === e.pointerId) {
+      appendFreehandSample(e, toSvgPoint(svgRoot, e.clientX, e.clientY));
+      commitFreehandStroke({ preferCorrection: true });
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      e.preventDefault();
+      return;
+    }
     if (!toolState.drawing) return;
 
     toolState.drawing = false;
@@ -3698,6 +4226,17 @@ export async function renderEditor(filePath, container) {
   });
 
   svgRoot.addEventListener("pointercancel", (e) => {
+    quickMenu.cancelLongPress();
+    cancelEyedropperHold();
+    if (toolState.mode === "freehand" && freehandStrokeState?.pointerId === e.pointerId) {
+      cancelFreehandStroke();
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      return;
+    }
     if (toolState.mode === "sketch") {
       const endRoot = toSvgPoint(svgRoot, e.clientX, e.clientY);
       if (!sketchController.onPointerUp(e, endRoot)) return;
@@ -3760,6 +4299,11 @@ export async function renderEditor(filePath, container) {
     svgRoot.id = "svg-editor";
     svgRoot.setAttribute("xmlns", SVG_NS);
     ensureSvgSizeAttrs(svgRoot);
+    drawingAssistSettings = setDrawingAssistSettings({
+      ...getDrawingAssistSettings(window),
+      ...(readDrawingAssistMetadata(svgRoot) || {}),
+    }, window);
+    drawingGuidesController.render(drawingAssistSettings);
     clearSelection();
     updateSvgRulers();
     markDocumentDirty(false);
@@ -3787,12 +4331,82 @@ export async function renderEditor(filePath, container) {
     setStatus("Saved: " + targetPath);
   };
 
+  function runSvgSnapshotOperation(label, operation) {
+    const before = window.getEditorHTML?.() || "";
+    const result = operation?.();
+    const after = window.getEditorHTML?.() || "";
+    if (!result || before === after) return result;
+    history.pushCustom({
+      kind: label || "svg-operation",
+      undo: () => {
+        window.setEditorHTML?.(before);
+        return { label };
+      },
+      redo: () => {
+        window.setEditorHTML?.(after);
+        return { label };
+      },
+    });
+    markDocumentDirty(true);
+    refreshSelectionAfterMutation(label || "svg-operation");
+    return result;
+  }
+
   window.selectSVGElement = selectElement;
   window.toggleSVGElementSelection = toggleSelection;
   window.SVGEditorContext = {
     svgRoot,
     layers: layersMgr,
     setMode,
+    recordSvgSnapshot(label, operation) {
+      return runSvgSnapshotOperation(label, operation);
+    },
+    getDrawingAssistSettings() {
+      return { ...drawingAssistSettings };
+    },
+    setDrawingAssistSettings(patch = {}) {
+      return refreshDrawingAssistSettings(patch);
+    },
+    getBrushPresets() {
+      return listBrushPresets(window.NodevisionVectorBrushPresets || []);
+    },
+    getCurrentBrushPreset() {
+      return currentBrushPreset();
+    },
+    showQuickMenu(clientX = null, clientY = null) {
+      const rect = svgRoot.getBoundingClientRect();
+      quickMenu.show(clientX ?? rect.left + 48, clientY ?? rect.top + 48, drawingAssistSettings);
+    },
+    insertGuidesIntoSvg() {
+      return runSvgSnapshotOperation("insert-guides", () => drawingGuidesController.insertGuidesIntoSvg());
+    },
+    expandSymmetrySelection() {
+      return runSvgSnapshotOperation("expand-symmetry", () => expandSymmetryClones(selectedElements));
+    },
+    addMask() {
+      return runSvgSnapshotOperation("add-mask", () => addMask(svgRoot, selectedElements.length ? selectedElements : [getActiveLayer()].filter(Boolean)));
+    },
+    addClippingPath() {
+      return runSvgSnapshotOperation("add-clip-path", () => addClipPath(svgRoot, selectedElements.length ? selectedElements : [getActiveLayer()].filter(Boolean)));
+    },
+    useSelectedObjectAsMask() {
+      return runSvgSnapshotOperation("use-selected-mask", () => useSelectedObjectAsMask(svgRoot, selectedElements));
+    },
+    useSelectedObjectAsClippingPath() {
+      return runSvgSnapshotOperation("use-selected-clip-path", () => useSelectedObjectAsClipPath(svgRoot, selectedElements));
+    },
+    disableSelectedMaskOrClip(attr = "mask") {
+      return runSvgSnapshotOperation("disable-mask-clip", () => setMaskOrClipEnabled(selectedElements, attr, false));
+    },
+    enableSelectedMaskOrClip(attr = "mask") {
+      return runSvgSnapshotOperation("enable-mask-clip", () => setMaskOrClipEnabled(selectedElements, attr, true));
+    },
+    detachSelectedMaskOrClip(attr = "mask") {
+      return runSvgSnapshotOperation("detach-mask-clip", () => detachMaskOrClip(svgRoot, selectedElements, attr));
+    },
+    releaseSelectedClipPath() {
+      return runSvgSnapshotOperation("release-clip-path", () => releaseClipPath(svgRoot, selectedElements));
+    },
     insertShape,
     insertInternalPng,
     insertImageFromInsertion,
@@ -3876,7 +4490,20 @@ export async function renderEditor(filePath, container) {
       return sketchController.getPredictionMode();
     },
     beginSketchFocalPointPlacement() {
-      return sketchController.beginFocalPointPlacement();
+      const begin = sketchController.beginFocalPointPlacement || sketchController.beginSetFocalPoint;
+      return typeof begin === "function" ? begin.call(sketchController) : false;
+    },
+    setSketchMirrorX(value, options = {}) {
+      return sketchController.setMirrorX(value, options);
+    },
+    setSketchMirrorY(value, options = {}) {
+      return sketchController.setMirrorY(value, options);
+    },
+    getSketchMirrorX() {
+      return sketchController.getMirrorX();
+    },
+    getSketchMirrorY() {
+      return sketchController.getMirrorY();
     },
     endSketchCurveAndStartNew() {
       return sketchController.endCurveAndStartNew();
@@ -3938,6 +4565,8 @@ export async function renderEditor(filePath, container) {
         keepConstruction: sketchController.getKeepConstruction(),
         enableSketchStrokeOrderColors: sketchController.getStrokeOrderColorsEnabled(),
         predictionMode: sketchController.getPredictionMode(),
+        mirrorX: sketchController.getMirrorX(),
+        mirrorY: sketchController.getMirrorY(),
         previewCount: previews.length,
         activePreviewId: sketchController.getActiveSketchPreviewId(),
         drawing: sketchController.isDrawing(),
@@ -3946,10 +4575,14 @@ export async function renderEditor(filePath, container) {
     applyCurrentStyleToSelection,
     setFillColor(value) {
       styleState.fill = String(value || styleState.fill || "#80c0ff");
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.svgLastEditedPaint = "fill";
       if (selectedElement) selectedElement.setAttribute("fill", styleState.fill);
     },
     setStrokeColor(value) {
       styleState.stroke = String(value || styleState.stroke || "#000000");
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.svgLastEditedPaint = "stroke";
       if (selectedElement) selectedElement.setAttribute("stroke", styleState.stroke);
     },
     setStrokeWidth(value) {
@@ -3967,16 +4600,38 @@ export async function renderEditor(filePath, container) {
     getLayers,
     getActiveLayer,
     setActiveLayer,
-    createLayer,
-    renameActiveLayer,
-    deleteActiveLayer,
+    createLayer(name = null) {
+      return runSvgSnapshotOperation("create-layer", () => createLayer(name));
+    },
+    renameActiveLayer(name) {
+      return runSvgSnapshotOperation("rename-layer", () => renameActiveLayer(name));
+    },
+    deleteActiveLayer() {
+      return runSvgSnapshotOperation("delete-layer", () => deleteActiveLayer());
+    },
     stepActiveLayer,
-    moveActiveLayer,
-    setActiveLayerVisible,
-    toggleActiveLayerVisible,
+    moveActiveLayer(direction = 1) {
+      return runSvgSnapshotOperation("move-layer", () => moveActiveLayer(direction));
+    },
+    setActiveLayerVisible(visible) {
+      return runSvgSnapshotOperation("layer-visibility", () => setActiveLayerVisible(visible));
+    },
+    toggleActiveLayerVisible() {
+      return runSvgSnapshotOperation("layer-visibility", () => toggleActiveLayerVisible());
+    },
     clearSelection,
     setSelection,
     toggleSelection,
+    lockSelection(locked = true) {
+      return runSvgSnapshotOperation(locked ? "lock-selection" : "unlock-selection", () => setSelectionLocked(locked));
+    },
+    toggleSelectionLocked() {
+      return runSvgSnapshotOperation("toggle-selection-lock", () => toggleSelectionLocked());
+    },
+    soloSelection() {
+      return runSvgSnapshotOperation("solo-selection", () => soloSelection());
+    },
+    selectSelectionContents,
     getSelectedElements() {
       return [...selectedElements];
     },
@@ -4017,15 +4672,31 @@ export async function renderEditor(filePath, container) {
     notifyElementChanged(reason = "properties") {
       refreshSelectionAfterMutation(reason);
     },
-    moveSelectionBy,
-    deleteSelection,
-    duplicateSelection,
+    moveSelectionBy(dx, dy) {
+      return runSvgSnapshotOperation("move-selection", () => moveSelectionBy(dx, dy));
+    },
+    deleteSelection() {
+      return runSvgSnapshotOperation("delete-selection", () => deleteSelection());
+    },
+    duplicateSelection(offsetX = 20, offsetY = 20) {
+      return runSvgSnapshotOperation("duplicate-selection", () => duplicateSelection(offsetX, offsetY));
+    },
     copySelection,
-    pasteSelection,
-    alignSelection,
-    arrangeSelection,
-    groupSelection,
-    ungroupSelection,
+    pasteSelection(offsetX = 20, offsetY = 20) {
+      return runSvgSnapshotOperation("paste-selection", () => pasteSelection(offsetX, offsetY));
+    },
+    alignSelection(mode = "left") {
+      return runSvgSnapshotOperation("align-selection", () => alignSelection(mode));
+    },
+    arrangeSelection(mode = "front") {
+      return runSvgSnapshotOperation("arrange-selection", () => arrangeSelection(mode));
+    },
+    groupSelection() {
+      return runSvgSnapshotOperation("group-selection", () => groupSelection());
+    },
+    ungroupSelection() {
+      return runSvgSnapshotOperation("ungroup-selection", () => ungroupSelection());
+    },
     selectAll() {
       setSelection(getSelectableElements());
       setStatus(`Selected ${selectedElements.length} element(s)`);
@@ -4043,5 +4714,6 @@ export async function renderEditor(filePath, container) {
   }
 
   setMode(window.NodevisionState?.svgDrawTool || "select");
+  window.dispatchEvent(new CustomEvent("nv-svg-editor-context-ready", { detail: { filePath, context: window.SVGEditorContext } }));
   console.log("SVG editor loaded for:", filePath);
 }

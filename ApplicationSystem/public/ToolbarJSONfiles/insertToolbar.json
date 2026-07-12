@@ -41,6 +41,19 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Bone",
+      "callbackKey": "glbInsertBone",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertBone": true
+      },
+      "icon": "icons/3Dmodel.png",
+      "shortLabel": "Bone"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "SCAD Primitive",
       "modes": ["SCADediting"],
       "preventDropdown": true,

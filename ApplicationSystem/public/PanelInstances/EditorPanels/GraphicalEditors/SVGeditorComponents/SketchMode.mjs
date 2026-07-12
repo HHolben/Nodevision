@@ -32,15 +32,36 @@ function safeBool(value, fallback = false) {
 }
 
 const NORMAL_SKETCH_STROKE_COLOR = "#808080";
-const SKETCH_PREDICTION_MODES = new Set(["raw", "shape", "curve", "function-curve", "irregular-shape"]);
+const IRREGULAR_SHAPE_AVERAGING_MODE = "irregular-shape-averaging";
+const IRREGULAR_SHAPE_OVERRIDING_MODE = "irregular-shape-overriding";
+const IRREGULAR_SHAPE_MODES = new Set([IRREGULAR_SHAPE_AVERAGING_MODE, IRREGULAR_SHAPE_OVERRIDING_MODE]);
+const SKETCH_PREDICTION_MODES = new Set(["raw", "shape", "curve", "function-curve", IRREGULAR_SHAPE_AVERAGING_MODE, IRREGULAR_SHAPE_OVERRIDING_MODE]);
 const DEFAULT_SKETCH_PREDICTION_MODE = "shape";
 
 function normalizePredictionMode(value) {
   const mode = String(value || "").trim().toLowerCase();
   if (mode === "raw-pencil") return "raw";
-  if (mode === "irregular" || mode === "blob" || mode === "organic-shape") return "irregular-shape";
   if (mode === "graph-curve" || mode === "function" || mode === "function curve") return "function-curve";
+  if (
+    mode === "irregular" ||
+    mode === "irregular-shape" ||
+    mode === "irregular shape" ||
+    mode === "irregular-shape-averaging" ||
+    mode === "irregular shape: averaging" ||
+    mode === "blob" ||
+    mode === "organic-shape" ||
+    mode === "radial-shape"
+  ) {
+    return IRREGULAR_SHAPE_AVERAGING_MODE;
+  }
+  if (mode === "irregular-shape-overriding" || mode === "irregular shape: overriding" || mode === "irregular-overriding") {
+    return IRREGULAR_SHAPE_OVERRIDING_MODE;
+  }
   return SKETCH_PREDICTION_MODES.has(mode) ? mode : DEFAULT_SKETCH_PREDICTION_MODE;
+}
+
+function isIrregularShapeMode(value) {
+  return IRREGULAR_SHAPE_MODES.has(normalizePredictionMode(value));
 }
 
 
@@ -138,7 +159,6 @@ export function createSketchModeController(deps = {}) {
       angularSmoothingBins: Math.max(0, Math.min(12, Number(user.irregularShapeAngularSmoothingBins) || 3)),
       minCoverageForFullPreview: clamp(Number(user.irregularShapeMinCoverageForFullPreview) || 0.60, 0, 1),
       minCoverageForTentativeInterpolation: clamp(Number(user.irregularShapeMinCoverageForTentativeInterpolation) || 0.20, 0, 1),
-      recentStrokeWeight: Math.max(1, Number(user.irregularShapeRecentStrokeWeight) || 1.25),
       outlierTrimPercent: clamp(Number(user.irregularShapeOutlierTrimPercent) || 0.15, 0, 0.45),
       previewSmoothness: clamp(Number(user.irregularShapePreviewSmoothness) || 0.65, 0, 1),
     };
@@ -217,6 +237,22 @@ export function createSketchModeController(deps = {}) {
     return state.enableStrokeOrderColors;
   }
 
+  function mirrorAxisKeys(axis) {
+    const normalized = String(axis || "").trim().toLowerCase();
+    return normalized === "y"
+      ? { previewKey: "mirrorY", stateKey: "sketchMirrorY", settingsKey: "irregularMirrorY" }
+      : { previewKey: "mirrorX", stateKey: "sketchMirrorX", settingsKey: "irregularMirrorX" };
+  }
+
+  function readIrregularMirrorSetting(axis, fallback = false) {
+    const keys = mirrorAxisKeys(axis);
+    const stateValue = globalThis?.NodevisionState?.[keys.stateKey];
+    if (typeof stateValue === "boolean") return stateValue;
+    const settingsValue = globalThis?.NodevisionSketchSettings?.[keys.settingsKey];
+    if (typeof settingsValue === "boolean") return settingsValue;
+    return safeBool(fallback, false);
+  }
+
   function createStrokePoint(rootPoint, event) {
     return {
       x: Number(rootPoint?.x) || 0,
@@ -262,38 +298,44 @@ export function createSketchModeController(deps = {}) {
       "pointer-events": "none",
       display: "none",
     });
+    const axisStyle = "stroke:var(--nv-toolbar-dropdown-text, #704214);";
     group.appendChild(createSvgEl("line", {
-      x1: "-6",
+      x1: "-100000",
       y1: "0",
-      x2: "6",
+      x2: "100000",
       y2: "0",
-      stroke: "#0f172a",
-      "stroke-width": "1.2",
-      "stroke-linecap": "round",
+      style: axisStyle,
+      "stroke-width": "1.25",
+      "stroke-dasharray": "10 8",
+      opacity: "0.7",
+      "vector-effect": "non-scaling-stroke",
     }));
     group.appendChild(createSvgEl("line", {
       x1: "0",
-      y1: "-6",
+      y1: "-100000",
       x2: "0",
-      y2: "6",
-      stroke: "#0f172a",
-      "stroke-width": "1.2",
-      "stroke-linecap": "round",
+      y2: "100000",
+      style: axisStyle,
+      "stroke-width": "1.25",
+      "stroke-dasharray": "10 8",
+      opacity: "0.7",
+      "vector-effect": "non-scaling-stroke",
     }));
     group.appendChild(createSvgEl("circle", {
       cx: "0",
       cy: "0",
-      r: "2.3",
-      fill: "#1f6feb",
-      stroke: "#ffffff",
-      "stroke-width": "1",
+      r: "5.5",
+      style: "fill:var(--nv-toolbar-dropdown-text, #704214);",
+      stroke: "#704214",
+      "stroke-width": "1.25",
+      "vector-effect": "non-scaling-stroke",
     }));
     return group;
   }
 
   function updateFocalPointMarker(preview) {
     if (!preview?.focalPointEl) return;
-    if (normalizePredictionMode(preview.predictionMode) !== "irregular-shape" || !preview.focalPoint) {
+    if (!isIrregularShapeMode(preview.predictionMode) || !preview.focalPoint) {
       preview.focalPointEl.setAttribute("display", "none");
       return;
     }
@@ -363,6 +405,8 @@ export function createSketchModeController(deps = {}) {
       locked: safeBool(preview.locked, false),
       predictionMode: normalizePredictionMode(preview.predictionMode),
       focalPoint: preview.focalPoint ? { ...preview.focalPoint } : null,
+      mirrorX: safeBool(preview.mirrorX, false),
+      mirrorY: safeBool(preview.mirrorY, false),
       state: preview.state || "raw-sketch",
       bezierRefinementPathId: preview.bezierRefinementPathId || null,
       rawStrokes: preview.rawStrokes.map((stroke) => ({
@@ -382,7 +426,7 @@ export function createSketchModeController(deps = {}) {
       accepted: safeBool(preview.accepted, false),
       strokeCount: preview.rawStrokes.length,
       previewPointCount: Number(preview.activePreviewGeometry?.pointCount) || 0,
-      irregularShapeDebug: normalizePredictionMode(preview.predictionMode) === "irregular-shape" ? {
+      irregularShapeDebug: isIrregularShapeMode(preview.predictionMode) ? {
         angularCoverage: Number(preview.hypotheses?.angularCoverage) || 0,
         angularCoveragePercent: Math.round((Number(preview.hypotheses?.angularCoverage) || 0) * 100),
         radialBinCount: preview.radialBins?.length || 0,
@@ -427,6 +471,8 @@ export function createSketchModeController(deps = {}) {
       locked: false,
       predictionMode: normalizePredictionMode(options.predictionMode || state.defaultPredictionMode),
       focalPoint: options.focalPoint ? { x: Number(options.focalPoint.x) || 0, y: Number(options.focalPoint.y) || 0 } : null,
+      mirrorX: typeof options.mirrorX === "boolean" ? options.mirrorX : readIrregularMirrorSetting("x"),
+      mirrorY: typeof options.mirrorY === "boolean" ? options.mirrorY : readIrregularMirrorSetting("y"),
       rawStrokes: [],
       radialSamples: [],
       radialBins: [],
@@ -2347,6 +2393,22 @@ export function createSketchModeController(deps = {}) {
     };
   }
 
+  function latestIrregularOverrideSample(samples = []) {
+    return samples
+      .filter((sample) => Number.isFinite(sample?.radius))
+      .sort((a, b) => {
+        const strokeDelta = (Number(b.strokeIndex) || 0) - (Number(a.strokeIndex) || 0);
+        if (strokeDelta) return strokeDelta;
+        const sourceDelta = (Number(b.sourceIndex) || 0) - (Number(a.sourceIndex) || 0);
+        if (sourceDelta) return sourceDelta;
+        const pointDelta = (Number(b.pointIndex) || 0) - (Number(a.pointIndex) || 0);
+        if (pointDelta) return pointDelta;
+        const directDelta = (b.direct ? 1 : 0) - (a.direct ? 1 : 0);
+        if (directDelta) return directDelta;
+        return (Number(b.weight) || 0) - (Number(a.weight) || 0);
+      })[0] || null;
+  }
+
   function pointFromRadialBin(focalPoint, bin) {
     const theta = Number(bin?.theta) || 0;
     const radius = Number(bin?.radius) || 0;
@@ -2354,6 +2416,25 @@ export function createSketchModeController(deps = {}) {
       x: focalPoint.x + Math.cos(theta) * radius,
       y: focalPoint.y + Math.sin(theta) * radius,
     };
+  }
+
+  function mirroredIrregularPoints(point, focalPoint, mirrorX = false, mirrorY = false) {
+    const x = Number(point?.x);
+    const y = Number(point?.y);
+    const focalX = Number(focalPoint?.x);
+    const focalY = Number(focalPoint?.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(focalX) || !Number.isFinite(focalY)) return [];
+    const variants = [{ x, y, mirror: "none" }];
+    if (mirrorY) variants.push({ x: (2 * focalX) - x, y, mirror: "mirror-y" });
+    if (mirrorX) variants.push({ x, y: (2 * focalY) - y, mirror: "mirror-x" });
+    if (mirrorX && mirrorY) variants.push({ x: (2 * focalX) - x, y: (2 * focalY) - y, mirror: "mirror-x-y" });
+    const seen = new Set();
+    return variants.filter((variant) => {
+      const key = Math.round(variant.x * 1000) + ":" + Math.round(variant.y * 1000);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   function interpolateIrregularRadialBins(radialBins, settings, coverage) {
@@ -2434,31 +2515,31 @@ export function createSketchModeController(deps = {}) {
     return tracks.filter((track) => track.length >= 2);
   }
 
-  function closedBezierPathDFromPolyline(points = [], options = {}) {
-    const clean = chooseCurveAnchorPoints(points, options.maxAnchors || 16);
-    if (clean.length < 3) return pointsToPathD(points);
-    const tension = Number(options.tension) || 0.75;
-    let d = "M " + clean[0].x + " " + clean[0].y;
-    for (let i = 0; i < clean.length; i += 1) {
-      const p0 = clean[(i - 1 + clean.length) % clean.length];
-      const p1 = clean[i];
-      const p2 = clean[(i + 1) % clean.length];
-      const p3 = clean[(i + 2) % clean.length];
-      const c1 = {
-        x: p1.x + ((p2.x - p0.x) / 6) * tension,
-        y: p1.y + ((p2.y - p0.y) / 6) * tension,
-      };
-      const c2 = {
-        x: p2.x - ((p3.x - p1.x) / 6) * tension,
-        y: p2.y - ((p3.y - p1.y) / 6) * tension,
-      };
-      d += " C " + c1.x + " " + c1.y + " " + c2.x + " " + c2.y + " " + p2.x + " " + p2.y;
-    }
-    return d + " Z";
+  function orderedOverrideBoundaryBins(radialBins = []) {
+    const ordered = radialBins
+      .filter((bin) => bin.overwritten && bin.overridePoint)
+      .sort((a, b) => a.index - b.index);
+    if (ordered.length <= 2) return ordered;
+    const binCount = radialBins.length;
+    let startIndex = 0;
+    let largestGap = -1;
+    ordered.forEach((bin, index) => {
+      const next = ordered[(index + 1) % ordered.length];
+      const gap = (next.index - bin.index + binCount) % binCount;
+      if (gap > largestGap) {
+        largestGap = gap;
+        startIndex = (index + 1) % ordered.length;
+      }
+    });
+    return [...ordered.slice(startIndex), ...ordered.slice(0, startIndex)];
   }
 
   function buildIrregularShapePreviewTracks(preview) {
     const settings = irregularShapeSettings();
+    const mode = normalizePredictionMode(preview?.predictionMode || state.defaultPredictionMode);
+    const combineMode = mode === IRREGULAR_SHAPE_OVERRIDING_MODE ? "overriding" : "averaging";
+    const mirrorX = safeBool(preview?.mirrorX, false);
+    const mirrorY = safeBool(preview?.mirrorY, false);
     preview.straightLineState = null;
     preview.angularPathState = null;
     preview.radialSamples = [];
@@ -2473,69 +2554,98 @@ export function createSketchModeController(deps = {}) {
       directSampleCount: 0,
     }));
 
-    const evidenceTracks = preview.rawStrokes
-      .map((stroke) => clonePointList(stroke.points))
-      .filter((points) => points.length >= 2);
+    const baseHypothesis = {
+      mode,
+      combineMode,
+      mirrorX,
+      mirrorY,
+      strokeCount: preview.rawStrokes.length,
+      sourceStrokeCount: 0,
+      radialBinCount: settings.radialBinCount,
+      angularCoverage: 0,
+      binsWithDirectEvidence: 0,
+      binsInterpolated: 0,
+      binsLowConfidence: 0,
+      outlierSamplesIgnored: 0,
+      discontinuities: 0,
+      closed: false,
+      radialOnly: true,
+    };
 
     if (!preview.focalPoint) {
       preview.hypotheses = {
-        mode: "irregular-shape",
+        ...baseHypothesis,
         previewMode: "needs-focal-point",
         confidence: 0,
-        strokeCount: preview.rawStrokes.length,
-        radialBinCount: settings.radialBinCount,
-        angularCoverage: 0,
-        binsWithDirectEvidence: 0,
-        binsInterpolated: 0,
-        binsLowConfidence: 0,
-        outlierSamplesIgnored: 0,
         reason: "focal-point-required",
         noPreview: true,
-        discontinuities: 0,
-        closed: false,
       };
       return [];
     }
 
-    if (!evidenceTracks.length) {
+    const drawableStrokes = preview.rawStrokes
+      .map((stroke, strokeIndex) => ({
+        stroke,
+        strokeIndex,
+        points: clonePointList(stroke.points),
+      }))
+      .filter((entry) => entry.points.length >= 2);
+    const sourceStrokes = drawableStrokes;
+    const overridingSourceStrokeIndex = sourceStrokes.length
+      ? sourceStrokes[sourceStrokes.length - 1].strokeIndex
+      : null;
+
+    if (!sourceStrokes.length) {
       preview.hypotheses = {
-        mode: "irregular-shape",
-        previewMode: "evidence-preview",
+        ...baseHypothesis,
+        previewMode: "radial-evidence-preview",
         confidence: 0,
-        strokeCount: 0,
-        radialBinCount: settings.radialBinCount,
-        angularCoverage: 0,
-        binsWithDirectEvidence: 0,
-        binsInterpolated: 0,
-        binsLowConfidence: 0,
-        outlierSamplesIgnored: 0,
-        discontinuities: 0,
-        closed: false,
+        noPreview: true,
+        sourceStrokeCount: 0,
+        overridingSourceStrokeIndex,
       };
       return [];
     }
 
     const samplesByBin = Array.from({ length: settings.radialBinCount }, () => []);
     const directBinIndexes = new Set();
-    const newestStrokeIndex = Math.max(0, preview.rawStrokes.length - 1);
-    preview.rawStrokes.forEach((stroke, strokeIndex) => {
-      const points = Array.isArray(stroke.points) ? stroke.points : [];
-      const strokeWeight = strokeIndex === newestStrokeIndex ? settings.recentStrokeWeight : 1;
+    const angularWindow = Math.max(0, Math.min(12, Number(settings.angularSmoothingBins) || 0));
+    sourceStrokes.forEach(({ points, strokeIndex }, sourceIndex) => {
       points.forEach((pt, pointIndex) => {
-        const dx = Number(pt.x) - preview.focalPoint.x;
-        const dy = Number(pt.y) - preview.focalPoint.y;
-        const radius = Math.hypot(dx, dy);
-        if (!Number.isFinite(radius) || radius <= 0.01) return;
-        const theta = normalizeAngleRadians(Math.atan2(dy, dx));
-        const binIndex = binIndexForAngle(theta, settings.radialBinCount);
-        directBinIndexes.add(binIndex);
-        const sample = { theta, radius, binIndex, strokeIndex, pointIndex, weight: strokeWeight };
-        preview.radialSamples.push(sample);
-        for (let offset = -2; offset <= 2; offset += 1) {
-          const target = (binIndex + offset + settings.radialBinCount) % settings.radialBinCount;
-          const falloff = offset === 0 ? 1 : offset === -1 || offset === 1 ? 0.45 : 0.18;
-          samplesByBin[target].push({ ...sample, weight: strokeWeight * falloff, direct: offset === 0 });
-        }
+        mirroredIrregularPoints(pt, preview.focalPoint, mirrorX, mirrorY).forEach((variant) => {
+          const dx = variant.x - preview.focalPoint.x;
+          const dy = variant.y - preview.focalPoint.y;
+          const radius = Math.hypot(dx, dy);
+          if (!Number.isFinite(radius) || radius <= 0.01) return;
+          const theta = normalizeAngleRadians(Math.atan2(dy, dx));
+          const binIndex = binIndexForAngle(theta, settings.radialBinCount);
+          directBinIndexes.add(binIndex);
+          const sample = {
+            theta,
+            radius,
+            binIndex,
+            strokeIndex,
+            sourceIndex,
+            pointIndex,
+            mirror: variant.mirror,
+            x: variant.x,
+            y: variant.y,
+            weight: 1,
+          };
+          preview.radialSamples.push(sample);
+          if (combineMode === "overriding") {
+            samplesByBin[binIndex].push({ ...sample, direct: true });
+          } else {
+            for (let offset = -angularWindow; offset <= angularWindow; offset += 1) {
+              const target = (binIndex + offset + settings.radialBinCount) % settings.radialBinCount;
+              const falloff = angularWindow <= 0
+                ? 1
+                : (angularWindow + 1 - Math.abs(offset)) / (angularWindow + 1);
+              if (falloff <= 0) continue;
+              samplesByBin[target].push({ ...sample, weight: falloff, direct: offset === 0 });
+            }
+          }
+        });
       });
     });
 
@@ -2547,84 +2657,70 @@ export function createSketchModeController(deps = {}) {
       bin.directSampleCount = directSamples.length;
       bin.directEvidence = directBinIndexes.has(index);
       if (!samples.length) return;
-      const estimate = weightedTrimmedMean(samples, settings.outlierTrimPercent);
-      ignored += estimate.ignored;
-      if (Number.isFinite(estimate.radius)) bin.radius = estimate.radius;
-      if (bin.directEvidence && directSamples.length <= 1) bin.lowConfidence = true;
+      if (combineMode === "overriding") {
+        const overrideSample = latestIrregularOverrideSample(samples);
+        if (overrideSample) {
+          bin.radius = overrideSample.radius;
+          bin.overwritten = true;
+          bin.overwritingStrokeIndex = overrideSample.strokeIndex;
+          bin.overridePoint = { x: overrideSample.x, y: overrideSample.y };
+        }
+      } else {
+        const estimate = weightedTrimmedMean(samples, settings.outlierTrimPercent);
+        ignored += estimate.ignored;
+        if (Number.isFinite(estimate.radius)) bin.radius = estimate.radius;
+        if (bin.directEvidence && directSamples.length <= 1) bin.lowConfidence = true;
+      }
     });
 
     const coverage = directBinIndexes.size / settings.radialBinCount;
-    interpolateIrregularRadialBins(preview.radialBins, settings, coverage);
-    smoothIrregularRadialBins(preview.radialBins, settings, coverage);
+    if (combineMode !== "overriding") {
+      interpolateIrregularRadialBins(preview.radialBins, settings, coverage);
+      smoothIrregularRadialBins(preview.radialBins, settings, coverage);
+    }
 
     const binsInterpolated = preview.radialBins.filter((bin) => bin.interpolated).length;
     const binsLowConfidence = preview.radialBins.filter((bin) => bin.lowConfidence).length;
     const highCoverage = coverage >= settings.minCoverageForFullPreview;
     const tentative = coverage >= settings.minCoverageForTentativeInterpolation;
-    const previewMode = highCoverage
-      ? "radial-silhouette-preview"
-      : tentative
-        ? "mixed-preview"
-        : "evidence-preview";
+    const previewMode = combineMode === "overriding"
+      ? "literal-override-shape-preview"
+      : highCoverage
+        ? "radial-silhouette-preview"
+        : tentative
+          ? "mixed-preview"
+          : "evidence-preview";
+    const radialTracks = combineMode === "overriding"
+      ? (() => {
+        const boundary = orderedOverrideBoundaryBins(preview.radialBins)
+          .map((bin) => ({ ...bin.overridePoint }));
+        return boundary.length >= 2 ? [[{ ...preview.focalPoint }, ...boundary]] : [];
+      })()
+      : splitContiguousRadialTracks(preview.focalPoint, preview.radialBins, highCoverage);
+    const closed = combineMode === "overriding"
+      ? radialTracks.some((track) => track.length >= 3)
+      : highCoverage && radialTracks.length === 1 && radialTracks[0].length >= 3;
+    const pointCount = radialTracks.reduce((sum, track) => sum + track.length, 0);
 
-    if (previewMode === "evidence-preview") {
-      preview.hypotheses = {
-        mode: "irregular-shape",
-        previewMode,
-        confidence: coverage,
-        strokeCount: preview.rawStrokes.length,
-        radialBinCount: settings.radialBinCount,
-        angularCoverage: coverage,
-        binsWithDirectEvidence: directBinIndexes.size,
-        binsInterpolated,
-        binsLowConfidence,
-        outlierSamplesIgnored: ignored,
-        discontinuities: evidenceTracks.length,
-        closed: false,
-        exactEvidence: true,
-      };
-      return evidenceTracks;
-    }
-
-    const radialTracks = splitContiguousRadialTracks(preview.focalPoint, preview.radialBins, highCoverage);
-    if (!highCoverage) {
-      preview.hypotheses = {
-        mode: "irregular-shape",
-        previewMode,
-        confidence: coverage,
-        strokeCount: preview.rawStrokes.length,
-        radialBinCount: settings.radialBinCount,
-        angularCoverage: coverage,
-        binsWithDirectEvidence: directBinIndexes.size,
-        binsInterpolated,
-        binsLowConfidence,
-        outlierSamplesIgnored: ignored,
-        discontinuities: evidenceTracks.length + radialTracks.length,
-        closed: false,
-        exactEvidence: true,
-      };
-      return [...evidenceTracks, ...radialTracks];
-    }
-
-    const radialTrack = radialTracks[0] || [];
-    const simplified = simplifyByMinDistance(radialTrack, Math.max(0.01, simplifyThreshold() * 0.55));
     preview.hypotheses = {
-      mode: "irregular-shape",
+      ...baseHypothesis,
       previewMode,
-      confidence: coverage >= 0.80 ? 1 : clamp(coverage, 0, 1),
-      strokeCount: preview.rawStrokes.length,
-      pointCount: simplified.length,
-      radialBinCount: settings.radialBinCount,
+      confidence: highCoverage ? (coverage >= 0.80 ? 1 : clamp(coverage, 0, 1)) : coverage,
+      sourceStrokeCount: sourceStrokes.length,
+      overridingSourceStrokeIndex,
+      pointCount,
       angularCoverage: coverage,
       binsWithDirectEvidence: directBinIndexes.size,
       binsInterpolated,
       binsLowConfidence,
+      binsOverwritten: combineMode === "overriding" ? preview.radialBins.filter((bin) => bin.overwritten).length : directBinIndexes.size,
       outlierSamplesIgnored: ignored,
-      discontinuities: 1,
-      closed: true,
-      pathD: closedBezierPathDFromPolyline(simplified, { maxAnchors: Number(globalThis?.NodevisionSketchSettings?.irregularShapeBezierAnchors) || 18 }),
+      discontinuities: radialTracks.length,
+      closed,
+      radialOnly: true,
+      noPreview: radialTracks.length === 0,
     };
-    return simplified.length >= 3 ? [simplified] : evidenceTracks;
+    return radialTracks;
   }
 
   function buildRawPreviewTracks(preview) {
@@ -2647,7 +2743,7 @@ export function createSketchModeController(deps = {}) {
     if (mode === "raw") return buildRawPreviewTracks(preview);
     if (mode === "curve") return buildCurvePreviewTracks(preview);
     if (mode === "function-curve") return buildFunctionCurvePreviewTracks(preview);
-    if (mode === "irregular-shape") return buildIrregularShapePreviewTracks(preview);
+    if (isIrregularShapeMode(mode)) return buildIrregularShapePreviewTracks(preview);
     return buildShapePreviewTracks(preview);
   }
 
@@ -2655,7 +2751,7 @@ export function createSketchModeController(deps = {}) {
     const safeTracks = tracks.filter((points) =>
       Array.isArray(points) && points.length >= 2
     );
-    const isIrregularShape = normalizePredictionMode(preview?.predictionMode) === "irregular-shape";
+    const isIrregularShape = isIrregularShapeMode(preview?.predictionMode);
     const primaryTrack = safeTracks.length
       ? [...safeTracks].sort((a, b) => strokeLength(b) - strokeLength(a))[0]
       : null;
@@ -2989,7 +3085,7 @@ export function createSketchModeController(deps = {}) {
 
 
     const predictionMode = normalizePredictionMode(preview.predictionMode || state.defaultPredictionMode);
-    if (predictionMode === "irregular-shape") {
+    if (isIrregularShapeMode(predictionMode)) {
       if (state.awaitingFocalPoint || !preview.focalPoint) {
         state.awaitingFocalPoint = false;
         setIrregularFocalPoint(preview, rootPoint, { refresh: true, reason: "set-focal-point" });
@@ -3210,8 +3306,8 @@ export function createSketchModeController(deps = {}) {
     const preview = ensureActivePreview();
     if (!preview) return false;
     const mode = normalizePredictionMode(preview.predictionMode || state.defaultPredictionMode);
-    if (mode !== "irregular-shape") {
-      setPredictionMode("irregular-shape", { previewId: preview.id });
+    if (!isIrregularShapeMode(mode)) {
+      setPredictionMode(IRREGULAR_SHAPE_AVERAGING_MODE, { previewId: preview.id });
     }
     state.awaitingFocalPoint = true;
     status("Irregular Shape: click to place the focal point");
@@ -3323,6 +3419,39 @@ export function createSketchModeController(deps = {}) {
     return element;
   }
 
+  function setIrregularMirror(axis, nextValue, options = {}) {
+    const keys = mirrorAxisKeys(axis);
+    const value = safeBool(nextValue, !readIrregularMirrorSetting(axis));
+    globalThis.NodevisionState = globalThis.NodevisionState || {};
+    globalThis.NodevisionState[keys.stateKey] = value;
+    globalThis.NodevisionSketchSettings = globalThis.NodevisionSketchSettings || {};
+    globalThis.NodevisionSketchSettings[keys.settingsKey] = value;
+
+    const preview = options.previewId ? getPreviewById(options.previewId) : ensureActivePreview();
+    if (preview) {
+      preview[keys.previewKey] = value;
+      if (isIrregularShapeMode(preview.predictionMode)) {
+        preview.accepted = false;
+        markRecognitionDirty(preview);
+        if (options.refresh !== false) {
+          refreshPreviewRecognition(preview, { reason: keys.previewKey + "-change" });
+        }
+      }
+    }
+
+    emitSketchPreviewsChanged(keys.previewKey + "-change");
+    const label = keys.previewKey === "mirrorY" ? "Mirror Y" : "Mirror X";
+    status("Irregular Shape " + label + ": " + (value ? "ON" : "OFF"));
+    return value;
+  }
+
+  function getIrregularMirror(axis) {
+    const keys = mirrorAxisKeys(axis);
+    const preview = getActivePreview();
+    if (preview && typeof preview[keys.previewKey] === "boolean") return preview[keys.previewKey];
+    return readIrregularMirrorSetting(axis, false);
+  }
+
   function setKeepConstruction(nextValue) {
     state.keepConstruction = safeBool(nextValue, !state.keepConstruction);
     status(
@@ -3426,6 +3555,11 @@ export function createSketchModeController(deps = {}) {
     hasSketchContent,
     isDrawing: () => Boolean(state.currentStroke || state.focalPointDrag),
     beginSetFocalPoint,
+    beginFocalPointPlacement: beginSetFocalPoint,
+    setMirrorX: (value, options = {}) => setIrregularMirror("x", value, options),
+    setMirrorY: (value, options = {}) => setIrregularMirror("y", value, options),
+    getMirrorX: () => getIrregularMirror("x"),
+    getMirrorY: () => getIrregularMirror("y"),
     getPreviewPointCount: () => activePreviewPointCount(),
     getStrokeCount: () => activePreviewStrokeCount(),
     getKeepConstruction: () => state.keepConstruction,

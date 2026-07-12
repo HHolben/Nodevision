@@ -15,6 +15,10 @@ function reinsert(el, info) {
   }
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : (value ? [value] : []);
+}
+
 export function createSvgUndoStack(limit = 100) {
   const undo = [];
   const redo = [];
@@ -51,6 +55,28 @@ export function createSvgUndoStack(limit = 100) {
     });
   }
 
+  function pushElementCreate(elements) {
+    const list = asArray(elements);
+    if (!list.length) return;
+    const places = list.map((el) => ensureParentEntry(el));
+    push({
+      kind: "create-elements",
+      undo: () => {
+        const removed = [];
+        list.forEach((el) => {
+          if (!el?.parentNode) return;
+          removed.push(el);
+          el.remove();
+        });
+        return { removed: true, elements: removed, element: removed[0] || null };
+      },
+      redo: () => {
+        list.forEach((el, index) => reinsert(el, places[index]));
+        return { elements: list, element: list[0] || null };
+      },
+    });
+  }
+
   function pushPathRemoval(pathEl) {
     if (!pathEl) return;
     const place = ensureParentEntry(pathEl);
@@ -58,6 +84,28 @@ export function createSvgUndoStack(limit = 100) {
       kind: "remove",
       undo: () => { reinsert(pathEl, place); return { element: pathEl }; },
       redo: () => { const p = ensureParentEntry(pathEl); if (pathEl.parentNode) pathEl.remove(); return { removed: true, element: pathEl, place: p }; },
+    });
+  }
+
+  function pushElementRemoval(elements) {
+    const list = asArray(elements);
+    if (!list.length) return;
+    const places = list.map((el) => ensureParentEntry(el));
+    push({
+      kind: "remove-elements",
+      undo: () => {
+        list.forEach((el, index) => reinsert(el, places[index]));
+        return { elements: list, element: list[0] || null };
+      },
+      redo: () => {
+        const removed = [];
+        list.forEach((el) => {
+          if (!el?.parentNode) return;
+          removed.push(el);
+          el.remove();
+        });
+        return { removed: true, elements: removed, element: removed[0] || null };
+      },
     });
   }
 
@@ -72,10 +120,22 @@ export function createSvgUndoStack(limit = 100) {
     });
   }
 
+  function pushCustom(action = {}) {
+    if (typeof action.undo !== "function" || typeof action.redo !== "function") return;
+    push({
+      kind: action.kind || "custom",
+      undo: action.undo,
+      redo: action.redo,
+    });
+  }
+
   return {
     pushPathCreate,
     pushPathRemoval,
     pushPathChange,
+    pushElementCreate,
+    pushElementRemoval,
+    pushCustom,
     undo: undoAction,
     redo: redoAction,
   };

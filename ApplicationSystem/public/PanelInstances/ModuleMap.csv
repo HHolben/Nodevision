@@ -7,7 +7,7 @@ dwg,Image,ViewBinary.mjs,BinaryFamilyEditor.mjs
 dxf,Image,ViewDXF.mjs,ModelFamilyEditor.mjs
 excellon,Image,ViewText.mjs,TextFamilyEditor.mjs
 exr,Image,ViewEXR.mjs,MediaFamilyEditor.mjs
-gif,Image,ViewImage.mjs,MediaFamilyEditor.mjs
+gif,Image,ViewImage.mjs,GIFeditor.mjs
 ico,Image,ViewImage.mjs,PNGeditor.mjs
 jpeg,Image,ViewJPG.mjs,PNGeditor.mjs
 jpg,Image,ViewJPG.mjs,PNGeditor.mjs
@@ -94,7 +94,7 @@ odt,Publication,ViewODT.mjs,DocumentFamilyEditor.mjs
 ops,Publication,ViewText.mjs,TextFamilyEditor.mjs
 org,Publication,ViewText.mjs,TextFamilyEditor.mjs
 owl,Publication,ViewRDF.mjs,TextFamilyEditor.mjs
-pdf,Publication,ViewPDF.mjs,DocumentFamilyEditor.mjs
+pdf,Publication,ViewPDF.mjs,PDFeditor.mjs
 pem,Publication,ViewText.mjs,TextFamilyEditor.mjs
 rdf,Publication,ViewRDF.mjs,TextFamilyEditor.mjs
 ris,Publication,ViewText.mjs,TextFamilyEditor.mjs

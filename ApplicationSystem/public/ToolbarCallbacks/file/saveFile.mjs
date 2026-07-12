@@ -52,6 +52,10 @@ function svgEditorPath() {
   return firstSavePath(window.__nvSvgEditorActivePath);
 }
 
+function pdfEditorPath() {
+  return firstSavePath(window.__nvPdfEditorActivePath);
+}
+
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
@@ -79,6 +83,8 @@ export default async function saveFile(options = {}) {
       document.getElementById("svg-editor-root") ||
       document.getElementById("svg-editor");
     const activeSvgPath = svgEditorPath();
+    const activePdfPath = pdfEditorPath();
+    const activeGifPath = firstSavePath(window.__nvGifEditorActivePath, window.GIFEditorContext?.filePath);
     const inSvgEditor =
       !!svgEditorElement &&
       (String(mode).toLowerCase().includes("svg") ||
@@ -124,8 +130,18 @@ export default async function saveFile(options = {}) {
     }
 
     // 1) Explicit editor state checks.
+    if (mode === "GIFediting" && typeof window.GIFEditorContext?.save === "function") {
+      const editorPath = activeGifPath || filePath;
+      if (refuseMismatchedEditorSave("GIF Editor", editorPath, filePath)) return false;
+      await window.GIFEditorContext.save(filePath);
+      return notifyFileSaved(filePath);
+    }
     if (canSaveRasterCanvas && (await saveRasterCanvas(filePath))) {
       return notifyFileSaved(filePath);
+    }
+    if (activePdfPath && sameSavePath(activePdfPath, filePath) && typeof window.currentSavePDFAnnotations === "function") {
+      await window.currentSavePDFAnnotations(filePath);
+      return notifyFileSaved(activePdfPath);
     }
     if (mode === "CodeEditing" && typeof window.saveCodeFile === "function") {
       const codeEditorPath = window.__nvCodeEditorActivePath || window.currentActiveFilePath;

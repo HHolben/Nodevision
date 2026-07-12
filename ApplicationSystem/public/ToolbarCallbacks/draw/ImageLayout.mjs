@@ -23,7 +23,7 @@ function getSvgApi() {
 }
 
 function getPngApi() {
-  const api = window.__nvPngEditorApi;
+  const api = window.__nvRasterEditorApi || window.__nvPngEditorApi;
   if (!api) return null;
   if (typeof api.getCanvasSize !== "function") return null;
   return api;
@@ -32,7 +32,7 @@ function getPngApi() {
 function getActiveImageApi() {
   const mode = window.NodevisionState?.currentMode;
   if (mode === "SVG Editing") return getSvgApi() || getPngApi();
-  if (mode === "PNGediting") return getPngApi() || getSvgApi();
+  if (mode === "PNGediting" || mode === "GIFediting") return getPngApi() || getSvgApi();
   return getPngApi() || getSvgApi();
 }
 
@@ -102,7 +102,7 @@ export default function ImageLayout() {
   const refresh = () => {
     const api = getActiveImageApi();
     if (!api) {
-      currentLabel.textContent = "Open a PNG/SVG editor to use Layout";
+      currentLabel.textContent = "Open a raster/SVG editor to use Layout";
       [
         resizeBtn, cropSelectionBtn, cropEdgesBtn,
         rotCwBtn, rotCcwBtn, flipHBtn, flipVBtn,
@@ -170,10 +170,12 @@ export default function ImageLayout() {
   // Keep widget in sync with editor changes.
   if (window.__nvImageLayoutListener) {
     window.removeEventListener("nv-png-editor-layout-changed", window.__nvImageLayoutListener);
+    window.removeEventListener("nv-raster-editor-layout-changed", window.__nvImageLayoutListener);
     window.removeEventListener("nv-svg-editor-layout-changed", window.__nvImageLayoutListener);
   }
   window.__nvImageLayoutListener = () => refresh();
   window.addEventListener("nv-png-editor-layout-changed", window.__nvImageLayoutListener);
+  window.addEventListener("nv-raster-editor-layout-changed", window.__nvImageLayoutListener);
   window.addEventListener("nv-svg-editor-layout-changed", window.__nvImageLayoutListener);
 
   refresh();

@@ -49,6 +49,15 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "Drawing Assist",
+    "panelTemplate": "SVGDrawingAssistPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/SVGDrawingAssistPanel.mjs",
+    "replaceActive": true,
+    "modes": ["SVG Editing"]
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "KML Feature Properties",
     "panelTemplate": "SVGPropertiesPanel",
     "panelType": "InfoPanel",

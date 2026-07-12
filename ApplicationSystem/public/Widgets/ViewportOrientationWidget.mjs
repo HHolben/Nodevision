@@ -29,6 +29,27 @@ const ROTATION_ARCS = [
   { id: "rot-z-xn-yn", title: "Rotate around Z reverse", axis: [0, 0, 1], direction: -1, from: "-X", to: "-Y", tone: "z" },
   { id: "rot-z-yn-xp", title: "Rotate around Z reverse", axis: [0, 0, 1], direction: -1, from: "-Y", to: "+X", tone: "z" },
 ];
+const ORIENTATION_THEMES = {
+  light: {
+    axisX: 0xc2410c,
+    axisY: 0x15803d,
+    axisZ: 0x1d4ed8,
+  },
+  dark: {
+    axisX: 0xfb923c,
+    axisY: 0x4ade80,
+    axisZ: 0x60a5fa,
+  },
+};
+
+function currentNodevisionTheme() {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement?.dataset?.nvTheme === "dark" ? "dark" : "light";
+}
+
+function normalizedTheme(theme) {
+  return theme === "dark" ? "dark" : "light";
+}
 
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;
@@ -37,23 +58,24 @@ function ensureStyles() {
   style.textContent = [
     ".nv-widget{box-sizing:border-box;font-family:system-ui,sans-serif;}",
     ".nv-widget *,.nv-widget *::before,.nv-widget *::after{box-sizing:inherit;}",
-    ".nv-widget-viewport-orientation{position:absolute;top:10px;right:10px;width:100px;height:100px;z-index:4;pointer-events:auto;user-select:none;}",
-    ".nv-orientation-gizmo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88px;height:88px;border-radius:8px;background:rgba(255,255,255,0.72);box-shadow:0 1px 6px rgba(15,23,42,0.2);overflow:hidden;cursor:grab;}",
+    ".nv-widget-viewport-orientation{position:absolute;top:10px;right:10px;width:100px;height:100px;z-index:4;pointer-events:auto;user-select:none;--nv-orientation-bg:rgba(255,255,255,0.72);--nv-orientation-shadow:0 1px 6px rgba(15,23,42,0.2);--nv-orientation-tip-border:rgba(148,163,184,0.78);--nv-orientation-tip-bg:rgba(255,255,255,0.9);--nv-orientation-tip-shadow:0 1px 3px rgba(15,23,42,0.18);--nv-orientation-tip-hover-border:#f59e0b;--nv-orientation-tip-hover-bg:#fff7e6;--nv-orientation-arc-shadow:drop-shadow(0 1px 1px rgba(15,23,42,0.18));--nv-orientation-axis-x:#c2410c;--nv-orientation-axis-y:#15803d;--nv-orientation-axis-z:#1d4ed8;}",
+    ".nv-widget-viewport-orientation[data-theme=\"dark\"]{--nv-orientation-bg:rgba(15,20,27,0.82);--nv-orientation-shadow:0 1px 8px rgba(0,0,0,0.42),0 0 0 1px rgba(148,163,184,0.2);--nv-orientation-tip-border:rgba(100,116,139,0.88);--nv-orientation-tip-bg:rgba(15,23,42,0.92);--nv-orientation-tip-shadow:0 1px 4px rgba(0,0,0,0.35);--nv-orientation-tip-hover-border:#fbbf24;--nv-orientation-tip-hover-bg:#1f2937;--nv-orientation-arc-shadow:drop-shadow(0 1px 1px rgba(0,0,0,0.42));--nv-orientation-axis-x:#fb923c;--nv-orientation-axis-y:#4ade80;--nv-orientation-axis-z:#60a5fa;}",
+    ".nv-orientation-gizmo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88px;height:88px;border-radius:8px;background:var(--nv-orientation-bg);box-shadow:var(--nv-orientation-shadow);overflow:hidden;cursor:grab;}",
     ".nv-orientation-gizmo canvas{display:block;width:100%;height:100%;}",
     ".nv-orientation-gizmo.is-dragging{cursor:grabbing;}",
     ".nv-orientation-controls{position:absolute;inset:0;pointer-events:none;}",
-    ".nv-orientation-tip-button{position:absolute;min-width:19px;height:17px;transform:translate(-50%,-50%);border:1px solid rgba(148,163,184,0.78);border-radius:999px;background:rgba(255,255,255,0.9);padding:0 3px;font:700 9px/1 system-ui,sans-serif;cursor:pointer;pointer-events:auto;box-shadow:0 1px 3px rgba(15,23,42,0.18);}",
-    ".nv-orientation-tip-button:hover,.nv-orientation-tip-button:focus-visible{border-color:#f59e0b;background:#fff7e6;outline:none;}",
+    ".nv-orientation-tip-button{position:absolute;min-width:19px;height:17px;transform:translate(-50%,-50%);border:1px solid var(--nv-orientation-tip-border);border-radius:999px;background:var(--nv-orientation-tip-bg);padding:0 3px;font:700 9px/1 system-ui,sans-serif;cursor:pointer;pointer-events:auto;box-shadow:var(--nv-orientation-tip-shadow);}",
+    ".nv-orientation-tip-button:hover,.nv-orientation-tip-button:focus-visible{border-color:var(--nv-orientation-tip-hover-border);background:var(--nv-orientation-tip-hover-bg);outline:none;}",
     ".nv-orientation-arc-layer{position:absolute;inset:0;width:88px;height:88px;pointer-events:auto;}",
     ".nv-orientation-arc-hit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke;cursor:pointer;}",
-    ".nv-orientation-arc{fill:none;stroke-width:2.2;stroke-linecap:round;opacity:0.78;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(15,23,42,0.18));}",
+    ".nv-orientation-arc{fill:none;stroke-width:2.2;stroke-linecap:round;opacity:0.78;pointer-events:none;filter:var(--nv-orientation-arc-shadow);}",
     ".nv-orientation-arc-hit:hover + .nv-orientation-arc{stroke-width:3.2;opacity:1;}",
-    ".nv-orientation-axis-x{color:#c2410c;}",
-    ".nv-orientation-axis-y{color:#15803d;}",
-    ".nv-orientation-axis-z{color:#1d4ed8;}",
-    ".nv-orientation-arc-x{stroke:#c2410c;}",
-    ".nv-orientation-arc-y{stroke:#15803d;}",
-    ".nv-orientation-arc-z{stroke:#1d4ed8;}",
+    ".nv-orientation-axis-x{color:var(--nv-orientation-axis-x);}",
+    ".nv-orientation-axis-y{color:var(--nv-orientation-axis-y);}",
+    ".nv-orientation-axis-z{color:var(--nv-orientation-axis-z);}",
+    ".nv-orientation-arc-x{stroke:var(--nv-orientation-axis-x);}",
+    ".nv-orientation-arc-y{stroke:var(--nv-orientation-axis-y);}",
+    ".nv-orientation-arc-z{stroke:var(--nv-orientation-axis-z);}",
   ].join("\n");
   document.head.appendChild(style);
 }
@@ -78,10 +100,11 @@ function classForAxis(axis) {
   return "nv-orientation-axis-z";
 }
 
-function colorForAxis(axis) {
-  if (axis === "x") return 0xc2410c;
-  if (axis === "y") return 0x15803d;
-  return 0x1d4ed8;
+function colorForAxis(axis, themeName = "light") {
+  const theme = ORIENTATION_THEMES[normalizedTheme(themeName)] || ORIENTATION_THEMES.light;
+  if (axis === "x") return theme.axisX;
+  if (axis === "y") return theme.axisY;
+  return theme.axisZ;
 }
 
 function svgPoint(point) {
@@ -112,10 +135,12 @@ export class ViewportOrientationWidget {
     this.arcDrag = null;
     this.axisDrag = null;
     this.suppressTipClick = false;
+    this.themeName = normalizedTheme(options.theme || currentNodevisionTheme());
     this.destroyed = false;
     this.boundPointerDown = (event) => this.onPointerDown(event);
     this.boundPointerMove = (event) => this.onPointerMove(event);
     this.boundPointerUp = (event) => this.onPointerUp(event);
+    this.boundThemeChanged = (event) => this.applyTheme(event?.detail?.theme || currentNodevisionTheme());
   }
 
   async mount() {
@@ -145,12 +170,14 @@ export class ViewportOrientationWidget {
 
     this.createOverlayRenderer();
     this.createControlOverlay();
+    this.applyTheme(this.themeName);
     this.gizmoEl.addEventListener("pointerdown", this.boundPointerDown);
     this.gizmoEl.addEventListener("pointermove", this.boundPointerMove);
     this.gizmoEl.addEventListener("pointerup", this.boundPointerUp);
     this.gizmoEl.addEventListener("pointercancel", this.boundPointerUp);
 
     this.unsubscribeCameraChanged = callAdapter(this.adapter, "onCameraChanged", () => this.sync());
+    if (typeof window !== "undefined") window.addEventListener("nv-theme-changed", this.boundThemeChanged);
     this.container.appendChild(this.root);
     this.sync();
     return this;
@@ -175,6 +202,7 @@ export class ViewportOrientationWidget {
     this.addAxisLine("y", [0, -AXIS_LENGTH, 0], [0, AXIS_LENGTH, 0]);
     this.addAxisLine("z", [0, 0, -AXIS_LENGTH], [0, 0, AXIS_LENGTH]);
     this.overlayRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    this.overlayRenderer.setClearColor(0x000000, 0);
     this.overlayRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.overlayRenderer.setSize(GIZMO_SIZE, GIZMO_SIZE);
     this.gizmoEl.appendChild(this.overlayRenderer.domElement);
@@ -186,8 +214,26 @@ export class ViewportOrientationWidget {
       new THREE.Vector3(...from),
       new THREE.Vector3(...to),
     ]);
-    const material = new THREE.LineBasicMaterial({ color: colorForAxis(axis), transparent: true, opacity: 0.92 });
-    this.overlayScene.add(new THREE.Line(geometry, material));
+    const material = new THREE.LineBasicMaterial({ color: colorForAxis(axis, this.themeName), transparent: true, opacity: 0.92 });
+    const line = new THREE.Line(geometry, material);
+    line.userData.orientationAxis = axis;
+    this.overlayScene.add(line);
+  }
+
+  applyTheme(theme = currentNodevisionTheme()) {
+    this.themeName = normalizedTheme(theme);
+    if (this.root) this.root.dataset.theme = this.themeName;
+    if (this.overlayScene) {
+      this.overlayScene.traverse?.((child) => {
+        const axis = child.userData?.orientationAxis;
+        if (!axis || !child.material?.color) return;
+        child.material.color.setHex(colorForAxis(axis, this.themeName));
+        child.material.needsUpdate = true;
+      });
+    }
+    if (this.overlayRenderer && this.overlayScene && this.overlayCamera) {
+      this.overlayRenderer.render(this.overlayScene, this.overlayCamera);
+    }
   }
 
   createControlOverlay() {
@@ -565,6 +611,7 @@ export class ViewportOrientationWidget {
   destroy() {
     this.destroyed = true;
     if (typeof this.unsubscribeCameraChanged === "function") this.unsubscribeCameraChanged();
+    if (typeof window !== "undefined") window.removeEventListener("nv-theme-changed", this.boundThemeChanged);
     callAdapter(this.adapter, "destroy");
     if (this.gizmoEl) {
       this.gizmoEl.removeEventListener("pointerdown", this.boundPointerDown);

@@ -8,8 +8,16 @@ import {
 import { updateToolbarState } from "./../../../panels/createToolbar.mjs";
 
 export async function renderEditor(filePath, container) {
+  return renderRasterEditor(filePath, container);
+}
+
+export async function renderRasterEditor(filePath, container, options = {}) {
   if (!container) throw new Error("Container required");
   container.innerHTML = "";
+  const editorMode = String(options.mode || "PNGediting").trim() || "PNGediting";
+  const editorKind = String(options.editorKind || "PNG").trim() || "PNG";
+  const apiGlobalName = String(options.apiGlobalName || "__nvPngEditorApi").trim() || "__nvPngEditorApi";
+  const layoutEventName = String(options.layoutEventName || "nv-png-editor-layout-changed").trim() || "nv-png-editor-layout-changed";
 
   const state = {
     logicalWidth: 32,
@@ -51,9 +59,9 @@ export async function renderEditor(filePath, container) {
   if (!Number.isFinite(window.NodevisionState.drawBrushSize)) {
     window.NodevisionState.drawBrushSize = 1;
   }
-  window.NodevisionState.currentMode = "PNGediting";
+  window.NodevisionState.currentMode = editorMode;
   updateToolbarState({
-    currentMode: "PNGediting",
+    currentMode: editorMode,
     drawColor: window.NodevisionState.drawColor,
     drawTool: window.NodevisionState.drawTool,
     drawAlpha: window.NodevisionState.drawAlpha,
@@ -62,7 +70,7 @@ export async function renderEditor(filePath, container) {
 
   if (filePath) {
     try {
-      const sourceImage = await loadPngFromNotebook(filePath);
+      const sourceImage = await loadRasterImageFromNotebook(filePath);
       state.logicalWidth = sourceImage.naturalWidth || sourceImage.width ||
         state.logicalWidth;
       state.logicalHeight = sourceImage.naturalHeight || sourceImage.height ||
@@ -71,7 +79,7 @@ export async function renderEditor(filePath, container) {
     } catch (err) {
       state.loadError = err?.message || "Failed to load source image.";
       console.warn(
-        "PNG editor: failed to load source image, starting with blank canvas.",
+        editorKind + " editor: failed to load source image, starting with blank canvas.",
         err,
       );
     }
@@ -287,7 +295,10 @@ export async function renderEditor(filePath, container) {
     const key = `${payload.width}x${payload.height}:${payload.canCrop ? 1 : 0}`;
     if (lastLayoutEvent === key) return;
     lastLayoutEvent = key;
-    window.dispatchEvent(new CustomEvent("nv-png-editor-layout-changed", { detail: payload }));
+    window.dispatchEvent(new CustomEvent(layoutEventName, { detail: payload }));
+    if (layoutEventName !== "nv-png-editor-layout-changed") {
+      window.dispatchEvent(new CustomEvent("nv-png-editor-layout-changed", { detail: payload }));
+    }
   };
 
   updateDisplayScale();
@@ -817,8 +828,31 @@ export async function renderEditor(filePath, container) {
     return true;
   }
 
+  function replaceCanvasContents(sourceCanvas, { pushHistory = false, statusMessage = "Canvas updated" } = {}) {
+    if (!(sourceCanvas instanceof HTMLCanvasElement) && !(sourceCanvas instanceof HTMLImageElement)) {
+      return false;
+    }
+    const nextWidth = Math.max(1, sourceCanvas.width || sourceCanvas.naturalWidth || 1);
+    const nextHeight = Math.max(1, sourceCanvas.height || sourceCanvas.naturalHeight || 1);
+    if (pushHistory) history.push(canvas);
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, nextWidth, nextHeight);
+    ctx.drawImage(sourceCanvas, 0, 0, nextWidth, nextHeight);
+    state.logicalWidth = nextWidth;
+    state.logicalHeight = nextHeight;
+    refreshPreviewCanvasDimensions();
+    clearShapePreview();
+    resetSelectionState();
+    updateDisplayScale();
+    notifyLayoutChanged();
+    if (statusMessage) updateRasterStatus(statusMessage);
+    return true;
+  }
+
   const handleKeyDown = (evt) => {
-    if (window.NodevisionState?.currentMode !== "PNGediting") return;
+    if (window.NodevisionState?.currentMode !== editorMode) return;
     if (isEditableTarget(evt.target)) return;
     const key = String(evt.key || "").toLowerCase();
     const isMac = /mac|iphone|ipad|ipod/i.test(
@@ -1546,12 +1580,17 @@ export async function renderEditor(filePath, container) {
 
   // Global Integration
   window.rasterCanvas = canvas;
-  window.__nvPngEditorApi = {
+  const editorApi = {
+    mode: editorMode,
+    filePath,
+    getCanvas: () => canvas,
+    getContext: () => ctx,
     getCanvasSize: () => ({ width: state.logicalWidth, height: state.logicalHeight }),
     undo: performUndo,
     redo: performRedo,
     canUndo: () => history.canUndo(),
     canRedo: () => history.canRedo(),
+    replaceCanvasContents,
     resizeCanvas,
     cropToSelection: cropToSelectionRect,
     canCrop: canCropSelection,
@@ -1561,9 +1600,13 @@ export async function renderEditor(filePath, container) {
     flipHorizontal: () => flipCanvas("h"),
     flipVertical: () => flipCanvas("v"),
   };
+  window.__nvRasterEditorApi = editorApi;
+  window[apiGlobalName] = editorApi;
+  window.__nvPngEditorApi = editorApi;
   notifyLayoutChanged();
 
   return {
+    api: editorApi,
     destroy: () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onMouseUp);
@@ -1585,11 +1628,22 @@ export async function renderEditor(filePath, container) {
       if (selectionToolbar && selectionToolbar.parentNode) {
         selectionToolbar.parentNode.removeChild(selectionToolbar);
       }
-      window.rasterCanvas = null;
-      if (window.__nvPngEditorApi && window.__nvPngEditorApi.cropToSelection === cropToSelectionRect) {
+      if (window.rasterCanvas === canvas) {
+        window.rasterCanvas = null;
+      }
+      if (window.__nvRasterEditorApi === editorApi) {
+        window.__nvRasterEditorApi = null;
+      }
+      if (window[apiGlobalName] === editorApi) {
+        window[apiGlobalName] = null;
+      }
+      if (window.__nvPngEditorApi === editorApi) {
         window.__nvPngEditorApi = null;
       }
-      window.dispatchEvent(new CustomEvent("nv-png-editor-layout-changed", { detail: { destroyed: true } }));
+      window.dispatchEvent(new CustomEvent(layoutEventName, { detail: { destroyed: true } }));
+      if (layoutEventName !== "nv-png-editor-layout-changed") {
+        window.dispatchEvent(new CustomEvent("nv-png-editor-layout-changed", { detail: { destroyed: true } }));
+      }
     },
   };
 }
@@ -1716,7 +1770,7 @@ function floodFillCanvas(ctx, canvas, startX, startY, replacementRGBA, tolerance
   ctx.putImageData(image, 0, 0);
 }
 
-async function loadPngFromNotebook(filePath) {
+async function loadRasterImageFromNotebook(filePath) {
   const stamp = `t=${Date.now()}`;
   const normalized = normalizeNotebookPath(filePath);
   const decodedNormalized = normalizeNotebookPath(safeDecode(filePath));
@@ -1767,7 +1821,7 @@ async function loadPngFromNotebook(filePath) {
   }
 
   throw lastError ||
-    new Error(`Failed to load PNG from candidates for: ${filePath}`);
+    new Error(`Failed to load image from candidates for: ${filePath}`);
 }
 
 async function loadImageFromApiPath(relativePath, stamp) {
@@ -1804,7 +1858,7 @@ function loadImageFromSrc(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load PNG: ${src}`));
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
     img.src = src;
   });
 }

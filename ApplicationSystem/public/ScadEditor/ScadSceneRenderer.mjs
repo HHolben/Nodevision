@@ -4,6 +4,23 @@
 import { mountWidget } from "/Widgets/WidgetHost.mjs";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
 
+const SCAD_LIGHT_THEME = {
+  viewportBackground: "#ffffff",
+  sceneBackground: 0xffffff,
+  gridCenter: 0x94a3b8,
+  gridLine: 0xe2e8f0,
+};
+const SCAD_DARK_THEME = {
+  viewportBackground: "#0f141b",
+  sceneBackground: 0x0f141b,
+  gridCenter: 0x445067,
+  gridLine: 0x2b3444,
+};
+
+function currentNodevisionTheme() {
+  return document.documentElement?.dataset?.nvTheme === "dark" ? "dark" : "light";
+}
+
 function layerFor(model, obj) {
   return model.layers.find((layer) => layer.id === obj.layerId) || model.layers[0] || {};
 }
@@ -58,7 +75,7 @@ export async function createScadSceneRenderer(container, options = {}) {
   container.innerHTML = "";
   container.style.position = container.style.position || "relative";
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf7f8fb);
+  scene.background = new THREE.Color(SCAD_LIGHT_THEME.sceneBackground);
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 4000);
   camera.position.set(90, -120, 120);
   camera.lookAt(0, 0, 0);
@@ -89,8 +106,29 @@ export async function createScadSceneRenderer(container, options = {}) {
       },
     },
   });
-  scene.add(new THREE.GridHelper(160, 16, 0xb8c1cc, 0xe1e5eb));
+  function disposeMaterial(material) {
+    if (Array.isArray(material)) material.forEach((entry) => entry?.dispose?.());
+    else material?.dispose?.();
+  }
+
+  let floorGrid = new THREE.GridHelper(160, 16, SCAD_LIGHT_THEME.gridCenter, SCAD_LIGHT_THEME.gridLine);
+  scene.add(floorGrid);
   scene.add(new THREE.AxesHelper(60));
+
+  function applyViewportTheme(theme = currentNodevisionTheme()) {
+    const colors = theme === "dark" ? SCAD_DARK_THEME : SCAD_LIGHT_THEME;
+    container.style.background = colors.viewportBackground;
+    scene.background.set(colors.sceneBackground);
+
+    scene.remove(floorGrid);
+    floorGrid.geometry?.dispose?.();
+    disposeMaterial(floorGrid.material);
+    floorGrid = new THREE.GridHelper(160, 16, colors.gridCenter, colors.gridLine);
+    scene.add(floorGrid);
+  }
+
+  const onThemeChanged = (event) => applyViewportTheme(event?.detail?.theme || currentNodevisionTheme());
+  applyViewportTheme();
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8b96a8, 1.7));
   const group = new THREE.Group();
   scene.add(group);
@@ -106,8 +144,8 @@ export async function createScadSceneRenderer(container, options = {}) {
 
   function resize() {
     const rect = container.getBoundingClientRect();
-    const w = Math.max(320, rect.width || 640);
-    const h = Math.max(260, rect.height || 420);
+    const w = Math.max(1, rect.width || container.clientWidth || 1);
+    const h = Math.max(1, rect.height || container.clientHeight || 1);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -249,24 +287,65 @@ export async function createScadSceneRenderer(container, options = {}) {
     else boxSelectHandler?.([], event);
   }
 
-  function selectObjectsInBox(box, event) {
-    const left = Math.min(box.startX, box.currentX);
-    const right = Math.max(box.startX, box.currentX);
-    const top = Math.min(box.startY, box.currentY);
-    const bottom = Math.max(box.startY, box.currentY);
+  function rectsIntersect(a, b) {
+    return a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top;
+  }
+
+  function screenBoundsForObject(object) {
+    const bounds = new THREE.Box3().setFromObject(object);
     const rect = renderer.domElement.getBoundingClientRect();
+    const points = [];
+
+    if (bounds.isEmpty()) {
+      points.push(object.getWorldPosition(new THREE.Vector3()));
+    } else {
+      points.push(
+        new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
+        new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
+        new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+        new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
+        new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
+        new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
+        new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
+        new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.max.z),
+      );
+    }
+
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+    let hasPoint = false;
+
+    points.forEach((sourcePoint) => {
+      const point = sourcePoint.clone().project(camera);
+      if (point.z < -1 || point.z > 1) return;
+      const x = rect.left + (point.x * 0.5 + 0.5) * rect.width;
+      const y = rect.top + (-point.y * 0.5 + 0.5) * rect.height;
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      top = Math.min(top, y);
+      bottom = Math.max(bottom, y);
+      hasPoint = true;
+    });
+
+    return hasPoint ? { left, right, top, bottom } : null;
+  }
+
+  function selectObjectsInBox(box, event) {
+    const selectionRect = {
+      left: Math.min(box.startX, box.currentX),
+      right: Math.max(box.startX, box.currentX),
+      top: Math.min(box.startY, box.currentY),
+      bottom: Math.max(box.startY, box.currentY),
+    };
     const ids = new Set();
     camera.updateMatrixWorld?.();
     group.children.forEach((child) => {
       const id = child.userData?.objectId;
       if (!id) return;
-      const bounds = new THREE.Box3().setFromObject(child);
-      const center = bounds.isEmpty() ? child.getWorldPosition(new THREE.Vector3()) : bounds.getCenter(new THREE.Vector3());
-      const point = center.project(camera);
-      if (point.z < -1 || point.z > 1) return;
-      const x = rect.left + (point.x * 0.5 + 0.5) * rect.width;
-      const y = rect.top + (-point.y * 0.5 + 0.5) * rect.height;
-      if (x >= left && x <= right && y >= top && y <= bottom) ids.add(id);
+      const bounds = screenBoundsForObject(child);
+      if (bounds && rectsIntersect(selectionRect, bounds)) ids.add(id);
     });
     boxSelectHandler?.([...ids], { shiftKey: box.shiftKey, ctrlKey: false, metaKey: false });
   }
@@ -287,6 +366,7 @@ export async function createScadSceneRenderer(container, options = {}) {
 
   function handleViewportPointerDown(event) {
     if (event.button !== 0) return;
+    event.preventDefault();
     startSelectionBox(event);
   }
 
@@ -303,7 +383,14 @@ export async function createScadSceneRenderer(container, options = {}) {
   window.addEventListener("pointerup", handleViewportPointerUp);
   window.addEventListener("pointercancel", handleViewportPointerUp);
 
-  window.addEventListener("resize", resize);
+  let resizeObserver = null;
+  if (typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(() => resize());
+    resizeObserver.observe(container);
+  } else {
+    window.addEventListener("resize", resize);
+  }
+  window.addEventListener("nv-theme-changed", onThemeChanged);
   resize();
 
   return {
@@ -320,7 +407,9 @@ export async function createScadSceneRenderer(container, options = {}) {
     setPickHandler(fn) { pickHandler = typeof fn === "function" ? fn : null; },
     setBoxSelectHandler(fn) { boxSelectHandler = typeof fn === "function" ? fn : null; },
     dispose() {
-      window.removeEventListener("resize", resize);
+      if (resizeObserver) resizeObserver.disconnect();
+      else window.removeEventListener("resize", resize);
+      window.removeEventListener("nv-theme-changed", onThemeChanged);
       window.removeEventListener("pointermove", handleViewportPointerMove);
       window.removeEventListener("pointerup", handleViewportPointerUp);
       window.removeEventListener("pointercancel", handleViewportPointerUp);
@@ -328,6 +417,9 @@ export async function createScadSceneRenderer(container, options = {}) {
       selectionBox?.el?.remove?.();
       selectionBox = null;
       cancelAnimationFrame(animationFrame);
+      scene.remove(floorGrid);
+      floorGrid.geometry?.dispose?.();
+      disposeMaterial(floorGrid.material);
       controls.dispose?.();
       clearGroup();
       renderer.dispose?.();

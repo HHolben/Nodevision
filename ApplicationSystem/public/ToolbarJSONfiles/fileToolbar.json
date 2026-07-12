@@ -232,6 +232,16 @@
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "Export",
+    "heading": "Export as STL",
+    "callbackKey": "ExportSelectedModelAsSTL",
+    "icon": "icons/Download.png",
+    "conditions": {
+      "modelCanExportSTL": true
+    }
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "Convert to EPUB",
     "callbackKey": "ConvertToEPUB",
     "icon": "icons/FileIcon.png",

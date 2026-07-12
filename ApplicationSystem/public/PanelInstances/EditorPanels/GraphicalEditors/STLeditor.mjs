@@ -13,6 +13,22 @@ const SAVE_ENDPOINT = "/api/save";
 const WELD_EPSILON = 1e-5;
 const NODEVISION_TOPOLOGY_PREFIX = "  // nodevision-topology: ";
 const STL_ACTION_AXIS_TYPES = new Set(["x", "y", "z"]);
+const STL_LIGHT_THEME = {
+  editorBackground: "#ffffff",
+  sceneBackground: 0xffffff,
+  gridCenter: 0x94a3b8,
+  gridLine: 0xe2e8f0,
+};
+const STL_DARK_THEME = {
+  editorBackground: "#101317",
+  sceneBackground: 0x0f141b,
+  gridCenter: 0x445067,
+  gridLine: 0x2b3444,
+};
+
+function currentNodevisionTheme() {
+  return document.documentElement?.dataset?.nvTheme === "dark" ? "dark" : "light";
+}
 
 function ensureStyles() {
   if (document.getElementById("nv-stl-editor-styles")) return;
@@ -20,6 +36,7 @@ function ensureStyles() {
   style.id = "nv-stl-editor-styles";
   style.textContent = `
     .nv-stl-editor { position:relative; width:100%; height:100%; min-width:0; min-height:0; overflow:hidden; background:#fff; }
+    html[data-nv-theme="dark"] .nv-stl-editor { background:#101317; }
     .nv-stl-viewport { position:absolute; inset:0; min-width:0; min-height:0; outline:none; }
     .nv-stl-viewport canvas { display:block; width:100%; height:100%; }
     .nv-stl-error { margin:12px; color:#b00020; }
@@ -264,9 +281,11 @@ export async function renderEditor(
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1);
+  const initialViewportRect = viewport.getBoundingClientRect();
   renderer.setSize(
-    Math.max(1, viewport.clientWidth),
-    Math.max(1, viewport.clientHeight),
+    Math.max(1, initialViewportRect.width || viewport.clientWidth || 1),
+    Math.max(1, initialViewportRect.height || viewport.clientHeight || 1),
+    false,
   );
   renderer.domElement.style.display = "block";
   renderer.domElement.style.width = "100%";
@@ -282,6 +301,32 @@ export async function renderEditor(
   const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
   keyLight.position.set(1, 1, 1).normalize();
   scene.add(keyLight);
+
+  function disposeMaterial(material) {
+    if (Array.isArray(material)) material.forEach((entry) => entry?.dispose?.());
+    else material?.dispose?.();
+  }
+
+  let floorGrid = new THREE.GridHelper(200, 40, STL_LIGHT_THEME.gridCenter, STL_LIGHT_THEME.gridLine);
+  floorGrid.name = "STLEditorThemeGrid";
+  scene.add(floorGrid);
+
+  function applyViewportTheme(theme = currentNodevisionTheme()) {
+    const colors = theme === "dark" ? STL_DARK_THEME : STL_LIGHT_THEME;
+    container.style.background = colors.editorBackground;
+    viewport.style.background = colors.editorBackground;
+    scene.background.set(colors.sceneBackground);
+
+    scene.remove(floorGrid);
+    floorGrid.geometry?.dispose?.();
+    disposeMaterial(floorGrid.material);
+    floorGrid = new THREE.GridHelper(200, 40, colors.gridCenter, colors.gridLine);
+    floorGrid.name = "STLEditorThemeGrid";
+    scene.add(floorGrid);
+  }
+
+  const onThemeChanged = (event) => applyViewportTheme(event?.detail?.theme || currentNodevisionTheme());
+  applyViewportTheme();
 
   const orientationWidget = await mountWidget(ViewportOrientationWidget, {
     container: viewport,
@@ -1089,73 +1134,164 @@ export async function renderEditor(
     return true;
   }
 
-  function extrudeSelection() {
-    if (!state.topology || state.selection.size === 0) return;
-    if (state.selection.size === 1) {
-      const [sourceIndex] = Array.from(state.selection);
-      extrudeSingleVertex(sourceIndex);
-      return;
-    }
-    const selectedFaces = [];
-    state.topology.faces.forEach((f, i) => {
-      if (
-        state.selection.has(f[0]) && state.selection.has(f[1]) &&
-        state.selection.has(f[2])
-      ) {
-        selectedFaces.push(i);
+  function ensureCustomEdge(a, b) {
+    if (!state.topology || !Number.isInteger(a) || !Number.isInteger(b) || a === b) return false;
+    state.topology.customEdges = Array.isArray(state.topology.customEdges) ? state.topology.customEdges : [];
+    const key = edgeKey(a, b);
+    const exists = state.topology.customEdges.some((edge) => edgeKey(edge[0], edge[1]) === key);
+    if (!exists) state.topology.customEdges.push([a, b]);
+    return !exists;
+  }
+
+  function topologyHasEdge(a, b) {
+    if (!state.topology || !Number.isInteger(a) || !Number.isInteger(b) || a === b) return false;
+    const key = edgeKey(a, b);
+    if ((state.topology.customEdges || []).some((edge) => edgeKey(edge[0], edge[1]) === key)) return true;
+    for (const face of state.topology.faces || []) {
+      if (!Array.isArray(face) || face.length < 3) continue;
+      for (let i = 0; i < face.length; i += 1) {
+        if (edgeKey(face[i], face[(i + 1) % face.length]) === key) return true;
       }
+    }
+    return false;
+  }
+
+  function selectedFaceIndicesForSelection() {
+    const selectedFaces = [];
+    if (!state.topology) return selectedFaces;
+    state.topology.faces.forEach((face, index) => {
+      if (!Array.isArray(face) || face.length < 3) return;
+      if (face.every((vertexIndex) => state.selection.has(vertexIndex))) selectedFaces.push(index);
     });
+    return selectedFaces;
+  }
 
-    const distance = Math.max(0.001, state.maxDim * 0.06);
+  function centroidForVertexIndices(indices = []) {
+    const centroid = new THREE.Vector3();
+    let count = 0;
+    indices.forEach((index) => {
+      const vertex = state.topology?.vertices?.[index];
+      if (!vertex) return;
+      centroid.add(vertex);
+      count += 1;
+    });
+    if (count > 0) centroid.multiplyScalar(1 / count);
+    return centroid;
+  }
 
-    if (selectedFaces.length === 0) {
-      const dir = new THREE.Vector3();
-      camera.getWorldDirection(dir);
-      dir.multiplyScalar(-distance);
-      state.selection.forEach((vi) => {
-        state.topology.vertices[vi].add(dir);
-      });
-      rebuildDisplayGeometry();
-      markDirty("Selection extruded");
-      return;
+  function extrusionOffsetForSelection(indices = [], normalHint = null) {
+    const centroid = centroidForVertexIndices(indices);
+    let target = pointFromLastCursorOnCameraPlane(centroid);
+    const minDistance = Math.max(WELD_EPSILON * 100, state.maxDim * 0.004, 0.001);
+    if (!target || target.distanceTo(centroid) <= minDistance) {
+      const distance = Math.max(0.001, state.maxDim * 0.06);
+      const normal = normalHint?.isVector3 && normalHint.lengthSq() > 1e-12
+        ? normalHint.clone().normalize()
+        : new THREE.Vector3().subVectors(fallbackExtrudePointFrom(centroid), centroid).normalize();
+      target = centroid.clone().addScaledVector(normal, distance);
+    }
+    return new THREE.Vector3().subVectors(target, centroid);
+  }
+
+  function startGrabForExtrudedVertices(oldToNew, centroid, message = "Selection extruded") {
+    state.selection = new Set(oldToNew.values());
+    state.maxDim = computeBounds().maxDim;
+    rebuildDisplayGeometry();
+    markDirty(message);
+
+    const grabStartVertices = cloneVertices(state.topology.vertices);
+    oldToNew.forEach((newIndex, oldIndex) => {
+      const source = state.topology.vertices[oldIndex];
+      if (source) grabStartVertices[newIndex] = source.clone();
+    });
+    const sourceClient = clientPointFromWorldPoint(centroid);
+    startActionMode("grab", {
+      clientX: sourceClient.x,
+      clientY: sourceClient.y,
+      startVerticesOverride: grabStartVertices,
+      centroidOverride: centroid,
+    });
+    applyActionMove(state.lastPointerClient.x, state.lastPointerClient.y);
+  }
+
+  function selectedVertexLoopFromTopology() {
+    if (!state.topology || state.selection.size < 3) return null;
+    const selected = new Set(state.selection);
+    const adjacency = new Map(Array.from(selected).map((index) => [index, new Set()]));
+    const addSelectedEdge = (a, b) => {
+      if (!selected.has(a) || !selected.has(b) || a === b) return;
+      adjacency.get(a)?.add(b);
+      adjacency.get(b)?.add(a);
+    };
+
+    for (const face of state.topology.faces || []) {
+      if (!Array.isArray(face) || face.length < 3) continue;
+      for (let i = 0; i < face.length; i += 1) addSelectedEdge(face[i], face[(i + 1) % face.length]);
+    }
+    for (const edge of state.topology.customEdges || []) {
+      if (!Array.isArray(edge) || edge.length < 2) continue;
+      addSelectedEdge(edge[0], edge[1]);
     }
 
+    if (Array.from(adjacency.values()).some((neighbors) => neighbors.size !== 2)) return null;
+    const start = Array.from(selected)[0];
+    const loop = [start];
+    let previous = null;
+    let current = start;
+    for (let guard = 0; guard < selected.size; guard += 1) {
+      const next = Array.from(adjacency.get(current) || []).find((candidate) => candidate !== previous);
+      if (!Number.isInteger(next)) return null;
+      if (next === start) return loop.length === selected.size ? loop : null;
+      if (loop.includes(next)) return null;
+      loop.push(next);
+      previous = current;
+      current = next;
+    }
+    return null;
+  }
+
+  function extrudeFaceIndices(selectedFaces = []) {
+    if (!state.topology || selectedFaces.length === 0) return false;
     const normal = new THREE.Vector3();
-    selectedFaces.forEach((fi) =>
-      normal.add(faceNormal(state.topology.vertices, state.topology.faces[fi]))
-    );
-    if (normal.lengthSq() < 1e-12) normal.set(0, 0, 1);
-    normal.normalize().multiplyScalar(distance);
+    const sourceSet = new Set();
+    selectedFaces.forEach((faceIndex) => {
+      const face = state.topology.faces[faceIndex];
+      if (!face) return;
+      face.forEach((vertexIndex) => sourceSet.add(vertexIndex));
+      normal.add(faceNormal(state.topology.vertices, face));
+    });
+    const sourceIndices = Array.from(sourceSet);
+    if (sourceIndices.length < 3) return false;
+    const offset = extrusionOffsetForSelection(sourceIndices, normal);
+    const centroid = centroidForVertexIndices(sourceIndices);
 
     const oldToNew = new Map();
-    selectedFaces.forEach((fi) => {
-      const f = state.topology.faces[fi];
-      f.forEach((vi) => {
-        if (oldToNew.has(vi)) return;
-        const nv = state.topology.vertices[vi].clone().add(normal);
-        oldToNew.set(vi, state.topology.vertices.length);
-        state.topology.vertices.push(nv);
-      });
+    sourceIndices.forEach((vertexIndex) => {
+      const source = state.topology.vertices[vertexIndex];
+      if (!source) return;
+      oldToNew.set(vertexIndex, state.topology.vertices.length);
+      state.topology.vertices.push(source.clone().add(offset));
     });
 
     const newFaces = [];
-    selectedFaces.forEach((fi) => {
-      const [a, b, c] = state.topology.faces[fi];
-      newFaces.push([oldToNew.get(a), oldToNew.get(b), oldToNew.get(c)]);
+    selectedFaces.forEach((faceIndex) => {
+      const face = state.topology.faces[faceIndex];
+      const copy = face.map((vertexIndex) => oldToNew.get(vertexIndex));
+      if (copy.every(Number.isInteger) && new Set(copy).size === copy.length) newFaces.push(copy);
     });
 
     const boundaryEdgeCounts = new Map();
     const boundaryEdgeOrientation = new Map();
-    selectedFaces.forEach((fi) => {
-      const [a, b, c] = state.topology.faces[fi];
-      const oriented = [[a, b], [b, c], [c, a]];
-      oriented.forEach(([u, v]) => {
-        const key = edgeKey(u, v);
+    selectedFaces.forEach((faceIndex) => {
+      const face = state.topology.faces[faceIndex];
+      if (!Array.isArray(face) || face.length < 3) return;
+      for (let i = 0; i < face.length; i += 1) {
+        const a = face[i];
+        const b = face[(i + 1) % face.length];
+        const key = edgeKey(a, b);
         boundaryEdgeCounts.set(key, (boundaryEdgeCounts.get(key) || 0) + 1);
-        if (!boundaryEdgeOrientation.has(key)) {
-          boundaryEdgeOrientation.set(key, [u, v]);
-        }
-      });
+        if (!boundaryEdgeOrientation.has(key)) boundaryEdgeOrientation.set(key, [a, b]);
+      }
     });
 
     boundaryEdgeCounts.forEach((count, key) => {
@@ -1163,14 +1299,119 @@ export async function renderEditor(
       const [a, b] = boundaryEdgeOrientation.get(key);
       const a2 = oldToNew.get(a);
       const b2 = oldToNew.get(b);
+      if (!Number.isInteger(a2) || !Number.isInteger(b2)) return;
       newFaces.push([a, b, b2], [a, b2, a2]);
+      ensureCustomEdge(a, a2);
+      ensureCustomEdge(b, b2);
+      ensureCustomEdge(a2, b2);
     });
 
     state.topology.faces.push(...newFaces);
-    state.selection = new Set(oldToNew.values());
+    startGrabForExtrudedVertices(oldToNew, centroid, "Face extruded");
+    return true;
+  }
+
+  function extrudeVertexLoop(loop = []) {
+    if (!state.topology || loop.length < 3) return false;
+    const sourceIndices = loop.filter((index) => Number.isInteger(index) && state.topology.vertices[index]);
+    if (sourceIndices.length < 3) return false;
+    const offset = extrusionOffsetForSelection(sourceIndices);
+    const centroid = centroidForVertexIndices(sourceIndices);
+    const oldToNew = new Map();
+    sourceIndices.forEach((vertexIndex) => {
+      const source = state.topology.vertices[vertexIndex];
+      oldToNew.set(vertexIndex, state.topology.vertices.length);
+      state.topology.vertices.push(source.clone().add(offset));
+    });
+
+    const newFaces = [];
+    const root = oldToNew.get(sourceIndices[0]);
+    for (let i = 1; i < sourceIndices.length - 1; i += 1) {
+      const a = oldToNew.get(sourceIndices[i]);
+      const b = oldToNew.get(sourceIndices[i + 1]);
+      if (Number.isInteger(root) && Number.isInteger(a) && Number.isInteger(b)) newFaces.push([root, a, b]);
+    }
+    for (let i = 0; i < sourceIndices.length; i += 1) {
+      const a = sourceIndices[i];
+      const b = sourceIndices[(i + 1) % sourceIndices.length];
+      const a2 = oldToNew.get(a);
+      const b2 = oldToNew.get(b);
+      if (!Number.isInteger(a2) || !Number.isInteger(b2)) continue;
+      newFaces.push([a, b, b2], [a, b2, a2]);
+      ensureCustomEdge(a, b);
+      ensureCustomEdge(a, a2);
+      ensureCustomEdge(b, b2);
+      ensureCustomEdge(a2, b2);
+    }
+
+    state.topology.faces.push(...newFaces);
+    startGrabForExtrudedVertices(oldToNew, centroid, "Face boundary extruded");
+    return true;
+  }
+
+  function extrudeEdgeSelection(edgeIndices = Array.from(state.selection || [])) {
+    if (!state.topology || edgeIndices.length !== 2) return false;
+    const [a, b] = edgeIndices;
+    const sourceA = state.topology.vertices[a];
+    const sourceB = state.topology.vertices[b];
+    if (!sourceA || !sourceB || a === b || !topologyHasEdge(a, b)) return false;
+
+    const midpoint = new THREE.Vector3().addVectors(sourceA, sourceB).multiplyScalar(0.5);
+    let targetMidpoint = pointFromLastCursorOnCameraPlane(midpoint);
+    const minDistance = Math.max(WELD_EPSILON * 100, state.maxDim * 0.004, 0.001);
+    if (!targetMidpoint || targetMidpoint.distanceTo(midpoint) <= minDistance) {
+      targetMidpoint = fallbackExtrudePointFrom(midpoint);
+    }
+    const offset = new THREE.Vector3().subVectors(targetMidpoint, midpoint);
+
+    const a2 = state.topology.vertices.length;
+    const b2 = a2 + 1;
+    state.topology.vertices.push(sourceA.clone().add(offset), sourceB.clone().add(offset));
+    state.topology.faces.push([a, b, b2], [a, b2, a2]);
+    ensureCustomEdge(a, b);
+    ensureCustomEdge(a, a2);
+    ensureCustomEdge(b, b2);
+    ensureCustomEdge(a2, b2);
+
+    state.selection = new Set([a2, b2]);
+    state.maxDim = computeBounds().maxDim;
     rebuildDisplayGeometry();
-    setModeLabel("extruded");
-    markDirty("Selection extruded");
+    markDirty("Edge extruded");
+
+    const grabStartVertices = cloneVertices(state.topology.vertices);
+    grabStartVertices[a2] = sourceA.clone();
+    grabStartVertices[b2] = sourceB.clone();
+    const sourceClient = clientPointFromWorldPoint(midpoint);
+    startActionMode("grab", {
+      clientX: sourceClient.x,
+      clientY: sourceClient.y,
+      startVerticesOverride: grabStartVertices,
+      centroidOverride: midpoint,
+    });
+    applyActionMove(state.lastPointerClient.x, state.lastPointerClient.y);
+    return true;
+  }
+
+  function extrudeSelection() {
+    if (!state.topology || state.selection.size === 0) return;
+    if (state.selection.size === 1) {
+      const [sourceIndex] = Array.from(state.selection);
+      extrudeSingleVertex(sourceIndex);
+      return;
+    }
+    if (state.selection.size === 2) {
+      if (extrudeEdgeSelection()) return;
+      setModeLabel("selected vertices are not joined by an edge");
+      return;
+    }
+
+    const selectedFaces = selectedFaceIndicesForSelection();
+    if (selectedFaces.length > 0 && extrudeFaceIndices(selectedFaces)) return;
+
+    const loop = selectedVertexLoopFromTopology();
+    if (loop && extrudeVertexLoop(loop)) return;
+
+    setModeLabel("selection does not define a connected edge or face");
   }
 
   function fillOrConnectSelection() {
@@ -1830,11 +2071,12 @@ export async function renderEditor(
   }
 
   function onResize() {
-    const w = Math.max(1, viewport.clientWidth);
-    const h = Math.max(1, viewport.clientHeight);
+    const rect = viewport.getBoundingClientRect();
+    const w = Math.max(1, rect.width || viewport.clientWidth || 1);
+    const h = Math.max(1, rect.height || viewport.clientHeight || 1);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
+    renderer.setSize(w, h, false);
   }
 
   let resizeObserver = null;
@@ -1901,6 +2143,7 @@ export async function renderEditor(
   window.addEventListener("pointerup", onPointerUp);
   window.addEventListener("pointercancel", onPointerUp);
   window.addEventListener("keydown", onKeyDown, true);
+  window.addEventListener("nv-theme-changed", onThemeChanged);
 
   renderer.setAnimationLoop(() => {
     if (state.destroyed) return;
@@ -1930,6 +2173,7 @@ export async function renderEditor(
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
       window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("nv-theme-changed", onThemeChanged);
       if (resizeObserver) resizeObserver.disconnect();
       else window.removeEventListener("resize", onResize);
       state.selectionBox?.el?.remove?.();
@@ -1941,6 +2185,9 @@ export async function renderEditor(
         brushRing.material.dispose();
         brushRing = null;
       }
+      scene.remove(floorGrid);
+      floorGrid.geometry?.dispose?.();
+      disposeMaterial(floorGrid.material);
       renderer.dispose();
       orientationWidget?.destroy?.();
       if (window.NodevisionState?.activeActionHandler === handleSTLToolbarAction) {

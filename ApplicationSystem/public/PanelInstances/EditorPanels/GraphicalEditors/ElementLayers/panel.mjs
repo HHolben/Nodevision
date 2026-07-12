@@ -51,9 +51,76 @@ function setSvgElementVisible(el, visible) {
   }
 }
 
+
+function withSvgSnapshot(label, operation) {
+  const ctx = window.SVGEditorContext;
+  const run = () => {
+    const result = operation?.();
+    return result === undefined ? true : result;
+  };
+  if (ctx?.recordSvgSnapshot) return ctx.recordSvgSnapshot(label, run);
+  return run();
+}
+
+function svgElementKind(el) {
+  const tag = String(el?.tagName || "element").toLowerCase();
+  if (isLayerGroupElement(el)) return "Layer";
+  if (tag === "g") return "Group";
+  if (tag === "mask") return "Mask";
+  if (tag === "clippath") return "Clip path";
+  if (tag === "defs") return "Definitions";
+  if (tag === "use") return "Linked clone";
+  if (tag === "lineargradient" || tag === "radialgradient") return "Gradient";
+  if (tag === "pattern") return "Pattern";
+  if (tag === "filter") return "Filter";
+  if (tag === "symbol") return "Symbol";
+  return "Object";
+}
+
+function isSvgElementLocked(el) {
+  return el?.getAttribute?.("data-nv-locked") === "true";
+}
+
+function setSvgElementLocked(el, locked) {
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
+  if (locked) {
+    el.setAttribute("data-nv-locked", "true");
+    if (el.style) el.style.pointerEvents = "none";
+  } else {
+    el.removeAttribute("data-nv-locked");
+    if (el.style?.pointerEvents === "none") el.style.pointerEvents = "";
+  }
+  return true;
+}
+
+function restoreSoloHiddenElements(root) {
+  const hidden = Array.from(root?.querySelectorAll?.("[data-nv-solo-hidden=\"true\"]") || []);
+  hidden.forEach((el) => {
+    const prevDisplay = el.getAttribute("data-nv-solo-prev-display");
+    if (el.style) el.style.display = prevDisplay || "";
+    el.removeAttribute("data-nv-solo-prev-display");
+    el.removeAttribute("data-nv-solo-hidden");
+  });
+  return hidden.length > 0;
+}
+
+function soloSvgElement(el) {
+  const root = el?.ownerSVGElement || el?.closest?.("svg") || null;
+  if (restoreSoloHiddenElements(root)) return true;
+  const layer = el?.closest?.("g[data-layer=\"true\"]") || el?.parentNode;
+  if (!layer?.children) return false;
+  Array.from(layer.children).forEach((sibling) => {
+    if (sibling === el || sibling.contains?.(el) || sibling.getAttribute?.("data-nv-editor-ui")) return;
+    sibling.setAttribute("data-nv-solo-hidden", "true");
+    sibling.setAttribute("data-nv-solo-prev-display", sibling.style?.display || "");
+    if (sibling.style) sibling.style.display = "none";
+  });
+  return true;
+}
+
 function describeSvgElement(el) {
   const explicit = el?.getAttribute?.("data-element-name");
-  if (explicit) return explicit;
+  if (explicit) return svgElementKind(el) + ": " + explicit;
   const tag = (el?.tagName || "element").toLowerCase();
   const id = el?.getAttribute?.("id");
   const cls = (el?.getAttribute?.("class") || "").trim();
@@ -68,7 +135,8 @@ function describeSvgElement(el) {
     const t = (el.textContent || "").trim().replace(/\s+/g, " ");
     if (t) extra = `${extra} “${t.slice(0, 32)}${t.length > 32 ? "…" : ""}”`;
   }
-  return `${tag}${idToken}${classToken}${extra}`;
+  const kind = svgElementKind(el);
+  return `${kind}: ${tag}${idToken}${classToken}${extra}`;
 }
 
 function getDropHalf(event, targetEl) {
@@ -170,7 +238,7 @@ function renderLayerContents({
     const item = document.createElement("div");
     Object.assign(item.style, {
       display: "grid",
-      gridTemplateColumns: "52px 1fr",
+      gridTemplateColumns: "52px 48px 48px 1fr auto",
       alignItems: "center",
       gap: "4px",
       padding: "2px 4px",
@@ -187,10 +255,32 @@ function renderLayerContents({
     visBtn.title = visible ? "Hide element" : "Show element";
     visBtn.setAttribute("aria-pressed", String(visible));
     visBtn.onclick = () => {
-      setSvgElementVisible(child, !visible);
+      withSvgSnapshot("element-visibility", () => setSvgElementVisible(child, !visible));
       rerender?.();
     };
     item.appendChild(visBtn);
+
+    const locked = isSvgElementLocked(child);
+    const lockBtn = document.createElement("button");
+    lockBtn.type = "button";
+    lockBtn.textContent = locked ? "Unlock" : "Lock";
+    lockBtn.title = locked ? "Unlock element" : "Lock element";
+    lockBtn.setAttribute("aria-pressed", String(locked));
+    lockBtn.onclick = () => {
+      withSvgSnapshot("element-lock", () => setSvgElementLocked(child, !locked));
+      rerender?.();
+    };
+    item.appendChild(lockBtn);
+
+    const soloBtn = document.createElement("button");
+    soloBtn.type = "button";
+    soloBtn.textContent = "Solo";
+    soloBtn.title = "Solo this element; click any Solo again to clear";
+    soloBtn.onclick = () => {
+      withSvgSnapshot("element-solo", () => soloSvgElement(child));
+      rerender?.();
+    };
+    item.appendChild(soloBtn);
 
     const label = document.createElement("div");
     label.textContent = describeSvgElement(child);
@@ -206,6 +296,20 @@ function renderLayerContents({
     });
     item.appendChild(label);
 
+    const contentsBtn = document.createElement("button");
+    contentsBtn.type = "button";
+    contentsBtn.textContent = "All";
+    contentsBtn.title = "Select all contents";
+    contentsBtn.disabled = !(child.children && child.children.length);
+    contentsBtn.onclick = (event) => {
+      event.stopPropagation();
+      const contents = Array.from(child.querySelectorAll?.("*") || []).filter((el) => !isLayerPanelHiddenElement(el));
+      window.SVGEditorContext?.setSelection?.(contents, { primary: contents[0] || null, allowLocked: true });
+      setActiveLayer?.(rootLayerId);
+      rerender?.();
+    };
+    item.appendChild(contentsBtn);
+
     const selectedElements = Array.isArray(state?.selectedElements)
       ? state.selectedElements
       : [];
@@ -220,7 +324,7 @@ function renderLayerContents({
         describeSvgElement(child);
       const next = prompt("Rename element", current);
       if (next && next.trim()) {
-        child.setAttribute("data-element-name", next.trim());
+        withSvgSnapshot("element-rename", () => child.setAttribute("data-element-name", next.trim()));
         label.textContent = describeSvgElement(child);
       }
     };
@@ -281,7 +385,7 @@ function renderLayerContents({
         : child.parentNode instanceof SVGElement
         ? child.parentNode
         : null;
-      moveElementToLayer?.(dragging, targetLayerId, beforeEl, targetParent);
+      withSvgSnapshot("element-reorder", () => moveElementToLayer?.(dragging, targetLayerId, beforeEl, targetParent));
       state.dragData = null;
       item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
       clearDropIndicator(item);
@@ -295,12 +399,12 @@ function renderLayerContents({
       const mod = e.ctrlKey || e.metaKey;
       let nextSelected = [child];
       if (ctx?.toggleSelection && mod) {
-        ctx.toggleSelection(child);
+        ctx.toggleSelection(child, { allowLocked: true });
         nextSelected = ctx.getSelectedElements
           ? ctx.getSelectedElements().filter((el) => el?.isConnected)
           : [];
       } else if (ctx?.setSelection) {
-        ctx.setSelection(nextSelected, { primary: child });
+        ctx.setSelection(nextSelected, { primary: child, allowLocked: true });
         nextSelected = ctx.getSelectedElements
           ? ctx.getSelectedElements().filter((el) => el?.isConnected)
           : nextSelected;
@@ -815,7 +919,7 @@ export function renderLayersPanel({
 
   panelEl.innerHTML = "";
 
-  const { header } = createLayerPanelHeader({ onAddLayer: () => createLayer?.() });
+  const { header } = createLayerPanelHeader({ onAddLayer: () => withSvgSnapshot("create-layer", () => createLayer?.()) });
   panelEl.appendChild(header);
 
   const list = createLayerListElement();
@@ -857,7 +961,7 @@ export function renderLayersPanel({
       },
       onToggleVisible: () => {
         const nextVisible = layer.style.display === "none";
-        setLayerVisible?.(layer.id, nextVisible);
+        withSvgSnapshot("layer-visibility", () => setLayerVisible?.(layer.id, nextVisible));
         rerender?.();
       },
       onSelect: () => {
@@ -871,16 +975,16 @@ export function renderLayersPanel({
         setActiveLayer?.(layer.id);
         rerender?.();
       },
-      onMoveUp: () => moveLayer?.(layer.id, -1),
-      onMoveDown: () => moveLayer?.(layer.id, 1),
+      onMoveUp: () => withSvgSnapshot("layer-order", () => moveLayer?.(layer.id, -1)),
+      onMoveDown: () => withSvgSnapshot("layer-order", () => moveLayer?.(layer.id, 1)),
       onRename: () => {
         const oldName = layer.getAttribute("data-layer-name") || layer.id;
         const next = prompt("Layer name:", oldName);
         if (!next) return;
-        layer.setAttribute("data-layer-name", next.trim() || oldName);
+        withSvgSnapshot("layer-rename", () => layer.setAttribute("data-layer-name", next.trim() || oldName));
         rerender?.();
       },
-      onDelete: () => removeLayer?.(layer.id),
+      onDelete: () => withSvgSnapshot("delete-layer", () => removeLayer?.(layer.id)),
     });
 
     wrapper.appendChild(row);
@@ -928,11 +1032,11 @@ export function renderLayersPanel({
         if (draggingId && draggingId !== layer.id) {
           // Top half = place above target in panel (after in DOM for top-first view).
           // Bottom half = place below target in panel (before in DOM for top-first view).
-          moveLayerTo?.(
+          withSvgSnapshot("layer-order", () => moveLayerTo?.(
             draggingId,
             layer.id,
             half === "upper" ? "after" : "before",
-          );
+          ));
         }
       } else if (state.dragData?.type === "element") {
         e.preventDefault();
@@ -940,7 +1044,7 @@ export function renderLayersPanel({
         if (draggingEl) {
           // Top half puts element at front/top of layer, bottom half at back/bottom.
           const beforeEl = half === "upper" ? null : layer.firstChild;
-          moveElementToLayer?.(draggingEl, layer.id, beforeEl, layer);
+          withSvgSnapshot("element-reorder", () => moveElementToLayer?.(draggingEl, layer.id, beforeEl, layer));
         }
       }
       state.dragData = null;

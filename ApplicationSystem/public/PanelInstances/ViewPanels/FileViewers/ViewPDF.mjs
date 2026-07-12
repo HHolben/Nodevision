@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPDF.mjs
-// This file defines browser-side View PDF logic for the Nodevision UI. It renders interface components and handles user interactions.
+// This file mounts the native Nodevision PDF viewer. The shared PDF workspace renders pages through PDF.js when available and overlays saved Nodevision annotations.
+
+import { renderPdfWorkspace } from "./PDF/PDFOverlayEditor.mjs";
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
   console.log("ViewPDF: initializing for", filename);
@@ -9,31 +11,15 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     return;
   }
 
-  // Default server base if not provided
-  serverBase = serverBase || "/Notebook";
-
-  // Clear panel
   viewPanel.innerHTML = "";
-
-  // Create outer container
   const container = document.createElement("div");
-  container.style.width = "100%";
-  container.style.height = "100%";
-  container.style.overflow = "auto";
+  Object.assign(container.style, {
+    width: "100%",
+    height: "100%",
+    minHeight: "0",
+  });
   viewPanel.appendChild(container);
 
-  // Use existing iframe param or create a new one
-  const pdfFrame = iframe || document.createElement("iframe");
-
-  pdfFrame.src = `${serverBase}/${encodeURIComponent(filename)}`;
-  pdfFrame.style.width = "100%";
-  pdfFrame.style.height = "600px";
-  pdfFrame.style.border = "1px solid #ccc";
-
-  pdfFrame.onload = () => console.log("PDF loaded:", filename);
-  pdfFrame.onerror = () => {
-    pdfFrame.srcdoc = `<p style="color:red;">Error loading PDF: ${filename}</p>`;
-  };
-
-  container.appendChild(pdfFrame);
+  await renderPdfWorkspace(filename, container, { editable: false });
+  return true;
 }

@@ -6,6 +6,14 @@ import { STLLoader } from "/lib/three/STLLoader.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
 
+function viewerElementSize(element) {
+  const rect = element.getBoundingClientRect?.();
+  return {
+    width: Math.max(1, rect?.width || element.clientWidth || 1),
+    height: Math.max(1, rect?.height || element.clientHeight || 1),
+  };
+}
+
 function isEmptySTLBuffer(arrayBuffer) {
   if (!arrayBuffer || arrayBuffer.byteLength === 0) return true;
   try {
@@ -35,17 +43,21 @@ export class STLViewer {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xffffff);
+    const size = viewerElementSize(container);
 
     this.camera = new THREE.PerspectiveCamera(
       45,
-      container.clientWidth / container.clientHeight,
+      size.width / size.height,
       1,
       50000,
     );
     this.camera.position.set(200, 200, 200);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setSize(container.clientWidth, container.clientHeight);
+    this.renderer.setSize(size.width, size.height, false);
+    this.renderer.domElement.style.display = "block";
+    this.renderer.domElement.style.width = "100%";
+    this.renderer.domElement.style.height = "100%";
     this.renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(this.renderer.domElement);
 
@@ -86,7 +98,13 @@ export class STLViewer {
     this.orientationWidget.mount();
 
     this.resizeHandler = () => this.handleResize();
-    window.addEventListener("resize", this.resizeHandler);
+    this.resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(() => this.handleResize());
+      this.resizeObserver.observe(container);
+    } else {
+      window.addEventListener("resize", this.resizeHandler);
+    }
 
     this.renderer.setAnimationLoop(() => this.animate());
   }
@@ -134,7 +152,8 @@ export class STLViewer {
   }
 
   destroy() {
-    window.removeEventListener("resize", this.resizeHandler);
+    if (this.resizeObserver) this.resizeObserver.disconnect();
+    else window.removeEventListener("resize", this.resizeHandler);
     if (this.floorGrid) {
       this.floorGrid.geometry?.dispose?.();
       if (Array.isArray(this.floorGrid.material)) this.floorGrid.material.forEach((mat) => mat.dispose?.());
@@ -146,12 +165,13 @@ export class STLViewer {
 
   handleResize() {
     const c = this.container;
-    const w = c.clientWidth;
-    const h = c.clientHeight;
+    const size = viewerElementSize(c);
+    const w = size.width;
+    const h = size.height;
 
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(w, h);
+    this.renderer.setSize(w, h, false);
   }
 
   animate() {

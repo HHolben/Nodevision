@@ -199,6 +199,13 @@ saveFile: async () => {
     return;
   }
 
+  if (mode === "GIFediting" && typeof window.GIFEditorContext?.save === "function") {
+    const editorPath = firstLegacySavePath(window.__nvGifEditorActivePath, window.GIFEditorContext?.filePath);
+    if (refuseLegacyMismatchedSave("GIF Editor", editorPath || filePath, filePath)) return;
+    await window.GIFEditorContext.save(filePath);
+    return;
+  }
+
   // Check for raster editing mode
   if (!window.NodevisionState?.htmlImageEditingInline &&
       (isRasterMode || isRasterPath) &&

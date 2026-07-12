@@ -495,6 +495,8 @@ export async function updateViewPanel(element, { force = false } = {}) {
   window.currentActiveFilePath = filename;
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = filename;
+  window.NodevisionModelExportContext = null;
+  updateToolbarState({ currentMode: "Default", selectedFile: filename, modelCanExportSTL: false });
   setFileViewStatus("File Viewer", filename);
   viewPanel.innerHTML = "";
 

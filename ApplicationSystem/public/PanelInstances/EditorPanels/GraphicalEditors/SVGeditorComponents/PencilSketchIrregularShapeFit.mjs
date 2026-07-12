@@ -8,7 +8,9 @@ export const IRREGULAR_SHAPE_DEFAULTS = {
   radialBinCount: 96,
   angularSmoothingBins: 3,
   minCoverageForPreview: 0.2,
-  recentStrokeWeight: 1.25,
+  combineMode: "averaging",
+  mirrorX: false,
+  mirrorY: false,
   outlierTrimPercent: 0.15,
   previewSmoothness: 0.65,
   maxPreviewPoints: 64,
@@ -30,8 +32,60 @@ function finitePoint(raw) {
   return { x, y };
 }
 
+function mirroredPoints(point, focalPoint, mirrorX = false, mirrorY = false) {
+  const base = finitePoint(point);
+  const focal = finitePoint(focalPoint);
+  if (!base || !focal) return [];
+  const variants = [{ ...base, mirror: "none" }];
+  if (mirrorY) variants.push({ x: (2 * focal.x) - base.x, y: base.y, mirror: "mirror-y" });
+  if (mirrorX) variants.push({ x: base.x, y: (2 * focal.y) - base.y, mirror: "mirror-x" });
+  if (mirrorX && mirrorY) variants.push({ x: (2 * focal.x) - base.x, y: (2 * focal.y) - base.y, mirror: "mirror-x-y" });
+  const seen = new Set();
+  return variants.filter((variant) => {
+    const key = Math.round(variant.x * 1000) + ":" + Math.round(variant.y * 1000);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function latestOverrideSample(samples = []) {
+  return samples
+    .filter((sample) => Number.isFinite(sample?.radius))
+    .sort((a, b) => {
+      const strokeDelta = (Number(b.strokeIndex) || 0) - (Number(a.strokeIndex) || 0);
+      if (strokeDelta) return strokeDelta;
+      const sourceDelta = (Number(b.sourceIndex) || 0) - (Number(a.sourceIndex) || 0);
+      if (sourceDelta) return sourceDelta;
+      const pointDelta = (Number(b.pointIndex) || 0) - (Number(a.pointIndex) || 0);
+      if (pointDelta) return pointDelta;
+      const directDelta = (b.direct ? 1 : 0) - (a.direct ? 1 : 0);
+      if (directDelta) return directDelta;
+      return (Number(b.weight) || 0) - (Number(a.weight) || 0);
+    })[0] || null;
+}
+
 function binIndexForAngle(angle, binCount) {
   return clamp(Math.floor((normalizeAngle(angle) / TAU) * binCount), 0, binCount - 1);
+}
+
+function orderedOverrideBins(bins = []) {
+  const ordered = bins
+    .filter((bin) => bin.overwritten && bin.overridePoint)
+    .sort((a, b) => a.index - b.index);
+  if (ordered.length <= 2) return ordered;
+  const binCount = bins.length;
+  let startIndex = 0;
+  let largestGap = -1;
+  ordered.forEach((bin, index) => {
+    const next = ordered[(index + 1) % ordered.length];
+    const gap = (next.index - bin.index + binCount) % binCount;
+    if (gap > largestGap) {
+      largestGap = gap;
+      startIndex = (index + 1) % ordered.length;
+    }
+  });
+  return [...ordered.slice(startIndex), ...ordered.slice(0, startIndex)];
 }
 
 function weightedTrimmedMean(samples = [], trimPercent = 0.15) {
@@ -195,7 +249,11 @@ export function fitIrregularShapeRadialPrediction(strokes = [], focalPoint, opti
     0,
     0.95,
   );
-  const recentStrokeWeight = Number(options.recentStrokeWeight) || IRREGULAR_SHAPE_DEFAULTS.recentStrokeWeight;
+  const combineMode = String(options.combineMode || IRREGULAR_SHAPE_DEFAULTS.combineMode).trim().toLowerCase() === "overriding"
+    ? "overriding"
+    : "averaging";
+  const mirrorX = Boolean(options.mirrorX ?? IRREGULAR_SHAPE_DEFAULTS.mirrorX);
+  const mirrorY = Boolean(options.mirrorY ?? IRREGULAR_SHAPE_DEFAULTS.mirrorY);
   const trimPercent = Number.isFinite(Number(options.outlierTrimPercent))
     ? Number(options.outlierTrimPercent)
     : IRREGULAR_SHAPE_DEFAULTS.outlierTrimPercent;
@@ -212,37 +270,45 @@ export function fitIrregularShapeRadialPrediction(strokes = [], focalPoint, opti
     ignoredOutlierCount: 0,
   }));
   const radialSamples = [];
-  const lastStrokeIndex = Math.max(0, strokes.length - 1);
+  const drawableStrokes = (Array.isArray(strokes) ? strokes : [])
+    .map((stroke, strokeIndex) => ({
+      strokeIndex,
+      points: Array.isArray(stroke?.points) ? stroke.points : [],
+    }))
+    .filter((entry) => entry.points.length >= 2);
+  const sourceStrokes = drawableStrokes;
 
-  strokes.forEach((stroke, strokeIndex) => {
-    const points = Array.isArray(stroke?.points) ? stroke.points : [];
-    const strokeWeight = strokeIndex === lastStrokeIndex ? recentStrokeWeight : 1;
-    points.forEach((rawPoint) => {
-      const point = finitePoint(rawPoint);
-      if (!point) return;
-      const dx = point.x - focal.x;
-      const dy = point.y - focal.y;
-      const radius = Math.hypot(dx, dy);
-      if (!Number.isFinite(radius) || radius <= EPSILON) return;
-      const theta = normalizeAngle(Math.atan2(dy, dx));
-      const centerBin = binIndexForAngle(theta, binCount);
-      radialSamples.push({ theta, radius, bin: centerBin, strokeIndex, weight: strokeWeight });
-      directEvidence[centerBin] += 1;
-      bins[centerBin].directSampleCount += 1;
-      for (let offset = -angularWindow; offset <= angularWindow; offset += 1) {
-        const distanceBins = Math.abs(offset);
-        const falloff = angularWindow <= 0
-          ? 1
-          : (angularWindow + 1 - distanceBins) / (angularWindow + 1);
-        if (falloff <= 0) continue;
-        const index = (centerBin + offset + binCount) % binCount;
-        bins[index].samples.push({
-          radius,
-          weight: strokeWeight * falloff,
-          direct: offset === 0,
-          strokeIndex,
-        });
-      }
+  sourceStrokes.forEach(({ points, strokeIndex }, sourceIndex) => {
+    points.forEach((rawPoint, pointIndex) => {
+      mirroredPoints(rawPoint, focal, mirrorX, mirrorY).forEach((point) => {
+        const dx = point.x - focal.x;
+        const dy = point.y - focal.y;
+        const radius = Math.hypot(dx, dy);
+        if (!Number.isFinite(radius) || radius <= EPSILON) return;
+        const theta = normalizeAngle(Math.atan2(dy, dx));
+        const centerBin = binIndexForAngle(theta, binCount);
+        const sample = { theta, radius, bin: centerBin, strokeIndex, sourceIndex, pointIndex, mirror: point.mirror, x: point.x, y: point.y, weight: 1 };
+        radialSamples.push(sample);
+        directEvidence[centerBin] += 1;
+        bins[centerBin].directSampleCount += 1;
+        if (combineMode === "overriding") {
+          bins[centerBin].samples.push({ ...sample, direct: true });
+        } else {
+          for (let offset = -angularWindow; offset <= angularWindow; offset += 1) {
+            const distanceBins = Math.abs(offset);
+            const falloff = angularWindow <= 0
+              ? 1
+              : (angularWindow + 1 - distanceBins) / (angularWindow + 1);
+            if (falloff <= 0) continue;
+            const index = (centerBin + offset + binCount) % binCount;
+            bins[index].samples.push({
+              ...sample,
+              weight: falloff,
+              direct: offset === 0,
+            });
+          }
+        }
+      });
     });
   });
 
@@ -254,6 +320,10 @@ export function fitIrregularShapeRadialPrediction(strokes = [], focalPoint, opti
       reason: "not-enough-radial-samples",
       confidence: 0,
       coverage,
+      combineMode,
+      mirrorX,
+      mirrorY,
+      sourceStrokeCount: sourceStrokes.length,
       points: [],
       radialSamples,
       radialBins: bins,
@@ -261,18 +331,33 @@ export function fitIrregularShapeRadialPrediction(strokes = [], focalPoint, opti
   }
 
   const rawRadii = bins.map((bin) => {
+    if (combineMode === "overriding") {
+      const overrideSample = latestOverrideSample(bin.samples);
+      if (overrideSample) {
+        bin.radius = overrideSample.radius;
+        bin.overwritten = true;
+        bin.overwritingStrokeIndex = overrideSample.strokeIndex;
+        bin.overridePoint = { x: overrideSample.x, y: overrideSample.y };
+      }
+      bin.ignoredOutlierCount = 0;
+      return bin.radius;
+    }
     const estimate = weightedTrimmedMean(bin.samples, trimPercent);
     bin.radius = estimate.radius;
     bin.ignoredOutlierCount = estimate.ignored;
     return estimate.radius;
   });
   const validRadiusCount = rawRadii.filter((radius) => Number.isFinite(radius)).length;
-  if (validRadiusCount < Math.max(3, Math.ceil(binCount * minCoverage))) {
+  if (combineMode !== "overriding" && validRadiusCount < Math.max(3, Math.ceil(binCount * minCoverage))) {
     return {
       ok: false,
       reason: coverage < minCoverage ? "coverage-too-low" : "not-enough-populated-bins",
       confidence: clamp(coverage / Math.max(EPSILON, minCoverage), 0, 0.35),
       coverage,
+      combineMode,
+      mirrorX,
+      mirrorY,
+      sourceStrokeCount: sourceStrokes.length,
       evidenceBinCount,
       binCount,
       points: [],
@@ -282,22 +367,38 @@ export function fitIrregularShapeRadialPrediction(strokes = [], focalPoint, opti
     };
   }
 
-  const interpolation = interpolateMissingRadii(rawRadii);
+  const interpolation = combineMode === "overriding"
+    ? { radii: rawRadii, interpolated: new Set() }
+    : interpolateMissingRadii(rawRadii);
   interpolation.interpolated.forEach((index) => {
     bins[index].interpolated = true;
     bins[index].radius = interpolation.radii[index];
   });
-  const smoothedRadii = smoothCircularRadii(interpolation.radii, angularWindow, smoothness);
-  const points = smoothedRadii.map((radius, index) => {
-    const theta = ((index + 0.5) / binCount) * TAU;
-    bins[index].smoothedRadius = radius;
-    return {
-      x: focal.x + Math.cos(theta) * radius,
-      y: focal.y + Math.sin(theta) * radius,
-      theta,
-      radius,
-    };
-  });
+  const smoothedRadii = combineMode === "overriding"
+    ? interpolation.radii
+    : smoothCircularRadii(interpolation.radii, angularWindow, smoothness);
+  const points = combineMode === "overriding"
+    ? orderedOverrideBins(bins).map((bin) => {
+      const radius = Number(bin.radius);
+      const theta = ((bin.index + 0.5) / binCount) * TAU;
+      bin.smoothedRadius = radius;
+      return {
+        x: bin.overridePoint.x,
+        y: bin.overridePoint.y,
+        theta,
+        radius,
+      };
+    })
+    : smoothedRadii.map((radius, index) => {
+      const theta = ((index + 0.5) / binCount) * TAU;
+      bins[index].smoothedRadius = radius;
+      return {
+        x: focal.x + Math.cos(theta) * radius,
+        y: focal.y + Math.sin(theta) * radius,
+        theta,
+        radius,
+      };
+    });
 
   let confidence = 0;
   if (coverage >= 0.8) confidence = 0.92;
@@ -306,10 +407,15 @@ export function fitIrregularShapeRadialPrediction(strokes = [], focalPoint, opti
   else confidence = clamp(coverage / Math.max(EPSILON, minCoverage), 0, 0.3);
 
   return {
-    ok: coverage >= minCoverage,
-    reason: coverage >= minCoverage ? "accepted" : "coverage-too-low",
-    confidence: clamp(confidence, 0, 1),
+    ok: combineMode === "overriding" ? points.length > 0 : coverage >= minCoverage,
+    reason: combineMode === "overriding" ? (points.length > 0 ? "accepted" : "not-enough-radial-samples") : (coverage >= minCoverage ? "accepted" : "coverage-too-low"),
+    confidence: combineMode === "overriding" ? clamp(coverage, 0, 1) : clamp(confidence, 0, 1),
     coverage,
+    combineMode,
+    mirrorX,
+    mirrorY,
+    sourceStrokeCount: sourceStrokes.length,
+    binsOverwritten: combineMode === "overriding" ? bins.filter((bin) => bin.overwritten).length : evidenceBinCount,
     evidenceBinCount,
     binCount,
     points,

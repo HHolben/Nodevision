@@ -142,7 +142,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "PickColor",
     "preventAutoSubToolbar": true,
-    "modes": ["PNGediting", "GraphicalEditing"]
+    "modes": ["PNGediting", "GIFediting", "GraphicalEditing"]
   },
   {
     "heading": "Layout",
@@ -151,7 +151,22 @@
     "callbackKey": "ImageLayout",
     "preventAutoSubToolbar": true,
     "icon": "icons/CanvasIcon.png",
-    "modes": ["PNGediting", "SVG Editing", "FontEditing"]
+    "modes": ["PNGediting", "GIFediting", "SVG Editing", "FontEditing"]
+  },
+  {
+    "heading": "Animations",
+    "parentHeading": "Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "GifAnimations",
+    "preventDropdown": true,
+    "modes": ["GIFediting", "GraphicalEditing"],
+    "shortLabel": "Anim"
+  },
+  {
+    "heading": "GIF Animation Controls",
+    "parentHeading": "Animations",
+    "script": "gifAnimationToolbar.mjs",
+    "modes": ["GIFediting"]
   },
   {
     "heading": "Vector Draw",
@@ -200,6 +215,22 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeFreehand",
     "icon": "icons/imageEditIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+  },
+  {
+    "heading": "Eyedropper",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeEyedropper",
+    "icon": "icons/CanvasIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+  },
+  {
+    "heading": "Eraser",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeEraser",
+    "icon": "icons/ExitIcon.png",
     "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
   },
   {
@@ -274,6 +305,12 @@
     "heading": "SVG Styles",
     "parentHeading": "Vector Draw",
     "script": "svgStyleWidget.mjs",
+    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+  },
+  {
+    "heading": "Drawing Assist Controls",
+    "parentHeading": "Vector Draw",
+    "script": "svgDrawingAssistWidget.mjs",
     "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
   },
   {

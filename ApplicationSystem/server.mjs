@@ -583,6 +583,7 @@ app.use('/api/file', uploadRoutes);
   app.use('/vendor/cytoscape', express.static(path.join(NODE_MODULES_DIR, 'cytoscape')));
   app.use('/vendor/mathjax', express.static(path.join(NODE_MODULES_DIR, 'mathjax')));
   app.use('/vendor/vexflow', express.static(path.join(NODE_MODULES_DIR, 'vexflow')));
+  app.use('/vendor/pdfjs', express.static(path.join(NODE_MODULES_DIR, 'pdfjs-dist')));
   app.use('/vendor/tesseract.js', express.static(path.join(NODE_MODULES_DIR, 'tesseract.js')));
   app.use('/vendor/layout-base', express.static(path.join(NODE_MODULES_DIR, 'layout-base')));
   app.use('/vendor/cytoscape-expand-collapse', express.static(path.join(NODE_MODULES_DIR, 'cytoscape-expand-collapse')));
