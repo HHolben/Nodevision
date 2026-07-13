@@ -2051,13 +2051,15 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
   function getTapeMeasureHit() {
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const candidates = (objects || []).filter((obj) => (
+    const candidates = [];
+    if (ground?.isMesh && ground?.visible) candidates.push(ground);
+    candidates.push(...(objects || []).filter((obj) => (
       obj?.isMesh
       && obj?.visible
       && obj?.userData?.isMeasure !== true
       && obj?.userData?.isWater !== true
       && obj?.userData?.isLiquid !== true
-    ));
+    )));
     const hits = raycaster.intersectObjects(candidates, false);
     return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
   }

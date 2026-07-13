@@ -9,8 +9,11 @@ export function addCrosshair(panel) {
   crosshair.style.transform = "translate(-50%, -50%)";
   crosshair.style.width = "20px";
   crosshair.style.height = "20px";
+  crosshair.style.boxSizing = "border-box";
   crosshair.style.border = "2px solid white";
   crosshair.style.borderRadius = "50%";
+  crosshair.style.background = "transparent";
+  crosshair.style.mixBlendMode = "difference";
   crosshair.style.pointerEvents = "none";
   crosshair.style.zIndex = "10";
   panel.appendChild(crosshair);
