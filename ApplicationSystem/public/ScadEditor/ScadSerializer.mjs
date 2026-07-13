@@ -29,6 +29,10 @@ function qName(name = "") {
   return String(name || "").replace(/[^a-zA-Z0-9_ -]/g, "").trim();
 }
 
+function qString(value = "") {
+  return JSON.stringify(String(value || ""));
+}
+
 function indentLines(lines, spaces = 2) {
   const pad = " ".repeat(spaces);
   return lines.map((line) => line ? pad + line : line);
@@ -38,13 +42,48 @@ function pointsLiteral(points = []) {
   return `[${points.map((pt) => `[${fmtNumber(pt?.[0] ?? 0)}, ${fmtNumber(pt?.[1] ?? 0)}]`).join(", ")}]`;
 }
 
+function points3Literal(points = []) {
+  return "[" + points.map((pt) => {
+    const arr = Array.isArray(pt) ? pt : [];
+    return "[" + fmtNumber(arr[0]) + ", " + fmtNumber(arr[1]) + ", " + fmtNumber(arr[2]) + "]";
+  }).join(", ") + "]";
+}
+
+function facesLiteral(faces = []) {
+  return "[" + faces.map((face) => {
+    const arr = Array.isArray(face) ? face : [];
+    return "[" + arr.map((index) => Math.max(0, Math.round(n(index, 0)))).join(", ") + "]";
+  }).join(", ") + "]";
+}
+
 function primitiveLines(obj) {
   const p = obj.params || {};
-  if (obj.type === "circle") return [`circle(r = ${fmtNumber(p.radius ?? p.r ?? 5)}, $fn = ${Math.max(8, Math.round(n(p.segments, 48)))});`];
-  if (obj.type === "rectangle") return [`square([${fmtNumber(p.width ?? 20)}, ${fmtNumber(p.height ?? 10)}], center = ${bool(p.center)});`];
-  if (obj.type === "triangle") return [`polygon(points = ${pointsLiteral(p.points || [[0, 0], [10, 0], [5, 8]])});`];
-  if (obj.type === "polygon" || obj.type === "vertexPath") return [`polygon(points = ${pointsLiteral(p.points || [])});`];
-  return [`// Unsupported object type: ${obj.type}`];
+  if (obj.type === "circle") return ["circle(r = " + fmtNumber(p.radius ?? p.r ?? 5) + ", $fn = " + Math.max(8, Math.round(n(p.segments, 48))) + ");"];
+  if (obj.type === "rectangle") return ["square([" + fmtNumber(p.width ?? 20) + ", " + fmtNumber(p.height ?? 10) + "], center = " + bool(p.center) + ");"];
+  if (obj.type === "square") return ["square(" + fmtNumber(p.size ?? 12) + ", center = " + bool(p.center) + ");"];
+  if (obj.type === "line") {
+    const points = Array.isArray(p.points) && p.points.length >= 2 ? p.points : [[0, 0], [20, 0]];
+    const radius = Math.max(0.01, n(p.strokeWidth, 0.5) / 2);
+    const a = points[0] || [0, 0];
+    const b = points[1] || [20, 0];
+    return [
+      "hull() {",
+      "  translate([" + fmtNumber(a[0] || 0) + ", " + fmtNumber(a[1] || 0) + "]) circle(r = " + fmtNumber(radius) + ", $fn = 12);",
+      "  translate([" + fmtNumber(b[0] || 0) + ", " + fmtNumber(b[1] || 0) + "]) circle(r = " + fmtNumber(radius) + ", $fn = 12);",
+      "}",
+    ];
+  }
+  if (obj.type === "triangle") return ["polygon(points = " + pointsLiteral(p.points || [[0, 0], [10, 0], [5, 8]]) + ");"];
+  if (obj.type === "polygon" || obj.type === "vertexPath") return ["polygon(points = " + pointsLiteral(p.points || []) + ");"];
+  if (obj.type === "text") return ["text(text = " + qString(p.text || "Text") + ", size = " + fmtNumber(p.size ?? 10) + ", font = " + qString(p.font || "Liberation Sans") + ", halign = " + qString(p.halign || "center") + ", valign = " + qString(p.valign || "center") + ");"];
+  if (obj.type === "sphere") return ["sphere(r = " + fmtNumber(p.radius ?? 6) + ", $fn = " + Math.max(8, Math.round(n(p.segments, 48))) + ");"];
+  if (obj.type === "cube") {
+    const size = Array.isArray(p.size) ? p.size : [p.size ?? 12, p.size ?? 12, p.size ?? 12];
+    return ["cube([" + vec(size, 3, 12).join(", ") + "], center = " + bool(p.center !== false) + ");"];
+  }
+  if (obj.type === "cylinder") return ["cylinder(h = " + fmtNumber(p.height ?? 16) + ", r = " + fmtNumber(p.radius ?? 5) + ", center = " + bool(p.center !== false) + ", $fn = " + Math.max(8, Math.round(n(p.segments, 48))) + ");"];
+  if (obj.type === "polyhedron") return ["polyhedron(points = " + points3Literal(p.points || []) + ", faces = " + facesLiteral(p.faces || []) + ");"];
+  return ["// Unsupported object type: " + obj.type];
 }
 
 function wrapBlock(prefix, bodyLines) {

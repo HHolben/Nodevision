@@ -31,7 +31,7 @@
   },
   {
     "ToolbarCategory": "View",
-    "heading": "SCAD Timeline",
+    "heading": "CADtimeline",
     "panelTemplate": "ScadTimelinePanel",
     "panelType": "ControlPanel",
     "panelPath": "/PanelInstances/ControlPanels/ScadTimelinePanel.mjs",

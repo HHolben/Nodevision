@@ -110,6 +110,86 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Circle",
+      "callbackKey": "scadInsertCircle",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Rectangle",
+      "callbackKey": "scadInsertRectangle",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Square",
+      "callbackKey": "scadInsertSquare",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Polygon",
+      "callbackKey": "scadInsertPolygon",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "SCAD Text",
+      "callbackKey": "scadInsertText",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Sphere",
+      "callbackKey": "scadInsertSphere",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Cube",
+      "callbackKey": "scadInsertCube",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Cylinder",
+      "callbackKey": "scadInsertCylinder",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Polyhedron",
+      "callbackKey": "scadInsertPolyhedron",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Line",
+      "callbackKey": "scadInsertLine",
+      "routeToActivePanel": true,
+      "modes": ["SCADediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Terrain",
       "modes": ["Virtual World Editing"],
       "preventDropdown": true

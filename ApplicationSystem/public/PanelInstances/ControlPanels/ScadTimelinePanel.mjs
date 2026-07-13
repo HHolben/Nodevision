@@ -19,7 +19,7 @@ function render(panel) {
 
   if (!ctx?.getModel) {
     const message = document.createElement("div");
-    message.textContent = "Open a graphical SCAD editor to show the timeline.";
+    message.textContent = "Open a graphical SCAD editor to show the CADtimeline.";
     Object.assign(message.style, { padding: "12px", color: "#b00020", font: "12px/1.35 system-ui, sans-serif" });
     panel.appendChild(message);
     return;

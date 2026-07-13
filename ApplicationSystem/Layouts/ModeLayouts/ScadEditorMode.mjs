@@ -34,10 +34,10 @@ export const SCAD_EDITOR_MODE_LAYOUT = {
     },
     {
       type: "cell",
-      id: "ScadTimelinePanel",
+      id: "CADTimelinePanel",
       panelType: "ScadTimelinePanel",
       panelClass: "ControlPanel",
-      displayName: "SCAD Timeline",
+      displayName: "CADtimeline",
       flex: "0 0 24%",
     },
   ],

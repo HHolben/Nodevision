@@ -44,6 +44,19 @@ function shapeForObject(THREE, obj) {
     shape.moveTo(0, 0); shape.lineTo(w, 0); shape.lineTo(w, h); shape.lineTo(0, h); shape.lineTo(0, 0);
     return shape;
   }
+  if (obj.type === "square") {
+    const size = Math.max(0.1, Number(p.size || 12));
+    shape.moveTo(0, 0); shape.lineTo(size, 0); shape.lineTo(size, size); shape.lineTo(0, size); shape.lineTo(0, 0);
+    return shape;
+  }
+  if (obj.type === "text") {
+    const size = Math.max(1, Number(p.size || 10));
+    const text = String(p.text || "Text");
+    const w = Math.max(size, text.length * size * 0.62);
+    const h = size;
+    shape.moveTo(-w / 2, -h / 2); shape.lineTo(w / 2, -h / 2); shape.lineTo(w / 2, h / 2); shape.lineTo(-w / 2, h / 2); shape.lineTo(-w / 2, -h / 2);
+    return shape;
+  }
   const pts = Array.isArray(p.points) ? p.points : [];
   if (!pts.length) return null;
   shape.moveTo(Number(pts[0][0] || 0), Number(pts[0][1] || 0));
@@ -67,6 +80,49 @@ function vertexPathPoints(THREE, obj) {
   return points
     .filter((point) => Array.isArray(point))
     .map((point) => new THREE.Vector3(Number(point[0] || 0), Number(point[1] || 0), Number(point[2] || 0)));
+}
+
+function solidGeometryForObject(THREE, obj) {
+  const p = obj.params || {};
+  if (obj.type === "sphere") {
+    const radius = Math.max(0.1, Number(p.radius || 6));
+    const segments = Math.max(8, Math.round(Number(p.segments || 48)));
+    return new THREE.SphereGeometry(radius, segments, Math.max(6, Math.round(segments / 2)));
+  }
+  if (obj.type === "cube") {
+    const size = Array.isArray(p.size) ? p.size : [p.size || 12, p.size || 12, p.size || 12];
+    const geometry = new THREE.BoxGeometry(Math.max(0.1, Number(size[0] || 12)), Math.max(0.1, Number(size[1] || 12)), Math.max(0.1, Number(size[2] || 12)));
+    if (p.center === false) geometry.translate(Number(size[0] || 12) / 2, Number(size[1] || 12) / 2, Number(size[2] || 12) / 2);
+    return geometry;
+  }
+  if (obj.type === "cylinder") {
+    const radius = Math.max(0.1, Number(p.radius || 5));
+    const height = Math.max(0.1, Number(p.height || 16));
+    const segments = Math.max(8, Math.round(Number(p.segments || 48)));
+    const geometry = new THREE.CylinderGeometry(radius, radius, height, segments);
+    geometry.rotateX(Math.PI / 2);
+    if (p.center === false) geometry.translate(0, 0, height / 2);
+    return geometry;
+  }
+  if (obj.type === "polyhedron") {
+    const points = Array.isArray(p.points) ? p.points : [];
+    const faces = Array.isArray(p.faces) ? p.faces : [];
+    if (!points.length || !faces.length) return null;
+    const vertices = [];
+    points.forEach((point) => vertices.push(Number(point?.[0] || 0), Number(point?.[1] || 0), Number(point?.[2] || 0)));
+    const indices = [];
+    faces.forEach((face) => {
+      const arr = Array.isArray(face) ? face.map((index) => Math.max(0, Math.round(Number(index || 0)))) : [];
+      for (let i = 1; i < arr.length - 1; i += 1) indices.push(arr[0], arr[i], arr[i + 1]);
+    });
+    if (!indices.length) return null;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+  return null;
 }
 
 export async function createScadSceneRenderer(container, options = {}) {
@@ -170,7 +226,18 @@ export async function createScadSceneRenderer(container, options = {}) {
       const color = selected ? selectedColor : new THREE.Color(layer.color || "#4f8cff");
       const opacity = layer.locked ? 0.42 : 0.78;
 
-      if (obj.type === "vertexPath") {
+      const solidGeometry = solidGeometryForObject(THREE, obj);
+      if (solidGeometry) {
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.05, transparent: opacity < 1, opacity });
+        const mesh = new THREE.Mesh(solidGeometry, mat);
+        mesh.userData.objectId = obj.id;
+        mesh.name = obj.name || obj.id;
+        applyTransform(mesh, obj);
+        group.add(mesh);
+        continue;
+      }
+
+      if (obj.type === "vertexPath" || obj.type === "line") {
         const points = vertexPathPoints(THREE, obj);
         if (!points.length) continue;
         const pointGeometry = new THREE.BufferGeometry().setFromPoints(points);

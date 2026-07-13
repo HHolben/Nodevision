@@ -57,7 +57,7 @@ export function parseBasicScad(scadText = "") {
   const source = String(scadText || "");
   const model = createEmptyScadModel();
   const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-  const statementRe = /((?:translate\s*\([^;{}]+\)\s*)?(?:rotate\s*\([^;{}]+\)\s*)?(?:scale\s*\([^;{}]+\)\s*)?(?:linear_extrude\s*\([^;{}]+\)\s*)?)(circle\s*\([^;]+\)|square\s*\([^;]+\)|polygon\s*\([^;]+\))\s*;/gi;
+  const statementRe = /((?:translate\s*\([^;{}]+\)\s*)?(?:rotate\s*\([^;{}]+\)\s*)?(?:scale\s*\([^;{}]+\)\s*)?(?:linear_extrude\s*\([^;{}]+\)\s*)?)(circle\s*\([^;]+\)|square\s*\([^;]+\)|polygon\s*\([^;]+\)|text\s*\([^;]+\)|sphere\s*\([^;]+\)|cube\s*\([^;]+\)|cylinder\s*\([^;]+\))\s*;/gi;
   let match;
   while ((match = statementRe.exec(withoutComments))) {
     const prefix = match[1] || "";
@@ -71,10 +71,46 @@ export function parseBasicScad(scadText = "") {
       addParsedObject(model, { type: "circle", name: "Imported circle", params: { radius: usesDiameter ? parseNumber(radius?.[1], 10) / 2 : parseNumber(radius?.[1], 5) }, transform, operations });
       continue;
     }
+    if (/^text/i.test(primitive)) {
+      const quoted = /text\s*\(\s*(?:"([^"]*)"|'([^']*)')/i.exec(primitive);
+      const named = /text\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(primitive);
+      const size = /\bsize\s*=\s*([^,)]+)/i.exec(primitive);
+      const value = quoted?.[1] || quoted?.[2] || named?.[1] || named?.[2] || "Text";
+      addParsedObject(model, { type: "text", name: "Imported text", params: { text: value, size: parseNumber(size?.[1], 10), font: "Liberation Sans", halign: "center", valign: "center" }, transform, operations });
+      continue;
+    }
+    if (/^sphere/i.test(primitive)) {
+      const radius = /\br\s*=\s*([^,)]+)/i.exec(primitive) || /\bd\s*=\s*([^,)]+)/i.exec(primitive);
+      const usesDiameter = /\bd\s*=/.test(radius?.[0] || "");
+      addParsedObject(model, { type: "sphere", name: "Imported sphere", params: { radius: usesDiameter ? parseNumber(radius?.[1], 12) / 2 : parseNumber(radius?.[1], 6), segments: 48 }, transform, operations });
+      continue;
+    }
+    if (/^cube/i.test(primitive)) {
+      const dims = /cube\s*\(\s*\[([^\]]+)\]/i.exec(primitive);
+      const scalar = /cube\s*\(\s*([^,\)]+)/i.exec(primitive);
+      const parts = dims ? String(dims[1] || "12,12,12").split(",") : [scalar?.[1] || 12, scalar?.[1] || 12, scalar?.[1] || 12];
+      addParsedObject(model, { type: "cube", name: "Imported cube", params: { size: [parseNumber(parts[0], 12), parseNumber(parts[1], 12), parseNumber(parts[2], 12)], center: /center\s*=\s*true/i.test(primitive) }, transform, operations });
+      continue;
+    }
+    if (/^cylinder/i.test(primitive)) {
+      const height = /\bh\s*=\s*([^,)]+)/i.exec(primitive);
+      const radius = /\br\s*=\s*([^,)]+)/i.exec(primitive) || /\bd\s*=\s*([^,)]+)/i.exec(primitive);
+      const usesDiameter = /\bd\s*=/.test(radius?.[0] || "");
+      addParsedObject(model, { type: "cylinder", name: "Imported cylinder", params: { height: parseNumber(height?.[1], 16), radius: usesDiameter ? parseNumber(radius?.[1], 10) / 2 : parseNumber(radius?.[1], 5), segments: 48, center: /center\s*=\s*true/i.test(primitive) }, transform, operations });
+      continue;
+    }
     if (/^square/i.test(primitive)) {
-      const dims = /square\s*\(\s*\[([^\]]+)\]/i.exec(primitive);
-      const parts = String(dims?.[1] || "20,10").split(",");
-      addParsedObject(model, { type: "rectangle", name: "Imported rectangle", params: { width: parseNumber(parts[0], 20), height: parseNumber(parts[1], 10), center: /center\s*=\s*true/i.test(primitive) }, transform, operations });
+      const body = primitive.slice(primitive.indexOf("(") + 1, primitive.lastIndexOf(")")).trim();
+      const centerText = primitive.toLowerCase().replaceAll(" ", "");
+      const center = centerText.includes("center=true");
+      if (body.startsWith("[")) {
+        const close = body.indexOf("]");
+        const parts = body.slice(1, close < 0 ? body.length : close).split(",");
+        addParsedObject(model, { type: "rectangle", name: "Imported rectangle", params: { width: parseNumber(parts[0], 20), height: parseNumber(parts[1], 10), center }, transform, operations });
+      } else {
+        const sizeText = body.split(",")[0];
+        addParsedObject(model, { type: "square", name: "Imported square", params: { size: parseNumber(sizeText, 12), center }, transform, operations });
+      }
       continue;
     }
     if (/^polygon/i.test(primitive)) {
@@ -85,7 +121,7 @@ export function parseBasicScad(scadText = "") {
   }
   if (!model.objects.length && source.trim()) {
     model.unsupportedSource = source;
-    model.warnings.push("Graphical SCAD could not import this source. Supported primitives are circle, square, polygon, and linear_extrude wrappers.");
+    model.warnings.push("Graphical SCAD could not import this source. Supported primitives are circle, square, polygon, text, sphere, cube, cylinder, and linear_extrude wrappers.");
   }
   return model;
 }

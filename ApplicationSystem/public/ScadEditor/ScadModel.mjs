@@ -4,7 +4,7 @@
 export const SCAD_MODEL_VERSION = 1;
 export const DEFAULT_UNITS = "mm";
 
-const SHAPE_TYPES = new Set(["circle", "rectangle", "triangle", "polygon", "vertexPath"]);
+const SHAPE_TYPES = new Set(["circle", "rectangle", "square", "triangle", "polygon", "vertexPath", "line", "text", "sphere", "cube", "cylinder", "polyhedron"]);
 
 function makeId(prefix = "id") {
   const random = Math.random().toString(36).slice(2, 9);
@@ -35,9 +35,42 @@ export function createTimelineStep({ id = makeId("step"), type = "modify", objec
   };
 }
 
+export function scadObjectTypeLabel(type = "") {
+  const labels = {
+    circle: "Circle",
+    rectangle: "Rectangle",
+    square: "Square",
+    triangle: "Triangle",
+    polygon: "Polygon",
+    vertexPath: "Vertex",
+    line: "Line",
+    text: "Text",
+    sphere: "Sphere",
+    cube: "Cube",
+    cylinder: "Cylinder",
+    polyhedron: "Polyhedron",
+  };
+  if (labels[type]) return labels[type];
+  return String(type || "Object").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (ch) => ch.toUpperCase());
+}
+
+export function scadPlacementTimelineLabel(type = "") {
+  return "Place " + scadObjectTypeLabel(type);
+}
+
 export function defaultParamsForType(type) {
   if (type === "circle") return { radius: 5, segments: 48 };
   if (type === "rectangle") return { width: 20, height: 10, center: false };
+  if (type === "square") return { size: 12, center: false };
+  if (type === "line") return { points: [[0, 0], [20, 0]], strokeWidth: 0.5, closed: false };
+  if (type === "text") return { text: "Text", size: 10, font: "Liberation Sans", halign: "center", valign: "center" };
+  if (type === "sphere") return { radius: 6, segments: 48 };
+  if (type === "cube") return { size: [12, 12, 12], center: true };
+  if (type === "cylinder") return { height: 16, radius: 5, segments: 48, center: true };
+  if (type === "polyhedron") return {
+    points: [[0, 0, 0], [12, 0, 0], [6, 10, 0], [6, 4, 10]],
+    faces: [[0, 1, 2], [0, 3, 1], [1, 3, 2], [2, 3, 0]],
+  };
   if (type === "triangle") return { points: [[0, 0], [10, 0], [5, 8]] };
   if (type === "polygon" || type === "vertexPath") return { points: [[0, 0], [10, 0], [5, 8]], closed: type !== "vertexPath" };
   return {};
@@ -125,7 +158,7 @@ export function addObject(model, objectInput = {}, options = {}) {
   model.objects.push(obj);
   reconcileLayerMembership(model);
   if (options.timeline !== false) {
-    addTimelineStep(model, { type: "create", objectIds: [obj.id], label: `Created ${obj.type}`, params: { type: obj.type } });
+    addTimelineStep(model, { type: "place", objectIds: [obj.id], label: scadPlacementTimelineLabel(obj.type), params: { type: obj.type, operation: "place" } });
   }
   return obj;
 }
@@ -149,9 +182,6 @@ export function removeObject(model, objectId, options = {}) {
   const idx = model.objects.findIndex((obj) => obj.id === objectId);
   if (idx < 0) return false;
   const [removed] = model.objects.splice(idx, 1);
-  model.timeline.forEach((step) => {
-    step.objectIds = (step.objectIds || []).filter((id) => id !== objectId);
-  });
   reconcileLayerMembership(model);
   if (options.timeline !== false) addTimelineStep(model, { type: "modify", label: `Deleted ${removed.name}`, params: { objectId } });
   return true;

@@ -510,6 +510,83 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Boolean Operations",
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true },
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Union",
+    "callbackKey": "scadUnion",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Difference",
+    "callbackKey": "scadDifference",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Intersection",
+    "callbackKey": "scadIntersection",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Cut out",
+    "callbackKey": "scadCutout",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "heading": "Transform",
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true },
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Transform",
+    "heading": "Translate",
+    "callbackKey": "scadTranslate",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Transform",
+    "heading": "Rotate",
+    "callbackKey": "scadRotate",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Transform",
+    "heading": "Scale",
+    "callbackKey": "scadScale",
+    "routeToActivePanel": true,
+    "modes": ["SCADediting"],
+    "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "SCAD Shape",
     "modes": ["SCADediting"],
     "conditions": { "scadShapeSelected": true },

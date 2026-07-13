@@ -4,6 +4,9 @@
         ".php",
         ".js",
         ".ipynb",
-        ".csv"
+        ".csv",
+        ".gtl",
+        ".gbr",
+        ".drl"
     ]
 }

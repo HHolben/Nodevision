@@ -7,7 +7,9 @@ dwg,Image,ViewBinary.mjs,BinaryFamilyEditor.mjs
 dxf,Image,ViewDXF.mjs,ModelFamilyEditor.mjs
 excellon,Image,ViewText.mjs,TextFamilyEditor.mjs
 exr,Image,ViewEXR.mjs,MediaFamilyEditor.mjs
+gbr,Circuit,ViewGerber.mjs,GerberFamilyEditor.mjs
 gif,Image,ViewImage.mjs,GIFeditor.mjs
+gtl,Circuit,ViewGerber.mjs,GerberFamilyEditor.mjs
 ico,Image,ViewImage.mjs,PNGeditor.mjs
 jpeg,Image,ViewJPG.mjs,PNGeditor.mjs
 jpg,Image,ViewJPG.mjs,PNGeditor.mjs
@@ -61,7 +63,7 @@ crt,Publication,ViewText.mjs,TextFamilyEditor.mjs
 cti,Publication,ViewText.mjs,TextFamilyEditor.mjs
 dat,Publication,ViewText.mjs,TextFamilyEditor.mjs
 der,Publication,ViewBinary.mjs,BinaryFamilyEditor.mjs
-drl,Publication,ViewText.mjs,TextFamilyEditor.mjs
+drl,Circuit,ViewGerber.mjs,GerberFamilyEditor.mjs
 dtd,Publication,ViewText.mjs,TextFamilyEditor.mjs
 epub,Publication,ViewEPUB.mjs,EPUBeditor.mjs
 fa,Publication,ViewText.mjs,TextFamilyEditor.mjs
