@@ -1,0 +1,27 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "PhysicsFrictionless",
+  "displayName": "Physics Frictionless",
+  "description": "Rigid collider material with no surface friction for test and special-case objects.",
+  "defaultColor": "#b8c2cc",
+  "homogeneousSubstance": false,
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 1000,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0,
+    "legacyFloorHorizontalVelocityRetention": 1
+  },
+  "rendering": {
+    "materialType": "solid",
+    "color": "#b8c2cc"
+  },
+  "chemicalFormulaMol": null
+}

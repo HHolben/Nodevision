@@ -3,6 +3,29 @@
 
 import { attachResizeEvents } from "/panels/panelResize.mjs";
 
+const FLOATING_PANEL_Z_INDEX = "22020";
+const OVERLAY_PANEL_Z_INDEX = "22060";
+const OVERLAY_MARGIN = 12;
+
+function readVisibleElementBottom(selector) {
+  const el = document.querySelector(selector);
+  if (!el) return 0;
+  const style = window.getComputedStyle?.(el);
+  if (style?.display === "none" || style?.visibility === "hidden") return 0;
+  const rect = el.getBoundingClientRect?.();
+  if (!rect || rect.height <= 0 || rect.width <= 0) return 0;
+  return Math.max(0, Math.ceil(rect.bottom));
+}
+
+function readOverlaySafeTop() {
+  const toolbarBottom = Math.max(
+    readVisibleElementBottom("#global-toolbar"),
+    readVisibleElementBottom("#sub-toolbar")
+  );
+  return Math.max(24, toolbarBottom + OVERLAY_MARGIN);
+}
+
+
 export function createFloatingInventoryPanel({ title = "Inventory", onRequestClose = null, defaultLayout = "overlay", closeBehavior = "remove" } = {}) {
   let highlightedSnapTarget = null;
 
@@ -46,7 +69,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     minWidth: "340px",
     maxWidth: "640px",
     maxHeight: "70vh",
-    zIndex: "22020",
+    zIndex: FLOATING_PANEL_Z_INDEX,
     margin: "0",
     display: "flex",
     flexDirection: "column",
@@ -289,7 +312,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
       maxWidth: "640px",
       height: "",
       maxHeight: "70vh",
-      zIndex: "22020"
+      zIndex: FLOATING_PANEL_Z_INDEX
     });
     dockedCell = null;
     previousHost = null;
@@ -469,15 +492,16 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
     panel.classList.remove("floating");
     panel.classList.remove("maximized");
     const preferredWidth = Math.min(window.innerWidth * 0.9, 720);
-    const topOffset = Math.max(56, (window.__nvGlobalToolbarHeight || 64));
+    const topOffset = readOverlaySafeTop();
+    const availableHeight = Math.max(220, window.innerHeight - topOffset - OVERLAY_MARGIN);
     Object.assign(panel.style, {
       position: "fixed",
       top: `${topOffset}px`,
       left: "50%",
       width: `${Math.round(preferredWidth)}px`,
-      maxHeight: "80vh",
+      maxHeight: "min(80vh, " + availableHeight + "px)",
       transform: "translateX(-50%)",
-      zIndex: "1200",
+      zIndex: OVERLAY_PANEL_Z_INDEX,
       height: ""
     });
     confirmBtn.style.display = "inline-flex";
@@ -555,6 +579,7 @@ export function createFloatingInventoryPanel({ title = "Inventory", onRequestClo
       undockToFloating();
     },
     setVisible(nextVisible) {
+      if (nextVisible && overlayMode) setOverlayStyles();
       panel.style.display = nextVisible ? "flex" : "none";
       if (nextVisible && !dockedCell && !overlayMode) {
         panel.classList.add("floating");

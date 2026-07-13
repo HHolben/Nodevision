@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "schist",
+  "displayName": "Schist",
+  "description": "Layered schist terrain material.",
+  "defaultColor": "#6f6975",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2800,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.78,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.06
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "schist",
+    "color": "#6f6975"
+  },
+  "chemicalFormulaMol": null
+}

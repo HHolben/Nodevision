@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "slate",
+  "displayName": "Slate",
+  "description": "Dark slate terrain material.",
+  "defaultColor": "#4f5962",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2750,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.75,
+    "coefficientOfKineticFriction": 0.46,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.05
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "slate",
+    "color": "#4f5962"
+  },
+  "chemicalFormulaMol": null
+}

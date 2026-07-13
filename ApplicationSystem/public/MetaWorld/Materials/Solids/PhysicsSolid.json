@@ -1,0 +1,27 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "PhysicsSolid",
+  "displayName": "Physics Solid",
+  "description": "Default rigid collider material for user-placed solid world objects.",
+  "defaultColor": "#8f9aa6",
+  "homogeneousSubstance": false,
+  "defaultForPlacedObjects": true,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 10000,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.92,
+    "coefficientOfKineticFriction": 0.08,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0,
+    "legacyFloorHorizontalVelocityRetention": 0.92
+  },
+  "rendering": {
+    "materialType": "solid",
+    "color": "#8f9aa6"
+  },
+  "chemicalFormulaMol": null
+}

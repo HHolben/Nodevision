@@ -126,8 +126,11 @@ Mask and clipping commands use native SVG:
 - Disable/enable stores and restores the original reference.
 - Detach removes the reference without deleting the definition.
 - Release Clip clones clip content back into artwork before removing the clip reference.
+- Edit Mask and Edit Clip select the definition contents in `<defs>` and show an editor-only dashed banner with an Edit Artwork escape hatch.
+- Escape or Edit Artwork returns selection to the masked/clipped artwork when the original object is still connected.
+- Invert Mask toggles simple black/white mask paint where SVG-native inversion is practical without rasterizing.
 
-The commands are non-destructive foundations. Dedicated edit-mask/edit-artwork interaction states and independent mask transforms are future refinements.
+The commands are non-destructive foundations. Selecting mask or clip-path contents lets existing transform controls edit those definition objects independently; transform-with-artwork remains a future refinement.
 
 ## History Integration
 
@@ -136,8 +139,8 @@ A brush stroke commits as one undoable element-create action, including symmetry
 ## Known Limitations
 
 - Browser-level pointer tests were not added because this checkout does not expose a browser test harness and this environment has no JavaScript runtime available on PATH.
-- Eraser modes beyond Delete Object are scaffolded in settings/UI and currently fall back to object deletion with a status message. Path splitting/subtraction needs a dedicated boolean geometry pass.
-- Mask editing mode indication is basic in this phase; dedicated edit-artwork/edit-mask state should be added next.
+- Eraser modes beyond Delete Object are scaffolded in settings/UI and now leave unsupported SVG untouched with a status message. Path splitting/subtraction needs a dedicated boolean geometry pass.
+- Mask inversion is limited to simple black/white mask content in this phase; arbitrary luminance masks need a fuller compositing strategy.
 - Layer thumbnails are not generated yet; the Layers panel focuses on structure, locking, visibility, solo, selection, and reorder.
 - Variable-width outlined brush geometry is editable as SVG paths but not yet round-tripped into a high-level brush editor.
 - Visible rendered-color sampling is limited to direct SVG paint attributes and inherited paint, not a full rasterized canvas sample.
@@ -165,8 +168,8 @@ A brush stroke commits as one undoable element-create action, including symmetry
 7. Use Eyedropper tool to sample fill and stroke colors; also press-hold on an object in Select mode to sample.
 8. Open QuickMenu with the configured key and long press empty canvas; verify actions switch tools or call existing commands.
 9. In Layers, create groups, expand/collapse rows, multi-select rows, rename, lock, hide, solo, duplicate, group/ungroup, and drag reorder.
-10. Select artwork, use Drawing Assist > Add Mask, then disable/enable/detach the mask and undo/redo each step.
-11. Select source plus artwork, use Use Selected As Clip, then Release Clip and verify both source-derived clip geometry and artwork remain.
+10. Select artwork, use Drawing Assist > Add Mask, Edit Mask, transform the mask rect, press Escape or Edit Artwork, then disable/enable/detach the mask and undo/redo each step.
+11. Select source plus artwork, use Use Selected As Clip, Edit Clip, then Release Clip and verify both source-derived clip geometry and artwork remain.
 12. Enable horizontal symmetry, draw a stroke, save and reload, and verify linked `<use>` references survive.
 13. Enable radial symmetry, change segment count and mirrored radial, draw a stroke, then Expand Symmetry.
 14. Show one-point and two-point perspective guides; toggle snapping independently from visibility.

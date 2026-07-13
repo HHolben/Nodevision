@@ -1,0 +1,37 @@
+MaterialName,MaterialJSONfile
+Physics Solid,Materials/Solids/PhysicsSolid.json
+Physics Frictionless,Materials/Solids/PhysicsFrictionless.json
+Grass,Materials/Solids/grass.json
+Soil,Materials/Solids/soil.json
+Limestone,Materials/Solids/limestone.json
+Sand,Materials/Solids/sand.json
+Snow,Materials/Solids/snow.json
+Lava,Materials/Solids/lava.json
+Gravel,Materials/Solids/gravel.json
+Andesite,Materials/Solids/andesite.json
+Basalt,Materials/Solids/basalt.json
+Claystone,Materials/Solids/claystone.json
+Chalk,Materials/Solids/chalk.json
+Quartzite,Materials/Solids/quartzite.json
+Marble,Materials/Solids/marble.json
+Schist,Materials/Solids/schist.json
+Slate,Materials/Solids/slate.json
+Obsidian,Materials/Solids/obsidian.json
+Pit Foam Block,Materials/Solids/PitFoamBlock.json
+Bouncy Rubber,Materials/Solids/BouncyRubber.json
+Water,Materials/Liquids/water.json
+Lake Water,Materials/Liquids/lakewater.json
+Salt Water,Materials/Liquids/saltwater.json
+Slime,Materials/Liquids/slime.json
+Quicksand,Materials/Liquids/quicksand.json
+Mud,Materials/Liquids/mud.json
+Bog Water,Materials/Liquids/bogwater.json
+Honey,Materials/Liquids/honey.json
+Milk,Materials/Liquids/milk.json
+Tea,Materials/Liquids/tea.json
+Petroleum,Materials/Liquids/petroleum.json
+White Oxygenated Air,Materials/Gasses/WhiteOxygenatedAir.json
+Earth Troposphere,Materials/Gasses/EarthTroposphere.json
+Hydrogen,Materials/Gasses/hydrogen.json
+Helium,Materials/Gasses/helium.json
+Vacuum,Materials/Gasses/vacuum.json

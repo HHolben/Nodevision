@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "claystone",
+  "displayName": "Claystone",
+  "description": "Muted claystone terrain material for sedimentary rock.",
+  "defaultColor": "#8f6a5a",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2400,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.82,
+    "coefficientOfKineticFriction": 0.58,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.05
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "claystone",
+    "color": "#8f6a5a"
+  },
+  "chemicalFormulaMol": null
+}

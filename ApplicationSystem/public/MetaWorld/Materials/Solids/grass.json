@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "grass",
+  "displayName": "Grass",
+  "description": "Grassy terrain material for solid ground and terrain painting.",
+  "defaultColor": "#3f8f46",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 1200,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.86,
+    "coefficientOfKineticFriction": 0.58,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.06
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "grass",
+    "color": "#3f8f46"
+  },
+  "chemicalFormulaMol": null
+}

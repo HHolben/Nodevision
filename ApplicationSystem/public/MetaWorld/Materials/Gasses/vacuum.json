@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "vacuum",
+  "displayName": "Vacuum",
+  "description": "Near-empty vacuum gas material for airless spaces.",
+  "defaultColor": "#000000",
+  "homogeneousSubstance": false,
+  "MatterState": "gas",
+  "defaultForWorldAtmosphere": false,
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "gas",
+    "solid": false,
+    "densityKgPerCubicMeter": 0,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 0
+  },
+  "rendering": {
+    "materialType": "gas",
+    "color": "#000000",
+    "opacity": 0.04
+  },
+  "chemicalFormulaMol": null
+}

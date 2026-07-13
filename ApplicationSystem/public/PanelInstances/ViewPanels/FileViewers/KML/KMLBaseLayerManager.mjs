@@ -1,6 +1,7 @@
 export const KML_BASEMAP_TYPES = Object.freeze({
   STREET: "street",
   AVIATION: "aviation",
+  TERRAIN: "terrain",
 });
 
 const AVIATION_CHART_PACK_TYPE = "nodevision-aviation-chart-pack";

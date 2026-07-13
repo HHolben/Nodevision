@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "mud",
+  "displayName": "Mud",
+  "description": "Dense muddy liquid terrain material.",
+  "defaultColor": "#6f5238",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1700,
+    "dynamicViscosityPascalSeconds": 20,
+    "kinematicViscositySquareMetersPerSecond": 0.0118,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1.7
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "mud",
+    "color": "#6f5238",
+    "opacity": 0.66
+  },
+  "chemicalFormulaMol": null
+}

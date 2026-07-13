@@ -1,5 +1,6 @@
 import { formatCoordinates } from "./KMLParser.mjs";
 import { createAviationBaseLayerManager, createStreetBaseLayer, KML_BASEMAP_TYPES } from "./KMLBaseLayerManager.mjs";
+import { createTerrainBaseLayerManager } from "./TerrainViewLayer.mjs";
 
 const LEAFLET_ASSETS = {
   css: "/leaflet/leaflet.css",
@@ -128,6 +129,15 @@ function coordsFromLatLngs(latLngs = []) {
     .map((latLng) => ({ lon: Number(latLng.lng), lat: Number(latLng.lat), alt: null }));
 }
 
+function latLngRingsFromPolygonGeometry(geometry) {
+  return (geometry?.coordinates || [])
+    .filter((ring) => Array.isArray(ring) && ring.length >= 4)
+    .map((ring) => ring
+      .map((pt) => [Number(pt?.[1]), Number(pt?.[0])])
+      .filter(([lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon)))
+    .filter((ring) => ring.length >= 4);
+}
+
 function markerIcon(color = "#d93b30", selected = false) {
   const size = selected ? 18 : 14;
   return window.L.divIcon({
@@ -147,7 +157,7 @@ function userLocationIcon() {
   });
 }
 
-export async function createKMLFlatMapRenderer(container, { onSelect, onGeometryChange, basemapType = KML_BASEMAP_TYPES.STREET, aviationChartPackPath = "", onBasemapStatus } = {}) {
+export async function createKMLFlatMapRenderer(container, { onSelect, onGeometryChange, basemapType = KML_BASEMAP_TYPES.STREET, aviationChartPackPath = "", onBasemapStatus, terrainSettings = {}, onTerrainStatus } = {}) {
   const L = await ensureLeafletLoaded({ requireDraw: true });
   if (!L?.map) throw new Error("Leaflet failed to initialize: window.L.map is unavailable.");
   container.innerHTML = "";
@@ -158,6 +168,11 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     baseLayerManager = await createAviationBaseLayerManager(L, map, {
       chartPackPath: aviationChartPackPath,
       onStatus: onBasemapStatus,
+    });
+  } else if (basemapType === KML_BASEMAP_TYPES.TERRAIN) {
+    baseLayerManager = createTerrainBaseLayerManager(L, map, {
+      settings: terrainSettings,
+      onStatus: onTerrainStatus,
     });
   } else {
     const streetLayer = createStreetBaseLayer(L).addTo(map);
@@ -175,6 +190,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
   let editHandler = null;
   let userLocationMarker = null;
   let userLocationAccuracyCircle = null;
+  let selectedRegionLayer = null;
 
   function defaultPathStyle(record, selected = false) {
     return {
@@ -203,7 +219,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
         const latLng = layer.getLatLng();
         onGeometryChange?.(record, [{ lon: latLng.lng, lat: latLng.lat, alt: coords[0]?.alt ?? null }]);
       });
-    } else if (geometry.type === "LineString") {
+    } else if (geometry.type === "LineString" || geometry.type === "LinearRing") {
       layer = L.polyline(latLngsFromCoords(coords), defaultPathStyle(record, record.id === selectedId));
     } else if (geometry.type === "Polygon") {
       layer = L.polygon(latLngsFromCoords(coords), defaultPathStyle(record, record.id === selectedId));
@@ -227,6 +243,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     });
     setSelected(selectedId);
     if (group.bringToFront) group.bringToFront();
+    selectedRegionLayer?.bringToFront?.();
   }
 
   function setSelected(id) {
@@ -309,6 +326,25 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     userLocationAccuracyCircle = null;
   }
 
+  function setSelectedRegion(region) {
+    if (selectedRegionLayer && map.hasLayer(selectedRegionLayer)) map.removeLayer(selectedRegionLayer);
+    selectedRegionLayer = null;
+    const rings = latLngRingsFromPolygonGeometry(region?.geometry || region);
+    if (!rings.length) return;
+    selectedRegionLayer = L.polygon(rings, {
+      color: "#f97316",
+      weight: 4,
+      opacity: 0.95,
+      fillColor: "#facc15",
+      fillOpacity: 0.28,
+      dashArray: "8 5",
+      interactive: false,
+      keyboard: false,
+    }).addTo(map);
+    selectedRegionLayer.__nvRegion = region;
+    selectedRegionLayer.bringToFront?.();
+  }
+
   function setUserLocation(location) {
     const lat = Number(location?.lat);
     const lon = Number(location?.lon);
@@ -364,7 +400,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
       layer.dragging.enable();
       return true;
     }
-    if (window.L.Edit?.Poly && (record.geometry?.type === "LineString" || record.geometry?.type === "Polygon")) {
+    if (window.L.Edit?.Poly && (record.geometry?.type === "LineString" || record.geometry?.type === "LinearRing" || record.geometry?.type === "Polygon")) {
       editHandler = new window.L.Edit.Poly(layer);
       editHandler.enable();
       layer.on("mouseup", () => onGeometryChange?.(record, coordsFromLatLngs(layer.getLatLngs())));
@@ -404,6 +440,20 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     flyToRecord,
     flyToLocation,
     setRecordVisible,
+    setSelectedRegion,
+    setTerrainSettings: (settings) => baseLayerManager?.setTerrainSettings?.(settings),
+    getViewState() {
+      const center = map.getCenter();
+      return { center: { lat: center.lat, lon: center.lng }, zoom: map.getZoom() };
+    },
+    setViewState(viewState = {}) {
+      const lat = Number(viewState.center?.lat ?? viewState.lat);
+      const lon = Number(viewState.center?.lon ?? viewState.center?.lng ?? viewState.lon);
+      const zoom = Number(viewState.zoom);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+      map.setView([lat, lon], Number.isFinite(zoom) ? zoom : map.getZoom(), { animate: false });
+      return true;
+    },
     editRecord,
     startAddPlacemark: (callback) => startDraw("marker", callback),
     startDrawPath: (callback) => startDraw("polyline", callback),
@@ -413,6 +463,7 @@ export async function createKMLFlatMapRenderer(container, { onSelect, onGeometry
     destroy() {
       clearUserLocation();
       disableEdit();
+      setSelectedRegion(null);
       baseLayerManager?.destroy?.();
       map.remove();
     },

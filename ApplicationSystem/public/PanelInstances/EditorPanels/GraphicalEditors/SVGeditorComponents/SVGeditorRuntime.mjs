@@ -32,7 +32,7 @@ import { createQuickMenuWidget } from "./QuickMenuWidget.mjs";
 import { applyEyedropperSample, createEyedropperIndicator, sampleSvgPaint } from "./EyedropperTool.mjs";
 import { createDrawingGuidesController } from "./DrawingGuides.mjs";
 import { createSymmetryOutputs, expandSymmetryClones } from "./SymmetryGenerator.mjs";
-import { addClipPath, addMask, detachMaskOrClip, releaseClipPath, setMaskOrClipEnabled, useSelectedObjectAsClipPath, useSelectedObjectAsMask } from "./SvgMaskClipCommands.mjs";
+import { addClipPath, addMask, detachMaskOrClip, getReferencedSvgId, getSvgDefinitionByReference, invertMask, releaseClipPath, setMaskOrClipEnabled, useSelectedObjectAsClipPath, useSelectedObjectAsMask } from "./SvgMaskClipCommands.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG_UI_ATTR = "data-nv-editor-ui";
@@ -104,6 +104,39 @@ export async function renderEditor(filePath, container) {
     position: "relative"
   });
   wrapper.appendChild(body);
+
+  const maskEditBanner = document.createElement("div");
+  maskEditBanner.setAttribute("role", "status");
+  maskEditBanner.setAttribute("aria-live", "polite");
+  maskEditBanner.dataset.nvEditorUi = "mask-edit-indicator";
+  Object.assign(maskEditBanner.style, {
+    position: "absolute",
+    top: "10px",
+    right: "14px",
+    zIndex: "30",
+    display: "none",
+    alignItems: "center",
+    gap: "8px",
+    maxWidth: "min(420px, calc(100% - 28px))",
+    padding: "7px 9px",
+    border: "2px dashed #111827",
+    borderRadius: "6px",
+    background: "rgba(255, 255, 255, 0.96)",
+    boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
+    color: "#111827",
+    font: "12px/1.35 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+    pointerEvents: "auto",
+  });
+  const maskEditBannerText = document.createElement("span");
+  maskEditBannerText.style.fontWeight = "700";
+  const maskEditArtworkButton = document.createElement("button");
+  maskEditArtworkButton.type = "button";
+  maskEditArtworkButton.textContent = "Edit Artwork";
+  maskEditArtworkButton.title = "Return selection to the masked or clipped artwork";
+  Object.assign(maskEditArtworkButton.style, { minHeight: "28px", whiteSpace: "nowrap" });
+  maskEditArtworkButton.addEventListener("click", () => editArtworkFromMaskEdit());
+  maskEditBanner.append(maskEditBannerText, maskEditArtworkButton);
+  body.appendChild(maskEditBanner);
 
   const rulerLayout = document.createElement("div");
   Object.assign(rulerLayout.style, {
@@ -280,6 +313,7 @@ export async function renderEditor(filePath, container) {
   let freehandRenderRaf = 0;
   let lastPointerClient = null;
   let eyedropperHoldState = null;
+  let maskEditState = null;
 
   const overlayLayer = createSvgEl("g", { [SVG_UI_ATTR]: "overlay" });
   overlayLayer.style.pointerEvents = "none";
@@ -2265,6 +2299,7 @@ export async function renderEditor(filePath, container) {
   }
 
   function clearSelection() {
+    clearMaskEditState({ silent: true });
     selectedElements = [];
     clearSelectedLineVertex();
     lineHandleDragState = null;
@@ -2291,6 +2326,9 @@ export async function renderEditor(filePath, container) {
     if (options.primary && selectedElements.includes(options.primary)) {
       selectedElements = [options.primary, ...selectedElements.filter((el) => el !== options.primary)];
     }
+    if (maskEditState && !options.keepMaskEditState && !selectionInsideMaskEditState(selectedElements)) {
+      clearMaskEditState({ silent: true });
+    }
     if (!isSelectedLineVertexValid()) clearSelectedLineVertex();
     refreshSelectionVisuals();
     notifySelectionChanged();
@@ -2302,6 +2340,9 @@ export async function renderEditor(filePath, container) {
       selectedElements = selectedElements.filter((x) => x !== el);
     } else {
       selectedElements = [el, ...selectedElements];
+    }
+    if (maskEditState && !options.keepMaskEditState && !selectionInsideMaskEditState(selectedElements)) {
+      clearMaskEditState({ silent: true });
     }
     if (!isSelectedLineVertexValid()) clearSelectedLineVertex();
     refreshSelectionVisuals();
@@ -2853,6 +2894,132 @@ export async function renderEditor(filePath, container) {
     if (Math.hypot(rootPoint.x - start.x, rootPoint.y - start.y) > Math.max(0.05, pointerToleranceInSvgUnits(4))) {
       cancelEyedropperHold();
     }
+  }
+
+  function closestSvgElementByTag(el, tagName) {
+    const wanted = String(tagName || "").toLowerCase();
+    let node = el;
+    while (node && node !== svgRoot) {
+      if (node instanceof SVGElement && String(node.tagName || "").toLowerCase() === wanted) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function findSelectedMaskOrClipDefinition(attr = "mask") {
+    const normalizedAttr = attr === "clip-path" ? "clip-path" : "mask";
+    const definitionTag = normalizedAttr === "clip-path" ? "clippath" : "mask";
+    const referencedArtwork = selectedElements.find((el) => getReferencedSvgId(el, normalizedAttr));
+    if (referencedArtwork) {
+      const id = getReferencedSvgId(referencedArtwork, normalizedAttr);
+      const definition = getSvgDefinitionByReference(svgRoot, referencedArtwork, normalizedAttr);
+      if (definition) return { id, definition, artwork: referencedArtwork, attr: normalizedAttr };
+    }
+
+    for (const candidate of selectedElements) {
+      if (!candidate) continue;
+      const directTag = String(candidate.tagName || "").toLowerCase();
+      if (directTag === definitionTag && candidate.id) {
+        return { id: candidate.id, definition: candidate, artwork: maskEditState?.artwork || null, attr: normalizedAttr };
+      }
+      const owner = closestSvgElementByTag(candidate, definitionTag);
+      if (owner?.id) return { id: owner.id, definition: owner, artwork: maskEditState?.artwork || null, attr: normalizedAttr };
+    }
+
+    if (maskEditState?.kind === normalizedAttr && maskEditState.definition?.isConnected) {
+      return {
+        id: maskEditState.id,
+        definition: maskEditState.definition,
+        artwork: maskEditState.artwork?.isConnected ? maskEditState.artwork : null,
+        attr: normalizedAttr,
+      };
+    }
+    return null;
+  }
+
+  function maskEditContentElements(definition) {
+    return Array.from(definition?.children || []).filter((child) => isSelectableElement(child, { allowLocked: true }));
+  }
+
+  function selectionInsideMaskEditState(elements = []) {
+    const definition = maskEditState?.definition;
+    if (!definition?.isConnected) return false;
+    return elements.some((el) => el === definition || definition.contains?.(el));
+  }
+
+  function updateMaskEditIndicator() {
+    if (!maskEditState?.definition?.isConnected) {
+      maskEditState = null;
+    }
+    if (!maskEditState) {
+      maskEditBanner.style.display = "none";
+      maskEditBannerText.textContent = "";
+      return;
+    }
+    const label = maskEditState.kind === "clip-path" ? "clipping path" : "mask";
+    maskEditBannerText.textContent = `Editing ${label}: ${maskEditState.id || "unnamed"}`;
+    maskEditBanner.style.display = "flex";
+  }
+
+  function clearMaskEditState(options = {}) {
+    const hadState = Boolean(maskEditState);
+    maskEditState = null;
+    updateMaskEditIndicator();
+    if (hadState && !options.silent) setStatus("Editing artwork");
+    return hadState;
+  }
+
+  function beginMaskOrClipEdit(attr = "mask") {
+    const normalizedAttr = attr === "clip-path" ? "clip-path" : "mask";
+    const found = findSelectedMaskOrClipDefinition(normalizedAttr);
+    if (!found?.definition) {
+      setStatus(normalizedAttr === "clip-path" ? "Select artwork with a clipping path first" : "Select artwork with a mask first");
+      return false;
+    }
+    const content = maskEditContentElements(found.definition);
+    maskEditState = {
+      kind: normalizedAttr,
+      id: found.id || found.definition.id || "",
+      definition: found.definition,
+      artwork: found.artwork || maskEditState?.artwork || null,
+    };
+    updateMaskEditIndicator();
+    if (content.length) {
+      setSelection(content, { primary: content[0], allowLocked: true, keepMaskEditState: true });
+    } else {
+      setSelection([found.definition], { primary: found.definition, allowLocked: true, keepMaskEditState: true });
+    }
+    const label = normalizedAttr === "clip-path" ? "clipping path" : "mask";
+    setStatus(`Editing ${label} content: ${maskEditState.id || "unnamed"}`);
+    return true;
+  }
+
+  function editArtworkFromMaskEdit() {
+    const artwork = maskEditState?.artwork;
+    clearMaskEditState({ silent: true });
+    if (artwork?.isConnected) {
+      setSelection([artwork], { primary: artwork, allowLocked: true });
+      setStatus("Editing artwork");
+      return true;
+    }
+    setStatus("Editing artwork; original masked object is no longer available");
+    return false;
+  }
+
+  function invertSelectedMaskCommand() {
+    const targets = [...selectedElements];
+    if (maskEditState?.artwork?.isConnected && !targets.includes(maskEditState.artwork)) targets.push(maskEditState.artwork);
+    if (!targets.some((el) => getReferencedSvgId(el, "mask"))) {
+      setStatus("Select artwork with a simple black/white mask first");
+      return false;
+    }
+    const changed = runSvgSnapshotOperation("invert-mask", () => invertMask(svgRoot, targets));
+    if (Array.isArray(changed) && changed.length) {
+      setStatus("Inverted simple mask paint");
+      return changed;
+    }
+    setStatus("Mask inversion supports simple black/white mask content in this phase");
+    return false;
   }
 
   function applyCurrentStyleToSelection() {
@@ -3606,6 +3773,11 @@ export async function renderEditor(filePath, container) {
         return;
       }
     }
+    if (key === "Escape" && maskEditState) {
+      editArtworkFromMaskEdit();
+      e.preventDefault();
+      return;
+    }
     const shortcut = String(drawingAssistSettings.quickMenuShortcut || "q").toLowerCase();
     if (!meta && !e.altKey && !e.shiftKey && key.toLowerCase() === shortcut) {
       const rect = svgRoot.getBoundingClientRect();
@@ -3894,11 +4066,8 @@ export async function renderEditor(filePath, container) {
       if (!target) {
         setStatus("Eraser: no SVG object under pointer");
       } else if (drawingAssistSettings.eraserMode && drawingAssistSettings.eraserMode !== "delete-object") {
-        setStatus("This eraser mode is scaffolded; falling back to object delete for unsupported SVG geometry");
-        history.pushElementRemoval(target);
-        target.remove();
-        clearSelection();
-        markDocumentDirty(true);
+        const tag = String(target.tagName || "object").toLowerCase();
+        setStatus(`${drawingAssistSettings.eraserMode}: <${tag}> geometry is unsupported in this phase; no SVG object changed`);
       } else {
         history.pushElementRemoval(target);
         target.remove();
@@ -4304,6 +4473,7 @@ export async function renderEditor(filePath, container) {
       ...(readDrawingAssistMetadata(svgRoot) || {}),
     }, window);
     drawingGuidesController.render(drawingAssistSettings);
+    clearMaskEditState({ silent: true });
     clearSelection();
     updateSvgRulers();
     markDocumentDirty(false);
@@ -4406,6 +4576,21 @@ export async function renderEditor(filePath, container) {
     },
     releaseSelectedClipPath() {
       return runSvgSnapshotOperation("release-clip-path", () => releaseClipPath(svgRoot, selectedElements));
+    },
+    editSelectedMask() {
+      return beginMaskOrClipEdit("mask");
+    },
+    editSelectedClippingPath() {
+      return beginMaskOrClipEdit("clip-path");
+    },
+    editArtwork() {
+      return editArtworkFromMaskEdit();
+    },
+    invertSelectedMask() {
+      return invertSelectedMaskCommand();
+    },
+    getMaskEditState() {
+      return maskEditState ? { kind: maskEditState.kind, id: maskEditState.id } : null;
     },
     insertShape,
     insertInternalPng,

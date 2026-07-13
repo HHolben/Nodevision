@@ -4,11 +4,14 @@
 import { setStatus } from "/StatusBar.mjs";
 import {
   MOISTURE_BANDS,
+  POLYGONAL_INSERT_SHAPES,
   TERRAIN_GEOMETRY_MODES,
   TEMPERATURE_BANDS,
   TERRAIN_BIOMES,
   TERRAIN_KINDS,
   TERRAIN_TEXTURES,
+  isLiquidTerrainKind,
+  loadTerrainMaterialOptions,
   resolveTerrainColor,
   terrainKindById
 } from "./TerrainTool/terrainPresets.mjs";
@@ -24,6 +27,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   const terrainPainter = createTerrainTilePainter({ THREE, scene, objects, colliders });
   let paintModeActive = false;
   let lastPaintStatusAt = 0;
+  let terrainMaterialOptions = TERRAIN_KINDS.slice();
 
   function syncTerrainSurfaceLayer(mesh, reason = "terrainSurfaceChanged") {
     if (!mesh?.isMesh || String(mesh.userData?.nvType || "").toLowerCase() !== "terrain-surface") return;
@@ -139,6 +143,45 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     return Number.isFinite(num) ? num : fallback;
   }
 
+  function readMatterState(value = {}) {
+    return String(value.MatterState || value.matterState || "").trim().toLowerCase();
+  }
+
+  function selectedTerrainMaterial(kind) {
+    return terrainKindById(kind, terrainMaterialOptions);
+  }
+
+  function isLiquidBrushSettings(settings = {}) {
+    return settings.isLiquid === true || readMatterState(settings) === "liquid" || settings.kind === "water";
+  }
+
+  function metadataForBrushSettings(settings = {}) {
+    const material = selectedTerrainMaterial(settings.kind);
+    const matterState = readMatterState(settings) || readMatterState(material);
+    const isLiquid = isLiquidBrushSettings({ ...settings, MatterState: matterState, isLiquid: isLiquidTerrainKind(material) });
+    return {
+      materialName: settings.materialName || material.materialName || material.label || settings.kind,
+      physicsMaterialId: settings.physicsMaterialId || material.physicsMaterialId || material.id || settings.kind,
+      physicsMaterialFile: settings.physicsMaterialFile || material.physicsMaterialFile || "",
+      MatterState: matterState || undefined,
+      matterState,
+      isLiquid
+    };
+  }
+
+  function terrainMetadataForSettings(settings = {}, metadata = {}) {
+    const materialMeta = metadataForBrushSettings(settings);
+    return {
+      ...metadata,
+      materialName: materialMeta.materialName,
+      physicsMaterialId: materialMeta.physicsMaterialId,
+      physicsMaterialFile: materialMeta.physicsMaterialFile,
+      MatterState: materialMeta.MatterState,
+      matterState: materialMeta.matterState,
+      isLiquid: materialMeta.isLiquid
+    };
+  }
+
   function clearGeneratedTerrain() {
     while (generatedRefs.length > 0) {
       const entry = generatedRefs.pop();
@@ -169,14 +212,16 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   paletteGrid.style.gap = "8px";
   root.appendChild(paletteGrid);
 
-  const kindField = createLabeledSelect({ label: "Terrain Kind", options: TERRAIN_KINDS, value: "grass" });
+  const kindField = createLabeledSelect({ label: "Material", options: TERRAIN_KINDS, value: "grass" });
   const geometryField = createLabeledSelect({ label: "Shape", options: TERRAIN_GEOMETRY_MODES, value: "voxel" });
+  const voxelSizeField = createLabeledInput({ label: "Voxel Size", value: "1", min: "0.1", step: "0.1" });
+  const polygonalShapeField = createLabeledSelect({ label: "Polygonal Shape", options: POLYGONAL_INSERT_SHAPES, value: "hills" });
   const textureField = createLabeledSelect({ label: "Texture", options: TERRAIN_TEXTURES, value: "solid" });
   const biomeField = createLabeledSelect({ label: "Biome", options: TERRAIN_BIOMES, value: "plains" });
   const temperatureField = createLabeledSelect({ label: "Temperature", options: TEMPERATURE_BANDS, value: "temperate" });
   const moistureField = createLabeledSelect({ label: "Moisture", options: MOISTURE_BANDS, value: "balanced" });
   const paintElevationField = createLabeledInput({ label: "Elevation", value: "0.6", min: "0.05", step: "0.1" });
-  const waterDepthField = createLabeledInput({ label: "Water Depth", value: "1.5", min: "0.05", step: "0.1" });
+  const waterDepthField = createLabeledInput({ label: "Liquid Depth", value: "1.5", min: "0.05", step: "0.1" });
   const paintTileSizeField = createLabeledInput({ label: "Brush Size", value: "1", min: "0.1", step: "0.1" });
   const paintRadiusField = createLabeledInput({ label: "Radius", value: "0", min: "0", step: "0.1" });
   const brushShapeField = createLabeledSelect({
@@ -190,9 +235,32 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   const paintBaseYField = createLabeledInput({ label: "Base Y", value: "0", step: "0.1" });
   const paintColorField = createLabeledInput({ label: "Paint Color", type: "color", value: "#3f8f46" });
 
+  function setTerrainMaterialOptions(options = [], preferredKind = kindField.input.value) {
+    if (!Array.isArray(options) || options.length < 1) return;
+    terrainMaterialOptions = options;
+    const selected = terrainKindById(preferredKind || kindField.input.value, terrainMaterialOptions);
+    kindField.input.replaceChildren();
+    terrainMaterialOptions.forEach((option) => {
+      const opt = document.createElement("option");
+      opt.value = option.id;
+      opt.textContent = option.label;
+      kindField.input.appendChild(opt);
+    });
+    kindField.input.value = selected?.id || terrainMaterialOptions[0]?.id || "";
+    refreshPaintColor();
+  }
+
+  void loadTerrainMaterialOptions()
+    .then((options) => setTerrainMaterialOptions(options, kindField.input.value))
+    .catch((err) => {
+      console.warn("Terrain material catalog failed to load:", err);
+    });
+
   [
     kindField,
     geometryField,
+    voxelSizeField,
+    polygonalShapeField,
     textureField,
     biomeField,
     temperatureField,
@@ -308,7 +376,13 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   root.appendChild(status);
 
   function readBrushSettings() {
-    const kind = String(kindField.input.value || "grass");
+    const kind = String(kindField.input.value || terrainMaterialOptions[0]?.id || "grass");
+    const selectedMaterial = selectedTerrainMaterial(kind);
+    const materialMeta = metadataForBrushSettings({
+      kind,
+      MatterState: selectedMaterial?.MatterState || selectedMaterial?.matterState || "",
+      isLiquid: isLiquidTerrainKind(selectedMaterial)
+    });
     const geometryMode = String(geometryField.input.value || "voxel");
     const texture = String(textureField.input.value || "solid");
     const biome = String(biomeField.input.value || "plains");
@@ -316,21 +390,55 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     const moisture = String(moistureField.input.value || "balanced");
     const elevation = Math.max(0.05, parseNumber(paintElevationField.input, 0.6));
     const depth = Math.max(0.05, parseNumber(waterDepthField.input, 1.5));
-    const tileSize = Math.max(0.1, parseNumber(paintTileSizeField.input, 1));
+    const brushTileSize = Math.max(0.1, parseNumber(paintTileSizeField.input, 1));
+    const voxelSize = Math.max(0.1, parseNumber(voxelSizeField.input, brushTileSize));
+    const tileSize = geometryMode === "voxel" ? voxelSize : brushTileSize;
+    const polygonalShape = String(polygonalShapeField.input.value || "hills");
     const radius = Math.max(0, parseNumber(paintRadiusField.input, 0));
     const brushShape = String(brushShapeField.input.value || "square");
     const baseY = parseNumber(paintBaseYField.input, 0);
-    const color = paintColorField.input.value || resolveTerrainColor({ kind, biome, temperature, moisture, elevation });
-    return { kind, geometryMode, texture, biome, temperature, moisture, elevation, depth, tileSize, radius, brushShape, baseY, color };
+    const color = paintColorField.input.value || resolveTerrainColor({ kind, biome, temperature, moisture, elevation, materialOptions: terrainMaterialOptions });
+    return {
+      kind,
+      geometryMode,
+      texture,
+      biome,
+      temperature,
+      moisture,
+      elevation,
+      depth,
+      tileSize,
+      voxelSize,
+      polygonalShape,
+      radius,
+      brushShape,
+      baseY,
+      color,
+      materialName: materialMeta.materialName,
+      physicsMaterialId: materialMeta.physicsMaterialId,
+      physicsMaterialFile: materialMeta.physicsMaterialFile,
+      MatterState: materialMeta.MatterState,
+      matterState: materialMeta.matterState,
+      isLiquid: materialMeta.isLiquid
+    };
+  }
+
+  function refreshTerrainModifierVisibility(settings = readBrushSettings()) {
+    const isVoxel = settings.geometryMode === "voxel";
+    voxelSizeField.wrap.style.display = isVoxel ? "grid" : "none";
+    polygonalShapeField.wrap.style.display = isVoxel ? "none" : "grid";
+    paintTileSizeField.wrap.style.display = isVoxel ? "none" : "grid";
   }
 
   function refreshPaintColor() {
     const settings = readBrushSettings();
-    paintColorField.input.value = resolveTerrainColor(settings);
-    const kind = terrainKindById(settings.kind);
-    solidInput.checked = kind.solid !== false;
-    waterDepthField.input.disabled = settings.kind !== "water";
-    waterDepthField.input.style.opacity = settings.kind === "water" ? "1" : "0.55";
+    paintColorField.input.value = resolveTerrainColor({ ...settings, materialOptions: terrainMaterialOptions });
+    const kind = selectedTerrainMaterial(settings.kind);
+    const isLiquid = isLiquidBrushSettings(settings) || isLiquidTerrainKind(kind);
+    solidInput.checked = isLiquid ? false : kind.solid !== false;
+    waterDepthField.input.disabled = !isLiquid;
+    waterDepthField.input.style.opacity = isLiquid ? "1" : "0.55";
+    refreshTerrainModifierVisibility(settings);
   }
 
   function setPaintModeActive(active) {
@@ -341,7 +449,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     setStatus(status.textContent);
   }
 
-  [kindField, geometryField, textureField, biomeField, temperatureField, moistureField, paintElevationField, waterDepthField].forEach((entry) => {
+  [kindField, geometryField, voxelSizeField, polygonalShapeField, textureField, biomeField, temperatureField, moistureField, paintElevationField, waterDepthField].forEach((entry) => {
     entry.input.addEventListener("input", refreshPaintColor);
     entry.input.addEventListener("change", refreshPaintColor);
   });
@@ -355,6 +463,37 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     status.textContent = "Cleared generated terrain.";
     setStatus(status.textContent);
   });
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  function polygonalHeightSample(shape, ix, iz, tilesX, tilesZ, params) {
+    const nx = tilesX > 0 ? ix / tilesX : 0.5;
+    const nz = tilesZ > 0 ? iz / tilesZ : 0.5;
+    const dx = nx * 2 - 1;
+    const dz = nz * 2 - 1;
+    const radial = Math.hypot(dx, dz);
+    const raise = Math.max(0, params.maxRaise) * Math.max(0, params.intensity);
+    let blend = params.noise;
+
+    if (shape === "cone") {
+      blend = clamp01(1 - radial);
+    } else if (shape === "rectangular-prism") {
+      blend = 1;
+    } else if (shape === "cylinder") {
+      blend = radial <= 1 ? 1 : 0;
+    } else if (shape === "equation-object") {
+      blend = clamp01(0.5 + 0.5 * Math.sin(nx * Math.PI * 4) * Math.cos(nz * Math.PI * 4));
+    } else {
+      blend = clamp01(params.noise);
+    }
+
+    return {
+      height: params.baseHeight + raise * blend,
+      blend
+    };
+  }
 
   generateBtn.addEventListener("click", () => {
     const length = Math.max(1, parseNumber(lengthField.input, 30));
@@ -375,6 +514,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     const colorHigh = colorHighField.input.value || "#cdbc88";
     const isSolid = solidInput.checked;
     const brushSettings = readBrushSettings();
+    const brushIsLiquid = isLiquidBrushSettings(brushSettings);
 
     const tilesX = Math.max(1, Math.floor(length / tileSize));
     const tilesZ = Math.max(1, Math.floor(width / tileSize));
@@ -397,13 +537,19 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
             persistence,
             lacunarity
           });
-          const height = brushSettings.kind === "water"
+          const sample = polygonalHeightSample(brushSettings.polygonalShape, ix, iz, tilesX, tilesZ, {
+            baseHeight,
+            maxRaise,
+            intensity,
+            noise
+          });
+          const height = brushIsLiquid
             ? Math.max(0.05, brushSettings.depth)
-            : baseHeight + maxRaise * intensity * noise;
+            : sample.height;
           heights.push(height);
-          colors.push(brushSettings.kind === "water"
+          colors.push(brushIsLiquid
             ? brushSettings.color
-            : "#" + blendColor(colorLow, colorHigh, noise).toString(16).padStart(6, "0"));
+            : "#" + blendColor(colorLow, colorHigh, sample.blend).toString(16).padStart(6, "0"));
         }
       }
 
@@ -417,19 +563,20 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
         texture: brushSettings.texture,
         kind: brushSettings.kind,
         isSolid,
-        metadata: {
+        metadata: terrainMetadataForSettings(brushSettings, {
           mode: "generated",
           kind: brushSettings.kind,
           biome: brushSettings.biome,
           temperature: brushSettings.temperature,
           moisture: brushSettings.moisture,
           geometryMode: brushSettings.geometryMode,
+          polygonalShape: brushSettings.polygonalShape,
           texture: brushSettings.texture,
           elevation: Math.round(Math.max(...heights) * 1000) / 1000,
-          depth: brushSettings.kind === "water" ? Math.round(brushSettings.depth * 1000) / 1000 : null,
+          depth: brushIsLiquid ? Math.round(brushSettings.depth * 1000) / 1000 : null,
           baseY: Math.round(centerY * 1000) / 1000,
           generator: { seed, noiseScale, octaves, persistence, lacunarity }
-        },
+        }),
         position: { x: centerX, y: centerY, z: centerZ }
       });
       scene.add(mesh);
@@ -445,7 +592,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
       }
       generatedRefs.push({ mesh, colliderRef });
       syncTerrainSurfaceLayer(mesh, "terrainSurfaceGenerated");
-      status.textContent = "Generated polygonal terrain surface.";
+      status.textContent = "Generated " + brushSettings.polygonalShape.split("-").join(" ") + " polygonal terrain surface.";
       setStatus(status.textContent);
       return;
     }
@@ -460,41 +607,48 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
           lacunarity
         });
         const height = baseHeight + maxRaise * intensity * noise;
-        const terrainHeight = brushSettings.kind === "water" ? Math.max(0.05, brushSettings.depth) : height;
+        const terrainHeight = brushIsLiquid ? Math.max(0.05, brushSettings.depth) : height;
         const isPolygonal = brushSettings.geometryMode === "polygonal";
         const visualHeight = isPolygonal ? Math.min(0.08, terrainHeight) : terrainHeight;
         const x = startX + ix * tileSize;
         const z = startZ + iz * tileSize;
         const y = centerY + (isPolygonal ? terrainHeight - visualHeight / 2 : terrainHeight / 2);
-        const color = brushSettings.kind === "water"
+        const color = brushIsLiquid
           ? brushSettings.color
           : `#${blendColor(colorLow, colorHigh, noise).toString(16).padStart(6, "0")}`;
 
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(tileSize, visualHeight, tileSize),
-          createTerrainMaterial(THREE, { color, texture: brushSettings.texture, kind: brushSettings.kind })
+          createTerrainMaterial(THREE, { color, texture: brushSettings.texture, kind: brushSettings.kind, isLiquid: brushIsLiquid })
         );
         mesh.position.set(x, y, z);
         mesh.userData.isWater = brushSettings.kind === "water";
-        mesh.userData.isSolid = isSolid && mesh.userData.isWater !== true;
-        mesh.userData.breakable = mesh.userData.isWater !== true;
+        mesh.userData.isLiquid = brushIsLiquid;
+        mesh.userData.MatterState = brushSettings.MatterState || (brushIsLiquid ? "liquid" : "");
+        mesh.userData.matterState = mesh.userData.MatterState || "";
+        mesh.userData.materialName = brushSettings.materialName || "";
+        mesh.userData.physicsMaterialId = brushSettings.physicsMaterialId || "";
+        mesh.userData.physicsMaterialFile = brushSettings.physicsMaterialFile || "";
+        mesh.userData.isSolid = isSolid && brushIsLiquid !== true;
+        mesh.userData.breakable = brushIsLiquid !== true;
         mesh.userData.generatedByTerrainTool = true;
         mesh.userData.nvType = isPolygonal ? "terrain-surface" : "box";
-        mesh.userData.terrain = {
+        mesh.userData.terrain = terrainMetadataForSettings(brushSettings, {
           mode: "generated",
           kind: brushSettings.kind,
           biome: brushSettings.biome,
           temperature: brushSettings.temperature,
           moisture: brushSettings.moisture,
           geometryMode: brushSettings.geometryMode,
+          voxelSize: Math.round(brushSettings.voxelSize * 1000) / 1000,
           texture: brushSettings.texture,
           tileKey: [Math.round(x / tileSize), Math.round(z / tileSize), Math.round(tileSize * 1000) / 1000].join(":"),
           tileSize: Math.round(tileSize * 1000) / 1000,
           elevation: Math.round(height * 1000) / 1000,
-          depth: brushSettings.kind === "water" ? Math.round(brushSettings.depth * 1000) / 1000 : null,
+          depth: brushIsLiquid ? Math.round(brushSettings.depth * 1000) / 1000 : null,
           baseY: Math.round(centerY * 1000) / 1000,
           generator: { seed, noise: Math.round(noise * 1000) / 1000 }
-        };
+        });
         scene.add(mesh);
         objects.push(mesh);
 
@@ -503,6 +657,8 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
           const half = new THREE.Vector3(tileSize / 2, visualHeight / 2, tileSize / 2);
           colliderRef = {
             type: "box",
+            target: mesh,
+            materialId: mesh.userData.physicsMaterialId || "",
             box: new THREE.Box3(
               new THREE.Vector3(x - half.x, y - half.y, z - half.z),
               new THREE.Vector3(x + half.x, y + half.y, z + half.z)
@@ -538,6 +694,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   function paintAtPoint(point) {
     const settings = readBrushSettings();
     const tileSize = Math.max(0.1, settings.tileSize);
+    const settingsIsLiquid = isLiquidBrushSettings(settings);
     const radius = Math.max(0, settings.radius);
     const extent = Math.max(0, Math.ceil(radius / tileSize));
     const centerGridX = Math.round((Number(point?.x) || 0) / tileSize);
@@ -549,22 +706,24 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
       const result = terrainPainter.paintPolygonalTerrainSurface({
         point,
         tileSize,
-        elevation: settings.kind === "water" ? settings.depth : settings.elevation,
+        elevation: settingsIsLiquid ? settings.depth : settings.elevation,
         baseY: settings.baseY,
         color: settings.color,
         isSolid: solidInput.checked,
         texture: settings.texture,
-        metadata: {
+        metadata: terrainMetadataForSettings(settings, {
           mode: "sculpted",
           kind: settings.kind,
           biome: settings.biome,
           temperature: settings.temperature,
           moisture: settings.moisture,
+          geometryMode: settings.geometryMode,
+          polygonalShape: settings.polygonalShape,
           radius: Math.round(Math.max(radius, tileSize) * 1000) / 1000,
           brushShape: settings.brushShape,
-          depth: settings.kind === "water" ? Math.round(settings.depth * 1000) / 1000 : null,
+          depth: settingsIsLiquid ? Math.round(settings.depth * 1000) / 1000 : null,
           paintedAt
-        }
+        })
       });
       if (!result) return false;
       syncTerrainSurfaceLayer(result.mesh, "terrainSurfaceSculpted");
@@ -591,24 +750,26 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
         const result = terrainPainter.paintTerrainTile({
           point: paintPoint,
           tileSize,
-          elevation: settings.kind === "water" ? settings.depth : settings.elevation,
+          elevation: settingsIsLiquid ? settings.depth : settings.elevation,
           baseY: settings.baseY,
           color: settings.color,
           isSolid: solidInput.checked,
           geometryMode: settings.geometryMode,
           texture: settings.texture,
           replaceExisting: true,
-          metadata: {
+          metadata: terrainMetadataForSettings(settings, {
             mode: "painted",
             kind: settings.kind,
             biome: settings.biome,
             temperature: settings.temperature,
             moisture: settings.moisture,
+            geometryMode: settings.geometryMode,
+            voxelSize: Math.round(settings.voxelSize * 1000) / 1000,
             radius: Math.round(radius * 1000) / 1000,
             brushShape: settings.brushShape,
-            depth: settings.kind === "water" ? Math.round(settings.depth * 1000) / 1000 : null,
+            depth: settingsIsLiquid ? Math.round(settings.depth * 1000) / 1000 : null,
             paintedAt
-          }
+          })
         });
         if (result) paintedCount += 1;
       }
@@ -629,7 +790,11 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   }
 
   function updateBrushSettings(partial = {}) {
-    if (partial.kind !== undefined) kindField.input.value = String(partial.kind);
+    if (Array.isArray(partial.materialOptions)) setTerrainMaterialOptions(partial.materialOptions, partial.kind || kindField.input.value);
+    if (partial.kind !== undefined) {
+      const selected = selectedTerrainMaterial(partial.kind);
+      kindField.input.value = selected?.id || String(partial.kind);
+    }
     if (partial.geometryMode !== undefined) geometryField.input.value = String(partial.geometryMode);
     if (partial.texture !== undefined) textureField.input.value = String(partial.texture);
     if (partial.biome !== undefined) biomeField.input.value = String(partial.biome);
@@ -638,6 +803,8 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     if (partial.elevation !== undefined) paintElevationField.input.value = String(partial.elevation);
     if (partial.depth !== undefined) waterDepthField.input.value = String(partial.depth);
     if (partial.tileSize !== undefined) paintTileSizeField.input.value = String(partial.tileSize);
+    if (partial.voxelSize !== undefined) voxelSizeField.input.value = String(partial.voxelSize);
+    if (partial.polygonalShape !== undefined) polygonalShapeField.input.value = String(partial.polygonalShape);
     if (partial.radius !== undefined) paintRadiusField.input.value = String(partial.radius);
     if (partial.brushShape !== undefined) brushShapeField.input.value = String(partial.brushShape);
     if (partial.baseY !== undefined) paintBaseYField.input.value = String(partial.baseY);
@@ -662,6 +829,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
       return paintModeActive === true;
     },
     setPaintModeActive,
+    setTerrainMaterialOptions,
     getBrushSettings: readBrushSettings,
     updateBrushSettings,
     generateTerrain: () => generateBtn.click(),

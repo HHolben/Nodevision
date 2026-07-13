@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "tea",
+  "displayName": "Tea",
+  "description": "Tea-colored liquid material.",
+  "defaultColor": "#9b5a2e",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1000,
+    "dynamicViscosityPascalSeconds": 0.001,
+    "kinematicViscositySquareMetersPerSecond": 0.000001,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "tea",
+    "color": "#9b5a2e",
+    "opacity": 0.5
+  },
+  "chemicalFormulaMol": null
+}

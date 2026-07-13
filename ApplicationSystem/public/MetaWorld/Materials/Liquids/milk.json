@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "milk",
+  "displayName": "Milk",
+  "description": "Opaque milk liquid material.",
+  "defaultColor": "#f2eee0",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1030,
+    "dynamicViscosityPascalSeconds": 0.002,
+    "kinematicViscositySquareMetersPerSecond": 0.00000194,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1.03
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "milk",
+    "color": "#f2eee0",
+    "opacity": 0.68
+  },
+  "chemicalFormulaMol": null
+}

@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "snow",
+  "displayName": "Snow",
+  "description": "Snow terrain material for cold solid surfaces.",
+  "defaultColor": "#e8eef2",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 350,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.48,
+    "coefficientOfKineticFriction": 0.22,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.02
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "snow",
+    "color": "#e8eef2"
+  },
+  "chemicalFormulaMol": null
+}

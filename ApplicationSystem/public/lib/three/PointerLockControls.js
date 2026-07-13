@@ -101,14 +101,12 @@ function onMouseMove(event) {
   const camera = this.camera;
   const lookScale = 0.002 * this.pointerSpeed;
 
-  // Rotate around the camera local axes so look stays relative after roll or pitch.
-  if (movementX !== 0) camera.rotateY(-movementX * lookScale);
-  if (movementY !== 0) {
-    camera.rotateX(-movementY * lookScale);
-    _euler.setFromQuaternion(camera.quaternion, 'YXZ');
-    _euler.x = Math.max(_PI_2 - this.maxPolarAngle, Math.min(_PI_2 - this.minPolarAngle, _euler.x));
-    camera.quaternion.setFromEuler(_euler);
-  }
+  // Apply yaw/pitch through YXZ Euler angles so horizontal panning stays level.
+  _euler.setFromQuaternion(camera.quaternion, 'YXZ');
+  if (movementX !== 0) _euler.y -= movementX * lookScale;
+  if (movementY !== 0) _euler.x -= movementY * lookScale;
+  _euler.x = Math.max(_PI_2 - this.maxPolarAngle, Math.min(_PI_2 - this.minPolarAngle, _euler.x));
+  camera.quaternion.setFromEuler(_euler);
 
   this.dispatchEvent(_changeEvent);
 }

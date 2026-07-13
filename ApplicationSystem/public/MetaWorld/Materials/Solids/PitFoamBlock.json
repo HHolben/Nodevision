@@ -1,0 +1,38 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "PitFoamBlock",
+  "displayName": "Pit Foam Block",
+  "description": "Fall-dampening foam block material for cushioned landing zones.",
+  "defaultColor": "#f5d86e",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 42,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.88,
+    "coefficientOfKineticFriction": 0.62,
+    "springConstantNewtonsPerMeter": 1800,
+    "restitution": 0.18,
+    "impactDamping": 0.82,
+    "legacyFloorHorizontalVelocityRetention": 0.58,
+    "playerBounce": {
+      "enabled": true,
+      "restitution": 0.18,
+      "minIncomingSpeed": 0.16,
+      "minBounceSpeed": 0,
+      "maxBounceSpeed": 0.16,
+      "damping": 0.75
+    }
+  },
+  "rendering": {
+    "materialType": "solid",
+    "color": "#f5d86e",
+    "roughness": 0.95
+  },
+  "chemicalFormulaMol": null
+}

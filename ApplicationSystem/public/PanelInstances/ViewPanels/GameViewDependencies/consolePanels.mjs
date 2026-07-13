@@ -2,14 +2,58 @@
 // Provides console-specific floating panels for placement, inspection, and use (environment controls).
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
+import {
+  DEFAULT_WORLD_GAS_MATERIAL_FILE,
+  DEFAULT_WORLD_GAS_MATERIAL_ID,
+  loadWorldObjectMaterialCatalog,
+  readWorldObjectMatterState
+} from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 
 const DEFAULT_ENVIRONMENT = {
   skyColor: "#ffffff",
   floorColor: "#d8dee4",
   backgroundMode: "color",
   backgroundImage: "",
-  floorImage: ""
+  floorImage: "",
+  gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
+  gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE
 };
+
+const DEFAULT_GAS_MATERIAL_OPTION = {
+  displayName: "White Oxygenated Air",
+  materialName: "White Oxygenated Air",
+  materialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
+  materialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
+  materialJSONfile: "Materials/Gasses/WhiteOxygenatedAir.json",
+  matterState: "gas",
+  MatterState: "gas"
+};
+
+function gasMaterialId(entry = {}) {
+  return String(entry.materialId || entry.id || entry.physicsMaterialId || entry.materialName || entry.displayName || DEFAULT_WORLD_GAS_MATERIAL_ID).trim();
+}
+
+function gasMaterialFile(entry = {}) {
+  return String(entry.materialFile || entry.MaterialJSONfile || entry.materialJSONfile || DEFAULT_WORLD_GAS_MATERIAL_FILE).trim();
+}
+
+function gasMaterialLabel(entry = {}) {
+  return String(entry.displayName || entry.materialName || gasMaterialId(entry)).trim();
+}
+
+function normalizeGasCatalogEntries(catalog = []) {
+  const entries = [DEFAULT_GAS_MATERIAL_OPTION, ...(Array.isArray(catalog) ? catalog : [])];
+  const seen = new Set();
+  return entries.filter((entry) => {
+    if (readWorldObjectMatterState(entry, entry.matterState || entry.MatterState) !== "gas") return false;
+    const id = gasMaterialId(entry);
+    const file = gasMaterialFile(entry);
+    const key = String(id || file || "").toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 function createField(labelText, inputEl, container) {
   const wrapper = document.createElement("label");
@@ -307,6 +351,12 @@ function createUsePanelUI() {
     return inp;
   })(), fields);
 
+  const gasSelect = createField("World Gas", (() => {
+    const inp = document.createElement("select");
+    inp.style.fontSize = "12px";
+    return inp;
+  })(), root);
+
   const urlField = createField("Background Image URL", (() => {
     const inp = document.createElement("input");
     inp.type = "text";
@@ -345,20 +395,50 @@ function createUsePanelUI() {
   fileInput.style.display = "none";
   root.appendChild(fileInput);
 
+  function setSelectedGas(env = {}) {
+    const selectedId = String(env.gasMaterialId || DEFAULT_ENVIRONMENT.gasMaterialId || "").toLowerCase();
+    const selectedFile = String(env.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile || "").toLowerCase();
+    const options = Array.from(gasSelect.options || []);
+    const selected = options.find((option) => {
+      return String(option.dataset.materialId || option.value || "").toLowerCase() === selectedId
+        || String(option.dataset.materialFile || "").toLowerCase() === selectedFile;
+    }) || options[0];
+    if (selected) gasSelect.value = selected.value;
+  }
+
+  function setGasOptions(entries = [], env = {}) {
+    const fragment = document.createDocumentFragment();
+    normalizeGasCatalogEntries(entries).forEach((entry) => {
+      const option = document.createElement("option");
+      const id = gasMaterialId(entry);
+      const file = gasMaterialFile(entry);
+      option.value = id || file;
+      option.dataset.materialId = id;
+      option.dataset.materialFile = file;
+      option.textContent = gasMaterialLabel(entry);
+      fragment.appendChild(option);
+    });
+    gasSelect.replaceChildren(fragment);
+    setSelectedGas(env);
+  }
+
   return {
     floatingPanel,
     skyInput,
     floorInput,
+    gasSelect,
     urlField,
     loadUrlBtn,
     uploadBtn,
     colorBtn,
     statusLine,
     fileInput,
+    setGasOptions,
     setStatus: (msg) => { statusLine.textContent = msg || ""; },
     setFields: (env) => {
       skyInput.value = env.skyColor || "#ffffff";
       floorInput.value = env.floorColor || "#d8dee4";
+      setSelectedGas(env);
     }
   };
 }
@@ -382,6 +462,18 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
   if (window.VRWorldContext) {
     window.VRWorldContext.environment = environment;
   }
+
+  let gasCatalog = normalizeGasCatalogEntries([DEFAULT_GAS_MATERIAL_OPTION]);
+  useUI.setGasOptions(gasCatalog, environment);
+  void loadWorldObjectMaterialCatalog()
+    .then((catalog) => {
+      gasCatalog = normalizeGasCatalogEntries(catalog);
+      useUI.setGasOptions(gasCatalog, environment);
+    })
+    .catch((err) => {
+      console.warn("World gas material catalog failed to load:", err);
+      useUI.setGasOptions(gasCatalog, environment);
+    });
 
   let pendingPlacement = null;
   let pendingInspect = null;
@@ -499,7 +591,9 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       floorColor: def.floorColor || DEFAULT_ENVIRONMENT.floorColor,
       backgroundMode: def.backgroundMode || (def.backgroundImage ? "image" : "color"),
       backgroundImage: def.backgroundImage || "",
-      floorImage: def.floorImage || ""
+      floorImage: def.floorImage || "",
+      gasMaterialId: def.gasMaterialId || DEFAULT_ENVIRONMENT.gasMaterialId,
+      gasMaterialFile: def.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile
     };
     applyEnvironmentState(merged);
   }
@@ -510,7 +604,9 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       floorColor: environment.floorColor,
       backgroundMode: environment.backgroundMode,
       backgroundImage: environment.backgroundImage,
-      floorImage: environment.floorImage
+      floorImage: environment.floorImage,
+      gasMaterialId: environment.gasMaterialId || DEFAULT_ENVIRONMENT.gasMaterialId,
+      gasMaterialFile: environment.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile
     };
   }
 
@@ -626,6 +722,15 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       skyColor: sky,
       floorColor: floor
     });
+  });
+
+  useUI.gasSelect.addEventListener("change", () => {
+    const selected = useUI.gasSelect.selectedOptions?.[0] || null;
+    if (!selected) return;
+    const gasMaterialId = selected.dataset.materialId || selected.value || DEFAULT_ENVIRONMENT.gasMaterialId;
+    const gasMaterialFile = selected.dataset.materialFile || DEFAULT_ENVIRONMENT.gasMaterialFile;
+    applyEnvironmentState({ gasMaterialId, gasMaterialFile });
+    useUI.setStatus("World gas set to " + (selected.textContent || gasMaterialId) + ".");
   });
 
   useUI.uploadBtn.addEventListener("click", () => {

@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "honey",
+  "displayName": "Honey",
+  "description": "Viscous honey liquid material.",
+  "defaultColor": "#d99422",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1420,
+    "dynamicViscosityPascalSeconds": 10,
+    "kinematicViscositySquareMetersPerSecond": 0.00704,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1.42
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "honey",
+    "color": "#d99422",
+    "opacity": 0.56
+  },
+  "chemicalFormulaMol": null
+}

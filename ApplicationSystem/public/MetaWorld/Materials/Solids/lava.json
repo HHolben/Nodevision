@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "lava",
+  "displayName": "Lava",
+  "description": "Lava-colored terrain material for volcanic solid terrain painting.",
+  "defaultColor": "#c94b2b",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2600,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.62,
+    "coefficientOfKineticFriction": 0.4,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.04
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "lava",
+    "color": "#c94b2b"
+  },
+  "chemicalFormulaMol": null
+}

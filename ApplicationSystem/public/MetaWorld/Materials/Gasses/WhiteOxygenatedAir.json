@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "WhiteOxygenatedAir",
+  "displayName": "White Oxygenated Air",
+  "description": "Default breathable oxygenated air gas material for worlds.",
+  "defaultColor": "#9fd8ff",
+  "homogeneousSubstance": false,
+  "MatterState": "gas",
+  "defaultForWorldAtmosphere": true,
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "gas",
+    "solid": false,
+    "densityKgPerCubicMeter": 1.225,
+    "dynamicViscosityPascalSeconds": 0.0000181,
+    "kinematicViscositySquareMetersPerSecond": 0.0000148,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 0.0012
+  },
+  "rendering": {
+    "materialType": "gas",
+    "color": "#9fd8ff",
+    "opacity": 0.18
+  },
+  "chemicalFormulaMol": null
+}

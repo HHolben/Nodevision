@@ -137,6 +137,7 @@ function resolveExtension(filename) {
     if (lower.endsWith(".alto.xml")) return "alto";
     if (lower.endsWith(".musicxml.xml")) return "musicxml"; // future-proofing
     if (lower.endsWith(".td.json")) return "td.json";
+    if (lower.endsWith(".terrain.json")) return "terrain.json";
     if (lower.endsWith(".tar.gz")) return "tar.gz"; // optional
 
     const lastSegment = lower.split("/").pop() || lower;

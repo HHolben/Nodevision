@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "EarthTroposphere",
+  "displayName": "Earth Troposphere",
+  "description": "Earth-like lower atmosphere gas material.",
+  "defaultColor": "#7fb7e8",
+  "homogeneousSubstance": false,
+  "MatterState": "gas",
+  "defaultForWorldAtmosphere": false,
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "gas",
+    "solid": false,
+    "densityKgPerCubicMeter": 1.225,
+    "dynamicViscosityPascalSeconds": 0.0000181,
+    "kinematicViscositySquareMetersPerSecond": 0.0000148,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 0.0012
+  },
+  "rendering": {
+    "materialType": "gas",
+    "color": "#7fb7e8",
+    "opacity": 0.16
+  },
+  "chemicalFormulaMol": null
+}

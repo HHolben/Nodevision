@@ -62,27 +62,36 @@ function makeCanvasTexture(THREE, { baseColor, texture }) {
   return map;
 }
 
-export function createTerrainMaterial(THREE, { color = "#777777", texture = "solid", kind = "" } = {}) {
-  const isWater = kind === "water";
-  const waterTint = "#9bd9b6";
-  const baseColor = isWater ? waterTint : color;
+export function createTerrainMaterial(THREE, { color = "#777777", texture = "solid", kind = "", isLiquid = false } = {}) {
+  const liquid = isLiquid === true || kind === "water";
+  const baseColor = color || "#777777";
+
+  if (liquid) {
+    const materialOptions = {
+      color: baseColor,
+      transparent: true,
+      opacity: 0.42,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    };
+    const map = texture && texture !== "solid"
+      ? makeCanvasTexture(THREE, { baseColor, texture })
+      : null;
+    if (map) materialOptions.map = map;
+    return new THREE.MeshBasicMaterial(materialOptions);
+  }
+
   const materialOptions = {
     color: baseColor,
-    roughness: isWater ? 0.18 : 0.55,
+    roughness: 0.55,
     metalness: 0
   };
   const map = texture && texture !== "solid"
     ? makeCanvasTexture(THREE, { baseColor, texture })
     : null;
   if (map) materialOptions.map = map;
-  if (isWater) {
-    materialOptions.transparent = true;
-    materialOptions.opacity = 0.28;
-    materialOptions.depthWrite = false;
-    materialOptions.side = THREE.DoubleSide;
-    materialOptions.emissive = waterTint;
-    materialOptions.emissiveIntensity = 0.08;
-  } else if (texture === "ripples") {
+  if (texture === "ripples") {
     materialOptions.transparent = true;
     materialOptions.opacity = 0.82;
   }

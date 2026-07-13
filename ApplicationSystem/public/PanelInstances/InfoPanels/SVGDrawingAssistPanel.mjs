@@ -232,9 +232,16 @@ function renderPanel(panel) {
     button("Add Clip Path", () => api.addClippingPath?.()),
     button("Use Selected As Mask", () => api.useSelectedObjectAsMask?.()),
     button("Use Selected As Clip", () => api.useSelectedObjectAsClippingPath?.()),
+    button("Edit Mask", () => api.editSelectedMask?.()),
+    button("Edit Clip", () => api.editSelectedClippingPath?.()),
+    button("Edit Artwork", () => api.editArtwork?.()),
+    button("Invert Mask", () => api.invertSelectedMask?.(), "Invert simple black/white mask content"),
     button("Disable Mask", () => api.disableSelectedMaskOrClip?.("mask")),
     button("Enable Mask", () => api.enableSelectedMaskOrClip?.("mask")),
+    button("Disable Clip", () => api.disableSelectedMaskOrClip?.("clip-path")),
+    button("Enable Clip", () => api.enableSelectedMaskOrClip?.("clip-path")),
     button("Detach Mask", () => api.detachSelectedMaskOrClip?.("mask")),
+    button("Detach Clip", () => api.detachSelectedMaskOrClip?.("clip-path")),
     button("Release Clip", () => api.releaseSelectedClipPath?.()),
   ]));
   panel.appendChild(masks);
@@ -253,6 +260,7 @@ function renderPanel(panel) {
 
 export async function setupPanel(panel) {
   if (!panel) throw new Error("Panel container required.");
+  if (typeof panel.__nvCleanupDrawingAssistPanel === "function") panel.__nvCleanupDrawingAssistPanel();
   const rerender = () => renderPanel(panel);
   renderPanel(panel);
   window.addEventListener("nv-svg-drawing-assist-settings-changed", rerender);

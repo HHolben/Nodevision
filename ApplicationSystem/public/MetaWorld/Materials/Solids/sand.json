@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "sand",
+  "displayName": "Sand",
+  "description": "Sand terrain material for beaches, dunes, and granular ground.",
+  "defaultColor": "#c9aa5a",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 1600,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.54,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.03
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "sand",
+    "color": "#c9aa5a"
+  },
+  "chemicalFormulaMol": null
+}

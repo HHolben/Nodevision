@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "limestone",
+  "displayName": "Limestone",
+  "description": "Pale limestone terrain material for solid rocky ground.",
+  "defaultColor": "#b8b59f",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2550,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.74,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.1
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "limestone",
+    "color": "#b8b59f"
+  },
+  "chemicalFormulaMol": null
+}

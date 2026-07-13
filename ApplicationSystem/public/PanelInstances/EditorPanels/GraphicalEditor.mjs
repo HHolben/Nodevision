@@ -78,6 +78,7 @@ function resolveExtension(filePath) {
     if (lower.endsWith(".tar.gz")) return "tar.gz";
     if (lower.endsWith(".nvcircuit.json")) return "nvcircuit.json";
     if (lower.endsWith(".td.json")) return "td.json";
+    if (lower.endsWith(".terrain.json")) return "terrain.json";
 
     const lastSegment = lower.split("/").pop() || lower;
     if (lastSegment.includes(".")) {

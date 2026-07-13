@@ -7,10 +7,12 @@ export const KML_VIEW_TYPES = Object.freeze({
   GLOBE: "globe",
   MAP: "map",
   AVIATION: "aviation",
+  TERRAIN: "terrain",
 });
 
 export function normalizeKMLViewType(value) {
   const normalized = String(value || "").trim().toLowerCase();
+  if (["terrain", "topo", "topographic", "contour", "contours"].includes(normalized)) return KML_VIEW_TYPES.TERRAIN;
   if (["aviation", "aviation-map", "aviationmap", "chart", "charts", "sectional"].includes(normalized)) return KML_VIEW_TYPES.AVIATION;
   if (["map", "street", "street-map", "flat", "projection", "flat-map", "flatmap"].includes(normalized)) return KML_VIEW_TYPES.MAP;
   return KML_VIEW_TYPES.GLOBE;
@@ -22,7 +24,7 @@ export async function createKMLMapRenderer(container, options = {}) {
     ? await createKMLGlobeRenderer(container, options)
     : await createKMLFlatMapRenderer(container, {
       ...options,
-      basemapType: viewType === KML_VIEW_TYPES.AVIATION ? "aviation" : "street",
+      basemapType: viewType === KML_VIEW_TYPES.AVIATION ? "aviation" : viewType === KML_VIEW_TYPES.TERRAIN ? "terrain" : "street",
     });
   renderer.viewType = viewType;
   return renderer;

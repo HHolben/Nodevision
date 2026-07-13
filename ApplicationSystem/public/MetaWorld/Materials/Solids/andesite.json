@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "andesite",
+  "displayName": "Andesite",
+  "description": "Fine-grained andesite stone terrain material.",
+  "defaultColor": "#6d7472",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2600,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.78,
+    "coefficientOfKineticFriction": 0.52,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "andesite",
+    "color": "#6d7472"
+  },
+  "chemicalFormulaMol": null
+}

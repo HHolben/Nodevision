@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "obsidian",
+  "displayName": "Obsidian",
+  "description": "Gloss-dark obsidian volcanic glass terrain material.",
+  "defaultColor": "#16151a",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2400,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.66,
+    "coefficientOfKineticFriction": 0.38,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.1
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "obsidian",
+    "color": "#16151a"
+  },
+  "chemicalFormulaMol": null
+}

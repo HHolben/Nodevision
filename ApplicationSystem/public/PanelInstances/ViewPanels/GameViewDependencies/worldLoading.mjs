@@ -1,8 +1,17 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
-import { createEquationColliderPlaneMesh, makePlaneColliderRef } from "./equationColliderTool.mjs";
+import { createEquationColliderPlaneMesh, makePlaneColliderRef, syncPlaneWaterVolumeRef } from "./equationColliderTool.mjs";
 import { createTerrainSurfaceColliderRef, createTerrainSurfaceMesh } from "./TerrainTool/terrainSurfaceMesh.mjs";
+import {
+  DEFAULT_WORLD_GAS_MATERIAL_FILE,
+  DEFAULT_WORLD_GAS_MATERIAL_ID,
+  DEFAULT_WORLD_OBJECT_MATERIAL_ID,
+  applyDefaultWorldObjectPhysicsMaterial,
+  materialFileForWorldObjectMaterial,
+  readWorldObjectMatterState,
+  readWorldObjectPhysicsMaterialId,
+} from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 import {
   clearActiveMetaWorldLayerBridge,
   notifyMetaWorldLayersChanged,
@@ -129,6 +138,10 @@ function isExpressionLayerType(type) {
   return type === "functionSurface" || type === "functionCurve" || type === "parametricCurve";
 }
 
+function isEquationObjectDefinition(def) {
+  return def?.type === "equation-collider-plane" || def?.type === "equation-inequality";
+}
+
 function readExpressionRenderDistance(camera) {
   const far = Number(camera?.far);
   return Number.isFinite(far) && far > 0 ? far : 1000;
@@ -187,12 +200,27 @@ function ensurePrimitiveSize(def) {
   return def.size;
 }
 
+function createWorldMeshMaterial(THREE, materialOpts = null, fallbackColor = "#888") {
+  const opts = materialOpts || { color: fallbackColor };
+  if (opts.isLiquid === true) {
+    return new THREE.MeshBasicMaterial({
+      color: opts.color || fallbackColor || "#2f83b7",
+      transparent: true,
+      opacity: Number.isFinite(opts.opacity) ? opts.opacity : 0.48,
+      depthWrite: false,
+      side: opts.side || THREE.DoubleSide,
+      toneMapped: false
+    });
+  }
+  return new THREE.MeshStandardMaterial(opts);
+}
+
 function createPrimitiveWorldMesh(THREE, def, materialOpts = null) {
   if (!THREE || !def || typeof def !== "object") return null;
   const type = String(def.type || "box").toLowerCase();
   if (!PRIMITIVE_WORLD_OBJECT_TYPES.has(type)) return null;
   const size = ensurePrimitiveSize(def);
-  const material = new THREE.MeshStandardMaterial(materialOpts || { color: def.color || "#888" });
+  const material = createWorldMeshMaterial(THREE, materialOpts, def.color || "#888");
 
   if (type === "box") {
     return new THREE.Mesh(new THREE.BoxGeometry(...size), material);
@@ -225,16 +253,61 @@ function createPrimitiveWorldMesh(THREE, def, materialOpts = null) {
   return null;
 }
 
+function readMaterialName(def = {}) {
+  const material = def?.material;
+  if (typeof material === "string") return material.trim().toLowerCase();
+  if (material && typeof material === "object") {
+    const candidate = material.type || material.kind || material.name || material.materialType;
+    if (typeof candidate === "string") return candidate.trim().toLowerCase();
+  }
+  const direct = def?.materialType || def?.materialKind || def?.materialName;
+  return typeof direct === "string" ? direct.trim().toLowerCase() : "";
+}
+
+function isLiquidMaterialDefinition(def = {}) {
+  return readWorldObjectMatterState(def, def?.isWater === true || readMaterialName(def) === "water" ? "liquid" : "") === "liquid";
+}
+
+function shouldUseDefaultPhysicsMaterial(def = {}) {
+  return !isLiquidMaterialDefinition(def)
+    && (def?.isSolid === true || def?.collidable === true || def?.collider === true);
+}
+
+function ensureWorldObjectPhysicsMaterial(def = {}) {
+  if (shouldUseDefaultPhysicsMaterial(def)) applyDefaultWorldObjectPhysicsMaterial(def);
+  return readWorldObjectPhysicsMaterialId(def, isLiquidMaterialDefinition(def) ? "water" : "");
+}
+
+function readResolvedPhysicsMaterialId(def = {}) {
+  if (isLiquidMaterialDefinition(def)) return readWorldObjectPhysicsMaterialId(def, "water");
+  if (shouldUseDefaultPhysicsMaterial(def)) {
+    return readWorldObjectPhysicsMaterialId(def, DEFAULT_WORLD_OBJECT_MATERIAL_ID);
+  }
+  return readWorldObjectPhysicsMaterialId(def, "");
+}
+
+function applyPhysicsMaterialToMesh(mesh, materialId) {
+  if (!mesh?.userData || !materialId) return;
+  mesh.userData.physicsMaterialId = materialId;
+  mesh.userData.physicsMaterialFile = materialFileForWorldObjectMaterial(materialId);
+}
+
+function attachPhysicsMaterialToCollider(colliderRef, materialId) {
+  if (colliderRef && materialId) colliderRef.materialId = materialId;
+  return colliderRef;
+}
+
 function makeObjectColliderRef(THREE, mesh, def, shape) {
-  if (!THREE || !mesh || def?.isWater === true) return null;
+  if (!THREE || !mesh || isLiquidMaterialDefinition(def)) return null;
   if (def?.isSolid !== true && def?.collidable !== true) return null;
+  const materialId = readResolvedPhysicsMaterialId(def);
   if (shape === "sphere") {
     const center = new THREE.Vector3(...def.position);
     const radius = Array.isArray(def.size) && Number.isFinite(def.size[0]) ? def.size[0] : 0.5;
-    return { type: "sphere", center, radius };
+    return attachPhysicsMaterialToCollider({ type: "sphere", center, radius }, materialId);
   }
   mesh.updateWorldMatrix?.(true, false);
-  return { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+  return attachPhysicsMaterialToCollider({ type: "box", box: new THREE.Box3().setFromObject(mesh) }, materialId);
 }
 
 function makeUniqueObjectId(layerEntries, preferredId, type) {
@@ -249,7 +322,26 @@ function makeUniqueObjectId(layerEntries, preferredId, type) {
   return candidate;
 }
 
-export function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, camera }) {
+function readPortalLinkedPortalId(def) {
+  const candidates = [def?.linkedPortalId, def?.portalLinkedPortalId, def?.targetPortalId, def?.portalTargetId];
+  const explicit = candidates.find((value) => typeof value === "string" && value.trim());
+  return explicit ? explicit.trim() : "";
+}
+
+function readPortalDestinationMode(def, sameWorld, linkedPortalId, spawn) {
+  const rawMode = String(def?.portalDestinationMode || def?.destinationMode || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+  if (["world", "metaworld", "file", "anotherworld"].includes(rawMode)) return "world";
+  if (["coordinate", "coordinates", "point", "sameworldcoordinate"].includes(rawMode)) return "coordinate";
+  if (["linkedportal", "linked", "bidirectional"].includes(rawMode)) return "linkedPortal";
+  if (["linkedworldportal", "worldlinkedportal", "linkedmetaworldportal"].includes(rawMode)) return "linkedWorldPortal";
+  if (linkedPortalId && sameWorld) return "linkedPortal";
+  if (linkedPortalId) return "linkedWorldPortal";
+  if (Array.isArray(spawn) && spawn.length >= 3) return "coordinate";
+  if (!sameWorld) return "world";
+  return "coordinate";
+}
+
+export function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, portals, spawnPoints, waterVolumes, camera }) {
   if (!worldData || !Array.isArray(layerEntries)) {
     clearActiveMetaWorldLayerBridge();
     return;
@@ -273,7 +365,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       entry.object3d.userData.onBreakTarget = () => bridge.removeExpressionLayer(entry.id);
       return;
     }
-    if (entry.def?.type === "equation-collider-plane") {
+    if (isEquationObjectDefinition(entry.def) || entry.def?.type === "portal") {
       entry.object3d.userData.breakable = true;
       entry.object3d.userData.placedByPlayer = true;
       entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id);
@@ -284,6 +376,27 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     if (!colliderRef) return;
     removeObjectFromArray(colliders, colliderRef);
     delete object3d.userData.colliderRef;
+  };
+  const removeGameObjectRuntimeRefs = (object3d) => {
+    const portalRef = object3d?.userData?.portalRef;
+    if (portalRef) {
+      removeObjectFromArray(portals, portalRef);
+      delete object3d.userData.portalRef;
+    }
+    const spawnPointRef = object3d?.userData?.spawnPointRef;
+    if (spawnPointRef) {
+      removeObjectFromArray(spawnPoints, spawnPointRef);
+      delete object3d.userData.spawnPointRef;
+    }
+    if (Array.isArray(waterVolumes)) {
+      for (let i = waterVolumes.length - 1; i >= 0; i -= 1) {
+        const ref = waterVolumes[i];
+        if (ref === object3d?.userData?.waterVolumeRef || ref?.target === object3d || ref?.object3d === object3d) {
+          waterVolumes.splice(i, 1);
+        }
+      }
+      if (object3d?.userData) delete object3d.userData.waterVolumeRef;
+    }
   };
   const syncExpressionLayerCollider = (entry) => {
     if (!entry?.object3d || !isExpressionLayerType(entry.def?.type)) return;
@@ -323,6 +436,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       if (restoredIds.has(entry.id)) return;
       if (entry.object3d && isExpressionLayerType(entry.def?.type)) {
         removeColliderRef(entry.object3d);
+        removeGameObjectRuntimeRefs(entry.object3d);
         scene?.remove?.(entry.object3d);
         removeObjectFromArray(objects, entry.object3d);
         disposeExpressionObject(entry.object3d);
@@ -475,6 +589,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       const [entry] = layerEntries.splice(index, 1);
       if (entry.object3d) {
         removeColliderRef(entry.object3d);
+        removeGameObjectRuntimeRefs(entry.object3d);
         scene?.remove?.(entry.object3d);
         removeObjectFromArray(objects, entry.object3d);
         disposeExpressionObject(entry.object3d);
@@ -499,6 +614,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       if (!def.color) def.color = "#888888";
       if (def.isSolid !== false) def.isSolid = true;
       if (def.breakable !== false) def.breakable = true;
+      const physicsMaterialId = ensureWorldObjectPhysicsMaterial(def);
 
       const materialOpts = { color: def.color || "#888888" };
       const mesh = createPrimitiveWorldMesh(THREE, def, materialOpts);
@@ -513,6 +629,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       mesh.userData.isSolid = def.isSolid === true || def.collidable === true;
       mesh.userData.breakable = def.breakable !== false;
       mesh.userData.placedByPlayer = true;
+      applyPhysicsMaterialToMesh(mesh, physicsMaterialId);
       if (def.hidden === true || def.visible === false) mesh.visible = false;
       scene.add(mesh);
       objects.push(mesh);
@@ -527,6 +644,150 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       notifyMetaWorldLayersChanged({ reason: "objectLayerAdded", objectId });
       return def;
     },
+    addGameObjectLayer(objectDef = {}) {
+      if (!THREE || !scene || !Array.isArray(objects) || !worldData) return null;
+      const def = objectDef && typeof objectDef === "object" ? JSON.parse(JSON.stringify(objectDef)) : {};
+      def.type = String(def.type || "portal").toLowerCase();
+      if (!Array.isArray(def.position) || def.position.length < 3) def.position = [0, 0.8, -2];
+
+      const objectId = makeUniqueObjectId(layerEntries, def.id || def.tag || def.name, def.type);
+      def.id = objectId;
+      def.tag = typeof def.tag === "string" && def.tag.trim() ? def.tag.trim() : objectId;
+      def.name = typeof def.name === "string" && def.name.trim() ? def.name.trim() : readLayerObjectName(def, objectId, layerEntries.length);
+
+      let meshShape = String(def.shape || def.geometry || "").toLowerCase();
+      if (def.type === "portal") {
+        meshShape = meshShape || "torus";
+        if (!Array.isArray(def.size) || def.size.length === 0) def.size = [0.72, 0.075];
+        if (!def.color) def.color = "#55ccff";
+        if (!Number.isFinite(def.opacity)) def.opacity = 0.72;
+        if (!def.emissive) def.emissive = "#55ccff";
+        if (!Number.isFinite(def.emissiveIntensity)) def.emissiveIntensity = 0.95;
+        if (!def.targetWorld && def.sameWorld !== false) def.sameWorld = true;
+        if (typeof def.spawnPoint !== "string" || !def.spawnPoint.trim()) def.spawnPoint = "default";
+        def.isSolid = def.isSolid === true;
+        def.breakable = false;
+      } else if (def.type === "spawn") {
+        meshShape = meshShape || "sphere";
+        if (!Array.isArray(def.size) || def.size.length === 0) def.size = [0.22];
+        if (!def.color) def.color = "#35d07f";
+        if (typeof def.spawnId !== "string" || !def.spawnId.trim()) def.spawnId = objectId;
+        def.isSolid = false;
+        def.breakable = false;
+      } else if (def.type === "console") {
+        meshShape = meshShape || "box";
+        if (!Array.isArray(def.size) || def.size.length < 3) def.size = [0.9, 1.15, 0.7];
+        if (!def.color) def.color = "#33ccaa";
+        if (def.collider !== false) def.collider = true;
+        def.isSolid = def.collider !== false;
+        if (def.breakable !== false) def.breakable = true;
+      } else {
+        return null;
+      }
+
+      const physicsMaterialId = ensureWorldObjectPhysicsMaterial(def);
+
+      const meshDef = { ...def, type: meshShape };
+      ensurePrimitiveSize(meshDef);
+      def.shape = meshShape;
+      def.size = Array.isArray(meshDef.size) ? [...meshDef.size] : def.size;
+
+      const materialOpts = { color: def.color || "#888888" };
+      if (def.type === "portal") {
+        materialOpts.transparent = true;
+        materialOpts.opacity = def.opacity;
+        materialOpts.emissive = def.emissive;
+        materialOpts.emissiveIntensity = def.emissiveIntensity;
+      }
+      const mesh = createPrimitiveWorldMesh(THREE, meshDef, materialOpts);
+      if (!mesh) return null;
+
+      this.recordHistory();
+      worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
+      worldData.objects.push(def);
+      mesh.position.set(...def.position);
+      mesh.userData.nvType = def.type;
+      mesh.userData.metaWorldLayerId = objectId;
+      mesh.userData.tag = def.tag;
+      mesh.userData.isSolid = def.isSolid === true || def.collidable === true;
+      mesh.userData.breakable = def.breakable !== false;
+      mesh.userData.placedByPlayer = true;
+
+      applyPhysicsMaterialToMesh(mesh, physicsMaterialId);
+
+      if (def.type === "portal") {
+        const targetWorld = typeof def.targetWorld === "string" ? def.targetWorld.trim() : "";
+        const sameWorld = def.sameWorld === true || ["self", ".", "same", "current"].includes(targetWorld.toLowerCase());
+        const resolvedTarget = sameWorld ? null : (targetWorld || null);
+        const linkedPortalId = readPortalLinkedPortalId(def);
+        const destinationMode = readPortalDestinationMode(def, sameWorld, linkedPortalId, def.spawn);
+        def.portalDestinationMode = destinationMode;
+        if (linkedPortalId) def.linkedPortalId = linkedPortalId;
+        mesh.userData.isPortal = true;
+        mesh.userData.portalTarget = resolvedTarget;
+        mesh.userData.portalSameWorld = sameWorld;
+        mesh.userData.portalDestinationMode = destinationMode;
+        mesh.userData.portalLinkedPortalId = linkedPortalId;
+        mesh.userData.portalSpawn = Array.isArray(def.spawn) ? [...def.spawn] : null;
+        mesh.userData.portalSpawnPoint = typeof def.spawnPoint === "string" ? def.spawnPoint : null;
+        mesh.userData.portalSpawnYaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : null;
+        mesh.userData.portalCooldownMs = Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200;
+        if ((resolvedTarget || sameWorld) && Array.isArray(portals)) {
+          const portalRef = {
+            box: new THREE.Box3().setFromObject(mesh),
+            object3d: mesh,
+            objectId,
+            targetWorld: resolvedTarget,
+            sameWorld,
+            destinationMode,
+            linkedPortalId,
+            spawn: Array.isArray(def.spawn) ? def.spawn : null,
+            spawnYaw: Number.isFinite(def.spawnYaw) ? def.spawnYaw : null,
+            spawnPoint: typeof def.spawnPoint === "string" ? def.spawnPoint : null,
+            cooldownMs: Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200,
+            lastTriggeredAt: 0
+          };
+          portals.push(portalRef);
+          mesh.userData.portalRef = portalRef;
+        }
+      } else if (def.type === "spawn") {
+        mesh.userData.spawnId = def.spawnId;
+        mesh.userData.spawnYaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : 0;
+        if (Array.isArray(spawnPoints)) {
+          const spawnPointRef = {
+            id: def.spawnId,
+            position: [def.position[0], def.position[1], def.position[2]],
+            yaw: Number.isFinite(def.spawnYaw) ? def.spawnYaw : 0
+          };
+          spawnPoints.push(spawnPointRef);
+          mesh.userData.spawnPointRef = spawnPointRef;
+        }
+      } else if (def.type === "console") {
+        mesh.userData.consoleProperties = {
+          collider: def.collider !== false,
+          color: def.color || "#33ccaa",
+          objectFile: typeof def.objectFile === "string" ? def.objectFile : "",
+          linkedObject: typeof def.linkedObject === "string" ? def.linkedObject : "",
+          inputs: def.inputs && typeof def.inputs === "object" ? def.inputs : {},
+          outputs: def.outputs && typeof def.outputs === "object" ? def.outputs : {},
+          metaWorldDemo: def.metaWorldDemo && typeof def.metaWorldDemo === "object" ? def.metaWorldDemo : null
+        };
+      }
+
+      if (def.hidden === true || def.visible === false) mesh.visible = false;
+      scene.add(mesh);
+      objects.push(mesh);
+      const colliderRef = makeObjectColliderRef(THREE, mesh, { ...def, type: meshShape }, meshShape);
+      if (colliderRef && Array.isArray(colliders)) {
+        colliders.push(colliderRef);
+        mesh.userData.colliderRef = colliderRef;
+      }
+      layerEntries.push({ id: objectId, def, object3d: mesh });
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "gameObjectLayerAdded", objectId });
+      return def;
+    },
     upsertObjectLayerFromMesh({ mesh, def, reason = "objectLayerUpserted" } = {}) {
       if (!mesh?.isMesh || !def || typeof def !== "object" || !worldData) return null;
       worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
@@ -534,9 +795,10 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       let entry = existingId ? layerEntries.find((candidate) => candidate.id === existingId) : null;
       const objectId = entry?.id || makeUniqueObjectId(layerEntries, def.id || def.tag || def.name, def.type || mesh.userData?.nvType || "object");
       const nextDef = JSON.parse(JSON.stringify({ ...def, id: objectId }));
+      const existingName = typeof entry?.def?.name === "string" && entry.def.name.trim() ? entry.def.name.trim() : "";
       nextDef.name = typeof nextDef.name === "string" && nextDef.name.trim()
         ? nextDef.name.trim()
-        : readLayerObjectName(nextDef, objectId, layerEntries.length);
+        : (existingName || readLayerObjectName(nextDef, objectId, layerEntries.length));
       if (nextDef.terrain && typeof nextDef.terrain === "object") {
         nextDef.terrain.id = objectId;
         nextDef.terrain.name = nextDef.name;
@@ -570,6 +832,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       const [entry] = layerEntries.splice(index, 1);
       if (entry.object3d) {
         removeColliderRef(entry.object3d);
+        removeGameObjectRuntimeRefs(entry.object3d);
         scene?.remove?.(entry.object3d);
         removeObjectFromArray(objects, entry.object3d);
         disposeExpressionObject(entry.object3d);
@@ -663,6 +926,8 @@ function convertMetaWorldToLegacyWorld(world) {
           floorColor: "#d8dee4",
           backgroundMode: "color",
           backgroundImage: "",
+          gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
+          gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
           ...(world.environment || world.metadata?.environment || {})
         }
       },
@@ -915,6 +1180,8 @@ function convertMetaWorldToLegacyWorld(world) {
         floorColor,
         backgroundMode: "color",
         backgroundImage: "",
+        gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
+        gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
         ...(world.environment || world.metadata?.environment || {})
       }
     },
@@ -1243,12 +1510,21 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         allowSave: readRule("allowSave", false)
       };
 
-      const envDef =
+      const rawEnvDef =
         worldData?.metadata?.environment
         || worldData?.environment
         || window.VRWorldContext?.environment
         || null;
+      const envDef = {
+        gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
+        gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
+        ...(rawEnvDef || {})
+      };
+      worldData.metadata = worldData.metadata && typeof worldData.metadata === "object" ? worldData.metadata : {};
+      worldData.metadata.environment = envDef;
       window.VRWorldContext?.consolePanels?.applyEnvironmentDefinition?.(envDef);
+      const temporalDef = worldData?.metadata?.temporal || worldData?.temporal || null;
+      window.VRWorldContext?.temporalController?.applySettings?.(temporalDef || { elapsedSeconds: 0 }, { resetElapsed: true });
     }
     objects.forEach(obj => scene.remove(obj));
     objects.length = 0;
@@ -1370,6 +1646,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           if (Array.isArray(size)) def.size = size;
           const targetWorld = readCustom("nv:targetWorld");
           if (targetWorld) def.targetWorld = targetWorld;
+          const destinationMode = readCustom("nv:portalDestinationMode") || readCustom("nv:destinationMode");
+          if (destinationMode) def.portalDestinationMode = destinationMode;
+          const linkedPortalId = readCustom("nv:linkedPortalId") || readCustom("nv:portalLinkedPortalId");
+          if (linkedPortalId) def.linkedPortalId = linkedPortalId;
           if (readCustom("nv:sameWorld") === true) def.sameWorld = true;
           const spawn = readCustom("nv:spawn");
           if (Array.isArray(spawn)) def.spawn = spawn;
@@ -1630,11 +1910,13 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
               ? def.label
               : null;
       const yaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : (Number.isFinite(def.yaw) ? def.yaw : null);
-      spawnCandidates.push({
+      const candidate = {
         id,
         position: [def.position[0], def.position[1], def.position[2]],
         yaw
-      });
+      };
+      spawnCandidates.push(candidate);
+      return candidate;
     };
 
     for (let defIndex = 0; defIndex < objectDefs.length; defIndex += 1) {
@@ -1646,11 +1928,17 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       const portalTarget = def.targetWorld || def.target || def.href || def.world;
       const sameWorld = def.sameWorld === true || isSameWorldTarget(portalTarget);
       const resolvedPortalTarget = isSameWorldTarget(portalTarget) ? null : portalTarget;
+      const portalLinkedPortalId = readPortalLinkedPortalId(def);
+      const portalDestinationMode = readPortalDestinationMode(def, sameWorld, portalLinkedPortalId, def.spawn);
       const portalSpawnPoint = def.spawnPoint ?? def.spawnId ?? null;
       const isSpawnPoint = def.type === "spawn" || def.tag === "spawn" || def.isSpawn === true;
-      if (isSpawnPoint) {
-        recordSpawnPoint(def);
-      }
+      const spawnCandidate = isSpawnPoint ? recordSpawnPoint(def) : null;
+      const isLiquidDefinition = isLiquidMaterialDefinition(def);
+      const physicsMaterialId = readResolvedPhysicsMaterialId(def);
+      const isEquationInequalityDefinition = def.type === "equation-inequality"
+        || def.inequality === true
+        || def.equationCollider?.inequality === true
+        || String(def.equationCollider?.kind || "").toLowerCase().includes("inequality");
       const rawActions = def.collisionAction ?? def.onCollide;
       const actionList = Array.isArray(rawActions) ? rawActions : (rawActions ? [rawActions] : []);
       if (isPortal && actionList.length === 0) {
@@ -1660,7 +1948,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           sameWorld,
           spawn: def.spawn,
           spawnYaw: def.spawnYaw,
-          spawnPoint: portalSpawnPoint
+          spawnPoint: portalSpawnPoint,
+          linkedPortalId: portalLinkedPortalId,
+          destinationMode: portalDestinationMode
         });
       }
       const portalShape = (def.shape || def.geometry || (def.type === "portal" ? "box" : def.type) || "").toLowerCase();
@@ -1674,14 +1964,15 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       const materialOpts = {
         color: def.color || "#888"
       };
-      if (def.isWater === true) {
-        materialOpts.color = def.color || "#9bd9b6";
+      if (isLiquidDefinition) {
+        materialOpts.color = def.color || "#2f83b7";
         materialOpts.transparent = true;
-        materialOpts.opacity = Number.isFinite(def.opacity) ? def.opacity : 0.28;
+        materialOpts.opacity = Number.isFinite(def.opacity) ? def.opacity : 0.48;
         materialOpts.depthWrite = false;
-        materialOpts.emissive = def.emissive || "#9bd9b6";
-        materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.08;
+        materialOpts.emissive = def.emissive || "#164a66";
+        materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.22;
         materialOpts.side = THREE.DoubleSide;
+        materialOpts.isLiquid = true;
       }
       if (isPortal) {
         materialOpts.transparent = true;
@@ -1693,15 +1984,23 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         materialOpts.emissive = def.emissive === true ? def.color || "#888" : def.emissive;
         materialOpts.emissiveIntensity = Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.75;
       }
-      if (def.type === "equation-collider-plane") {
+      if (isEquationObjectDefinition(def)) {
         const planeProps = def.equationCollider && typeof def.equationCollider === "object" ? def.equationCollider : {};
         const size = Array.isArray(def.size) && Number.isFinite(def.size[0]) ? def.size[0] : planeProps.size;
         const thickness = Array.isArray(def.size) && Number.isFinite(def.size[1]) ? def.size[1] : planeProps.thickness;
-        mesh = createEquationColliderPlaneMesh(THREE, {
+        const equationProps = {
           ...planeProps,
           size,
-          thickness
-        }, materialOpts);
+          thickness,
+          inequality: isEquationInequalityDefinition,
+          operator: def.operator || def.inequalityOperator || planeProps.operator,
+          inequalitySide: def.inequalitySide || planeProps.inequalitySide || def.liquidSide || def.equationLiquidSide || def.waterSide || def.equationWaterSide,
+          expression: def.equationExpression || def.expression || planeProps.expression,
+          equationTemporal: def.equationTemporal === true || planeProps.equationTemporal === true,
+          equationBaseExpression: def.equationBaseExpression || planeProps.equationBaseExpression || def.equationExpression || def.expression || planeProps.expression || "",
+          timeSeconds: window.VRWorldContext?.temporalController?.getTimeSeconds?.() ?? 0
+        };
+        mesh = createEquationColliderPlaneMesh(THREE, equationProps, materialOpts);
       } else if (def.type === "asset") {
         const assetType = String(def.assetType || "").toLowerCase();
         const src = typeof def.src === "string" ? def.src : "";
@@ -1766,7 +2065,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         const size = Array.isArray(def.size) && def.size.length >= 3 ? def.size : [0.9, 1.15, 0.7];
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(size[0], size[1], size[2]),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
         mesh.userData.consoleProperties = {
           collider: def.collider !== false,
@@ -1782,13 +2081,13 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         const height = Array.isArray(def.size) && Number.isFinite(def.size[1]) ? def.size[1] : 0.12;
         mesh = new THREE.Mesh(
           new THREE.CylinderGeometry(radius, radius, height, 32),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
       } else if (def.type === "object-file") {
         const size = Array.isArray(def.size) && def.size.length >= 3 ? def.size : [1, 1, 1];
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(size[0], size[1], size[2]),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
         if (typeof def.objectFile === "string" && def.objectFile) {
           mesh.userData.objectFilePath = def.objectFile;
@@ -1836,38 +2135,46 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           texture: def.texture || terrain.texture || "solid",
           kind: def.kind || terrain.kind || "grass",
           isSolid: def.isSolid === true || def.collidable === true,
-          metadata: terrain
+          metadata: {
+            ...terrain,
+            MatterState: def.MatterState || terrain.MatterState,
+            matterState: def.matterState || terrain.matterState,
+            isLiquid: def.isLiquid === true || terrain.isLiquid === true,
+            materialName: def.materialName || terrain.materialName,
+            physicsMaterialId: def.physicsMaterialId || terrain.physicsMaterialId,
+            physicsMaterialFile: def.physicsMaterialFile || terrain.physicsMaterialFile
+          }
         });
       } else if (portalShape === "box") {
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(...def.size),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
       } else if (portalShape === "sphere") {
         mesh = new THREE.Mesh(
           new THREE.SphereGeometry(def.size[0], 32, 32),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
       } else if (portalShape === "cylinder") {
         const radius = def.size[0];
         const height = def.size[1];
         mesh = new THREE.Mesh(
           new THREE.CylinderGeometry(radius, radius, height, 24),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
       } else if (portalShape === "cone") {
         const radius = def.size[0];
         const height = def.size[1];
         mesh = new THREE.Mesh(
           new THREE.ConeGeometry(radius, height, 32),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
       } else if (portalShape === "pyramid") {
         const radius = def.size[0];
         const height = def.size[1];
         mesh = new THREE.Mesh(
           new THREE.ConeGeometry(radius, height, 4),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
         mesh.rotation.y = Math.PI / 4;
       } else if (portalShape === "torus") {
@@ -1875,7 +2182,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         const tube = def.size[1];
         mesh = new THREE.Mesh(
           new THREE.TorusGeometry(radius, tube, 16, 64),
-          new THREE.MeshStandardMaterial(materialOpts)
+          createWorldMeshMaterial(THREE, materialOpts)
         );
       } else if (def.type === "light") {
         const lightType = (def.lightType || "point").toLowerCase();
@@ -1902,21 +2209,47 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
 
       if (mesh) {
-        if (def.type !== "equation-collider-plane" || !(def.equationCollider && typeof def.equationCollider === "object")) {
+        if (!isEquationObjectDefinition(def) || !(def.equationCollider && typeof def.equationCollider === "object")) {
           mesh.position.set(...def.position);
         }
-        mesh.userData.nvType = def.type || portalShape || null;
+        mesh.userData.nvType = isEquationObjectDefinition(def)
+          ? (isEquationInequalityDefinition ? "equation-inequality" : "equation-collider-plane")
+          : (def.type || portalShape || null);
         mesh.userData.metaWorldLayerId = layerObjectId;
         if (typeof def.tag === "string" && def.tag) mesh.userData.tag = def.tag;
         if (typeof def.spawnId === "string" && def.spawnId) mesh.userData.spawnId = def.spawnId;
         if (Number.isFinite(def.spawnYaw)) mesh.userData.spawnYaw = def.spawnYaw;
-        mesh.userData.isSolid = isExpressionLayerType(def.type)
-          ? def.collider?.enabled === true
-          : (def.type === "equation-collider-plane" ? def.collider !== false : (def.isSolid === true || def.collidable === true));
+        mesh.userData.isSolid = isLiquidDefinition
+          ? false
+          : (isExpressionLayerType(def.type)
+            ? def.collider?.enabled === true
+            : (isEquationObjectDefinition(def) ? (!isEquationInequalityDefinition && def.collider !== false) : (def.isSolid === true || def.collidable === true)));
         mesh.userData.breakable = isExpressionLayerType(def.type)
           ? def.locked !== true
-          : (def.type === "equation-collider-plane" ? false : (def.breakable !== false && !isPortal && !isSpawnPoint && def.isWater !== true));
-        mesh.userData.isWater = def.isWater === true;
+          : (isEquationObjectDefinition(def) ? false : (def.breakable !== false && !isPortal && !isSpawnPoint && !isLiquidDefinition));
+        mesh.userData.isLiquid = isLiquidDefinition;
+        mesh.userData.isWater = false;
+        mesh.userData.MatterState = isLiquidDefinition ? "liquid" : readWorldObjectMatterState(def);
+        mesh.userData.matterState = mesh.userData.MatterState || "";
+        applyPhysicsMaterialToMesh(mesh, physicsMaterialId);
+        if (isEquationObjectDefinition(def)) {
+          mesh.userData.equationExpression = def.equationExpression || def.expression || mesh.userData.equationExpression || "";
+          mesh.userData.equationTemporal = def.equationTemporal === true || def.equationCollider?.equationTemporal === true || mesh.userData.equationTemporal === true;
+          mesh.userData.equationBaseExpression = def.equationBaseExpression || def.equationCollider?.equationBaseExpression || mesh.userData.equationBaseExpression || (mesh.userData.equationTemporal ? mesh.userData.equationExpression : "");
+          mesh.userData.equationTimeSeconds = window.VRWorldContext?.temporalController?.getTimeSeconds?.() ?? 0;
+          mesh.userData.equationInequalityOperator = def.operator || def.inequalityOperator || mesh.userData.equationInequalityOperator || "";
+          mesh.userData.equationInequalitySide = def.inequalitySide || mesh.userData.equationInequalitySide || "negative";
+          delete mesh.userData.materialType;
+          if (isLiquidDefinition) {
+            mesh.userData.equationLiquidSide = def.equationLiquidSide || def.liquidSide || def.equationWaterSide || def.waterSide || mesh.userData.equationInequalitySide || "negative";
+            mesh.userData.equationLiquidInfinite = def.equationLiquidInfinite !== false && def.liquidInfinite !== false && def.equationWaterInfinite !== false && def.waterInfinite !== false;
+          } else {
+            delete mesh.userData.equationLiquidSide;
+            delete mesh.userData.equationLiquidInfinite;
+          }
+          delete mesh.userData.equationWaterSide;
+          delete mesh.userData.equationWaterInfinite;
+        }
         if (def.terrain && typeof def.terrain === "object") {
           const restoredTerrain = JSON.parse(JSON.stringify(def.terrain));
           mesh.userData.terrain = def.type === "terrain-surface"
@@ -1927,26 +2260,42 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         scene.add(mesh);
         objects.push(mesh);
         layerEntries.push({ id: layerObjectId, def, object3d: mesh });
+        if (isSpawnPoint && spawnCandidate) {
+          mesh.userData.isSpawn = true;
+          mesh.userData.spawnId = spawnCandidate.id;
+          mesh.userData.spawnYaw = Number.isFinite(spawnCandidate.yaw) ? spawnCandidate.yaw : 0;
+          mesh.userData.spawnPointRef = spawnCandidate;
+        }
         if (isPortal) {
           mesh.userData.isPortal = true;
+          def.portalDestinationMode = portalDestinationMode;
+          if (portalLinkedPortalId) def.linkedPortalId = portalLinkedPortalId;
           mesh.userData.portalTarget = resolvedPortalTarget;
           mesh.userData.portalSameWorld = sameWorld;
+          mesh.userData.portalDestinationMode = portalDestinationMode;
+          mesh.userData.portalLinkedPortalId = portalLinkedPortalId;
           mesh.userData.portalSpawn = Array.isArray(def.spawn) ? [...def.spawn] : null;
           mesh.userData.portalSpawnPoint = typeof portalSpawnPoint === "string" ? portalSpawnPoint : null;
           mesh.userData.portalSpawnYaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : null;
           mesh.userData.portalCooldownMs = Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200;
           if ((resolvedPortalTarget || sameWorld) && portals) {
             const box = new THREE.Box3().setFromObject(mesh);
-            portals.push({
+            const portalRef = {
               box,
+              object3d: mesh,
+              objectId: layerObjectId,
               targetWorld: resolvedPortalTarget,
               sameWorld,
+              destinationMode: portalDestinationMode,
+              linkedPortalId: portalLinkedPortalId,
               spawn: Array.isArray(def.spawn) ? def.spawn : null,
               spawnYaw: Number.isFinite(def.spawnYaw) ? def.spawnYaw : null,
               spawnPoint: typeof portalSpawnPoint === "string" ? portalSpawnPoint : null,
               cooldownMs: Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200,
               lastTriggeredAt: 0
-            });
+            };
+            portals.push(portalRef);
+            mesh.userData.portalRef = portalRef;
           } else {
             console.warn("Portal missing targetWorld:", def);
           }
@@ -1959,6 +2308,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           if (actions.length > 0) {
             const collisionRef = {
               box,
+              object3d: mesh,
               actions,
               cooldownMs: Number.isFinite(def.cooldownMs) ? def.cooldownMs : 1200,
               lastTriggeredAt: 0
@@ -1989,21 +2339,32 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           }
         }
 
-        if (def.isWater === true && waterVolumes) {
-          const box = new THREE.Box3().setFromObject(mesh);
-          waterVolumes.push({
-            box,
-            buoyancyScale: Number.isFinite(def.waterBuoyancyScale) ? def.waterBuoyancyScale : 1
-          });
+        if (isLiquidDefinition && waterVolumes) {
+          if (isEquationObjectDefinition(def)) {
+            syncPlaneWaterVolumeRef(THREE, waterVolumes, mesh, mesh.userData.equationCollider || def.equationCollider || {}, {
+              liquid: true,
+              side: mesh.userData.equationLiquidSide,
+              infinite: mesh.userData.equationLiquidInfinite,
+              buoyancyScale: Number.isFinite(def.liquidBuoyancyScale) ? def.liquidBuoyancyScale : (Number.isFinite(def.waterBuoyancyScale) ? def.waterBuoyancyScale : 1)
+            });
+          } else {
+            const box = new THREE.Box3().setFromObject(mesh);
+            waterVolumes.push({
+              box,
+              buoyancyScale: Number.isFinite(def.liquidBuoyancyScale) ? def.liquidBuoyancyScale : (Number.isFinite(def.waterBuoyancyScale) ? def.waterBuoyancyScale : 1)
+            });
+          }
         }
 
-        if (((def.type === "equation-collider-plane" && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && def.isWater !== true) {
+        if (((isEquationObjectDefinition(def) && !isEquationInequalityDefinition && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && !isLiquidDefinition) {
           if (isExpressionLayerType(def.type) && def.collider?.enabled === true) {
             const colliderRef = createExpressionLayerColliderRef(THREE, mesh, def, getExpressionLayerOptions(camera || window.VRWorldContext?.camera)) || { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (def.type === "terrain-surface") {
             const colliderRef = createTerrainSurfaceColliderRef(THREE, mesh) || { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (portalShape === "box") {
@@ -2012,24 +2373,29 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             const center = new THREE.Vector3(...def.position);
             const box = new THREE.Box3(center.clone().sub(halfSize), center.clone().add(halfSize));
             const colliderRef = { type: "box", box };
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (portalShape === "sphere") {
             const center = new THREE.Vector3(...def.position);
             const radius = def.size[0];
             const colliderRef = { type: "sphere", center, radius };
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (["cylinder", "cone", "pyramid", "torus"].includes(portalShape)) {
             const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
-          } else if (def.type === "equation-collider-plane" && def.collider !== false) {
+          } else if (isEquationObjectDefinition(def) && !isEquationInequalityDefinition && def.collider !== false) {
             const colliderRef = makePlaneColliderRef(THREE, mesh);
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           } else if (def.type === "console" || def.type === "object-file" || def.type === "asset") {
             const colliderRef = { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
             mesh.userData.objectFileColliderFactory?.(colliderRef);
@@ -2037,6 +2403,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             const sphere = new THREE.Sphere();
             new THREE.Box3().setFromObject(mesh).getBoundingSphere(sphere);
             const colliderRef = { type: "sphere", center: sphere.center.clone(), radius: sphere.radius };
+            attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);
             mesh.userData.colliderRef = colliderRef;
           }
@@ -2060,7 +2427,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
     }
 
-    registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, camera });
+    window.VRWorldContext?.temporalController?.forceSample?.();
+    registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, portals, spawnPoints, waterVolumes, camera });
     notifyMetaWorldLayersChanged({ reason: "worldLoaded" });
 
     if (spawnPoints) {
@@ -2069,10 +2437,49 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
     const shouldAutoSpawn = options?.skipAutoSpawn !== true;
     if (shouldAutoSpawn && controls) {
+      const defaultHeight = Number.isFinite(movementState?.playerHeight) ? movementState.playerHeight : 1.75;
+      const fallbackSpawn = { position: [0, defaultHeight, 0], yaw: null };
       const availableSpawns = spawnPoints && spawnPoints.length > 0 ? spawnPoints : spawnCandidates;
       const spawnPointId = typeof options?.spawnPoint === "string" ? options.spawnPoint.trim() : null;
+      const portalTargetId = typeof options?.portalTargetId === "string" ? options.portalTargetId.trim() : "";
+      const findPortalTargetObject = (portalId) => {
+        if (!portalId) return null;
+        const entry = layerEntries.find((candidate) => {
+          const object = candidate?.object3d;
+          const def = candidate?.def || {};
+          if (!object) return false;
+          return candidate.id === portalId
+            || def.id === portalId
+            || def.tag === portalId
+            || def.name === portalId
+            || object.userData?.metaWorldLayerId === portalId
+            || object.userData?.tag === portalId;
+        });
+        return entry?.object3d || null;
+      };
+      const readPortalExitPosition = (target) => {
+        if (!target) return null;
+        const worldPosition = new THREE.Vector3();
+        const worldQuaternion = new THREE.Quaternion();
+        target.getWorldPosition?.(worldPosition);
+        target.getWorldQuaternion?.(worldQuaternion);
+        const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(worldQuaternion);
+        if (direction.lengthSq() < 1e-6) direction.set(0, 0, 1);
+        direction.normalize();
+        const exit = worldPosition.addScaledVector(direction, 1.25);
+        exit.y = Math.max(exit.y + 0.35, defaultHeight);
+        const targetRef = target.userData?.portalRef;
+        if (targetRef) targetRef.lastTriggeredAt = performance.now();
+        return [exit.x, exit.y, exit.z];
+      };
+
       let chosen = null;
-      if (availableSpawns.length > 0) {
+      let position = null;
+      const portalTargetObject = findPortalTargetObject(portalTargetId);
+      if (portalTargetObject) {
+        position = readPortalExitPosition(portalTargetObject);
+      }
+      if (!position && availableSpawns.length > 0) {
         if (spawnPointId) {
           chosen = availableSpawns.find(point => point?.id === spawnPointId) || null;
         }
@@ -2080,10 +2487,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           const idx = Math.floor(Math.random() * availableSpawns.length);
           chosen = availableSpawns[idx] || null;
         }
+        if (Array.isArray(chosen?.position) && chosen.position.length >= 3) {
+          position = chosen.position;
+        }
       }
-      const position = Array.isArray(chosen?.position) && chosen.position.length >= 3
-        ? chosen.position
-        : [0, 0, 0];
+      if (!position) position = fallbackSpawn.position;
       controls.getObject().position.set(position[0], position[1], position[2]);
       if (movementState?.worldMode === "2d" && movementState?.movementMode !== "topdown") {
         movementState.planeZ = Number.isFinite(position[2]) ? position[2] : 0;

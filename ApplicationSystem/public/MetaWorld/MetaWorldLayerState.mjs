@@ -320,6 +320,17 @@ export function removeMetaWorldExpressionLayer(objectId) {
   return removed;
 }
 
+export function removeMetaWorldLayerObject(objectId) {
+  if (!activeBridge) return false;
+  const removeFn = typeof activeBridge.removeObjectLayer === "function"
+    ? activeBridge.removeObjectLayer.bind(activeBridge)
+    : (typeof activeBridge.removeExpressionLayer === "function" ? activeBridge.removeExpressionLayer.bind(activeBridge) : null);
+  if (!removeFn) return false;
+  const removed = removeFn(objectId) !== false;
+  if (removed && selectedMetaWorldLayerId === objectId) selectedMetaWorldLayerId = null;
+  return removed;
+}
+
 export function setMetaWorldObjectVisibility(objectId, visible) {
   if (!activeBridge || typeof activeBridge.setObjectVisibility !== "function") {
     return false;
@@ -468,9 +479,9 @@ function renderMetaWorldSvgStylePanel(panelEl) {
       if (!next) return;
       renameMetaWorldLayer(entry.id, next);
     },
-    onDeleteLayer: (entry) => removeMetaWorldExpressionLayer(entry.id),
+    onDeleteLayer: (entry) => removeMetaWorldLayerObject(entry.id),
     renderLayerDetails: renderExpressionLayerDetails,
-    deleteDisabled: (entry) => !isExpressionLayer(entry),
+    deleteDisabled: () => !(bridge && (typeof bridge.removeObjectLayer === "function" || typeof bridge.removeExpressionLayer === "function")),
   });
 }
 

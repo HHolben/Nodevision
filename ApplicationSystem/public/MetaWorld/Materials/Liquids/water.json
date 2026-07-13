@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "water",
+  "displayName": "Water",
+  "description": "Liquid water material for collider and water-volume behavior.",
+  "defaultColor": "#2f83b7",
+  "homogeneousSubstance": true,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 997,
+    "dynamicViscosityPascalSeconds": 0.00089,
+    "kinematicViscositySquareMetersPerSecond": 8.93e-7,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1
+  },
+  "rendering": {
+    "materialType": "water",
+    "color": "#2f83b7",
+    "opacity": 0.48
+  },
+  "chemicalFormulaMol": "Water\n  Nodevision\n\n  3  2  0  0  0  0            999 V2000\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9584    0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.2390    0.9270    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\n  1  3  1  0  0  0  0\nM  END\n"
+}

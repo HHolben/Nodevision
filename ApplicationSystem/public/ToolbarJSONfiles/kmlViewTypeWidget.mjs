@@ -3,6 +3,7 @@
 
 function normalizeViewType(value) {
   const normalized = String(value || "").trim().toLowerCase();
+  if (["terrain", "topo", "topographic", "contour", "contours"].includes(normalized)) return "terrain";
   if (["aviation", "aviation-map", "aviationmap", "chart", "charts", "sectional"].includes(normalized)) return "aviation";
   if (["map", "street", "street-map", "flat", "projection", "flat-map", "flatmap"].includes(normalized)) return "map";
   return "globe";
@@ -75,6 +76,7 @@ function dispatchAction(action) {
 
 function setViewType(viewType) {
   const normalized = normalizeViewType(viewType);
+  if (normalized === "terrain") return dispatchAction("viewTypeTerrain");
   if (normalized === "aviation") return dispatchAction("viewTypeAviation");
   if (normalized === "map") return dispatchAction("viewTypeMap");
   return dispatchAction("viewTypeGlobe");
@@ -89,6 +91,7 @@ function render(hostElement) {
         "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"map\" /> Street</label>" +
         "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"globe\" /> Globe</label>" +
         "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"aviation\" /> Aviation</label>" +
+        "<label style=\"display:flex;align-items:center;gap:5px;\"><input type=\"radio\" name=\"nv-kml-view-type\" value=\"terrain\" /> Terrain</label>" +
       "</fieldset>" +
       "<span style=\"display:flex;align-items:center;gap:4px;\">" +
         "<input data-nv-kml-user-location type=\"checkbox\" aria-label=\"Enable My Location\" />" +

@@ -143,10 +143,63 @@ export function useSelectedObjectAsClipPath(svgRoot, selected = [], options = {}
   return { id, element: clip, source, appliedTo: artwork };
 }
 
-function referencedId(el, attr) {
-  const raw = String(el?.getAttribute?.(attr) || "");
+export function extractSvgUrlReferenceId(value) {
+  const raw = String(value || "").trim();
   const match = raw.match(/^url\(#([^)]+)\)$/);
   return match ? match[1] : "";
+}
+
+export function getReferencedSvgId(el, attr) {
+  return extractSvgUrlReferenceId(el?.getAttribute?.(attr));
+}
+
+function referencedId(el, attr) {
+  return getReferencedSvgId(el, attr);
+}
+
+export function getSvgDefinitionByReference(svgRoot, el, attr) {
+  const id = referencedId(el, attr);
+  return id ? svgRoot?.querySelector?.(`#${cssId(id)}`) || null : null;
+}
+
+function invertPaintValue(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw || raw === "none" || raw === "currentcolor") return null;
+  if (raw === "white" || raw === "#fff" || raw === "#ffffff" || raw === "rgb(255,255,255)" || raw === "rgb(255 255 255)") return "black";
+  if (raw === "black" || raw === "#000" || raw === "#000000" || raw === "rgb(0,0,0)" || raw === "rgb(0 0 0)") return "white";
+  return null;
+}
+
+function invertSimpleMaskPaints(mask) {
+  const nodes = Array.from(mask?.querySelectorAll?.("*") || []);
+  let changed = 0;
+  nodes.forEach((node) => {
+    ["fill", "stroke"].forEach((attr) => {
+      if (!node.hasAttribute?.(attr)) return;
+      const next = invertPaintValue(node.getAttribute(attr));
+      if (!next) return;
+      node.setAttribute(attr, next);
+      changed += 1;
+    });
+  });
+  return changed;
+}
+
+export function invertMask(svgRoot, elements = []) {
+  const masks = [];
+  elements.forEach((el) => {
+    const mask = getSvgDefinitionByReference(svgRoot, el, "mask");
+    if (mask && !masks.includes(mask)) masks.push(mask);
+  });
+  const changed = [];
+  masks.forEach((mask) => {
+    if (invertSimpleMaskPaints(mask)) {
+      const inverted = mask.getAttribute("data-nv-mask-inverted") === "true";
+      mask.setAttribute("data-nv-mask-inverted", inverted ? "false" : "true");
+      changed.push(mask);
+    }
+  });
+  return changed;
 }
 
 export function setMaskOrClipEnabled(elements = [], attr = "mask", enabled = true) {

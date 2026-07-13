@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "gravel",
+  "displayName": "Gravel",
+  "description": "Loose gravel terrain material replacing the former path terrain preset.",
+  "defaultColor": "#8c887a",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 1700,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.78,
+    "coefficientOfKineticFriction": 0.48,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.05
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "gravel",
+    "color": "#8c887a"
+  },
+  "chemicalFormulaMol": null
+}

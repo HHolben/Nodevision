@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "lakewater",
+  "displayName": "Lake Water",
+  "description": "Fresh lake water liquid material.",
+  "defaultColor": "#3f86a8",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 998,
+    "dynamicViscosityPascalSeconds": 0.001,
+    "kinematicViscositySquareMetersPerSecond": 0.000001,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "lakewater",
+    "color": "#3f86a8",
+    "opacity": 0.48
+  },
+  "chemicalFormulaMol": null
+}

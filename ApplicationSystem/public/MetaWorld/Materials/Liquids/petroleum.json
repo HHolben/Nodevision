@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "petroleum",
+  "displayName": "Petroleum",
+  "description": "Dark petroleum liquid material.",
+  "defaultColor": "#23211d",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 850,
+    "dynamicViscosityPascalSeconds": 0.05,
+    "kinematicViscositySquareMetersPerSecond": 0.0000588,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 0.85
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "petroleum",
+    "color": "#23211d",
+    "opacity": 0.58
+  },
+  "chemicalFormulaMol": null
+}

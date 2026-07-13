@@ -38,6 +38,16 @@ function normalizeColors(colors, columns, rows, fallbackColor) {
   return colors.slice(0, count).map((color) => typeof color === "string" && color ? color : fallbackColor || "#777777");
 }
 
+function readTerrainMatterState(kind, metadata = {}) {
+  const state = String(metadata.MatterState || metadata.matterState || "").trim().toLowerCase();
+  if (state) return state;
+  return metadata.isLiquid === true || kind === "water" ? "liquid" : "";
+}
+
+function isLiquidTerrainMetadata(kind, metadata = {}) {
+  return readTerrainMatterState(kind, metadata) === "liquid";
+}
+
 function colorToRgb(THREE, color) {
   const c = new THREE.Color(color || "#777777");
   return [c.r, c.g, c.b];
@@ -103,7 +113,9 @@ export function createTerrainSurfaceMesh(THREE, {
   const safeTileSize = Math.max(0.1, Number(tileSize) || 1);
   const normalizedHeights = normalizeHeights(heights, safeColumns, safeRows);
   const normalizedColors = normalizeColors(colors, safeColumns, safeRows, color);
-  const material = createTerrainMaterial(THREE, { color, texture, kind });
+  const isLiquid = isLiquidTerrainMetadata(kind, metadata);
+  const matterState = readTerrainMatterState(kind, metadata);
+  const material = createTerrainMaterial(THREE, { color, texture, kind, isLiquid });
   material.vertexColors = true;
   material.side = THREE.DoubleSide;
   material.needsUpdate = true;
@@ -125,10 +137,22 @@ export function createTerrainSurfaceMesh(THREE, {
   mesh.userData.paintedByTerrainTool = metadata.mode === "painted" || metadata.mode === "sculpted";
   mesh.userData.nvType = "terrain-surface";
   mesh.userData.isWater = kind === "water";
-  mesh.userData.isSolid = isSolid === true && mesh.userData.isWater !== true;
-  mesh.userData.breakable = mesh.userData.isWater !== true;
+  mesh.userData.isLiquid = isLiquid;
+  mesh.userData.MatterState = matterState || "";
+  mesh.userData.matterState = mesh.userData.MatterState || "";
+  mesh.userData.materialName = metadata.materialName || "";
+  mesh.userData.physicsMaterialId = metadata.physicsMaterialId || "";
+  mesh.userData.physicsMaterialFile = metadata.physicsMaterialFile || "";
+  mesh.userData.isSolid = isSolid === true && isLiquid !== true;
+  mesh.userData.breakable = isLiquid !== true;
   mesh.userData.terrain = {
     ...metadata,
+    materialName: metadata.materialName || "",
+    physicsMaterialId: metadata.physicsMaterialId || "",
+    physicsMaterialFile: metadata.physicsMaterialFile || "",
+    MatterState: matterState || metadata.MatterState || undefined,
+    matterState,
+    isLiquid,
     geometryMode: "polygonal",
     kind,
     texture,
@@ -171,6 +195,11 @@ export function createTerrainSurfaceDefinition(mesh, options = {}) {
     terrain: JSON.parse(JSON.stringify(terrain))
   };
   if (id) def.id = id;
+  if (terrain.MatterState) def.MatterState = terrain.MatterState;
+  if (terrain.isLiquid === true) def.isLiquid = true;
+  if (terrain.materialName) def.materialName = terrain.materialName;
+  if (terrain.physicsMaterialId) def.physicsMaterialId = terrain.physicsMaterialId;
+  if (terrain.physicsMaterialFile) def.physicsMaterialFile = terrain.physicsMaterialFile;
   if (Array.isArray(terrain.heights)) def.heights = terrain.heights.map(round3);
   if (Array.isArray(terrain.vertexColors)) def.vertexColors = terrain.vertexColors.slice();
   if (mesh?.visible === false) def.hidden = true;
@@ -179,7 +208,12 @@ export function createTerrainSurfaceDefinition(mesh, options = {}) {
 
 export function createTerrainSurfaceColliderRef(THREE, mesh) {
   if (!THREE || !mesh?.isMesh || mesh.userData?.isSolid !== true) return null;
-  return { type: "box", box: new THREE.Box3().setFromObject(mesh) };
+  return {
+    type: "box",
+    target: mesh,
+    materialId: mesh.userData?.physicsMaterialId || mesh.userData?.terrain?.physicsMaterialId || "",
+    box: new THREE.Box3().setFromObject(mesh)
+  };
 }
 
 export function refreshTerrainSurfaceMesh(THREE, mesh) {

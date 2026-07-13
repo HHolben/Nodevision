@@ -1,6 +1,6 @@
 let nextRecordId = 1;
 
-const GEOMETRY_TYPES = ["Point", "LineString", "Polygon"];
+const GEOMETRY_TYPES = ["Point", "LineString", "LinearRing", "Polygon"];
 const EMPTY_KML_DOCUMENT = '<kml xmlns="http://www.opengis.net/kml/2.2"><Document/></kml>';
 
 function localName(node) {

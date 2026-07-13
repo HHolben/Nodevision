@@ -6,7 +6,7 @@ import { ensureScadEditorModeLayout } from "/panels/workspace.mjs";
 import { fetchText, resetEditorHooks, saveText } from "./GraphicalEditors/FamilyEditorCommon.mjs";
 import { parseScadText } from "/ScadEditor/ScadParser.mjs";
 import { serializeScadModel } from "/ScadEditor/ScadSerializer.mjs";
-import { addObject, renameTimelineStep, setTimelineStepDisabled, deleteTimelineStep, isObjectEditable } from "/ScadEditor/ScadModel.mjs";
+import { addObject, addTimelineStep, removeObject, renameTimelineStep, setTimelineStepDisabled, deleteTimelineStep, isObjectEditable } from "/ScadEditor/ScadModel.mjs";
 import { shapeFromTool, polygonFromPoints } from "/ScadEditor/ScadShapeTools.mjs";
 import { addBooleanOperation, deleteObjects, duplicateObjects, extrudeObjects, renameObject } from "/ScadEditor/ScadOperations.mjs";
 import { createScadSceneRenderer } from "/ScadEditor/ScadSceneRenderer.mjs";
@@ -14,6 +14,7 @@ import { exportScadCodeToSTL } from "/ModelExport/STLExport.mjs";
 import { clearScadLayersContext, ensureScadLayersContext, notifyScadLayersChanged, notifyScadSelectionChanged } from "/ScadEditor/ScadLayerPanelContext.mjs";
 
 const SCAD_MODE = "SCADediting";
+const SCAD_ACTION_AXIS_TYPES = new Set(["x", "y", "z"]);
 
 function normalizePath(path = "") {
   return String(path || "").trim().replace(/\\/g, "/").replace(/[?#].*$/, "").replace(/^\/+/, "").replace(/^Notebook\//i, "");
@@ -114,6 +115,7 @@ export async function renderEditor(filePath, container) {
   let dragStart = null;
   let activeLayerId = null;
   let selectedIds = [];
+  let selectedVertexRefs = [];
   let lastModelPoint = [0, 0];
   let grabState = null;
 
@@ -183,29 +185,107 @@ export async function renderEditor(filePath, container) {
     if (id && model.layers.some((layer) => layer.id === id)) activeLayerId = id;
   }
 
-  function selectObject(id, event = null) {
+  function makeScadVertexRef(objectId, pointIndex = 0) {
+    const obj = objectById(objectId);
+    if (obj?.type !== "vertexPath") return null;
+    const index = Number.isInteger(pointIndex) ? pointIndex : 0;
+    const point = scadVertexPathWorldPoints(obj)[index];
+    return point ? { ...point, id: obj.id, pointIndex: index } : null;
+  }
+
+  function vertexRefKey(ref) {
+    return String(ref?.id || "") + ":" + String(Number.isInteger(ref?.pointIndex) ? ref.pointIndex : 0);
+  }
+
+  function vertexRefPositionKey(ref) {
+    return [ref?.x, ref?.y, ref?.z].map((value) => Number(numberOrZero(value).toFixed(6))).join(",");
+  }
+
+  function dedupeScadVertexRefs(refs = []) {
+    const seen = new Set();
+    const seenPositions = new Set();
+    const hydrated = [];
+    refs.forEach((ref) => {
+      const next = makeScadVertexRef(ref?.id || ref?.objectId, Number.isInteger(ref?.pointIndex) ? ref.pointIndex : 0);
+      if (!next) return;
+      const key = vertexRefKey(next);
+      const positionKey = vertexRefPositionKey(next);
+      if (seen.has(key) || seenPositions.has(positionKey)) return;
+      seen.add(key);
+      seenPositions.add(positionKey);
+      hydrated.push(next);
+    });
+    return hydrated;
+  }
+
+  function pickedVertexRefFromMeta(objectId, meta = null) {
+    if (!meta || typeof meta !== "object") return null;
+    const raw = meta.vertexRef && typeof meta.vertexRef === "object" ? meta.vertexRef : meta;
+    const pointIndex = Number.isInteger(raw.pointIndex) ? raw.pointIndex : null;
+    return pointIndex === null ? null : makeScadVertexRef(raw.objectId || raw.id || objectId, pointIndex);
+  }
+
+  function singlePointVertexRefsForIds(ids = selectedIds) {
+    return (ids || [])
+      .map((id) => {
+        const obj = objectById(id);
+        return obj?.type === "vertexPath" && scadVertexPathWorldPoints(obj).length === 1
+          ? makeScadVertexRef(id, 0)
+          : null;
+      })
+      .filter(Boolean);
+  }
+
+  function currentSelectedVertexRefs() {
+    const selectedSet = new Set(selectedIds);
+    const explicit = dedupeScadVertexRefs(selectedVertexRefs).filter((ref) => selectedSet.has(ref.id));
+    if (explicit.length) return explicit;
+    return singlePointVertexRefsForIds();
+  }
+
+  function setSelection(ids = [], refs = []) {
+    selectedIds = Array.isArray(ids) ? ids.filter(Boolean) : [];
+    selectedVertexRefs = dedupeScadVertexRefs(refs).filter((ref) => selectedIds.includes(ref.id));
+  }
+
+  function selectObject(id, event = null, meta = null) {
     const obj = model.objects.find((item) => item.id === id);
     if (!obj || !isObjectEditable(model, obj)) return;
+    const vertexRef = pickedVertexRefFromMeta(id, meta) || (obj.type === "vertexPath" && scadVertexPathWorldPoints(obj).length === 1 ? makeScadVertexRef(id, 0) : null);
     if (event?.shiftKey || event?.ctrlKey || event?.metaKey) {
-      selectedIds = selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id];
+      if (vertexRef) {
+        const nextRefs = currentSelectedVertexRefs();
+        const key = vertexRefKey(vertexRef);
+        const exists = nextRefs.some((ref) => vertexRefKey(ref) === key);
+        selectedVertexRefs = exists ? nextRefs.filter((ref) => vertexRefKey(ref) !== key) : [...nextRefs, vertexRef];
+        const nextIds = new Set(selectedIds);
+        if (selectedVertexRefs.some((ref) => ref.id === id)) nextIds.add(id);
+        else nextIds.delete(id);
+        selectedIds = [...nextIds];
+      } else {
+        selectedIds = selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id];
+        selectedVertexRefs = currentSelectedVertexRefs().filter((ref) => selectedIds.includes(ref.id));
+      }
     } else {
-      selectedIds = [id];
+      setSelection([id], vertexRef ? [vertexRef] : []);
     }
     renderer?.setSelectedId(selectedIds[0] || null);
     refresh();
   }
 
-  function selectObjects(ids = [], event = null) {
+  function selectObjects(ids = [], event = null, meta = null) {
     const editable = ids.filter((id) => {
       const obj = model.objects.find((item) => item.id === id);
       return obj && isObjectEditable(model, obj);
     });
+    const refs = dedupeScadVertexRefs(Array.isArray(meta?.vertexRefs) ? meta.vertexRefs : []);
     if (event?.shiftKey || event?.ctrlKey || event?.metaKey) {
       const next = new Set(selectedIds);
       editable.forEach((id) => next.add(id));
       selectedIds = [...next];
+      selectedVertexRefs = dedupeScadVertexRefs([...currentSelectedVertexRefs(), ...refs]).filter((ref) => selectedIds.includes(ref.id));
     } else {
-      selectedIds = editable;
+      setSelection(editable, refs);
     }
     refresh();
   }
@@ -214,18 +294,20 @@ export async function renderEditor(filePath, container) {
     const ids = model.objects
       .filter((obj) => isObjectEditable(model, obj))
       .map((obj) => obj.id);
-    selectedIds = ids;
+    setSelection(ids, []);
     renderer?.setSelectedIds?.(selectedIds);
     setStatus(ids.length ? "Selected " + ids.length + " object(s)." : "No editable objects to select.");
     refresh();
   }
 
   function selectedScadVertices() {
-    const selected = selectedObjects(model, selectedIds);
-    return selected.map(scadVertexWorldPoint).filter(Boolean);
+    return currentSelectedVertexRefs();
   }
 
   function selectedScadEdge() {
+    const vertexRefs = selectedScadVertices();
+    if (vertexRefs.length === 2) return { a: vertexRefs[0], b: vertexRefs[1] };
+
     const selected = selectedObjects(model, selectedIds);
     if (selected.length === 1 && selected[0]?.type === "vertexPath") {
       const points = scadVertexPathWorldPoints(selected[0]);
@@ -261,7 +343,12 @@ export async function renderEditor(filePath, container) {
     const z = numberOrZero(points[0]?.z);
     obj.params = {
       ...(obj.params || {}),
-      points: points.map((point) => [numberOrZero(point.x), numberOrZero(point.y)]),
+      points: points.map((point) => {
+        const localZ = numberOrZero(point.z) - z;
+        const next = [numberOrZero(point.x), numberOrZero(point.y)];
+        if (Math.abs(localZ) > 1e-8) next.push(localZ);
+        return next;
+      }),
       closed: Boolean(closed),
     };
     obj.transform = { ...(obj.transform || {}), translate: [0, 0, z] };
@@ -286,8 +373,8 @@ export async function renderEditor(filePath, container) {
     if (!extrusion) return;
     const a = extrusion.sourceA;
     const b = extrusion.sourceB;
-    const a2 = pointWithDelta(extrusion.startA2, delta);
-    const b2 = pointWithDelta(extrusion.startB2, delta);
+    const a2 = pointWithDelta(a, delta);
+    const b2 = pointWithDelta(b, delta);
     setVertexPathWorldPoints(objectById(extrusion.newEdgeId), [a2, b2], false);
     setVertexPathWorldPoints(objectById(extrusion.sideAId), [a, a2], false);
     setVertexPathWorldPoints(objectById(extrusion.sideBId), [b, b2], false);
@@ -325,14 +412,16 @@ export async function renderEditor(filePath, container) {
       transform: { translate: [0, 0, z] },
     }, { activeLayerId });
 
-    selectedIds = [newEdge.id];
+    setSelection([newEdge.id], [
+      { id: newEdge.id, pointIndex: 0 },
+      { id: newEdge.id, pointIndex: 1 },
+    ]);
     markDirty();
     refresh();
     return {
       sourceA: { ...edge.a },
       sourceB: { ...edge.b },
-      startA2: { ...a2 },
-      startB2: { ...b2 },
+      initialOffset: { ...offset },
       faceId: face.id,
       sideAId: sideA.id,
       sideBId: sideB.id,
@@ -348,8 +437,8 @@ export async function renderEditor(filePath, container) {
       if (points.length >= 3 && scadVerticesAreCoplanar(points) && polygonArea(points) > 1e-6) return { points };
     }
 
-    const vertices = selected.map(scadVertexWorldPoint).filter(Boolean);
-    if (vertices.length >= 3 && vertices.length === selected.length && scadVerticesAreCoplanar(vertices) && polygonArea(vertices) > 1e-6) {
+    const vertices = selectedScadVertices();
+    if (vertices.length >= 3 && scadVerticesAreCoplanar(vertices) && polygonArea(vertices) > 1e-6) {
       return { points: vertices };
     }
     return null;
@@ -374,7 +463,7 @@ export async function renderEditor(filePath, container) {
 
   function updateScadFaceExtrusion(extrusion, delta = { x: 0, y: 0, z: 0 }) {
     if (!extrusion) return;
-    const copies = extrusion.startCopies.map((point) => pointWithDelta(point, delta));
+    const copies = extrusion.sourcePoints.map((point) => pointWithDelta(point, delta));
     setPolygonWorldPoints(objectById(extrusion.copyFaceId), copies);
     extrusion.sideFaceIds.forEach((id, index) => {
       const next = (index + 1) % extrusion.sourcePoints.length;
@@ -419,12 +508,12 @@ export async function renderEditor(filePath, container) {
       sideEdgeIds.push(sideEdge.id);
     }
 
-    selectedIds = [copyFace.id];
+    setSelection([copyFace.id], []);
     markDirty();
     refresh();
     return {
       sourcePoints: points.map((point) => ({ ...point })),
-      startCopies: copies.map((point) => ({ ...point })),
+      initialOffset: { ...offset },
       copyFaceId: copyFace.id,
       sideFaceIds,
       sideEdgeIds,
@@ -439,33 +528,164 @@ export async function renderEditor(filePath, container) {
     return [...lastModelPoint];
   }
 
+  function grabTypeLabel(type) {
+    if (type === "vertexExtrusion") return "Vertex extrude";
+    if (type === "edgeExtrusion") return "Edge extrude";
+    if (type === "faceExtrusion") return "Face extrude";
+    return "Grab";
+  }
+
+  function getGrabDirectionSign(state = grabState) {
+    return state?.axisDirectionSign === -1 ? -1 : 1;
+  }
+
+  function grabAxisLabel(state = grabState) {
+    if (!SCAD_ACTION_AXIS_TYPES.has(state?.axisLock)) return "free";
+    return String(state.axisLock).toUpperCase() + " " + (getGrabDirectionSign(state) < 0 ? "-" : "+");
+  }
+
+  function setGrabInstructionStatus(state = grabState) {
+    if (!state) return;
+    const axisText = SCAD_ACTION_AXIS_TYPES.has(state.axisLock) ? ", " + grabAxisLabel(state) + " locked" : "";
+    setStatus(grabTypeLabel(state.type) + ": move mouse" + axisText + ", X/Y/Z lock axis, - flips direction, click/Enter confirm, Esc cancel.");
+  }
+
+  function grabDeltaMagnitude(delta) {
+    return Math.hypot(numberOrZero(delta?.x), numberOrZero(delta?.y), numberOrZero(delta?.z));
+  }
+
+  function rawGrabDelta(state, event = null) {
+    const point = modelPointFromEventOrLast(event);
+    const delta = { x: point[0] - state.start[0], y: point[1] - state.start[1], z: 0 };
+    const initial = state?.extrusion?.initialOffset;
+    if (initial && grabDeltaMagnitude(delta) <= 1e-6) return { ...initial };
+    return delta;
+  }
+
+  function constrainedGrabDelta(state, event = null) {
+    const delta = rawGrabDelta(state, event);
+    const sign = getGrabDirectionSign(state);
+    if (state.axisLock === "x") return { x: delta.x * sign, y: 0, z: 0 };
+    if (state.axisLock === "y") return { x: 0, y: delta.y * sign, z: 0 };
+    if (state.axisLock === "z") return { x: 0, y: 0, z: delta.y * sign };
+    return { x: delta.x * sign, y: delta.y * sign, z: numberOrZero(delta.z) * sign };
+  }
+
   function startGrabSelectedObjects(event = null) {
     const selected = selectedObjects(model, selectedIds).filter((obj) => isObjectEditable(model, obj));
     if (!selected.length) return false;
     grabState = {
       type: "objects",
       start: modelPointFromEventOrLast(event),
+      axisLock: null,
+      axisDirectionSign: 1,
       originals: selected.map((obj) => ({
         id: obj.id,
         translate: Array.isArray(obj.transform?.translate) ? [...obj.transform.translate] : [0, 0, 0],
       })),
     };
-    setStatus("Grab: move mouse, click/Enter to confirm, Esc to cancel.");
+    setGrabInstructionStatus(grabState);
     return true;
   }
 
   function startGrabScadExtrusion(extrusion, event = null, type = "edgeExtrusion") {
     if (!extrusion) return false;
-    grabState = { type, start: modelPointFromEventOrLast(event), extrusion };
-    setStatus((type === "faceExtrusion" ? "Face" : "Edge") + " extruded. Move mouse, click/Enter to confirm, Esc to cancel.");
+    grabState = { type, start: modelPointFromEventOrLast(event), axisLock: null, axisDirectionSign: 1, extrusion };
+    setGrabInstructionStatus(grabState);
+    return true;
+  }
+
+  function vertexExtrusionTarget(state, event = null) {
+    const delta = constrainedGrabDelta(state, event);
+    const source = state.source;
+    return { x: source.x + delta.x, y: source.y + delta.y, z: source.z + delta.z };
+  }
+
+  function setGrabAxisLock(axis, event = null) {
+    if (!grabState || !SCAD_ACTION_AXIS_TYPES.has(axis)) return false;
+    if (grabState.axisLock === axis) {
+      grabState.axisLock = null;
+      grabState.axisDirectionSign = 1;
+    } else {
+      grabState.axisLock = axis;
+      grabState.axisDirectionSign = 1;
+    }
+    updateGrab(event);
+    setGrabInstructionStatus(grabState);
+    return true;
+  }
+
+  function toggleGrabDirection(event = null) {
+    if (!grabState) return false;
+    grabState.axisDirectionSign = getGrabDirectionSign(grabState) < 0 ? 1 : -1;
+    updateGrab(event);
+    setGrabInstructionStatus(grabState);
+    return true;
+  }
+
+  function createScadVertexExtrusion(source) {
+    if (!source) return null;
+    const z = numberOrZero(source.z);
+    const newVertex = addObject(model, {
+      type: "vertexPath",
+      name: "Extruded Vertex",
+      params: { points: [[source.x, source.y]], closed: false },
+      transform: { translate: [0, 0, z] },
+    }, { activeLayerId, timeline: false });
+    const edge = addObject(model, {
+      type: "vertexPath",
+      name: "Extruded Edge",
+      params: { points: [[source.x, source.y], [source.x, source.y]], closed: false },
+      transform: { translate: [0, 0, z] },
+    }, { activeLayerId, timeline: false });
+    setSelection([newVertex.id, edge.id], [{ id: newVertex.id, pointIndex: 0 }]);
+    return {
+      source: { ...source },
+      sourceId: source.id,
+      newVertexId: newVertex.id,
+      edgeId: edge.id,
+      createdIds: [newVertex.id, edge.id],
+      target: { ...source },
+    };
+  }
+
+  function updateScadVertexExtrusion(state, event = null) {
+    if (!state) return false;
+    const target = vertexExtrusionTarget(state, event);
+    state.target = { ...target };
+    setVertexPathWorldPoints(objectById(state.newVertexId), [target], false);
+    setVertexPathWorldPoints(objectById(state.edgeId), [state.source, target], false);
+    return true;
+  }
+
+  function startGrabScadVertexExtrusion(event = null) {
+    const vertices = selectedScadVertices();
+    if (vertices.length !== 1) {
+      setStatus("Select exactly one vertex to extrude.");
+      return false;
+    }
+    const source = vertices[0];
+    const extrusion = createScadVertexExtrusion(source);
+    if (!extrusion) return false;
+    grabState = {
+      type: "vertexExtrusion",
+      ...extrusion,
+      start: modelPointFromEventOrLast(event),
+      axisLock: null,
+      axisDirectionSign: 1,
+    };
+    updateScadVertexExtrusion(grabState, event);
+    setGrabInstructionStatus(grabState);
+    refresh();
     return true;
   }
 
   function updateGrab(event) {
     if (!grabState) return false;
-    const point = modelPointFromEventOrLast(event);
-    const delta = { x: point[0] - grabState.start[0], y: point[1] - grabState.start[1], z: 0 };
-    if (grabState.type === "edgeExtrusion") {
+    const delta = constrainedGrabDelta(grabState, event);
+    if (grabState.type === "vertexExtrusion") {
+      updateScadVertexExtrusion(grabState, event);
+    } else if (grabState.type === "edgeExtrusion") {
       updateScadEdgeExtrusion(grabState.extrusion, delta);
     } else if (grabState.type === "faceExtrusion") {
       updateScadFaceExtrusion(grabState.extrusion, delta);
@@ -475,7 +695,11 @@ export async function renderEditor(filePath, container) {
         if (!obj) return;
         obj.transform = {
           ...(obj.transform || {}),
-          translate: [numberOrZero(entry.translate[0]) + delta.x, numberOrZero(entry.translate[1]) + delta.y, numberOrZero(entry.translate[2])],
+          translate: [
+            numberOrZero(entry.translate[0]) + delta.x,
+            numberOrZero(entry.translate[1]) + delta.y,
+            numberOrZero(entry.translate[2]) + delta.z,
+          ],
         };
       });
     }
@@ -493,12 +717,24 @@ export async function renderEditor(filePath, container) {
         if (!obj) return;
         obj.transform = { ...(obj.transform || {}), translate: [...entry.translate] };
       });
+    } else if (cancel && finished.type === "vertexExtrusion") {
+      (finished.createdIds || []).forEach((id) => removeObject(model, id, { timeline: false }));
+      setSelection(finished.sourceId ? [finished.sourceId] : [], finished.source ? [finished.source] : []);
     } else if (cancel && (finished.type === "edgeExtrusion" || finished.type === "faceExtrusion")) {
       const createdIds = Array.isArray(finished.extrusion?.createdIds)
         ? finished.extrusion.createdIds
         : [finished.extrusion?.faceId, finished.extrusion?.sideAId, finished.extrusion?.sideBId, finished.extrusion?.newEdgeId].filter(Boolean);
       deleteObjects(model, createdIds);
-      selectedIds = [];
+      setSelection([], []);
+    } else if (finished.type === "vertexExtrusion") {
+      setSelection(finished.newVertexId ? [finished.newVertexId] : [], finished.newVertexId ? [{ id: finished.newVertexId, pointIndex: 0 }] : []);
+      addTimelineStep(model, {
+        type: "extrude",
+        objectIds: [finished.sourceId, finished.newVertexId, finished.edgeId].filter(Boolean),
+        label: "Extruded vertex",
+        params: { axisLock: finished.axisLock || null, source: finished.source || null, target: finished.target || null },
+      });
+      markDirty();
     } else {
       markDirty();
     }
@@ -508,6 +744,9 @@ export async function renderEditor(filePath, container) {
   }
 
   function extrudeSelectedScadEdge(event = null) {
+    const vertices = selectedScadVertices();
+    if (vertices.length === 1) return startGrabScadVertexExtrusion(event);
+
     const edge = selectedScadEdge();
     if (edge) {
       const extrusion = createScadEdgeExtrusion(edge);
@@ -525,13 +764,9 @@ export async function renderEditor(filePath, container) {
   }
 
   function fillOrConnectSelectedVertices() {
-    if (selectedIds.length < 2) {
-      setStatus("Select two or more vertices first.");
-      return;
-    }
     const vertices = selectedScadVertices();
-    if (vertices.length !== selectedIds.length) {
-      setStatus("F works on selected vertex objects only.");
+    if (vertices.length < 2) {
+      setStatus("Select two or more vertices first.");
       return;
     }
 
@@ -543,7 +778,7 @@ export async function renderEditor(filePath, container) {
         params: { points: [[a.x, a.y], [b.x, b.y]], closed: false },
         transform: { translate: [0, 0, a.z] },
       }, { activeLayerId });
-      selectedIds = [edge.id];
+      setSelection([edge.id], [{ id: edge.id, pointIndex: 0 }, { id: edge.id, pointIndex: 1 }]);
       markDirty();
       setStatus("Edge created.");
       refresh();
@@ -566,7 +801,7 @@ export async function renderEditor(filePath, container) {
       params: { points: vertices.map((point) => [point.x, point.y]), closed: true },
       transform: { translate: [0, 0, z] },
     }, { activeLayerId });
-    selectedIds = [face.id];
+    setSelection([face.id], []);
     markDirty();
     setStatus("Face created.");
     refresh();
@@ -574,7 +809,7 @@ export async function renderEditor(filePath, container) {
 
   function addShapeAt(tool, start, end = null) {
     const obj = addObject(model, shapeFromTool(tool, start, end), { activeLayerId });
-    selectedIds = [obj.id];
+    setSelection([obj.id], []);
     activeTool = "select";
     markDirty();
     refresh();
@@ -616,7 +851,7 @@ export async function renderEditor(filePath, container) {
 
   function runDuplicate() {
     const clones = duplicateObjects(model, selectedIds);
-    if (clones.length) selectedIds = clones;
+    if (clones.length) setSelection(clones, []);
     markDirty();
     refresh();
   }
@@ -624,13 +859,13 @@ export async function renderEditor(filePath, container) {
   function runDelete() {
     if (!selectedIds.length) return;
     deleteObjects(model, selectedIds);
-    selectedIds = [];
+    setSelection([], []);
     markDirty();
     refresh();
   }
 
   const timelineActions = {
-    selectStep(step) { selectedIds = (step.objectIds || []).filter((id) => model.objects.some((obj) => obj.id === id)); refresh(); },
+    selectStep(step) { setSelection((step.objectIds || []).filter((id) => model.objects.some((obj) => obj.id === id)), []); refresh(); },
     toggleStep(id, disabled) { setTimelineStepDisabled(model, id, disabled); markDirty(); refresh(); },
     renameStep(id, label) { renameTimelineStep(model, id, label); markDirty(); refresh(); },
     deleteStep(id) { deleteTimelineStep(model, id); markDirty(); refresh(); },
@@ -696,7 +931,18 @@ export async function renderEditor(filePath, container) {
   function handleEditorKeyDown(event) {
     if (disposed || window.GraphicalScadEditorContext?.handleToolbarAction !== handleToolbarAction) return;
     if (event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) return;
-    const key = String(event.key || "").toLowerCase();
+    const rawKey = String(event.key || "");
+    const key = rawKey.toLowerCase();
+    if (grabState && SCAD_ACTION_AXIS_TYPES.has(key)) {
+      event.preventDefault();
+      setGrabAxisLock(key, event);
+      return;
+    }
+    if (grabState && (rawKey === "-" || rawKey === "=")) {
+      event.preventDefault();
+      toggleGrabDirection(event);
+      return;
+    }
     if (key === "escape" && grabState) {
       event.preventDefault();
       finishGrab({ cancel: true });
@@ -705,6 +951,10 @@ export async function renderEditor(filePath, container) {
     if (key === "enter" && grabState) {
       event.preventDefault();
       finishGrab();
+      return;
+    }
+    if (grabState) {
+      event.preventDefault();
       return;
     }
     if (key === "e") {
@@ -770,7 +1020,7 @@ export async function renderEditor(filePath, container) {
   previewMount.addEventListener("dblclick", () => {
     if (activeTool !== "polygon" || polygonPoints.length < 3) return;
     const obj = addObject(model, polygonFromPoints(polygonPoints), { activeLayerId });
-    selectedIds = [obj.id];
+    setSelection([obj.id], []);
     polygonPoints = [];
     activeTool = "select";
     markDirty();

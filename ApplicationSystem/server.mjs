@@ -52,6 +52,7 @@ import { registerPeerRoutes } from "./server/routes/peerRoutes.mjs";
 import { registerSyncPanelRoutes } from "./server/routes/syncPanelRoutes.mjs";
 import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
 import { createDesktopOpenState, registerDesktopOpenRoutes } from "./Desktop/DesktopOpenHandler.mjs";
+import { registerTerrainRoutes } from "./server/routes/terrainRoutes.mjs";
 
 const FAA_VFR_RASTER_CHARTS_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/vfr/";
 const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
@@ -610,6 +611,7 @@ app.use('/api/file', uploadRoutes);
   registerAppStylesRoutes(app, ctx);
   registerMetaWorldAssetRoutes(app, ctx);
   registerWorldRoutes(app, ctx);
+  registerTerrainRoutes(app, ctx);
 
   return app;
 }

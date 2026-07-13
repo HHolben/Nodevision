@@ -11,12 +11,280 @@ import { setupResizeObserver } from "./resizeObserver.mjs";
 import { createPlayerInventory } from "./playerInventory.mjs";
 import { createObjectInspector } from "./objectInspector.mjs";
 import { createTerrainToolController } from "./terrainGeneratorTool.mjs";
-import { createEquationColliderController } from "./equationColliderTool.mjs";
+import {
+  createEquationColliderController,
+  expressionUsesTimeVariable,
+  resolveTemporalPlaneEquationConfig,
+  resizeEquationColliderPlaneMesh,
+  syncPlaneColliderRef,
+  syncPlaneWaterVolumeRef,
+} from "./equationColliderTool.mjs";
 import { saveCurrentWorldFile } from "./worldSave.mjs";
 import { createWorldPropertiesPanel } from "./worldPropertiesPanel.mjs";
 import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
 import { createEquationObjectsPanel } from "./equationObjectsPanel.mjs";
 import { createConsolePanels } from "./consolePanels.mjs";
+import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
+
+function clampTemporalNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function createTemporalController({ THREE, objects, waterVolumes, movementState }) {
+  const now = () => (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now());
+  const state = {
+    elapsedSeconds: 0,
+    staticTimeEnabled: false,
+    staticTimeSeconds: 0,
+    timeScale: 1,
+    samplingRateHz: 10,
+    lastRealNowMs: now(),
+    lastSampleMs: 0,
+    lastSampleTimeSeconds: NaN
+  };
+
+  function syncMovementState() {
+    if (!movementState) return;
+    movementState.temporal = {
+      elapsedSeconds: state.elapsedSeconds,
+      staticTimeEnabled: state.staticTimeEnabled,
+      staticTimeSeconds: state.staticTimeSeconds,
+      timeScale: state.timeScale,
+      samplingRateHz: state.samplingRateHz
+    };
+  }
+
+  function getTimeSeconds() {
+    return state.staticTimeEnabled ? state.staticTimeSeconds : state.elapsedSeconds;
+  }
+
+  function getSettings() {
+    return {
+      elapsedSeconds: state.elapsedSeconds,
+      currentTimeSeconds: getTimeSeconds(),
+      staticTimeEnabled: state.staticTimeEnabled,
+      staticTimeSeconds: state.staticTimeSeconds,
+      timeScale: state.timeScale,
+      samplingRateHz: state.samplingRateHz
+    };
+  }
+
+  function applySettings(settings = {}, options = {}) {
+    if (!settings || typeof settings !== "object") return getSettings();
+    if (Number.isFinite(settings.elapsedSeconds) || options.resetElapsed === true) {
+      state.elapsedSeconds = clampTemporalNumber(settings.elapsedSeconds, -1000000000, 1000000000, 0);
+    }
+    state.staticTimeEnabled = settings.staticTimeEnabled === true;
+    state.staticTimeSeconds = clampTemporalNumber(settings.staticTimeSeconds, -1000000000, 1000000000, state.staticTimeSeconds);
+    state.timeScale = clampTemporalNumber(settings.timeScale, -128, 128, state.timeScale);
+    state.samplingRateHz = clampTemporalNumber(settings.samplingRateHz, 0.1, 120, state.samplingRateHz);
+    state.lastRealNowMs = now();
+    syncMovementState();
+    forceSample();
+    return getSettings();
+  }
+
+  function isTemporalEquationObject(object) {
+    const data = object?.userData || {};
+    const expression = data.equationExpression || data.equationCollider?.expression || "";
+    return object?.isMesh === true
+      && (data.nvType === "equation-collider-plane" || data.nvType === "equation-inequality")
+      && (data.equationTemporal === true || data.equationCollider?.equationTemporal === true || expressionUsesTimeVariable(expression));
+  }
+
+  function sampleTemporalObject(mesh, timeSeconds) {
+    if (!THREE || !mesh?.userData) return false;
+    const previous = mesh.userData.equationCollider || {};
+    const expression = mesh.userData.equationExpression || previous.expression || previous.equationExpression || "";
+    const rawConfig = {
+      ...previous,
+      expression,
+      equationExpression: expression,
+      equationTemporal: true,
+      equationBaseExpression: mesh.userData.equationBaseExpression || previous.equationBaseExpression || expression,
+      timeSeconds
+    };
+    const config = resolveTemporalPlaneEquationConfig(rawConfig, timeSeconds);
+    resizeEquationColliderPlaneMesh(THREE, mesh, config);
+    mesh.userData.equationTimeSeconds = timeSeconds;
+    mesh.userData.equationTemporal = config.equationTemporal === true;
+    mesh.userData.equationBaseExpression = config.equationBaseExpression || expression;
+    if (mesh.userData.colliderRef) syncPlaneColliderRef(THREE, mesh);
+    const liquidEnabled = mesh.userData.isLiquid === true || mesh.userData.MatterState === "liquid" || mesh.userData.matterState === "liquid";
+    syncPlaneWaterVolumeRef(THREE, waterVolumes, mesh, config, {
+      liquid: liquidEnabled,
+      side: mesh.userData.equationLiquidSide || config.inequalitySide,
+      infinite: mesh.userData.equationLiquidInfinite !== false,
+      buoyancyScale: Number.isFinite(mesh.userData.liquidBuoyancyScale) ? mesh.userData.liquidBuoyancyScale : 1
+    });
+    return true;
+  }
+
+  function sampleAll() {
+    const timeSeconds = getTimeSeconds();
+    let count = 0;
+    (objects || []).forEach((object) => {
+      if (isTemporalEquationObject(object) && sampleTemporalObject(object, timeSeconds)) count += 1;
+    });
+    state.lastSampleMs = now();
+    state.lastSampleTimeSeconds = timeSeconds;
+    syncMovementState();
+    return count;
+  }
+
+  function forceSample() {
+    return sampleAll();
+  }
+
+  function update() {
+    const currentNow = now();
+    const deltaSeconds = Math.max(0, (currentNow - state.lastRealNowMs) / 1000);
+    state.lastRealNowMs = currentNow;
+    if (state.staticTimeEnabled !== true) {
+      state.elapsedSeconds += deltaSeconds * state.timeScale;
+    }
+    const intervalMs = 1000 / Math.max(0.1, state.samplingRateHz);
+    const timeSeconds = getTimeSeconds();
+    if (currentNow - state.lastSampleMs >= intervalMs || state.lastSampleTimeSeconds !== timeSeconds && state.staticTimeEnabled === true) {
+      sampleAll();
+    }
+  }
+
+  syncMovementState();
+  return { update, forceSample, getTimeSeconds, getSettings, applySettings };
+}
+
+function createTemporalManipulatorPanel({ temporalController }) {
+  let visible = false;
+  const floatingPanel = createFloatingInventoryPanel({
+    title: "Temporal Manipulator",
+    closeBehavior: "hide",
+    onRequestClose: () => {
+      visible = false;
+      floatingPanel.setVisible(false);
+    }
+  });
+  floatingPanel.setVisible(false);
+  const root = document.createElement("div");
+  root.style.display = "grid";
+  root.style.gap = "10px";
+  root.style.font = "12px/1.35 monospace";
+  root.style.minWidth = "280px";
+  floatingPanel.content.appendChild(root);
+
+  const staticLabel = document.createElement("label");
+  staticLabel.style.display = "flex";
+  staticLabel.style.alignItems = "center";
+  staticLabel.style.gap = "6px";
+  const staticInput = document.createElement("input");
+  staticInput.type = "checkbox";
+  staticLabel.appendChild(staticInput);
+  staticLabel.appendChild(document.createTextNode("Static Time"));
+  root.appendChild(staticLabel);
+
+  function addNumber(labelText, value, step) {
+    const label = document.createElement("label");
+    label.style.display = "grid";
+    label.style.gap = "4px";
+    label.textContent = labelText;
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = step;
+    input.value = String(value);
+    label.appendChild(input);
+    root.appendChild(label);
+    return input;
+  }
+
+  const staticTimeInput = addNumber("Time Seconds", 0, "0.1");
+  const samplingInput = addNumber("Sampling Rate Hz", 10, "0.1");
+  samplingInput.min = "0.1";
+  samplingInput.max = "120";
+  const speedInput = addNumber("Time Speed", 1, "0.1");
+
+  const buttonRow = document.createElement("div");
+  buttonRow.style.display = "flex";
+  buttonRow.style.gap = "8px";
+  buttonRow.style.flexWrap = "wrap";
+  root.appendChild(buttonRow);
+  function addButton(labelText, handler) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = labelText;
+    button.addEventListener("click", handler);
+    buttonRow.appendChild(button);
+    return button;
+  }
+
+  const statusLine = document.createElement("div");
+  statusLine.style.opacity = "0.86";
+  root.appendChild(statusLine);
+
+  function readControls() {
+    return {
+      staticTimeEnabled: staticInput.checked === true,
+      staticTimeSeconds: clampTemporalNumber(staticTimeInput.value, -1000000000, 1000000000, 0),
+      samplingRateHz: clampTemporalNumber(samplingInput.value, 0.1, 120, 10),
+      timeScale: clampTemporalNumber(speedInput.value, -128, 128, 1)
+    };
+  }
+
+  function updateStatusFromController() {
+    const settings = temporalController?.getSettings?.() || {};
+    const currentTime = Number.isFinite(settings.currentTimeSeconds) ? settings.currentTimeSeconds : 0;
+    statusLine.textContent = "Time " + currentTime.toFixed(2) + " s";
+  }
+
+  function syncFromController() {
+    const settings = temporalController?.getSettings?.() || {};
+    staticInput.checked = settings.staticTimeEnabled === true;
+    staticTimeInput.value = String(Number.isFinite(settings.staticTimeSeconds) ? settings.staticTimeSeconds : 0);
+    samplingInput.value = String(Number.isFinite(settings.samplingRateHz) ? settings.samplingRateHz : 10);
+    speedInput.value = String(Number.isFinite(settings.timeScale) ? settings.timeScale : 1);
+    updateStatusFromController();
+  }
+
+  function applyControls() {
+    temporalController?.applySettings?.(readControls());
+    syncFromController();
+  }
+
+  function resetTimeToZero() {
+    staticTimeInput.value = "0";
+    temporalController?.applySettings?.({
+      ...readControls(),
+      elapsedSeconds: 0,
+      staticTimeSeconds: 0
+    }, { resetElapsed: true });
+    syncFromController();
+  }
+
+  [staticInput, staticTimeInput, samplingInput, speedInput].forEach((input) => input.addEventListener("change", applyControls));
+  addButton("Reverse", () => { speedInput.value = String(-Math.abs(clampTemporalNumber(speedInput.value, -128, 128, 1) || 1)); applyControls(); });
+  addButton("Pause", () => { speedInput.value = "0"; applyControls(); });
+  addButton("1x", () => { speedInput.value = "1"; staticInput.checked = false; applyControls(); });
+  addButton("Reset", resetTimeToZero);
+  addButton("Sample", () => { temporalController?.forceSample?.(); syncFromController(); });
+
+  const timer = window.setInterval(() => {
+    if (visible) updateStatusFromController();
+  }, 250);
+
+  return {
+    open() {
+      visible = true;
+      syncFromController();
+      floatingPanel.setVisible(true);
+    },
+    isVisible() { return visible; },
+    dispose() {
+      window.clearInterval(timer);
+      floatingPanel.dispose();
+    }
+  };
+}
 
 export function initScene({ THREE, PointerLockControls, panel, canvas, state, loadWorldFromFile, getBindings, normalizeKeyName }) {
   console.log("[VW] initScene start");
@@ -79,6 +347,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     useLatch: false,
     attackLatch: false,
     inspectLatch: false,
+    standUpLatch: false,
     suppressAttackUntilMs: 0,
     velocityY: 0,
     isGrounded: true,
@@ -140,8 +409,11 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const objectInspector = createObjectInspector({
     THREE,
     panel,
+    scene,
     sceneObjects: objects,
-    colliders
+    colliders,
+    portals,
+    spawnPoints
   });
   panel._vrObjectInspector = objectInspector;
   window.VRWorldContext.objectInspector = objectInspector;
@@ -167,7 +439,8 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     THREE,
     scene,
     objects,
-    colliders
+    colliders,
+    waterVolumes
   });
   panel._vrEquationColliderController = equationColliderController;
   window.VRWorldContext.equationColliderController = equationColliderController;
@@ -176,11 +449,25 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     THREE,
     controller: equationColliderController,
     colliders,
+    waterVolumes,
     hostPanel: panel,
     canvas
   });
   panel._vrEquationObjectsPanel = equationObjectsPanel;
   window.VRWorldContext.equationObjectsPanel = equationObjectsPanel;
+
+  const temporalController = createTemporalController({
+    THREE,
+    objects,
+    waterVolumes,
+    movementState
+  });
+  panel._vrTemporalController = temporalController;
+  window.VRWorldContext.temporalController = temporalController;
+
+  const temporalManipulatorPanel = createTemporalManipulatorPanel({ temporalController });
+  panel._vrTemporalManipulatorPanel = temporalManipulatorPanel;
+  window.VRWorldContext.temporalManipulatorPanel = temporalManipulatorPanel;
 
   const viewController = createCameraModeController({
     THREE,
@@ -231,6 +518,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   window.saveVirtualWorldFile = saveVirtualWorldFile;
   window.VRWorldContext.saveVirtualWorldFile = saveVirtualWorldFile;
   const update = () => {
+    temporalController.update();
     movementUpdate();
     viewController.update();
   };

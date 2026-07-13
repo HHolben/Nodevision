@@ -6,6 +6,7 @@ import { getPlaneRayIntersection } from "./equationColliderTool.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
 import { setStatus } from "/StatusBar.mjs";
+import { loadWorldObjectMaterialCatalog } from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 
 export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, worldPropertiesPanel, functionPlotterPanel, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController, consolePanels, ground }) {
   const playerRadius = 0.35;
@@ -33,6 +34,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   let inventoryMenuLeftLatch = false;
   let inventoryMenuRightLatch = false;
   let inventoryMenuConfirmLatch = false;
+  let inventoryHandSwitchLatch = false;
+  let hotbarSlotLatch = null;
   let phaseToggleLatch = false;
   const raycaster = new THREE.Raycaster();
   raycaster.params.Sprite = { threshold: 0.4 }; // expand hit area for 2D sprite handles
@@ -218,6 +221,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
   function shouldUseBoundsPicking(target) {
     if (!target?.isMesh) return false;
+    if (target.userData?.isPortal === true || String(target.userData?.nvType || "").toLowerCase() === "portal") return true;
     if (target.userData?.objectFileUseBoundsPicking === true) return true;
     const objectPath = String(target.userData?.objectFilePath || "").toLowerCase().split(/[?#]/)[0];
     return objectPath.endsWith(".stl");
@@ -675,7 +679,65 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     e.stopPropagation();
   }
 
+  function isPortalLikeTarget(target) {
+    return target?.userData?.isPortal === true || String(target?.userData?.nvType || "").toLowerCase() === "portal";
+  }
+
+  function markPortalInspectableTarget(target, portalRef = null) {
+    if (!target) return null;
+    if (!target.userData || typeof target.userData !== "object") target.userData = {};
+    target.userData.isPortal = true;
+    target.userData.nvType = "portal";
+    if (portalRef) {
+      target.userData.portalRef = portalRef;
+      portalRef.object3d = target;
+      if (!portalRef.objectId) {
+        portalRef.objectId = target.userData.metaWorldLayerId || target.userData.tag || target.name || target.uuid || "";
+      }
+    }
+    return target;
+  }
+
+  function findPortalRefForTarget(target) {
+    if (!target) return null;
+    if (target.userData?.portalRef) return target.userData.portalRef;
+    if (!Array.isArray(portals)) return null;
+    const objectId = target.userData?.metaWorldLayerId || target.userData?.tag || target.name || "";
+    return portals.find((entry) => entry?.object3d === target || (objectId && entry?.objectId === objectId)) || null;
+  }
+
+  function updatePortalRuntimeForTarget(target) {
+    if (!target || !isPortalLikeTarget(target)) return;
+    let portalRef = findPortalRefForTarget(target);
+    if (!portalRef && Array.isArray(portals)) {
+      portalRef = { lastTriggeredAt: 0 };
+      portals.push(portalRef);
+    }
+    if (!portalRef) return;
+    target.updateWorldMatrix?.(true, false);
+    const box = new THREE.Box3().setFromObject(target);
+    const objectId = target.userData?.metaWorldLayerId || target.userData?.tag || target.name || target.uuid || "";
+    portalRef.box = box;
+    portalRef.object3d = target;
+    if (objectId) portalRef.objectId = objectId;
+    const targetWorld = typeof target.userData?.portalTarget === "string" ? target.userData.portalTarget : portalRef.targetWorld;
+    portalRef.targetWorld = targetWorld || null;
+    portalRef.sameWorld = typeof target.userData?.portalSameWorld === "boolean" ? target.userData.portalSameWorld : portalRef.sameWorld === true;
+    portalRef.destinationMode = target.userData?.portalDestinationMode || portalRef.destinationMode;
+    portalRef.linkedPortalId = typeof target.userData?.portalLinkedPortalId === "string" ? target.userData.portalLinkedPortalId : portalRef.linkedPortalId || "";
+    portalRef.spawn = Array.isArray(target.userData?.portalSpawn) ? target.userData.portalSpawn.slice(0, 3) : (Array.isArray(portalRef.spawn) ? portalRef.spawn : null);
+    portalRef.spawnPoint = typeof target.userData?.portalSpawnPoint === "string" ? target.userData.portalSpawnPoint : portalRef.spawnPoint || null;
+    portalRef.spawnYaw = Number.isFinite(target.userData?.portalSpawnYaw) ? target.userData.portalSpawnYaw : (Number.isFinite(portalRef.spawnYaw) ? portalRef.spawnYaw : null);
+    portalRef.cooldownMs = Number.isFinite(target.userData?.portalCooldownMs) ? target.userData.portalCooldownMs : portalRef.cooldownMs || 1200;
+    target.userData.portalRef = portalRef;
+    if (target.userData?.collisionActionRef) {
+      target.userData.collisionActionRef.box = box;
+      target.userData.collisionActionRef.object3d = target;
+    }
+  }
+
   function updateColliderForTarget(target) {
+    updatePortalRuntimeForTarget(target);
     const ref = target?.userData?.colliderRef;
     if (!ref) return;
     if (ref.type === "compound" && typeof ref.update === "function") {
@@ -926,14 +988,99 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return movementState?.worldRules?.[abilityKey] === true;
   }
 
+  const bounceMaterialsByKey = new Map();
+
+  function materialLookupKey(value) {
+    return typeof value === "string" && value.trim() ? value.trim().toLowerCase() : "";
+  }
+
+  function readBounceNumber(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function materialBounceConfigFromEntry(entry = {}) {
+    const def = entry.materialDefinition && typeof entry.materialDefinition === "object" ? entry.materialDefinition : entry;
+    const colliderDef = def.collider && typeof def.collider === "object" ? def.collider : {};
+    const playerBounce = colliderDef.playerBounce && typeof colliderDef.playerBounce === "object"
+      ? colliderDef.playerBounce
+      : (def.playerBounce && typeof def.playerBounce === "object" ? def.playerBounce : {});
+    const restitution = readBounceNumber(playerBounce.restitution, readBounceNumber(colliderDef.restitution, 0));
+    const enabled = playerBounce.enabled === true || restitution > 0;
+    if (!enabled || restitution <= 0) return null;
+    return {
+      materialId: entry.materialId || def.id || entry.materialName || "",
+      materialName: def.displayName || entry.displayName || entry.materialName || entry.materialId || "",
+      restitution,
+      damping: readBounceNumber(playerBounce.damping, 1),
+      minIncomingSpeed: readBounceNumber(playerBounce.minIncomingSpeed, 0.08),
+      minBounceSpeed: readBounceNumber(playerBounce.minBounceSpeed, 0),
+      maxBounceSpeed: readBounceNumber(playerBounce.maxBounceSpeed, Infinity)
+    };
+  }
+
+  function cacheBounceMaterial(entry = {}) {
+    const config = materialBounceConfigFromEntry(entry);
+    if (!config) return;
+    [
+      entry.materialId,
+      entry.materialName,
+      entry.displayName,
+      entry.materialFile,
+      entry.materialJSONfile,
+      entry.materialDefinition?.id,
+      entry.materialDefinition?.displayName
+    ].forEach((key) => {
+      const lookup = materialLookupKey(key);
+      if (lookup) bounceMaterialsByKey.set(lookup, config);
+    });
+  }
+
+  function refreshBounceMaterialCatalog(catalog = []) {
+    bounceMaterialsByKey.clear();
+    (Array.isArray(catalog) ? catalog : []).forEach(cacheBounceMaterial);
+  }
+
+  function bounceConfigForCollider(collider = null, context = {}) {
+    if (collider?.box && context?.groundContact !== true) {
+      const footY = Number(context.playerFootY);
+      const topY = Number(collider.box.max?.y);
+      const contactTolerance = Math.max(0.35, Math.abs(Number(context.incomingVelocityY) || 0) + 0.2);
+      if (Number.isFinite(footY) && Number.isFinite(topY) && (footY < topY - 0.08 || footY > topY + contactTolerance)) return null;
+    }
+    const candidates = [
+      collider?.materialId,
+      collider?.physicsMaterialId,
+      collider?.target?.userData?.physicsMaterialId,
+      collider?.target?.userData?.physicsMaterialFile,
+      collider?.target?.userData?.materialName,
+      collider?.target?.userData?.terrain?.physicsMaterialId,
+      collider?.target?.userData?.terrain?.physicsMaterialFile,
+      collider?.target?.userData?.terrain?.materialName
+    ];
+    for (const candidate of candidates) {
+      const config = bounceMaterialsByKey.get(materialLookupKey(candidate));
+      if (config) return config;
+    }
+    return null;
+  }
+
+  void loadWorldObjectMaterialCatalog()
+    .then(refreshBounceMaterialCatalog)
+    .catch((err) => {
+      console.warn("Bouncy material catalog failed to load:", err);
+    });
+
   movementState.playerHeight = basePlayerHeight;
   const wouldCollide = createCollisionChecker({ colliders, movementState, playerRadius });
 
   function sampleExpressionTerrainGroundLevel(position, fallbackGroundLevel = groundLevel) {
     let best = fallbackGroundLevel;
     let bestColliderId = null;
+    let bestCollider = null;
     if (!Array.isArray(colliders) || !position) {
       movementState.pendingExpressionTerrainColliderId = null;
+      movementState.pendingGroundCollider = null;
       return best;
     }
 
@@ -961,11 +1108,13 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         if ((canStepOnto || isActiveSurface) && Number.isFinite(y) && y > best) {
           best = y;
           bestColliderId = colliderId;
+          bestCollider = collider;
         }
       }
     }
 
     movementState.pendingExpressionTerrainColliderId = bestColliderId;
+    movementState.pendingGroundCollider = bestCollider;
     return best;
   }
 
@@ -999,13 +1148,16 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const gpBindings = bindings?.gamepad || {};
     const rightBumperPressed = !!gp?.buttons?.[5]?.pressed;
 
+    const shortcutModifierHeld = heldKeys.control === true || heldKeys.meta === true;
+    const saveShortcutHeld = heldKeys.saveShortcutActive === true;
+
     const forward = readGamepadBinding(gp, gpBindings.moveForward);
     const backward = readGamepadBinding(gp, gpBindings.moveBackward);
     const left = readGamepadBinding(gp, gpBindings.moveLeft);
     const rightward = readGamepadBinding(gp, gpBindings.moveRight);
 
     const moveForward = heldKeys[bindings.moveForward] || forward > 0;
-    const moveBackward = heldKeys[bindings.moveBackward] || backward > 0;
+    const moveBackward = !saveShortcutHeld && (heldKeys[bindings.moveBackward] || backward > 0);
     const moveLeft = heldKeys[bindings.moveLeft] || left > 0;
     const moveRight = heldKeys[bindings.moveRight] || rightward > 0;
 
@@ -1029,9 +1181,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const flyDown = heldKeys[bindings.flyDown];
     const phase = heldKeys[bindings.phase] || heldKeys.v;
 
+    const standUp = heldKeys.standup === true || (shortcutModifierHeld && heldKeys.arrowup === true);
     const rollLeft = heldKeys[bindings.rollLeft];
     const rollRight = heldKeys[bindings.rollRight];
-    const pitchUp = heldKeys[bindings.pitchUp];
+    const pitchUp = !standUp && heldKeys[bindings.pitchUp];
     const pitchDown = heldKeys[bindings.pitchDown];
 
     const lookYaw = readGamepadBinding(gp, gpBindings.lookYaw);
@@ -1040,11 +1193,19 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const cycleCamera = heldKeys[bindings.cycleCamera] || heldKeys.u || readGamepadBinding(gp, gpBindings.cycleCamera) > 0;
     const pause = heldKeys[bindings.pause] || readGamepadBinding(gp, gpBindings.pause) > 0;
     const openInventory = heldKeys[bindings.openInventory] || readGamepadBinding(gp, gpBindings.openInventory) > 0;
-    const inventoryMenuUp = heldKeys.arrowup || !!gp?.buttons?.[12]?.pressed;
+    const inventoryMenuUp = (!standUp && heldKeys.arrowup) || !!gp?.buttons?.[12]?.pressed;
     const inventoryMenuDown = heldKeys.arrowdown || !!gp?.buttons?.[13]?.pressed;
     const inventoryMenuLeft = heldKeys.arrowleft || !!gp?.buttons?.[14]?.pressed;
     const inventoryMenuRight = heldKeys.arrowright || !!gp?.buttons?.[15]?.pressed;
     const inventoryMenuConfirm = heldKeys.enter || readGamepadBinding(gp, gpBindings.jump) > 0;
+    let hotbarSlot = null;
+    for (let i = 1; i <= 9; i += 1) {
+      if (heldKeys[String(i)]) {
+        hotbarSlot = i - 1;
+        break;
+      }
+    }
+    const handSwitch = heldKeys["-"] || heldKeys.minus;
 
     return {
       moveForward,
@@ -1069,17 +1230,28 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       rollRight,
       pitchUp,
       pitchDown,
+      standUp,
       lookYaw,
       lookPitch,
       cycleCamera,
       pause,
       openInventory,
+      hotbarSlot,
+      handSwitch,
       inventoryMenuUp,
       inventoryMenuDown,
       inventoryMenuLeft,
       inventoryMenuRight,
       inventoryMenuConfirm
     };
+  }
+
+  function applyStandUpAlignment() {
+    camera.up?.set?.(0, 1, 0);
+    camera.rotation.set(0, 0, 0);
+    camera.updateMatrixWorld?.(true);
+    movementState.velocityY = 0;
+    movementState.isGrounded = true;
   }
 
   function applyMouseLikeLookDelta(deltaX, deltaY) {
@@ -1093,13 +1265,11 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const maxPolar = Number.isFinite(controls.maxPolarAngle) ? controls.maxPolarAngle : Math.PI;
 
     const lookScale = 0.002 * pointerSpeed;
-    if (dx !== 0) camera.rotateY(-dx * lookScale);
-    if (dy !== 0) {
-      camera.rotateX(-dy * lookScale);
-      mouseLikeEuler.setFromQuaternion(camera.quaternion, "YXZ");
-      mouseLikeEuler.x = Math.max(halfPi - maxPolar, Math.min(halfPi - minPolar, mouseLikeEuler.x));
-      camera.quaternion.setFromEuler(mouseLikeEuler);
-    }
+    mouseLikeEuler.setFromQuaternion(camera.quaternion, "YXZ");
+    if (dx !== 0) mouseLikeEuler.y -= dx * lookScale;
+    if (dy !== 0) mouseLikeEuler.x -= dy * lookScale;
+    mouseLikeEuler.x = Math.max(halfPi - maxPolar, Math.min(halfPi - minPolar, mouseLikeEuler.x));
+    camera.quaternion.setFromEuler(mouseLikeEuler);
   }
 
   function isSameWorldTarget(value) {
@@ -1108,12 +1278,24 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return normalized === "self" || normalized === "." || normalized === "same" || normalized === "current";
   }
 
+  function readLinkedPortalId(portal) {
+    const value = portal?.linkedPortalId || portal?.portalLinkedPortalId || portal?.targetPortalId || portal?.portalTargetId;
+    return typeof value === "string" && value.trim() ? value.trim() : "";
+  }
+
   function findPortalHit(position, nowMs) {
     if (!portals || portals.length === 0) return null;
     const playerMinY = position.y - movementState.playerHeight;
     const playerMaxY = position.y;
     for (const portal of portals) {
-      if (!portal?.box || (!portal?.targetWorld && !portal?.sameWorld)) continue;
+      const portalObject = portal?.object3d || null;
+      if (portalObject?.visible === false) continue;
+      if (portalObject?.updateWorldMatrix) {
+        portalObject.updateWorldMatrix(true, false);
+        portal.box = new THREE.Box3().setFromObject(portalObject);
+      }
+      const linkedPortalId = readLinkedPortalId(portal);
+      if (!portal?.box || (!portal?.targetWorld && !portal?.sameWorld && !linkedPortalId)) continue;
       if (nowMs - portal.lastTriggeredAt < portal.cooldownMs) continue;
       const minX = portal.box.min.x - playerRadius;
       const maxX = portal.box.max.x + playerRadius;
@@ -1133,6 +1315,12 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const playerMinY = position.y - movementState.playerHeight;
     const playerMaxY = position.y;
     for (const trigger of collisionActions) {
+      const triggerObject = trigger?.object3d || null;
+      if (triggerObject?.visible === false) continue;
+      if (triggerObject?.updateWorldMatrix) {
+        triggerObject.updateWorldMatrix(true, false);
+        trigger.box = new THREE.Box3().setFromObject(triggerObject);
+      }
       if (!trigger?.box || !trigger?.actions?.length) continue;
       if (nowMs - trigger.lastTriggeredAt < trigger.cooldownMs) continue;
       const minX = trigger.box.min.x - playerRadius;
@@ -1181,7 +1369,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       const fallback = spawnPoints[idx];
       if (fallback?.position) return fallback;
     }
-    return { position: [0, 0, 0], yaw: null };
+    return { position: [0, movementState.playerHeight || basePlayerHeight, 0], yaw: null };
   }
 
   function applySpawnChoice(spawnPointId, spawnYaw) {
@@ -1197,33 +1385,111 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
   }
 
+  function findPortalObjectById(portalId) {
+    if (typeof portalId !== "string" || !portalId.trim() || !Array.isArray(objects)) return null;
+    const id = portalId.trim();
+    return objects.find((object) => {
+      if (!object?.userData?.isPortal) return false;
+      const ref = object.userData.portalRef;
+      return object.userData.metaWorldLayerId === id
+        || object.userData.tag === id
+        || object.name === id
+        || ref?.objectId === id;
+    }) || null;
+  }
+
+  function readPortalExitPosition(targetObject) {
+    if (!targetObject) return null;
+    const worldPosition = new THREE.Vector3();
+    const worldQuaternion = new THREE.Quaternion();
+    targetObject.getWorldPosition?.(worldPosition);
+    targetObject.getWorldQuaternion?.(worldQuaternion);
+    const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(worldQuaternion);
+    if (direction.lengthSq() < 1e-6) direction.set(0, 0, 1);
+    direction.normalize();
+    const exit = worldPosition.addScaledVector(direction, Math.max(playerRadius * 4, 1.25));
+    exit.y = Math.max(exit.y + 0.35, movementState.playerHeight || basePlayerHeight);
+    return exit;
+  }
+
+  function applyPortalExitObject(targetObject, spawnYaw, nowMs = performance.now()) {
+    const exit = readPortalExitPosition(targetObject);
+    if (!exit) return false;
+    controls.getObject().position.copy(exit);
+    movementState.velocityY = 0;
+    movementState.isGrounded = true;
+    if (Number.isFinite(spawnYaw)) {
+      controls.getObject().rotation.y = spawnYaw;
+    }
+    const targetRef = targetObject.userData?.portalRef;
+    if (targetRef) {
+      targetRef.lastTriggeredAt = nowMs;
+      targetObject.updateWorldMatrix?.(true, false);
+      targetRef.box = new THREE.Box3().setFromObject(targetObject);
+    }
+    return true;
+  }
+
+  function applyPortalTravel(portalLike, nowMs = performance.now()) {
+    if (!portalLike) return false;
+    const sameWorld = portalLike.sameWorld === true || isSameWorldTarget(portalLike.targetWorld);
+    const targetWorld = sameWorld ? null : portalLike.targetWorld;
+    const linkedPortalId = readLinkedPortalId(portalLike);
+    const hasSpawn = Array.isArray(portalLike.spawn) && portalLike.spawn.length >= 3;
+
+    if (linkedPortalId) {
+      if (sameWorld) {
+        const linkedPortal = findPortalObjectById(linkedPortalId);
+        if (linkedPortal && applyPortalExitObject(linkedPortal, portalLike.spawnYaw, nowMs)) {
+          portalLike.lastTriggeredAt = nowMs;
+          return true;
+        }
+        console.warn("Linked portal target not found:", linkedPortalId);
+      } else if (targetWorld && typeof loadWorldFromFile === "function") {
+        loadWorldFromFile(targetWorld, {
+          portalTargetId: linkedPortalId,
+          spawnYaw: Number.isFinite(portalLike.spawnYaw) ? portalLike.spawnYaw : null,
+          skipAutoSpawn: false
+        });
+        return true;
+      }
+    }
+
+    if (!sameWorld) {
+      if (!targetWorld || typeof loadWorldFromFile !== "function") {
+        console.warn("Portal action missing targetWorld or loader.", portalLike);
+        return false;
+      }
+      loadWorldFromFile(targetWorld, {
+        spawnPoint: typeof portalLike.spawnPoint === "string" ? portalLike.spawnPoint : null,
+        spawnYaw: Number.isFinite(portalLike.spawnYaw) ? portalLike.spawnYaw : null,
+        skipAutoSpawn: hasSpawn
+      });
+      return true;
+    }
+
+    if (hasSpawn) {
+      controls.getObject().position.set(portalLike.spawn[0], portalLike.spawn[1], portalLike.spawn[2]);
+      movementState.velocityY = 0;
+      movementState.isGrounded = true;
+      if (Number.isFinite(portalLike.spawnYaw)) {
+        controls.getObject().rotation.y = portalLike.spawnYaw;
+      }
+      return true;
+    }
+
+    if (typeof portalLike.spawnPoint === "string") {
+      applySpawnChoice(portalLike.spawnPoint, portalLike.spawnYaw);
+      return true;
+    }
+
+    return false;
+  }
+
   function applyCollisionAction(action) {
     if (!action || !action.type) return;
     if (action.type === "portal") {
-      const sameWorld = action.sameWorld === true || isSameWorldTarget(action.targetWorld);
-      const targetWorld = sameWorld ? null : action.targetWorld;
-      const hasSpawn = Array.isArray(action.spawn) && action.spawn.length >= 3;
-      if (!sameWorld) {
-        if (!targetWorld || typeof loadWorldFromFile !== "function") {
-          console.warn("Portal action missing targetWorld or loader.", action);
-          return;
-        }
-        loadWorldFromFile(targetWorld, {
-          spawnPoint: typeof action.spawnPoint === "string" ? action.spawnPoint : null,
-          spawnYaw: Number.isFinite(action.spawnYaw) ? action.spawnYaw : null,
-          skipAutoSpawn: hasSpawn
-        });
-      }
-      if (hasSpawn) {
-        controls.getObject().position.set(action.spawn[0], action.spawn[1], action.spawn[2]);
-        movementState.velocityY = 0;
-        movementState.isGrounded = true;
-        if (Number.isFinite(action.spawnYaw)) {
-          controls.getObject().rotation.y = action.spawnYaw;
-        }
-      } else if (sameWorld && typeof action.spawnPoint === "string") {
-        applySpawnChoice(action.spawnPoint, action.spawnYaw);
-      }
+      applyPortalTravel(action);
     } else if (action.type === "impulse") {
       const impulse = Array.isArray(action.impulse) ? action.impulse : null;
       const upBoost = Number.isFinite(action.up) ? action.up : null;
@@ -1407,6 +1673,49 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     };
   }
 
+  function makePlacedObjectId(mesh, prefix = "object") {
+    const existing = [mesh?.userData?.metaWorldLayerId, mesh?.userData?.tag, mesh?.name]
+      .find((value) => typeof value === "string" && value.trim());
+    const objectId = existing ? existing.trim() : prefix + "-" + Date.now().toString(36) + "-" + Math.floor(Math.random() * 1000);
+    mesh.userData.metaWorldLayerId = objectId;
+    if (!mesh.userData.tag) mesh.userData.tag = objectId;
+    if (!mesh.name) mesh.name = objectId;
+    return objectId;
+  }
+
+  function registerPlacedPortal(mesh) {
+    if (!mesh) return null;
+    const objectId = makePlacedObjectId(mesh, "portal");
+    mesh.userData.nvType = "portal";
+    mesh.userData.isPortal = true;
+    mesh.userData.isSolid = false;
+    mesh.userData.breakable = false;
+    mesh.userData.portalTarget = typeof mesh.userData.portalTarget === "string" && mesh.userData.portalTarget ? mesh.userData.portalTarget : null;
+    mesh.userData.portalSameWorld = mesh.userData.portalSameWorld !== false;
+    mesh.userData.portalDestinationMode = mesh.userData.portalDestinationMode || "coordinate";
+    mesh.userData.portalLinkedPortalId = typeof mesh.userData.portalLinkedPortalId === "string" ? mesh.userData.portalLinkedPortalId : "";
+    mesh.userData.portalSpawn = Array.isArray(mesh.userData.portalSpawn) ? mesh.userData.portalSpawn.slice(0, 3) : null;
+    mesh.userData.portalSpawnPoint = typeof mesh.userData.portalSpawnPoint === "string" ? mesh.userData.portalSpawnPoint : null;
+    mesh.userData.portalSpawnYaw = Number.isFinite(mesh.userData.portalSpawnYaw) ? mesh.userData.portalSpawnYaw : null;
+    mesh.userData.portalCooldownMs = Number.isFinite(mesh.userData.portalCooldownMs) ? mesh.userData.portalCooldownMs : 1200;
+    mesh.updateWorldMatrix?.(true, false);
+    const portalRef = mesh.userData.portalRef || { lastTriggeredAt: 0 };
+    portalRef.box = new THREE.Box3().setFromObject(mesh);
+    portalRef.object3d = mesh;
+    portalRef.objectId = objectId;
+    portalRef.targetWorld = mesh.userData.portalTarget;
+    portalRef.sameWorld = mesh.userData.portalSameWorld === true;
+    portalRef.destinationMode = mesh.userData.portalDestinationMode;
+    portalRef.linkedPortalId = mesh.userData.portalLinkedPortalId;
+    portalRef.spawn = mesh.userData.portalSpawn;
+    portalRef.spawnPoint = mesh.userData.portalSpawnPoint;
+    portalRef.spawnYaw = mesh.userData.portalSpawnYaw;
+    portalRef.cooldownMs = mesh.userData.portalCooldownMs;
+    if (Array.isArray(portals) && !portals.includes(portalRef)) portals.push(portalRef);
+    mesh.userData.portalRef = portalRef;
+    return portalRef;
+  }
+
   function createPlacedMesh(selectedItem, inventory) {
     const id = String(selectedItem?.id || "").toLowerCase();
     if (id === "box") {
@@ -1449,6 +1758,22 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         mesh,
         collider: mesh.userData?.mathFunctionProperties?.collider ? { type: "sphere", radius: 0.7 } : null
       };
+    }
+    if (id === "portal") {
+      const mesh = new THREE.Mesh(
+        new THREE.TorusGeometry(0.72, 0.075, 16, 64),
+        new THREE.MeshStandardMaterial({
+          color: 0x55ccff,
+          emissive: 0x55ccff,
+          emissiveIntensity: 0.95,
+          transparent: true,
+          opacity: 0.72
+        })
+      );
+      mesh.userData.portalSameWorld = true;
+      mesh.userData.portalDestinationMode = "coordinate";
+      mesh.userData.portalSpawn = null;
+      return { mesh, collider: null };
     }
     if (id === "console") {
       const props = parseConsoleProperties(inventory);
@@ -1731,6 +2056,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       && obj?.visible
       && obj?.userData?.isMeasure !== true
       && obj?.userData?.isWater !== true
+      && obj?.userData?.isLiquid !== true
     ));
     const hits = raycaster.intersectObjects(candidates, false);
     return hits.find((h) => Number.isFinite(h.distance) && h.distance <= useRangeMax && h.object?.visible) || null;
@@ -1831,6 +2157,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     scene.add(mesh);
     objects.push(mesh);
 
+    if (String(selected.id || "").toLowerCase() === "portal") {
+      registerPlacedPortal(mesh);
+    }
+
     if (placement.collider?.type === "box") {
       const half = placement.collider.half;
       const colliderRef = {
@@ -1922,6 +2252,13 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       return true;
     }
 
+    if (toolId === "temporal-manipulator") {
+      if (movementState.temporalToolLatch) return true;
+      movementState.temporalToolLatch = true;
+      window.VRWorldContext?.temporalManipulatorPanel?.open?.();
+      return true;
+    }
+
     return false;
   }
 
@@ -1942,6 +2279,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   function isEquationObjectTarget(target) {
     const type = String(target?.userData?.nvType || "").toLowerCase();
     return type === "equation-collider-plane"
+      || type === "equation-inequality"
       || target?.userData?.metaWorldExpressionLayer === true
       || type === "functionsurface"
       || type === "functioncurve"
@@ -1950,10 +2288,21 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
   function tryBreakTargetBlock() {
     if (movementState.worldMode === "2d") return false;
-    const hit = getInspectHit({ includeMeasurements: true, allowInfinitePlanes: true });
+    let hit = getInspectHit({ includeMeasurements: true, allowInfinitePlanes: true });
+    if (!hit?.object) hit = getPortalInspectFallbackHit();
     if (!hit?.object) return false;
-    const target = hit.object;
-    const isEquationObject = isEquationObjectTarget(target);
+    let target = hit.object;
+    let isEquationObject = isEquationObjectTarget(target);
+    let isPortalTarget = isPortalLikeTarget(target);
+    if (!isEquationObject && !isPortalTarget && (target.userData?.breakable === false || (!target.userData?.breakable && !target.userData?.placedByPlayer))) {
+      const portalHit = getPortalInspectFallbackHit();
+      if (portalHit?.object) {
+        hit = portalHit;
+        target = hit.object;
+        isEquationObject = isEquationObjectTarget(target);
+        isPortalTarget = isPortalLikeTarget(target);
+      }
+    }
     if (!isEquationObject && !canUseAbility("allowBreak")) return false;
     if (target.userData?.isMeasureEndpoint === "second") {
       removeMeasurementVisual(target);
@@ -1962,8 +2311,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       updateTapeMeasurePreview();
       return true;
     }
-    if (target.userData?.isPortal) return false;
-    if (!isEquationObject) {
+    if (!isEquationObject && !isPortalTarget) {
       if (target.userData?.breakable === false) return false;
       if (!target.userData?.breakable && !target.userData?.placedByPlayer) return false;
     }
@@ -1978,6 +2326,16 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const objIndex = objects.indexOf(target);
     if (objIndex !== -1) objects.splice(objIndex, 1);
 
+    if (isPortalTarget && Array.isArray(portals)) {
+      for (let i = portals.length - 1; i >= 0; i -= 1) {
+        const ref = portals[i];
+        if (ref === target.userData?.portalRef || ref?.object3d === target || ref?.objectId === target.userData?.metaWorldLayerId) {
+          portals.splice(i, 1);
+        }
+      }
+      delete target.userData.portalRef;
+    }
+
     const colliderRef = target.userData?.colliderRef;
     if (colliderRef) {
       const cIndex = colliders.indexOf(colliderRef);
@@ -1988,10 +2346,25 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       const idx = collisionActions.indexOf(collisionActionRef);
       if (idx !== -1) collisionActions.splice(idx, 1);
     }
+    if (isPortalTarget && Array.isArray(collisionActions)) {
+      for (let i = collisionActions.length - 1; i >= 0; i -= 1) {
+        const ref = collisionActions[i];
+        if (ref?.object3d === target || ref === collisionActionRef) collisionActions.splice(i, 1);
+      }
+    }
     const useTargetRef = target.userData?.useTargetRef;
     if (useTargetRef) {
       const idx = useTargets.indexOf(useTargetRef);
       if (idx !== -1) useTargets.splice(idx, 1);
+    }
+    if (Array.isArray(waterVolumes)) {
+      for (let i = waterVolumes.length - 1; i >= 0; i -= 1) {
+        const ref = waterVolumes[i];
+        if (ref === target.userData?.waterVolumeRef || ref?.target === target || ref?.object3d === target) {
+          waterVolumes.splice(i, 1);
+        }
+      }
+      delete target.userData.waterVolumeRef;
     }
 
     const inventory = window.VRWorldContext?.inventory;
@@ -2002,6 +2375,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         || itemType === "sphere"
         || itemType === "cylinder"
         || itemType === "console"
+        || itemType === "portal"
         || itemType === "math-function"
         || itemType === "object-file"
         || itemType === "image-plane"
@@ -2022,6 +2396,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   function getWaterVolumeAtPosition(position) {
     if (!Array.isArray(waterVolumes) || waterVolumes.length === 0) return null;
     for (const water of waterVolumes) {
+      if (typeof water?.containsPoint === "function" && water.containsPoint(position)) return water;
       if (!water?.box || typeof water.box.containsPoint !== "function") continue;
       if (water.box.containsPoint(position)) return water;
     }
@@ -2031,9 +2406,92 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   function getEquationPlaneRayHits() {
     const ray = raycaster.ray;
     return (objects || [])
-      .filter((obj) => obj?.isMesh && obj?.visible && String(obj.userData?.nvType || "").toLowerCase() === "equation-collider-plane")
+      .filter((obj) => obj?.isMesh && obj?.visible && ["equation-collider-plane", "equation-inequality"].includes(String(obj.userData?.nvType || "").toLowerCase()))
       .map((mesh) => getPlaneRayIntersection(THREE, mesh, ray))
       .filter((hit) => hit && Number.isFinite(hit.distance) && hit.object?.visible);
+  }
+
+  function getPortalRefInspectHit() {
+    if (!Array.isArray(portals) || portals.length === 0) return null;
+    const hits = [];
+    for (const portal of portals) {
+      const target = portal?.object3d || null;
+      if (target?.visible === false) continue;
+      if (target?.updateWorldMatrix) {
+        target.updateWorldMatrix(true, false);
+        portal.box = new THREE.Box3().setFromObject(target);
+      }
+      const box = portal?.box;
+      if (!box || box.isEmpty?.()) continue;
+      const point = box.containsPoint(raycaster.ray.origin)
+        ? boundsPickPoint.copy(raycaster.ray.origin)
+        : raycaster.ray.intersectBox(box, boundsPickPoint);
+      if (!point) continue;
+      const distance = raycaster.ray.origin.distanceTo(point);
+      if (!Number.isFinite(distance) || distance > useRangeMax) continue;
+      if (!target) continue;
+      markPortalInspectableTarget(target, portal);
+      hits.push({
+        distance,
+        point: point.clone(),
+        object: target,
+        portalRef: portal,
+        boundsPick: true
+      });
+    }
+    return hits.sort((a, b) => a.distance - b.distance)[0] || null;
+  }
+
+  function collectPortalInspectCandidates() {
+    const candidates = [];
+    const seen = new Set();
+    const add = (target, portalRef = null) => {
+      if (!target || target.visible === false || seen.has(target)) return;
+      if (portalRef) {
+        markPortalInspectableTarget(target, portalRef);
+      } else if (!isPortalLikeTarget(target)) {
+        return;
+      }
+      seen.add(target);
+      candidates.push(target);
+    };
+    (objects || []).forEach((target) => add(target));
+    if (Array.isArray(portals)) {
+      portals.forEach((portal) => add(portal?.object3d, portal));
+    }
+    return candidates;
+  }
+
+  function getPortalInspectFallbackHit() {
+    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+    const hits = [];
+    const maxDistance = Math.max(useRangeMax, 40);
+    for (const target of collectPortalInspectCandidates()) {
+      target.updateWorldMatrix?.(true, false);
+      const box = new THREE.Box3().setFromObject(target);
+      if (box.isEmpty()) continue;
+      const directPoint = box.containsPoint(raycaster.ray.origin)
+        ? raycaster.ray.origin.clone()
+        : raycaster.ray.intersectBox(box, new THREE.Vector3());
+      if (directPoint) {
+        const distance = raycaster.ray.origin.distanceTo(directPoint);
+        if (Number.isFinite(distance) && distance <= maxDistance) {
+          hits.push({ distance, point: directPoint.clone(), object: target, boundsPick: true, portalFallback: true });
+        }
+        continue;
+      }
+
+      const center = box.getCenter(new THREE.Vector3());
+      const toCenter = center.clone().sub(raycaster.ray.origin);
+      const projected = toCenter.dot(raycaster.ray.direction);
+      if (!Number.isFinite(projected) || projected < 0 || projected > maxDistance) continue;
+      const closest = raycaster.ray.origin.clone().addScaledVector(raycaster.ray.direction, projected);
+      const size = box.getSize(new THREE.Vector3());
+      const pickRadius = Math.max(0.55, Math.min(1.75, size.length() * 0.35));
+      if (center.distanceTo(closest) > pickRadius) continue;
+      hits.push({ distance: projected, point: center, object: target, boundsPick: true, portalFallback: true });
+    }
+    return hits.sort((a, b) => a.distance - b.distance)[0] || null;
   }
 
   function getInspectHit(options = {}) {
@@ -2049,7 +2507,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       .map(boundsPickHit)
       .filter(Boolean);
     const planeHits = options.allowInfinitePlanes === false ? [] : getEquationPlaneRayHits();
-    return meshHits.concat(boundsHits, planeHits).sort((a, b) => a.distance - b.distance)[0] || null;
+    const portalRefHit = getPortalRefInspectHit();
+    return meshHits.concat(boundsHits, planeHits, portalRefHit ? [portalRefHit] : []).sort((a, b) => a.distance - b.distance)[0] || null;
   }
 
   function clearStlVertexMarkers() {
@@ -2147,25 +2606,32 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return true;
   }
 
+  function openInspectTarget(target, distance = null) {
+    if (!target) return false;
+    const type = String(target.userData?.nvType || "").toLowerCase();
+    if (["equation-collider-plane", "equation-inequality"].includes(type) && window.VRWorldContext?.equationObjectsPanel?.openForTarget) {
+      return window.VRWorldContext.equationObjectsPanel.openForTarget(target);
+    }
+    if (type === "console" && consolePanels?.openInspectPanel) {
+      return consolePanels.openInspectPanel(target, distance, {
+        onApply: (mesh, config) => {
+          applyConsoleConfig(mesh, config);
+        }
+      });
+    }
+    if (objectInspector) {
+      return objectInspector.inspectTarget(target, distance);
+    }
+    return false;
+  }
+
   function handleInspectAction() {
     const hit = getInspectHit();
-    const target = hit?.object;
-    if (target) {
-      const type = String(target.userData?.nvType || "").toLowerCase();
-      if (type === "equation-collider-plane" && window.VRWorldContext?.equationObjectsPanel?.openForTarget) {
-        return window.VRWorldContext.equationObjectsPanel.openForTarget(target);
-      }
-      if (type === "console" && consolePanels?.openInspectPanel) {
-        return consolePanels.openInspectPanel(target, hit.distance, {
-          onApply: (mesh, config) => {
-            applyConsoleConfig(mesh, config);
-          }
-        });
-      }
-      if (objectInspector) {
-        return objectInspector.inspectTarget(target, hit.distance);
-      }
-    }
+    if (hit?.object && openInspectTarget(hit.object, hit.distance)) return true;
+
+    const portalHit = getPortalInspectFallbackHit();
+    if (portalHit?.object && openInspectTarget(portalHit.object, portalHit.distance)) return true;
+
     if (!hit) {
       worldPropertiesPanel?.open?.();
       return true;
@@ -2176,10 +2642,25 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   return function update() {
     // Ensure wheel handler is always present so scroll works after turning 180°.
     ensureWheelHandler();
+    const focusedElement = document.activeElement;
+    const typingIntoField = focusedElement && (
+      ["INPUT", "TEXTAREA", "SELECT"].includes(focusedElement.tagName)
+      || focusedElement.isContentEditable === true
+    );
+    const unlockedBindings = typeof getBindings === "function" ? getBindings() : {};
+    const unlockedInspectKey = String(unlockedBindings.inspect || "y").toLowerCase();
+    const unlockedInspecting = !typingIntoField && (heldKeys?.[unlockedInspectKey] || heldKeys?.y);
     if (!controls.isLocked) {
       // Keep grabbed objects in sync even when pointer lock drops.
       updateGrabbedObjectFollow();
       updateGizmoHandleOrientations();
+      if (unlockedInspecting && !movementState.inspectLatch) {
+        movementState.inspectLatch = true;
+        movementState.lastInspectMs = performance.now();
+        if (handleInspectAction()) return;
+      } else if (!unlockedInspecting) {
+        movementState.inspectLatch = false;
+      }
       return;
     }
     if (movementState.stlEdit) {
@@ -2211,6 +2692,20 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       if (inventory?.toggleMenu) inventory.toggleMenu();
     } else if (!inputState.openInventory) {
       inventoryToggleLatch = false;
+    }
+
+    if (inputState.handSwitch && !inventoryHandSwitchLatch) {
+      inventoryHandSwitchLatch = true;
+      inventory?.switchHand?.();
+    } else if (!inputState.handSwitch) {
+      inventoryHandSwitchLatch = false;
+    }
+
+    if (Number.isInteger(inputState.hotbarSlot) && hotbarSlotLatch !== inputState.hotbarSlot) {
+      hotbarSlotLatch = inputState.hotbarSlot;
+      inventory?.selectDominantSlot?.(inputState.hotbarSlot);
+    } else if (!Number.isInteger(inputState.hotbarSlot)) {
+      hotbarSlotLatch = null;
     }
 
     if (movementState.skipClickFrame) {
@@ -2299,6 +2794,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       movementState.lastUseActionMs = 0;
       movementState.svgToolLatch = false;
       movementState.terrainToolLatch = false;
+      movementState.temporalToolLatch = false;
     }
     if (!grabbing) {
       movementState.grabLatch = false;
@@ -2388,7 +2884,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
           ? movementState.crouchJumpMultiplier
           : defaultCrouchJumpMultiplier,
         groundLevel: movementGroundLevel,
-        wouldCollide
+        wouldCollide,
+        resolveGroundBounce: bounceConfigForCollider
       });
     }
 
@@ -2430,6 +2927,18 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       pauseLatch = false;
     }
 
+    if (inputState.standUp && !movementState.standUpLatch) {
+      if (canUseAbility("allowRoll") || canUseAbility("allowPitch")) {
+        applyStandUpAlignment();
+        setStatus("Player stood up.");
+      } else {
+        setStatus("Stand up is not available in this world.");
+      }
+      movementState.standUpLatch = true;
+    } else if (!inputState.standUp) {
+      movementState.standUpLatch = false;
+    }
+
     const rollPitchInput = {
       ...inputState,
       rollLeft: canUseAbility("allowRoll") ? inputState.rollLeft : false,
@@ -2440,7 +2949,13 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     applyRollPitch({ camera, inputState: rollPitchInput });
     updateTapeMeasurePreview();
 
-    const actionHit = findCollisionActionHit(controls.getObject().position, performance.now());
+    if (inspecting && !movementState.inspectLatch) {
+      movementState.inspectLatch = true;
+      movementState.lastInspectMs = nowMs;
+      if (handleInspectAction()) return;
+    }
+
+    const actionHit = inspecting ? null : findCollisionActionHit(controls.getObject().position, performance.now());
     if (actionHit) {
       for (const action of actionHit.actions) {
         applyCollisionAction(action);
@@ -2595,33 +3110,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       }
     }
 
-    if (inspecting && !movementState.inspectLatch) {
-      movementState.inspectLatch = true;
-      movementState.lastInspectMs = nowMs;
-      if (handleInspectAction()) return;
-    }
-
-    const portalHit = findPortalHit(controls.getObject().position, performance.now());
-    if (portalHit) {
-      const sameWorld = portalHit.sameWorld === true || isSameWorldTarget(portalHit.targetWorld);
-      const hasSpawn = Array.isArray(portalHit.spawn) && portalHit.spawn.length >= 3;
-      if (!sameWorld) {
-        if (typeof loadWorldFromFile !== "function") return;
-        loadWorldFromFile(portalHit.targetWorld, {
-          spawnPoint: typeof portalHit.spawnPoint === "string" ? portalHit.spawnPoint : null,
-          spawnYaw: Number.isFinite(portalHit.spawnYaw) ? portalHit.spawnYaw : null,
-          skipAutoSpawn: hasSpawn
-        });
-      }
-      if (hasSpawn) {
-        controls.getObject().position.set(portalHit.spawn[0], portalHit.spawn[1], portalHit.spawn[2]);
-        movementState.velocityY = 0;
-        movementState.isGrounded = true;
-        if (Number.isFinite(portalHit.spawnYaw)) {
-          controls.getObject().rotation.y = portalHit.spawnYaw;
-        }
-      } else if (sameWorld && typeof portalHit.spawnPoint === "string") {
-        applySpawnChoice(portalHit.spawnPoint, portalHit.spawnYaw);
+    if (!inspecting) {
+      const portalHit = findPortalHit(controls.getObject().position, performance.now());
+      if (portalHit) {
+        applyPortalTravel(portalHit);
       }
     }
   };

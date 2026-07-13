@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "basalt",
+  "displayName": "Basalt",
+  "description": "Dark basalt stone terrain material.",
+  "defaultColor": "#303436",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 3000,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.8,
+    "coefficientOfKineticFriction": 0.55,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.07
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "basalt",
+    "color": "#303436"
+  },
+  "chemicalFormulaMol": null
+}

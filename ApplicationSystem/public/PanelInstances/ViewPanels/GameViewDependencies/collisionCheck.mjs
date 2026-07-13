@@ -2,12 +2,11 @@
 // This file provides collision checks between the player and world colliders.
 
 function pointWithinPlaneConstraints(eq, point, padding = 0) {
-  return point.x >= Math.min(eq.xmin ?? -15, eq.xmax ?? 15) - padding
-    && point.x <= Math.max(eq.xmin ?? -15, eq.xmax ?? 15) + padding
-    && point.y >= Math.min(eq.ymin ?? -15, eq.ymax ?? 15) - padding
-    && point.y <= Math.max(eq.ymin ?? -15, eq.ymax ?? 15) + padding
-    && point.z >= Math.min(eq.zmin ?? -15, eq.zmax ?? 15) - padding
-    && point.z <= Math.max(eq.zmin ?? -15, eq.zmax ?? 15) + padding;
+  if (!eq || !point) return false;
+  if (eq.boundX === true && (point.x < Math.min(eq.xmin ?? -15, eq.xmax ?? 15) - padding || point.x > Math.max(eq.xmin ?? -15, eq.xmax ?? 15) + padding)) return false;
+  if (eq.boundY === true && (point.y < Math.min(eq.ymin ?? -15, eq.ymax ?? 15) - padding || point.y > Math.max(eq.ymin ?? -15, eq.ymax ?? 15) + padding)) return false;
+  if (eq.boundZ === true && (point.z < Math.min(eq.zmin ?? -15, eq.zmax ?? 15) - padding || point.z > Math.max(eq.zmin ?? -15, eq.zmax ?? 15) + padding)) return false;
+  return true;
 }
 
 function signedPlaneDistance(collider, point) {
@@ -73,14 +72,19 @@ function compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, pl
 
 export function createCollisionChecker({ colliders, movementState, playerRadius }) {
   return function wouldCollide(nextPosition) {
+    if (movementState) movementState.lastCollisionCollider = null;
     if (movementState?.phaseThroughObjects === true) return false;
+    const hit = (collider) => {
+      if (movementState) movementState.lastCollisionCollider = collider || null;
+      return true;
+    };
     const playerMinY = nextPosition.y - movementState.playerHeight;
     const playerMaxY = nextPosition.y;
     for (const collider of colliders) {
       if (collider.type === "box") {
-        if (boxCutsPlayer(collider.box, nextPosition, playerRadius, playerMinY, playerMaxY)) return true;
+        if (boxCutsPlayer(collider.box, nextPosition, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       } else if (collider.type === "compound") {
-        if (compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, playerMaxY)) return true;
+        if (compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       } else if (collider.type === "equation-plane") {
         if (collider.target?.visible === false) continue;
         const threshold = playerRadius + Math.max(0.02, Number(collider.thickness) || 0.2) / 2;
@@ -89,7 +93,7 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
           { x: nextPosition.x, y: playerMinY, z: nextPosition.z },
           { x: nextPosition.x, y: (playerMinY + playerMaxY) / 2, z: nextPosition.z }
         ];
-        if (samples.some((point) => pointWithinPlaneConstraints(collider.equation || {}, point, threshold) && Math.abs(signedPlaneDistance(collider, point)) <= threshold)) return true;
+        if (samples.some((point) => pointWithinPlaneConstraints(collider.equation || {}, point, threshold) && Math.abs(signedPlaneDistance(collider, point)) <= threshold)) return hit(collider);
       } else if (collider.type === "sphere") {
         const dx = nextPosition.x - collider.center.x;
         const dz = nextPosition.z - collider.center.z;
@@ -97,9 +101,9 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
         let dy = 0;
         if (collider.center.y < playerMinY) dy = playerMinY - collider.center.y;
         else if (collider.center.y > playerMaxY) dy = collider.center.y - playerMaxY;
-        if (dx * dx + dy * dy + dz * dz <= totalRadius * totalRadius) return true;
+        if (dx * dx + dy * dy + dz * dz <= totalRadius * totalRadius) return hit(collider);
       } else if (collider.type === "expression-heightfield") {
-        if (expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY)) return true;
+        if (expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       }
     }
     return false;

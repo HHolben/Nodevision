@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "slime",
+  "displayName": "Slime",
+  "description": "Thick green slime liquid material.",
+  "defaultColor": "#57a842",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1050,
+    "dynamicViscosityPascalSeconds": 12,
+    "kinematicViscositySquareMetersPerSecond": 0.0114,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1.05
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "slime",
+    "color": "#57a842",
+    "opacity": 0.58
+  },
+  "chemicalFormulaMol": null
+}

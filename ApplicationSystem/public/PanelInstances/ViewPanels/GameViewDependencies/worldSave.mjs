@@ -1,7 +1,15 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs
 // This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
-import { normalizePlaneEquationConfig } from "./equationColliderTool.mjs";
+import { expressionUsesTimeVariable, normalizePlaneEquationConfig } from "./equationColliderTool.mjs";
+import {
+  DEFAULT_WORLD_GAS_MATERIAL_FILE,
+  DEFAULT_WORLD_GAS_MATERIAL_ID,
+  DEFAULT_WORLD_OBJECT_MATERIAL_ID,
+  materialFileForWorldObjectMaterial,
+  readWorldObjectMatterState,
+  readWorldObjectPhysicsMaterialId,
+} from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 
 function normalizeWorldPath(filePath) {
   if (!filePath) return "";
@@ -15,7 +23,9 @@ const DEFAULT_ENVIRONMENT = {
   skyColor: "#ffffff",
   floorColor: "#d8dee4",
   backgroundMode: "color",
-  backgroundImage: ""
+  backgroundImage: "",
+  gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
+  gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE
 };
 
 function buildAsciiStl(vertices = []) {
@@ -57,7 +67,9 @@ function buildEnvironmentMeta(movementState) {
     floorColor: env.floorColor || DEFAULT_ENVIRONMENT.floorColor,
     backgroundMode: env.backgroundMode || (env.backgroundImage ? "image" : "color"),
     backgroundImage: env.backgroundImage || "",
-    floorImage: env.floorImage || ""
+    floorImage: env.floorImage || "",
+    gasMaterialId: env.gasMaterialId || DEFAULT_ENVIRONMENT.gasMaterialId,
+    gasMaterialFile: env.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile
   };
 }
 
@@ -72,6 +84,7 @@ function vec3(v) {
 function getMeshType(mesh) {
   const hint = String(mesh?.userData?.nvType || "").toLowerCase();
   if (hint === "portal") return "portal";
+  if (hint === "spawn") return "spawn";
   if (hint === "functionsurface") return "functionSurface";
   if (hint === "functioncurve") return "functionCurve";
   if (hint === "parametriccurve") return "parametricCurve";
@@ -84,6 +97,7 @@ function getMeshType(mesh) {
     || hint === "torus"
     || hint === "math-function"
     || hint === "equation-collider-plane"
+    || hint === "equation-inequality"
     || hint === "console"
     || hint === "button"
     || hint === "object-file"
@@ -122,6 +136,22 @@ function materialMeta(mesh) {
   if (mat.transparent === true) out.opacity = Number.isFinite(mat.opacity) ? round3(mat.opacity) : 0.65;
   if (mat.emissive?.isColor && mat.emissive.getHex() !== 0) out.emissive = `#${mat.emissive.getHexString()}`;
   if (Number.isFinite(mat.emissiveIntensity) && mat.emissiveIntensity !== 1) out.emissiveIntensity = round3(mat.emissiveIntensity);
+  return out;
+}
+
+function physicsMaterialMeta(mesh, def = {}) {
+  const userData = mesh?.userData || {};
+  const liquid = readWorldObjectMatterState(userData, readWorldObjectMatterState(def, userData.isWater === true || def.isWater === true || def.materialType === "water" ? "liquid" : "")) === "liquid";
+  const fallback = liquid
+    ? (userData.physicsMaterialId || def.physicsMaterialId || "water")
+    : (def.isSolid === true || userData.isSolid === true || userData.physicsEnabled === true ? DEFAULT_WORLD_OBJECT_MATERIAL_ID : "");
+  const defMaterialId = readWorldObjectPhysicsMaterialId(def, fallback);
+  const materialId = readWorldObjectPhysicsMaterialId(userData, defMaterialId);
+  if (!materialId) return {};
+  const out = { physicsMaterialId: materialId };
+  if (typeof userData.physicsMaterialFile === "string" && userData.physicsMaterialFile) out.physicsMaterialFile = userData.physicsMaterialFile;
+  else if (typeof def.physicsMaterialFile === "string" && def.physicsMaterialFile) out.physicsMaterialFile = def.physicsMaterialFile;
+  else out.physicsMaterialFile = materialFileForWorldObjectMaterial(materialId);
   return out;
 }
 
@@ -282,7 +312,7 @@ function serializeMesh(mesh) {
   const sy = Math.abs(mesh.scale?.y || 1);
   const sz = Math.abs(mesh.scale?.z || 1);
 
-  const shape = type === "portal" ? getGeometryShape(mesh) : type;
+  const shape = type === "portal" || type === "spawn" ? getGeometryShape(mesh) : type;
 
   if (type === "math-function") {
     const props = mesh.userData?.mathFunctionProperties || {};
@@ -291,10 +321,15 @@ function serializeMesh(mesh) {
     def.resolution = Math.max(16, Math.min(192, Math.floor(rawResolution)));
     def.limits = Array.isArray(props.limits) ? props.limits.slice(0, 2).map(round3) : [-8, 8];
     def.collider = props.collider !== false;
-  } else if (type === "equation-collider-plane") {
+  } else if (type === "equation-collider-plane" || type === "equation-inequality") {
     const props = normalizePlaneEquationConfig(mesh.userData?.equationCollider || {});
+    const inequality = type === "equation-inequality" || props.inequality === true;
+    const expression = mesh.userData?.equationExpression || props.expression || "";
+    const temporal = mesh.userData?.equationTemporal === true || props.equationTemporal === true || expressionUsesTimeVariable(expression);
+    const operator = mesh.userData?.equationInequalityOperator || props.operator || "";
+    const inequalitySide = mesh.userData?.equationInequalitySide || props.inequalitySide || "negative";
     def.equationCollider = {
-      kind: "plane",
+      kind: inequality ? "plane-inequality" : "plane",
       a: round3(props.a),
       b: round3(props.b),
       c: round3(props.c),
@@ -305,10 +340,37 @@ function serializeMesh(mesh) {
       ymax: round3(props.ymax),
       zmin: round3(props.zmin),
       zmax: round3(props.zmax),
-      thickness: round3(props.thickness)
+      thickness: round3(props.thickness),
+      boundX: props.boundX === true,
+      boundY: props.boundY === true,
+      boundZ: props.boundZ === true,
+      inequality,
+      operator,
+      inequalitySide,
+      expression,
+      equationTemporal: temporal || undefined,
+      equationBaseExpression: temporal ? expression : undefined
     };
-    def.collider = mesh.userData?.colliderRef ? true : false;
-    def.isSolid = mesh.userData?.isSolid !== false;
+    if (inequality) {
+      def.inequality = true;
+      def.operator = operator;
+      def.inequalitySide = inequalitySide;
+      def.equationExpression = expression;
+    }
+    if (temporal) {
+      def.equationTemporal = true;
+      def.equationBaseExpression = expression;
+    }
+    const matterState = readWorldObjectMatterState(mesh.userData || {}, readWorldObjectMatterState(def));
+    const liquid = matterState === "liquid";
+    if (matterState) def.MatterState = matterState;
+    def.isLiquid = liquid || undefined;
+    def.collider = liquid || inequality ? false : (mesh.userData?.colliderRef ? true : false);
+    def.isSolid = liquid || inequality ? false : mesh.userData?.isSolid !== false;
+    if (liquid) {
+      def.equationLiquidSide = mesh.userData?.equationLiquidSide || mesh.userData?.equationWaterSide || "negative";
+      def.equationLiquidInfinite = mesh.userData?.equationLiquidInfinite !== false && mesh.userData?.equationWaterInfinite !== false;
+    }
   } else if (type === "console") {
     const props = mesh.userData?.consoleProperties || {};
     def.collider = props.collider !== false;
@@ -396,8 +458,14 @@ function serializeMesh(mesh) {
   }
 
   Object.assign(def, materialMeta(mesh));
+  Object.assign(def, physicsMaterialMeta(mesh, def));
 
-  if (mesh.userData?.isWater === true) def.isWater = true;
+  const savedMatterState = readWorldObjectMatterState(mesh.userData || {}, readWorldObjectMatterState(def));
+  if (savedMatterState) def.MatterState = savedMatterState;
+  if (savedMatterState === "liquid") {
+    def.isLiquid = true;
+    def.isSolid = false;
+  }
   if (mesh.visible === false) def.hidden = true;
   if (mesh.userData?.useAction) def.useAction = mesh.userData.useAction;
   if (typeof mesh.userData?.tag === "string" && mesh.userData.tag) def.tag = mesh.userData.tag;
@@ -407,10 +475,21 @@ function serializeMesh(mesh) {
     def.terrain = JSON.parse(JSON.stringify(mesh.userData.terrain));
   }
 
+  if (type === "spawn") {
+    def.type = "spawn";
+    def.shape = shape;
+    def.isSolid = false;
+  }
+
   if (mesh.userData?.isPortal === true || type === "portal") {
     def.type = "portal";
     def.shape = shape;
     def.isSolid = mesh.userData?.isSolid === true;
+    if (typeof mesh.userData?.portalDestinationMode === "string" && mesh.userData.portalDestinationMode) {
+      def.portalDestinationMode = mesh.userData.portalDestinationMode;
+      def.destinationMode = mesh.userData.portalDestinationMode;
+    }
+    if (typeof mesh.userData?.portalLinkedPortalId === "string" && mesh.userData.portalLinkedPortalId) def.linkedPortalId = mesh.userData.portalLinkedPortalId;
     if (typeof mesh.userData?.portalTarget === "string" && mesh.userData.portalTarget) def.targetWorld = mesh.userData.portalTarget;
     if (mesh.userData?.portalSameWorld === true) def.sameWorld = true;
     if (Array.isArray(mesh.userData?.portalSpawn) && mesh.userData.portalSpawn.length >= 3) def.spawn = mesh.userData.portalSpawn.slice(0, 3).map(round3);
@@ -468,6 +547,13 @@ function buildWorldDefinition({
   const finalMeshDefs = shouldFallbackToExistingObjects ? existing.objects : meshDefs;
   const worldRules = movementState?.worldRules || {};
   const environment = buildEnvironmentMeta(movementState);
+  const temporalState = movementState?.temporal || window.VRWorldContext?.temporalController?.getSettings?.() || existing?.metadata?.temporal || {};
+  const temporal = {
+    staticTimeEnabled: temporalState.staticTimeEnabled === true,
+    staticTimeSeconds: Number.isFinite(temporalState.staticTimeSeconds) ? round3(temporalState.staticTimeSeconds) : 0,
+    timeScale: Number.isFinite(temporalState.timeScale) ? round3(temporalState.timeScale) : 1,
+    samplingRateHz: Number.isFinite(temporalState.samplingRateHz) ? round3(temporalState.samplingRateHz) : 10
+  };
   const metadata = {
     ...(existing.metadata || {}),
     source: existing?.metadata?.source || "GameView",
@@ -482,7 +568,8 @@ function buildWorldDefinition({
       allowToolUse: worldRules.allowToolUse === true,
       allowSave: worldRules.allowSave === true
     },
-    environment
+    environment,
+    temporal
   };
 
   return {

@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "soil",
+  "displayName": "Soil",
+  "description": "Soil terrain material for solid earth and terrain painting.",
+  "defaultColor": "#6b5137",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 1500,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.92,
+    "coefficientOfKineticFriction": 0.64,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.04
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "soil",
+    "color": "#6b5137"
+  },
+  "chemicalFormulaMol": null
+}

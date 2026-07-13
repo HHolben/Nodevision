@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "helium",
+  "displayName": "Helium",
+  "description": "Helium gas material.",
+  "defaultColor": "#f4ddff",
+  "homogeneousSubstance": true,
+  "MatterState": "gas",
+  "defaultForWorldAtmosphere": false,
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "gas",
+    "solid": false,
+    "densityKgPerCubicMeter": 0.1786,
+    "dynamicViscosityPascalSeconds": 0.0000196,
+    "kinematicViscositySquareMetersPerSecond": 0.0001097,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 0.00018
+  },
+  "rendering": {
+    "materialType": "gas",
+    "color": "#f4ddff",
+    "opacity": 0.14
+  },
+  "chemicalFormulaMol": null
+}

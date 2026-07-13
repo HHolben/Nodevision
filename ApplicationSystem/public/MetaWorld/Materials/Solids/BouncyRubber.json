@@ -1,0 +1,38 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "BouncyRubber",
+  "displayName": "Bouncy Rubber",
+  "description": "Highly elastic rubber material that rebounds the player like a trampoline.",
+  "defaultColor": "#202327",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 920,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 1.08,
+    "coefficientOfKineticFriction": 0.86,
+    "springConstantNewtonsPerMeter": 12000,
+    "restitution": 1.25,
+    "impactDamping": 0.08,
+    "legacyFloorHorizontalVelocityRetention": 0.94,
+    "playerBounce": {
+      "enabled": true,
+      "restitution": 1.25,
+      "minIncomingSpeed": 0.08,
+      "minBounceSpeed": 0.32,
+      "maxBounceSpeed": 0.85,
+      "damping": 1
+    }
+  },
+  "rendering": {
+    "materialType": "solid",
+    "color": "#202327",
+    "roughness": 0.72
+  },
+  "chemicalFormulaMol": null
+}

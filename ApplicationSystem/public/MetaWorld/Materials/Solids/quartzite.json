@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "quartzite",
+  "displayName": "Quartzite",
+  "description": "Hard quartzite stone terrain material.",
+  "defaultColor": "#c5c6bd",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2650,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.76,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.09
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "quartzite",
+    "color": "#c5c6bd"
+  },
+  "chemicalFormulaMol": null
+}

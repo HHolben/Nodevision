@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "hydrogen",
+  "displayName": "Hydrogen",
+  "description": "Hydrogen gas material.",
+  "defaultColor": "#d7eefc",
+  "homogeneousSubstance": true,
+  "MatterState": "gas",
+  "defaultForWorldAtmosphere": false,
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "gas",
+    "solid": false,
+    "densityKgPerCubicMeter": 0.0899,
+    "dynamicViscosityPascalSeconds": 0.0000089,
+    "kinematicViscositySquareMetersPerSecond": 0.000099,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 0.00009
+  },
+  "rendering": {
+    "materialType": "gas",
+    "color": "#d7eefc",
+    "opacity": 0.14
+  },
+  "chemicalFormulaMol": "Hydrogen\n  Nodevision\n\n  2  1  0  0  0  0            999 V2000\n   -0.3700    0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0\n    0.3700    0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\nM  END\n"
+}

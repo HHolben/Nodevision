@@ -1,8 +1,9 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/equationColliderWidget.mjs
-// This widget renders Insert > Equation Object controls for MetaWorld editing. The button creates expression layers through the shared MetaWorld layer bridge.
+// This widget renders Insert > Equation / Inequality Object controls for MetaWorld editing. The primary action opens the equation object panel; secondary controls still add expression layers.
 
 import { setStatus } from "/StatusBar.mjs";
 import { addMetaWorldExpressionLayer, getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from "/MetaWorld/MetaWorldLayerState.mjs";
+import { DEFAULT_WORLD_OBJECT_MATERIAL_FILE, DEFAULT_WORLD_OBJECT_MATERIAL_ID, materialFileForWorldObjectMaterial } from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 
 const BLANK_EXPRESSION_LAYER = {
   expression: "z = 0",
@@ -10,6 +11,55 @@ const BLANK_EXPRESSION_LAYER = {
   name: "Blank Expression",
   domain: { autoSize: true },
   collider: { enabled: true, type: "heightfield" },
+};
+
+const DEFAULT_EQUATION_OBJECT = {
+  a: 0,
+  b: 0,
+  c: 1,
+  d: 0,
+  xmin: -15,
+  xmax: 15,
+  ymin: -15,
+  ymax: 15,
+  zmin: -15,
+  zmax: 15,
+  thickness: 0.2,
+  boundX: false,
+  boundY: false,
+  boundZ: false,
+  collider: true,
+  color: "#61d6d6",
+  inequality: false,
+  operator: "",
+  inequalitySide: "negative",
+  expression: "z = 0",
+  equationExpression: "z = 0",
+  physicsMaterialId: DEFAULT_WORLD_OBJECT_MATERIAL_ID,
+  physicsMaterialFile: DEFAULT_WORLD_OBJECT_MATERIAL_FILE,
+};
+
+const OCEAN_WATER_OBJECT = {
+  ...DEFAULT_EQUATION_OBJECT,
+  d: -100,
+  zmin: 70,
+  zmax: 100,
+  collider: false,
+  inequality: true,
+  operator: "<",
+  expression: "z < 100",
+  equationExpression: "z < 100",
+  physicsMaterialId: "water",
+  physicsMaterialFile: materialFileForWorldObjectMaterial("water"),
+  MatterState: "liquid",
+  matterState: "liquid",
+  liquid: true,
+  isLiquid: true,
+  liquidSide: "negative",
+  liquidInfinite: true,
+  equationLiquidSide: "negative",
+  equationLiquidInfinite: true,
+  color: "#2f83b7",
 };
 
 function makeButton(label, onClick) {
@@ -29,6 +79,21 @@ function makePresetButton(label, expression, type, name) {
     const layer = addMetaWorldExpressionLayer({ expression, type, name, domain: { autoSize: true } });
     setStatus(layer ? name + " added to MetaWorld layers." : "Open a MetaWorld editor before adding expression layers.");
   });
+}
+
+function getEquationObjectsPanel() {
+  return window.VRWorldContext?.equationObjectsPanel || null;
+}
+
+export function openEquationInequalityObjectPanel(config = DEFAULT_EQUATION_OBJECT) {
+  const panel = getEquationObjectsPanel();
+  if (!panel?.open) {
+    setStatus("Open a MetaWorld editor before inserting equation / inequality objects.");
+    return false;
+  }
+  panel.open(config);
+  setStatus("Set the equation or inequality, choose material, then click Insert Object.");
+  return true;
 }
 
 function makeDefaultWorldDefinition() {
@@ -102,6 +167,9 @@ async function ensureEditableMetaWorldBridge() {
     scene: ctx.scene,
     objects: ctx.objects,
     colliders: Array.isArray(ctx.colliders) ? ctx.colliders : [],
+    portals: Array.isArray(ctx.portals) ? ctx.portals : [],
+    spawnPoints: Array.isArray(ctx.spawnPoints) ? ctx.spawnPoints : [],
+    waterVolumes: Array.isArray(ctx.waterVolumes) ? ctx.waterVolumes : [],
     camera: ctx.camera,
   });
 
@@ -123,10 +191,22 @@ function renderEquationColliderWidget(hostElement) {
   hostElement.innerHTML = "";
   hostElement.classList.add("nv-equation-collider-toolbar");
 
+  const openEditor = makeButton("Equation / Inequality Object", () => {
+    openEquationInequalityObjectPanel(DEFAULT_EQUATION_OBJECT);
+  });
+  const openOcean = makeButton("Ocean Bound: z < 100", () => {
+    openEquationInequalityObjectPanel(OCEAN_WATER_OBJECT);
+  });
+
+  hostElement.appendChild(openEditor);
+  hostElement.appendChild(openOcean);
+
   const bridge = getActiveMetaWorldLayerBridge();
   if (!bridge?.addExpressionLayer) {
-    hostElement.appendChild(document.createTextNode("Open a MetaWorld editor to insert expression layers."));
-    setStatus("Open a MetaWorld editor before inserting expression layers.");
+    const note = document.createElement("span");
+    note.textContent = "Open a MetaWorld editor to add expression layers.";
+    note.style.opacity = "0.75";
+    hostElement.appendChild(note);
     return;
   }
 
@@ -140,8 +220,9 @@ function renderEquationColliderWidget(hostElement) {
 export function initToolbarWidget(hostElement, item = {}) {
   if (!hostElement) return;
 
-  if (item?.heading === "Equation Object") {
-    void insertBlankExpressionLayer();
+  const heading = String(item?.heading || "");
+  if (heading === "Equation Object" || heading === "Equation / Inequality Object") {
+    openEquationInequalityObjectPanel(DEFAULT_EQUATION_OBJECT);
     return;
   }
 

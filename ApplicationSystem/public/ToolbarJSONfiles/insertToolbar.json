@@ -131,6 +131,23 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Game Object",
+      "modes": ["Virtual World Editing", "VR World Editing"],
+      "preventDropdown": true,
+      "icon": "icons/3Dmodel.png"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Game Object",
+      "heading": "Game Object Controls",
+      "script": "worldShapeWidget.mjs",
+      "widgetKind": "gameObject",
+      "modes": ["Virtual World Editing", "VR World Editing"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
       "parentHeading": "Character",
       "heading": "Character Controls",
       "script": "worldCharacterWidget.mjs",
@@ -156,15 +173,15 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
-      "heading": "Equation Object",
+      "heading": "Equation / Inequality Object",
       "script": "equationColliderWidget.mjs",
       "modes": ["Virtual World Editing"],
       "preventDropdown": true
     },
     {
       "ToolbarCategory": "Insert",
-      "parentHeading": "Equation Object",
-      "heading": "Expression Layer Controls",
+      "parentHeading": "Equation / Inequality Object",
+      "heading": "Equation / Inequality Controls",
       "script": "equationColliderWidget.mjs",
       "modes": ["Virtual World Editing"],
       "preventDropdown": true

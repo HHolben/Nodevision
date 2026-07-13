@@ -282,9 +282,16 @@ export async function createScadSceneRenderer(container, options = {}) {
     pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(group.children, false);
-    const id = hits[0]?.object?.userData?.objectId || null;
-    if (id) pickHandler?.(id, event);
-    else boxSelectHandler?.([], event);
+    const hit = hits[0] || null;
+    const id = hit?.object?.userData?.objectId || null;
+    if (id) {
+      const meta = hit.object?.isPoints && Number.isInteger(hit.index)
+        ? { vertexRef: { objectId: id, pointIndex: hit.index } }
+        : null;
+      pickHandler?.(id, event, meta);
+    } else {
+      boxSelectHandler?.([], event, { vertexRefs: [] });
+    }
   }
 
   function rectsIntersect(a, b) {
@@ -332,6 +339,36 @@ export async function createScadSceneRenderer(container, options = {}) {
     return hasPoint ? { left, right, top, bottom } : null;
   }
 
+  function screenPointFromWorldPoint(worldPoint) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    const point = worldPoint.clone().project(camera);
+    if (point.z < -1 || point.z > 1) return null;
+    return {
+      x: rect.left + (point.x * 0.5 + 0.5) * rect.width,
+      y: rect.top + (-point.y * 0.5 + 0.5) * rect.height,
+    };
+  }
+
+  function collectVertexRefsInBox(selectionRect) {
+    const refs = [];
+    group.children.forEach((child) => {
+      if (!child?.isPoints) return;
+      const objectId = child.userData?.objectId;
+      const positions = child.geometry?.attributes?.position;
+      if (!objectId || !positions) return;
+      for (let pointIndex = 0; pointIndex < positions.count; pointIndex += 1) {
+        const worldPoint = new THREE.Vector3().fromBufferAttribute(positions, pointIndex);
+        child.localToWorld(worldPoint);
+        const screenPoint = screenPointFromWorldPoint(worldPoint);
+        if (!screenPoint) continue;
+        if (screenPoint.x >= selectionRect.left && screenPoint.x <= selectionRect.right && screenPoint.y >= selectionRect.top && screenPoint.y <= selectionRect.bottom) {
+          refs.push({ objectId, pointIndex });
+        }
+      }
+    });
+    return refs;
+  }
+
   function selectObjectsInBox(box, event) {
     const selectionRect = {
       left: Math.min(box.startX, box.currentX),
@@ -341,13 +378,15 @@ export async function createScadSceneRenderer(container, options = {}) {
     };
     const ids = new Set();
     camera.updateMatrixWorld?.();
+    const vertexRefs = collectVertexRefsInBox(selectionRect);
+    vertexRefs.forEach((ref) => ids.add(ref.objectId));
     group.children.forEach((child) => {
       const id = child.userData?.objectId;
       if (!id) return;
       const bounds = screenBoundsForObject(child);
       if (bounds && rectsIntersect(selectionRect, bounds)) ids.add(id);
     });
-    boxSelectHandler?.([...ids], { shiftKey: box.shiftKey, ctrlKey: false, metaKey: false });
+    boxSelectHandler?.([...ids], { shiftKey: box.shiftKey, ctrlKey: false, metaKey: false }, { vertexRefs });
   }
 
   function finishSelectionBox(event) {

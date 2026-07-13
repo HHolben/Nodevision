@@ -1,0 +1,134 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/TerrainViewLayer.mjs
+// Leaflet terrain preview layer: elevation-colored raster tiles plus dynamic contour lines.
+
+import { effectiveContourIntervalMeters, effectiveIndexContourIntervalMeters, normalizeTerrainSettings } from "./TerrainSettings.mjs";
+
+function pseudoElevationMeters(lat, lon) {
+  const ridge = Math.sin((lon * 2.2 + lat * 1.3) * Math.PI / 180) * 700;
+  const folds = Math.cos((lon - lat) * Math.PI / 34) * 260;
+  const continental = Math.sin((lat + 14) * Math.PI / 40) * 360;
+  return ridge + folds + continental + 950;
+}
+
+function terrainColor(elevation) {
+  if (elevation < 0) return [112, 146, 164];
+  if (elevation < 350) return [183, 204, 158];
+  if (elevation < 800) return [205, 195, 145];
+  if (elevation < 1400) return [188, 160, 125];
+  if (elevation < 2200) return [164, 140, 130];
+  return [226, 226, 218];
+}
+
+function drawTerrainTile(ctx, map, coords, tileSize, settings) {
+  const z = coords.z;
+  const interval = effectiveContourIntervalMeters(settings, z);
+  const indexInterval = effectiveIndexContourIntervalMeters(settings, z);
+  const image = ctx.createImageData(tileSize, tileSize);
+  const elevations = new Float32Array(tileSize * tileSize);
+
+  for (let y = 0; y < tileSize; y += 1) {
+    for (let x = 0; x < tileSize; x += 1) {
+      const globalPoint = { x: (coords.x * tileSize) + x, y: (coords.y * tileSize) + y };
+      const latLng = map.unproject(globalPoint, z);
+      const e = pseudoElevationMeters(latLng.lat, latLng.lng);
+      elevations[(y * tileSize) + x] = e;
+      const idx = ((y * tileSize) + x) * 4;
+      const base = settings.elevationColors ? terrainColor(e) : [224, 226, 222];
+      let shade = 1;
+      if (settings.hillshade && x > 1 && y > 1) {
+        const west = elevations[(y * tileSize) + x - 1] || e;
+        const north = elevations[((y - 1) * tileSize) + x] || e;
+        shade = 0.92 + Math.max(-0.16, Math.min(0.18, ((e - west) + (e - north)) / 360));
+      }
+      if (settings.slopeShading && x > 1 && y > 1) {
+        const west = elevations[(y * tileSize) + x - 1] || e;
+        shade -= Math.min(0.16, Math.abs(e - west) / 720);
+      }
+      image.data[idx] = Math.max(0, Math.min(255, Math.round(base[0] * shade)));
+      image.data[idx + 1] = Math.max(0, Math.min(255, Math.round(base[1] * shade)));
+      image.data[idx + 2] = Math.max(0, Math.min(255, Math.round(base[2] * shade)));
+      image.data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+
+  if (interval > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.72;
+    for (let y = 2; y < tileSize - 2; y += 2) {
+      for (let x = 2; x < tileSize - 2; x += 2) {
+        const e = elevations[(y * tileSize) + x];
+        const regularDistance = Math.abs(e / interval - Math.round(e / interval));
+        if (regularDistance < 0.028) {
+          const isIndex = Math.abs(e / indexInterval - Math.round(e / indexInterval)) < 0.035;
+          ctx.fillStyle = isIndex ? "rgba(69, 54, 42, 0.88)" : "rgba(82, 68, 52, 0.52)";
+          ctx.fillRect(x, y, isIndex ? 2 : 1, isIndex ? 2 : 1);
+        }
+      }
+    }
+    ctx.restore();
+  }
+}
+
+function createLegendControl(L, settings) {
+  const control = L.control({ position: "bottomright" });
+  control.onAdd = () => {
+    const node = document.createElement("div");
+    node.className = "nv-kml-terrain-legend";
+    node.style.cssText = "padding:8px 10px;background:rgba(255,255,255,.94);border:1px solid #aeb9c8;border-radius:6px;box-shadow:0 1px 8px rgba(15,23,42,.2);font:12px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;color:#1f2937;min-width:170px;";
+    const interval = effectiveContourIntervalMeters(settings, 11);
+    const units = settings.elevationUnits === "feet" ? "ft" : "m";
+    node.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">Terrain</div><div>Contours: ${interval} ${units}</div><div>Index contours: ${effectiveIndexContourIntervalMeters(settings, 11)} ${units}</div><div style="margin-top:4px;font-size:11px;color:#52606d;">Preview terrain layer. Export records selected source metadata.</div>`;
+    return node;
+  };
+  return control;
+}
+
+export function createTerrainBaseLayerManager(L, map, { settings = {}, onStatus } = {}) {
+  let currentSettings = normalizeTerrainSettings(settings);
+  let legend = null;
+  const TerrainLayer = L.GridLayer.extend({
+    createTile(coords, done) {
+      const tile = document.createElement("canvas");
+      const size = this.getTileSize();
+      tile.width = size.x;
+      tile.height = size.y;
+      const ctx = tile.getContext("2d", { alpha: false });
+      try {
+        drawTerrainTile(ctx, map, coords, size.x, currentSettings);
+        done?.(null, tile);
+      } catch (err) {
+        done?.(err, tile);
+      }
+      return tile;
+    },
+  });
+  const terrainLayer = new TerrainLayer({ tileSize: 256, opacity: 1, pane: "tilePane", attribution: "Terrain preview generated by Nodevision; source attribution is shown in exports." });
+  terrainLayer.addTo(map);
+
+  function refreshLegend() {
+    if (legend) map.removeControl(legend);
+    legend = null;
+    if (currentSettings.showAttribution) {
+      legend = createLegendControl(L, currentSettings);
+      legend.addTo(map);
+    }
+  }
+
+  refreshLegend();
+  onStatus?.({ state: "loaded", tone: "info", message: "Terrain preview layer loaded. Use Preview/Export to estimate source data for a selected closed region." });
+
+  return {
+    setTerrainSettings(nextSettings = {}) {
+      currentSettings = normalizeTerrainSettings({ ...currentSettings, ...nextSettings });
+      terrainLayer.redraw();
+      refreshLegend();
+      return currentSettings;
+    },
+    destroy() {
+      if (map.hasLayer(terrainLayer)) map.removeLayer(terrainLayer);
+      if (legend) map.removeControl(legend);
+      legend = null;
+    },
+  };
+}

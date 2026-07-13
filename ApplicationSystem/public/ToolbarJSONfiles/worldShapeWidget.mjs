@@ -2,6 +2,7 @@
 // Renders the Insert > Shape sub-toolbar for adding primitive 3D solids to MetaWorld scenes.
 
 import { getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from "/MetaWorld/MetaWorldLayerState.mjs";
+import { applyDefaultWorldObjectPhysicsMaterial } from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 import { setStatus } from "/StatusBar.mjs";
 
 const SHAPES = [
@@ -11,6 +12,12 @@ const SHAPES = [
   { type: "cylinder", label: "Cylinder", color: "#b8a66f", size: [0.5, 1] },
   { type: "cone", label: "Cone", color: "#fb8b6b", size: [0.5, 1.1] },
   { type: "torus", label: "Torus", color: "#b48cff", size: [0.65, 0.18] },
+];
+
+const GAME_OBJECTS = [
+  { type: "portal", label: "Portal", color: "#55ccff" },
+  { type: "spawn", label: "Spawn Point", color: "#35d07f" },
+  { type: "console", label: "Console", color: "#33ccaa" },
 ];
 
 function makeDefaultWorldDefinition() {
@@ -59,7 +66,7 @@ function createLayerEntries(worldData, ctx) {
 
 async function ensureEditableMetaWorldBridge() {
   const existing = getActiveMetaWorldLayerBridge();
-  if (existing?.addObjectLayer) return existing;
+  if (existing?.addObjectLayer && existing?.addGameObjectLayer) return existing;
 
   const ctx = window.VRWorldContext;
   if (!ctx?.THREE || !ctx?.scene || !Array.isArray(ctx.objects)) return null;
@@ -84,6 +91,8 @@ async function ensureEditableMetaWorldBridge() {
     scene: ctx.scene,
     objects: ctx.objects,
     colliders: Array.isArray(ctx.colliders) ? ctx.colliders : [],
+    portals: Array.isArray(ctx.portals) ? ctx.portals : [],
+    spawnPoints: Array.isArray(ctx.spawnPoints) ? ctx.spawnPoints : [],
     camera: ctx.camera,
   });
 
@@ -112,7 +121,7 @@ function readCameraPlacement() {
 function makeShapeDefinition(shape) {
   const suffix = Date.now().toString(36) + "-" + Math.floor(Math.random() * 1000);
   const id = "shape-" + shape.type + "-" + suffix;
-  return {
+  return applyDefaultWorldObjectPhysicsMaterial({
     id,
     tag: id,
     name: shape.label,
@@ -122,7 +131,7 @@ function makeShapeDefinition(shape) {
     color: shape.color,
     isSolid: true,
     breakable: true,
-  };
+  });
 }
 
 function makeButton(shape) {
@@ -144,7 +153,7 @@ function makeButton(shape) {
   return button;
 }
 
-function render(hostElement) {
+function renderShapes(hostElement) {
   hostElement.innerHTML = "";
   hostElement.classList.add("nv-world-shape-toolbar");
 
@@ -158,8 +167,101 @@ function render(hostElement) {
   SHAPES.forEach((shape) => hostElement.appendChild(makeButton(shape)));
 }
 
-export function initToolbarWidget(hostElement) {
+function makeIdPrefix(type) {
+  if (type === "spawn") return "spawn-point";
+  if (type === "console") return "console";
+  return "portal";
+}
+
+function makeGameObjectDefinition(item) {
+  const suffix = Date.now().toString(36) + "-" + Math.floor(Math.random() * 1000);
+  const id = makeIdPrefix(item.type) + "-" + suffix;
+  const base = {
+    id,
+    tag: id,
+    name: item.label,
+    type: item.type,
+    position: readCameraPlacement(),
+    color: item.color,
+  };
+
+  if (item.type === "portal") {
+    return {
+      ...base,
+      shape: "torus",
+      size: [0.72, 0.075],
+      opacity: 0.72,
+      emissive: item.color,
+      emissiveIntensity: 0.95,
+      sameWorld: true,
+      spawnPoint: "default",
+      cooldownMs: 1200,
+      isSolid: false,
+      breakable: false,
+    };
+  }
+
+  if (item.type === "spawn") {
+    return {
+      ...base,
+      shape: "sphere",
+      size: [0.22],
+      spawnId: id,
+      spawnYaw: 0,
+      isSolid: false,
+      breakable: false,
+    };
+  }
+
+  return applyDefaultWorldObjectPhysicsMaterial({
+    ...base,
+    shape: "box",
+    size: [0.9, 1.15, 0.7],
+    collider: true,
+    isSolid: true,
+    breakable: true,
+  });
+}
+
+function makeGameObjectButton(item) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = item.label;
+  button.title = "Add " + item.label;
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const bridge = await ensureEditableMetaWorldBridge();
+    if (!bridge?.addGameObjectLayer) {
+      setStatus("Open a MetaWorld editor before inserting game objects.");
+      return;
+    }
+    const added = bridge.addGameObjectLayer(makeGameObjectDefinition(item));
+    setStatus(added ? item.label + " added to MetaWorld." : "Could not add " + item.label + ".");
+  });
+  return button;
+}
+
+function renderGameObjects(hostElement) {
+  hostElement.innerHTML = "";
+  hostElement.classList.add("nv-world-game-object-toolbar");
+
+  const bridge = getActiveMetaWorldLayerBridge();
+  if (!bridge?.addGameObjectLayer && !window.VRWorldContext?.scene) {
+    hostElement.appendChild(document.createTextNode("Open a MetaWorld editor to insert game objects."));
+    setStatus("Open a MetaWorld editor before inserting game objects.");
+    return;
+  }
+
+  GAME_OBJECTS.forEach((item) => hostElement.appendChild(makeGameObjectButton(item)));
+}
+
+export function initToolbarWidget(hostElement, item = {}) {
   if (!hostElement) return;
+  const renderCurrent = () => {
+    if (item?.widgetKind === "gameObject") renderGameObjects(hostElement);
+    else renderShapes(hostElement);
+  };
 
   if (typeof hostElement.__nvWorldShapeCleanup === "function") {
     hostElement.__nvWorldShapeCleanup();
@@ -177,10 +279,10 @@ export function initToolbarWidget(hostElement) {
       cleanup();
       return;
     }
-    render(hostElement);
+    renderCurrent();
   }
 
   hostElement.__nvWorldShapeCleanup = cleanup;
   window.addEventListener(META_WORLD_LAYER_EVENTS.bridgeChanged, rerender);
-  render(hostElement);
+  renderCurrent();
 }

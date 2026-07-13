@@ -79,7 +79,33 @@ export function applyFlyingMovement({ THREE, controls, inputState, speed, wouldC
   if (!wouldCollide(nextPosition)) object.position.copy(nextPosition);
 }
 
-export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, crouching, crouchJumpMultiplier = 1.85, groundLevel, wouldCollide }) {
+function finiteNumber(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function applyGroundBounce({ movementState, incomingVelocityY, resolveGroundBounce, collider = null, groundContact = false, playerFootY = null }) {
+  if (!movementState || incomingVelocityY >= 0 || typeof resolveGroundBounce !== "function") return false;
+  const config = resolveGroundBounce(collider, { incomingVelocityY, groundContact, playerFootY }) || null;
+  if (!config) return false;
+  const restitution = Math.max(0, Math.min(4, finiteNumber(config.restitution, 0)));
+  const damping = Math.max(0, Math.min(2, finiteNumber(config.damping, 1)));
+  const minIncomingSpeed = Math.max(0, finiteNumber(config.minIncomingSpeed, 0.08));
+  if (restitution <= 0 || Math.abs(incomingVelocityY) < minIncomingSpeed) return false;
+  const minBounceSpeed = Math.max(0, finiteNumber(config.minBounceSpeed, 0));
+  const maxBounceSpeed = finiteNumber(config.maxBounceSpeed, Infinity);
+  let bounceSpeed = Math.abs(incomingVelocityY) * restitution * damping;
+  if (minBounceSpeed > 0) bounceSpeed = Math.max(minBounceSpeed, bounceSpeed);
+  if (Number.isFinite(maxBounceSpeed)) bounceSpeed = Math.min(bounceSpeed, Math.max(0, maxBounceSpeed));
+  if (bounceSpeed <= 0) return false;
+  movementState.velocityY = bounceSpeed;
+  movementState.isGrounded = false;
+  movementState.lastBounceMaterialId = config.materialId || "";
+  movementState.lastBounceMaterialName = config.materialName || "";
+  return true;
+}
+
+export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, crouching, crouchJumpMultiplier = 1.85, groundLevel, wouldCollide, resolveGroundBounce = null }) {
   if (inputState.jump && movementState.isGrounded) {
     const jumpImpulse = crouching ? jumpSpeed * crouchJumpMultiplier : jumpSpeed;
     movementState.velocityY = jumpImpulse;
@@ -89,6 +115,7 @@ export function applyGroundMovement({ controls, inputState, movementState, gravi
   if (!inputState.jump) movementState.jumpLatch = false;
 
   movementState.velocityY -= gravity;
+  const incomingVelocityY = movementState.velocityY;
   const object = controls.getObject();
   const nextPosition = object.position.clone();
   nextPosition.y += movementState.velocityY;
@@ -102,11 +129,36 @@ export function applyGroundMovement({ controls, inputState, movementState, gravi
 
   if (footY <= groundLevel || canSnapDown) {
     nextPosition.y = groundLevel + movementState.playerHeight;
-    movementState.velocityY = 0;
-    movementState.isGrounded = true;
+    const bounced = applyGroundBounce({
+      movementState,
+      incomingVelocityY,
+      resolveGroundBounce,
+      collider: movementState.pendingGroundCollider || null,
+      groundContact: true,
+      playerFootY: nextPosition.y - movementState.playerHeight
+    });
+    if (!bounced) {
+      movementState.velocityY = 0;
+      movementState.isGrounded = true;
+    }
   } else if (wouldCollide(nextPosition)) {
-    if (movementState.velocityY < 0) movementState.isGrounded = true;
-    movementState.velocityY = 0;
+    const hitCollider = movementState.lastCollisionCollider || null;
+    if (incomingVelocityY < 0) {
+      const bounced = applyGroundBounce({
+        movementState,
+        incomingVelocityY,
+        resolveGroundBounce,
+        collider: hitCollider,
+        groundContact: false,
+        playerFootY: object.position.y - movementState.playerHeight
+      });
+      if (!bounced) {
+        movementState.isGrounded = true;
+        movementState.velocityY = 0;
+      }
+    } else {
+      movementState.velocityY = 0;
+    }
     nextPosition.y = object.position.y;
   } else {
     movementState.isGrounded = false;

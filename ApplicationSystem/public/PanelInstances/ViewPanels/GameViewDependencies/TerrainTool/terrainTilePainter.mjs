@@ -21,6 +21,31 @@ function buildTileKey(gridX, gridZ, tileSize) {
   return `${gridX}:${gridZ}:${round3(tileSize)}`;
 }
 
+function readTerrainMatterState(metadata = {}) {
+  const state = String(metadata.MatterState || metadata.matterState || "").trim().toLowerCase();
+  if (state) return state;
+  return metadata.isLiquid === true || metadata.kind === "water" ? "liquid" : "";
+}
+
+function isLiquidTerrainMetadata(metadata = {}) {
+  return readTerrainMatterState(metadata) === "liquid";
+}
+
+function applyTerrainMaterialUserData(mesh, metadata = {}, isSolid = true) {
+  if (!mesh?.userData) return;
+  const matterState = readTerrainMatterState(metadata);
+  const isLiquid = isLiquidTerrainMetadata(metadata);
+  mesh.userData.isWater = metadata.kind === "water";
+  mesh.userData.isLiquid = isLiquid;
+  mesh.userData.MatterState = matterState || "";
+  mesh.userData.matterState = mesh.userData.MatterState || "";
+  mesh.userData.materialName = metadata.materialName || "";
+  mesh.userData.physicsMaterialId = metadata.physicsMaterialId || "";
+  mesh.userData.physicsMaterialFile = metadata.physicsMaterialFile || "";
+  mesh.userData.isSolid = isSolid === true && isLiquid !== true;
+  mesh.userData.breakable = isLiquid !== true;
+}
+
 export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
   const paintedTiles = new Map();
   const paintedSurfaces = new Set();
@@ -105,6 +130,8 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
 
     const colliderRef = createTerrainSurfaceColliderRef(THREE, mesh);
     if (colliderRef) {
+      colliderRef.materialId = mesh.userData.physicsMaterialId || "";
+      colliderRef.target = mesh;
       colliders.push(colliderRef);
       mesh.userData.colliderRef = colliderRef;
     }
@@ -154,7 +181,27 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
       baseY: round3(Number(baseY) || 0),
       paintedAt: metadata.paintedAt || mesh.userData.terrain?.paintedAt || null
     };
-    return { mesh, colliderRef: mesh.userData?.colliderRef || null, key: mesh.uuid };
+    applyTerrainMaterialUserData(mesh, mesh.userData.terrain, isSolid);
+    let colliderRef = mesh.userData?.colliderRef || null;
+    if (mesh.userData.isSolid !== true && colliderRef) {
+      const colIdx = colliders.indexOf(colliderRef);
+      if (colIdx !== -1) colliders.splice(colIdx, 1);
+      delete mesh.userData.colliderRef;
+      colliderRef = null;
+    } else if (mesh.userData.isSolid === true && !colliderRef) {
+      colliderRef = createTerrainSurfaceColliderRef(THREE, mesh);
+      if (colliderRef) {
+        colliderRef.materialId = mesh.userData.physicsMaterialId || "";
+        colliderRef.target = mesh;
+        colliders.push(colliderRef);
+        mesh.userData.colliderRef = colliderRef;
+      }
+    }
+    if (colliderRef) {
+      colliderRef.materialId = mesh.userData.physicsMaterialId || "";
+      colliderRef.target = mesh;
+    }
+    return { mesh, colliderRef, key: mesh.uuid };
   }
 
   function paintTerrainTile({
@@ -198,12 +245,10 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
     const y = (Number(baseY) || 0) + (isPolygonal ? height - visualHeight / 2 : height / 2);
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(safeTileSize, visualHeight, safeTileSize),
-      createTerrainMaterial(THREE, { color, texture, kind: metadata.kind })
+      createTerrainMaterial(THREE, { color, texture, kind: metadata.kind, isLiquid: isLiquidTerrainMetadata(metadata) })
     );
     mesh.position.set(x, y, z);
-    mesh.userData.isWater = metadata.kind === "water";
-    mesh.userData.isSolid = isSolid === true && mesh.userData.isWater !== true;
-    mesh.userData.breakable = mesh.userData.isWater !== true;
+    applyTerrainMaterialUserData(mesh, metadata, isSolid);
     mesh.userData.generatedByTerrainTool = true;
     mesh.userData.paintedByTerrainTool = true;
     mesh.userData.nvType = isPolygonal ? "terrain-surface" : "box";
@@ -224,6 +269,8 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
       const half = new THREE.Vector3(safeTileSize / 2, visualHeight / 2, safeTileSize / 2);
       colliderRef = {
         type: "box",
+        target: mesh,
+        materialId: mesh.userData.physicsMaterialId || "",
         box: new THREE.Box3(
           new THREE.Vector3(x - half.x, y - half.y, z - half.z),
           new THREE.Vector3(x + half.x, y + half.y, z + half.z)

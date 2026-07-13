@@ -5,6 +5,9 @@ import { createKMLLayerTree } from "./KMLLayerTree.mjs";
 import { createKMLMapRenderer, normalizeKMLViewType, KML_VIEW_TYPES } from "./KMLMapRenderer.mjs";
 import { createKMLPropertyPanel } from "./KMLPropertyPanel.mjs";
 import { DEFAULT_CELESTIAL_OPTIONS } from "./CelestialBackdrop.mjs";
+import { getClosedRegionCandidate, formatArea, formatBounds } from "./ClosedRegionSelection.mjs";
+import { normalizeTerrainSettings, effectiveContourIntervalMeters, effectiveIndexContourIntervalMeters } from "./TerrainSettings.mjs";
+import { estimateTerrainRegion, previewTerrainRegion, exportTerrainRegion, getTerrainJob, cancelTerrainJob, retryTerrainJob } from "./TerrainRegionClient.mjs";
 import {
   createPlacemark,
   deleteFeature,
@@ -32,6 +35,7 @@ function notebookUrl(filePath) {
 const USER_LOCATION_MAP_ZOOM = 16;
 const USER_LOCATION_GLOBE_DISTANCE = 1.45;
 const CELESTIAL_OPTIONS_STORAGE_KEY = "nodevision.kml.celestialOptions";
+const TERRAIN_SETTINGS_STORAGE_KEY = "nodevision.kml.terrainSettings";
 
 function normalizeCelestialOptions(options = {}) {
   const merged = { ...DEFAULT_CELESTIAL_OPTIONS, ...options };
@@ -53,6 +57,20 @@ function loadCelestialOptions(overrides = {}) {
     stored = JSON.parse(window.localStorage?.getItem(CELESTIAL_OPTIONS_STORAGE_KEY) || "{}");
   } catch {}
   return normalizeCelestialOptions({ ...stored, ...overrides });
+}
+
+function loadTerrainSettings(overrides = {}) {
+  let stored = {};
+  try {
+    stored = JSON.parse(window.localStorage?.getItem(TERRAIN_SETTINGS_STORAGE_KEY) || "{}");
+  } catch {}
+  return normalizeTerrainSettings({ ...stored, ...overrides });
+}
+
+function persistTerrainSettings(settings = {}) {
+  try {
+    window.localStorage?.setItem(TERRAIN_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch {}
 }
 
 function celestialTimeLabel(options = {}) {
@@ -139,6 +157,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   }
   let aviationChartStatus = null;
   let celestialOptions = loadCelestialOptions(options.celestialOptions || {});
+  let terrainSettings = loadTerrainSettings(options.terrainSettings || {});
+  let terrainStatus = null;
+  let selectedRegion = null;
+  let lastTerrainEstimate = null;
+  let lastTerrainPreview = null;
+  let terrainJobStatus = null;
+  let terrainJobPollTimer = null;
   let userLocationEnabled = false;
   let userLocationWatchId = null;
   let userLocationLastPosition = null;
@@ -171,6 +196,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   function viewTypeLabel(type) {
     const normalized = normalizeKMLViewType(type);
     if (normalized === KML_VIEW_TYPES.AVIATION) return "aviation map";
+    if (normalized === KML_VIEW_TYPES.TERRAIN) return "terrain map";
     if (normalized === KML_VIEW_TYPES.MAP) return "street map";
     return "globe";
   }
@@ -209,6 +235,190 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       kmlAviationChartState: info.state || "",
     });
     dispatchKMLChange("aviation-chart", { aviationChartPackPath, aviationChartStatus: info });
+  }
+
+  function handleTerrainStatus(info = {}) {
+    terrainStatus = info;
+    if (viewType === KML_VIEW_TYPES.TERRAIN && info.message) showStatus(status, info.message, info.tone === "error" ? "error" : "");
+    dispatchKMLChange("terrain-status", { terrainStatus: info });
+  }
+
+  function getSelectedRegionCandidateForCurrentRecord() {
+    const record = selectedRecord();
+    if (!record?.geometry) return { valid: false, reason: "Select a closed KML path or polygon to prepare terrain and offline map data." };
+    return getClosedRegionCandidate(record);
+  }
+
+  function applySelectedRegion(region) {
+    selectedRegion = region ? { ...region, featureId: region.featureId || region.recordId || null, sourceKmlFeatureId: region.recordId || region.featureId || null } : null;
+    renderer?.setSelectedRegion?.(selectedRegion);
+    dispatchKMLChange("terrain-region-selection", { selectedRegion });
+    return selectedRegion;
+  }
+
+  function selectEnclosedRegion() {
+    const candidate = getSelectedRegionCandidateForCurrentRecord();
+    if (!candidate.valid) {
+      applySelectedRegion(null);
+      showStatus(status, candidate.reason || "Selected feature is not a valid closed region.", "error");
+      return false;
+    }
+    const region = applySelectedRegion(candidate.region);
+    showStatus(status, "Selected enclosed region: " + (region.featureName || "KML region") + " (" + formatArea(region.areaSquareMeters) + ").");
+    return true;
+  }
+
+  function regionForTerrainAction() {
+    if (selectedRegion) return selectedRegion;
+    const candidate = getSelectedRegionCandidateForCurrentRecord();
+    if (candidate.valid) return candidate.region;
+    throw new Error(candidate.reason || "Select a valid closed region first.");
+  }
+
+  function terrainPayload(extra = {}) {
+    const region = regionForTerrainAction();
+    return {
+      name: region.featureName || "Selected Terrain Region",
+      region,
+      settings: terrainSettings,
+      kmlText: serializeKML(state),
+      ...extra,
+    };
+  }
+
+  function setTerrainSettings(nextSettings = {}) {
+    terrainSettings = normalizeTerrainSettings({ ...terrainSettings, ...nextSettings });
+    persistTerrainSettings(terrainSettings);
+    renderer?.setTerrainSettings?.(terrainSettings);
+    updateToolbarState({ kmlTerrainSettings: { ...terrainSettings } });
+    dispatchKMLChange("terrain-settings", { terrainSettings: { ...terrainSettings } });
+    return terrainSettings;
+  }
+
+  function updateActualTerrainSourceFromEstimate(estimate) {
+    if (!estimate?.actualSource) return;
+    terrainSettings = normalizeTerrainSettings({ ...terrainSettings, actualSource: estimate.actualSource });
+    persistTerrainSettings(terrainSettings);
+    renderer?.setTerrainSettings?.(terrainSettings);
+  }
+
+  async function estimateTerrain() {
+    try {
+      showStatus(status, "Estimating terrain package...");
+      const estimate = await estimateTerrainRegion(terrainPayload());
+      lastTerrainEstimate = estimate;
+      updateActualTerrainSourceFromEstimate(estimate);
+      dispatchKMLChange("terrain-estimate", { estimate });
+      const fallback = estimate.fallbackUsed ? " Fallback source used: " + (estimate.actualSourceDisplayName || estimate.actualSource) + "." : "";
+      showStatus(status, "Terrain estimate: " + (estimate.estimatedBytesLabel || "unknown size") + "." + fallback, estimate.warning ? "error" : "");
+      return estimate;
+    } catch (err) {
+      showStatus(status, "Terrain estimate failed: " + (err?.message || err), "error");
+      return null;
+    }
+  }
+
+  async function previewTerrain() {
+    try {
+      showStatus(status, "Generating terrain preview estimate...");
+      const preview = await previewTerrainRegion(terrainPayload());
+      lastTerrainPreview = preview;
+      lastTerrainEstimate = preview.estimate || lastTerrainEstimate;
+      updateActualTerrainSourceFromEstimate(lastTerrainEstimate);
+      dispatchKMLChange("terrain-preview", { preview, estimate: lastTerrainEstimate });
+      const count = preview.preview?.contours?.features?.length || 0;
+      showStatus(status, "Terrain preview ready: " + count + " contour segments estimated for export.");
+      return preview;
+    } catch (err) {
+      showStatus(status, "Terrain preview failed: " + (err?.message || err), "error");
+      return null;
+    }
+  }
+
+  function publishTerrainJob(job) {
+    terrainJobStatus = job || null;
+    window.dispatchEvent(new CustomEvent("nv-kml-terrain-job", { detail: { job: terrainJobStatus } }));
+    dispatchKMLChange("terrain-job", { terrainJobStatus });
+  }
+
+  function clearTerrainJobPollTimer() {
+    if (terrainJobPollTimer) window.clearTimeout(terrainJobPollTimer);
+    terrainJobPollTimer = null;
+  }
+
+  async function pollTerrainJob(jobId) {
+    clearTerrainJobPollTimer();
+    if (!jobId) return null;
+    try {
+      const payload = await getTerrainJob(jobId);
+      const job = payload.job || payload;
+      publishTerrainJob(job);
+      if (["complete", "failed", "cancelled"].includes(job.status)) {
+        showStatus(status, job.status === "complete" ? "Terrain package complete: " + (job.result?.manifestPath || job.jobId) : "Terrain job " + job.status + ": " + (job.error || job.phase || job.jobId), job.status === "complete" ? "" : "error");
+        return job;
+      }
+      terrainJobPollTimer = window.setTimeout(() => pollTerrainJob(jobId), 1200);
+      return job;
+    } catch (err) {
+      showStatus(status, "Terrain job status failed: " + (err?.message || err), "error");
+      return null;
+    }
+  }
+
+  async function startTerrainExport(overrides = {}) {
+    try {
+      const estimate = lastTerrainEstimate || await estimateTerrain();
+      if (!estimate) return null;
+      const hardWarnings = (estimate.warnings || []).filter((item) => /exceeds|maximum|disabled/i.test(item));
+      if (hardWarnings.length && typeof window.confirm === "function") {
+        const ok = window.confirm("Terrain export has warnings:\n\n" + hardWarnings.join("\n") + "\n\nContinue creating the package?");
+        if (!ok) {
+          showStatus(status, "Terrain export cancelled before download.");
+          return null;
+        }
+      }
+      showStatus(status, "Starting terrain export job...");
+      const payload = await exportTerrainRegion(terrainPayload({ settings: normalizeTerrainSettings({ ...terrainSettings, ...overrides }), estimate }));
+      const job = payload.job || payload;
+      publishTerrainJob(job);
+      pollTerrainJob(payload.jobId || job.jobId);
+      return job;
+    } catch (err) {
+      showStatus(status, "Terrain export failed: " + (err?.message || err), "error");
+      return null;
+    }
+  }
+
+  function downloadRegionData() {
+    return startTerrainExport();
+  }
+
+  function exportTerrainAsset() {
+    return startTerrainExport();
+  }
+
+  function createOfflineMapPackage() {
+    return startTerrainExport({ includeBasemap: terrainSettings.includeBasemap, includeAviation: terrainSettings.includeAviation });
+  }
+
+  function insertTerrainIntoMetaWorld() {
+    showStatus(status, "Insert into MetaWorld is prepared through the exported terrain-region manifest; direct insertion is disabled in this phase.");
+    return false;
+  }
+
+  async function cancelCurrentTerrainJob() {
+    if (!terrainJobStatus?.jobId) return false;
+    const payload = await cancelTerrainJob(terrainJobStatus.jobId);
+    publishTerrainJob(payload.job || payload);
+    return true;
+  }
+
+  async function retryCurrentTerrainJob() {
+    if (!terrainJobStatus?.jobId) return false;
+    const payload = await retryTerrainJob(terrainJobStatus.jobId);
+    publishTerrainJob(payload.job || payload);
+    pollTerrainJob(payload.jobId || payload.job?.jobId);
+    return true;
   }
 
   function dispatchKMLChange(reason, extra = {}) {
@@ -519,7 +729,9 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     const currentRecord = state?.recordsById.get(record?.id) || record;
     if (!currentRecord) return;
     selectedId = currentRecord.id;
+    if (selectedRegion && selectedRegion.recordId && selectedRegion.recordId !== selectedId) applySelectedRegion(null);
     renderer?.setSelected(selectedId);
+    renderer?.setSelectedRegion?.(selectedRegion);
     refreshLayerHosts();
     refreshPropertyHosts();
     if (fly) flyToRecord(currentRecord);
@@ -572,7 +784,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     showStatus(status, message);
   }
 
-  async function initRenderer({ fit = false, flyToSelected = false } = {}) {
+  async function initRenderer({ fit = false, flyToSelected = false, viewState = null } = {}) {
+    const preservedViewState = viewState || renderer?.getViewState?.() || null;
     renderer?.destroy?.();
     renderer = null;
     if (viewType === KML_VIEW_TYPES.AVIATION) {
@@ -592,6 +805,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       aviationChartPackPath,
       celestialOptions,
       onBasemapStatus: handleBasemapStatus,
+      terrainSettings,
+      onTerrainStatus: handleTerrainStatus,
       onSelect: (record) => selectRecord(record, false),
       onGeometryChange: (record, coords) => {
         handleCoordinates(record, coords.map((coord) => String(coord.lon) + "," + String(coord.lat) + (coord.alt !== null ? "," + String(coord.alt) : "")).join(" "));
@@ -602,17 +817,20 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     const appliedCelestialOptions = renderer.setCelestialOptions?.(celestialOptions);
     if (appliedCelestialOptions) celestialOptions = normalizeCelestialOptions(appliedCelestialOptions);
     renderer.setSelected(selectedId);
+    renderer.setSelectedRegion?.(selectedRegion);
+    renderer.setTerrainSettings?.(terrainSettings);
     if (userLocationEnabled) {
       stopUserLocationTelemetry();
       userLocationEnabled = true;
       startUserLocationTelemetry();
     }
     const selected = selectedRecord();
-    if (flyToSelected && selected?.geometry) renderer.flyToRecord(selected);
-    else if (fit) renderer.fitAll();
+    const restoredViewState = Boolean(preservedViewState && renderer.setViewState?.(preservedViewState));
+    if (!restoredViewState && flyToSelected && selected?.geometry) renderer.flyToRecord(selected);
+    else if (!restoredViewState && fit) renderer.fitAll();
     if (window.NodevisionState) window.NodevisionState.kmlViewType = viewType;
-    if (window.NodevisionState?.currentMode === nodevisionMode) updateToolbarState({ kmlViewType: viewType, kmlAviationChartPackPath: aviationChartPackPath, kmlCelestialOptions: { ...celestialOptions } });
-    dispatchKMLChange("view-type", { viewType, aviationChartPackPath });
+    if (window.NodevisionState?.currentMode === nodevisionMode) updateToolbarState({ kmlViewType: viewType, kmlAviationChartPackPath: aviationChartPackPath, kmlCelestialOptions: { ...celestialOptions }, kmlTerrainSettings: { ...terrainSettings } });
+    dispatchKMLChange("view-type", { viewType, aviationChartPackPath, terrainSettings: { ...terrainSettings } });
   }
 
   async function setViewType(nextViewType) {
@@ -624,12 +842,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       return;
     }
     const hadSelection = Boolean(selectedRecord()?.geometry);
+    const viewState = renderer?.getViewState?.() || null;
     viewType = normalized;
     try {
       window.localStorage?.setItem("nodevision.kml.viewType", viewType);
     } catch {}
     showStatus(status, "Switching to " + label + " view...");
-    await initRenderer({ fit: !hadSelection, flyToSelected: hadSelection });
+    await initRenderer({ fit: !hadSelection, flyToSelected: hadSelection, viewState });
     refreshLayerHosts();
     refreshPropertyHosts();
     if (viewType === KML_VIEW_TYPES.AVIATION && aviationChartStatus?.message) {
@@ -944,6 +1163,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       viewTypeMap: () => setViewType("map"),
       viewTypeStreet: () => setViewType("map"),
       viewTypeAviation: () => setViewType("aviation"),
+      viewTypeTerrain: () => setViewType("terrain"),
       enableUserLocation: () => setUserLocationEnabled(true),
       disableUserLocation: () => setUserLocationEnabled(false),
       toggleUserLocation: () => setUserLocationEnabled(!userLocationEnabled),
@@ -954,12 +1174,22 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       setViewTypeMap: () => setViewType("map"),
       setViewTypeStreet: () => setViewType("map"),
       setViewTypeAviation: () => setViewType("aviation"),
+      setViewTypeTerrain: () => setViewType("terrain"),
       selectAviationChartPack,
       clearAviationChartPack,
       showAviationChartImportPlaceholder,
       aviationChartImportPlaceholder: showAviationChartImportPlaceholder,
       searchLocation,
       downloadSectionalForSelectedPin,
+      selectEnclosedRegion,
+      previewTerrain,
+      estimateTerrain,
+      downloadRegionData,
+      exportTerrainAsset,
+      createOfflineMapPackage,
+      insertTerrainIntoMetaWorld,
+      cancelTerrainJob: cancelCurrentTerrainJob,
+      retryTerrainJob: retryCurrentTerrainJob,
       refreshCelestialNow,
     };
     if (typeof actions[actionKey] === "function") return actions[actionKey]();
@@ -1002,8 +1232,37 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     },
   };
 
+  const terrainContext = {
+    id: "kml-terrain",
+    title: "Terrain Region",
+    getTerrainSettings: () => ({ ...terrainSettings }),
+    setTerrainSettings,
+    setViewType,
+    getViewType: () => viewType,
+    getSelectedRecord: selectedRecord,
+    getSelectedRegion: () => selectedRegion,
+    getSelectedRegionCandidate: getSelectedRegionCandidateForCurrentRecord,
+    selectEnclosedRegion,
+    formatArea,
+    formatBounds,
+    getLastTerrainEstimate: () => lastTerrainEstimate,
+    getLastTerrainPreview: () => lastTerrainPreview,
+    getTerrainJobStatus: () => terrainJobStatus,
+    previewTerrain,
+    estimateTerrain,
+    downloadRegionData,
+    exportTerrainAsset,
+    createOfflineMapPackage,
+    insertTerrainIntoMetaWorld,
+    cancelTerrainJob: cancelCurrentTerrainJob,
+    retryTerrainJob: retryCurrentTerrainJob,
+    effectiveContourIntervalMeters: () => effectiveContourIntervalMeters(terrainSettings, renderer?.map?.getZoom?.() || 10),
+    effectiveIndexContourIntervalMeters: () => effectiveIndexContourIntervalMeters(terrainSettings, renderer?.map?.getZoom?.() || 10),
+  };
+
   window.KMLLayersContext = layersContext;
   window.KMLPropertiesContext = propertiesContext;
+  window.KMLTerrainContext = terrainContext;
   window.KMLEditorContext = {
     mode,
     filePath: cleanPath,
@@ -1025,6 +1284,18 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     addWaypoint,
     searchLocation,
     downloadSectionalForSelectedPin,
+    getTerrainSettings: () => ({ ...terrainSettings }),
+    setTerrainSettings,
+    getSelectedRegion: () => selectedRegion,
+    getSelectedRegionCandidate: getSelectedRegionCandidateForCurrentRecord,
+    selectEnclosedRegion,
+    previewTerrain,
+    estimateTerrain,
+    downloadRegionData,
+    exportTerrainAsset,
+    createOfflineMapPackage,
+    insertTerrainIntoMetaWorld,
+    getTerrainJobStatus: () => terrainJobStatus,
     getCelestialOptions: () => ({ ...celestialOptions }),
     setCelestialOptions,
     refreshCelestialNow,
@@ -1043,12 +1314,13 @@ export async function renderKMLEditor(filePath, container, options = {}) {
     kmlAviationChartPackPath: aviationChartPackPath,
     kmlUserLocationEnabled: userLocationEnabled,
     kmlCelestialOptions: { ...celestialOptions },
+    kmlTerrainSettings: { ...terrainSettings },
   });
 
   refreshLayerHosts();
   refreshPropertyHosts();
   dispatchKMLChange("ready");
-  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode, viewType, aviationChartPackPath, userLocationEnabled, celestialOptions: { ...celestialOptions } } }));
+  window.dispatchEvent(new CustomEvent("nv-kml-context-ready", { detail: { filePath: cleanPath, mode, viewType, aviationChartPackPath, userLocationEnabled, celestialOptions: { ...celestialOptions }, terrainSettings: { ...terrainSettings }, selectedRegion } }));
   showStatus(status, `Loaded ${state.features.length} editable KML feature${state.features.length === 1 ? "" : "s"}.`);
 
   try {
@@ -1064,6 +1336,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   const destroy = () => {
     userLocationEnabled = false;
     stopUserLocationTelemetry();
+    clearTerrainJobPollTimer();
     renderer?.destroy();
     layerHosts.clear();
     propertyHosts.clear();
@@ -1071,6 +1344,7 @@ export async function renderKMLEditor(filePath, container, options = {}) {
       delete window.KMLEditorContext;
       delete window.KMLLayersContext;
       delete window.KMLPropertiesContext;
+      delete window.KMLTerrainContext;
       if (window.NodevisionState?.activeActionHandler === handleToolbarAction) {
         updateToolbarState({ activeActionHandler: null });
       }

@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "saltwater",
+  "displayName": "Salt Water",
+  "description": "Salt water liquid material for oceans and briny pools.",
+  "defaultColor": "#2d7fa3",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1025,
+    "dynamicViscosityPascalSeconds": 0.00108,
+    "kinematicViscositySquareMetersPerSecond": 0.00000105,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1.03
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "saltwater",
+    "color": "#2d7fa3",
+    "opacity": 0.48
+  },
+  "chemicalFormulaMol": null
+}

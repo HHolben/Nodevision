@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "quicksand",
+  "displayName": "Quicksand",
+  "description": "Water-saturated quicksand liquid material.",
+  "defaultColor": "#b9a05d",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1900,
+    "dynamicViscosityPascalSeconds": 40,
+    "kinematicViscositySquareMetersPerSecond": 0.021,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1.9
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "quicksand",
+    "color": "#b9a05d",
+    "opacity": 0.66
+  },
+  "chemicalFormulaMol": null
+}

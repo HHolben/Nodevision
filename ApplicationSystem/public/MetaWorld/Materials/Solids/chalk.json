@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "chalk",
+  "displayName": "Chalk",
+  "description": "Soft pale chalk terrain material.",
+  "defaultColor": "#e7e1cf",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 2200,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.74,
+    "coefficientOfKineticFriction": 0.46,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.03
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "chalk",
+    "color": "#e7e1cf"
+  },
+  "chemicalFormulaMol": null
+}

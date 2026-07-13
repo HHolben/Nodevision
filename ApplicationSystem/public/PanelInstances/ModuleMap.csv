@@ -183,6 +183,7 @@ vhd,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 vhdl,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 dem,GeographicalData,ViewBinary.mjs,BinaryFamilyEditor.mjs
 geojson,GeographicalData,ViewGeoJSON.mjs,GeoFamilyEditor.mjs
+terrain.json,GeographicalData,ViewTerrainRegion.mjs,GeoFamilyEditor.mjs
 gpkg,GeographicalData,ViewBinary.mjs,BinaryFamilyEditor.mjs
 gpx,GeographicalData,ViewGPX.mjs,GeoFamilyEditor.mjs
 grib,GeographicalData,ViewGRIB.mjs,GeoFamilyEditor.mjs

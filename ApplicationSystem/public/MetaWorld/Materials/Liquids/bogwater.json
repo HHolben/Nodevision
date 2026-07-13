@@ -1,0 +1,30 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "bogwater",
+  "displayName": "Bog Water",
+  "description": "Dark bog water liquid material.",
+  "defaultColor": "#4b5b36",
+  "homogeneousSubstance": false,
+  "MatterState": "liquid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "liquid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1010,
+    "dynamicViscosityPascalSeconds": 0.003,
+    "kinematicViscositySquareMetersPerSecond": 0.00000297,
+    "coefficientOfStaticFriction": 0,
+    "coefficientOfKineticFriction": 0,
+    "springConstantNewtonsPerMeter": 0,
+    "restitution": 0,
+    "buoyancyScale": 1.01
+  },
+  "rendering": {
+    "materialType": "liquid",
+    "terrainKind": "bogwater",
+    "color": "#4b5b36",
+    "opacity": 0.5
+  },
+  "chemicalFormulaMol": null
+}
