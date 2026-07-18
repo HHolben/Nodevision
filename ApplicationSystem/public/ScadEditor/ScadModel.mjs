@@ -250,6 +250,23 @@ export function deleteTimelineStep(model, stepId) {
   return true;
 }
 
+export function setParameter(model, name, value, options = {}) {
+  const key = String(name || "").trim();
+  if (!key || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) return false;
+  model.parameters = { ...(model.parameters || {}), [key]: value };
+  if (options.timeline !== false) addTimelineStep(model, { type: "parameter", label: "Set " + key, params: { operation: "setParameter", name: key, value } });
+  return true;
+}
+
+export function deleteParameter(model, name, options = {}) {
+  const key = String(name || "").trim();
+  if (!key || !model.parameters || !Object.prototype.hasOwnProperty.call(model.parameters, key)) return false;
+  const value = model.parameters[key];
+  delete model.parameters[key];
+  if (options.timeline !== false) addTimelineStep(model, { type: "parameter", label: "Delete " + key, params: { operation: "deleteParameter", name: key, value } });
+  return true;
+}
+
 export function reconcileLayerMembership(model) {
   const existingLayerIds = new Set(model.layers.map((layer) => layer.id));
   if (!existingLayerIds.size) model.layers.push(createLayer());

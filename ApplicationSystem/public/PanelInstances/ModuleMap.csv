@@ -152,9 +152,9 @@ scad,Model,ViewSCAD.mjs,SCADeditor.mjs
 step,Model,ViewSTEP.mjs,ModelFamilyEditor.mjs
 stl,Model,ViewSTL.mjs,STLeditor.mjs
 unv,Model,ViewText.mjs,TextFamilyEditor.mjs
-usd,Model,ViewUSD.mjs,ModelFamilyEditor.mjs
-usda,Model,ViewUSD.mjs,ModelFamilyEditor.mjs
-usdc,Model,ViewUSD.mjs,ModelFamilyEditor.mjs
+usd,Model,ViewUSD.mjs,USDeditor.mjs
+usda,Model,ViewUSD.mjs,USDeditor.mjs
+usdc,Model,ViewUSD.mjs,USDeditor.mjs
 vtk,Model,ViewVTK.mjs,ModelFamilyEditor.mjs
 vtp,Model,ViewVTK.mjs,ModelFamilyEditor.mjs
 latex,Equation,ViewText.mjs,LaTeXeditor.mjs

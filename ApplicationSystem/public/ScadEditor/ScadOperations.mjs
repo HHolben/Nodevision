@@ -3,6 +3,9 @@
 
 import { addTimelineStep, addObject, removeObject, scadObjectTypeLabel, updateObject } from "./ScadModel.mjs";
 
+const EXTRUDABLE_TYPES = new Set(["circle", "rectangle", "square", "triangle", "polygon", "text"]);
+const BOOLEAN_OPERATION_TYPES = new Set(["cutout", "difference", "union", "intersection"]);
+
 function selected(model, ids = []) {
   const set = new Set(ids);
   return model.objects.filter((obj) => set.has(obj.id));
@@ -26,7 +29,7 @@ function titleCaseOperation(value = "") {
 export function extrudeObjects(model, objectIds = [], height = 10) {
   const changed = [];
   const changedObjects = [];
-  for (const obj of selected(model, objectIds)) {
+  for (const obj of selected(model, objectIds).filter((item) => EXTRUDABLE_TYPES.has(item.type))) {
     const ops = Array.isArray(obj.operations) ? [...obj.operations] : [];
     const existing = ops.find((op) => op.type === "extrude");
     if (existing) existing.params = { ...(existing.params || {}), height: Number(height) || 10 };
@@ -40,16 +43,27 @@ export function extrudeObjects(model, objectIds = [], height = 10) {
 }
 
 export function addBooleanOperation(model, type, objectIds = []) {
-  const ids = objectIds.filter(Boolean);
+  const seen = new Set();
+  const ids = objectIds.filter((id) => {
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return model.objects.some((obj) => obj.id === id);
+  });
   if (ids.length < 2) return null;
-  const normalized = type === "cutout" ? "cutout" : type;
+  const normalized = type === "cutout" ? "cutout" : String(type || "").toLowerCase();
+  if (!BOOLEAN_OPERATION_TYPES.has(normalized)) return null;
   const operation = normalized === "cutout" ? "difference" : normalized;
   const label = normalized === "cutout" ? "Cut Out" : "Boolean " + titleCaseOperation(normalized);
   return addTimelineStep(model, {
     type: normalized,
     objectIds: ids,
     label,
-    params: { operation },
+    params: {
+      operation,
+      operandCount: ids.length,
+      baseObjectId: ids[0],
+      operandIds: ids.slice(1),
+    },
   });
 }
 

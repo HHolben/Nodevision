@@ -41,6 +41,7 @@ import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
 import { registerMetaWorldAssetRoutes } from "./server/routes/metaWorldAssetRoutes.mjs";
 import { validateSvgSavePayload } from "./routes/api/fileSaveRoutes/svgSaveGuard.js";
 import { validateSaveSourcePath } from "./routes/api/fileSaveRoutes/saveSourceGuard.js";
+import { requireLanViewPermission } from "./routes/api/lanCooperationRoutes.js";
 import { isWithin } from "./routes/api/fileSaveRoutes/paths.js";
 import {
   NOTEBOOK_BACKUP_DIRNAME,
@@ -53,6 +54,7 @@ import { registerSyncPanelRoutes } from "./server/routes/syncPanelRoutes.mjs";
 import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
 import { createDesktopOpenState, registerDesktopOpenRoutes } from "./Desktop/DesktopOpenHandler.mjs";
 import { registerTerrainRoutes } from "./server/routes/terrainRoutes.mjs";
+import { registerHandwritingOcrTrainingRoutes } from "./server/routes/handwritingOcrTrainingRoutes.mjs";
 
 const FAA_VFR_RASTER_CHARTS_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/vfr/";
 const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
@@ -370,6 +372,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerBrokerRoutes(app, ctx);
   registerDesktopOpenRoutes(app, ctx, desktopOpenState);
   registerKmlUtilityRoutes(app, ctx);
+  registerHandwritingOcrTrainingRoutes(app, ctx);
 
 
   // Public login background asset (optional).
@@ -600,7 +603,7 @@ app.use('/api/file', uploadRoutes);
   app.use('/api', previewRuntimeRoutes(ctx));
   app.use('/api', previewRuntimeControlRoutes(ctx));
   app.use('/UserSettings', express.static(USER_SETTINGS_DIR));
-  app.use('/Notebook', requireAuthentication, express.static(NOTEBOOK_DIR));
+  app.use('/Notebook', requireAuthentication, requireLanViewPermission(ctx), express.static(NOTEBOOK_DIR));
   app.use(favicon(path.join(PUBLIC_DIR, 'favicon.ico')));
 
   await loadRoutes(app, ctx);

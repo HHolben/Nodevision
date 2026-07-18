@@ -2,6 +2,7 @@
 // This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { expressionUsesTimeVariable, normalizePlaneEquationConfig } from "./equationColliderTool.mjs";
+import { normalizeMetaWorldMultiplayer } from "/MetaWorld/MetaWorldMultiplayerConfig.mjs";
 import {
   DEFAULT_WORLD_GAS_MATERIAL_FILE,
   DEFAULT_WORLD_GAS_MATERIAL_ID,
@@ -24,9 +25,62 @@ const DEFAULT_ENVIRONMENT = {
   floorColor: "#d8dee4",
   backgroundMode: "color",
   backgroundImage: "",
+  dayNightCycle: {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  },
   gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
   gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE
 };
+
+function cloneDefaultDayNightCycle() {
+  return {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  };
+}
+
+function clampFiniteNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function normalizeDayNightPeriod(period, fallbackTime = 0) {
+  const source = period && typeof period === "object" ? period : {};
+  return {
+    time: clampFiniteNumber(source.time ?? source.timeSeconds ?? source.at ?? source.offset, 0, Number.MAX_SAFE_INTEGER, fallbackTime),
+    brightness: clampFiniteNumber(source.brightness ?? source.level ?? source.intensity, 0, 1, 1)
+  };
+}
+
+function normalizeDayNightCycle(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const durationSeconds = clampFiniteNumber(source.durationSeconds ?? source.duration ?? source.cycleSeconds, 1, 86400, DEFAULT_ENVIRONMENT.dayNightCycle.durationSeconds);
+  const sourcePeriods = Array.isArray(source.periods)
+    ? source.periods
+    : Array.isArray(source.keyframes)
+      ? source.keyframes
+      : [];
+  const periods = sourcePeriods
+    .map((period, index) => normalizeDayNightPeriod(period, index === 0 ? 0 : durationSeconds * index / Math.max(sourcePeriods.length, 1)))
+    .map((period) => ({
+      time: clampFiniteNumber(period.time, 0, durationSeconds, 0),
+      brightness: clampFiniteNumber(period.brightness, 0, 1, 1)
+    }))
+    .sort((a, b) => a.time - b.time);
+  return {
+    enabled: source.enabled === true,
+    durationSeconds,
+    periods: periods.length ? periods : cloneDefaultDayNightCycle().periods
+  };
+}
 
 function buildAsciiStl(vertices = []) {
   const pts = Array.isArray(vertices) ? vertices : [];
@@ -68,6 +122,7 @@ function buildEnvironmentMeta(movementState) {
     backgroundMode: env.backgroundMode || (env.backgroundImage ? "image" : "color"),
     backgroundImage: env.backgroundImage || "",
     floorImage: env.floorImage || "",
+    dayNightCycle: normalizeDayNightCycle(env.dayNightCycle ?? DEFAULT_ENVIRONMENT.dayNightCycle),
     gasMaterialId: env.gasMaterialId || DEFAULT_ENVIRONMENT.gasMaterialId,
     gasMaterialFile: env.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile
   };
@@ -547,6 +602,7 @@ function buildWorldDefinition({
   const finalMeshDefs = shouldFallbackToExistingObjects ? existing.objects : meshDefs;
   const worldRules = movementState?.worldRules || {};
   const environment = buildEnvironmentMeta(movementState);
+  const multiplayer = normalizeMetaWorldMultiplayer(movementState?.multiplayer || existing?.metadata?.multiplayer || existing?.multiplayer || {});
   const temporalState = movementState?.temporal || window.VRWorldContext?.temporalController?.getSettings?.() || existing?.metadata?.temporal || {};
   const temporal = {
     staticTimeEnabled: temporalState.staticTimeEnabled === true,
@@ -569,13 +625,15 @@ function buildWorldDefinition({
       allowSave: worldRules.allowSave === true
     },
     environment,
-    temporal
+    temporal,
+    multiplayer
   };
 
   return {
     ...existing,
     worldMode: movementState?.worldMode === "2d" ? "2d" : "3d",
     environment,
+    multiplayer,
     metadata,
     objects: finalMeshDefs.concat(lightDefs)
   };

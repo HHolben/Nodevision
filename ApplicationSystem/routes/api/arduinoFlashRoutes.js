@@ -10,43 +10,17 @@ import { promisify } from "node:util";
 import { EventEmitter } from "node:events";
 import { createServerContext } from "../../shared/serverContext.mjs";
 import { isWithin, normalizeClientPath } from "./fileSaveRoutes/paths.js";
+import {
+  isSerialDependencyUnavailable,
+  loadSerialDependencies,
+  serialUnavailablePayload,
+} from "./serialDependencies.mjs";
 
 const execFileAsync = promisify(execFile);
 const BASE_CONTEXT = createServerContext();
 const CLI_TIMEOUT_MS = 15_000;
 const JOB_RETENTION_MS = 10 * 60 * 1000;
 const MAX_SERIAL_BUFFER_LINES = 2000;
-
-let serialDependenciesPromise = null;
-let serialDependencyWarningLogged = false;
-
-async function loadSerialDependencies() {
-  if (!serialDependenciesPromise) {
-    serialDependenciesPromise = Promise.all([
-      import("serialport"),
-      import("@serialport/parser-readline"),
-    ]).then(([serialportModule, readlineModule]) => {
-      const SerialPort = serialportModule.SerialPort || serialportModule.default?.SerialPort || serialportModule.default;
-      const ReadlineParser = readlineModule.ReadlineParser || readlineModule.default?.ReadlineParser || readlineModule.default;
-      if (!SerialPort || !ReadlineParser) {
-        throw new Error("serialport modules loaded, but required exports were not found.");
-      }
-      return { SerialPort, ReadlineParser };
-    }).catch((err) => {
-      serialDependenciesPromise = null;
-      if (!serialDependencyWarningLogged) {
-        serialDependencyWarningLogged = true;
-        console.warn("⚠️ Arduino Flash serial support unavailable: serialport or @serialport/parser-readline could not be imported.", err?.message || err);
-      }
-      throw err;
-    });
-  }
-  return serialDependenciesPromise;
-}
-
-function logSerialDependencyStatus() {
-  loadSerialDependencies().catch(() => {});
-}
 
 function arduinoCliCommand(ctx) {
   return process.env.ARDUINO_CLI || "arduino-cli";
@@ -299,7 +273,6 @@ function createSerialStore() {
 export default function createArduinoFlashRouter(ctx = BASE_CONTEXT) {
   const router = express.Router();
   console.log("✅ Arduino Flash routes mounted at /api/arduino-flash");
-  logSerialDependencyStatus();
   const jobStore = createJobStore(ctx);
   const serialStore = createSerialStore();
 
@@ -319,8 +292,11 @@ export default function createArduinoFlashRouter(ctx = BASE_CONTEXT) {
 
   router.get("/arduino-flash/ports", async (req, res) => {
     try {
-      res.json({ ports: await listSerialPorts() });
+      res.json({ ports: await listSerialPorts(), serialSupportAvailable: true });
     } catch (err) {
+      if (isSerialDependencyUnavailable(err)) {
+        return res.status(200).json({ ports: [], ...serialUnavailablePayload(err) });
+      }
       res.status(500).json({ error: err?.message || "Failed to list serial ports." });
     }
   });
@@ -405,6 +381,9 @@ export default function createArduinoFlashRouter(ctx = BASE_CONTEXT) {
       const job = jobStore.createJob({ kind: "upload", args: ["upload", "-p", port, "--fqbn", fqbn, sketch.sketchPath] });
       res.json({ jobId: job.id, filePath: sketch.relativePath });
     } catch (err) {
+      if (isSerialDependencyUnavailable(err)) {
+        return res.status(503).json(serialUnavailablePayload(err));
+      }
       res.status(400).json({ error: err?.message || "Failed to start upload." });
     }
   });
@@ -440,6 +419,9 @@ export default function createArduinoFlashRouter(ctx = BASE_CONTEXT) {
       const state = await serialStore.connect({ port, baudRate });
       res.json({ connected: true, port: state.port, baudRate: state.baudRate });
     } catch (err) {
+      if (isSerialDependencyUnavailable(err)) {
+        return res.status(503).json(serialUnavailablePayload(err));
+      }
       res.status(400).json({ error: err?.message || "Serial connection failed." });
     }
   });

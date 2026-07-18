@@ -60,7 +60,7 @@ function collectProviders(instanceVars = {}) {
   if (window.SCADLayersContext?.attachHost) {
     providers.push({
       id: "scad",
-      title: window.SCADLayersContext.title || "SCAD Layers",
+      title: window.SCADLayersContext.title || "SCAD Variables & Meshes",
       attachHost: window.SCADLayersContext.attachHost,
       actions: [],
     });

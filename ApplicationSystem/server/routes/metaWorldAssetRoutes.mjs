@@ -186,6 +186,13 @@ function defaultWorld(fileName) {
         floorColor: "#d8dee4",
         backgroundMode: "color",
         backgroundImage: "",
+        dayNightCycle: {
+          enabled: false,
+          durationSeconds: 120,
+          periods: [
+            { time: 0, brightness: 1 }
+          ]
+        }
       },
     },
     environment: {
@@ -193,6 +200,13 @@ function defaultWorld(fileName) {
       floorColor: "#d8dee4",
       backgroundMode: "color",
       backgroundImage: "",
+      dayNightCycle: {
+        enabled: false,
+        durationSeconds: 120,
+        periods: [
+          { time: 0, brightness: 1 }
+        ]
+      }
     },
     objects: [],
   };

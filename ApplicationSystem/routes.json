@@ -5,6 +5,8 @@
     { "name": "fileRoutes", "path": "./routes/api/files.js" },
     { "name": "folderRoutes", "path": "./routes/api/folderRoutes.js" },
     { "name": "fileSaveRoutes", "path": "./routes/api/fileSaveRoutes.js" },
+    { "name": "lanCooperationRoutes", "path": "./routes/api/lanCooperationRoutes.js" },
+    { "name": "metaWorldMultiplayerRoutes", "path": "./routes/api/metaWorldMultiplayerRoutes.js" },
     { "name": "templateRoutes", "path": "./Templates/TemplateRoutes.mjs" },
     { "name": "regenerateNodesRoutes", "path": "./routes/api/regenerateNodesRoutes.js" },
     { "name": "generateEdgesRoutes", "path": "./routes/api/generateEdgesRoutes.js" },

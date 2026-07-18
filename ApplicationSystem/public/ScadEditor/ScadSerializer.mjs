@@ -90,8 +90,43 @@ function wrapBlock(prefix, bodyLines) {
   return [prefix, ...indentLines(bodyLines, 2)];
 }
 
+function objectExtrudeOperation(obj) {
+  return (Array.isArray(obj?.operations) ? obj.operations : []).find((op) => op?.type === "extrude" && !op.disabled) || null;
+}
+
+function objectIs3DPrimitive(obj) {
+  return ["sphere", "cube", "cylinder", "polyhedron"].includes(obj?.type);
+}
+
+function objectHas3DGeometry(obj) {
+  return objectIs3DPrimitive(obj) || Boolean(objectExtrudeOperation(obj));
+}
+
+function objectNominalHeight(obj) {
+  const p = obj?.params || {};
+  const extrude = objectExtrudeOperation(obj);
+  if (extrude) return Math.max(0.1, n(extrude.params?.height ?? extrude.height, 10));
+  if (obj?.type === "cube") {
+    const size = Array.isArray(p.size) ? p.size : [p.size ?? 12, p.size ?? 12, p.size ?? 12];
+    return Math.max(0.1, n(size[2], 12));
+  }
+  if (obj?.type === "cylinder") return Math.max(0.1, n(p.height, 16));
+  if (obj?.type === "sphere") return Math.max(0.1, n(p.radius, 6) * 2);
+  if (obj?.type === "polyhedron") {
+    const zValues = (Array.isArray(p.points) ? p.points : []).map((point) => n(point?.[2], 0));
+    if (zValues.length) return Math.max(0.1, Math.max(...zValues) - Math.min(...zValues));
+  }
+  return 10;
+}
+
+function booleanTargetHeight(children = []) {
+  const first3D = children.find(objectHas3DGeometry);
+  if (!first3D) return null;
+  return objectNominalHeight(first3D);
+}
+
 export function serializeObjectToScad(obj, options = {}) {
-  if (!obj || obj.visible === false) return [];
+  if (!obj || (obj.visible === false && options.includeHidden !== true)) return [];
   let lines = primitiveLines(obj);
   const operations = Array.isArray(obj.operations) ? obj.operations.filter((op) => !op.disabled) : [];
   for (const op of operations) {
@@ -99,6 +134,9 @@ export function serializeObjectToScad(obj, options = {}) {
       const height = fmtNumber(op.params?.height ?? op.height ?? 10);
       lines = wrapBlock(`linear_extrude(height = ${height})`, lines);
     }
+  }
+  if (options.force3DHeight !== undefined && options.force3DHeight !== null && !objectHas3DGeometry(obj)) {
+    lines = wrapBlock(`linear_extrude(height = ${fmtNumber(options.force3DHeight)})`, lines);
   }
 
   const t = obj.transform || {};
@@ -116,10 +154,6 @@ export function serializeObjectToScad(obj, options = {}) {
   return lines;
 }
 
-function enabledTimeline(model, type) {
-  return (model.timeline || []).filter((step) => step?.type === type && !step.disabled);
-}
-
 function objectById(model, id) {
   return model.objects.find((obj) => obj.id === id);
 }
@@ -134,11 +168,14 @@ function serializeBooleanStep(model, step) {
   const op = step.params?.operation || step.type;
   if (!ids.length) return [];
   const children = ids.map((id) => objectById(model, id)).filter(Boolean);
-  if (!children.length) return [];
+  if (children.length < 2) return [];
   const keyword = op === "cutout" ? "difference" : op;
-  const lines = [`${keyword}() {`];
+  if (!["union", "difference", "intersection"].includes(keyword)) return [];
+  const targetHeight = booleanTargetHeight(children);
+  const lines = [keyword + "() {"];
   children.forEach((child, index) => {
-    const childLines = serializeObjectToScad(child, { comment: true });
+    const childLines = serializeObjectToScad(child, { comment: true, includeHidden: true, force3DHeight: targetHeight });
+    if (!childLines.length) return;
     lines.push(...indentLines(childLines, 2));
     if (index < children.length - 1) lines.push("");
   });
@@ -150,13 +187,8 @@ export function generateScadBody(modelInput) {
   const model = normalizeScadModel(modelInput);
   const emitted = new Set();
   const body = [];
-  const booleanSteps = [
-    ...enabledTimeline(model, "cutout"),
-    ...enabledTimeline(model, "difference"),
-    ...enabledTimeline(model, "union"),
-    ...enabledTimeline(model, "intersection"),
-    ...enabledTimeline(model, "boolean"),
-  ];
+  const booleanStepTypes = new Set(["cutout", "difference", "union", "intersection"]);
+  const booleanSteps = (model.timeline || []).filter((step) => booleanStepTypes.has(step?.type) && !step.disabled);
 
   for (const step of booleanSteps) {
     const lines = serializeBooleanStep(model, step);
@@ -175,11 +207,19 @@ export function generateScadBody(modelInput) {
   return body.join("\n") + "\n";
 }
 
+function parameterValueLiteral(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return fmtNumber(value);
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (Array.isArray(value)) return "[" + value.map(parameterValueLiteral).join(", ") + "]";
+  const raw = String(value ?? "").trim();
+  return raw || "0";
+}
+
 export function serializeScadModel(modelInput, options = {}) {
   const model = normalizeScadModel(modelInput);
   const metadata = JSON.stringify(model, null, 2);
   const header = `${MODEL_BLOCK_START}\n${metadata}\n${MODEL_BLOCK_END}\n\n`;
-  const params = Object.entries(model.parameters || {}).map(([key, value]) => `${key} = ${value};`);
+  const params = Object.entries(model.parameters || {}).map(([key, value]) => key + " = " + parameterValueLiteral(value) + ";");
   const paramBlock = params.length ? params.join("\n") + "\n\n" : "";
   const body = generateScadBody(model);
   if (model.unsupportedSource && options.preserveUnsupportedSource) {

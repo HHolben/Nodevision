@@ -105,6 +105,23 @@ export function getActivePanelElement() {
   return null;
 }
 
+export function getPanelElementFromElement(element) {
+  const start = element?.nodeType === 1 ? element : null;
+  if (!start) return null;
+
+  const panel = start.closest?.(".panel");
+  if (isTargetElement(panel)) return panel;
+
+  const cell = start.closest?.(".panel-cell");
+  if (!isTargetElement(cell)) return null;
+
+  return getDirectChildByClass(cell, "panel") || cell;
+}
+
+export function getPanelElementFromEvent(event) {
+  return getPanelElementFromElement(event?.target);
+}
+
 function getPanelContent(panel) {
   if (!panel?.isConnected) return null;
   if (panel.classList?.contains("panel-cell")) return panel;
@@ -292,6 +309,47 @@ export function zoomPanelBy(delta = 0, panel = null) {
   return setPanelViewportState({ zoom: (state.zoom || 1) + Number(delta || 0) }, target);
 }
 
+export function zoomPanelAt(panel = null, clientX = null, clientY = null, factor = 1) {
+  const target = panel || getActivePanelElement();
+  if (!target) return null;
+
+  const state = ensureState(target);
+  if (!state) return null;
+
+  const currentZoom = Number.isFinite(Number(state.zoom)) ? Number(state.zoom) : 1;
+  const rawFactor = Number(factor);
+  const nextZoom = clamp(
+    currentZoom * (Number.isFinite(rawFactor) && rawFactor > 0 ? rawFactor : 1),
+    MIN_ZOOM,
+    MAX_ZOOM,
+    currentZoom
+  );
+
+  const content = getPanelContent(target);
+  if (!content || !Number.isFinite(Number(clientX)) || !Number.isFinite(Number(clientY))) {
+    return setPanelViewportState({ zoom: nextZoom }, target);
+  }
+
+  const rect = content.getBoundingClientRect?.();
+  if (!rect || rect.width <= 0 || rect.height <= 0) {
+    return setPanelViewportState({ zoom: nextZoom }, target);
+  }
+
+  const localX = Number(clientX) - rect.left;
+  const localY = Number(clientY) - rect.top;
+  const contentX = (localX - (state.panX || 0)) / currentZoom;
+  const contentY = (localY - (state.panY || 0)) / currentZoom;
+
+  return setPanelViewportState(
+    {
+      zoom: nextZoom,
+      panX: localX - contentX * nextZoom,
+      panY: localY - contentY * nextZoom,
+    },
+    target
+  );
+}
+
 export function panPanelBy(dx = 0, dy = 0, panel = null) {
   const target = panel || getActivePanelElement();
   if (!target) return null;
@@ -328,13 +386,147 @@ export function fitPanelViewport(panel = null, options = {}) {
   return setPanelViewportState({ zoom, panX, panY }, target);
 }
 
+function activatePanelForViewport(panel) {
+  if (!isTargetElement(panel)) return null;
+  rememberPanel(panel);
+
+  const owningCell = panel.classList?.contains("panel-cell") ? panel : panel.closest?.(".panel-cell");
+  const panelElement = panel.classList?.contains("panel")
+    ? panel
+    : panel.closest?.(".panel") || getDirectChildByClass(panel, "panel");
+
+  if (isTargetElement(panelElement)) {
+    window.__nvActivePanelElement = panelElement;
+  }
+
+  const panelId =
+    owningCell?.dataset?.id ||
+    panelElement?.dataset?.instanceName ||
+    panelElement?.dataset?.instanceId ||
+    panel?.dataset?.id ||
+    panel?.dataset?.panelClass ||
+    "Panel";
+  const panelClass =
+    owningCell?.dataset?.panelClass ||
+    panelElement?.dataset?.panelClass ||
+    panelElement?.dataset?.panelType ||
+    panel?.dataset?.panelClass ||
+    "InfoPanel";
+
+  if (owningCell?.isConnected) {
+    window.activeCell = owningCell;
+  }
+  window.activePanel = panelId;
+  window.activePanelClass = panelClass;
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activePanelType = panelClass;
+
+  if (owningCell?.isConnected && typeof window.highlightActiveCell === "function") {
+    window.highlightActiveCell(owningCell);
+  }
+
+  window.dispatchEvent(new CustomEvent("activePanelChanged", {
+    detail: { panel: panelId, cell: owningCell || null, panelClass },
+  }));
+
+  return panelElement || panel;
+}
+
+function getWheelZoomFactor(event) {
+  const deltaY = Number.isFinite(Number(event?.deltaY)) ? Number(event.deltaY) : 0;
+  const boundedDelta = clamp(deltaY, -600, 600, 0);
+  return Math.exp(-boundedDelta * 0.0015);
+}
+
+function getPanelCenter(panel) {
+  const content = getPanelContent(panel);
+  const rect = content?.getBoundingClientRect?.();
+  if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+function zoomPanelAtCenter(panel, factor) {
+  const center = getPanelCenter(panel);
+  if (!center) return zoomPanelAt(panel, null, null, factor);
+  return zoomPanelAt(panel, center.x, center.y, factor);
+}
+
+function getZoomShortcutAction(event) {
+  if (!(event?.ctrlKey || event?.metaKey) || event.altKey) return null;
+  const key = String(event.key || "").toLowerCase();
+  const code = String(event.code || "");
+
+  if (key === "+" || key === "=" || code === "NumpadAdd") return "in";
+  if (key === "-" || key === "_" || code === "NumpadSubtract") return "out";
+  if (key === "0" || code === "Digit0" || code === "Numpad0") return "reset";
+  return null;
+}
+
+export function installPanelZoomShortcuts() {
+  if (typeof window === "undefined") return null;
+  if (window.__nvPanelZoomShortcutsInstalled) {
+    return window.__nvPanelZoomShortcutsInstalled;
+  }
+
+  const onWheel = (event) => {
+    if (!(event.ctrlKey || event.metaKey)) return;
+
+    const panel = getPanelElementFromEvent(event);
+    if (!isTargetElement(panel)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const target = activatePanelForViewport(panel) || panel;
+    zoomPanelAt(target, event.clientX, event.clientY, getWheelZoomFactor(event));
+  };
+
+  const onKeyDown = (event) => {
+    const action = getZoomShortcutAction(event);
+    if (!action) return;
+
+    const panel = getPanelElementFromEvent(event) || getActivePanelElement();
+    if (!isTargetElement(panel)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const target = activatePanelForViewport(panel) || panel;
+
+    if (action === "reset") {
+      resetPanelViewport(target);
+      return;
+    }
+
+    zoomPanelAtCenter(target, action === "in" ? 1.1 : 1 / 1.1);
+  };
+
+  window.addEventListener("wheel", onWheel, { capture: true, passive: false });
+  window.addEventListener("keydown", onKeyDown, true);
+
+  window.__nvPanelZoomShortcutsInstalled = {
+    dispose() {
+      window.removeEventListener("wheel", onWheel, { capture: true });
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.__nvPanelZoomShortcutsInstalled = null;
+    },
+  };
+
+  return window.__nvPanelZoomShortcutsInstalled;
+}
+
 window.NodevisionPanelViewportTools = {
   getActivePanelElement,
+  getPanelElementFromElement,
+  getPanelElementFromEvent,
   getPanelViewportState,
   setPanelViewportState,
   applyPanelViewport,
   zoomPanelBy,
+  zoomPanelAt,
   panPanelBy,
   resetPanelViewport,
   fitPanelViewport,
+  installPanelZoomShortcuts,
 };

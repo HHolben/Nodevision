@@ -5,13 +5,14 @@ import * as THREE from "/lib/three/three.module.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
 import { GLTFLoader } from "/lib/three/examples/jsm/loaders/GLTFLoader.js";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
-import { ensureSvgEditingSplit, loadPanelIntoCell } from "/panels/workspace.mjs";
+import { ensureSvgEditingSplit, loadPanelIntoCell, rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 import { mountWidget } from "/Widgets/WidgetHost.mjs";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
 import { exportSceneToSTL } from "/ModelExport/STLExport.mjs";
 
 const NOTEBOOK_BASE = "/Notebook";
 const LAYERS_PANEL_ID = "SVGLayersPanel";
+const KEYFRAME_ANIMATION_PANEL_ID = "KeyframeAnimationPanel";
 const GLB_SELECTION_BOX_STYLE_ID = "nv-glb-editor-selection-box-styles";
 const GLB_LIGHT_THEME = {
   shellBackground: "#f7f9fc",
@@ -380,6 +381,8 @@ export async function renderEditor(filePath, container) {
     activeActionHandler: null,
     modelCanExportSTL: false,
     glbCanInsertBone: false,
+    glbCanInsertPrimitive: false,
+    glbCanEditMesh: false,
   });
 
   const editorRoot = document.createElement("div");
@@ -535,6 +538,7 @@ export async function renderEditor(filePath, container) {
     animationPaneVisible: false,
     animationPreviewLocked: false,
     animationThumbnailRequest: 0,
+    keyframeAnimation: { currentTime: 0, keyframes: [], nextId: 1 },
     meshEdit: null,
   };
 
@@ -550,6 +554,9 @@ export async function renderEditor(filePath, container) {
         console.warn("GLB layers listener error:", err);
       }
     });
+    if (!state.destroyed) {
+      window.dispatchEvent(new CustomEvent("nv-glb-layers-changed", { detail: { providerId: "glb" } }));
+    }
   }
 
   function layerEntries() {
@@ -770,6 +777,341 @@ export async function renderEditor(filePath, container) {
     return () => {
       layerListeners.delete(listener);
     };
+  }
+
+
+  function objectByUuid(uuid) {
+    return state.selectableObjects.find((obj) => obj?.uuid === uuid) || null;
+  }
+
+  function normalizeKeyframeTime(value, fallback = state.keyframeAnimation.currentTime) {
+    const bounded = clamp(value, 0, 36000, fallback);
+    return Math.round(bounded * 1000) / 1000;
+  }
+
+  function snapshotObjectTransform(object) {
+    return {
+      position: {
+        x: object?.position?.x || 0,
+        y: object?.position?.y || 0,
+        z: object?.position?.z || 0,
+      },
+      rotation: {
+        x: object?.rotation?.x || 0,
+        y: object?.rotation?.y || 0,
+        z: object?.rotation?.z || 0,
+        order: object?.rotation?.order || "XYZ",
+      },
+      scale: {
+        x: object?.scale?.x ?? 1,
+        y: object?.scale?.y ?? 1,
+        z: object?.scale?.z ?? 1,
+      },
+      visible: object?.visible !== false,
+    };
+  }
+
+  function cloneSnapshot(snapshot = {}) {
+    return {
+      position: { ...(snapshot.position || {}) },
+      rotation: { ...(snapshot.rotation || {}) },
+      scale: { ...(snapshot.scale || {}) },
+      visible: snapshot.visible !== false,
+    };
+  }
+
+  function applySnapshotToObject(object, snapshot) {
+    if (!object || !snapshot) return false;
+    const position = snapshot.position || {};
+    const rotation = snapshot.rotation || {};
+    const scale = snapshot.scale || {};
+    object.position?.set?.(
+      Number(position.x) || 0,
+      Number(position.y) || 0,
+      Number(position.z) || 0,
+    );
+    object.rotation?.set?.(
+      Number(rotation.x) || 0,
+      Number(rotation.y) || 0,
+      Number(rotation.z) || 0,
+      rotation.order || object.rotation?.order || "XYZ",
+    );
+    object.scale?.set?.(
+      Number.isFinite(Number(scale.x)) ? Number(scale.x) : 1,
+      Number.isFinite(Number(scale.y)) ? Number(scale.y) : 1,
+      Number.isFinite(Number(scale.z)) ? Number(scale.z) : 1,
+    );
+    object.visible = snapshot.visible !== false;
+    object.updateMatrixWorld?.(true);
+    updateSelectionHelper();
+    notifyLayersChanged();
+    renderer.render(scene, camera);
+    orientationWidget?.sync?.();
+    return true;
+  }
+
+  function keyframeRecordId() {
+    const id = "glb-keyframe-" + Date.now().toString(36) + "-" + state.keyframeAnimation.nextId;
+    state.keyframeAnimation.nextId += 1;
+    return id;
+  }
+
+  function layerInfoForUuid(uuid) {
+    const entry = layerEntries().find((layer) => layer.uuid === uuid);
+    if (entry) return entry;
+    const object = objectByUuid(uuid);
+    if (!object) return null;
+    const index = state.selectableObjects.indexOf(object);
+    return {
+      uuid,
+      label: nameForObject(object, index >= 0 ? index : 0),
+      type: object.type || "Object3D",
+      visible: object.visible !== false,
+      selected: state.selectedObjects.has(object),
+      pos: object.position ? { x: object.position.x, y: object.position.y, z: object.position.z } : { x: 0, y: 0, z: 0 },
+    };
+  }
+
+  function notifyKeyframeAnimationChanged() {
+    if (state.destroyed) return;
+    window.dispatchEvent(new CustomEvent("nv-keyframe-animation-changed", { detail: { providerId: "glb" } }));
+  }
+
+  function clearKeyframeAnimationState(options = {}) {
+    state.keyframeAnimation.currentTime = 0;
+    state.keyframeAnimation.keyframes = [];
+    state.keyframeAnimation.nextId = 1;
+    if (options.notify !== false) notifyKeyframeAnimationChanged();
+  }
+
+  function getKeyframeAnimationState() {
+    const keyframeCounts = new Map();
+    state.keyframeAnimation.keyframes.forEach((entry) => {
+      keyframeCounts.set(entry.uuid, (keyframeCounts.get(entry.uuid) || 0) + 1);
+    });
+    const layers = layerEntries().map((entry) => ({
+      ...entry,
+      keyframeCount: keyframeCounts.get(entry.uuid) || 0,
+    }));
+    const layerByUuid = new Map(layers.map((entry) => [entry.uuid, entry]));
+    return {
+      providerId: "glb",
+      title: "KeyframeAnimation",
+      currentTime: state.keyframeAnimation.currentTime,
+      selectedUuids: Array.from(state.selectedObjects).map((obj) => obj.uuid),
+      layers,
+      keyframes: state.keyframeAnimation.keyframes.map((entry) => {
+        const layer = layerByUuid.get(entry.uuid);
+        return {
+          ...entry,
+          label: layer?.label || entry.label,
+          type: layer?.type || entry.type || "Object3D",
+          snapshot: cloneSnapshot(entry.snapshot),
+        };
+      }),
+    };
+  }
+
+  function setKeyframeForObject(uuid, time = state.keyframeAnimation.currentTime, options = {}) {
+    const object = objectByUuid(uuid);
+    if (!object) {
+      if (!options.silent) setStatus("Layer is no longer available for keyframing.");
+      return null;
+    }
+    const layer = layerInfoForUuid(uuid);
+    const keyframeTime = normalizeKeyframeTime(time);
+    state.keyframeAnimation.currentTime = keyframeTime;
+    const existingIndex = state.keyframeAnimation.keyframes.findIndex((entry) =>
+      entry.uuid === uuid && Math.abs(entry.time - keyframeTime) < 0.0005
+    );
+    const previous = existingIndex >= 0 ? state.keyframeAnimation.keyframes[existingIndex] : null;
+    const record = {
+      id: previous?.id || keyframeRecordId(),
+      uuid,
+      label: layer?.label || object.name || "Object",
+      type: layer?.type || object.type || "Object3D",
+      time: keyframeTime,
+      snapshot: snapshotObjectTransform(object),
+      createdAt: previous?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+    };
+    if (existingIndex >= 0) state.keyframeAnimation.keyframes.splice(existingIndex, 1, record);
+    else state.keyframeAnimation.keyframes.push(record);
+    state.keyframeAnimation.keyframes.sort((a, b) => a.time - b.time || a.label.localeCompare(b.label));
+    if (!options.silent) {
+      notifyKeyframeAnimationChanged();
+      setStatus("Set keyframe for " + record.label + " at " + keyframeTime.toFixed(3) + "s.");
+    }
+    return record;
+  }
+
+  function setKeyframesForSelected(time = state.keyframeAnimation.currentTime) {
+    const selected = Array.from(state.selectedObjects);
+    if (!selected.length) {
+      setStatus("Select at least one layer before setting a keyframe.");
+      return false;
+    }
+    const keyframeTime = normalizeKeyframeTime(time);
+    const records = selected
+      .map((object) => setKeyframeForObject(object.uuid, keyframeTime, { silent: true }))
+      .filter(Boolean);
+    notifyKeyframeAnimationChanged();
+    setStatus("Set " + records.length + " keyframe" + (records.length === 1 ? "" : "s") + " at " + keyframeTime.toFixed(3) + "s.");
+    return records.length > 0;
+  }
+
+  function deleteKeyframe(id) {
+    const index = state.keyframeAnimation.keyframes.findIndex((entry) => entry.id === id);
+    if (index < 0) return false;
+    const [removed] = state.keyframeAnimation.keyframes.splice(index, 1);
+    notifyKeyframeAnimationChanged();
+    setStatus("Deleted keyframe for " + (removed?.label || "layer") + ".");
+    return true;
+  }
+
+  function applyKeyframe(id) {
+    const entry = state.keyframeAnimation.keyframes.find((keyframe) => keyframe.id === id);
+    if (!entry) return false;
+    const object = objectByUuid(entry.uuid);
+    if (!object) {
+      setStatus("Layer is no longer available for this keyframe.");
+      return false;
+    }
+    state.keyframeAnimation.currentTime = entry.time;
+    selectByUuid(entry.uuid);
+    const applied = applySnapshotToObject(object, entry.snapshot);
+    notifyKeyframeAnimationChanged();
+    if (applied) setStatus("Applied keyframe for " + (entry.label || "layer") + " at " + entry.time.toFixed(3) + "s.");
+    return applied;
+  }
+
+  function setKeyframeCurrentTime(time) {
+    state.keyframeAnimation.currentTime = normalizeKeyframeTime(time);
+    notifyKeyframeAnimationChanged();
+    return state.keyframeAnimation.currentTime;
+  }
+
+  function getEditorCell() {
+    return container?.closest?.(".panel-cell") || null;
+  }
+
+  function createKeyframeAnimationPanelCell() {
+    const cell = document.createElement("div");
+    cell.className = "panel-cell";
+    cell.dataset.id = KEYFRAME_ANIMATION_PANEL_ID;
+    cell.dataset.panelId = KEYFRAME_ANIMATION_PANEL_ID;
+    cell.dataset.panelSlug = "keyframeanimationpanel";
+    cell.dataset.panelClass = "ControlPanel";
+    Object.assign(cell.style, {
+      border: "1px solid #bbb",
+      background: "#fafafa",
+      overflow: "auto",
+      flex: "0 0 30%",
+      display: "flex",
+      flexDirection: "column",
+      position: "relative",
+      minHeight: "128px",
+      minWidth: "0",
+    });
+    return cell;
+  }
+
+  function ensureKeyframeAnimationColumn(editorCell) {
+    if (!editorCell?.parentElement) return null;
+    const parent = editorCell.parentElement;
+    if (parent.dataset?.nvGlbKeyframeColumn === "1") return parent;
+
+    const originalFlex = editorCell.style.flex || "1 1 auto";
+    const column = document.createElement("div");
+    column.className = "panel-row";
+    Object.assign(column.style, {
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      flex: originalFlex,
+      alignItems: "stretch",
+      minHeight: "0",
+      minWidth: "0",
+    });
+    column.dataset.direction = "column";
+    column.dataset.isVertical = "1";
+    column.dataset.nvGlbKeyframeColumn = "1";
+
+    parent.replaceChild(column, editorCell);
+    editorCell.style.flex = "1 1 70%";
+    editorCell.style.minHeight = "0";
+    editorCell.style.minWidth = "0";
+    column.appendChild(editorCell);
+    rebuildLayoutDividersForContainer(column, true);
+    rebuildLayoutDividersForContainer(parent, parent.dataset?.direction === "column");
+    return column;
+  }
+
+  function findKeyframeAnimationPanelCell() {
+    const editorCell = getEditorCell();
+    const column = editorCell?.parentElement?.dataset?.nvGlbKeyframeColumn === "1" ? editorCell.parentElement : null;
+    if (!column) return null;
+    return Array.from(column.children).find((child) =>
+      child.classList?.contains?.("panel-cell") && child.dataset?.id === KEYFRAME_ANIMATION_PANEL_ID
+    ) || null;
+  }
+
+  async function showKeyframeAnimationPanel() {
+    const editorCell = getEditorCell();
+    if (!editorCell) return false;
+    const column = ensureKeyframeAnimationColumn(editorCell);
+    if (!column) return false;
+    let panelCell = findKeyframeAnimationPanelCell();
+    if (!panelCell) {
+      panelCell = createKeyframeAnimationPanelCell();
+      column.appendChild(panelCell);
+      rebuildLayoutDividersForContainer(column, true);
+    }
+
+    window.activeCell = panelCell;
+    try {
+      await loadPanelIntoCell(KEYFRAME_ANIMATION_PANEL_ID, {
+        id: KEYFRAME_ANIMATION_PANEL_ID,
+        displayName: "KeyframeAnimation",
+        providerId: "glb",
+      });
+      notifyKeyframeAnimationChanged();
+    } finally {
+      window.activeCell = editorCell;
+      window.highlightActiveCell?.(editorCell);
+    }
+    return true;
+  }
+
+  function hideKeyframeAnimationPanel() {
+    const panelCell = findKeyframeAnimationPanelCell();
+    if (!panelCell) return false;
+    const column = panelCell.parentElement;
+    const editorCell = getEditorCell();
+    if (typeof panelCell.cleanup === "function") {
+      try {
+        panelCell.cleanup();
+      } catch (err) {
+        console.warn("KeyframeAnimation panel cleanup failed:", err);
+      }
+    }
+    panelCell.remove();
+    if (column) rebuildLayoutDividersForContainer(column, true);
+    const parent = column?.parentElement;
+    if (editorCell && parent && column.dataset?.nvGlbKeyframeColumn === "1") {
+      const originalFlex = column.style.flex || editorCell.style.flex || "1 1 auto";
+      parent.replaceChild(editorCell, column);
+      editorCell.style.flex = originalFlex;
+      rebuildLayoutDividersForContainer(parent, parent.dataset?.direction === "column");
+      window.activeCell = editorCell;
+      window.highlightActiveCell?.(editorCell);
+    }
+    return true;
+  }
+
+  function toggleKeyframeAnimationPanel() {
+    if (findKeyframeAnimationPanelCell()) return hideKeyframeAnimationPanel();
+    return showKeyframeAnimationPanel();
   }
 
 
@@ -1107,6 +1449,23 @@ export async function renderEditor(filePath, container) {
     togglePane: toggleAnimationPane,
   };
 
+  const keyframeAnimationContextToken = Symbol("nv-glb-keyframe-animation-context");
+  window.KeyframeAnimationContext = {
+    id: "glb-keyframe-animation",
+    title: "KeyframeAnimation",
+    token: keyframeAnimationContextToken,
+    getState: getKeyframeAnimationState,
+    setCurrentTime: setKeyframeCurrentTime,
+    setKeyframe: setKeyframeForObject,
+    setKeyframesForSelected,
+    deleteKeyframe,
+    applyKeyframe,
+    selectLayer: selectByUuid,
+    showPanel: showKeyframeAnimationPanel,
+    hidePanel: hideKeyframeAnimationPanel,
+    togglePanel: toggleKeyframeAnimationPanel,
+  };
+
   function exportSTL() {
     const hiddenDisplays = [];
     state.root?.traverse?.((node) => {
@@ -1136,6 +1495,9 @@ export async function renderEditor(filePath, container) {
     token: glbEditorToken,
     filePath,
     insertBone,
+    insertPrimitive,
+    insertMeshVertex,
+    fillOrConnectMeshSelection,
     handleToolbarAction: handleGLBToolbarAction,
     exportSTL,
   };
@@ -1145,6 +1507,7 @@ export async function renderEditor(filePath, container) {
   function clearModel() {
     clearMeshEditOverlay();
     resetAnimationSequence();
+    clearKeyframeAnimationState();
     if (!state.root) {
       state.mixer = null;
       return;
@@ -1173,6 +1536,213 @@ export async function renderEditor(filePath, container) {
     if (!object || state.selectableSet.has(object)) return;
     state.selectableObjects.push(object);
     state.selectableSet.add(object);
+  }
+
+  function defaultPrimitiveSize() {
+    const box = new THREE.Box3();
+    if (state.root) box.setFromObject(state.root);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    return clamp(maxDim > 0 ? maxDim * 0.18 : 1, 0.08, 20, 1);
+  }
+
+  function insertionWorldPosition() {
+    const edit = state.meshEdit;
+    if (edit?.mesh && edit.selectedVertices?.size) {
+      return edit.mesh.localToWorld(meshCentroid(Array.from(edit.selectedVertices), edit));
+    }
+    if (state.selectedObject) return objectWorldCenter(state.selectedObject);
+    if (state.root) {
+      const box = new THREE.Box3().setFromObject(state.root);
+      if (!box.isEmpty()) return box.getCenter(new THREE.Vector3());
+    }
+    return controls?.target?.clone?.() || new THREE.Vector3();
+  }
+
+  function centerGeometry(geometry) {
+    geometry.computeBoundingBox?.();
+    const center = geometry.boundingBox?.getCenter?.(new THREE.Vector3()) || new THREE.Vector3();
+    geometry.translate?.(-center.x, -center.y, -center.z);
+    geometry.computeVertexNormals?.();
+    geometry.computeBoundingBox?.();
+    geometry.computeBoundingSphere?.();
+    return geometry;
+  }
+
+  function createRegularPolygonGeometry(sides, radius) {
+    const safeSides = Math.max(3, Math.floor(Number(sides) || 3));
+    const shape = new THREE.Shape();
+    for (let i = 0; i < safeSides; i += 1) {
+      const angle = -Math.PI / 2 + (i / safeSides) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    }
+    shape.closePath();
+    return centerGeometry(new THREE.ShapeGeometry(shape));
+  }
+
+  function primitiveMaterial(type) {
+    const colors = {
+      vertex: 0xf59e0b,
+      line: 0x38bdf8,
+      circle: 0x34d399,
+      rectangle: 0x60a5fa,
+      square: 0x60a5fa,
+      triangle: 0xf472b6,
+      polygon: 0xa78bfa,
+      sphere: 0x22c55e,
+      cube: 0x3b82f6,
+      cylinder: 0xf97316,
+      polyhedron: 0xeab308,
+    };
+    return new THREE.MeshStandardMaterial({
+      color: colors[type] || 0x8b9cb3,
+      roughness: 0.72,
+      metalness: 0.08,
+      side: THREE.DoubleSide,
+    });
+  }
+
+  function primitiveLabel(type) {
+    const labels = {
+      vertex: "Vertex",
+      line: "Line",
+      circle: "Circle",
+      rectangle: "Rectangle",
+      square: "Square",
+      triangle: "Triangle",
+      polygon: "Polygon",
+      sphere: "Sphere",
+      cube: "Cube",
+      cylinder: "Cylinder",
+      polyhedron: "Polyhedron",
+    };
+    return labels[type] || "Primitive";
+  }
+
+  function nextPrimitiveName(type) {
+    const label = primitiveLabel(type);
+    let count = 0;
+    state.root?.traverse?.((node) => {
+      if (node?.userData?.nvInsertedPrimitiveType === type) count += 1;
+    });
+    return label + " " + (count + 1);
+  }
+
+  function createPrimitiveObject(type, size = defaultPrimitiveSize()) {
+    const safeSize = clamp(size, 0.05, 1000, 1);
+    let object = null;
+    if (type === "vertex") {
+      object = new THREE.Mesh(new THREE.SphereGeometry(safeSize * 0.08, 12, 8), primitiveMaterial(type));
+    } else if (type === "line") {
+      const geometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-safeSize * 0.5, 0, 0),
+        new THREE.Vector3(safeSize * 0.5, 0, 0),
+      ]);
+      object = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x38bdf8 }));
+    } else if (type === "circle") {
+      object = new THREE.Mesh(new THREE.CircleGeometry(safeSize * 0.5, 48), primitiveMaterial(type));
+    } else if (type === "rectangle") {
+      object = new THREE.Mesh(new THREE.PlaneGeometry(safeSize * 1.35, safeSize * 0.85), primitiveMaterial(type));
+    } else if (type === "square") {
+      object = new THREE.Mesh(new THREE.PlaneGeometry(safeSize, safeSize), primitiveMaterial(type));
+    } else if (type === "triangle") {
+      object = new THREE.Mesh(createRegularPolygonGeometry(3, safeSize * 0.58), primitiveMaterial(type));
+    } else if (type === "polygon") {
+      object = new THREE.Mesh(createRegularPolygonGeometry(6, safeSize * 0.56), primitiveMaterial(type));
+    } else if (type === "sphere") {
+      object = new THREE.Mesh(new THREE.SphereGeometry(safeSize * 0.5, 32, 16), primitiveMaterial(type));
+    } else if (type === "cube") {
+      object = new THREE.Mesh(new THREE.BoxGeometry(safeSize, safeSize, safeSize), primitiveMaterial(type));
+    } else if (type === "cylinder") {
+      object = new THREE.Mesh(new THREE.CylinderGeometry(safeSize * 0.35, safeSize * 0.35, safeSize, 32), primitiveMaterial(type));
+    } else if (type === "polyhedron") {
+      object = new THREE.Mesh(new THREE.TetrahedronGeometry(safeSize * 0.65), primitiveMaterial(type));
+    }
+
+    if (!object) return null;
+    object.name = nextPrimitiveName(type);
+    object.userData = {
+      ...(object.userData || {}),
+      nvInsertedPrimitive: true,
+      nvInsertedPrimitiveType: type,
+    };
+    return object;
+  }
+
+  function addObjectToGlbRoot(object, worldPosition = insertionWorldPosition()) {
+    if (!state.root || !object) return false;
+    state.root.updateMatrixWorld?.(true);
+    object.position.copy(state.root.worldToLocal(worldPosition.clone()));
+    state.root.add(object);
+    object.updateMatrixWorld?.(true);
+    addSelectableObject(object);
+    selectObject(object);
+    updateSelectionHelper();
+    notifyLayersChanged();
+    updateGLBToolbarState();
+    return true;
+  }
+
+  function insertPrimitive(type) {
+    if (!state.root) {
+      setStatus("Load a GLB before inserting a primitive.");
+      return false;
+    }
+    const primitiveType = String(type || "").trim();
+    const object = createPrimitiveObject(primitiveType);
+    if (!object) {
+      setStatus("This primitive is not supported by the GLB editor yet.");
+      return false;
+    }
+    if (!addObjectToGlbRoot(object)) return false;
+    setStatus("Inserted " + primitiveLabel(primitiveType).toLowerCase() + ": " + object.name + ".");
+    return true;
+  }
+
+  function insertMeshVertex() {
+    const edit = state.meshEdit;
+    if (!edit?.mesh || !edit.topology) {
+      return insertPrimitive("vertex");
+    }
+    const worldPosition = insertionWorldPosition();
+    const localPosition = edit.mesh.worldToLocal(worldPosition.clone());
+    const index = edit.topology.vertices.length;
+    edit.topology.vertices.push(localPosition);
+    edit.selectedVertices = new Set([index]);
+    rebuildMeshGeometryFromTopology(edit);
+    setStatus("Inserted mesh vertex " + (index + 1) + ".");
+    return true;
+  }
+
+  function grabMeshSelection(event = null) {
+    const selected = Array.from(state.meshEdit?.selectedVertices || []);
+    if (!selected.length) {
+      setStatus("Select one or more mesh vertices to grab.");
+      return false;
+    }
+    return startMeshVertexGrab(selected, event);
+  }
+
+  function fillOrConnectMeshSelection() {
+    const edit = state.meshEdit;
+    const selected = Array.from(edit?.selectedVertices || []);
+    if (!edit?.mesh || !edit.topology || selected.length < 2) {
+      setStatus("Select at least two mesh vertices first.");
+      return false;
+    }
+    if (selected.length === 2) {
+      if (!meshHasEdge(selected[0], selected[1], edit)) edit.topology.customEdges.push([selected[0], selected[1]]);
+      rebuildMeshEditOverlay();
+      setStatus("Inserted mesh edge.");
+      return true;
+    }
+    edit.topology.faces.push(selected);
+    rebuildMeshGeometryFromTopology(edit);
+    setStatus("Inserted mesh face.");
+    return true;
   }
 
   function defaultBoneLength() {
@@ -1291,8 +1861,30 @@ export async function renderEditor(filePath, container) {
   }
 
   function handleGLBToolbarAction(callbackKey) {
-    if (callbackKey === "glbInsertBone") return insertBone();
-    if (callbackKey === "ExportSelectedModelAsSTL" || callbackKey === "exportModelAsSTL") return exportSTL();
+    const key = String(callbackKey || "");
+    const primitiveMap = {
+      scadInsertCircle: "circle",
+      scadInsertRectangle: "rectangle",
+      scadInsertSquare: "square",
+      scadInsertTriangle: "triangle",
+      scadInsertPolygon: "polygon",
+      scadInsertLine: "line",
+      scadInsertSphere: "sphere",
+      scadInsertCube: "cube",
+      scadInsertCylinder: "cylinder",
+      scadInsertPolyhedron: "polyhedron",
+    };
+    if (key === "glbInsertBone") return insertBone();
+    if (key === "stlAddVertex" || key === "objInsertVertex" || key === "scadInsertVertex") return insertMeshVertex();
+    if (key === "stlExtrude" || key === "objExtrude" || key === "scadExtrude") return extrudeMeshSelection();
+    if (key === "stlFillOrConnect" || key === "objFillOrConnect") return fillOrConnectMeshSelection();
+    if (key === "stlGrab" || key === "objGrab") return grabMeshSelection();
+    if (primitiveMap[key]) return insertPrimitive(primitiveMap[key]);
+    if (key === "scadSelectTool") {
+      setStatus("GLB select mode is active.");
+      return true;
+    }
+    if (key === "ExportSelectedModelAsSTL" || key === "exportModelAsSTL") return exportSTL();
     return false;
   }
 
@@ -1305,6 +1897,8 @@ export async function renderEditor(filePath, container) {
       activeActionHandler: handleGLBToolbarAction,
       modelCanExportSTL: true,
       glbCanInsertBone: true,
+      glbCanInsertPrimitive: true,
+      glbCanEditMesh: true,
       ...extra,
     });
   }
@@ -2077,6 +2671,7 @@ export async function renderEditor(filePath, container) {
   const cleanup = () => {
     state.destroyed = true;
     state.animationThumbnailRequest += 1;
+    hideKeyframeAnimationPanel();
     renderer.setAnimationLoop(null);
     renderer.domElement.removeEventListener("pointerdown", onPointerDown);
     window.removeEventListener("pointermove", onPointerMove);
@@ -2100,16 +2695,19 @@ export async function renderEditor(filePath, container) {
     if (window.GLBAnimationContext?.token === animationContextToken) {
       delete window.GLBAnimationContext;
     }
+    if (window.KeyframeAnimationContext?.token === keyframeAnimationContextToken) {
+      delete window.KeyframeAnimationContext;
+    }
     if (window.GLBEditorContext?.token === glbEditorToken) {
       delete window.GLBEditorContext;
     }
     if (window.NodevisionState?.activeActionHandler === handleGLBToolbarAction) {
       window.NodevisionState.activeActionHandler = null;
-      updateToolbarState({ activeActionHandler: null, glbCanInsertBone: false });
+      updateToolbarState({ activeActionHandler: null, glbCanInsertBone: false, glbCanInsertPrimitive: false, glbCanEditMesh: false });
     }
     if (window.NodevisionModelExportContext?.token === exportToken) {
       window.NodevisionModelExportContext = null;
-      updateToolbarState({ modelCanExportSTL: false, glbCanInsertBone: false });
+      updateToolbarState({ modelCanExportSTL: false, glbCanInsertBone: false, glbCanInsertPrimitive: false, glbCanEditMesh: false });
     }
     container.__nvActiveEditorCleanup = null;
     container.__nvGlbEditorCleanup = null;

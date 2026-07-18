@@ -2,14 +2,78 @@
 // This file defines browser-side world Properties Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
+import { normalizeMetaWorldMultiplayer } from "/MetaWorld/MetaWorldMultiplayerConfig.mjs";
 
 const DEFAULT_ENVIRONMENT = {
   skyColor: "#ffffff",
   floorColor: "#d8dee4",
   backgroundMode: "color",
   backgroundImage: "",
-  floorImage: ""
+  floorImage: "",
+  dayNightCycle: {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  }
 };
+
+function cloneDefaultDayNightCycle() {
+  return {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  };
+}
+
+function clampFiniteNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function normalizeDayNightPeriod(period, fallbackTime = 0) {
+  const source = period && typeof period === "object" ? period : {};
+  return {
+    time: clampFiniteNumber(source.time ?? source.timeSeconds ?? source.at ?? source.offset, 0, Number.MAX_SAFE_INTEGER, fallbackTime),
+    brightness: clampFiniteNumber(source.brightness ?? source.level ?? source.intensity, 0, 1, 1)
+  };
+}
+
+function normalizeDayNightCycle(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const durationSeconds = clampFiniteNumber(source.durationSeconds ?? source.duration ?? source.cycleSeconds, 1, 86400, DEFAULT_ENVIRONMENT.dayNightCycle.durationSeconds);
+  const sourcePeriods = Array.isArray(source.periods)
+    ? source.periods
+    : Array.isArray(source.keyframes)
+      ? source.keyframes
+      : [];
+  const periods = sourcePeriods
+    .map((period, index) => normalizeDayNightPeriod(period, index === 0 ? 0 : durationSeconds * index / Math.max(sourcePeriods.length, 1)))
+    .map((period) => ({
+      time: clampFiniteNumber(period.time, 0, durationSeconds, 0),
+      brightness: clampFiniteNumber(period.brightness, 0, 1, 1)
+    }))
+    .sort((a, b) => a.time - b.time);
+  return {
+    enabled: source.enabled === true,
+    durationSeconds,
+    periods: periods.length ? periods : cloneDefaultDayNightCycle().periods
+  };
+}
+
+function normalizeEnvironmentState(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const environment = {
+    ...DEFAULT_ENVIRONMENT,
+    ...source
+  };
+  environment.dayNightCycle = normalizeDayNightCycle(source.dayNightCycle ?? source.dayNight ?? source.lightCycle ?? DEFAULT_ENVIRONMENT.dayNightCycle);
+  return environment;
+}
 
 function createField(labelText, inputEl, container) {
   const wrapper = document.createElement("label");
@@ -174,6 +238,185 @@ export function createWorldPropertiesPanel({ movementState }) {
   envStatusLine.style.opacity = "0.85";
   environmentSection.appendChild(envStatusLine);
 
+  const cycleSection = document.createElement("div");
+  cycleSection.style.display = "flex";
+  cycleSection.style.flexDirection = "column";
+  cycleSection.style.gap = "8px";
+  cycleSection.style.paddingTop = "6px";
+  cycleSection.style.borderTop = "1px solid rgba(255,255,255,0.08)";
+  environmentSection.appendChild(cycleSection);
+
+  const cycleTitle = document.createElement("div");
+  cycleTitle.textContent = "Day / Night Cycle";
+  cycleTitle.style.fontWeight = "600";
+  cycleSection.appendChild(cycleTitle);
+
+  const cycleHeader = document.createElement("div");
+  cycleHeader.style.display = "grid";
+  cycleHeader.style.gridTemplateColumns = "minmax(0, 1fr) minmax(90px, 140px)";
+  cycleHeader.style.gap = "8px";
+  cycleSection.appendChild(cycleHeader);
+
+  const dayNightEnabledInput = createField("Enabled", (() => {
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.style.width = "auto";
+    return input;
+  })(), cycleHeader);
+
+  const cycleDurationInput = createField("Cycle Length (s)", (() => {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "1";
+    input.step = "1";
+    input.value = "120";
+    return input;
+  })(), cycleHeader);
+
+  const cycleRows = document.createElement("div");
+  cycleRows.style.display = "flex";
+  cycleRows.style.flexDirection = "column";
+  cycleRows.style.gap = "6px";
+  cycleSection.appendChild(cycleRows);
+
+  const cycleButtonRow = document.createElement("div");
+  cycleButtonRow.style.display = "flex";
+  cycleButtonRow.style.gap = "8px";
+  cycleButtonRow.style.flexWrap = "wrap";
+  cycleSection.appendChild(cycleButtonRow);
+
+  const addPeriodBtn = document.createElement("button");
+  addPeriodBtn.type = "button";
+  addPeriodBtn.textContent = "Add Period";
+  cycleButtonRow.appendChild(addPeriodBtn);
+
+  const applyCycleBtn = document.createElement("button");
+  applyCycleBtn.type = "button";
+  applyCycleBtn.textContent = "Apply Cycle";
+  cycleButtonRow.appendChild(applyCycleBtn);
+
+  const resetCycleBtn = document.createElement("button");
+  resetCycleBtn.type = "button";
+  resetCycleBtn.textContent = "Full Brightness";
+  cycleButtonRow.appendChild(resetCycleBtn);
+
+  function formatCycleNumber(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "0";
+    return Number.isInteger(number) ? String(number) : String(Math.round(number * 100) / 100);
+  }
+
+  function refreshCycleRemoveButtons() {
+    const buttons = Array.from(cycleRows.querySelectorAll("[data-remove-cycle-period]"));
+    buttons.forEach((button) => {
+      button.disabled = buttons.length <= 1;
+    });
+  }
+
+  function createCyclePeriodRow(period = { time: 0, brightness: 1 }) {
+    const row = document.createElement("div");
+    row.dataset.cycleRow = "true";
+    row.style.display = "grid";
+    row.style.gridTemplateColumns = "minmax(72px, 1fr) minmax(84px, 1fr) auto";
+    row.style.gap = "6px";
+    row.style.alignItems = "end";
+
+    const timeInput = document.createElement("input");
+    timeInput.type = "number";
+    timeInput.min = "0";
+    timeInput.step = "1";
+    timeInput.value = formatCycleNumber(period.time);
+    timeInput.dataset.cycleTime = "true";
+    createField("Time (s)", timeInput, row);
+
+    const brightnessInput = document.createElement("input");
+    brightnessInput.type = "number";
+    brightnessInput.min = "0";
+    brightnessInput.max = "1";
+    brightnessInput.step = "0.05";
+    brightnessInput.value = formatCycleNumber(period.brightness);
+    brightnessInput.dataset.cycleBrightness = "true";
+    createField("Brightness", brightnessInput, row);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.textContent = "Remove";
+    removeBtn.dataset.removeCyclePeriod = "true";
+    row.appendChild(removeBtn);
+
+    timeInput.addEventListener("change", () => applyCycle("Day/night cycle updated."));
+    brightnessInput.addEventListener("change", () => applyCycle("Day/night cycle updated."));
+    removeBtn.addEventListener("click", () => {
+      row.remove();
+      ensureCyclePeriod();
+      refreshCycleRemoveButtons();
+      applyCycle("Day/night period removed.");
+    });
+    return row;
+  }
+
+  function ensureCyclePeriod() {
+    if (!cycleRows.querySelector("[data-cycle-row]")) {
+      cycleRows.appendChild(createCyclePeriodRow({ time: 0, brightness: 1 }));
+    }
+  }
+
+  function setCycleFields(cycle) {
+    const normalized = normalizeDayNightCycle(cycle);
+    dayNightEnabledInput.checked = normalized.enabled;
+    cycleDurationInput.value = formatCycleNumber(normalized.durationSeconds);
+    cycleRows.replaceChildren();
+    normalized.periods.forEach((period) => {
+      cycleRows.appendChild(createCyclePeriodRow(period));
+    });
+    ensureCyclePeriod();
+    refreshCycleRemoveButtons();
+  }
+
+  function readCycleFromFields() {
+    const rows = Array.from(cycleRows.querySelectorAll("[data-cycle-row]"));
+    const periods = rows.map((row, index) => {
+      const timeInput = row.querySelector("[data-cycle-time]");
+      const brightnessInput = row.querySelector("[data-cycle-brightness]");
+      return {
+        time: Number(timeInput?.value ?? index),
+        brightness: Number(brightnessInput?.value ?? 1)
+      };
+    });
+    return normalizeDayNightCycle({
+      enabled: dayNightEnabledInput.checked,
+      durationSeconds: Number(cycleDurationInput.value),
+      periods
+    });
+  }
+
+  function applyCycle(statusMessage = "Day/night cycle applied.") {
+    const cycle = readCycleFromFields();
+    setCycleFields(cycle);
+    applyEnvironment({ dayNightCycle: cycle }, statusMessage);
+  }
+
+  addPeriodBtn.addEventListener("click", () => {
+    const cycle = readCycleFromFields();
+    const nextTime = Math.min(
+      cycle.durationSeconds,
+      Math.round((cycle.durationSeconds * cycle.periods.length / Math.max(cycle.periods.length + 1, 2)) * 100) / 100
+    );
+    cycleRows.appendChild(createCyclePeriodRow({ time: nextTime, brightness: 1 }));
+    refreshCycleRemoveButtons();
+    applyCycle("Day/night period added.");
+  });
+
+  applyCycleBtn.addEventListener("click", () => applyCycle());
+  resetCycleBtn.addEventListener("click", () => {
+    setCycleFields(cloneDefaultDayNightCycle());
+    applyCycle("Full brightness restored.");
+  });
+  dayNightEnabledInput.addEventListener("change", () => {
+    applyCycle(dayNightEnabledInput.checked ? "Day/night cycle enabled." : "Day/night cycle disabled.");
+  });
+  cycleDurationInput.addEventListener("change", () => applyCycle("Cycle length updated."));
+
   applyColorsBtn.addEventListener("click", () => {
     const sky = skyColorInput.value || DEFAULT_ENVIRONMENT.skyColor;
     const floor = floorColorInput.value || DEFAULT_ENVIRONMENT.floorColor;
@@ -206,6 +449,70 @@ export function createWorldPropertiesPanel({ movementState }) {
     }
     applyEnvironment({ floorImage: url }, "Floor image loading.");
   });
+
+  const multiplayerSection = document.createElement("div");
+  multiplayerSection.style.display = "flex";
+  multiplayerSection.style.flexDirection = "column";
+  multiplayerSection.style.gap = "8px";
+  multiplayerSection.style.paddingTop = "6px";
+  multiplayerSection.style.borderTop = "1px solid rgba(255,255,255,0.1)";
+  root.appendChild(multiplayerSection);
+
+  const multiplayerTitle = document.createElement("div");
+  multiplayerTitle.textContent = "Multiplayer";
+  multiplayerTitle.style.fontWeight = "600";
+  multiplayerSection.appendChild(multiplayerTitle);
+
+  const multiplayerGrid = document.createElement("div");
+  multiplayerGrid.style.display = "grid";
+  multiplayerGrid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+  multiplayerGrid.style.gap = "8px";
+  multiplayerSection.appendChild(multiplayerGrid);
+
+  const multiplayerEnabledInput = createField("Enable Presence", (() => {
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.style.width = "auto";
+    return input;
+  })(), multiplayerGrid);
+
+  const multiplayerShowNamesInput = createField("Show Names", (() => {
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.style.width = "auto";
+    return input;
+  })(), multiplayerGrid);
+
+  const multiplayerPublishRateInput = createField("Publish Rate (ms)", (() => {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "250";
+    input.max = "5000";
+    input.step = "50";
+    return input;
+  })(), multiplayerGrid);
+
+  const multiplayerSnapshotRateInput = createField("Snapshot Rate (ms)", (() => {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "300";
+    input.max = "5000";
+    input.step = "50";
+    return input;
+  })(), multiplayerGrid);
+
+  const multiplayerAvatarScaleInput = createField("Avatar Scale", (() => {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0.35";
+    input.max = "2.5";
+    input.step = "0.05";
+    return input;
+  })(), multiplayerGrid);
+
+  const multiplayerStatusLine = document.createElement("div");
+  multiplayerStatusLine.style.opacity = "0.85";
+  multiplayerSection.appendChild(multiplayerStatusLine);
 
   const buttonRow = document.createElement("div");
   buttonRow.style.display = "flex";
@@ -244,10 +551,10 @@ export function createWorldPropertiesPanel({ movementState }) {
 
   function getEnvironmentState() {
     const env = movementState?.environment || {};
-    return {
+    return normalizeEnvironmentState({
       ...DEFAULT_ENVIRONMENT,
       ...env
-    };
+    });
   }
 
   function refreshEnvironmentFields() {
@@ -256,6 +563,7 @@ export function createWorldPropertiesPanel({ movementState }) {
     floorColorInput.value = env.floorColor || DEFAULT_ENVIRONMENT.floorColor;
     skyImageInput.value = env.backgroundImage || "";
     floorImageInput.value = env.floorImage || "";
+    setCycleFields(env.dayNightCycle);
     envStatusLine.textContent = env.backgroundMode === "image" && env.backgroundImage
       ? "Sky image active."
       : env.floorImage
@@ -263,21 +571,119 @@ export function createWorldPropertiesPanel({ movementState }) {
         : "";
   }
 
-  function applyEnvironment(overrides, statusMessage) {
-    const consolePanels = window.VRWorldContext?.consolePanels;
-    if (consolePanels?.applyEnvironmentState) {
-      consolePanels.applyEnvironmentState(overrides);
-    } else if (movementState) {
-      movementState.environment = {
-        ...(movementState.environment || {}),
-        ...overrides
+  function syncWorldEnvironment(env) {
+    const definition = normalizeEnvironmentState(env);
+    const worldDef = window.VRWorldContext?.currentWorldDefinition;
+    if (worldDef && typeof worldDef === "object") {
+      worldDef.environment = {
+        ...(worldDef.environment || {}),
+        ...definition
+      };
+      worldDef.metadata = worldDef.metadata && typeof worldDef.metadata === "object" ? worldDef.metadata : {};
+      worldDef.metadata.environment = {
+        ...(worldDef.metadata.environment || {}),
+        ...definition
       };
     }
+    if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
+    return definition;
+  }
+
+  function applyEnvironment(overrides, statusMessage) {
+    const sourceOverrides = overrides && typeof overrides === "object" ? overrides : {};
+    const nextEnvironment = normalizeEnvironmentState({
+      ...getEnvironmentState(),
+      ...sourceOverrides
+    });
+    const consolePanels = window.VRWorldContext?.consolePanels;
+    if (consolePanels?.applyEnvironmentState) {
+      consolePanels.applyEnvironmentState(sourceOverrides);
+    } else if (movementState) {
+      movementState.environment = nextEnvironment;
+    }
+    syncWorldEnvironment(movementState?.environment || nextEnvironment);
     refreshEnvironmentFields();
     if (typeof statusMessage === "string") {
       envStatusLine.textContent = statusMessage;
     }
   }
+
+  function getMultiplayerState() {
+    const worldDef = window.VRWorldContext?.currentWorldDefinition || {};
+    return normalizeMetaWorldMultiplayer(
+      movementState?.multiplayer
+      || worldDef?.metadata?.multiplayer
+      || worldDef?.multiplayer
+      || {}
+    );
+  }
+
+  function formatMultiplayerNumber(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "0";
+    return Number.isInteger(number) ? String(number) : String(Math.round(number * 100) / 100);
+  }
+
+  function setMultiplayerFields(multiplayer) {
+    const normalized = normalizeMetaWorldMultiplayer(multiplayer);
+    multiplayerEnabledInput.checked = normalized.enabled;
+    multiplayerShowNamesInput.checked = normalized.showNames !== false;
+    multiplayerPublishRateInput.value = formatMultiplayerNumber(normalized.publishRateMs);
+    multiplayerSnapshotRateInput.value = formatMultiplayerNumber(normalized.snapshotRateMs);
+    multiplayerAvatarScaleInput.value = formatMultiplayerNumber(normalized.avatarScale);
+  }
+
+  function refreshMultiplayerFields() {
+    const multiplayer = getMultiplayerState();
+    setMultiplayerFields(multiplayer);
+    const runtimeStatus = window.VRWorldContext?.multiplayerClient?.getStatus?.();
+    multiplayerStatusLine.textContent = multiplayer.enabled
+      ? (runtimeStatus?.status || "Multiplayer presence enabled.")
+      : "Multiplayer presence disabled.";
+  }
+
+  function readMultiplayerFromFields() {
+    return normalizeMetaWorldMultiplayer({
+      enabled: multiplayerEnabledInput.checked,
+      showNames: multiplayerShowNamesInput.checked,
+      publishRateMs: Number(multiplayerPublishRateInput.value),
+      snapshotRateMs: Number(multiplayerSnapshotRateInput.value),
+      avatarScale: Number(multiplayerAvatarScaleInput.value)
+    });
+  }
+
+  function syncWorldMultiplayer(multiplayer) {
+    const definition = normalizeMetaWorldMultiplayer(multiplayer);
+    if (movementState) movementState.multiplayer = definition;
+    const worldDef = window.VRWorldContext?.currentWorldDefinition;
+    if (worldDef && typeof worldDef === "object") {
+      worldDef.multiplayer = definition;
+      worldDef.metadata = worldDef.metadata && typeof worldDef.metadata === "object" ? worldDef.metadata : {};
+      worldDef.metadata.multiplayer = definition;
+    }
+    window.VRWorldContext?.multiplayerClient?.configure?.({
+      worldPath: window.VRWorldContext?.currentWorldPath || window.selectedFilePath || "",
+      settings: definition
+    });
+    if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
+    return definition;
+  }
+
+  function applyMultiplayer(statusMessage = "Multiplayer settings applied.") {
+    const multiplayer = syncWorldMultiplayer(readMultiplayerFromFields());
+    setMultiplayerFields(multiplayer);
+    multiplayerStatusLine.textContent = statusMessage;
+  }
+
+  [
+    multiplayerEnabledInput,
+    multiplayerShowNamesInput,
+    multiplayerPublishRateInput,
+    multiplayerSnapshotRateInput,
+    multiplayerAvatarScaleInput
+  ].forEach((input) => {
+    input.addEventListener("change", () => applyMultiplayer("Multiplayer settings updated."));
+  });
 
   function applyToState() {
     if (!movementState) return;
@@ -303,10 +709,13 @@ export function createWorldPropertiesPanel({ movementState }) {
         description: descriptionInput.value.trim()
       };
     }
+    if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
   }
 
   applyBtn.addEventListener("click", () => {
     applyToState();
+    applyCycle("World properties applied.");
+    applyMultiplayer("World properties applied.");
     refreshFromState();
   });
 
@@ -314,6 +723,7 @@ export function createWorldPropertiesPanel({ movementState }) {
     open() {
       refreshFromState();
       refreshEnvironmentFields();
+      refreshMultiplayerFields();
       visible = true;
       floatingPanel.setVisible(true);
     },

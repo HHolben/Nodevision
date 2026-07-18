@@ -22,7 +22,7 @@ export const SCAD_EDITOR_MODE_LAYOUT = {
           id: "SVGLayersPanel",
           panelType: "SVGLayersPanel",
           panelClass: "InfoPanel",
-          displayName: "SCAD Layers",
+          displayName: "SCAD Variables & Meshes",
           flex: "0 0 24%",
           forceReload: true,
           panelVars: {

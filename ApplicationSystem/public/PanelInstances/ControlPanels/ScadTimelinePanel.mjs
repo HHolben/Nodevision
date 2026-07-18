@@ -28,6 +28,7 @@ function render(panel) {
   const model = ctx.getModel();
   const selectedIds = ctx.getSelectedIds?.() || [];
   renderScadTimelinePanel(panel, { model, selectedIds }, {
+    selectObject: (id, event) => ctx.selectObject?.(id, event || null),
     selectStep: (step) => ctx.selectTimelineStep?.(step),
     toggleStep: (id, disabled) => ctx.toggleTimelineStep?.(id, disabled),
     renameStep: (id, label) => ctx.renameTimelineStep?.(id, label),

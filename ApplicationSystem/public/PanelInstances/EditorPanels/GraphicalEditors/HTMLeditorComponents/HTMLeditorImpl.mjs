@@ -8,6 +8,7 @@ import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayer
 import { countWords } from "../FamilyEditorCommon.mjs";
 import { setStatus, setWordCount } from "/StatusBar.mjs";
 import { setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
+import { installCartoonEditingBehavior } from "/ToolbarCallbacks/insert/cartoonTools.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico"]);
@@ -4103,6 +4104,10 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLTableToolbar();
     container.__cleanupHTMLTableToolbar = null;
   }
+  if (typeof container.__cleanupHTMLCartoonToolbar === "function") {
+    container.__cleanupHTMLCartoonToolbar();
+    container.__cleanupHTMLCartoonToolbar = null;
+  }
   const renderToken = Symbol("html-editor:" + filePath);
   container.__nvEditorRenderToken = renderToken;
   container.innerHTML = "";
@@ -4128,6 +4133,8 @@ export async function renderEditor(filePath, container, options = {}) {
     htmlImagePath: null,
     htmlAudioPath: null,
     htmlTableSelected: false,
+    htmlCartoonSelected: false,
+    htmlCartoonGap: 12,
   });
 
 
@@ -4201,6 +4208,7 @@ export async function renderEditor(filePath, container, options = {}) {
     }
     updateToolbarState({ htmlTableSelected: false });
   };
+  container.__cleanupHTMLCartoonToolbar = installCartoonEditingBehavior(wysiwyg);
 
   // Expose a layer context so the Layers panel can toggle HTML elements.
   window.HTMLLayersContext = createHtmlLayersContext(wysiwyg, { title: "HTML Layers" });
@@ -4297,6 +4305,7 @@ export async function renderEditor(filePath, container, options = {}) {
     ensureWrappingForEditableText(wysiwyg);
 
     window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
+      getEditorElement: () => wysiwyg,
       saveCurrentSelection: () => {
         rememberCurrentSelectionRange(wysiwyg);
         return true;
@@ -4306,6 +4315,28 @@ export async function renderEditor(filePath, container, options = {}) {
         if (!range) return false;
         applySelectionRange(range);
         wysiwyg.focus();
+        return true;
+      },
+      appendScriptForSave: (scriptText, key = "") => {
+        const script = String(scriptText || "");
+        if (!script.trim()) return false;
+        const scriptKey = String(key || "").trim();
+        const existing = scriptKey
+          ? Array.from(hidden.children).find((el) => el.dataset.scriptKey === scriptKey || String(el.dataset.script || "").includes(scriptKey))
+          : null;
+        const target = existing || document.createElement("div");
+        target.dataset.script = script;
+        if (scriptKey) target.dataset.scriptKey = scriptKey;
+        if (!existing) hidden.appendChild(target);
+        markHtmlEditorDirty(wysiwyg, filePath);
+        return true;
+      },
+      insertTextAtSelection: (text) => {
+        const node = document.createTextNode(String(text ?? ""));
+        insertNodeAtCaret(wysiwyg, node, {
+          preferredRange: getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg),
+        });
+        markHtmlEditorDirty(wysiwyg, filePath);
         return true;
       },
       applyFontFamilyToSelection: (fontFamilyOrStack, fallback = "") => {
@@ -4357,6 +4388,13 @@ export async function renderEditor(filePath, container, options = {}) {
       });
       bodyClone.querySelectorAll("[data-nv-resizable]").forEach((el) => {
         el.removeAttribute("data-nv-resizable");
+      });
+      bodyClone.querySelectorAll("[data-nv-cartoon-resize-handle]").forEach((el) => el.remove());
+      bodyClone.querySelectorAll("[data-nv-cartoon-selected]").forEach((el) => {
+        el.removeAttribute("data-nv-cartoon-selected");
+      });
+      bodyClone.querySelectorAll("[data-nv-cartoon-panel], [data-nv-cartoon-layout], [data-nv-cartoon-split], [data-nv-cartoon-frame]").forEach((el) => {
+        el.removeAttribute("contenteditable");
       });
       removeFormattingWhitespaceTextNodes(bodyClone);
       const bodyContent = bodyClone.innerHTML;

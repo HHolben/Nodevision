@@ -23,6 +23,65 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "3D Scene Panel",
+      "callbackKey": "insert3DScenePanel",
+      "modes": ["HTMLediting", "HTMLviewing", "EPUBediting"],
+      "icon": "icons/3Dmodel.png",
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Cartoon Panel",
+      "callbackKey": "insertCartoonPanel",
+      "modes": ["HTMLediting", "EPUBediting"],
+      "icon": "icons/DefaultNodeImage.png",
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Cartoon Panel",
+      "heading": "Insert Panel",
+      "shortLabel": "+P",
+      "callbackKey": "cartoonInsertPanel",
+      "modes": ["HTMLediting", "EPUBediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Cartoon Panel",
+      "heading": "Delete Selected Panel",
+      "shortLabel": "P-",
+      "callbackKey": "cartoonDeleteSelectedPanel",
+      "modes": ["HTMLediting", "EPUBediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Cartoon Panel",
+      "heading": "Split Vertically",
+      "shortLabel": "V|",
+      "callbackKey": "cartoonSplitVertical",
+      "modes": ["HTMLediting", "EPUBediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Cartoon Panel",
+      "heading": "Split Horizontally",
+      "shortLabel": "H-",
+      "callbackKey": "cartoonSplitHorizontal",
+      "modes": ["HTMLediting", "EPUBediting"]
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Cartoon Panel",
+      "heading": "Panel Gap",
+      "content": "<div id=\"nv-cartoon-gap-toolbar\"></div>",
+      "script": "cartoonPanelGapWidget.mjs",
+      "modes": ["HTMLediting", "EPUBediting"],
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Waypoint",
       "callbackKey": "insertWaypoint",
       "routeToActivePanel": true,
@@ -50,6 +109,186 @@
       },
       "icon": "icons/3Dmodel.png",
       "shortLabel": "Bone"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "GLB Primitive",
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      },
+      "icon": "icons/3Dmodel.png",
+      "shortLabel": "3D"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Circle",
+      "callbackKey": "scadInsertCircle",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Rectangle",
+      "callbackKey": "scadInsertRectangle",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Square",
+      "callbackKey": "scadInsertSquare",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Triangle",
+      "callbackKey": "scadInsertTriangle",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Polygon",
+      "callbackKey": "scadInsertPolygon",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Line",
+      "callbackKey": "scadInsertLine",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Sphere",
+      "callbackKey": "scadInsertSphere",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Cube",
+      "callbackKey": "scadInsertCube",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Cylinder",
+      "callbackKey": "scadInsertCylinder",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "GLB Primitive",
+      "heading": "Polyhedron",
+      "callbackKey": "scadInsertPolyhedron",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanInsertPrimitive": true
+      }
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Mesh Edit",
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanEditMesh": true
+      },
+      "icon": "icons/3Dmodel.png",
+      "shortLabel": "Mesh"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Mesh Edit",
+      "heading": "Vertex",
+      "callbackKey": "stlAddVertex",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanEditMesh": true
+      },
+      "shortLabel": "Vtx"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Mesh Edit",
+      "heading": "Extrude",
+      "callbackKey": "stlExtrude",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanEditMesh": true
+      },
+      "shortLabel": "Ext"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Mesh Edit",
+      "heading": "Fill or Edge",
+      "callbackKey": "stlFillOrConnect",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanEditMesh": true
+      },
+      "shortLabel": "F"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Mesh Edit",
+      "heading": "Grab",
+      "callbackKey": "stlGrab",
+      "routeToActivePanel": true,
+      "modes": ["GraphicalEditing"],
+      "conditions": {
+        "glbCanEditMesh": true
+      },
+      "shortLabel": "G"
     },
     {
       "ToolbarCategory": "Insert",
@@ -804,7 +1043,7 @@
 
     {
       "ToolbarCategory": "Insert",
-      "heading": "Handwriting → Text",
+      "heading": "Insert Handwriting",
       "insertGroup": "text",
       "callbackKey": "handwritingToText",
       "parentHeading": "Insert Text"

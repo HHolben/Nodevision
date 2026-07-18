@@ -7,6 +7,7 @@ import { createToolbar } from './panels/createToolbar.mjs';
 import { ensureWorkspace, loadDefaultLayout, renderLayout } from "./panels/workspace.mjs";
 import { initStatusBar } from "./StatusBar.mjs";
 import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
+import { installPanelZoomShortcuts } from "./panels/panelZoomPan.mjs";
 
 
 //Initialize the status bar: 
@@ -15,6 +16,7 @@ initStatusBar();
 async function initNodevision() {
   try {
     await createToolbar("#global-toolbar");
+    installPanelZoomShortcuts();
 
     const workspace = ensureWorkspace();
     console.log("Workspace initialized:", workspace);

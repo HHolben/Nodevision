@@ -5,17 +5,54 @@
 // language data (e.g. eng.traineddata.gz) under /Tesseract/lang-data.
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
+import {
+  HANDWRITING_TRAJECTORY_SCHEMA,
+  normalizeRawHandwritingStrokes,
+  normalizeStoredHandwritingSample,
+} from "/PanelInstances/InfoPanels/HandwritingTrajectory.mjs";
+import { compareHandwritingTrajectories } from "/PanelInstances/InfoPanels/HandwritingTrajectoryMatcher.mjs";
+import {
+  combineHandwritingCandidateEvidence,
+  stableSortHandwritingCandidates,
+} from "/PanelInstances/InfoPanels/HandwritingCandidateScoring.mjs";
+import {
+  contextProfile,
+  rerankCandidatesWithContext,
+} from "/PanelInstances/InfoPanels/HandwritingRecognitionContext.mjs";
+import {
+  rerankCandidatesWithConfusions,
+  validateConfusions,
+} from "/PanelInstances/InfoPanels/HandwritingConfusions.mjs";
+import {
+  coordinateHandwritingRecognition,
+  createRecognitionRequestTracker,
+} from "/PanelInstances/InfoPanels/HandwritingRecognitionCoordinator.mjs";
 
 const PANEL_KEY = "__nvHandwritingOcrPanel";
 const DEFAULT_BG = "#fff4a8";
 const DEFAULT_FG = "#172033";
+const DEFAULT_PEN_SIZE = 7;
 const OCR_PAGE_BG = "#ffffff";
+const HENRY_SCRIPT_FONT_FAMILY = "Henryscriptversion1";
+const HENRY_SCRIPT_FONT_URL = "/api/handwriting-ocr/font/henryscript";
+const HENRY_SCRIPT_TEMPLATE_STACK = "\"Henryscriptversion1\", \"Segoe Print\", \"Bradley Hand\", \"Comic Sans MS\", cursive";
 const GUIDE_LINE_COLOR = "rgba(79, 146, 205, 0.3)";
 const GUIDE_BASELINE_COLOR = "rgba(51, 126, 204, 0.42)";
 const GUIDE_MARGIN_COLOR = "rgba(212, 88, 92, 0.32)";
-const SIMPLE_RECOGNITION_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const SIMPLE_RECOGNITION_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const SIMPLE_RECOGNITION_SIZE = 64;
 const SIMPLE_RECOGNITION_GRID = 28;
+const CUSTOM_RECOGNITION_CANDIDATE_LIMIT = 5;
+const CUSTOM_RECOGNITION_RAW_LIMIT = 16;
+const LIVE_RECOGNITION_MOVE_DELAY_MS = 900;
+const LIVE_RECOGNITION_STROKE_DELAY_MS = 320;
+const DEBUG_REFRESH_DELAY_MS = 220;
+const CUSTOM_RECOGNITION_ACCEPTANCE = Object.freeze({
+  minScore: 0.42,
+  minLead: 0.018,
+  strongScore: 0.56,
+});
+let handwritingFontPromise = null;
 
 function clamp(num, min, max) {
   const n = Number(num);
@@ -25,6 +62,34 @@ function clamp(num, min, max) {
 
 function safeText(value) {
   return String(value ?? "").replace(/\u0000/g, "");
+}
+
+function isHandwritingFontReady() {
+  try {
+    return Boolean(document.fonts?.check?.("16px \"" + HENRY_SCRIPT_FONT_FAMILY + "\""));
+  } catch (_) {
+    return false;
+  }
+}
+
+function ensureHandwritingFontLoaded() {
+  if (isHandwritingFontReady()) return Promise.resolve(true);
+  if (handwritingFontPromise) return handwritingFontPromise;
+  handwritingFontPromise = Promise.resolve()
+    .then(async () => {
+      if (!document.fonts?.load) return false;
+      const loaded = await document.fonts.load(
+        SIMPLE_RECOGNITION_SIZE + "px \"" + HENRY_SCRIPT_FONT_FAMILY + "\"",
+        SIMPLE_RECOGNITION_CHARS
+      );
+      return Boolean(loaded?.length) || isHandwritingFontReady();
+    })
+    .catch((err) => {
+      console.warn("[HandwritingOcrPanel] Henryscript font unavailable:", err);
+      handwritingFontPromise = null;
+      return false;
+    });
+  return handwritingFontPromise;
 }
 
 function makeButton(label, opts = {}) {
@@ -41,10 +106,11 @@ function injectStylesOnce() {
   const style = document.createElement("style");
   style.id = "nv-ocr-style";
   style.textContent = `
-    .nv-ocr-wrap { display: flex; flex-direction: column; gap: 8px; min-height: 0; height: 100%; color: #eaf7ff; }
+    @font-face { font-family: "${HENRY_SCRIPT_FONT_FAMILY}"; src: url("${HENRY_SCRIPT_FONT_URL}") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+    .nv-ocr-wrap { display: flex; flex-direction: column; gap: 8px; min-height: 0; height: 100%; box-sizing: border-box; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; color: #eaf7ff; }
     .nv-ocr-header { display:flex; gap: 10px; align-items: baseline; flex-wrap: wrap; flex: 0 0 auto; }
     .nv-ocr-note { opacity: 0.85; font-size: 12px; }
-    .nv-ocr-board { display:flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1 1 auto; padding: 10px; border: 1px solid rgba(70, 96, 135, 0.65); background: rgba(12, 18, 28, 0.85); }
+    .nv-ocr-board { display:flex; flex-direction: column; gap: 8px; min-height: 0; flex: 0 0 auto; padding: 10px; border: 1px solid rgba(70, 96, 135, 0.65); background: rgba(12, 18, 28, 0.85); }
     .nv-ocr-toolbar { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; min-width: 0; }
     .nv-ocr-seg { display:inline-flex; border: 1px solid rgba(75, 102, 140, 0.9); overflow: hidden; }
     .nv-ocr-seg button { border: none; border-right: 1px solid rgba(75, 102, 140, 0.9); background: rgba(18, 32, 52, 0.92); }
@@ -63,7 +129,7 @@ function injectStylesOnce() {
     .nv-ocr-progress { height: 10px; background: rgba(16, 28, 46, 0.85); border: 1px solid rgba(75, 102, 140, 0.65); border-radius: 7px; overflow: hidden; }
     .nv-ocr-bar { height: 100%; width: 0%; background: #2b72ff; transition: width 0.18s ease; }
     .nv-ocr-out { display:grid; gap: 6px; flex: 0 0 auto; }
-    .nv-ocr-textarea { width: 100%; min-height: 78px; max-height: 22vh; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid rgba(75, 102, 140, 0.9); background: rgba(10, 18, 32, 0.92); color: #eaf7ff; resize: vertical; }
+    .nv-ocr-textarea { width: 100%; min-height: 78px; max-height: 22vh; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid rgba(75, 102, 140, 0.9); background: rgba(10, 18, 32, 0.92); color: #eaf7ff; resize: vertical; font-family: ${HENRY_SCRIPT_TEMPLATE_STACK}; font-size: 20px; line-height: 1.45; }
     .nv-ocr-help { opacity: 0.75; font-size: 12px; line-height: 1.35; }
     .nv-ocr-status { min-height: 16px; font-size: 12px; opacity: 0.82; }
     .nv-ocr-debug { display: none; gap: 6px; padding: 8px; border: 1px solid rgba(75, 102, 140, 0.72); border-radius: 6px; background: rgba(7, 12, 22, 0.78); color: #eaf7ff; font-size: 12px; }
@@ -73,6 +139,15 @@ function injectStylesOnce() {
     .nv-ocr-debug-segments { display: grid; gap: 4px; }
     .nv-ocr-debug-segment { padding: 6px; border-radius: 4px; border: 1px solid rgba(75, 102, 140, 0.55); background: rgba(18, 32, 52, 0.64); line-height: 1.35; }
     .nv-ocr-debug-json { width: 100%; min-height: 76px; max-height: 22vh; box-sizing: border-box; padding: 8px; border-radius: 5px; border: 1px solid rgba(75, 102, 140, 0.72); background: rgba(3, 8, 16, 0.86); color: #d8edff; font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
+    .nv-ocr-training-count { opacity: 0.82; font-size: 12px; white-space: nowrap; }
+    .nv-ocr-correction { display: none; gap: 6px; padding: 8px; border: 1px solid rgba(75, 102, 140, 0.72); border-radius: 6px; background: rgba(7, 12, 22, 0.78); color: #eaf7ff; font-size: 12px; }
+    .nv-ocr-correction.active { display: grid; }
+    .nv-ocr-correction-summary { opacity: 0.9; line-height: 1.35; }
+    .nv-ocr-correction-rows { display: grid; gap: 5px; }
+    .nv-ocr-correction-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) 54px auto; gap: 7px; align-items: center; padding: 6px; border-radius: 5px; border: 1px solid rgba(75, 102, 140, 0.55); background: rgba(18, 32, 52, 0.64); }
+    .nv-ocr-correction-char { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: ${HENRY_SCRIPT_TEMPLATE_STACK}; font-size: 22px; line-height: 1.1; color: #ffffff; }
+    .nv-ocr-correction-meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.84; }
+    .nv-ocr-correction-input { width: 48px; box-sizing: border-box; padding: 5px 6px; border-radius: 5px; border: 1px solid rgba(75, 102, 140, 0.9); background: rgba(10, 18, 32, 0.92); color: #eaf7ff; font: 16px ${HENRY_SCRIPT_TEMPLATE_STACK}; text-align: center; }
     .nv-ocr-wrap input[type="checkbox"] { margin: 0; }
     @media (max-width: 620px) {
       .nv-ocr-board { padding: 8px; }
@@ -218,6 +293,9 @@ function describeOfflineRequirement() {
 export function mountHandwritingOcrPanel(container, {
   onInsertText = null,
   onLiveText = null,
+  getCorrectionText = null,
+  onAcceptCorrectionText = null,
+  getRecognitionContext = null,
   liveInsert = true,
   title = "Handwriting -> Text"
 } = {}) {
@@ -279,7 +357,7 @@ export function mountHandwritingOcrPanel(container, {
   sizeInput.type = "range";
   sizeInput.min = "2";
   sizeInput.max = "36";
-  sizeInput.value = "16";
+  sizeInput.value = String(DEFAULT_PEN_SIZE);
   sizeInput.className = "nv-ocr-range";
   toolbar.appendChild(sizeInput);
 
@@ -315,6 +393,19 @@ export function mountHandwritingOcrPanel(container, {
   debugLabel.appendChild(document.createTextNode("Debug"));
   toolbar.appendChild(debugLabel);
 
+  const correctionLabel = document.createElement("label");
+  correctionLabel.className = "nv-ocr-label";
+  const correctionInput = document.createElement("input");
+  correctionInput.type = "checkbox";
+  correctionLabel.appendChild(correctionInput);
+  correctionLabel.appendChild(document.createTextNode("Correction mode"));
+  toolbar.appendChild(correctionLabel);
+
+  const trainingCount = document.createElement("span");
+  trainingCount.className = "nv-ocr-training-count";
+  trainingCount.textContent = "Training: -";
+  toolbar.appendChild(trainingCount);
+
   const refreshDebugBtn = makeButton("Refresh debug");
   toolbar.appendChild(refreshDebugBtn);
 
@@ -323,6 +414,9 @@ export function mountHandwritingOcrPanel(container, {
 
   const copyStrokesBtn = makeButton("Copy strokes");
   toolbar.appendChild(copyStrokesBtn);
+
+  const editorCorrectionBtn = makeButton("Correction", { title: "Use the corrected text from the main editor and save training samples" });
+  toolbar.appendChild(editorCorrectionBtn);
 
   const clearBtn = makeButton("Clear");
   toolbar.appendChild(clearBtn);
@@ -380,6 +474,18 @@ export function mountHandwritingOcrPanel(container, {
   debugPanel.appendChild(debugJson);
   board.appendChild(debugPanel);
 
+  const correctionPanel = document.createElement("section");
+  correctionPanel.className = "nv-ocr-correction";
+
+  const correctionSummary = document.createElement("div");
+  correctionSummary.className = "nv-ocr-correction-summary";
+  correctionPanel.appendChild(correctionSummary);
+
+  const correctionRows = document.createElement("div");
+  correctionRows.className = "nv-ocr-correction-rows";
+  correctionPanel.appendChild(correctionRows);
+  board.appendChild(correctionPanel);
+
   const outWrap = document.createElement("div");
   outWrap.className = "nv-ocr-out";
   const outLabel = document.createElement("label");
@@ -421,9 +527,24 @@ export function mountHandwritingOcrPanel(container, {
   let currentStroke = null;
   let penStrokes = [];
   let lastDebugState = null;
+  let debugRefreshTimer = 0;
+  let trainingSamples = [];
+  let trainingSamplesLoaded = false;
+  let trainingLoadPromise = null;
+  let confusionStats = validateConfusions(null);
+  const recognitionRequests = createRecognitionRequestTracker();
 
   function getActiveStrokes() {
     return currentStroke?.length ? [...penStrokes, currentStroke] : [...penStrokes];
+  }
+
+  function cloneStrokesForRecognition(strokes = getActiveStrokes()) {
+    return (Array.isArray(strokes) ? strokes : []).map((stroke) => (Array.isArray(stroke) ? stroke : []).map((point) => ({
+      x: Number(point?.x) || 0,
+      y: Number(point?.y) || 0,
+      t: Number.isFinite(point?.t) ? point.t : 0,
+      pressure: Number.isFinite(point?.pressure) ? clamp(point.pressure, 0, 1) : 0.5,
+    })));
   }
 
   function roundDebugNumber(value) {
@@ -471,9 +592,21 @@ export function mountHandwritingOcrPanel(container, {
 
   function normalizeDebugCandidates(candidates = []) {
     return candidates.map((candidate) => ({
-      char: candidate.char || "",
-      mode: candidate.mode || "",
+      char: candidate.char || candidate.text || "",
+      text: candidate.text || candidate.char || "",
+      mode: candidate.mode || candidate.engine || "",
       score: normalizeDebugScore(candidate.score),
+      evidence: {
+        rasterScore: normalizeDebugScore(candidate.evidence?.rasterScore),
+        trajectoryScore: candidate.evidence?.trajectoryScore === null ? null : normalizeDebugScore(candidate.evidence?.trajectoryScore),
+        inkDensityScore: normalizeDebugScore(candidate.evidence?.inkDensityScore),
+        strokeCountScore: normalizeDebugScore(candidate.evidence?.strokeCountScore),
+        aspectRatioScore: normalizeDebugScore(candidate.evidence?.aspectRatioScore),
+        personalSampleBonus: normalizeDebugScore(candidate.evidence?.personalSampleBonus),
+        contextAdjustment: normalizeDebugScore(candidate.evidence?.contextAdjustment),
+        confusionAdjustment: normalizeDebugScore(candidate.evidence?.confusionAdjustment),
+        trajectoryAware: Boolean(candidate.evidence?.trajectoryAware || candidate.evidence?.trajectoryEvidence?.trajectoryAware),
+      },
     }));
   }
 
@@ -576,6 +709,20 @@ export function mountHandwritingOcrPanel(container, {
     const detailForState = detail || (debugInput.checked ? recognizeSimpleStrokesDetailed() : null);
     lastDebugState = makeDebugState(source, text, detailForState, extra);
     updateDebugView(lastDebugState);
+    updateCorrectionView();
+  }
+
+  function schedulePanelAnalysisRefresh(source = "strokes", delay = DEBUG_REFRESH_DELAY_MS) {
+    if (!debugInput.checked && !correctionInput.checked) return;
+    clearTimeout(debugRefreshTimer);
+    debugRefreshTimer = window.setTimeout(() => {
+      debugRefreshTimer = 0;
+      if (debugInput.checked) {
+        refreshDebugFromStrokes(source);
+      } else if (correctionInput.checked) {
+        updateCorrectionView();
+      }
+    }, delay);
   }
 
   function refreshDebugFromStrokes(source = "strokes") {
@@ -601,13 +748,318 @@ export function mountHandwritingOcrPanel(container, {
     }
   }
 
+  function firstTrainingChar(value) {
+    return Array.from(String(value || "").trim())[0] || "";
+  }
+
+  function cleanRasterBounds(bounds) {
+    if (!bounds || typeof bounds !== "object") return null;
+    const clean = {
+      minX: Number(bounds.minX),
+      minY: Number(bounds.minY),
+      maxX: Number(bounds.maxX),
+      maxY: Number(bounds.maxY),
+      width: Number(bounds.width),
+      height: Number(bounds.height),
+    };
+    return Object.values(clean).every(Number.isFinite) ? clean : null;
+  }
+
+  function normalizeTrainingSample(raw) {
+    const label = firstTrainingChar(raw?.label || raw?.char);
+    const points = Array.isArray(raw?.sample?.points) ? raw.sample.points : [];
+    if (!label || !points.length) return null;
+    const cleanPoints = points
+      .map((point) => ({ x: Math.round(Number(point?.x)), y: Math.round(Number(point?.y)) }))
+      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+    if (!cleanPoints.length) return null;
+    const sampleAspectRatio = Number(raw?.sample?.aspectRatio);
+    const sampleBounds = cleanRasterBounds(raw?.sample?.bounds);
+    const normalizedSample = {
+      grid: SIMPLE_RECOGNITION_GRID,
+      points: cleanPoints,
+      ...(Number.isFinite(sampleAspectRatio) && sampleAspectRatio > 0 ? { aspectRatio: sampleAspectRatio } : {}),
+      ...(sampleBounds ? { bounds: sampleBounds } : {}),
+    };
+    const trajectory = normalizeStoredHandwritingSample(raw?.trajectory, {
+      character: label,
+      raster28: normalizedSample,
+      requireStrokes: false,
+    });
+    return {
+      id: safeText(raw?.id || ""),
+      schema: safeText(raw?.schema || (trajectory ? "nodevision-handwriting-correction-sample/2" : "nodevision-handwriting-correction-sample/1")),
+      label,
+      recognizedChar: firstTrainingChar(raw?.recognizedChar),
+      source: safeText(raw?.source || "user-correction"),
+      createdAt: safeText(raw?.createdAt || ""),
+      mode: safeText(raw?.mode || "user-correction"),
+      sample: normalizedSample,
+      trajectory,
+      bounds: raw?.bounds || null,
+      strokeCount: Math.max(0, Math.round(Number(raw?.strokeCount || trajectory?.metadata?.strokeCount || 0))),
+    };
+  }
+
+  function setTrainingCount() {
+    trainingCount.textContent = trainingSamplesLoaded
+      ? `Training: ${trainingSamples.length}`
+      : "Training: -";
+  }
+
+  function getUserTrainingTemplates() {
+    return trainingSamples.map((entry) => ({
+      char: entry.label,
+      text: entry.label,
+      mode: "user-correction",
+      source: entry.source || "user-correction",
+      sample: entry.sample,
+      trajectory: entry.trajectory || null,
+      schema: entry.schema || "nodevision-handwriting-correction-sample/1",
+    }));
+  }
+
+  async function loadTrainingSamples({ force = false } = {}) {
+    if (trainingSamplesLoaded && !force) return trainingSamples;
+    if (trainingLoadPromise && !force) return trainingLoadPromise;
+    trainingLoadPromise = fetch("/api/handwriting-ocr/training", {
+      cache: "no-store",
+      credentials: "include",
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Training load failed: ${res.status}`);
+        const data = await res.json();
+        trainingSamples = (Array.isArray(data?.samples) ? data.samples : [])
+          .map(normalizeTrainingSample)
+          .filter(Boolean);
+        confusionStats = validateConfusions(data?.confusions || null);
+        trainingSamplesLoaded = true;
+        setTrainingCount();
+        if (root.isConnected) updateCorrectionView();
+        return trainingSamples;
+      })
+      .catch((err) => {
+        console.warn("[HandwritingOcrPanel] training samples unavailable:", err);
+        trainingSamplesLoaded = true;
+        trainingSamples = [];
+        setTrainingCount();
+        return trainingSamples;
+      })
+      .finally(() => {
+        trainingLoadPromise = null;
+      });
+    return trainingLoadPromise;
+  }
+
+  function makeCorrectionSegments() {
+    const activeStrokes = getActiveStrokes();
+    const segments = segmentStrokesForText(activeStrokes);
+    const details = segments.map((strokes, index) => {
+      const detail = recognizeSingleGlyphDetailed(strokes);
+      return {
+        index: index + 1,
+        strokes,
+        char: detail.char || "",
+        source: detail.source || "none",
+        score: detail.score || 0,
+        candidates: detail.candidates || [],
+        bounds: detail.bounds || boundsForStrokes(strokes),
+        strokeCount: strokes.length,
+      };
+    });
+    return applyCapitalizationContext(details, getRecognitionContextText());
+  }
+
+  function makeTrainingArtifact(strokes) {
+    const imageCanvas = renderStrokesForPrediction(strokes);
+    if (!imageCanvas) return null;
+    const sample = canvasInkToGrid(imageCanvas, 48);
+    if (!sample?.points?.length) return null;
+    const compactSample = {
+      grid: SIMPLE_RECOGNITION_GRID,
+      points: sample.points.map((point) => ({ x: point.x, y: point.y })),
+      bounds: sample.bounds || null,
+      aspectRatio: Number.isFinite(sample.aspectRatio) ? sample.aspectRatio : 1,
+    };
+    const trajectory = normalizeRawHandwritingStrokes(strokes, {
+      raster28: compactSample,
+    });
+    return {
+      imageDataUrl: imageCanvas.toDataURL("image/png"),
+      sample: compactSample,
+      trajectory,
+    };
+  }
+
+  function updateCorrectionView() {
+    const visible = correctionInput.checked;
+    correctionPanel.classList.toggle("active", visible);
+    if (!visible) return;
+
+    if (!trainingSamplesLoaded && !trainingLoadPromise) loadTrainingSamples();
+    const segments = makeCorrectionSegments();
+    correctionRows.replaceChildren();
+    correctionSummary.textContent = `${segments.length} segments. ${trainingSamples.length} saved samples.`;
+
+    if (!segments.length) {
+      const empty = document.createElement("div");
+      empty.className = "nv-ocr-debug-segment";
+      empty.textContent = "No segments.";
+      correctionRows.appendChild(empty);
+      return;
+    }
+
+    segments.forEach((segment) => {
+      const row = document.createElement("div");
+      row.className = "nv-ocr-correction-row";
+
+      const preview = document.createElement("div");
+      preview.className = "nv-ocr-correction-char";
+      preview.textContent = segment.char || "?";
+      row.appendChild(preview);
+
+      const meta = document.createElement("div");
+      meta.className = "nv-ocr-correction-meta";
+      const candidates = (segment.candidates || [])
+        .slice(0, 3)
+        .map((candidate) => `${candidate.char || "?"} ${formatDebugScore(candidate.score)}`)
+        .join(", ");
+      meta.textContent = `#${segment.index} ${segment.source} ${formatDebugScore(segment.score)} ${candidates}`;
+      row.appendChild(meta);
+
+      const input = document.createElement("input");
+      input.className = "nv-ocr-correction-input";
+      input.type = "text";
+      input.maxLength = 2;
+      input.value = segment.char || "";
+      input.setAttribute("aria-label", `Correction for segment ${segment.index}`);
+      row.appendChild(input);
+
+      const saveBtn = makeButton("Save");
+      saveBtn.addEventListener("click", () => saveCorrectionSegment(segment, input.value, row, saveBtn));
+      row.appendChild(saveBtn);
+
+      correctionRows.appendChild(row);
+    });
+  }
+
+
+  async function postCorrectionSample(segment, label, source = "stroke") {
+    const artifact = makeTrainingArtifact(segment.strokes);
+    if (!artifact) throw new Error("No character sample to save.");
+    const res = await fetch("/api/handwriting-ocr/training", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        label,
+        recognizedChar: segment.char || "",
+        source,
+        segmentIndex: segment.index,
+        strokeCount: segment.strokeCount,
+        bounds: simplifyBounds(segment.bounds),
+        sample: artifact.sample,
+        trajectory: artifact.trajectory ? { ...artifact.trajectory, schema: HANDWRITING_TRAJECTORY_SCHEMA, character: label } : null,
+        imageDataUrl: artifact.imageDataUrl,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || `Correction save failed: ${res.status}`);
+    const saved = normalizeTrainingSample(data?.sample);
+    if (saved) {
+      trainingSamples = [saved, ...trainingSamples.filter((entry) => entry.id !== saved.id)];
+      trainingSamplesLoaded = true;
+      setTrainingCount();
+    }
+    confusionStats = validateConfusions(data?.confusions || confusionStats);
+    return saved;
+  }
+
+  async function saveCorrectionSegment(segment, rawLabel, row, saveBtn) {
+    const label = firstTrainingChar(rawLabel);
+    if (!label) {
+      status.textContent = "Enter a correction character.";
+      return;
+    }
+
+    saveBtn.disabled = true;
+    status.textContent = "Saving correction...";
+    try {
+      await postCorrectionSample(segment, label, "manual-correction");
+      row.dataset.saved = "true";
+      status.textContent = `Saved correction ${label}.`;
+      updateCorrectionView();
+    } catch (err) {
+      console.warn("[HandwritingOcrPanel] correction save failed:", err);
+      status.textContent = err?.message || "Correction save failed.";
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  function correctionLabelsFromText(text) {
+    return Array.from(safeText(text || "")).filter((char) => !/\s/.test(char));
+  }
+
+  async function readEditorCorrectionText() {
+    if (typeof getCorrectionText !== "function") return "";
+    return safeText(await getCorrectionText());
+  }
+
+  async function saveEditorCorrection() {
+    editorCorrectionBtn.disabled = true;
+    status.textContent = "Reading editor correction...";
+    try {
+      const correctedText = safeText((await readEditorCorrectionText()) || outText.value);
+      const visibleText = correctedText.trim();
+      if (!visibleText) {
+        status.textContent = "No corrected text found in the editor.";
+        return;
+      }
+
+      const segments = makeCorrectionSegments();
+      const labels = correctionLabelsFromText(correctedText);
+      if (!segments.length) {
+        status.textContent = "No handwriting segments to train.";
+        return;
+      }
+      if (!labels.length) {
+        status.textContent = "No correction characters to save.";
+        return;
+      }
+
+      if (typeof onAcceptCorrectionText === "function") {
+        onAcceptCorrectionText(correctedText);
+      } else if (typeof onInsertText === "function") {
+        onInsertText(correctedText);
+      }
+
+      outText.value = correctedText;
+      const count = Math.min(segments.length, labels.length);
+      let savedCount = 0;
+      for (let i = 0; i < count; i += 1) {
+        await postCorrectionSample(segments[i], labels[i], "editor-correction");
+        savedCount += 1;
+      }
+
+      const mismatch = labels.length !== segments.length ? ` (${labels.length} chars, ${segments.length} segments)` : "";
+      status.textContent = `Saved ${savedCount} editor corrections${mismatch}.`;
+      updateCorrectionView();
+    } catch (err) {
+      console.warn("[HandwritingOcrPanel] editor correction failed:", err);
+      status.textContent = err?.message || "Editor correction failed.";
+    } finally {
+      editorCorrectionBtn.disabled = false;
+    }
+  }
+
 
   function setStroke() {
     const dpr = getDpr();
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.strokeStyle = tool === "pen" ? DEFAULT_FG : DEFAULT_BG;
-    ctx.lineWidth = clamp(sizeInput.valueAsNumber || 16, 2, 36) * dpr;
+    ctx.lineWidth = clamp(sizeInput.valueAsNumber || DEFAULT_PEN_SIZE, 2, 36) * dpr;
   }
 
   function resizeCanvasKeepContent() {
@@ -640,15 +1092,22 @@ export function mountHandwritingOcrPanel(container, {
     const dpr = getDpr();
     const clientX = e.touches?.[0]?.clientX ?? e.clientX;
     const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+    const touch = e.touches?.[0] || e.changedTouches?.[0] || null;
+    const pressure = Number.isFinite(e.pressure) && e.pressure > 0
+      ? e.pressure
+      : (Number.isFinite(touch?.force) && touch.force > 0 ? touch.force : 0.5);
+    const t = Number.isFinite(e.timeStamp) ? e.timeStamp : Date.now();
     return {
       x: (clientX - rect.left) * dpr,
-      y: (clientY - rect.top) * dpr
+      y: (clientY - rect.top) * dpr,
+      t,
+      pressure: clamp(pressure, 0, 1),
     };
   }
 
   function normalizeStrokePoints(strokes) {
     const points = strokes.flatMap((stroke) => Array.isArray(stroke) ? stroke : []);
-    if (points.length < 4) return null;
+    if (!points.length) return null;
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -659,14 +1118,16 @@ export function mountHandwritingOcrPanel(container, {
       if (point.y < minY) minY = point.y;
       if (point.y > maxY) maxY = point.y;
     }
-    const width = maxX - minX;
-    const height = maxY - minY;
-    if (width < 8 || height < 12) return null;
+    const width = Math.max(0, maxX - minX);
+    const height = Math.max(0, maxY - minY);
+    const scale = Math.max(width, height, 1);
+    const offsetX = (1 - width / scale) / 2;
+    const offsetY = (1 - height / scale) / 2;
     const norm = (point) => ({
-      x: (point.x - minX) / Math.max(1, width),
-      y: (point.y - minY) / Math.max(1, height),
+      x: clamp(((point.x - minX) / scale) + offsetX, 0, 1),
+      y: clamp(((point.y - minY) / scale) + offsetY, 0, 1),
     });
-    return { width, height, strokes: strokes.map((stroke) => stroke.map(norm)) };
+    return { width: Math.max(1, width), height: Math.max(1, height), strokes: strokes.map((stroke) => stroke.map(norm)) };
   }
 
   function strokeHasMiddleBar(stroke) {
@@ -814,6 +1275,32 @@ export function mountHandwritingOcrPanel(container, {
     return Boolean(features?.rightSpine || (features?.rightTop && features.rightMiddle && features.rightBottom && !features.rightWaist));
   }
 
+  function normalizedGlyphAspect(features) {
+    return features?.normalized ? features.normalized.width / Math.max(1, features.normalized.height) : 0;
+  }
+
+  function looksLikeLowercaseF(features) {
+    if (!features) return false;
+    const aspect = normalizedGlyphAspect(features);
+    const tallStem = features.centerSpine || features.centerYSpan > 0.66 || (!features.leftSpine && features.leftYSpan > 0.62);
+    const crossbar = features.middleBar || horizontalStrokeInNormalizedBand(features.points, 0.28, 0.62, 0.22);
+    const topHook = features.topCenter || features.leftTop || features.rightTop || features.topBar;
+    const bowl = features.rightMiddleStrong && features.rightBottom && features.leftMiddle;
+    if (features.leftSpine && features.topBar && features.middleBar) return false;
+    return features.ratio > 1.05 && aspect < 1.05 && tallStem && crossbar && topHook && !features.bottomBar && !bowl;
+  }
+
+  function looksLikeLowercaseG(features) {
+    if (!features) return false;
+    const aspect = normalizedGlyphAspect(features);
+    const bowl = features.leftMiddle && (features.rightMiddle || features.rightMiddleStrong) && (features.topCenter || features.leftTop || features.rightTop);
+    const lowerLoop = features.bottomCenter && (features.leftBottom || features.rightBottom);
+    const descenderCoverage = features.centerYSpan > 0.58 || features.rightYSpan > 0.5 || features.leftYSpan > 0.5;
+    const notBlockD = !features.leftSpine || features.rightWaist || features.middleBar || aspect < 0.72;
+    return features.ratio > 0.85 && features.ratio < 3.8 && bowl && lowerLoop && descenderCoverage && notBlockD;
+  }
+
+
   function hasLowerDiagonalStroke(features, minWidth = 0.16, minHeight = 0.12) {
     return Boolean(features?.normalized?.strokes?.some((stroke) => {
       if (!stroke || stroke.length < 2) return false;
@@ -897,6 +1384,10 @@ export function mountHandwritingOcrPanel(container, {
     return "";
   }
 
+  function recognizeLowercaseFFromStrokes(strokes) {
+    return looksLikeLowercaseF(getGlyphFeatures(strokes)) ? "f" : "";
+  }
+
   function recognizeCapitalLFromStrokes(strokes) {
     const features = getGlyphFeatures(strokes);
     if (!features) return "";
@@ -909,6 +1400,7 @@ export function mountHandwritingOcrPanel(container, {
     const features = getGlyphFeatures(strokes);
     if (!features) return "";
     if (features.ratio < 0.75 || features.ratio > 4.2) return "";
+    if (looksLikeLowercaseG(features)) return "";
     if (hasLeftColumn(features) && !features.rightSpine && features.rightTop && features.rightMiddle && features.rightBottom && !features.rightWaist && !features.middleBar) return "D";
     if (features.leftSpine && !features.rightSpine && !features.topBar && !features.bottomBar && !features.middleBar && features.rightTop && features.rightMiddle && features.rightBottom && features.rightBulge && !features.rightWaist) return "D";
     return "";
@@ -1111,41 +1603,81 @@ export function mountHandwritingOcrPanel(container, {
         if (cells[y * SIMPLE_RECOGNITION_GRID + x]) points.push({ x, y });
       }
     }
-    return points.length ? { cells, points } : null;
+    return points.length ? {
+      grid: SIMPLE_RECOGNITION_GRID,
+      cells,
+      points,
+      bounds: { minX, minY, maxX, maxY, width, height },
+      aspectRatio: width / Math.max(height, 1),
+    } : null;
   }
 
   let simpleLetterTemplates = null;
+  let simpleLetterTemplateKey = "";
+
+  function getTemplateFontStacks() {
+    const stacks = [];
+    if (isHandwritingFontReady()) {
+      stacks.push({
+        label: "henryscript",
+        family: HENRY_SCRIPT_TEMPLATE_STACK,
+        scale: 0.9,
+        y: 0.58,
+      });
+    }
+    stacks.push({
+      label: "script",
+      family: "\"Segoe Print\", \"Bradley Hand\", \"Comic Sans MS\", cursive",
+      scale: 0.9,
+      y: 0.58,
+    });
+    stacks.push({
+      label: "sans",
+      family: "Arial, Helvetica, sans-serif",
+      scale: 0.86,
+      y: 0.56,
+    });
+    return stacks;
+  }
 
   function buildSimpleLetterTemplates() {
-    if (simpleLetterTemplates) return simpleLetterTemplates;
+    const fontStacks = getTemplateFontStacks();
+    const cacheKey = fontStacks.map((font) => font.label).join("|");
+    if (simpleLetterTemplates && simpleLetterTemplateKey === cacheKey) return simpleLetterTemplates;
     simpleLetterTemplates = [];
+    simpleLetterTemplateKey = cacheKey;
+
     for (const char of SIMPLE_RECOGNITION_CHARS) {
-      for (const mode of ["fill", "stroke"]) {
-        const templateCanvas = document.createElement("canvas");
-        templateCanvas.width = SIMPLE_RECOGNITION_SIZE;
-        templateCanvas.height = SIMPLE_RECOGNITION_SIZE;
-        const templateCtx = templateCanvas.getContext("2d", { willReadFrequently: true });
-        templateCtx.fillStyle = "#000000";
-        templateCtx.fillRect(0, 0, templateCanvas.width, templateCanvas.height);
-        templateCtx.textAlign = "center";
-        templateCtx.textBaseline = "middle";
-        templateCtx.lineJoin = "round";
-        templateCtx.lineCap = "round";
-        templateCtx.font = `${Math.round(SIMPLE_RECOGNITION_SIZE * 0.86)}px Arial, Helvetica, sans-serif`;
-        if (mode === "stroke") {
-          templateCtx.strokeStyle = "#ffffff";
-          templateCtx.lineWidth = Math.max(3, Math.round(SIMPLE_RECOGNITION_SIZE * 0.055));
-          templateCtx.strokeText(char, SIMPLE_RECOGNITION_SIZE / 2, SIMPLE_RECOGNITION_SIZE * 0.56);
-        } else {
-          templateCtx.fillStyle = "#ffffff";
-          templateCtx.fillText(char, SIMPLE_RECOGNITION_SIZE / 2, SIMPLE_RECOGNITION_SIZE * 0.56);
+      for (const fontDef of fontStacks) {
+        for (const mode of ["fill", "stroke"]) {
+          const templateCanvas = document.createElement("canvas");
+          templateCanvas.width = SIMPLE_RECOGNITION_SIZE;
+          templateCanvas.height = SIMPLE_RECOGNITION_SIZE;
+          const templateCtx = templateCanvas.getContext("2d", { willReadFrequently: true });
+          templateCtx.fillStyle = "#000000";
+          templateCtx.fillRect(0, 0, templateCanvas.width, templateCanvas.height);
+          templateCtx.textAlign = "center";
+          templateCtx.textBaseline = "middle";
+          templateCtx.lineJoin = "round";
+          templateCtx.lineCap = "round";
+          templateCtx.font = Math.round(SIMPLE_RECOGNITION_SIZE * (fontDef.scale || 0.86)) + "px " + fontDef.family;
+          const textY = SIMPLE_RECOGNITION_SIZE * (fontDef.y || 0.56);
+          if (mode === "stroke") {
+            templateCtx.strokeStyle = "#ffffff";
+            templateCtx.lineWidth = Math.max(3, Math.round(SIMPLE_RECOGNITION_SIZE * 0.055));
+            templateCtx.strokeText(char, SIMPLE_RECOGNITION_SIZE / 2, textY);
+          } else {
+            templateCtx.fillStyle = "#ffffff";
+            templateCtx.fillText(char, SIMPLE_RECOGNITION_SIZE / 2, textY);
+          }
+          const sample = canvasInkToGrid(templateCanvas, 32);
+          if (sample) simpleLetterTemplates.push({ char, mode: fontDef.label + "-" + mode, sample });
         }
-        const sample = canvasInkToGrid(templateCanvas, 32);
-        if (sample) simpleLetterTemplates.push({ char, mode, sample });
       }
     }
     return simpleLetterTemplates;
   }
+
 
   function meanNearestDistance(fromPoints, toPoints) {
     if (!fromPoints.length || !toPoints.length) return Infinity;
@@ -1163,33 +1695,100 @@ export function mountHandwritingOcrPanel(container, {
     return total / fromPoints.length;
   }
 
-  function scoreSamples(inputSample, templateSample) {
+  function scoreSamplesDetailed(inputSample, templateSample) {
     const gridScale = SIMPLE_RECOGNITION_GRID - 1;
     const inputToTemplate = meanNearestDistance(inputSample.points, templateSample.points) / gridScale;
     const templateToInput = meanNearestDistance(templateSample.points, inputSample.points) / gridScale;
-    const inkRatio = Math.min(inputSample.points.length, templateSample.points.length) / Math.max(inputSample.points.length, templateSample.points.length);
+    const inkDensityScore = Math.min(inputSample.points.length, templateSample.points.length) / Math.max(inputSample.points.length, templateSample.points.length);
     const weightedDistance = inputToTemplate * 0.62 + templateToInput * 0.38;
-    return Math.max(0, 1 - weightedDistance / 0.22) * (0.74 + inkRatio * 0.26);
+    const shapeScore = Math.max(0, 1 - weightedDistance / 0.22);
+    return {
+      rasterScore: Math.max(0, Math.min(1, shapeScore * (0.74 + inkDensityScore * 0.26))),
+      inkDensityScore: Math.max(0, Math.min(1, inkDensityScore)),
+      rasterDistance: weightedDistance,
+      inputToTemplate,
+      templateToInput,
+    };
   }
 
-  function rankTemplateLetters(strokes, limit = 5) {
+  function scoreSamples(inputSample, templateSample) {
+    return scoreSamplesDetailed(inputSample, templateSample).rasterScore;
+  }
+
+  function metadataRatioScore(inputValue, templateValue) {
+    const a = Number(inputValue);
+    const b = Number(templateValue);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return 1;
+    return Math.max(0, Math.min(1, 1 - Math.abs(Math.log(a / b)) / Math.log(4)));
+  }
+
+  function scoreTemplateTrajectory(inputTrajectory, template) {
+    if (!inputTrajectory?.strokes?.length || !template?.trajectory?.strokes?.length) {
+      return { trajectoryScore: null, strokeCountScore: 1, aspectRatioScore: 1, evidence: { trajectoryAware: false } };
+    }
+    const comparison = compareHandwritingTrajectories(inputTrajectory, template.trajectory);
+    const inputCount = inputTrajectory.metadata?.strokeCount || inputTrajectory.strokes.length || 0;
+    const templateCount = template.trajectory.metadata?.strokeCount || template.trajectory.strokes.length || 0;
+    const strokeCountScore = Math.max(0, Math.min(1, 1 - Math.abs(inputCount - templateCount) / Math.max(inputCount, templateCount, 1)));
+    const aspectRatioScore = metadataRatioScore(inputTrajectory.metadata?.aspectRatio, template.trajectory.metadata?.aspectRatio);
+    return {
+      trajectoryScore: comparison.similarity,
+      strokeCountScore,
+      aspectRatioScore,
+      evidence: comparison.evidence || { trajectoryAware: true },
+    };
+  }
+
+  function rankTemplateLetters(strokes, limit = CUSTOM_RECOGNITION_CANDIDATE_LIMIT) {
     const predictionCanvas = renderStrokesForPrediction(strokes);
     if (!predictionCanvas) return [];
     const inputSample = canvasInkToGrid(predictionCanvas, 48);
-    if (!inputSample || inputSample.points.length < 4) return [];
+    if (!inputSample || inputSample.points.length < 1) return [];
+    const inputTrajectory = normalizeRawHandwritingStrokes(strokes, {
+      raster28: { grid: SIMPLE_RECOGNITION_GRID, points: inputSample.points },
+    });
 
     const byChar = new Map();
-    for (const template of buildSimpleLetterTemplates()) {
-      const score = scoreSamples(inputSample, template.sample);
+    const templates = [...getUserTrainingTemplates(), ...buildSimpleLetterTemplates()];
+    for (const template of templates) {
+      const rasterEvidence = scoreSamplesDetailed(inputSample, template.sample);
+      const trajectoryEvidence = scoreTemplateTrajectory(inputTrajectory, template);
+      const personalSampleBonus = template.mode === "user-correction" ? 0.08 : 0;
+      const combined = combineHandwritingCandidateEvidence({
+        mode: template.mode,
+        rasterScore: rasterEvidence.rasterScore,
+        trajectoryScore: trajectoryEvidence.trajectoryScore,
+        inkDensityScore: rasterEvidence.inkDensityScore,
+        strokeCountScore: trajectoryEvidence.strokeCountScore,
+        aspectRatioScore: trajectoryEvidence.trajectoryScore === null
+          ? metadataRatioScore(inputSample.aspectRatio, template.sample?.aspectRatio)
+          : trajectoryEvidence.aspectRatioScore,
+        personalSampleBonus,
+      });
+      const candidate = {
+        char: template.char,
+        text: template.char,
+        mode: template.mode,
+        engine: template.mode === "user-correction" ? "nodevision-personal-template" : "nodevision-custom-template",
+        score: combined.score,
+        relativeConfidence: combined.relativeConfidence,
+        confidence: combined.relativeConfidence,
+        evidence: {
+          ...combined.evidence,
+          rasterDistance: rasterEvidence.rasterDistance,
+          inputToTemplate: rasterEvidence.inputToTemplate,
+          templateToInput: rasterEvidence.templateToInput,
+          trajectoryEvidence: trajectoryEvidence.evidence,
+          sampleSchema: template.trajectory?.schema || "nodevision-handwriting-sample/1",
+          sampleSource: template.source || template.mode || "template",
+        },
+      };
       const previous = byChar.get(template.char);
-      if (!previous || score > previous.score) {
-        byChar.set(template.char, { char: template.char, mode: template.mode, score });
-      }
+      if (!previous || candidate.score > previous.score) byChar.set(template.char, candidate);
     }
 
-    return Array.from(byChar.values())
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    const sorted = stableSortHandwritingCandidates(Array.from(byChar.values()));
+    return rerankCandidatesWithConfusions(sorted, confusionStats).slice(0, Math.max(limit, CUSTOM_RECOGNITION_CANDIDATE_LIMIT));
   }
 
   function findCandidate(candidates, char, maxBehind = 0.05) {
@@ -1202,6 +1801,15 @@ export function mountHandwritingOcrPanel(container, {
     if (!best.char) return best;
 
     const features = getGlyphFeatures(strokes);
+    if (best.char === "g" && looksLikeLowercaseG(features)) return best;
+    if (best.char === "f" && looksLikeLowercaseF(features)) return best;
+
+    const fCandidate = findCandidate(candidates, "f", 0.16);
+    if (fCandidate && looksLikeLowercaseF(features) && ["a", "A", "t", "l", "I", "F", "f"].includes(best.char)) return fCandidate;
+
+    const gCandidate = findCandidate(candidates, "g", 0.16);
+    if (gCandidate && looksLikeLowercaseG(features) && ["D", "d", "O", "o", "Q", "q", "a", "g"].includes(best.char)) return gCandidate;
+
     const upperTwin = best.char.toLowerCase?.() === best.char && best.char.toUpperCase?.() !== best.char
       ? findCandidate(candidates, best.char.toUpperCase(), 0.055)
       : null;
@@ -1211,7 +1819,7 @@ export function mountHandwritingOcrPanel(container, {
     if (bCandidate && features?.leftTall && features.rightTop && features.rightBottom) return bCandidate;
 
     const dCandidate = findCandidate(candidates, "D", 0.06);
-    if (dCandidate && features?.leftTall && ["Q", "O", "o", "g"].includes(best.char)) return dCandidate;
+    if (dCandidate && features?.leftTall && ["Q", "O", "o"].includes(best.char) && !looksLikeLowercaseG(features)) return dCandidate;
 
     const zCandidate = findCandidate(candidates, "Z", 0.035);
     if (zCandidate && best.char === "z") return zCandidate;
@@ -1243,15 +1851,16 @@ export function mountHandwritingOcrPanel(container, {
   }
 
   function recognizeTemplateLetterDetailed(strokes) {
-    const candidates = rankTemplateLetters(strokes, 12);
+    const candidates = rankTemplateLetters(strokes, CUSTOM_RECOGNITION_RAW_LIMIT);
     const rawBest = candidates[0] || { char: "", score: 0, mode: "" };
     const best = chooseTemplateCandidate(strokes, candidates);
     const adjusted = Boolean(best.char && rawBest.char && best.char !== rawBest.char);
     const second = candidates.find((candidate) => candidate.char !== best.char) || { char: "", score: 0, mode: "" };
-    const accepted = best.score >= 0.42 && (best.score - second.score >= 0.018 || best.score >= 0.56);
+    const accepted = best.score >= CUSTOM_RECOGNITION_ACCEPTANCE.minScore
+      && (best.score - second.score >= CUSTOM_RECOGNITION_ACCEPTANCE.minLead || best.score >= CUSTOM_RECOGNITION_ACCEPTANCE.strongScore);
     return {
       char: accepted ? best.char : "",
-      source: adjusted ? "template-adjusted" : "template",
+      source: adjusted ? "template-adjusted" : (best.mode === "user-correction" ? "user-correction" : "template"),
       accepted,
       score: best.score || 0,
       candidates,
@@ -1261,6 +1870,14 @@ export function mountHandwritingOcrPanel(container, {
 
   function recognizeTemplateLetter(strokes) {
     return recognizeTemplateLetterDetailed(strokes).char;
+  }
+
+  function shouldKeepLowercaseTemplateDetail(templateDetail, strokes) {
+    if (!templateDetail?.accepted || !["f", "g"].includes(templateDetail.char)) return false;
+    const features = getGlyphFeatures(strokes);
+    if (templateDetail.char === "f") return looksLikeLowercaseF(features) || (templateDetail.score || 0) >= 0.48;
+    if (templateDetail.char === "g") return looksLikeLowercaseG(features) || (templateDetail.score || 0) >= 0.48;
+    return false;
   }
 
   function strokeBounds(stroke) {
@@ -1293,7 +1910,7 @@ export function mountHandwritingOcrPanel(container, {
     if (!bounds) return true;
     const span = Math.max(bounds.width || 0, bounds.height || 0);
     const pointCount = Array.isArray(entry.stroke) ? entry.stroke.length : 0;
-    const minSpan = Math.max(4 * getDpr(), clamp(sizeInput.valueAsNumber || 16, 2, 36) * getDpr() * 0.18);
+    const minSpan = Math.max(4 * getDpr(), clamp(sizeInput.valueAsNumber || DEFAULT_PEN_SIZE, 2, 36) * getDpr() * 0.18);
     return pointCount <= 8 && span < minSpan;
   }
 
@@ -1328,16 +1945,19 @@ export function mountHandwritingOcrPanel(container, {
     medianWidth = usableWidths[Math.floor(usableWidths.length / 2)] || 1;
     allBounds = entries.reduce((bounds, entry) => mergeBounds(bounds, entry.bounds), null);
     textHeight = Math.max(1, allBounds?.height || medianWidth);
-    const maxGlyphGap = Math.max(16 * getDpr(), Math.min(textHeight * 0.26, medianWidth * 0.82));
-    const strokeJoinGap = clamp(sizeInput.valueAsNumber || 16, 2, 36) * getDpr() * 0.72;
-    const closeStrokeGap = Math.max(10 * getDpr(), textHeight * 0.08, strokeJoinGap);
+    const maxGlyphGap = Math.max(8 * getDpr(), Math.min(textHeight * 0.18, medianWidth * 0.42));
+    const strokeJoinGap = clamp(sizeInput.valueAsNumber || DEFAULT_PEN_SIZE, 2, 36) * getDpr() * 0.42;
+    const closeStrokeGap = Math.max(4 * getDpr(), Math.min(textHeight * 0.1, medianWidth * 0.38, strokeJoinGap));
     const groups = [];
 
     for (const entry of entries) {
       let target = null;
       for (const group of groups) {
         const gap = entry.bounds.minX - group.bounds.maxX;
-        const overlapsX = entry.bounds.minX <= group.bounds.maxX && entry.bounds.maxX >= group.bounds.minX;
+        const horizontalOverlap = Math.min(entry.bounds.maxX, group.bounds.maxX) - Math.max(entry.bounds.minX, group.bounds.minX);
+        const overlapsX = horizontalOverlap > 0;
+        const minWidthForOverlap = Math.max(1, Math.min(entry.bounds.width || 1, group.bounds.width || 1));
+        const horizontalOverlapRatio = overlapsX ? horizontalOverlap / minWidthForOverlap : 0;
         const centerX = (entry.bounds.minX + entry.bounds.maxX) * 0.5;
         const groupCenterX = (group.bounds.minX + group.bounds.maxX) * 0.5;
         const nearCenter = centerX >= group.bounds.minX - maxGlyphGap * 0.6 && centerX <= group.bounds.maxX + maxGlyphGap * 0.6;
@@ -1350,13 +1970,14 @@ export function mountHandwritingOcrPanel(container, {
         const verticalGap = verticalOverlap > 0
           ? 0
           : Math.max(0, Math.max(entry.bounds.minY, group.bounds.minY) - Math.min(entry.bounds.maxY, group.bounds.maxY));
-        const stackedStroke = overlapsX && verticalGap <= closeStrokeGap * 1.2 && (
-          verticalOverlapRatio > 0.08 ||
+        const stackedStroke = overlapsX && horizontalOverlapRatio > 0.16 && verticalGap <= closeStrokeGap * 1.2 && (
+          verticalOverlapRatio > 0.12 ||
           entry.bounds.height <= textHeight * 0.32 ||
           group.bounds.height <= textHeight * 0.32
         );
-        const closeStroke = gap >= 0 && gap <= closeStrokeGap && verticalOverlapRatio > 0.18;
-        if ((overlapsX && verticalOverlapRatio > 0.12) || stackedStroke || closeStroke || (looksLikeDot && nearCenter) || (groupLooksLikeDot && entryNearGroupDot)) {
+        const strongOverlap = overlapsX && horizontalOverlapRatio > 0.18 && verticalOverlapRatio > 0.16;
+        const closeStroke = gap >= 0 && gap <= closeStrokeGap && verticalOverlapRatio > 0.42;
+        if (strongOverlap || stackedStroke || closeStroke || (looksLikeDot && nearCenter) || (groupLooksLikeDot && entryNearGroupDot)) {
           target = group;
           break;
         }
@@ -1375,12 +1996,126 @@ export function mountHandwritingOcrPanel(container, {
       .map((group) => group.strokes);
   }
 
+
+  function getRecognitionContextText() {
+    if (typeof getRecognitionContext !== "function") return "";
+    try {
+      const context = getRecognitionContext();
+      if (typeof context === "string") return safeText(context);
+      return safeText(context?.before || context?.textBefore || context?.prefix || "");
+    } catch (err) {
+      console.warn("[HandwritingOcrPanel] recognition context unavailable:", err);
+      return "";
+    }
+  }
+
+  function isAsciiLetter(char) {
+    return /^[A-Za-z]$/.test(char || "");
+  }
+
+  function isUppercaseAscii(char) {
+    return /^[A-Z]$/.test(char || "");
+  }
+
+  function capitalizationProfile(contextText) {
+    const text = safeText(contextText || "");
+    const significant = text.replace(/[\s\"\x27\u2018\u2019\u201c\u201d\(\[\{]+$/g, "");
+    const previous = Array.from(significant).pop() || "";
+    const trailingLetters = (text.match(/[A-Za-z]+$/) || [""])[0];
+    const upperRun = ((trailingLetters.match(/[A-Z]+$/) || [""])[0] || "").length;
+    return {
+      previous,
+      inWord: trailingLetters.length > 0,
+      upperRun,
+      sentenceStart: !previous || /[.!?]/.test(previous) || /\n\s*$/.test(text),
+    };
+  }
+
+  function bestCandidateForChar(detail, char) {
+    const candidates = Array.isArray(detail?.candidates) ? detail.candidates : [];
+    const preferTemplateScore = String(detail?.source || "").startsWith("heuristic");
+    let best = null;
+    let heuristicBest = null;
+    for (const candidate of candidates) {
+      if (candidate?.char !== char) continue;
+      const score = Number(candidate.score) || 0;
+      const entry = { ...candidate, score };
+      if (preferTemplateScore && candidate.mode === "heuristic") {
+        if (!heuristicBest || score > heuristicBest.score) heuristicBest = entry;
+        continue;
+      }
+      if (!best || score > best.score) best = entry;
+    }
+
+    if (detail?.char === char && !preferTemplateScore) {
+      const score = Number(detail.score) || 0;
+      if (!best || score > best.score) best = { char, mode: detail.source || "detail", score };
+    }
+
+    return best || heuristicBest;
+  }
+
+  function capitalizationBias(char, profile) {
+    const upper = isUppercaseAscii(char);
+    if (profile.sentenceStart) return upper ? 0.04 : 0;
+    if (!profile.inWord) return upper ? -0.01 : 0.02;
+    if (profile.upperRun >= 2) return upper ? 0.015 : 0;
+    if (profile.upperRun === 1) return upper ? -0.02 : 0.035;
+    return upper ? -0.01 : 0.02;
+  }
+
+  function maxCaseSwitchBehind(profile, targetIsUpper) {
+    if (profile.sentenceStart && targetIsUpper) return 0.008;
+    if (profile.inWord && profile.upperRun === 1 && !targetIsUpper) return 0.008;
+    if (!targetIsUpper && !profile.sentenceStart) return 0.008;
+    if (profile.upperRun >= 2 && targetIsUpper) return 0.008;
+    return 0.006;
+  }
+
+  function applyCapitalizationContextToDetail(detail, contextText) {
+    const candidates = Array.isArray(detail?.candidates) ? detail.candidates : [];
+    if (!candidates.length) return detail;
+    const reranked = rerankCandidatesWithContext(candidates, { before: contextText });
+    const chosen = reranked[0] || null;
+    if (!chosen?.char && !chosen?.text) return detail;
+    const currentChar = detail?.char || candidates[0]?.char || candidates[0]?.text || "";
+    const chosenChar = chosen.char || chosen.text || "";
+    const originalCurrent = candidates.find((candidate) => (candidate.char || candidate.text) === currentChar) || candidates[0];
+    const originalChosen = candidates.find((candidate) => (candidate.char || candidate.text) === chosenChar) || chosen;
+    const rawBehind = Math.max(0, Number(originalCurrent?.score || 0) - Number(originalChosen?.score || 0));
+    const profile = contextProfile({ before: contextText });
+    const targetIsUpper = isUppercaseAscii(chosenChar);
+    if (chosenChar !== currentChar && rawBehind > maxCaseSwitchBehind(profile, targetIsUpper)) return detail;
+    return {
+      ...detail,
+      char: chosenChar,
+      source: chosenChar !== currentChar ? (detail.source || "template") + "+context" : detail.source,
+      score: chosen.score || detail.score || 0,
+      accepted: Boolean(chosenChar),
+      candidates: reranked,
+    };
+  }
+
+  function applyCapitalizationContext(segmentDetails, startingContext = "") {
+    let contextText = safeText(startingContext || "");
+    for (const segment of segmentDetails) {
+      const adjusted = applyCapitalizationContextToDetail(segment, contextText);
+      Object.assign(segment, adjusted);
+      if (segment.char) contextText += segment.char;
+    }
+    return segmentDetails;
+  }
+
   function recognizeSingleGlyphDetailed(strokes) {
     const bounds = boundsForStrokes(strokes);
+    const templateDetail = recognizeTemplateLetterDetailed(strokes);
+    if (templateDetail?.source === "user-correction" && templateDetail.accepted) return templateDetail;
+    if (shouldKeepLowercaseTemplateDetail(templateDetail, strokes)) return templateDetail;
     const heuristics = [
       ["I", recognizeCapitalIFromStrokes],
       ["H", recognizeCapitalHFromStrokes],
       ["E", recognizeCapitalEFromStrokes],
+      ["f", recognizeLowercaseFFromStrokes],
       ["F", recognizeCapitalFFromStrokes],
       ["L", recognizeCapitalLFromStrokes],
       ["B", recognizeCapitalBFromStrokes],
@@ -1407,20 +2142,20 @@ export function mountHandwritingOcrPanel(container, {
         source: `heuristic-${label}`,
         accepted: true,
         score: 1,
-        candidates: [{ char, mode: "heuristic", score: 1 }],
+        candidates: [{ char, mode: "heuristic", score: 1 }, ...(templateDetail?.candidates || [])],
         bounds,
       };
     }
 
-    return recognizeTemplateLetterDetailed(strokes);
+    return templateDetail || recognizeTemplateLetterDetailed(strokes);
   }
 
   function recognizeSingleGlyph(strokes) {
     return recognizeSingleGlyphDetailed(strokes).char;
   }
 
-  function recognizeSimpleStrokesDetailed() {
-    const activeStrokes = getActiveStrokes();
+  function recognizeSimpleStrokesDetailed(strokesOverride = null, contextOverride = null) {
+    const activeStrokes = Array.isArray(strokesOverride) ? strokesOverride : getActiveStrokes();
     const segments = segmentStrokesForText(activeStrokes);
     if (!segments.length) {
       return { text: "", strokeCount: activeStrokes.length, segmentCount: 0, segments: [] };
@@ -1440,12 +2175,16 @@ export function mountHandwritingOcrPanel(container, {
       };
     });
 
+    const contextBefore = contextOverride === null ? getRecognitionContextText() : safeText(contextOverride);
+    applyCapitalizationContext(segmentDetails, contextBefore);
+
     const recognizedCount = segmentDetails.filter((detail) => detail.char).length;
     let text = "";
     if (segments.length > 1 && recognizedCount > 0) {
       text = segmentDetails.map((detail) => detail.char || "?").join("");
     } else {
-      const detail = recognizeSingleGlyphDetailed(activeStrokes);
+      const rawDetail = recognizeSingleGlyphDetailed(activeStrokes);
+      const detail = applyCapitalizationContextToDetail(rawDetail, contextBefore);
       text = detail.char || "";
       if (segmentDetails.length === 1) {
         segmentDetails[0] = {
@@ -1474,7 +2213,16 @@ export function mountHandwritingOcrPanel(container, {
 
 
   function startDraw(e) {
+    if (drawing) endDraw(e);
+    recognitionRequests.invalidate();
+    clearTimeout(liveTimer);
+    clearTimeout(debugRefreshTimer);
+    liveTimer = 0;
+    debugRefreshTimer = 0;
     drawing = true;
+    if (typeof canvas.setPointerCapture === "function" && e?.pointerId !== undefined) {
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    }
     const p = getPoint(e);
     currentStroke = tool === "pen" ? [p] : null;
     ctx.beginPath();
@@ -1500,28 +2248,41 @@ export function mountHandwritingOcrPanel(container, {
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
     hasInk = true;
-    scheduleLiveRecognition();
+    scheduleLiveRecognition(LIVE_RECOGNITION_MOVE_DELAY_MS);
     e.preventDefault?.();
   }
-  function endDraw() {
+  function endDraw(e = null) {
     if (drawing && currentStroke?.length) penStrokes.push(currentStroke);
     currentStroke = null;
     if (drawing) {
-      scheduleLiveRecognition(140);
-      refreshDebugFromStrokes("drawing");
+      scheduleLiveRecognition(LIVE_RECOGNITION_STROKE_DELAY_MS);
+      schedulePanelAnalysisRefresh("drawing");
+    }
+    if (typeof canvas.releasePointerCapture === "function" && e?.pointerId !== undefined) {
+      try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
     }
     drawing = false;
   }
 
   const onResize = () => resizeCanvasKeepContent();
-  canvas.addEventListener("pointerdown", startDraw);
-  canvas.addEventListener("pointermove", moveDraw);
-  window.addEventListener("pointerup", endDraw);
-  canvas.addEventListener("touchstart", startDraw, { passive: false });
-  canvas.addEventListener("touchmove", moveDraw, { passive: false });
-  window.addEventListener("touchend", endDraw);
+  const usePointerEvents = typeof window.PointerEvent === "function";
+  if (usePointerEvents) {
+    canvas.addEventListener("pointerdown", startDraw);
+    canvas.addEventListener("pointermove", moveDraw);
+    window.addEventListener("pointerup", endDraw);
+    window.addEventListener("pointercancel", endDraw);
+  } else {
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mousemove", moveDraw);
+    window.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("touchstart", startDraw, { passive: false });
+    canvas.addEventListener("touchmove", moveDraw, { passive: false });
+    window.addEventListener("touchend", endDraw);
+    window.addEventListener("touchcancel", endDraw);
+  }
 
   window.addEventListener("resize", onResize);
+  window.addEventListener("blur", endDraw);
   sizeInput.addEventListener("input", () => {
     setStroke();
     refreshDebugFromStrokes("settings");
@@ -1549,8 +2310,11 @@ export function mountHandwritingOcrPanel(container, {
   });
 
   clearBtn.addEventListener("click", () => {
+    recognitionRequests.invalidate();
     clearTimeout(liveTimer);
+    clearTimeout(debugRefreshTimer);
     liveTimer = 0;
+    debugRefreshTimer = 0;
     fillCanvas(ctx, canvas, DEFAULT_BG);
     setStroke();
     hasInk = false;
@@ -1600,11 +2364,21 @@ export function mountHandwritingOcrPanel(container, {
     updateDebugView();
   });
 
+  correctionInput.addEventListener("change", () => {
+    if (correctionInput.checked) {
+      loadTrainingSamples();
+      updateCorrectionView();
+      return;
+    }
+    updateCorrectionView();
+  });
+
   refreshDebugBtn.addEventListener("click", () => {
     debugInput.checked = true;
     refreshDebugFromStrokes("manual");
   });
   copyDebugBtn.addEventListener("click", async () => {
+    await ensureHandwritingFontLoaded();
     const detail = recognizeSimpleStrokesDetailed();
     const state = makeDebugState("manual", detail.text, detail);
     lastDebugState = state;
@@ -1615,6 +2389,10 @@ export function mountHandwritingOcrPanel(container, {
   copyStrokesBtn.addEventListener("click", async () => {
     await copyDebugText(JSON.stringify(serializeStrokesForDebug(), null, 2));
     status.textContent = "Stroke JSON copied.";
+  });
+
+  editorCorrectionBtn.addEventListener("click", () => {
+    saveEditorCorrection();
   });
 
   async function ensureNativeRecognizer() {
@@ -1639,10 +2417,11 @@ export function mountHandwritingOcrPanel(container, {
     return nativeRecognizerPromise;
   }
 
-  async function recognizeNativeHandwriting() {
+  async function recognizeNativeHandwriting(strokesSnapshot = null, signal = null) {
     const recognizer = await ensureNativeRecognizer();
+    if (signal?.aborted) return "";
     if (!recognizer?.startDrawing) return "";
-    const strokes = currentStroke?.length ? [...penStrokes, currentStroke] : penStrokes;
+    const strokes = Array.isArray(strokesSnapshot) ? strokesSnapshot : (currentStroke?.length ? [...penStrokes, currentStroke] : penStrokes);
     if (!strokes.length) return "";
 
     const drawing = recognizer.startDrawing({ recognitionType: "text" });
@@ -1650,7 +2429,7 @@ export function mountHandwritingOcrPanel(container, {
       if (!stroke?.length) continue;
       const nativeStroke = new window.HandwritingStroke();
       stroke.forEach((point, index) => {
-        nativeStroke.addPoint({ x: point.x, y: point.y, t: index * 16 });
+        nativeStroke.addPoint({ x: point.x, y: point.y, t: Number.isFinite(point.t) ? point.t : index * 16 });
       });
       drawing.addStroke(nativeStroke);
     }
@@ -1727,10 +2506,8 @@ export function mountHandwritingOcrPanel(container, {
   function scheduleLiveRecognition(delay = 520) {
     if (!liveInput.checked || !hasInk) return;
     if (!recognizing) status.textContent = "Ink captured; reading shortly...";
-    const now = Date.now();
-    const elapsed = now - lastLiveScheduleAt;
-    lastLiveScheduleAt = now;
-    const actualDelay = elapsed > 1200 ? Math.min(delay, 180) : delay;
+    lastLiveScheduleAt = Date.now();
+    const actualDelay = delay;
     clearTimeout(liveTimer);
     liveTimer = window.setTimeout(() => {
       liveTimer = 0;
@@ -1745,56 +2522,129 @@ export function mountHandwritingOcrPanel(container, {
       return;
     }
 
+    const request = recognitionRequests.begin();
+    const strokesSnapshot = cloneStrokesForRecognition();
+    const contextBefore = getRecognitionContextText();
+    let customDetail = null;
+
     recognizing = true;
     recognizeBtn.disabled = true;
     if (!live) outText.value = "Recognizing...";
     status.textContent = live ? "Reading handwriting..." : "Recognizing handwriting...";
     bar.style.width = "0%";
 
+    const engines = [
+      {
+        name: "browser-native",
+        stopOnSuccess: true,
+        available: () => !live && typeof navigator !== "undefined" && typeof navigator.createHandwritingRecognizer === "function" && typeof window !== "undefined" && typeof window.HandwritingStroke === "function",
+        run: async ({ signal }) => {
+          const text = await recognizeNativeHandwriting(strokesSnapshot, signal);
+          return {
+            engine: "browser-native",
+            status: text ? "success" : "empty",
+            candidates: text ? [{ text, score: 0.78, evidence: { source: "browser-native" } }] : [],
+          };
+        },
+      },
+      {
+        name: "nodevision-custom",
+        stopOnSuccess: true,
+        available: () => strokesSnapshot.some((stroke) => stroke.length),
+        run: async ({ signal }) => {
+          if (live) {
+            if (!isHandwritingFontReady()) {
+              ensureHandwritingFontLoaded().then((loaded) => {
+                if (!loaded || !root.isConnected) return;
+                simpleLetterTemplates = null;
+                simpleLetterTemplateKey = "";
+              });
+            }
+            if (!trainingSamplesLoaded && !trainingLoadPromise) loadTrainingSamples();
+          } else {
+            await ensureHandwritingFontLoaded();
+            await loadTrainingSamples();
+          }
+          if (signal?.aborted) return { engine: "nodevision-custom", status: "cancelled", candidates: [] };
+          customDetail = recognizeSimpleStrokesDetailed(strokesSnapshot, contextBefore);
+          const segmentCandidates = customDetail.segmentCount === 1 ? (customDetail.segments?.[0]?.candidates || []) : [];
+          const fallbackScore = customDetail.segments?.length
+            ? customDetail.segments.reduce((total, segment) => total + (Number(segment.score) || 0), 0) / customDetail.segments.length
+            : 0.64;
+          const candidates = segmentCandidates.length
+            ? segmentCandidates.map((candidate) => ({ ...candidate, engine: "nodevision-custom" }))
+            : (customDetail.text ? [{ text: customDetail.text, char: customDetail.text, score: Math.max(0.01, Math.min(1, fallbackScore)), evidence: { segmentCount: customDetail.segmentCount } }] : []);
+          return {
+            engine: "nodevision-custom",
+            status: customDetail.text ? "success" : "empty",
+            candidates,
+            detail: customDetail,
+          };
+        },
+      },
+      {
+        name: "tesseract",
+        stopOnSuccess: true,
+        available: () => !live,
+        run: async ({ signal }) => {
+          if (signal?.aborted) return { engine: "tesseract", status: "cancelled", candidates: [] };
+          const threshold = Number(thresholdInput.value || "180");
+          const bin = binarizeCanvas(canvas, threshold);
+          const wk = await ensureWorker();
+          if (signal?.aborted) return { engine: "tesseract", status: "cancelled", candidates: [] };
+          const { data } = await wk.recognize(bin);
+          const text = safeText(data?.text || "").trim();
+          const confidence = Math.max(0.01, Math.min(0.72, Number(data?.confidence || 50) / 100));
+          return {
+            engine: "tesseract",
+            status: text ? "success" : "empty",
+            candidates: text ? [{ text, score: confidence, evidence: { source: "tesseract" } }] : [],
+          };
+        },
+      },
+    ];
+
     try {
-      const nativeText = await recognizeNativeHandwriting();
-      if (nativeText) {
-        setDebugState("native", nativeText, null, { nativeText });
-        outText.value = nativeText;
-        if (liveInput.checked || live) emitLiveText(nativeText);
-        bar.style.width = "100%";
-        status.textContent = "Text updated from native handwriting recognition.";
-        setTimeout(() => { bar.style.width = "0%"; }, 900);
-        return;
-      }
+      const finalResult = await coordinateHandwritingRecognition({
+        engines,
+        context: { before: contextBefore },
+        signal: request.signal,
+        requestId: request.id,
+      });
+      if (!recognitionRequests.isActive(request)) return;
 
-      const strokeDetail = recognizeSimpleStrokesDetailed();
-      const strokeText = strokeDetail.text;
-      if (strokeText) {
-        setDebugState("stroke", strokeText, strokeDetail);
-        outText.value = strokeText;
-        if (liveInput.checked || live) emitLiveText(strokeText);
-        bar.style.width = "100%";
-        status.textContent = "Text updated from handwriting strokes.";
-        setTimeout(() => { bar.style.width = "0%"; }, 900);
-        return;
-      }
-
-      if (live) {
+      const text = safeText(finalResult.text || "").trim();
+      if (!text && live) {
         status.textContent = "Add more strokes, or use Recognize Text for OCR.";
         return;
       }
 
-      const threshold = Number(thresholdInput.value || "180");
-      const bin = binarizeCanvas(canvas, threshold);
-      const wk = await ensureWorker();
-      const { data } = await wk.recognize(bin);
-      const text = safeText(data?.text || "").trim();
       outText.value = text || "(no text detected)";
-      setDebugState("tesseract", text, null, { tesseractText: text });
-      if (liveInput.checked || live) emitLiveText(text);
+      if (finalResult.selectedEngine === "nodevision-custom" && customDetail) {
+        setDebugState("stroke", text, customDetail, { recognition: finalResult });
+      } else {
+        setDebugState(finalResult.selectedEngine || "none", text, { text, strokeCount: strokesSnapshot.length, segmentCount: 0, segments: [] }, { recognition: finalResult });
+      }
+      if (text && (liveInput.checked || live)) emitLiveText(text);
       bar.style.width = "100%";
-      status.textContent = text ? "Text updated in the editor." : "No text detected yet.";
-      setTimeout(() => { bar.style.width = "0%"; }, 900);
+      if (finalResult.selectedEngine === "browser-native") status.textContent = "Text updated from native handwriting recognition.";
+      else if (finalResult.selectedEngine === "nodevision-custom") status.textContent = "Text updated from handwriting strokes.";
+      else if (finalResult.selectedEngine === "tesseract") status.textContent = text ? "Text updated in the editor." : "No text detected yet.";
+      else status.textContent = "No text detected yet.";
+      setTimeout(() => { if (recognitionRequests.isActive(request)) bar.style.width = "0%"; }, 900);
     } catch (err) {
+      if (!recognitionRequests.isActive(request) || err?.name === "AbortError") return;
       console.warn("[HandwritingOcrPanel] recognition failed:", err);
       const msg = err?.message ? String(err.message) : String(err);
-      const strokeDetail = recognizeSimpleStrokesDetailed();
+      if (live) {
+        if (!isHandwritingFontReady()) ensureHandwritingFontLoaded();
+        if (!trainingSamplesLoaded && !trainingLoadPromise) loadTrainingSamples();
+      } else {
+        await ensureHandwritingFontLoaded();
+        await loadTrainingSamples();
+      }
+      if (!recognitionRequests.isActive(request)) return;
+      const strokeDetail = recognizeSimpleStrokesDetailed(strokesSnapshot, contextBefore);
       const strokeText = strokeDetail.text;
       if (strokeText) {
         setDebugState("stroke-fallback", strokeText, strokeDetail, { error: msg });
@@ -1803,16 +2653,21 @@ export function mountHandwritingOcrPanel(container, {
         status.textContent = "Text updated from handwriting strokes.";
       } else {
         setDebugState("error", "", null, { error: msg });
-        outText.value = `Recognition error: ${msg}\n\n${describeOfflineRequirement()}`;
+        outText.value = "Recognition error: " + msg + "\n\n" + describeOfflineRequirement();
         status.textContent = "Recognition failed.";
       }
       bar.style.width = "0%";
     } finally {
-      recognizing = false;
-      recognizeBtn.disabled = false;
+      if (recognitionRequests.isActive(request)) {
+        recognizing = false;
+        recognizeBtn.disabled = false;
+      } else {
+        recognizing = false;
+        recognizeBtn.disabled = false;
+      }
       if (queuedRecognition) {
         queuedRecognition = false;
-        scheduleLiveRecognition(120);
+        scheduleLiveRecognition(LIVE_RECOGNITION_STROKE_DELAY_MS);
       }
     }
   }
@@ -1828,6 +2683,7 @@ export function mountHandwritingOcrPanel(container, {
       scheduleLiveRecognition(160);
       return;
     }
+    recognitionRequests.invalidate();
     if (typeof onLiveText === "function") {
       lastLiveText = "";
       onLiveText("");
@@ -1835,17 +2691,41 @@ export function mountHandwritingOcrPanel(container, {
   });
 
   status.textContent = "Ready.";
+  loadTrainingSamples();
+  preloadTimer = window.setTimeout(() => {
+    ensureHandwritingFontLoaded().then((loaded) => {
+      if (!loaded || !root.isConnected) return;
+      simpleLetterTemplates = null;
+      simpleLetterTemplateKey = "";
+      refreshDebugFromStrokes("font");
+    });
+  }, 60);
 
   setStroke();
   resizeCanvasKeepContent();
 
   const api = {
     dispose: async () => {
+      recognitionRequests.invalidate();
       clearTimeout(liveTimer);
+      clearTimeout(debugRefreshTimer);
       clearTimeout(preloadTimer);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("pointerup", endDraw);
-      window.removeEventListener("touchend", endDraw);
+      window.removeEventListener("blur", endDraw);
+      if (usePointerEvents) {
+        canvas.removeEventListener("pointerdown", startDraw);
+        canvas.removeEventListener("pointermove", moveDraw);
+        window.removeEventListener("pointerup", endDraw);
+        window.removeEventListener("pointercancel", endDraw);
+      } else {
+        canvas.removeEventListener("mousedown", startDraw);
+        canvas.removeEventListener("mousemove", moveDraw);
+        window.removeEventListener("mouseup", endDraw);
+        canvas.removeEventListener("touchstart", startDraw);
+        canvas.removeEventListener("touchmove", moveDraw);
+        window.removeEventListener("touchend", endDraw);
+        window.removeEventListener("touchcancel", endDraw);
+      }
       try {
         await worker?.terminate?.();
       } catch (_) {

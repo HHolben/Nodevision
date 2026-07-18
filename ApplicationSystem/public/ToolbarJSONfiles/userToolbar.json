@@ -26,6 +26,11 @@
   },
   {
     "ToolbarCategory": "User",
+    "heading": "LAN Cooperation",
+    "callbackKey": "lanCooperation"
+  },
+  {
+    "ToolbarCategory": "User",
     "heading": "Logout",
     "callbackKey": "logout",
     "icon": "icons/ExitIcon.png"    

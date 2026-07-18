@@ -17,6 +17,7 @@ import {
   notifyMetaWorldLayersChanged,
   setActiveMetaWorldLayerBridge,
 } from "/MetaWorld/MetaWorldLayerState.mjs";
+import { normalizeMetaWorldMultiplayer } from "/MetaWorld/MetaWorldMultiplayerConfig.mjs";
 import {
   createDefaultExpressionLayer,
   createExpressionLayerColliderRef,
@@ -903,6 +904,7 @@ function convertMetaWorldToLegacyWorld(world) {
       worldType: world.worldType,
       worldMode: modeHint === "2d" ? "2d" : "3d",
       movementMode: movementHint,
+      multiplayer: normalizeMetaWorldMultiplayer(world.multiplayer || world.metadata?.multiplayer),
       metadata: {
         ...(world.metadata || {}),
         source: "NodevisionMetaWorld",
@@ -910,6 +912,7 @@ function convertMetaWorldToLegacyWorld(world) {
         worldMode: modeHint === "2d" ? "2d" : "3d",
         viewMode: viewHint,
         movementMode: movementHint,
+        multiplayer: normalizeMetaWorldMultiplayer(world.multiplayer || world.metadata?.multiplayer),
         playerRules: {
           allowFly: false,
           allowRoll: false,
@@ -926,6 +929,13 @@ function convertMetaWorldToLegacyWorld(world) {
           floorColor: "#d8dee4",
           backgroundMode: "color",
           backgroundImage: "",
+          dayNightCycle: {
+            enabled: false,
+            durationSeconds: 120,
+            periods: [
+              { time: 0, brightness: 1 }
+            ]
+          },
           gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
           gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
           ...(world.environment || world.metadata?.environment || {})
@@ -1158,8 +1168,10 @@ function convertMetaWorldToLegacyWorld(world) {
     type: world.type,
     worldType: world.worldType,
     worldMode: "3d",
+    multiplayer: normalizeMetaWorldMultiplayer(world.multiplayer || world.metadata?.multiplayer),
     metadata: {
       source: "NodevisionMetaWorld",
+      multiplayer: normalizeMetaWorldMultiplayer(world.multiplayer || world.metadata?.multiplayer),
       originalMetaWorld: JSON.parse(JSON.stringify(world)),
       worldMode: "3d",
       viewMode: world.viewMode || world.metadata?.viewMode || "",
@@ -1180,6 +1192,13 @@ function convertMetaWorldToLegacyWorld(world) {
         floorColor,
         backgroundMode: "color",
         backgroundImage: "",
+        dayNightCycle: {
+          enabled: false,
+          durationSeconds: 120,
+          periods: [
+            { time: 0, brightness: 1 }
+          ]
+        },
         gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
         gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
         ...(world.environment || world.metadata?.environment || {})
@@ -1348,7 +1367,19 @@ async function loadStlWorld(filePath, state, THREE) {
   } else {
     scene.__nvGridHelper.visible = true;
   }
-  const envDef = { skyColor: "#ffffff", floorColor: "#ffffff", backgroundMode: "color", backgroundImage: "" };
+  const envDef = {
+    skyColor: "#ffffff",
+    floorColor: "#ffffff",
+    backgroundMode: "color",
+    backgroundImage: "",
+    dayNightCycle: {
+      enabled: false,
+      durationSeconds: 120,
+      periods: [
+        { time: 0, brightness: 1 }
+      ]
+    }
+  };
   consolePanels?.applyEnvironmentDefinition?.(envDef);
   if (movementState.environment) Object.assign(movementState.environment, envDef);
 
@@ -1416,6 +1447,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       state.pendingWorldOptions = options;
       return;
     }
+
+    window.VRWorldContext?.multiplayerClient?.configure?.({ worldPath: "", settings: { enabled: false } });
 
     // Special path: directly edit an STL file instead of an HTML world.
     if (ext === "stl") {
@@ -1518,6 +1551,13 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       const envDef = {
         gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
         gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
+        dayNightCycle: {
+          enabled: false,
+          durationSeconds: 120,
+          periods: [
+            { time: 0, brightness: 1 }
+          ]
+        },
         ...(rawEnvDef || {})
       };
       worldData.metadata = worldData.metadata && typeof worldData.metadata === "object" ? worldData.metadata : {};
@@ -1525,6 +1565,16 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       window.VRWorldContext?.consolePanels?.applyEnvironmentDefinition?.(envDef);
       const temporalDef = worldData?.metadata?.temporal || worldData?.temporal || null;
       window.VRWorldContext?.temporalController?.applySettings?.(temporalDef || { elapsedSeconds: 0 }, { resetElapsed: true });
+
+      const multiplayerDef = normalizeMetaWorldMultiplayer(
+        worldData?.metadata?.multiplayer
+        || worldData?.multiplayer
+        || worldData?.usd?.metadata?.multiplayer
+        || {}
+      );
+      movementState.multiplayer = multiplayerDef;
+      worldData.multiplayer = multiplayerDef;
+      worldData.metadata.multiplayer = multiplayerDef;
     }
     objects.forEach(obj => scene.remove(obj));
     objects.length = 0;
@@ -2510,6 +2560,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         controls.getObject().rotation.y = yaw;
       }
     }
+
+    window.VRWorldContext?.multiplayerClient?.configure?.({
+      worldPath,
+      settings: movementState?.multiplayer || {}
+    });
   } catch (err) {
     console.error("Failed to load world:", err);
   }

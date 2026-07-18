@@ -6,7 +6,7 @@ import { ensureScadEditorModeLayout } from "/panels/workspace.mjs";
 import { fetchText, resetEditorHooks, saveText } from "./GraphicalEditors/FamilyEditorCommon.mjs";
 import { parseScadText } from "/ScadEditor/ScadParser.mjs";
 import { serializeScadModel } from "/ScadEditor/ScadSerializer.mjs";
-import { addObject, addTimelineStep, removeObject, renameTimelineStep, setTimelineStepDisabled, deleteTimelineStep, isObjectEditable } from "/ScadEditor/ScadModel.mjs";
+import { addObject, addTimelineStep, removeObject, renameTimelineStep, setTimelineStepDisabled, deleteTimelineStep, isObjectEditable, scadObjectTypeLabel } from "/ScadEditor/ScadModel.mjs";
 import { shapeFromTool, polygonFromPoints } from "/ScadEditor/ScadShapeTools.mjs";
 import { addBooleanOperation, deleteObjects, duplicateObjects, extrudeObjects, renameObject, rotateObjects, scaleObjects, translateObjects } from "/ScadEditor/ScadOperations.mjs";
 import { createScadSceneRenderer } from "/ScadEditor/ScadSceneRenderer.mjs";
@@ -15,6 +15,9 @@ import { clearScadLayersContext, ensureScadLayersContext, notifyScadLayersChange
 
 const SCAD_MODE = "SCADediting";
 const SCAD_ACTION_AXIS_TYPES = new Set(["x", "y", "z"]);
+const SCAD_FACE_OBJECT_TYPES = new Set(["circle", "rectangle", "square", "triangle", "polygon", "text"]);
+const SCAD_SCALE_DRAG_UNITS = 60;
+const SCAD_MIN_SCALE_FACTOR = 0.05;
 
 function normalizePath(path = "") {
   return String(path || "").trim().replace(/\\/g, "/").replace(/[?#].*$/, "").replace(/^\/+/, "").replace(/^Notebook\//i, "");
@@ -75,8 +78,31 @@ function scadVertexPathWorldPoints(obj) {
 function scadShapeWorldPoints(obj) {
   if (!obj) return [];
   if (obj.type === "vertexPath" || obj.type === "line") return scadVertexPathWorldPoints(obj);
-  if (obj.type !== "polygon" && obj.type !== "triangle") return [];
-  const points = Array.isArray(obj.params?.points) ? obj.params.points : [];
+  let points = null;
+  if (obj.type === "circle") {
+    const radius = Math.max(0.1, numberOrZero(obj.params?.radius || obj.params?.r || 5));
+    points = Array.from({ length: 32 }, (_, index) => {
+      const angle = (Math.PI * 2 * index) / 32;
+      return [Math.cos(angle) * radius, Math.sin(angle) * radius];
+    });
+  } else if (obj.type === "rectangle") {
+    const width = Math.max(0.1, numberOrZero(obj.params?.width || 20));
+    const height = Math.max(0.1, numberOrZero(obj.params?.height || 10));
+    points = [[0, 0], [width, 0], [width, height], [0, height]];
+  } else if (obj.type === "square") {
+    const size = Math.max(0.1, numberOrZero(obj.params?.size || 12));
+    points = [[0, 0], [size, 0], [size, size], [0, size]];
+  } else if (obj.type === "text") {
+    const size = Math.max(1, numberOrZero(obj.params?.size || 10));
+    const text = String(obj.params?.text || "Text");
+    const width = Math.max(size, text.length * size * 0.62);
+    const height = size;
+    points = [[-width / 2, -height / 2], [width / 2, -height / 2], [width / 2, height / 2], [-width / 2, height / 2]];
+  } else if (obj.type === "polygon" || obj.type === "triangle") {
+    points = Array.isArray(obj.params?.points) ? obj.params.points : [];
+  } else {
+    return [];
+  }
   const translate = Array.isArray(obj.transform?.translate) ? obj.transform.translate : [0, 0, 0];
   const scale = Array.isArray(obj.transform?.scale) ? obj.transform.scale : [1, 1, 1];
   return points
@@ -116,6 +142,7 @@ export async function renderEditor(filePath, container) {
   let activeLayerId = null;
   let selectedIds = [];
   let selectedVertexRefs = [];
+  let selectedFaceRefs = [];
   let lastModelPoint = [0, 0];
   let grabState = null;
 
@@ -225,6 +252,56 @@ export async function renderEditor(filePath, container) {
     return pointIndex === null ? null : makeScadVertexRef(raw.objectId || raw.id || objectId, pointIndex);
   }
 
+  function hydrateScadFacePoint(point) {
+    if (Array.isArray(point)) return { x: numberOrZero(point[0]), y: numberOrZero(point[1]), z: numberOrZero(point[2]) };
+    if (point && typeof point === "object") return { x: numberOrZero(point.x), y: numberOrZero(point.y), z: numberOrZero(point.z) };
+    return null;
+  }
+
+  function makeScadFaceRef(raw = {}) {
+    const objectId = raw?.objectId || raw?.id;
+    const obj = objectById(objectId);
+    if (!obj || !isObjectEditable(model, obj)) return null;
+    const points = (Array.isArray(raw?.points) ? raw.points : []).map(hydrateScadFacePoint).filter(Boolean);
+    if (points.length < 3) return null;
+    return {
+      id: obj.id,
+      objectId: obj.id,
+      faceIndex: Number.isInteger(raw?.faceIndex) ? raw.faceIndex : null,
+      points,
+      normal: Array.isArray(raw?.normal) ? raw.normal.map(numberOrZero) : null,
+    };
+  }
+
+  function faceRefKey(ref) {
+    const pointKey = (ref?.points || []).map((point) => [point.x, point.y, point.z].map((value) => Number(numberOrZero(value).toFixed(5))).join(",")).join(";");
+    return String(ref?.id || ref?.objectId || "") + ":" + String(ref?.faceIndex ?? pointKey);
+  }
+
+  function dedupeScadFaceRefs(refs = []) {
+    const seen = new Set();
+    const hydrated = [];
+    refs.forEach((ref) => {
+      const next = makeScadFaceRef(ref);
+      if (!next) return;
+      const key = faceRefKey(next);
+      if (seen.has(key)) return;
+      seen.add(key);
+      hydrated.push(next);
+    });
+    return hydrated;
+  }
+
+  function pickedFaceRefFromMeta(objectId, meta = null) {
+    if (!meta || typeof meta !== "object" || !meta.faceRef) return null;
+    return makeScadFaceRef({ ...meta.faceRef, objectId: meta.faceRef.objectId || objectId });
+  }
+
+  function currentSelectedFaceRefs() {
+    const selectedSet = new Set(selectedIds);
+    return dedupeScadFaceRefs(selectedFaceRefs).filter((ref) => selectedSet.has(ref.id));
+  }
+
   function singlePointVertexRefsForIds(ids = selectedIds) {
     return (ids || [])
       .map((id) => {
@@ -243,33 +320,51 @@ export async function renderEditor(filePath, container) {
     return singlePointVertexRefsForIds();
   }
 
-  function setSelection(ids = [], refs = []) {
+  function setSelection(ids = [], refs = [], faces = []) {
     selectedIds = Array.isArray(ids) ? ids.filter(Boolean) : [];
     selectedVertexRefs = dedupeScadVertexRefs(refs).filter((ref) => selectedIds.includes(ref.id));
+    selectedFaceRefs = dedupeScadFaceRefs(faces).filter((ref) => selectedIds.includes(ref.id));
   }
 
   function selectObject(id, event = null, meta = null) {
     const obj = model.objects.find((item) => item.id === id);
     if (!obj || !isObjectEditable(model, obj)) return;
     const vertexRef = pickedVertexRefFromMeta(id, meta) || ((obj.type === "vertexPath" || obj.type === "line") && scadVertexPathWorldPoints(obj).length === 1 ? makeScadVertexRef(id, 0) : null);
+    const objectFaceRef = !vertexRef && SCAD_FACE_OBJECT_TYPES.has(obj.type) ? makeScadFaceRef({ objectId: id, points: scadShapeWorldPoints(obj) }) : null;
+    const faceRef = vertexRef ? null : (objectFaceRef || pickedFaceRefFromMeta(id, meta));
     if (event?.shiftKey || event?.ctrlKey || event?.metaKey) {
       if (vertexRef) {
         const nextRefs = currentSelectedVertexRefs();
         const key = vertexRefKey(vertexRef);
         const exists = nextRefs.some((ref) => vertexRefKey(ref) === key);
         selectedVertexRefs = exists ? nextRefs.filter((ref) => vertexRefKey(ref) !== key) : [...nextRefs, vertexRef];
+        selectedFaceRefs = [];
         const nextIds = new Set(selectedIds);
         if (selectedVertexRefs.some((ref) => ref.id === id)) nextIds.add(id);
+        else nextIds.delete(id);
+        selectedIds = [...nextIds];
+      } else if (faceRef) {
+        const nextFaces = currentSelectedFaceRefs();
+        const key = faceRefKey(faceRef);
+        const exists = nextFaces.some((ref) => faceRefKey(ref) === key);
+        selectedFaceRefs = exists ? nextFaces.filter((ref) => faceRefKey(ref) !== key) : [...nextFaces, faceRef];
+        selectedVertexRefs = [];
+        const nextIds = new Set(selectedIds);
+        if (selectedFaceRefs.some((ref) => ref.id === id)) nextIds.add(id);
         else nextIds.delete(id);
         selectedIds = [...nextIds];
       } else {
         selectedIds = selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id];
         selectedVertexRefs = currentSelectedVertexRefs().filter((ref) => selectedIds.includes(ref.id));
+        selectedFaceRefs = currentSelectedFaceRefs().filter((ref) => selectedIds.includes(ref.id));
       }
     } else {
-      setSelection([id], vertexRef ? [vertexRef] : []);
+      setSelection([id], vertexRef ? [vertexRef] : [], faceRef ? [faceRef] : []);
     }
-    renderer?.setSelectedId(selectedIds[0] || null);
+    if (typeof renderer?.setSelectedIds === "function") renderer.setSelectedIds(selectedIds);
+    else renderer?.setSelectedId(selectedIds[0] || null);
+    renderer?.setSelectedFaceRefs?.(selectedFaceRefs);
+    if (faceRef) setStatus("Selected face on " + (obj.name || obj.type || "mesh") + ".");
     refresh();
   }
 
@@ -284,6 +379,7 @@ export async function renderEditor(filePath, container) {
       editable.forEach((id) => next.add(id));
       selectedIds = [...next];
       selectedVertexRefs = dedupeScadVertexRefs([...currentSelectedVertexRefs(), ...refs]).filter((ref) => selectedIds.includes(ref.id));
+      selectedFaceRefs = [];
     } else {
       setSelection(editable, refs);
     }
@@ -430,7 +526,19 @@ export async function renderEditor(filePath, container) {
     };
   }
 
+  function selectedScadFaceObjectIds() {
+    return selectedObjects(model, selectedIds)
+      .filter((obj) => SCAD_FACE_OBJECT_TYPES.has(obj.type) && isObjectEditable(model, obj))
+      .map((obj) => obj.id);
+  }
+
   function selectedScadFace() {
+    const faceRefs = currentSelectedFaceRefs();
+    if (faceRefs.length === 1) {
+      const points = faceRefs[0].points || [];
+      if (points.length >= 3 && scadVerticesAreCoplanar(points) && polygonArea(points) > 1e-6) return { points, source: faceRefs[0] };
+    }
+
     const selected = selectedObjects(model, selectedIds);
     if (selected.length === 1 && (selected[0].type === "polygon" || selected[0].type === "triangle")) {
       const points = scadShapeWorldPoints(selected[0]);
@@ -529,6 +637,7 @@ export async function renderEditor(filePath, container) {
   }
 
   function grabTypeLabel(type) {
+    if (type === "scale") return "Scale";
     if (type === "vertexExtrusion") return "Vertex extrude";
     if (type === "edgeExtrusion") return "Edge extrude";
     if (type === "faceExtrusion") return "Face extrude";
@@ -571,6 +680,41 @@ export async function renderEditor(filePath, container) {
     return { x: delta.x * sign, y: delta.y * sign, z: numberOrZero(delta.z) * sign };
   }
 
+  function objectScaleVector(obj) {
+    const scale = Array.isArray(obj?.transform?.scale) ? obj.transform.scale : [1, 1, 1];
+    return [0, 1, 2].map((index) => {
+      const value = Number(scale[index]);
+      return Number.isFinite(value) && value !== 0 ? value : 1;
+    });
+  }
+
+  function transformTimelineSelectionLabel(objectIds = []) {
+    const objects = selectedObjects(model, objectIds);
+    if (objects.length === 1) return scadObjectTypeLabel(objects[0].type);
+    return String(objects.length) + " Objects";
+  }
+
+  function scaleFactorForGrab(state, event = null) {
+    const delta = rawGrabDelta(state, event);
+    const axis = state?.axisLock;
+    const driver = axis === "x"
+      ? delta.x
+      : axis === "y" || axis === "z"
+        ? delta.y
+        : Math.abs(delta.x) >= Math.abs(delta.y)
+          ? delta.x
+          : delta.y;
+    return Math.max(SCAD_MIN_SCALE_FACTOR, 1 + (numberOrZero(driver) * getGrabDirectionSign(state)) / SCAD_SCALE_DRAG_UNITS);
+  }
+
+  function scaleFactorsForGrab(state, event = null) {
+    const factor = scaleFactorForGrab(state, event);
+    if (state?.axisLock === "x") return [factor, 1, 1];
+    if (state?.axisLock === "y") return [1, factor, 1];
+    if (state?.axisLock === "z") return [1, 1, factor];
+    return [factor, factor, factor];
+  }
+
   function startGrabSelectedObjects(event = null) {
     const selected = selectedObjects(model, selectedIds).filter((obj) => isObjectEditable(model, obj));
     if (!selected.length) return false;
@@ -582,6 +726,27 @@ export async function renderEditor(filePath, container) {
       originals: selected.map((obj) => ({
         id: obj.id,
         translate: Array.isArray(obj.transform?.translate) ? [...obj.transform.translate] : [0, 0, 0],
+      })),
+    };
+    setGrabInstructionStatus(grabState);
+    return true;
+  }
+
+  function startScaleSelectedObjects(event = null, axisLock = null) {
+    const selected = selectedObjects(model, selectedIds).filter((obj) => isObjectEditable(model, obj));
+    if (!selected.length) {
+      setStatus("Select one or more objects to scale.");
+      return false;
+    }
+    grabState = {
+      type: "scale",
+      start: modelPointFromEventOrLast(event),
+      axisLock: SCAD_ACTION_AXIS_TYPES.has(axisLock) ? axisLock : null,
+      axisDirectionSign: 1,
+      lastFactors: [1, 1, 1],
+      originals: selected.map((obj) => ({
+        id: obj.id,
+        scale: objectScaleVector(obj),
       })),
     };
     setGrabInstructionStatus(grabState);
@@ -689,6 +854,21 @@ export async function renderEditor(filePath, container) {
       updateScadEdgeExtrusion(grabState.extrusion, delta);
     } else if (grabState.type === "faceExtrusion") {
       updateScadFaceExtrusion(grabState.extrusion, delta);
+    } else if (grabState.type === "scale") {
+      const factors = scaleFactorsForGrab(grabState, event);
+      grabState.lastFactors = [...factors];
+      grabState.originals.forEach((entry) => {
+        const obj = objectById(entry.id);
+        if (!obj) return;
+        obj.transform = {
+          ...(obj.transform || {}),
+          scale: [
+            numberOrZero(entry.scale[0]) * factors[0],
+            numberOrZero(entry.scale[1]) * factors[1],
+            numberOrZero(entry.scale[2]) * factors[2],
+          ],
+        };
+      });
     } else {
       grabState.originals.forEach((entry) => {
         const obj = objectById(entry.id);
@@ -717,6 +897,12 @@ export async function renderEditor(filePath, container) {
         if (!obj) return;
         obj.transform = { ...(obj.transform || {}), translate: [...entry.translate] };
       });
+    } else if (cancel && finished.type === "scale") {
+      finished.originals.forEach((entry) => {
+        const obj = objectById(entry.id);
+        if (!obj) return;
+        obj.transform = { ...(obj.transform || {}), scale: [...entry.scale] };
+      });
     } else if (cancel && finished.type === "vertexExtrusion") {
       (finished.createdIds || []).forEach((id) => removeObject(model, id, { timeline: false }));
       setSelection(finished.sourceId ? [finished.sourceId] : [], finished.source ? [finished.source] : []);
@@ -744,6 +930,17 @@ export async function renderEditor(filePath, container) {
         params: { operation: "extrude", target: finished.type === "faceExtrusion" ? "face" : "edge" },
       });
       markDirty();
+    } else if (finished.type === "scale") {
+      const objectIds = finished.originals.map((entry) => entry.id).filter((id) => Boolean(objectById(id)));
+      if (objectIds.length) {
+        addTimelineStep(model, {
+          type: "transform",
+          objectIds,
+          label: "Scale " + transformTimelineSelectionLabel(objectIds),
+          params: { operation: "scale", factors: finished.lastFactors || [1, 1, 1], axisLock: finished.axisLock || null },
+        });
+      }
+      markDirty();
     } else {
       markDirty();
     }
@@ -753,6 +950,18 @@ export async function renderEditor(filePath, container) {
   }
 
   function extrudeSelectedScadEdge(event = null) {
+    const faceObjectIds = selectedScadFaceObjectIds();
+    if (faceObjectIds.length) {
+      const h = Number(prompt("Extrusion height", "10"));
+      if (!Number.isFinite(h) || h <= 0) return false;
+      const changed = extrudeObjects(model, faceObjectIds, h);
+      if (!changed.length) return alert("Select a 2D face object to extrude.");
+      markDirty();
+      setStatus("Extruded " + faceObjectIds.length + " face object(s).");
+      refresh();
+      return true;
+    }
+
     const vertices = selectedScadVertices();
     if (vertices.length === 1) return startGrabScadVertexExtrusion(event);
 
@@ -835,25 +1044,31 @@ export async function renderEditor(filePath, container) {
     renderer?.renderModel(model);
     if (typeof renderer?.setSelectedIds === "function") renderer.setSelectedIds(selectedIds);
     else renderer?.setSelectedId(selectedIds[0] || null);
+    renderer?.setSelectedFaceRefs?.(selectedFaceRefs);
     notifyScadLayersChanged();
     notifyScadSelectionChanged();
     window.NodevisionState.scadShapeSelected = selectedIds.length > 0;
     updateToolbarState({ currentMode: SCAD_MODE, scadShapeSelected: selectedIds.length > 0 });
-    window.dispatchEvent(new CustomEvent("nv-scad-model-changed", { detail: { model, selectedIds } }));
+    window.dispatchEvent(new CustomEvent("nv-scad-model-changed", { detail: { model, selectedIds, selectedFaceRefs } }));
   }
 
   function runExtrude() {
     if (!selectedIds.length) return alert("Select a shape to extrude.");
     const h = Number(prompt("Extrusion height", "10"));
     if (!Number.isFinite(h) || h <= 0) return;
-    extrudeObjects(model, selectedIds, h);
+    const changed = extrudeObjects(model, selectedIds, h);
+    if (!changed.length) return alert("Select a 2D face object to extrude.");
     markDirty();
     refresh();
   }
 
   function runBoolean(type) {
     if (selectedIds.length < 2) return alert("Select at least two shapes for this operation.");
-    addBooleanOperation(model, type, selectedIds);
+    const step = addBooleanOperation(model, type, selectedIds);
+    if (!step) return alert("Choose union, difference, intersection, or cut out with at least two selected shapes.");
+    setSelection(step.objectIds || selectedIds, []);
+    const booleanHint = step.params?.operation === "difference" ? " First selected object is the base." : "";
+    setStatus((step.label || "Boolean operation") + " added to CADtimeline." + booleanHint);
     markDirty();
     refresh();
   }
@@ -1007,6 +1222,11 @@ export async function renderEditor(filePath, container) {
     if (key === "g") {
       event.preventDefault();
       if (!grabState) startGrabSelectedObjects(event);
+      return;
+    }
+    if (key === "s") {
+      event.preventDefault();
+      startScaleSelectedObjects(event);
       return;
     }
     if (key === "a") {

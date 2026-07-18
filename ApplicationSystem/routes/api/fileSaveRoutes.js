@@ -15,6 +15,7 @@ import {
 import { writePayloadToFile } from "./fileSaveRoutes/writePayload.js";
 import { validateSvgSavePayload } from "./fileSaveRoutes/svgSaveGuard.js";
 import { validateSaveSourcePath } from "./fileSaveRoutes/saveSourceGuard.js";
+import { rejectIfLanWriteDenied } from "./lanCooperationRoutes.js";
 
 const BASE_CONTEXT = createServerContext();
 
@@ -25,6 +26,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   const USER_TRASH_ROOT = path.join(USER_SETTINGS_ROOT, 'Trash');
 
   router.post('/save', async (req, res) => {
+    if (await rejectIfLanWriteDenied(req, res, ctx)) return;
+
     const {
       path: relativePath,
       content,
@@ -108,6 +111,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   });
 
   router.post('/create', async (req, res) => {
+    if (await rejectIfLanWriteDenied(req, res, ctx)) return;
+
     const { path: relativePath } = req.body;
     if (!relativePath) return res.status(400).send('File path is required');
 
@@ -126,6 +131,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   });
 
   router.post('/create-directory', async (req, res) => {
+    if (await rejectIfLanWriteDenied(req, res, ctx)) return;
+
     const { path: relativePath } = req.body;
     if (!relativePath) return res.status(400).json({ error: 'Directory path is required' });
 
@@ -143,6 +150,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   });
 
   router.post('/delete', async (req, res) => {
+    if (await rejectIfLanWriteDenied(req, res, ctx)) return;
+
     const { path: relativePath } = req.body;
     if (!relativePath) return res.status(400).send('Path is required');
 
@@ -177,6 +186,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   });
 
   router.post('/rename', async (req, res) => {
+    if (await rejectIfLanWriteDenied(req, res, ctx)) return;
+
     const { oldPath, newPath } = req.body;
     if (!oldPath || !newPath) {
       return res.status(400).send('Both oldPath and newPath are required');
@@ -196,6 +207,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   });
 
   router.post('/copy', async (req, res) => {
+    if (await rejectIfLanWriteDenied(req, res, ctx)) return;
+
     const { source, destination } = req.body;
     if (!source || !destination) {
       return res.status(400).send('Both source and destination are required');
@@ -222,6 +235,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   });
 
   router.post('/cut', async (req, res) => {
+    if (await rejectIfLanWriteDenied(req, res, ctx)) return;
+
     const { source, destination } = req.body;
     if (!source || !destination) {
       return res.status(400).send('Both source and destination are required');

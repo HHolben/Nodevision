@@ -791,7 +791,8 @@ async function importModeLayout({ userModulePath, defaultModulePath, fallbackMod
         || mod.layout
         || mod.SVG_EDITOR_MODE_LAYOUT
         || mod.MID_EDITOR_MODE_LAYOUT
-        || mod.HANDWRITING_OCR_MODE_LAYOUT;
+        || mod.HANDWRITING_OCR_MODE_LAYOUT
+        || mod.GIF_EDITOR_MODE_LAYOUT;
       if (layout) return layout;
     } catch (err) {
       lastError = err;
@@ -1003,6 +1004,19 @@ export async function ensureScadEditorModeLayout({ editorCell } = {}) {
   });
 }
 
+export async function ensureGifEditorModeLayout({ editorCell } = {}) {
+  const layout = await importModeLayout({
+    userModulePath: "/UserSettings/ModeLayouts/GifEditorMode.mjs",
+    defaultModulePath: "/Layouts/ModeLayouts/GifEditorMode.mjs",
+  });
+  return ensureEditorModeLayout({
+    editorCell,
+    layout,
+    modeId: layout?.id || "GifEditorMode",
+    preserveExistingPanelIds: ["FileManager"],
+  });
+}
+
 export async function ensureKMLViewerModeLayout({ viewerCell } = {}) {
   const layout = await importModeLayout({
     userModulePath: "/UserSettings/ModeLayouts/KMLviewerMode.mjs",
@@ -1112,15 +1126,24 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
     console.log(`🔁 Normalized panel type: ${requestedPanelType} → ${panelType}`);
   }
 
-  // Try multiple search paths for panels
-  const possiblePaths = [
+  // Try multiple search paths for panels, honoring the target cell class first.
+  const panelClass = String(cell.dataset.panelClass || "").toLowerCase();
+  const preferredFolder = {
+    editorpanel: "EditorPanels",
+    infopanel: "InfoPanels",
+    viewpanel: "ViewPanels",
+    controlpanel: "ControlPanels",
+  }[panelClass];
+  const candidatePaths = [
+    preferredFolder ? `/PanelInstances/${preferredFolder}/${panelType}.mjs` : null,
     `/PanelInstances/${panelType}.mjs`,
     `/PanelInstances/EditorPanels/${panelType}.mjs`,
     `/PanelInstances/InfoPanels/${panelType}.mjs`,
     `/PanelInstances/ViewPanels/${panelType}.mjs`,
     `/PanelInstances/ControlPanels/${panelType}.mjs`,
     `/panels/${panelType}.mjs`,
-  ];
+  ].filter(Boolean);
+  const possiblePaths = [...new Set(candidatePaths)];
 
   let module = null;
   for (const path of possiblePaths) {
@@ -1130,7 +1153,12 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
         window.__nvModuleCacheBust = Date.now();
       }
       const importPath = `${path}${path.includes("?") ? "&" : "?"}v=${window.__nvModuleCacheBust}`;
-      module = await import(importPath);
+      const candidateModule = await import(importPath);
+      if (typeof candidateModule.setupPanel !== "function") {
+        console.warn("⚠️ Panel module has no setupPanel(), trying next candidate:", path);
+        continue;
+      }
+      module = candidateModule;
       console.log("✅ Successfully imported:", path);
       break;
     } catch (err) {
@@ -1139,7 +1167,7 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
   }
 
   if (!module) {
-    console.warn("⚠️ No panel module found for", panelType);
+    console.warn("⚠️ No panel module with setupPanel found for", panelType);
     return;
   }
 
@@ -1159,10 +1187,11 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
   } else {
     delete cell.dataset.currentFilePath;
   }
-  await module.setupPanel(cell, {
+  const cleanup = await module.setupPanel(cell, {
     ...panelVars,
     filePath: resolvedFilePath || null,
   });
+  if (typeof cleanup === "function") cell.cleanup = cleanup;
 
   console.log("✅ Loaded panel:", panelType);
 }

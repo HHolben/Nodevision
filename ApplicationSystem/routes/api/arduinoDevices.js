@@ -6,7 +6,11 @@
 import express from "express";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { SerialPort } from "serialport";
+import {
+  isSerialDependencyUnavailable,
+  loadSerialDependencies,
+  serialUnavailablePayload,
+} from "./serialDependencies.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -95,6 +99,7 @@ async function listViaArduinoCli() {
 }
 
 async function listViaSerialPort() {
+  const { SerialPort } = await loadSerialDependencies();
   const ports = await SerialPort.list();
   const mapped = ports
     .map((p) => {
@@ -141,6 +146,14 @@ export default function createArduinoDevicesRouter() {
         arduinoCliAvailable: false,
       });
     } catch (err) {
+      if (isSerialDependencyUnavailable(err)) {
+        return res.status(200).json({
+          devices: [],
+          source: "unavailable",
+          arduinoCliAvailable: false,
+          ...serialUnavailablePayload(err),
+        });
+      }
       console.error("[arduinoDevices] Failed to list devices:", err);
       res.status(500).json({ error: err.message || "Failed to list devices" });
     }

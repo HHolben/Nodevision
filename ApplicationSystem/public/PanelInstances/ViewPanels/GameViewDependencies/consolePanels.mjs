@@ -16,7 +16,14 @@ const DEFAULT_ENVIRONMENT = {
   backgroundImage: "",
   floorImage: "",
   gasMaterialId: DEFAULT_WORLD_GAS_MATERIAL_ID,
-  gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE
+  gasMaterialFile: DEFAULT_WORLD_GAS_MATERIAL_FILE,
+  dayNightCycle: {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  }
 };
 
 const DEFAULT_GAS_MATERIAL_OPTION = {
@@ -28,6 +35,95 @@ const DEFAULT_GAS_MATERIAL_OPTION = {
   matterState: "gas",
   MatterState: "gas"
 };
+
+function cloneDefaultDayNightCycle() {
+  return {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  };
+}
+
+function clampFiniteNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function normalizeDayNightPeriod(period, fallbackTime = 0) {
+  const source = period && typeof period === "object" ? period : {};
+  return {
+    time: clampFiniteNumber(source.time ?? source.timeSeconds ?? source.at ?? source.offset, 0, Number.MAX_SAFE_INTEGER, fallbackTime),
+    brightness: clampFiniteNumber(source.brightness ?? source.level ?? source.intensity, 0, 1, 1)
+  };
+}
+
+function normalizeDayNightCycle(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const durationSeconds = clampFiniteNumber(source.durationSeconds ?? source.duration ?? source.cycleSeconds, 1, 86400, DEFAULT_ENVIRONMENT.dayNightCycle.durationSeconds);
+  const sourcePeriods = Array.isArray(source.periods)
+    ? source.periods
+    : Array.isArray(source.keyframes)
+      ? source.keyframes
+      : [];
+  const periods = sourcePeriods
+    .map((period, index) => normalizeDayNightPeriod(period, index === 0 ? 0 : durationSeconds * index / Math.max(sourcePeriods.length, 1)))
+    .map((period) => ({
+      time: clampFiniteNumber(period.time, 0, durationSeconds, 0),
+      brightness: clampFiniteNumber(period.brightness, 0, 1, 1)
+    }))
+    .sort((a, b) => a.time - b.time);
+  return {
+    enabled: source.enabled === true,
+    durationSeconds,
+    periods: periods.length ? periods : cloneDefaultDayNightCycle().periods
+  };
+}
+
+function normalizeEnvironmentState(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const environment = {
+    ...DEFAULT_ENVIRONMENT,
+    ...source
+  };
+  environment.dayNightCycle = normalizeDayNightCycle(source.dayNightCycle ?? source.dayNight ?? source.lightCycle ?? DEFAULT_ENVIRONMENT.dayNightCycle);
+  return environment;
+}
+
+function moduloPositive(value, modulus) {
+  return ((value % modulus) + modulus) % modulus;
+}
+
+function smoothStep(value) {
+  return value * value * (3 - 2 * value);
+}
+
+function sampleDayNightBrightness(cycle, elapsedSeconds = 0) {
+  const normalized = normalizeDayNightCycle(cycle);
+  if (!normalized.enabled) return 1;
+  const periods = normalized.periods;
+  if (periods.length <= 1) return periods[0]?.brightness ?? 1;
+  const duration = normalized.durationSeconds;
+  const t = moduloPositive(Number(elapsedSeconds) || 0, duration);
+  let previous = periods[periods.length - 1];
+  let next = periods[0];
+  for (const period of periods) {
+    if (period.time <= t) previous = period;
+    if (period.time > t) {
+      next = period;
+      break;
+    }
+  }
+  const previousTime = previous === periods[periods.length - 1] && t < periods[0].time
+    ? previous.time - duration
+    : previous.time;
+  const nextTime = next.time <= previousTime ? next.time + duration : next.time;
+  const span = Math.max(0.001, nextTime - previousTime);
+  const amount = smoothStep(clampFiniteNumber((t - previousTime) / span, 0, 1, 0));
+  return previous.brightness + (next.brightness - previous.brightness) * amount;
+}
 
 function gasMaterialId(entry = {}) {
   return String(entry.materialId || entry.id || entry.physicsMaterialId || entry.materialName || entry.displayName || DEFAULT_WORLD_GAS_MATERIAL_ID).trim();
@@ -454,10 +550,10 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
   let currentFloorTexture = null;
   let floorTextureRequestId = 0;
 
-  let environment = {
+  let environment = normalizeEnvironmentState({
     ...DEFAULT_ENVIRONMENT,
     ...(movementState?.environment || {})
-  };
+  });
   if (movementState) movementState.environment = environment;
   if (window.VRWorldContext) {
     window.VRWorldContext.environment = environment;
@@ -501,15 +597,68 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     useUI.setFields(environment);
   }
 
-  function applyEnvironmentState(overrides = {}) {
-    environment = {
-      ...environment,
-      ...overrides
-    };
-    if (movementState) movementState.environment = environment;
-    if (window.VRWorldContext) window.VRWorldContext.environment = environment;
+  function syncEnvironmentState() {
+    const definition = getEnvironmentDefinition();
+    environment = definition;
+    if (movementState) movementState.environment = definition;
+    if (window.VRWorldContext) {
+      window.VRWorldContext.environment = definition;
+      const worldDef = window.VRWorldContext.currentWorldDefinition;
+      if (worldDef && typeof worldDef === "object") {
+        worldDef.environment = {
+          ...(worldDef.environment || {}),
+          ...definition
+        };
+        worldDef.metadata = worldDef.metadata && typeof worldDef.metadata === "object" ? worldDef.metadata : {};
+        worldDef.metadata.environment = {
+          ...(worldDef.metadata.environment || {}),
+          ...definition
+        };
+      }
+    }
+  }
 
-    if (environment.backgroundMode === "image" && environment.backgroundImage) {
+  function readEnvironmentElapsedSeconds() {
+    return window.VRWorldContext?.temporalController?.getTimeSeconds?.() ?? 0;
+  }
+
+  function updateEnvironmentLighting(elapsedSeconds = readEnvironmentElapsedSeconds()) {
+    const brightness = clampFiniteNumber(sampleDayNightBrightness(environment.dayNightCycle, elapsedSeconds), 0, 1, 1);
+    if (scene?.traverse) {
+      scene.traverse((object) => {
+        if (!object?.isLight) return;
+        object.userData = object.userData || {};
+        if (!Number.isFinite(object.userData.nvDayNightBaseIntensity)) {
+          const baseIntensity = Number(object.intensity);
+          object.userData.nvDayNightBaseIntensity = Number.isFinite(baseIntensity) ? baseIntensity : 1;
+        }
+        object.intensity = object.userData.nvDayNightBaseIntensity * brightness;
+      });
+    }
+    if (scene && !(environment.backgroundMode === "image" && environment.backgroundImage)) {
+      const skyColor = new THREE.Color(environment.skyColor || DEFAULT_ENVIRONMENT.skyColor);
+      skyColor.multiplyScalar(brightness);
+      scene.background = skyColor;
+    }
+    if (movementState) movementState.environmentBrightness = brightness;
+    if (window.VRWorldContext) window.VRWorldContext.environmentBrightness = brightness;
+    return brightness;
+  }
+
+  function applyEnvironmentState(overrides = {}) {
+    const sourceOverrides = overrides && typeof overrides === "object" ? overrides : {};
+    environment = normalizeEnvironmentState({
+      ...environment,
+      ...sourceOverrides
+    });
+    syncEnvironmentState();
+    const backgroundChanged = Object.prototype.hasOwnProperty.call(sourceOverrides, "backgroundMode")
+      || Object.prototype.hasOwnProperty.call(sourceOverrides, "backgroundImage")
+      || Object.prototype.hasOwnProperty.call(sourceOverrides, "skyColor");
+    const floorChanged = Object.prototype.hasOwnProperty.call(sourceOverrides, "floorImage")
+      || Object.prototype.hasOwnProperty.call(sourceOverrides, "floorColor");
+
+    if (backgroundChanged && environment.backgroundMode === "image" && environment.backgroundImage) {
       const requestId = ++textureRequestId;
       loader.load(
         environment.backgroundImage,
@@ -521,6 +670,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
           disposeTexture();
           currentTexture = texture;
           scene.background = currentTexture;
+          updateEnvironmentLighting();
           useUI.setStatus("Background image applied.");
         },
         undefined,
@@ -529,19 +679,20 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
           if (requestId === textureRequestId) {
             environment.backgroundMode = "color";
             environment.backgroundImage = "";
-            applyEnvironmentState({});
+            applyEnvironmentState({ backgroundMode: "color", backgroundImage: "" });
           }
           useUI.setStatus("Failed to load background image.");
         }
       );
-    } else {
+    } else if (backgroundChanged) {
+      textureRequestId += 1;
       disposeTexture();
       if (scene) scene.background = new THREE.Color(environment.skyColor || DEFAULT_ENVIRONMENT.skyColor);
       useUI.setStatus("Background colors applied.");
     }
 
     const floorColor = environment.floorColor || DEFAULT_ENVIRONMENT.floorColor;
-    if (environment.floorImage) {
+    if (floorChanged && environment.floorImage) {
       const requestId = ++floorTextureRequestId;
       floorLoader.load(
         environment.floorImage,
@@ -566,12 +717,13 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
           console.warn("Console floor texture load failed:", err);
           if (requestId === floorTextureRequestId) {
             environment.floorImage = "";
-            applyEnvironmentState({});
+            applyEnvironmentState({ floorImage: "" });
           }
           useUI.setStatus("Failed to load floor image.");
         }
       );
-    } else if (ground?.material) {
+    } else if (floorChanged && ground?.material) {
+      floorTextureRequestId += 1;
       disposeFloorTexture();
       if (ground.material.map) {
         ground.material.map = null;
@@ -581,6 +733,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       }
       ground.material.needsUpdate = true;
     }
+    updateEnvironmentLighting();
     refreshUseFields();
   }
 
@@ -593,7 +746,8 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       backgroundImage: def.backgroundImage || "",
       floorImage: def.floorImage || "",
       gasMaterialId: def.gasMaterialId || DEFAULT_ENVIRONMENT.gasMaterialId,
-      gasMaterialFile: def.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile
+      gasMaterialFile: def.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile,
+      dayNightCycle: normalizeDayNightCycle(def.dayNightCycle ?? def.dayNight ?? def.lightCycle ?? DEFAULT_ENVIRONMENT.dayNightCycle)
     };
     applyEnvironmentState(merged);
   }
@@ -606,7 +760,8 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       backgroundImage: environment.backgroundImage,
       floorImage: environment.floorImage,
       gasMaterialId: environment.gasMaterialId || DEFAULT_ENVIRONMENT.gasMaterialId,
-      gasMaterialFile: environment.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile
+      gasMaterialFile: environment.gasMaterialFile || DEFAULT_ENVIRONMENT.gasMaterialFile,
+      dayNightCycle: normalizeDayNightCycle(environment.dayNightCycle)
     };
   }
 
@@ -904,6 +1059,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     applyEnvironmentDefinition,
     getEnvironmentDefinition,
     applyEnvironmentState,
+    updateEnvironmentLighting,
     runConsoleAction
   };
 }

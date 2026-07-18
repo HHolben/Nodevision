@@ -5,6 +5,107 @@
 import * as THREE from "/lib/three/three.module.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
 
+const DEFAULT_ENVIRONMENT = {
+  skyColor: "#eef2f4",
+  floorColor: "",
+  dayNightCycle: {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  }
+};
+
+function cloneDefaultDayNightCycle() {
+  return {
+    enabled: false,
+    durationSeconds: 120,
+    periods: [
+      { time: 0, brightness: 1 }
+    ]
+  };
+}
+
+function clampFiniteNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function normalizeDayNightPeriod(period, fallbackTime = 0) {
+  const source = period && typeof period === "object" ? period : {};
+  return {
+    time: clampFiniteNumber(source.time ?? source.timeSeconds ?? source.at ?? source.offset, 0, Number.MAX_SAFE_INTEGER, fallbackTime),
+    brightness: clampFiniteNumber(source.brightness ?? source.level ?? source.intensity, 0, 1, 1)
+  };
+}
+
+function normalizeDayNightCycle(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const durationSeconds = clampFiniteNumber(source.durationSeconds ?? source.duration ?? source.cycleSeconds, 1, 86400, DEFAULT_ENVIRONMENT.dayNightCycle.durationSeconds);
+  const sourcePeriods = Array.isArray(source.periods)
+    ? source.periods
+    : Array.isArray(source.keyframes)
+      ? source.keyframes
+      : [];
+  const periods = sourcePeriods
+    .map((period, index) => normalizeDayNightPeriod(period, index === 0 ? 0 : durationSeconds * index / Math.max(sourcePeriods.length, 1)))
+    .map((period) => ({
+      time: clampFiniteNumber(period.time, 0, durationSeconds, 0),
+      brightness: clampFiniteNumber(period.brightness, 0, 1, 1)
+    }))
+    .sort((a, b) => a.time - b.time);
+  return {
+    enabled: source.enabled === true,
+    durationSeconds,
+    periods: periods.length ? periods : cloneDefaultDayNightCycle().periods
+  };
+}
+
+function normalizeEnvironmentState(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const environment = {
+    ...DEFAULT_ENVIRONMENT,
+    ...source
+  };
+  environment.dayNightCycle = normalizeDayNightCycle(source.dayNightCycle ?? source.dayNight ?? source.lightCycle ?? DEFAULT_ENVIRONMENT.dayNightCycle);
+  return environment;
+}
+
+function moduloPositive(value, modulus) {
+  return ((value % modulus) + modulus) % modulus;
+}
+
+function smoothStep(value) {
+  return value * value * (3 - 2 * value);
+}
+
+function sampleDayNightBrightness(cycle, elapsedSeconds = 0) {
+  const normalized = normalizeDayNightCycle(cycle);
+  if (!normalized.enabled) return 1;
+  const periods = normalized.periods;
+  if (periods.length <= 1) return periods[0]?.brightness ?? 1;
+  const duration = normalized.durationSeconds;
+  const t = moduloPositive(Number(elapsedSeconds) || 0, duration);
+  let previous = periods[periods.length - 1];
+  let next = periods[0];
+  for (const period of periods) {
+    if (period.time <= t) previous = period;
+    if (period.time > t) {
+      next = period;
+      break;
+    }
+  }
+  const previousTime = previous === periods[periods.length - 1] && t < periods[0].time
+    ? previous.time - duration
+    : previous.time;
+  const nextTime = next.time <= previousTime ? next.time + duration : next.time;
+  const span = Math.max(0.001, nextTime - previousTime);
+  const amount = smoothStep(clampFiniteNumber((t - previousTime) / span, 0, 1, 0));
+  return previous.brightness + (next.brightness - previous.brightness) * amount;
+}
+
 export class MetaWorldScene {
   constructor({ container, world }) {
     this.container = container;
@@ -13,8 +114,13 @@ export class MetaWorldScene {
     this.clickableObjects = [];
     this.animationHooks = new Set();
     this.clock = new THREE.Clock();
+    this.elapsedSeconds = 0;
+    this.environment = normalizeEnvironmentState({
+      ...DEFAULT_ENVIRONMENT,
+      ...(world.environment || world.metadata?.environment || {})
+    });
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color("#eef2f4");
+    this.scene.background = new THREE.Color(this.environment.skyColor || DEFAULT_ENVIRONMENT.skyColor);
     this.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -23,9 +129,11 @@ export class MetaWorldScene {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.enabled = world.interactionPermissions.allowCameraOrbit;
+    this.lights = [];
     this.setupCamera();
     this.setupLights();
     this.setupRoom();
+    this.updateEnvironmentLighting(0);
     this.resize();
     this.resizeHandler = () => this.resize();
     this.running = false;
@@ -40,18 +148,23 @@ export class MetaWorldScene {
   }
 
   setupLights() {
-    this.scene.add(new THREE.HemisphereLight("#ffffff", "#b4bec8", 1.8));
+    const fill = new THREE.HemisphereLight("#ffffff", "#b4bec8", 1.8);
+    this.scene.add(fill);
+    this.lights.push(fill);
+
     const key = new THREE.DirectionalLight("#ffffff", 2.2);
     key.position.set(5, 8, 4);
     key.castShadow = true;
     this.scene.add(key);
+    this.lights.push(key);
   }
 
   setupRoom() {
     const size = this.world.museum.size;
+    const floorColor = this.environment.floorColor || this.world.museum.floorColor;
     const floor = new THREE.Mesh(
       new THREE.BoxGeometry(size.x, 0.12, size.z),
-      new THREE.MeshStandardMaterial({ color: this.world.museum.floorColor, roughness: 0.85 }),
+      new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.85 }),
     );
     floor.position.y = -0.06;
     floor.receiveShadow = true;
@@ -99,6 +212,24 @@ export class MetaWorldScene {
     return sprite;
   }
 
+  updateEnvironmentLighting(elapsedSeconds = 0) {
+    const brightness = clampFiniteNumber(sampleDayNightBrightness(this.environment.dayNightCycle, elapsedSeconds), 0, 1, 1);
+    for (const light of this.lights) {
+      light.userData = light.userData || {};
+      if (!Number.isFinite(light.userData.nvDayNightBaseIntensity)) {
+        const baseIntensity = Number(light.intensity);
+        light.userData.nvDayNightBaseIntensity = Number.isFinite(baseIntensity) ? baseIntensity : 1;
+      }
+      light.intensity = light.userData.nvDayNightBaseIntensity * brightness;
+    }
+    if (!(this.environment.backgroundMode === "image" && this.environment.backgroundImage)) {
+      const skyColor = new THREE.Color(this.environment.skyColor || DEFAULT_ENVIRONMENT.skyColor);
+      skyColor.multiplyScalar(brightness);
+      this.scene.background = skyColor;
+    }
+    return brightness;
+  }
+
   addAnimationHook(callback) {
     this.animationHooks.add(callback);
     return () => this.animationHooks.delete(callback);
@@ -111,6 +242,8 @@ export class MetaWorldScene {
       if (!this.running) return;
       this.animationFrameId = requestAnimationFrame(animate);
       const dt = Math.min(this.clock.getDelta(), 0.05);
+      this.elapsedSeconds += dt;
+      this.updateEnvironmentLighting(this.elapsedSeconds);
       for (const hook of this.animationHooks) hook(dt, this);
       this.controls.update();
       this.renderer.render(this.scene, this.camera);

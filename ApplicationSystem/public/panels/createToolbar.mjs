@@ -265,6 +265,63 @@ function checkToolbarConditions(item, state) {
 }
 
 
+function toolbarChildrenForHeading(heading) {
+  const normalized = String(heading || "").trim();
+  if (!normalized) return [];
+  const matches = [];
+  for (const key in toolbarDataCache) {
+    const set = toolbarDataCache[key];
+    if (!Array.isArray(set)) continue;
+    matches.push(...set.filter((item) => item.parentHeading === normalized));
+  }
+  return matches;
+}
+
+function resolveToolbarContextHandler(item) {
+  let contextName = String(item?.routeToContext || "").trim();
+  const conditions = item?.conditions || {};
+  if (!contextName && (
+    Object.prototype.hasOwnProperty.call(conditions, "glbCanInsertBone") ||
+    Object.prototype.hasOwnProperty.call(conditions, "glbCanInsertPrimitive") ||
+    Object.prototype.hasOwnProperty.call(conditions, "glbCanEditMesh")
+  )) {
+    contextName = "GLBEditorContext";
+  }
+  if (!contextName) return null;
+  const context = window[contextName];
+  if (!context) return null;
+  if (typeof context.handleToolbarAction === "function") return context.handleToolbarAction.bind(context);
+  if (typeof context.handleAction === "function") return context.handleAction.bind(context);
+  return null;
+}
+
+function runToolbarItemCallback(item) {
+  if (!item?.callbackKey) return;
+  const contextHandler = resolveToolbarContextHandler(item);
+  if (typeof contextHandler === "function") {
+    const handled = contextHandler(item.callbackKey, item);
+    if (handled !== false) return;
+  }
+  if (item.routeToActivePanel) {
+    const handler = window.NodevisionState?.activeActionHandler;
+    if (typeof handler === "function") {
+      const handled = handler(item.callbackKey, item);
+      if (handled !== false) return;
+    }
+  }
+  if (item.ToolbarCategory) handleToolbarClick(item.ToolbarCategory, item.callbackKey);
+}
+
+function dropdownsAreRelated(a, b) {
+  return !!(a && b && (a === b || a.contains?.(b) || b.contains?.(a)));
+}
+
+function hideUnrelatedDropdowns(activeDropdown) {
+  Object.values(prebuiltDropdowns).forEach((dropdown) => {
+    if (!dropdownsAreRelated(dropdown, activeDropdown)) dropdown.style.display = "none";
+  });
+}
+
 // === Dynamic callback loader ===
 async function handleToolbarClick(category, key) {
   const callback = await loadCallback(category.toLowerCase(), key);
@@ -496,7 +553,7 @@ function buildToolbar(container, items, parentHeading = null) {
       btnWrapper.addEventListener("mouseenter", () => {
         clearTimeout(hoverTimeout);
         playToolbarHighlightSound();
-        Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
+        hideUnrelatedDropdowns(dropdown);
         dropdown.style.display = "block";
       });
       btnWrapper.addEventListener("mouseleave", () => {
@@ -509,7 +566,7 @@ function buildToolbar(container, items, parentHeading = null) {
       e.stopPropagation();
 
       // Close other dropdowns
-      Object.values(prebuiltDropdowns).forEach(dd => { if (dd !== dropdown) dd.style.display = "none"; });
+      hideUnrelatedDropdowns(dropdown);
 
 // === Panel handling ===
 if (item.panelTemplateId || item.panelTemplate) {
@@ -530,17 +587,7 @@ if (item.panelTemplateId || item.panelTemplate) {
       // Script import
       if (item.script) attachToolbarScript(item, btnWrapper);
 
-      // Route to active panel handler if specified
-      if (item.routeToActivePanel && item.callbackKey) {
-        const handler = window.NodevisionState.activeActionHandler;
-        if (typeof handler === 'function') {
-          handler(item.callbackKey);
-        } else if (item.ToolbarCategory) {
-          handleToolbarClick(item.ToolbarCategory, item.callbackKey);
-        }
-      } else if (item.callbackKey && item.ToolbarCategory) {
-        handleToolbarClick(item.ToolbarCategory, item.callbackKey);
-      }
+      runToolbarItemCallback(item);
 
       // Sub-toolbar
       // Priority rule:
@@ -564,8 +611,10 @@ function buildDropdownFromItem(item) {
   if (item.preventDropdown === true) return null;
   const state = window.NodevisionState || {};
   const normalizedHeading = item.heading.toLowerCase();
-  const jsonName = `${normalizedHeading}Toolbar.json`;
-  const subItems = toolbarDataCache[jsonName] || [];
+  const jsonName = normalizedHeading + "Toolbar.json";
+  const fileItems = toolbarDataCache[jsonName] || [];
+  const nestedChildren = fileItems.length ? [] : toolbarChildrenForHeading(item.heading);
+  const subItems = fileItems.length ? fileItems : nestedChildren;
 
   const directChildren = subItems.filter((i) => i.parentHeading === item.heading);
   const rootItems = subItems.filter((i) => !i.parentHeading);
@@ -676,16 +725,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
         createPanel(moduleName, panelType, item.defaultInstanceVars || {});
       }
 
-      if (item.routeToActivePanel && item.callbackKey) {
-        const handler = window.NodevisionState.activeActionHandler;
-        if (typeof handler === "function") {
-          handler(item.callbackKey);
-        } else if (item.ToolbarCategory) {
-          handleToolbarClick(item.ToolbarCategory, item.callbackKey);
-        }
-      } else if (item.callbackKey && item.ToolbarCategory) {
-        handleToolbarClick(item.ToolbarCategory, item.callbackKey);
-      }
+      runToolbarItemCallback(item);
     });
 
     container.appendChild(btn);

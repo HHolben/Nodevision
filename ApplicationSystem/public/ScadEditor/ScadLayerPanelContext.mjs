@@ -2,7 +2,7 @@
 // Shared Layers panel provider for the graphical SCAD editor.
 
 import { createLayerPanelElement, renderFlatLayerPanel } from "/PanelInstances/Common/Layers/LayerPanelSurface.mjs";
-import { addLayer, deleteLayer, moveObjectToLayer, reorderLayer, setLayerLocked, setLayerVisibility } from "./ScadModel.mjs";
+import { addLayer, deleteLayer, deleteParameter, moveObjectToLayer, reorderLayer, setLayerLocked, setLayerVisibility, setParameter } from "./ScadModel.mjs";
 
 export const SCAD_LAYERS_CHANGED_EVENT = "nodevision:scad-layers-changed";
 export const SCAD_SELECTION_CHANGED_EVENT = "nodevision:scad-selection-changed";
@@ -38,7 +38,7 @@ function selectObjectFromPanel(objectId, event) {
 function renderObjectRow(obj, selectedIds) {
   const row = document.createElement("button");
   row.type = "button";
-  row.textContent = obj.name || obj.type || obj.id;
+  row.textContent = "Mesh: " + (obj.name || obj.type || obj.id);
   row.title = obj.id;
   Object.assign(row.style, {
     width: "100%",
@@ -108,6 +108,110 @@ function renderLayerExtras(wrapper, layer) {
   wrapper.appendChild(details);
 }
 
+function formatParameterInput(value) {
+  if (Array.isArray(value)) return "[" + value.map(formatParameterInput).join(", ") + "]";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (value === null || value === undefined) return "";
+  return String(value);
+}
+
+function parsePanelParameterValue(rawValue = "") {
+  const raw = String(rawValue || "").trim();
+  if (raw.toLowerCase() === "true") return true;
+  if (raw.toLowerCase() === "false") return false;
+  const numeric = Number(raw);
+  return raw && Number.isFinite(numeric) ? numeric : raw;
+}
+
+function commitParameterValue(name, rawValue) {
+  const model = getModel();
+  if (!model) return false;
+  if (!setParameter(model, name, parsePanelParameterValue(rawValue))) return false;
+  commitLayerChange();
+  return true;
+}
+
+function renderParameterRow(name, value) {
+  const row = document.createElement("div");
+  Object.assign(row.style, { display: "grid", gridTemplateColumns: "minmax(70px, 0.85fr) minmax(72px, 1fr) auto", gap: "4px", alignItems: "center" });
+
+  const label = document.createElement("div");
+  label.textContent = name;
+  label.title = name;
+  Object.assign(label.style, { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", font: "11px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", color: "#374151" });
+  row.appendChild(label);
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = formatParameterInput(value);
+  input.title = "SCAD variable value";
+  Object.assign(input.style, { width: "100%", boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: "4px", padding: "3px 5px", font: "11px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" });
+  input.addEventListener("change", () => commitParameterValue(name, input.value));
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      input.blur();
+    }
+  });
+  row.appendChild(input);
+
+  const del = document.createElement("button");
+  del.type = "button";
+  del.textContent = "Delete";
+  del.title = "Delete variable";
+  Object.assign(del.style, { font: "10px/1 system-ui, sans-serif", padding: "4px 5px", border: "1px solid #d1d5db", borderRadius: "4px", background: "#fff", cursor: "pointer" });
+  del.addEventListener("click", () => {
+    const model = getModel();
+    if (!model || !confirm("Delete variable " + name + "?")) return;
+    if (deleteParameter(model, name)) commitLayerChange();
+  });
+  row.appendChild(del);
+  return row;
+}
+
+function renderVariablesSection(model) {
+  const section = document.createElement("div");
+  Object.assign(section.style, { border: "1px solid #d5d5d5", borderRadius: "6px", background: "#fff", padding: "6px", marginBottom: "8px" });
+
+  const header = document.createElement("div");
+  Object.assign(header.style, { display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" });
+  const title = document.createElement("div");
+  title.textContent = "Variables";
+  Object.assign(title.style, { flex: "1", font: "700 12px/1.25 system-ui, sans-serif", color: "#111827" });
+  header.appendChild(title);
+
+  const add = document.createElement("button");
+  add.type = "button";
+  add.textContent = "+";
+  add.title = "Add variable";
+  add.addEventListener("click", () => {
+    const name = prompt("Variable name", "width");
+    if (name === null) return;
+    const key = String(name || "").trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return alert("Variable names must start with a letter or underscore.");
+    const value = prompt("Variable value", "10");
+    if (value === null) return;
+    commitParameterValue(key, value);
+  });
+  header.appendChild(add);
+  section.appendChild(header);
+
+  const entries = Object.entries(model.parameters || {});
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.textContent = "No variables defined.";
+    Object.assign(empty.style, { color: "#6b7280", font: "11px/1.35 system-ui, sans-serif" });
+    section.appendChild(empty);
+    return section;
+  }
+
+  const rows = document.createElement("div");
+  Object.assign(rows.style, { display: "grid", gap: "4px" });
+  entries.forEach(([name, value]) => rows.appendChild(renderParameterRow(name, value)));
+  section.appendChild(rows);
+  return section;
+}
+
 function renderScadLayersPanel() {
   if (!activePanelEl) return;
   const model = getModel();
@@ -119,8 +223,8 @@ function renderScadLayersPanel() {
     panelEl: activePanelEl,
     layers: model.layers || [],
     activeLayerId: getActiveLayerId(),
-    titleText: "SCAD Layers",
-    emptyText: "No SCAD layers found.",
+    titleText: "SCAD Variables & Meshes",
+    emptyText: "No SCAD meshes found.",
     getLayerName: (layer) => `${layer.name || layer.id}${layer.locked ? " (locked)" : ""}`,
     getLayerTitle: (layer) => layer.locked ? "Layer is locked" : "Select SCAD layer",
     isLayerVisible: (layer) => layer.visible !== false,
@@ -162,6 +266,8 @@ function renderScadLayersPanel() {
     deleteDisabled: () => (model.layers || []).length <= 1,
     renderLayerDetails: renderLayerExtras,
   });
+  const variablesSection = renderVariablesSection(model);
+  activePanelEl.insertBefore(variablesSection, activePanelEl.children[1] || null);
 }
 
 function attachScadLayersHost(host) {
@@ -199,7 +305,7 @@ export function ensureScadLayersContext(controller) {
   if (activePanelEl) renderScadLayersPanel();
   window.SCADLayersContext = {
     id: "scad",
-    title: "SCAD Layers",
+    title: "SCAD Variables & Meshes",
     attachHost: attachScadLayersHost,
     refresh: renderScadLayersPanel,
   };

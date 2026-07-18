@@ -40,6 +40,56 @@ const SVG_RULER_THICKNESS = 26;
 const SVG_RULER_SIDE = 34;
 const LINE_TOOL_AXIS_TYPES = new Set(["x", "y", "z"]);
 
+function applyEditableSvgRootDefaults(root) {
+  if (!root) return root;
+  root.id = "svg-editor";
+  root.setAttribute("xmlns", SVG_NS);
+  ensureSvgSizeAttrs(root);
+  Object.assign(root.style, {
+    width: "100%",
+    height: "100%",
+    minHeight: "400px",
+    display: "block",
+  });
+  return root;
+}
+
+function createBlankSvgRoot() {
+  const root = createSvgEl("svg", {
+    xmlns: SVG_NS,
+    width: "800",
+    height: "600",
+    viewBox: "0 0 800 600",
+  });
+  return applyEditableSvgRootDefaults(root);
+}
+
+function parseEditableSvgRoot(svgText = "") {
+  const source = String(svgText || "");
+  if (!source.trim()) return { root: createBlankSvgRoot(), blank: true, warning: null };
+
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(source, "image/svg+xml");
+  const parseError = xmlDoc.querySelector("parsererror");
+  let loaded = !parseError && xmlDoc.documentElement?.localName?.toLowerCase() === "svg"
+    ? xmlDoc.documentElement
+    : null;
+  if (!loaded && !parseError) loaded = xmlDoc.querySelector("svg");
+
+  if (!loaded) {
+    const htmlDoc = parser.parseFromString(source, "text/html");
+    loaded = htmlDoc.querySelector("svg");
+  }
+
+  if (!loaded || loaded.localName?.toLowerCase() !== "svg") {
+    return { root: createBlankSvgRoot(), blank: true, warning: "SVG content was empty or not parseable; opened a blank canvas." };
+  }
+
+  const root = loaded.ownerDocument === document ? loaded : document.importNode(loaded, true);
+  return { root: applyEditableSvgRootDefaults(root), blank: false, warning: null };
+}
+
+
 function normalizeEditorSavePath(pathValue) {
   return String(pathValue || "")
     .trim()
@@ -220,42 +270,22 @@ export async function renderEditor(filePath, container) {
     }
   }
   if (loadError && filePath) {
-    wrapper.innerHTML = `<div style="color:red;padding:12px">Failed to load SVG: ${loadError.message}</div>`;
+    status.textContent = "Failed to load SVG; opened a blank canvas.";
+    status.style.display = "block";
     console.warn("SVG editor: failed to load file, showing blank canvas as fallback.", loadError);
     svgText = "";
   }
 
-  if (!svgText.trim()) {
-    svgRoot.setAttribute("xmlns", SVG_NS);
-    ensureSvgSizeAttrs(svgRoot);
-  } else {
-    const parser = new DOMParser();
-    let doc = parser.parseFromString(svgText, "image/svg+xml");
-    let parseError = doc.querySelector("parsererror");
-    let loaded = doc.documentElement?.localName?.toLowerCase() === "svg"
-      ? doc.documentElement
-      : doc.querySelector("svg");
-    if (parseError || !loaded) {
-      // Fallback for SVG-like content that is not strict XML but still contains renderable SVG.
-      const htmlDoc = parser.parseFromString(svgText, "text/html");
-      const htmlSvg = htmlDoc.querySelector("svg");
-      if (htmlSvg) {
-        loaded = document.importNode(htmlSvg, true);
-      }
-    }
-    if (!loaded || loaded.localName?.toLowerCase() !== "svg") {
-      console.warn("SVG editor: loaded content was not parseable, defaulting to blank SVG.");
-      svgRoot.setAttribute("xmlns", SVG_NS);
-      ensureSvgSizeAttrs(svgRoot);
-    } else {
-      svgRoot.replaceWith(loaded);
-      svgRoot = loaded;
-      svgRoot.id = "svg-editor";
-      svgRoot.setAttribute("xmlns", SVG_NS);
-    }
+  const parsedSvg = parseEditableSvgRoot(svgText);
+  if (parsedSvg.warning) {
+    status.textContent = parsedSvg.warning;
+    status.style.display = "block";
+    console.warn("SVG editor: " + parsedSvg.warning);
+  } else if (parsedSvg.blank) {
+    status.textContent = "Blank SVG canvas ready.";
   }
-
-  ensureSvgSizeAttrs(svgRoot);
+  svgRoot.replaceWith(parsedSvg.root);
+  svgRoot = parsedSvg.root;
 
   const layersMgr = createElementLayers(svgRoot);
   let layersPanelHost = null;
@@ -4446,9 +4476,8 @@ export async function renderEditor(filePath, container) {
   };
 
   window.setEditorHTML = (svgString) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgString, "image/svg+xml");
-    const fresh = doc.documentElement;
+    const parsed = parseEditableSvgRoot(svgString);
+    const fresh = parsed.root;
 
     Array.from(svgRoot.attributes).forEach((attr) => {
       svgRoot.removeAttribute(attr.name);
@@ -4465,9 +4494,8 @@ export async function renderEditor(filePath, container) {
     });
     svgRoot.appendChild(overlayLayer);
 
-    svgRoot.id = "svg-editor";
-    svgRoot.setAttribute("xmlns", SVG_NS);
-    ensureSvgSizeAttrs(svgRoot);
+    applyEditableSvgRootDefaults(svgRoot);
+    if (parsed.warning) setStatus(parsed.warning);
     drawingAssistSettings = setDrawingAssistSettings({
       ...getDrawingAssistSettings(window),
       ...(readDrawingAssistMetadata(svgRoot) || {}),

@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/GIFeditor.mjs
 // GIF editor shell built on the shared raster editor from PNGeditor.
+import { ensureGifEditorModeLayout } from "/panels/workspace.mjs";
 import { renderRasterEditor } from "./PNGeditor.mjs";
 
 const GIF_MODE = "GIFediting";
@@ -28,6 +29,12 @@ export async function renderEditor(filePath, container) {
     window.currentActiveFilePath = filePath;
     window.filePath = filePath;
   }
+  try {
+    await applyGifEditorModeLayout(container);
+  } catch (err) {
+    console.warn("GIF editor: failed to apply GIF editor mode layout:", err);
+  }
+
   gifContext.refresh();
 
   return {
@@ -45,10 +52,18 @@ export async function renderEditor(filePath, container) {
   };
 }
 
+async function applyGifEditorModeLayout(container) {
+  const editorCell = container?.closest?.(".panel-cell");
+  if (!editorCell) return null;
+  if (editorCell.closest?.(".panel-row[data-nv-mode-layout-id=\"GifEditorMode\"]")) return null;
+  return ensureGifEditorModeLayout({ editorCell });
+}
+
 function createGifEditorContext(filePath, rasterApi) {
   const firstCanvas = getApiCanvas(rasterApi) || createCanvas(1, 1);
   const frames = [createFrameFromCanvas(firstCanvas, 100)];
   let currentFrameIndex = 0;
+  let copiedFrame = null;
   let destroyed = false;
 
   const context = {
@@ -63,7 +78,12 @@ function createGifEditorContext(filePath, rasterApi) {
     nextFrame,
     previousFrame,
     addDuplicateFrame,
+    duplicateFrame,
+    copyFrame,
+    pasteFrame,
+    moveFrame,
     deleteCurrentFrame,
+    deleteFrame,
     setFrameDelay,
     save,
     destroy,
@@ -82,6 +102,19 @@ function createGifEditorContext(filePath, rasterApi) {
       width: size.width,
       height: size.height,
       canDeleteFrame: frames.length > 1,
+      hasCopiedFrame: Boolean(copiedFrame),
+      frames: frames.map(getFrameSummary),
+    };
+  }
+
+  function getFrameSummary(frame, index) {
+    return {
+      index,
+      frameNumber: index + 1,
+      delayMs: frame ? frame.delayMs : 100,
+      width: frame?.canvas?.width || 1,
+      height: frame?.canvas?.height || 1,
+      selected: index === currentFrameIndex,
     };
   }
 
@@ -90,19 +123,19 @@ function createGifEditorContext(filePath, rasterApi) {
     window.dispatchEvent(new CustomEvent("nv-gif-editor-state-changed", { detail: getState() }));
   }
 
-  function saveCurrentFrame() {
+  function saveCurrentFrame({ notify = true } = {}) {
     const canvas = getApiCanvas(rasterApi);
     if (!(canvas instanceof HTMLCanvasElement)) return false;
     const previous = frames[currentFrameIndex] || { delayMs: 100 };
     frames[currentFrameIndex] = createFrameFromCanvas(canvas, previous.delayMs);
-    refresh();
+    if (notify) refresh();
     return true;
   }
 
   function selectFrame(index) {
     const nextIndex = clampIndex(index, frames.length);
     if (nextIndex === currentFrameIndex) return true;
-    saveCurrentFrame();
+    saveCurrentFrame({ notify: false });
     currentFrameIndex = nextIndex;
     drawFrameToRaster(frames[currentFrameIndex]);
     refresh();
@@ -118,20 +151,78 @@ function createGifEditorContext(filePath, rasterApi) {
   }
 
   function addDuplicateFrame() {
-    saveCurrentFrame();
-    const source = frames[currentFrameIndex] || frames[0];
+    return duplicateFrame(currentFrameIndex);
+  }
+
+  function duplicateFrame(index = currentFrameIndex) {
+    saveCurrentFrame({ notify: false });
+    const sourceIndex = clampIndex(index, frames.length);
+    const source = frames[sourceIndex] || frames[0];
+    if (!source) return false;
     const duplicate = createFrameFromCanvas(source.canvas, source.delayMs);
-    frames.splice(currentFrameIndex + 1, 0, duplicate);
-    currentFrameIndex += 1;
+    frames.splice(sourceIndex + 1, 0, duplicate);
+    currentFrameIndex = sourceIndex + 1;
     drawFrameToRaster(duplicate);
     refresh();
     return true;
   }
 
-  function deleteCurrentFrame() {
+  function copyFrame(index = currentFrameIndex) {
+    const sourceIndex = clampIndex(index, frames.length);
+    if (sourceIndex === currentFrameIndex) saveCurrentFrame({ notify: false });
+    const source = frames[sourceIndex] || frames[0];
+    if (!source) return false;
+    copiedFrame = createFrameFromCanvas(source.canvas, source.delayMs);
+    refresh();
+    return true;
+  }
+
+  function pasteFrame(index = currentFrameIndex) {
+    if (!copiedFrame) return false;
+    saveCurrentFrame({ notify: false });
+    const insertAfterIndex = clampIndex(index, frames.length);
+    const duplicate = createFrameFromCanvas(copiedFrame.canvas, copiedFrame.delayMs);
+    frames.splice(insertAfterIndex + 1, 0, duplicate);
+    currentFrameIndex = insertAfterIndex + 1;
+    drawFrameToRaster(duplicate);
+    refresh();
+    return true;
+  }
+
+  function moveFrame(fromIndex, toIndex) {
     if (frames.length <= 1) return false;
-    frames.splice(currentFrameIndex, 1);
-    currentFrameIndex = Math.min(currentFrameIndex, frames.length - 1);
+    saveCurrentFrame({ notify: false });
+    const from = clampIndex(fromIndex, frames.length);
+    const to = clampIndex(toIndex, frames.length);
+    if (from === to) return true;
+    const [frame] = frames.splice(from, 1);
+    frames.splice(to, 0, frame);
+    if (currentFrameIndex === from) {
+      currentFrameIndex = to;
+    } else if (from < currentFrameIndex && to >= currentFrameIndex) {
+      currentFrameIndex -= 1;
+    } else if (from > currentFrameIndex && to <= currentFrameIndex) {
+      currentFrameIndex += 1;
+    }
+    drawFrameToRaster(frames[currentFrameIndex]);
+    refresh();
+    return true;
+  }
+
+  function deleteCurrentFrame() {
+    return deleteFrame(currentFrameIndex);
+  }
+
+  function deleteFrame(index = currentFrameIndex) {
+    if (frames.length <= 1) return false;
+    saveCurrentFrame({ notify: false });
+    const targetIndex = clampIndex(index, frames.length);
+    frames.splice(targetIndex, 1);
+    if (currentFrameIndex > targetIndex) {
+      currentFrameIndex -= 1;
+    } else if (currentFrameIndex === targetIndex) {
+      currentFrameIndex = Math.min(targetIndex, frames.length - 1);
+    }
     drawFrameToRaster(frames[currentFrameIndex]);
     refresh();
     return true;
@@ -148,7 +239,7 @@ function createGifEditorContext(filePath, rasterApi) {
   async function save(targetPath = filePath) {
     const cleanPath = String(targetPath || filePath || "").trim();
     if (!cleanPath) throw new Error("GIF save path is missing.");
-    saveCurrentFrame();
+    saveCurrentFrame({ notify: false });
     const size = getExportSize();
     const gifBytes = encodeGif(frames, size.width, size.height);
     const payload = {

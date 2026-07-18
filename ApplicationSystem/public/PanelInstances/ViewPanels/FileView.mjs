@@ -479,6 +479,16 @@ export async function updateViewPanel(element, { force = false } = {}) {
   const ext = resolveExtension(filename);
   const lowerFilename = filename.toLowerCase();
   if (!ext || lowerFilename === ext || !filename.includes('.')) {
+    if (typeof viewPanel._dispose === "function") {
+      try {
+        viewPanel._dispose();
+      } catch (err) {
+        console.warn("[FileView] Previous viewer cleanup failed:", err);
+      }
+      viewPanel._dispose = null;
+    }
+    viewPanel.innerHTML = "";
+    lastRenderedPath = null;
     console.log("📁 Skipping directory view for:", filename);
     setFileViewStatus("File Viewer", `Directory selected: ${filename}`);
     return false;
@@ -499,6 +509,14 @@ export async function updateViewPanel(element, { force = false } = {}) {
   window.NodevisionModelExportContext = null;
   updateToolbarState({ currentMode: "Default", selectedFile: filename, modelCanExportSTL: false });
   setFileViewStatus("File Viewer", filename);
+  if (typeof viewPanel._dispose === "function") {
+    try {
+      viewPanel._dispose();
+    } catch (err) {
+      console.warn("[FileView] Previous viewer cleanup failed:", err);
+    }
+    viewPanel._dispose = null;
+  }
   viewPanel.innerHTML = "";
 
   // Determine server base depending on file type

@@ -121,6 +121,34 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "Reload App",
+    "icon": "icons/Sync.png",
+    "callbackKey": "reloadApp",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Full screen",
+    "icon": "icons/StretchArrowIcon.png",
+    "callbackKey": "fullscreenApp",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Chat",
+    "icon": "icons/AddressIcon.png",
+    "callbackKey": "chat",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Comments",
+    "icon": "icons/QuotationIcon.png",
+    "callbackKey": "commentsPanel",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "New Layer",
     "callbackKey": "svgLayerAdd",

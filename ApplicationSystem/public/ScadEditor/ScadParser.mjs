@@ -20,6 +20,14 @@ function parseNumber(value, fallback = 0) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+function parseParameterValue(value = "") {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^(true|false)$/i.test(raw)) return raw.toLowerCase() === "true";
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : raw;
+}
+
 function parsePointsLiteral(value = "") {
   const points = [];
   const re = /\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]/g;
@@ -57,6 +65,11 @@ export function parseBasicScad(scadText = "") {
   const source = String(scadText || "");
   const model = createEmptyScadModel();
   const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const assignmentRe = new RegExp("^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*([^;{}]+);", "gm");
+  let assignmentMatch;
+  while ((assignmentMatch = assignmentRe.exec(withoutComments))) {
+    model.parameters[assignmentMatch[1]] = parseParameterValue(assignmentMatch[2]);
+  }
   const statementRe = /((?:translate\s*\([^;{}]+\)\s*)?(?:rotate\s*\([^;{}]+\)\s*)?(?:scale\s*\([^;{}]+\)\s*)?(?:linear_extrude\s*\([^;{}]+\)\s*)?)(circle\s*\([^;]+\)|square\s*\([^;]+\)|polygon\s*\([^;]+\)|text\s*\([^;]+\)|sphere\s*\([^;]+\)|cube\s*\([^;]+\)|cylinder\s*\([^;]+\))\s*;/gi;
   let match;
   while ((match = statementRe.exec(withoutComments))) {
@@ -119,7 +132,8 @@ export function parseBasicScad(scadText = "") {
       addParsedObject(model, { type: points.length === 3 ? "triangle" : "polygon", name: "Imported polygon", params: { points }, transform, operations });
     }
   }
-  if (!model.objects.length && source.trim()) {
+  const hasParameters = Object.keys(model.parameters || {}).length > 0;
+  if (!model.objects.length && source.trim() && !hasParameters) {
     model.unsupportedSource = source;
     model.warnings.push("Graphical SCAD could not import this source. Supported primitives are circle, square, polygon, text, sphere, cube, cylinder, and linear_extrude wrappers.");
   }
@@ -130,5 +144,6 @@ export function parseScadText(scadText = "") {
   const embedded = extractEmbeddedScadModel(scadText);
   if (embedded) return { model: embedded, source: "metadata", warnings: embedded.warnings || [] };
   const model = parseBasicScad(scadText);
-  return { model, source: model.objects.length ? "best-effort" : "unsupported", warnings: model.warnings || [] };
+  const hasGraphicalContent = model.objects.length || Object.keys(model.parameters || {}).length;
+  return { model, source: hasGraphicalContent ? "best-effort" : "unsupported", warnings: model.warnings || [] };
 }

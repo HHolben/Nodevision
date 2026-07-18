@@ -21,6 +21,7 @@ import {
 } from "./equationColliderTool.mjs";
 import { saveCurrentWorldFile } from "./worldSave.mjs";
 import { createWorldPropertiesPanel } from "./worldPropertiesPanel.mjs";
+import { createMetaWorldMultiplayerClient } from "/MetaWorld/MetaWorldMultiplayerClient.mjs";
 import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
 import { createEquationObjectsPanel } from "./equationObjectsPanel.mjs";
 import { createConsolePanels } from "./consolePanels.mjs";
@@ -377,6 +378,14 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
       allowInspect: false,
       allowToolUse: false,
       allowSave: false
+    },
+    multiplayer: {
+      enabled: false,
+      publishRateMs: 700,
+      snapshotRateMs: 1000,
+      staleMs: 12000,
+      avatarScale: 1,
+      showNames: true
     }
   };
   window.VRWorldContext.controls = controls;
@@ -469,6 +478,17 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   panel._vrTemporalManipulatorPanel = temporalManipulatorPanel;
   window.VRWorldContext.temporalManipulatorPanel = temporalManipulatorPanel;
 
+  const multiplayerClient = createMetaWorldMultiplayerClient({
+    THREE,
+    scene,
+    camera,
+    controls,
+    movementState,
+    panel
+  });
+  panel._vrMetaWorldMultiplayerClient = multiplayerClient;
+  window.VRWorldContext.multiplayerClient = multiplayerClient;
+
   const viewController = createCameraModeController({
     THREE,
     panel,
@@ -519,8 +539,10 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   window.VRWorldContext.saveVirtualWorldFile = saveVirtualWorldFile;
   const update = () => {
     temporalController.update();
+    consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
     viewController.update();
+    multiplayerClient.update();
   };
   const stopRenderLoop = startRenderLoop(renderer, scene, () => viewController.getActiveCamera(), update);
   panel._vrStopRenderLoop = stopRenderLoop;

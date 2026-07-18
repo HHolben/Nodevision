@@ -189,6 +189,7 @@ export async function createScadSceneRenderer(container, options = {}) {
   const group = new THREE.Group();
   scene.add(group);
   let selectedIds = new Set();
+  let selectedFaceRefs = [];
   let pickHandler = null;
   let boxSelectHandler = null;
   let selectionBox = null;
@@ -215,66 +216,262 @@ export async function createScadSceneRenderer(container, options = {}) {
     }
   }
 
-  function renderModel(model) {
-    modelRef = model;
-    clearGroup();
-    const selectedColor = 0xffb13b;
-    for (const obj of model.objects || []) {
-      const layer = layerFor(model, obj);
-      if (obj.visible === false || layer.visible === false) continue;
-      const selected = selectedIds.has(obj.id);
-      const color = selected ? selectedColor : new THREE.Color(layer.color || "#4f8cff");
-      const opacity = layer.locked ? 0.42 : 0.78;
+  function pointFromFaceRefPoint(point) {
+    if (Array.isArray(point)) return new THREE.Vector3(Number(point[0] || 0), Number(point[1] || 0), Number(point[2] || 0));
+    return new THREE.Vector3(Number(point?.x || 0), Number(point?.y || 0), Number(point?.z || 0));
+  }
 
-      const solidGeometry = solidGeometryForObject(THREE, obj);
-      if (solidGeometry) {
-        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.05, transparent: opacity < 1, opacity });
-        const mesh = new THREE.Mesh(solidGeometry, mat);
-        mesh.userData.objectId = obj.id;
-        mesh.name = obj.name || obj.id;
-        applyTransform(mesh, obj);
-        group.add(mesh);
-        continue;
-      }
+  function selectedFacesForObject(objectId) {
+    return selectedFaceRefs.filter((ref) => (ref?.objectId || ref?.id) === objectId && Array.isArray(ref?.points) && ref.points.length >= 3);
+  }
 
-      if (obj.type === "vertexPath" || obj.type === "line") {
-        const points = vertexPathPoints(THREE, obj);
-        if (!points.length) continue;
-        const pointGeometry = new THREE.BufferGeometry().setFromPoints(points);
-        const pointMaterial = new THREE.PointsMaterial({
-          color,
-          size: selected ? 8 : 6,
-          sizeAttenuation: false,
-          transparent: opacity < 1,
-          opacity,
-        });
-        const pointCloud = new THREE.Points(pointGeometry, pointMaterial);
-        pointCloud.userData.objectId = obj.id;
-        pointCloud.name = obj.name || obj.id;
-        applyTransform(pointCloud, obj);
-        group.add(pointCloud);
+  function addSelectedFaceOverlay(objectId, color) {
+    selectedFacesForObject(objectId).forEach((ref) => {
+      const points = ref.points.map(pointFromFaceRefPoint);
+      if (points.length < 3) return;
+      const fillGeometry = new THREE.BufferGeometry().setFromPoints(points);
+      const indices = [];
+      for (let i = 1; i < points.length - 1; i += 1) indices.push(0, i, i + 1);
+      fillGeometry.setIndex(indices);
+      fillGeometry.computeVertexNormals();
+      const fill = new THREE.Mesh(fillGeometry, new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.32,
+        side: THREE.DoubleSide,
+        depthTest: false,
+      }));
+      fill.userData.ignorePick = true;
+      group.add(fill);
 
-        if (points.length > 1) {
-          const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-          const lineMaterial = new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity });
-          const line = obj.params?.closed ? new THREE.LineLoop(lineGeometry, lineMaterial) : new THREE.Line(lineGeometry, lineMaterial);
-          line.userData.objectId = obj.id;
-          line.name = obj.name || obj.id;
-          applyTransform(line, obj);
-          group.add(line);
-        }
-        continue;
-      }
+      const outlineGeometry = new THREE.BufferGeometry().setFromPoints([...points, points[0]]);
+      const outline = new THREE.Line(outlineGeometry, new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.96,
+        depthTest: false,
+      }));
+      outline.userData.ignorePick = true;
+      group.add(outline);
+    });
+  }
 
-      const shape = shapeForObject(THREE, obj);
-      if (!shape) continue;
-      const geometry = new THREE.ExtrudeGeometry(shape, { depth: objectHeight(obj), bevelEnabled: false });
-      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.05, transparent: opacity < 1, opacity });
-      const mesh = new THREE.Mesh(geometry, mat);
-      mesh.userData.objectId = obj.id;
+  function faceRefFromHit(hit, objectId) {
+    const face = hit?.face;
+    const geometry = hit?.object?.geometry;
+    const positions = geometry?.attributes?.position;
+    if (!face || !positions) return null;
+    const points = [face.a, face.b, face.c].map((index) => {
+      const point = new THREE.Vector3().fromBufferAttribute(positions, index);
+      hit.object.localToWorld(point);
+      return [Number(point.x.toFixed(5)), Number(point.y.toFixed(5)), Number(point.z.toFixed(5))];
+    });
+    const normal = face.normal.clone().transformDirection(hit.object.matrixWorld);
+    return {
+      objectId,
+      id: objectId,
+      faceIndex: Number.isInteger(hit.faceIndex) ? hit.faceIndex : 0,
+      points,
+      normal: [Number(normal.x.toFixed(5)), Number(normal.y.toFixed(5)), Number(normal.z.toFixed(5))],
+    };
+  }
+
+  const BOOLEAN_STEP_TYPES = new Set(["cutout", "difference", "union", "intersection"]);
+  const selectedColor = 0xffb13b;
+
+  function booleanKeyword(step) {
+    const op = step?.params?.operation || step?.type;
+    if (op === "cutout") return "difference";
+    return ["union", "difference", "intersection"].includes(op) ? op : null;
+  }
+
+  function enabledBooleanSteps(model) {
+    return (model?.timeline || []).filter((step) => BOOLEAN_STEP_TYPES.has(step?.type) && !step.disabled && Boolean(booleanKeyword(step)));
+  }
+
+  function objectByIdInModel(model, id) {
+    return (model?.objects || []).find((obj) => obj.id === id) || null;
+  }
+
+  function booleanStepObjects(model, step) {
+    return (step?.objectIds || []).map((id) => objectByIdInModel(model, id)).filter(Boolean);
+  }
+
+  function objectHas3DPreview(obj) {
+    return ["sphere", "cube", "cylinder", "polyhedron"].includes(obj?.type) || (obj?.operations || []).some((op) => op?.type === "extrude" && !op.disabled);
+  }
+
+  function previewObjectHeight(obj) {
+    const p = obj?.params || {};
+    const extrude = (obj?.operations || []).find((op) => op?.type === "extrude" && !op.disabled);
+    if (extrude) return Math.max(0.4, Number(extrude.params?.height || extrude.height || 10));
+    if (obj?.type === "cube") {
+      const size = Array.isArray(p.size) ? p.size : [p.size || 12, p.size || 12, p.size || 12];
+      return Math.max(0.4, Number(size[2] || 12));
+    }
+    if (obj?.type === "cylinder") return Math.max(0.4, Number(p.height || 16));
+    if (obj?.type === "sphere") return Math.max(0.4, Number(p.radius || 6) * 2);
+    return objectHeight(obj);
+  }
+
+  function booleanPreviewHeight(objects = []) {
+    const source = objects.find(objectHas3DPreview) || objects[0];
+    return previewObjectHeight(source);
+  }
+
+  function renderObjectPreview(model, obj, options = {}) {
+    if (!obj) return false;
+    const layer = layerFor(model, obj);
+    if (obj.visible === false && options.includeHidden !== true) return false;
+    if (layer.visible === false) return false;
+    const selected = selectedIds.has(obj.id);
+    const color = options.color !== undefined ? options.color : (selected ? selectedColor : new THREE.Color(layer.color || "#4f8cff"));
+    const opacity = Number.isFinite(options.opacity) ? options.opacity : (layer.locked ? 0.42 : 0.78);
+    const transparent = opacity < 1;
+    const wireframe = Boolean(options.wireframe);
+    const ignorePick = Boolean(options.ignorePick);
+    const pickObjectId = options.pickObjectId || obj.id;
+
+    const solidGeometry = solidGeometryForObject(THREE, obj);
+    if (solidGeometry) {
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.05, transparent, opacity, wireframe });
+      const mesh = new THREE.Mesh(solidGeometry, mat);
+      mesh.userData.objectId = pickObjectId;
+      mesh.userData.ignorePick = ignorePick;
       mesh.name = obj.name || obj.id;
       applyTransform(mesh, obj);
       group.add(mesh);
+      if (selected && !ignorePick && !wireframe) addSelectedFaceOverlay(obj.id, selectedColor);
+      return true;
+    }
+
+    if (obj.type === "vertexPath" || obj.type === "line") {
+      const points = vertexPathPoints(THREE, obj);
+      if (!points.length) return false;
+      const pointGeometry = new THREE.BufferGeometry().setFromPoints(points);
+      const pointMaterial = new THREE.PointsMaterial({
+        color,
+        size: selected ? 8 : 6,
+        sizeAttenuation: false,
+        transparent,
+        opacity,
+      });
+      const pointCloud = new THREE.Points(pointGeometry, pointMaterial);
+      pointCloud.userData.objectId = pickObjectId;
+      pointCloud.userData.ignorePick = ignorePick;
+      pointCloud.name = obj.name || obj.id;
+      applyTransform(pointCloud, obj);
+      group.add(pointCloud);
+
+      if (points.length > 1) {
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+        const lineMaterial = new THREE.LineBasicMaterial({ color, transparent, opacity });
+        const line = obj.params?.closed ? new THREE.LineLoop(lineGeometry, lineMaterial) : new THREE.Line(lineGeometry, lineMaterial);
+        line.userData.objectId = pickObjectId;
+        line.userData.ignorePick = ignorePick;
+        line.name = obj.name || obj.id;
+        applyTransform(line, obj);
+        group.add(line);
+      }
+      return true;
+    }
+
+    const shape = shapeForObject(THREE, obj);
+    if (!shape) return false;
+    const depth = Number.isFinite(options.depthOverride) ? options.depthOverride : objectHeight(obj);
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.05, transparent, opacity, wireframe });
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.userData.objectId = pickObjectId;
+    mesh.userData.ignorePick = ignorePick;
+    mesh.name = obj.name || obj.id;
+    applyTransform(mesh, obj);
+    group.add(mesh);
+    if (selected && !ignorePick && !wireframe) addSelectedFaceOverlay(obj.id, selectedColor);
+    return true;
+  }
+
+  function objectPreviewBox(obj, depthOverride = null) {
+    if (!obj) return null;
+    let geometry = solidGeometryForObject(THREE, obj);
+    if (!geometry) {
+      if (obj.type === "vertexPath" || obj.type === "line") geometry = new THREE.BufferGeometry().setFromPoints(vertexPathPoints(THREE, obj));
+      else {
+        const shape = shapeForObject(THREE, obj);
+        if (shape) geometry = new THREE.ExtrudeGeometry(shape, { depth: Number.isFinite(depthOverride) ? depthOverride : objectHeight(obj), bevelEnabled: false });
+      }
+    }
+    if (!geometry) return null;
+    const material = new THREE.MeshBasicMaterial();
+    const mesh = new THREE.Mesh(geometry, material);
+    applyTransform(mesh, obj);
+    mesh.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(mesh);
+    geometry.dispose?.();
+    material.dispose?.();
+    return box.isEmpty() ? null : box;
+  }
+
+  function intersectionBoxForObjects(objects = [], depthOverride = null) {
+    let result = null;
+    for (const obj of objects) {
+      const box = objectPreviewBox(obj, depthOverride);
+      if (!box) continue;
+      result = result ? result.intersect(box) : box.clone();
+      if (result.isEmpty()) return null;
+    }
+    return result;
+  }
+
+  function renderIntersectionPreview(model, step, objects, depthOverride) {
+    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: 0.24, color: 0x0f766e, depthOverride }));
+    const box = intersectionBoxForObjects(objects, depthOverride);
+    if (!box) return false;
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const geometry = new THREE.BoxGeometry(Math.max(0.01, size.x), Math.max(0.01, size.y), Math.max(0.01, size.z));
+    const material = new THREE.MeshStandardMaterial({ color: 0x14b8a6, roughness: 0.7, transparent: true, opacity: 0.48 });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.copy(center);
+    mesh.userData.objectId = step.params?.baseObjectId || objects[0]?.id || null;
+    mesh.name = step.label || "Intersection Preview";
+    group.add(mesh);
+    return true;
+  }
+
+  function renderBooleanStep(model, step) {
+    const keyword = booleanKeyword(step);
+    const objects = booleanStepObjects(model, step);
+    if (!keyword || objects.length < 2) return [];
+    const ids = (step.objectIds || []).filter(Boolean);
+    const depthOverride = booleanPreviewHeight(objects);
+    const selectedBoolean = ids.some((id) => selectedIds.has(id));
+    if (keyword === "difference") {
+      const base = objects[0];
+      renderObjectPreview(model, base, { includeHidden: true, color: selectedBoolean ? selectedColor : undefined, depthOverride });
+      objects.slice(1).forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: selectedIds.has(obj.id) ? 0.45 : 0.28, color: 0xef4444, depthOverride }));
+      return ids;
+    }
+    if (keyword === "intersection") {
+      renderIntersectionPreview(model, step, objects, depthOverride);
+      return ids;
+    }
+    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, depthOverride }));
+    return ids;
+  }
+
+  function renderModel(model) {
+    modelRef = model;
+    clearGroup();
+    const emitted = new Set();
+    for (const step of enabledBooleanSteps(model)) {
+      renderBooleanStep(model, step).forEach((id) => emitted.add(id));
+    }
+    for (const obj of model.objects || []) {
+      if (emitted.has(obj.id)) continue;
+      renderObjectPreview(model, obj);
     }
     resize();
     renderer.render(scene, camera);
@@ -348,13 +545,15 @@ export async function createScadSceneRenderer(container, options = {}) {
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
     raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObjects(group.children, false);
+    const hits = raycaster.intersectObjects(group.children, false).filter((entry) => !entry.object?.userData?.ignorePick);
     const hit = hits[0] || null;
     const id = hit?.object?.userData?.objectId || null;
     if (id) {
       const meta = hit.object?.isPoints && Number.isInteger(hit.index)
         ? { vertexRef: { objectId: id, pointIndex: hit.index } }
-        : null;
+        : hit.object?.isMesh && hit.face
+          ? { faceRef: faceRefFromHit(hit, id) }
+          : null;
       pickHandler?.(id, event, meta);
     } else {
       boxSelectHandler?.([], event, { vertexRefs: [] });
@@ -508,6 +707,10 @@ export async function createScadSceneRenderer(container, options = {}) {
     },
     setSelectedIds(ids = []) {
       selectedIds = new Set((Array.isArray(ids) ? ids : []).filter(Boolean));
+      if (modelRef) renderModel(modelRef);
+    },
+    setSelectedFaceRefs(refs = []) {
+      selectedFaceRefs = (Array.isArray(refs) ? refs : []).filter((ref) => Array.isArray(ref?.points) && ref.points.length >= 3);
       if (modelRef) renderModel(modelRef);
     },
     setPickHandler(fn) { pickHandler = typeof fn === "function" ? fn : null; },

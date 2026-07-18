@@ -21,7 +21,7 @@ export function renderScadTimelinePanel(container, state, actions = {}) {
   container.appendChild(header);
 
   const list = document.createElement("div");
-  Object.assign(list.style, { display: "flex", flexDirection: "column", gap: "6px", overflow: "visible", padding: "0 10px 10px" });
+  Object.assign(list.style, { display: "flex", flexDirection: "row", alignItems: "stretch", gap: "8px", overflowX: "auto", overflowY: "hidden", padding: "0 10px 10px", minHeight: "126px" });
   container.appendChild(list);
 
   const steps = model.timeline || [];
@@ -40,7 +40,9 @@ export function renderScadTimelinePanel(container, state, actions = {}) {
     const codeLine = timelineCodeLine(model, step);
     const operationLabel = (step.params && step.params.operation) || step.type || "step";
     Object.assign(card.style, {
-      width: "100%",
+      flex: "0 0 190px",
+      width: "190px",
+      minHeight: "110px",
       boxSizing: "border-box",
       textAlign: "left",
       border: active ? "1px solid #f59e0b" : "1px solid #d1d5db",
@@ -125,6 +127,8 @@ function timelineCodeLine(model, step) {
   if (operation === "rotate") return "rotate(" + vec(params.delta || [0, 0, 0], 3, 0) + ")";
   if (operation === "scale") return "scale(" + vec(params.factors || [1, 1, 1], 3, 1) + ")";
   if (operation === "extrude") return "linear_extrude(height = " + fmtNumber(params.height, 10) + ")";
+  if (operation === "setParameter") return String(params.name || "variable") + " = " + String(params.value ?? "") + ";";
+  if (operation === "deleteParameter") return "// delete variable " + String(params.name || "");
   if (operation === "union" || operation === "difference" || operation === "intersection") return operation + "() { ... }";
   if (operation === "duplicate") return "// duplicate selected geometry";
   if (operation === "delete") return "// delete selected geometry";
