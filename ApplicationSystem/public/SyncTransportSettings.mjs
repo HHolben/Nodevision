@@ -3,7 +3,7 @@
 
 export function normalizeSyncTransport(value) {
   const text = String(value || "wireless").trim().toLowerCase();
-  if (text === "usb" || text === "usb-cable" || text === "usb cable" || text === "usb-network" || text === "usb network") return "usb";
+  if (text === "usb" || text === "usb-cable" || text === "usb cable" || text === "usb-network" || text === "usb network" || text === "usb-ethernet" || text === "usb ethernet" || text === "direct" || text === "direct-network" || text === "direct network" || text === "direct / usb ethernet") return "usb";
   if (text === "offline" || text === "offline-package" || text === "offline package" || text === "package") return "offline-package";
   return "wireless";
 }

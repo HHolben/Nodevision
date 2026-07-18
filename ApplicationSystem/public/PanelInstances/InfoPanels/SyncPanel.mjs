@@ -59,7 +59,7 @@ const TEMPLATE = `
         <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;">Connection Type
           <select data-sync-transport style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:150px;">
             <option value="wireless">Wireless / LAN</option>
-            <option value="usb">USB Network</option>
+            <option value="usb">Direct / USB Ethernet</option>
             <option value="offline-package">Offline Package</option>
           </select>
         </label>
@@ -67,7 +67,7 @@ const TEMPLATE = `
           <input data-peer-url type="url" inputmode="url" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
         </label>
       </div>
-      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">USB Network mode uses normal Nodevision peer sync over an operating-system network interface created by USB, Thunderbolt, USB tethering, or a USB Ethernet adapter. If no USB network interface exists, Nodevision cannot discover the peer.</div>
+      <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">Direct / USB Ethernet mode uses normal Nodevision peer sync over a wired, Thunderbolt, USB tethering, or USB Ethernet network interface. If the adapter has no IPv4 address, Nodevision cannot discover the peer.</div>
       <div data-offline-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f4f0ff;color:#4b367c;font-size:0.82em;line-height:1.35;">Offline Package mode exports signed sync bundles that can be moved by USB drive, external disk, SD card, or another trusted physical medium without using wireless networking.</div>
       <div data-usb-diagnostics style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f8fbff;border:1px solid #d6e6f7;color:#24425f;font-size:0.8em;line-height:1.35;"></div>
       <div data-peer-list style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;"></div>
@@ -248,7 +248,7 @@ function persistSyncTransportSettings(settings = {}) {
 
 function syncTransportLabel(value) {
   const transport = normalizeSyncTransport(value);
-  if (transport === "usb") return "USB Network";
+  if (transport === "usb") return "Direct / USB Ethernet";
   if (transport === "offline-package") return "Offline Package";
   return "Wireless / LAN";
 }
@@ -309,11 +309,21 @@ function isSafeRelativePath(value) {
 function renderUsbDiagnosticsHtml(diagnostics) {
   if (!diagnostics || typeof diagnostics !== "object") return "";
   const interfaces = Array.isArray(diagnostics.interfaces) ? diagnostics.interfaces : [];
+  const directInterfaces = Array.isArray(diagnostics.directInterfaces) ? diagnostics.directInterfaces : [];
+  const visibleInterfaces = directInterfaces.length
+    ? directInterfaces
+    : interfaces.map((item) => ({ ...item, ipv4Addresses: item.address ? [item.address] : [], hasUsableIpv4: Boolean(item.address) }));
   const candidates = Array.isArray(diagnostics.candidatePeerProbeUrls) ? diagnostics.candidatePeerProbeUrls.slice(0, 10) : [];
   const listening = diagnostics.listening && typeof diagnostics.listening === "object" ? diagnostics.listening : {};
-  const interfaceRows = interfaces.length
-    ? interfaces.map((item) => `<li>${escapeHtml(item.name || "interface")}: ${escapeHtml(item.address || "")}${item.netmask ? ` / ${escapeHtml(item.netmask)}` : ""}</li>`).join("")
-    : `<li>No non-Wi-Fi IPv4 interfaces detected.</li>`;
+  const linkLabel = (item) => item.linkDetected === true ? "link" : item.linkDetected === false ? "no link" : "";
+  const interfaceRows = visibleInterfaces.length
+    ? visibleInterfaces.map((item) => {
+      const ipv4 = Array.isArray(item.ipv4Addresses) ? item.ipv4Addresses.filter(Boolean) : (item.address ? [item.address] : []);
+      const addressText = ipv4.length ? ipv4.join(", ") : "no IPv4";
+      const meta = [item.transport, item.state, linkLabel(item)].map((part) => String(part || "").trim()).filter(Boolean).join(", ");
+      return `<li>${escapeHtml(item.name || "interface")}: ${escapeHtml(addressText)}${meta ? ` (${escapeHtml(meta)})` : ""}</li>`;
+    }).join("")
+    : `<li>No wired/direct network interfaces detected.</li>`;
   const candidateRows = candidates.length
     ? candidates.map((url) => `<li>${escapeHtml(url)}</li>`).join("")
     : `<li>No candidate peer probe URLs available.</li>`;
@@ -321,7 +331,7 @@ function renderUsbDiagnosticsHtml(diagnostics) {
     ? `${String(listening.host)}:${String(listening.port || "?")}${listening.listensOnAllInterfaces ? " (all interfaces)" : listening.loopbackOnly ? " (loopback only)" : ""}`
     : "Unknown";
   const message = String(diagnostics.message || "").trim();
-  return `<div><strong>USB Network Diagnostics</strong></div><div>Listening: ${escapeHtml(listenText)}</div><div style="margin-top:4px;">Interfaces:</div><ul style="margin:3px 0 6px;padding-left:18px;">${interfaceRows}</ul><div>Candidate peer probe URLs:</div><ul style="margin:3px 0 0;padding-left:18px;">${candidateRows}</ul>${message ? `<div style="margin-top:6px;color:#8f4f00;">${escapeHtml(message)}</div>` : ""}`;
+  return `<div><strong>Direct Network Diagnostics</strong></div><div>Listening: ${escapeHtml(listenText)}</div><div style="margin-top:4px;">Interfaces:</div><ul style="margin:3px 0 6px;padding-left:18px;">${interfaceRows}</ul><div>Candidate peer probe URLs:</div><ul style="margin:3px 0 0;padding-left:18px;">${candidateRows}</ul>${message ? `<div style="margin-top:6px;color:#8f4f00;">${escapeHtml(message)}</div>` : ""}`;
 }
 
 async function fetchJsonWithStatus(url, init = {}) {
@@ -589,8 +599,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
     const usbMode = transport === "usb";
     const offlineMode = transport === "offline-package";
-    scanningBtn.textContent = offlineMode ? "Peer Scan Unused" : scanning ? "Stop Scanning" : (usbMode ? "Scan USB Network" : "Scan for Devices");
-    discoverableBtn.textContent = offlineMode ? "Discoverability Unused" : discoverable ? "Stop Discoverability" : (usbMode ? "Make Discoverable on USB Network" : "Make This Device Discoverable");
+    scanningBtn.textContent = offlineMode ? "Peer Scan Unused" : scanning ? "Stop Scanning" : (usbMode ? "Scan Direct Network" : "Scan for Devices");
+    discoverableBtn.textContent = offlineMode ? "Discoverability Unused" : discoverable ? "Stop Discoverability" : (usbMode ? "Make Discoverable on Direct Network" : "Make This Device Discoverable");
     scanningBtn.disabled = state.busy || offlineMode;
     discoverableBtn.disabled = state.busy || offlineMode;
   };
@@ -1414,11 +1424,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
   refreshBtn?.addEventListener("click", () => Promise.all([loadProtection(), loadScopes(), loadFolders(), refreshStatus()]).catch((err) => setError(errorEl, err?.message || "Refresh failed")));
   scanningBtn?.addEventListener("click", () => {
     const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
-    runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : (usbMode ? "Starting USB Network scan" : "Starting scan"));
+    runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : (usbMode ? "Starting direct network scan" : "Starting scan"));
   });
   discoverableBtn?.addEventListener("click", () => {
     const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
-    runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : (usbMode ? "Enabling USB Network discoverability" : "Enabling discoverability"));
+    runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : (usbMode ? "Enabling direct network discoverability" : "Enabling discoverability"));
   });
   protectWritesEl?.addEventListener("change", () => toggleProtection(protectWritesEl.checked));
   protectEnableBtn?.addEventListener("click", () => toggleProtection(true));

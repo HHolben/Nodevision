@@ -88,7 +88,7 @@ async function main() {
   let injectedRediscoveryPeer = null;
   const usbPeerCandidateUrls = [];
   const usbNetworkInterfaces = {
-    usb0: [{ family: "IPv4", address: "192.168.50.2", netmask: "255.255.255.0", internal: false }],
+    usb0: [{ family: 4, address: "192.168.50.2", netmask: "255.255.255.0", internal: false }],
   };
   const broadcasterStarts = [];
   registerSyncPanelRoutes(app, {
@@ -115,6 +115,28 @@ async function main() {
       };
     },
   });
+
+  const initialDiagnosticsStatus = await app.request("GET", "/api/sync/status");
+  const initialDiagnostics = initialDiagnosticsStatus.payload?.usbNetworkDiagnostics || {};
+  assert(initialDiagnostics.noDirectIpv4NetworkInterfaceDetected === false, "Expected numeric IPv4 direct interface to count as usable");
+  assert(
+    (initialDiagnostics.interfaces || []).some((item) => item?.name === "usb0" && item?.address === "192.168.50.2"),
+    "Expected direct diagnostics to list usb0 IPv4 address",
+  );
+
+  const noIpv4App = createMockApp();
+  registerSyncPanelRoutes(noIpv4App, {
+    runtimeRoot,
+    syncPanelState: createSyncPanelState(),
+    networkInterfaces: {
+      enxusb: [{ family: "IPv6", address: "fe80::1234", netmask: "ffff:ffff:ffff:ffff::", internal: false }],
+    },
+  });
+  const noIpv4Status = await noIpv4App.request("GET", "/api/sync/status");
+  const noIpv4Diagnostics = noIpv4Status.payload?.usbNetworkDiagnostics || {};
+  assert(noIpv4Diagnostics.noDirectIpv4NetworkInterfaceDetected === true, "Expected direct adapter without IPv4 to be marked unavailable");
+  assert((noIpv4Diagnostics.directInterfaces || []).some((item) => item?.name === "enxusb" && item?.hasUsableIpv4 === false), "Expected diagnostics to list direct adapter without IPv4");
+  assert(String(noIpv4Diagnostics.message || "").includes("does not have a usable IPv4 address"), "Expected no-IPv4 diagnostic message");
 
   upsertDiscoveredPeer(state, {
     deviceId: "nv_dev_trusted_sync",
@@ -177,9 +199,9 @@ async function main() {
     const usbDiscoveryScan = await app.request("POST", "/api/sync/discovery/scanning", {
       body: { enabled: true, syncTransport: "usb" },
     });
-    assert(usbDiscoveryScan.statusCode === 200, "Expected USB scanning without peerUrl to succeed");
+    assert(usbDiscoveryScan.statusCode === 200, "Expected direct scanning without peerUrl to succeed");
     const usbDiscoveredPeer = (usbDiscoveryScan.payload?.discoveredPeers || []).find((peer) => peer?.deviceId === "nv_dev_usb_probe_discovered");
-    assert(usbDiscoveredPeer, "Expected USB scanning without peerUrl to discover candidate peer");
+    assert(usbDiscoveredPeer, "Expected direct scanning without peerUrl to discover candidate peer");
     assert(usbDiscoveredPeer.address === "127.0.0.1", "Expected USB-discovered peer address from probed URL");
     assert(usbDiscoveredPeer.port === reachableProbePort, "Expected USB-discovered peer port from probed URL");
     assert(usbDiscoveredPeer.trusted === false, "Expected USB-discovered HTTP status peer to start untrusted");
@@ -189,11 +211,11 @@ async function main() {
     const usbDiscoverable = await app.request("POST", "/api/sync/discovery/discoverable", {
       body: { enabled: true, syncTransport: "usb" },
     });
-    assert(usbDiscoverable.statusCode === 200, "Expected USB discoverable to start");
+    assert(usbDiscoverable.statusCode === 200, "Expected direct discoverable to start");
     const usbBroadcasterOptions = broadcasterStarts.at(-1) || {};
     assert(
       Array.isArray(usbBroadcasterOptions.extraTargetAddresses) && usbBroadcasterOptions.extraTargetAddresses.includes("192.168.50.255"),
-      "Expected USB discoverability to include subnet broadcast target",
+      "Expected direct discoverability to include subnet broadcast target",
     );
     await app.request("POST", "/api/sync/discovery/discoverable", {
       body: { enabled: false },
@@ -282,7 +304,7 @@ async function main() {
       body: { deviceId: "nv_dev_trusted_same_machine", scope: "SyncTest", dryRun: true, syncTransport: "usb" },
     });
     assert(usbMissingPeerUrlRun.statusCode === 400, "Expected USB run without peerUrl to be rejected");
-    assert(String(usbMissingPeerUrlRun.payload?.error || "").includes("USB Cable sync requires a peer URL"), "Expected USB missing peer URL explanation");
+    assert(String(usbMissingPeerUrlRun.payload?.error || "").includes("Direct network sync requires a peer URL"), "Expected direct missing peer URL explanation");
 
     upsertDiscoveredPeer(state, {
       deviceId: "nv_dev_trusted_usb_strict",

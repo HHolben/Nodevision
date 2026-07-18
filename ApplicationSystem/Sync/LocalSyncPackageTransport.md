@@ -49,5 +49,5 @@ The importer is conservative about overwrites. Existing local files are skipped 
 15. Try packages containing `../evil.txt`, `../../somewhere`, `/absolute/path.txt`, `C:\Users\Henry\evil.txt`, URL-encoded traversal, empty paths, or NUL-path attempts and confirm preview/import reject them without writing files.
 16. Create a partial failure scenario such as a destination directory where a package file should be written, and confirm import reports partial success with per-file blocked details.
 17. Return to `Wireless / LAN` and confirm existing peer discovery, trust, dry-run, push, pull, sync, and large-file HTTP streaming still work.
-18. Select `USB Network` and confirm diagnostics list non-Wi-Fi interfaces, IP addresses, listener binding, and candidate peer probe URLs.
-19. Confirm the no-interface message appears when the OS has not created a USB/Thunderbolt/tethering network interface.
+18. Select `Direct / USB Ethernet` and confirm diagnostics list non-Wi-Fi direct interfaces, IP addresses, listener binding, and candidate peer probe URLs.
+19. Confirm the no-interface message appears when the OS has not created a wired direct IPv4 network interface.

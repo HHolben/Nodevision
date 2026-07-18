@@ -3,6 +3,7 @@
 
 import os from "node:os";
 import net from "node:net";
+import fs from "node:fs";
 import multer from "multer";
 import { addTrustedPeer, findTrustedPeer, getLocalPeerInfo } from "../../Sync/TrustedPeers.mjs";
 import {
@@ -509,7 +510,7 @@ function parseSyncTransport(body) {
     ? (body.syncTransport ?? body.transport ?? "wireless")
     : "wireless";
   const text = String(raw || "wireless").trim().toLowerCase();
-  if (text === "usb" || text === "usb-cable" || text === "usb cable" || text === "usb-network" || text === "usb network") return "usb";
+  if (text === "usb" || text === "usb-cable" || text === "usb cable" || text === "usb-network" || text === "usb network" || text === "usb-ethernet" || text === "usb ethernet" || text === "direct" || text === "direct-network" || text === "direct network" || text === "direct / usb ethernet") return "usb";
   if (text === "offline" || text === "offline-package" || text === "offline package" || text === "package") return "offline-package";
   return "wireless";
 }
@@ -548,6 +549,17 @@ function parseIpv4Octets(address) {
   const parts = String(address || "").split(".").map((part) => Number(part));
   if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return null;
   return parts;
+}
+
+function getNetworkInterfaceFamily(entry) {
+  const family = entry?.family;
+  if (family === 4 || String(family || "").toLowerCase() === "ipv4") return "IPv4";
+  if (family === 6 || String(family || "").toLowerCase() === "ipv6") return "IPv6";
+  return String(family || "");
+}
+
+function isIpv4NetworkInterfaceEntry(entry) {
+  return getNetworkInterfaceFamily(entry) === "IPv4";
 }
 
 function buildIpv4Address(parts) {
@@ -591,13 +603,16 @@ function getConfiguredNetworkInterfaces(ctx = {}) {
 function getLocalUsbCandidateHosts(ctx = {}) {
   const hosts = [];
   const configuredInterfaces = getConfiguredNetworkInterfaces(ctx);
-  for (const entries of Object.values(configuredInterfaces || {})) {
+  for (const [name, entries] of Object.entries(configuredInterfaces || {})) {
     if (!Array.isArray(entries)) continue;
+    const metadata = readLinuxNetworkInterfaceMetadata(name, ctx);
+    if (!isDirectNetworkInterfaceName(name, metadata)) continue;
     for (const entry of entries) {
-      if (!entry || entry.family !== "IPv4" || entry.internal === true) continue;
+      if (!entry || !isIpv4NetworkInterfaceEntry(entry) || entry.internal === true) continue;
       addUsbCandidateHostsFromLocalAddress(hosts, entry.address);
     }
   }
+  for (const host of getLinuxArpCandidateHosts(ctx)) addUsbCandidateHost(hosts, host);
   for (const host of COMMON_USB_PEER_HOSTS) addUsbCandidateHost(hosts, host);
   return hosts;
 }
@@ -606,10 +621,12 @@ function getLocalUsbDiscoveryTargetAddresses(ctx = {}) {
   const targets = [];
   const addTarget = (address) => addUsbCandidateHost(targets, address);
   const configuredInterfaces = getConfiguredNetworkInterfaces(ctx);
-  for (const entries of Object.values(configuredInterfaces || {})) {
+  for (const [name, entries] of Object.entries(configuredInterfaces || {})) {
     if (!Array.isArray(entries)) continue;
+    const metadata = readLinuxNetworkInterfaceMetadata(name, ctx);
+    if (!isDirectNetworkInterfaceName(name, metadata)) continue;
     for (const entry of entries) {
-      if (!entry || entry.family !== "IPv4" || entry.internal === true) continue;
+      if (!entry || !isIpv4NetworkInterfaceEntry(entry) || entry.internal === true) continue;
       const broadcast = calculateIpv4BroadcastAddress(entry.address, entry.netmask);
       if (broadcast && broadcast !== "255.255.255.255") addTarget(broadcast);
       addUsbCandidateHostsFromLocalAddress(targets, entry.address);
@@ -979,20 +996,136 @@ function interfaceNameLooksWireless(name) {
   return /(?:wi-?fi|wifi|wlan|airport|wireless|^wl)/i.test(String(name || ""));
 }
 
+function interfaceNameLooksVirtualOrLoopback(name) {
+  return /^(?:lo|docker|br-|veth|virbr|vmnet|vboxnet|tun|tap|wg|tailscale|zt|cni|flannel|kube|podman|utun|awdl|llw|anpi|bridge|gif|stf|p2p|ipsec)/i.test(String(name || ""));
+}
+
+function safeLinuxNetworkInterfaceName(name) {
+  const text = String(name || "").trim();
+  if (!text || text.includes("/") || text.includes(String.fromCharCode(0)) || text.includes("..")) return "";
+  return text;
+}
+
+function readLinuxNetworkInterfaceFile(name, filename) {
+  const interfaceName = safeLinuxNetworkInterfaceName(name);
+  const safeFilename = String(filename || "").trim();
+  if (!interfaceName || !safeFilename || safeFilename.includes("/") || safeFilename.includes(String.fromCharCode(0)) || safeFilename.includes("..")) return "";
+  try {
+    return fs.readFileSync("/sys/class/net/" + interfaceName + "/" + safeFilename, "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+
+function readLinuxNetworkInterfaceMetadata(name, ctx = {}) {
+  if (ctx?.networkInterfaces && typeof ctx.networkInterfaces === "object") return {};
+  const interfaceName = safeLinuxNetworkInterfaceName(name);
+  if (!interfaceName) return {};
+  let devicePath = "";
+  try {
+    devicePath = fs.realpathSync("/sys/class/net/" + interfaceName + "/device");
+  } catch {
+    devicePath = "";
+  }
+  const carrierText = readLinuxNetworkInterfaceFile(interfaceName, "carrier");
+  return {
+    state: readLinuxNetworkInterfaceFile(interfaceName, "operstate"),
+    linkDetected: carrierText === "1" ? true : carrierText === "0" ? false : null,
+    mac: readLinuxNetworkInterfaceFile(interfaceName, "address"),
+    type: readLinuxNetworkInterfaceFile(interfaceName, "type"),
+    usb: /\/usb/i.test(devicePath),
+  };
+}
+
+function isDirectNetworkInterfaceName(name, metadata = {}) {
+  if (interfaceNameLooksWireless(name)) return false;
+  if (interfaceNameLooksVirtualOrLoopback(name)) return false;
+  if (String(metadata?.type || "") === "772") return false;
+  return Boolean(String(name || "").trim());
+}
+
+function getSystemNetworkInterfaceNames(ctx = {}, configuredInterfaces = null) {
+  const names = new Set(Object.keys(configuredInterfaces || getConfiguredNetworkInterfaces(ctx) || {}));
+  if (ctx?.networkInterfaces && typeof ctx.networkInterfaces === "object") return [...names];
+  try {
+    for (const name of fs.readdirSync("/sys/class/net")) {
+      if (String(name || "").trim()) names.add(String(name));
+    }
+  } catch {
+    // Non-Linux platforms can rely on os.networkInterfaces().
+  }
+  return [...names];
+}
+
+function getDetectedDirectNetworkInterfaces(ctx = {}) {
+  const configuredInterfaces = getConfiguredNetworkInterfaces(ctx);
+  const detected = [];
+  for (const name of getSystemNetworkInterfaceNames(ctx, configuredInterfaces)) {
+    const entries = Array.isArray(configuredInterfaces?.[name]) ? configuredInterfaces[name] : [];
+    const metadata = readLinuxNetworkInterfaceMetadata(name, ctx);
+    if (!isDirectNetworkInterfaceName(name, metadata)) continue;
+    const addresses = entries
+      .filter((entry) => entry && entry.internal !== true)
+      .map((entry) => ({
+        family: getNetworkInterfaceFamily(entry),
+        address: String(entry.address || ""),
+        netmask: String(entry.netmask || ""),
+        mac: String(entry.mac || metadata.mac || ""),
+      }))
+      .filter((entry) => entry.address);
+    const ipv4Addresses = addresses.filter((entry) => entry.family === "IPv4").map((entry) => entry.address);
+    detected.push({
+      name,
+      addresses,
+      ipv4Addresses,
+      hasUsableIpv4: ipv4Addresses.length > 0,
+      linkDetected: metadata.linkDetected,
+      state: metadata.state || "",
+      transport: metadata.usb ? "usb-ethernet" : "ethernet",
+      mac: metadata.mac || addresses.find((entry) => entry.mac)?.mac || "",
+    });
+  }
+  return detected;
+}
+
+function getLinuxArpCandidateHosts(ctx = {}) {
+  if (ctx?.networkInterfaces && typeof ctx.networkInterfaces === "object") return [];
+  const hosts = [];
+  try {
+    const lines = fs.readFileSync("/proc/net/arp", "utf8").split(/\r?\n/).slice(1);
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      const address = parts[0] || "";
+      const deviceName = parts[5] || "";
+      if (!address || net.isIP(address) !== 4) continue;
+      const metadata = readLinuxNetworkInterfaceMetadata(deviceName, ctx);
+      if (!isDirectNetworkInterfaceName(deviceName, metadata)) continue;
+      addUsbCandidateHost(hosts, address);
+    }
+  } catch {
+    // ARP candidates are best-effort only.
+  }
+  return hosts;
+}
+
 function getDetectedNonWifiNetworkInterfaces(ctx = {}) {
   const detected = [];
   const configuredInterfaces = getConfiguredNetworkInterfaces(ctx);
   for (const [name, entries] of Object.entries(configuredInterfaces || {})) {
     if (!Array.isArray(entries)) continue;
+    const metadata = readLinuxNetworkInterfaceMetadata(name, ctx);
+    if (!isDirectNetworkInterfaceName(name, metadata)) continue;
     for (const entry of entries) {
-      if (!entry || entry.family !== "IPv4" || entry.internal === true) continue;
-      if (interfaceNameLooksWireless(name)) continue;
+      if (!entry || !isIpv4NetworkInterfaceEntry(entry) || entry.internal === true) continue;
       detected.push({
         name,
         address: String(entry.address || ""),
         netmask: String(entry.netmask || ""),
-        mac: String(entry.mac || ""),
+        mac: String(entry.mac || metadata.mac || ""),
         family: "IPv4",
+        linkDetected: metadata.linkDetected,
+        state: metadata.state || "",
+        transport: metadata.usb ? "usb-ethernet" : "ethernet",
       });
     }
   }
@@ -1012,21 +1145,28 @@ function getListeningAddressSnapshot(ctx = {}) {
 
 function getUsbNetworkDiagnostics(ctx = {}) {
   const interfaces = getDetectedNonWifiNetworkInterfaces(ctx);
+  const directInterfaces = getDetectedDirectNetworkInterfaces(ctx);
+  const directInterfacesWithoutIpv4 = directInterfaces.filter((item) => item.hasUsableIpv4 !== true);
   const listening = getListeningAddressSnapshot(ctx);
   const candidatePeerProbeUrls = getUsbPeerDiscoveryCandidateUrls({}, ctx).slice(0, 80);
-  const noUsbNetworkInterfaceDetected = interfaces.length === 0;
+  const noDirectIpv4NetworkInterfaceDetected = interfaces.length === 0;
   const messages = [];
-  if (noUsbNetworkInterfaceDetected) {
-    messages.push("No USB network interface detected. The operating system has not created a network link over this cable. Use a USB Ethernet adapter, Thunderbolt networking, USB tethering, or Offline Package mode.");
+  if (noDirectIpv4NetworkInterfaceDetected && directInterfaces.length > 0) {
+    messages.push("A wired/direct network adapter is present, but it does not have a usable IPv4 address. Set both laptops' wired connections to Link-Local Only or assign static IPv4 addresses on the same subnet, then scan again.");
+  } else if (noDirectIpv4NetworkInterfaceDetected) {
+    messages.push("No wired/direct IPv4 network interface detected. The operating system has not created an addressable network link over this cable. Use USB Ethernet, Thunderbolt networking, USB tethering, or Offline Package mode.");
   }
   if (listening.loopbackOnly) {
-    messages.push("Nodevision appears to be listening only on loopback. Peers cannot reach this device unless the server listens on 0.0.0.0 or the USB network interface address.");
+    messages.push("Nodevision appears to be listening only on loopback. Peers cannot reach this device unless the server listens on 0.0.0.0 or the wired/direct interface address.");
   }
   return {
     interfaces,
+    directInterfaces,
+    directInterfacesWithoutIpv4,
     listening,
     candidatePeerProbeUrls,
-    noUsbNetworkInterfaceDetected,
+    noUsbNetworkInterfaceDetected: noDirectIpv4NetworkInterfaceDetected,
+    noDirectIpv4NetworkInterfaceDetected,
     message: messages.join(" "),
   };
 }
@@ -1476,7 +1616,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
     }
     if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
-      return res.status(400).json({ ok: false, preflight: true, ready: false, error: "USB Network sync requires a peer URL on the USB network" });
+      return res.status(400).json({ ok: false, preflight: true, ready: false, error: "Direct network sync requires a peer URL on the direct wired network" });
     }
     const syncRunner = resolveSyncRunner(ctx);
 
@@ -1603,7 +1743,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
     }
     if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
-      return res.status(400).json({ ok: false, error: "USB Network sync requires a peer URL on the USB network" });
+      return res.status(400).json({ ok: false, error: "Direct network sync requires a peer URL on the direct wired network" });
     }
     const syncRunner = resolveSyncRunner(ctx);
 
@@ -1778,11 +1918,11 @@ export function registerSyncPanelRoutes(app, ctx) {
     if (syncTransportRequiresExplicitPeerUrl(syncTransport) && !requestedPeerUrl) {
       logSyncJobCreationDecision(req, body, protection, "rejected", {
         statusCode: 400,
-        reason: "USB Network sync requires a peer URL on the USB network",
+        reason: "Direct network sync requires a peer URL on the direct wired network",
         selectedPeerDeviceId: deviceId,
         scope,
       });
-      return res.status(400).json({ ok: false, error: "USB Network sync requires a peer URL on the USB network" });
+      return res.status(400).json({ ok: false, error: "Direct network sync requires a peer URL on the direct wired network" });
     }
     const syncRunner = resolveSyncRunner(ctx);
 
