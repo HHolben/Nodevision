@@ -622,23 +622,37 @@ export function startPeerDiscoveryBroadcaster(options = {}) {
     }
 
     const payloadBuffer = Buffer.from(JSON.stringify(wireBeacon), "utf8");
+    let sentAnyDatagram = false;
+    let lastSendError = null;
     try {
       await sendDatagram(payloadBuffer, multicastGroup);
+      sentAnyDatagram = true;
       debugLog(debugEnabled, "Beacon sent via multicast", `target=${multicastGroup}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
     } catch (multicastErr) {
+      lastSendError = multicastErr;
       debugLog(debugEnabled, "Multicast beacon send failed; attempting IPv4 broadcast fallback", asErrorMessage(multicastErr));
-      await sendDatagram(payloadBuffer, broadcastAddress);
-      debugLog(debugEnabled, "Beacon sent via broadcast fallback", `target=${broadcastAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
+      try {
+        await sendDatagram(payloadBuffer, broadcastAddress);
+        sentAnyDatagram = true;
+        debugLog(debugEnabled, "Beacon sent via broadcast fallback", `target=${broadcastAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
+      } catch (broadcastErr) {
+        lastSendError = broadcastErr;
+        debugLog(debugEnabled, "IPv4 broadcast fallback failed; continuing with extra discovery targets", `target=${broadcastAddress}:${discoveryPort}`, asErrorMessage(broadcastErr));
+      }
     }
 
     for (const targetAddress of extraTargetAddresses) {
       try {
         await sendDatagram(payloadBuffer, targetAddress);
+        sentAnyDatagram = true;
         debugLog(debugEnabled, "Beacon sent via extra discovery target", `target=${targetAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
       } catch (targetErr) {
+        lastSendError = targetErr;
         debugLog(debugEnabled, "Extra discovery target send failed", `target=${targetAddress}:${discoveryPort}`, asErrorMessage(targetErr));
       }
     }
+
+    if (!sentAnyDatagram && lastSendError) throw lastSendError;
   }
 
   const ready = new Promise((resolve, reject) => {
