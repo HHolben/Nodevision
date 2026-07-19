@@ -173,6 +173,12 @@
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Graph Layers",
+    "script": "graphManagerLayerControlsWidget.mjs"
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "Save File",
     "callbackKey": "saveFile",
     "icon": "icons/SaveIcon.png",

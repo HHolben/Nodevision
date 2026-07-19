@@ -43,8 +43,8 @@ panelElem.style.flexDirection = "column";
     <div class="graph-manager" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
       <div style="flex-grow:1;position:relative;min-height:0;">
         <div id="cy" style="width:100%;height:100%;background:#ffffff;position:relative;"></div>
-        <div id="mqtt-graph-controls" style="position:absolute;top:10px;left:10px;z-index:5;display:flex;gap:10px;align-items:center;background:rgba(255,255,255,0.92);border:1px solid #d8dde6;border-radius:8px;padding:7px 9px;font-size:12px;"></div>
         <div id="mqtt-device-inspector" style="display:none;position:absolute;right:10px;top:10px;z-index:5;width:min(310px,35%);max-height:70%;overflow:auto;background:rgba(255,255,255,0.96);border:1px solid #d8dde6;border-radius:8px;padding:10px;font-size:12px;box-shadow:0 8px 22px rgba(15,23,42,0.14);"></div>
+        <div id="graph-link-inspector" style="display:none;position:absolute;right:10px;bottom:10px;z-index:6;width:min(420px,48%);max-width:calc(100% - 20px);background:rgba(255,255,255,0.96);border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:12px system-ui,sans-serif;box-shadow:0 8px 22px rgba(15,23,42,0.14);"></div>
       </div>
       
       <div id="graph-error" style="color:red; padding: 10px; font-weight: bold;"></div>
@@ -57,7 +57,10 @@ panelElem.style.flexDirection = "column";
     updateToolbarState({ activePanelType: 'GraphManager' });
     // This handler will be defined inside GraphManagerCore.mjs
     window.NodevisionState.activeActionHandler = window.handleGraphManagerAction;
-    navigationState.setLastInfoPanelType('GraphManager');
+    navigationState.setLastInfoPanelType("GraphManager");
+    window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+      detail: { heading: "Graph Manager", force: false, toggle: false }
+    }));
   };
 
   panelElem.addEventListener('focus', handleFocus, true);
@@ -74,8 +77,8 @@ panelElem.style.flexDirection = "column";
       containerId: 'cy',
       rootPath: panelVars.currentDirectory || '',      
       statusElemId: null,
-      mqttControlsId: 'mqtt-graph-controls',
-      mqttInspectorId: 'mqtt-device-inspector'
+      mqttInspectorId: 'mqtt-device-inspector',
+      linkInspectorId: 'graph-link-inspector'
     });
     
     console.log("✅ GraphManagerCore loaded and initialized.");

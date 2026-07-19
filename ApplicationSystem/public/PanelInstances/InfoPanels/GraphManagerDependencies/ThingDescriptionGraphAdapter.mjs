@@ -19,13 +19,23 @@ function notebookUrl(path) {
   return `/Notebook/${String(path || '').split('/').filter(Boolean).map(encodeURIComponent).join('/')}`;
 }
 
+function ensureControlsSection(container) {
+  if (!container) return null;
+  let section = container.querySelector("[data-td-layer-controls]");
+  if (!section) {
+    section = document.createElement("div");
+    section.dataset.tdLayerControls = "true";
+    section.style.cssText = "display:flex;align-items:center;gap:10px;flex-wrap:wrap;";
+    container.appendChild(section);
+  }
+  return section;
+}
+
 function renderControl(container, state, refresh) {
-  if (!container || container.querySelector('[data-td-layer]')) return;
-  const label = document.createElement('label');
-  label.style.cssText = 'display:flex;align-items:center;gap:5px;';
-  label.innerHTML = `<input data-td-layer type="checkbox" ${state.enabled ? 'checked' : ''}>Thing Descriptions`;
-  container.appendChild(label);
-  label.querySelector('[data-td-layer]')?.addEventListener('change', (event) => {
+  const section = ensureControlsSection(container);
+  if (!section) return;
+  section.innerHTML = `<label style="display:flex;align-items:center;gap:5px;white-space:nowrap;"><input data-td-layer type="checkbox" ${state.enabled ? "checked" : ""}>Thing Descriptions</label>`;
+  section.querySelector("[data-td-layer]")?.addEventListener("change", (event) => {
     state.enabled = event.target.checked;
     refresh();
   });
@@ -58,8 +68,9 @@ async function elementsForVisibleTdFiles(cy) {
 }
 
 export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout } = {}) {
-  if (!cy) return { refresh: () => {}, cleanup: () => {} };
+  if (!cy) return { refresh: () => {}, setControlsElement: () => {}, cleanup: () => {} };
   const state = { enabled: true, rendering: false, pending: false };
+  let currentControlsEl = controlsEl || null;
 
   const refresh = async () => {
     if (state.rendering) {
@@ -68,7 +79,7 @@ export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout } = 
     }
     state.rendering = true;
     try {
-      renderControl(controlsEl, state, refresh);
+      renderControl(currentControlsEl, state, refresh);
       if (!state.enabled) {
         cy.elements('.td-live').remove();
         relayout?.({ fit: false, reason: 'td-layer-disabled' });
@@ -94,10 +105,14 @@ export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout } = 
     }
   };
 
-  renderControl(controlsEl, state, refresh);
+  renderControl(currentControlsEl, state, refresh);
   refresh();
   return {
     refresh,
-    cleanup: () => cy.elements('.td-live').remove(),
+    setControlsElement(container) {
+      currentControlsEl = container || null;
+      renderControl(currentControlsEl, state, refresh);
+    },
+    cleanup: () => cy.elements(".td-live").remove(),
   };
 }

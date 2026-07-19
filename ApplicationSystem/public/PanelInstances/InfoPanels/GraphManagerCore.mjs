@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
 // This file defines browser-side Graph Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
-import { scanFileForLinks } from './GraphManagerDependencies/ScanForLinks.mjs';
+import { scanFileForLinkRecords } from './GraphManagerDependencies/ScanForLinks.mjs';
+import { buildSelectedGraphLink, linkRecordTargetId, makeEdgeLabel, setSelectedGraphLink, summarizeLinkRecord } from './GraphManagerDependencies/LinkRecords.mjs';
 import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
 import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';
 import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
@@ -11,9 +12,12 @@ import { attachMqttGraphLayer, MQTT_GRAPH_STYLE } from './GraphManagerDependenci
 import { attachThingDescriptionGraphLayer, THING_DESCRIPTION_GRAPH_STYLE } from './GraphManagerDependencies/ThingDescriptionGraphAdapter.mjs';
 
 let cy;
+let mqttGraphLayer = null;
 let tdGraphLayer = null;
 let currentRootPath = '';
 const discoveredLinks = new Map(); // sourcePath -> Set(targetPath)
+const linkRecordsBySourceTarget = new Map(); // sourcePath + targetPath -> link records[]
+let linkInspectorElem = null;
 const brokenLinksBySource = new Map(); // sourcePath -> Set(brokenTargetPath)
 let layoutHasInitialized = false;
 let activeLayout = null;
@@ -21,6 +25,8 @@ let layoutDebounceTimer = null;
 let layoutPendingFit = false;
 let layoutPendingReasons = new Set();
 let dragMoveState = null;
+let expandedDirectoryCollisionFrame = null;
+let expandedDirectoryCollisionNodeId = null;
 const htmlPreviewCache = new Map(); // path -> url | null
 let externalNodesLoaded = false;
 const EDGE_BUCKET_SYMBOLS = [
@@ -38,6 +44,22 @@ const DIRECTORY_IMAGE_CANDIDATES = [
 ];
 const BROKEN_LINK_BADGE_URL =
     'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23fbc02d" d="M1 21h22L12 2 1 21z"/><path fill="%23000" d="M12 8.5c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1s1-.45 1-1v-4c0-.55-.45-1-1-1zm0 7c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>';
+const DIRECTORY_NOTEBOOK_COLOR = "#e5e7eb";
+const DIRECTORY_COLOR_FAMILIES = [
+    ["#8b5cf6", "#a855f7", "#7c3aed", "#c084fc"],
+    ["#2563eb", "#3b82f6", "#1d4ed8", "#60a5fa"],
+    ["#06b6d4", "#0891b2", "#22d3ee", "#0e7490"],
+    ["#22c55e", "#16a34a", "#10b981", "#15803d"],
+    ["#eab308", "#facc15", "#ca8a04", "#fde047"],
+    ["#f97316", "#fb923c", "#ea580c", "#fdba74"],
+    ["#dc2626", "#ef4444", "#b91c1c", "#f87171"],
+];
+const DIRECTORY_EXPANDED_TINT_SURFACE = "#f8fafc";
+const DIRECTORY_EXPANDED_TINT_AMOUNT = 0.42;
+const DIRECTORY_BORDER_DARKEN_AMOUNT = 0.22;
+const EXPANDED_DIRECTORY_PARENT_MARGIN = 28;
+const EXPANDED_DIRECTORY_COLLISION_GAP = 36;
+const EXPANDED_DIRECTORY_COLLISION_MAX_PASSES = 6;
 const CLIPBOARD_SHORTCUTS = {
     c: "copyFile",
     v: "pasteFile",
@@ -299,6 +321,86 @@ function resolveNotebookLink(sourceFilePath, rawLink) {
     return normalizeNotebookRelativePath(candidate);
 }
 
+
+function clamp01(value) {
+    return Math.max(0, Math.min(1, Number(value) || 0));
+}
+
+function hexToRgb(hex) {
+    const clean = String(hex || "").replace(/^#/, "");
+    const value = clean.length === 3
+        ? clean.split("").map((ch) => ch + ch).join("")
+        : clean.padEnd(6, "0").slice(0, 6);
+    const num = Number.parseInt(value, 16);
+    return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255,
+    };
+}
+
+function rgbToHex({ r, g, b }) {
+    return "#" + [r, g, b]
+        .map((value) => Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, "0"))
+        .join("");
+}
+
+function mixHexColors(fromHex, toHex, amount) {
+    const t = clamp01(amount);
+    const from = hexToRgb(fromHex);
+    const to = hexToRgb(toHex);
+    return rgbToHex({
+        r: from.r + (to.r - from.r) * t,
+        g: from.g + (to.g - from.g) * t,
+        b: from.b + (to.b - from.b) * t,
+    });
+}
+
+function directoryDepth(pathValue = "") {
+    const clean = normalizePath(pathValue || "");
+    if (!clean) return 0;
+    return clean.split("/").filter(Boolean).length;
+}
+
+function directoryVisualLevel(pathValue = "") {
+    const clean = normalizePath(pathValue || "");
+    if (!clean) return -1;
+    return Math.max(0, directoryDepth(clean) - 1);
+}
+
+function directoryColorForLevel(level) {
+    if (level < 0) return DIRECTORY_NOTEBOOK_COLOR;
+    const familyIndex = level % DIRECTORY_COLOR_FAMILIES.length;
+    const family = DIRECTORY_COLOR_FAMILIES[familyIndex] || DIRECTORY_COLOR_FAMILIES[0];
+    const shadeIndex = Math.floor(level / DIRECTORY_COLOR_FAMILIES.length) % family.length;
+    return family[shadeIndex];
+}
+
+function directoryVisualData(pathValue = "") {
+    const level = directoryVisualLevel(pathValue);
+    const color = directoryColorForLevel(level);
+    return {
+        directoryLevel: level,
+        directoryColor: color,
+        directoryFillColor: mixHexColors(color, DIRECTORY_EXPANDED_TINT_SURFACE, DIRECTORY_EXPANDED_TINT_AMOUNT),
+        directoryBorderColor: mixHexColors(color, "#111827", DIRECTORY_BORDER_DARKEN_AMOUNT),
+    };
+}
+
+function updateDirectoryLevelColors() {
+    if (!cy) return;
+    const directories = cy.nodes('node[type="directory"]');
+    if (!directories.length) return;
+
+    directories.forEach((node) => {
+        const visual = directoryVisualData(node.data("fullPath") || node.id());
+        node.data("directoryLevel", visual.directoryLevel);
+        node.data("directoryColor", visual.directoryColor);
+        node.data("directoryFillColor", visual.directoryFillColor);
+        node.data("directoryBorderColor", visual.directoryBorderColor);
+    });
+}
+
 function basename(pathValue = '') {
     const clean = normalizePath(pathValue);
     const parts = clean.split('/').filter(Boolean);
@@ -371,6 +473,195 @@ function setDropTargetHighlight(node) {
     dragMoveState.dropTargetId = nextId;
 }
 
+
+function collectionContainsNode(collection, targetNode) {
+    if (!collection || !targetNode || typeof targetNode.empty !== "function" || targetNode.empty()) return false;
+    const targetId = targetNode.id();
+    let found = false;
+    collection.forEach((node) => {
+        if (node?.id?.() === targetId) found = true;
+    });
+    return found;
+}
+
+function isAncestorOfNode(ancestor, node) {
+    if (!ancestor || !node || ancestor.empty?.() || node.empty?.()) return false;
+    return collectionContainsNode(node.ancestors?.(), ancestor);
+}
+
+function isDescendantOfNode(descendant, node) {
+    if (!descendant || !node || descendant.empty?.() || node.empty?.()) return false;
+    return collectionContainsNode(node.descendants?.(), descendant);
+}
+
+function isExpandedDirectoryNode(node) {
+    if (!node || typeof node.empty !== "function" || node.empty()) return false;
+    if (node.data("type") !== "directory") return false;
+    const descendants = typeof node.descendants === "function" ? node.descendants() : null;
+    return Boolean(descendants && !descendants.empty());
+}
+
+function parentNodeOf(node) {
+    const parent = typeof node?.parent === "function" ? node.parent() : null;
+    if (!parent || typeof parent.empty !== "function" || parent.empty()) return null;
+    return parent;
+}
+
+function nodeCollisionBox(node) {
+    if (!node || typeof node.boundingBox !== "function") return null;
+    try {
+        const box = node.boundingBox({ includeLabels: false, includeOverlays: false });
+        if (!box || !Number.isFinite(box.x1) || !Number.isFinite(box.x2) || !Number.isFinite(box.y1) || !Number.isFinite(box.y2)) return null;
+        return {
+            x1: box.x1,
+            x2: box.x2,
+            y1: box.y1,
+            y2: box.y2,
+            w: box.x2 - box.x1,
+            h: box.y2 - box.y1,
+        };
+    } catch (_) {
+        return null;
+    }
+}
+
+function paddedBox(box, padding = 0) {
+    return {
+        x1: box.x1 - padding,
+        x2: box.x2 + padding,
+        y1: box.y1 - padding,
+        y2: box.y2 + padding,
+        w: box.w + padding * 2,
+        h: box.h + padding * 2,
+    };
+}
+
+function boxesOverlap(a, b) {
+    return a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+}
+
+function boxCenter(box) {
+    return {
+        x: (box.x1 + box.x2) / 2,
+        y: (box.y1 + box.y2) / 2,
+    };
+}
+
+function separationVector(activeBox, targetBox, gap = EXPANDED_DIRECTORY_COLLISION_GAP) {
+    const active = paddedBox(activeBox, gap / 2);
+    const target = paddedBox(targetBox, gap / 2);
+    if (!boxesOverlap(active, target)) return null;
+
+    const activeCenter = boxCenter(active);
+    const targetCenter = boxCenter(target);
+    const pushRight = targetCenter.x >= activeCenter.x;
+    const pushDown = targetCenter.y >= activeCenter.y;
+    const shiftX = pushRight ? active.x2 - target.x1 : active.x1 - target.x2;
+    const shiftY = pushDown ? active.y2 - target.y1 : active.y1 - target.y2;
+    const nudgeX = pushRight ? 0.5 : -0.5;
+    const nudgeY = pushDown ? 0.5 : -0.5;
+
+    if (Math.abs(shiftX) <= Math.abs(shiftY)) {
+        return { x: shiftX + nudgeX, y: 0 };
+    }
+    return { x: 0, y: shiftY + nudgeY };
+}
+
+function collisionRootForNode(node, movingNode) {
+    if (!node || !movingNode || node.empty?.() || movingNode.empty?.()) return null;
+    if (!node.visible?.()) return null;
+    if (node.id() === movingNode.id()) return null;
+    if (isAncestorOfNode(node, movingNode) || isDescendantOfNode(node, movingNode)) return null;
+
+    let root = node;
+    while (true) {
+        const parent = parentNodeOf(root);
+        if (!parent) break;
+        if (parent.id() === movingNode.id() || isDescendantOfNode(parent, movingNode)) return null;
+        if (isAncestorOfNode(parent, movingNode)) break;
+        root = parent;
+    }
+
+    if (root.id() === movingNode.id()) return null;
+    if (isAncestorOfNode(root, movingNode) || isDescendantOfNode(root, movingNode)) return null;
+    return root.visible?.() ? root : null;
+}
+
+function collectCollisionRoots(movingNode) {
+    const roots = new Map();
+    cy.nodes().forEach((node) => {
+        const root = collisionRootForNode(node, movingNode);
+        if (root) roots.set(root.id(), root);
+    });
+    roots.delete(movingNode.id());
+    return [...roots.values()];
+}
+
+function shiftNodeCluster(node, dx, dy) {
+    if (!node || node.empty?.() || (!dx && !dy)) return;
+    const movableNodes = [];
+    const descendants = typeof node.descendants === "function" ? node.descendants() : null;
+
+    if (descendants && !descendants.empty()) {
+        descendants.forEach((child) => {
+            const children = typeof child.children === "function" ? child.children() : null;
+            if (!children || children.empty()) movableNodes.push(child);
+        });
+    } else {
+        movableNodes.push(node);
+    }
+
+    movableNodes.forEach((item) => {
+        if (typeof item.locked === "function" && item.locked()) return;
+        if (typeof item.position !== "function") return;
+        const pos = item.position();
+        item.position({ x: pos.x + dx, y: pos.y + dy });
+    });
+}
+
+function resolveExpandedDirectoryCollisions(movingNode, { maxPasses = EXPANDED_DIRECTORY_COLLISION_MAX_PASSES } = {}) {
+    if (!cy || !isExpandedDirectoryNode(movingNode)) return;
+    const movingId = movingNode.id();
+
+    for (let pass = 0; pass < maxPasses; pass += 1) {
+        const activeNode = cy.getElementById(movingId);
+        if (!isExpandedDirectoryNode(activeNode)) return;
+        const activeBox = nodeCollisionBox(activeNode);
+        if (!activeBox) return;
+
+        let movedAny = false;
+        collectCollisionRoots(activeNode).forEach((candidate) => {
+            const targetBox = nodeCollisionBox(candidate);
+            if (!targetBox) return;
+            const vector = separationVector(activeBox, targetBox);
+            if (!vector) return;
+            shiftNodeCluster(candidate, vector.x, vector.y);
+            movedAny = true;
+        });
+
+        if (!movedAny) break;
+    }
+}
+
+function scheduleExpandedDirectoryCollisionResolution(node) {
+    if (!isExpandedDirectoryNode(node)) return;
+    expandedDirectoryCollisionNodeId = node.id();
+    if (expandedDirectoryCollisionFrame) return;
+
+    const schedule = typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame.bind(window)
+        : (callback) => window.setTimeout(callback, 16);
+
+    expandedDirectoryCollisionFrame = schedule(() => {
+        const nodeId = expandedDirectoryCollisionNodeId;
+        expandedDirectoryCollisionFrame = null;
+        expandedDirectoryCollisionNodeId = null;
+        if (!cy || !nodeId) return;
+        const activeNode = cy.getElementById(nodeId);
+        resolveExpandedDirectoryCollisions(activeNode);
+    });
+}
+
 async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
     if (!cy) return;
 
@@ -389,6 +680,7 @@ async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
     }
 
     discoveredLinks.clear();
+    linkRecordsBySourceTarget.clear();
     cy.elements().not('.mqtt-live, .td-live').remove();
     externalNodesLoaded = false;
 
@@ -668,7 +960,11 @@ function setupCtrlDragMoveHandlers() {
     });
 }
 
-function rememberLink(sourcePath, targetPath) {
+function edgeRecordKey(sourcePath, targetPath) {
+    return normalizePath(sourcePath) + "->" + normalizePath(targetPath);
+}
+
+function rememberLink(sourcePath, targetPath, record = null) {
     const source = normalizePath(sourcePath);
     const target = normalizePath(targetPath);
     if (!source || !target) return;
@@ -679,6 +975,61 @@ function rememberLink(sourcePath, targetPath) {
         discoveredLinks.set(source, targets);
     }
     targets.add(target);
+
+    if (record && typeof record === "object") {
+        const key = edgeRecordKey(source, target);
+        const records = linkRecordsBySourceTarget.get(key) || [];
+        const duplicate = records.some((item) => item.id === record.id);
+        if (!duplicate) records.push(record);
+        linkRecordsBySourceTarget.set(key, records);
+    }
+}
+
+function clearLinkRecordsForSource(sourcePath) {
+    const source = normalizePath(sourcePath);
+    if (!source) return;
+    for (const key of [...linkRecordsBySourceTarget.keys()]) {
+        if (key.startsWith(source + "->")) linkRecordsBySourceTarget.delete(key);
+    }
+    discoveredLinks.delete(source);
+}
+
+
+function makePersistedLinkRecord(edge) {
+    if (!edge || typeof edge !== "object") return null;
+    const hasMetadata = Boolean(
+        edge.linkKind ||
+        edge.linkProperty ||
+        edge.linkText ||
+        edge.displayText ||
+        edge.edgeLabel ||
+        (Array.isArray(edge.tags) && edge.tags.length) ||
+        (Array.isArray(edge.symbols) && edge.symbols.length)
+    );
+    if (!hasMetadata) return null;
+    const target = normalizePath(edge.target || "");
+    const record = {
+        id: "persisted:" + normalizePath(edge.source || "") + "->" + target,
+        recordIndex: 0,
+        sourcePath: normalizePath(edge.source || ""),
+        sourceFormat: "persisted",
+        linkKind: edge.linkKind || "link",
+        linkProperty: edge.linkProperty || "",
+        targetRaw: target,
+        targetKind: target.startsWith("external:") ? "external" : "internal",
+        targetPath: target,
+        linkText: edge.linkText || "",
+        tags: Array.isArray(edge.tags) ? edge.tags : [],
+        symbols: Array.isArray(edge.symbols) ? edge.symbols : [],
+        displayText: edge.displayText || "",
+        edgeLabel: edge.edgeLabel || "",
+        editableTarget: false,
+        editableText: false,
+        editableMetadata: false,
+        ranges: {}
+    };
+    record.edgeLabel = record.edgeLabel || makeEdgeLabel(record);
+    return record;
 }
 
 function ingestPersistedEdgeData(data) {
@@ -688,7 +1039,7 @@ function ingestPersistedEdgeData(data) {
     if (Array.isArray(data)) {
         for (const edge of data) {
             if (edge && typeof edge === 'object') {
-                rememberLink(edge.source, edge.target);
+                rememberLink(edge.source, edge.target, makePersistedLinkRecord(edge));
             }
         }
         return;
@@ -764,6 +1115,10 @@ function resolveVisibleTargetNode(targetPath) {
     return null;
 }
 
+function edgeLabelFromRecords(records = []) {
+    return [...new Set(records.map((record) => makeEdgeLabel(record)).filter(Boolean))].join(" | ");
+}
+
 function rebuildVisibleEdges() {
     if (!cy) return;
 
@@ -777,27 +1132,49 @@ function rebuildVisibleEdges() {
             if (!visibleTarget) continue;
             if (visibleSource === visibleTarget) continue;
 
-            const key = `${visibleSource}->${visibleTarget}`;
-            if (edgeMap.has(key)) continue;
+            const key = visibleSource + "->" + visibleTarget;
+            const records = [...(linkRecordsBySourceTarget.get(edgeRecordKey(sourcePath, targetPath)) || [])];
+            const existing = edgeMap.get(key);
+            if (existing) {
+                existing.data.linkRecords.push(...records);
+                existing.data.occurrenceCount = existing.data.linkRecords.length;
+                existing.data.edgeLabel = edgeLabelFromRecords(existing.data.linkRecords);
+                continue;
+            }
 
+            const edgeLabel = edgeLabelFromRecords(records);
+            const primary = records[0] || null;
             edgeMap.set(key, {
-                group: 'edges',
+                group: "edges",
                 data: {
-                    id: `edge-${visibleSource}-${visibleTarget}`,
+                    id: "edge-" + visibleSource + "-" + visibleTarget,
                     source: visibleSource,
-                    target: visibleTarget
+                    target: visibleTarget,
+                    sourcePath,
+                    targetPath,
+                    linkRecords: records,
+                    occurrenceCount: records.length,
+                    edgeLabel,
+                    linkKind: primary?.linkKind || "link",
+                    linkProperty: primary?.linkProperty || "",
+                    linkText: primary?.linkText || "",
+                    targetKind: primary?.targetKind || (String(targetPath).startsWith("external:") ? "external" : "internal"),
+                    tags: primary?.tags || [],
+                    symbols: primary?.symbols || [],
+                    displayText: primary?.displayText || ""
                 }
             });
         }
     }
 
     cy.batch(() => {
-        cy.edges().not('.mqtt-live, .td-live').remove();
+        cy.edges().not(".mqtt-live, .td-live").remove();
         if (edgeMap.size > 0) {
             cy.add([...edgeMap.values()]);
         }
     });
 }
+
 
 function buildGraphLayoutOptions({ fit = true } = {}) {
     // Use fcose for better compound-node packing and reduced wasted space.
@@ -943,10 +1320,99 @@ function applyBrokenLinkBadge(sourcePath) {
     node.data('hasBrokenLinks', count > 0 ? 1 : 0);
 }
 
-export async function initGraphView({ containerId, rootPath, statusElemId, mqttControlsId = null, mqttInspectorId = null }) {
+
+function escapeHtml(value = "") {
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+async function openGraphLinkPanel(panelName, displayName, offsetX = 0) {
+    const existing = document.querySelector(".panel[data-instance-name=\"" + panelName + "\"], [data-id=\"" + panelName + "\"]");
+    if (existing) {
+        existing.style.display = "flex";
+        existing.style.zIndex = "23000";
+        if (typeof window.highlightActiveCell === "function") {
+            const cell = existing.closest(".panel-cell");
+            if (cell) window.highlightActiveCell(cell);
+        }
+        if (panelName === "LinkViewer" && typeof window.updateLinkViewerPanel === "function") {
+            window.updateLinkViewerPanel(window.selectedGraphLink || null);
+        }
+        if (panelName === "LinkEditor" && typeof window.updateLinkEditorPanel === "function") {
+            window.updateLinkEditorPanel(window.selectedGraphLink || null);
+        }
+        return existing;
+    }
+
+    const { createPanelDOM } = await import("/panels/panelFactory.mjs");
+    const panelInst = await createPanelDOM(
+        panelName,
+        "nv-" + panelName.toLowerCase() + "-" + Date.now(),
+        "InfoPanel",
+        { displayName, layout: "floating" }
+    );
+    document.body.appendChild(panelInst.panel);
+    if (typeof panelInst.panel.__nvSetLayout === "function") {
+        panelInst.panel.__nvSetLayout("floating");
+    }
+    Object.assign(panelInst.panel.style, {
+        width: "min(460px, 92vw)",
+        height: "min(560px, 82vh)",
+        left: Math.max(24, Math.round(window.innerWidth * 0.52) + offsetX) + "px",
+        top: Math.max(28, Math.round(window.innerHeight * 0.12)) + "px",
+        zIndex: "23000",
+    });
+    return panelInst.panel;
+}
+
+window.openLinkViewerPanel = () => openGraphLinkPanel("LinkViewer", "Link Viewer", 0);
+window.openLinkEditorPanel = () => openGraphLinkPanel("LinkEditor", "Link Editor", 36);
+
+function renderGraphLinkInspector(selection) {
+    if (!linkInspectorElem) return;
+    const record = selection?.record || null;
+    if (!record) {
+        linkInspectorElem.style.display = "none";
+        linkInspectorElem.innerHTML = "";
+        return;
+    }
+
+    linkInspectorElem.style.display = "block";
+    const countText = selection.occurrenceCount > 1 ? " (" + selection.occurrenceCount + " links)" : "";
+    const targetLabel = record.targetKind === "external" ? record.targetRaw : record.targetPath;
+    linkInspectorElem.innerHTML = "<div style=\"font-weight:700;margin-bottom:4px;\">" + escapeHtml(summarizeLinkRecord(record)) + escapeHtml(countText) + "</div>" +
+        "<div style=\"color:#475569;margin-bottom:6px;\">" + escapeHtml(record.sourcePath) + " -> " + escapeHtml(targetLabel) + "</div>" +
+        "<div style=\"display:flex;gap:6px;flex-wrap:wrap;\">" +
+        "<button type=\"button\" data-link-panel=\"viewer\" style=\"font:inherit;padding:4px 7px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;\">Link Viewer</button>" +
+        "<button type=\"button\" data-link-panel=\"editor\" style=\"font:inherit;padding:4px 7px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;\">Link Editor</button>" +
+        "</div>";
+
+    const viewerBtn = linkInspectorElem.querySelector("[data-link-panel=\"viewer\"]");
+    const editorBtn = linkInspectorElem.querySelector("[data-link-panel=\"editor\"]");
+    viewerBtn?.addEventListener("click", () => window.openLinkViewerPanel?.());
+    editorBtn?.addEventListener("click", () => window.openLinkEditorPanel?.());
+}
+
+function bindGraphManagerLayerControls(container) {
+    const controlsEl = container || null;
+    mqttGraphLayer?.setControlsElement?.(controlsEl);
+    tdGraphLayer?.setControlsElement?.(controlsEl);
+}
+
+if (typeof window !== "undefined") {
+    window.bindGraphManagerLayerControls = bindGraphManagerLayerControls;
+}
+
+export async function initGraphView({ containerId, rootPath, statusElemId, mqttControlsId = null, mqttInspectorId = null, linkInspectorId = null }) {
     currentRootPath = normalizePath(rootPath);
     navigationState.setLastOpenedDirectory(currentRootPath, "GraphManager");
     discoveredLinks.clear();
+    linkRecordsBySourceTarget.clear();
+    linkInspectorElem = linkInspectorId ? document.getElementById(linkInspectorId) : null;
+    renderGraphLinkInspector(null);
     const container = document.getElementById(containerId);
     const statusElem = statusElemId ? document.getElementById(statusElemId) : null;
     const edgeStyleOverrides = await loadEdgeStyleOverrides();
@@ -972,14 +1438,14 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
             {
                 selector: 'node[type="directory"]',
                 style: {
-                    'background-color': '#ffca28',
+                    'background-color': 'data(directoryColor)',
                     'shape': 'round-rectangle',
                     // Keep unexpanded directories compact while allowing expanded ones
                     // to size naturally around their children.
                     'min-width': 64,
                     'min-height': 64,
                     'border-width': 1,
-                    'border-color': '#b58a19'
+                    'border-color': 'data(directoryBorderColor)'
                 }
             },
             {
@@ -993,26 +1459,26 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 selector: 'node[type="directory"][hasDirectoryImage = 1]',
                 style: {
                     'background-image': 'data(directoryImageUrl)',
-                    'background-fit': 'cover',
+                    'background-fit': 'contain',
                     'background-position-x': '50%',
                     'background-position-y': '50%',
                     'background-repeat': 'no-repeat',
                     'background-opacity': 1,
                     'border-width': 1,
-                    'border-color': '#b58a19'
+                    'border-color': 'data(directoryBorderColor)'
                 }
             },
             {
                 selector: ':parent',
                 style: {
-                    'background-opacity': 0.1,
-                    'background-color': '#ffca28',
-                    'border-color': '#ffca28',
-                    'border-width': 2,
+                    'background-opacity': 1,
+                    'background-color': 'data(directoryFillColor)',
+                    'border-color': 'data(directoryColor)',
+                    'border-width': 3,
                     'text-valign': 'top',
                     'text-halign': 'center',
-                    // Reduce wasted internal space while preserving label readability.
-                    'padding': 10,
+                    // Keep expanded directories visually nested instead of flush with the parent border.
+                    'padding': EXPANDED_DIRECTORY_PARENT_MARGIN,
                     'text-margin-y': 4,
                     'compound-sizing-wrt-labels': 'include'
                 }
@@ -1022,22 +1488,12 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 selector: 'node[type="directory"][hasDirectoryImage = 1]:parent',
                 style: {
                     'background-image': 'data(directoryImageUrl)',
-                    'background-fit': 'cover',
+                    'background-fit': 'contain',
                     'background-position-x': '50%',
                     'background-position-y': '50%',
                     'background-repeat': 'no-repeat',
-                    'background-opacity': 0.4
-                }
-            },
-            {
-                selector: 'node[type="directory"][hasDirectoryImage = 1]:parent',
-                style: {
-                    'background-image': 'data(directoryImageUrl)',
-                    'background-fit': 'cover',
-                    'background-position-x': '50%',
-                    'background-position-y': '50%',
-                    'background-repeat': 'no-repeat',
-                    'background-opacity': 0.35
+                    'background-opacity': 1,
+                    'background-image-opacity': 0.75
                 }
             },
             {
@@ -1137,7 +1593,26 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                     'control-point-weights': [0.25, 0.75],
                     'opacity': 0.8,
                     'arrow-scale': 1.2,
+                    'label': 'data(edgeLabel)',
+                    'font-size': 10,
+                    'font-weight': 600,
+                    'color': '#253045',
+                    'text-rotation': 'autorotate',
+                    'text-background-color': '#ffffff',
+                    'text-background-opacity': 0.86,
+                    'text-background-padding': 2,
+                    'text-margin-y': -8,
                     ...(edgeStyleOverrides || {})
+                }
+            },
+            {
+                selector: 'edge.nv-selected-link',
+                style: {
+                    'width': 4,
+                    'line-color': '#2563eb',
+                    'target-arrow-color': '#2563eb',
+                    'opacity': 1,
+                    'z-index': 30
                 }
             },
             ...MQTT_GRAPH_STYLE,
@@ -1176,6 +1651,22 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         }
     });
 
+    cy.on("tap", "edge", (evt) => {
+        const edge = evt.target;
+        cy.edges().removeClass("nv-selected-link");
+        edge.addClass("nv-selected-link");
+        const selection = buildSelectedGraphLink(edge.data(), 0);
+        setSelectedGraphLink(selection);
+        renderGraphLinkInspector(selection);
+    });
+
+    cy.on("tap", (evt) => {
+        if (evt.target !== cy) return;
+        cy.edges().removeClass("nv-selected-link");
+        setSelectedGraphLink(null);
+        renderGraphLinkInspector(null);
+    });
+
     cy.on('dblclick', 'node', async (evt) => {
         const node = evt.target;
         if (node.data('type') === 'directory') {
@@ -1184,20 +1675,37 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         }
     });
 
+
+    cy.on("drag", "node[type=\"directory\"]", (evt) => {
+        if (dragMoveState?.active) return;
+        scheduleExpandedDirectoryCollisionResolution(evt.target);
+    });
+
+    cy.on("free", "node[type=\"directory\"]", (evt) => {
+        if (dragMoveState?.active) return;
+        resolveExpandedDirectoryCollisions(evt.target);
+    });
+
     setupCtrlDragMoveHandlers();
 
-    attachMqttGraphLayer({
+    mqttGraphLayer?.cleanup?.();
+    tdGraphLayer?.cleanup?.();
+
+    const layerControlsEl = mqttControlsId ? document.getElementById(mqttControlsId) : null;
+    mqttGraphLayer = attachMqttGraphLayer({
         cy,
-        controlsEl: mqttControlsId ? document.getElementById(mqttControlsId) : null,
+        controlsEl: layerControlsEl,
         inspectorEl: mqttInspectorId ? document.getElementById(mqttInspectorId) : null,
         relayout: queueRelayout,
     });
 
     tdGraphLayer = attachThingDescriptionGraphLayer({
         cy,
-        controlsEl: mqttControlsId ? document.getElementById(mqttControlsId) : null,
+        controlsEl: layerControlsEl,
         relayout: queueRelayout,
     });
+    bindGraphManagerLayerControls(document.querySelector("[data-graph-manager-layer-controls]"));
+    window.dispatchEvent(new CustomEvent("graphManagerLayersReady"));
 
     await loadExternalNodes();
 
@@ -1226,7 +1734,8 @@ async function renderGraphData(files, parentPath) {
                 type: 'directory', 
                 fullPath: normalizedParentPath,
                 directoryImageUrl: currentDirectoryImage,
-                hasDirectoryImage: currentDirectoryImage ? 1 : 0
+                hasDirectoryImage: currentDirectoryImage ? 1 : 0,
+                ...directoryVisualData(normalizedParentPath)
             }
         });
     } else {
@@ -1259,12 +1768,13 @@ async function renderGraphData(files, parentPath) {
                         group: 'nodes',
                         data: {
                             id: fullPath,
-                        label: f.name,
-                        fullPath: fullPath,
+                            label: f.name,
+                            fullPath: fullPath,
                             type: f.isDirectory ? 'directory' : 'file',
                             parent: parentId,
                             directoryImageUrl,
                             hasDirectoryImage: directoryImageUrl ? 1 : 0,
+                            ...(f.isDirectory ? directoryVisualData(fullPath) : {}),
                             previewUrl,
                             hasPreview,
                             hasBrokenLinks: 0,
@@ -1287,12 +1797,14 @@ async function renderGraphData(files, parentPath) {
 
             if (!f.isDirectory) {
                 const ext = f.name.split('.').pop().toLowerCase();
-                if (ext === 'html' || ext === 'md') {
+                if (["html", "htm", "xhtml", "php", "md", "markdown"].includes(ext)) {
                     filesToScan.push(fullPath);
                 }
             }
         });
     });
+
+    updateDirectoryLevelColors();
 
     // Give newly added nodes a reasonable placement quickly.
     queueRelayout({ fit: false, reason: 'nodes-added' });
@@ -1322,26 +1834,38 @@ async function renderGraphData(files, parentPath) {
 async function handleLinkDiscovery(filePath) {
     const cleanSource = normalizePath(filePath);
     clearBrokenLinksForSource(cleanSource);
+    clearLinkRecordsForSource(cleanSource);
     try {
-        const links = await scanFileForLinks(cleanSource);
-        
-        if (links && Array.isArray(links)) {
-            for (const rawTarget of links) {
-                // External HTTP(S) links become external nodes + edges
+        const records = await scanFileForLinkRecords(cleanSource);
+
+        if (records && Array.isArray(records)) {
+            for (const record of records) {
+                const rawTarget = record.targetRaw;
+                if (!rawTarget) continue;
+
                 if (isHttpLink(rawTarget)) {
                     const extNode = makeExternalNodeFromUrl(rawTarget);
                     if (!extNode) continue;
                     addExternalNodesToGraph([extNode]);
                     await persistExternalNodes([extNode]);
-                    rememberLink(cleanSource, extNode.id);
-                    await saveFoundEdge({ source: cleanSource, target: extNode.id });
+                    rememberLink(cleanSource, extNode.id, record);
+                    await saveFoundEdge({
+                        source: cleanSource,
+                        target: extNode.id,
+                        linkKind: record.linkKind,
+                        linkProperty: record.linkProperty,
+                        linkText: record.linkText,
+                        tags: record.tags,
+                        symbols: record.symbols,
+                        displayText: record.displayText,
+                        edgeLabel: makeEdgeLabel(record)
+                    });
                     continue;
                 }
 
-                const resolvedTarget = resolveNotebookLink(cleanSource, rawTarget);
-                if (!resolvedTarget) continue;
+                const cleanTarget = normalizePath(linkRecordTargetId(record));
+                if (!cleanTarget) continue;
 
-                const cleanTarget = normalizePath(resolvedTarget);
                 const exists = await notebookAssetExists(cleanTarget);
                 if (!exists) {
                     rememberBrokenLink(cleanSource, cleanTarget);
@@ -1349,17 +1873,27 @@ async function handleLinkDiscovery(filePath) {
                     continue;
                 }
 
-                rememberLink(cleanSource, cleanTarget);
+                rememberLink(cleanSource, cleanTarget, record);
 
-                // Persist
-                await saveFoundEdge({ source: cleanSource, target: cleanTarget });
+                await saveFoundEdge({
+                    source: cleanSource,
+                    target: cleanTarget,
+                    linkKind: record.linkKind,
+                    linkProperty: record.linkProperty,
+                    linkText: record.linkText,
+                    tags: record.tags,
+                    symbols: record.symbols,
+                    displayText: record.displayText,
+                    edgeLabel: makeEdgeLabel(record)
+                });
             }
         }
         applyBrokenLinkBadge(cleanSource);
     } catch (err) {
-        console.error(`Link discovery failed for ${cleanSource}:`, err);
+        console.error("Link discovery failed for " + cleanSource + ":", err);
     }
 }
+
 
 async function toggleCompoundDirectory(node) {
     const path = node.data('fullPath');
@@ -1375,6 +1909,7 @@ async function toggleCompoundDirectory(node) {
 
     navigationState.setLastOpenedDirectory(path || "", "GraphManager");
 
+    updateDirectoryLevelColors();
     rebuildVisibleEdges();
     queueRelayout({ fit: true, reason: 'toggle-directory' });
 }

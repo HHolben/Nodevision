@@ -48,15 +48,13 @@ export function registerGraphExtras(app, ctx) {
       const combined = [...existingEdges, ...incomingEdges].filter((edge) => {
         return edge && typeof edge === "object" && typeof edge.source === "string" && typeof edge.target === "string";
       });
-      const seen = new Set();
-      const deduped = [];
+      const byKey = new Map();
       for (const edge of combined) {
         const key = edgeKey(edge);
         if (!edge.source || !edge.target) continue;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        deduped.push(edge);
+        byKey.set(key, { ...(byKey.get(key) || {}), ...edge });
       }
+      const deduped = [...byKey.values()];
 
       const tmpFile = `${targetFile}.tmp`;
       await fsPromises.writeFile(tmpFile, JSON.stringify(deduped, null, 2), "utf8");

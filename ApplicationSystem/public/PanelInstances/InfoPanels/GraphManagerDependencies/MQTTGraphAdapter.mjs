@@ -37,17 +37,30 @@ function addEdge(elements, ids, id, sourceNode, target, label) {
   elements.push({ group: 'edges', classes: 'mqtt-live', data: { id, source: sourceNode, target, label, layer: 'mqtt' } });
 }
 
+function ensureControlsSection(container) {
+  if (!container) return null;
+  let section = container.querySelector("[data-mqtt-layer-controls]");
+  if (!section) {
+    section = document.createElement("div");
+    section.dataset.mqttLayerControls = "true";
+    section.style.cssText = "display:flex;align-items:center;gap:10px;flex-wrap:wrap;";
+    container.appendChild(section);
+  }
+  return section;
+}
+
 function renderControls(container, state, render) {
-  if (!container) return;
-  container.innerHTML = `
-    <label style="display:flex;align-items:center;gap:5px;"><input data-mqtt-layer-devices type="checkbox" ${state.showDevices ? "checked" : ""}>MQTT Devices</label>
-    <label style="display:flex;align-items:center;gap:5px;"><input data-mqtt-layer-topics type="checkbox" ${state.showTopics ? "checked" : ""}>MQTT Topics</label>
+  const section = ensureControlsSection(container);
+  if (!section) return;
+  section.innerHTML = `
+    <label style="display:flex;align-items:center;gap:5px;white-space:nowrap;"><input data-mqtt-layer-devices type="checkbox" ${state.showDevices ? "checked" : ""}>MQTT Devices</label>
+    <label style="display:flex;align-items:center;gap:5px;white-space:nowrap;"><input data-mqtt-layer-topics type="checkbox" ${state.showTopics ? "checked" : ""}>MQTT Topics</label>
   `;
-  container.querySelector('[data-mqtt-layer-devices]')?.addEventListener('change', (event) => {
+  section.querySelector("[data-mqtt-layer-devices]")?.addEventListener("change", (event) => {
     state.showDevices = event.target.checked;
     render();
   });
-  container.querySelector('[data-mqtt-layer-topics]')?.addEventListener('change', (event) => {
+  section.querySelector("[data-mqtt-layer-topics]")?.addEventListener("change", (event) => {
     state.showTopics = event.target.checked;
     render();
   });
@@ -124,9 +137,10 @@ function elementsForSnapshot(snapshot, state) {
 }
 
 export function attachMqttGraphLayer({ cy, controlsEl, inspectorEl, relayout } = {}) {
-  if (!cy) return () => {};
+  if (!cy) return { setControlsElement: () => {}, cleanup: () => {} };
   const client = getMqttModelClient();
   const state = { showDevices: true, showTopics: true, snapshot: client.snapshot() };
+  let currentControlsEl = controlsEl || null;
 
   const render = () => {
     const { elements, ids } = elementsForSnapshot(state.snapshot, state);
@@ -141,7 +155,7 @@ export function attachMqttGraphLayer({ cy, controlsEl, inspectorEl, relayout } =
     relayout?.({ fit: false, reason: 'mqtt-layer' });
   };
 
-  renderControls(controlsEl, state, render);
+  renderControls(currentControlsEl, state, render);
   const unsubscribe = client.subscribe((snapshot) => {
     state.snapshot = snapshot;
     render();
@@ -153,10 +167,16 @@ export function attachMqttGraphLayer({ cy, controlsEl, inspectorEl, relayout } =
   });
 
   render();
-  return () => {
-    unsubscribe();
-    cy.off('tap', 'node[source="mqtt"]');
-    cy.elements('.mqtt-live').remove();
-    if (inspectorEl) inspectorEl.style.display = 'none';
+  return {
+    setControlsElement(container) {
+      currentControlsEl = container || null;
+      renderControls(currentControlsEl, state, render);
+    },
+    cleanup() {
+      unsubscribe();
+      cy.off("tap", "node[source=\"mqtt\"]");
+      cy.elements(".mqtt-live").remove();
+      if (inspectorEl) inspectorEl.style.display = "none";
+    },
   };
 }

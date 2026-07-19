@@ -208,6 +208,24 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "Link Viewer",
+    "content": "",
+    "panelTemplate": "LinkViewer",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/LinkViewer.mjs",
+    "replaceActive": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "Link Editor",
+    "content": "",
+    "panelTemplate": "LinkEditor",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/LinkEditor.mjs",
+    "replaceActive": true
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "File Manager",
     "content": "",
     "panelTemplate": "FileManager",
