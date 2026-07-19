@@ -16,6 +16,12 @@ const DEFAULT_DEDUPE_WINDOW_MS = 30_000;
 const DEFAULT_BIND_ADDRESS = "0.0.0.0";
 const DEFAULT_BROADCAST_ADDRESS = "255.255.255.255";
 const DISCOVERY_BEACON_WARN_BYTES = 1200;
+const UNAVAILABLE_DISCOVERY_ROUTE_ERROR_CODES = new Set([
+  "EADDRNOTAVAIL",
+  "EHOSTUNREACH",
+  "ENETDOWN",
+  "ENETUNREACH",
+]);
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.prototype.toString.call(value) === "[object Object]";
@@ -167,6 +173,11 @@ function debugLog(enabled, message, ...args) {
 
 function asErrorMessage(err) {
   return err?.message || String(err);
+}
+
+export function isUnavailableDiscoveryRouteError(err) {
+  const code = String(err?.code || "").trim();
+  return Boolean(code) && UNAVAILABLE_DISCOVERY_ROUTE_ERROR_CODES.has(code);
 }
 
 function rejectVerification(reason, detail = "", message = null) {
@@ -589,6 +600,10 @@ export function startPeerDiscoveryBroadcaster(options = {}) {
   let timer = null;
   const onError = typeof options.onError === "function" ? options.onError : null;
   socket.on("error", (err) => {
+    if (isUnavailableDiscoveryRouteError(err)) {
+      debugLog(debugEnabled, "Discovery route unavailable", asErrorMessage(err));
+      return;
+    }
     if (onError) onError(err);
   });
 
@@ -624,19 +639,24 @@ export function startPeerDiscoveryBroadcaster(options = {}) {
     const payloadBuffer = Buffer.from(JSON.stringify(wireBeacon), "utf8");
     let sentAnyDatagram = false;
     let lastSendError = null;
+    let lastReportableSendError = null;
+    const rememberSendError = (err) => {
+      lastSendError = err;
+      if (!isUnavailableDiscoveryRouteError(err)) lastReportableSendError = err;
+    };
     try {
       await sendDatagram(payloadBuffer, multicastGroup);
       sentAnyDatagram = true;
       debugLog(debugEnabled, "Beacon sent via multicast", `target=${multicastGroup}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
     } catch (multicastErr) {
-      lastSendError = multicastErr;
+      rememberSendError(multicastErr);
       debugLog(debugEnabled, "Multicast beacon send failed; attempting IPv4 broadcast fallback", asErrorMessage(multicastErr));
       try {
         await sendDatagram(payloadBuffer, broadcastAddress);
         sentAnyDatagram = true;
         debugLog(debugEnabled, "Beacon sent via broadcast fallback", `target=${broadcastAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
       } catch (broadcastErr) {
-        lastSendError = broadcastErr;
+        rememberSendError(broadcastErr);
         debugLog(debugEnabled, "IPv4 broadcast fallback failed; continuing with extra discovery targets", `target=${broadcastAddress}:${discoveryPort}`, asErrorMessage(broadcastErr));
       }
     }
@@ -647,12 +667,15 @@ export function startPeerDiscoveryBroadcaster(options = {}) {
         sentAnyDatagram = true;
         debugLog(debugEnabled, "Beacon sent via extra discovery target", `target=${targetAddress}:${discoveryPort}`, `bytes=${payloadBuffer.length}`);
       } catch (targetErr) {
-        lastSendError = targetErr;
+        rememberSendError(targetErr);
         debugLog(debugEnabled, "Extra discovery target send failed", `target=${targetAddress}:${discoveryPort}`, asErrorMessage(targetErr));
       }
     }
 
-    if (!sentAnyDatagram && lastSendError) throw lastSendError;
+    if (!sentAnyDatagram && lastReportableSendError) throw lastReportableSendError;
+    if (!sentAnyDatagram && lastSendError) {
+      debugLog(debugEnabled, "No discovery datagrams sent because discovery routes are unavailable", asErrorMessage(lastSendError));
+    }
   }
 
   const ready = new Promise((resolve, reject) => {

@@ -13,6 +13,7 @@ import {
   applyDiscoverySocketOptionsAfterBind,
   createDiscoveryBeacon,
   createDiscoveryDeduper,
+  isUnavailableDiscoveryRouteError,
   isSelfDiscoveryBeacon,
   normalizeDiscoveredPeer,
   parseAndVerifyDiscoveryDatagram,
@@ -235,6 +236,14 @@ async function main() {
   assert(
     socketCallOrder.join(",") === "setBroadcast,setMulticastTTL,setMulticastLoopback,addMembership",
     "Expected post-bind multicast option call order",
+  );
+  assert(
+    isUnavailableDiscoveryRouteError(Object.assign(new Error("send ENETUNREACH 192.168.55.100:39000"), { code: "ENETUNREACH" })) === true,
+    "Expected unreachable discovery route errors to be classified as unavailable",
+  );
+  assert(
+    isUnavailableDiscoveryRouteError(Object.assign(new Error("socket closed"), { code: "EBADF" })) === false,
+    "Expected non-route discovery errors to stay reportable",
   );
   assert(
     isSelfDiscoveryBeacon("nv_dev_receiver_trusted", "nv_dev_receiver_trusted") === true,
