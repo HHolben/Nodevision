@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs
 // This file defines browser-side Code Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
+import "/EditorSwitchGuard.mjs";
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus, setWordCountVisibility } from "/StatusBar.mjs";
@@ -1413,7 +1414,6 @@ function guardFileSwitch(nextPath, proceed) {
 }
 
 if (typeof window !== "undefined") {
-  window.__nvGuardFileSwitch = guardFileSwitch;
   window.isCodeEditorDirty = () => Boolean(window.__nvCodeEditorDirty);
   window.isCodeEditorActive = isCodeEditorActive;
 }

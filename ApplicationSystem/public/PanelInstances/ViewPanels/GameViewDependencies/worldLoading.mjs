@@ -342,6 +342,33 @@ function readPortalDestinationMode(def, sameWorld, linkedPortalId, spawn) {
   return "coordinate";
 }
 
+function readSpawnPointId(def, fallbackId = "") {
+  const candidates = [def?.spawnId, def?.spawnPointId, def?.spawnPoint, def?.id, def?.tag, def?.name, def?.label, fallbackId];
+  const explicit = candidates.find((value) => typeof value === "string" && value.trim());
+  return explicit ? explicit.trim() : "default";
+}
+
+function readSpawnYaw(def, fallback = 0) {
+  const yaw = Number(def?.spawnYaw ?? def?.yaw);
+  return Number.isFinite(yaw) ? yaw : fallback;
+}
+
+function readSpawnPosition(def) {
+  if (!Array.isArray(def?.position) || def.position.length < 3) return null;
+  const position = def.position.slice(0, 3).map((value) => Number(value));
+  return position.every(Number.isFinite) ? position : null;
+}
+
+function makeSpawnPointRef(def, fallbackId = "") {
+  const position = readSpawnPosition(def);
+  if (!position) return null;
+  return {
+    id: readSpawnPointId(def, fallbackId),
+    position,
+    yaw: readSpawnYaw(def, 0)
+  };
+}
+
 export function registerMetaWorldLayerBridge({ state, filePath, worldData, layerEntries, THREE, scene, objects, colliders, portals, spawnPoints, waterVolumes, camera }) {
   if (!worldData || !Array.isArray(layerEntries)) {
     clearActiveMetaWorldLayerBridge();
@@ -756,10 +783,14 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         mesh.userData.spawnYaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : 0;
         if (Array.isArray(spawnPoints)) {
           const spawnPointRef = {
-            id: def.spawnId,
-            position: [def.position[0], def.position[1], def.position[2]],
-            yaw: Number.isFinite(def.spawnYaw) ? def.spawnYaw : 0
+            id: readSpawnPointId(def, objectId),
+            position: [Number(def.position[0]), Number(def.position[1]), Number(def.position[2])],
+            yaw: readSpawnYaw(def, 0),
+            object3d: mesh,
+            objectId
           };
+          def.spawnId = spawnPointRef.id;
+          def.spawnYaw = spawnPointRef.yaw;
           spawnPoints.push(spawnPointRef);
           mesh.userData.spawnPointRef = spawnPointRef;
         }
@@ -1948,23 +1979,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     };
 
     const spawnCandidates = [];
-    const recordSpawnPoint = (def) => {
-      if (!Array.isArray(def?.position) || def.position.length < 3) return;
-      const id = typeof def.spawnId === "string"
-        ? def.spawnId
-        : typeof def.id === "string"
-          ? def.id
-          : typeof def.name === "string"
-            ? def.name
-            : typeof def.label === "string"
-              ? def.label
-              : null;
-      const yaw = Number.isFinite(def.spawnYaw) ? def.spawnYaw : (Number.isFinite(def.yaw) ? def.yaw : null);
-      const candidate = {
-        id,
-        position: [def.position[0], def.position[1], def.position[2]],
-        yaw
-      };
+    const recordSpawnPoint = (def, fallbackId = "") => {
+      const candidate = makeSpawnPointRef(def, fallbackId);
+      if (!candidate) return null;
+      def.spawnId = candidate.id;
+      def.spawnYaw = candidate.yaw;
       spawnCandidates.push(candidate);
       return candidate;
     };
@@ -1982,7 +2001,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       const portalDestinationMode = readPortalDestinationMode(def, sameWorld, portalLinkedPortalId, def.spawn);
       const portalSpawnPoint = def.spawnPoint ?? def.spawnId ?? null;
       const isSpawnPoint = def.type === "spawn" || def.tag === "spawn" || def.isSpawn === true;
-      const spawnCandidate = isSpawnPoint ? recordSpawnPoint(def) : null;
+      const spawnCandidate = isSpawnPoint ? recordSpawnPoint(def, layerObjectId) : null;
       const isLiquidDefinition = isLiquidMaterialDefinition(def);
       const physicsMaterialId = readResolvedPhysicsMaterialId(def);
       const isEquationInequalityDefinition = def.type === "equation-inequality"
@@ -2311,6 +2330,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         objects.push(mesh);
         layerEntries.push({ id: layerObjectId, def, object3d: mesh });
         if (isSpawnPoint && spawnCandidate) {
+          spawnCandidate.object3d = mesh;
+          spawnCandidate.objectId = layerObjectId;
+          spawnCandidate.position = [mesh.position.x, mesh.position.y, mesh.position.z];
           mesh.userData.isSpawn = true;
           mesh.userData.spawnId = spawnCandidate.id;
           mesh.userData.spawnYaw = Number.isFinite(spawnCandidate.yaw) ? spawnCandidate.yaw : 0;
@@ -2531,7 +2553,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
       if (!position && availableSpawns.length > 0) {
         if (spawnPointId) {
-          chosen = availableSpawns.find(point => point?.id === spawnPointId) || null;
+          chosen = availableSpawns.find(point => String(point?.id || "").trim() === spawnPointId)
+            || availableSpawns.find(point => String(point?.id || "").trim().toLowerCase() === spawnPointId.toLowerCase())
+            || null;
         }
         if (!chosen) {
           const idx = Math.floor(Math.random() * availableSpawns.length);

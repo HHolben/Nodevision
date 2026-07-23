@@ -7,7 +7,7 @@ import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayersContext.mjs";
 import { countWords } from "../FamilyEditorCommon.mjs";
 import { setStatus, setWordCount } from "/StatusBar.mjs";
-import { setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
+import { handleTableArrowKeyNavigation, setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
 import { installCartoonEditingBehavior } from "/ToolbarCallbacks/insert/cartoonTools.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
@@ -58,6 +58,9 @@ const HTML_TEXT_STYLE_SELECTOR = [
   "figcaption",
   ".nv-item-content"
 ].join(",");
+const HTML_TABLE_DIVIDER_HIT_PX = 6;
+const HTML_TABLE_MIN_COLUMN_WIDTH = 32;
+const HTML_TABLE_MIN_ROW_HEIGHT = 24;
 
 function ensureHTMLLayoutStyles() {
   if (document.getElementById("nv-html-layout-style")) return;
@@ -284,6 +287,17 @@ function ensureHTMLLayoutStyles() {
       overflow-wrap: anywhere;
       word-break: break-word;
     }
+    #wysiwyg.nv-table-divider-resize-col,
+    #wysiwyg.nv-table-divider-resizing-col {
+      cursor: col-resize;
+    }
+    #wysiwyg.nv-table-divider-resize-row,
+    #wysiwyg.nv-table-divider-resizing-row {
+      cursor: row-resize;
+    }
+    #wysiwyg.nv-table-divider-resizing {
+      user-select: none;
+    }
     #wysiwyg p,
     #wysiwyg div,
     #wysiwyg li,
@@ -425,6 +439,321 @@ function markHtmlEditorDirty(wysiwyg, filePath = "") {
   } catch {
     // Non-critical notification only.
   }
+}
+
+function normalizeDocumentMetadataTags(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
+  return String(value || "")
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function findHeadChild(headContainer, tagName, create = false) {
+  const tag = String(tagName || "").toLowerCase();
+  let el = Array.from(headContainer?.children || []).find((child) => child.tagName?.toLowerCase() === tag) || null;
+  if (!el && create && headContainer) {
+    el = document.createElement(tag);
+    headContainer.appendChild(el);
+  }
+  return el;
+}
+
+function findNamedMeta(headContainer, name, create = false) {
+  const wanted = String(name || "").toLowerCase();
+  let el = Array.from(headContainer?.querySelectorAll?.("meta") || [])
+    .find((meta) => String(meta.getAttribute("name") || "").toLowerCase() === wanted) || null;
+  if (!el && create && headContainer) {
+    el = document.createElement("meta");
+    el.setAttribute("name", wanted);
+    headContainer.appendChild(el);
+  }
+  return el;
+}
+
+function setHeadText(headContainer, tagName, value) {
+  const text = String(value || "").trim();
+  const el = findHeadChild(headContainer, tagName, Boolean(text));
+  if (!el) return;
+  if (!text) {
+    el.remove();
+    return;
+  }
+  el.textContent = text;
+}
+
+function setNamedMeta(headContainer, name, value) {
+  const text = String(value || "").trim();
+  const el = findNamedMeta(headContainer, name, Boolean(text));
+  if (!el) return;
+  if (!text) {
+    el.remove();
+    return;
+  }
+  el.setAttribute("content", text);
+}
+
+function readHtmlDocumentMetadata(headContainer) {
+  const title = findHeadChild(headContainer, "title")?.textContent || "";
+  const description = findNamedMeta(headContainer, "description")?.getAttribute("content") || "";
+  const author = findNamedMeta(headContainer, "author")?.getAttribute("content") || "";
+  const tags = normalizeDocumentMetadataTags(findNamedMeta(headContainer, "keywords")?.getAttribute("content") || "");
+  return {
+    formatLabel: "HTML document",
+    fields: ["title", "description", "author", "tags"],
+    title: title.trim(),
+    description: description.trim(),
+    author: author.trim(),
+    tags,
+  };
+}
+
+function applyHtmlDocumentMetadata(headContainer, patch = {}) {
+  setHeadText(headContainer, "title", patch.title);
+  setNamedMeta(headContainer, "description", patch.description);
+  setNamedMeta(headContainer, "author", patch.author);
+  setNamedMeta(headContainer, "keywords", normalizeDocumentMetadataTags(patch.tags).join(", "));
+  return readHtmlDocumentMetadata(headContainer);
+}
+
+function getHtmlEditorElementFromNode(node) {
+  return node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+}
+
+function getTableCellFromEditorTarget(wysiwyg, node) {
+  const el = getHtmlEditorElementFromNode(node);
+  const cell = el?.closest?.("td, th") || null;
+  return cell && wysiwyg?.contains?.(cell) ? cell : null;
+}
+
+function getTableColumnCount(table) {
+  return Math.max(0, ...Array.from(table?.rows || []).map((row) => row.cells.length));
+}
+
+function getTableColumnCells(table, columnIndex) {
+  return Array.from(table?.rows || [])
+    .map((row) => row.cells[columnIndex] || null)
+    .filter(Boolean);
+}
+
+function measureTableColumnWidth(table, columnIndex) {
+  const cell = getTableColumnCells(table, columnIndex)[0] || null;
+  const rect = cell?.getBoundingClientRect?.();
+  return Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(rect?.width || HTML_TABLE_MIN_COLUMN_WIDTH));
+}
+
+function applyTableColumnWidth(table, columnIndex, width) {
+  const px = `${Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(width))}px`;
+  for (const cell of getTableColumnCells(table, columnIndex)) {
+    cell.style.width = px;
+    cell.style.boxSizing = "border-box";
+  }
+}
+
+function freezeTableColumnWidths(table) {
+  if (!table) return;
+  const tableRect = table.getBoundingClientRect?.();
+  if (tableRect?.width > 0) table.style.width = `${Math.round(tableRect.width)}px`;
+  table.style.tableLayout = "fixed";
+  const columnCount = getTableColumnCount(table);
+  for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+    applyTableColumnWidth(table, columnIndex, measureTableColumnWidth(table, columnIndex));
+  }
+}
+
+function measureTableRowHeight(row) {
+  const rect = row?.getBoundingClientRect?.();
+  return Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(rect?.height || HTML_TABLE_MIN_ROW_HEIGHT));
+}
+
+function applyTableRowHeight(row, height) {
+  if (!row) return;
+  const px = `${Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(height))}px`;
+  row.style.height = px;
+  for (const cell of Array.from(row.cells || [])) {
+    cell.style.height = px;
+    cell.style.boxSizing = "border-box";
+  }
+}
+
+function resolveTableDividerResizeHit(wysiwyg, event) {
+  if (!wysiwyg || !event) return null;
+  const cell = getTableCellFromEditorTarget(wysiwyg, event.target);
+  const table = cell?.closest?.("table") || null;
+  if (!cell || !table || !wysiwyg.contains(table)) return null;
+
+  const rect = cell.getBoundingClientRect?.();
+  if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+
+  const rows = Array.from(table.rows || []);
+  const row = cell.parentElement;
+  const rowIndex = rows.indexOf(row);
+  const columnIndex = cell.cellIndex;
+  const hits = [];
+  const left = Math.abs(event.clientX - rect.left);
+  const right = Math.abs(event.clientX - rect.right);
+  const top = Math.abs(event.clientY - rect.top);
+  const bottom = Math.abs(event.clientY - rect.bottom);
+
+  if (left <= HTML_TABLE_DIVIDER_HIT_PX && columnIndex > 0) {
+    hits.push({ kind: "column", index: columnIndex - 1, distance: left, cell, table });
+  }
+  if (right <= HTML_TABLE_DIVIDER_HIT_PX && columnIndex >= 0) {
+    hits.push({ kind: "column", index: columnIndex, distance: right, cell, table });
+  }
+  if (top <= HTML_TABLE_DIVIDER_HIT_PX && rowIndex > 0) {
+    hits.push({ kind: "row", index: rowIndex - 1, distance: top, cell, table });
+  }
+  if (bottom <= HTML_TABLE_DIVIDER_HIT_PX && rowIndex >= 0) {
+    hits.push({ kind: "row", index: rowIndex, distance: bottom, cell, table });
+  }
+
+  hits.sort((a, b) => a.distance - b.distance || (a.kind === "column" ? -1 : 1));
+  return hits[0] || null;
+}
+
+function setTableDividerResizeCursor(wysiwyg, hit = null, resizing = false) {
+  if (!wysiwyg) return;
+  wysiwyg.classList.remove(
+    "nv-table-divider-resize-col",
+    "nv-table-divider-resize-row",
+    "nv-table-divider-resizing",
+    "nv-table-divider-resizing-col",
+    "nv-table-divider-resizing-row"
+  );
+  if (!hit) return;
+  wysiwyg.classList.add(resizing ? "nv-table-divider-resizing" : `nv-table-divider-resize-${hit.kind === "column" ? "col" : "row"}`);
+  if (resizing) wysiwyg.classList.add(`nv-table-divider-resizing-${hit.kind === "column" ? "col" : "row"}`);
+}
+
+function startTableDividerResize(wysiwyg, filePath, hit, startEvent) {
+  if (!hit?.table || !wysiwyg) return;
+  const table = hit.table;
+  const rows = Array.from(table.rows || []);
+  const startX = startEvent.clientX;
+  const startY = startEvent.clientY;
+  const tableStartRect = table.getBoundingClientRect?.();
+  const previousUserSelect = document.body.style.userSelect;
+  let moved = false;
+
+  setActiveTableCell(hit.cell);
+  updateToolbarState({ htmlTableSelected: true });
+  setTableDividerResizeCursor(wysiwyg, hit, true);
+  document.body.style.userSelect = "none";
+
+  let resizeState = null;
+  if (hit.kind === "column") {
+    freezeTableColumnWidths(table);
+    const columnCount = getTableColumnCount(table);
+    const leftIndex = Math.max(0, Math.min(hit.index, columnCount - 1));
+    const rightIndex = leftIndex + 1 < columnCount ? leftIndex + 1 : null;
+    const leftStart = measureTableColumnWidth(table, leftIndex);
+    const rightStart = rightIndex !== null ? measureTableColumnWidth(table, rightIndex) : 0;
+    resizeState = {
+      kind: "column",
+      leftIndex,
+      rightIndex,
+      leftStart,
+      rightStart,
+      total: leftStart + rightStart,
+      tableStartWidth: Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(tableStartRect?.width || table.offsetWidth || leftStart)),
+    };
+  } else {
+    const topIndex = Math.max(0, Math.min(hit.index, rows.length - 1));
+    const bottomIndex = topIndex + 1 < rows.length ? topIndex + 1 : null;
+    const topRow = rows[topIndex] || null;
+    const bottomRow = bottomIndex !== null ? rows[bottomIndex] : null;
+    const topStart = measureTableRowHeight(topRow);
+    const bottomStart = bottomRow ? measureTableRowHeight(bottomRow) : 0;
+    resizeState = {
+      kind: "row",
+      topRow,
+      bottomRow,
+      topStart,
+      bottomStart,
+      total: topStart + bottomStart,
+      tableStartHeight: Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(tableStartRect?.height || table.offsetHeight || topStart)),
+    };
+  }
+
+  const onMove = (moveEvent) => {
+    if (!resizeState) return;
+    const dx = moveEvent.clientX - startX;
+    const dy = moveEvent.clientY - startY;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) moved = true;
+
+    if (resizeState.kind === "column") {
+      if (resizeState.rightIndex !== null) {
+        const leftWidth = Math.max(
+          HTML_TABLE_MIN_COLUMN_WIDTH,
+          Math.min(resizeState.total - HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.leftStart + dx)
+        );
+        applyTableColumnWidth(table, resizeState.leftIndex, leftWidth);
+        applyTableColumnWidth(table, resizeState.rightIndex, resizeState.total - leftWidth);
+        table.style.width = `${resizeState.tableStartWidth}px`;
+      } else {
+        const nextWidth = Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.leftStart + dx);
+        applyTableColumnWidth(table, resizeState.leftIndex, nextWidth);
+        table.style.width = `${Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.tableStartWidth + (nextWidth - resizeState.leftStart))}px`;
+      }
+      return;
+    }
+
+    if (resizeState.bottomRow) {
+      const topHeight = Math.max(
+        HTML_TABLE_MIN_ROW_HEIGHT,
+        Math.min(resizeState.total - HTML_TABLE_MIN_ROW_HEIGHT, resizeState.topStart + dy)
+      );
+      applyTableRowHeight(resizeState.topRow, topHeight);
+      applyTableRowHeight(resizeState.bottomRow, resizeState.total - topHeight);
+      table.style.height = `${resizeState.tableStartHeight}px`;
+    } else {
+      const nextHeight = Math.max(HTML_TABLE_MIN_ROW_HEIGHT, resizeState.topStart + dy);
+      applyTableRowHeight(resizeState.topRow, nextHeight);
+      table.style.height = `${Math.max(HTML_TABLE_MIN_ROW_HEIGHT, resizeState.tableStartHeight + (nextHeight - resizeState.topStart))}px`;
+    }
+  };
+
+  const finish = () => {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", finish);
+    window.removeEventListener("pointercancel", finish);
+    document.body.style.userSelect = previousUserSelect;
+    setTableDividerResizeCursor(wysiwyg, null);
+    if (moved) markHtmlEditorDirty(wysiwyg, filePath);
+  };
+
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", finish);
+  window.addEventListener("pointercancel", finish);
+}
+
+function registerTableDividerResizing(wysiwyg, filePath = "") {
+  if (!wysiwyg) return () => {};
+
+  const onPointerMove = (event) => {
+    setTableDividerResizeCursor(wysiwyg, resolveTableDividerResizeHit(wysiwyg, event));
+  };
+  const onPointerLeave = () => setTableDividerResizeCursor(wysiwyg, null);
+  const onPointerDown = (event) => {
+    if (event.button !== 0) return;
+    const hit = resolveTableDividerResizeHit(wysiwyg, event);
+    if (!hit) return;
+    event.preventDefault();
+    event.stopPropagation();
+    startTableDividerResize(wysiwyg, filePath, hit, event);
+  };
+
+  wysiwyg.addEventListener("pointermove", onPointerMove);
+  wysiwyg.addEventListener("pointerleave", onPointerLeave);
+  wysiwyg.addEventListener("pointerdown", onPointerDown, true);
+
+  return () => {
+    wysiwyg.removeEventListener("pointermove", onPointerMove);
+    wysiwyg.removeEventListener("pointerleave", onPointerLeave);
+    wysiwyg.removeEventListener("pointerdown", onPointerDown, true);
+    setTableDividerResizeCursor(wysiwyg, null);
+  };
 }
 
 function sanitizeCssFontValue(value) {
@@ -4104,6 +4433,10 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLTableToolbar();
     container.__cleanupHTMLTableToolbar = null;
   }
+  if (typeof container.__cleanupHTMLTableDividerResizing === "function") {
+    container.__cleanupHTMLTableDividerResizing();
+    container.__cleanupHTMLTableDividerResizing = null;
+  }
   if (typeof container.__cleanupHTMLCartoonToolbar === "function") {
     container.__cleanupHTMLCartoonToolbar();
     container.__cleanupHTMLCartoonToolbar = null;
@@ -4160,6 +4493,7 @@ export async function renderEditor(filePath, container, options = {}) {
   wysiwyg.style.wordBreak = "break-word";
   wrapper.appendChild(wysiwyg);
   window.__nvTableEditorRoot = wysiwyg;
+  container.__cleanupHTMLTableDividerResizing = registerTableDividerResizing(wysiwyg, filePath);
 
   // Hidden script container
   const hidden = document.createElement("div");
@@ -4198,8 +4532,10 @@ export async function renderEditor(filePath, container, options = {}) {
   wysiwyg.addEventListener("click", updateTableSelectionFromEvent);
   wysiwyg.addEventListener("keyup", updateTableSelectionFromSelection);
   wysiwyg.addEventListener("focusin", updateTableSelectionFromSelection);
+  wysiwyg.addEventListener("keydown", handleTableArrowKeyNavigation);
   document.addEventListener("selectionchange", updateTableSelectionFromSelection);
   container.__cleanupHTMLTableToolbar = () => {
+    wysiwyg.removeEventListener("keydown", handleTableArrowKeyNavigation);
     document.removeEventListener("selectionchange", updateTableSelectionFromSelection);
     if (window.__nvTableEditorRoot === wysiwyg) window.__nvTableEditorRoot = null;
     if (window.__nvHtmlTableActiveCell && wysiwyg.contains(window.__nvHtmlTableActiveCell)) {
@@ -4365,7 +4701,31 @@ export async function renderEditor(filePath, container, options = {}) {
       applyDocumentBackground: (options) => applyDocumentBackgroundToWysiwyg(wysiwyg, options),
       readDocumentBackground: () => readDocumentBackgroundFromWysiwyg(wysiwyg),
       markDirty: () => markHtmlEditorDirty(wysiwyg, filePath),
+      readDocumentMetadata: () => readHtmlDocumentMetadata(headClone),
+      applyDocumentMetadata: (patch) => {
+        const metadata = applyHtmlDocumentMetadata(headClone, patch);
+        markHtmlEditorDirty(wysiwyg, filePath);
+        return metadata;
+      },
     });
+
+    window.NodevisionMetadataTools = {
+      owner: wysiwyg,
+      formatLabel: editorMode === "EPUBediting" ? "EPUB chapter" : "HTML document",
+      fields: ["title", "description", "author", "tags"],
+      readMetadata: () => ({
+        ...readHtmlDocumentMetadata(headClone),
+        formatLabel: editorMode === "EPUBediting" ? "EPUB chapter" : "HTML document",
+      }),
+      applyMetadata: (patch) => {
+        const metadata = applyHtmlDocumentMetadata(headClone, patch);
+        markHtmlEditorDirty(wysiwyg, filePath);
+        return {
+          ...metadata,
+          formatLabel: editorMode === "EPUBediting" ? "EPUB chapter" : "HTML document",
+        };
+      },
+    };
 
     updateWordCount();
 

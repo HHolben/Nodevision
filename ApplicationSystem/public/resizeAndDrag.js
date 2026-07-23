@@ -10,22 +10,35 @@ export function makeResizableAndDraggable(element, dockCells = []) {
   let originalY = 0;
   let mouseX = 0;
   let mouseY = 0;
+  let activeResizePointerId = null;
 
   const resizeHandle = element.querySelector('.resize-handle');
   const dragBar = element.querySelector('.drag-bar');
 
-  resizeHandle.addEventListener('mousedown', function(e) {
-    e.preventDefault();
-    isResizing = true;
-    originalWidth = element.offsetWidth;
-    originalHeight = element.offsetHeight;
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    document.addEventListener('mousemove', resize);
-    document.addEventListener('mouseup', stopResize);
-  });
+  if (resizeHandle) {
+    resizeHandle.style.touchAction = 'none';
+    resizeHandle.style.userSelect = 'none';
 
-  dragBar.addEventListener('mousedown', function(e) {
+    resizeHandle.addEventListener('pointerdown', function(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (activeResizePointerId !== null) return;
+      e.preventDefault();
+      isResizing = true;
+      activeResizePointerId = e.pointerId;
+      originalWidth = element.offsetWidth;
+      originalHeight = element.offsetHeight;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      document.body.style.cursor = 'nwse-resize';
+      document.body.style.userSelect = 'none';
+      resizeHandle.setPointerCapture?.(e.pointerId);
+      document.addEventListener('pointermove', resize);
+      document.addEventListener('pointerup', stopResize);
+      document.addEventListener('pointercancel', stopResize);
+    });
+  }
+
+  dragBar?.addEventListener('mousedown', function(e) {
     e.preventDefault();
     isDragging = true;
     originalX = element.offsetLeft;
@@ -38,18 +51,26 @@ export function makeResizableAndDraggable(element, dockCells = []) {
   });
 
   function resize(e) {
-    if (isResizing) {
-      const width = originalWidth + (e.clientX - mouseX);
-      const height = originalHeight + (e.clientY - mouseY);
-      element.style.width = width + 'px';
-      element.style.height = height + 'px';
-    }
+    if (!isResizing) return;
+    if (e.pointerId !== activeResizePointerId) return;
+    e.preventDefault();
+    const width = originalWidth + (e.clientX - mouseX);
+    const height = originalHeight + (e.clientY - mouseY);
+    element.style.width = width + 'px';
+    element.style.height = height + 'px';
   }
 
-  function stopResize() {
+  function stopResize(e) {
+    if (!isResizing) return;
+    if (e?.pointerId !== undefined && e.pointerId !== activeResizePointerId) return;
+    resizeHandle?.releasePointerCapture?.(activeResizePointerId);
     isResizing = false;
-    document.removeEventListener('mousemove', resize);
-    document.removeEventListener('mouseup', stopResize);
+    activeResizePointerId = null;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    document.removeEventListener('pointermove', resize);
+    document.removeEventListener('pointerup', stopResize);
+    document.removeEventListener('pointercancel', stopResize);
   }
 
   function drag(e) {

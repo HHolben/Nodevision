@@ -6,6 +6,7 @@ export function makeGridResizable(root, options = {}) {
   const dividers = root.querySelectorAll(".divider");
 
   let isDragging = false;
+  let activePointerId = null;
   let currentDivider = null;
   let orientation = null;
   let leftPane, rightPane, topPane, bottomPane;
@@ -22,17 +23,28 @@ export function makeGridResizable(root, options = {}) {
       height: "100vh",
       cursor,
       zIndex: 9999,
+      touchAction: "none",
+      userSelect: "none",
     });
     document.body.appendChild(overlay);
     return overlay;
   }
 
   dividers.forEach(divider => {
-    divider.addEventListener("mousedown", e => {
+    divider.style.touchAction = "none";
+    divider.style.userSelect = "none";
+
+    divider.addEventListener("pointerdown", e => {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (activePointerId !== null) return;
       e.preventDefault();
       isDragging = true;
+      activePointerId = e.pointerId;
       currentDivider = divider;
       orientation = divider.dataset.orientation;
+      document.body.style.cursor = orientation === "vertical" ? "ew-resize" : "ns-resize";
+      document.body.style.userSelect = "none";
+      divider.setPointerCapture?.(e.pointerId);
 
       if (orientation === "vertical") {
         leftPane = divider.previousElementSibling;
@@ -54,8 +66,10 @@ export function makeGridResizable(root, options = {}) {
     });
   });
 
-  document.addEventListener("mousemove", e => {
+  document.addEventListener("pointermove", e => {
     if (!isDragging) return;
+    if (e.pointerId !== activePointerId) return;
+    e.preventDefault();
 
     if (orientation === "vertical") {
       const deltaX = e.clientX - startX;
@@ -78,13 +92,21 @@ export function makeGridResizable(root, options = {}) {
     }
   });
 
-  document.addEventListener("mouseup", () => {
+  function stopDragging(e) {
     if (!isDragging) return;
+    if (e?.pointerId !== undefined && e.pointerId !== activePointerId) return;
+    currentDivider?.releasePointerCapture?.(activePointerId);
     isDragging = false;
+    activePointerId = null;
     currentDivider = null;
     orientation = null;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
 
     const overlay = document.getElementById("resize-overlay");
     if (overlay) overlay.remove();
-  });
+  }
+
+  document.addEventListener("pointerup", stopDragging);
+  document.addEventListener("pointercancel", stopDragging);
 }

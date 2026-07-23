@@ -1,5 +1,5 @@
 [
-  
+
 {
   "ToolbarCategory": "View",
   "heading": "Code Editing",
@@ -65,6 +65,35 @@
     "callbackKey": "editEquationHere",
     "modes": ["HTMLediting", "EPUBediting", "GraphicalEditing"],
     "conditions": null
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit",
+    "heading": "Metadata",
+    "callbackKey": "openMetadataToolbar",
+    "modes": ["HTMLediting", "HTMLviewing", "EPUBediting", "SVG Editing", "SCADediting", "JSONEditing", "CIRediting", "ICSCalendarEditing"],
+    "shortLabel": "Meta",
+    "preventDropdown": true,
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Metadata",
+    "heading": "Document Metadata",
+    "content": "<div id=\"nv-metadata-toolbar\"></div>",
+    "script": "metadataToolbar.mjs",
+    "modes": ["HTMLediting", "HTMLviewing", "EPUBediting", "SVG Editing", "SCADediting", "JSONEditing", "CIRediting", "ICSCalendarEditing"],
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit",
+    "heading": "Texture",
+    "callbackKey": "objOpenTextureTools",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "icon": "icons/3Dmodel.png",
+    "shortLabel": "Tex"
   },
   {
     "ToolbarCategory": "Edit",
@@ -511,8 +540,7 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Boolean Operations",
-    "modes": ["SCADediting"],
-    "conditions": { "scadShapeSelected": true },
+    "modes": ["STLediting", "OBJediting", "SCADediting"],
     "preventDropdown": true
   },
   {
@@ -541,6 +569,60 @@
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
     "conditions": { "scadShapeSelected": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Union",
+    "callbackKey": "stlUnion",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "conditions": { "stlHasSelection": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Difference",
+    "callbackKey": "stlDifference",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "conditions": { "stlHasSelection": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Intersection",
+    "callbackKey": "stlIntersection",
+    "routeToActivePanel": true,
+    "modes": ["STLediting"],
+    "conditions": { "stlHasSelection": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Union",
+    "callbackKey": "objUnion",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "conditions": { "objCanBoolean": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Difference",
+    "callbackKey": "objDifference",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "conditions": { "objCanBoolean": true }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Boolean Operations",
+    "heading": "Intersection",
+    "callbackKey": "objIntersection",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "conditions": { "objCanBoolean": true }
   },
   {
     "ToolbarCategory": "Edit",

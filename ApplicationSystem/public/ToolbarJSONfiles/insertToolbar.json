@@ -14,6 +14,25 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Citation",
+      "callbackKey": "openCitationToolbar",
+      "modes": ["HTMLediting", "HTMLviewing", "EPUBediting"],
+      "shortLabel": "Cit",
+      "preventDropdown": true,
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Citation",
+      "heading": "Insert web source",
+      "content": "<div id=\"nv-citation-toolbar\"></div>",
+      "script": "citationToolbar.mjs",
+      "modes": ["HTMLediting", "HTMLviewing", "EPUBediting"],
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Import Asset",
       "script": "importAssetWidget.mjs",
       "modes": ["HTMLediting", "HTMLviewing", "3D World Viewing", "VR World Editing", "Virtual World Editing"],

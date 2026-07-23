@@ -149,6 +149,7 @@ export async function renderEditor(filePath, container) {
     renderCalendar(state);
     updateEventEditorPanel(state);
     configureToolbarIntegration(state);
+    installCalendarMetadataTools(state);
     setWordCount(0);
   } catch (error) {
     setWordCount(0);
@@ -196,8 +197,86 @@ function configureToolbarIntegration(state) {
   }
 }
 
+function normalizeMetadataTags(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
+  return String(value || "")
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function readCalendarMetadataProperty(doc, names) {
+  ensureCalendarEnvelope(doc);
+  const wanted = new Set(names.map((name) => String(name || "").toUpperCase()));
+  for (const section of doc.sections || []) {
+    if (section.type !== "outside") continue;
+    for (const line of section.lines || []) {
+      const parsed = parsePropertyLine(line);
+      if (parsed && wanted.has(parsed.name)) return unescapeICalText(parsed.value || "").trim();
+    }
+  }
+  return "";
+}
+
+function upsertCalendarMetadataProperty(doc, name, value) {
+  ensureCalendarEnvelope(doc);
+  const targetName = String(name || "").toUpperCase();
+  const cleanValue = String(value || "").trim();
+  let insertionSection = (doc.sections || []).find((section) => section.type === "outside") || null;
+  if (!insertionSection) {
+    insertionSection = { type: "outside", lines: ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Nodevision//ICS Calendar Editor//EN", "END:VCALENDAR"] };
+    doc.sections.unshift(insertionSection);
+  }
+
+  for (const section of doc.sections || []) {
+    if (section.type !== "outside") continue;
+    section.lines = (section.lines || []).filter((line) => parsePropertyLine(line)?.name !== targetName);
+  }
+
+  if (!cleanValue) return;
+  const line = `${targetName}:${escapeICalText(cleanValue)}`;
+  const lines = insertionSection.lines || [];
+  const endIndex = lines.findIndex((item) => String(item || "").trim().toUpperCase() === "END:VCALENDAR");
+  if (endIndex >= 0) lines.splice(endIndex, 0, line);
+  else lines.push(line);
+  insertionSection.lines = lines;
+}
+
+function readCalendarDocumentMetadata(state) {
+  return {
+    formatLabel: "ICS calendar",
+    fields: ["title", "description", "author", "tags"],
+    title: readCalendarMetadataProperty(state.calendarDoc, ["X-WR-CALNAME", "NAME"]),
+    description: readCalendarMetadataProperty(state.calendarDoc, ["X-WR-CALDESC", "DESCRIPTION"]),
+    author: readCalendarMetadataProperty(state.calendarDoc, ["X-NODEVISION-AUTHOR"]),
+    tags: normalizeMetadataTags(readCalendarMetadataProperty(state.calendarDoc, ["X-NODEVISION-TAGS"])),
+  };
+}
+
+function installCalendarMetadataTools(state) {
+  window.NodevisionMetadataTools = {
+    owner: state,
+    formatLabel: "ICS calendar",
+    fields: ["title", "description", "author", "tags"],
+    readMetadata: () => readCalendarDocumentMetadata(state),
+    applyMetadata: (patch = {}) => {
+      upsertCalendarMetadataProperty(state.calendarDoc, "X-WR-CALNAME", patch.title);
+      upsertCalendarMetadataProperty(state.calendarDoc, "X-WR-CALDESC", patch.description);
+      upsertCalendarMetadataProperty(state.calendarDoc, "X-NODEVISION-AUTHOR", patch.author);
+      upsertCalendarMetadataProperty(state.calendarDoc, "X-NODEVISION-TAGS", normalizeMetadataTags(patch.tags).join(", "));
+      setDirty(state, true);
+      setStatus(state, "Metadata updated.", "info");
+      return readCalendarDocumentMetadata(state);
+    },
+  };
+}
+
 function cleanupRuntime(state) {
   if (!state) return;
+
+  if (window.NodevisionMetadataTools?.owner === state) {
+    window.NodevisionMetadataTools = undefined;
+  }
 
   if (state.currentTimeIntervalId) {
     clearInterval(state.currentTimeIntervalId);

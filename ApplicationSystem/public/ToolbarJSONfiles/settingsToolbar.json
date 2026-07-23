@@ -30,6 +30,12 @@
     "ToolbarCategory": "settings",
     "callbackKey": "openSoundSettings"
   },
+  {
+    "heading": "Timeout",
+    "icon": "icons/EditIcon.png",
+    "ToolbarCategory": "settings",
+    "callbackKey": "Timeout"
+  },
 
   {
     "heading": "Open Settings",

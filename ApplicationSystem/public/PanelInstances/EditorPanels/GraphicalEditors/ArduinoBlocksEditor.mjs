@@ -738,54 +738,28 @@ function installStyles(host) {
   const style = document.createElement("style");
   style.textContent = `
     .nv-arduino-panel {
-      display: grid;
-      grid-template-columns: minmax(320px, 1fr) minmax(240px, 320px);
-      gap: 10px;
+      display: flex;
+      flex-direction: column;
       height: 100%;
       min-height: 0;
       color: #102030;
     }
-    .nv-arduino-placement-panel,
-    .nv-arduino-side-panel {
+    .nv-arduino-placement-panel {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
       min-width: 0;
       min-height: 0;
+      width: 100%;
       border: 1px solid #c7d1dc;
       border-radius: 8px;
       background: #fff;
       overflow: hidden;
     }
-    .nv-arduino-placement-panel {
-      display: flex;
-      flex-direction: column;
-    }
     .nv-arduino-blockly-host {
       flex: 1;
       min-height: 0;
       width: 100%;
-      background: #fff;
-    }
-    .nv-arduino-side-panel {
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
-    }
-    .nv-arduino-side-title {
-      margin: 0;
-      padding: 10px;
-      border-bottom: 1px solid #dbe3eb;
-      font: 700 13px/1.2 system-ui, sans-serif;
-    }
-    .nv-arduino-preview-wrap { min-height: 0; padding: 10px; }
-    .nv-arduino-preview {
-      width: 100%;
-      height: 100%;
-      min-height: 220px;
-      box-sizing: border-box;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 7px;
-      resize: none;
-      font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      color: #111827;
       background: #fff;
     }
     .nv-arduino-convert {
@@ -806,9 +780,6 @@ function installStyles(host) {
       cursor: pointer;
       min-height: 28px;
       font: 12px/1.2 system-ui, sans-serif;
-    }
-    @media (max-width: 900px) {
-      .nv-arduino-panel { grid-template-columns: 1fr; }
     }
   `;
   host.appendChild(style);
@@ -851,7 +822,6 @@ export async function renderEditor(filePath, container) {
     originalText,
     protectOriginal: !loadedBlocklyState && originalText.trim().length > 0,
     dirty: false,
-    preview: null,
   };
 
   function openCategory(heading) {
@@ -860,13 +830,6 @@ export async function renderEditor(filePath, container) {
     }));
     status.textContent = `${heading} blocks ready`;
     updateToolbar();
-  }
-
-  function refreshPreview() {
-    if (!state.preview) return;
-    state.preview.value = state.protectOriginal
-      ? state.originalText
-      : generateArduinoCodeFromWorkspace(state.blocklyWorkspace);
   }
 
   function currentBlocklyState() {
@@ -907,7 +870,6 @@ export async function renderEditor(filePath, container) {
     state.protectOriginal = false;
     state.dirty = true;
     status.textContent = message || "Arduino sketch changed";
-    refreshPreview();
     syncSaveHooks();
     updateToolbarState({ fileIsDirty: true });
   }
@@ -980,25 +942,6 @@ export async function renderEditor(filePath, container) {
     blocklyHost.className = "nv-arduino-blockly-host";
     placement.appendChild(blocklyHost);
     root.appendChild(placement);
-
-    const side = document.createElement("aside");
-    side.className = "nv-arduino-side-panel";
-
-    const title = document.createElement("h3");
-    title.className = "nv-arduino-side-title";
-    title.textContent = "Arduino Code";
-    side.appendChild(title);
-
-    const previewWrap = document.createElement("div");
-    previewWrap.className = "nv-arduino-preview-wrap";
-    const preview = document.createElement("textarea");
-    preview.className = "nv-arduino-preview";
-    preview.readOnly = true;
-    previewWrap.appendChild(preview);
-    side.appendChild(previewWrap);
-    state.preview = preview;
-
-    root.appendChild(side);
     body.appendChild(root);
 
     state.blocklyWorkspace = Blockly.inject(blocklyHost, {
@@ -1020,7 +963,6 @@ export async function renderEditor(filePath, container) {
     state.resizeObserver.observe(blocklyHost);
     setTimeout(() => Blockly.svgResize(state.blocklyWorkspace), 0);
 
-    refreshPreview();
     syncSaveHooks();
   }
 

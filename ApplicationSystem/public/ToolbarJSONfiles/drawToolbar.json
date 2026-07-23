@@ -137,6 +137,58 @@
     "shortLabel": "Sav"
   },
   {
+    "heading": "OBJ Mesh",
+    "parentHeading": "Draw",
+    "preventDropdown": true,
+    "modes": ["OBJediting"],
+    "shortLabel": "OBJ"
+  },
+  {
+    "heading": "Recenter View",
+    "parentHeading": "OBJ Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "objRecenter",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "shortLabel": "Ctr"
+  },
+  {
+    "heading": "Clear Selection",
+    "parentHeading": "OBJ Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "objClearSelection",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "shortLabel": "Clr"
+  },
+  {
+    "heading": "Grab",
+    "parentHeading": "OBJ Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "objGrab",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "shortLabel": "G"
+  },
+  {
+    "heading": "Extrude",
+    "parentHeading": "OBJ Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "objExtrude",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "shortLabel": "Ext"
+  },
+  {
+    "heading": "Save OBJ",
+    "parentHeading": "OBJ Mesh",
+    "ToolbarCategory": "draw",
+    "callbackKey": "objSave",
+    "routeToActivePanel": true,
+    "modes": ["OBJediting"],
+    "shortLabel": "Sav"
+  },
+  {
     "heading": "Color",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",

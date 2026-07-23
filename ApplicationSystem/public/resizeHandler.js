@@ -1,22 +1,35 @@
 // Nodevision/ApplicationSystem/public/resizeHandler.js
-// This file defines browser-side resize Handler logic for the Nodevision UI. It renders interface components and handles user interactions.
-// public/resizeHandler.js
-// Purpose: TODO: Add description of module purpose
+// Browser-side resize handling for the legacy two-column container view.
 
 document.addEventListener('DOMContentLoaded', function () {
     const divider = document.getElementById('divider');
     const containerLeft = document.querySelector('.container-left');
     const containerRight = document.querySelector('.container-right');
     const contentFrame = document.getElementById('content-frame');
-    let isResizing = false;
+    if (!divider || !containerLeft || !containerRight || !contentFrame) return;
 
-    divider.addEventListener('mousedown', function (e) {
+    let isResizing = false;
+    let activePointerId = null;
+
+    divider.style.touchAction = 'none';
+    divider.style.userSelect = 'none';
+
+    divider.addEventListener('pointerdown', function (e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        if (activePointerId !== null) return;
         isResizing = true;
+        activePointerId = e.pointerId;
         contentFrame.style.pointerEvents = 'none';
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+        divider.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
     });
 
-    document.addEventListener('mousemove', function (e) {
+    document.addEventListener('pointermove', function (e) {
         if (!isResizing) return;
+        if (e.pointerId !== activePointerId) return;
+        e.preventDefault();
         const offsetRight = document.body.offsetWidth - e.clientX;
         const offsetLeft = e.clientX;
         containerLeft.style.width = `${offsetLeft}px`;
@@ -24,25 +37,17 @@ document.addEventListener('DOMContentLoaded', function () {
         contentFrame.style.width = `${containerRight.offsetWidth}px`;
     });
 
-    document.addEventListener('mouseup', function () {
-        isResizing = false;
-        contentFrame.style.pointerEvents = 'auto';
-    });
-});
-
-
-    function resize(e) {
+    function stopResize(e) {
         if (!isResizing) return;
-        let offsetRight = document.body.offsetWidth - (e.clientX - document.body.offsetLeft);
-        containerLeft.style.width = `calc(100% - ${offsetRight}px)`;
-        containerRight.style.width = `${offsetRight}px`;
-        let iframeWidth = containerRight.offsetWidth;
-        contentFrame.style.width = `${iframeWidth}px`;
+        if (e?.pointerId !== undefined && e.pointerId !== activePointerId) return;
+        divider.releasePointerCapture?.(activePointerId);
+        isResizing = false;
+        activePointerId = null;
+        contentFrame.style.pointerEvents = 'auto';
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
     }
 
-    function stopResize() {
-        isResizing = false;
-        contentFrame.style.pointerEvents = 'auto';
-        document.removeEventListener('mousemove', resize);
-        document.removeEventListener('mouseup', stopResize);
-    }
+    document.addEventListener('pointerup', stopResize);
+    document.addEventListener('pointercancel', stopResize);
+});

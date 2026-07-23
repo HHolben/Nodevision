@@ -11,14 +11,99 @@ function clampNumber(value, { min = -Infinity, max = Infinity } = {}) {
   return Math.min(max, Math.max(min, n));
 }
 
-function rgbaToHex(value, fallback = "#000000") {
+function clampTransparency(value) {
+  return clampNumber(value, { min: 0, max: 100 }) ?? 0;
+}
+
+function hexToRgb(value) {
   const text = String(value || "").trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(text)) return text;
-  const match = text.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/i);
-  if (!match) return fallback;
-  if (match[4] !== undefined && Number(match[4]) <= 0) return fallback;
-  const toHex = (part) => Math.max(0, Math.min(255, Number(part) || 0)).toString(16).padStart(2, "0");
-  return `#${toHex(match[1])}${toHex(match[2])}${toHex(match[3])}`;
+  const match = text.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/);
+  if (!match) return null;
+  const raw = match[1].length === 3
+    ? match[1].split("").map((part) => `${part}${part}`).join("")
+    : match[1];
+  return {
+    r: Number.parseInt(raw.slice(0, 2), 16),
+    g: Number.parseInt(raw.slice(2, 4), 16),
+    b: Number.parseInt(raw.slice(4, 6), 16),
+    a: raw.length === 8 ? Number.parseInt(raw.slice(6, 8), 16) / 255 : 1,
+  };
+}
+
+function rgbToHex({ r, g, b } = {}, fallback = "#000000") {
+  if (![r, g, b].every(Number.isFinite)) return fallback;
+  const toHex = (part) => Math.max(0, Math.min(255, Math.round(part))).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function parseAlpha(value, fallback = 1) {
+  const text = String(value ?? "").trim();
+  if (!text) return fallback;
+  const n = text.endsWith("%") ? Number.parseFloat(text) / 100 : Number.parseFloat(text);
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback;
+}
+
+function parseCssColor(value, fallback = "#000000") {
+  const text = String(value || "").trim();
+  if (!text) return { hex: fallback, transparency: 0 };
+  if (/^transparent$/i.test(text)) return { hex: fallback, transparency: 100 };
+
+  const fromHex = hexToRgb(text);
+  if (fromHex) {
+    return {
+      hex: rgbToHex(fromHex, fallback),
+      transparency: Math.round((1 - fromHex.a) * 100),
+    };
+  }
+
+  const commaMatch = text.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+%?))?\s*\)$/i);
+  if (commaMatch) {
+    const color = {
+      r: Number.parseFloat(commaMatch[1]),
+      g: Number.parseFloat(commaMatch[2]),
+      b: Number.parseFloat(commaMatch[3]),
+    };
+    const alpha = parseAlpha(commaMatch[4], 1);
+    return {
+      hex: rgbToHex(color, fallback),
+      transparency: Math.round((1 - alpha) * 100),
+    };
+  }
+
+  const slashMatch = text.match(/^rgba?\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/i);
+  if (slashMatch) {
+    const color = {
+      r: Number.parseFloat(slashMatch[1]),
+      g: Number.parseFloat(slashMatch[2]),
+      b: Number.parseFloat(slashMatch[3]),
+    };
+    const alpha = parseAlpha(slashMatch[4], 1);
+    return {
+      hex: rgbToHex(color, fallback),
+      transparency: Math.round((1 - alpha) * 100),
+    };
+  }
+
+  return { hex: fallback, transparency: 0 };
+}
+
+function formatAlpha(alpha) {
+  const clamped = Math.max(0, Math.min(1, alpha));
+  if (clamped === 0 || clamped === 1) return String(clamped);
+  return String(Math.round(clamped * 100) / 100);
+}
+
+function colorWithTransparency(hex, transparency, fallback = "#000000") {
+  const rgb = hexToRgb(hex) || hexToRgb(fallback) || { r: 0, g: 0, b: 0 };
+  const alpha = (100 - clampTransparency(transparency)) / 100;
+  if (alpha >= 1) return rgbToHex(rgb, fallback);
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${formatAlpha(alpha)})`;
+}
+
+function readColorControl(mount, name, fallback) {
+  const transparent = field(mount, `${name}Transparent`)?.checked;
+  const transparency = transparent ? 100 : clampTransparency(field(mount, `${name}Transparency`)?.value);
+  return colorWithTransparency(field(mount, name)?.value || fallback, transparency, fallback);
 }
 
 function buildShadow(offsetX, offsetY, blur, color) {
@@ -28,23 +113,30 @@ function buildShadow(offsetX, offsetY, blur, color) {
   return `${x}px ${y}px ${b}px ${color || "#000000"}`;
 }
 
+function renderColorControls(name, label, value, title) {
+  return `<span style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;" title="${title}">
+    <label style="display:flex;align-items:center;gap:5px;">${label}
+      <input data-field="${name}" type="color" value="${value}" style="width:30px;height:22px;padding:0;border:0;background:transparent;" />
+    </label>
+    <label style="display:flex;align-items:center;gap:3px;" title="Make ${label.toLowerCase()} fully transparent">
+      <input data-field="${name}Transparent" type="checkbox" style="width:14px;height:14px;" /> Off
+    </label>
+    <label style="display:flex;align-items:center;gap:4px;" title="${label} transparency">Trans
+      <input data-field="${name}Transparency" type="range" min="0" max="100" step="1" value="0" style="width:78px;" />
+      <span data-field="${name}TransparencyValue" style="display:inline-block;width:32px;text-align:right;">0%</span>
+    </label>
+  </span>`;
+}
+
 function renderToolbar(mount) {
   mount.innerHTML = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:12px monospace;">
-    <label style="display:flex;align-items:center;gap:5px;" title="Text color">Color
-      <input data-field="color" type="color" value="#222222" style="width:30px;height:22px;padding:0;border:0;background:transparent;" />
-    </label>
-    <label style="display:flex;align-items:center;gap:5px;" title="Text background highlight">Highlight
-      <input data-field="backgroundColor" type="color" value="#ffffe3" style="width:30px;height:22px;padding:0;border:0;background:transparent;" />
-    </label>
-    <label style="display:flex;align-items:center;gap:5px;" title="Text outline color">Outline
-      <input data-field="outlineColor" type="color" value="#000000" style="width:30px;height:22px;padding:0;border:0;background:transparent;" />
-    </label>
+    ${renderColorControls("color", "Color", "#222222", "Text color")}
+    ${renderColorControls("backgroundColor", "Highlight", "#ffffe3", "Text background highlight")}
+    ${renderColorControls("outlineColor", "Outline", "#000000", "Text outline color")}
     <label style="display:flex;align-items:center;gap:5px;" title="Text outline width">W
       <input data-field="outlineWidth" type="number" min="0" max="20" step="0.25" value="0" style="width:56px;height:22px;" />
     </label>
-    <label style="display:flex;align-items:center;gap:5px;" title="Text shadow color">Shadow
-      <input data-field="shadowColor" type="color" value="#000000" style="width:30px;height:22px;padding:0;border:0;background:transparent;" />
-    </label>
+    ${renderColorControls("shadowColor", "Shadow", "#000000", "Text shadow color")}
     <label style="display:flex;align-items:center;gap:5px;" title="Shadow X offset">X
       <input data-field="shadowX" type="number" min="-200" max="200" step="1" value="2" style="width:50px;height:22px;" />
     </label>
@@ -75,16 +167,68 @@ function setStatus(mount, message, isError = false) {
 function readControls(mount) {
   const outlineWidth = clampNumber(field(mount, "outlineWidth")?.value, { min: 0, max: 20 }) ?? 0;
   return {
-    color: field(mount, "color")?.value || "#222222",
-    backgroundColor: field(mount, "backgroundColor")?.value || "#ffffe3",
-    webkitTextStrokeColor: field(mount, "outlineColor")?.value || "#000000",
+    color: readColorControl(mount, "color", "#222222"),
+    backgroundColor: readColorControl(mount, "backgroundColor", "#ffffe3"),
+    webkitTextStrokeColor: readColorControl(mount, "outlineColor", "#000000"),
     webkitTextStrokeWidth: outlineWidth > 0 ? `${outlineWidth}px` : "",
     textShadow: buildShadow(
       field(mount, "shadowX")?.value,
       field(mount, "shadowY")?.value,
       field(mount, "shadowBlur")?.value,
-      field(mount, "shadowColor")?.value || "#000000",
+      readColorControl(mount, "shadowColor", "#000000"),
     ),
+  };
+}
+
+function syncColorControl(mount, name, value, fallback) {
+  const parsed = parseCssColor(value, fallback);
+  const color = field(mount, name);
+  const transparent = field(mount, `${name}Transparent`);
+  const transparency = field(mount, `${name}Transparency`);
+  const valueLabel = field(mount, `${name}TransparencyValue`);
+  if (color) color.value = parsed.hex;
+  if (transparent) transparent.checked = parsed.transparency >= 100;
+  if (transparency) transparency.value = String(parsed.transparency);
+  if (valueLabel) valueLabel.textContent = `${parsed.transparency}%`;
+}
+
+function syncTransparencyDisplay(mount, name) {
+  const slider = field(mount, `${name}Transparency`);
+  const checkbox = field(mount, `${name}Transparent`);
+  const valueLabel = field(mount, `${name}TransparencyValue`);
+  if (!slider) return;
+  const value = Math.round(clampTransparency(slider.value));
+  slider.value = String(value);
+  if (checkbox) checkbox.checked = value >= 100;
+  if (valueLabel) valueLabel.textContent = `${value}%`;
+}
+
+function handleTransparentToggle(mount, name) {
+  const checkbox = field(mount, `${name}Transparent`);
+  const slider = field(mount, `${name}Transparency`);
+  if (!checkbox || !slider) return;
+  if (checkbox.checked) {
+    slider.dataset.nvPreviousTransparency = slider.value;
+    slider.value = "100";
+  } else if (Number(slider.value) >= 100) {
+    slider.value = slider.dataset.nvPreviousTransparency && Number(slider.dataset.nvPreviousTransparency) < 100
+      ? slider.dataset.nvPreviousTransparency
+      : "0";
+  }
+  syncTransparencyDisplay(mount, name);
+}
+
+function parseTextShadow(shadowText) {
+  const text = String(shadowText || "").trim();
+  if (!text || /^none$/i.test(text)) return null;
+  const colorMatch = text.match(/rgba?\([^)]*\)|#[0-9a-fA-F]{3,8}\b|transparent\b/i);
+  const lengths = Array.from(text.matchAll(/(-?\d+(?:\.\d+)?)px/g)).map((match) => match[1]);
+  if (lengths.length < 2 && !colorMatch) return null;
+  return {
+    color: colorMatch?.[0] || "#000000",
+    x: lengths[0] || "2",
+    y: lengths[1] || "2",
+    blur: lengths[2] || "4",
   };
 }
 
@@ -93,18 +237,17 @@ function syncFromSelection(mount) {
     ? tools().readTextStyleSelection()
     : {};
   if (!snapshot || !Object.keys(snapshot).length) return;
-  field(mount, "color").value = rgbaToHex(snapshot.color, "#222222");
-  field(mount, "backgroundColor").value = rgbaToHex(snapshot.backgroundColor, "#ffffe3");
-  field(mount, "outlineColor").value = rgbaToHex(snapshot.outlineColor, "#000000");
+  syncColorControl(mount, "color", snapshot.color, "#222222");
+  syncColorControl(mount, "backgroundColor", snapshot.backgroundColor, "#ffffe3");
+  syncColorControl(mount, "outlineColor", snapshot.outlineColor, "#000000");
   const outlineWidth = Number.parseFloat(String(snapshot.outlineWidth || "0"));
   field(mount, "outlineWidth").value = Number.isFinite(outlineWidth) ? String(outlineWidth) : "0";
-  const shadow = String(snapshot.shadow || "");
-  const match = shadow.match(/(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+(\d+(?:\.\d+)?)px\s+(#[0-9a-fA-F]{6}|rgba?\([^)]*\))/);
-  if (match) {
-    field(mount, "shadowX").value = match[1];
-    field(mount, "shadowY").value = match[2];
-    field(mount, "shadowBlur").value = match[3];
-    field(mount, "shadowColor").value = rgbaToHex(match[4], "#000000");
+  const shadow = parseTextShadow(snapshot.shadow);
+  if (shadow) {
+    field(mount, "shadowX").value = shadow.x;
+    field(mount, "shadowY").value = shadow.y;
+    field(mount, "shadowBlur").value = shadow.blur;
+    syncColorControl(mount, "shadowColor", shadow.color, "#000000");
   }
 }
 
@@ -123,6 +266,14 @@ export function initToolbarWidget(hostElement) {
 
   mount.addEventListener("input", (evt) => {
     if (!evt.target?.matches?.("input")) return;
+    const transparencyField = evt.target?.dataset?.field?.match(/^(.+)Transparency$/);
+    if (transparencyField) syncTransparencyDisplay(mount, transparencyField[1]);
+    setStatus(mount, "");
+  });
+
+  mount.addEventListener("change", (evt) => {
+    const transparentField = evt.target?.dataset?.field?.match(/^(.+)Transparent$/);
+    if (transparentField) handleTransparentToggle(mount, transparentField[1]);
     setStatus(mount, "");
   });
 

@@ -96,6 +96,7 @@ export function createEmptyScadModel(options = {}) {
   return {
     version: SCAD_MODEL_VERSION,
     units: options.units || DEFAULT_UNITS,
+    metadata: { ...(options.metadata || {}) },
     parameters: { ...(options.parameters || {}) },
     layers: [layer],
     objects: [],
@@ -108,6 +109,7 @@ export function createEmptyScadModel(options = {}) {
 export function normalizeScadModel(input = {}) {
   const model = createEmptyScadModel({
     units: input.units || DEFAULT_UNITS,
+    metadata: input.metadata && typeof input.metadata === "object" && !Array.isArray(input.metadata) ? input.metadata : {},
     parameters: input.parameters || {},
     unsupportedSource: input.unsupportedSource || "",
     warnings: input.warnings || [],

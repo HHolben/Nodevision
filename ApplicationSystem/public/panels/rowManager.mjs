@@ -35,10 +35,12 @@ export function insertRowWithDivider(workspace) {
     const divider = document.createElement("div");
     divider.className = "row-divider";
     Object.assign(divider.style, {
-      height: "5px",
+      height: "10px",
       background: "#ccc",
       cursor: "row-resize",
       flex: "0 0 auto",
+      touchAction: "none",
+      userSelect: "none",
     });
     workspace.appendChild(divider);
     makeDividerAdjustable(divider, row);
@@ -49,24 +51,43 @@ export function insertRowWithDivider(workspace) {
 
 function makeDividerAdjustable(divider, rowBelow) {
   let startY, startHeight, prevRow;
+  let activePointerId = null;
 
-  divider.addEventListener("mousedown", (e) => {
+  divider.style.touchAction = "none";
+  divider.style.userSelect = "none";
+
+  divider.addEventListener("pointerdown", (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    if (activePointerId !== null) return;
     startY = e.clientY;
     prevRow = divider.previousElementSibling;
     if (!prevRow || !prevRow.classList.contains("panel-row")) return;
+    activePointerId = e.pointerId ?? "mouse";
     startHeight = prevRow.offsetHeight;
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+    divider.setPointerCapture?.(e.pointerId);
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+    document.addEventListener("pointercancel", onPointerUp);
     e.preventDefault();
   });
 
-  function onMouseMove(e) {
+  function onPointerMove(e) {
+    if (activePointerId !== (e.pointerId ?? "mouse")) return;
+    e.preventDefault();
     const dy = e.clientY - startY;
     prevRow.style.flex = "0 0 " + Math.max(80, startHeight + dy) + "px";
   }
 
-  function onMouseUp() {
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
+  function onPointerUp(e) {
+    if (activePointerId !== null && e?.pointerId !== undefined && activePointerId !== e.pointerId) return;
+    activePointerId = null;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    if (e?.pointerId !== undefined) divider.releasePointerCapture?.(e.pointerId);
+    document.removeEventListener("pointermove", onPointerMove);
+    document.removeEventListener("pointerup", onPointerUp);
+    document.removeEventListener("pointercancel", onPointerUp);
   }
 }

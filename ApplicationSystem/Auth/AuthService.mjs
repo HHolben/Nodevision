@@ -3,6 +3,9 @@
 import {
   createSession,
   deleteSession,
+  getSessionTimeoutSettings,
+  touchSession as touchStoredSession,
+  updateSessionTimeoutSettings,
   validateSession,
 } from './sessionManager.mjs';
 import { getUserByUsername } from './userStore.mjs';
@@ -51,6 +54,7 @@ export async function login({ username, password, ip }) {
       identity,
       token: session.token,
       expires: session.expires,
+      timeoutSeconds: session.timeoutSeconds,
     };
   } catch (err) {
     if (err === INVALID_CREDS_ERROR) {
@@ -88,6 +92,8 @@ export async function authenticateRequest(req) {
     type: session.type,
     username: session.username ?? 'unknown',
     role: session.role,
+    expires: session.expires,
+    lastActivity: session.lastActivity || session.created || null,
   };
 }
 
@@ -116,4 +122,10 @@ export function requireRole(role) {
       next(err);
     }
   };
+}
+
+export { getSessionTimeoutSettings, updateSessionTimeoutSettings };
+
+export async function touchSession(token) {
+  return touchStoredSession(token);
 }

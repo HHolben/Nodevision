@@ -12,6 +12,28 @@ import { createSchematicRenderer } from "./SchematicRenderer.mjs";
 import { setupInteractions } from "./SchematicInteractions.mjs";
 import { loadCircuitFile, saveCircuitFile } from "./CircuitFileFormat.mjs";
 
+function normalizeMetadataTags(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
+  return String(value || "")
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function readCircuitMetadata(state) {
+  const metadata = state.document.metadata && typeof state.document.metadata === "object" && !Array.isArray(state.document.metadata)
+    ? state.document.metadata
+    : {};
+  return {
+    formatLabel: "Circuit document",
+    fields: ["title", "description", "author", "tags"],
+    title: String(metadata.title || "").trim(),
+    description: String(metadata.description || "").trim(),
+    author: String(metadata.author || "").trim(),
+    tags: normalizeMetadataTags(metadata.tags),
+  };
+}
+
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   const doc = await loadCircuitFile(filePath);
@@ -161,6 +183,29 @@ export async function renderEditor(filePath, container) {
     updateToolbarState({ fileIsDirty: false });
   };
   window.saveMDFile = window.saveWYSIWYGFile;
+
+  window.NodevisionMetadataTools = {
+    owner: state,
+    formatLabel: "Circuit document",
+    fields: ["title", "description", "author", "tags"],
+    readMetadata: () => readCircuitMetadata(state),
+    applyMetadata: (patch = {}) => {
+      const metadata = state.document.metadata && typeof state.document.metadata === "object" && !Array.isArray(state.document.metadata)
+        ? state.document.metadata
+        : {};
+      state.document.metadata = {
+        ...metadata,
+        title: String(patch.title || "").trim(),
+        description: String(patch.description || "").trim(),
+        author: String(patch.author || "").trim(),
+        tags: normalizeMetadataTags(patch.tags),
+      };
+      markDirty(state, "Updated metadata");
+      updateToolbarState({ fileIsDirty: true });
+      layout.message.textContent = "Updated metadata";
+      return readCircuitMetadata(state);
+    },
+  };
 
   setupInteractions(canvas, state, renderer, inspector, {
     onChange: (msg) => {

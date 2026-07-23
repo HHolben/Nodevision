@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileView.mjs
 // This file defines browser-side File View logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import "/EditorSwitchGuard.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus } from "/StatusBar.mjs";
 

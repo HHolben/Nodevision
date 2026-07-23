@@ -224,7 +224,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     if (target.userData?.isPortal === true || String(target.userData?.nvType || "").toLowerCase() === "portal") return true;
     if (target.userData?.objectFileUseBoundsPicking === true) return true;
     const objectPath = String(target.userData?.objectFilePath || "").toLowerCase().split(/[?#]/)[0];
-    return objectPath.endsWith(".stl");
+    return objectPath.endsWith(".stl") || objectPath.endsWith(".obj");
   }
 
   function boundsPickHit(target) {
@@ -736,7 +736,86 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
   }
 
+  function isSpawnPointTarget(target) {
+    return target?.userData?.isSpawn === true
+      || String(target?.userData?.nvType || "").toLowerCase() === "spawn"
+      || Boolean(target?.userData?.spawnPointRef);
+  }
+
+  function readSpawnRuntimeId(target) {
+    const candidates = [
+      target?.userData?.spawnId,
+      target?.userData?.spawnPointId,
+      target?.userData?.metaWorldLayerId,
+      target?.userData?.tag,
+      target?.name,
+      target?.uuid
+    ];
+    const explicit = candidates.find((value) => typeof value === "string" && value.trim());
+    return explicit ? explicit.trim() : "";
+  }
+
+  function findSpawnRefForTarget(target) {
+    if (!target) return null;
+    if (target.userData?.spawnPointRef) return target.userData.spawnPointRef;
+    if (!Array.isArray(spawnPoints)) return null;
+    const spawnId = readSpawnRuntimeId(target);
+    const objectId = target.userData?.metaWorldLayerId || target.userData?.tag || target.name || "";
+    return spawnPoints.find((entry) => entry?.object3d === target
+      || entry?.target === target
+      || (objectId && entry?.objectId === objectId)
+      || (spawnId && entry?.id === spawnId)) || null;
+  }
+
+  function updateSpawnRuntimeForTarget(target) {
+    if (!target || !isSpawnPointTarget(target)) return null;
+    let spawnRef = findSpawnRefForTarget(target);
+    if (!spawnRef && Array.isArray(spawnPoints)) {
+      spawnRef = {};
+      spawnPoints.push(spawnRef);
+    }
+    if (!spawnRef) return null;
+
+    const spawnId = readSpawnRuntimeId(target) || "default";
+    const yaw = Number.isFinite(target.userData?.spawnYaw)
+      ? target.userData.spawnYaw
+      : (Number.isFinite(spawnRef.yaw) ? spawnRef.yaw : 0);
+    target.userData.isSpawn = true;
+    target.userData.nvType = "spawn";
+    target.userData.spawnId = spawnId;
+    target.userData.spawnYaw = yaw;
+    target.userData.spawnPointRef = spawnRef;
+
+    spawnRef.id = spawnId;
+    spawnRef.objectId = target.userData?.metaWorldLayerId || spawnId;
+    spawnRef.object3d = target;
+    spawnRef.position = [target.position.x, target.position.y, target.position.z];
+    spawnRef.yaw = yaw;
+    return spawnRef;
+  }
+
+  function removeSpawnRuntimeForTarget(target) {
+    if (!target || !Array.isArray(spawnPoints)) return;
+    const spawnRef = target.userData?.spawnPointRef || null;
+    const spawnId = readSpawnRuntimeId(target);
+    for (let i = spawnPoints.length - 1; i >= 0; i -= 1) {
+      const ref = spawnPoints[i];
+      if (ref === spawnRef || ref?.object3d === target || ref?.target === target || (spawnRef == null && spawnId && ref?.id === spawnId)) {
+        spawnPoints.splice(i, 1);
+      }
+    }
+    delete target.userData.spawnPointRef;
+  }
+
+  function refreshSpawnRefs() {
+    if (!Array.isArray(spawnPoints)) return;
+    spawnPoints.slice().forEach((point) => {
+      if (point?.object3d) updateSpawnRuntimeForTarget(point.object3d);
+    });
+  }
+
   function updateColliderForTarget(target) {
+    updateSpawnRuntimeForTarget(target);
     updatePortalRuntimeForTarget(target);
     const ref = target?.userData?.colliderRef;
     if (!ref) return;
@@ -1360,13 +1439,15 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   }
 
   function resolveSpawnChoice(spawnPointId) {
+    refreshSpawnRefs();
     if (Array.isArray(spawnPoints) && spawnPoints.length > 0) {
-      if (typeof spawnPointId === "string" && spawnPointId.trim()) {
-        const match = spawnPoints.find(point => point?.id === spawnPointId.trim());
+      const requestedId = typeof spawnPointId === "string" ? spawnPointId.trim() : "";
+      if (requestedId) {
+        const match = spawnPoints.find(point => String(point?.id || "").trim() === requestedId)
+          || spawnPoints.find(point => String(point?.id || "").trim().toLowerCase() === requestedId.toLowerCase());
         if (match?.position) return match;
       }
-      const idx = Math.floor(Math.random() * spawnPoints.length);
-      const fallback = spawnPoints[idx];
+      const fallback = spawnPoints.find(point => point?.position);
       if (fallback?.position) return fallback;
     }
     return { position: [0, movementState.playerHeight || basePlayerHeight, 0], yaw: null };
@@ -1716,6 +1797,19 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return portalRef;
   }
 
+  function registerPlacedSpawn(mesh) {
+    if (!mesh) return null;
+    const objectId = makePlacedObjectId(mesh, "spawn-point");
+    mesh.userData.nvType = "spawn";
+    mesh.userData.isSpawn = true;
+    mesh.userData.isSolid = false;
+    mesh.userData.spawnId = typeof mesh.userData.spawnId === "string" && mesh.userData.spawnId.trim()
+      ? mesh.userData.spawnId.trim()
+      : objectId;
+    mesh.userData.spawnYaw = Number.isFinite(mesh.userData.spawnYaw) ? mesh.userData.spawnYaw : 0;
+    return updateSpawnRuntimeForTarget(mesh);
+  }
+
   function createPlacedMesh(selectedItem, inventory) {
     const id = String(selectedItem?.id || "").toLowerCase();
     if (id === "box") {
@@ -1773,6 +1867,19 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       mesh.userData.portalSameWorld = true;
       mesh.userData.portalDestinationMode = "coordinate";
       mesh.userData.portalSpawn = null;
+      return { mesh, collider: null };
+    }
+    if (id === "spawn" || id === "spawn-point" || id === "spawnpoint") {
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 18, 14),
+        new THREE.MeshStandardMaterial({
+          color: 0x35d07f,
+          emissive: 0x0a4f2a,
+          emissiveIntensity: 0.45
+        })
+      );
+      mesh.userData.isSpawn = true;
+      mesh.userData.spawnYaw = 0;
       return { mesh, collider: null };
     }
     if (id === "console") {
@@ -2159,8 +2266,11 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     scene.add(mesh);
     objects.push(mesh);
 
-    if (String(selected.id || "").toLowerCase() === "portal") {
+    const placedItemId = String(selected.id || "").toLowerCase();
+    if (placedItemId === "portal") {
       registerPlacedPortal(mesh);
+    } else if (placedItemId === "spawn" || placedItemId === "spawn-point" || placedItemId === "spawnpoint") {
+      registerPlacedSpawn(mesh);
     }
 
     if (placement.collider?.type === "box") {
@@ -2296,6 +2406,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     let target = hit.object;
     let isEquationObject = isEquationObjectTarget(target);
     let isPortalTarget = isPortalLikeTarget(target);
+    let isSpawnTarget = isSpawnPointTarget(target);
     if (!isEquationObject && !isPortalTarget && (target.userData?.breakable === false || (!target.userData?.breakable && !target.userData?.placedByPlayer))) {
       const portalHit = getPortalInspectFallbackHit();
       if (portalHit?.object) {
@@ -2303,6 +2414,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         target = hit.object;
         isEquationObject = isEquationObjectTarget(target);
         isPortalTarget = isPortalLikeTarget(target);
+        isSpawnTarget = isSpawnPointTarget(target);
       }
     }
     if (!isEquationObject && !canUseAbility("allowBreak")) return false;
@@ -2336,6 +2448,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         }
       }
       delete target.userData.portalRef;
+    }
+
+    if (isSpawnTarget) {
+      removeSpawnRuntimeForTarget(target);
     }
 
     const colliderRef = target.userData?.colliderRef;
@@ -2378,6 +2494,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         || itemType === "cylinder"
         || itemType === "console"
         || itemType === "portal"
+        || itemType === "spawn"
         || itemType === "math-function"
         || itemType === "object-file"
         || itemType === "image-plane"

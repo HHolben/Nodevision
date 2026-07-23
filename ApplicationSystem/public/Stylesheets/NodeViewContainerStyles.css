@@ -23,9 +23,11 @@
 }
 
 .divider {
-    width: 5px;
+    width: 10px;
     background-color: #ddd;
     cursor: ew-resize;
+    touch-action: none;
+    user-select: none;
     position: relative;
     z-index: 1;
 }

@@ -42,17 +42,80 @@ export function getActiveTableCell() {
   return null;
 }
 
-function focusCell(cell) {
-  if (!cell) return;
+export function focusTableCell(cell, { atEnd = false } = {}) {
+  if (!cell) return false;
   const sel = window.getSelection?.();
-  if (!sel) return;
+  if (!sel) return false;
   const range = document.createRange();
   range.selectNodeContents(cell);
-  range.collapse(true);
+  range.collapse(!atEnd);
   sel.removeAllRanges();
   sel.addRange(range);
-  cell.focus?.();
+  try {
+    cell.focus?.({ preventScroll: true });
+  } catch {
+    cell.focus?.();
+  }
+  cell.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   setActiveTableCell(cell);
+  updateToolbarState({ htmlTableSelected: true });
+  return true;
+}
+
+function focusCell(cell) {
+  return focusTableCell(cell);
+}
+
+function cellFromKeyboardEvent(event) {
+  const target = event?.target;
+  if (target?.closest?.("input, textarea, select, button, a")) return null;
+  const eventCell = closestCell(target);
+  if (eventCell && isCellInEditor(eventCell)) return setActiveTableCell(eventCell);
+  return getActiveTableCell();
+}
+
+function adjacentCell(cell, direction) {
+  const table = cell?.closest?.("table");
+  const row = cell?.parentElement;
+  if (!table || !row) return null;
+
+  const rows = Array.from(table.rows || []);
+  const rowIndex = rows.indexOf(row);
+  const colIndex = cell.cellIndex;
+  if (rowIndex < 0 || colIndex < 0) return null;
+
+  if (direction === "left") return row.cells[colIndex - 1] || null;
+  if (direction === "right") return row.cells[colIndex + 1] || null;
+
+  const targetRow = rows[rowIndex + (direction === "up" ? -1 : 1)] || null;
+  if (!targetRow) return null;
+  return targetRow.cells[Math.min(colIndex, Math.max(0, targetRow.cells.length - 1))] || null;
+}
+
+export function moveActiveTableCell(direction, options = {}) {
+  const cell = options.cell || getActiveTableCell();
+  const target = adjacentCell(cell, direction);
+  if (!target) return false;
+  return focusTableCell(target, { atEnd: direction === "left" });
+}
+
+export function handleTableArrowKeyNavigation(event) {
+  const keyToDirection = {
+    ArrowLeft: "left",
+    ArrowRight: "right",
+    ArrowUp: "up",
+    ArrowDown: "down",
+  };
+  const direction = keyToDirection[event?.key];
+  if (!direction) return false;
+  if (event.defaultPrevented || event.isComposing) return false;
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+
+  const cell = cellFromKeyboardEvent(event);
+  if (!cell) return false;
+  if (!moveActiveTableCell(direction, { cell })) return false;
+  event.preventDefault();
+  return true;
 }
 
 function copyCellStyle(target, source) {

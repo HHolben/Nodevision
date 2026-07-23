@@ -25,6 +25,19 @@
   },
   {
     "ToolbarCategory": "File",
+    "heading": "Import",
+    "icon": "icons/Download.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Import",
+    "heading": "From Phone",
+    "callbackKey": "importFromPhone",
+    "icon": "icons/FileIcon.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "New File",
     "callbackKey": "NewFile",
     "icon": "icons/DefaultNodeImage.png",

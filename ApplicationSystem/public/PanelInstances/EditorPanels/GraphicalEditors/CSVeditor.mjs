@@ -2,7 +2,7 @@
 // This file defines browser-side CSVeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // CSVeditor.mjs
 import { updateToolbarState } from "/panels/createToolbar.mjs";
-import { setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
+import { handleTableArrowKeyNavigation, setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   if (typeof container.__cleanupCSVTableToolbar === "function") {
@@ -60,8 +60,10 @@ export async function renderEditor(filePath, container) {
   table.addEventListener("click", updateTableSelectionFromEvent);
   table.addEventListener("keyup", updateTableSelectionFromSelection);
   table.addEventListener("focusin", updateTableSelectionFromSelection);
+  table.addEventListener("keydown", handleTableArrowKeyNavigation);
   document.addEventListener("selectionchange", updateTableSelectionFromSelection);
   container.__cleanupCSVTableToolbar = () => {
+    table.removeEventListener("keydown", handleTableArrowKeyNavigation);
     document.removeEventListener("selectionchange", updateTableSelectionFromSelection);
     if (window.__nvTableEditorRoot === tableWrapper) window.__nvTableEditorRoot = null;
     if (window.__nvHtmlTableActiveCell && tableWrapper.contains(window.__nvHtmlTableActiveCell)) {

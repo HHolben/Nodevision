@@ -2,6 +2,7 @@
 // This file defines browser-side File Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { updateToolbarState } from '/panels/createToolbar.mjs';
+import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
 import { moveFileOrDirectory as moveFileOrDirectoryAPI } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
@@ -622,19 +623,19 @@ export function attachFileClickHandlers() {
     item.addEventListener("click", e => {
       e.preventDefault();
 
-      // Set global selected file path
-      window.selectedFilePath = item.dataset.fullPath;
-      // FileView installs a selectedFilePath proxy that syncs NodevisionState + toolbar.
-      // If that proxy isn't installed (e.g., FileView panel not loaded yet), do it here.
-      if (!window._selectedFileProxyInstalled) {
-        window.NodevisionState = window.NodevisionState || {};
-        window.NodevisionState.selectedFile = window.selectedFilePath || null;
-        updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
-      }
-      console.log("Selected file:", window.selectedFilePath);
-
-      // Visually mark selection
-      markSelectedFileItem(item);
+      requestNodevisionFileSelection(item.dataset.fullPath, {
+        onSelected: (selectedPath) => {
+          // FileView installs a selectedFilePath proxy that syncs NodevisionState + toolbar.
+          // If that proxy isn't installed (e.g., FileView panel not loaded yet), do it here.
+          if (!window._selectedFileProxyInstalled) {
+            window.NodevisionState = window.NodevisionState || {};
+            window.NodevisionState.selectedFile = selectedPath || null;
+            updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
+          }
+          console.log("Selected file:", selectedPath);
+          markSelectedFileItem(item);
+        },
+      });
     });
   });
 }
@@ -789,11 +790,14 @@ window.revealPathInFileManager = async function revealPathInFileManager(path = "
     return true;
   }
 
-  window.selectedFilePath = cleanPath;
-  const fileItem = findFileManagerItemByPath(cleanPath);
-  if (fileItem) {
-    markSelectedFileItem(fileItem);
-  }
+  requestNodevisionFileSelection(cleanPath, {
+    onSelected: () => {
+      const fileItem = findFileManagerItemByPath(cleanPath);
+      if (fileItem) {
+        markSelectedFileItem(fileItem);
+      }
+    },
+  });
   return true;
 };
 

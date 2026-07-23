@@ -187,6 +187,26 @@ function makeIdPrefix(type) {
   return "portal";
 }
 
+function hasSpawnPointId(id) {
+  const needle = String(id || "").trim().toLowerCase();
+  if (!needle) return false;
+  const runtimePoints = window.VRWorldContext?.spawnPoints;
+  if (Array.isArray(runtimePoints) && runtimePoints.some((point) => String(point?.id || "").trim().toLowerCase() === needle)) return true;
+  const bridge = getActiveMetaWorldLayerBridge();
+  const defs = Array.isArray(bridge?.worldData?.objects) ? bridge.worldData.objects : [];
+  return defs.some((def) => {
+    if (!def || typeof def !== "object") return false;
+    const isSpawn = def.type === "spawn" || def.tag === "spawn" || def.isSpawn === true;
+    if (!isSpawn) return false;
+    const candidates = [def.spawnId, def.spawnPointId, def.id, def.tag, def.name, def.label];
+    return candidates.some((value) => String(value || "").trim().toLowerCase() === needle);
+  });
+}
+
+function spawnIdForNewSpawn(fallbackId) {
+  return hasSpawnPointId("default") ? fallbackId : "default";
+}
+
 function makeGameObjectDefinition(item) {
   const suffix = Date.now().toString(36) + "-" + Math.floor(Math.random() * 1000);
   const id = makeIdPrefix(item.type) + "-" + suffix;
@@ -220,7 +240,7 @@ function makeGameObjectDefinition(item) {
       ...base,
       shape: "sphere",
       size: [0.22],
-      spawnId: id,
+      spawnId: spawnIdForNewSpawn(id),
       spawnYaw: 0,
       isSolid: false,
       breakable: false,

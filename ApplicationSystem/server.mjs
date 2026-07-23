@@ -55,6 +55,7 @@ import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
 import { createDesktopOpenState, registerDesktopOpenRoutes } from "./Desktop/DesktopOpenHandler.mjs";
 import { registerTerrainRoutes } from "./server/routes/terrainRoutes.mjs";
 import { registerHandwritingOcrTrainingRoutes } from "./server/routes/handwritingOcrTrainingRoutes.mjs";
+import { registerPhoneImportRoutes } from "./server/routes/phoneImportRoutes.mjs";
 
 const FAA_VFR_RASTER_CHARTS_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/vfr/";
 const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
@@ -373,6 +374,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerDesktopOpenRoutes(app, ctx, desktopOpenState);
   registerKmlUtilityRoutes(app, ctx);
   registerHandwritingOcrTrainingRoutes(app, ctx);
+  registerPhoneImportRoutes(app, ctx);
 
 
   // Public login background asset (optional).

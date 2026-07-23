@@ -38,6 +38,32 @@
     return;
   }
 
+
+  function installCsvArrowNavigation(container) {
+    if (!container || container.__nvCsvArrowNavigationBound) return;
+    container.__nvCsvArrowNavigationBound = true;
+    container.addEventListener("keydown", (event) => {
+      const keyToDelta = {
+        ArrowLeft: [0, -1],
+        ArrowRight: [0, 1],
+        ArrowUp: [-1, 0],
+        ArrowDown: [1, 0],
+      };
+      const delta = keyToDelta[event.key];
+      if (!delta || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
+      const input = event.target?.closest?.("input[data-row][data-col]");
+      if (!input || !container.contains(input)) return;
+      const row = Number.parseInt(input.dataset.row, 10);
+      const col = Number.parseInt(input.dataset.col, 10);
+      if (!Number.isFinite(row) || !Number.isFinite(col)) return;
+      const next = container.querySelector(`input[data-row="${row + delta[0]}"][data-col="${col + delta[1]}"]`);
+      if (!next) return;
+      event.preventDefault();
+      next.focus();
+      next.select?.();
+    });
+  }
+
   // Render CSV into table of text inputs
   function renderCSV(path, container) {
     fetch(`/api/fileCSVContent?path=${encodeURIComponent(path)}`)
@@ -67,6 +93,7 @@
         html += '</tbody></table>';
 
         container.innerHTML = html;
+        installCsvArrowNavigation(container);
         addSaveButton(path, container);
       })
       .catch(err => {

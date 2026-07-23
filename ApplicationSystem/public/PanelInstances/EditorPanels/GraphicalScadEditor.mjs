@@ -1033,6 +1033,43 @@ export async function renderEditor(filePath, container) {
     refresh();
   }
 
+  function normalizeDocumentMetadataTags(value) {
+    if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
+    return String(value || "")
+      .split(/[;,]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  function readScadDocumentMetadata() {
+    const metadata = model.metadata && typeof model.metadata === "object" && !Array.isArray(model.metadata)
+      ? model.metadata
+      : {};
+    return {
+      formatLabel: "SCAD model",
+      fields: ["title", "description", "author", "tags"],
+      title: String(metadata.title || "").trim(),
+      description: String(metadata.description || "").trim(),
+      author: String(metadata.author || "").trim(),
+      tags: normalizeDocumentMetadataTags(metadata.tags),
+    };
+  }
+
+  function applyScadDocumentMetadata(patch = {}) {
+    const metadata = model.metadata && typeof model.metadata === "object" && !Array.isArray(model.metadata)
+      ? model.metadata
+      : {};
+    model.metadata = {
+      ...metadata,
+      title: String(patch.title || "").trim(),
+      description: String(patch.description || "").trim(),
+      author: String(patch.author || "").trim(),
+      tags: normalizeDocumentMetadataTags(patch.tags),
+    };
+    markDirty();
+    return readScadDocumentMetadata();
+  }
+
   function markDirty() {
     window.NodevisionState = window.NodevisionState || {};
     window.NodevisionState.fileIsDirty = true;
@@ -1334,6 +1371,13 @@ export async function renderEditor(filePath, container) {
   };
 
   window.GraphicalScadEditorContext = scadController;
+  window.NodevisionMetadataTools = {
+    owner: scadController,
+    formatLabel: "SCAD model",
+    fields: ["title", "description", "author", "tags"],
+    readMetadata: readScadDocumentMetadata,
+    applyMetadata: applyScadDocumentMetadata,
+  };
   ensureScadLayersContext(scadController);
   window.addEventListener("keydown", handleEditorKeyDown, true);
 

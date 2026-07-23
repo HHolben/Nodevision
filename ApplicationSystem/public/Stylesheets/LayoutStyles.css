@@ -221,10 +221,12 @@ html[data-nv-theme="dark"] .panel-header {
   
 }
 .row-divider {
-  height: 6px;
+  height: 10px;
   background: #666;
   cursor: row-resize;
   flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
 
   /* make sure it's clickable */
   z-index: 10;
@@ -237,10 +239,12 @@ html[data-nv-theme="dark"] .panel-header {
   position: relative;
   pointer-events: auto;
   cursor: col-resize;
-  width: 6px;
-  min-width: 6px;
-  max-width: 6px;
+  width: 10px;
+  min-width: 10px;
+  max-width: 10px;
   z-index: 100;
+  touch-action: none;
+  user-select: none;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -248,9 +252,9 @@ html[data-nv-theme="dark"] .panel-header {
   width: 100%;
   min-width: 0;
   max-width: none;
-  height: 6px;
-  min-height: 6px;
-  max-height: 6px;
+  height: 10px;
+  min-height: 10px;
+  max-height: 10px;
   cursor: row-resize;
 }
 
@@ -306,8 +310,22 @@ html[data-nv-theme="dark"] .panel-header {
   border: 2px dashed rgba(255, 255, 255, 0.25);
   border-radius: 10px;
   pointer-events: none;
+  touch-action: none;
+  user-select: none;
   opacity: 0;
   transition: opacity 140ms ease;
+}
+
+.panel-resizer-touch-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  height: 32px;
+  cursor: nwse-resize;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
 }
 
 .panel.floating .panel-resizer {

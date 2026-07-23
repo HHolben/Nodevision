@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
 // This file defines browser-side Graph Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
 import { scanFileForLinkRecords } from './GraphManagerDependencies/ScanForLinks.mjs';
 import { buildSelectedGraphLink, linkRecordTargetId, makeEdgeLabel, setSelectedGraphLink, summarizeLinkRecord } from './GraphManagerDependencies/LinkRecords.mjs';
 import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
@@ -757,7 +758,7 @@ async function revealPathInGraphManager(path, options = {}) {
     }
 
     if (!isDirectory) {
-        window.selectedFilePath = cleanPath;
+        requestNodevisionFileSelection(cleanPath);
     }
 
     return true;
@@ -1645,7 +1646,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
 
     cy.on('tap', 'node', (evt) => {
         const path = evt.target.data('fullPath');
-        if (path !== undefined) window.selectedFilePath = path;
+        if (path !== undefined) requestNodevisionFileSelection(path);
         if (evt.target.data('type') === 'external' && evt.target.data('url')) {
             window.selectedExternalUrl = evt.target.data('url');
         }

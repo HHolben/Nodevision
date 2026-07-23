@@ -1,4 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditor.mjs
+import "/EditorSwitchGuard.mjs";
 // This file defines browser-side Graphical Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
 // using ModuleMap.csv as the single source of truth.
 import { updateToolbarState } from "/panels/createToolbar.mjs";

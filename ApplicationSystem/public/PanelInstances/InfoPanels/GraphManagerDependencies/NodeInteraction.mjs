@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/NodeInteraction.mjs
 // This file defines browser-side Node Interaction logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
 import { recomputeEdges } from './EdgeManagement.mjs';
 import { listDirectory } from './APIFunctions.mjs';
 import { SELECTED_COLOR, UNSELECTED_COLOR } from './CytoscapeStyling.mjs';
@@ -31,19 +32,20 @@ export async function highlight(node) {
   
   console.log("[NodeInteraction] Selected node:", cleanPath);
 
-  // Set global path - FileView's reactive watcher will handle rendering
-  window.selectedFilePath = cleanPath;
-
-  // Highlight the FileView panel
-  const viewCell = document.querySelector('[data-id="FileView"]');
-  if (viewCell) {
-    if (window.highlightActiveCell) {
-      window.highlightActiveCell(viewCell);
-    } else {
-      document.querySelectorAll(".panel-cell").forEach(c => c.style.outline = "");
-      viewCell.style.outline = "2px solid #0078d7";
-    }
-  }
+  // Set global path - FileView's reactive watcher will handle rendering.
+  requestNodevisionFileSelection(cleanPath, {
+    onSelected: () => {
+      const viewCell = document.querySelector('[data-id="FileView"]');
+      if (viewCell) {
+        if (window.highlightActiveCell) {
+          window.highlightActiveCell(viewCell);
+        } else {
+          document.querySelectorAll(".panel-cell").forEach(c => c.style.outline = "");
+          viewCell.style.outline = "2px solid #0078d7";
+        }
+      }
+    },
+  });
 }
 
 // --- Directory Management Functions ---

@@ -8,6 +8,7 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus as setNodevisionStatus } from "/StatusBar.mjs";
 import { mountWidget } from "/Widgets/WidgetHost.mjs";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
+import { meshBooleanLabel, renderBooleanOperationToTopology } from "./MeshBooleanScad.mjs";
 
 const SAVE_ENDPOINT = "/api/save";
 const WELD_EPSILON = 1e-5;
@@ -419,8 +420,32 @@ export async function renderEditor(
     controls.update();
   }
 
+  function disposeScenePrimitive(ref) {
+    if (!ref) return;
+    scene.remove(ref);
+    ref.geometry?.dispose?.();
+    disposeMaterial(ref.material);
+  }
+
+  function clearDisplayGeometry() {
+    disposeScenePrimitive(mesh);
+    disposeScenePrimitive(edgeLines);
+    disposeScenePrimitive(vertexPoints);
+    disposeScenePrimitive(selectedVertexPoints);
+    disposeScenePrimitive(customEdgeLines);
+    mesh = null;
+    edgeLines = null;
+    vertexPoints = null;
+    selectedVertexPoints = null;
+    customEdgeLines = null;
+  }
+
   function rebuildDisplayGeometry() {
     if (!state.topology) return;
+    if (!state.topology.vertices.length && !state.topology.faces.length && !state.topology.customEdges.length) {
+      clearDisplayGeometry();
+      return;
+    }
 
     const triangles = state.topology.faces.length;
     const posArray = new Float32Array(triangles * 9);
@@ -1414,6 +1439,170 @@ export async function renderEditor(
     setModeLabel("selection does not define a connected edge or face");
   }
 
+  function stlConnectedFaceComponents() {
+    const topology = state.topology;
+    if (!topology?.faces?.length) return [];
+    const vertexToFaces = new Map();
+    topology.faces.forEach((face, faceIndex) => {
+      if (!Array.isArray(face) || face.length < 3) return;
+      face.forEach((vertexIndex) => {
+        if (!Number.isInteger(vertexIndex)) return;
+        if (!vertexToFaces.has(vertexIndex)) vertexToFaces.set(vertexIndex, []);
+        vertexToFaces.get(vertexIndex).push(faceIndex);
+      });
+    });
+
+    const visited = new Set();
+    const components = [];
+    topology.faces.forEach((face, startIndex) => {
+      if (visited.has(startIndex) || !Array.isArray(face) || face.length < 3) return;
+      const faceIndices = [];
+      const vertexIndices = new Set();
+      const stack = [startIndex];
+      visited.add(startIndex);
+      while (stack.length) {
+        const faceIndex = stack.pop();
+        const currentFace = topology.faces[faceIndex];
+        if (!Array.isArray(currentFace) || currentFace.length < 3) continue;
+        faceIndices.push(faceIndex);
+        currentFace.forEach((vertexIndex) => {
+          if (!Number.isInteger(vertexIndex)) return;
+          vertexIndices.add(vertexIndex);
+          (vertexToFaces.get(vertexIndex) || []).forEach((linkedFaceIndex) => {
+            if (visited.has(linkedFaceIndex)) return;
+            visited.add(linkedFaceIndex);
+            stack.push(linkedFaceIndex);
+          });
+        });
+      }
+      components.push({ faceIndices, vertexIndices });
+    });
+    return components;
+  }
+
+  function selectedStlBooleanComponents() {
+    if (!state.topology || !state.selection.size) return [];
+    const selectionOrder = Array.from(state.selection);
+    return stlConnectedFaceComponents()
+      .map((component, index) => {
+        const selectedOrder = selectionOrder.findIndex((vertexIndex) => component.vertexIndices.has(vertexIndex));
+        let selectedFaceCount = 0;
+        component.faceIndices.forEach((faceIndex) => {
+          const face = state.topology.faces[faceIndex];
+          if (Array.isArray(face) && face.every((vertexIndex) => state.selection.has(vertexIndex))) selectedFaceCount += 1;
+        });
+        return { component, index, selectedOrder, selectedFaceCount };
+      })
+      .filter((entry) => entry.selectedOrder >= 0 || entry.selectedFaceCount > 0)
+      .sort((a, b) => {
+        const orderA = a.selectedOrder >= 0 ? a.selectedOrder : Number.MAX_SAFE_INTEGER;
+        const orderB = b.selectedOrder >= 0 ? b.selectedOrder : Number.MAX_SAFE_INTEGER;
+        return orderA - orderB || a.index - b.index;
+      })
+      .map((entry) => entry.component);
+  }
+
+  function topologyForFaceComponent(component) {
+    const vertexMap = new Map();
+    const vertices = [];
+    const faces = [];
+    const remap = (oldIndex) => {
+      if (!Number.isInteger(oldIndex)) return null;
+      if (!vertexMap.has(oldIndex)) {
+        const vertex = state.topology.vertices[oldIndex];
+        if (!vertex) return null;
+        vertexMap.set(oldIndex, vertices.length);
+        vertices.push(vertex.clone());
+      }
+      return vertexMap.get(oldIndex);
+    };
+
+    component.faceIndices.forEach((faceIndex) => {
+      const face = state.topology.faces[faceIndex];
+      const nextFace = Array.isArray(face) ? face.map(remap).filter(Number.isInteger) : [];
+      if (nextFace.length >= 3 && new Set(nextFace).size >= 3) faces.push(nextFace);
+    });
+    return { vertices, faces, customEdges: [] };
+  }
+
+  function replaceStlComponentsWithBooleanResult(components, booleanTopology) {
+    const removeFaceIndices = new Set();
+    const removeVertexIndices = new Set();
+    components.forEach((component) => {
+      component.faceIndices.forEach((faceIndex) => removeFaceIndices.add(faceIndex));
+      component.vertexIndices.forEach((vertexIndex) => removeVertexIndices.add(vertexIndex));
+    });
+
+    const nextVertices = [];
+    const nextFaces = [];
+    const vertexMap = new Map();
+    const remapOriginal = (oldIndex) => {
+      if (!Number.isInteger(oldIndex)) return null;
+      if (!vertexMap.has(oldIndex)) {
+        const vertex = state.topology.vertices[oldIndex];
+        if (!vertex) return null;
+        vertexMap.set(oldIndex, nextVertices.length);
+        nextVertices.push(vertex.clone());
+      }
+      return vertexMap.get(oldIndex);
+    };
+
+    state.topology.faces.forEach((face, faceIndex) => {
+      if (removeFaceIndices.has(faceIndex)) return;
+      const nextFace = Array.isArray(face) ? face.map(remapOriginal).filter(Number.isInteger) : [];
+      if (nextFace.length >= 3 && new Set(nextFace).size >= 3) nextFaces.push(nextFace);
+    });
+
+    const nextCustomEdges = [];
+    (state.topology.customEdges || []).forEach((edge) => {
+      if (!Array.isArray(edge) || edge.length < 2) return;
+      const [a, b] = edge;
+      if (removeVertexIndices.has(a) || removeVertexIndices.has(b)) return;
+      const nextA = remapOriginal(a);
+      const nextB = remapOriginal(b);
+      if (Number.isInteger(nextA) && Number.isInteger(nextB) && nextA !== nextB) nextCustomEdges.push([nextA, nextB]);
+    });
+
+    const booleanStart = nextVertices.length;
+    (booleanTopology.vertices || []).forEach((vertex) => nextVertices.push(vertex.clone ? vertex.clone() : new THREE.Vector3(vertex?.x || 0, vertex?.y || 0, vertex?.z || 0)));
+    (booleanTopology.faces || []).forEach((face) => {
+      const nextFace = Array.isArray(face) ? face.map((index) => Number(index) + booleanStart).filter(Number.isInteger) : [];
+      if (nextFace.length >= 3 && new Set(nextFace).size >= 3) nextFaces.push(nextFace);
+    });
+
+    state.topology = { vertices: nextVertices, faces: nextFaces, customEdges: nextCustomEdges };
+    state.selection = new Set((booleanTopology.vertices || []).map((_, index) => booleanStart + index));
+  }
+
+  async function runStlBooleanOperation(operation) {
+    if (state.mode !== "idle") commitAction();
+    if (isSculptToolActive()) setSculptTool("select");
+    const label = meshBooleanLabel(operation);
+    const components = selectedStlBooleanComponents();
+    if (components.length < 2) {
+      setModeLabel("select vertices from at least two disconnected solids");
+      alert("Select vertices from at least two disconnected STL solids for " + label.toLowerCase() + ".");
+      return true;
+    }
+
+    const operands = components.map(topologyForFaceComponent);
+    setNodevisionStatus("STL", label + " boolean rendering...");
+    try {
+      const result = await renderBooleanOperationToTopology(THREE, operation, operands, { weldEpsilon: WELD_EPSILON });
+      replaceStlComponentsWithBooleanResult(components, result);
+      state.maxDim = computeBounds().maxDim;
+      rebuildDisplayGeometry();
+      markDirty("STL " + label.toLowerCase() + " applied");
+      setModeLabel(label.toLowerCase() + " applied");
+      notifyToolbarState();
+    } catch (err) {
+      console.error("[STLeditor] Boolean " + operation + " failed:", err);
+      setNodevisionStatus("STL", label + " boolean failed");
+      alert(label + " boolean failed. Mesh booleans use the server OpenSCAD renderer. " + (err?.message || err));
+    }
+    return true;
+  }
+
   function fillOrConnectSelection() {
     if (!state.topology || state.selection.size < 2) return;
     const selected = Array.from(state.selection);
@@ -1461,6 +1650,17 @@ export async function renderEditor(
       rebuildSelectionDisplay();
       notifyToolbarState();
       return false;
+    }
+
+    if (removed.size >= state.topology.vertices.length) {
+      state.topology = createEmptyTopology();
+      state.selection.clear();
+      state.maxDim = computeBounds().maxDim;
+      clearDisplayGeometry();
+      setModeLabel("all vertices deleted");
+      markDirty("Deleted all STL vertices");
+      notifyToolbarState();
+      return true;
     }
 
     const indexMap = new Map();
@@ -1759,6 +1959,9 @@ export async function renderEditor(
       },
       stlExtrude: () => extrudeSelection(),
       stlFillOrConnect: () => fillOrConnectSelection(),
+      stlUnion: () => runStlBooleanOperation("union"),
+      stlDifference: () => runStlBooleanOperation("difference"),
+      stlIntersection: () => runStlBooleanOperation("intersection"),
       stlSculptDraw: () => setSculptTool("draw"),
       stlSculptSmooth: () => setSculptTool("smooth"),
       stlSculptFlatten: () => setSculptTool("flatten"),

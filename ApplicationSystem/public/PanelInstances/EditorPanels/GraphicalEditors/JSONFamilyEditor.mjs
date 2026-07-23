@@ -37,6 +37,7 @@ export async function renderEditor(filePath, container) {
     syncSourceText(state);
     renderTree(state);
     installSaveHooks(state);
+    installMetadataTools(state);
     installCleanup(state);
     notifyToolbar(state, { fileIsDirty: false });
     status.textContent = "JSON loaded";
@@ -575,6 +576,65 @@ function notifyToolbar(state, extra = {}) {
   showToolbarSubToolbar(TOOLBAR_HEADING, { force: true, toggle: false });
 }
 
+function normalizeMetadataTags(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
+  return String(value || "")
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function readJsonDocumentMetadata(state) {
+  const root = state.data && typeof state.data === "object" && !Array.isArray(state.data) ? state.data : null;
+  const metadata = root?.metadata && typeof root.metadata === "object" && !Array.isArray(root.metadata)
+    ? root.metadata
+    : {};
+  return {
+    formatLabel: "JSON document",
+    fields: ["title", "description", "author", "tags"],
+    title: String(metadata.title || "").trim(),
+    description: String(metadata.description || "").trim(),
+    author: String(metadata.author || "").trim(),
+    tags: normalizeMetadataTags(metadata.tags),
+  };
+}
+
+function installMetadataTools(state) {
+  window.NodevisionMetadataTools = {
+    owner: state,
+    formatLabel: "JSON document",
+    fields: ["title", "description", "author", "tags"],
+    readMetadata: () => readJsonDocumentMetadata(state),
+    applyMetadata: (patch = {}) => {
+      if (state.sourceDirty && !applySourceBeforeMutation(state)) {
+        throw new Error("Source JSON is invalid");
+      }
+      if (!state.data || typeof state.data !== "object" || Array.isArray(state.data)) {
+        throw new Error("Metadata requires a root JSON object");
+      }
+      const current = state.data.metadata && typeof state.data.metadata === "object" && !Array.isArray(state.data.metadata)
+        ? state.data.metadata
+        : {};
+      state.data.metadata = {
+        ...current,
+        title: String(patch.title || "").trim(),
+        description: String(patch.description || "").trim(),
+        author: String(patch.author || "").trim(),
+        tags: normalizeMetadataTags(patch.tags),
+      };
+      state.dirty = true;
+      syncSourceText(state);
+      setStatus(state, "Metadata updated", "ok");
+      renderTree(state, pathKey(["metadata"]));
+      updateToolbarState({ fileIsDirty: true });
+      window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+        detail: { heading: "Metadata", force: true, toggle: false },
+      }));
+      return readJsonDocumentMetadata(state);
+    },
+  };
+}
+
 function installSaveHooks(state) {
   window.saveMDFile = async (path = state.filePath) => saveJson(state, path);
   window.saveWYSIWYGFile = window.saveMDFile;
@@ -588,6 +648,9 @@ function installCleanup(state) {
     }
     if (window.NodevisionState?.activeActionHandler === state.actionHandler) {
       updateToolbarState({ activeActionHandler: null, fileIsDirty: false });
+    }
+    if (window.NodevisionMetadataTools?.owner === state) {
+      window.NodevisionMetadataTools = undefined;
     }
     if (window.saveMDFile === window.saveWYSIWYGFile) window.saveWYSIWYGFile = undefined;
     window.saveMDFile = undefined;

@@ -11,6 +11,8 @@ export function makeRowsResizable(workspace, { minHeight = 50 } = {}) {
 
     const divider = document.createElement("div");
     divider.className = "row-divider";
+    divider.style.touchAction = "none";
+    divider.style.userSelect = "none";
 
     row.insertAdjacentElement("afterend", divider);
 
@@ -18,21 +20,29 @@ export function makeRowsResizable(workspace, { minHeight = 50 } = {}) {
     const nextRow = rows[i + 1];
 
     let isDragging = false;
+    let activePointerId = null;
     let startY = 0;
     let startHeightPrev = 0;
     let startHeightNext = 0;
 
-    divider.addEventListener("mousedown", (e) => {
+    divider.addEventListener("pointerdown", (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (activePointerId !== null) return;
       isDragging = true;
+      activePointerId = e.pointerId;
       startY = e.clientY;
       startHeightPrev = prevRow.offsetHeight;
       startHeightNext = nextRow.offsetHeight;
       document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+      divider.setPointerCapture?.(e.pointerId);
       e.preventDefault();
     });
 
-    window.addEventListener("mousemove", (e) => {
+    window.addEventListener("pointermove", (e) => {
       if (!isDragging) return;
+      if (e.pointerId !== activePointerId) return;
+      e.preventDefault();
       const delta = e.clientY - startY;
 
       let newPrev = startHeightPrev + delta;
@@ -46,11 +56,17 @@ export function makeRowsResizable(workspace, { minHeight = 50 } = {}) {
       nextRow.style.height = newNext + "px";
     });
 
-    window.addEventListener("mouseup", () => {
-      if (isDragging) {
-        isDragging = false;
-        document.body.style.cursor = "default";
-      }
-    });
+    function stopDragging(e) {
+      if (!isDragging) return;
+      if (e?.pointerId !== undefined && e.pointerId !== activePointerId) return;
+      divider.releasePointerCapture?.(activePointerId);
+      isDragging = false;
+      activePointerId = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    window.addEventListener("pointerup", stopDragging);
+    window.addEventListener("pointercancel", stopDragging);
   });
 }

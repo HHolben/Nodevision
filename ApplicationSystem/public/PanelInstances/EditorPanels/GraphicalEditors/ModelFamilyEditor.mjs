@@ -5,6 +5,7 @@ import {
   ensureNodevisionState,
   createBaseLayout,
   fetchArrayBuffer,
+  fetchText,
   fileExt,
   saveText,
   saveBase64,
@@ -14,6 +15,28 @@ import { parseNetlist } from "/PanelInstances/ViewPanels/FileViewers/ViewCIR/par
 import { mountWidget } from "/Widgets/WidgetHost.mjs";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
 import { exportSceneToSTL } from "/ModelExport/STLExport.mjs";
+import {
+  colorToHex,
+  createMaterial,
+  escapeHTML as escapeMtlHTML,
+  formatNumber,
+  getColor,
+  getNumber,
+  getTextValue,
+  hexToColor,
+  materialOpacity,
+  materialPreviewColor,
+  materialUnknownEntries,
+  parseMtl,
+  serializeMtl,
+  setColor,
+  setMaterialName,
+  setNumber,
+  setTextValue,
+  summarizeMtl,
+  uniqueMaterialName,
+} from "/PanelInstances/ViewPanels/FileViewers/MTL/mtlFormat.mjs";
+import { meshBooleanLabel, renderBooleanOperationToTopology } from "./MeshBooleanScad.mjs";
 
 const OBJ_LIGHT_THEME = {
   panelBorder: "#d7dee8",
@@ -42,10 +65,11 @@ function parseObjIndex(rawToken, vertexCount) {
   return index >= 0 && index < vertexCount ? index : null;
 }
 
-function createObjPart(index, name = "") {
+function createObjPart(index, name = "", materialName = "") {
   return {
-    id: `obj-part-${index}`,
-    name: String(name || `Part ${index}`).trim() || `Part ${index}`,
+    id: "obj-part-" + index,
+    name: String(name || ("Part " + index)).trim() || ("Part " + index),
+    materialName: String(materialName || "").trim(),
     faces: [],
     lines: [],
     pointIndices: new Set(),
@@ -59,15 +83,18 @@ function objPartHasGeometry(part) {
 function parseObjText(source = "") {
   const vertices = [];
   const parts = [];
+  const mtllibs = [];
+  let currentMaterialName = "";
   let current = createObjPart(1, "Object 1");
   parts.push(current);
 
   const usePart = (name = "") => {
     if (!objPartHasGeometry(current)) {
       current.name = String(name || current.name).trim() || current.name;
+      if (currentMaterialName && !current.materialName) current.materialName = currentMaterialName;
       return current;
     }
-    current = createObjPart(parts.length + 1, name || `Object ${parts.length + 1}`);
+    current = createObjPart(parts.length + 1, name || ("Object " + (parts.length + 1)), currentMaterialName);
     parts.push(current);
     return current;
   };
@@ -81,8 +108,19 @@ function parseObjText(source = "") {
       if (point.length === 3 && point.every(Number.isFinite)) vertices.push(point);
       return;
     }
+    if (kind === "mtllib") {
+      const library = values.join(" ").trim();
+      if (library) mtllibs.push(library);
+      return;
+    }
+    if (kind === "usemtl") {
+      currentMaterialName = values.join(" ").trim();
+      if (objPartHasGeometry(current)) usePart(currentMaterialName || current.name);
+      current.materialName = currentMaterialName;
+      return;
+    }
     if (kind === "o" || kind === "g") {
-      usePart(values.join(" ") || `${kind.toUpperCase()} ${parts.length + 1}`);
+      usePart(values.join(" ") || (kind.toUpperCase() + " " + (parts.length + 1)));
       return;
     }
     if (kind === "f") {
@@ -104,12 +142,607 @@ function parseObjText(source = "") {
 
   const visibleParts = parts.filter(objPartHasGeometry);
   if (!visibleParts.length && vertices.length) {
-    const fallback = createObjPart(1, "Vertices");
+    const fallback = createObjPart(1, "Vertices", currentMaterialName);
     vertices.forEach((_, index) => fallback.pointIndices.add(index));
     visibleParts.push(fallback);
   }
-  return { vertices, parts: visibleParts };
+  return { vertices, parts: visibleParts, mtllibs };
 }
+
+function formatObjScalar(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  return Number(n.toFixed(6)).toString();
+}
+
+function serializeObjParsedText(parsed, fallback = "") {
+  if (!parsed) return String(fallback || "");
+  const lines = ["# Nodevision OBJ mesh edit"];
+  const libraries = Array.from(new Set((parsed.mtllibs || []).map((item) => String(item || "").trim()).filter(Boolean)));
+  libraries.forEach((library) => lines.push("mtllib " + library));
+  parsed.vertices.forEach((vertex) => {
+    lines.push("v " + [vertex[0], vertex[1], vertex[2]].map(formatObjScalar).join(" "));
+  });
+  parsed.parts.forEach((part) => {
+    lines.push("o " + (part.name || part.id || "Object"));
+    if (part.materialName) lines.push("usemtl " + part.materialName);
+    part.faces.forEach((face) => lines.push("f " + face.map((index) => String(index + 1)).join(" ")));
+    part.lines.forEach((line) => lines.push("l " + line.map((index) => String(index + 1)).join(" ")));
+  });
+  return lines.join("\n") + "\n";
+}
+
+function cleanObjPath(path = "") {
+  const [withoutQuery] = String(path || "").split(/[?#]/);
+  return withoutQuery.replaceAll(String.fromCharCode(92), "/").replace(/^\/+/, "").replace(/^Notebook\/+/, "");
+}
+
+function objBaseName(path = "") {
+  return cleanObjPath(path).split("/").filter(Boolean).pop() || "model.obj";
+}
+
+function objDirName(path = "") {
+  const parts = cleanObjPath(path).split("/").filter(Boolean);
+  parts.pop();
+  return parts.join("/");
+}
+
+function objJoinPath(dir = "", child = "") {
+  const cleanChild = cleanObjPath(child);
+  if (!cleanChild) return cleanObjPath(dir);
+  if (!dir || cleanChild.includes("/")) return cleanObjPath([dir, cleanChild].filter(Boolean).join("/"));
+  return cleanObjPath(dir + "/" + cleanChild);
+}
+
+function objDefaultMtlPath(objPath = "") {
+  const base = objBaseName(objPath).replace(/\.[^.]*$/, "") || "material";
+  return objJoinPath(objDirName(objPath), base + ".mtl");
+}
+
+function objMtlLibraryName(objPath = "", mtlPath = "") {
+  const objDir = objDirName(objPath);
+  const cleanMtl = cleanObjPath(mtlPath);
+  if (objDir && cleanMtl.startsWith(objDir + "/")) return cleanMtl.slice(objDir.length + 1);
+  return objBaseName(cleanMtl || objDefaultMtlPath(objPath));
+}
+
+function firstObjMtllib(source = "") {
+  const match = String(source || "").match(/^\s*mtllib\s+(.+)$/im);
+  return match ? match[1].trim() : "";
+}
+
+function resolveObjMtlPath(objPath = "", library = "") {
+  const cleanLibrary = cleanObjPath(library);
+  if (!cleanLibrary) return objDefaultMtlPath(objPath);
+  if (cleanLibrary.includes("/")) return objJoinPath(objDirName(objPath), cleanLibrary);
+  return objJoinPath(objDirName(objPath), cleanLibrary);
+}
+
+function defaultObjMaterialName(objPath = "") {
+  const base = objBaseName(objPath).replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+  return base ? base + "_Material" : "OBJ_Material";
+}
+
+function createObjMtlDocument(materialName) {
+  return { preamble: [], materials: [createMaterial(materialName || "OBJ_Material")], trailingNewline: true };
+}
+
+function findObjMaterial(documentModel, name = "") {
+  const lower = String(name || "").toLowerCase();
+  return (documentModel?.materials || []).find((material) => String(material.name || "").toLowerCase() === lower) || null;
+}
+
+function ensureObjMaterial(documentModel, name = "") {
+  const cleanName = String(name || "").trim() || uniqueMaterialName(documentModel, "Material");
+  let material = findObjMaterial(documentModel, cleanName);
+  if (!material) {
+    material = createMaterial(cleanName);
+    documentModel.materials = Array.isArray(documentModel.materials) ? documentModel.materials : [];
+    documentModel.materials.push(material);
+  }
+  return material;
+}
+
+function applyObjMaterialReference(source, mtlLibraryName, materialName) {
+  const normalized = String(source || "").replace(/\r\n?/g, "\n");
+  const lines = normalized.split("\n");
+  const library = String(mtlLibraryName || "").trim();
+  const material = String(materialName || "").trim();
+
+  if (library) {
+    const existingIndex = lines.findIndex((line) => /^\s*mtllib\b/i.test(line));
+    if (existingIndex >= 0) {
+      lines[existingIndex] = "mtllib " + library;
+    } else {
+      let insertAt = 0;
+      while (insertAt < lines.length) {
+        const clean = String(lines[insertAt] || "").trim();
+        if (clean && !clean.startsWith("#")) break;
+        insertAt += 1;
+      }
+      lines.splice(insertAt, 0, "mtllib " + library);
+    }
+  }
+
+  if (material) {
+    let sawUseMtl = false;
+    lines.forEach((line, index) => {
+      if (/^\s*usemtl\b/i.test(line)) {
+        lines[index] = "usemtl " + material;
+        sawUseMtl = true;
+      }
+    });
+    if (!sawUseMtl) {
+      const geometryIndex = lines.findIndex((line) => /^\s*(f|l)\s+/i.test(line));
+      lines.splice(geometryIndex >= 0 ? geometryIndex : Math.max(0, lines.length - 1), 0, "usemtl " + material);
+    }
+  }
+
+  const joined = lines.join("\n");
+  return joined.endsWith("\n") ? joined : joined + "\n";
+}
+
+function objTextureToolsCss() {
+  return `
+    .nv-obj-texture-tools,
+    .nv-obj-texture-tools * { box-sizing: border-box; }
+    .nv-obj-texture-tools {
+      display: grid;
+      gap: 8px;
+      border: 1px solid #c8d3dd;
+      border-radius: 8px;
+      background: #f7fafb;
+      color: #172026;
+      padding: 8px;
+      font: 12px/1.35 system-ui, sans-serif;
+    }
+    .nv-obj-texture-tools[hidden] { display: none; }
+    .nv-obj-texture-bar,
+    .nv-obj-texture-direct {
+      display: flex;
+      align-items: end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .nv-obj-texture-tools label {
+      min-width: 130px;
+      display: grid;
+      gap: 3px;
+      color: #44515a;
+      font-weight: 650;
+    }
+    .nv-obj-texture-tools input,
+    .nv-obj-texture-tools select {
+      min-width: 0;
+      border: 1px solid #b8c4ce;
+      border-radius: 6px;
+      background: #fff;
+      color: #111820;
+      padding: 6px 7px;
+      font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .nv-obj-texture-tools button,
+    .nv-obj-texture-tools .nv-mtl-delete {
+      border: 1px solid #aebbc4;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2e38;
+      min-height: 30px;
+      padding: 5px 9px;
+      font: inherit;
+      cursor: pointer;
+    }
+    .nv-obj-texture-tools button:hover { background: #eef4f6; border-color: #6f8796; }
+    .nv-obj-texture-body {
+      display: grid;
+      grid-template-columns: minmax(150px, 210px) minmax(280px, 1fr);
+      min-height: 180px;
+      border: 1px solid #d5dee6;
+      border-radius: 7px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .nv-obj-texture-tools .nv-mtl-material-list {
+      min-height: 0;
+      max-height: 260px;
+      overflow: auto;
+      padding: 7px;
+      border-right: 1px solid #d5dee6;
+    }
+    .nv-obj-texture-tools .nv-mtl-material-editor {
+      min-height: 0;
+      max-height: 300px;
+      overflow: auto;
+      padding: 9px;
+    }
+    .nv-obj-texture-tools .nv-mtl-material-button {
+      width: 100%;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      align-items: center;
+      gap: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      text-align: left;
+    }
+    .nv-obj-texture-tools .nv-mtl-material-button.is-active { border-color: #7890a0; background: #e9f1f4; }
+    .nv-obj-texture-tools .nv-mtl-list-swatch {
+      width: 20px;
+      height: 20px;
+      border: 1px solid #9aa7b0;
+      border-radius: 5px;
+    }
+    .nv-obj-texture-tools .nv-mtl-list-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .nv-obj-texture-tools .nv-mtl-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(150px, 1fr));
+      gap: 8px;
+    }
+    .nv-obj-texture-tools .nv-mtl-field {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+      color: #44515a;
+      font-weight: 650;
+    }
+    .nv-obj-texture-tools .nv-mtl-field-full { grid-column: 1 / -1; }
+    .nv-obj-texture-tools .nv-mtl-field input,
+    .nv-obj-texture-tools .nv-mtl-field select { width: 100%; }
+    .nv-obj-texture-tools .nv-mtl-color-field {
+      grid-template-columns: 44px repeat(3, minmax(54px, 1fr));
+      align-items: end;
+    }
+    .nv-obj-texture-tools .nv-mtl-color-field span { grid-column: 1 / -1; }
+    .nv-obj-texture-tools .nv-mtl-color-field input[type="color"] { height: 32px; padding: 2px; }
+    .nv-obj-texture-tools .nv-mtl-custom-lines {
+      grid-column: 1 / -1;
+      border: 1px solid #d5dee6;
+      border-radius: 7px;
+      background: #fff;
+    }
+    .nv-obj-texture-tools .nv-mtl-pane-title {
+      padding: 7px 8px;
+      border-bottom: 1px solid #d5dee6;
+      color: #44515a;
+      font-weight: 700;
+    }
+    .nv-obj-texture-tools .nv-mtl-custom-lines pre {
+      margin: 0;
+      max-height: 90px;
+      overflow: auto;
+      padding: 8px;
+      background: #111820;
+      color: #edf3f7;
+      border-radius: 0 0 7px 7px;
+      white-space: pre-wrap;
+      font: 11px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .nv-obj-texture-status { color: #5f6c76; min-height: 16px; }
+    @media (max-width: 900px) {
+      .nv-obj-texture-body { grid-template-columns: minmax(0, 1fr); }
+      .nv-obj-texture-tools .nv-mtl-material-list { border-right: 0; border-bottom: 1px solid #d5dee6; }
+      .nv-obj-texture-tools .nv-mtl-form { grid-template-columns: minmax(0, 1fr); }
+    }
+  `;
+}
+
+function createObjTextureTools({ objPath, initialObjText, host, status, textarea, preview }) {
+  const initialLibrary = firstObjMtllib(initialObjText);
+  const state = {
+    visible: false,
+    loaded: false,
+    mtlPath: resolveObjMtlPath(objPath, initialLibrary),
+    document: createObjMtlDocument(defaultObjMaterialName(objPath)),
+    selectedIndex: 0,
+    dirty: false,
+    statusText: "Texture tools ready",
+  };
+
+  const root = document.createElement("section");
+  root.className = "nv-obj-texture-tools";
+  root.hidden = true;
+  host.appendChild(root);
+
+  function selectedMaterial() {
+    return state.document.materials?.[state.selectedIndex] || null;
+  }
+
+  function setToolStatus(message) {
+    state.statusText = message || "";
+    const el = root.querySelector("[data-texture-status]");
+    if (el) el.textContent = state.statusText;
+    if (message) status.textContent = message;
+  }
+
+  function markMtlDirty(message) {
+    state.dirty = true;
+    updateToolbarState({ fileIsDirty: true });
+    setToolStatus(message || "MTL changed");
+  }
+
+  function syncPreviewMaterial() {
+    preview?.setMaterialDocument?.(state.document, objDirName(state.mtlPath));
+  }
+
+  function materialChanged(message, rerender = false) {
+    markMtlDirty(message);
+    syncPreviewMaterial();
+    if (rerender) render();
+    else updateMaterialButtons();
+  }
+
+  async function loadMtl(pathValue = state.mtlPath) {
+    state.mtlPath = cleanObjPath(pathValue || objDefaultMtlPath(objPath));
+    try {
+      const text = await fetchText(state.mtlPath);
+      state.document = parseMtl(text);
+      if (!state.document.materials.length) state.document.materials.push(createMaterial(defaultObjMaterialName(objPath)));
+      state.selectedIndex = Math.max(0, Math.min(state.selectedIndex, state.document.materials.length - 1));
+      state.loaded = true;
+      state.dirty = false;
+      render();
+      syncPreviewMaterial();
+      setToolStatus("Loaded " + objBaseName(state.mtlPath));
+    } catch (err) {
+      state.document = createObjMtlDocument(defaultObjMaterialName(objPath));
+      state.selectedIndex = 0;
+      state.loaded = true;
+      state.dirty = false;
+      render();
+      setToolStatus("New MTL " + objBaseName(state.mtlPath));
+    }
+  }
+
+  async function saveMtl() {
+    const content = serializeMtl(state.document);
+    await saveText(state.mtlPath || objDefaultMtlPath(objPath), content);
+    state.dirty = false;
+    setToolStatus("Saved " + objBaseName(state.mtlPath));
+    window.dispatchEvent(new CustomEvent("nodevision-file-saved", { detail: { filePath: state.mtlPath } }));
+  }
+
+  function applyMaterialToObj(message = "Applied OBJ material") {
+    const material = selectedMaterial() || ensureObjMaterial(state.document, defaultObjMaterialName(objPath));
+    const libraryName = objMtlLibraryName(objPath, state.mtlPath || objDefaultMtlPath(objPath));
+    const nextText = applyObjMaterialReference(textarea.value, libraryName, material.name);
+    textarea.value = nextText;
+    preview?.setSource?.(nextText);
+    updateToolbarState({ fileIsDirty: true });
+    setToolStatus(message);
+  }
+
+  function updateMaterialButtons() {
+    const buttons = root.querySelectorAll(".nv-mtl-material-button");
+    buttons.forEach((button, index) => button.classList.toggle("is-active", index === state.selectedIndex));
+    const summary = summarizeMtl(state.document);
+    const summaryEl = root.querySelector("[data-texture-summary]");
+    if (summaryEl) summaryEl.textContent = summary.materialCount + " material" + (summary.materialCount === 1 ? "" : "s") + ", " + summary.textureCount + " map" + (summary.textureCount === 1 ? "" : "s");
+  }
+
+  function renderMaterialList(listEl) {
+    listEl.innerHTML = "";
+    const materials = state.document.materials || [];
+    materials.forEach((material, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "nv-mtl-material-button" + (index === state.selectedIndex ? " is-active" : "");
+      button.title = material.name || "Unnamed material";
+      button.innerHTML = "<span class=\"nv-mtl-list-swatch\"></span><span class=\"nv-mtl-list-name\"></span>";
+      button.querySelector(".nv-mtl-list-swatch").style.background = colorToHex(materialPreviewColor(material));
+      button.querySelector(".nv-mtl-list-name").textContent = material.name || "Unnamed material";
+      button.addEventListener("click", () => {
+        state.selectedIndex = index;
+        render();
+      });
+      listEl.appendChild(button);
+    });
+  }
+
+  function colorField(material, key, label) {
+    const value = getColor(material, key, key === "Kd" ? [0.8, 0.8, 0.8] : [0, 0, 0]);
+    const field = document.createElement("div");
+    field.className = "nv-mtl-field nv-mtl-color-field";
+    field.innerHTML = "<span>" + label + "</span>" +
+      "<input type=\"color\" value=\"" + colorToHex(value) + "\" title=\"" + label + "\">" +
+      "<input type=\"number\" min=\"0\" max=\"1\" step=\"0.01\" value=\"" + formatNumber(value[0], 3) + "\" aria-label=\"" + label + " red\">" +
+      "<input type=\"number\" min=\"0\" max=\"1\" step=\"0.01\" value=\"" + formatNumber(value[1], 3) + "\" aria-label=\"" + label + " green\">" +
+      "<input type=\"number\" min=\"0\" max=\"1\" step=\"0.01\" value=\"" + formatNumber(value[2], 3) + "\" aria-label=\"" + label + " blue\">";
+    const [colorInput, rInput, gInput, bInput] = field.querySelectorAll("input");
+    const applyValues = (values) => {
+      setColor(material, key, values);
+      materialChanged(label + " changed");
+    };
+    colorInput.addEventListener("input", () => {
+      const rgb = hexToColor(colorInput.value);
+      rInput.value = formatNumber(rgb[0], 3);
+      gInput.value = formatNumber(rgb[1], 3);
+      bInput.value = formatNumber(rgb[2], 3);
+      applyValues(rgb);
+    });
+    [rInput, gInput, bInput].forEach((input) => {
+      input.addEventListener("input", () => {
+        const rgb = [rInput.value, gInput.value, bInput.value].map((item) => Number(item));
+        colorInput.value = colorToHex(rgb);
+        applyValues(rgb);
+      });
+    });
+    return field;
+  }
+
+  function numberField(material, key, label, options = {}) {
+    const value = getNumber(material, key, options.fallback ?? 0);
+    const field = document.createElement("label");
+    field.className = "nv-mtl-field";
+    field.innerHTML = "<span>" + label + "</span><input type=\"number\" min=\"" + (options.min ?? "") + "\" max=\"" + (options.max ?? "") + "\" step=\"" + (options.step ?? 0.01) + "\" value=\"" + formatNumber(value, 3) + "\">";
+    field.querySelector("input").addEventListener("input", (event) => {
+      setNumber(material, key, event.target.value, { precision: key === "illum" ? 0 : 3 });
+      materialChanged(label + " changed");
+    });
+    return field;
+  }
+
+  function illumField(material) {
+    const value = String(Math.round(getNumber(material, "illum", 2)));
+    const field = document.createElement("label");
+    field.className = "nv-mtl-field";
+    field.innerHTML = "<span>Illumination</span><select>" + Array.from({ length: 11 }, (_, index) => "<option value=\"" + index + "\"" + (String(index) === value ? " selected" : "") + ">" + index + "</option>").join("") + "</select>";
+    field.querySelector("select").addEventListener("change", (event) => {
+      setNumber(material, "illum", event.target.value, { precision: 0 });
+      materialChanged("Illumination changed");
+    });
+    return field;
+  }
+
+  function textField(material, key, label) {
+    const value = getTextValue(material, key, "");
+    const field = document.createElement("label");
+    field.className = "nv-mtl-field nv-mtl-field-full";
+    field.innerHTML = "<span>" + label + "</span><input type=\"text\" value=\"" + escapeMtlHTML(value) + "\">";
+    field.querySelector("input").addEventListener("input", (event) => {
+      setTextValue(material, key, event.target.value, { removeEmpty: true });
+      materialChanged(label + " changed");
+    });
+    return field;
+  }
+
+  function renderMaterialEditor(detailEl) {
+    detailEl.innerHTML = "";
+    const material = selectedMaterial();
+    if (!material) {
+      detailEl.textContent = "No material selected";
+      return;
+    }
+    const form = document.createElement("form");
+    form.className = "nv-mtl-form";
+    form.addEventListener("submit", (event) => event.preventDefault());
+
+    const nameRow = document.createElement("label");
+    nameRow.className = "nv-mtl-field nv-mtl-field-full";
+    nameRow.innerHTML = "<span>Name</span><input type=\"text\" data-name value=\"" + escapeMtlHTML(material.name || "") + "\">";
+    nameRow.querySelector("input").addEventListener("input", (event) => {
+      setMaterialName(material, event.target.value);
+      materialChanged("Material renamed", true);
+    });
+    form.append(
+      nameRow,
+      colorField(material, "Ka", "Ambient"),
+      colorField(material, "Kd", "Diffuse"),
+      colorField(material, "Ks", "Specular"),
+      colorField(material, "Ke", "Emission"),
+      numberField(material, "Ns", "Shininess", { min: 0, max: 1000, step: 1, fallback: 10 }),
+      numberField(material, "Ni", "Optical density", { min: 0, max: 10, step: 0.01, fallback: 1 }),
+      numberField(material, "d", "Opacity", { min: 0, max: 1, step: 0.01, fallback: materialOpacity(material) }),
+      illumField(material),
+      textField(material, "map_Kd", "Diffuse map"),
+      textField(material, "map_Ks", "Specular map"),
+      textField(material, "map_Bump", "Bump map"),
+      textField(material, "norm", "Normal map"),
+    );
+
+    const custom = materialUnknownEntries(material);
+    const customBox = document.createElement("div");
+    customBox.className = "nv-mtl-custom-lines";
+    customBox.innerHTML = "<div class=\"nv-mtl-pane-title\">Custom directives</div><pre></pre>";
+    customBox.querySelector("pre").textContent = custom.map((entry) => entry.raw).join("\n") || "None";
+    form.appendChild(customBox);
+    detailEl.appendChild(form);
+  }
+
+  function render() {
+    const material = selectedMaterial();
+    const directMap = material ? getTextValue(material, "map_Kd", "") : "";
+    root.innerHTML = "<style>" + objTextureToolsCss() + "</style>" +
+      "<div class=\"nv-obj-texture-bar\">" +
+        "<label>MTL file<input type=\"text\" data-mtl-path value=\"" + escapeMtlHTML(state.mtlPath) + "\"></label>" +
+        "<button type=\"button\" data-action=\"load\">Load MTL</button>" +
+        "<button type=\"button\" data-action=\"save\">Save MTL</button>" +
+        "<button type=\"button\" data-action=\"add\">Add Material</button>" +
+        "<button type=\"button\" data-action=\"apply\">Apply Material</button>" +
+        "<button type=\"button\" data-action=\"close\">Close</button>" +
+        "<span data-texture-summary></span>" +
+      "</div>" +
+      "<div class=\"nv-obj-texture-direct\">" +
+        "<label>Direct texture<input type=\"text\" data-direct-texture value=\"" + escapeMtlHTML(directMap) + "\"></label>" +
+        "<input type=\"file\" accept=\"image/*\" data-direct-file>" +
+        "<button type=\"button\" data-action=\"apply-texture\">Apply Texture</button>" +
+      "</div>" +
+      "<div class=\"nv-obj-texture-body\"><nav class=\"nv-mtl-material-list\" aria-label=\"OBJ MTL materials\"></nav><main class=\"nv-mtl-material-editor\"></main></div>" +
+      "<div class=\"nv-obj-texture-status\" data-texture-status>" + escapeMtlHTML(state.statusText) + "</div>";
+
+    const pathInput = root.querySelector("[data-mtl-path]");
+    const directInput = root.querySelector("[data-direct-texture]");
+    const fileInput = root.querySelector("[data-direct-file]");
+    const listEl = root.querySelector(".nv-mtl-material-list");
+    const detailEl = root.querySelector(".nv-mtl-material-editor");
+
+    pathInput.addEventListener("input", () => {
+      state.mtlPath = cleanObjPath(pathInput.value);
+    });
+    root.querySelector("[data-action=\"load\"]").addEventListener("click", () => loadMtl(pathInput.value));
+    root.querySelector("[data-action=\"save\"]").addEventListener("click", () => saveMtl().catch((err) => setToolStatus("Save MTL failed: " + (err.message || err))));
+    root.querySelector("[data-action=\"add\"]").addEventListener("click", () => {
+      const name = uniqueMaterialName(state.document, "Material");
+      state.document.materials.push(createMaterial(name));
+      state.selectedIndex = state.document.materials.length - 1;
+      materialChanged("Material added", true);
+    });
+    root.querySelector("[data-action=\"apply\"]").addEventListener("click", () => applyMaterialToObj());
+    root.querySelector("[data-action=\"close\"]").addEventListener("click", () => close());
+    root.querySelector("[data-action=\"apply-texture\"]").addEventListener("click", () => {
+      const materialToEdit = selectedMaterial() || ensureObjMaterial(state.document, defaultObjMaterialName(objPath));
+      state.selectedIndex = Math.max(0, state.document.materials.indexOf(materialToEdit));
+      setTextValue(materialToEdit, "map_Kd", directInput.value, { removeEmpty: true });
+      markMtlDirty("Diffuse texture changed");
+      applyMaterialToObj("Applied texture material");
+      render();
+    });
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files?.[0];
+      if (file) directInput.value = file.name;
+    });
+
+    renderMaterialList(listEl);
+    renderMaterialEditor(detailEl);
+    updateMaterialButtons();
+  }
+
+  function open() {
+    state.visible = true;
+    root.hidden = false;
+    render();
+    if (!state.loaded) loadMtl(state.mtlPath);
+  }
+
+  function close() {
+    state.visible = false;
+    root.hidden = true;
+  }
+
+  function toggle() {
+    if (state.visible) close();
+    else open();
+  }
+
+  render();
+
+  return {
+    open,
+    close,
+    toggle,
+    hasDirtyMtl: () => state.dirty,
+    saveMtl,
+    saveIfDirty: async () => {
+      if (state.dirty) await saveMtl();
+    },
+  };
+}
+
 
 export async function createObjGraphicalPreview(host, sourceText, status, options = {}) {
   const THREE = await import("/lib/three/three.module.js");
@@ -247,6 +880,16 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       const group = partGroups.get(id);
       if (!group) return;
       helperRoot.add(new THREE.BoxHelper(group, 0xf5c542));
+    });
+  }
+
+  function notifyObjToolbarState(extra = {}) {
+    updateToolbarState({
+      currentMode: "OBJediting",
+      activePanelType: "GraphicalEditor",
+      objHasPartSelection: selectedIds.size > 0,
+      objCanBoolean: selectedIds.size >= 2,
+      ...extra,
     });
   }
 
@@ -396,18 +1039,40 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
     return true;
   }
 
+  function selectedObjPartVertexIndices() {
+    const indices = new Set();
+    if (!parsedObj || selectedIds.size === 0) return [];
+    parsedObj.parts.forEach((part) => {
+      if (!selectedIds.has(part.id)) return;
+      part.faces.forEach((face) => face.forEach((index) => indices.add(index)));
+      part.lines.forEach((line) => line.forEach((index) => indices.add(index)));
+      part.pointIndices.forEach((index) => indices.add(index));
+    });
+    return Array.from(indices).filter((index) => Number.isInteger(index) && objPoint(index));
+  }
+
+  function appendObjVertexExtrusion(sourceIndex, event = null) {
+    if (!parsedObj || !Number.isInteger(sourceIndex)) return false;
+    const source = objPoint(sourceIndex);
+    if (!source) return false;
+    const offset = objExtrudeOffsetForIndices([sourceIndex]);
+    const next = source.clone().add(offset);
+    const nextIndex = parsedObj.vertices.length;
+    parsedObj.vertices.push([next.x, next.y, next.z]);
+    const part = ensureExtrusionPart(parsedObj);
+    part.lines.push([sourceIndex, nextIndex]);
+    part.pointIndices.add(sourceIndex);
+    part.pointIndices.add(nextIndex);
+
+    currentSourceText = serializeObjFromParsed(parsedObj);
+    options.onSourceChange?.(currentSourceText);
+    setSource(currentSourceText, { selectedVertexIndices: [nextIndex], statusText: "OBJ vertex extruded. Move mouse, click/Enter to confirm." });
+    startObjVertexGrab([nextIndex], event, source, new Map([[nextIndex, source]]));
+    return true;
+  }
+
   function serializeObjFromParsed(parsed) {
-    if (!parsed) return currentSourceText;
-    const lines = ["# Nodevision OBJ mesh edit"];
-    parsed.vertices.forEach((vertex) => {
-      lines.push("v " + [vertex[0], vertex[1], vertex[2]].map(formatObjNumber).join(" "));
-    });
-    parsed.parts.forEach((part) => {
-      lines.push("o " + (part.name || part.id || "Object"));
-      part.faces.forEach((face) => lines.push("f " + face.map((index) => String(index + 1)).join(" ")));
-      part.lines.forEach((line) => lines.push("l " + line.map((index) => String(index + 1)).join(" ")));
-    });
-    return lines.join("\n") + "\n";
+    return serializeObjParsedText(parsed, currentSourceText);
   }
 
   function syncObjSourceFromParsed() {
@@ -524,6 +1189,172 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
     return true;
   }
 
+  function extrudeObjSelection(event = null) {
+    if (grabState) finishObjEdgeGrab(false);
+    const edge = selectedEdgeRecord();
+    if (edge) return appendObjExtrusion(edge, event);
+
+    const selectedVertices = Array.from(selectedVertexIndices).filter((index) => Number.isInteger(index) && objPoint(index));
+    if (selectedVertices.length === 1) return appendObjVertexExtrusion(selectedVertices[0], event);
+    if (selectedVertices.length === 2) {
+      const [a, b] = selectedVertices;
+      const edgeMatch = edgeRecords.find((entry) => (entry.a === a && entry.b === b) || (entry.a === b && entry.b === a));
+      if (edgeMatch) return appendObjExtrusion(edgeMatch, event);
+    }
+
+    if (selectedIds.size > 0) return appendObjFaceExtrusion(event);
+    status.textContent = "Select an OBJ edge, vertex, or face region first.";
+    return true;
+  }
+
+  function selectedObjBooleanParts() {
+    if (!parsedObj || selectedIds.size < 1) return [];
+    const byId = new Map(parsedObj.parts.map((part) => [part.id, part]));
+    return Array.from(selectedIds).map((id) => byId.get(id)).filter(Boolean);
+  }
+
+  function objPartToBooleanOperand(part) {
+    const vertexMap = new Map();
+    const vertices = [];
+    const faces = [];
+    const remap = (oldIndex) => {
+      if (!Number.isInteger(oldIndex)) return null;
+      if (!vertexMap.has(oldIndex)) {
+        const point = parsedObj.vertices[oldIndex];
+        if (!Array.isArray(point)) return null;
+        vertexMap.set(oldIndex, vertices.length);
+        vertices.push([Number(point[0]) || 0, Number(point[1]) || 0, Number(point[2]) || 0]);
+      }
+      return vertexMap.get(oldIndex);
+    };
+
+    (part.faces || []).forEach((face) => {
+      const nextFace = Array.isArray(face) ? face.map(remap).filter(Number.isInteger) : [];
+      if (nextFace.length >= 3 && new Set(nextFace).size >= 3) faces.push(nextFace);
+    });
+    return { name: part.name || part.id, vertices, faces };
+  }
+
+  function uniqueObjPartId(prefix = "obj-part-nodevision-boolean") {
+    const used = new Set((parsedObj?.parts || []).map((part) => part.id));
+    let index = 1;
+    let id = prefix;
+    while (used.has(id)) {
+      index += 1;
+      id = prefix + "-" + index;
+    }
+    return id;
+  }
+
+  function applyObjBooleanResult(operation, parts, resultTopology) {
+    const removeIds = new Set(parts.map((part) => part.id));
+    parsedObj.parts = parsedObj.parts.filter((part) => !removeIds.has(part.id));
+
+    let resultPart = null;
+    if ((resultTopology.vertices || []).length && (resultTopology.faces || []).length) {
+      const label = meshBooleanLabel(operation);
+      const offset = parsedObj.vertices.length;
+      (resultTopology.vertices || []).forEach((vertex) => {
+        parsedObj.vertices.push([Number(vertex?.x) || 0, Number(vertex?.y) || 0, Number(vertex?.z) || 0]);
+      });
+      resultPart = createObjPart(parsedObj.parts.length + 1, "Boolean " + label, parts[0]?.materialName || "");
+      resultPart.id = uniqueObjPartId();
+      (resultTopology.faces || []).forEach((face) => {
+        const nextFace = Array.isArray(face) ? face.map((index) => Number(index) + offset).filter(Number.isInteger) : [];
+        if (nextFace.length >= 3 && new Set(nextFace).size >= 3) {
+          resultPart.faces.push(nextFace);
+          nextFace.forEach((index) => resultPart.pointIndices.add(index));
+        }
+      });
+      if (objPartHasGeometry(resultPart)) parsedObj.parts.push(resultPart);
+    }
+
+    currentSourceText = serializeObjFromParsed(parsedObj);
+    options.onSourceChange?.(currentSourceText);
+    rebuildObjDisplayFromParsed({ frame: true });
+    if (resultPart) setSelection([resultPart.id]);
+    else clearObjSelection();
+    const label = meshBooleanLabel(operation);
+    status.textContent = resultPart
+      ? "OBJ " + label.toLowerCase() + " applied."
+      : "OBJ " + label.toLowerCase() + " produced an empty result.";
+    notifyObjToolbarState({ fileIsDirty: true });
+  }
+
+  async function runObjBooleanOperation(operation) {
+    if (grabState) finishObjEdgeGrab(false);
+    const label = meshBooleanLabel(operation);
+    const parts = selectedObjBooleanParts();
+    if (parts.length < 2) {
+      status.textContent = "Select at least two OBJ parts for " + label.toLowerCase() + ".";
+      return true;
+    }
+
+    const operands = parts.map(objPartToBooleanOperand).filter((operand) => operand.faces.length > 0);
+    if (operands.length < 2) {
+      status.textContent = "Selected OBJ parts need closed face geometry for booleans.";
+      return true;
+    }
+
+    status.textContent = "OBJ " + label.toLowerCase() + " rendering...";
+    try {
+      const result = await renderBooleanOperationToTopology(THREE, operation, operands);
+      applyObjBooleanResult(operation, parts, result);
+    } catch (err) {
+      console.error("[ModelFamilyEditor] OBJ boolean " + operation + " failed:", err);
+      status.textContent = "OBJ " + label.toLowerCase() + " failed.";
+      alert(label + " boolean failed. Mesh booleans use the server OpenSCAD renderer. " + (err?.message || err));
+    }
+    return true;
+  }
+
+  function grabObjSelection(event = null) {
+    if (grabState) return finishObjEdgeGrab(false);
+    const selectedVertices = Array.from(selectedVertexIndices).filter((index) => Number.isInteger(index) && objPoint(index));
+    if (selectedVertices.length) return startObjVertexGrab(selectedVertices, event);
+
+    const edge = selectedEdgeRecord();
+    if (edge) return startObjEdgeGrab(event);
+
+    const partVertices = selectedObjPartVertexIndices();
+    if (partVertices.length) return startObjVertexGrab(partVertices, event);
+
+    status.textContent = "Select OBJ vertices, an edge, or part(s) first.";
+    return true;
+  }
+
+  function clearObjSelection() {
+    if (grabState) finishObjEdgeGrab(true);
+    selectedIds = new Set();
+    selectedEdgeIndex = null;
+    selectedVertexIndices = new Set();
+    rebuildSelectionHelpers();
+    rebuildEdgeEditOverlay();
+    status.textContent = "OBJ selection cleared.";
+    notifyObjToolbarState();
+    return true;
+  }
+
+  function handleObjToolbarAction(callbackKey) {
+    const actions = {
+      objRecenter: () => {
+        frameModel();
+        status.textContent = "OBJ view centered.";
+        return true;
+      },
+      objClearSelection: () => clearObjSelection(),
+      objGrab: () => grabObjSelection(),
+      objExtrude: () => extrudeObjSelection(),
+      objUnion: () => runObjBooleanOperation("union"),
+      objDifference: () => runObjBooleanOperation("difference"),
+      objIntersection: () => runObjBooleanOperation("intersection"),
+    };
+    const action = actions[callbackKey];
+    if (typeof action !== "function") return false;
+    action();
+    return true;
+  }
+
   function startObjVertexGrab(indices = [], event = null, centroidOverride = null, startOverrides = null) {
     const unique = Array.from(new Set(indices.filter((index) => Number.isInteger(index) && objPoint(index))));
     if (!parsedObj || !unique.length) return false;
@@ -606,6 +1437,7 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
     rebuildEdgeEditOverlay();
     const count = selectedIds.size;
     status.textContent = count ? `OBJ selected: ${count} part(s).` : "OBJ ready. Click or drag in the viewport to select parts.";
+    notifyObjToolbarState();
   }
 
   function createPartGroup(part, vertices) {
@@ -712,6 +1544,7 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       rebuildEdgeEditOverlay();
     }
     status.textContent = setOptions.statusText || ("OBJ graphical preview: " + partGroups.size + " part(s), " + parsedObj.vertices.length + " vertices. Click edge: select | E: extrude | G: grab.");
+    notifyObjToolbarState();
   }
 
   function setPointerFromEvent(event) {
@@ -883,18 +1716,15 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       return;
     }
     if (key === "e") {
-      const edge = selectedEdgeRecord();
-      if (!edge && selectedIds.size === 0) return;
+      if (!selectedEdgeRecord() && selectedVertexIndices.size === 0 && selectedIds.size === 0) return;
       event.preventDefault();
-      if (edge) appendObjExtrusion(edge, event);
-      else appendObjFaceExtrusion(event);
+      extrudeObjSelection(event);
       return;
     }
     if (key === "g") {
-      if (!selectedEdgeRecord() && selectedVertexIndices.size === 0) return;
+      if (!selectedEdgeRecord() && selectedVertexIndices.size === 0 && selectedIds.size === 0) return;
       event.preventDefault();
-      if (selectedVertexIndices.size) startObjVertexGrab(Array.from(selectedVertexIndices), event);
-      else startObjEdgeGrab(event);
+      grabObjSelection(event);
     }
   }
 
@@ -938,6 +1768,10 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
 
   return {
     setSource,
+    handleToolbarAction: handleObjToolbarAction,
+    commitActiveEdit() {
+      return grabState ? finishObjEdgeGrab(false) : false;
+    },
     exportSTL(pathValue = "model.obj") {
       exportSceneToSTL(modelRoot, pathValue);
     },
@@ -1671,6 +2505,8 @@ export async function renderEditor(filePath, container) {
       editorCol.appendChild(textarea);
       layout.appendChild(editorCol);
 
+      let objTextureTools = null;
+
       if (isCIR) {
         const previewTitle = document.createElement("div");
         previewTitle.style.cssText = "font:12px monospace;color:#333;margin-bottom:4px;";
@@ -1747,17 +2583,59 @@ export async function renderEditor(filePath, container) {
         const previewTitle = document.createElement("div");
         previewTitle.textContent = "OBJ viewport";
         previewTitle.style.cssText = "font:12px monospace;color:#333;";
+        const textureHost = document.createElement("div");
+        textureHost.style.cssText = "min-width:0;width:100%;";
         const previewMount = document.createElement("div");
         previewMount.style.cssText = "flex:1;min-height:360px;min-width:0;width:100%;";
-        previewCol.append(previewTitle, previewMount);
+        previewCol.append(previewTitle, textureHost, previewMount);
         layout.appendChild(previewCol);
         body.appendChild(layout);
 
+        let objToolbarHandler = null;
+        const markObjDirty = () => {
+          updateToolbarState({ currentMode, activeActionHandler: objToolbarHandler, modelCanExportSTL: true, fileIsDirty: true });
+          window.dispatchEvent(new CustomEvent("nodevision-editor-dirty", { detail: { filePath } }));
+        };
         const objPreview = await createObjGraphicalPreview(previewMount, textarea.value, status, {
           onSourceChange: (nextSource) => {
             textarea.value = String(nextSource || "");
+            markObjDirty();
           },
         });
+        objTextureTools = createObjTextureTools({
+          objPath: filePath,
+          initialObjText: textarea.value,
+          host: textureHost,
+          status,
+          textarea,
+          preview: objPreview,
+        });
+        objToolbarHandler = (callbackKey) => {
+          if (callbackKey === "objOpenTextureTools") {
+            objTextureTools.toggle();
+            return true;
+          }
+          if (callbackKey === "objSave") {
+            (async () => {
+              try {
+                objPreview.commitActiveEdit?.();
+                if (typeof window.saveMDFile === "function") await window.saveMDFile(filePath);
+                else await saveText(filePath, textarea.value);
+                status.textContent = "Saved OBJ.";
+                updateToolbarState({ currentMode, activeActionHandler: objToolbarHandler, modelCanExportSTL: true, fileIsDirty: false });
+              } catch (err) {
+                console.error("[ModelFamilyEditor] OBJ save failed:", err);
+                status.textContent = "Failed to save OBJ.";
+                alert("Failed to save OBJ: " + (err?.message || err));
+              }
+            })();
+            return true;
+          }
+          if (objPreview.handleToolbarAction?.(callbackKey)) return true;
+          return false;
+        };
+        window.NodevisionState.activeActionHandler = objToolbarHandler;
+
         const exportToken = Symbol("nv-obj-export-context");
         window.NodevisionModelExportContext = {
           token: exportToken,
@@ -1765,15 +2643,24 @@ export async function renderEditor(filePath, container) {
           filePath,
           exportSTL: () => objPreview.exportSTL(filePath),
         };
-        updateToolbarState({ currentMode, modelCanExportSTL: true });
+        updateToolbarState({ currentMode, activeActionHandler: objToolbarHandler, modelCanExportSTL: true, objHasPartSelection: false, objCanBoolean: false });
+        window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+          detail: { heading: "OBJ Mesh", force: true, toggle: false },
+        }));
         container.__nvModelFamilyEditorCleanup = () => {
           objPreview.dispose();
           if (window.NodevisionModelExportContext?.token === exportToken) {
             window.NodevisionModelExportContext = null;
-            updateToolbarState({ modelCanExportSTL: false });
           }
+          if (window.NodevisionState?.activeActionHandler === objToolbarHandler) {
+            window.NodevisionState.activeActionHandler = null;
+          }
+          updateToolbarState({ activeActionHandler: null, modelCanExportSTL: false });
         };
-        textarea.addEventListener("input", () => objPreview.setSource(textarea.value));
+        textarea.addEventListener("input", () => {
+          objPreview.setSource(textarea.value);
+          markObjDirty();
+        });
       } else {
         body.appendChild(layout);
       }
@@ -1781,6 +2668,7 @@ export async function renderEditor(filePath, container) {
       window.getEditorMarkdown = () => textarea.value;
       window.saveMDFile = async (path = filePath) => {
         await saveText(path, textarea.value);
+        await objTextureTools?.saveIfDirty?.();
       };
       if (!isOBJ) {
         status.textContent = isCIR ? "Circuit netlist mode" : "Model text mode";

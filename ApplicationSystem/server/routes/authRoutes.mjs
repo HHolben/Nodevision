@@ -1,17 +1,108 @@
 // Nodevision/ApplicationSystem/server/routes/authRoutes.mjs
-// This file registers login, logout, and session endpoints so that the Nodevision client can authenticate users and maintain sessions via cookies.
+// This file registers login, logout, session, and timeout endpoints so Nodevision can authenticate users and manage idle session expiry.
+
+function sessionCookieOptions(expires) {
+  const expiresMs = Math.max(Math.floor(Number(expires || 0) * 1000 - Date.now()), 0);
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: expiresMs,
+    path: "/",
+  };
+}
+
+function setSessionCookie(res, token, expires) {
+  res.cookie("nodevision_session", token, sessionCookieOptions(expires));
+}
+
+function clearSessionCookie(res) {
+  res.clearCookie("nodevision_session", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+  });
+}
+
+function identityPayload(identity) {
+  if (!identity) return null;
+  const { id, username, role, type } = identity;
+  return { id, username, role, type };
+}
 
 export function registerAuthRoutes(app, AuthService) {
-  app.get("/api/session", (req, res) => {
+  app.get("/api/session", async (req, res) => {
     if (!req.identity) {
       return res.status(200).json({ loggedIn: false });
     }
 
-    const { id, username, role, type } = req.identity;
+    const settings = await AuthService.getSessionTimeoutSettings();
     res.status(200).json({
       loggedIn: true,
-      identity: { id, username, role, type },
+      identity: identityPayload(req.identity),
+      expires: req.identity.expires || null,
+      lastActivity: req.identity.lastActivity || null,
+      ...settings,
     });
+  });
+
+  app.get("/api/session/timeout", async (req, res) => {
+    try {
+      if (!req.identity) return res.status(401).json({ error: "Authentication required" });
+      const settings = await AuthService.getSessionTimeoutSettings();
+      res.json({
+        success: true,
+        expires: req.identity.expires || null,
+        lastActivity: req.identity.lastActivity || null,
+        ...settings,
+      });
+    } catch (err) {
+      console.error("Timeout settings read error", err);
+      res.status(500).json({ error: "Unable to read timeout settings" });
+    }
+  });
+
+  app.put("/api/session/timeout", async (req, res) => {
+    try {
+      if (!req.identity) return res.status(401).json({ error: "Authentication required" });
+      const settings = await AuthService.updateSessionTimeoutSettings(req.body || {});
+      const token = req.cookies?.nodevision_session;
+      const session = await AuthService.touchSession(token);
+      if (!session) {
+        clearSessionCookie(res);
+        return res.status(401).json({ error: "Session expired" });
+      }
+      setSessionCookie(res, token, session.expires);
+      res.json({
+        success: true,
+        expires: session.expires,
+        lastActivity: session.lastActivity || null,
+        ...settings,
+      });
+    } catch (err) {
+      console.error("Timeout settings update error", err);
+      res.status(400).json({ error: err?.message || "Unable to update timeout settings" });
+    }
+  });
+
+  app.post("/api/session/activity", async (req, res) => {
+    try {
+      const token = req.cookies?.nodevision_session;
+      const session = await AuthService.touchSession(token);
+      if (!session) {
+        clearSessionCookie(res);
+        return res.status(401).json({ error: "Session expired" });
+      }
+      setSessionCookie(res, token, session.expires);
+      res.json({
+        success: true,
+        expires: session.expires,
+        lastActivity: session.lastActivity || null,
+        timeoutSeconds: session.timeoutSeconds,
+      });
+    } catch (err) {
+      console.error("Session activity error", err);
+      res.status(500).json({ error: "Unable to refresh session activity" });
+    }
   });
 
   app.get("/login", (req, res) => {
@@ -27,18 +118,13 @@ export function registerAuthRoutes(app, AuthService) {
         ip: req.ip,
       });
 
-      const expiresMs = Math.max(result.expires * 1000 - Date.now(), 0);
-      res.cookie("nodevision_session", result.token, {
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: expiresMs,
-        path: "/",
-      });
+      setSessionCookie(res, result.token, result.expires);
 
       res.json({
         success: true,
         identity: result.identity,
         expires: result.expires,
+        timeoutSeconds: result.timeoutSeconds,
       });
     } catch (err) {
       if (err?.message === "Invalid credentials") {
@@ -53,11 +139,7 @@ export function registerAuthRoutes(app, AuthService) {
     try {
       const token = req.cookies?.nodevision_session;
       await AuthService.logout(token);
-      res.clearCookie("nodevision_session", {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-      });
+      clearSessionCookie(res);
       res.json({ success: true });
     } catch (err) {
       console.error("Logout error", err);
@@ -65,4 +147,3 @@ export function registerAuthRoutes(app, AuthService) {
     }
   });
 }
-

@@ -33,7 +33,7 @@
   {
     "heading": "Draw",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["PNGediting", "GIFediting", "GraphicalEditing", "SVG Editing", "FontEditing", "NBTediting", "STLediting"]
+    "modes": ["PNGediting", "GIFediting", "GraphicalEditing", "SVG Editing", "FontEditing", "NBTediting", "STLediting", "OBJediting"]
   },
   {
     "heading": "Draw",

@@ -2,11 +2,17 @@
 // Panel-scoped zoom/pan utilities. Applies transforms only inside the active panel content.
 
 const VIEWPORT_CLASS = "nv-panel-zoom-viewport";
+const SPACER_CLASS = "nv-panel-zoom-spacer";
 const LAYER_CLASS = "nv-panel-zoom-layer";
 const STATE_KEY = "__nvPanelZoomPanState";
 const ORIGINAL_OVERFLOW_KEY = "__nvPanelZoomPanOriginalOverflow";
 const ORIGINAL_POSITION_KEY = "__nvPanelZoomPanOriginalPosition";
 const LAST_PANEL_KEY = "__nvLastActiveZoomPanPanel";
+const SCROLL_BOUND_KEY = "__nvPanelZoomPanScrollBound";
+const APPLYING_SCROLL_KEY = "__nvPanelZoomPanApplyingScroll";
+const RESIZE_OBSERVER_KEY = "__nvPanelZoomPanResizeObserver";
+const RESIZE_FRAME_KEY = "__nvPanelZoomPanResizeFrame";
+const CONTENT_RESIZE_FRAME_KEY = "__nvPanelZoomPanContentResizeFrame";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 8;
@@ -34,6 +40,11 @@ function isTargetElement(el) {
 function getDirectChildByClass(parent, className) {
   if (!parent?.children?.length || !className) return null;
   return Array.from(parent.children).find((child) => child?.classList?.contains(className)) || null;
+}
+
+function parsePixelValue(value) {
+  const n = Number.parseFloat(String(value || ""));
+  return Number.isFinite(n) ? n : 0;
 }
 
 function queryPanelFromActiveCell() {
@@ -133,6 +144,53 @@ function getPanelContent(panel) {
   return panel;
 }
 
+function applyViewportStyles(viewport) {
+  Object.assign(viewport.style, {
+    position: "absolute",
+    inset: "0",
+    overflow: "auto",
+    minWidth: "0",
+    minHeight: "0",
+  });
+}
+
+function applySpacerStyles(spacer) {
+  Object.assign(spacer.style, {
+    position: "relative",
+    width: "100%",
+    height: "100%",
+    minWidth: "100%",
+    minHeight: "100%",
+    pointerEvents: "none",
+  });
+}
+
+function applyLayerStyles(layer) {
+  Object.assign(layer.style, {
+    position: "absolute",
+    left: "0",
+    top: "0",
+    width: "100%",
+    height: "100%",
+    minWidth: "0",
+    minHeight: "0",
+    boxSizing: "border-box",
+    transformOrigin: "0 0",
+    willChange: "transform",
+  });
+}
+
+function getExistingViewportLayer(panelContent) {
+  if (!panelContent) return null;
+  const viewport = getDirectChildByClass(panelContent, VIEWPORT_CLASS);
+  if (!viewport) return null;
+  return {
+    viewport,
+    spacer: getDirectChildByClass(viewport, SPACER_CLASS),
+    layer: getDirectChildByClass(viewport, LAYER_CLASS),
+  };
+}
+
 function ensureViewportLayer(panelContent) {
   if (!panelContent) return null;
 
@@ -140,25 +198,15 @@ function ensureViewportLayer(panelContent) {
   if (!viewport) {
     viewport = document.createElement("div");
     viewport.className = VIEWPORT_CLASS;
-    Object.assign(viewport.style, {
-      position: "absolute",
-      inset: "0",
-      overflow: "hidden",
-      minWidth: "0",
-      minHeight: "0",
-    });
+    applyViewportStyles(viewport);
+
+    const spacer = document.createElement("div");
+    spacer.className = SPACER_CLASS;
+    applySpacerStyles(spacer);
 
     const layer = document.createElement("div");
     layer.className = LAYER_CLASS;
-    Object.assign(layer.style, {
-      position: "absolute",
-      left: "0",
-      top: "0",
-      minWidth: "100%",
-      minHeight: "100%",
-      transformOrigin: "0 0",
-      willChange: "transform",
-    });
+    applyLayerStyles(layer);
 
     const existing = Array.from(panelContent.childNodes);
     existing.forEach((node) => {
@@ -166,33 +214,43 @@ function ensureViewportLayer(panelContent) {
       layer.appendChild(node);
     });
 
+    viewport.appendChild(spacer);
     viewport.appendChild(layer);
     panelContent.appendChild(viewport);
-    return { viewport, layer };
+    return { viewport, spacer, layer };
+  }
+
+  applyViewportStyles(viewport);
+  let spacer = getDirectChildByClass(viewport, SPACER_CLASS);
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.className = SPACER_CLASS;
+    applySpacerStyles(spacer);
+    viewport.insertBefore(spacer, viewport.firstChild);
+  } else {
+    applySpacerStyles(spacer);
   }
 
   let layer = getDirectChildByClass(viewport, LAYER_CLASS);
   if (!layer) {
     layer = document.createElement("div");
     layer.className = LAYER_CLASS;
-    Object.assign(layer.style, {
-      position: "absolute",
-      left: "0",
-      top: "0",
-      minWidth: "100%",
-      minHeight: "100%",
-      transformOrigin: "0 0",
-      willChange: "transform",
-    });
+    applyLayerStyles(layer);
     const existing = Array.from(viewport.childNodes);
     existing.forEach((node) => {
-      if (node === layer) return;
+      if (node === layer || node === spacer) return;
       layer.appendChild(node);
     });
     viewport.appendChild(layer);
+  } else {
+    applyLayerStyles(layer);
+    Array.from(viewport.childNodes).forEach((node) => {
+      if (node === layer || node === spacer) return;
+      layer.appendChild(node);
+    });
   }
 
-  return { viewport, layer };
+  return { viewport, spacer, layer };
 }
 
 function unwrapViewportLayer(panelContent) {
@@ -201,7 +259,9 @@ function unwrapViewportLayer(panelContent) {
   if (!viewport) return false;
   const layer = getDirectChildByClass(viewport, LAYER_CLASS);
   const source = layer || viewport;
-  const children = Array.from(source.childNodes);
+  const children = Array.from(source.childNodes).filter((node) => {
+    return !node?.classList?.contains?.(SPACER_CLASS);
+  });
   viewport.remove();
   children.forEach((node) => panelContent.appendChild(node));
   return true;
@@ -219,9 +279,185 @@ function ensureState(panel) {
   return panel[STATE_KEY];
 }
 
+function getPanelPayloadId(target) {
+  return target?.dataset?.instanceId ||
+    target?.dataset?.instanceName ||
+    target?.dataset?.id ||
+    target?.dataset?.panelClass ||
+    "";
+}
+
+function dispatchPanelViewportUpdated(target, state) {
+  const payload = {
+    panel: target,
+    panelId: getPanelPayloadId(target),
+    zoom: round(state?.zoom ?? 1, 4),
+    panX: round(state?.panX ?? 0, 2),
+    panY: round(state?.panY ?? 0, 2),
+  };
+  window.dispatchEvent(new CustomEvent("nv-panel-zoom-pan-updated", { detail: payload }));
+  return payload;
+}
+
+function syncStateFromViewport(panel, refs = null) {
+  const state = ensureState(panel);
+  if (!state) return null;
+  const panelContent = getPanelContent(panel);
+  const activeRefs = refs || getExistingViewportLayer(panelContent);
+  if (!activeRefs?.viewport || !activeRefs?.layer) return state;
+
+  const layerLeft = parsePixelValue(activeRefs.layer.style.left);
+  const layerTop = parsePixelValue(activeRefs.layer.style.top);
+  state.panX = round(layerLeft - (activeRefs.viewport.scrollLeft || 0), 2);
+  state.panY = round(layerTop - (activeRefs.viewport.scrollTop || 0), 2);
+  return state;
+}
+
+function bindViewportScroll(panel, refs) {
+  if (!panel || !refs?.viewport || refs.viewport[SCROLL_BOUND_KEY]) return;
+  refs.viewport[SCROLL_BOUND_KEY] = true;
+  refs.viewport.addEventListener("scroll", () => {
+    if (refs.viewport[APPLYING_SCROLL_KEY]) return;
+    const state = syncStateFromViewport(panel, refs);
+    if (state) dispatchPanelViewportUpdated(panel, state);
+  }, { passive: true });
+}
+
+function disconnectResizeObserver(panel) {
+  if (!panel) return;
+  panel[RESIZE_OBSERVER_KEY]?.disconnect?.();
+  panel[RESIZE_OBSERVER_KEY] = null;
+  if (panel[RESIZE_FRAME_KEY]) {
+    cancelAnimationFrame(panel[RESIZE_FRAME_KEY]);
+    panel[RESIZE_FRAME_KEY] = 0;
+  }
+}
+
+function ensureResizeObserver(panel, panelContent) {
+  if (!panel || !panelContent || typeof ResizeObserver !== "function") return;
+  if (panel[RESIZE_OBSERVER_KEY]?.__nvObservedPanelContent === panelContent) return;
+  disconnectResizeObserver(panel);
+  const observer = new ResizeObserver(() => {
+    if (!panel.isConnected || !panel[STATE_KEY]) {
+      disconnectResizeObserver(panel);
+      return;
+    }
+    if (panel[RESIZE_FRAME_KEY]) cancelAnimationFrame(panel[RESIZE_FRAME_KEY]);
+    panel[RESIZE_FRAME_KEY] = requestAnimationFrame(() => {
+      panel[RESIZE_FRAME_KEY] = 0;
+      applyPanelViewport(panel);
+    });
+  });
+  observer.__nvObservedPanelContent = panelContent;
+  observer.observe(panelContent);
+  panel[RESIZE_OBSERVER_KEY] = observer;
+}
+
+function scheduleContentBoundsChanged(panelContent, target, bounds) {
+  if (!panelContent || !target) return;
+  if (target[CONTENT_RESIZE_FRAME_KEY]) {
+    cancelAnimationFrame(target[CONTENT_RESIZE_FRAME_KEY]);
+  }
+  target[CONTENT_RESIZE_FRAME_KEY] = requestAnimationFrame(() => {
+    target[CONTENT_RESIZE_FRAME_KEY] = 0;
+    const detail = {
+      panel: target,
+      panelId: getPanelPayloadId(target),
+      ...bounds,
+    };
+    panelContent.dispatchEvent(new CustomEvent("nv-panel-content-bounds-changed", {
+      bubbles: true,
+      detail,
+    }));
+    window.dispatchEvent(new CustomEvent("nv-panel-content-bounds-changed", { detail }));
+    window.dispatchEvent(new Event("resize"));
+  });
+}
+
+function measureLayerBaseSize(panelContent, refs, zoom = 1) {
+  const viewportW = Math.max(1, refs.viewport.clientWidth || panelContent.clientWidth || 1);
+  const viewportH = Math.max(1, refs.viewport.clientHeight || panelContent.clientHeight || 1);
+  const effectiveZoom = clamp(zoom, MIN_ZOOM, MAX_ZOOM, 1);
+  const zoomedOutW = Math.ceil(viewportW / effectiveZoom);
+  const zoomedOutH = Math.ceil(viewportH / effectiveZoom);
+
+  refs.layer.style.width = `${Math.max(viewportW, zoomedOutW)}px`;
+  refs.layer.style.height = `${Math.max(viewportH, zoomedOutH)}px`;
+
+  return {
+    width: Math.max(1, Math.ceil(refs.layer.scrollWidth || refs.layer.offsetWidth || viewportW), zoomedOutW),
+    height: Math.max(1, Math.ceil(refs.layer.scrollHeight || refs.layer.offsetHeight || viewportH), zoomedOutH),
+    viewportW,
+    viewportH,
+  };
+}
+
+function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
+  if (!panelContent || !refs?.viewport || !refs?.spacer || !refs?.layer) {
+    return { panX, panY };
+  }
+
+  const { width: baseW, height: baseH, viewportW, viewportH } = measureLayerBaseSize(panelContent, refs, zoom);
+  const layerLeft = Math.max(0, panX);
+  const layerTop = Math.max(0, panY);
+  const desiredScrollLeft = Math.max(0, -panX);
+  const desiredScrollTop = Math.max(0, -panY);
+  const scaledW = Math.max(1, Math.ceil(baseW * zoom));
+  const scaledH = Math.max(1, Math.ceil(baseH * zoom));
+
+  refs.layer.style.left = `${round(layerLeft, 3)}px`;
+  refs.layer.style.top = `${round(layerTop, 3)}px`;
+  refs.layer.style.width = `${baseW}px`;
+  refs.layer.style.height = `${baseH}px`;
+  refs.layer.style.setProperty("--nv-panel-content-width", `${baseW}px`);
+  refs.layer.style.setProperty("--nv-panel-content-height", `${baseH}px`);
+  refs.layer.style.setProperty("--nv-panel-visible-width", `${Math.ceil(viewportW / zoom)}px`);
+  refs.layer.style.setProperty("--nv-panel-visible-height", `${Math.ceil(viewportH / zoom)}px`);
+  refs.layer.style.transform = `scale(${round(zoom, 5)})`;
+
+  refs.spacer.style.width = `${Math.max(viewportW, Math.ceil(layerLeft + scaledW), Math.ceil(desiredScrollLeft + viewportW))}px`;
+  refs.spacer.style.height = `${Math.max(viewportH, Math.ceil(layerTop + scaledH), Math.ceil(desiredScrollTop + viewportH))}px`;
+
+  refs.viewport[APPLYING_SCROLL_KEY] = true;
+  refs.viewport.scrollLeft = desiredScrollLeft;
+  refs.viewport.scrollTop = desiredScrollTop;
+  const actualPanX = round(layerLeft - (refs.viewport.scrollLeft || 0), 2);
+  const actualPanY = round(layerTop - (refs.viewport.scrollTop || 0), 2);
+  requestAnimationFrame(() => {
+    refs.viewport[APPLYING_SCROLL_KEY] = false;
+  });
+  return {
+    panX: actualPanX,
+    panY: actualPanY,
+    baseW,
+    baseH,
+    viewportW,
+    viewportH,
+    visibleW: Math.ceil(viewportW / zoom),
+    visibleH: Math.ceil(viewportH / zoom),
+  };
+}
+
+function getEffectivePanelPan(panelContent, state) {
+  const refs = getExistingViewportLayer(panelContent);
+  if (refs?.viewport && refs?.layer) {
+    const layerLeft = parsePixelValue(refs.layer.style.left);
+    const layerTop = parsePixelValue(refs.layer.style.top);
+    return {
+      panX: layerLeft - (refs.viewport.scrollLeft || 0),
+      panY: layerTop - (refs.viewport.scrollTop || 0),
+    };
+  }
+
+  return {
+    panX: (Number.isFinite(Number(state?.panX)) ? Number(state.panX) : 0) - (panelContent?.scrollLeft || 0),
+    panY: (Number.isFinite(Number(state?.panY)) ? Number(state.panY) : 0) - (panelContent?.scrollTop || 0),
+  };
+}
+
 export function getPanelViewportState(panel = null) {
   const target = panel || getActivePanelElement();
-  const state = ensureState(target);
+  const state = syncStateFromViewport(target) || ensureState(target);
   if (!state) return null;
   return {
     zoom: round(state.zoom, 4),
@@ -254,6 +490,16 @@ export function applyPanelViewport(panel = null) {
     panelContent.style.overflow = panelContent[ORIGINAL_OVERFLOW_KEY] || "auto";
     panelContent.style.position = panelContent[ORIGINAL_POSITION_KEY] || "";
     unwrapViewportLayer(panelContent);
+    disconnectResizeObserver(target);
+    scheduleContentBoundsChanged(panelContent, target, {
+      zoom: 1,
+      contentWidth: panelContent.clientWidth || 0,
+      contentHeight: panelContent.clientHeight || 0,
+      viewportWidth: panelContent.clientWidth || 0,
+      viewportHeight: panelContent.clientHeight || 0,
+      visibleContentWidth: panelContent.clientWidth || 0,
+      visibleContentHeight: panelContent.clientHeight || 0,
+    });
   } else {
     if (window.getComputedStyle(panelContent).position === "static") {
       panelContent.style.position = "relative";
@@ -261,32 +507,34 @@ export function applyPanelViewport(panel = null) {
     panelContent.style.overflow = "hidden";
     const refs = ensureViewportLayer(panelContent);
     if (!refs?.layer) return null;
-    refs.layer.style.transform = `translate(${round(panX, 3)}px, ${round(panY, 3)}px) scale(${round(zoom, 5)})`;
+    bindViewportScroll(target, refs);
+    ensureResizeObserver(target, panelContent);
+    const actualPan = updateViewportGeometry(panelContent, refs, zoom, panX, panY);
+    state.panX = actualPan.panX;
+    state.panY = actualPan.panY;
+    scheduleContentBoundsChanged(panelContent, target, {
+      zoom,
+      contentWidth: actualPan.baseW,
+      contentHeight: actualPan.baseH,
+      viewportWidth: actualPan.viewportW,
+      viewportHeight: actualPan.viewportH,
+      visibleContentWidth: actualPan.visibleW,
+      visibleContentHeight: actualPan.visibleH,
+    });
   }
   state.zoom = zoom;
-  state.panX = panX;
-  state.panY = panY;
+  if (isIdentity) {
+    state.panX = panX;
+    state.panY = panY;
+  }
 
-  const payload = {
-    panel: target,
-    panelId:
-      target.dataset?.instanceId ||
-      target.dataset?.instanceName ||
-      target.dataset?.id ||
-      target.dataset?.panelClass ||
-      "",
-    zoom: round(zoom, 4),
-    panX: round(panX, 2),
-    panY: round(panY, 2),
-  };
-  window.dispatchEvent(new CustomEvent("nv-panel-zoom-pan-updated", { detail: payload }));
-  return payload;
+  return dispatchPanelViewportUpdated(target, state);
 }
 
 export function setPanelViewportState(next = {}, panel = null) {
   const target = panel || getActivePanelElement();
   if (!target) return null;
-  const state = ensureState(target);
+  const state = syncStateFromViewport(target) || ensureState(target);
   if (!state) return null;
 
   if (next.zoom !== undefined) {
@@ -304,16 +552,19 @@ export function setPanelViewportState(next = {}, panel = null) {
 export function zoomPanelBy(delta = 0, panel = null) {
   const target = panel || getActivePanelElement();
   if (!target) return null;
-  const state = ensureState(target);
+  const state = syncStateFromViewport(target) || ensureState(target);
   if (!state) return null;
-  return setPanelViewportState({ zoom: (state.zoom || 1) + Number(delta || 0) }, target);
+  const currentZoom = Number.isFinite(Number(state.zoom)) ? Number(state.zoom) : 1;
+  const nextZoom = clamp(currentZoom + Number(delta || 0), MIN_ZOOM, MAX_ZOOM, currentZoom);
+  const factor = currentZoom > 0 ? nextZoom / currentZoom : 1;
+  return zoomPanelAtCenter(target, factor);
 }
 
 export function zoomPanelAt(panel = null, clientX = null, clientY = null, factor = 1) {
   const target = panel || getActivePanelElement();
   if (!target) return null;
 
-  const state = ensureState(target);
+  const state = syncStateFromViewport(target) || ensureState(target);
   if (!state) return null;
 
   const currentZoom = Number.isFinite(Number(state.zoom)) ? Number(state.zoom) : 1;
@@ -337,8 +588,9 @@ export function zoomPanelAt(panel = null, clientX = null, clientY = null, factor
 
   const localX = Number(clientX) - rect.left;
   const localY = Number(clientY) - rect.top;
-  const contentX = (localX - (state.panX || 0)) / currentZoom;
-  const contentY = (localY - (state.panY || 0)) / currentZoom;
+  const effectivePan = getEffectivePanelPan(content, state);
+  const contentX = (localX - effectivePan.panX) / currentZoom;
+  const contentY = (localY - effectivePan.panY) / currentZoom;
 
   return setPanelViewportState(
     {
@@ -353,7 +605,7 @@ export function zoomPanelAt(panel = null, clientX = null, clientY = null, factor
 export function panPanelBy(dx = 0, dy = 0, panel = null) {
   const target = panel || getActivePanelElement();
   if (!target) return null;
-  const state = ensureState(target);
+  const state = syncStateFromViewport(target) || ensureState(target);
   if (!state) return null;
   return setPanelViewportState({
     panX: (state.panX || 0) + Number(dx || 0),

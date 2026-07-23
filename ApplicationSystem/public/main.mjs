@@ -88,11 +88,13 @@ function addDividers() {
     }
 
     .divider {
-      width: 6px;
+      width: 10px;
       background: #555;
       cursor: col-resize;
       flex: 0 0 auto;
       z-index: 10;
+      touch-action: none;
+      user-select: none;
     }
 
     .divider:hover {

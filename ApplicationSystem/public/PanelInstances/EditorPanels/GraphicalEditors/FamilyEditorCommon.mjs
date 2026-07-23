@@ -44,6 +44,7 @@ export function resetEditorHooks() {
   window.saveMDFile = undefined;
   window.getEditorHTML = undefined;
   window.saveWYSIWYGFile = undefined;
+  window.NodevisionMetadataTools = undefined;
 }
 
 export function ensureNodevisionState(mode = "FamilyEditing") {
