@@ -27,6 +27,119 @@ const DIRECTORY_IMAGE_CANDIDATES = [
 const directoryImageCache = new Map();
 const navigationState = getNodevisionNavigationState();
 
+const FILE_MANAGER_AUTO_SCROLL_EDGE_RATIO = 0.05;
+const FILE_MANAGER_AUTO_SCROLL_MIN_EDGE_PX = 18;
+const FILE_MANAGER_AUTO_SCROLL_MAX_SPEED = 22;
+let fileManagerAutoScrollState = null;
+
+function hasScrollableOverflow(element) {
+  return Boolean(element && element.scrollHeight > element.clientHeight + 1);
+}
+
+function getFileManagerScrollContainer(fromElement = null) {
+  const manager = fromElement?.closest?.(".file-manager") || document.querySelector(".file-manager");
+  const list = manager?.querySelector?.("#file-list") || document.getElementById("file-list");
+  const candidates = [
+    list,
+    manager,
+    fromElement?.closest?.(".panel-content"),
+    fromElement?.closest?.(".panel-cell"),
+  ].filter(Boolean);
+
+  return candidates.find(hasScrollableOverflow) || list || null;
+}
+
+function refreshFileManagerAutoScrollSpeed() {
+  const state = fileManagerAutoScrollState;
+  if (!state?.active || !state.container || state.pointerY === null) return 0;
+  if (!hasScrollableOverflow(state.container)) {
+    state.speed = 0;
+    return 0;
+  }
+
+  const rect = state.container.getBoundingClientRect();
+  const edgeSize = Math.max(FILE_MANAGER_AUTO_SCROLL_MIN_EDGE_PX, rect.height * FILE_MANAGER_AUTO_SCROLL_EDGE_RATIO);
+  const y = state.pointerY;
+  let nextSpeed = 0;
+
+  if (y >= rect.bottom - edgeSize && state.container.scrollTop < state.container.scrollHeight - state.container.clientHeight) {
+    const intensity = Math.min(1, Math.max(0, (y - (rect.bottom - edgeSize)) / edgeSize));
+    nextSpeed = Math.max(2, Math.ceil(FILE_MANAGER_AUTO_SCROLL_MAX_SPEED * intensity));
+  } else if (y <= rect.top + edgeSize && state.container.scrollTop > 0) {
+    const intensity = Math.min(1, Math.max(0, ((rect.top + edgeSize) - y) / edgeSize));
+    nextSpeed = -Math.max(2, Math.ceil(FILE_MANAGER_AUTO_SCROLL_MAX_SPEED * intensity));
+  }
+
+  state.speed = nextSpeed;
+  return nextSpeed;
+}
+
+function runFileManagerAutoScrollFrame() {
+  const state = fileManagerAutoScrollState;
+  if (!state?.active) return;
+
+  state.frame = 0;
+  const speed = refreshFileManagerAutoScrollSpeed();
+  if (!speed) return;
+
+  const maxScrollTop = Math.max(0, state.container.scrollHeight - state.container.clientHeight);
+  const nextTop = Math.max(0, Math.min(maxScrollTop, state.container.scrollTop + speed));
+  if (nextTop !== state.container.scrollTop) {
+    state.container.scrollTop = nextTop;
+  }
+
+  if (refreshFileManagerAutoScrollSpeed()) {
+    state.frame = window.requestAnimationFrame(runFileManagerAutoScrollFrame);
+  }
+}
+
+function scheduleFileManagerAutoScroll() {
+  const state = fileManagerAutoScrollState;
+  if (!state?.active || state.frame) return;
+  if (!refreshFileManagerAutoScrollSpeed()) return;
+  state.frame = window.requestAnimationFrame(runFileManagerAutoScrollFrame);
+}
+
+function handleFileManagerAutoScrollDragOver(event) {
+  const state = fileManagerAutoScrollState;
+  if (!state?.active) return;
+  state.pointerY = event.clientY;
+  scheduleFileManagerAutoScroll();
+}
+
+function stopFileManagerAutoScroll() {
+  const state = fileManagerAutoScrollState;
+  if (!state) return;
+  state.active = false;
+  if (state.frame) {
+    window.cancelAnimationFrame(state.frame);
+  }
+  state.container?.classList?.remove("nv-file-manager-auto-scroll-active");
+  document.removeEventListener("dragover", handleFileManagerAutoScrollDragOver, true);
+  document.removeEventListener("drop", stopFileManagerAutoScroll, true);
+  document.removeEventListener("dragend", stopFileManagerAutoScroll, true);
+  fileManagerAutoScrollState = null;
+}
+
+function startFileManagerAutoScroll(fromElement = null) {
+  stopFileManagerAutoScroll();
+  const container = getFileManagerScrollContainer(fromElement);
+  if (!container) return;
+
+  fileManagerAutoScrollState = {
+    active: true,
+    container,
+    pointerY: null,
+    speed: 0,
+    frame: 0,
+  };
+
+  container.classList?.add("nv-file-manager-auto-scroll-active");
+  document.addEventListener("dragover", handleFileManagerAutoScrollDragOver, true);
+  document.addEventListener("drop", stopFileManagerAutoScroll, true);
+  document.addEventListener("dragend", stopFileManagerAutoScroll, true);
+}
+
 function resolveDirectoryImageUrl(entry) {
   if (!entry || typeof entry !== "object") return "";
   const direct = typeof entry.directoryImageUrl === "string" ? entry.directoryImageUrl.trim() : "";
@@ -362,15 +475,23 @@ export function displayFiles(files, currentPath) {
     listStyle: "none",
     margin: "0",
     padding: "0",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px"
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(var(--nv-file-manager-tile-min-width, 220px), 100%), 1fr))",
+    gridAutoRows: "minmax(24px, auto)",
+    alignItems: "stretch",
+    alignContent: "start",
+    gap: "4px",
+    width: "100%",
+    boxSizing: "border-box"
   });
 
   // ".." entry — only if not at root
   if (currentPath !== "") {
     const li = document.createElement("li");
     li.style.margin = "0";
+    li.style.minWidth = "0";
+    li.style.display = "flex";
+    li.style.gridColumn = "1 / -1";
     const link = document.createElement("a");
     link.href = "#";
     link.textContent = "..";
@@ -422,6 +543,7 @@ export function displayFiles(files, currentPath) {
     });
     link.addEventListener("drop", async e => {
       e.preventDefault();
+      stopFileManagerAutoScroll();
       applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
       link.style.outline = "";
 
@@ -459,6 +581,8 @@ export function displayFiles(files, currentPath) {
   sortedFiles.forEach(f => {
     const li = document.createElement("li");
     li.style.margin = "0";
+    li.style.minWidth = "0";
+    li.style.display = "flex";
     const link = document.createElement("a");
     link.href = "#";
     link.classList.add(f.isDirectory ? "folder" : "file");
@@ -532,10 +656,12 @@ export function displayFiles(files, currentPath) {
       e.dataTransfer.setData("application/json", JSON.stringify(payload));
       e.dataTransfer.setData("text/plain", payload.path);
       link.style.opacity = "0.6";
+      startFileManagerAutoScroll(link);
     });
     link.addEventListener("dragend", () => {
       link.style.opacity = "";
       clearDropHighlights();
+      stopFileManagerAutoScroll();
     });
 
     if (f.isDirectory) {
@@ -557,6 +683,7 @@ export function displayFiles(files, currentPath) {
       });
       link.addEventListener("drop", async e => {
         e.preventDefault();
+        stopFileManagerAutoScroll();
         applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
         link.style.outline = "";
 
@@ -622,6 +749,9 @@ export function attachFileClickHandlers() {
   fileItems.forEach(item => {
     item.addEventListener("click", e => {
       e.preventDefault();
+
+      navigationState.setLastInfoPanelType("FileManager");
+      navigationState.setLastFileSelectionPanelType?.("FileManager");
 
       requestNodevisionFileSelection(item.dataset.fullPath, {
         onSelected: (selectedPath) => {
@@ -786,6 +916,14 @@ window.revealPathInFileManager = async function revealPathInFileManager(path = "
     const directoryItem = findFileManagerItemByPath(cleanPath);
     if (directoryItem) {
       markSelectedFileItem(directoryItem);
+    }
+    return true;
+  }
+
+  if (options?.selectFile === false) {
+    const fileItem = findFileManagerItemByPath(cleanPath);
+    if (fileItem) {
+      markSelectedFileItem(fileItem);
     }
     return true;
   }

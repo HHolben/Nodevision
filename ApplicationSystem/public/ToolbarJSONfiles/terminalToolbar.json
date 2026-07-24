@@ -5,6 +5,20 @@
   },
   {
     "ToolbarCategory": "Terminal",
+    "heading": "Nodevision Console",
+    "callbackKey": "openNodevisionConsole",
+    "icon": "icons/CodeEditor.png",
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Terminal",
+    "parentHeading": "Nodevision Console",
+    "heading": "Command Glossary",
+    "content": "",
+    "script": "nodevisionConsoleCommandsWidget.mjs"
+  },
+  {
+    "ToolbarCategory": "Terminal",
     "heading": "Compile & Run",
     "callbackKey": "executeFile",
     "conditions": {

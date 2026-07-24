@@ -30,6 +30,9 @@ let expandedDirectoryCollisionFrame = null;
 let expandedDirectoryCollisionNodeId = null;
 const htmlPreviewCache = new Map(); // path -> url | null
 let externalNodesLoaded = false;
+let graphViewportResizeFrame = 0;
+let graphViewportResizeShouldFit = false;
+let graphViewportEventCleanup = null;
 const EDGE_BUCKET_SYMBOLS = [
     ...'abcdefghijklmnopqrstuvwxyz',
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -754,10 +757,11 @@ async function revealPathInGraphManager(path, options = {}) {
 
     const node = cy?.getElementById(cleanPath);
     if (node && !node.empty()) {
+        try { cy.nodes().unselect(); node.select(); } catch (_) { /* ignore */ }
         try { cy.center(node); } catch (_) { /* ignore */ }
     }
 
-    if (!isDirectory) {
+    if (!isDirectory && options?.selectFile !== false) {
         requestNodevisionFileSelection(cleanPath);
     }
 
@@ -1330,48 +1334,6 @@ function escapeHtml(value = "") {
         .replace(/"/g, "&quot;");
 }
 
-async function openGraphLinkPanel(panelName, displayName, offsetX = 0) {
-    const existing = document.querySelector(".panel[data-instance-name=\"" + panelName + "\"], [data-id=\"" + panelName + "\"]");
-    if (existing) {
-        existing.style.display = "flex";
-        existing.style.zIndex = "23000";
-        if (typeof window.highlightActiveCell === "function") {
-            const cell = existing.closest(".panel-cell");
-            if (cell) window.highlightActiveCell(cell);
-        }
-        if (panelName === "LinkViewer" && typeof window.updateLinkViewerPanel === "function") {
-            window.updateLinkViewerPanel(window.selectedGraphLink || null);
-        }
-        if (panelName === "LinkEditor" && typeof window.updateLinkEditorPanel === "function") {
-            window.updateLinkEditorPanel(window.selectedGraphLink || null);
-        }
-        return existing;
-    }
-
-    const { createPanelDOM } = await import("/panels/panelFactory.mjs");
-    const panelInst = await createPanelDOM(
-        panelName,
-        "nv-" + panelName.toLowerCase() + "-" + Date.now(),
-        "InfoPanel",
-        { displayName, layout: "floating" }
-    );
-    document.body.appendChild(panelInst.panel);
-    if (typeof panelInst.panel.__nvSetLayout === "function") {
-        panelInst.panel.__nvSetLayout("floating");
-    }
-    Object.assign(panelInst.panel.style, {
-        width: "min(460px, 92vw)",
-        height: "min(560px, 82vh)",
-        left: Math.max(24, Math.round(window.innerWidth * 0.52) + offsetX) + "px",
-        top: Math.max(28, Math.round(window.innerHeight * 0.12)) + "px",
-        zIndex: "23000",
-    });
-    return panelInst.panel;
-}
-
-window.openLinkViewerPanel = () => openGraphLinkPanel("LinkViewer", "Link Viewer", 0);
-window.openLinkEditorPanel = () => openGraphLinkPanel("LinkEditor", "Link Editor", 36);
-
 function renderGraphLinkInspector(selection) {
     if (!linkInspectorElem) return;
     const record = selection?.record || null;
@@ -1386,15 +1348,156 @@ function renderGraphLinkInspector(selection) {
     const targetLabel = record.targetKind === "external" ? record.targetRaw : record.targetPath;
     linkInspectorElem.innerHTML = "<div style=\"font-weight:700;margin-bottom:4px;\">" + escapeHtml(summarizeLinkRecord(record)) + escapeHtml(countText) + "</div>" +
         "<div style=\"color:#475569;margin-bottom:6px;\">" + escapeHtml(record.sourcePath) + " -> " + escapeHtml(targetLabel) + "</div>" +
-        "<div style=\"display:flex;gap:6px;flex-wrap:wrap;\">" +
-        "<button type=\"button\" data-link-panel=\"viewer\" style=\"font:inherit;padding:4px 7px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;\">Link Viewer</button>" +
-        "<button type=\"button\" data-link-panel=\"editor\" style=\"font:inherit;padding:4px 7px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;\">Link Editor</button>" +
-        "</div>";
+        "<div style=\"color:#64748b;\">" + (typeof window.showGraphLinkInFileView === "function" ? "Shown in File Viewer" : "Open File View to inspect and edit this link") + "</div>";
+}
 
-    const viewerBtn = linkInspectorElem.querySelector("[data-link-panel=\"viewer\"]");
-    const editorBtn = linkInspectorElem.querySelector("[data-link-panel=\"editor\"]");
-    viewerBtn?.addEventListener("click", () => window.openLinkViewerPanel?.());
-    editorBtn?.addEventListener("click", () => window.openLinkEditorPanel?.());
+function parseCssPixelValue(value) {
+    const n = Number.parseFloat(String(value || "").trim());
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function getGraphViewportSurface(container) {
+    return container?.closest?.("[data-graph-manager-surface]") || container?.parentElement || null;
+}
+
+function getGraphPanelContent(container) {
+    return container?.closest?.(".panel-content") || null;
+}
+
+function getGraphZoomLayer(container) {
+    return container?.closest?.(".nv-panel-zoom-layer") || null;
+}
+
+function isGraphViewportEvent(container, event) {
+    const panelContent = getGraphPanelContent(container);
+    const graphPanel = container?.closest?.(".panel");
+    const eventPanel = event?.detail?.panel || null;
+    if (!eventPanel) return true;
+
+    return eventPanel === panelContent ||
+        eventPanel === graphPanel ||
+        eventPanel.contains?.(container) ||
+        panelContent?.contains?.(eventPanel) ||
+        graphPanel?.contains?.(eventPanel);
+}
+
+function getGraphExpandedSurfaceSize(container) {
+    const surface = getGraphViewportSurface(container);
+    const layer = getGraphZoomLayer(container);
+    const panelContent = getGraphPanelContent(container);
+    const source = layer || surface || container;
+    const styles = source ? window.getComputedStyle(source) : null;
+
+    const contentWidth = parseCssPixelValue(styles?.getPropertyValue("--nv-panel-content-width"));
+    const contentHeight = parseCssPixelValue(styles?.getPropertyValue("--nv-panel-content-height"));
+    const visibleWidth = parseCssPixelValue(styles?.getPropertyValue("--nv-panel-visible-width"));
+    const visibleHeight = parseCssPixelValue(styles?.getPropertyValue("--nv-panel-visible-height"));
+    const layerWidth = layer ? Math.max(parseCssPixelValue(layer.style.width), layer.clientWidth || 0) : 0;
+    const layerHeight = layer ? Math.max(parseCssPixelValue(layer.style.height), layer.clientHeight || 0) : 0;
+    const surfaceParent = surface?.parentElement || null;
+    const parentWidth = surfaceParent?.clientWidth || panelContent?.clientWidth || container?.clientWidth || 0;
+    const parentHeight = surfaceParent?.clientHeight || panelContent?.clientHeight || container?.clientHeight || 0;
+
+    return {
+        width: Math.max(1, Math.ceil(contentWidth), Math.ceil(visibleWidth), Math.ceil(layerWidth), Math.ceil(parentWidth)),
+        height: Math.max(1, Math.ceil(contentHeight), Math.ceil(visibleHeight), Math.ceil(layerHeight), Math.ceil(parentHeight)),
+    };
+}
+
+function getGraphSurfaceReservedHeight(surface) {
+    const manager = surface?.closest?.(".graph-manager");
+    if (!manager?.children?.length) return 0;
+
+    return Array.from(manager.children).reduce((total, child) => {
+        if (child === surface) return total;
+        const styles = window.getComputedStyle(child);
+        if (styles.display === "none" || styles.position === "absolute" || styles.position === "fixed") return total;
+        return total + (child.offsetHeight || 0);
+    }, 0);
+}
+
+function applyGraphViewportSize(container = document.getElementById("cy")) {
+    if (!container) return;
+
+    const surface = getGraphViewportSurface(container);
+    const layer = getGraphZoomLayer(container);
+
+    if (surface) {
+        surface.style.minWidth = "0";
+        surface.style.minHeight = "0";
+        surface.style.boxSizing = "border-box";
+    }
+
+    if (layer) {
+        const size = getGraphExpandedSurfaceSize(container);
+        if (surface) {
+            surface.style.width = size.width + "px";
+            surface.style.height = Math.max(1, size.height - getGraphSurfaceReservedHeight(surface)) + "px";
+        }
+        container.style.width = "100%";
+        container.style.height = "100%";
+        container.style.minWidth = "100%";
+        container.style.minHeight = "100%";
+    } else {
+        if (surface) {
+            surface.style.width = "100%";
+            surface.style.height = "";
+        }
+        container.style.width = "100%";
+        container.style.height = "100%";
+        container.style.minWidth = "0";
+        container.style.minHeight = "0";
+    }
+
+    try { cy?.resize?.(); } catch (_) { /* ignore */ }
+}
+
+function scheduleGraphViewportResize(container = document.getElementById("cy"), options = {}) {
+    graphViewportResizeShouldFit = graphViewportResizeShouldFit || Boolean(options?.fit);
+    if (graphViewportResizeFrame) return;
+
+    graphViewportResizeFrame = window.requestAnimationFrame(() => {
+        graphViewportResizeFrame = 0;
+        const doFit = graphViewportResizeShouldFit;
+        graphViewportResizeShouldFit = false;
+        applyGraphViewportSize(container);
+        if (doFit && cy && !activeLayout) {
+            try { cy.fit(undefined, 14); } catch (_) { /* ignore */ }
+        }
+    });
+}
+
+function bindGraphViewportSizing(container) {
+    if (!container) return;
+    if (graphViewportEventCleanup) {
+        graphViewportEventCleanup();
+        graphViewportEventCleanup = null;
+    }
+
+    const panelContent = getGraphPanelContent(container);
+    const handleBoundsChanged = (event) => {
+        if (!isGraphViewportEvent(container, event)) return;
+        scheduleGraphViewportResize(container);
+    };
+    const handleZoomPanUpdated = (event) => {
+        if (!isGraphViewportEvent(container, event)) return;
+        scheduleGraphViewportResize(container);
+    };
+
+    panelContent?.addEventListener?.("nv-panel-content-bounds-changed", handleBoundsChanged);
+    window.addEventListener("nv-panel-zoom-pan-updated", handleZoomPanUpdated);
+
+    graphViewportEventCleanup = () => {
+        panelContent?.removeEventListener?.("nv-panel-content-bounds-changed", handleBoundsChanged);
+        window.removeEventListener("nv-panel-zoom-pan-updated", handleZoomPanUpdated);
+        if (graphViewportResizeFrame) {
+            window.cancelAnimationFrame(graphViewportResizeFrame);
+            graphViewportResizeFrame = 0;
+        }
+        graphViewportResizeShouldFit = false;
+    };
+
+    applyGraphViewportSize(container);
 }
 
 function bindGraphManagerLayerControls(container) {
@@ -1623,30 +1726,34 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     });
 
     window.cy = cy;
+    bindGraphViewportSizing(container);
 
-    // Keep Cytoscape's renderer in sync with available panel space.
-    if (container && typeof ResizeObserver !== 'undefined') {
+    // Keep Cytoscape renderer in sync with available panel space.
+    if (container && typeof ResizeObserver !== "undefined") {
         try {
             if (container.__nvGraphResizeObserver) {
                 container.__nvGraphResizeObserver.disconnect();
             }
             const ro = new ResizeObserver(() => {
                 if (!cy) return;
-                try { cy.resize(); } catch (_) { /* ignore */ }
-                if (!activeLayout) {
-                    try { cy.fit(undefined, 14); } catch (_) { /* ignore */ }
-                }
+                scheduleGraphViewportResize(container, { fit: true });
             });
-            ro.observe(container);
+            [container, getGraphViewportSurface(container), getGraphPanelContent(container)]
+                .filter(Boolean)
+                .forEach((element) => ro.observe(element));
             container.__nvGraphResizeObserver = ro;
         } catch (err) {
-            console.warn('[GraphManager] ResizeObserver setup failed:', err);
+            console.warn("[GraphManager] ResizeObserver setup failed:", err);
         }
     }
 
     cy.on('tap', 'node', (evt) => {
         const path = evt.target.data('fullPath');
-        if (path !== undefined) requestNodevisionFileSelection(path);
+        if (path !== undefined) {
+            navigationState.setLastInfoPanelType("GraphManager");
+            navigationState.setLastFileSelectionPanelType?.("GraphManager");
+            requestNodevisionFileSelection(path);
+        }
         if (evt.target.data('type') === 'external' && evt.target.data('url')) {
             window.selectedExternalUrl = evt.target.data('url');
         }

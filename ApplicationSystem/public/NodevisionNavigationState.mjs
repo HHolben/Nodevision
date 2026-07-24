@@ -38,6 +38,10 @@ function attachStateMethods(state) {
     state.getLastInfoPanelType = () => normalizeInfoPanelType(state.lastInfoPanelType);
   }
 
+  if (typeof state.getLastFileSelectionPanelType !== "function") {
+    state.getLastFileSelectionPanelType = () => normalizeInfoPanelType(state.lastFileSelectionPanelType);
+  }
+
   if (typeof state.setLastInfoPanelType !== "function") {
     state.setLastInfoPanelType = (panelType = null) => {
       const cleanPanelType = normalizeInfoPanelType(panelType);
@@ -48,11 +52,22 @@ function attachStateMethods(state) {
     };
   }
 
+  if (typeof state.setLastFileSelectionPanelType !== "function") {
+    state.setLastFileSelectionPanelType = (panelType = null) => {
+      const cleanPanelType = normalizeInfoPanelType(panelType);
+      if (cleanPanelType) {
+        state.lastFileSelectionPanelType = cleanPanelType;
+      }
+      return state.lastFileSelectionPanelType;
+    };
+  }
+
   if (typeof state.lastOpenedDirectory !== "string") {
     state.lastOpenedDirectory = "";
   }
   state.lastOpenedDirectory = normalizeDirectoryPath(state.lastOpenedDirectory);
   state.lastInfoPanelType = normalizeInfoPanelType(state.lastInfoPanelType);
+  state.lastFileSelectionPanelType = normalizeInfoPanelType(state.lastFileSelectionPanelType);
 
   return state;
 }
@@ -66,6 +81,7 @@ export function getNodevisionNavigationState() {
   const created = {
     lastOpenedDirectory: "",
     lastInfoPanelType: null,
+    lastFileSelectionPanelType: null,
   };
   window.NodevisionNavigationState = attachStateMethods(created);
   return window.NodevisionNavigationState;

@@ -31,23 +31,27 @@ export function getActionHandler() {
 export async function setupPanel(panelElem, panelVars = {}) {
 
   // Ensure the panel itself fills the cell
-panelElem.style.height = "100%";
-panelElem.style.display = "flex";
-panelElem.style.flexDirection = "column";
+  panelElem.style.height = "100%";
+  panelElem.style.minHeight = "0";
+  panelElem.style.display = "flex";
+  panelElem.style.flexDirection = "column";
+  panelElem.style.width = "100%";
+  panelElem.style.minWidth = "0";
+  panelElem.style.boxSizing = "border-box";
 
 
   console.log("🛠️ Initializing GraphManager panel...", panelVars);
 
   // 1. Create the UI Structure
   panelElem.innerHTML = `
-    <div class="graph-manager" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
-      <div style="flex-grow:1;position:relative;min-height:0;">
-        <div id="cy" style="width:100%;height:100%;background:#ffffff;position:relative;"></div>
+    <div class="graph-manager" style="width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;">
+      <div class="graph-manager-surface" data-graph-manager-surface style="flex:1 1 auto;position:relative;min-width:0;min-height:0;width:100%;box-sizing:border-box;">
+        <div id="cy" style="width:100%;height:100%;min-width:0;min-height:0;background:#ffffff;position:relative;box-sizing:border-box;"></div>
         <div id="mqtt-device-inspector" style="display:none;position:absolute;right:10px;top:10px;z-index:5;width:min(310px,35%);max-height:70%;overflow:auto;background:rgba(255,255,255,0.96);border:1px solid #d8dde6;border-radius:8px;padding:10px;font-size:12px;box-shadow:0 8px 22px rgba(15,23,42,0.14);"></div>
         <div id="graph-link-inspector" style="display:none;position:absolute;right:10px;bottom:10px;z-index:6;width:min(420px,48%);max-width:calc(100% - 20px);background:rgba(255,255,255,0.96);border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:12px system-ui,sans-serif;box-shadow:0 8px 22px rgba(15,23,42,0.14);"></div>
       </div>
       
-      <div id="graph-error" style="color:red; padding: 10px; font-weight: bold;"></div>
+      <div id="graph-error" style="flex:0 0 auto;color:red; padding: 10px; font-weight: bold;"></div>
     </div>
   `;
 
