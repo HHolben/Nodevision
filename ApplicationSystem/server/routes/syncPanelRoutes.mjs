@@ -23,6 +23,7 @@ import {
   pushOfflinePackageToMountedReceiver,
 } from "../../Sync/OfflineSyncInbox.mjs";
 import { loadSyncProtection, saveSyncProtection } from "../../Sync/SyncProtection.mjs";
+import { runFullDiagnostics, runLocalDiagnostics, runPeerDiagnostics } from "../../Sync/WiredSyncDiagnostics.mjs";
 import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
 import {
@@ -1281,6 +1282,33 @@ export function registerSyncPanelRoutes(app, ctx) {
   app.get("/api/sync/status", async (req, res) => {
     if (!requireSession(req, res)) return;
     return res.json(await syncStateResponse(state, ctx));
+  });
+
+  app.post("/api/sync/diagnostics/wired", async (req, res) => {
+    if (!requireSession(req, res)) return;
+    const body = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
+    const mode = String(body.mode || body.command || "local").trim().toLowerCase();
+    const peerUrl = parsePeerUrlOrigin(body.peerUrl || body.usbPeerUrl || "");
+    const options = {
+      runtimeRoot: ctx?.runtimeRoot,
+      interfaceName: String(body.interfaceName || "").trim(),
+      scope: String(body.scope || DEFAULT_SYNC_SCOPE).trim() || DEFAULT_SYNC_SCOPE,
+    };
+    try {
+      let report;
+      if (mode === "peer") {
+        if (!peerUrl) return res.status(400).json({ ok: false, error: "peerUrl is required for peer diagnostics" });
+        report = await runPeerDiagnostics(peerUrl, options);
+      } else if (mode === "full") {
+        if (!peerUrl) return res.status(400).json({ ok: false, error: "peerUrl is required for full diagnostics" });
+        report = await runFullDiagnostics(peerUrl, options);
+      } else {
+        report = await runLocalDiagnostics(options);
+      }
+      return res.status(report.ok ? 200 : 409).json(report);
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err?.message || "Failed to run wired sync diagnostics" });
+    }
   });
 
   app.get("/api/sync/package/export", async (req, res) => {

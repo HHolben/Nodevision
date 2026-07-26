@@ -343,5 +343,6 @@ export async function getLocalPeerInfo(options = {}) {
   return {
     deviceId: localIdentity.deviceId,
     deviceName: localIdentity.deviceName,
+    publicKey: localIdentity.publicKey,
   };
 }

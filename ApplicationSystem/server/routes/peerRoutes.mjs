@@ -24,6 +24,14 @@ import {
   verifySignedScopeManifestRequest,
   validateScopedRelativePath,
 } from "../../Sync/ScopePeerSync.mjs";
+import {
+  buildCapabilitiesPayload,
+  buildDiagnosticPingPayload,
+  summarizeScopeManifestForDiagnostics,
+  validateScopeFileStreamForDiagnostics,
+  validateScopeFileStreamPushForDiagnostics,
+  verifyPeerHelloForDiagnostics,
+} from "../../Sync/WiredSyncDiagnostics.mjs";
 
 const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 const STREAM_SIGNED_REQUEST_MAX_AGE_MS = 45 * 60 * 1000;
@@ -520,7 +528,88 @@ export function extractSignedStreamAuth(req) {
   };
 }
 
+function diagnosticStatusFromCode(code, fallback = 400) {
+  const text = String(code || "");
+  if (text === "unknown_peer" || text === "invalid_signature" || text === "malformed_signature" || text === "expired_request") return 401;
+  if (text === "scope_not_enabled") return 403;
+  if (text === "protected_mode_rejected") return 403;
+  if (text === "manifest_request_failed" || text === "stream_validation_failed" || text === "stream_push_validation_failed") return 500;
+  if (text === "invalid_payload" || text === "malformed_payload" || text === "malformed_request" || text === "invalid_timestamp") return 400;
+  return fallback;
+}
+
 export function registerPeerRoutes(app, ctx) {
+  app.get("/api/sync/diagnostics/ping", async (req, res) => {
+    try {
+      const payload = await buildDiagnosticPingPayload({
+        runtimeRoot: ctx?.runtimeRoot,
+        port: ctx?.actualPort || ctx?.port,
+      });
+      return res.json(payload);
+    } catch {
+      return res.status(500).json({ ok: false, error: "Failed to build diagnostic ping" });
+    }
+  });
+
+  app.get("/api/sync/capabilities", async (req, res) => {
+    try {
+      const payload = await buildCapabilitiesPayload({
+        runtimeRoot: ctx?.runtimeRoot,
+        port: ctx?.actualPort || ctx?.port,
+      });
+      return res.json(payload);
+    } catch {
+      return res.status(500).json({ ok: false, error: "Failed to build sync capabilities" });
+    }
+  });
+
+  app.post("/api/sync/diagnostics/peer-auth", async (req, res) => {
+    const result = await verifyPeerHelloForDiagnostics(req.body || {}, { runtimeRoot: ctx?.runtimeRoot });
+    return res.status(result.ok ? 200 : diagnosticStatusFromCode(result.code, result.status || 400)).json(result);
+  });
+
+  app.post("/api/sync/diagnostics/capabilities", async (req, res) => {
+    const auth = await verifyPeerHelloForDiagnostics(req.body || {}, { runtimeRoot: ctx?.runtimeRoot });
+    if (!auth.ok) return res.status(diagnosticStatusFromCode(auth.code, auth.status || 400)).json(auth);
+    try {
+      const capabilities = await buildCapabilitiesPayload({
+        runtimeRoot: ctx?.runtimeRoot,
+        port: ctx?.actualPort || ctx?.port,
+      });
+      return res.json({ ok: true, auth, capabilities });
+    } catch {
+      return res.status(500).json({ ok: false, error: "Failed to build diagnostic capabilities" });
+    }
+  });
+
+  app.post("/api/sync/diagnostics/scope-manifest-summary", async (req, res) => {
+    const result = await summarizeScopeManifestForDiagnostics(req.body || {}, {
+      runtimeRoot: ctx?.runtimeRoot,
+      notebookDir: ctx?.notebookDir,
+    });
+    return res.status(result.ok ? 200 : diagnosticStatusFromCode(result.code, 500)).json(result);
+  });
+
+  app.post("/api/sync/diagnostics/scope-file-stream-auth", async (req, res) => {
+    const result = await validateScopeFileStreamForDiagnostics(req.body || {}, {
+      runtimeRoot: ctx?.runtimeRoot,
+      notebookDir: ctx?.notebookDir,
+      maxMessageAgeMs: STREAM_SIGNED_REQUEST_MAX_AGE_MS,
+      maxFutureSkewMs: STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS,
+    });
+    return res.status(result.ok ? 200 : diagnosticStatusFromCode(result.code, 400)).json(result);
+  });
+
+  app.post("/api/sync/diagnostics/scope-file-stream-push-auth", async (req, res) => {
+    const result = await validateScopeFileStreamPushForDiagnostics(req.body || {}, {
+      runtimeRoot: ctx?.runtimeRoot,
+      notebookDir: ctx?.notebookDir,
+      maxMessageAgeMs: STREAM_SIGNED_REQUEST_MAX_AGE_MS,
+      maxFutureSkewMs: STREAM_SIGNED_REQUEST_MAX_FUTURE_SKEW_MS,
+    });
+    return res.status(result.ok ? 200 : diagnosticStatusFromCode(result.code, 400)).json(result);
+  });
+
   app.post("/api/peer/hello", async (req, res) => {
     try {
       const { payload, signatureBase64 } = req.body || {};

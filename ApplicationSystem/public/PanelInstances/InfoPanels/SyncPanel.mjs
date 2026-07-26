@@ -70,6 +70,21 @@ const TEMPLATE = `
       <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">Direct / USB Ethernet mode uses normal Nodevision peer sync over a wired, Thunderbolt, USB tethering, or USB Ethernet network interface. If the adapter has no IPv4 address, Nodevision cannot discover the peer.</div>
       <div data-offline-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f4f0ff;color:#4b367c;font-size:0.82em;line-height:1.35;">Offline Package mode exports signed sync bundles that can be moved by USB drive, external disk, SD card, or another trusted physical medium without using wireless networking.</div>
       <div data-usb-diagnostics style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f8fbff;border:1px solid #d6e6f7;color:#24425f;font-size:0.8em;line-height:1.35;"></div>
+      <section data-wired-diagnostics-panel style="display:none;margin:0 0 10px;padding:9px;border:1px solid #cfdbea;border-radius:8px;background:#fbfdff;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:600;font-size:0.92em;">Wired Diagnostics</div>
+            <div data-wired-diagnostics-summary style="margin-top:3px;color:#52606d;font-size:0.8em;">No diagnostic run yet.</div>
+          </div>
+          <button type="button" data-wired-diagnostics-export style="border:1px solid #9aa8b6;border-radius:6px;background:#fff;padding:5px 8px;cursor:pointer;font-size:0.78em;">Export Report</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:8px;">
+          <button type="button" data-wired-diagnostics-local style="border:1px solid #7992ad;border-radius:6px;background:#fff;padding:6px 9px;cursor:pointer;font-size:0.82em;">Detect Wired Interfaces</button>
+          <button type="button" data-wired-diagnostics-peer style="border:1px solid #7992ad;border-radius:6px;background:#fff;padding:6px 9px;cursor:pointer;font-size:0.82em;">Test Peer URL</button>
+          <button type="button" data-wired-diagnostics-full style="border:none;border-radius:6px;background:#315f86;color:#fff;padding:7px 10px;cursor:pointer;font-size:0.82em;">Run Full Diagnostics</button>
+        </div>
+        <div data-wired-diagnostics-results style="display:grid;gap:5px;font-size:0.8em;"></div>
+      </section>
       <div data-peer-list style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;"></div>
     </section>
 
@@ -334,6 +349,32 @@ function renderUsbDiagnosticsHtml(diagnostics) {
   return `<div><strong>Direct Network Diagnostics</strong></div><div>Listening: ${escapeHtml(listenText)}</div><div style="margin-top:4px;">Interfaces:</div><ul style="margin:3px 0 6px;padding-left:18px;">${interfaceRows}</ul><div>Candidate peer probe URLs:</div><ul style="margin:3px 0 0;padding-left:18px;">${candidateRows}</ul>${message ? `<div style="margin-top:6px;color:#8f4f00;">${escapeHtml(message)}</div>` : ""}`;
 }
 
+function diagnosticStatusColor(status) {
+  const text = String(status || "").toLowerCase();
+  if (text === "pass") return { bg: "#ecf8ef", border: "#b8dec2", color: "#216b34" };
+  if (text === "fail") return { bg: "#fff0f0", border: "#efb5b5", color: "#992121" };
+  if (text === "warning") return { bg: "#fff8e8", border: "#e5c26d", color: "#765414" };
+  if (text === "running") return { bg: "#eef6ff", border: "#a9cae8", color: "#24527a" };
+  return { bg: "#f5f6f7", border: "#d6dadd", color: "#555" };
+}
+
+function renderWiredDiagnosticsReportHtml(report) {
+  if (!report || typeof report !== "object") return "<div style=\"color:#777;\">No diagnostic report yet.</div>";
+  const results = Array.isArray(report.results) ? report.results : [];
+  if (!results.length) return "<div style=\"color:#777;\">No diagnostic stages were returned.</div>";
+  const rows = results.slice(0, 18).map((result) => {
+    const style = diagnosticStatusColor(result.status);
+    const code = result.code ? " <span style=\"color:" + style.color + ";\">" + escapeHtml(result.code) + "</span>" : "";
+    const next = result.suggestedNextStep ? "<div style=\"margin-top:2px;color:#666;\">" + escapeHtml(result.suggestedNextStep) + "</div>" : "";
+    return "<div style=\"border:1px solid " + style.border + ";border-radius:6px;background:" + style.bg + ";padding:6px;color:" + style.color + ";\">"
+      + "<div style=\"display:flex;justify-content:space-between;gap:8px;align-items:flex-start;\"><strong>" + escapeHtml(result.stage || "stage") + "</strong><span>" + escapeHtml(result.status || "skipped") + code + "</span></div>"
+      + "<div style=\"margin-top:2px;color:#333;\">" + escapeHtml(result.explanation || result.test || "") + "</div>"
+      + next
+      + "</div>";
+  }).join("");
+  return rows + (results.length > 18 ? "<div style=\"color:#666;\">" + escapeHtml(results.length - 18) + " more diagnostic stage(s) in the exported report.</div>" : "");
+}
+
 async function fetchJsonWithStatus(url, init = {}) {
   const response = await fetch(url, { credentials: "include", headers: { "Content-Type": "application/json" }, ...init });
   const payload = await response.json().catch(() => ({}));
@@ -393,6 +434,13 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const usbHelpEl = panelElem.querySelector("[data-usb-help]");
   const offlineHelpEl = panelElem.querySelector("[data-offline-help]");
   const usbDiagnosticsEl = panelElem.querySelector("[data-usb-diagnostics]");
+  const wiredDiagnosticsPanelEl = panelElem.querySelector("[data-wired-diagnostics-panel]");
+  const wiredDiagnosticsSummaryEl = panelElem.querySelector("[data-wired-diagnostics-summary]");
+  const wiredDiagnosticsResultsEl = panelElem.querySelector("[data-wired-diagnostics-results]");
+  const wiredDiagnosticsLocalBtn = panelElem.querySelector("[data-wired-diagnostics-local]");
+  const wiredDiagnosticsPeerBtn = panelElem.querySelector("[data-wired-diagnostics-peer]");
+  const wiredDiagnosticsFullBtn = panelElem.querySelector("[data-wired-diagnostics-full]");
+  const wiredDiagnosticsExportBtn = panelElem.querySelector("[data-wired-diagnostics-export]");
   const scopeSelect = panelElem.querySelector("[data-scope-select]");
   const syncDirectionSelect = panelElem.querySelector("[data-sync-direction]");
   const maxFileSizeInput = panelElem.querySelector("[data-sync-max-file-mb]");
@@ -435,6 +483,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     localDevice: null,
     protection: { protectedFromPeerWrites: false },
     status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null, usbNetworkDiagnostics: null },
+    wiredDiagnosticsReport: null,
     scopes: ["SyncTest"],
     candidateFolders: [],
     activeJob: null,
@@ -486,6 +535,23 @@ export async function setupPanel(panelElem, panelVars = {}) {
       usbDiagnosticsEl.style.display = html ? "block" : "none";
       usbDiagnosticsEl.innerHTML = html;
     }
+    renderWiredDiagnostics();
+  };
+
+  const renderWiredDiagnostics = () => {
+    const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
+    const visible = transport === "usb";
+    if (wiredDiagnosticsPanelEl) wiredDiagnosticsPanelEl.style.display = visible ? "block" : "none";
+    if (!visible) return;
+    const report = state.wiredDiagnosticsReport;
+    const firstFailure = report?.firstFailure || null;
+    if (wiredDiagnosticsSummaryEl) {
+      if (!report) wiredDiagnosticsSummaryEl.textContent = "Run diagnostics to identify the first blocking wired-sync layer.";
+      else if (firstFailure) wiredDiagnosticsSummaryEl.textContent = "First blocking layer: " + firstFailure.stage + " - " + (firstFailure.code || firstFailure.test);
+      else wiredDiagnosticsSummaryEl.textContent = "No required wired diagnostic stage failed in the latest run.";
+    }
+    if (wiredDiagnosticsResultsEl) wiredDiagnosticsResultsEl.innerHTML = renderWiredDiagnosticsReportHtml(report);
+    if (wiredDiagnosticsExportBtn) wiredDiagnosticsExportBtn.disabled = state.busy || !report;
   };
 
   const setActivePeerUrl = (value) => {
@@ -798,7 +864,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, receiverDropPathInput, pushPreviewBtn, pushPackageBtn, inboxRefreshBtn, inboxListEl, inboxPreviewBtn, inboxImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, receiverDropPathInput, pushPreviewBtn, pushPackageBtn, inboxRefreshBtn, inboxListEl, inboxPreviewBtn, inboxImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn, wiredDiagnosticsLocalBtn, wiredDiagnosticsPeerBtn, wiredDiagnosticsFullBtn, wiredDiagnosticsExportBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
     renderTransportSettings();
@@ -851,6 +917,52 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const unshareScope = async (scope) => { setBusy(true, "Removing shared folder..."); try { await apiFetchJson("/api/sync/scopes", { method: "DELETE", body: JSON.stringify({ scope }) }); await Promise.all([loadScopes(), loadFolders()]); } catch (err) { setError(errorEl, err?.message || "Failed to remove scope"); } finally { setBusy(false); } };
   const toggleProtection = async (enabled) => { setBusy(true, "Updating sync protection..."); try { const p = await apiFetchJson("/api/sync/protection", { method: "POST", body: JSON.stringify({ protectedFromPeerWrites: Boolean(enabled) }) }); state.protection = p.protection || { protectedFromPeerWrites: Boolean(enabled) }; renderProtection(); setStatus(statusEl, state.protection.protectedFromPeerWrites ? "This installation is protected from sync writes." : "Sync write protection disabled."); } catch (err) { setError(errorEl, err?.message || "Failed to update sync protection"); renderProtection(); } finally { setBusy(false); } };
 
+
+  const runWiredDiagnostics = async (mode) => {
+    setError(errorEl, "");
+    const selectedMode = String(mode || "local");
+    const peerUrl = getActivePeerUrl(state.syncSettings);
+    if ((selectedMode === "peer" || selectedMode === "full") && !peerUrl) {
+      setError(errorEl, "Enter the peer URL for wired diagnostics.");
+      return;
+    }
+    setBusy(true, selectedMode === "local" ? "Detecting wired interfaces..." : selectedMode === "peer" ? "Testing peer URL..." : "Running full wired diagnostics...");
+    try {
+      const scope = scopeSelect?.value || "SyncTest";
+      const { response, payload } = await fetchJsonWithStatus("/api/sync/diagnostics/wired", {
+        method: "POST",
+        body: JSON.stringify({ mode: selectedMode, peerUrl, scope, syncTransport: state.syncSettings.syncTransport }),
+      });
+      if (!response.ok && !Array.isArray(payload?.results)) throw createJsonResponseError(response, payload);
+      state.wiredDiagnosticsReport = payload;
+      renderWiredDiagnostics();
+      if (syncResultEl) syncResultEl.textContent = JSON.stringify(payload, null, 2);
+      if (syncDetailsEl) syncDetailsEl.open = true;
+      const first = payload?.firstFailure;
+      setStatus(statusEl, first ? "Wired diagnostics stopped at " + first.stage + ": " + (first.code || first.test) : "Wired diagnostics completed without a required-stage failure.");
+    } catch (err) {
+      setError(errorEl, err?.message || "Failed to run wired diagnostics");
+    } finally {
+      setBusy(false);
+      renderWiredDiagnostics();
+    }
+  };
+
+  const exportWiredDiagnostics = () => {
+    const report = state.wiredDiagnosticsReport;
+    if (!report) return;
+    const blob = new Blob([JSON.stringify(report, null, 2) + "\n"], { type: "application/json" });
+    const link = document.createElement("a");
+    const runId = String(report.runId || "wired-diagnostics").replace(/[^A-Za-z0-9_.-]+/g, "-");
+    link.href = URL.createObjectURL(blob);
+    link.download = runId + ".json";
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(link.href);
+      link.remove();
+    }, 0);
+  };
 
   const setPackageStatus = (message = "", options = {}) => {
     if (!packageStatusEl) return;
@@ -1357,6 +1469,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
   });
   peerUrlInput?.addEventListener("input", () => { setActivePeerUrl(peerUrlInput.value); });
   peerUrlInput?.addEventListener("change", () => { setActivePeerUrl(peerUrlInput.value); renderTransportSettings(); });
+  wiredDiagnosticsLocalBtn?.addEventListener("click", () => { runWiredDiagnostics("local"); });
+  wiredDiagnosticsPeerBtn?.addEventListener("click", () => { runWiredDiagnostics("peer"); });
+  wiredDiagnosticsFullBtn?.addEventListener("click", () => { runWiredDiagnostics("full"); });
+  wiredDiagnosticsExportBtn?.addEventListener("click", () => { exportWiredDiagnostics(); });
 
   maxFileSizeInput?.addEventListener("change", () => { getMaxFileSizeBytes(); });
   syncDirectionSelect?.addEventListener("change", () => {
