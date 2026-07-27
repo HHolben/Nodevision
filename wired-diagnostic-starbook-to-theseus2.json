@@ -1,0 +1,2177 @@
+{
+  "ok": false,
+  "command": "full",
+  "runId": "wired-ms2fxi9b-n1bptj",
+  "generatedAt": "2026-07-26T23:40:05.423Z",
+  "protocolVersion": 1,
+  "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
+  "results": [
+    {
+      "stage": "ethernet-hardware",
+      "test": "candidate-ethernet-interfaces",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "Selected likely wired interface enp0s13f0u1.",
+      "evidence": {
+        "selectedInterface": "enp0s13f0u1",
+        "interfaces": [
+          {
+            "name": "enp0s13f0u1",
+            "type": "usb-ethernet",
+            "administrativeState": "up",
+            "operstate": "up",
+            "carrier": true,
+            "macAddress": "4c:ea:xx:xx:xx:fc",
+            "mtu": 1500,
+            "ipv4Addresses": [
+              {
+                "family": "IPv4",
+                "address": "169.254.42.12",
+                "netmask": "255.255.0.0",
+                "cidr": "169.254.42.12/16",
+                "prefixLength": 16,
+                "internal": false,
+                "macRedacted": "4c:ea:xx:xx:xx:fc",
+                "scope": "link-local",
+                "loopback": false,
+                "private": "[REDACTED]",
+                "linkLocal": true,
+                "global": false,
+                "usableForPeerUrl": true,
+                "requiresZoneIdentifier": false,
+                "interfaceName": "enp0s13f0u1",
+                "network": "169.254.0.0",
+                "broadcast": "169.254.255.255",
+                "overlapsAnotherActiveInterface": false
+              }
+            ],
+            "ipv6Addresses": [
+              {
+                "family": "IPv6",
+                "address": "fe80::a53b:464a:9910:6541",
+                "netmask": "ffff:ffff:ffff:ffff::",
+                "cidr": "fe80::a53b:464a:9910:6541/64",
+                "prefixLength": null,
+                "internal": false,
+                "macRedacted": "4c:ea:xx:xx:xx:fc",
+                "scope": "link-local",
+                "loopback": false,
+                "private": "[REDACTED]",
+                "linkLocal": true,
+                "global": false,
+                "usableForPeerUrl": true,
+                "requiresZoneIdentifier": true,
+                "interfaceName": "enp0s13f0u1"
+              }
+            ],
+            "appearsUsbEthernet": true,
+            "appearsWireless": false,
+            "appearsVirtual": false,
+            "hasDefaultRoute": false,
+            "likelyDirectWired": true,
+            "routeTableEntries": [
+              {
+                "destination": "169.254.0.0",
+                "gateway": "0.0.0.0",
+                "netmask": "255.255.0.0",
+                "defaultRoute": false
+              }
+            ]
+          },
+          {
+            "name": "lo",
+            "type": "virtual-or-loopback",
+            "administrativeState": "up",
+            "operstate": "unknown",
+            "carrier": true,
+            "macAddress": "00:00:xx:xx:xx:00",
+            "mtu": 65536,
+            "ipv4Addresses": [
+              {
+                "family": "IPv4",
+                "address": "127.0.0.1",
+                "netmask": "255.0.0.0",
+                "cidr": "127.0.0.1/8",
+                "prefixLength": 8,
+                "internal": true,
+                "macRedacted": "00:00:xx:xx:xx:00",
+                "scope": "loopback",
+                "loopback": true,
+                "private": "[REDACTED]",
+                "linkLocal": false,
+                "global": false,
+                "usableForPeerUrl": false,
+                "requiresZoneIdentifier": false,
+                "interfaceName": "lo",
+                "network": "127.0.0.0",
+                "broadcast": "127.255.255.255",
+                "overlapsAnotherActiveInterface": false
+              }
+            ],
+            "ipv6Addresses": [
+              {
+                "family": "IPv6",
+                "address": "::1",
+                "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                "cidr": "::1/128",
+                "prefixLength": null,
+                "internal": true,
+                "macRedacted": "00:00:xx:xx:xx:00",
+                "scope": "loopback",
+                "loopback": true,
+                "private": "[REDACTED]",
+                "linkLocal": false,
+                "global": false,
+                "usableForPeerUrl": false,
+                "requiresZoneIdentifier": false,
+                "interfaceName": "lo"
+              }
+            ],
+            "appearsUsbEthernet": false,
+            "appearsWireless": false,
+            "appearsVirtual": true,
+            "hasDefaultRoute": false,
+            "likelyDirectWired": false,
+            "routeTableEntries": []
+          },
+          {
+            "name": "wlp0s20f3",
+            "type": "wireless",
+            "administrativeState": "up",
+            "operstate": "up",
+            "carrier": true,
+            "macAddress": "26:ca:xx:xx:xx:62",
+            "mtu": 1500,
+            "ipv4Addresses": [
+              {
+                "family": "IPv4",
+                "address": "10.0.0.42",
+                "netmask": "255.255.255.0",
+                "cidr": "10.0.0.42/24",
+                "prefixLength": 24,
+                "internal": false,
+                "macRedacted": "26:ca:xx:xx:xx:62",
+                "scope": "private",
+                "loopback": false,
+                "private": "[REDACTED]",
+                "linkLocal": false,
+                "global": false,
+                "usableForPeerUrl": true,
+                "requiresZoneIdentifier": false,
+                "interfaceName": "wlp0s20f3",
+                "network": "10.0.0.0",
+                "broadcast": "10.0.0.255",
+                "overlapsAnotherActiveInterface": false
+              }
+            ],
+            "ipv6Addresses": [
+              {
+                "family": "IPv6",
+                "address": "fe80::67a8:4271:58ee:4865",
+                "netmask": "ffff:ffff:ffff:ffff::",
+                "cidr": "fe80::67a8:4271:58ee:4865/64",
+                "prefixLength": null,
+                "internal": false,
+                "macRedacted": "26:ca:xx:xx:xx:62",
+                "scope": "link-local",
+                "loopback": false,
+                "private": "[REDACTED]",
+                "linkLocal": true,
+                "global": false,
+                "usableForPeerUrl": true,
+                "requiresZoneIdentifier": true,
+                "interfaceName": "wlp0s20f3"
+              }
+            ],
+            "appearsUsbEthernet": false,
+            "appearsWireless": true,
+            "appearsVirtual": false,
+            "hasDefaultRoute": true,
+            "likelyDirectWired": false,
+            "routeTableEntries": [
+              {
+                "destination": "0.0.0.0",
+                "gateway": "10.0.0.1",
+                "netmask": "0.0.0.0",
+                "defaultRoute": true
+              },
+              {
+                "destination": "10.0.0.0",
+                "gateway": "0.0.0.0",
+                "netmask": "255.255.255.0",
+                "defaultRoute": false
+              }
+            ]
+          }
+        ]
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "local",
+      "required": true,
+      "reportSection": "local"
+    },
+    {
+      "stage": "ethernet-hardware",
+      "test": "physical-carrier",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "Carrier detected and interface is administratively usable.",
+      "evidence": {
+        "interfaceName": "enp0s13f0u1",
+        "administrativeState": "up",
+        "operstate": "up",
+        "carrier": true
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "local",
+      "required": true,
+      "reportSection": "local"
+    },
+    {
+      "stage": "address-assignment",
+      "test": "ip-address-suitability",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "Selected wired IPv4 address 169.254.42.12/16.",
+      "evidence": {
+        "interfaceName": "enp0s13f0u1",
+        "ipv4Addresses": [
+          {
+            "family": "IPv4",
+            "address": "169.254.42.12",
+            "netmask": "255.255.0.0",
+            "cidr": "169.254.42.12/16",
+            "prefixLength": 16,
+            "internal": false,
+            "macRedacted": "4c:ea:xx:xx:xx:fc",
+            "scope": "link-local",
+            "loopback": false,
+            "private": "[REDACTED]",
+            "linkLocal": true,
+            "global": false,
+            "usableForPeerUrl": true,
+            "requiresZoneIdentifier": false,
+            "interfaceName": "enp0s13f0u1",
+            "network": "169.254.0.0",
+            "broadcast": "169.254.255.255",
+            "overlapsAnotherActiveInterface": false
+          }
+        ],
+        "ipv6LinkLocal": {
+          "address": "fe80::a53b:464a:9910:6541",
+          "requiresZoneIdentifier": true
+        }
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "local",
+      "required": true,
+      "reportSection": "local"
+    },
+    {
+      "stage": "local-routing",
+      "test": "wired-subnet-route",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "A local route exists for the selected wired subnet.",
+      "evidence": {
+        "interfaceName": "enp0s13f0u1",
+        "routeTableEntries": [
+          {
+            "destination": "169.254.0.0",
+            "gateway": "0.0.0.0",
+            "netmask": "255.255.0.0",
+            "defaultRoute": false
+          }
+        ],
+        "selectedIpv4": {
+          "family": "IPv4",
+          "address": "169.254.42.12",
+          "netmask": "255.255.0.0",
+          "cidr": "169.254.42.12/16",
+          "prefixLength": 16,
+          "internal": false,
+          "macRedacted": "4c:ea:xx:xx:xx:fc",
+          "scope": "link-local",
+          "loopback": false,
+          "private": "[REDACTED]",
+          "linkLocal": true,
+          "global": false,
+          "usableForPeerUrl": true,
+          "requiresZoneIdentifier": false,
+          "interfaceName": "enp0s13f0u1",
+          "network": "169.254.0.0",
+          "broadcast": "169.254.255.255",
+          "overlapsAnotherActiveInterface": false
+        }
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "local",
+      "required": false,
+      "reportSection": "local"
+    },
+    {
+      "stage": "firewall-accessibility",
+      "test": "local-firewall-observation",
+      "status": "warning",
+      "durationMs": 0,
+      "code": "FIREWALL_SUSPECTED",
+      "explanation": "Local diagnostics cannot prove Fedora firewalld permits incoming peer TCP without a remote test.",
+      "evidence": {
+        "requiredTcpPort": 3000,
+        "discoveryUdpPort": 39000
+      },
+      "details": {},
+      "suggestedNextStep": "Run the reciprocal full diagnostic from the other laptop, then compare reports. Use firewall-cmd list commands from the manual procedure; do not disable the firewall permanently.",
+      "problemLocation": "unknown",
+      "required": false,
+      "reportSection": "local"
+    },
+    {
+      "stage": "server-binding",
+      "test": "configured-port-listener",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "Nodevision is listening on an address reachable from non-loopback interfaces.",
+      "evidence": {
+        "runtime": {
+          "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
+          "configPath": "/home/henry/CodexPlayground/Nodevision/ApplicationSystem/config.json",
+          "configLoaded": true,
+          "host": "127.0.0.1",
+          "port": 3000,
+          "phpHost": "127.0.0.1",
+          "phpPort": 8080
+        },
+        "binding": {
+          "port": 3000,
+          "selectedInterfaceName": "enp0s13f0u1",
+          "selectedInterfaceIpv4": "169.254.42.12",
+          "sockets": [
+            {
+              "family": "IPv4",
+              "address": "0.0.0.0",
+              "port": 3000
+            }
+          ],
+          "listening": true,
+          "listensAllIpv4": true,
+          "listensLoopbackIpv4": false,
+          "listensSelectedIpv4": false,
+          "listensAllIpv6": false,
+          "listensLoopbackIpv6": false,
+          "ipv6Only": false,
+          "loopbackOnly": false
+        }
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "local",
+      "required": true,
+      "reportSection": "local"
+    },
+    {
+      "stage": "raw-http-reachability",
+      "test": "local-loopback-diagnostic-ping",
+      "status": "pass",
+      "durationMs": 0,
+      "code": "LOCAL_SERVER_PORT_MISMATCH",
+      "explanation": "The diagnostic ping endpoint is reachable on loopback.",
+      "evidence": {
+        "ok": true,
+        "status": 200,
+        "statusText": "OK",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "ok": true,
+          "service": "nodevision-sync",
+          "protocolVersion": 1,
+          "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+          "deviceIdRedacted": "nv_dev_fca...4afd32",
+          "deviceName": "StarBook",
+          "publicKeyFingerprint": "c0a98a55b8126df5",
+          "identityPresent": true,
+          "port": 3000,
+          "protectedFromIncomingWrites": true,
+          "timestamp": "2026-07-26T23:40:05.362Z"
+        },
+        "rawBodyLength": 328,
+        "durationMs": 24,
+        "afterHttpConnection": true,
+        "route": "/api/sync/diagnostics/ping",
+        "method": "GET",
+        "sanitizedBody": {
+          "ok": true,
+          "service": "nodevision-sync",
+          "protocolVersion": 1,
+          "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+          "deviceIdRedacted": "nv_dev_fca...4afd32",
+          "deviceName": "StarBook",
+          "publicKeyFingerprint": "c0a98a55b8126df5",
+          "identityPresent": true,
+          "port": 3000,
+          "protectedFromIncomingWrites": true,
+          "timestamp": "2026-07-26T23:40:05.362Z"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": "Confirm Nodevision is running on the configured port.",
+      "problemLocation": "local",
+      "required": true,
+      "reportSection": "local"
+    },
+    {
+      "stage": "nodevision-server-binding",
+      "test": "local-wired-address-diagnostic-ping",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "The local Nodevision server answers through the selected wired IPv4 address.",
+      "evidence": {
+        "wiredBase": "http://169.254.42.12:3000",
+        "wiredPing": {
+          "ok": true,
+          "status": 200,
+          "statusText": "OK",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "ok": true,
+            "service": "nodevision-sync",
+            "protocolVersion": 1,
+            "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+            "deviceIdRedacted": "nv_dev_fca...4afd32",
+            "deviceName": "StarBook",
+            "publicKeyFingerprint": "c0a98a55b8126df5",
+            "identityPresent": true,
+            "port": 3000,
+            "protectedFromIncomingWrites": true,
+            "timestamp": "2026-07-26T23:40:05.369Z"
+          },
+          "rawBodyLength": 328,
+          "durationMs": 2,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/ping",
+          "method": "GET",
+          "sanitizedBody": {
+            "ok": true,
+            "service": "nodevision-sync",
+            "protocolVersion": 1,
+            "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+            "deviceIdRedacted": "nv_dev_fca...4afd32",
+            "deviceName": "StarBook",
+            "publicKeyFingerprint": "c0a98a55b8126df5",
+            "identityPresent": true,
+            "port": 3000,
+            "protectedFromIncomingWrites": true,
+            "timestamp": "2026-07-26T23:40:05.369Z"
+          }
+        }
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "local",
+      "required": true,
+      "reportSection": "local"
+    },
+    {
+      "stage": "peer-url",
+      "test": "parse-peer-url",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "Peer URL parsed successfully.",
+      "evidence": {
+        "href": "http://169.254.42.13:3000",
+        "protocol": "http:",
+        "hostname": "169.254.42.13",
+        "host": "169.254.42.13:3000",
+        "port": 3000,
+        "isLiteralIp": true
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "unknown",
+      "required": true,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "basic-tcp-http",
+      "test": "peer-tcp-connectivity",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "TCP connection to peer host and port succeeded.",
+      "evidence": {
+        "ok": true,
+        "code": null,
+        "error": null,
+        "durationMs": 1
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "unknown",
+      "required": true,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "public-peer-identification",
+      "test": "diagnostic-ping",
+      "status": "fail",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "The public diagnostic ping endpoint did not answer successfully.",
+      "evidence": {
+        "ok": false,
+        "status": 401,
+        "statusText": "Unauthorized",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "Unauthorized"
+        },
+        "rawBodyLength": 24,
+        "durationMs": 7,
+        "afterHttpConnection": true,
+        "route": "/api/sync/diagnostics/ping",
+        "method": "GET",
+        "sanitizedBody": {
+          "error": "Unauthorized"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": "Inspect HTTP status and peer server logs.",
+      "problemLocation": "remote",
+      "required": false,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "public-peer-identification",
+      "test": "peer-status",
+      "status": "pass",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "The public peer status endpoint answered.",
+      "evidence": {
+        "ok": true,
+        "status": 200,
+        "statusText": "OK",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "ok": true,
+          "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+          "deviceName": "theseus2",
+          "localDevice": {
+            "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+            "deviceName": "theseus2",
+            "protectedFromIncomingWrites": false,
+            "acceptsIncomingSyncWrites": true,
+            "allowsOutgoingSyncReads": true,
+            "supportedSyncModes": [
+              "pull",
+              "push",
+              "sync"
+            ]
+          },
+          "protectedFromIncomingWrites": false,
+          "acceptsIncomingSyncWrites": true,
+          "allowsOutgoingSyncReads": true,
+          "supportedSyncModes": [
+            "pull",
+            "push",
+            "sync"
+          ],
+          "trustedPeers": []
+        },
+        "rawBodyLength": 471,
+        "durationMs": 5,
+        "afterHttpConnection": true,
+        "route": "/api/peer/status",
+        "method": "GET",
+        "sanitizedBody": {
+          "ok": true,
+          "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+          "deviceName": "theseus2",
+          "localDevice": {
+            "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+            "deviceName": "theseus2",
+            "protectedFromIncomingWrites": false,
+            "acceptsIncomingSyncWrites": true,
+            "allowsOutgoingSyncReads": true,
+            "supportedSyncModes": [
+              "pull",
+              "push",
+              "sync"
+            ]
+          },
+          "protectedFromIncomingWrites": false,
+          "acceptsIncomingSyncWrites": true,
+          "allowsOutgoingSyncReads": true,
+          "supportedSyncModes": [
+            "pull",
+            "push",
+            "sync"
+          ],
+          "trustedPeers": []
+        }
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "remote",
+      "required": true,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "discovery-logic",
+      "test": "http-status-public-key-for-direct-discovery",
+      "status": "warning",
+      "durationMs": 0,
+      "code": "PEER_IDENTITY_MISSING",
+      "explanation": "Direct HTTP discovery expects a publicKey in /api/peer/status, but this peer status response did not include one.",
+      "evidence": {
+        "route": "/api/peer/status",
+        "hasDeviceId": true,
+        "hasPublicKey": false
+      },
+      "details": {},
+      "suggestedNextStep": "Use UDP discovery or update the peer to expose its public key in the public status/diagnostic identity response.",
+      "problemLocation": "remote",
+      "required": false,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "sync-capability",
+      "test": "capabilities-endpoint",
+      "status": "fail",
+      "durationMs": 0,
+      "code": null,
+      "explanation": "The sync capabilities endpoint did not answer successfully.",
+      "evidence": {
+        "ok": false,
+        "status": 401,
+        "statusText": "Unauthorized",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "Unauthorized"
+        },
+        "rawBodyLength": 24,
+        "durationMs": 5,
+        "afterHttpConnection": true,
+        "route": "/api/sync/capabilities",
+        "method": "GET",
+        "sanitizedBody": {
+          "error": "Unauthorized"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": null,
+      "problemLocation": "remote",
+      "required": false,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "signed-peer-authentication",
+      "test": "diagnostic-peer-auth",
+      "status": "fail",
+      "durationMs": 0,
+      "code": "PEER_SIGNATURE_REJECTED",
+      "explanation": "The peer rejected the signed diagnostic hello.",
+      "evidence": {
+        "ok": false,
+        "status": 401,
+        "statusText": "Unauthorized",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "Unauthorized"
+        },
+        "rawBodyLength": 24,
+        "durationMs": 8,
+        "afterHttpConnection": true,
+        "route": "/api/sync/diagnostics/peer-auth",
+        "method": "POST",
+        "sanitizedBody": {
+          "error": "Unauthorized"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": "If TCP and public endpoints pass, compare TrustedPeers.json public key fingerprints on both devices.",
+      "problemLocation": "directional",
+      "required": true,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "sync-capability",
+      "test": "signed-sync-capabilities",
+      "status": "fail",
+      "durationMs": 0,
+      "code": "PEER_SIGNATURE_REJECTED",
+      "explanation": "The peer rejected or did not register the signed capability diagnostic request.",
+      "evidence": {
+        "ok": false,
+        "status": 401,
+        "statusText": "Unauthorized",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "Unauthorized"
+        },
+        "rawBodyLength": 24,
+        "durationMs": 5,
+        "afterHttpConnection": true,
+        "route": "/api/sync/diagnostics/capabilities",
+        "method": "POST",
+        "sanitizedBody": {
+          "error": "Unauthorized"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": "Check protocol version, diagnostic route registration, trust, and signed hello validation.",
+      "problemLocation": "directional",
+      "required": false,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "sync-manifest-exchange",
+      "test": "manifest-summary",
+      "status": "fail",
+      "durationMs": 0,
+      "code": "PEER_SIGNATURE_REJECTED",
+      "explanation": "The peer did not complete the manifest-only diagnostic request.",
+      "evidence": {
+        "ok": false,
+        "status": 401,
+        "statusText": "Unauthorized",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "Unauthorized"
+        },
+        "rawBodyLength": 24,
+        "durationMs": 5,
+        "afterHttpConnection": true,
+        "route": "/api/sync/diagnostics/scope-manifest-summary",
+        "method": "POST",
+        "sanitizedBody": {
+          "error": "Unauthorized"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": "Check trust, enabled sync scope, and protected-mode policy.",
+      "problemLocation": "directional",
+      "required": false,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "individual-transport-components",
+      "test": "file-stream-auth-validation-no-file-read",
+      "status": "fail",
+      "durationMs": 0,
+      "code": "PEER_SIGNATURE_REJECTED",
+      "explanation": "The peer rejected diagnostic file-stream auth validation.",
+      "evidence": {
+        "ok": false,
+        "status": 401,
+        "statusText": "Unauthorized",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "Unauthorized"
+        },
+        "rawBodyLength": 24,
+        "durationMs": 4,
+        "afterHttpConnection": true,
+        "route": "/api/sync/diagnostics/scope-file-stream-auth",
+        "method": "POST",
+        "sanitizedBody": {
+          "error": "Unauthorized"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": "Use the safe details to distinguish trust, signature, timestamp, scope, and path validation failures.",
+      "problemLocation": "directional",
+      "required": false,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "individual-transport-components",
+      "test": "file-stream-push-auth-validation-no-file-write",
+      "status": "fail",
+      "durationMs": 0,
+      "code": "PEER_SIGNATURE_REJECTED",
+      "explanation": "The peer rejected diagnostic stream-push auth validation before protected-mode success could be determined.",
+      "evidence": {
+        "ok": false,
+        "status": 401,
+        "statusText": "Unauthorized",
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "Unauthorized"
+        },
+        "rawBodyLength": 24,
+        "durationMs": 5,
+        "afterHttpConnection": true,
+        "route": "/api/sync/diagnostics/scope-file-stream-push-auth",
+        "method": "POST",
+        "sanitizedBody": {
+          "error": "Unauthorized"
+        }
+      },
+      "details": {},
+      "suggestedNextStep": "Use the safe details to distinguish trust, signature, timestamp, scope, path, and protected-mode failures.",
+      "problemLocation": "directional",
+      "required": false,
+      "reportSection": "peer"
+    },
+    {
+      "stage": "discovery-logic",
+      "test": "explicit-url-reachability",
+      "status": "pass",
+      "durationMs": 0,
+      "code": "EXPLICIT_CONNECTION_SUCCEEDED",
+      "explanation": "The peer is reachable by explicit URL. Automatic discovery should now be diagnosed separately.",
+      "evidence": {
+        "peerUrl": "http://169.254.42.13:3000"
+      },
+      "details": {},
+      "suggestedNextStep": "Run `node scripts/diagnose-wired-sync.mjs discovery --duration-ms 7000` on both machines, or use the Sync Panel diagnostics.",
+      "problemLocation": "unknown",
+      "required": false,
+      "reportSection": "peer"
+    }
+  ],
+  "local": {
+    "ok": true,
+    "command": "local",
+    "runId": "wired-ms2fxi6r-ds4oxs",
+    "generatedAt": "2026-07-26T23:40:05.331Z",
+    "protocolVersion": 1,
+    "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
+    "results": [
+      {
+        "stage": "ethernet-hardware",
+        "test": "candidate-ethernet-interfaces",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "Selected likely wired interface enp0s13f0u1.",
+        "evidence": {
+          "selectedInterface": "enp0s13f0u1",
+          "interfaces": [
+            {
+              "name": "enp0s13f0u1",
+              "type": "usb-ethernet",
+              "administrativeState": "up",
+              "operstate": "up",
+              "carrier": true,
+              "macAddress": "4c:ea:xx:xx:xx:fc",
+              "mtu": 1500,
+              "ipv4Addresses": [
+                {
+                  "family": "IPv4",
+                  "address": "169.254.42.12",
+                  "netmask": "255.255.0.0",
+                  "cidr": "169.254.42.12/16",
+                  "prefixLength": 16,
+                  "internal": false,
+                  "macRedacted": "4c:ea:xx:xx:xx:fc",
+                  "scope": "link-local",
+                  "loopback": false,
+                  "private": "[REDACTED]",
+                  "linkLocal": true,
+                  "global": false,
+                  "usableForPeerUrl": true,
+                  "requiresZoneIdentifier": false,
+                  "interfaceName": "enp0s13f0u1",
+                  "network": "169.254.0.0",
+                  "broadcast": "169.254.255.255",
+                  "overlapsAnotherActiveInterface": false
+                }
+              ],
+              "ipv6Addresses": [
+                {
+                  "family": "IPv6",
+                  "address": "fe80::a53b:464a:9910:6541",
+                  "netmask": "ffff:ffff:ffff:ffff::",
+                  "cidr": "fe80::a53b:464a:9910:6541/64",
+                  "prefixLength": null,
+                  "internal": false,
+                  "macRedacted": "4c:ea:xx:xx:xx:fc",
+                  "scope": "link-local",
+                  "loopback": false,
+                  "private": "[REDACTED]",
+                  "linkLocal": true,
+                  "global": false,
+                  "usableForPeerUrl": true,
+                  "requiresZoneIdentifier": true,
+                  "interfaceName": "enp0s13f0u1"
+                }
+              ],
+              "appearsUsbEthernet": true,
+              "appearsWireless": false,
+              "appearsVirtual": false,
+              "hasDefaultRoute": false,
+              "likelyDirectWired": true,
+              "routeTableEntries": [
+                {
+                  "destination": "169.254.0.0",
+                  "gateway": "0.0.0.0",
+                  "netmask": "255.255.0.0",
+                  "defaultRoute": false
+                }
+              ]
+            },
+            {
+              "name": "lo",
+              "type": "virtual-or-loopback",
+              "administrativeState": "up",
+              "operstate": "unknown",
+              "carrier": true,
+              "macAddress": "00:00:xx:xx:xx:00",
+              "mtu": 65536,
+              "ipv4Addresses": [
+                {
+                  "family": "IPv4",
+                  "address": "127.0.0.1",
+                  "netmask": "255.0.0.0",
+                  "cidr": "127.0.0.1/8",
+                  "prefixLength": 8,
+                  "internal": true,
+                  "macRedacted": "00:00:xx:xx:xx:00",
+                  "scope": "loopback",
+                  "loopback": true,
+                  "private": "[REDACTED]",
+                  "linkLocal": false,
+                  "global": false,
+                  "usableForPeerUrl": false,
+                  "requiresZoneIdentifier": false,
+                  "interfaceName": "lo",
+                  "network": "127.0.0.0",
+                  "broadcast": "127.255.255.255",
+                  "overlapsAnotherActiveInterface": false
+                }
+              ],
+              "ipv6Addresses": [
+                {
+                  "family": "IPv6",
+                  "address": "::1",
+                  "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                  "cidr": "::1/128",
+                  "prefixLength": null,
+                  "internal": true,
+                  "macRedacted": "00:00:xx:xx:xx:00",
+                  "scope": "loopback",
+                  "loopback": true,
+                  "private": "[REDACTED]",
+                  "linkLocal": false,
+                  "global": false,
+                  "usableForPeerUrl": false,
+                  "requiresZoneIdentifier": false,
+                  "interfaceName": "lo"
+                }
+              ],
+              "appearsUsbEthernet": false,
+              "appearsWireless": false,
+              "appearsVirtual": true,
+              "hasDefaultRoute": false,
+              "likelyDirectWired": false,
+              "routeTableEntries": []
+            },
+            {
+              "name": "wlp0s20f3",
+              "type": "wireless",
+              "administrativeState": "up",
+              "operstate": "up",
+              "carrier": true,
+              "macAddress": "26:ca:xx:xx:xx:62",
+              "mtu": 1500,
+              "ipv4Addresses": [
+                {
+                  "family": "IPv4",
+                  "address": "10.0.0.42",
+                  "netmask": "255.255.255.0",
+                  "cidr": "10.0.0.42/24",
+                  "prefixLength": 24,
+                  "internal": false,
+                  "macRedacted": "26:ca:xx:xx:xx:62",
+                  "scope": "private",
+                  "loopback": false,
+                  "private": "[REDACTED]",
+                  "linkLocal": false,
+                  "global": false,
+                  "usableForPeerUrl": true,
+                  "requiresZoneIdentifier": false,
+                  "interfaceName": "wlp0s20f3",
+                  "network": "10.0.0.0",
+                  "broadcast": "10.0.0.255",
+                  "overlapsAnotherActiveInterface": false
+                }
+              ],
+              "ipv6Addresses": [
+                {
+                  "family": "IPv6",
+                  "address": "fe80::67a8:4271:58ee:4865",
+                  "netmask": "ffff:ffff:ffff:ffff::",
+                  "cidr": "fe80::67a8:4271:58ee:4865/64",
+                  "prefixLength": null,
+                  "internal": false,
+                  "macRedacted": "26:ca:xx:xx:xx:62",
+                  "scope": "link-local",
+                  "loopback": false,
+                  "private": "[REDACTED]",
+                  "linkLocal": true,
+                  "global": false,
+                  "usableForPeerUrl": true,
+                  "requiresZoneIdentifier": true,
+                  "interfaceName": "wlp0s20f3"
+                }
+              ],
+              "appearsUsbEthernet": false,
+              "appearsWireless": true,
+              "appearsVirtual": false,
+              "hasDefaultRoute": true,
+              "likelyDirectWired": false,
+              "routeTableEntries": [
+                {
+                  "destination": "0.0.0.0",
+                  "gateway": "10.0.0.1",
+                  "netmask": "0.0.0.0",
+                  "defaultRoute": true
+                },
+                {
+                  "destination": "10.0.0.0",
+                  "gateway": "0.0.0.0",
+                  "netmask": "255.255.255.0",
+                  "defaultRoute": false
+                }
+              ]
+            }
+          ]
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "local",
+        "required": true
+      },
+      {
+        "stage": "ethernet-hardware",
+        "test": "physical-carrier",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "Carrier detected and interface is administratively usable.",
+        "evidence": {
+          "interfaceName": "enp0s13f0u1",
+          "administrativeState": "up",
+          "operstate": "up",
+          "carrier": true
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "local",
+        "required": true
+      },
+      {
+        "stage": "address-assignment",
+        "test": "ip-address-suitability",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "Selected wired IPv4 address 169.254.42.12/16.",
+        "evidence": {
+          "interfaceName": "enp0s13f0u1",
+          "ipv4Addresses": [
+            {
+              "family": "IPv4",
+              "address": "169.254.42.12",
+              "netmask": "255.255.0.0",
+              "cidr": "169.254.42.12/16",
+              "prefixLength": 16,
+              "internal": false,
+              "macRedacted": "4c:ea:xx:xx:xx:fc",
+              "scope": "link-local",
+              "loopback": false,
+              "private": "[REDACTED]",
+              "linkLocal": true,
+              "global": false,
+              "usableForPeerUrl": true,
+              "requiresZoneIdentifier": false,
+              "interfaceName": "enp0s13f0u1",
+              "network": "169.254.0.0",
+              "broadcast": "169.254.255.255",
+              "overlapsAnotherActiveInterface": false
+            }
+          ],
+          "ipv6LinkLocal": {
+            "address": "fe80::a53b:464a:9910:6541",
+            "requiresZoneIdentifier": true
+          }
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "local",
+        "required": true
+      },
+      {
+        "stage": "local-routing",
+        "test": "wired-subnet-route",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "A local route exists for the selected wired subnet.",
+        "evidence": {
+          "interfaceName": "enp0s13f0u1",
+          "routeTableEntries": [
+            {
+              "destination": "169.254.0.0",
+              "gateway": "0.0.0.0",
+              "netmask": "255.255.0.0",
+              "defaultRoute": false
+            }
+          ],
+          "selectedIpv4": {
+            "family": "IPv4",
+            "address": "169.254.42.12",
+            "netmask": "255.255.0.0",
+            "cidr": "169.254.42.12/16",
+            "prefixLength": 16,
+            "internal": false,
+            "macRedacted": "4c:ea:xx:xx:xx:fc",
+            "scope": "link-local",
+            "loopback": false,
+            "private": "[REDACTED]",
+            "linkLocal": true,
+            "global": false,
+            "usableForPeerUrl": true,
+            "requiresZoneIdentifier": false,
+            "interfaceName": "enp0s13f0u1",
+            "network": "169.254.0.0",
+            "broadcast": "169.254.255.255",
+            "overlapsAnotherActiveInterface": false
+          }
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "local",
+        "required": false
+      },
+      {
+        "stage": "firewall-accessibility",
+        "test": "local-firewall-observation",
+        "status": "warning",
+        "durationMs": 0,
+        "code": "FIREWALL_SUSPECTED",
+        "explanation": "Local diagnostics cannot prove Fedora firewalld permits incoming peer TCP without a remote test.",
+        "evidence": {
+          "requiredTcpPort": 3000,
+          "discoveryUdpPort": 39000
+        },
+        "details": {},
+        "suggestedNextStep": "Run the reciprocal full diagnostic from the other laptop, then compare reports. Use firewall-cmd list commands from the manual procedure; do not disable the firewall permanently.",
+        "problemLocation": "unknown",
+        "required": false
+      },
+      {
+        "stage": "server-binding",
+        "test": "configured-port-listener",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "Nodevision is listening on an address reachable from non-loopback interfaces.",
+        "evidence": {
+          "runtime": {
+            "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
+            "configPath": "/home/henry/CodexPlayground/Nodevision/ApplicationSystem/config.json",
+            "configLoaded": true,
+            "host": "127.0.0.1",
+            "port": 3000,
+            "phpHost": "127.0.0.1",
+            "phpPort": 8080
+          },
+          "binding": {
+            "port": 3000,
+            "selectedInterfaceName": "enp0s13f0u1",
+            "selectedInterfaceIpv4": "169.254.42.12",
+            "sockets": [
+              {
+                "family": "IPv4",
+                "address": "0.0.0.0",
+                "port": 3000
+              }
+            ],
+            "listening": true,
+            "listensAllIpv4": true,
+            "listensLoopbackIpv4": false,
+            "listensSelectedIpv4": false,
+            "listensAllIpv6": false,
+            "listensLoopbackIpv6": false,
+            "ipv6Only": false,
+            "loopbackOnly": false
+          }
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "local",
+        "required": true
+      },
+      {
+        "stage": "raw-http-reachability",
+        "test": "local-loopback-diagnostic-ping",
+        "status": "pass",
+        "durationMs": 0,
+        "code": "LOCAL_SERVER_PORT_MISMATCH",
+        "explanation": "The diagnostic ping endpoint is reachable on loopback.",
+        "evidence": {
+          "ok": true,
+          "status": 200,
+          "statusText": "OK",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "ok": true,
+            "service": "nodevision-sync",
+            "protocolVersion": 1,
+            "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+            "deviceIdRedacted": "nv_dev_fca...4afd32",
+            "deviceName": "StarBook",
+            "publicKeyFingerprint": "c0a98a55b8126df5",
+            "identityPresent": true,
+            "port": 3000,
+            "protectedFromIncomingWrites": true,
+            "timestamp": "2026-07-26T23:40:05.362Z"
+          },
+          "rawBodyLength": 328,
+          "durationMs": 24,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/ping",
+          "method": "GET",
+          "sanitizedBody": {
+            "ok": true,
+            "service": "nodevision-sync",
+            "protocolVersion": 1,
+            "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+            "deviceIdRedacted": "nv_dev_fca...4afd32",
+            "deviceName": "StarBook",
+            "publicKeyFingerprint": "c0a98a55b8126df5",
+            "identityPresent": true,
+            "port": 3000,
+            "protectedFromIncomingWrites": true,
+            "timestamp": "2026-07-26T23:40:05.362Z"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": "Confirm Nodevision is running on the configured port.",
+        "problemLocation": "local",
+        "required": true
+      },
+      {
+        "stage": "nodevision-server-binding",
+        "test": "local-wired-address-diagnostic-ping",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "The local Nodevision server answers through the selected wired IPv4 address.",
+        "evidence": {
+          "wiredBase": "http://169.254.42.12:3000",
+          "wiredPing": {
+            "ok": true,
+            "status": 200,
+            "statusText": "OK",
+            "contentType": "application/json; charset=utf-8",
+            "body": {
+              "ok": true,
+              "service": "nodevision-sync",
+              "protocolVersion": 1,
+              "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+              "deviceIdRedacted": "nv_dev_fca...4afd32",
+              "deviceName": "StarBook",
+              "publicKeyFingerprint": "c0a98a55b8126df5",
+              "identityPresent": true,
+              "port": 3000,
+              "protectedFromIncomingWrites": true,
+              "timestamp": "2026-07-26T23:40:05.369Z"
+            },
+            "rawBodyLength": 328,
+            "durationMs": 2,
+            "afterHttpConnection": true,
+            "route": "/api/sync/diagnostics/ping",
+            "method": "GET",
+            "sanitizedBody": {
+              "ok": true,
+              "service": "nodevision-sync",
+              "protocolVersion": 1,
+              "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+              "deviceIdRedacted": "nv_dev_fca...4afd32",
+              "deviceName": "StarBook",
+              "publicKeyFingerprint": "c0a98a55b8126df5",
+              "identityPresent": true,
+              "port": 3000,
+              "protectedFromIncomingWrites": true,
+              "timestamp": "2026-07-26T23:40:05.369Z"
+            }
+          }
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "local",
+        "required": true
+      }
+    ],
+    "localIdentity": {
+      "present": true,
+      "canSign": true,
+      "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+      "deviceIdRedacted": "nv_dev_fca...4afd32",
+      "deviceName": "StarBook",
+      "publicKeyFingerprint": "c0a98a55b8126df5",
+      "publicKeyPresent": true
+    },
+    "runtime": {
+      "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
+      "configPath": "/home/henry/CodexPlayground/Nodevision/ApplicationSystem/config.json",
+      "configLoaded": true,
+      "host": "127.0.0.1",
+      "port": 3000,
+      "phpHost": "127.0.0.1",
+      "phpPort": 8080
+    },
+    "network": {
+      "selectedInterfaceName": "enp0s13f0u1",
+      "selectedInterfaceAddress": "169.254.42.12",
+      "interfaces": [
+        {
+          "name": "enp0s13f0u1",
+          "type": "usb-ethernet",
+          "administrativeState": "up",
+          "operstate": "up",
+          "carrier": true,
+          "macAddress": "4c:ea:xx:xx:xx:fc",
+          "mtu": 1500,
+          "ipv4Addresses": [
+            {
+              "family": "IPv4",
+              "address": "169.254.42.12",
+              "netmask": "255.255.0.0",
+              "cidr": "169.254.42.12/16",
+              "prefixLength": 16,
+              "internal": false,
+              "macRedacted": "4c:ea:xx:xx:xx:fc",
+              "scope": "link-local",
+              "loopback": false,
+              "private": false,
+              "linkLocal": true,
+              "global": false,
+              "usableForPeerUrl": true,
+              "requiresZoneIdentifier": false,
+              "interfaceName": "enp0s13f0u1",
+              "network": "169.254.0.0",
+              "broadcast": "169.254.255.255",
+              "overlapsAnotherActiveInterface": false
+            }
+          ],
+          "ipv6Addresses": [
+            {
+              "family": "IPv6",
+              "address": "fe80::a53b:464a:9910:6541",
+              "netmask": "ffff:ffff:ffff:ffff::",
+              "cidr": "fe80::a53b:464a:9910:6541/64",
+              "prefixLength": null,
+              "internal": false,
+              "macRedacted": "4c:ea:xx:xx:xx:fc",
+              "scope": "link-local",
+              "loopback": false,
+              "private": false,
+              "linkLocal": true,
+              "global": false,
+              "usableForPeerUrl": true,
+              "requiresZoneIdentifier": true,
+              "interfaceName": "enp0s13f0u1"
+            }
+          ],
+          "appearsUsbEthernet": true,
+          "appearsWireless": false,
+          "appearsVirtual": false,
+          "hasDefaultRoute": false,
+          "likelyDirectWired": true,
+          "routeTableEntries": [
+            {
+              "destination": "169.254.0.0",
+              "gateway": "0.0.0.0",
+              "netmask": "255.255.0.0",
+              "defaultRoute": false
+            }
+          ]
+        },
+        {
+          "name": "lo",
+          "type": "virtual-or-loopback",
+          "administrativeState": "up",
+          "operstate": "unknown",
+          "carrier": true,
+          "macAddress": "00:00:xx:xx:xx:00",
+          "mtu": 65536,
+          "ipv4Addresses": [
+            {
+              "family": "IPv4",
+              "address": "127.0.0.1",
+              "netmask": "255.0.0.0",
+              "cidr": "127.0.0.1/8",
+              "prefixLength": 8,
+              "internal": true,
+              "macRedacted": "00:00:xx:xx:xx:00",
+              "scope": "loopback",
+              "loopback": true,
+              "private": false,
+              "linkLocal": false,
+              "global": false,
+              "usableForPeerUrl": false,
+              "requiresZoneIdentifier": false,
+              "interfaceName": "lo",
+              "network": "127.0.0.0",
+              "broadcast": "127.255.255.255",
+              "overlapsAnotherActiveInterface": false
+            }
+          ],
+          "ipv6Addresses": [
+            {
+              "family": "IPv6",
+              "address": "::1",
+              "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+              "cidr": "::1/128",
+              "prefixLength": null,
+              "internal": true,
+              "macRedacted": "00:00:xx:xx:xx:00",
+              "scope": "loopback",
+              "loopback": true,
+              "private": false,
+              "linkLocal": false,
+              "global": false,
+              "usableForPeerUrl": false,
+              "requiresZoneIdentifier": false,
+              "interfaceName": "lo"
+            }
+          ],
+          "appearsUsbEthernet": false,
+          "appearsWireless": false,
+          "appearsVirtual": true,
+          "hasDefaultRoute": false,
+          "likelyDirectWired": false,
+          "routeTableEntries": []
+        },
+        {
+          "name": "wlp0s20f3",
+          "type": "wireless",
+          "administrativeState": "up",
+          "operstate": "up",
+          "carrier": true,
+          "macAddress": "26:ca:xx:xx:xx:62",
+          "mtu": 1500,
+          "ipv4Addresses": [
+            {
+              "family": "IPv4",
+              "address": "10.0.0.42",
+              "netmask": "255.255.255.0",
+              "cidr": "10.0.0.42/24",
+              "prefixLength": 24,
+              "internal": false,
+              "macRedacted": "26:ca:xx:xx:xx:62",
+              "scope": "private",
+              "loopback": false,
+              "private": true,
+              "linkLocal": false,
+              "global": false,
+              "usableForPeerUrl": true,
+              "requiresZoneIdentifier": false,
+              "interfaceName": "wlp0s20f3",
+              "network": "10.0.0.0",
+              "broadcast": "10.0.0.255",
+              "overlapsAnotherActiveInterface": false
+            }
+          ],
+          "ipv6Addresses": [
+            {
+              "family": "IPv6",
+              "address": "fe80::67a8:4271:58ee:4865",
+              "netmask": "ffff:ffff:ffff:ffff::",
+              "cidr": "fe80::67a8:4271:58ee:4865/64",
+              "prefixLength": null,
+              "internal": false,
+              "macRedacted": "26:ca:xx:xx:xx:62",
+              "scope": "link-local",
+              "loopback": false,
+              "private": false,
+              "linkLocal": true,
+              "global": false,
+              "usableForPeerUrl": true,
+              "requiresZoneIdentifier": true,
+              "interfaceName": "wlp0s20f3"
+            }
+          ],
+          "appearsUsbEthernet": false,
+          "appearsWireless": true,
+          "appearsVirtual": false,
+          "hasDefaultRoute": true,
+          "likelyDirectWired": false,
+          "routeTableEntries": [
+            {
+              "destination": "0.0.0.0",
+              "gateway": "10.0.0.1",
+              "netmask": "0.0.0.0",
+              "defaultRoute": true
+            },
+            {
+              "destination": "10.0.0.0",
+              "gateway": "0.0.0.0",
+              "netmask": "255.255.255.0",
+              "defaultRoute": false
+            }
+          ]
+        }
+      ]
+    },
+    "serverBinding": {
+      "port": 3000,
+      "selectedInterfaceName": "enp0s13f0u1",
+      "selectedInterfaceIpv4": "169.254.42.12",
+      "sockets": [
+        {
+          "family": "IPv4",
+          "address": "0.0.0.0",
+          "port": 3000
+        }
+      ],
+      "listening": true,
+      "listensAllIpv4": true,
+      "listensLoopbackIpv4": false,
+      "listensSelectedIpv4": false,
+      "listensAllIpv6": false,
+      "listensLoopbackIpv6": false,
+      "ipv6Only": false,
+      "loopbackOnly": false
+    },
+    "firstFailure": null
+  },
+  "peer": {
+    "ok": false,
+    "command": "peer",
+    "runId": "wired-ms2fxi7u-3omupn",
+    "generatedAt": "2026-07-26T23:40:05.370Z",
+    "protocolVersion": 1,
+    "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
+    "results": [
+      {
+        "stage": "peer-url",
+        "test": "parse-peer-url",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "Peer URL parsed successfully.",
+        "evidence": {
+          "href": "http://169.254.42.13:3000",
+          "protocol": "http:",
+          "hostname": "169.254.42.13",
+          "host": "169.254.42.13:3000",
+          "port": 3000,
+          "isLiteralIp": true
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "unknown",
+        "required": true
+      },
+      {
+        "stage": "basic-tcp-http",
+        "test": "peer-tcp-connectivity",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "TCP connection to peer host and port succeeded.",
+        "evidence": {
+          "ok": true,
+          "code": null,
+          "error": null,
+          "durationMs": 1
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "unknown",
+        "required": true
+      },
+      {
+        "stage": "public-peer-identification",
+        "test": "diagnostic-ping",
+        "status": "fail",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "The public diagnostic ping endpoint did not answer successfully.",
+        "evidence": {
+          "ok": false,
+          "status": 401,
+          "statusText": "Unauthorized",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "error": "Unauthorized"
+          },
+          "rawBodyLength": 24,
+          "durationMs": 7,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/ping",
+          "method": "GET",
+          "sanitizedBody": {
+            "error": "Unauthorized"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": "Inspect HTTP status and peer server logs.",
+        "problemLocation": "remote",
+        "required": false
+      },
+      {
+        "stage": "public-peer-identification",
+        "test": "peer-status",
+        "status": "pass",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "The public peer status endpoint answered.",
+        "evidence": {
+          "ok": true,
+          "status": 200,
+          "statusText": "OK",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "ok": true,
+            "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+            "deviceName": "theseus2",
+            "localDevice": {
+              "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+              "deviceName": "theseus2",
+              "protectedFromIncomingWrites": false,
+              "acceptsIncomingSyncWrites": true,
+              "allowsOutgoingSyncReads": true,
+              "supportedSyncModes": [
+                "pull",
+                "push",
+                "sync"
+              ]
+            },
+            "protectedFromIncomingWrites": false,
+            "acceptsIncomingSyncWrites": true,
+            "allowsOutgoingSyncReads": true,
+            "supportedSyncModes": [
+              "pull",
+              "push",
+              "sync"
+            ],
+            "trustedPeers": []
+          },
+          "rawBodyLength": 471,
+          "durationMs": 5,
+          "afterHttpConnection": true,
+          "route": "/api/peer/status",
+          "method": "GET",
+          "sanitizedBody": {
+            "ok": true,
+            "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+            "deviceName": "theseus2",
+            "localDevice": {
+              "deviceId": "nv_dev_6dd7dcb754ecf9596a4f8014",
+              "deviceName": "theseus2",
+              "protectedFromIncomingWrites": false,
+              "acceptsIncomingSyncWrites": true,
+              "allowsOutgoingSyncReads": true,
+              "supportedSyncModes": [
+                "pull",
+                "push",
+                "sync"
+              ]
+            },
+            "protectedFromIncomingWrites": false,
+            "acceptsIncomingSyncWrites": true,
+            "allowsOutgoingSyncReads": true,
+            "supportedSyncModes": [
+              "pull",
+              "push",
+              "sync"
+            ],
+            "trustedPeers": []
+          }
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "remote",
+        "required": true
+      },
+      {
+        "stage": "discovery-logic",
+        "test": "http-status-public-key-for-direct-discovery",
+        "status": "warning",
+        "durationMs": 0,
+        "code": "PEER_IDENTITY_MISSING",
+        "explanation": "Direct HTTP discovery expects a publicKey in /api/peer/status, but this peer status response did not include one.",
+        "evidence": {
+          "route": "/api/peer/status",
+          "hasDeviceId": true,
+          "hasPublicKey": false
+        },
+        "details": {},
+        "suggestedNextStep": "Use UDP discovery or update the peer to expose its public key in the public status/diagnostic identity response.",
+        "problemLocation": "remote",
+        "required": false
+      },
+      {
+        "stage": "sync-capability",
+        "test": "capabilities-endpoint",
+        "status": "fail",
+        "durationMs": 0,
+        "code": null,
+        "explanation": "The sync capabilities endpoint did not answer successfully.",
+        "evidence": {
+          "ok": false,
+          "status": 401,
+          "statusText": "Unauthorized",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "error": "Unauthorized"
+          },
+          "rawBodyLength": 24,
+          "durationMs": 5,
+          "afterHttpConnection": true,
+          "route": "/api/sync/capabilities",
+          "method": "GET",
+          "sanitizedBody": {
+            "error": "Unauthorized"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": null,
+        "problemLocation": "remote",
+        "required": false
+      },
+      {
+        "stage": "signed-peer-authentication",
+        "test": "diagnostic-peer-auth",
+        "status": "fail",
+        "durationMs": 0,
+        "code": "PEER_SIGNATURE_REJECTED",
+        "explanation": "The peer rejected the signed diagnostic hello.",
+        "evidence": {
+          "ok": false,
+          "status": 401,
+          "statusText": "Unauthorized",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "error": "Unauthorized"
+          },
+          "rawBodyLength": 24,
+          "durationMs": 8,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/peer-auth",
+          "method": "POST",
+          "sanitizedBody": {
+            "error": "Unauthorized"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": "If TCP and public endpoints pass, compare TrustedPeers.json public key fingerprints on both devices.",
+        "problemLocation": "directional",
+        "required": true
+      },
+      {
+        "stage": "sync-capability",
+        "test": "signed-sync-capabilities",
+        "status": "fail",
+        "durationMs": 0,
+        "code": "PEER_SIGNATURE_REJECTED",
+        "explanation": "The peer rejected or did not register the signed capability diagnostic request.",
+        "evidence": {
+          "ok": false,
+          "status": 401,
+          "statusText": "Unauthorized",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "error": "Unauthorized"
+          },
+          "rawBodyLength": 24,
+          "durationMs": 5,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/capabilities",
+          "method": "POST",
+          "sanitizedBody": {
+            "error": "Unauthorized"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": "Check protocol version, diagnostic route registration, trust, and signed hello validation.",
+        "problemLocation": "directional",
+        "required": false
+      },
+      {
+        "stage": "sync-manifest-exchange",
+        "test": "manifest-summary",
+        "status": "fail",
+        "durationMs": 0,
+        "code": "PEER_SIGNATURE_REJECTED",
+        "explanation": "The peer did not complete the manifest-only diagnostic request.",
+        "evidence": {
+          "ok": false,
+          "status": 401,
+          "statusText": "Unauthorized",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "error": "Unauthorized"
+          },
+          "rawBodyLength": 24,
+          "durationMs": 5,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/scope-manifest-summary",
+          "method": "POST",
+          "sanitizedBody": {
+            "error": "Unauthorized"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": "Check trust, enabled sync scope, and protected-mode policy.",
+        "problemLocation": "directional",
+        "required": false
+      },
+      {
+        "stage": "individual-transport-components",
+        "test": "file-stream-auth-validation-no-file-read",
+        "status": "fail",
+        "durationMs": 0,
+        "code": "PEER_SIGNATURE_REJECTED",
+        "explanation": "The peer rejected diagnostic file-stream auth validation.",
+        "evidence": {
+          "ok": false,
+          "status": 401,
+          "statusText": "Unauthorized",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "error": "Unauthorized"
+          },
+          "rawBodyLength": 24,
+          "durationMs": 4,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/scope-file-stream-auth",
+          "method": "POST",
+          "sanitizedBody": {
+            "error": "Unauthorized"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": "Use the safe details to distinguish trust, signature, timestamp, scope, and path validation failures.",
+        "problemLocation": "directional",
+        "required": false
+      },
+      {
+        "stage": "individual-transport-components",
+        "test": "file-stream-push-auth-validation-no-file-write",
+        "status": "fail",
+        "durationMs": 0,
+        "code": "PEER_SIGNATURE_REJECTED",
+        "explanation": "The peer rejected diagnostic stream-push auth validation before protected-mode success could be determined.",
+        "evidence": {
+          "ok": false,
+          "status": 401,
+          "statusText": "Unauthorized",
+          "contentType": "application/json; charset=utf-8",
+          "body": {
+            "error": "Unauthorized"
+          },
+          "rawBodyLength": 24,
+          "durationMs": 5,
+          "afterHttpConnection": true,
+          "route": "/api/sync/diagnostics/scope-file-stream-push-auth",
+          "method": "POST",
+          "sanitizedBody": {
+            "error": "Unauthorized"
+          }
+        },
+        "details": {},
+        "suggestedNextStep": "Use the safe details to distinguish trust, signature, timestamp, scope, path, and protected-mode failures.",
+        "problemLocation": "directional",
+        "required": false
+      },
+      {
+        "stage": "discovery-logic",
+        "test": "explicit-url-reachability",
+        "status": "pass",
+        "durationMs": 0,
+        "code": "EXPLICIT_CONNECTION_SUCCEEDED",
+        "explanation": "The peer is reachable by explicit URL. Automatic discovery should now be diagnosed separately.",
+        "evidence": {
+          "peerUrl": "http://169.254.42.13:3000"
+        },
+        "details": {},
+        "suggestedNextStep": "Run `node scripts/diagnose-wired-sync.mjs discovery --duration-ms 7000` on both machines, or use the Sync Panel diagnostics.",
+        "problemLocation": "unknown",
+        "required": false
+      }
+    ],
+    "localIdentity": {
+      "present": true,
+      "canSign": true,
+      "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+      "deviceIdRedacted": "nv_dev_fca...4afd32",
+      "deviceName": "StarBook",
+      "publicKeyFingerprint": "c0a98a55b8126df5",
+      "publicKeyPresent": true
+    },
+    "peerUrl": "http://169.254.42.13:3000",
+    "peerIdentity": {
+      "deviceId": null,
+      "deviceIdRedacted": null,
+      "deviceName": null,
+      "publicKeyFingerprint": null,
+      "protocolVersion": null
+    },
+    "firstFailure": {
+      "stage": "signed-peer-authentication",
+      "test": "diagnostic-peer-auth",
+      "code": "PEER_SIGNATURE_REJECTED",
+      "explanation": "The peer rejected the signed diagnostic hello.",
+      "problemLocation": "directional",
+      "suggestedNextStep": "If TCP and public endpoints pass, compare TrustedPeers.json public key fingerprints on both devices."
+    }
+  },
+  "localIdentity": {
+    "present": true,
+    "canSign": true,
+    "deviceId": "nv_dev_fca52854818327da4877fe8bd34afd32",
+    "deviceIdRedacted": "nv_dev_fca...4afd32",
+    "deviceName": "StarBook",
+    "publicKeyFingerprint": "c0a98a55b8126df5",
+    "publicKeyPresent": true
+  },
+  "peerIdentity": {
+    "deviceId": null,
+    "deviceIdRedacted": null,
+    "deviceName": null,
+    "publicKeyFingerprint": null,
+    "protocolVersion": null
+  },
+  "peerUrl": "http://169.254.42.13:3000",
+  "network": {
+    "selectedInterfaceName": "enp0s13f0u1",
+    "selectedInterfaceAddress": "169.254.42.12",
+    "interfaces": [
+      {
+        "name": "enp0s13f0u1",
+        "type": "usb-ethernet",
+        "administrativeState": "up",
+        "operstate": "up",
+        "carrier": true,
+        "macAddress": "4c:ea:xx:xx:xx:fc",
+        "mtu": 1500,
+        "ipv4Addresses": [
+          {
+            "family": "IPv4",
+            "address": "169.254.42.12",
+            "netmask": "255.255.0.0",
+            "cidr": "169.254.42.12/16",
+            "prefixLength": 16,
+            "internal": false,
+            "macRedacted": "4c:ea:xx:xx:xx:fc",
+            "scope": "link-local",
+            "loopback": false,
+            "private": false,
+            "linkLocal": true,
+            "global": false,
+            "usableForPeerUrl": true,
+            "requiresZoneIdentifier": false,
+            "interfaceName": "enp0s13f0u1",
+            "network": "169.254.0.0",
+            "broadcast": "169.254.255.255",
+            "overlapsAnotherActiveInterface": false
+          }
+        ],
+        "ipv6Addresses": [
+          {
+            "family": "IPv6",
+            "address": "fe80::a53b:464a:9910:6541",
+            "netmask": "ffff:ffff:ffff:ffff::",
+            "cidr": "fe80::a53b:464a:9910:6541/64",
+            "prefixLength": null,
+            "internal": false,
+            "macRedacted": "4c:ea:xx:xx:xx:fc",
+            "scope": "link-local",
+            "loopback": false,
+            "private": false,
+            "linkLocal": true,
+            "global": false,
+            "usableForPeerUrl": true,
+            "requiresZoneIdentifier": true,
+            "interfaceName": "enp0s13f0u1"
+          }
+        ],
+        "appearsUsbEthernet": true,
+        "appearsWireless": false,
+        "appearsVirtual": false,
+        "hasDefaultRoute": false,
+        "likelyDirectWired": true,
+        "routeTableEntries": [
+          {
+            "destination": "169.254.0.0",
+            "gateway": "0.0.0.0",
+            "netmask": "255.255.0.0",
+            "defaultRoute": false
+          }
+        ]
+      },
+      {
+        "name": "lo",
+        "type": "virtual-or-loopback",
+        "administrativeState": "up",
+        "operstate": "unknown",
+        "carrier": true,
+        "macAddress": "00:00:xx:xx:xx:00",
+        "mtu": 65536,
+        "ipv4Addresses": [
+          {
+            "family": "IPv4",
+            "address": "127.0.0.1",
+            "netmask": "255.0.0.0",
+            "cidr": "127.0.0.1/8",
+            "prefixLength": 8,
+            "internal": true,
+            "macRedacted": "00:00:xx:xx:xx:00",
+            "scope": "loopback",
+            "loopback": true,
+            "private": false,
+            "linkLocal": false,
+            "global": false,
+            "usableForPeerUrl": false,
+            "requiresZoneIdentifier": false,
+            "interfaceName": "lo",
+            "network": "127.0.0.0",
+            "broadcast": "127.255.255.255",
+            "overlapsAnotherActiveInterface": false
+          }
+        ],
+        "ipv6Addresses": [
+          {
+            "family": "IPv6",
+            "address": "::1",
+            "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+            "cidr": "::1/128",
+            "prefixLength": null,
+            "internal": true,
+            "macRedacted": "00:00:xx:xx:xx:00",
+            "scope": "loopback",
+            "loopback": true,
+            "private": false,
+            "linkLocal": false,
+            "global": false,
+            "usableForPeerUrl": false,
+            "requiresZoneIdentifier": false,
+            "interfaceName": "lo"
+          }
+        ],
+        "appearsUsbEthernet": false,
+        "appearsWireless": false,
+        "appearsVirtual": true,
+        "hasDefaultRoute": false,
+        "likelyDirectWired": false,
+        "routeTableEntries": []
+      },
+      {
+        "name": "wlp0s20f3",
+        "type": "wireless",
+        "administrativeState": "up",
+        "operstate": "up",
+        "carrier": true,
+        "macAddress": "26:ca:xx:xx:xx:62",
+        "mtu": 1500,
+        "ipv4Addresses": [
+          {
+            "family": "IPv4",
+            "address": "10.0.0.42",
+            "netmask": "255.255.255.0",
+            "cidr": "10.0.0.42/24",
+            "prefixLength": 24,
+            "internal": false,
+            "macRedacted": "26:ca:xx:xx:xx:62",
+            "scope": "private",
+            "loopback": false,
+            "private": true,
+            "linkLocal": false,
+            "global": false,
+            "usableForPeerUrl": true,
+            "requiresZoneIdentifier": false,
+            "interfaceName": "wlp0s20f3",
+            "network": "10.0.0.0",
+            "broadcast": "10.0.0.255",
+            "overlapsAnotherActiveInterface": false
+          }
+        ],
+        "ipv6Addresses": [
+          {
+            "family": "IPv6",
+            "address": "fe80::67a8:4271:58ee:4865",
+            "netmask": "ffff:ffff:ffff:ffff::",
+            "cidr": "fe80::67a8:4271:58ee:4865/64",
+            "prefixLength": null,
+            "internal": false,
+            "macRedacted": "26:ca:xx:xx:xx:62",
+            "scope": "link-local",
+            "loopback": false,
+            "private": false,
+            "linkLocal": true,
+            "global": false,
+            "usableForPeerUrl": true,
+            "requiresZoneIdentifier": true,
+            "interfaceName": "wlp0s20f3"
+          }
+        ],
+        "appearsUsbEthernet": false,
+        "appearsWireless": true,
+        "appearsVirtual": false,
+        "hasDefaultRoute": true,
+        "likelyDirectWired": false,
+        "routeTableEntries": [
+          {
+            "destination": "0.0.0.0",
+            "gateway": "10.0.0.1",
+            "netmask": "0.0.0.0",
+            "defaultRoute": true
+          },
+          {
+            "destination": "10.0.0.0",
+            "gateway": "0.0.0.0",
+            "netmask": "255.255.255.0",
+            "defaultRoute": false
+          }
+        ]
+      }
+    ]
+  },
+  "serverBinding": {
+    "port": 3000,
+    "selectedInterfaceName": "enp0s13f0u1",
+    "selectedInterfaceIpv4": "169.254.42.12",
+    "sockets": [
+      {
+        "family": "IPv4",
+        "address": "0.0.0.0",
+        "port": 3000
+      }
+    ],
+    "listening": true,
+    "listensAllIpv4": true,
+    "listensLoopbackIpv4": false,
+    "listensSelectedIpv4": false,
+    "listensAllIpv6": false,
+    "listensLoopbackIpv6": false,
+    "ipv6Only": false,
+    "loopbackOnly": false
+  },
+  "firstFailure": {
+    "stage": "signed-peer-authentication",
+    "test": "diagnostic-peer-auth",
+    "code": "PEER_SIGNATURE_REJECTED",
+    "explanation": "The peer rejected the signed diagnostic hello.",
+    "problemLocation": "directional",
+    "suggestedNextStep": "If TCP and public endpoints pass, compare TrustedPeers.json public key fingerprints on both devices."
+  }
+}

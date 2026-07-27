@@ -48,6 +48,7 @@ export const DIAGNOSTIC_CODES = Object.freeze({
   LOCAL_SERVER_PORT_MISMATCH: "LOCAL_SERVER_PORT_MISMATCH",
   FIREWALL_SUSPECTED: "FIREWALL_SUSPECTED",
   DIAGNOSTIC_ROUTE_MISSING: "DIAGNOSTIC_ROUTE_MISSING",
+  DIAGNOSTIC_ROUTE_PROTECTED: "DIAGNOSTIC_ROUTE_PROTECTED",
   PEER_ROUTE_NOT_FOUND: "PEER_ROUTE_NOT_FOUND",
   PEER_PROTOCOL_MISMATCH: "PEER_PROTOCOL_MISMATCH",
   PEER_IDENTITY_MISSING: "PEER_IDENTITY_MISSING",
@@ -1483,6 +1484,19 @@ function classifyPeerAuthBody(body = {}) {
   return code || DIAGNOSTIC_CODES.PEER_SIGNATURE_REJECTED;
 }
 
+function isGenericUnauthorizedEndpoint(endpoint = {}) {
+  const body = endpoint?.body && typeof endpoint.body === "object" ? endpoint.body : {};
+  return Number(endpoint?.status) === 401
+    && !String(body.code || "").trim()
+    && /unauthorized/i.test(String(body.error || endpoint?.statusText || ""));
+}
+
+function classifyDiagnosticEndpointFailure(endpoint = {}) {
+  if (Number(endpoint?.status) === 404) return DIAGNOSTIC_CODES.PEER_ROUTE_NOT_FOUND;
+  if (isGenericUnauthorizedEndpoint(endpoint)) return DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_PROTECTED;
+  return classifyPeerAuthBody(endpoint.body);
+}
+
 export async function runPeerDiagnostics(rawUrl, options = {}) {
   const report = buildReportBase("peer", options);
   report.localIdentity = await loadLocalIdentitySummary({ runtimeRoot: resolveRuntimeRoot(options) });
@@ -1541,7 +1555,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     stage: "public-peer-identification",
     test: "diagnostic-ping",
     status: ping.ok ? "pass" : "fail",
-    code: ping.status === 404 ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_MISSING : ping.code || null,
+    code: ping.status === 404 ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_MISSING : isGenericUnauthorizedEndpoint(ping) ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_PROTECTED : ping.code || null,
     explanation: ping.ok
       ? "The public diagnostic ping endpoint answered."
       : "The public diagnostic ping endpoint did not answer successfully.",
@@ -1595,7 +1609,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     stage: "sync-capability",
     test: "capabilities-endpoint",
     status: capabilities.ok ? "pass" : capabilities.status === 404 ? "warning" : "fail",
-    code: capabilities.status === 404 ? DIAGNOSTIC_CODES.PEER_ROUTE_NOT_FOUND : capabilities.code || null,
+    code: capabilities.status === 404 ? DIAGNOSTIC_CODES.PEER_ROUTE_NOT_FOUND : isGenericUnauthorizedEndpoint(capabilities) ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_PROTECTED : capabilities.code || null,
     explanation: capabilities.ok ? "The sync capabilities endpoint answered." : "The sync capabilities endpoint did not answer successfully.",
     evidence: capabilities,
     suggestedNextStep: capabilities.status === 404 ? "Older peers can still expose capabilities through /api/peer/status." : null,
@@ -1628,7 +1642,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     stage: "signed-peer-authentication",
     test: "diagnostic-peer-auth",
     status: peerAuth.ok ? "pass" : "fail",
-    code: peerAuth.ok ? null : (peerAuth.status === 404 ? DIAGNOSTIC_CODES.PEER_ROUTE_NOT_FOUND : classifyPeerAuthBody(peerAuth.body)),
+    code: peerAuth.ok ? null : classifyDiagnosticEndpointFailure(peerAuth),
     explanation: peerAuth.ok
       ? "The peer accepted the signed diagnostic hello without modifying trust records."
       : "The peer rejected the signed diagnostic hello.",
@@ -1647,7 +1661,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     stage: "sync-capability",
     test: "signed-sync-capabilities",
     status: signedCapabilities.ok ? "pass" : "fail",
-    code: signedCapabilities.ok ? null : (signedCapabilities.status === 404 ? DIAGNOSTIC_CODES.PEER_ROUTE_NOT_FOUND : classifyPeerAuthBody(signedCapabilities.body)),
+    code: signedCapabilities.ok ? null : classifyDiagnosticEndpointFailure(signedCapabilities),
     explanation: signedCapabilities.ok
       ? "The peer accepted a signed capability-only diagnostic request."
       : "The peer rejected or did not register the signed capability diagnostic request.",
@@ -1683,7 +1697,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     stage: "sync-manifest-exchange",
     test: "manifest-summary",
     status: manifest.ok ? "pass" : "fail",
-    code: manifest.ok ? null : (manifest.status === 403 ? DIAGNOSTIC_CODES.PEER_SCOPE_REJECTED : manifest.status === 401 ? classifyPeerAuthBody(manifest.body) : DIAGNOSTIC_CODES.MANIFEST_REQUEST_FAILED),
+    code: manifest.ok ? null : (manifest.status === 403 ? DIAGNOSTIC_CODES.PEER_SCOPE_REJECTED : manifest.status === 401 ? classifyDiagnosticEndpointFailure(manifest) : DIAGNOSTIC_CODES.MANIFEST_REQUEST_FAILED),
     explanation: manifest.ok
       ? "The peer authenticated a manifest-only diagnostic request and returned counts only."
       : "The peer did not complete the manifest-only diagnostic request.",
@@ -1703,7 +1717,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     stage: "individual-transport-components",
     test: "file-stream-auth-validation-no-file-read",
     status: streamValidation.ok ? "pass" : "fail",
-    code: streamValidation.ok ? null : classifyPeerAuthBody(streamValidation.body),
+    code: streamValidation.ok ? null : classifyDiagnosticEndpointFailure(streamValidation),
     explanation: streamValidation.ok
       ? "The peer validated file-stream authentication and path/scope checks without reading a Notebook file."
       : "The peer rejected diagnostic file-stream auth validation.",
@@ -1724,7 +1738,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     stage: "individual-transport-components",
     test: "file-stream-push-auth-validation-no-file-write",
     status: streamPushValidation.ok || streamPushProtected ? "pass" : "fail",
-    code: streamPushValidation.ok || streamPushProtected ? null : classifyPeerAuthBody(streamPushValidation.body),
+    code: streamPushValidation.ok || streamPushProtected ? null : classifyDiagnosticEndpointFailure(streamPushValidation),
     explanation: streamPushValidation.ok
       ? "The peer validated stream-push authentication and path/scope checks without writing a Notebook file."
       : streamPushProtected
