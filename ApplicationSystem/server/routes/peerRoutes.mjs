@@ -539,7 +539,7 @@ function diagnosticStatusFromCode(code, fallback = 400) {
 }
 
 export function registerPeerRoutes(app, ctx) {
-  app.get("/api/sync/diagnostics/ping", async (req, res) => {
+  for (const routePath of ["/api/sync/diagnostics/ping", "/api/peer/diagnostics/ping"]) app.get(routePath, async (req, res) => {
     try {
       const payload = await buildDiagnosticPingPayload({
         runtimeRoot: ctx?.runtimeRoot,
@@ -551,7 +551,7 @@ export function registerPeerRoutes(app, ctx) {
     }
   });
 
-  app.get("/api/sync/capabilities", async (req, res) => {
+  for (const routePath of ["/api/sync/capabilities", "/api/peer/capabilities"]) app.get(routePath, async (req, res) => {
     try {
       const payload = await buildCapabilitiesPayload({
         runtimeRoot: ctx?.runtimeRoot,
@@ -563,12 +563,12 @@ export function registerPeerRoutes(app, ctx) {
     }
   });
 
-  app.post("/api/sync/diagnostics/peer-auth", async (req, res) => {
+  for (const routePath of ["/api/sync/diagnostics/peer-auth", "/api/peer/diagnostics/peer-auth"]) app.post(routePath, async (req, res) => {
     const result = await verifyPeerHelloForDiagnostics(req.body || {}, { runtimeRoot: ctx?.runtimeRoot });
     return res.status(result.ok ? 200 : diagnosticStatusFromCode(result.code, result.status || 400)).json(result);
   });
 
-  app.post("/api/sync/diagnostics/capabilities", async (req, res) => {
+  for (const routePath of ["/api/sync/diagnostics/capabilities", "/api/peer/diagnostics/capabilities"]) app.post(routePath, async (req, res) => {
     const auth = await verifyPeerHelloForDiagnostics(req.body || {}, { runtimeRoot: ctx?.runtimeRoot });
     if (!auth.ok) return res.status(diagnosticStatusFromCode(auth.code, auth.status || 400)).json(auth);
     try {
@@ -582,7 +582,7 @@ export function registerPeerRoutes(app, ctx) {
     }
   });
 
-  app.post("/api/sync/diagnostics/scope-manifest-summary", async (req, res) => {
+  for (const routePath of ["/api/sync/diagnostics/scope-manifest-summary", "/api/peer/diagnostics/scope-manifest-summary"]) app.post(routePath, async (req, res) => {
     const result = await summarizeScopeManifestForDiagnostics(req.body || {}, {
       runtimeRoot: ctx?.runtimeRoot,
       notebookDir: ctx?.notebookDir,
@@ -590,7 +590,7 @@ export function registerPeerRoutes(app, ctx) {
     return res.status(result.ok ? 200 : diagnosticStatusFromCode(result.code, 500)).json(result);
   });
 
-  app.post("/api/sync/diagnostics/scope-file-stream-auth", async (req, res) => {
+  for (const routePath of ["/api/sync/diagnostics/scope-file-stream-auth", "/api/peer/diagnostics/scope-file-stream-auth"]) app.post(routePath, async (req, res) => {
     const result = await validateScopeFileStreamForDiagnostics(req.body || {}, {
       runtimeRoot: ctx?.runtimeRoot,
       notebookDir: ctx?.notebookDir,
@@ -600,7 +600,7 @@ export function registerPeerRoutes(app, ctx) {
     return res.status(result.ok ? 200 : diagnosticStatusFromCode(result.code, 400)).json(result);
   });
 
-  app.post("/api/sync/diagnostics/scope-file-stream-push-auth", async (req, res) => {
+  for (const routePath of ["/api/sync/diagnostics/scope-file-stream-push-auth", "/api/peer/diagnostics/scope-file-stream-push-auth"]) app.post(routePath, async (req, res) => {
     const result = await validateScopeFileStreamPushForDiagnostics(req.body || {}, {
       runtimeRoot: ctx?.runtimeRoot,
       notebookDir: ctx?.notebookDir,

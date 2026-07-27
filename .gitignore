@@ -31,3 +31,6 @@ ServerData/data/sessions.json
 
 # Local server identity and trust data
 ServerSettings/
+
+# Wired sync diagnostic reports
+wired-diagnostic-*.json

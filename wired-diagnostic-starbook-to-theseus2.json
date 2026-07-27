@@ -1,8 +1,8 @@
 {
   "ok": false,
   "command": "full",
-  "runId": "wired-ms2fxi9b-n1bptj",
-  "generatedAt": "2026-07-26T23:40:05.423Z",
+  "runId": "wired-ms2gvtpx-4fivny",
+  "generatedAt": "2026-07-27T00:06:46.581Z",
   "protocolVersion": 1,
   "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
   "results": [
@@ -401,10 +401,10 @@
           "identityPresent": true,
           "port": 3000,
           "protectedFromIncomingWrites": true,
-          "timestamp": "2026-07-26T23:40:05.362Z"
+          "timestamp": "2026-07-27T00:06:46.518Z"
         },
         "rawBodyLength": 328,
-        "durationMs": 24,
+        "durationMs": 23,
         "afterHttpConnection": true,
         "route": "/api/sync/diagnostics/ping",
         "method": "GET",
@@ -419,7 +419,7 @@
           "identityPresent": true,
           "port": 3000,
           "protectedFromIncomingWrites": true,
-          "timestamp": "2026-07-26T23:40:05.362Z"
+          "timestamp": "2026-07-27T00:06:46.518Z"
         }
       },
       "details": {},
@@ -453,10 +453,10 @@
             "identityPresent": true,
             "port": 3000,
             "protectedFromIncomingWrites": true,
-            "timestamp": "2026-07-26T23:40:05.369Z"
+            "timestamp": "2026-07-27T00:06:46.524Z"
           },
           "rawBodyLength": 328,
-          "durationMs": 2,
+          "durationMs": 3,
           "afterHttpConnection": true,
           "route": "/api/sync/diagnostics/ping",
           "method": "GET",
@@ -471,7 +471,7 @@
             "identityPresent": true,
             "port": 3000,
             "protectedFromIncomingWrites": true,
-            "timestamp": "2026-07-26T23:40:05.369Z"
+            "timestamp": "2026-07-27T00:06:46.524Z"
           }
         }
       },
@@ -526,7 +526,7 @@
       "test": "diagnostic-ping",
       "status": "fail",
       "durationMs": 0,
-      "code": null,
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The public diagnostic ping endpoint did not answer successfully.",
       "evidence": {
         "ok": false,
@@ -537,7 +537,7 @@
           "error": "Unauthorized"
         },
         "rawBodyLength": 24,
-        "durationMs": 7,
+        "durationMs": 5,
         "afterHttpConnection": true,
         "route": "/api/sync/diagnostics/ping",
         "method": "GET",
@@ -590,7 +590,7 @@
           "trustedPeers": []
         },
         "rawBodyLength": 471,
-        "durationMs": 5,
+        "durationMs": 8,
         "afterHttpConnection": true,
         "route": "/api/peer/status",
         "method": "GET",
@@ -650,7 +650,7 @@
       "test": "capabilities-endpoint",
       "status": "fail",
       "durationMs": 0,
-      "code": null,
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The sync capabilities endpoint did not answer successfully.",
       "evidence": {
         "ok": false,
@@ -680,7 +680,7 @@
       "test": "diagnostic-peer-auth",
       "status": "fail",
       "durationMs": 0,
-      "code": "PEER_SIGNATURE_REJECTED",
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The peer rejected the signed diagnostic hello.",
       "evidence": {
         "ok": false,
@@ -691,7 +691,7 @@
           "error": "Unauthorized"
         },
         "rawBodyLength": 24,
-        "durationMs": 8,
+        "durationMs": 7,
         "afterHttpConnection": true,
         "route": "/api/sync/diagnostics/peer-auth",
         "method": "POST",
@@ -710,7 +710,7 @@
       "test": "signed-sync-capabilities",
       "status": "fail",
       "durationMs": 0,
-      "code": "PEER_SIGNATURE_REJECTED",
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The peer rejected or did not register the signed capability diagnostic request.",
       "evidence": {
         "ok": false,
@@ -740,7 +740,7 @@
       "test": "manifest-summary",
       "status": "fail",
       "durationMs": 0,
-      "code": "PEER_SIGNATURE_REJECTED",
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The peer did not complete the manifest-only diagnostic request.",
       "evidence": {
         "ok": false,
@@ -751,7 +751,7 @@
           "error": "Unauthorized"
         },
         "rawBodyLength": 24,
-        "durationMs": 5,
+        "durationMs": 7,
         "afterHttpConnection": true,
         "route": "/api/sync/diagnostics/scope-manifest-summary",
         "method": "POST",
@@ -770,7 +770,7 @@
       "test": "file-stream-auth-validation-no-file-read",
       "status": "fail",
       "durationMs": 0,
-      "code": "PEER_SIGNATURE_REJECTED",
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The peer rejected diagnostic file-stream auth validation.",
       "evidence": {
         "ok": false,
@@ -800,7 +800,7 @@
       "test": "file-stream-push-auth-validation-no-file-write",
       "status": "fail",
       "durationMs": 0,
-      "code": "PEER_SIGNATURE_REJECTED",
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The peer rejected diagnostic stream-push auth validation before protected-mode success could be determined.",
       "evidence": {
         "ok": false,
@@ -845,8 +845,8 @@
   "local": {
     "ok": true,
     "command": "local",
-    "runId": "wired-ms2fxi6r-ds4oxs",
-    "generatedAt": "2026-07-26T23:40:05.331Z",
+    "runId": "wired-ms2gvtnb-qs9epl",
+    "generatedAt": "2026-07-27T00:06:46.487Z",
     "protocolVersion": 1,
     "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
     "results": [
@@ -1239,10 +1239,10 @@
             "identityPresent": true,
             "port": 3000,
             "protectedFromIncomingWrites": true,
-            "timestamp": "2026-07-26T23:40:05.362Z"
+            "timestamp": "2026-07-27T00:06:46.518Z"
           },
           "rawBodyLength": 328,
-          "durationMs": 24,
+          "durationMs": 23,
           "afterHttpConnection": true,
           "route": "/api/sync/diagnostics/ping",
           "method": "GET",
@@ -1257,7 +1257,7 @@
             "identityPresent": true,
             "port": 3000,
             "protectedFromIncomingWrites": true,
-            "timestamp": "2026-07-26T23:40:05.362Z"
+            "timestamp": "2026-07-27T00:06:46.518Z"
           }
         },
         "details": {},
@@ -1290,10 +1290,10 @@
               "identityPresent": true,
               "port": 3000,
               "protectedFromIncomingWrites": true,
-              "timestamp": "2026-07-26T23:40:05.369Z"
+              "timestamp": "2026-07-27T00:06:46.524Z"
             },
             "rawBodyLength": 328,
-            "durationMs": 2,
+            "durationMs": 3,
             "afterHttpConnection": true,
             "route": "/api/sync/diagnostics/ping",
             "method": "GET",
@@ -1308,7 +1308,7 @@
               "identityPresent": true,
               "port": 3000,
               "protectedFromIncomingWrites": true,
-              "timestamp": "2026-07-26T23:40:05.369Z"
+              "timestamp": "2026-07-27T00:06:46.524Z"
             }
           }
         },
@@ -1555,8 +1555,8 @@
   "peer": {
     "ok": false,
     "command": "peer",
-    "runId": "wired-ms2fxi7u-3omupn",
-    "generatedAt": "2026-07-26T23:40:05.370Z",
+    "runId": "wired-ms2gvtod-sgoavo",
+    "generatedAt": "2026-07-27T00:06:46.525Z",
     "protocolVersion": 1,
     "runtimeRoot": "/home/henry/CodexPlayground/Nodevision",
     "results": [
@@ -1603,7 +1603,7 @@
         "test": "diagnostic-ping",
         "status": "fail",
         "durationMs": 0,
-        "code": null,
+        "code": "DIAGNOSTIC_ROUTE_PROTECTED",
         "explanation": "The public diagnostic ping endpoint did not answer successfully.",
         "evidence": {
           "ok": false,
@@ -1614,7 +1614,7 @@
             "error": "Unauthorized"
           },
           "rawBodyLength": 24,
-          "durationMs": 7,
+          "durationMs": 5,
           "afterHttpConnection": true,
           "route": "/api/sync/diagnostics/ping",
           "method": "GET",
@@ -1666,7 +1666,7 @@
             "trustedPeers": []
           },
           "rawBodyLength": 471,
-          "durationMs": 5,
+          "durationMs": 8,
           "afterHttpConnection": true,
           "route": "/api/peer/status",
           "method": "GET",
@@ -1724,7 +1724,7 @@
         "test": "capabilities-endpoint",
         "status": "fail",
         "durationMs": 0,
-        "code": null,
+        "code": "DIAGNOSTIC_ROUTE_PROTECTED",
         "explanation": "The sync capabilities endpoint did not answer successfully.",
         "evidence": {
           "ok": false,
@@ -1753,7 +1753,7 @@
         "test": "diagnostic-peer-auth",
         "status": "fail",
         "durationMs": 0,
-        "code": "PEER_SIGNATURE_REJECTED",
+        "code": "DIAGNOSTIC_ROUTE_PROTECTED",
         "explanation": "The peer rejected the signed diagnostic hello.",
         "evidence": {
           "ok": false,
@@ -1764,7 +1764,7 @@
             "error": "Unauthorized"
           },
           "rawBodyLength": 24,
-          "durationMs": 8,
+          "durationMs": 7,
           "afterHttpConnection": true,
           "route": "/api/sync/diagnostics/peer-auth",
           "method": "POST",
@@ -1782,7 +1782,7 @@
         "test": "signed-sync-capabilities",
         "status": "fail",
         "durationMs": 0,
-        "code": "PEER_SIGNATURE_REJECTED",
+        "code": "DIAGNOSTIC_ROUTE_PROTECTED",
         "explanation": "The peer rejected or did not register the signed capability diagnostic request.",
         "evidence": {
           "ok": false,
@@ -1811,7 +1811,7 @@
         "test": "manifest-summary",
         "status": "fail",
         "durationMs": 0,
-        "code": "PEER_SIGNATURE_REJECTED",
+        "code": "DIAGNOSTIC_ROUTE_PROTECTED",
         "explanation": "The peer did not complete the manifest-only diagnostic request.",
         "evidence": {
           "ok": false,
@@ -1822,7 +1822,7 @@
             "error": "Unauthorized"
           },
           "rawBodyLength": 24,
-          "durationMs": 5,
+          "durationMs": 7,
           "afterHttpConnection": true,
           "route": "/api/sync/diagnostics/scope-manifest-summary",
           "method": "POST",
@@ -1840,7 +1840,7 @@
         "test": "file-stream-auth-validation-no-file-read",
         "status": "fail",
         "durationMs": 0,
-        "code": "PEER_SIGNATURE_REJECTED",
+        "code": "DIAGNOSTIC_ROUTE_PROTECTED",
         "explanation": "The peer rejected diagnostic file-stream auth validation.",
         "evidence": {
           "ok": false,
@@ -1869,7 +1869,7 @@
         "test": "file-stream-push-auth-validation-no-file-write",
         "status": "fail",
         "durationMs": 0,
-        "code": "PEER_SIGNATURE_REJECTED",
+        "code": "DIAGNOSTIC_ROUTE_PROTECTED",
         "explanation": "The peer rejected diagnostic stream-push auth validation before protected-mode success could be determined.",
         "evidence": {
           "ok": false,
@@ -1929,7 +1929,7 @@
     "firstFailure": {
       "stage": "signed-peer-authentication",
       "test": "diagnostic-peer-auth",
-      "code": "PEER_SIGNATURE_REJECTED",
+      "code": "DIAGNOSTIC_ROUTE_PROTECTED",
       "explanation": "The peer rejected the signed diagnostic hello.",
       "problemLocation": "directional",
       "suggestedNextStep": "If TCP and public endpoints pass, compare TrustedPeers.json public key fingerprints on both devices."
@@ -2169,7 +2169,7 @@
   "firstFailure": {
     "stage": "signed-peer-authentication",
     "test": "diagnostic-peer-auth",
-    "code": "PEER_SIGNATURE_REJECTED",
+    "code": "DIAGNOSTIC_ROUTE_PROTECTED",
     "explanation": "The peer rejected the signed diagnostic hello.",
     "problemLocation": "directional",
     "suggestedNextStep": "If TCP and public endpoints pass, compare TrustedPeers.json public key fingerprints on both devices."

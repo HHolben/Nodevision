@@ -74,9 +74,25 @@ export const PUBLIC_ROUTE_INVENTORY = Object.freeze([
     sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
   },
   {
+    stage: "Minimal unauthenticated diagnostic endpoint",
+    method: "GET",
+    route: "/api/peer/diagnostics/ping",
+    authenticationRequired: "No",
+    expectedSuccess: "200 JSON with service, protocolVersion, public device identity summary, configured port, timestamp",
+    sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
+  },
+  {
     stage: "Sync capability endpoint",
     method: "GET",
     route: "/api/sync/capabilities",
+    authenticationRequired: "No",
+    expectedSuccess: "200 JSON with protocolVersion, supported transports and sync modes, protected-mode flags",
+    sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
+  },
+  {
+    stage: "Sync capability endpoint",
+    method: "GET",
+    route: "/api/peer/capabilities",
     authenticationRequired: "No",
     expectedSuccess: "200 JSON with protocolVersion, supported transports and sync modes, protected-mode flags",
     sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
@@ -106,9 +122,25 @@ export const PUBLIC_ROUTE_INVENTORY = Object.freeze([
     sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
   },
   {
+    stage: "Diagnostic signed peer authentication",
+    method: "POST",
+    route: "/api/peer/diagnostics/peer-auth",
+    authenticationRequired: "Signed trusted peer",
+    expectedSuccess: "200 JSON with trust/signature/timestamp decision, no trust-record write",
+    sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
+  },
+  {
     stage: "Diagnostic signed sync capabilities",
     method: "POST",
     route: "/api/sync/diagnostics/capabilities",
+    authenticationRequired: "Signed trusted peer",
+    expectedSuccess: "200 JSON with authenticated capability metadata only, no Notebook data",
+    sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
+  },
+  {
+    stage: "Diagnostic signed sync capabilities",
+    method: "POST",
+    route: "/api/peer/diagnostics/capabilities",
     authenticationRequired: "Signed trusted peer",
     expectedSuccess: "200 JSON with authenticated capability metadata only, no Notebook data",
     sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
@@ -133,6 +165,14 @@ export const PUBLIC_ROUTE_INVENTORY = Object.freeze([
     stage: "Diagnostic scoped manifest summary",
     method: "POST",
     route: "/api/sync/diagnostics/scope-manifest-summary",
+    authenticationRequired: "Signed trusted peer",
+    expectedSuccess: "200 JSON with manifest counts/bytes only",
+    sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
+  },
+  {
+    stage: "Diagnostic scoped manifest summary",
+    method: "POST",
+    route: "/api/peer/diagnostics/scope-manifest-summary",
     authenticationRequired: "Signed trusted peer",
     expectedSuccess: "200 JSON with manifest counts/bytes only",
     sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
@@ -186,9 +226,25 @@ export const PUBLIC_ROUTE_INVENTORY = Object.freeze([
     sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
   },
   {
+    stage: "Diagnostic scoped stream auth validation",
+    method: "POST",
+    route: "/api/peer/diagnostics/scope-file-stream-auth",
+    authenticationRequired: "Signed trusted peer",
+    expectedSuccess: "200 JSON after auth/path/scope validation, before file read",
+    sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
+  },
+  {
     stage: "Diagnostic scoped stream push auth validation",
     method: "POST",
     route: "/api/sync/diagnostics/scope-file-stream-push-auth",
+    authenticationRequired: "Signed trusted peer",
+    expectedSuccess: "200 JSON or 403 protected-mode JSON after auth/path/scope validation, before file write",
+    sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
+  },
+  {
+    stage: "Diagnostic scoped stream push auth validation",
+    method: "POST",
+    route: "/api/peer/diagnostics/scope-file-stream-push-auth",
     authenticationRequired: "Signed trusted peer",
     expectedSuccess: "200 JSON or 403 protected-mode JSON after auth/path/scope validation, before file write",
     sourceFile: "ApplicationSystem/server/routes/peerRoutes.mjs",
@@ -866,6 +922,21 @@ export async function callEndpoint(baseUrl, route, { method = "GET", body = null
   };
 }
 
+async function callEndpointCandidates(baseUrl, routes, options = {}) {
+  const candidates = Array.isArray(routes) ? routes : [routes];
+  const attempts = [];
+  for (const route of candidates) {
+    const result = await callEndpoint(baseUrl, route, options);
+    attempts.push(result);
+    if (result.ok) return { ...result, attempts: sanitizeJson(attempts) };
+    if (Number(result.status) !== 404 && !isGenericUnauthorizedEndpoint(result)) {
+      return { ...result, attempts: sanitizeJson(attempts) };
+    }
+  }
+  const fallback = attempts[attempts.length - 1] || { ok: false, status: 0, route: candidates[0] || "", method: options.method || "GET" };
+  return { ...fallback, attempts: sanitizeJson(attempts) };
+}
+
 function parseProcTcpFile(filePath, family) {
   const sockets = [];
   const raw = readTextFile(filePath);
@@ -992,6 +1063,13 @@ export async function loadLocalIdentitySummary(options = {}) {
 
 export async function buildDiagnosticPingPayload(options = {}) {
   const identity = await loadLocalIdentitySummary(options);
+  let publicKey = null;
+  try {
+    const fullIdentity = await loadDeviceIdentity(options);
+    publicKey = identity.present ? String(fullIdentity.publicKey || "") : null;
+  } catch {
+    publicKey = null;
+  }
   const runtime = resolveRuntimeNetwork(options);
   const protection = await loadSyncProtection({ runtimeRoot: runtime.runtimeRoot }).catch(() => ({ protectedFromPeerWrites: false }));
   return {
@@ -1002,6 +1080,7 @@ export async function buildDiagnosticPingPayload(options = {}) {
     deviceIdRedacted: identity.present ? identity.deviceIdRedacted : null,
     deviceName: identity.present ? identity.deviceName : null,
     publicKeyFingerprint: identity.present ? identity.publicKeyFingerprint : null,
+    publicKey,
     identityPresent: identity.present,
     port: normalizePort(options.port, normalizePort(runtime.port, 3000)),
     protectedFromIncomingWrites: protection?.protectedFromPeerWrites === true,
@@ -1019,6 +1098,7 @@ export async function buildCapabilitiesPayload(options = {}) {
     deviceId: ping.deviceId,
     deviceName: ping.deviceName,
     publicKeyFingerprint: ping.publicKeyFingerprint,
+    publicKey: ping.publicKey || null,
     transports: {
       wirelessLan: true,
       directUsbEthernet: true,
@@ -1436,36 +1516,50 @@ export async function runLocalDiagnostics(options = {}) {
   }));
 
   const localhostBase = `http://127.0.0.1:${runtime.port}`;
-  const localPing = await callEndpoint(localhostBase, "/api/sync/diagnostics/ping", { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
+  const localPing = await callEndpointCandidates(localhostBase, ["/api/peer/diagnostics/ping", "/api/sync/diagnostics/ping"], { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
   report.results.push(makeResult({
     stage: "raw-http-reachability",
     test: "local-loopback-diagnostic-ping",
     status: localPing.ok ? "pass" : "fail",
-    code: localPing.status === 404 ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_MISSING : localPing.code || (localPing.status ? DIAGNOSTIC_CODES.LOCAL_SERVER_PORT_MISMATCH : DIAGNOSTIC_CODES.LOCAL_SERVER_NOT_RUNNING),
+    code: localPing.status === 404
+      ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_MISSING
+      : isGenericUnauthorizedEndpoint(localPing)
+        ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_PROTECTED
+        : localPing.code || (localPing.status ? DIAGNOSTIC_CODES.LOCAL_SERVER_PORT_MISMATCH : DIAGNOSTIC_CODES.LOCAL_SERVER_NOT_RUNNING),
     explanation: localPing.ok
       ? "The diagnostic ping endpoint is reachable on loopback."
       : "The diagnostic ping endpoint is not reachable on loopback at the configured port.",
     evidence: localPing,
     suggestedNextStep: localPing.status === 404
-      ? "Update the peer to a build that registers GET /api/sync/diagnostics/ping."
-      : "Confirm Nodevision is running on the configured port.",
+      ? "Update the peer to a build that registers GET /api/peer/diagnostics/ping and GET /api/sync/diagnostics/ping."
+      : isGenericUnauthorizedEndpoint(localPing)
+        ? "Inspect local route registration and auth middleware; the diagnostic ping must remain public."
+        : "Confirm Nodevision is running on the configured port.",
     problemLocation: "local",
     required: true,
   }));
 
   if (selectedIpv4) {
     const wiredBase = `http://${selectedIpv4.address}:${runtime.port}`;
-    const wiredPing = await callEndpoint(wiredBase, "/api/sync/diagnostics/ping", { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
+    const wiredPing = await callEndpointCandidates(wiredBase, ["/api/peer/diagnostics/ping", "/api/sync/diagnostics/ping"], { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
     report.results.push(makeResult({
       stage: "nodevision-server-binding",
       test: "local-wired-address-diagnostic-ping",
       status: wiredPing.ok ? "pass" : "fail",
-      code: wiredPing.ok ? null : (binding.loopbackOnly ? DIAGNOSTIC_CODES.LOCAL_SERVER_LOOPBACK_ONLY : wiredPing.code || DIAGNOSTIC_CODES.LOCAL_SERVER_NOT_RUNNING),
+      code: wiredPing.ok
+        ? null
+        : isGenericUnauthorizedEndpoint(wiredPing)
+          ? DIAGNOSTIC_CODES.DIAGNOSTIC_ROUTE_PROTECTED
+          : (binding.loopbackOnly ? DIAGNOSTIC_CODES.LOCAL_SERVER_LOOPBACK_ONLY : wiredPing.code || DIAGNOSTIC_CODES.LOCAL_SERVER_NOT_RUNNING),
       explanation: wiredPing.ok
         ? "The local Nodevision server answers through the selected wired IPv4 address."
         : "The local Nodevision server does not answer through the selected wired IPv4 address.",
       evidence: { wiredBase, wiredPing },
-      suggestedNextStep: wiredPing.ok ? null : "Fix server binding before debugging remote discovery.",
+      suggestedNextStep: wiredPing.ok
+        ? null
+        : isGenericUnauthorizedEndpoint(wiredPing)
+          ? "Inspect local route registration and auth middleware; the diagnostic ping must remain public on the wired address."
+          : "Fix server binding before debugging remote discovery.",
       problemLocation: "local",
       required: true,
     }));
@@ -1543,7 +1637,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
   }));
   if (!tcp.ok) return finalizeReport(report);
 
-  const ping = await callEndpoint(parsed.href, "/api/sync/diagnostics/ping", { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
+  const ping = await callEndpointCandidates(parsed.href, ["/api/peer/diagnostics/ping", "/api/sync/diagnostics/ping"], { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
   report.peerIdentity = isPlainObject(ping.body) ? {
     deviceId: ping.body.deviceId || null,
     deviceIdRedacted: ping.body.deviceIdRedacted || redactedId(ping.body.deviceId),
@@ -1561,7 +1655,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
       : "The public diagnostic ping endpoint did not answer successfully.",
     evidence: ping,
     suggestedNextStep: ping.status === 404
-      ? "Update the peer to a build that includes GET /api/sync/diagnostics/ping, or continue with /api/peer/status for older builds."
+      ? "Update the peer to a build that includes GET /api/peer/diagnostics/ping; the CLI falls back to /api/sync/diagnostics/ping and /api/peer/status for older builds."
       : "Inspect HTTP status and peer server logs.",
     problemLocation: ping.ok ? "remote" : "remote",
     required: false,
@@ -1604,7 +1698,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     }));
   }
 
-  const capabilities = await callEndpoint(parsed.href, "/api/sync/capabilities", { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
+  const capabilities = await callEndpointCandidates(parsed.href, ["/api/peer/capabilities", "/api/sync/capabilities"], { method: "GET", timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS });
   report.results.push(makeResult({
     stage: "sync-capability",
     test: "capabilities-endpoint",
@@ -1633,7 +1727,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
   }
 
   const signedHello = await createSignedHelloDiagnostic({ runtimeRoot: resolveRuntimeRoot(options) });
-  const peerAuth = await callEndpoint(parsed.href, "/api/sync/diagnostics/peer-auth", {
+  const peerAuth = await callEndpointCandidates(parsed.href, ["/api/peer/diagnostics/peer-auth", "/api/sync/diagnostics/peer-auth"], {
     method: "POST",
     body: signedHello,
     timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS,
@@ -1652,7 +1746,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
     required: true,
   }));
 
-  const signedCapabilities = await callEndpoint(parsed.href, "/api/sync/diagnostics/capabilities", {
+  const signedCapabilities = await callEndpointCandidates(parsed.href, ["/api/peer/diagnostics/capabilities", "/api/sync/diagnostics/capabilities"], {
     method: "POST",
     body: signedHello,
     timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS,
@@ -1688,7 +1782,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
   }
 
   const signedManifest = await createSignedScopeManifestDiagnostic({ scope: options.scope || DEFAULT_SCOPE }, { runtimeRoot: resolveRuntimeRoot(options) });
-  const manifest = await callEndpoint(parsed.href, "/api/sync/diagnostics/scope-manifest-summary", {
+  const manifest = await callEndpointCandidates(parsed.href, ["/api/peer/diagnostics/scope-manifest-summary", "/api/sync/diagnostics/scope-manifest-summary"], {
     method: "POST",
     body: signedManifest,
     timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS,
@@ -1708,7 +1802,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
   }));
 
   const signedStream = await createSignedScopeFileRequestDiagnostic({ scope: options.scope || DEFAULT_SCOPE }, { runtimeRoot: resolveRuntimeRoot(options) });
-  const streamValidation = await callEndpoint(parsed.href, "/api/sync/diagnostics/scope-file-stream-auth", {
+  const streamValidation = await callEndpointCandidates(parsed.href, ["/api/peer/diagnostics/scope-file-stream-auth", "/api/sync/diagnostics/scope-file-stream-auth"], {
     method: "POST",
     body: signedStream,
     timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS,
@@ -1728,7 +1822,7 @@ export async function runPeerDiagnostics(rawUrl, options = {}) {
   }));
 
   const signedStreamPush = await createSignedScopeFileStreamPushDiagnostic({ scope: options.scope || DEFAULT_SCOPE }, { runtimeRoot: resolveRuntimeRoot(options) });
-  const streamPushValidation = await callEndpoint(parsed.href, "/api/sync/diagnostics/scope-file-stream-push-auth", {
+  const streamPushValidation = await callEndpointCandidates(parsed.href, ["/api/peer/diagnostics/scope-file-stream-push-auth", "/api/sync/diagnostics/scope-file-stream-push-auth"], {
     method: "POST",
     body: signedStreamPush,
     timeoutMs: options.timeoutMs || DEFAULT_HTTP_TIMEOUT_MS,

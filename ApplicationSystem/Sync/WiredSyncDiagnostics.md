@@ -60,21 +60,28 @@ Before this change, direct HTTP discovery in `syncPanelRoutes.mjs` expected `loc
 | Stage | Method | Route | Authentication required | Expected success | Source file |
 | ----- | ------ | ----- | ----------------------- | ---------------- | ----------- |
 | Public diagnostic ping | GET | `/api/sync/diagnostics/ping` | No | `200` JSON identifying Nodevision sync diagnostics, protocol version, public identity summary, port, timestamp | `ApplicationSystem/server/routes/peerRoutes.mjs` |
+| Public diagnostic ping alias | GET | `/api/peer/diagnostics/ping` | No | `200` JSON identifying Nodevision sync diagnostics, protocol version, public identity summary, port, timestamp | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Public capability hint | GET | `/api/sync/capabilities` | No | `200` JSON with protocol version, supported transports, supported sync modes, protected-mode flags | `ApplicationSystem/server/routes/peerRoutes.mjs` |
+| Public capability hint alias | GET | `/api/peer/capabilities` | No | `200` JSON with protocol version, supported transports, supported sync modes, protected-mode flags | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Public peer status | GET | `/api/peer/status` | No for public status; localhost/session includes trusted-peer status list | `200` JSON with local device identity and sync capability flags | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Signed peer hello | POST | `/api/peer/hello` | Signed trusted peer | `200` JSON with peer and signed response; updates trusted peer last-seen/hello status | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Diagnostic signed peer authentication | POST | `/api/sync/diagnostics/peer-auth` | Signed trusted peer | `200` JSON showing trust, public-key, signature, and timestamp decisions without trust-record writes | `ApplicationSystem/server/routes/peerRoutes.mjs` |
+| Diagnostic signed peer authentication alias | POST | `/api/peer/diagnostics/peer-auth` | Signed trusted peer | `200` JSON showing trust, public-key, signature, and timestamp decisions without trust-record writes | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Diagnostic signed capabilities | POST | `/api/sync/diagnostics/capabilities` | Signed trusted peer | `200` JSON with authenticated capability metadata only | `ApplicationSystem/server/routes/peerRoutes.mjs` |
+| Diagnostic signed capabilities alias | POST | `/api/peer/diagnostics/capabilities` | Signed trusted peer | `200` JSON with authenticated capability metadata only | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Legacy SyncTest manifest | POST | `/api/peer/manifest` | Signed trusted peer | `200` JSON full SyncTest manifest; diagnostics do not call this route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Scoped manifest | POST | `/api/peer/scope/manifest` | Signed trusted peer | `200` JSON full scoped manifest; normal sync route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Diagnostic scoped manifest summary | POST | `/api/sync/diagnostics/scope-manifest-summary` | Signed trusted peer | `200` JSON with manifest entry count, declared bytes, and small sanitized sample only | `ApplicationSystem/server/routes/peerRoutes.mjs` |
+| Diagnostic scoped manifest summary alias | POST | `/api/peer/diagnostics/scope-manifest-summary` | Signed trusted peer | `200` JSON with manifest entry count, declared bytes, and small sanitized sample only | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Legacy SyncTest file get | POST | `/api/peer/file-get` | Signed trusted peer | `200` JSON with file content; diagnostics do not call this route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Legacy SyncTest file push | POST | `/api/peer/file-push` | Signed trusted peer; protected mode can block | `200` JSON after writing a SyncTest file; diagnostics do not call this route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Scoped JSON file get | POST | `/api/peer/scope/file-get` | Signed trusted peer | `200` JSON with file content; diagnostics do not call this route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Scoped JSON file push | POST | `/api/peer/scope/file-push` | Signed trusted peer; protected mode can block | `200` JSON after writing scoped file content; diagnostics do not call this route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Scoped stream file get | GET | `/api/peer/scope/file-stream` | Signed trusted peer | `200` binary stream; diagnostics do not call this route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Diagnostic scoped stream auth validation | POST | `/api/sync/diagnostics/scope-file-stream-auth` | Signed trusted peer | `200` JSON after auth, timestamp, scope, and relative-path validation, before file read | `ApplicationSystem/server/routes/peerRoutes.mjs` |
+| Diagnostic scoped stream auth validation alias | POST | `/api/peer/diagnostics/scope-file-stream-auth` | Signed trusted peer | `200` JSON after auth, timestamp, scope, and relative-path validation, before file read | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Diagnostic scoped stream push auth validation | POST | `/api/sync/diagnostics/scope-file-stream-push-auth` | Signed trusted peer | `200` JSON or protected-mode `403` after auth, timestamp, scope, and relative-path validation, before file write | `ApplicationSystem/server/routes/peerRoutes.mjs` |
+| Diagnostic scoped stream push auth validation alias | POST | `/api/peer/diagnostics/scope-file-stream-push-auth` | Signed trusted peer | `200` JSON or protected-mode `403` after auth, timestamp, scope, and relative-path validation, before file write | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Scoped stream file push | POST | `/api/peer/scope/file-stream-push` | Signed trusted peer; protected mode can block | `200` JSON after writing streamed content; diagnostics do not call this route | `ApplicationSystem/server/routes/peerRoutes.mjs` |
 | Sync Panel status | GET | `/api/sync/status` | Local UI session | `200` JSON with discovery state, discovered peers, and USB/direct interface diagnostics | `ApplicationSystem/server/routes/syncPanelRoutes.mjs` |
 | Sync Panel wired diagnostics | POST | `/api/sync/diagnostics/wired` | Local UI session | `200` or `409` JSON diagnostic report; performs no sync action | `ApplicationSystem/server/routes/syncPanelRoutes.mjs` |
@@ -86,14 +93,14 @@ Before this change, direct HTTP discovery in `syncPanelRoutes.mjs` expected `loc
 | Sync Panel run | POST | `/api/sync/run` | Local UI session plus signed peer requests | `200` JSON; default dry run is true but route can apply sync | `ApplicationSystem/server/routes/syncPanelRoutes.mjs` |
 | Sync Panel job start | POST | `/api/sync/jobs/start` | Local UI session plus signed peer requests | `202` JSON job; can apply sync when dryRun is false | `ApplicationSystem/server/routes/syncPanelRoutes.mjs` |
 
-Routes newly added for this diagnostic work are `/api/sync/diagnostics/ping`, `/api/sync/capabilities`, `/api/sync/diagnostics/peer-auth`, `/api/sync/diagnostics/capabilities`, `/api/sync/diagnostics/scope-manifest-summary`, `/api/sync/diagnostics/scope-file-stream-auth`, `/api/sync/diagnostics/scope-file-stream-push-auth`, and `/api/sync/diagnostics/wired`. The prior Sync Panel did not reference these routes. The prior direct HTTP discovery/schema mismatch was `/api/peer/status` lacking the public key that the discovery probe expected.
+Routes newly added for this diagnostic work are `/api/sync/diagnostics/ping`, `/api/sync/capabilities`, `/api/sync/diagnostics/peer-auth`, `/api/sync/diagnostics/capabilities`, `/api/sync/diagnostics/scope-manifest-summary`, `/api/sync/diagnostics/scope-file-stream-auth`, `/api/sync/diagnostics/scope-file-stream-push-auth`, peer-family aliases under `/api/peer/diagnostics/*` plus `/api/peer/capabilities`, and `/api/sync/diagnostics/wired`. The CLI and UI prefer the `/api/peer/*` diagnostic aliases, then fall back to `/api/sync/*` for compatibility. The prior Sync Panel did not reference these routes. The prior direct HTTP discovery/schema mismatch was `/api/peer/status` lacking the public key that the discovery probe expected.
 
 ## CLI Usage
 
 ```bash
 node scripts/diagnose-wired-sync.mjs local
 node scripts/diagnose-wired-sync.mjs peer --url http://PEER_IP:3000
-node scripts/diagnose-wired-sync.mjs endpoint --url http://PEER_IP:3000 --route /api/sync/diagnostics/ping
+node scripts/diagnose-wired-sync.mjs endpoint --url http://PEER_IP:3000 --route /api/peer/diagnostics/ping
 node scripts/diagnose-wired-sync.mjs full --url http://PEER_IP:3000 --output wired-diagnostic-local-to-peer.json
 node scripts/diagnose-wired-sync.mjs discovery --duration-ms 7000 --output wired-discovery.json
 node scripts/diagnose-wired-sync.mjs compare report-a.json report-b.json
@@ -143,6 +150,7 @@ LOCAL_SERVER_LOOPBACK_ONLY
 LOCAL_SERVER_PORT_MISMATCH
 FIREWALL_SUSPECTED
 DIAGNOSTIC_ROUTE_MISSING
+DIAGNOSTIC_ROUTE_PROTECTED
 PEER_ROUTE_NOT_FOUND
 PEER_PROTOCOL_MISMATCH
 PEER_IDENTITY_MISSING
@@ -166,7 +174,7 @@ Address failures are reported as address-configuration failures, not discovery f
 
 Server binding is checked through `/proc/net/tcp` and `/proc/net/tcp6` where available. The diagnostic distinguishes no listener, loopback-only listener, all-IPv4 listener, selected-interface listener, IPv6-only listener, and port mismatch.
 
-The local endpoint self-test calls `http://127.0.0.1:<port>/api/sync/diagnostics/ping` and then, when a wired IPv4 address exists, `http://<local-wired-ip>:<port>/api/sync/diagnostics/ping`.
+The local endpoint self-test first calls `http://127.0.0.1:<port>/api/peer/diagnostics/ping`, falling back to `/api/sync/diagnostics/ping`; when a wired IPv4 address exists, it repeats the same candidate test through `http://<local-wired-ip>:<port>`.
 
 ## Remote Diagnostics
 
@@ -308,7 +316,7 @@ From Framework 12:
 
 ```bash
 ping -I <framework12-wired-interface> <framework13-wired-ip>
-curl -v http://<framework13-wired-ip>:<port>/api/sync/diagnostics/ping
+curl -v http://<framework13-wired-ip>:<port>/api/peer/diagnostics/ping
 node scripts/diagnose-wired-sync.mjs full \
   --url http://<framework13-wired-ip>:<port> \
   --output wired-diagnostic-framework12-to-framework13.json
@@ -318,7 +326,7 @@ From Framework 13:
 
 ```bash
 ping -I <framework13-wired-interface> <framework12-wired-ip>
-curl -v http://<framework12-wired-ip>:<port>/api/sync/diagnostics/ping
+curl -v http://<framework12-wired-ip>:<port>/api/peer/diagnostics/ping
 node scripts/diagnose-wired-sync.mjs full \
   --url http://<framework12-wired-ip>:<port> \
   --output wired-diagnostic-framework13-to-framework12.json
@@ -349,13 +357,16 @@ If explicit IP diagnostics pass but discovery produces `AUTOMATIC_DISCOVERY_FAIL
 
 Code inspection confirmed one application-layer mismatch: direct HTTP discovery expected `/api/peer/status` to expose a public key, but the route did not include one before this change. That has been corrected.
 
-The physical two-laptop failure has not been reproduced in this environment. Based on the current architecture, the most evidence-backed remaining hypotheses are:
+The supplied Fedora outputs also narrowed the physical and network layers. StarBook eventually had `enp0s13f0u1` on `169.254.42.12/16` with a connected `169.254.0.0/16` route, and Theseus2 had `enp0s13f0u3` on `169.254.42.13/16` with the matching route. Both Nodevision processes were listening on `0.0.0.0:3000`. That means the first confirmed failing layer is no longer Ethernet carrier, address assignment, routing, or server binding.
 
-1. Nodevision is bound to `127.0.0.1` or the wrong interface on one laptop.
-2. The direct Ethernet link has no usable IPv4 address because there is no DHCP server.
-3. Fedora firewalld blocks the Nodevision TCP port or UDP discovery port on the wired zone.
-4. Explicit IP works but automatic UDP discovery selects or advertises a Wi-Fi address.
-5. Trust is configured in only one direction or a trusted public key no longer matches the peer identity.
-6. The two installations accidentally share the same device identity.
+The first reproduced application failure was StarBook reaching Theseus2 by explicit URL, then receiving a generic `401 Unauthorized` from `/api/sync/diagnostics/ping` and failing signed diagnostic peer auth. The patch therefore registers equivalent `/api/peer/*` diagnostic aliases, prefers those aliases in the CLI and Sync Panel direct probe, and classifies a generic diagnostic `401` as `DIAGNOSTIC_ROUTE_PROTECTED` instead of a misleading signature failure.
+
+Remaining hypotheses, ranked by current evidence:
+
+1. One running Nodevision process is from an older checkout or was not restarted after the diagnostic routes were added.
+2. A route or auth middleware is protecting `/api/sync/*`; `/api/peer/diagnostics/ping` should confirm whether the peer route family is reachable.
+3. Trust is configured in only one direction, or a trusted public key no longer matches the peer identity.
+4. Explicit IP works, but automatic UDP discovery still selects, advertises, or de-duplicates the wrong address.
+5. Fedora firewalld blocks UDP `39000`, affecting automatic discovery even when TCP `3000` works.
 
 Do not consider wired sync fixed until both explicit peer URL diagnostics and automatic discovery have passed in both directions on the two Fedora laptops.

@@ -749,9 +749,27 @@ async function discoverPeerFromHttpStatusUrl(state, peerUrl, ctx) {
     const localDevice = payload?.localDevice && typeof payload.localDevice === "object"
       ? payload.localDevice
       : {};
-    const deviceId = String(localDevice.deviceId || payload?.deviceId || "").trim();
-    const deviceName = String(localDevice.deviceName || payload?.deviceName || "Unknown Device").trim();
-    const publicKey = String(localDevice.publicKey || payload?.publicKey || "").trim();
+    let deviceId = String(localDevice.deviceId || payload?.deviceId || "").trim();
+    let deviceName = String(localDevice.deviceName || payload?.deviceName || "Unknown Device").trim();
+    let publicKey = String(localDevice.publicKey || payload?.publicKey || "").trim();
+    if (!publicKey) {
+      for (const identityRoute of ["/api/peer/diagnostics/ping", "/api/sync/diagnostics/ping"]) {
+        try {
+          const identityResponse = await fetch(new URL(identityRoute, origin + "/").toString(), {
+            method: "GET",
+            signal: controller.signal,
+          });
+          const identityPayload = await identityResponse.json().catch(() => ({}));
+          if (!identityResponse.ok || identityPayload?.ok === false) continue;
+          deviceId = String(identityPayload.localDevice?.deviceId || identityPayload.deviceId || deviceId).trim();
+          deviceName = String(identityPayload.localDevice?.deviceName || identityPayload.deviceName || deviceName || "Unknown Device").trim();
+          publicKey = String(identityPayload.localDevice?.publicKey || identityPayload.publicKey || "").trim();
+          if (publicKey) break;
+        } catch {
+          // Keep direct discovery tolerant of older peers and protected diagnostic aliases.
+        }
+      }
+    }
     if (!deviceId || !deviceName || !publicKey) return null;
 
     const localPeerInfo = await getLocalPeerInfo({ runtimeRoot: ctx?.runtimeRoot }).catch(() => null);
