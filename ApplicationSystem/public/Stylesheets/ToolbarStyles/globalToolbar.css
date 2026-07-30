@@ -36,6 +36,21 @@
   margin-right: 4px;
 }
 
+.toolbar-button--user {
+  margin-left: auto;
+}
+
+.toolbar-button--user .toolbar-main-button {
+  max-width: 190px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolbar-button--user .toolbar-main-button .nv-toolbar-icon {
+  flex: 0 0 18px;
+}
+
 .toolbar-button--dropdown-item {
   display: block;
   width: 100%;
@@ -104,15 +119,29 @@
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
-  border: 1px solid #666;
+  border: 1px solid currentColor;
   border-radius: 3px;
-  background: linear-gradient(135deg, #f2f2f2 0%, #cfcfcf 100%);
+  background: transparent;
   box-sizing: border-box;
-  display: inline-block;
-  color: #111;
-  font: 700 8px/14px system-ui, sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  font: 700 10px/1 system-ui, sans-serif;
   text-align: center;
   overflow: hidden;
+}
+
+.nv-toolbar-icon-fallback[data-icon-length="1"] {
+  font-size: 13px;
+}
+
+.nv-toolbar-icon-fallback[data-icon-length="2"] {
+  font-size: 10px;
+}
+
+.nv-toolbar-icon-fallback[data-icon-length="3"] {
+  font-size: 8px;
 }
 
 /* === Dropdown Panel === */

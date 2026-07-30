@@ -2,36 +2,43 @@
   {
     "ToolbarCategory": "User",
     "heading": "Profile",
+    "hotkeyText": "",
     "callbackKey": "profile"
   },
   {
     "ToolbarCategory": "User",
     "heading": "Avatars",
+    "hotkeyText": "",
     "callbackKey": "avatars"
   },
   {
     "ToolbarCategory": "User",
     "heading": "Password",
+    "hotkeyText": "",
     "callbackKey": "password"
   },
   {
     "ToolbarCategory": "User",
     "heading": "Permissions",
+    "hotkeyText": "",
     "callbackKey": "permissions"
   },
   {
     "ToolbarCategory": "User",
     "heading": "Users",
+    "hotkeyText": "",
     "callbackKey": "users"
   },
   {
     "ToolbarCategory": "User",
     "heading": "LAN Cooperation",
+    "hotkeyText": "",
     "callbackKey": "lanCooperation"
   },
   {
     "ToolbarCategory": "User",
     "heading": "Logout",
+    "hotkeyText": "",
     "callbackKey": "logout",
     "icon": "icons/ExitIcon.png"    
   }

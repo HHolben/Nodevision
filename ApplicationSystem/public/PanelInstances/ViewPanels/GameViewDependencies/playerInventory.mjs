@@ -13,8 +13,8 @@ const CATEGORY_META = {
   "resources": { label: "Resources", emptyText: "No resources carried." },
   "building-blocks": { label: "Building Blocks", emptyText: "No building blocks carried." }
 };
-const TOOL_IDS = new Set(["select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator"]);
-const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "math-function", "object-file", "image-plane", "console", "portal"]);
+const TOOL_IDS = new Set(["select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
+const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "math-function", "object-file", "image-plane", "iframe", "console", "portal"]);
 const RESOURCE_IDS = new Set(["ore", "wood", "stone", "energy-cell", "water", "fuel"]);
 const PASSIVE_IDS = new Set(["armor", "helmet", "boots", "jetpack", "oxygen-tank"]);
 const HOTBAR_INSTRUMENT_ID = "item-hotbar";
@@ -82,17 +82,20 @@ export function createPlayerInventory({ panel }) {
       { id: "math-function", label: "Math Function", count: 4, category: "building-blocks", placeable: true },
       { id: "object-file", label: "Object File", count: 0, category: "building-blocks", placeable: true },
       { id: "image-plane", label: "Image Plane", count: 0, category: "building-blocks", placeable: true },
+      { id: "iframe", label: "iFrame", count: 3, category: "building-blocks", placeable: true },
       { id: "select-object", label: "Select Object", count: 1, category: "tools", tool: true },
       { id: "select-image", label: "Select Image", count: 1, category: "tools", tool: true },
       { id: "svg-camera", label: "SVG Camera", count: 1, category: "tools", tool: true },
       { id: "tape-measure", label: "Tape Measure", count: 1, category: "tools", tool: true },
       { id: "terrain-generator", label: "Terrain Generator", count: 1, category: "tools", tool: true },
       { id: "temporal-manipulator", label: "Temporal Manipulator", count: 1, category: "tools", tool: true },
+      { id: "voxel-placer", label: "Voxel Placer", count: 1, category: "tools", tool: true },
+      { id: "voxel-extruder", label: "Voxel Extruder", count: 1, category: "tools", tool: true },
       { id: "coordinates-hud", label: "Coordinates HUD", count: 1, category: "instruments", instrument: true },
       { id: CHRONOMETER_INSTRUMENT_ID, label: "Chronometer", count: 1, category: "instruments", instrument: true },
       { id: HOTBAR_INSTRUMENT_ID, label: "Item Hotbar", count: 1, category: "instruments", instrument: true }
     ].map(normalizeItem),
-    dominantSlots: [null, "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", null, null]
+    dominantSlots: [null, "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]
   };
 
   const statusHud = document.createElement("div");
@@ -319,6 +322,49 @@ export function createPlayerInventory({ panel }) {
       center.style.borderRadius = "50%";
       center.style.background = "rgba(7, 30, 48, 0.95)";
       icon.appendChild(center);
+      return icon;
+    }
+    if (id === "voxel-placer") {
+      icon.style.position = "relative";
+      icon.style.borderRadius = "7px";
+      icon.style.background = "linear-gradient(135deg, #8ee6c1 0%, #2d8f7d 100%)";
+      icon.style.border = "1px solid rgba(216, 255, 241, 0.9)";
+      icon.style.boxShadow = "-4px 4px 0 rgba(0, 0, 0, 0.25)";
+      const cube = document.createElement("div");
+      cube.style.position = "absolute";
+      cube.style.left = "8px";
+      cube.style.top = "8px";
+      cube.style.width = "14px";
+      cube.style.height = "14px";
+      cube.style.border = "2px solid rgba(5, 51, 43, 0.82)";
+      cube.style.background = "rgba(235, 255, 247, 0.58)";
+      icon.appendChild(cube);
+      return icon;
+    }
+    if (id === "voxel-extruder") {
+      icon.style.position = "relative";
+      icon.style.borderRadius = "7px";
+      icon.style.background = "linear-gradient(135deg, #c7f0ff 0%, #4a8fd8 100%)";
+      icon.style.border = "1px solid rgba(224, 246, 255, 0.9)";
+      icon.style.boxShadow = "-4px 4px 0 rgba(0, 0, 0, 0.25)";
+      const back = document.createElement("div");
+      back.style.position = "absolute";
+      back.style.left = "5px";
+      back.style.top = "11px";
+      back.style.width = "12px";
+      back.style.height = "12px";
+      back.style.border = "2px solid rgba(11, 47, 89, 0.78)";
+      back.style.background = "rgba(238, 250, 255, 0.45)";
+      const front = document.createElement("div");
+      front.style.position = "absolute";
+      front.style.left = "14px";
+      front.style.top = "5px";
+      front.style.width = "12px";
+      front.style.height = "12px";
+      front.style.border = "2px solid rgba(11, 47, 89, 0.88)";
+      front.style.background = "rgba(248, 253, 255, 0.7)";
+      icon.appendChild(back);
+      icon.appendChild(front);
       return icon;
     }
     if (id === "math-function") {

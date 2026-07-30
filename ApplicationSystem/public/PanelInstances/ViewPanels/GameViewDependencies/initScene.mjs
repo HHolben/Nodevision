@@ -10,6 +10,7 @@ import { startRenderLoop } from "./renderLoop.mjs";
 import { setupResizeObserver } from "./resizeObserver.mjs";
 import { createPlayerInventory } from "./playerInventory.mjs";
 import { createObjectInspector } from "./objectInspector.mjs";
+import { createVirtualWorldEmbeddedResourceEditor } from "./embeddedResourceEditor.mjs";
 import { createTerrainToolController } from "./terrainGeneratorTool.mjs";
 import {
   createEquationColliderController,
@@ -20,6 +21,7 @@ import {
   syncPlaneWaterVolumeRef,
 } from "./equationColliderTool.mjs";
 import { saveCurrentWorldFile } from "./worldSave.mjs";
+import { updateIframeObjectOverlays } from "./worldLoading.mjs";
 import { createWorldPropertiesPanel } from "./worldPropertiesPanel.mjs";
 import { createMetaWorldMultiplayerClient } from "/MetaWorld/MetaWorldMultiplayerClient.mjs";
 import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
@@ -353,6 +355,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     velocityY: 0,
     isGrounded: true,
     isSwimming: false,
+    editorGravityEnabled: true,
     playerHeight: 1.75,
     playerMode: preferredMode,
     worldMode: "3d",
@@ -369,6 +372,11 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     playerBuoyancy: 0.015,
     swimSpeedMultiplier: 0.72,
     crouchJumpMultiplier: 1.85,
+    editorRunSkillLevel: 5,
+    playerSkills: {
+      walking: { id: "walking", name: "Walking", type: "active", level: 1 },
+      running: { id: "running", name: "Running", type: "modifier", modifierSkill: true, stacksOn: "walking", level: 0 }
+    },
     worldRules: {
       allowFly: false,
       allowRoll: false,
@@ -426,6 +434,15 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   });
   panel._vrObjectInspector = objectInspector;
   window.VRWorldContext.objectInspector = objectInspector;
+
+  const embeddedResourceEditor = createVirtualWorldEmbeddedResourceEditor({
+    panel,
+    THREE,
+    objectInspector
+  });
+  panel._vrEmbeddedResourceEditor = embeddedResourceEditor;
+  window.VRWorldContext.embeddedResourceEditor = embeddedResourceEditor;
+  window.VRWorldContext.editSelectedResourceHere = () => embeddedResourceEditor.openSelectedResource();
 
   const worldPropertiesPanel = createWorldPropertiesPanel({ movementState });
   panel._vrWorldPropertiesPanel = worldPropertiesPanel;
@@ -542,6 +559,12 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
     viewController.update();
+    updateIframeObjectOverlays({
+      panel,
+      THREE,
+      objects,
+      camera: viewController.getActiveCamera() || camera
+    });
     multiplayerClient.update();
   };
   const stopRenderLoop = startRenderLoop(renderer, scene, () => viewController.getActiveCamera(), update);

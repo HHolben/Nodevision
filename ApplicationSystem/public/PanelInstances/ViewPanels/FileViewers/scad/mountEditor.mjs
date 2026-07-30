@@ -145,6 +145,16 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
   }
 
   const initialState = (() => {
+    if (hasSCAD && canImportGeometry) {
+      const scadCode = generateSCAD(parsedProject.sceneTree, parsedProject.parameters);
+      return {
+        filePath: scadPath,
+        parameters: parsedProject.parameters,
+        sceneTree: parsedProject.sceneTree,
+        scadCode,
+      };
+    }
+
     if (hasProject) {
       return {
         filePath: scadPath,
@@ -155,16 +165,6 @@ export async function mountSCADParametricEditor(container, filePath, opts = {}) 
     }
 
     if (hasSCAD) {
-      if (canImportGeometry) {
-        const scadCode = generateSCAD(parsedProject.sceneTree, parsedProject.parameters);
-        return {
-          filePath: scadPath,
-          parameters: parsedProject.parameters,
-          sceneTree: parsedProject.sceneTree,
-          scadCode,
-        };
-      }
-
       const params = parseParametersFromSCAD(scadText);
       const starter = makeStarterProjectFromParameters(params);
       return {

@@ -158,6 +158,8 @@ function getMeshType(mesh) {
     || hint === "object-file"
     || hint === "image-plane"
     || hint === "terrain-surface"
+    || hint === "sound-object"
+    || hint === "iframe"
   ) return hint;
   const gType = mesh?.geometry?.type;
   if (gType === "BoxGeometry") return "box";
@@ -338,6 +340,196 @@ function compactTerrainDefinitions(defs = []) {
   return passthrough.concat(compactedTerrain);
 }
 
+const VOXEL_PATTERN_TYPE = "voxel-pattern";
+const VOXEL_COMPACT_EPSILON = 0.001;
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function finiteNumberArray(value, length) {
+  if (!Array.isArray(value) || value.length < length) return null;
+  const numbers = value.slice(0, length).map(Number);
+  return numbers.every(Number.isFinite) ? numbers : null;
+}
+
+function isVoxelDefinition(def) {
+  return def && typeof def === "object" && (def.isVoxel === true || def.voxel === true || def.voxelPlacer);
+}
+
+function isAutoVoxelId(value) {
+  const text = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return !text || text.startsWith("voxel-") || text.startsWith("voxel-pattern-");
+}
+
+function voxelStepFromDefinition(def) {
+  const size = finiteNumberArray(def?.size, 3);
+  if (size && size.every((value) => value > 0)) return size.map((value) => round3(Math.abs(value)));
+  const voxel = def?.voxelPlacer && typeof def.voxelPlacer === "object" ? def.voxelPlacer : {};
+  const voxelSize = Number(def?.voxelSize ?? voxel.size);
+  if (Number.isFinite(voxelSize) && voxelSize > 0) {
+    const safeSize = round3(Math.abs(voxelSize));
+    return [safeSize, safeSize, safeSize];
+  }
+  return null;
+}
+
+function voxelTemplateForPattern(def) {
+  const template = cloneJson(def);
+  delete template.position;
+  delete template.id;
+  delete template.tag;
+  delete template.name;
+  return template;
+}
+
+function hasVoxelPatternBlockingMetadata(def) {
+  if ([def?.id, def?.tag, def?.name].some((value) => !isAutoVoxelId(value))) return true;
+  return [
+    "useAction",
+    "onUse",
+    "collisionAction",
+    "onCollide",
+    "spawnId",
+    "spawnYaw",
+    "portalDestinationMode",
+    "destinationMode",
+    "targetWorld",
+    "linkedPortalId"
+  ].some((key) => def?.[key] !== undefined);
+}
+
+function moduloPositiveNumber(value, modulus) {
+  if (!Number.isFinite(value) || !Number.isFinite(modulus) || modulus <= 0) return 0;
+  const result = ((value % modulus) + modulus) % modulus;
+  return Math.abs(result - modulus) <= VOXEL_COMPACT_EPSILON ? 0 : result;
+}
+
+function voxelCompactEntry(def) {
+  if (!isVoxelDefinition(def) || String(def.type || "").toLowerCase() !== "box") return null;
+  if (hasVoxelPatternBlockingMetadata(def)) return null;
+  const position = finiteNumberArray(def.position, 3);
+  const step = voxelStepFromDefinition(def);
+  if (!position || !step || !step.every((value) => Number.isFinite(value) && value > 0)) return null;
+  const offset = position.map((value, index) => round3(moduloPositiveNumber(value, step[index])));
+  const grid = position.map((value, index) => Math.round((value - offset[index]) / step[index]));
+  const aligned = grid.every((coord, index) => Math.abs(offset[index] + coord * step[index] - position[index]) <= VOXEL_COMPACT_EPSILON);
+  if (!aligned) return null;
+  const template = voxelTemplateForPattern(def);
+  const key = JSON.stringify({ template, step, offset });
+  return { def, template, key, step, offset, gx: grid[0], gy: grid[1], gz: grid[2] };
+}
+
+function voxelCellKey(gx, gy, gz) {
+  return String(gx) + ":" + String(gy) + ":" + String(gz);
+}
+
+function createVoxelPatternDefinition(start, width, height, depth) {
+  const counts = [width, height, depth];
+  const step = start.step.map(round3);
+  const pattern = {
+    kind: "grid",
+    shape: "cuboid",
+    counts,
+    step
+  };
+  if (height === 1 && width === depth) {
+    pattern.shape = "square";
+    pattern.base = width;
+  } else if (width === height && height === depth) {
+    pattern.shape = "cube";
+    pattern.base = width;
+  }
+  if (step.every((value) => Math.abs(value - step[0]) <= VOXEL_COMPACT_EPSILON)) {
+    pattern.unit = step[0];
+  }
+  return {
+    type: VOXEL_PATTERN_TYPE,
+    position: start.def.position.slice(0, 3).map(round3),
+    voxel: cloneJson(start.template),
+    pattern
+  };
+}
+
+function compactVoxelGroup(entries) {
+  const remaining = new Map();
+  for (const entry of entries) {
+    const key = voxelCellKey(entry.gx, entry.gy, entry.gz);
+    if (!remaining.has(key)) remaining.set(key, entry);
+  }
+
+  const compacted = [];
+  const sortedCells = () => Array.from(remaining.values()).sort((a, b) => (a.gy - b.gy) || (a.gz - b.gz) || (a.gx - b.gx));
+
+  while (remaining.size > 0) {
+    const start = sortedCells()[0];
+    let width = 1;
+    while (remaining.has(voxelCellKey(start.gx + width, start.gy, start.gz))) width += 1;
+
+    let depth = 1;
+    let canGrowDepth = true;
+    while (canGrowDepth) {
+      for (let dx = 0; dx < width; dx += 1) {
+        if (!remaining.has(voxelCellKey(start.gx + dx, start.gy, start.gz + depth))) {
+          canGrowDepth = false;
+          break;
+        }
+      }
+      if (canGrowDepth) depth += 1;
+    }
+
+    let height = 1;
+    let canGrowHeight = true;
+    while (canGrowHeight) {
+      for (let dz = 0; dz < depth; dz += 1) {
+        for (let dx = 0; dx < width; dx += 1) {
+          if (!remaining.has(voxelCellKey(start.gx + dx, start.gy + height, start.gz + dz))) {
+            canGrowHeight = false;
+            break;
+          }
+        }
+        if (!canGrowHeight) break;
+      }
+      if (canGrowHeight) height += 1;
+    }
+
+    for (let dy = 0; dy < height; dy += 1) {
+      for (let dz = 0; dz < depth; dz += 1) {
+        for (let dx = 0; dx < width; dx += 1) {
+          remaining.delete(voxelCellKey(start.gx + dx, start.gy + dy, start.gz + dz));
+        }
+      }
+    }
+
+    if (width * height * depth <= 1) compacted.push(start.def);
+    else compacted.push(createVoxelPatternDefinition(start, width, height, depth));
+  }
+
+  return compacted;
+}
+
+function compactVoxelDefinitions(defs = []) {
+  const passthrough = [];
+  const groups = new Map();
+
+  for (const def of defs) {
+    const entry = voxelCompactEntry(def);
+    if (!entry) {
+      passthrough.push(def);
+      continue;
+    }
+    if (!groups.has(entry.key)) groups.set(entry.key, []);
+    groups.get(entry.key).push(entry);
+  }
+
+  const compactedVoxels = [];
+  for (const entries of groups.values()) {
+    compactedVoxels.push(...compactVoxelGroup(entries));
+  }
+
+  return passthrough.concat(compactedVoxels);
+}
+
 function serializeMesh(mesh) {
   if (!mesh?.isMesh) return null;
   const type = getMeshType(mesh);
@@ -456,6 +648,24 @@ function serializeMesh(mesh) {
     if (typeof mesh.userData?.objectFilePath === "string" && mesh.userData.objectFilePath) {
       def.objectFile = mesh.userData.objectFilePath;
     }
+    if (typeof mesh.userData?.objectFileFormat === "string" && mesh.userData.objectFileFormat) {
+      def.objectFormat = mesh.userData.objectFileFormat;
+    } else if (typeof mesh.userData?.objectFileExtension === "string" && mesh.userData.objectFileExtension) {
+      def.objectFormat = mesh.userData.objectFileExtension;
+    }
+    if (typeof mesh.userData?.objectFileName === "string" && mesh.userData.objectFileName) {
+      def.objectFileName = mesh.userData.objectFileName;
+    }
+    if (typeof mesh.userData?.objectFileDataUrl === "string" && mesh.userData.objectFileDataUrl) {
+      def.objectDataUrl = mesh.userData.objectFileDataUrl;
+    }
+    if (typeof mesh.userData?.objectFileText === "string" && mesh.userData.objectFileText) {
+      def.objectText = mesh.userData.objectFileText;
+    }
+    def.collider = mesh.userData?.colliderRef ? true : false;
+    def.colliderBinding = def.collider ? "geometry" : "none";
+    def.collidable = def.collider;
+    def.isSolid = def.collider;
   } else if (type === "image-plane") {
     const p = g?.parameters || {};
     def.size = [
@@ -465,6 +675,49 @@ function serializeMesh(mesh) {
     if (typeof mesh.userData?.imageFilePath === "string" && mesh.userData.imageFilePath) {
       def.imageFile = mesh.userData.imageFilePath;
     }
+  } else if (type === "iframe") {
+    const iframe = mesh.userData?.iframeObject && typeof mesh.userData.iframeObject === "object" ? mesh.userData.iframeObject : {};
+    const p = g?.parameters || {};
+    def.shape = "box";
+    def.size = [
+      round3((p.width ?? 1.6) * sx),
+      round3((p.height ?? 0.9) * sy),
+      round3((p.depth ?? 0.04) * sz)
+    ];
+    const src = mesh.userData?.iframeSrc || iframe.iframeSrc || iframe.src || "about:blank";
+    const title = mesh.userData?.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page";
+    def.src = src;
+    def.iframeSrc = src;
+    def.iframeTitle = title;
+    const sourceKind = String(mesh.userData?.iframeSourceKind || iframe.iframeSourceKind || iframe.sourceKind || "").trim()
+      || (String(src || "").trim().toLowerCase() === "nodevision://host-page" ? "host-page" : "");
+    if (sourceKind) def.iframeSourceKind = sourceKind;
+    if (mesh.userData?.iframeColor) def.color = mesh.userData.iframeColor;
+    if (mesh.userData?.iframeSandbox || iframe.sandbox) def.sandbox = mesh.userData?.iframeSandbox || iframe.sandbox;
+    if (mesh.userData?.iframeAllow || iframe.allow) def.allow = mesh.userData?.iframeAllow || iframe.allow;
+    def.collider = mesh.userData?.colliderRef ? true : false;
+    def.collidable = def.collider;
+    def.isSolid = def.collider;
+  } else if (type === "sound-object") {
+    const sound = mesh.userData?.soundObject && typeof mesh.userData.soundObject === "object" ? mesh.userData.soundObject : {};
+    const p = g?.parameters || {};
+    const scale = Math.max(sx, sy, sz);
+    def.size = [round3((p.radius ?? 0.25) * scale)];
+    const source = mesh.userData?.soundSource || sound.src || mesh.userData?.audioAssetPath || "";
+    const linked = mesh.userData?.soundLinkedPath || mesh.userData?.soundFile || sound.audioLinkedPath || sound.audioFile || "";
+    const inline = mesh.userData?.soundDataUrl || sound.audioDataUrl || "";
+    if (source) def.src = source;
+    if (linked) {
+      def.audioFile = linked;
+      def.audioLinkedPath = linked;
+    }
+    if (inline) def.audioDataUrl = inline;
+    def.volume = round3(clampFiniteNumber(mesh.userData?.soundVolume ?? sound.volume, 0, 1, 0.8));
+    def.range = round3(clampFiniteNumber(mesh.userData?.soundRange ?? sound.range, 0, 10000, 14));
+    def.loop = mesh.userData?.soundLoop !== false && sound.loop !== false;
+    def.collider = false;
+    def.collidable = false;
+    def.isSolid = false;
   } else if (type === "terrain-surface") {
     const terrain = mesh.userData?.terrain || {};
     def.size = [
@@ -510,6 +763,26 @@ function serializeMesh(mesh) {
       round3((p.radius ?? 1) * rScale),
       round3((p.tube ?? 0.25) * rScale)
     ];
+  }
+
+  if (mesh.userData?.isVoxel === true || mesh.userData?.voxel === true || mesh.userData?.voxelPlacer) {
+    const voxel = mesh.userData?.voxelPlacer && typeof mesh.userData.voxelPlacer === "object" ? mesh.userData.voxelPlacer : {};
+    def.isVoxel = true;
+    def.voxel = true;
+    if (Number.isFinite(mesh.userData?.voxelSize)) def.voxelSize = round3(mesh.userData.voxelSize);
+    else if (Number.isFinite(voxel.size)) def.voxelSize = round3(voxel.size);
+    def.collider = mesh.userData?.colliderRef ? true : false;
+    def.isSolid = def.collider;
+    def.breakable = mesh.userData?.breakable !== false;
+    def.voxelPlacer = {
+      size: Number.isFinite(voxel.size) ? round3(voxel.size) : def.voxelSize,
+      materialId: voxel.materialId || mesh.userData?.physicsMaterialId || "",
+      materialFile: voxel.materialFile || mesh.userData?.physicsMaterialFile || "",
+      materialName: voxel.materialName || mesh.userData?.materialName || "",
+      matterState: voxel.matterState || mesh.userData?.MatterState || mesh.userData?.matterState || "",
+      color: voxel.color || def.color,
+      collider: def.collider
+    };
   }
 
   Object.assign(def, materialMeta(mesh));
@@ -586,7 +859,7 @@ function buildWorldDefinition({
   const rawMeshDefs = objectArray
     .map(serializeMesh)
     .filter(Boolean);
-  const meshDefs = compactTerrainDefinitions(rawMeshDefs);
+  const meshDefs = compactVoxelDefinitions(compactTerrainDefinitions(rawMeshDefs));
   const lightDefs = (lights || [])
     .map(serializeLight)
     .filter(Boolean);
@@ -624,6 +897,9 @@ function buildWorldDefinition({
       allowToolUse: worldRules.allowToolUse === true,
       allowSave: worldRules.allowSave === true
     },
+    editorGravityEnabled: movementState?.editorGravityEnabled !== false,
+    playerSkills: movementState?.playerSkills || existing?.metadata?.playerSkills || existing?.playerSkills || undefined,
+    playerCharacter: movementState?.playerCharacter || existing?.metadata?.playerCharacter || existing?.playerCharacter || undefined,
     environment,
     temporal,
     multiplayer

@@ -48,6 +48,39 @@ function parseTransformPrefix(prefix = "") {
   return transform;
 }
 
+function primitiveBody(primitive = "") {
+  const start = String(primitive || "").indexOf("(");
+  const end = String(primitive || "").lastIndexOf(")");
+  return start >= 0 && end > start ? String(primitive).slice(start + 1, end).trim() : "";
+}
+
+function firstTopLevelArg(body = "") {
+  const text = String(body || "");
+  let depth = 0;
+  let quote = "";
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (quote) {
+      if (ch === "\\") i += 1;
+      else if (ch === quote) quote = "";
+      continue;
+    }
+    if (ch === "\"" || ch.charCodeAt(0) === 39) {
+      quote = ch;
+      continue;
+    }
+    if (ch === "(" || ch === "[" || ch === "{") depth += 1;
+    else if (ch === ")" || ch === "]" || ch === "}") depth = Math.max(0, depth - 1);
+    else if (ch === "," && depth === 0) return text.slice(0, i).trim();
+  }
+  return text.trim();
+}
+
+function parseFnSegments(primitive = "", fallback = 48) {
+  const fn = /\$fn\s*=\s*([^,)]+)/i.exec(primitive);
+  return Math.max(8, Math.round(parseNumber(fn?.[1], fallback)));
+}
+
 function addParsedObject(model, input) {
   const obj = addObject(model, input, { timeline: false });
   model.timeline.push({
@@ -93,9 +126,15 @@ export function parseBasicScad(scadText = "") {
       continue;
     }
     if (/^sphere/i.test(primitive)) {
+      const body = primitiveBody(primitive);
       const radius = /\br\s*=\s*([^,)]+)/i.exec(primitive) || /\bd\s*=\s*([^,)]+)/i.exec(primitive);
-      const usesDiameter = /\bd\s*=/.test(radius?.[0] || "");
-      addParsedObject(model, { type: "sphere", name: "Imported sphere", params: { radius: usesDiameter ? parseNumber(radius?.[1], 12) / 2 : parseNumber(radius?.[1], 6), segments: 48 }, transform, operations });
+      const positional = firstTopLevelArg(body);
+      const positionalRadius = positional && !positional.includes("=") ? positional : undefined;
+      const usesDiameter = /\bd\s*=/i.test(radius?.[0] || "");
+      const radiusValue = usesDiameter
+        ? parseNumber(radius?.[1], 12) / 2
+        : parseNumber(radius?.[1] ?? positionalRadius, 6);
+      addParsedObject(model, { type: "sphere", name: "Imported sphere", params: { radius: radiusValue, segments: parseFnSegments(primitive) }, transform, operations });
       continue;
     }
     if (/^cube/i.test(primitive)) {
@@ -109,7 +148,7 @@ export function parseBasicScad(scadText = "") {
       const height = /\bh\s*=\s*([^,)]+)/i.exec(primitive);
       const radius = /\br\s*=\s*([^,)]+)/i.exec(primitive) || /\bd\s*=\s*([^,)]+)/i.exec(primitive);
       const usesDiameter = /\bd\s*=/.test(radius?.[0] || "");
-      addParsedObject(model, { type: "cylinder", name: "Imported cylinder", params: { height: parseNumber(height?.[1], 16), radius: usesDiameter ? parseNumber(radius?.[1], 10) / 2 : parseNumber(radius?.[1], 5), segments: 48, center: /center\s*=\s*true/i.test(primitive) }, transform, operations });
+      addParsedObject(model, { type: "cylinder", name: "Imported cylinder", params: { height: parseNumber(height?.[1], 16), radius: usesDiameter ? parseNumber(radius?.[1], 10) / 2 : parseNumber(radius?.[1], 5), segments: parseFnSegments(primitive), center: /center\s*=\s*true/i.test(primitive) }, transform, operations });
       continue;
     }
     if (/^square/i.test(primitive)) {

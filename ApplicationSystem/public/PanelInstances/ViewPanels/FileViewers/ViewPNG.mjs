@@ -9,6 +9,7 @@
  * @param {string} serverBase - Base URL of the server to fetch the file from.
  */
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
+  viewPanel.dataset.nvZoomInlineFit = "stretch-on-zoom-out";
   try {
     const url = `${serverBase}/${filename}`;
 

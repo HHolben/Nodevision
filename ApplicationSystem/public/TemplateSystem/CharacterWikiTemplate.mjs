@@ -33,6 +33,14 @@ const DEFAULT_SKILLS = [
     equations: "baseSpeed * averageHealthRatio(['left-leg','right-leg']) * (1 + skillLevel('walking') / 10)",
   },
   {
+    name: "Running",
+    type: "modifier",
+    level: 0,
+    requiresAnatomy: "Left Leg, Right Leg",
+    description: "Move faster by stacking a running modifier onto walking.",
+    equations: "walkSpeed * (1 + skillLevel('running') / 10)",
+  },
+  {
     name: "Standing",
     type: "passive",
     level: 1,
@@ -354,7 +362,7 @@ export function enhanceTemplateForm({ form, values, options }) {
     const row = document.createElement("div");
     row.className = "nodevision-character-template-row";
     const name = createInput("Skill", skill.name || "");
-    const type = createSelect("Type", skill.type || "active", ["active", "passive"]);
+    const type = createSelect("Type", skill.type || "active", ["active", "passive", "modifier"]);
     const level = createInput("Level", skill.level ?? 0, { type: "number", min: 0 });
     const required = createInput("Required anatomy", skill.requiresAnatomy || "", { placeholder: "Left Leg, Right Leg" });
     const description = createInput("Description", skill.description || "", { multiline: true });

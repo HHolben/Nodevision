@@ -3,6 +3,7 @@
 {
   "ToolbarCategory": "View",
   "heading": "Code Editing",
+  "hotkeyText": "",
   "content": "",
   "panelTemplate": "CodeEditor",
   "panelType": "EditorPanel",
@@ -13,6 +14,7 @@
 {
   "ToolbarCategory": "View",
   "heading": "Graphical Editing",
+  "hotkeyText": "",
   "content": "",
   "panelTemplate": "GraphicalEditor",
   "panelType": "EditorPanel",
@@ -23,6 +25,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Virtual World Editing",
+    "hotkeyText": "",
     "callbackKey": "VirtualWorldEditing",
     "panel": "GameView",
     "panelTemplate": "GameView",
@@ -31,12 +34,14 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Edit Styles",
+    "hotkeyText": "",
     "callbackKey": "editStyles",
     "modes": ["HTMLediting"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "Edit Image Here",
+    "hotkeyText": "",
     "callbackKey": "editImageHere",
     "modes": ["HTMLediting", "EPUBediting"],
     "conditions": {
@@ -46,6 +51,7 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Edit Image Here",
+    "hotkeyText": "",
     "callbackKey": "editImageHere",
     "modes": ["SVG Editing"],
     "conditions": {
@@ -54,7 +60,18 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Edit Here",
+    "hotkeyText": "",
+    "callbackKey": "editImageHere",
+    "modes": ["Virtual World Editing", "VR World Editing"],
+    "conditions": {
+      "virtualWorldResourceSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "Edit Recording Here",
+    "hotkeyText": "",
     "callbackKey": "editRecordingHere",
     "modes": ["HTMLediting", "EPUBediting", "GraphicalEditing"],
     "conditions": null
@@ -62,6 +79,7 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Edit Equation Here",
+    "hotkeyText": "",
     "callbackKey": "editEquationHere",
     "modes": ["HTMLediting", "EPUBediting", "GraphicalEditing"],
     "conditions": null
@@ -70,6 +88,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Edit",
     "heading": "Metadata",
+    "hotkeyText": "",
     "callbackKey": "openMetadataToolbar",
     "modes": ["HTMLediting", "HTMLviewing", "EPUBediting", "SVG Editing", "SCADediting", "JSONEditing", "CIRediting", "ICSCalendarEditing"],
     "shortLabel": "Meta",
@@ -80,6 +99,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Metadata",
     "heading": "Document Metadata",
+    "hotkeyText": "",
     "content": "<div id=\"nv-metadata-toolbar\"></div>",
     "script": "metadataToolbar.mjs",
     "modes": ["HTMLediting", "HTMLviewing", "EPUBediting", "SVG Editing", "SCADediting", "JSONEditing", "CIRediting", "ICSCalendarEditing"],
@@ -89,6 +109,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Edit",
     "heading": "Texture",
+    "hotkeyText": "",
     "callbackKey": "objOpenTextureTools",
     "routeToActivePanel": true,
     "modes": ["OBJediting"],
@@ -99,6 +120,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Edit Image Here",
     "heading": "Crop Image",
+    "hotkeyText": "",
     "callbackKey": "cropSelectedImage",
     "modes": ["HTMLediting", "EPUBediting"],
     "conditions": {
@@ -109,6 +131,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Edit Image Here",
     "heading": "Toggle Embedded Image Editor",
+    "hotkeyText": "",
     "callbackKey": "openSelectedImageEditorUndocked",
     "modes": ["HTMLediting", "EPUBediting"],
     "conditions": {
@@ -118,12 +141,14 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Auto Format",
+    "hotkeyText": "",
     "callbackKey": "autoFormatFile",
     "modes": ["Code Editing"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "VR World Editor",
+    "hotkeyText": "",
     "content": "",
     "script": "SendToVRWorldEditorPage.js",
     "modes": ["3D World Viewing"]
@@ -131,59 +156,69 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Add Object",
+    "hotkeyText": "",
     "callbackKey": "addVRObject",
     "modes": ["VR World Editing"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "Edit Terrain",
+    "hotkeyText": "",
     "callbackKey": "editTerrain",
     "modes": ["VR World Editing"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "Lighting",
+    "hotkeyText": "",
     "callbackKey": "editLighting",
     "modes": ["VR World Editing"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "Delete Object",
+    "hotkeyText": "",
     "callbackKey": "deleteVRObject",
     "modes": ["VR World Editing"]
   },
     {
     "ToolbarCategory": "Edit",
     "heading": "Add Cube",
+    "hotkeyText": "",
     "callbackKey": "vrAddCube",
     "modes": ["VR World Editing"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "Add Sphere",
+    "hotkeyText": "",
     "callbackKey": "vrAddSphere",
     "modes": ["VR World Editing"]
   },
   {
     "ToolbarCategory": "Edit",
     "heading": "Delete Object",
+    "hotkeyText": "",
     "callbackKey": "vrDeleteObject",
     "modes": ["VR World Editing"]
   },
 {
   "ToolbarCategory": "Edit",
   "heading": "SVG Selection",
+  "hotkeyText": "",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
   "heading": "SVG Controls",
+  "hotkeyText": "",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Controls",
   "heading": "Change Fill Color",
+  "hotkeyText": "",
   "callbackKey": "svgChangeFillColor",
   "modes": ["SVG Editing"]
 },
@@ -191,6 +226,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Controls",
   "heading": "Change Stroke Color",
+  "hotkeyText": "",
   "callbackKey": "svgChangeStrokeColor",
   "modes": ["SVG Editing"]
 },
@@ -198,6 +234,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Controls",
   "heading": "Change Stroke Width",
+  "hotkeyText": "",
   "callbackKey": "svgChangeStrokeWidth",
   "modes": ["SVG Editing"]
 },
@@ -205,6 +242,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Controls",
   "heading": "Apply Style To Selection",
+  "hotkeyText": "",
   "callbackKey": "svgApplyStyleToSelection",
   "modes": ["SVG Editing"]
 },
@@ -212,6 +250,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Controls",
   "heading": "Resize Canvas",
+  "hotkeyText": "",
   "callbackKey": "svgResizeCanvas",
   "modes": ["SVG Editing"]
 },
@@ -219,18 +258,21 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Controls",
   "heading": "Crop To Selection",
+  "hotkeyText": "",
   "callbackKey": "svgCropToSelection",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
   "heading": "SVG Arrange",
+  "hotkeyText": "",
   "modes": ["SVG Editing"]
 },
 {
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Select Tool",
+  "hotkeyText": "",
   "callbackKey": "svgSelectTool",
   "modes": ["SVG Editing"],
   "icon": "icons/EditIcon.png"
@@ -239,6 +281,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Move Shape",
+  "hotkeyText": "",
   "callbackKey": "moveShape",
   "modes": ["SVG Editing"],
   "icon": "icons/EditIcon.png"
@@ -247,6 +290,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Select All",
+  "hotkeyText": "",
   "callbackKey": "svgSelectAll",
   "modes": ["SVG Editing"]
 },
@@ -254,6 +298,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Delete Shape",
+  "hotkeyText": "Delete",
   "callbackKey": "svgDeleteShape",
   "modes": ["SVG Editing"],
   "icon": "icons/ExitIcon.png"
@@ -262,6 +307,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Duplicate Shape",
+  "hotkeyText": "",
   "callbackKey": "svgDuplicateShape",
   "modes": ["SVG Editing"]
 },
@@ -269,6 +315,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Copy",
+  "hotkeyText": "Ctrl/Cmd+C",
   "callbackKey": "svgCopy",
   "modes": ["SVG Editing"],
   "icon": "icons/FileIcon.png"
@@ -277,6 +324,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Paste",
+  "hotkeyText": "Ctrl/Cmd+V",
   "callbackKey": "svgPaste",
   "modes": ["SVG Editing"],
   "icon": "icons/PasteIcon.png"
@@ -285,6 +333,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Group Selection",
+  "hotkeyText": "",
   "callbackKey": "svgGroupSelection",
   "modes": ["SVG Editing"]
 },
@@ -292,6 +341,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Selection",
   "heading": "Ungroup Selection",
+  "hotkeyText": "",
   "callbackKey": "svgUngroupSelection",
   "modes": ["SVG Editing"]
 },
@@ -299,6 +349,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Arrange",
   "heading": "Align Left",
+  "hotkeyText": "",
   "callbackKey": "svgAlignLeft",
   "modes": ["SVG Editing"]
 },
@@ -306,6 +357,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Arrange",
   "heading": "Align Center",
+  "hotkeyText": "",
   "callbackKey": "svgAlignCenter",
   "modes": ["SVG Editing"]
 },
@@ -313,6 +365,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Arrange",
   "heading": "Align Right",
+  "hotkeyText": "",
   "callbackKey": "svgAlignRight",
   "modes": ["SVG Editing"]
 },
@@ -320,6 +373,7 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Arrange",
   "heading": "Bring to Front",
+  "hotkeyText": "",
   "callbackKey": "svgBringToFront",
   "modes": ["SVG Editing"]
 },
@@ -327,12 +381,14 @@
   "ToolbarCategory": "Edit",
   "parentHeading": "SVG Arrange",
   "heading": "Send to Back",
+  "hotkeyText": "",
   "callbackKey": "svgSendToBack",
   "modes": ["SVG Editing"]
 },
   {
     "ToolbarCategory": "Edit",
     "heading": "JSON Tools",
+    "hotkeyText": "",
     "modes": ["JSONEditing"],
     "preventDropdown": true
   },
@@ -340,6 +396,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Add Property",
+    "hotkeyText": "",
     "shortLabel": "+K",
     "callbackKey": "jsonAddProperty",
     "routeToActivePanel": true,
@@ -350,6 +407,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Add Array Item",
+    "hotkeyText": "",
     "shortLabel": "+[]",
     "callbackKey": "jsonAddItem",
     "routeToActivePanel": true,
@@ -360,6 +418,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Rename Key",
+    "hotkeyText": "",
     "shortLabel": "Key",
     "callbackKey": "jsonRenameKey",
     "routeToActivePanel": true,
@@ -370,6 +429,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Delete Node",
+    "hotkeyText": "",
     "shortLabel": "Del",
     "callbackKey": "jsonDeleteNode",
     "routeToActivePanel": true,
@@ -380,6 +440,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Format",
+    "hotkeyText": "",
     "shortLabel": "Fmt",
     "callbackKey": "jsonFormat",
     "routeToActivePanel": true,
@@ -389,6 +450,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Source",
+    "hotkeyText": "",
     "shortLabel": "Src",
     "callbackKey": "jsonToggleSource",
     "routeToActivePanel": true,
@@ -398,6 +460,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Apply Source",
+    "hotkeyText": "",
     "shortLabel": "Apply",
     "callbackKey": "jsonApplySource",
     "routeToActivePanel": true,
@@ -408,6 +471,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Fit Tree",
+    "hotkeyText": "",
     "shortLabel": "Fit",
     "callbackKey": "jsonFitTree",
     "routeToActivePanel": true,
@@ -417,6 +481,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "JSON Tools",
     "heading": "Save JSON",
+    "hotkeyText": "Ctrl/Cmd+S",
     "shortLabel": "Save",
     "callbackKey": "jsonSave",
     "routeToActivePanel": true,
@@ -425,6 +490,7 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Sculpt",
+    "hotkeyText": "",
     "modes": ["STLediting"],
     "preventDropdown": true,
     "shortLabel": "Scp"
@@ -433,6 +499,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Draw Brush",
+    "hotkeyText": "",
     "shortLabel": "Drw",
     "callbackKey": "stlSculptDraw",
     "routeToActivePanel": true,
@@ -442,6 +509,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Smooth Brush",
+    "hotkeyText": "",
     "shortLabel": "Sm",
     "callbackKey": "stlSculptSmooth",
     "routeToActivePanel": true,
@@ -451,6 +519,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Flatten Brush",
+    "hotkeyText": "",
     "shortLabel": "Flt",
     "callbackKey": "stlSculptFlatten",
     "routeToActivePanel": true,
@@ -460,6 +529,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Inflate Brush",
+    "hotkeyText": "",
     "shortLabel": "Inf",
     "callbackKey": "stlSculptInflate",
     "routeToActivePanel": true,
@@ -469,6 +539,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Deflate Brush",
+    "hotkeyText": "",
     "shortLabel": "Def",
     "callbackKey": "stlSculptDeflate",
     "routeToActivePanel": true,
@@ -478,6 +549,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Pinch Brush",
+    "hotkeyText": "",
     "shortLabel": "Pch",
     "callbackKey": "stlSculptPinch",
     "routeToActivePanel": true,
@@ -487,6 +559,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Grab Brush",
+    "hotkeyText": "",
     "shortLabel": "Grb",
     "callbackKey": "stlSculptGrab",
     "routeToActivePanel": true,
@@ -496,6 +569,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Radius -",
+    "hotkeyText": "",
     "shortLabel": "R-",
     "callbackKey": "stlSculptRadiusDown",
     "routeToActivePanel": true,
@@ -505,6 +579,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Radius +",
+    "hotkeyText": "",
     "shortLabel": "R+",
     "callbackKey": "stlSculptRadiusUp",
     "routeToActivePanel": true,
@@ -514,6 +589,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Strength -",
+    "hotkeyText": "",
     "shortLabel": "S-",
     "callbackKey": "stlSculptStrengthDown",
     "routeToActivePanel": true,
@@ -523,6 +599,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Strength +",
+    "hotkeyText": "",
     "shortLabel": "S+",
     "callbackKey": "stlSculptStrengthUp",
     "routeToActivePanel": true,
@@ -532,6 +609,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Sculpt",
     "heading": "Exit Sculpt",
+    "hotkeyText": "",
     "shortLabel": "Off",
     "callbackKey": "stlSculptOff",
     "routeToActivePanel": true,
@@ -540,6 +618,7 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Boolean Operations",
+    "hotkeyText": "",
     "modes": ["STLediting", "OBJediting", "SCADediting"],
     "preventDropdown": true
   },
@@ -547,6 +626,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Union",
+    "hotkeyText": "",
     "callbackKey": "scadUnion",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -556,6 +636,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Difference",
+    "hotkeyText": "",
     "callbackKey": "scadDifference",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -565,6 +646,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Intersection",
+    "hotkeyText": "",
     "callbackKey": "scadIntersection",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -574,6 +656,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Union",
+    "hotkeyText": "",
     "callbackKey": "stlUnion",
     "routeToActivePanel": true,
     "modes": ["STLediting"],
@@ -583,6 +666,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Difference",
+    "hotkeyText": "",
     "callbackKey": "stlDifference",
     "routeToActivePanel": true,
     "modes": ["STLediting"],
@@ -592,6 +676,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Intersection",
+    "hotkeyText": "",
     "callbackKey": "stlIntersection",
     "routeToActivePanel": true,
     "modes": ["STLediting"],
@@ -601,6 +686,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Union",
+    "hotkeyText": "",
     "callbackKey": "objUnion",
     "routeToActivePanel": true,
     "modes": ["OBJediting"],
@@ -610,6 +696,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Difference",
+    "hotkeyText": "",
     "callbackKey": "objDifference",
     "routeToActivePanel": true,
     "modes": ["OBJediting"],
@@ -619,6 +706,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Intersection",
+    "hotkeyText": "",
     "callbackKey": "objIntersection",
     "routeToActivePanel": true,
     "modes": ["OBJediting"],
@@ -628,6 +716,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Boolean Operations",
     "heading": "Cut out",
+    "hotkeyText": "",
     "callbackKey": "scadCutout",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -636,6 +725,7 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "Transform",
+    "hotkeyText": "",
     "modes": ["SCADediting"],
     "conditions": { "scadShapeSelected": true },
     "preventDropdown": true
@@ -644,6 +734,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Transform",
     "heading": "Translate",
+    "hotkeyText": "",
     "callbackKey": "scadTranslate",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -653,6 +744,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Transform",
     "heading": "Rotate",
+    "hotkeyText": "",
     "callbackKey": "scadRotate",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -662,6 +754,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "Transform",
     "heading": "Scale",
+    "hotkeyText": "S",
     "callbackKey": "scadScale",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -670,6 +763,7 @@
   {
     "ToolbarCategory": "Edit",
     "heading": "SCAD Shape",
+    "hotkeyText": "",
     "modes": ["SCADediting"],
     "conditions": { "scadShapeSelected": true },
     "preventDropdown": true
@@ -678,6 +772,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Extrude",
+    "hotkeyText": "E",
     "callbackKey": "scadExtrude",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -687,6 +782,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Cut out",
+    "hotkeyText": "",
     "callbackKey": "scadCutout",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -696,6 +792,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Union",
+    "hotkeyText": "",
     "callbackKey": "scadUnion",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -705,6 +802,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Difference",
+    "hotkeyText": "",
     "callbackKey": "scadDifference",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -714,6 +812,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Intersection",
+    "hotkeyText": "",
     "callbackKey": "scadIntersection",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -723,6 +822,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Translate",
+    "hotkeyText": "",
     "callbackKey": "scadTranslate",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -732,6 +832,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Rotate",
+    "hotkeyText": "",
     "callbackKey": "scadRotate",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -741,6 +842,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Scale",
+    "hotkeyText": "S",
     "callbackKey": "scadScale",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -750,6 +852,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Rename",
+    "hotkeyText": "",
     "callbackKey": "scadRename",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -759,6 +862,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Duplicate",
+    "hotkeyText": "",
     "callbackKey": "scadDuplicate",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],
@@ -768,6 +872,7 @@
     "ToolbarCategory": "Edit",
     "parentHeading": "SCAD Shape",
     "heading": "Delete",
+    "hotkeyText": "Delete",
     "callbackKey": "scadDelete",
     "routeToActivePanel": true,
     "modes": ["SCADediting"],

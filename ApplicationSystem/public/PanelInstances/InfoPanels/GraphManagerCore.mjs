@@ -1006,6 +1006,7 @@ function makePersistedLinkRecord(edge) {
         edge.linkKind ||
         edge.linkProperty ||
         edge.linkText ||
+        edge.label ||
         edge.displayText ||
         edge.edgeLabel ||
         (Array.isArray(edge.tags) && edge.tags.length) ||
@@ -1026,14 +1027,15 @@ function makePersistedLinkRecord(edge) {
         linkText: edge.linkText || "",
         tags: Array.isArray(edge.tags) ? edge.tags : [],
         symbols: Array.isArray(edge.symbols) ? edge.symbols : [],
-        displayText: edge.displayText || "",
+        label: edge.label || edge.displayText || "",
+        displayText: edge.displayText || edge.label || "",
         edgeLabel: edge.edgeLabel || "",
         editableTarget: false,
         editableText: false,
         editableMetadata: false,
         ranges: {}
     };
-    record.edgeLabel = record.edgeLabel || makeEdgeLabel(record);
+    record.edgeLabel = makeEdgeLabel(record);
     return record;
 }
 
@@ -1124,6 +1126,14 @@ function edgeLabelFromRecords(records = []) {
     return [...new Set(records.map((record) => makeEdgeLabel(record)).filter(Boolean))].join(" | ");
 }
 
+function explicitLabelFromRecords(records = []) {
+    for (const record of records) {
+        const label = String(record?.label || "").trim();
+        if (label) return label;
+    }
+    return "";
+}
+
 function rebuildVisibleEdges() {
     if (!cy) return;
 
@@ -1144,6 +1154,7 @@ function rebuildVisibleEdges() {
                 existing.data.linkRecords.push(...records);
                 existing.data.occurrenceCount = existing.data.linkRecords.length;
                 existing.data.edgeLabel = edgeLabelFromRecords(existing.data.linkRecords);
+                existing.data.label = explicitLabelFromRecords(existing.data.linkRecords);
                 continue;
             }
 
@@ -1166,7 +1177,8 @@ function rebuildVisibleEdges() {
                     targetKind: primary?.targetKind || (String(targetPath).startsWith("external:") ? "external" : "internal"),
                     tags: primary?.tags || [],
                     symbols: primary?.symbols || [],
-                    displayText: primary?.displayText || ""
+                    label: primary?.label || "",
+                    displayText: primary?.displayText || primary?.label || ""
                 }
             });
         }
@@ -1965,6 +1977,7 @@ async function handleLinkDiscovery(filePath) {
                         linkText: record.linkText,
                         tags: record.tags,
                         symbols: record.symbols,
+                        label: record.label,
                         displayText: record.displayText,
                         edgeLabel: makeEdgeLabel(record)
                     });
@@ -1991,6 +2004,7 @@ async function handleLinkDiscovery(filePath) {
                     linkText: record.linkText,
                     tags: record.tags,
                     symbols: record.symbols,
+                    label: record.label,
                     displayText: record.displayText,
                     edgeLabel: makeEdgeLabel(record)
                 });

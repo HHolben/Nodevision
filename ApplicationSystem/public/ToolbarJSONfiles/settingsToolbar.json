@@ -2,36 +2,49 @@
   {
     "ToolbarCategory": "Settings",
     "heading": "Toggle View Mode",
+    "hotkeyText": "",
     "type": "toggle",
     "callbackKey": "toggleViewMode"
   },
   {
     "ToolbarCategory": "Settings",
     "heading": "Toggle Page Preview Mode",
+    "hotkeyText": "",
     "type": "toggle",
     "callbackKey": "togglePagePreviewMode"
   },
 
   {
+    "heading": "User Preferences",
+    "hotkeyText": "",
+    "icon": "icons/EditIcon.png",
+    "ToolbarCategory": "settings",
+    "callbackKey": "openUserPreferences"
+  },
+  {
     "heading": "Game Controls",
+    "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "openGameControls"
   },
   {
     "heading": "Connect Bluetooth Controller",
+    "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "connectBluetoothController"
   },
   {
     "heading": "Sound Settings",
+    "hotkeyText": "",
     "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "callbackKey": "openSoundSettings"
   },
   {
     "heading": "Timeout",
+    "hotkeyText": "",
     "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "callbackKey": "Timeout"
@@ -39,30 +52,35 @@
 
   {
     "heading": "Open Settings",
+    "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "openSettingsPage"
   },
   {
     "heading": "Toggle View Mode",
+    "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "toggleViewMode"
   },
   {
     "heading": "Toggle Page Preview Mode",
+    "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
     "callbackKey": "togglePagePreviewMode"
   },
   {
     "heading": "Edit Login Background",
+    "hotkeyText": "",
     "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "callbackKey": "editLoginBackground"
   },
   {
     "heading": "App Styles",
+    "hotkeyText": "",
     "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "panelTemplateId": "AppStylesPanel",

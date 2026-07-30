@@ -162,6 +162,7 @@ export function createWorldPropertiesPanel({ movementState }) {
   const allowInspectInput = createRuleToggle("Allow Inspect");
   const allowToolUseInput = createRuleToggle("Allow Tool Use");
   const allowSaveInput = createRuleToggle("Allow Save");
+  const editorGravityInput = createRuleToggle("Editor Gravity");
 
   const statusLine = document.createElement("div");
   statusLine.style.opacity = "0.85";
@@ -542,6 +543,7 @@ export function createWorldPropertiesPanel({ movementState }) {
     allowInspectInput.checked = worldRules.allowInspect === true;
     allowToolUseInput.checked = worldRules.allowToolUse === true;
     allowSaveInput.checked = worldRules.allowSave === true;
+    editorGravityInput.checked = movementState?.editorGravityEnabled !== false;
 
     const metadata = window.VRWorldContext?.currentWorldDefinition?.metadata || {};
     titleInput.value = typeof metadata.title === "string" ? metadata.title : "";
@@ -699,6 +701,11 @@ export function createWorldPropertiesPanel({ movementState }) {
       allowToolUse: allowToolUseInput.checked,
       allowSave: allowSaveInput.checked
     };
+    movementState.editorGravityEnabled = editorGravityInput.checked;
+    if (!movementState.editorGravityEnabled) {
+      movementState.velocityY = 0;
+      movementState.isGrounded = false;
+    }
 
     const worldDef = window.VRWorldContext?.currentWorldDefinition;
     if (worldDef && typeof worldDef === "object") {
@@ -706,7 +713,8 @@ export function createWorldPropertiesPanel({ movementState }) {
       worldDef.metadata = {
         ...(worldDef.metadata || {}),
         title: titleInput.value.trim(),
-        description: descriptionInput.value.trim()
+        description: descriptionInput.value.trim(),
+        editorGravityEnabled: movementState.editorGravityEnabled !== false
       };
     }
     if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;

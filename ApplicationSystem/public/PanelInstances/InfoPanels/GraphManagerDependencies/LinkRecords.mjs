@@ -15,10 +15,221 @@ const HTML_LINK_ATTRS = new Map([
 const NODEVISION_METADATA_ATTRS = {
   tags: "data-nodevision-link-tags",
   symbols: "data-nodevision-link-symbols",
-  displayText: "data-nodevision-link-label",
+  label: "data-nodevision-link-label",
 };
 
 const MARKDOWN_METADATA_PREFIX = "nodevision-link";
+
+const PORTAL_EDGE_TEXT = "contains a portal to:";
+const SOURCE_REFERENCE_LINK_PROPERTIES = new Set([
+  "src",
+  "data-src",
+  "poster",
+  "data",
+  "data-nodevision-font-src",
+  "data-nodevision-font-stylesheet",
+]);
+
+function extensionKindFromPath(rawTarget = "") {
+  const clean = String(rawTarget || "").split(/[?#]/)[0].toLowerCase();
+  const ext = clean.includes(".") ? clean.slice(clean.lastIndexOf(".") + 1) : "";
+  if (["apng", "avif", "bmp", "gif", "ico", "jpeg", "jpg", "png", "svg", "webp"].includes(ext)) return "image";
+  if (["aac", "flac", "m4a", "mp3", "oga", "ogg", "opus", "wav", "weba"].includes(ext)) return "audio";
+  if (["avi", "m4v", "mov", "mp4", "mpeg", "ogv", "webm"].includes(ext)) return "video";
+  if (["glb", "gltf", "obj", "ply", "scad", "stl", "usd", "usda", "usdc", "usdz"].includes(ext)) return "3D model";
+  if (["css"].includes(ext)) return "stylesheet";
+  if (["js", "mjs", "cjs", "ts"].includes(ext)) return "script";
+  if (["otf", "ttf", "woff", "woff2"].includes(ext)) return "font";
+  if (["csv", "ods", "tsv", "xls", "xlsx"].includes(ext)) return "spreadsheet";
+  if (["html", "htm", "php", "xhtml"].includes(ext)) return "webpage";
+  return "";
+}
+
+function isHtmlAttributeNameChar(ch = "") {
+  if (!ch) return false;
+  const code = ch.charCodeAt(0);
+  return (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    ch === "-" || ch === "_" || ch === ":" || ch === ".";
+}
+
+function isHtmlSpace(ch = "") {
+  const code = ch ? ch.charCodeAt(0) : 0;
+  return code === 32 || code === 9 || code === 10 || code === 13 || code === 12;
+}
+
+function readHtmlAttributeValue(tagSource = "", attrName = "") {
+  const source = String(tagSource || "");
+  const lower = source.toLowerCase();
+  const wanted = String(attrName || "").toLowerCase();
+  const doubleQuote = String.fromCharCode(34);
+  const singleQuote = String.fromCharCode(39);
+  if (!wanted) return "";
+
+  let index = 0;
+  while (index < source.length) {
+    const found = lower.indexOf(wanted, index);
+    if (found < 0) return "";
+    const before = source[found - 1] || "";
+    const after = source[found + wanted.length] || "";
+    if (isHtmlAttributeNameChar(before) || isHtmlAttributeNameChar(after)) {
+      index = found + wanted.length;
+      continue;
+    }
+
+    let pos = found + wanted.length;
+    while (isHtmlSpace(source[pos] || "")) pos += 1;
+    if (source[pos] !== "=") {
+      index = found + wanted.length;
+      continue;
+    }
+    pos += 1;
+    while (isHtmlSpace(source[pos] || "")) pos += 1;
+
+    const quote = source[pos] || "";
+    if (quote !== doubleQuote && quote !== singleQuote && quote !== "`") return "";
+    const end = source.indexOf(quote, pos + 1);
+    return end >= 0 ? source.slice(pos + 1, end) : "";
+  }
+  return "";
+}
+
+function inferHtmlReferenceKind({ tagName = "", linkProperty = "", rawTarget = "", tagSource = "" } = {}) {
+  const tag = String(tagName || "").toLowerCase();
+  const property = String(linkProperty || "").toLowerCase();
+  if (property.includes("font")) return "font";
+  if (property === "poster") return "image";
+  if (tag === "img" || tag === "picture") return "image";
+  if (tag === "audio") return "audio";
+  if (tag === "video") return "video";
+  if (tag === "script") return "script";
+  if (tag === "iframe" || tag === "frame") return "webpage";
+  if (tag === "link") {
+    const rel = readHtmlAttributeValue(tagSource, "rel").toLowerCase();
+    if (rel.includes("stylesheet")) return "stylesheet";
+    if (rel.includes("icon")) return "image";
+    if (rel.includes("preload") || rel.includes("prefetch")) return extensionKindFromPath(rawTarget) || "file";
+    return extensionKindFromPath(rawTarget) || "file";
+  }
+  if (tag === "source") {
+    const type = readHtmlAttributeValue(tagSource, "type").toLowerCase();
+    if (type.startsWith("audio/")) return "audio";
+    if (type.startsWith("video/")) return "video";
+    if (type.startsWith("image/")) return "image";
+  }
+  if (tag === "embed" || tag === "object") return extensionKindFromPath(rawTarget) || "file";
+  return extensionKindFromPath(rawTarget) || "file";
+}
+
+function defaultHtmlLinkText({ attrName = "", tagBounds = null, rawTarget = "" } = {}) {
+  const property = String(attrName || "").toLowerCase();
+  const tagName = String(tagBounds?.tagName || "").toLowerCase();
+  if (property === "href" && tagName === "a") return "";
+  const isReference = SOURCE_REFERENCE_LINK_PROPERTIES.has(property) || (property === "href" && tagName === "link");
+  if (!isReference) return "";
+  const kind = inferHtmlReferenceKind({ tagName, linkProperty: property, rawTarget, tagSource: tagBounds?.source || "" });
+  return `references ${kind} located at:`;
+}
+
+function stripJsonComments(value = "") {
+  return String(value || "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1")
+    .trim();
+}
+
+function isMetaWorldScript(attrs = "") {
+  const text = String(attrs || "");
+  return /\bdata-nodevision-meta-world\b/i.test(text) ||
+    /\bid\s*=\s*(["\x27])nodevision-metaworld\1/i.test(text) ||
+    /\btype\s*=\s*(["\x27])application\/json\1/i.test(text);
+}
+
+function extractMetaWorldScriptBodies(text = "") {
+  const scripts = [];
+  const scriptRegex = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let match;
+  while ((match = scriptRegex.exec(String(text || "")))) {
+    if (!isMetaWorldScript(match[1] || "")) continue;
+    scripts.push(match[2] || "");
+  }
+  return scripts;
+}
+
+function isSameWorldPortalTarget(value = "") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "self" || normalized === "." || normalized === "same" || normalized === "current";
+}
+
+function portalTargetFromDefinition(def = {}) {
+  const candidates = [def.targetWorld, def.portalTarget, def.target, def.href, def.world];
+  const explicit = candidates.find((value) => typeof value === "string" && value.trim());
+  return explicit ? explicit.trim() : "";
+}
+
+function looksLikeMetaWorldDefinition(world) {
+  if (!world || typeof world !== "object") return false;
+  const worldType = String(world.worldType || world.type || world.kind || "").toLowerCase();
+  return worldType.includes("nodevisionmetaworld") ||
+    worldType.includes("meta-world") ||
+    Array.isArray(world.objects) ||
+    Boolean(world.worldMode || world.environment || world.metadata?.source === "GameView");
+}
+
+function collectPortalTargets(value, targets = [], seen = new Set()) {
+  if (!value || typeof value !== "object" || seen.has(value)) return targets;
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectPortalTargets(item, targets, seen));
+    return targets;
+  }
+
+  const typeText = String(value.type || value.nvType || value.kind || "").toLowerCase();
+  const isPortal = value.isPortal === true || value.portal === true || typeText === "portal";
+  if (isPortal) {
+    const target = portalTargetFromDefinition(value);
+    if (target && !isSameWorldPortalTarget(target)) targets.push(target);
+  }
+
+  Object.values(value).forEach((child) => {
+    if (child && typeof child === "object") collectPortalTargets(child, targets, seen);
+  });
+  return targets;
+}
+
+function parseMetaWorldPortalLinks(content, sourcePath, startIndex = 0) {
+  const records = [];
+  let recordIndex = startIndex;
+  for (const body of extractMetaWorldScriptBodies(content)) {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(stripJsonComments(body));
+    } catch (_) {
+      parsed = null;
+    }
+    if (!looksLikeMetaWorldDefinition(parsed)) continue;
+    for (const rawTarget of collectPortalTargets(parsed)) {
+      const target = String(rawTarget || "").trim();
+      if (!target || isIgnoredLink(target)) continue;
+      records.push(buildLinkRecord({
+        sourcePath,
+        sourceFormat: "metaworld",
+        linkKind: "portal",
+        linkProperty: "targetWorld",
+        rawTarget: target,
+        linkText: PORTAL_EDGE_TEXT,
+        metadata: {},
+        recordIndex,
+        ranges: {},
+      }));
+      recordIndex += 1;
+    }
+  }
+  return records;
+}
+
 
 export function normalizeNotebookRelativePath(inputPath) {
   const parts = [];
@@ -151,6 +362,7 @@ function readHtmlMetadata(text, tagBounds) {
   const metadata = {
     tags: [],
     symbols: [],
+    label: "",
     displayText: "",
     attrRanges: {},
     insertAt: tagBounds?.insertAt ?? null,
@@ -175,7 +387,10 @@ function readHtmlMetadata(text, tagBounds) {
 
     if (key === "tags") metadata.tags = csvToList(decodeHtmlEntities(raw));
     if (key === "symbols") metadata.symbols = normalizeSymbols(decodeHtmlEntities(raw));
-    if (key === "displayText") metadata.displayText = decodeHtmlEntities(raw).trim();
+    if (key === "label") {
+      metadata.label = decodeHtmlEntities(raw).trim();
+      metadata.displayText = metadata.label;
+    }
   }
 
   return metadata;
@@ -223,8 +438,10 @@ function buildLinkRecord({
   const targetKind = isExternalLink(targetRaw) ? "external" : "internal";
   const tags = Array.isArray(metadata.tags) ? metadata.tags : csvToList(metadata.tags);
   const symbols = normalizeSymbols(metadata.symbols);
-  const displayText = String(metadata.displayText || "").trim();
-  const edgeLabel = makeEdgeLabel({ displayText, symbols });
+  const label = String(metadata.label || metadata.displayText || "").trim();
+  const displayText = String(metadata.displayText || label).trim();
+  const resolvedLinkText = String(linkText || "").trim();
+  const edgeLabel = makeEdgeLabel({ label, displayText, linkText: resolvedLinkText, symbols, linkKind, linkProperty });
   const start = ranges?.target?.start ?? 0;
 
   return {
@@ -237,9 +454,10 @@ function buildLinkRecord({
     targetRaw,
     targetKind,
     targetPath: targetPath || targetRaw,
-    linkText: String(linkText || "").trim(),
+    linkText: resolvedLinkText,
     tags,
     symbols,
+    label,
     displayText,
     edgeLabel,
     editableTarget: Boolean(ranges?.target),
@@ -250,11 +468,16 @@ function buildLinkRecord({
 }
 
 export function makeEdgeLabel(record = {}) {
+  const label = String(record.label || "").trim();
+  if (label) return label;
   const displayText = String(record.displayText || "").trim();
+  const linkText = String(record.linkText || "").trim();
+  const labelText = displayText || linkText;
+  const existingEdgeLabel = String(record.edgeLabel || "").trim();
   const symbols = normalizeSymbols(record.symbols);
   const symbolText = symbols.join(" ");
-  if (displayText && symbolText) return `${symbolText} ${displayText}`;
-  return displayText || symbolText;
+  if (labelText && symbolText) return symbolText + " " + labelText;
+  return labelText || symbolText || existingEdgeLabel;
 }
 
 function parseHtmlLinks(content, sourcePath, startIndex) {
@@ -283,7 +506,7 @@ function parseHtmlLinks(content, sourcePath, startIndex) {
       linkKind: HTML_LINK_ATTRS.get(attrName) || attrName,
       linkProperty: attrName,
       rawTarget,
-      linkText: anchorText?.text || "",
+      linkText: anchorText?.text || defaultHtmlLinkText({ attrName, tagBounds, rawTarget }),
       metadata,
       recordIndex,
       ranges: {
@@ -314,6 +537,7 @@ function parseHtmlLinks(content, sourcePath, startIndex) {
       linkKind: "resource",
       linkProperty: "css-url",
       rawTarget,
+      linkText: "references file located at:",
       recordIndex,
       ranges: {
         target: { start: valueStart, end: valueStart + rawTarget.length },
@@ -327,27 +551,29 @@ function parseHtmlLinks(content, sourcePath, startIndex) {
 
 function parseMarkdownMetadata(raw = "") {
   const trimmed = String(raw || "").trim();
-  if (!trimmed) return { tags: [], symbols: [], displayText: "" };
+  if (!trimmed) return { tags: [], symbols: [], label: "", displayText: "" };
   try {
     const parsed = JSON.parse(trimmed);
+    const label = String(parsed.label || parsed.displayText || "").trim();
     return {
       tags: Array.isArray(parsed.tags) ? parsed.tags : csvToList(parsed.tags),
       symbols: normalizeSymbols(parsed.symbols),
-      displayText: String(parsed.displayText || parsed.label || "").trim(),
+      label,
+      displayText: String(parsed.displayText || label).trim(),
     };
   } catch {
-    return { tags: [], symbols: [], displayText: "" };
+    return { tags: [], symbols: [], label: "", displayText: "" };
   }
 }
 
-function serializeMarkdownMetadata({ tags = [], symbols = [], displayText = "" } = {}) {
+function serializeMarkdownMetadata({ tags = [], symbols = [], label = "", displayText = "" } = {}) {
   const payload = {};
   const cleanTags = csvToList(listToCsv(tags));
   const cleanSymbols = normalizeSymbols(symbols);
-  const cleanDisplayText = String(displayText || "").trim();
+  const cleanLabel = String(label || displayText || "").trim();
   if (cleanTags.length) payload.tags = cleanTags;
   if (cleanSymbols.length) payload.symbols = cleanSymbols;
-  if (cleanDisplayText) payload.displayText = cleanDisplayText;
+  if (cleanLabel) payload.label = cleanLabel;
   if (!Object.keys(payload).length) return "";
   return `<!-- ${MARKDOWN_METADATA_PREFIX} ${JSON.stringify(payload)} -->`;
 }
@@ -436,7 +662,8 @@ function isIgnoredLink(rawLink = "") {
 export function parseLinkRecordsFromText(content, sourcePath) {
   const ext = normalizeNotebookRelativePath(sourcePath).split(".").pop()?.toLowerCase() || "";
   if (["html", "htm", "xhtml", "php"].includes(ext)) {
-    return parseHtmlLinks(content, sourcePath, 0);
+    const htmlRecords = parseHtmlLinks(content, sourcePath, 0);
+    return htmlRecords.concat(parseMetaWorldPortalLinks(content, sourcePath, htmlRecords.length));
   }
   if (["md", "markdown"].includes(ext)) {
     return parseMarkdownLinks(content, sourcePath, 0);
@@ -481,10 +708,11 @@ export function linkRecordTargetId(record) {
 }
 
 export function summarizeLinkRecord(record = {}) {
+  const label = String(record.label || "").trim();
   const text = String(record.linkText || "").trim();
   const display = String(record.displayText || "").trim();
   const target = String(record.targetRaw || record.targetPath || "").trim();
-  return display || text || target || "Link";
+  return label || display || text || target || "Link";
 }
 
 function findMatchingRecord(content, selectedRecord) {
@@ -518,7 +746,7 @@ function removeRangeWithLeadingSpace(content, start, end) {
 function metadataIsEmpty(patch = {}) {
   return !csvToList(patch.tags).length &&
     !normalizeSymbols(patch.symbols).length &&
-    !String(patch.displayText || "").trim();
+    !String(patch.label || patch.displayText || "").trim();
 }
 
 function htmlMetadataReplacements(record, patch) {
@@ -531,7 +759,7 @@ function htmlMetadataReplacements(record, patch) {
       ? listToCsv(patch.tags)
       : key === "symbols"
         ? normalizeSymbols(patch.symbols).join(" ")
-        : String(patch.displayText || "").trim();
+        : String(patch.label || patch.displayText || "").trim();
     const existing = htmlTag.attrRanges?.[key] || null;
 
     if (existing) {
@@ -613,7 +841,8 @@ export function applyLinkRecordEdit(content, selectedRecord, patch = {}) {
   const metadataPatch = {
     tags: patch.tags ?? record.tags,
     symbols: patch.symbols ?? record.symbols,
-    displayText: patch.displayText ?? record.displayText,
+    label: patch.label ?? patch.displayText ?? record.label ?? record.displayText,
+    displayText: patch.displayText ?? patch.label ?? record.displayText ?? record.label,
   };
 
   if (record.sourceFormat === "html") {
@@ -679,7 +908,8 @@ export function buildSelectedGraphLink(edgeData = {}, occurrenceIndex = 0) {
     linkText: edgeData.linkText || "",
     tags: Array.isArray(edgeData.tags) ? edgeData.tags : [],
     symbols: Array.isArray(edgeData.symbols) ? edgeData.symbols : [],
-    displayText: edgeData.displayText || "",
+    label: edgeData.label || "",
+    displayText: edgeData.displayText || edgeData.label || "",
     edgeLabel: edgeData.edgeLabel || "",
     editableTarget: false,
     editableText: false,

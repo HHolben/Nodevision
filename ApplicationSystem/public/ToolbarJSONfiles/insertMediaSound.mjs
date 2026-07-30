@@ -9,7 +9,7 @@ function mimeFromExt(ext) {
   return map[e] || "audio/mpeg";
 }
 
-export function renderSound(root, exts = []) {
+export function renderSound(root, exts = [], renderOptions = {}) {
   renderBinaryAv(root, {
     kind: "Sound",
     tagName: "audio",
@@ -18,6 +18,7 @@ export function renderSound(root, exts = []) {
     preferredExt: "mp3",
     mimeFromExt,
     exts,
+    target: renderOptions?.target === "virtualWorld" ? "virtualWorld" : "html",
   });
 }
 

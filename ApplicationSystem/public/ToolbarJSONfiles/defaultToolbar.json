@@ -1,27 +1,32 @@
 [
   {
     "heading": "File",
+    "hotkeyText": "",
     "icon": "icons/FileIcon.png",
     "callbackKey": "fileMenu"
   },
   {
     "heading": "Edit",
+    "hotkeyText": "",
     "icon": "icons/EditIcon.png",
     "callbackKey": "editMenu"
   },
   {
     "heading": "Styles",
+    "hotkeyText": "",
     "icon": "icons/EditIcon.png",
     "modes": ["HTMLediting"]
   },
   {
     "heading": "Insert",
+    "hotkeyText": "",
     "icon": "icons/InsertSensitiveIcon.png",
     "callbackKey": "fileMenu",
     "modes": ["CodeEditing", "GraphicalEditing", "HTMLediting", "HTMLviewing", "EPUBediting", "MIDIediting", "STLediting", "SVG Editing", "SCADediting", "CIRediting", "EquationEditing", "ICSCalendarEditing", "3D World Viewing", "VR World Editing", "Virtual World Editing", "ArduinoBlockEditing"]
   },
   {
     "heading": "Table",
+    "hotkeyText": "",
     "icon": "icons/SpreadsheetIcon.png",
     "ToolbarCategory": "Insert",
     "callbackKey": "openTableToolbar",
@@ -32,11 +37,13 @@
   },
   {
     "heading": "Draw",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "modes": ["PNGediting", "GIFediting", "GraphicalEditing", "SVG Editing", "FontEditing", "NBTediting", "STLediting", "OBJediting"]
   },
   {
     "heading": "Draw",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "mode": "HTMLediting",
     "conditions": {
@@ -46,31 +53,39 @@
   },
   {
     "heading": "KML",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "modes": ["KMLviewerMode", "KMLeditorMode"],
     "preventDropdown": true
   },
   {
     "heading": "Terminal",
+    "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "callbackKey": "openTerminal"
   },
   {
     "heading": "View",
+    "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "callbackKey": "openTerminal"
   },
   {
     "heading": "Settings",
+    "hotkeyText": "",
     "icon": "icons/EditIcon.png"
   },
   {
     "heading": "SearchBar",
+    "hotkeyText": "",
     "content": "<div id=\"toolbar-file-search\" style=\"display:flex;align-items:center;gap:6px;position:relative;\"><input id=\"toolbar-file-search-input\" type=\"text\" placeholder=\"Search files, folders, or content\" style=\"width:300px;padding:4px 6px;border:1px solid #888;border-radius:4px;\" /><select id=\"toolbar-file-search-scope\" style=\"padding:4px;border:1px solid #888;border-radius:4px;\"><option value=\"all\">All</option><option value=\"name\">Names</option><option value=\"content\">Content</option><option value=\"activeContent\">Active Contents</option></select><button id=\"toolbar-file-search-btn\" style=\"padding:4px 8px;border:1px solid #333;background:#eee;cursor:pointer;border-radius:4px;\">Search</button><div id=\"toolbar-file-search-results\" style=\"display:none;position:absolute;left:0;top:calc(100% + 4px);width:560px;max-height:300px;overflow:auto;background:#fff;border:1px solid #bbb;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:2000;\"></div></div>",
     "script": "searchWidget.mjs"
   },
   {
     "heading": "User",
-    "icon": "icons/DefaultNodeImage.png"
+    "hotkeyText": "",
+    "icon": "icons/UserIcon.svg",
+    "toolbarSlot": "user",
+    "showIconOnMainToolbar": true
   }
 ]

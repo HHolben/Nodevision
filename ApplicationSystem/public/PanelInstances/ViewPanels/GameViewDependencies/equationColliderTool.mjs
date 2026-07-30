@@ -7,7 +7,7 @@ import {
   readWorldObjectMatterState,
   readWorldObjectPhysicsMaterialId,
 } from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
-import { compileMathExpression } from "/MetaWorld/Expressions/ExpressionParser.mjs";
+import { compileMathDeclarations, compileScopedMathExpression, splitMathStatements } from "/MetaWorld/Expressions/ExpressionParser.mjs";
 
 function parseNumber(value, fallback) {
   const n = Number.parseFloat(value);
@@ -62,11 +62,26 @@ function findTopLevelComparison(source = "") {
   return null;
 }
 
-function evaluateAxisLimitExpression(expression, timeSeconds = 0) {
-  const compiler = compileMathExpression(expression, ["x", "y", "z", "t", "time"]);
+function evaluateAxisLimitExpression(expression, timeSeconds = 0, declarations = {}) {
+  const compiler = compileScopedMathExpression(expression, ["x", "y", "z", "t", "time"], declarations);
   const t = Number.isFinite(timeSeconds) ? timeSeconds : 0;
   const value = compiler.evaluate({ x: 0, y: 0, z: 0, t, time: t });
   return Number.isFinite(value) ? value : NaN;
+}
+
+function splitTopLevelAssignment(source = "") {
+  const comparison = findTopLevelComparison(source);
+  if (!comparison || comparison.operator !== "=") return ["", String(source || "").trim()];
+  return [source.slice(0, comparison.index).trim().toLowerCase(), source.slice(comparison.index + 1).trim()];
+}
+
+function parseAxisRelationStatement(statement = "") {
+  const comparison = findTopLevelComparison(statement);
+  if (!comparison) return null;
+  const axis = statement.slice(0, comparison.index).trim().toLowerCase();
+  const rhsExpression = statement.slice(comparison.index + comparison.operator.length).trim();
+  if (!["x", "y", "z"].includes(axis) || !rhsExpression) return null;
+  return { axis, operator: comparison.operator, rhsExpression };
 }
 
 function hasOwn(object, key) {
@@ -124,34 +139,52 @@ export function isEquationInequalityConfig(raw = {}) {
 export function parseAxisInequalityText(text, options = {}) {
   const source = String(text || "").trim();
   if (!source) return null;
-  const comparison = findTopLevelComparison(source);
-  if (!comparison) return null;
-  const axis = source.slice(0, comparison.index).trim().toLowerCase();
-  const rhsExpression = source.slice(comparison.index + comparison.operator.length).trim();
-  if (!["x", "y", "z"].includes(axis) || !rhsExpression) return null;
+  const statements = splitMathStatements(source);
+  if (!statements.length) return null;
+
+  const declarationAssignments = [];
+  let relation = null;
+  for (const statement of statements) {
+    const axisRelation = parseAxisRelationStatement(statement);
+    if (axisRelation) {
+      if (relation) return null;
+      relation = axisRelation;
+      continue;
+    }
+    const [lhs, rhs] = splitTopLevelAssignment(statement);
+    if (!lhs || !rhs) return null;
+    declarationAssignments.push([lhs, rhs]);
+  }
+  if (!relation) return null;
+
   const timeSeconds = Number.isFinite(options?.timeSeconds) ? options.timeSeconds : 0;
+  let declarations = null;
   let limit = NaN;
   try {
-    limit = evaluateAxisLimitExpression(rhsExpression, timeSeconds);
+    declarations = compileMathDeclarations(declarationAssignments);
+    limit = evaluateAxisLimitExpression(relation.rhsExpression, timeSeconds, declarations);
   } catch (_) {
     return null;
   }
   if (!Number.isFinite(limit)) return null;
-  const operator = comparison.operator;
-  const temporal = expressionUsesTimeVariable(rhsExpression);
+
+  const operator = relation.operator;
+  const temporal = expressionUsesTimeVariable(relation.rhsExpression);
   const side = sideFromOperator(operator, "negative");
   return {
-    axis,
+    axis: relation.axis,
     limit,
     expression: source,
-    rhsExpression,
-    temporalExpression: temporal ? rhsExpression : "",
+    rhsExpression: relation.rhsExpression,
+    constants: declarations.constants,
+    points: declarations.points,
+    temporalExpression: temporal ? relation.rhsExpression : "",
     equationTemporal: temporal,
     timeSeconds,
     operator,
-    a: axis === "x" ? 1 : 0,
-    b: axis === "y" ? 1 : 0,
-    c: axis === "z" ? 1 : 0,
+    a: relation.axis === "x" ? 1 : 0,
+    b: relation.axis === "y" ? 1 : 0,
+    c: relation.axis === "z" ? 1 : 0,
     d: -limit,
     liquidSide: side,
     waterSide: side,
@@ -190,6 +223,8 @@ export function normalizePlaneEquationConfig(raw = {}) {
     operator,
     inequalitySide: side === "positive" ? "positive" : "negative",
     expression,
+    constants: parsedExpression?.constants || raw.constants || raw.equationConstants || {},
+    points: parsedExpression?.points || raw.points || raw.equationPoints || {},
     equationTemporal: temporal,
     equationBaseExpression: raw.equationBaseExpression || raw.baseExpression || (temporal ? expression : ""),
     temporalExpression: parsedExpression?.temporalExpression || "",
@@ -231,6 +266,8 @@ export function resolveTemporalPlaneEquationConfig(raw = {}, timeSeconds = 0) {
     operator: base.operator || parsed.operator,
     inequalitySide: side === "positive" ? "positive" : "negative",
     expression: parsed.expression,
+    constants: parsed.constants || base.constants || {},
+    points: parsed.points || base.points || {},
     equationTemporal: true,
     equationBaseExpression: base.equationBaseExpression || parsed.expression,
     temporalExpression: parsed.temporalExpression || parsed.rhsExpression || "",

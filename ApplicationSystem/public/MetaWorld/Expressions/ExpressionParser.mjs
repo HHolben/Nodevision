@@ -63,6 +63,30 @@ function splitTopLevel(value, separator = ",") {
   return parts.filter(Boolean);
 }
 
+export function splitMathStatements(value = "") {
+  const source = String(value || "");
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    const ch = source[i];
+    if (ch === "(") {
+      depth += 1;
+      continue;
+    }
+    if (ch === ")") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth === 0 && (ch === "," || ch === ";" || ch === "\n")) {
+      parts.push(source.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(source.slice(start).trim());
+  return parts.filter(Boolean);
+}
+
 function splitAssignment(value) {
   let depth = 0;
   for (let i = 0; i < value.length; i += 1) {
@@ -78,35 +102,106 @@ function splitAssignment(value) {
 
 function isValidConstantName(name) {
   return /^[a-z_][a-z0-9_]*$/.test(name)
+    && !String(name || "").startsWith("__point_")
     && !Object.prototype.hasOwnProperty.call(FUNCTIONS, name)
     && !Object.prototype.hasOwnProperty.call(CONSTANTS, name)
     && !["x", "y", "z", "t", "time"].includes(name);
 }
 
-function compileScopedExpression(expression, variables, localConstants = {}) {
-  const constantNames = Object.keys(localConstants);
-  const compiler = compileMathExpression(expression, variables.concat(constantNames));
+function pointComponentConstantName(name, component) {
+  return "__point_" + String(name || "").toLowerCase() + "_" + String(component || "").toLowerCase();
+}
+
+function pointComponentConstants(points = {}) {
+  const out = {};
+  Object.entries(points || {}).forEach(([name, point]) => {
+    out[pointComponentConstantName(name, "x")] = Number(point?.x);
+    out[pointComponentConstantName(name, "y")] = Number(point?.y);
+    out[pointComponentConstantName(name, "z")] = Number(point?.z);
+  });
+  return out;
+}
+
+function rewritePointAccess(expression, points = {}) {
+  const pointNames = new Set(Object.keys(points || {}).map((name) => String(name || "").toLowerCase()));
+  if (!pointNames.size) return String(expression || "");
+  return String(expression || "").replace(/\b([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*([xyzXYZ])\b/g, (match, rawName, rawComponent) => {
+    const name = String(rawName || "").toLowerCase();
+    if (!pointNames.has(name)) return match;
+    return pointComponentConstantName(name, rawComponent);
+  });
+}
+
+function isPointLiteralExpression(expression = "") {
+  const source = String(expression || "").trim();
+  if (!source.startsWith("(") || !source.endsWith(")")) return false;
+  return splitTopLevel(source.slice(1, -1)).length === 3;
+}
+
+function compileScopedExpression(expression, variables, localConstants = {}, localPoints = {}) {
+  const scopedConstants = { ...pointComponentConstants(localPoints), ...localConstants };
+  const normalizedExpression = rewritePointAccess(expression, localPoints);
+  const constantNames = Object.keys(scopedConstants);
+  const compiler = compileMathExpression(normalizedExpression, variables.concat(constantNames));
   return {
-    source: compiler.source,
+    source: String(expression || "").trim(),
     evaluate(scope = {}) {
-      return compiler.evaluate({ ...localConstants, ...scope });
+      return compiler.evaluate({ ...scopedConstants, ...scope });
     },
   };
 }
 
-function compileConstantAssignments(assignments) {
+function compilePointLiteral(name, expression, scopedConstants = {}, points = {}) {
+  const source = String(expression || "").trim();
+  const parts = source.startsWith("(") && source.endsWith(")")
+    ? splitTopLevel(source.slice(1, -1))
+    : [];
+  if (parts.length !== 3) throw new Error(`Point ${name} needs three coordinates, such as ${name} = (2, 5, 7).`);
+  const values = parts.map((part) => {
+    const compiler = compileScopedExpression(part, [], scopedConstants, points);
+    const value = compiler.evaluate({});
+    if (!Number.isFinite(value)) throw new Error(`Point ${name} has a coordinate that did not produce a finite number.`);
+    return value;
+  });
+  return { x: values[0], y: values[1], z: values[2] };
+}
+
+export function compileMathDeclarations(assignments) {
   const constants = {};
-  assignments.forEach(([name, expression]) => {
+  const points = {};
+  const scopedConstants = {};
+  assignments.forEach(([rawName, expression]) => {
+    const name = String(rawName || "").trim().toLowerCase();
     if (!isValidConstantName(name)) {
-      throw new Error(`Invalid constant name ${name}. Use names such as a, amplitude, or offset.`);
+      throw new Error(`Invalid constant name ${name}. Use names such as num, amplitude, offset, or pointa.`);
     }
-    if (!expression) throw new Error(`Constant ${name} needs a value.`);
-    const compiler = compileScopedExpression(expression, [], constants);
+    if (Object.prototype.hasOwnProperty.call(constants, name) || Object.prototype.hasOwnProperty.call(points, name)) {
+      throw new Error(`Duplicate declaration ${name}.`);
+    }
+    if (!expression) throw new Error(`Declaration ${name} needs a value.`);
+    if (isPointLiteralExpression(expression)) {
+      const point = compilePointLiteral(name, expression, scopedConstants, points);
+      points[name] = point;
+      Object.assign(scopedConstants, pointComponentConstants({ [name]: point }));
+      return;
+    }
+    const compiler = compileScopedExpression(expression, [], scopedConstants, points);
     const value = compiler.evaluate({});
     if (!Number.isFinite(value)) throw new Error(`Constant ${name} did not produce a finite number.`);
     constants[name] = value;
+    scopedConstants[name] = value;
   });
-  return constants;
+  return { constants, points, scopedConstants };
+}
+
+
+export function compileScopedMathExpression(expression, variables = [], declarations = {}) {
+  return compileScopedExpression(
+    expression,
+    variables,
+    declarations?.scopedConstants || declarations?.constants || {},
+    declarations?.points || {}
+  );
 }
 
 function tokenize(input) {
@@ -315,7 +410,7 @@ export function compileMathExpression(expression, variables = []) {
 
 export function parseExpressionLayerExpression(expression) {
   const source = String(expression || "").trim();
-  const assignments = splitTopLevel(source).map(splitAssignment);
+  const assignments = splitMathStatements(source).map(splitAssignment);
   const namedAssignments = assignments.filter(([lhs]) => lhs);
   const map = new Map(namedAssignments);
   const outputNames = new Set();
@@ -330,30 +425,47 @@ export function parseExpressionLayerExpression(expression) {
   }
 
   const constantAssignments = namedAssignments.filter(([lhs]) => !outputNames.has(lhs));
-  const localConstants = compileConstantAssignments(constantAssignments);
+  const declarations = compileMathDeclarations(constantAssignments);
+  const localConstants = declarations.scopedConstants;
   const variables = ["x", "y", "z", "t", "time"];
 
   if (map.has("x") && map.has("y")) {
     return {
       kind: "parametricCurve",
-      constants: localConstants,
+      constants: declarations.constants,
+      points: declarations.points,
       compilers: {
-        x: compileScopedExpression(map.get("x"), variables, localConstants),
-        y: compileScopedExpression(map.get("y"), variables, localConstants),
-        z: compileScopedExpression(map.get("z") || "0", variables, localConstants),
+        x: compileScopedExpression(map.get("x"), variables, localConstants, declarations.points),
+        y: compileScopedExpression(map.get("y"), variables, localConstants, declarations.points),
+        z: compileScopedExpression(map.get("z") || "0", variables, localConstants, declarations.points),
       },
     };
   }
 
   if (map.has("z")) {
-    return { kind: "functionSurface", constants: localConstants, compiler: compileScopedExpression(map.get("z"), variables, localConstants) };
+    return {
+      kind: "functionSurface",
+      constants: declarations.constants,
+      points: declarations.points,
+      compiler: compileScopedExpression(map.get("z"), variables, localConstants, declarations.points),
+    };
   }
   if (map.has("y")) {
-    return { kind: "functionCurve", constants: localConstants, compiler: compileScopedExpression(map.get("y"), variables, localConstants) };
+    return {
+      kind: "functionCurve",
+      constants: declarations.constants,
+      points: declarations.points,
+      compiler: compileScopedExpression(map.get("y"), variables, localConstants, declarations.points),
+    };
   }
   const unnamedExpression = assignments.find(([lhs, rhs]) => !lhs && rhs)?.[1] || "";
   if (unnamedExpression) {
-    return { kind: "functionSurface", constants: localConstants, compiler: compileScopedExpression(unnamedExpression, variables, localConstants) };
+    return {
+      kind: "functionSurface",
+      constants: declarations.constants,
+      points: declarations.points,
+      compiler: compileScopedExpression(unnamedExpression, variables, localConstants, declarations.points),
+    };
   }
   throw new Error("Use constants like a = 2 before z = f(x, y), y = f(x), or x/y/z parametric assignments.");
 }

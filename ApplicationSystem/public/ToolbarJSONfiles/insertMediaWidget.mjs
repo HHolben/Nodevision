@@ -31,12 +31,19 @@ export async function initToolbarWidget(hostElement) {
     return;
   }
 
-  const families = moduleMap.families || [];
+  const currentMode = window.NodevisionState?.currentMode || "";
+  const inVirtualWorld = currentMode === "Virtual World Editing" || currentMode === "VR World Editing";
+  const virtualWorldModelExts = new Set(["stl", "obj", "scad"]);
+  const virtualWorldMediaFamilies = new Set(["Model", "Sound"]);
+  const families = inVirtualWorld
+    ? (moduleMap.families || []).filter((family) => virtualWorldMediaFamilies.has(family))
+    : (moduleMap.families || []);
   const byFamily = moduleMap.extensionsByFamily || new Map();
 
   const show = (family) => {
     detail.innerHTML = "";
-    const exts = Array.from(byFamily.get(family) || []);
+    let exts = Array.from(byFamily.get(family) || []);
+    if (inVirtualWorld && family === "Model") exts = exts.filter((ext) => virtualWorldModelExts.has(ext));
 
     if (family === "Image") {
       if (window.NodevisionState?.currentMode === "SVG Editing") {
@@ -59,9 +66,9 @@ export async function initToolbarWidget(hostElement) {
     const open = async () => {
       const panel = await openInsertMediaPanel(`Insert ${family}`, family);
       if (family === "Video") return renderVideo(panel.mount, exts);
-      if (family === "Sound") return renderSound(panel.mount, exts);
+      if (family === "Sound") return renderSound(panel.mount, exts, { target: inVirtualWorld ? "virtualWorld" : "html" });
       if (family === "Spreadsheet") return renderSpreadsheet(panel.mount, exts);
-      if (family === "Model") return renderInsertModel(panel.mount, exts);
+      if (family === "Model") return renderInsertModel(panel.mount, exts, { target: inVirtualWorld ? "virtualWorld" : "html" });
       return renderGenericLink(panel.mount, family, exts);
     };
     open().then(() => {

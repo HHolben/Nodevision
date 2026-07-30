@@ -558,7 +558,7 @@ function renderLinkDescription(shell, selection) {
     ["Resolved Target", linkTargetDisplay(record)],
     ["Raw Target", record.targetRaw || ""],
     ["Link Text", record.linkText || ""],
-    ["Graph Text", record.displayText || ""],
+    ["Label", record.label || record.displayText || ""],
     ["Tags", listToCsv(record.tags || [])],
     ["Symbols", normalizeSymbols(record.symbols || []).join(" ")],
     ["Editable Target", record.editableTarget ? "Yes" : "No"],
@@ -571,12 +571,14 @@ function renderLinkDescription(shell, selection) {
 }
 
 function readLinkPatchFromForm(root) {
+  const label = root.querySelector("#nv-link-file-label")?.value || "";
   return {
     targetRaw: root.querySelector("#nv-link-file-target")?.value || "",
     linkText: root.querySelector("#nv-link-file-text")?.value || "",
     tags: csvToList(root.querySelector("#nv-link-file-tags")?.value || ""),
     symbols: normalizeSymbols(root.querySelector("#nv-link-file-symbols")?.value || ""),
-    displayText: root.querySelector("#nv-link-file-display")?.value || "",
+    label,
+    displayText: label,
   };
 }
 
@@ -669,7 +671,7 @@ function renderLinkEditor(shell, selection) {
     fieldNode({ id: "nv-link-file-text", label: "Link Text", value: record.linkText || "", disabled: !record.editableText }),
     fieldNode({ id: "nv-link-file-tags", label: "Tags", value: listToCsv(record.tags || []), disabled: !record.editableMetadata, placeholder: "reference, draft" }),
     fieldNode({ id: "nv-link-file-symbols", label: "Symbols", value: normalizeSymbols(record.symbols || []).join(" "), disabled: !record.editableMetadata, placeholder: "*, ?" }),
-    fieldNode({ id: "nv-link-file-display", label: "Graph Text", value: record.displayText || "", disabled: !record.editableMetadata })
+    fieldNode({ id: "nv-link-file-label", label: "Label", value: record.label || record.displayText || "", disabled: !record.editableMetadata })
   );
 
   const actions = document.createElement("div");
@@ -894,6 +896,7 @@ export async function showGraphLinkInFileView(selection = selectedGraphLink()) {
   currentLinkViewSelection = selection;
   lastRenderedPath = null;
   viewPanel.innerHTML = "";
+  delete viewPanel.dataset.nvZoomInlineFit;
   const owningCell = viewPanel.closest(".panel-cell");
   owningCell?.removeAttribute("data-current-file-path");
   owningCell?.setAttribute("data-current-link-id", selection.edgeId || record.id || "link");
@@ -1442,6 +1445,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
       viewPanel._dispose = null;
     }
     viewPanel.innerHTML = "";
+    delete viewPanel.dataset.nvZoomInlineFit;
     lastRenderedPath = null;
     console.log("📁 Skipping directory view for:", filename);
     setFileViewStatus("File Viewer", `Directory selected: ${filename}`);
@@ -1472,6 +1476,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
     viewPanel._dispose = null;
   }
   viewPanel.innerHTML = "";
+  delete viewPanel.dataset.nvZoomInlineFit;
 
   // Determine server base depending on file type
   const isPHP = ext === "php";
@@ -1479,6 +1484,9 @@ export async function updateViewPanel(element, { force = false } = {}) {
   const serverBase = isPHP ? `${origin}/php` : `${origin}/Notebook`;
 
   const success = await renderFile(filename, viewPanel, serverBase);
+  window.NodevisionPanelViewportTools?.applyPanelViewport?.(
+    viewPanel.closest?.(".panel") || viewPanel.closest?.(".panel-cell") || viewPanel
+  );
   if (success) {
     setFileViewStatus("File Viewer", `Loaded: ${filename}`);
     tryScrollToPendingFileViewAnchor(filename);
@@ -1511,10 +1519,11 @@ async function renderFile(filename, viewPanel, serverBase) {
       viewerFile = "ViewText.mjs";
     }
 
-    const modulePath = `${basePath}/${viewerFile}`;
-    console.log(`🔍 Loading viewer module: ${modulePath}`);
+    const modulePath = basePath + "/" + viewerFile;
+    const moduleUrl = modulePath + "?nvViewer=" + String(Date.now());
+    console.log("🔍 Loading viewer module: " + moduleUrl);
 
-    const viewer = await import(modulePath);
+    const viewer = await import(moduleUrl);
 
     // Let viewer specify if it wants an iframe
     const wantsIframe = viewer.wantsIframe === true;

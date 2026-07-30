@@ -315,7 +315,7 @@ export function createEquationObjectsPanel({ THREE, controller, colliders, water
   quickLabel.textContent = "Equation / Inequality";
   const quickInequalityInput = document.createElement("input");
   quickInequalityInput.type = "text";
-  quickInequalityInput.placeholder = "z = 0 or z < 100";
+  quickInequalityInput.placeholder = "Num = 5, a = (2, 5, 7), z < Num + a.z";
   quickLabel.appendChild(quickInequalityInput);
   root.appendChild(quickLabel);
 
@@ -574,7 +574,7 @@ export function createEquationObjectsPanel({ THREE, controller, colliders, water
 
   function prepareQuickInequality() {
     if (applyQuickInequality()) return true;
-    statusLine.textContent = "Use an axis equation or inequality like z = sin(t) or z < 100 + t.";
+    statusLine.textContent = "Use declarations followed by an axis equation or inequality, like Num = 5, a = (2, 5, 7), z < Num + a.z.";
     return false;
   }
 

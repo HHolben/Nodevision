@@ -475,11 +475,9 @@ export function displayFiles(files, currentPath) {
     listStyle: "none",
     margin: "0",
     padding: "0",
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(min(var(--nv-file-manager-tile-min-width, 220px), 100%), 1fr))",
-    gridAutoRows: "minmax(24px, auto)",
+    display: "flex",
+    flexDirection: "column",
     alignItems: "stretch",
-    alignContent: "start",
     gap: "4px",
     width: "100%",
     boxSizing: "border-box"
@@ -490,8 +488,8 @@ export function displayFiles(files, currentPath) {
     const li = document.createElement("li");
     li.style.margin = "0";
     li.style.minWidth = "0";
+    li.style.width = "100%";
     li.style.display = "flex";
-    li.style.gridColumn = "1 / -1";
     const link = document.createElement("a");
     link.href = "#";
     link.textContent = "..";
@@ -582,6 +580,7 @@ export function displayFiles(files, currentPath) {
     const li = document.createElement("li");
     li.style.margin = "0";
     li.style.minWidth = "0";
+    li.style.width = "100%";
     li.style.display = "flex";
     const link = document.createElement("a");
     link.href = "#";

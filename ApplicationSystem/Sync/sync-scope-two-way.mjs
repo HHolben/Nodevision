@@ -241,6 +241,53 @@ function applyFileSizeLimitToPlan(plan, localEntries, remoteEntries, maxFileSize
   return { plan: nextPlan, skippedBySize, maxFileSizeBytes: normalizedLimit };
 }
 
+function entriesHaveSameSize(localEntry, remoteEntry) {
+  const localSize = Number(localEntry?.size);
+  const remoteSize = Number(remoteEntry?.size);
+  return Number.isFinite(localSize) && Number.isFinite(remoteSize) && localSize === remoteSize;
+}
+
+function sameNameLocationSizeSkipRecord({ relativePath, localEntry, remoteEntry }) {
+  const location = path.posix.dirname(relativePath);
+  return {
+    relativePath,
+    fileName: path.posix.basename(relativePath),
+    location: location === "." ? "" : location,
+    operation: "conflict",
+    size: toNonNegativeSize(localEntry?.size ?? remoteEntry?.size),
+    localSize: toNonNegativeSize(localEntry?.size),
+    remoteSize: toNonNegativeSize(remoteEntry?.size),
+    reason: "same_name_location_size",
+    error: "Skipped because name, location, and size match",
+  };
+}
+
+function applySameNameLocationSizeSkipToPlan(plan, localEntries, remoteEntries, skipSameNameLocationSize) {
+  const skippedSameNameLocationSize = [];
+  if (skipSameNameLocationSize !== true) {
+    return { plan, skippedSameNameLocationSize, skipSameNameLocationSize: false };
+  }
+
+  const nextPlan = {
+    onlyLocal: Array.from(plan.onlyLocal || []),
+    onlyRemote: Array.from(plan.onlyRemote || []),
+    changed: [],
+    same: Array.from(plan.same || []),
+  };
+
+  for (const relativePath of plan.changed || []) {
+    const localEntry = localEntries.get(relativePath);
+    const remoteEntry = remoteEntries.get(relativePath);
+    if (entriesHaveSameSize(localEntry, remoteEntry)) {
+      skippedSameNameLocationSize.push(sameNameLocationSizeSkipRecord({ relativePath, localEntry, remoteEntry }));
+    } else {
+      nextPlan.changed.push(relativePath);
+    }
+  }
+
+  return { plan: nextPlan, skippedSameNameLocationSize, skipSameNameLocationSize: true };
+}
+
 function resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath }) {
   const scopeRoot = path.resolve(notebookDir, scope);
   return path.resolve(scopeRoot, relativePath.slice(`${scope}/`.length));
@@ -491,6 +538,7 @@ export async function runScopeSyncTwoWay({
   onFileError = "fail",
   onFileErrorControl,
   maxFileSizeBytes = null,
+  skipSameNameLocationSize = false,
   syncDirection = "sync",
   transport = null,
 } = {}) {
@@ -508,7 +556,8 @@ export async function runScopeSyncTwoWay({
   const localEntries = toManifestEntryMap(localBefore);
   const remoteEntries = toManifestEntryMap(remoteBefore);
   const limited = applyFileSizeLimitToPlan(rawPlan, localEntries, remoteEntries, maxFileSizeBytes);
-  const directional = applySyncDirectionToPlan(limited.plan, localEntries, remoteEntries, syncDirection);
+  const sameNameLocationSizeFiltered = applySameNameLocationSizeSkipToPlan(limited.plan, localEntries, remoteEntries, skipSameNameLocationSize === true);
+  const directional = applySyncDirectionToPlan(sameNameLocationSizeFiltered.plan, localEntries, remoteEntries, syncDirection);
   const plan = directional.plan;
   const normalizedSyncDirection = directional.syncDirection;
   const progressState = {
@@ -521,7 +570,18 @@ export async function runScopeSyncTwoWay({
     currentFile: null,
   };
   const fileErrorMode = normalizeFileErrorMode(onFileError);
-  const skippedOperations = [];
+  const plannedSkippedAt = new Date().toISOString();
+  const skippedOperations = sameNameLocationSizeFiltered.skippedSameNameLocationSize.map((entry) => ({
+    ...entry,
+    type: entry.operation || "conflict",
+    scope: normalizedScope,
+    peerUrl: normalizedPeerUrl,
+    bytes: toNonNegativeSize(entry.size),
+    safelyRetryable: true,
+    timestamp: plannedSkippedAt,
+  }));
+  progressState.filesSkipped = skippedOperations.length;
+  progressState.bytesSkipped = skippedOperations.reduce((sum, entry) => sum + toNonNegativeSize(entry.bytes), 0);
   const emitProgress = (event, details = {}) => {
     if (typeof onProgress !== "function") return;
     onProgress({
@@ -546,7 +606,7 @@ export async function runScopeSyncTwoWay({
   emitProgress("plan");
 
   if (dryRun) {
-    return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, syncDirection: normalizedSyncDirection, maxFileSizeBytes: limited.maxFileSizeBytes, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed, skipped: { same: plan.same, oversized: limited.skippedBySize, direction: directional.skippedByDirection } } };
+    return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, syncDirection: normalizedSyncDirection, maxFileSizeBytes: limited.maxFileSizeBytes, skipSameNameLocationSize: sameNameLocationSizeFiltered.skipSameNameLocationSize, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed, skipped: { same: plan.same, oversized: limited.skippedBySize, sameNameLocationSize: sameNameLocationSizeFiltered.skippedSameNameLocationSize, direction: directional.skippedByDirection } } };
   }
 
   const pulled = []; const pushed = []; const conflicts = [];
@@ -886,12 +946,13 @@ export async function runScopeSyncTwoWay({
     peerUrl: normalizedPeerUrl,
     syncDirection: normalizedSyncDirection,
     maxFileSizeBytes: limited.maxFileSizeBytes,
+    skipSameNameLocationSize: sameNameLocationSizeFiltered.skipSameNameLocationSize,
     before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan },
     operations: {
       pulled,
       pushed,
       conflicts,
-      skipped: { same: plan.same, oversized: limited.skippedBySize, direction: directional.skippedByDirection },
+      skipped: { same: plan.same, oversized: limited.skippedBySize, sameNameLocationSize: sameNameLocationSizeFiltered.skippedSameNameLocationSize, direction: directional.skippedByDirection },
       skippedOperations,
     },
     skippedFiles: skippedOperations.map((entry) => ({

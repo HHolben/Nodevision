@@ -953,6 +953,26 @@ function parseOnFileErrorMode(body) {
   throw new Error("onFileError must be one of: fail, pause, skip");
 }
 
+function parseOptionalBoolean(body, fieldName, fallback = false) {
+  if (!body || typeof body !== "object" || Array.isArray(body) || body[fieldName] === undefined || body[fieldName] === null || body[fieldName] === "") {
+    return Boolean(fallback);
+  }
+  const raw = body[fieldName];
+  if (typeof raw === "boolean") return raw;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    if (raw === 1) return true;
+    if (raw === 0) return false;
+  }
+  const text = String(raw).trim().toLowerCase();
+  if (text === "true" || text === "1" || text === "yes" || text === "on") return true;
+  if (text === "false" || text === "0" || text === "no" || text === "off") return false;
+  throw new Error(fieldName + " must be a boolean");
+}
+
+function parseSkipSameNameLocationSize(body) {
+  return parseOptionalBoolean(body, "skipSameNameLocationSize", false);
+}
+
 function parseSyncDirection(body) {
   const raw = body && typeof body === "object" && !Array.isArray(body)
     ? (body.syncDirection ?? body.direction ?? "sync")
@@ -1650,6 +1670,13 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid sync direction" });
     }
 
+    let skipSameNameLocationSize;
+    try {
+      skipSameNameLocationSize = parseSkipSameNameLocationSize(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid skip option" });
+    }
+
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -1676,7 +1703,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         dryRun: true,
         syncRunner,
         syncDirection,
-        syncRunnerOptions: { maxFileSizeBytes },
+        syncRunnerOptions: { maxFileSizeBytes, skipSameNameLocationSize },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
       discoveredPeer = maybePersistResolvedPeerEndpointForTransport(state, discoveredPeer, peerUrl, syncTransport);
@@ -1777,6 +1804,13 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid sync direction" });
     }
 
+    let skipSameNameLocationSize;
+    try {
+      skipSameNameLocationSize = parseSkipSameNameLocationSize(body);
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid skip option" });
+    }
+
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -1803,7 +1837,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         dryRun,
         syncRunner,
         syncDirection,
-        syncRunnerOptions: { maxFileSizeBytes, onFileError: onFileError === "pause" ? "fail" : onFileError },
+        syncRunnerOptions: { maxFileSizeBytes, onFileError: onFileError === "pause" ? "fail" : onFileError, skipSameNameLocationSize },
       });
       peerUrl = syncResult.resolvedPeerUrl || peerUrl;
       discoveredPeer = maybePersistResolvedPeerEndpointForTransport(state, discoveredPeer, peerUrl, syncTransport);
@@ -1943,6 +1977,19 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(400).json({ ok: false, error: err?.message || "Invalid sync direction" });
     }
 
+    let skipSameNameLocationSize;
+    try {
+      skipSameNameLocationSize = parseSkipSameNameLocationSize(body);
+    } catch (err) {
+      logSyncJobCreationDecision(req, body, protection, "rejected", {
+        statusCode: 400,
+        reason: err?.message || "Invalid skip option",
+        selectedPeerDeviceId: deviceId,
+        scope,
+      });
+      return res.status(400).json({ ok: false, error: err?.message || "Invalid skip option" });
+    }
+
     let peerUrl;
     try {
       peerUrl = buildTrustedDiscoveredPeerUrl(state, deviceId);
@@ -2029,6 +2076,7 @@ export function registerSyncPanelRoutes(app, ctx) {
               onFileError,
               onFileErrorControl,
               maxFileSizeBytes,
+              skipSameNameLocationSize,
             },
           });
           maybePersistResolvedPeerEndpointForTransport(state, discoveredPeerSnapshot, syncResult.resolvedPeerUrl || peerUrl, syncTransport);
@@ -2042,6 +2090,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         peerUrl,
         jobId: started.jobId,
         maxFileSizeBytes,
+        skipSameNameLocationSize,
         onFileError,
         syncDirection,
         syncTransport,

@@ -1,11 +1,13 @@
 [
   {
     "ToolbarCategory": "Terminal",
-    "heading": "Preview Runtime"
+    "heading": "Preview Runtime",
+    "hotkeyText": ""
   },
   {
     "ToolbarCategory": "Terminal",
     "heading": "Nodevision Console",
+    "hotkeyText": "",
     "callbackKey": "openNodevisionConsole",
     "icon": "icons/CodeEditor.png",
     "preventDropdown": true
@@ -14,12 +16,14 @@
     "ToolbarCategory": "Terminal",
     "parentHeading": "Nodevision Console",
     "heading": "Command Glossary",
+    "hotkeyText": "",
     "content": "",
     "script": "nodevisionConsoleCommandsWidget.mjs"
   },
   {
     "ToolbarCategory": "Terminal",
     "heading": "Compile & Run",
+    "hotkeyText": "",
     "callbackKey": "executeFile",
     "conditions": {
       "requiresFile": true
@@ -29,12 +33,14 @@
     "ToolbarCategory": "Terminal",
     "parentHeading": "Preview Runtime",
     "heading": "Set Runtime Token…",
+    "hotkeyText": "",
     "callbackKey": "setPreviewRuntimeToken"
   },
   {
     "ToolbarCategory": "Terminal",
     "parentHeading": "Preview Runtime",
     "heading": "Restart Preview Runtime",
+    "hotkeyText": "",
     "callbackKey": "restartPreviewRuntime"
   }
 ]

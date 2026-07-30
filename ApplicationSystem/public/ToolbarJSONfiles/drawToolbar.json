@@ -1,6 +1,7 @@
 [
   {
     "heading": "NBT Blocks",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "preventDropdown": true,
     "modes": ["NBTediting"],
@@ -8,12 +9,14 @@
   },
   {
     "heading": "NBT Block Controls",
+    "hotkeyText": "",
     "parentHeading": "NBT Blocks",
     "script": "nbtBlockToolWidget.mjs",
     "modes": ["NBTediting"]
   },
   {
     "heading": "Select Block",
+    "hotkeyText": "",
     "parentHeading": "NBT Blocks",
     "ToolbarCategory": "draw",
     "callbackKey": "nbtModeSelect",
@@ -23,6 +26,7 @@
   },
   {
     "heading": "Place Block",
+    "hotkeyText": "",
     "parentHeading": "NBT Blocks",
     "ToolbarCategory": "draw",
     "callbackKey": "nbtModePlace",
@@ -32,6 +36,7 @@
   },
   {
     "heading": "Delete Tool",
+    "hotkeyText": "",
     "parentHeading": "NBT Blocks",
     "ToolbarCategory": "draw",
     "callbackKey": "nbtModeDelete",
@@ -41,6 +46,7 @@
   },
   {
     "heading": "Add Block",
+    "hotkeyText": "",
     "parentHeading": "NBT Blocks",
     "ToolbarCategory": "draw",
     "callbackKey": "nbtAddBlock",
@@ -50,6 +56,7 @@
   },
   {
     "heading": "Delete Block",
+    "hotkeyText": "",
     "parentHeading": "NBT Blocks",
     "ToolbarCategory": "draw",
     "callbackKey": "nbtDeleteBlock",
@@ -59,6 +66,7 @@
   },
   {
     "heading": "Save NBT",
+    "hotkeyText": "Ctrl/Cmd+S",
     "parentHeading": "NBT Blocks",
     "ToolbarCategory": "draw",
     "callbackKey": "nbtSave",
@@ -68,6 +76,7 @@
   },
   {
     "heading": "STL Mesh",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "preventDropdown": true,
     "modes": ["STLediting"],
@@ -75,6 +84,7 @@
   },
   {
     "heading": "Recenter View",
+    "hotkeyText": "",
     "parentHeading": "STL Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "stlRecenter",
@@ -84,6 +94,7 @@
   },
   {
     "heading": "Clear Selection",
+    "hotkeyText": "",
     "parentHeading": "STL Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "stlClearSelection",
@@ -93,6 +104,7 @@
   },
   {
     "heading": "Grab",
+    "hotkeyText": "G",
     "parentHeading": "STL Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "stlGrab",
@@ -102,6 +114,7 @@
   },
   {
     "heading": "Stretch",
+    "hotkeyText": "S",
     "parentHeading": "STL Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "stlScale",
@@ -111,6 +124,7 @@
   },
   {
     "heading": "Extrude",
+    "hotkeyText": "E",
     "parentHeading": "STL Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "stlExtrude",
@@ -120,6 +134,7 @@
   },
   {
     "heading": "Fill or Edge",
+    "hotkeyText": "F",
     "parentHeading": "STL Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "stlFillOrConnect",
@@ -129,6 +144,7 @@
   },
   {
     "heading": "Save STL",
+    "hotkeyText": "Ctrl/Cmd+S",
     "parentHeading": "STL Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "stlSave",
@@ -138,6 +154,7 @@
   },
   {
     "heading": "OBJ Mesh",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "preventDropdown": true,
     "modes": ["OBJediting"],
@@ -145,6 +162,7 @@
   },
   {
     "heading": "Recenter View",
+    "hotkeyText": "",
     "parentHeading": "OBJ Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "objRecenter",
@@ -154,6 +172,7 @@
   },
   {
     "heading": "Clear Selection",
+    "hotkeyText": "",
     "parentHeading": "OBJ Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "objClearSelection",
@@ -163,6 +182,7 @@
   },
   {
     "heading": "Grab",
+    "hotkeyText": "G",
     "parentHeading": "OBJ Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "objGrab",
@@ -172,6 +192,7 @@
   },
   {
     "heading": "Extrude",
+    "hotkeyText": "E",
     "parentHeading": "OBJ Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "objExtrude",
@@ -181,6 +202,7 @@
   },
   {
     "heading": "Save OBJ",
+    "hotkeyText": "Ctrl/Cmd+S",
     "parentHeading": "OBJ Mesh",
     "ToolbarCategory": "draw",
     "callbackKey": "objSave",
@@ -190,6 +212,7 @@
   },
   {
     "heading": "Color",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "PickColor",
@@ -198,6 +221,7 @@
   },
   {
     "heading": "Layout",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "ImageLayout",
@@ -207,6 +231,7 @@
   },
   {
     "heading": "Animations",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "GifAnimations",
@@ -216,12 +241,14 @@
   },
   {
     "heading": "GIF Animation Controls",
+    "hotkeyText": "",
     "parentHeading": "Animations",
     "script": "gifAnimationToolbar.mjs",
     "modes": ["GIFediting"]
   },
   {
     "heading": "Vector Draw",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "DrawSVG",
@@ -230,6 +257,7 @@
   },
   {
     "heading": "Pencil Sketching",
+    "hotkeyText": "",
     "parentHeading": "Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "PencilSketching",
@@ -239,6 +267,7 @@
   },
   {
     "heading": "Select",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeSelect",
@@ -247,6 +276,7 @@
   },
   {
     "heading": "Line",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeLine",
@@ -255,6 +285,7 @@
   },
   {
     "heading": "Bezier",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeBezier",
@@ -263,6 +294,7 @@
   },
   {
     "heading": "Freehand",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeFreehand",
@@ -271,6 +303,7 @@
   },
   {
     "heading": "Eyedropper",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeEyedropper",
@@ -279,6 +312,7 @@
   },
   {
     "heading": "Eraser",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeEraser",
@@ -287,6 +321,7 @@
   },
   {
     "heading": "Sketch",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeSketch",
@@ -295,6 +330,7 @@
   },
   {
     "heading": "Undo Stroke",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "ToolbarCategory": "draw",
     "callbackKey": "svgUndoSketchStroke",
@@ -303,6 +339,7 @@
   },
   {
     "heading": "Finalize Sketch",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "ToolbarCategory": "draw",
     "callbackKey": "svgFinalizeSketch",
@@ -311,6 +348,7 @@
   },
   {
     "heading": "Clear Sketch",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "ToolbarCategory": "draw",
     "callbackKey": "svgClearSketch",
@@ -319,6 +357,7 @@
   },
   {
     "heading": "Cancel Sketch",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "ToolbarCategory": "draw",
     "callbackKey": "svgCancelSketchMode",
@@ -327,6 +366,7 @@
   },
   {
     "heading": "Keep Construction",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "ToolbarCategory": "draw",
     "callbackKey": "svgToggleKeepSketchConstruction",
@@ -335,6 +375,7 @@
   },
   {
     "heading": "Toggle Construction",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "ToolbarCategory": "draw",
     "callbackKey": "svgToggleSketchConstructionVisibility",
@@ -343,30 +384,35 @@
   },
   {
     "heading": "Prediction Mode",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "script": "sketchPredictionModeWidget.mjs",
     "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
   },
   {
     "heading": "Color stroke order",
+    "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "script": "sketchStrokeOrderWidget.mjs",
     "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
   },
   {
     "heading": "SVG Styles",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "script": "svgStyleWidget.mjs",
     "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
   },
   {
     "heading": "Drawing Assist Controls",
+    "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "script": "svgDrawingAssistWidget.mjs",
     "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
   },
   {
     "heading": "Delete",
+    "hotkeyText": "Delete",
     "parentHeading": "Vector Draw",
     "ToolbarCategory": "draw",
     "callbackKey": "svgDeleteSelection",
@@ -375,6 +421,7 @@
   },
   {
     "heading": "Add Placemark",
+    "hotkeyText": "",
     "parentHeading": "KML",
     "callbackKey": "addPlacemark",
     "routeToActivePanel": true,
@@ -383,6 +430,7 @@
   },
   {
     "heading": "Draw Path",
+    "hotkeyText": "",
     "parentHeading": "KML",
     "callbackKey": "drawPath",
     "routeToActivePanel": true,
@@ -391,6 +439,7 @@
   },
   {
     "heading": "Draw Polygon",
+    "hotkeyText": "",
     "parentHeading": "KML",
     "callbackKey": "drawPolygon",
     "routeToActivePanel": true,
@@ -399,6 +448,7 @@
   },
   {
     "heading": "Edit Selected",
+    "hotkeyText": "",
     "parentHeading": "KML",
     "callbackKey": "editSelected",
     "routeToActivePanel": true,
@@ -407,6 +457,7 @@
   },
   {
     "heading": "Delete Selected",
+    "hotkeyText": "",
     "parentHeading": "KML",
     "callbackKey": "deleteSelected",
     "routeToActivePanel": true,
@@ -415,6 +466,7 @@
   },
   {
     "heading": "Fit to KML",
+    "hotkeyText": "",
     "parentHeading": "KML",
     "callbackKey": "fitKML",
     "routeToActivePanel": true,
@@ -423,6 +475,7 @@
   },
   {
     "heading": "View XML",
+    "hotkeyText": "",
     "parentHeading": "KML",
     "callbackKey": "viewXml",
     "routeToActivePanel": true,
@@ -431,6 +484,7 @@
   },
   {
     "heading": "Save KML",
+    "hotkeyText": "Ctrl/Cmd+S",
     "parentHeading": "KML",
     "callbackKey": "saveKML",
     "routeToActivePanel": true,

@@ -8,7 +8,7 @@ import { parseScadText } from "/ScadEditor/ScadParser.mjs";
 import { serializeScadModel } from "/ScadEditor/ScadSerializer.mjs";
 import { addObject, addTimelineStep, removeObject, renameTimelineStep, setTimelineStepDisabled, deleteTimelineStep, isObjectEditable, scadObjectTypeLabel } from "/ScadEditor/ScadModel.mjs";
 import { shapeFromTool, polygonFromPoints } from "/ScadEditor/ScadShapeTools.mjs";
-import { addBooleanOperation, deleteObjects, duplicateObjects, extrudeObjects, renameObject, rotateObjects, scaleObjects, translateObjects } from "/ScadEditor/ScadOperations.mjs";
+import { addBooleanOperation, deleteObjects, duplicateObjects, extrudeObjects, recordScaleTimelineStep, renameObject, rotateObjects, scaleObjects, translateObjects } from "/ScadEditor/ScadOperations.mjs";
 import { createScadSceneRenderer } from "/ScadEditor/ScadSceneRenderer.mjs";
 import { exportScadCodeToSTL } from "/ModelExport/STLExport.mjs";
 import { clearScadLayersContext, ensureScadLayersContext, notifyScadLayersChanged, notifyScadSelectionChanged } from "/ScadEditor/ScadLayerPanelContext.mjs";
@@ -16,6 +16,7 @@ import { clearScadLayersContext, ensureScadLayersContext, notifyScadLayersChange
 const SCAD_MODE = "SCADediting";
 const SCAD_ACTION_AXIS_TYPES = new Set(["x", "y", "z"]);
 const SCAD_FACE_OBJECT_TYPES = new Set(["circle", "rectangle", "square", "triangle", "polygon", "text"]);
+const SCAD_SOLID_OBJECT_TYPES = new Set(["sphere", "cube", "cylinder", "polyhedron"]);
 const SCAD_SCALE_DRAG_UNITS = 60;
 const SCAD_MIN_SCALE_FACTOR = 0.05;
 
@@ -143,8 +144,10 @@ export async function renderEditor(filePath, container) {
   let selectedIds = [];
   let selectedVertexRefs = [];
   let selectedFaceRefs = [];
+  let scadClipboard = null;
   let lastModelPoint = [0, 0];
   let grabState = null;
+  let scadPlacementPanel = null;
 
   container.innerHTML = "";
   container.style.width = "100%";
@@ -933,11 +936,9 @@ export async function renderEditor(filePath, container) {
     } else if (finished.type === "scale") {
       const objectIds = finished.originals.map((entry) => entry.id).filter((id) => Boolean(objectById(id)));
       if (objectIds.length) {
-        addTimelineStep(model, {
-          type: "transform",
-          objectIds,
+        recordScaleTimelineStep(model, objectIds, finished.lastFactors || [1, 1, 1], {
           label: "Scale " + transformTimelineSelectionLabel(objectIds),
-          params: { operation: "scale", factors: finished.lastFactors || [1, 1, 1], axisLock: finished.axisLock || null },
+          axisLock: finished.axisLock || null,
         });
       }
       markDirty();
@@ -1025,12 +1026,217 @@ export async function renderEditor(filePath, container) {
     refresh();
   }
 
+  function scadSolidPlacementLabel(type = "") {
+    return scadObjectTypeLabel(type || "solid");
+  }
+
+  function readPlacementNumber(value, fallback = 0, min = null, integer = false) {
+    const number = Number(value);
+    let next = Number.isFinite(number) ? number : fallback;
+    if (Number.isFinite(min)) next = Math.max(min, next);
+    return integer ? Math.max(Number.isFinite(min) ? min : 0, Math.round(next)) : next;
+  }
+
+  function ensurePlacementVector(value, fallback = [0, 0, 0]) {
+    const source = Array.isArray(value) ? value : fallback;
+    return [0, 1, 2].map((index) => numberOrZero(source[index] ?? fallback[index] ?? 0));
+  }
+
+  function setPlacementTranslate(obj, index, value) {
+    const translate = ensurePlacementVector(obj.transform?.translate);
+    translate[index] = numberOrZero(value);
+    obj.transform = { ...(obj.transform || {}), translate };
+  }
+
+  function currentPolyhedronSize(obj) {
+    const points = Array.isArray(obj.params?.points) ? obj.params.points : [];
+    const xs = points.map((point) => Number(point?.[0])).filter(Number.isFinite);
+    if (xs.length >= 2) return Math.max(1, Math.max(...xs) - Math.min(...xs));
+    return 12;
+  }
+
+  function setPolyhedronSize(obj, sizeValue) {
+    const size = Math.max(0.1, numberOrZero(sizeValue) || currentPolyhedronSize(obj));
+    obj.params = {
+      ...(obj.params || {}),
+      points: [[0, 0, 0], [size, 0, 0], [size / 2, size * 0.82, 0], [size / 2, size * 0.35, size]],
+      faces: [[0, 1, 2], [0, 3, 1], [1, 3, 2], [2, 3, 0]]
+    };
+  }
+
+  function scadSolidPlacementFields(obj) {
+    const p = obj.params || {};
+    const translate = ensurePlacementVector(obj.transform?.translate);
+    if (obj.type === "sphere") {
+      return [
+        { key: "radius", label: "Radius", value: p.radius ?? 6, min: 0.1, step: 0.1, apply(value) { obj.params.radius = readPlacementNumber(value, p.radius ?? 6, 0.1); } },
+        { key: "segments", label: "Segments", value: p.segments ?? 48, min: 8, step: 1, integer: true, apply(value) { obj.params.segments = readPlacementNumber(value, p.segments ?? 48, 8, true); } },
+        { key: "x", label: "X", value: translate[0], step: 0.1, apply(value) { setPlacementTranslate(obj, 0, readPlacementNumber(value, translate[0])); } },
+        { key: "y", label: "Y", value: translate[1], step: 0.1, apply(value) { setPlacementTranslate(obj, 1, readPlacementNumber(value, translate[1])); } },
+        { key: "z", label: "Z", value: translate[2], step: 0.1, apply(value) { setPlacementTranslate(obj, 2, readPlacementNumber(value, translate[2])); } }
+      ];
+    }
+    if (obj.type === "cube") {
+      const size = Array.isArray(p.size) ? p.size : [p.size ?? 12, p.size ?? 12, p.size ?? 12];
+      const writeSize = (index, value) => {
+        const next = ensurePlacementVector(obj.params.size, [12, 12, 12]);
+        next[index] = readPlacementNumber(value, size[index] ?? 12, 0.1);
+        obj.params.size = next;
+        if (index === 2 && obj.params.center !== false) setPlacementTranslate(obj, 2, next[2] / 2);
+      };
+      return [
+        { key: "sizeX", label: "Size X", value: size[0] ?? 12, min: 0.1, step: 0.1, apply(value) { writeSize(0, value); } },
+        { key: "sizeY", label: "Size Y", value: size[1] ?? 12, min: 0.1, step: 0.1, apply(value) { writeSize(1, value); } },
+        { key: "sizeZ", label: "Size Z", value: size[2] ?? 12, min: 0.1, step: 0.1, apply(value) { writeSize(2, value); } },
+        { key: "x", label: "X", value: translate[0], step: 0.1, apply(value) { setPlacementTranslate(obj, 0, readPlacementNumber(value, translate[0])); } },
+        { key: "y", label: "Y", value: translate[1], step: 0.1, apply(value) { setPlacementTranslate(obj, 1, readPlacementNumber(value, translate[1])); } },
+        { key: "z", label: "Z", value: translate[2], step: 0.1, apply(value) { setPlacementTranslate(obj, 2, readPlacementNumber(value, translate[2])); } }
+      ];
+    }
+    if (obj.type === "cylinder") {
+      return [
+        { key: "radius", label: "Radius", value: p.radius ?? 5, min: 0.1, step: 0.1, apply(value) { obj.params.radius = readPlacementNumber(value, p.radius ?? 5, 0.1); } },
+        { key: "height", label: "Height", value: p.height ?? 16, min: 0.1, step: 0.1, apply(value) { obj.params.height = readPlacementNumber(value, p.height ?? 16, 0.1); if (obj.params.center !== false) setPlacementTranslate(obj, 2, obj.params.height / 2); } },
+        { key: "segments", label: "Segments", value: p.segments ?? 48, min: 8, step: 1, integer: true, apply(value) { obj.params.segments = readPlacementNumber(value, p.segments ?? 48, 8, true); } },
+        { key: "x", label: "X", value: translate[0], step: 0.1, apply(value) { setPlacementTranslate(obj, 0, readPlacementNumber(value, translate[0])); } },
+        { key: "y", label: "Y", value: translate[1], step: 0.1, apply(value) { setPlacementTranslate(obj, 1, readPlacementNumber(value, translate[1])); } },
+        { key: "z", label: "Z", value: translate[2], step: 0.1, apply(value) { setPlacementTranslate(obj, 2, readPlacementNumber(value, translate[2])); } }
+      ];
+    }
+    if (obj.type === "polyhedron") {
+      return [
+        { key: "size", label: "Size", value: currentPolyhedronSize(obj), min: 0.1, step: 0.1, apply(value) { setPolyhedronSize(obj, value); } },
+        { key: "x", label: "X", value: translate[0], step: 0.1, apply(value) { setPlacementTranslate(obj, 0, readPlacementNumber(value, translate[0])); } },
+        { key: "y", label: "Y", value: translate[1], step: 0.1, apply(value) { setPlacementTranslate(obj, 1, readPlacementNumber(value, translate[1])); } },
+        { key: "z", label: "Z", value: translate[2], step: 0.1, apply(value) { setPlacementTranslate(obj, 2, readPlacementNumber(value, translate[2])); } }
+      ];
+    }
+    return [];
+  }
+
+  function closeScadPlacementPanel() {
+    if (!scadPlacementPanel) return;
+    const panelState = scadPlacementPanel;
+    scadPlacementPanel = null;
+    window.removeEventListener("pointerdown", panelState.outsidePointer, true);
+    window.removeEventListener("keydown", panelState.outsideKeydown, true);
+    if (panelState.element?.parentNode) panelState.element.parentNode.removeChild(panelState.element);
+  }
+
+  function applyScadPlacementField(obj, field, input) {
+    if (!obj || !field || !input) return false;
+    const number = Number(input.value);
+    if (!Number.isFinite(number)) {
+      input.select?.();
+      return false;
+    }
+    field.apply(input.value);
+    markDirty();
+    refresh();
+    setStatus("Place " + scadSolidPlacementLabel(obj.type) + ": " + field.label + " = " + input.value + ".");
+    return true;
+  }
+
+  function showScadSolidPlacementPanel(obj) {
+    closeScadPlacementPanel();
+    if (!obj || !SCAD_SOLID_OBJECT_TYPES.has(obj.type)) return;
+    const fields = scadSolidPlacementFields(obj);
+    if (!fields.length) return;
+
+    const panel = document.createElement("form");
+    panel.setAttribute("aria-label", "Place " + scadSolidPlacementLabel(obj.type));
+    Object.assign(panel.style, {
+      position: "absolute",
+      left: "12px",
+      bottom: "12px",
+      zIndex: "40",
+      width: "min(280px, calc(100% - 24px))",
+      boxSizing: "border-box",
+      border: "1px solid rgba(39, 50, 68, 0.22)",
+      borderRadius: "7px",
+      background: "rgba(252, 253, 255, 0.97)",
+      boxShadow: "0 14px 38px rgba(15, 23, 42, 0.2)",
+      padding: "10px",
+      color: "#172033",
+      font: "12px/1.35 system-ui, sans-serif"
+    });
+
+    const title = document.createElement("div");
+    title.textContent = "Place " + scadSolidPlacementLabel(obj.type);
+    Object.assign(title.style, { font: "700 13px/1.2 system-ui, sans-serif", marginBottom: "8px" });
+    panel.appendChild(title);
+
+    const inputs = [];
+    fields.forEach((field, index) => {
+      const label = document.createElement("label");
+      Object.assign(label.style, { display: "grid", gridTemplateColumns: "84px minmax(0, 1fr)", alignItems: "center", gap: "8px", marginBottom: "6px" });
+      const span = document.createElement("span");
+      span.textContent = field.label;
+      span.style.color = "#475569";
+      const input = document.createElement("input");
+      input.type = "number";
+      input.value = String(field.value ?? 0);
+      input.step = String(field.step ?? 0.1);
+      if (Number.isFinite(field.min)) input.min = String(field.min);
+      input.dataset.fieldKey = field.key;
+      Object.assign(input.style, { width: "100%", boxSizing: "border-box", border: "1px solid #cbd5e1", borderRadius: "5px", padding: "5px 7px", font: "12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" });
+      input.addEventListener("change", () => applyScadPlacementField(obj, field, input));
+      input.addEventListener("input", () => {
+        if (Number.isFinite(Number(input.value))) applyScadPlacementField(obj, field, input);
+      });
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeScadPlacementPanel();
+          return;
+        }
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        if (!applyScadPlacementField(obj, field, input)) return;
+        const next = inputs[index + 1];
+        if (next) {
+          next.focus();
+          next.select?.();
+        } else {
+          closeScadPlacementPanel();
+        }
+      });
+      label.append(span, input);
+      panel.appendChild(label);
+      inputs.push(input);
+    });
+
+    const footer = document.createElement("div");
+    footer.textContent = "Enter advances through numeric fields.";
+    Object.assign(footer.style, { marginTop: "4px", color: "#64748b", font: "11px/1.3 system-ui, sans-serif" });
+    panel.appendChild(footer);
+
+    panel.addEventListener("submit", (event) => event.preventDefault());
+    panel.addEventListener("pointerdown", (event) => event.stopPropagation());
+    const outsidePointer = (event) => {
+      if (!panel.contains(event.target)) closeScadPlacementPanel();
+    };
+    const outsideKeydown = (event) => {
+      if (event.key === "Escape") closeScadPlacementPanel();
+    };
+    previewMount.appendChild(panel);
+    scadPlacementPanel = { element: panel, outsidePointer, outsideKeydown };
+    window.setTimeout(() => {
+      if (scadPlacementPanel?.element !== panel) return;
+      window.addEventListener("pointerdown", outsidePointer, true);
+      window.addEventListener("keydown", outsideKeydown, true);
+      inputs[0]?.focus();
+      inputs[0]?.select?.();
+    }, 0);
+  }
+
   function addShapeAt(tool, start, end = null) {
     const obj = addObject(model, shapeFromTool(tool, start, end), { activeLayerId });
     setSelection([obj.id], []);
     activeTool = "select";
     markDirty();
     refresh();
+    showScadSolidPlacementPanel(obj);
   }
 
   function normalizeDocumentMetadataTags(value) {
@@ -1104,7 +1310,8 @@ export async function renderEditor(filePath, container) {
     const step = addBooleanOperation(model, type, selectedIds);
     if (!step) return alert("Choose union, difference, intersection, or cut out with at least two selected shapes.");
     setSelection(step.objectIds || selectedIds, []);
-    const booleanHint = step.params?.operation === "difference" ? " First selected object is the base." : "";
+    const base = step.params?.operation === "difference" ? objectById(step.params?.baseObjectId) : null;
+    const booleanHint = base ? " Base: " + (base.name || base.type || "selected object") + "." : "";
     setStatus((step.label || "Boolean operation") + " added to CADtimeline." + booleanHint);
     markDirty();
     refresh();
@@ -1149,6 +1356,75 @@ export async function renderEditor(filePath, container) {
     setSelection([], []);
     markDirty();
     refresh();
+  }
+
+  function clonePlainObject(value) {
+    if (typeof structuredClone === "function") return structuredClone(value);
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function copySelectedScadBodies() {
+    const objects = selectedObjects(model, selectedIds).filter((obj) => isObjectEditable(model, obj));
+    if (!objects.length) {
+      setStatus("Select one or more SCAD bodies to copy.");
+      return false;
+    }
+    scadClipboard = {
+      kind: "nodevision-scad-bodies",
+      objects: objects.map((obj) => clonePlainObject(obj)),
+      copiedAt: new Date().toISOString(),
+    };
+    window.NodevisionScadClipboard = scadClipboard;
+    setStatus("Copied " + String(objects.length) + " SCAD bod" + (objects.length === 1 ? "y" : "ies") + ".");
+    return true;
+  }
+
+  function pasteName(name = "Body") {
+    const base = String(name || "Body").trim() || "Body";
+    return base.endsWith(" copy") ? base : base + " copy";
+  }
+
+  function pasteScadClipboard() {
+    const clipboard = scadClipboard || window.NodevisionScadClipboard;
+    const objects = Array.isArray(clipboard?.objects) && clipboard.kind === "nodevision-scad-bodies" ? clipboard.objects : [];
+    if (!objects.length) {
+      setStatus("No copied SCAD bodies to paste.");
+      return false;
+    }
+
+    const pastedIds = [];
+    objects.forEach((entry) => {
+      const input = clonePlainObject(entry);
+      const transform = input.transform && typeof input.transform === "object" ? input.transform : {};
+      const translate = Array.isArray(transform.translate) ? transform.translate : [0, 0, 0];
+      const preservedLayer = model.layers.find((layer) => layer.id === input.layerId && layer.visible !== false && !layer.locked);
+      const preservedLayerId = preservedLayer?.id || null;
+      delete input.id;
+      input.name = pasteName(input.name || input.type);
+      input.transform = {
+        ...transform,
+        translate: [
+          numberOrZero(translate[0]) + 5,
+          numberOrZero(translate[1]) + 5,
+          numberOrZero(translate[2]),
+        ],
+      };
+      const obj = addObject(model, { ...input, layerId: preservedLayerId || activeLayerId }, { activeLayerId: preservedLayerId || activeLayerId, timeline: false });
+      pastedIds.push(obj.id);
+    });
+
+    if (!pastedIds.length) return false;
+    addTimelineStep(model, {
+      type: "paste",
+      objectIds: pastedIds,
+      label: "Paste " + transformTimelineSelectionLabel(pastedIds),
+      params: { operation: "paste", count: pastedIds.length },
+    });
+    setSelection(pastedIds, []);
+    markDirty();
+    setStatus("Pasted " + String(pastedIds.length) + " SCAD bod" + (pastedIds.length === 1 ? "y" : "ies") + ".");
+    refresh();
+    return true;
   }
 
   const timelineActions = {
@@ -1224,9 +1500,22 @@ export async function renderEditor(filePath, container) {
 
   function handleEditorKeyDown(event) {
     if (disposed || window.GraphicalScadEditorContext?.handleToolbarAction !== handleToolbarAction) return;
-    if (event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) return;
     const rawKey = String(event.key || "");
     const key = rawKey.toLowerCase();
+    const commandKey = event.ctrlKey || event.metaKey;
+    if (commandKey && !event.altKey && !isTypingTarget(event.target)) {
+      if (key === "c") {
+        event.preventDefault();
+        copySelectedScadBodies();
+        return;
+      }
+      if (key === "v") {
+        event.preventDefault();
+        pasteScadClipboard();
+        return;
+      }
+    }
+    if (commandKey || event.altKey || isTypingTarget(event.target)) return;
     if (grabState && SCAD_ACTION_AXIS_TYPES.has(key)) {
       event.preventDefault();
       setGrabAxisLock(key, event);
@@ -1357,6 +1646,8 @@ export async function renderEditor(filePath, container) {
     setTool,
     selectObject,
     selectAll: selectAllObjects,
+    copySelection: copySelectedScadBodies,
+    pasteClipboard: pasteScadClipboard,
     fillSelection: fillOrConnectSelectedVertices,
     markDirty,
     refresh,
@@ -1400,6 +1691,7 @@ export async function renderEditor(filePath, container) {
   return {
     destroy() {
       disposed = true;
+      closeScadPlacementPanel();
       window.removeEventListener("keydown", handleEditorKeyDown, true);
       renderer?.dispose?.();
       clearScadLayersContext(scadController);

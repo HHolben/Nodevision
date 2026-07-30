@@ -102,27 +102,60 @@ function objectHas3DGeometry(obj) {
   return objectIs3DPrimitive(obj) || Boolean(objectExtrudeOperation(obj));
 }
 
-function objectNominalHeight(obj) {
-  const p = obj?.params || {};
-  const extrude = objectExtrudeOperation(obj);
-  if (extrude) return Math.max(0.1, n(extrude.params?.height ?? extrude.height, 10));
-  if (obj?.type === "cube") {
-    const size = Array.isArray(p.size) ? p.size : [p.size ?? 12, p.size ?? 12, p.size ?? 12];
-    return Math.max(0.1, n(size[2], 12));
-  }
-  if (obj?.type === "cylinder") return Math.max(0.1, n(p.height, 16));
-  if (obj?.type === "sphere") return Math.max(0.1, n(p.radius, 6) * 2);
-  if (obj?.type === "polyhedron") {
-    const zValues = (Array.isArray(p.points) ? p.points : []).map((point) => n(point?.[2], 0));
-    if (zValues.length) return Math.max(0.1, Math.max(...zValues) - Math.min(...zValues));
-  }
-  return 10;
+function objectTranslateZ(obj) {
+  const translate = Array.isArray(obj?.transform?.translate) ? obj.transform.translate : [];
+  return n(translate[2], 0);
 }
 
-function booleanTargetHeight(children = []) {
-  const first3D = children.find(objectHas3DGeometry);
-  if (!first3D) return null;
-  return objectNominalHeight(first3D);
+function objectScaleZ(obj) {
+  const scale = Array.isArray(obj?.transform?.scale) ? obj.transform.scale : [];
+  return n(scale[2], 1) || 1;
+}
+
+function objectLocalZRange(obj) {
+  const p = obj?.params || {};
+  const extrude = objectExtrudeOperation(obj);
+  if (extrude) {
+    const height = Math.max(0.1, n(extrude.params?.height ?? extrude.height, 10));
+    return { min: 0, max: height };
+  }
+  if (obj?.type === "cube") {
+    const size = Array.isArray(p.size) ? p.size : [p.size ?? 12, p.size ?? 12, p.size ?? 12];
+    const height = Math.max(0.1, n(size[2], 12));
+    return p.center === false ? { min: 0, max: height } : { min: -height / 2, max: height / 2 };
+  }
+  if (obj?.type === "cylinder") {
+    const height = Math.max(0.1, n(p.height, 16));
+    return p.center === false ? { min: 0, max: height } : { min: -height / 2, max: height / 2 };
+  }
+  if (obj?.type === "sphere") {
+    const radius = Math.max(0.1, n(p.radius, 6));
+    return { min: -radius, max: radius };
+  }
+  if (obj?.type === "polyhedron") {
+    const zValues = (Array.isArray(p.points) ? p.points : []).map((point) => n(point?.[2], 0));
+    if (zValues.length) return { min: Math.min(...zValues), max: Math.max(...zValues) };
+  }
+  return null;
+}
+
+function objectWorldZRange(obj) {
+  const range = objectLocalZRange(obj);
+  if (!range) return null;
+  const scaleZ = objectScaleZ(obj);
+  const translateZ = objectTranslateZ(obj);
+  const min = range.min * scaleZ + translateZ;
+  const max = range.max * scaleZ + translateZ;
+  return { min: Math.min(min, max), max: Math.max(min, max) };
+}
+
+function booleanTargetZRange(children = []) {
+  const ranges = children.filter(objectHas3DGeometry).map(objectWorldZRange).filter(Boolean);
+  if (!ranges.length) return null;
+  const min = Math.min(...ranges.map((range) => range.min));
+  const max = Math.max(...ranges.map((range) => range.max));
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
+  return { min, max };
 }
 
 export function serializeObjectToScad(obj, options = {}) {
@@ -135,17 +168,30 @@ export function serializeObjectToScad(obj, options = {}) {
       lines = wrapBlock(`linear_extrude(height = ${height})`, lines);
     }
   }
-  if (options.force3DHeight !== undefined && options.force3DHeight !== null && !objectHas3DGeometry(obj)) {
-    lines = wrapBlock(`linear_extrude(height = ${fmtNumber(options.force3DHeight)})`, lines);
+  const forceRange = options.force3DRange && Number.isFinite(options.force3DRange.min) && Number.isFinite(options.force3DRange.max)
+    ? options.force3DRange
+    : null;
+  if (!objectHas3DGeometry(obj) && (forceRange || (options.force3DHeight !== undefined && options.force3DHeight !== null))) {
+    if (forceRange && forceRange.max > forceRange.min) {
+      const scaleZ = objectScaleZ(obj);
+      const safeScaleZ = Math.abs(scaleZ) > 0.000001 ? scaleZ : 1;
+      const localHeight = (forceRange.max - forceRange.min) / Math.abs(safeScaleZ);
+      const localStartWorldZ = safeScaleZ >= 0 ? forceRange.min : forceRange.max;
+      const localMin = (localStartWorldZ - objectTranslateZ(obj)) / safeScaleZ;
+      lines = wrapBlock(`linear_extrude(height = ${fmtNumber(localHeight)})`, lines);
+      if (Math.abs(localMin) > 0.000001) lines = wrapBlock(`translate([0, 0, ${fmtNumber(localMin)}])`, lines);
+    } else {
+      lines = wrapBlock(`linear_extrude(height = ${fmtNumber(options.force3DHeight)})`, lines);
+    }
   }
 
   const t = obj.transform || {};
   const translate = Array.isArray(t.translate) ? t.translate : [0, 0, 0];
   const rotate = Array.isArray(t.rotate) ? t.rotate : [0, 0, 0];
   const scale = Array.isArray(t.scale) ? t.scale : [1, 1, 1];
-  if (translate.some((v) => n(v, 0) !== 0)) lines = wrapBlock(`translate([${vec(translate).join(", ")}])`, lines);
-  if (rotate.some((v) => n(v, 0) !== 0)) lines = wrapBlock(`rotate([${vec(rotate).join(", ")}])`, lines);
   if (scale.some((v) => n(v, 1) !== 1)) lines = wrapBlock(`scale([${vec(scale, 3, 1).join(", ")}])`, lines);
+  if (rotate.some((v) => n(v, 0) !== 0)) lines = wrapBlock(`rotate([${vec(rotate).join(", ")}])`, lines);
+  if (translate.some((v) => n(v, 0) !== 0)) lines = wrapBlock(`translate([${vec(translate).join(", ")}])`, lines);
 
   if (options.comment !== false) {
     const label = qName(obj.name || obj.id);
@@ -171,10 +217,11 @@ function serializeBooleanStep(model, step) {
   if (children.length < 2) return [];
   const keyword = op === "cutout" ? "difference" : op;
   if (!["union", "difference", "intersection"].includes(keyword)) return [];
-  const targetHeight = booleanTargetHeight(children);
+  const targetRange = booleanTargetZRange(children);
+  const targetHeight = targetRange ? targetRange.max - targetRange.min : null;
   const lines = [keyword + "() {"];
   children.forEach((child, index) => {
-    const childLines = serializeObjectToScad(child, { comment: true, includeHidden: true, force3DHeight: targetHeight });
+    const childLines = serializeObjectToScad(child, { comment: true, includeHidden: true, force3DHeight: targetHeight, force3DRange: targetRange });
     if (!childLines.length) return;
     lines.push(...indentLines(childLines, 2));
     if (index < children.length - 1) lines.push("");

@@ -9,6 +9,7 @@
 export async function renderFile(filename, viewPanel) {
   console.log(`[ViewSVG] renderFile → ${filename}`);
   if (!viewPanel) throw new Error("ViewSVG: viewPanel container is required.");
+  viewPanel.dataset.nvZoomInlineFit = "stretch-on-zoom-out";
 
   const serverBase = '/Notebook';
 

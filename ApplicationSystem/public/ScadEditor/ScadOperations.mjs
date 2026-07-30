@@ -5,6 +5,23 @@ import { addTimelineStep, addObject, removeObject, scadObjectTypeLabel, updateOb
 
 const EXTRUDABLE_TYPES = new Set(["circle", "rectangle", "square", "triangle", "polygon", "text"]);
 const BOOLEAN_OPERATION_TYPES = new Set(["cutout", "difference", "union", "intersection"]);
+const BOOLEAN_SOLID_TYPES = new Set(["sphere", "cube", "cylinder", "polyhedron"]);
+
+function hasActiveExtrude(obj) {
+  return (obj?.operations || []).some((op) => op?.type === "extrude" && !op.disabled);
+}
+
+function hasBooleanSolidBody(obj) {
+  return BOOLEAN_SOLID_TYPES.has(obj?.type) || hasActiveExtrude(obj);
+}
+
+function orderBooleanObjectIds(model, type, ids = []) {
+  if (type !== "cutout" && type !== "difference") return ids;
+  const byId = new Map(model.objects.map((obj) => [obj.id, obj]));
+  const solidIds = ids.filter((id) => hasBooleanSolidBody(byId.get(id)));
+  if (solidIds.length !== 1 || ids[0] === solidIds[0]) return ids;
+  return [solidIds[0], ...ids.filter((id) => id !== solidIds[0])];
+}
 
 function selected(model, ids = []) {
   const set = new Set(ids);
@@ -24,6 +41,57 @@ function changedSelectionLabel(objects = [], fallbackIds = []) {
 
 function titleCaseOperation(value = "") {
   return String(value || "Operation").replace(/^./, (ch) => ch.toUpperCase());
+}
+
+function scaleFactorVector(values = []) {
+  const arr = Array.isArray(values) ? values : [];
+  return [0, 1, 2].map((index) => {
+    const num = Number(arr[index]);
+    return Number.isFinite(num) && num !== 0 ? num : 1;
+  });
+}
+
+function sameObjectIdSet(a = [], b = []) {
+  const left = (Array.isArray(a) ? a : []).filter(Boolean);
+  const right = (Array.isArray(b) ? b : []).filter(Boolean);
+  if (left.length !== right.length) return false;
+  const leftSet = new Set(left);
+  if (leftSet.size !== left.length) return false;
+  return right.every((id) => leftSet.has(id));
+}
+
+function lastMergeableScaleStep(model, objectIds = []) {
+  const timeline = Array.isArray(model?.timeline) ? model.timeline : [];
+  const last = timeline[timeline.length - 1] || null;
+  if (!last || last.disabled) return null;
+  if (last.type !== "transform" || last.params?.operation !== "scale") return null;
+  return sameObjectIdSet(last.objectIds, objectIds) ? last : null;
+}
+
+export function recordScaleTimelineStep(model, objectIds = [], factors = [1, 1, 1], options = {}) {
+  const ids = (Array.isArray(objectIds) ? objectIds : []).filter(Boolean);
+  if (!ids.length) return null;
+  const nextFactors = scaleFactorVector(factors);
+  const previous = lastMergeableScaleStep(model, ids);
+  if (previous) {
+    const previousFactors = scaleFactorVector(previous.params?.factors);
+    previous.params = {
+      ...(previous.params || {}),
+      operation: "scale",
+      factors: previousFactors.map((factor, index) => factor * nextFactors[index]),
+    };
+    if (options.axisLock !== undefined) previous.params.axisLock = options.axisLock;
+    previous.timestamp = new Date().toISOString();
+    return previous;
+  }
+  const params = { operation: "scale", factors: nextFactors };
+  if (options.axisLock !== undefined) params.axisLock = options.axisLock;
+  return addTimelineStep(model, {
+    type: "transform",
+    objectIds: ids,
+    label: options.label || "Scale " + selectionLabel(model, ids),
+    params,
+  });
 }
 
 export function extrudeObjects(model, objectIds = [], height = 10) {
@@ -53,16 +121,17 @@ export function addBooleanOperation(model, type, objectIds = []) {
   const normalized = type === "cutout" ? "cutout" : String(type || "").toLowerCase();
   if (!BOOLEAN_OPERATION_TYPES.has(normalized)) return null;
   const operation = normalized === "cutout" ? "difference" : normalized;
+  const orderedIds = orderBooleanObjectIds(model, normalized, ids);
   const label = normalized === "cutout" ? "Cut Out" : "Boolean " + titleCaseOperation(normalized);
   return addTimelineStep(model, {
     type: normalized,
-    objectIds: ids,
+    objectIds: orderedIds,
     label,
     params: {
       operation,
-      operandCount: ids.length,
-      baseObjectId: ids[0],
-      operandIds: ids.slice(1),
+      operandCount: orderedIds.length,
+      baseObjectId: orderedIds[0],
+      operandIds: orderedIds.slice(1),
     },
   });
 }
@@ -84,11 +153,12 @@ export function rotateObjects(model, objectIds = [], delta = [0, 0, 0]) {
 }
 
 export function scaleObjects(model, objectIds = [], factors = [1, 1, 1]) {
+  const appliedFactors = scaleFactorVector(factors);
   selected(model, objectIds).forEach((obj) => {
     const s = obj.transform?.scale || [1, 1, 1];
-    obj.transform.scale = [0, 1, 2].map((i) => Number(s[i] || 1) * (Number(factors[i]) || 1));
+    obj.transform.scale = [0, 1, 2].map((i) => Number(s[i] || 1) * appliedFactors[i]);
   });
-  if (objectIds.length) addTimelineStep(model, { type: "transform", objectIds, label: "Scale " + selectionLabel(model, objectIds), params: { operation: "scale", factors } });
+  recordScaleTimelineStep(model, objectIds, appliedFactors, { label: "Scale " + selectionLabel(model, objectIds) });
 }
 
 export function duplicateObjects(model, objectIds = []) {

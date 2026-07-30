@@ -131,6 +131,7 @@ function timelineCodeLine(model, step) {
   if (operation === "deleteParameter") return "// delete variable " + String(params.name || "");
   if (operation === "union" || operation === "difference" || operation === "intersection") return operation + "() { ... }";
   if (operation === "duplicate") return "// duplicate selected geometry";
+  if (operation === "paste") return "// paste copied geometry";
   if (operation === "delete") return "// delete selected geometry";
   if (operation === "rename") return "// rename " + (params.name || "object");
   if (obj) return objectCode(obj);

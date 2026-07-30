@@ -2,6 +2,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "NBT Block Properties",
+    "hotkeyText": "",
     "panelTemplate": "NBTPropertiesPanel",
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/NBTPropertiesPanel.mjs",
@@ -11,6 +12,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "NBT Tag Properties",
+    "hotkeyText": "",
     "panelTemplate": "NBTPropertiesPanel",
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/NBTPropertiesPanel.mjs",
@@ -21,6 +23,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "View Layers",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "ViewLayers",
     "panelTemplate": "SVGLayersPanel",
@@ -32,6 +35,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "CADtimeline",
+    "hotkeyText": "",
     "panelTemplate": "ScadTimelinePanel",
     "panelType": "ControlPanel",
     "panelPath": "/PanelInstances/ControlPanels/ScadTimelinePanel.mjs",
@@ -41,6 +45,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "SVG Element Properties",
+    "hotkeyText": "",
     "panelTemplate": "SVGPropertiesPanel",
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGPropertiesPanel.mjs",
@@ -50,6 +55,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Drawing Assist",
+    "hotkeyText": "",
     "panelTemplate": "SVGDrawingAssistPanel",
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGDrawingAssistPanel.mjs",
@@ -59,6 +65,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "KML Feature Properties",
+    "hotkeyText": "",
     "panelTemplate": "SVGPropertiesPanel",
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGPropertiesPanel.mjs",
@@ -69,6 +76,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View",
     "heading": "View Type",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "preventDropdown": true,
     "modes": ["KMLviewerMode", "KMLeditorMode"]
@@ -77,6 +85,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Type",
     "heading": "KML View Type Controls",
+    "hotkeyText": "",
     "script": "kmlViewTypeWidget.mjs",
     "modes": ["KMLviewerMode", "KMLeditorMode"]
   },
@@ -84,6 +93,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Type",
     "heading": "Select Aviation Chart Pack",
+    "hotkeyText": "",
     "callbackKey": "selectAviationChartPack",
     "routeToActivePanel": true,
     "modes": ["KMLviewerMode", "KMLeditorMode"]
@@ -92,6 +102,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Type",
     "heading": "Clear Aviation Chart Pack",
+    "hotkeyText": "",
     "callbackKey": "clearAviationChartPack",
     "routeToActivePanel": true,
     "modes": ["KMLviewerMode", "KMLeditorMode"]
@@ -100,6 +111,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View",
     "heading": "STL viewport",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "shortLabel": "STL",
     "preventDropdown": true,
@@ -109,12 +121,14 @@
     "ToolbarCategory": "View",
     "parentHeading": "STL viewport",
     "heading": "Controls",
+    "hotkeyText": "",
     "script": "stlViewportWidget.mjs",
     "modes": ["STLviewing"]
   },
   {
     "ToolbarCategory": "View",
     "heading": "dark mode",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "toggleDarkMode",
     "preventAutoSubToolbar": true
@@ -122,6 +136,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Reload App",
+    "hotkeyText": "",
     "icon": "icons/Sync.png",
     "callbackKey": "reloadApp",
     "preventAutoSubToolbar": true
@@ -129,6 +144,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Full screen",
+    "hotkeyText": "",
     "icon": "icons/StretchArrowIcon.png",
     "callbackKey": "fullscreenApp",
     "preventAutoSubToolbar": true
@@ -136,6 +152,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Chat",
+    "hotkeyText": "",
     "icon": "icons/AddressIcon.png",
     "callbackKey": "chat",
     "preventAutoSubToolbar": true
@@ -143,6 +160,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Comments",
+    "hotkeyText": "",
     "icon": "icons/QuotationIcon.png",
     "callbackKey": "commentsPanel",
     "preventAutoSubToolbar": true
@@ -151,6 +169,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "New Layer",
+    "hotkeyText": "",
     "callbackKey": "svgLayerAdd",
     "modes": ["SVG Editing"]
   },
@@ -158,6 +177,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "Next Layer",
+    "hotkeyText": "",
     "callbackKey": "svgLayerNext",
     "modes": ["SVG Editing"]
   },
@@ -165,6 +185,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "Previous Layer",
+    "hotkeyText": "",
     "callbackKey": "svgLayerPrev",
     "modes": ["SVG Editing"]
   },
@@ -172,6 +193,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "Rename Active Layer",
+    "hotkeyText": "",
     "callbackKey": "svgLayerRenameActive",
     "modes": ["SVG Editing"]
   },
@@ -179,6 +201,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "Delete Active Layer",
+    "hotkeyText": "",
     "callbackKey": "svgLayerDeleteActive",
     "modes": ["SVG Editing"]
   },
@@ -186,12 +209,14 @@
     "ToolbarCategory": "View",
     "parentHeading": "View Layers",
     "heading": "Toggle Layer Visibility",
+    "hotkeyText": "",
     "callbackKey": "svgLayerToggleActiveVisibility",
     "modes": ["SVG Editing"]
   },
     {
     "ToolbarCategory": "File",
     "heading": "File View",
+    "hotkeyText": "",
     "icon": "icons/DefaultNodeImage.png",
     "panelTemplateId": "FileView",
     "panelType": "FileView",
@@ -200,6 +225,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Graph View",
+    "hotkeyText": "",
     "content": "",
     "panelTemplate": "GraphManager",
     "panelType": "InfoPanel",
@@ -209,6 +235,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "File Manager",
+    "hotkeyText": "",
     "content": "",
     "panelTemplate": "FileManager",
     "panelType": "InfoPanel",
@@ -218,6 +245,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "IoT Dashboard",
+    "hotkeyText": "",
     "content": "",
     "panelTemplate": "IoTDashboard",
     "panelType": "InfoPanel",
@@ -227,6 +255,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "MQTT Explorer",
+    "hotkeyText": "",
     "content": "",
     "panelTemplate": "MQTTExplorer",
     "panelType": "InfoPanel",
@@ -236,6 +265,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Virtual World Viewing",
+    "hotkeyText": "",
     "callbackKey": "VirtualWorldViewing",
     "panel": "GameView",
     "panelTemplate": "GameView",
@@ -244,6 +274,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Virtual World Editing",
+    "hotkeyText": "",
     "callbackKey": "VirtualWorldEditing",
     "panel": "GameView",
     "panelTemplate": "GameView",
@@ -252,6 +283,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Play Score",
+    "hotkeyText": "",
     "icon": "icons/MusicSheetIcon.png",
     "modes": ["MIDIediting", "MIDIviewing"]
   },
@@ -259,6 +291,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Play Score",
     "heading": "Controls",
+    "hotkeyText": "",
     "modes": ["MIDIediting", "MIDIviewing"],
     "content": "<button data-nv-midi-action=\"play\" style=\"height:26px;padding:0 10px;\">Play</button><button data-nv-midi-action=\"pause\" style=\"height:26px;padding:0 10px;\">Pause</button><button data-nv-midi-action='restart' style='height:26px;padding:0 10px;'>Restart</button><label style=\"display:flex;align-items:center;gap:6px;font:12px system-ui, -apple-system, Segoe UI, sans-serif;\">Tempo <input data-nv-midi-tempo type=\"number\" min=\"20\" max=\"400\" step=\"1\" style=\"width:78px;height:24px;\" /></label><label style=\"display:flex;align-items:center;gap:6px;font:12px system-ui, -apple-system, Segoe UI, sans-serif;padding-left:8px;\"><input data-nv-midi-click type=\"checkbox\" style=\"width:16px;height:16px;\" /> Click track</label>",
     "script": "playScoreControlsWidget.mjs"
@@ -266,6 +299,7 @@
   {
     "ToolbarCategory": "View",
     "heading": "Zoom and Pan",
+    "hotkeyText": "Ctrl/Cmd+Plus, Ctrl/Cmd+Minus, Ctrl/Cmd+0",
     "content": "",
     "icon": "icons/StretchArrowIcon.png"
   },
@@ -273,12 +307,14 @@
     "ToolbarCategory": "View",
     "parentHeading": "Zoom and Pan",
     "heading": "Controls",
+    "hotkeyText": "Ctrl/Cmd+Plus, Ctrl/Cmd+Minus, Ctrl/Cmd+0",
     "content": "",
     "script": "zoomPanControlsWidget.mjs"
   },
   {
     "ToolbarCategory": "View",
     "heading": "Layout Controls",
+    "hotkeyText": "",
     "content": "",
     "icon": "icons/CanvasIcon.png"
   },
@@ -286,6 +322,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Close Panel",
+    "hotkeyText": "",
     "icon": "icons/ExitIcon.png",
     "callbackKey": "closePanel"
   },
@@ -293,6 +330,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Fullscreen Panel",
+    "hotkeyText": "",
     "icon": "icons/StretchArrowIcon.png",
     "callbackKey": "fullscreenPanel"
   },
@@ -300,6 +338,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Fullscreen Workspace",
+    "hotkeyText": "",
     "icon": "icons/StretchArrowIcon.png",
     "callbackKey": "fullscreenWorkspace"
   },
@@ -307,6 +346,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Undock Panel",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "UndockPanel"
   },
@@ -315,6 +355,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Split Cell Horizontally",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "SplitCellHorizontally"
   },
@@ -322,12 +363,14 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Split Cell Vertically",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "SplitCellVertically"
   },    {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Merge Cells",
+    "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
     "callbackKey": "MergeCells"
   },
@@ -335,6 +378,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Left",
+    "hotkeyText": "",
     "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelLeft"
   },
@@ -342,6 +386,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Right",
+    "hotkeyText": "",
     "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelRight"
   },
@@ -349,6 +394,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Up",
+    "hotkeyText": "",
     "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelUp"
   },
@@ -356,6 +402,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Move Panel Down",
+    "hotkeyText": "",
     "icon": "icons/PositionArrowIcon.png",
     "callbackKey": "movePanelDown"
   },
@@ -363,6 +410,7 @@
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
     "heading": "Save Current Layout",
+    "hotkeyText": "",
     "icon": "icons/SaveIcon.png",
     "callbackKey": "SaveCurrentLayout"
   }

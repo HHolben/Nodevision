@@ -55,6 +55,7 @@ import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
 import { createDesktopOpenState, registerDesktopOpenRoutes } from "./Desktop/DesktopOpenHandler.mjs";
 import { registerTerrainRoutes } from "./server/routes/terrainRoutes.mjs";
 import { registerHandwritingOcrTrainingRoutes } from "./server/routes/handwritingOcrTrainingRoutes.mjs";
+import { registerStrokeHandwritingRecognitionRoutes } from "./server/routes/strokeHandwritingRecognitionRoutes.mjs";
 import { registerPhoneImportRoutes } from "./server/routes/phoneImportRoutes.mjs";
 
 const FAA_VFR_RASTER_CHARTS_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/vfr/";
@@ -374,6 +375,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerDesktopOpenRoutes(app, ctx, desktopOpenState);
   registerKmlUtilityRoutes(app, ctx);
   registerHandwritingOcrTrainingRoutes(app, ctx);
+  registerStrokeHandwritingRecognitionRoutes(app, ctx);
   registerPhoneImportRoutes(app, ctx);
 
 

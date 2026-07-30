@@ -3,7 +3,23 @@
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 import { getActiveMetaWorldLayerBridge, notifyMetaWorldLayersChanged } from "/MetaWorld/MetaWorldLayerState.mjs";
+import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { normalizePlaneEquationConfig, resizeEquationColliderPlaneMesh, syncPlaneColliderRef, makePlaneColliderRef } from "./equationColliderTool.mjs";
+import { resolveLinkedWorldResource } from "./embeddedResourceEditor.mjs";
+
+const IFRAME_HOST_PAGE_SOURCE = "nodevision://host-page";
+const IFRAME_HOST_PAGE_KIND = "host-page";
+
+function readIframeSourceKind(data = {}) {
+  const iframe = data.iframeObject && typeof data.iframeObject === "object" ? data.iframeObject : {};
+  return String(data.iframeSourceKind || data.sourceKind || iframe.iframeSourceKind || iframe.sourceKind || "").trim().toLowerCase();
+}
+
+function sourceKindForIframeSource(src) {
+  return String(src || "").trim().toLowerCase() === IFRAME_HOST_PAGE_SOURCE
+    ? IFRAME_HOST_PAGE_KIND
+    : "";
+}
 
 function parseNumber(value, fallback = 0) {
   const n = Number.parseFloat(value);
@@ -323,6 +339,93 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   }
   [planeBoundXInput, planeBoundYInput, planeBoundZInput].forEach((input) => input.addEventListener("change", refreshPlaneBoundControls));
 
+  const soundControls = document.createElement("div");
+  soundControls.style.display = "none";
+  soundControls.style.gridColumn = "1 / -1";
+  soundControls.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+  soundControls.style.gap = "8px";
+  soundControls.style.padding = "8px";
+  soundControls.style.border = "1px solid rgba(80,190,255,0.42)";
+  soundControls.style.borderRadius = "8px";
+  controls.appendChild(soundControls);
+
+  const soundHeading = document.createElement("div");
+  soundHeading.textContent = "Sound Object";
+  soundHeading.style.gridColumn = "1 / -1";
+  soundHeading.style.fontWeight = "700";
+  soundControls.appendChild(soundHeading);
+
+  function labeledSoundInput(labelText, inputEl) {
+    const box = document.createElement("label");
+    box.style.display = "flex";
+    box.style.flexDirection = "column";
+    box.style.gap = "4px";
+    box.textContent = labelText;
+    box.appendChild(inputEl);
+    soundControls.appendChild(box);
+    return inputEl;
+  }
+
+  const soundSourceInput = labeledSoundInput("Source", document.createElement("input"));
+  soundSourceInput.type = "text";
+  soundSourceInput.placeholder = "audio/music.mp3";
+  soundSourceInput.parentElement.style.gridColumn = "1 / -1";
+
+  const soundVolumeInput = labeledSoundInput("Volume", document.createElement("input"));
+  soundVolumeInput.type = "number";
+  soundVolumeInput.min = "0";
+  soundVolumeInput.max = "1";
+  soundVolumeInput.step = "0.05";
+
+  const soundRangeInput = labeledSoundInput("Range", document.createElement("input"));
+  soundRangeInput.type = "number";
+  soundRangeInput.min = "0";
+  soundRangeInput.step = "0.5";
+
+  const iframeControls = document.createElement("div");
+  iframeControls.style.display = "none";
+  iframeControls.style.gridColumn = "1 / -1";
+  iframeControls.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+  iframeControls.style.gap = "8px";
+  iframeControls.style.padding = "8px";
+  iframeControls.style.border = "1px solid rgba(60,130,255,0.42)";
+  iframeControls.style.borderRadius = "8px";
+  controls.appendChild(iframeControls);
+
+  const iframeHeading = document.createElement("div");
+  iframeHeading.textContent = "iFrame";
+  iframeHeading.style.gridColumn = "1 / -1";
+  iframeHeading.style.fontWeight = "700";
+  iframeControls.appendChild(iframeHeading);
+
+  function labeledIframeInput(labelText, inputEl) {
+    const box = document.createElement("label");
+    box.style.display = "flex";
+    box.style.flexDirection = "column";
+    box.style.gap = "4px";
+    box.textContent = labelText;
+    box.appendChild(inputEl);
+    iframeControls.appendChild(box);
+    return inputEl;
+  }
+
+  const iframeSourceInput = labeledIframeInput("Source", document.createElement("input"));
+  iframeSourceInput.type = "text";
+  iframeSourceInput.placeholder = "https://example.com or pages/info.html";
+  iframeSourceInput.parentElement.style.gridColumn = "1 / -1";
+
+  const iframeTitleInput = labeledIframeInput("Title", document.createElement("input"));
+  iframeTitleInput.type = "text";
+
+  const iframeAllowInput = labeledIframeInput("Allow", document.createElement("input"));
+  iframeAllowInput.type = "text";
+  iframeAllowInput.placeholder = "fullscreen";
+
+  const iframeSandboxInput = labeledIframeInput("Sandbox", document.createElement("input"));
+  iframeSandboxInput.type = "text";
+  iframeSandboxInput.placeholder = "allow-scripts allow-same-origin";
+  iframeSandboxInput.parentElement.style.gridColumn = "1 / -1";
+
   const buttonRow = document.createElement("div");
   buttonRow.style.display = "flex";
   buttonRow.style.gap = "8px";
@@ -439,6 +542,170 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     return target?.userData?.isPortal === true || String(target?.userData?.nvType || "").toLowerCase() === "portal";
   }
 
+  function isSoundObjectTarget(target) {
+    const type = String(target?.userData?.nvType || "").toLowerCase();
+    return type === "sound-object" || Boolean(target?.userData?.soundObject || target?.userData?.audioAssetPath);
+  }
+
+  function clampInspectorNumber(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.max(min, Math.min(max, number));
+  }
+
+  function syncSoundDefinition(target) {
+    if (!isSoundObjectTarget(target)) return;
+    const objectId = getPortalObjectId(target);
+    const def = findWorldObjectDefinition(objectId);
+    if (!def) return;
+    const sound = target.userData.soundObject && typeof target.userData.soundObject === "object" ? target.userData.soundObject : {};
+    def.type = "sound-object";
+    def.src = target.userData.soundSource || sound.src || target.userData.audioAssetPath || "";
+    const linked = target.userData.soundLinkedPath || target.userData.soundFile || sound.audioLinkedPath || sound.audioFile || "";
+    if (linked) {
+      def.audioFile = linked;
+      def.audioLinkedPath = linked;
+    } else {
+      delete def.audioFile;
+      delete def.audioLinkedPath;
+    }
+    const inline = target.userData.soundDataUrl || sound.audioDataUrl || "";
+    if (inline) def.audioDataUrl = inline;
+    else delete def.audioDataUrl;
+    def.volume = clampInspectorNumber(target.userData.soundVolume ?? sound.volume, 0, 1, 0.8);
+    def.range = clampInspectorNumber(target.userData.soundRange ?? sound.range, 0, 10000, 14);
+    def.loop = target.userData.soundLoop !== false && sound.loop !== false;
+    def.collider = false;
+    def.collidable = false;
+    def.isSolid = false;
+    const bridge = getActiveMetaWorldLayerBridge();
+    if (bridge?.worldData?.metadata && typeof bridge.worldData.metadata === "object") {
+      bridge.worldData.metadata.layersDirty = true;
+      bridge.worldData.metadata.visibilityDirty = true;
+    }
+    notifyMetaWorldLayersChanged({ reason: "soundObjectUpdated", objectId });
+    markWorldDirty();
+  }
+
+  function populateSoundControlsFromTarget(target) {
+    const show = isSoundObjectTarget(target);
+    soundControls.style.display = show ? "grid" : "none";
+    colliderInput.disabled = show;
+    physicsInput.disabled = show;
+    if (!show) return;
+    const sound = target.userData.soundObject && typeof target.userData.soundObject === "object" ? target.userData.soundObject : {};
+    soundSourceInput.value = target.userData.soundSource || sound.src || target.userData.audioAssetPath || sound.audioFile || "";
+    soundVolumeInput.value = String(clampInspectorNumber(target.userData.soundVolume ?? sound.volume, 0, 1, 0.8));
+    soundRangeInput.value = String(clampInspectorNumber(target.userData.soundRange ?? sound.range, 0, 10000, 14));
+    colliderInput.checked = false;
+    physicsInput.checked = false;
+  }
+
+  function applySoundFormToTarget(target) {
+    if (!isSoundObjectTarget(target)) return;
+    const source = String(soundSourceInput.value || "").trim();
+    const volume = clampInspectorNumber(soundVolumeInput.value, 0, 1, target.userData.soundVolume ?? 0.8);
+    const range = clampInspectorNumber(soundRangeInput.value, 0, 10000, target.userData.soundRange ?? 14);
+    const sound = target.userData.soundObject && typeof target.userData.soundObject === "object" ? target.userData.soundObject : {};
+    const isInlineSource = source.startsWith("data:");
+    const isExternalSource = source.startsWith("data:") || source.startsWith("blob:") || /^https?:/i.test(source) || source.startsWith("/");
+    const linkedSource = source && !isExternalSource ? source : "";
+    target.userData.nvType = "sound-object";
+    target.userData.soundSource = source;
+    target.userData.audioAssetPath = source;
+    target.userData.soundFile = linkedSource;
+    target.userData.soundLinkedPath = linkedSource;
+    target.userData.soundDataUrl = isInlineSource ? source : "";
+    target.userData.soundVolume = volume;
+    target.userData.soundRange = range;
+    target.userData.soundLoop = true;
+    target.userData.soundObject = {
+      ...sound,
+      src: source,
+      audioFile: linkedSource,
+      audioLinkedPath: linkedSource,
+      audioDataUrl: isInlineSource ? source : "",
+      volume,
+      range,
+      loop: true
+    };
+    target.userData.isSolid = false;
+    target.userData.physicsEnabled = false;
+    removeColliderForTarget(colliders, target);
+    target.userData.syncSoundObjectRuntime?.();
+    target.userData.updateSoundObjectRuntime?.(window.VRWorldContext?.controls?.getObject?.().position || window.VRWorldContext?.camera?.position || null);
+    syncSoundDefinition(target);
+  }
+
+  function isIframeTarget(target) {
+    const type = String(target?.userData?.nvType || "").toLowerCase();
+    return type === "iframe" || Boolean(target?.userData?.iframeObject || target?.userData?.iframeSrc);
+  }
+
+  function syncIframeDefinition(target) {
+    if (!isIframeTarget(target)) return;
+    const objectId = getPortalObjectId(target);
+    const def = findWorldObjectDefinition(objectId);
+    if (!def) return;
+    const iframe = target.userData.iframeObject && typeof target.userData.iframeObject === "object" ? target.userData.iframeObject : {};
+    const src = target.userData.iframeSrc || iframe.iframeSrc || iframe.src || "about:blank";
+    const title = target.userData.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page";
+    const sourceKind = sourceKindForIframeSource(src) || readIframeSourceKind(target.userData);
+    def.type = "iframe";
+    def.shape = "box";
+    def.src = src;
+    def.iframeSrc = src;
+    def.iframeTitle = title;
+    if (sourceKind) def.iframeSourceKind = sourceKind;
+    else delete def.iframeSourceKind;
+    def.color = target.userData.iframeColor || def.color || "#f8fbff";
+    if (target.userData.iframeSandbox || iframe.sandbox) def.sandbox = target.userData.iframeSandbox || iframe.sandbox;
+    else delete def.sandbox;
+    if (target.userData.iframeAllow || iframe.allow) def.allow = target.userData.iframeAllow || iframe.allow;
+    else delete def.allow;
+    def.collider = target.userData?.colliderRef ? true : false;
+    def.collidable = def.collider;
+    def.isSolid = def.collider;
+    const bridge = getActiveMetaWorldLayerBridge();
+    if (bridge?.worldData?.metadata && typeof bridge.worldData.metadata === "object") {
+      bridge.worldData.metadata.layersDirty = true;
+      bridge.worldData.metadata.visibilityDirty = true;
+    }
+    notifyMetaWorldLayersChanged({ reason: "iframeObjectUpdated", objectId });
+    markWorldDirty();
+  }
+
+  function populateIframeControlsFromTarget(target) {
+    const show = isIframeTarget(target);
+    iframeControls.style.display = show ? "grid" : "none";
+    if (!show) return;
+    const iframe = target.userData.iframeObject && typeof target.userData.iframeObject === "object" ? target.userData.iframeObject : {};
+    iframeSourceInput.value = readIframeSourceKind(target.userData) === IFRAME_HOST_PAGE_KIND
+      ? IFRAME_HOST_PAGE_SOURCE
+      : (target.userData.iframeSrc || iframe.iframeSrc || iframe.src || "about:blank");
+    iframeTitleInput.value = target.userData.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page";
+    iframeAllowInput.value = target.userData.iframeAllow || iframe.allow || "";
+    iframeSandboxInput.value = target.userData.iframeSandbox || iframe.sandbox || "";
+  }
+
+  function applyIframeFormToTarget(target) {
+    if (!isIframeTarget(target)) return;
+    const src = String(iframeSourceInput.value || "").trim() || "about:blank";
+    const title = String(iframeTitleInput.value || "").trim() || "Embedded Page";
+    const allow = String(iframeAllowInput.value || "").trim();
+    const sandbox = String(iframeSandboxInput.value || "").trim();
+    const sourceKind = sourceKindForIframeSource(src);
+    target.userData.nvType = "iframe";
+    target.userData.iframeSrc = src;
+    target.userData.iframeTitle = title;
+    target.userData.iframeSourceKind = sourceKind;
+    target.userData.iframeAllow = allow;
+    target.userData.iframeSandbox = sandbox;
+    target.userData.iframeColor = colorInput.value || target.userData.iframeColor || "#f8fbff";
+    target.userData.iframeObject = { src, iframeSrc: src, iframeSourceKind: sourceKind, title, iframeTitle: title, allow, sandbox };
+    target.userData.refreshIframeObjectMaterial?.();
+  }
+
   function portalRefMatchesTarget(portalRef, target) {
     if (!portalRef || !target) return false;
     const object = portalRef.object3d;
@@ -497,6 +764,19 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   function markWorldDirty() {
     if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
+  }
+
+  function syncLinkedResourceSelection(target) {
+    const resource = resolveLinkedWorldResource(target);
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.activeVirtualWorldObject = target || null;
+    window.NodevisionState.activeVirtualWorldLinkedResource = resource || null;
+    window.NodevisionState.virtualWorldResourceSelected = Boolean(resource);
+    updateToolbarState({
+      virtualWorldResourceSelected: Boolean(resource),
+      activeVirtualWorldLinkedResource: resource || null,
+    });
+    return resource;
   }
 
   function findWorldObjectDefinition(objectId) {
@@ -766,6 +1046,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     }
 
     populatePortalControlsFromTarget(target);
+    populateSoundControlsFromTarget(target);
+    populateIframeControlsFromTarget(target);
 
     const kind = target.userData?.nvType || target.name || target.type || "Object";
     const distanceText = Number.isFinite(distance) ? ` | distance ${distance.toFixed(2)}m` : "";
@@ -805,7 +1087,19 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       applyPortalFormToTarget(activeTarget);
     }
 
-    if (colliderInput.checked && !activeTarget.userData?.colliderRef) {
+    const soundTarget = isSoundObjectTarget(activeTarget);
+    if (soundTarget) {
+      applySoundFormToTarget(activeTarget);
+      colliderInput.checked = false;
+      physicsInput.checked = false;
+    }
+
+    const iframeTarget = isIframeTarget(activeTarget);
+    if (iframeTarget) {
+      applyIframeFormToTarget(activeTarget);
+    }
+
+    if (!soundTarget && colliderInput.checked && !activeTarget.userData?.colliderRef) {
       if (isEquationColliderPlane(activeTarget)) {
         const colliderRef = makePlaneColliderRef(THREE, activeTarget);
         colliders.push(colliderRef);
@@ -813,19 +1107,21 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       } else {
         addBoxColliderForTarget(THREE, colliders, activeTarget);
       }
-    } else if (!colliderInput.checked && activeTarget.userData?.colliderRef) {
+    } else if (!soundTarget && !colliderInput.checked && activeTarget.userData?.colliderRef) {
       removeColliderForTarget(colliders, activeTarget);
     }
 
-    activeTarget.userData.physicsEnabled = physicsInput.checked;
-    activeTarget.userData.isSolid = physicsInput.checked;
+    activeTarget.userData.physicsEnabled = soundTarget ? false : physicsInput.checked;
+    activeTarget.userData.isSolid = soundTarget ? false : physicsInput.checked;
 
     syncTargetCollider(THREE, colliders, activeTarget);
+    if (iframeTarget) syncIframeDefinition(activeTarget);
     if (isEquationColliderPlane(activeTarget)) {
       window.VRWorldContext?.equationObjectsPanel?.syncTargetLayer?.(activeTarget, "equationObjectInspectorUpdated");
     }
     loadPreviewFromTarget(activeTarget);
     populateFormFromTarget(activeTarget);
+    syncLinkedResourceSelection(activeTarget);
   }
 
   portalModeSelect.addEventListener("change", refreshPortalControlVisibility);
@@ -847,6 +1143,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     syncTargetCollider(THREE, colliders, activeTarget);
     loadPreviewFromTarget(activeTarget);
     populateFormFromTarget(activeTarget);
+    syncLinkedResourceSelection(activeTarget);
   });
 
   const resizeObserver = new ResizeObserver(() => updatePreviewSize());
@@ -857,6 +1154,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       const resolvedTarget = resolveInspectableTarget(target);
       if (!resolvedTarget) return false;
       activeTarget = resolvedTarget;
+      syncLinkedResourceSelection(activeTarget);
       loadPreviewFromTarget(activeTarget);
       populateFormFromTarget(activeTarget, distance);
       floatingPanel.setVisible(true);
@@ -864,13 +1162,31 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     hide() {
+      activeTarget = null;
       floatingPanel.setVisible(false);
+      syncLinkedResourceSelection(null);
+    },
+    getActiveTarget() {
+      return activeTarget;
+    },
+    getActiveLinkedResource() {
+      return resolveLinkedWorldResource(activeTarget);
+    },
+    refreshActiveTarget() {
+      if (!activeTarget) return false;
+      syncTargetCollider(THREE, colliders, activeTarget);
+      loadPreviewFromTarget(activeTarget);
+      populateFormFromTarget(activeTarget);
+      syncLinkedResourceSelection(activeTarget);
+      return true;
     },
     dispose() {
+      activeTarget = null;
       stopPreviewLoop();
       resizeObserver.disconnect();
       previewRenderer.dispose();
       floatingPanel.dispose();
+      syncLinkedResourceSelection(null);
     }
   };
 }

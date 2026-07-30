@@ -496,7 +496,8 @@ class OrbitControls extends EventDispatcher {
 
 		function getZoomScale( delta ) {
 
-			const normalized_delta = Math.abs( delta ) / ( 100 * ( window.devicePixelRatio | 0 ) );
+			const pixelRatio = Math.max( 1, Number( window.devicePixelRatio ) || 1 );
+			const normalized_delta = Math.abs( delta ) / ( 100 * pixelRatio );
 			return Math.pow( 0.95, scope.zoomSpeed * normalized_delta );
 
 		}

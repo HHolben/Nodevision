@@ -154,6 +154,10 @@ const TEMPLATE = `
           <input type="checkbox" data-sync-pause-on-error>
           <span>Pause on file errors</span>
         </label>
+        <label style="display:flex;gap:6px;align-items:center;font-size:0.86em;color:#444;padding-bottom:8px;">
+          <input type="checkbox" data-sync-skip-same-name-location-size>
+          <span>Skip files with same name, location, and size</span>
+        </label>
         <button type="button" data-sync-dry style="border:1px solid #777;border-radius:6px;background:#fff;padding:7px 10px;cursor:pointer;font-size:0.9em;">Dry Run Sync</button>
         <button type="button" data-sync-apply style="border:none;border-radius:6px;background:#0a84ff;color:#fff;padding:8px 12px;cursor:pointer;font-size:0.9em;">Apply Sync</button>
       </div>
@@ -224,6 +228,7 @@ function normalizeMaxFileSizeMb(value) {
 
 const SYNC_MAX_FILE_SIZE_MB_STORAGE_KEY = "nodevision.sync.maxFileSizeMb";
 const SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY = "nodevision.sync.pauseOnFileError";
+const SYNC_SKIP_SAME_NAME_LOCATION_SIZE_STORAGE_KEY = "nodevision.sync.skipSameNameLocationSize";
 const SYNC_DIRECTION_STORAGE_KEY = "nodevision.sync.direction";
 const SYNC_TRANSPORT_STORAGE_KEY = "nodevision.sync.syncTransport";
 const SYNC_PEER_URL_STORAGE_KEY = "nodevision.sync.peerUrl";
@@ -279,6 +284,14 @@ function readStoredMaxFileSizeMb() {
 function readStoredPauseOnFileError() {
   try {
     return window.localStorage?.getItem(SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function readStoredSkipSameNameLocationSize() {
+  try {
+    return window.localStorage?.getItem(SYNC_SKIP_SAME_NAME_LOCATION_SIZE_STORAGE_KEY) === "true";
   } catch {
     return false;
   }
@@ -445,6 +458,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const syncDirectionSelect = panelElem.querySelector("[data-sync-direction]");
   const maxFileSizeInput = panelElem.querySelector("[data-sync-max-file-mb]");
   const pauseOnFileErrorInput = panelElem.querySelector("[data-sync-pause-on-error]");
+  const skipSameNameLocationSizeInput = panelElem.querySelector("[data-sync-skip-same-name-location-size]");
   const syncDryBtn = panelElem.querySelector("[data-sync-dry]");
   const packageExportBtn = panelElem.querySelector("[data-package-export]");
   const packageImportBtn = panelElem.querySelector("[data-package-import]");
@@ -491,6 +505,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     syncEvents: [],
     maxFileSizeMb: readStoredMaxFileSizeMb(),
     pauseOnFileError: readStoredPauseOnFileError(),
+    skipSameNameLocationSize: readStoredSkipSameNameLocationSize(),
     syncDirection: readStoredSyncDirection(),
     syncSettings: readStoredSyncTransportSettings(),
     inboxPackages: [],
@@ -502,6 +517,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   if (maxFileSizeInput && state.maxFileSizeMb !== null) maxFileSizeInput.value = String(state.maxFileSizeMb);
   if (pauseOnFileErrorInput) pauseOnFileErrorInput.checked = state.pauseOnFileError;
+  if (skipSameNameLocationSizeInput) skipSameNameLocationSizeInput.checked = state.skipSameNameLocationSize;
   if (syncDirectionSelect) syncDirectionSelect.value = state.syncDirection;
   if (syncTransportSelect) syncTransportSelect.value = state.syncSettings.syncTransport;
   if (receiverDropPathInput) {
@@ -619,6 +635,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const maxFileSizeBytes = getMaxFileSizeBytes();
     if (maxFileSizeBytes !== null) body.maxFileSizeBytes = maxFileSizeBytes;
     body.onFileError = state.pauseOnFileError ? "pause" : "fail";
+    body.skipSameNameLocationSize = Boolean(state.skipSameNameLocationSize);
     return body;
   };
 
@@ -864,7 +881,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, receiverDropPathInput, pushPreviewBtn, pushPackageBtn, inboxRefreshBtn, inboxListEl, inboxPreviewBtn, inboxImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn, wiredDiagnosticsLocalBtn, wiredDiagnosticsPeerBtn, wiredDiagnosticsFullBtn, wiredDiagnosticsExportBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, skipSameNameLocationSizeInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, receiverDropPathInput, pushPreviewBtn, pushPackageBtn, inboxRefreshBtn, inboxListEl, inboxPreviewBtn, inboxImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn, wiredDiagnosticsLocalBtn, wiredDiagnosticsPeerBtn, wiredDiagnosticsFullBtn, wiredDiagnosticsExportBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
     renderTransportSettings();
@@ -1485,6 +1502,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
   pauseOnFileErrorInput?.addEventListener("change", () => {
     state.pauseOnFileError = Boolean(pauseOnFileErrorInput.checked);
     try { window.localStorage?.setItem(SYNC_PAUSE_ON_FILE_ERROR_STORAGE_KEY, state.pauseOnFileError ? "true" : "false"); } catch {}
+  });
+  skipSameNameLocationSizeInput?.addEventListener("change", () => {
+    state.skipSameNameLocationSize = Boolean(skipSameNameLocationSizeInput.checked);
+    try { window.localStorage?.setItem(SYNC_SKIP_SAME_NAME_LOCATION_SIZE_STORAGE_KEY, state.skipSameNameLocationSize ? "true" : "false"); } catch {}
   });
 
   peerListEl?.addEventListener("click", async (e) => {

@@ -6,7 +6,7 @@ import { getPlaneRayIntersection } from "./equationColliderTool.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
 import { setStatus } from "/StatusBar.mjs";
-import { loadWorldObjectMaterialCatalog } from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
+import { DEFAULT_WORLD_OBJECT_MATERIAL_ID, loadWorldObjectMaterialCatalog, materialFileForWorldObjectMaterial } from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 
 export function createMovementUpdater({ THREE, scene, objects, camera, controls, colliders, portals, collisionActions, useTargets, spawnPoints, waterVolumes, objectInspector, worldPropertiesPanel, functionPlotterPanel, loadWorldFromFile, getBindings, heldKeys, movementState, terrainToolController, consolePanels, ground }) {
   const playerRadius = 0.35;
@@ -61,6 +61,17 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const lastGrabDir = new THREE.Vector3(0, 0, -1);
   const boundsPickBox = new THREE.Box3();
   const boundsPickPoint = new THREE.Vector3();
+  const selectedItemActions = new Map();
+  const VOXEL_PLACER_TOOL_ID = "voxel-placer";
+  const VOXEL_EXTRUDER_TOOL_ID = "voxel-extruder";
+  const DEFAULT_VOXEL_PLACER_CONFIG = Object.freeze({
+    size: 1,
+    materialId: DEFAULT_WORLD_OBJECT_MATERIAL_ID,
+    materialFile: materialFileForWorldObjectMaterial(DEFAULT_WORLD_OBJECT_MATERIAL_ID),
+    color: "#8ee6c1",
+    collider: true
+  });
+  let voxelMaterialCatalogPromise = null;
 
   function getFacingDirection(out = new THREE.Vector3()) {
     const ctrlObj = controls?.getObject?.();
@@ -1067,6 +1078,193 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return movementState?.worldRules?.[abilityKey] === true;
   }
 
+  function normalizeSkillKey(value) {
+    return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+  }
+
+  function readSkillLevelValue(value) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    if (value && typeof value === "object") {
+      const direct = [value.level, value.value, value.rank, value.skillLevel].map(Number).find(Number.isFinite);
+      if (Number.isFinite(direct)) return direct;
+      return 1;
+    }
+    return 0;
+  }
+
+  function skillNameMatches(entry, skillKeys) {
+    const keys = Array.isArray(skillKeys) ? skillKeys.map(normalizeSkillKey) : [normalizeSkillKey(skillKeys)];
+    const names = [entry?.id, entry?.name, entry?.skill, entry?.label, entry?.type].map(normalizeSkillKey);
+    return names.some((name) => name && keys.includes(name));
+  }
+
+  function readSkillLevelFromSource(source, skillKeys) {
+    if (!source) return 0;
+    const keys = Array.isArray(skillKeys) ? skillKeys.map(normalizeSkillKey) : [normalizeSkillKey(skillKeys)];
+    if (Array.isArray(source)) {
+      for (const entry of source) {
+        if (skillNameMatches(entry, keys)) return readSkillLevelValue(entry);
+      }
+      return 0;
+    }
+    if (typeof source === "object") {
+      for (const key of keys) {
+        const direct = source[key] ?? source[key.toLowerCase()];
+        const level = readSkillLevelValue(direct);
+        if (level > 0) return level;
+      }
+      for (const [name, entry] of Object.entries(source)) {
+        if (keys.includes(normalizeSkillKey(name))) return readSkillLevelValue(entry);
+        if (entry && typeof entry === "object" && skillNameMatches(entry, keys)) return readSkillLevelValue(entry);
+      }
+    }
+    return 0;
+  }
+
+  function collectPlayerSkillSources() {
+    const ctx = window.VRWorldContext || {};
+    const worldDef = ctx.currentWorldDefinition || {};
+    const metadata = worldDef.metadata || {};
+    const playerCharacter = movementState.playerCharacter || ctx.playerCharacter || ctx.currentCharacter || metadata.playerCharacter || worldDef.playerCharacter || worldDef.character || {};
+    return [
+      movementState.playerSkills,
+      movementState.skills,
+      ctx.playerSkills,
+      ctx.skills,
+      playerCharacter.skills,
+      playerCharacter.character?.skills,
+      metadata.playerSkills,
+      worldDef.playerSkills
+    ];
+  }
+
+  function readPlayerSkillLevel(skillKeys) {
+    for (const source of collectPlayerSkillSources()) {
+      const level = readSkillLevelFromSource(source, skillKeys);
+      if (level > 0) return level;
+    }
+    return 0;
+  }
+
+  function readRunSkillLevel() {
+    if (playerMode() === "creative") {
+      const editorLevel = Number(movementState.editorRunSkillLevel);
+      return Number.isFinite(editorLevel) ? Math.max(1, editorLevel) : 5;
+    }
+    return readPlayerSkillLevel(["run", "running"]);
+  }
+
+  function runSpeedMultiplier(inputState, { crouching = false, crawling = false } = {}) {
+    const moving = inputState?.moveForward || inputState?.moveBackward || inputState?.moveLeft || inputState?.moveRight;
+    if (!inputState?.run || !moving || crouching || crawling) {
+      movementState.isRunning = false;
+      movementState.activeRunSkillLevel = 0;
+      return 1;
+    }
+    const level = readRunSkillLevel();
+    if (level <= 0) {
+      movementState.isRunning = false;
+      movementState.activeRunSkillLevel = 0;
+      return 1;
+    }
+    movementState.isRunning = true;
+    movementState.activeRunSkillLevel = level;
+    return Math.max(1, Math.min(4, 1 + level / 10));
+  }
+
+  function getSelectedInventoryItem() {
+    return window.VRWorldContext?.inventory?.getSelectedItem?.() || null;
+  }
+
+  function getSelectedItemId(item = getSelectedInventoryItem()) {
+    return String(item?.id || "").trim().toLowerCase();
+  }
+
+  function handleSelectedItemAction(actionName, context = {}) {
+    const actionMap = selectedItemActions.get(getSelectedItemId());
+    const handler = actionMap && actionMap[actionName];
+    if (typeof handler !== "function") return false;
+    return handler(context) !== false;
+  }
+
+  function updateSoundObjectRuntimes(listenerPosition) {
+    if (!Array.isArray(objects)) return;
+    objects.forEach((object) => {
+      object?.userData?.updateSoundObjectRuntime?.(listenerPosition);
+    });
+  }
+
+  function normalizeVoxelSize(value, fallback = DEFAULT_VOXEL_PLACER_CONFIG.size) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fallback;
+    return Math.max(0.05, Math.min(20, numeric));
+  }
+
+  function isHexDigitChar(ch) {
+    return "0123456789abcdefABCDEF".includes(ch);
+  }
+
+  function normalizeVoxelColor(value, fallback = DEFAULT_VOXEL_PLACER_CONFIG.color) {
+    const text = typeof value === "string" ? value.trim() : "";
+    if ((text.length === 4 || text.length === 7) && text[0] === "#") {
+      let ok = true;
+      for (let i = 1; i < text.length; i += 1) {
+        if (!isHexDigitChar(text[i])) ok = false;
+      }
+      if (ok) return text;
+    }
+    return fallback;
+  }
+
+  function ensureVoxelPlacerConfig() {
+    const existing = movementState.voxelPlacerConfig && typeof movementState.voxelPlacerConfig === "object"
+      ? movementState.voxelPlacerConfig
+      : {};
+    const materialId = String(existing.materialId || DEFAULT_VOXEL_PLACER_CONFIG.materialId).trim() || DEFAULT_VOXEL_PLACER_CONFIG.materialId;
+    const config = {
+      size: normalizeVoxelSize(existing.size),
+      materialId,
+      materialFile: String(existing.materialFile || materialFileForWorldObjectMaterial(materialId) || DEFAULT_VOXEL_PLACER_CONFIG.materialFile),
+      materialName: typeof existing.materialName === "string" ? existing.materialName : "",
+      matterState: typeof existing.matterState === "string" ? existing.matterState : "",
+      color: normalizeVoxelColor(existing.color),
+      collider: existing.collider !== false
+    };
+    movementState.voxelPlacerConfig = config;
+    return config;
+  }
+
+  function ensureVoxelMaterialCatalog() {
+    if (!voxelMaterialCatalogPromise) {
+      voxelMaterialCatalogPromise = loadWorldObjectMaterialCatalog()
+        .catch((err) => {
+          console.warn("Voxel material catalog failed to load:", err);
+          return [];
+        });
+    }
+    return voxelMaterialCatalogPromise;
+  }
+
+  function findVoxelMaterialEntry(materialId, catalog = []) {
+    const key = String(materialId || "").trim().toLowerCase();
+    return (Array.isArray(catalog) ? catalog : []).find((entry) => String(entry?.materialId || "").trim().toLowerCase() === key) || null;
+  }
+
+  function voxelColorFromMaterialEntry(entry, fallback = DEFAULT_VOXEL_PLACER_CONFIG.color) {
+    return normalizeVoxelColor(entry?.color || entry?.materialDefinition?.defaultColor || entry?.materialDefinition?.rendering?.color, fallback);
+  }
+
+  function applyVoxelMaterialEntry(config, entry, { updateColor = false } = {}) {
+    if (!entry) return config;
+    config.materialId = String(entry.materialId || config.materialId || DEFAULT_VOXEL_PLACER_CONFIG.materialId);
+    config.materialFile = String(entry.materialFile || materialFileForWorldObjectMaterial(config.materialId) || "");
+    config.materialName = String(entry.displayName || entry.materialName || config.materialId || "");
+    config.matterState = String(entry.matterState || entry.MatterState || config.matterState || "");
+    if (updateColor) config.color = voxelColorFromMaterialEntry(entry, config.color);
+    return config;
+  }
+
   const bounceMaterialsByKey = new Map();
 
   function materialLookupKey(value) {
@@ -1259,6 +1457,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const flyUp = heldKeys[bindings.flyUp] || jump;
     const flyDown = heldKeys[bindings.flyDown];
     const phase = heldKeys[bindings.phase] || heldKeys.v;
+    const runKey = String(bindings.run || "e").toLowerCase();
+    const run = heldKeys[runKey] || heldKeys.e || readGamepadBinding(gp, gpBindings.run) > 0;
 
     const standUp = heldKeys.standup === true || (shortcutModifierHeld && heldKeys.arrowup === true);
     const rollLeft = heldKeys[bindings.rollLeft];
@@ -1305,6 +1505,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       flyUp,
       flyDown,
       phase,
+      run,
       rollLeft,
       rollRight,
       pitchUp,
@@ -1713,6 +1914,28 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     };
   }
 
+  function parseIframeProperties() {
+    const raw = prompt(
+      "iFrame properties:\nsource URL or Notebook path; title; width (m); height (m)\nExample: pages/info.html;Info Page;1.6;0.9",
+      "about:blank;Embedded Page;1.6;0.9"
+    );
+    if (raw === null) return null;
+    const parts = String(raw).split(";").map((part) => part.trim());
+    const src = parts[0] || "about:blank";
+    const title = parts[1] || "Embedded Page";
+    const width = Math.max(0.2, Math.min(30, Number.parseFloat(parts[2] || "1.6")));
+    const height = Math.max(0.2, Math.min(30, Number.parseFloat(parts[3] || "0.9")));
+    return {
+      src,
+      title,
+      width: Number.isFinite(width) ? width : 1.6,
+      height: Number.isFinite(height) ? height : 0.9,
+      depth: 0.04,
+      allow: "fullscreen",
+      sandbox: "allow-scripts allow-same-origin allow-forms"
+    };
+  }
+
   function buildMathFunctionMesh(rawProps) {
     const props = normalizeFunctionConfig(rawProps);
     const [xMin, xMax] = props.limits;
@@ -1810,6 +2033,516 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return updateSpawnRuntimeForTarget(mesh);
   }
 
+  function closeVoxelPlacerDialog() {
+    const panel = movementState.voxelPlacerDialog;
+    if (panel?.parentNode) panel.parentNode.removeChild(panel);
+    movementState.voxelPlacerDialog = null;
+  }
+
+  function addVoxelDialogRow(form, labelText, control) {
+    const label = document.createElement("label");
+    Object.assign(label.style, {
+      display: "grid",
+      gridTemplateColumns: "90px minmax(0, 1fr)",
+      alignItems: "center",
+      gap: "10px",
+      color: "#d9f7ef",
+      font: "12px/1.3 system-ui, sans-serif"
+    });
+    const span = document.createElement("span");
+    span.textContent = labelText;
+    span.style.color = "rgba(230, 255, 247, 0.82)";
+    label.appendChild(span);
+    label.appendChild(control);
+    form.appendChild(label);
+    return label;
+  }
+
+  function styleVoxelDialogControl(control) {
+    Object.assign(control.style, {
+      width: "100%",
+      boxSizing: "border-box",
+      borderRadius: "6px",
+      border: "1px solid rgba(132, 211, 190, 0.72)",
+      background: "rgba(6, 22, 28, 0.95)",
+      color: "#f0fffb",
+      padding: "7px 8px",
+      font: "12px/1.2 system-ui, sans-serif"
+    });
+  }
+
+  function openVoxelPlacerDialog() {
+    if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowToolUse")) return false;
+    if (movementState.voxelPlacerDialog?.isConnected) {
+      movementState.voxelPlacerDialog.querySelector("input, select, button")?.focus?.();
+      return true;
+    }
+
+    const config = ensureVoxelPlacerConfig();
+    const overlay = document.createElement("div");
+    movementState.voxelPlacerDialog = overlay;
+    Object.assign(overlay.style, {
+      position: "fixed",
+      inset: "0",
+      zIndex: "26000",
+      display: "grid",
+      placeItems: "center",
+      background: "rgba(1, 9, 12, 0.42)",
+      pointerEvents: "auto"
+    });
+
+    const panel = document.createElement("form");
+    Object.assign(panel.style, {
+      width: "min(360px, calc(100vw - 32px))",
+      borderRadius: "8px",
+      border: "1px solid rgba(153, 236, 214, 0.82)",
+      background: "linear-gradient(180deg, rgba(12, 36, 43, 0.98), rgba(4, 18, 24, 0.98))",
+      boxShadow: "0 18px 52px rgba(0, 0, 0, 0.48)",
+      padding: "14px",
+      color: "#f0fffb",
+      font: "12px/1.4 system-ui, sans-serif"
+    });
+    overlay.appendChild(panel);
+
+    const title = document.createElement("div");
+    title.textContent = "Voxel Placer";
+    Object.assign(title.style, {
+      marginBottom: "12px",
+      color: "#f6fffc",
+      font: "700 16px/1.2 system-ui, sans-serif"
+    });
+    panel.appendChild(title);
+
+    const sizeInput = document.createElement("input");
+    sizeInput.type = "number";
+    sizeInput.min = "0.05";
+    sizeInput.max = "20";
+    sizeInput.step = "0.05";
+    sizeInput.value = String(config.size);
+    styleVoxelDialogControl(sizeInput);
+    addVoxelDialogRow(panel, "Size", sizeInput);
+
+    const materialSelect = document.createElement("select");
+    styleVoxelDialogControl(materialSelect);
+    addVoxelDialogRow(panel, "Material", materialSelect);
+
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = normalizeVoxelColor(config.color);
+    Object.assign(colorInput.style, {
+      width: "100%",
+      height: "34px",
+      boxSizing: "border-box",
+      borderRadius: "6px",
+      border: "1px solid rgba(132, 211, 190, 0.72)",
+      background: "rgba(6, 22, 28, 0.95)",
+      padding: "3px"
+    });
+    addVoxelDialogRow(panel, "Color", colorInput);
+
+    const colliderInput = document.createElement("input");
+    colliderInput.type = "checkbox";
+    colliderInput.checked = config.collider !== false;
+    colliderInput.style.width = "18px";
+    colliderInput.style.height = "18px";
+    const colliderWrap = document.createElement("div");
+    colliderWrap.style.display = "flex";
+    colliderWrap.style.alignItems = "center";
+    colliderWrap.style.gap = "8px";
+    colliderWrap.appendChild(colliderInput);
+    const colliderText = document.createElement("span");
+    colliderText.textContent = "Collider";
+    colliderText.style.color = "#f0fffb";
+    colliderWrap.appendChild(colliderText);
+    addVoxelDialogRow(panel, "Physics", colliderWrap);
+
+    const actions = document.createElement("div");
+    Object.assign(actions.style, {
+      display: "flex",
+      justifyContent: "end",
+      gap: "8px",
+      marginTop: "14px"
+    });
+    panel.appendChild(actions);
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.textContent = "Close";
+    const applyButton = document.createElement("button");
+    applyButton.type = "submit";
+    applyButton.textContent = "Apply";
+    [closeButton, applyButton].forEach((button) => {
+      Object.assign(button.style, {
+        borderRadius: "6px",
+        border: "1px solid rgba(171, 240, 222, 0.8)",
+        background: button === applyButton ? "#7edfc2" : "rgba(8, 31, 38, 0.9)",
+        color: button === applyButton ? "#062018" : "#e8fff8",
+        padding: "7px 12px",
+        font: "700 12px/1 system-ui, sans-serif",
+        cursor: "pointer"
+      });
+      actions.appendChild(button);
+    });
+
+    let catalog = [];
+    const populateMaterials = (entries) => {
+      catalog = Array.isArray(entries) ? entries : [];
+      materialSelect.textContent = "";
+      const source = catalog.length ? catalog : [{
+        materialId: config.materialId,
+        materialFile: config.materialFile,
+        displayName: config.materialName || "Physics Solid",
+        color: config.color,
+        matterState: config.matterState
+      }];
+      source.forEach((entry) => {
+        const option = document.createElement("option");
+        option.value = String(entry.materialId || entry.materialName || "");
+        option.textContent = String(entry.displayName || entry.materialName || entry.materialId || "Material");
+        materialSelect.appendChild(option);
+      });
+      materialSelect.value = findVoxelMaterialEntry(config.materialId, source)?.materialId || source[0]?.materialId || config.materialId;
+      const selectedEntry = findVoxelMaterialEntry(materialSelect.value, source);
+      applyVoxelMaterialEntry(config, selectedEntry, { updateColor: false });
+    };
+
+    const selectedEntryFromControl = () => findVoxelMaterialEntry(materialSelect.value, catalog) || {
+      materialId: materialSelect.value || config.materialId,
+      materialFile: materialFileForWorldObjectMaterial(materialSelect.value || config.materialId),
+      displayName: materialSelect.selectedOptions?.[0]?.textContent || materialSelect.value || config.materialName,
+      color: colorInput.value,
+      matterState: config.matterState
+    };
+
+    materialSelect.addEventListener("change", () => {
+      const entry = selectedEntryFromControl();
+      applyVoxelMaterialEntry(config, entry, { updateColor: true });
+      colorInput.value = normalizeVoxelColor(config.color);
+    });
+
+    panel.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const next = ensureVoxelPlacerConfig();
+      next.size = normalizeVoxelSize(sizeInput.value);
+      next.color = normalizeVoxelColor(colorInput.value, next.color);
+      next.collider = colliderInput.checked;
+      applyVoxelMaterialEntry(next, selectedEntryFromControl(), { updateColor: false });
+      movementState.voxelPlacerConfig = { ...next };
+      setStatus("Voxel Placer updated: size " + next.size + ", " + (next.collider ? "collider" : "visual only") + ".");
+      closeVoxelPlacerDialog();
+    });
+
+    closeButton.addEventListener("click", closeVoxelPlacerDialog);
+    overlay.addEventListener("pointerdown", (event) => {
+      if (event.target === overlay) closeVoxelPlacerDialog();
+    });
+    panel.addEventListener("pointerdown", (event) => event.stopPropagation());
+    panel.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeVoxelPlacerDialog();
+      }
+      event.stopPropagation();
+    });
+
+    populateMaterials([]);
+    void ensureVoxelMaterialCatalog().then(populateMaterials);
+    document.body.appendChild(overlay);
+    controls?.unlock?.();
+    window.setTimeout(() => sizeInput.focus(), 0);
+    return true;
+  }
+
+  function computeVoxelPlacePosition(hit, normal, half, snapToGrid) {
+    const n = normal.clone().normalize();
+    const offset = Math.abs(n.x) * half.x + Math.abs(n.y) * half.y + Math.abs(n.z) * half.z + 0.001;
+    const placePos = hit.point.clone().addScaledVector(n, offset);
+    if (snapToGrid) {
+      const size = Math.max(0.05, half.x * 2);
+      const yOffset = half.y;
+      placePos.x = Math.round(placePos.x / size) * size;
+      placePos.y = Math.round((placePos.y - yOffset) / size) * size + yOffset;
+      placePos.z = Math.round(placePos.z / size) * size;
+    }
+    if (placePos.y < half.y) placePos.y = half.y;
+    return placePos;
+  }
+
+  function placementNormalFromHit(hit) {
+    const normal = hit?.face?.normal?.clone?.() || new THREE.Vector3(0, 1, 0);
+    if (hit?.object?.matrixWorld) normal.transformDirection(hit.object.matrixWorld).normalize();
+    else normal.normalize();
+    return normal;
+  }
+
+  function createVoxelColliderRef(mesh, half, materialId) {
+    const position = mesh.position;
+    const colliderRef = {
+      type: "box",
+      half: half.clone(),
+      box: new THREE.Box3(
+        new THREE.Vector3(position.x - half.x, position.y - half.y, position.z - half.z),
+        new THREE.Vector3(position.x + half.x, position.y + half.y, position.z + half.z)
+      ),
+      target: mesh
+    };
+    if (materialId) {
+      colliderRef.materialId = materialId;
+      colliderRef.physicsMaterialId = materialId;
+    }
+    return colliderRef;
+  }
+
+  function markMeshAsVoxel(mesh, config, size, colliderEnabled) {
+    const materialId = String(config.materialId || DEFAULT_WORLD_OBJECT_MATERIAL_ID);
+    const materialFile = String(config.materialFile || materialFileForWorldObjectMaterial(materialId) || "");
+    mesh.userData.nvType = "box";
+    mesh.userData.isVoxel = true;
+    mesh.userData.voxel = true;
+    mesh.userData.voxelSize = size;
+    mesh.userData.voxelPlacer = {
+      size,
+      materialId,
+      materialFile,
+      materialName: config.materialName || materialId,
+      matterState: config.matterState || "",
+      color: config.color,
+      collider: colliderEnabled
+    };
+    mesh.userData.physicsMaterialId = materialId;
+    mesh.userData.physicsMaterialFile = materialFile;
+    mesh.userData.materialName = config.materialName || materialId;
+    mesh.userData.MatterState = config.matterState || "";
+    mesh.userData.matterState = mesh.userData.MatterState;
+    mesh.userData.isSolid = colliderEnabled;
+    mesh.userData.physicsEnabled = colliderEnabled;
+    mesh.userData.breakable = true;
+    mesh.userData.placedByPlayer = true;
+    makePlacedObjectId(mesh, "voxel");
+  }
+
+  function tryPlaceVoxel({ snapToGrid = false } = {}) {
+    if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowPlace")) return false;
+    const hit = getPlacementHit();
+    if (!hit) {
+      setStatus("No voxel placement target.");
+      return true;
+    }
+
+    const config = ensureVoxelPlacerConfig();
+    const size = normalizeVoxelSize(config.size);
+    const half = new THREE.Vector3(size / 2, size / 2, size / 2);
+    const shape = { type: "box", half };
+    const placePos = computeVoxelPlacePosition(hit, placementNormalFromHit(hit), half, snapToGrid);
+    const colliderEnabled = config.collider !== false;
+    if (colliderEnabled && intersectsPlayer(placePos, shape)) {
+      setStatus("Voxel would intersect the player.");
+      return true;
+    }
+    if (colliderEnabled && intersectsExistingColliders(placePos, shape)) {
+      setStatus("Voxel would overlap an existing collider.");
+      return true;
+    }
+
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(size, size, size),
+      new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.74, metalness: 0.04 })
+    );
+    mesh.position.copy(placePos);
+    markMeshAsVoxel(mesh, config, size, colliderEnabled);
+    scene.add(mesh);
+    objects.push(mesh);
+
+    if (colliderEnabled) {
+      const colliderRef = createVoxelColliderRef(mesh, half, mesh.userData.physicsMaterialId);
+      colliders.push(colliderRef);
+      mesh.userData.colliderRef = colliderRef;
+    }
+
+    setStatus("Voxel placed.");
+    return true;
+  }
+
+  function isVoxelMesh(target) {
+    return target?.isMesh && (target.userData?.isVoxel === true || target.userData?.voxel === true || target.userData?.voxelPlacer);
+  }
+
+  function removeVoxelMesh(target) {
+    scene.remove(target);
+    const objIndex = objects.indexOf(target);
+    if (objIndex !== -1) objects.splice(objIndex, 1);
+    const colliderRef = target.userData?.colliderRef;
+    if (colliderRef) {
+      const cIndex = colliders.indexOf(colliderRef);
+      if (cIndex !== -1) colliders.splice(cIndex, 1);
+      delete target.userData.colliderRef;
+    }
+    const collisionActionRef = target.userData?.collisionActionRef;
+    if (collisionActionRef) {
+      const idx = collisionActions.indexOf(collisionActionRef);
+      if (idx !== -1) collisionActions.splice(idx, 1);
+    }
+    const useTargetRef = target.userData?.useTargetRef;
+    if (useTargetRef) {
+      const idx = useTargets.indexOf(useTargetRef);
+      if (idx !== -1) useTargets.splice(idx, 1);
+    }
+    if (Array.isArray(waterVolumes)) {
+      for (let i = waterVolumes.length - 1; i >= 0; i -= 1) {
+        const ref = waterVolumes[i];
+        if (ref === target.userData?.waterVolumeRef || ref?.target === target || ref?.object3d === target) {
+          waterVolumes.splice(i, 1);
+        }
+      }
+      delete target.userData.waterVolumeRef;
+    }
+    target.geometry?.dispose?.();
+    if (Array.isArray(target.material)) target.material.forEach((mat) => mat?.dispose?.());
+    else target.material?.dispose?.();
+  }
+
+  function tryDeleteVoxel() {
+    if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowBreak")) return true;
+    const hit = getInspectHit({ includeMeasurements: false, allowInfinitePlanes: false });
+    const target = hit?.object || null;
+    if (!target) {
+      setStatus("No voxel targeted.");
+      return true;
+    }
+    if (!isVoxelMesh(target)) {
+      setStatus("Voxel Placer only removes voxels.");
+      return true;
+    }
+    removeVoxelMesh(target);
+    setStatus("Voxel deleted.");
+    return true;
+  }
+
+  function voxelHalfExtentsFromMesh(target) {
+    const params = target?.geometry?.parameters || {};
+    const scale = target?.scale || {};
+    const width = Number(params.width);
+    const height = Number(params.height);
+    const depth = Number(params.depth);
+    const fallbackSize = normalizeVoxelSize(target?.userData?.voxelSize || target?.userData?.voxelPlacer?.size || 1);
+    return new THREE.Vector3(
+      (Number.isFinite(width) && width > 0 ? width : fallbackSize) * Math.abs(Number(scale.x) || 1) * 0.5,
+      (Number.isFinite(height) && height > 0 ? height : fallbackSize) * Math.abs(Number(scale.y) || 1) * 0.5,
+      (Number.isFinite(depth) && depth > 0 ? depth : fallbackSize) * Math.abs(Number(scale.z) || 1) * 0.5
+    );
+  }
+
+  function cloneVoxelMaterial(target) {
+    if (Array.isArray(target?.material)) return target.material.map((mat) => mat?.clone?.() || mat);
+    return target?.material?.clone?.() || new THREE.MeshStandardMaterial({
+      color: target?.userData?.voxelPlacer?.color || "#8ee6c1",
+      roughness: 0.74,
+      metalness: 0.04
+    });
+  }
+
+  function cloneVoxelUserData(target) {
+    const data = target?.userData || {};
+    const voxel = data.voxelPlacer && typeof data.voxelPlacer === "object" ? data.voxelPlacer : {};
+    const cloned = {
+      ...data,
+      voxelPlacer: { ...voxel }
+    };
+    delete cloned.metaWorldLayerId;
+    delete cloned.tag;
+    delete cloned.colliderRef;
+    delete cloned.collisionActionRef;
+    delete cloned.useTargetRef;
+    delete cloned.waterVolumeRef;
+    cloned.isVoxel = true;
+    cloned.voxel = true;
+    cloned.breakable = true;
+    cloned.placedByPlayer = true;
+    return cloned;
+  }
+
+  function dominantAxisFromNormal(normal) {
+    const x = Math.abs(normal.x);
+    const y = Math.abs(normal.y);
+    const z = Math.abs(normal.z);
+    if (x >= y && x >= z) return new THREE.Vector3(Math.sign(normal.x) || 1, 0, 0);
+    if (y >= x && y >= z) return new THREE.Vector3(0, Math.sign(normal.y) || 1, 0);
+    return new THREE.Vector3(0, 0, Math.sign(normal.z) || 1);
+  }
+
+  function tryExtrudeVoxel({ snapToGrid = false } = {}) {
+    if (movementState.worldMode === "2d") return false;
+    if (!canUseAbility("allowPlace")) return true;
+    const hit = getInspectHit({ includeMeasurements: false, allowInfinitePlanes: false });
+    const target = hit?.object || null;
+    if (!target) {
+      setStatus("No voxel targeted.");
+      return true;
+    }
+    if (!isVoxelMesh(target)) {
+      setStatus("Voxel Extruder only clones voxels.");
+      return true;
+    }
+
+    const sourceHalf = voxelHalfExtentsFromMesh(target);
+    const cloneHalf = sourceHalf.clone();
+    const axis = dominantAxisFromNormal(placementNormalFromHit(hit));
+    const placePos = target.position.clone().add(new THREE.Vector3(
+      axis.x * (sourceHalf.x + cloneHalf.x),
+      axis.y * (sourceHalf.y + cloneHalf.y),
+      axis.z * (sourceHalf.z + cloneHalf.z)
+    ));
+
+    if (snapToGrid) {
+      const grid = Math.max(0.05, Math.min(sourceHalf.x, sourceHalf.y, sourceHalf.z) * 2);
+      placePos.x = Math.round(placePos.x / grid) * grid;
+      placePos.y = Math.round((placePos.y - cloneHalf.y) / grid) * grid + cloneHalf.y;
+      placePos.z = Math.round(placePos.z / grid) * grid;
+    }
+    if (placePos.y < cloneHalf.y) placePos.y = cloneHalf.y;
+
+    const colliderEnabled = target.userData?.colliderRef
+      ? true
+      : target.userData?.voxelPlacer?.collider !== false && target.userData?.isSolid === true;
+    const shape = colliderEnabled ? { type: "box", half: cloneHalf } : null;
+    if (shape && intersectsPlayer(placePos, shape)) {
+      setStatus("Extruded voxel would intersect the player.");
+      return true;
+    }
+    if (shape && intersectsExistingColliders(placePos, shape)) {
+      setStatus("Extruded voxel would overlap an existing collider.");
+      return true;
+    }
+
+    const mesh = target.clone(false);
+    mesh.geometry = target.geometry?.clone?.() || new THREE.BoxGeometry(cloneHalf.x * 2, cloneHalf.y * 2, cloneHalf.z * 2);
+    mesh.material = cloneVoxelMaterial(target);
+    mesh.userData = cloneVoxelUserData(target);
+    mesh.position.copy(placePos);
+    mesh.rotation.copy(target.rotation);
+    mesh.quaternion.copy(target.quaternion);
+    mesh.scale.copy(target.scale);
+    mesh.name = "";
+    mesh.userData.isSolid = colliderEnabled;
+    mesh.userData.physicsEnabled = colliderEnabled;
+    if (mesh.userData.voxelPlacer) mesh.userData.voxelPlacer.collider = colliderEnabled;
+    makePlacedObjectId(mesh, "voxel");
+    scene.add(mesh);
+    objects.push(mesh);
+
+    if (colliderEnabled) {
+      const colliderRef = createVoxelColliderRef(mesh, cloneHalf, mesh.userData.physicsMaterialId);
+      colliders.push(colliderRef);
+      mesh.userData.colliderRef = colliderRef;
+    }
+
+    setStatus("Voxel extruded.");
+    return true;
+  }
+
   function createPlacedMesh(selectedItem, inventory) {
     const id = String(selectedItem?.id || "").toLowerCase();
     if (id === "box") {
@@ -1895,6 +2628,28 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         collider: props.collider ? { type: "box", half: new THREE.Vector3(0.45, 0.575, 0.35) } : null
       };
     }
+    if (id === "iframe") {
+      const props = parseIframeProperties();
+      if (!props) return null;
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(props.width, props.height, props.depth),
+        new THREE.MeshStandardMaterial({ color: 0xf8fbff, emissive: 0x183a5f, emissiveIntensity: 0.28 })
+      );
+      mesh.userData.iframeSrc = props.src;
+      mesh.userData.iframeTitle = props.title;
+      mesh.userData.iframeAllow = props.allow;
+      mesh.userData.iframeSandbox = props.sandbox;
+      mesh.userData.iframeColor = "#f8fbff";
+      mesh.userData.iframeObject = {
+        src: props.src,
+        iframeSrc: props.src,
+        title: props.title,
+        iframeTitle: props.title,
+        allow: props.allow,
+        sandbox: props.sandbox
+      };
+      return { mesh, collider: null };
+    }
     if (id === "object-file") {
       const objectFilePath = String(
         selectedItem?.objectFilePath
@@ -1907,6 +2662,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         new THREE.MeshStandardMaterial({ color: 0x6e80d8 })
       );
       mesh.userData.objectFilePath = objectFilePath;
+      mesh.userData.objectFileColliderBinding = "geometry";
       return {
         mesh,
         collider: { type: "box", half: new THREE.Vector3(0.5, 0.5, 0.5) }
@@ -2300,13 +3056,15 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return true;
   }
 
-  function tryUseSelectedTool() {
+  function tryUseSelectedTool(context = {}) {
     if (movementState.worldMode === "2d") return false;
     if (!canUseAbility("allowToolUse")) return false;
     const inventory = window.VRWorldContext?.inventory;
     const selected = inventory?.getSelectedItem?.();
     if (!selected?.id) return false;
     const toolId = String(selected.id).toLowerCase();
+    const selectedUseAction = selectedItemActions.get(toolId)?.use;
+    if (typeof selectedUseAction === "function") return selectedUseAction(context) !== false;
 
     if (toolId === "svg-camera") {
       if (movementState.svgToolLatch) return true;
@@ -2373,6 +3131,95 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
     return false;
   }
+
+  selectedItemActions.set("svg-camera", {
+    use: () => {
+      if (movementState.svgToolLatch) return true;
+      movementState.svgToolLatch = true;
+      if (movementState.svgCameraBusy) return true;
+      const ctx = window.VRWorldContext || {};
+      movementState.svgCameraBusy = true;
+      triggerSvgCameraCapture({
+        scene,
+        camera,
+        sourceRenderer: ctx.renderer,
+        worldPath: ctx.currentWorldPath || window.selectedFilePath || ""
+      }).catch((err) => {
+        if (err?.name === "AbortError") return;
+        console.warn("SVG Camera export failed:", err);
+      }).finally(() => {
+        movementState.svgCameraBusy = false;
+      });
+      return true;
+    }
+  });
+
+  selectedItemActions.set("tape-measure", {
+    use: () => {
+      const hit = getTapeMeasureHit();
+      if (!hit?.point) return true;
+      if (!movementState.tapeMeasureFirstPoint || movementState.tapeMeasureSecondPoint) {
+        clearMeasurementVisuals();
+        const firstPoint = hit.point.clone();
+        const firstMarker = createMeasureMarker(firstPoint, "first");
+        scene.add(firstMarker);
+        registerMeasurementVisual(firstMarker);
+        movementState.tapeMeasureFirstMarker = firstMarker;
+        movementState.tapeMeasureFirstPoint = firstPoint;
+        updateTapeMeasurePreview();
+        return true;
+      }
+      const secondPoint = hit.point.clone();
+      const firstPoint = movementState.tapeMeasureFirstPoint.clone();
+      const secondMarker = createMeasureMarker(secondPoint, "second");
+      scene.add(secondMarker);
+      registerMeasurementVisual(secondMarker);
+      movementState.tapeMeasureSecondMarker = secondMarker;
+      movementState.tapeMeasureSecondPoint = secondPoint;
+      ensureTapeMeasureLineAndLabel(firstPoint, secondPoint);
+      if (movementState.tapeMeasureLine) movementState.tapeMeasureLine.visible = true;
+      if (movementState.tapeMeasureLabel) movementState.tapeMeasureLabel.visible = true;
+      return true;
+    }
+  });
+
+  selectedItemActions.set("terrain-generator", {
+    use: () => {
+      if (tryPaintTerrain()) return true;
+      if (movementState.terrainToolLatch) return true;
+      movementState.terrainToolLatch = true;
+      const terrainTool = terrainToolController || window.VRWorldContext?.terrainToolController;
+      terrainTool?.openPanel?.();
+      return true;
+    }
+  });
+
+  selectedItemActions.set("temporal-manipulator", {
+    use: () => {
+      if (movementState.temporalToolLatch) return true;
+      movementState.temporalToolLatch = true;
+      window.VRWorldContext?.temporalManipulatorPanel?.open?.();
+      return true;
+    }
+  });
+
+  selectedItemActions.set(VOXEL_PLACER_TOOL_ID, {
+    adjust: () => openVoxelPlacerDialog(),
+    use: ({ snapToGrid = false } = {}) => tryPlaceVoxel({ snapToGrid }),
+    attack: () => tryDeleteVoxel()
+  });
+
+  selectedItemActions.set(VOXEL_EXTRUDER_TOOL_ID, {
+    use: ({ snapToGrid = false } = {}) => tryExtrudeVoxel({ snapToGrid }),
+    attack: () => {
+      setStatus("Voxel Extruder only clones voxels with use.");
+      return true;
+    },
+    adjust: () => {
+      setStatus("Voxel Extruder copies the targeted voxel onto the viewed face.");
+      return true;
+    }
+  });
 
   function tryPaintTerrain() {
     if (movementState.worldMode === "2d") return false;
@@ -2498,6 +3345,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         || itemType === "math-function"
         || itemType === "object-file"
         || itemType === "image-plane"
+        || itemType === "iframe"
       ) {
         inventory.addItem(itemType, 1, itemType.charAt(0).toUpperCase() + itemType.slice(1));
         if (itemType === "object-file" && target.userData?.objectFilePath && inventory?.setSelectedObjectFile) {
@@ -2752,9 +3600,11 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     if (portalHit?.object && openInspectTarget(portalHit.object, portalHit.distance)) return true;
 
     if (!hit) {
+      objectInspector?.hide?.();
       worldPropertiesPanel?.open?.();
       return true;
     }
+    objectInspector?.hide?.();
     return false;
   }
 
@@ -2769,6 +3619,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const unlockedBindings = typeof getBindings === "function" ? getBindings() : {};
     const unlockedInspectKey = String(unlockedBindings.inspect || "y").toLowerCase();
     const unlockedInspecting = !typingIntoField && (heldKeys?.[unlockedInspectKey] || heldKeys?.y);
+    const listenerPosition = controls?.getObject?.()?.position || camera?.position || null;
+    updateSoundObjectRuntimes(listenerPosition);
     if (!controls.isLocked) {
       // Keep grabbed objects in sync even when pointer lock drops.
       updateGrabbedObjectFollow();
@@ -2792,7 +3644,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
     ensureWheelHandler();
     const nowMs = performance.now();
-    const speed = 0.2;
+    const baseSpeed = 0.2;
     const bindings = getBindings();
     const inputState = buildInputState(bindings);
     const crouching = inputState.crouch;
@@ -2805,6 +3657,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const inspecting = inputState.inspect;
     const inventory = window.VRWorldContext?.inventory;
     const inEditorMode = playerMode() === "creative";
+    const speed = baseSpeed * runSpeedMultiplier(inputState, { crouching, crawling });
 
     if (inputState.openInventory && !inventoryToggleLatch) {
       inventoryToggleLatch = true;
@@ -2901,6 +3754,12 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       phaseToggleLatch = false;
     }
 
+    const editorGravityEnabled = movementState.editorGravityEnabled !== false;
+    const editorGravityDisabled = inEditorMode && !editorGravityEnabled;
+    if (editorGravityDisabled) {
+      movementState.velocityY = 0;
+    }
+
     if (inputState.fly && !movementState.flyToggleLatch) {
       if (canUseAbility("allowFly")) {
         movementState.isFlying = !movementState.isFlying;
@@ -2920,6 +3779,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
     if (!stretching) {
       movementState.stretchLatch = false;
+      movementState.selectedItemAdjustLatch = false;
     }
     if (!attacking) movementState.attackLatch = false;
     if (!inspecting) movementState.inspectLatch = false;
@@ -2991,6 +3851,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         : speed;
       movementState.isGrounded = false;
       applyFlyingMovement({ THREE, controls, inputState, speed: swimSpeed, wouldCollide, buoyancy });
+    } else if (editorGravityDisabled) {
+      movementState.isGrounded = false;
     } else {
       applyGroundMovement({
         controls,
@@ -3138,6 +4000,15 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       }
     }
 
+    const newAdjustPress = stretching && !movementState.selectedItemAdjustLatch;
+    if (newAdjustPress) {
+      movementState.selectedItemAdjustLatch = true;
+      if (handleSelectedItemAction("adjust", { nowMs })) {
+        movementState.stretchLatch = true;
+        return;
+      }
+    }
+
     const newStretchPress = stretching && !movementState.stretchLatch;
     if (newStretchPress && inEditorMode) {
       movementState.stretchLatch = true;
@@ -3197,6 +4068,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       // Same physical input can map to both use + attack (e.g. RB). Suppress attack for this press window.
       movementState.attackLatch = true;
       movementState.suppressAttackUntilMs = nowMs + 180;
+      if (handleSelectedItemAction("use", { snapToGrid: !!inputState.snapPlace, nowMs })) {
+        movementState.suppressAttackUntilMs = nowMs + 220;
+        return;
+      }
       if (tryPaintTerrain()) {
         movementState.suppressAttackUntilMs = nowMs + 220;
         return;
@@ -3224,6 +4099,9 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
     if (attacking && !movementState.attackLatch && nowMs >= (movementState.suppressAttackUntilMs || 0)) {
       movementState.attackLatch = true;
+      if (handleSelectedItemAction("attack", { nowMs })) {
+        return;
+      }
       if (tryBreakTargetBlock()) {
         return;
       }

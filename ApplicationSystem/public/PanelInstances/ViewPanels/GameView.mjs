@@ -76,6 +76,8 @@ function cleanupLegacyGameView(panel, state = {}) {
   panel._vrViewController = null;
   if (panel._vrInventory?.dispose) panel._vrInventory.dispose();
   panel._vrInventory = null;
+  if (panel._vrEmbeddedResourceEditor?.dispose) panel._vrEmbeddedResourceEditor.dispose();
+  panel._vrEmbeddedResourceEditor = null;
   if (panel._vrObjectInspector?.dispose) panel._vrObjectInspector.dispose();
   panel._vrObjectInspector = null;
   if (panel._vrWorldPropertiesPanel?.dispose) panel._vrWorldPropertiesPanel.dispose();
@@ -92,6 +94,28 @@ function cleanupLegacyGameView(panel, state = {}) {
   panel._vrConsolePanels = null;
   if (panel._vrMetaWorldMultiplayerClient?.dispose) panel._vrMetaWorldMultiplayerClient.dispose();
   panel._vrMetaWorldMultiplayerClient = null;
+  if (Array.isArray(window.VRWorldContext?.objects)) {
+    window.VRWorldContext.objects.forEach((object) => {
+      try {
+        object?.userData?.soundRuntime?.audio?.pause?.();
+        if (object?.userData?.soundRuntime?.audio) object.userData.soundRuntime.audio.src = "";
+        if (object?.userData) delete object.userData.soundRuntime;
+        const materials = Array.isArray(object?.material) ? object.material : [object?.material];
+        materials.forEach((material) => {
+          if (!material?.userData?.nvGeneratedIframeMaterial) return;
+          material.map?.dispose?.();
+          material.dispose?.();
+        });
+        object?.userData?.iframeOverlay?.element?.remove?.();
+        if (object?.userData) delete object.userData.iframeOverlay;
+        if (object?.userData) delete object.userData.refreshIframeObjectMaterial;
+      } catch (err) {
+        console.warn("Virtual world object cleanup failed:", err);
+      }
+    });
+  }
+  panel._vrIframeObjectOverlayLayer?.remove?.();
+  panel._vrIframeObjectOverlayLayer = null;
   if (panel._vrSaveVirtualWorldFile && window.saveVirtualWorldFile === panel._vrSaveVirtualWorldFile) {
     window.saveVirtualWorldFile = null;
   }

@@ -41,12 +41,16 @@ function shapeForObject(THREE, obj) {
   if (obj.type === "rectangle") {
     const w = Math.max(0.1, Number(p.width || 20));
     const h = Math.max(0.1, Number(p.height || 10));
-    shape.moveTo(0, 0); shape.lineTo(w, 0); shape.lineTo(w, h); shape.lineTo(0, h); shape.lineTo(0, 0);
+    const x0 = p.center ? -w / 2 : 0;
+    const y0 = p.center ? -h / 2 : 0;
+    shape.moveTo(x0, y0); shape.lineTo(x0 + w, y0); shape.lineTo(x0 + w, y0 + h); shape.lineTo(x0, y0 + h); shape.lineTo(x0, y0);
     return shape;
   }
   if (obj.type === "square") {
     const size = Math.max(0.1, Number(p.size || 12));
-    shape.moveTo(0, 0); shape.lineTo(size, 0); shape.lineTo(size, size); shape.lineTo(0, size); shape.lineTo(0, 0);
+    const x0 = p.center ? -size / 2 : 0;
+    const y0 = p.center ? -size / 2 : 0;
+    shape.moveTo(x0, y0); shape.lineTo(x0 + size, y0); shape.lineTo(x0 + size, y0 + size); shape.lineTo(x0, y0 + size); shape.lineTo(x0, y0);
     return shape;
   }
   if (obj.type === "text") {
@@ -301,6 +305,21 @@ export async function createScadSceneRenderer(container, options = {}) {
     return ["sphere", "cube", "cylinder", "polyhedron"].includes(obj?.type) || (obj?.operations || []).some((op) => op?.type === "extrude" && !op.disabled);
   }
 
+  function previewNumber(value, fallback = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
+  function previewObjectTranslateZ(obj) {
+    const translate = Array.isArray(obj?.transform?.translate) ? obj.transform.translate : [];
+    return previewNumber(translate[2], 0);
+  }
+
+  function previewObjectScaleZ(obj) {
+    const scale = Array.isArray(obj?.transform?.scale) ? obj.transform.scale : [];
+    return previewNumber(scale[2], 1) || 1;
+  }
+
   function previewObjectHeight(obj) {
     const p = obj?.params || {};
     const extrude = (obj?.operations || []).find((op) => op?.type === "extrude" && !op.disabled);
@@ -314,7 +333,59 @@ export async function createScadSceneRenderer(container, options = {}) {
     return objectHeight(obj);
   }
 
+  function previewObjectLocalZRange(obj) {
+    const p = obj?.params || {};
+    const extrude = (obj?.operations || []).find((op) => op?.type === "extrude" && !op.disabled);
+    if (extrude) {
+      const height = Math.max(0.4, Number(extrude.params?.height || extrude.height || 10));
+      return { min: 0, max: height };
+    }
+    if (obj?.type === "cube") {
+      const size = Array.isArray(p.size) ? p.size : [p.size || 12, p.size || 12, p.size || 12];
+      const height = Math.max(0.4, Number(size[2] || 12));
+      return p.center === false ? { min: 0, max: height } : { min: -height / 2, max: height / 2 };
+    }
+    if (obj?.type === "cylinder") {
+      const height = Math.max(0.4, Number(p.height || 16));
+      return p.center === false ? { min: 0, max: height } : { min: -height / 2, max: height / 2 };
+    }
+    if (obj?.type === "sphere") {
+      const radius = Math.max(0.4, Number(p.radius || 6));
+      return { min: -radius, max: radius };
+    }
+    if (obj?.type === "polyhedron") {
+      const zValues = (Array.isArray(p.points) ? p.points : []).map((point) => previewNumber(point?.[2], 0));
+      if (zValues.length) return { min: Math.min(...zValues), max: Math.max(...zValues) };
+    }
+    return null;
+  }
+
+  function previewObjectWorldZRange(obj) {
+    const range = previewObjectLocalZRange(obj);
+    if (!range) return null;
+    const scaleZ = previewObjectScaleZ(obj);
+    const translateZ = previewObjectTranslateZ(obj);
+    const min = range.min * scaleZ + translateZ;
+    const max = range.max * scaleZ + translateZ;
+    return { min: Math.min(min, max), max: Math.max(min, max) };
+  }
+
+  function booleanPreviewZRange(objects = []) {
+    const ranges = objects.filter(objectHas3DPreview).map((obj) => {
+      const box = objectPreviewBox(obj);
+      if (box) return { min: box.min.z, max: box.max.z };
+      return previewObjectWorldZRange(obj);
+    }).filter(Boolean);
+    if (!ranges.length) return null;
+    const min = Math.min(...ranges.map((range) => range.min));
+    const max = Math.max(...ranges.map((range) => range.max));
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
+    return { min, max };
+  }
+
   function booleanPreviewHeight(objects = []) {
+    const range = booleanPreviewZRange(objects);
+    if (range) return range.max - range.min;
     const source = objects.find(objectHas3DPreview) || objects[0];
     return previewObjectHeight(source);
   }
@@ -378,8 +449,20 @@ export async function createScadSceneRenderer(container, options = {}) {
 
     const shape = shapeForObject(THREE, obj);
     if (!shape) return false;
-    const depth = Number.isFinite(options.depthOverride) ? options.depthOverride : objectHeight(obj);
+    const depthRange = options.depthRangeOverride && Number.isFinite(options.depthRangeOverride.min) && Number.isFinite(options.depthRangeOverride.max)
+      ? options.depthRangeOverride
+      : null;
+    const scaleZ = previewObjectScaleZ(obj);
+    const safeScaleZ = Math.abs(scaleZ) > 0.000001 ? scaleZ : 1;
+    const depth = depthRange && depthRange.max > depthRange.min
+      ? (depthRange.max - depthRange.min) / Math.abs(safeScaleZ)
+      : Number.isFinite(options.depthOverride) ? options.depthOverride : objectHeight(obj);
     const geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+    if (depthRange && depthRange.max > depthRange.min) {
+      const localStartWorldZ = safeScaleZ >= 0 ? depthRange.min : depthRange.max;
+      const localMin = (localStartWorldZ - previewObjectTranslateZ(obj)) / safeScaleZ;
+      if (Math.abs(localMin) > 0.000001) geometry.translate(0, 0, localMin);
+    }
     const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.05, transparent, opacity, wireframe });
     const mesh = new THREE.Mesh(geometry, mat);
     mesh.userData.objectId = pickObjectId;
@@ -391,14 +474,29 @@ export async function createScadSceneRenderer(container, options = {}) {
     return true;
   }
 
-  function objectPreviewBox(obj, depthOverride = null) {
+  function objectPreviewBox(obj, depthOverride = null, depthRangeOverride = null) {
     if (!obj) return null;
     let geometry = solidGeometryForObject(THREE, obj);
     if (!geometry) {
       if (obj.type === "vertexPath" || obj.type === "line") geometry = new THREE.BufferGeometry().setFromPoints(vertexPathPoints(THREE, obj));
       else {
         const shape = shapeForObject(THREE, obj);
-        if (shape) geometry = new THREE.ExtrudeGeometry(shape, { depth: Number.isFinite(depthOverride) ? depthOverride : objectHeight(obj), bevelEnabled: false });
+        if (shape) {
+          const depthRange = depthRangeOverride && Number.isFinite(depthRangeOverride.min) && Number.isFinite(depthRangeOverride.max)
+            ? depthRangeOverride
+            : null;
+          const scaleZ = previewObjectScaleZ(obj);
+          const safeScaleZ = Math.abs(scaleZ) > 0.000001 ? scaleZ : 1;
+          const depth = depthRange && depthRange.max > depthRange.min
+            ? (depthRange.max - depthRange.min) / Math.abs(safeScaleZ)
+            : Number.isFinite(depthOverride) ? depthOverride : objectHeight(obj);
+          geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+          if (depthRange && depthRange.max > depthRange.min) {
+            const localStartWorldZ = safeScaleZ >= 0 ? depthRange.min : depthRange.max;
+            const localMin = (localStartWorldZ - previewObjectTranslateZ(obj)) / safeScaleZ;
+            if (Math.abs(localMin) > 0.000001) geometry.translate(0, 0, localMin);
+          }
+        }
       }
     }
     if (!geometry) return null;
@@ -412,10 +510,10 @@ export async function createScadSceneRenderer(container, options = {}) {
     return box.isEmpty() ? null : box;
   }
 
-  function intersectionBoxForObjects(objects = [], depthOverride = null) {
+  function intersectionBoxForObjects(objects = [], depthOverride = null, depthRangeOverride = null) {
     let result = null;
     for (const obj of objects) {
-      const box = objectPreviewBox(obj, depthOverride);
+      const box = objectPreviewBox(obj, depthOverride, depthRangeOverride);
       if (!box) continue;
       result = result ? result.intersect(box) : box.clone();
       if (result.isEmpty()) return null;
@@ -423,9 +521,9 @@ export async function createScadSceneRenderer(container, options = {}) {
     return result;
   }
 
-  function renderIntersectionPreview(model, step, objects, depthOverride) {
-    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: 0.24, color: 0x0f766e, depthOverride }));
-    const box = intersectionBoxForObjects(objects, depthOverride);
+  function renderIntersectionPreview(model, step, objects, depthOverride, depthRangeOverride = null) {
+    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: 0.24, color: 0x0f766e, depthOverride, depthRangeOverride }));
+    const box = intersectionBoxForObjects(objects, depthOverride, depthRangeOverride);
     if (!box) return false;
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
@@ -446,19 +544,20 @@ export async function createScadSceneRenderer(container, options = {}) {
     const objects = booleanStepObjects(model, step);
     if (!keyword || objects.length < 2) return [];
     const ids = (step.objectIds || []).filter(Boolean);
-    const depthOverride = booleanPreviewHeight(objects);
+    const depthRangeOverride = booleanPreviewZRange(objects);
+    const depthOverride = depthRangeOverride ? depthRangeOverride.max - depthRangeOverride.min : booleanPreviewHeight(objects);
     const selectedBoolean = ids.some((id) => selectedIds.has(id));
     if (keyword === "difference") {
       const base = objects[0];
-      renderObjectPreview(model, base, { includeHidden: true, color: selectedBoolean ? selectedColor : undefined, depthOverride });
-      objects.slice(1).forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: selectedIds.has(obj.id) ? 0.45 : 0.28, color: 0xef4444, depthOverride }));
+      renderObjectPreview(model, base, { includeHidden: true, color: selectedBoolean ? selectedColor : undefined, depthOverride, depthRangeOverride });
+      objects.slice(1).forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: selectedIds.has(obj.id) ? 0.45 : 0.28, color: 0xef4444, depthOverride, depthRangeOverride }));
       return ids;
     }
     if (keyword === "intersection") {
-      renderIntersectionPreview(model, step, objects, depthOverride);
+      renderIntersectionPreview(model, step, objects, depthOverride, depthRangeOverride);
       return ids;
     }
-    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, depthOverride }));
+    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, depthOverride, depthRangeOverride }));
     return ids;
   }
 

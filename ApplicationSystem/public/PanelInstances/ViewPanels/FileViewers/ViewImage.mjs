@@ -2,6 +2,7 @@
 // This file renders image files inside the view panel with a contained responsive preview.
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
+  viewPanel.dataset.nvZoomInlineFit = "stretch-on-zoom-out";
   viewPanel.innerHTML = "";
 
   const img = document.createElement("img");

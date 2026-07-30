@@ -2,6 +2,7 @@
 // Shared renderer for binary A/V inserts (Video + Sound) with New/Existing and Referenced/Inline.
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { fetchUrlAsDataUrl, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
+import { ensureEditableMetaWorldBridge, readCameraPlacement } from "./worldShapeWidget.mjs";
 
 function pickDefaultExt(exts, preferred) {
   const list = Array.from(new Set(exts || [])).map((e) => String(e).toLowerCase()).filter(Boolean);
@@ -15,6 +16,48 @@ function ensureExt(name, ext) {
   if (n.toLowerCase().endsWith(`.${ext}`)) return n;
   if (n.includes(".")) return n;
   return `${n}.${ext}`;
+}
+
+function makeWorldSoundId(label = "sound") {
+  const slug = String(label || "sound").toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 36) || "sound";
+  return "sound-object-" + slug + "-" + Date.now().toString(36) + "-" + Math.floor(Math.random() * 1000);
+}
+
+function soundObjectLabel(value, fallback = "Sound Object") {
+  const raw = String(value || "").split(/[?#]/)[0].split("/").pop() || fallback;
+  return raw.replace(/\.[a-z0-9]+$/i, "").trim() || fallback;
+}
+
+async function insertWorldSoundObject({ src = "", linked = "", label = "", inline = false } = {}) {
+  const source = String(src || "").trim();
+  const linkedPath = String(linked || "").trim();
+  if (!source && !linkedPath) throw new Error("Missing sound source.");
+  const name = soundObjectLabel(label || linkedPath || source, "Sound Object");
+  const def = {
+    id: makeWorldSoundId(name),
+    tag: "",
+    name: name || "Sound Object",
+    type: "sound-object",
+    position: readCameraPlacement(),
+    size: [0.25],
+    color: "#44aaff",
+    src: source,
+    audioFile: linkedPath,
+    audioLinkedPath: linkedPath,
+    volume: 0.8,
+    range: 14,
+    loop: true,
+    collider: false,
+    collidable: false,
+    isSolid: false,
+    breakable: true
+  };
+  if (inline && source.startsWith("data:")) def.audioDataUrl = source;
+  const bridge = await ensureEditableMetaWorldBridge();
+  if (!bridge?.addSoundObjectLayer) throw new Error("Open a MetaWorld editor before inserting Sound Objects.");
+  const added = bridge.addSoundObjectLayer(def);
+  if (!added) throw new Error("Could not add Sound Object to the virtual world.");
+  return added;
 }
 
 function createSilentWavDataUrl(durationSec = 1, sampleRate = 8000) {
@@ -59,6 +102,7 @@ export function renderBinaryAv(root, cfg) {
   const mimeFromExt = typeof cfg?.mimeFromExt === "function" ? cfg.mimeFromExt : (() => "application/octet-stream");
   const elementStyle = String(cfg?.elementStyle || "");
   const isSound = kind.toLowerCase() === "sound";
+  const target = cfg?.target === "virtualWorld" ? "virtualWorld" : "html";
 
   const extensions = Array.from(new Set(cfg?.exts || [])).map((e) => String(e).toLowerCase()).filter(Boolean).sort((a, b) => a.localeCompare(b));
   const defaultExt = pickDefaultExt(extensions, preferredExt || extensions[0] || "");
@@ -336,7 +380,30 @@ export function renderBinaryAv(root, cfg) {
         }
       }
 
-      const linkedAttr = linked ? ` data-nv-linked-path="${escapeHtml(linked)}"` : "";
+      if (target === "virtualWorld" && isSound) {
+        const label = linked || existingSourceEl.value || newFile.name || existingFile.name || newNameEl.value || sourceMode + " sound";
+        await insertWorldSoundObject({
+          src,
+          linked,
+          label,
+          inline: storageMode === "inline"
+        });
+        try {
+          if (linked) {
+            const dir = dirname(linked);
+            if (typeof window.refreshFileManager === "function") window.refreshFileManager(dir);
+            document.dispatchEvent(new CustomEvent("refreshFileManager", { detail: { path: dir } }));
+            if (typeof window.refreshGraphManager === "function") window.refreshGraphManager({ fit: false, reason: "insert-media" });
+            document.dispatchEvent(new CustomEvent("refreshGraphManager", { detail: { path: dir, reason: "insert-media" } }));
+          }
+        } catch (notifyErr) {
+          console.warn("[insertMediaBinaryAv] refresh after world sound insert failed", notifyErr);
+        }
+        setStatus("Sound Object added.");
+        return;
+      }
+
+      const linkedAttr = linked ? " data-nv-linked-path=\"" + escapeHtml(linked) + "\"" : "";
       const styleAttr = elementStyle ? ` style="${escapeHtml(elementStyle)}"` : "";
       insertHtmlAtCaret(`<${tag} controls${styleAttr} src="${escapeHtml(src)}"${linkedAttr}></${tag}>`);
       try {

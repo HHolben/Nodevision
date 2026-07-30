@@ -14,10 +14,14 @@ const SHAPES = [
   { type: "torus", label: "Torus", color: "#b48cff", size: [0.65, 0.18] },
 ];
 
+const HOST_PAGE_IFRAME_SOURCE = "nodevision://host-page";
+
 const GAME_OBJECTS = [
   { type: "portal", label: "Portal", color: "#55ccff" },
   { type: "spawn", label: "Spawn Point", color: "#35d07f" },
   { type: "console", label: "Console", color: "#33ccaa" },
+  { type: "iframe", label: "iFrame", color: "#f8fbff" },
+  { type: "iframe", variant: "host-page", label: "This Page View", color: "#e8f4ff", title: "Add a live view of the containing webpage" },
 ];
 
 function makeDefaultWorldDefinition() {
@@ -78,9 +82,9 @@ function createLayerEntries(worldData, ctx) {
   });
 }
 
-async function ensureEditableMetaWorldBridge() {
+export async function ensureEditableMetaWorldBridge() {
   const existing = getActiveMetaWorldLayerBridge();
-  if (existing?.addObjectLayer && existing?.addGameObjectLayer) return existing;
+  if (existing?.addObjectLayer && existing?.addGameObjectLayer && existing?.addObjectFileLayer && existing?.addSoundObjectLayer) return existing;
 
   const ctx = window.VRWorldContext;
   if (!ctx?.THREE || !ctx?.scene || !Array.isArray(ctx.objects)) return null;
@@ -113,7 +117,7 @@ async function ensureEditableMetaWorldBridge() {
   return getActiveMetaWorldLayerBridge();
 }
 
-function readCameraPlacement() {
+export function readCameraPlacement() {
   const ctx = window.VRWorldContext;
   const camera = ctx?.camera;
   const controlsObject = ctx?.controls?.getObject?.();
@@ -184,6 +188,7 @@ function renderShapes(hostElement) {
 function makeIdPrefix(type) {
   if (type === "spawn") return "spawn-point";
   if (type === "console") return "console";
+  if (type === "iframe") return "iframe";
   return "portal";
 }
 
@@ -247,6 +252,25 @@ function makeGameObjectDefinition(item) {
     };
   }
 
+  if (item.type === "iframe") {
+    const hostPage = item.variant === "host-page";
+    return {
+      ...base,
+      shape: "box",
+      size: [1.6, 0.9, 0.04],
+      src: hostPage ? HOST_PAGE_IFRAME_SOURCE : "about:blank",
+      iframeSrc: hostPage ? HOST_PAGE_IFRAME_SOURCE : "about:blank",
+      iframeSourceKind: hostPage ? "host-page" : "",
+      iframeTitle: hostPage ? "Containing Webpage" : "Embedded Page",
+      sandbox: "allow-scripts allow-same-origin allow-forms",
+      allow: "fullscreen",
+      collider: false,
+      collidable: false,
+      isSolid: false,
+      breakable: true,
+    };
+  }
+
   return applyDefaultWorldObjectPhysicsMaterial({
     ...base,
     shape: "box",
@@ -261,7 +285,7 @@ function makeGameObjectButton(item) {
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = item.label;
-  button.title = "Add " + item.label;
+  button.title = item.title || "Add " + item.label;
   button.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -270,7 +294,15 @@ function makeGameObjectButton(item) {
       setStatus("Open a MetaWorld editor before inserting game objects.");
       return;
     }
-    const added = bridge.addGameObjectLayer(makeGameObjectDefinition(item));
+    const def = makeGameObjectDefinition(item);
+    if (item.type === "iframe" && item.variant !== "host-page") {
+      const entered = window.prompt?.("iFrame source URL or Notebook path", def.src || "about:blank");
+      if (entered === null) return;
+      const src = String(entered || "").trim() || "about:blank";
+      def.src = src;
+      def.iframeSrc = src;
+    }
+    const added = bridge.addGameObjectLayer(def);
     setStatus(added ? item.label + " added to MetaWorld." : "Could not add " + item.label + ".");
   });
   return button;

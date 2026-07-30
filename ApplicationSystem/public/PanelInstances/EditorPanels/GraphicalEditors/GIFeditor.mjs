@@ -2,6 +2,7 @@
 // GIF editor shell built on the shared raster editor from PNGeditor.
 import { ensureGifEditorModeLayout } from "/panels/workspace.mjs";
 import { renderRasterEditor } from "./PNGeditor.mjs";
+import { decodeGifFrames } from "./GIFFrameDecoder.mjs";
 
 const GIF_MODE = "GIFediting";
 const TRANSPARENT_INDEX = 0;
@@ -35,6 +36,7 @@ export async function renderEditor(filePath, container) {
     console.warn("GIF editor: failed to apply GIF editor mode layout:", err);
   }
 
+  await gifContext.loadSourceFrames();
   gifContext.refresh();
 
   return {
@@ -85,6 +87,7 @@ function createGifEditorContext(filePath, rasterApi) {
     deleteCurrentFrame,
     deleteFrame,
     setFrameDelay,
+    loadSourceFrames,
     save,
     destroy,
   };
@@ -236,6 +239,24 @@ function createGifEditorContext(filePath, rasterApi) {
     return true;
   }
 
+  async function loadSourceFrames() {
+    if (!filePath) return false;
+    try {
+      const decoded = await fetchDecodedGifFrames(filePath);
+      if (!decoded || !Array.isArray(decoded.frames) || !decoded.frames.length) return false;
+      const decodedFrames = decoded.frames.map((frame) => createFrameFromDecodedGifFrame(frame, decoded.width, decoded.height));
+      frames.splice(0, frames.length, ...decodedFrames);
+      currentFrameIndex = 0;
+      drawFrameToRaster(frames[currentFrameIndex]);
+      console.info("GIF editor: loaded " + String(frames.length) + " frame" + (frames.length === 1 ? "" : "s") + " from " + filePath + ".");
+      refresh();
+      return true;
+    } catch (err) {
+      console.warn("GIF editor: failed to decode animated GIF frames; using browser-rendered first frame.", err);
+      return false;
+    }
+  }
+
   async function save(targetPath = filePath) {
     const cleanPath = String(targetPath || filePath || "").trim();
     if (!cleanPath) throw new Error("GIF save path is missing.");
@@ -301,6 +322,35 @@ function createGifEditorContext(filePath, rasterApi) {
   }
 
   return context;
+}
+
+function gifNotebookUrl(pathValue = "") {
+  const clean = String(pathValue || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .replace(/^\/+/, "")
+    .replace(/^Notebook\/+/, "");
+  const encoded = clean.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  return "/Notebook/" + encoded;
+}
+
+async function fetchDecodedGifFrames(filePath) {
+  const response = await fetch(gifNotebookUrl(filePath), { cache: "no-store" });
+  if (!response.ok) throw new Error("HTTP " + String(response.status));
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  return decodeGifFrames(bytes);
+}
+
+function createFrameFromDecodedGifFrame(frame, width, height) {
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d", { alpha: true });
+  if (ctx) {
+    const imageData = ctx.createImageData(width, height);
+    imageData.data.set(frame.rgba);
+    ctx.putImageData(imageData, 0, 0);
+  }
+  return { canvas, delayMs: clampDelay(frame.delayMs) };
 }
 
 function getApiCanvas(api) {

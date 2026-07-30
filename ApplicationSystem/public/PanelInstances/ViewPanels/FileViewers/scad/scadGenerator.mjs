@@ -246,7 +246,7 @@ function makeTokenizer(src) {
     return c >= "0" && c <= "9";
   }
   function isIdentStart(c) {
-    return (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_";
+    return (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_" || c.charCodeAt(0) === 36;
   }
   function isIdent(c) {
     return isIdentStart(c) || isDigit(c);
@@ -459,6 +459,7 @@ function parseStatement(tok) {
       if (named.r !== undefined) node.parameters.r = named.r.trim();
       else if (named.d !== undefined) node.parameters.d = named.d.trim();
       else if (args[0] !== undefined) node.parameters.r = args[0].trim();
+      if (named["$fn"] !== undefined) node.parameters.$fn = named["$fn"].trim();
     } else if (type === NODE_TYPES.cylinder) {
       if (named.h !== undefined) node.parameters.h = named.h.trim();
       if (named.r !== undefined) node.parameters.r = named.r.trim();

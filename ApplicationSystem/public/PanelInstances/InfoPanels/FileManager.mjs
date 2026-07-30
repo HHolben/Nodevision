@@ -39,17 +39,17 @@ export function setupPanel(panelElem, panelVars = {}) {
     </div>
   `;
 
-  panelElem.addEventListener('focus', () => {
+  const handleFocus = () => {
     updateToolbarState({ activePanelType: 'FileManager' });
     window.NodevisionState.activeActionHandler = window.handleFileManagerAction;
     navigationState.setLastInfoPanelType('FileManager');
-  }, true);
+    window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+      detail: { heading: "File Manager", force: false, toggle: false }
+    }));
+  };
 
-  panelElem.addEventListener('click', () => {
-    updateToolbarState({ activePanelType: 'FileManager' });
-    window.NodevisionState.activeActionHandler = window.handleFileManagerAction;
-    navigationState.setLastInfoPanelType('FileManager');
-  });
+  panelElem.addEventListener('focus', handleFocus, true);
+  panelElem.addEventListener('click', handleFocus);
 
   import("/PanelInstances/InfoPanels/FileManagerCore.mjs")
     .then(mod => {

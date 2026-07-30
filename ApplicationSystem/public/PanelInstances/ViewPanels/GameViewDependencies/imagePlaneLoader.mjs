@@ -21,11 +21,13 @@ function normalizeNotebookPath(rawPath) {
   return parts.join("/");
 }
 
-export function resolveNotebookUrl(rawPath) {
+export function resolveNotebookUrl(rawPath, options = {}) {
   const normalized = normalizeNotebookPath(rawPath);
   if (!normalized) return "";
   const segments = normalized.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment));
-  return segments.length === 0 ? NOTEBOOK_PREFIX.slice(0, -1) : `${NOTEBOOK_PREFIX}${segments.join("/")}`;
+  const url = segments.length === 0 ? NOTEBOOK_PREFIX.slice(0, -1) : NOTEBOOK_PREFIX + segments.join("/");
+  if (options && options.cacheBust === true) return url + (url.indexOf("?") === -1 ? "?" : "&") + "nv=" + Date.now();
+  return url;
 }
 
 function loadViaTextureLoader(THREE, url) {
@@ -106,8 +108,8 @@ async function loadSvgAsCanvasTexture(THREE, url) {
   return texture;
 }
 
-async function loadNotebookTexture(THREE, rawPath) {
-  const url = resolveNotebookUrl(rawPath);
+async function loadNotebookTexture(THREE, rawPath, options = {}) {
+  const url = resolveNotebookUrl(rawPath, options);
   if (!url) throw new Error("Invalid notebook image path.");
 
   const ext = String(rawPath || "").split(".").pop()?.toLowerCase() || "";
@@ -125,7 +127,7 @@ async function loadNotebookTexture(THREE, rawPath) {
   }
 }
 
-export async function applyImagePlaneTexture(mesh, THREE) {
+export async function applyImagePlaneTexture(mesh, THREE, options = {}) {
   const rawPath = mesh?.userData?.imageFilePath;
   if (!mesh?.isMesh || !rawPath || !THREE) return null;
   const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
@@ -136,7 +138,7 @@ export async function applyImagePlaneTexture(mesh, THREE) {
 
   let texture;
   try {
-    texture = await loadNotebookTexture(THREE, rawPath);
+    texture = await loadNotebookTexture(THREE, rawPath, options);
   } catch (err) {
     if (mesh.userData.imageTextureRequestId === requestId) {
       console.warn("[image-plane] texture load failed:", err);

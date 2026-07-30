@@ -2,6 +2,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "File Manager",
+    "hotkeyText": "",
     "icon": "icons/FileManager.png",
     "panelTemplateId": "FileManager",          
     "panelType": "InfoPanel",                
@@ -10,6 +11,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Graph Manager",
+    "hotkeyText": "",
     "icon": "icons/GraphManager.png",
     "panelTemplateId": "GraphManager",          
     "panelType": "InfoPanel",                
@@ -18,6 +20,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Sync",
+    "hotkeyText": "",
     "icon": "icons/Sync.png",
     "panelTemplateId": "SyncPanel",
     "panelType": "InfoPanel",
@@ -26,19 +29,32 @@
   {
     "ToolbarCategory": "File",
     "heading": "Import",
+    "hotkeyText": "",
     "icon": "icons/Download.png"
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "Import",
     "heading": "From Phone",
+    "hotkeyText": "",
     "callbackKey": "importFromPhone",
     "icon": "icons/FileIcon.png",
     "preventAutoSubToolbar": true
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "Import",
+    "heading": "Import Spreadsheet",
+    "hotkeyText": "",
+    "callbackKey": "importSpreadsheet",
+    "icon": "icons/SpreadsheetIcon.png",
+    "modes": ["CSVediting"],
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "New File",
+    "hotkeyText": "",
     "callbackKey": "NewFile",
     "icon": "icons/DefaultNodeImage.png",
     "preventAutoSubToolbar": true
@@ -46,6 +62,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Create from Template",
+    "hotkeyText": "",
     "callbackKey": "CreateFromTemplate",
     "icon": "icons/FileIcon.png",
     "preventAutoSubToolbar": true
@@ -53,6 +70,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Save As Template",
+    "hotkeyText": "",
     "callbackKey": "SaveAsTemplate",
     "icon": "icons/SaveIcon.png",
     "preventAutoSubToolbar": true
@@ -61,6 +79,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "New File",
+    "hotkeyText": "",
     "callbackKey": "NewFile",
     "icon": "icons/DefaultNodeImage.png",
     "routeToActivePanel": true
@@ -69,6 +88,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "New Directory",
+    "hotkeyText": "",
     "callbackKey": "NewDirectory",
     "icon": "icons/DefaultRegionImage.png",
     "routeToActivePanel": true
@@ -77,6 +97,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Delete File/Directory",
+    "hotkeyText": "",
     "callbackKey": "DeleteFile",
     "icon": "icons/TrashIcon.png",
     "routeToActivePanel": true
@@ -85,6 +106,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Rename File/Directory",
+    "hotkeyText": "",
     "callbackKey": "renameFile",
     "icon": "icons/RenameIcon.png",
     "routeToActivePanel": true
@@ -93,6 +115,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Copy File/Directory",
+    "hotkeyText": "Ctrl/Cmd+C",
     "callbackKey": "copyFile",
     "icon": "icons/FileIcon.png",
     "routeToActivePanel": true
@@ -101,6 +124,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Cut File/Directory",
+    "hotkeyText": "Ctrl/Cmd+X",
     "callbackKey": "cutFile",
     "icon": "icons/FileIcon.png",
     "routeToActivePanel": true
@@ -109,6 +133,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Open Trash",
+    "hotkeyText": "",
     "callbackKey": "openTrash",
     "icon": "icons/OpenTrashIcon.png",
     "routeToActivePanel": true
@@ -117,14 +142,25 @@
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
     "heading": "Paste File/Directory",
+    "hotkeyText": "Ctrl/Cmd+V",
     "callbackKey": "pasteFile",
     "icon": "icons/PasteIcon.png",
     "routeToActivePanel": true
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
+    "heading": "Manager View",
+    "hotkeyText": "",
+    "script": "graphManagerLayerControlsWidget.mjs",
+    "widget": "managerPanelSwitcher",
+    "selectedPanel": "FileManager"
+  },
+  {
+    "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "New Node",
+    "hotkeyText": "",
     "callbackKey": "NewFile",
     "icon": "icons/DefaultNodeImage.png",
     "routeToActivePanel": true
@@ -133,6 +169,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "New Region",
+    "hotkeyText": "",
     "callbackKey": "NewDirectory",
     "icon": "icons/DefaultRegionImage.png",
     "routeToActivePanel": true
@@ -141,6 +178,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "Delete Node/Region",
+    "hotkeyText": "",
     "callbackKey": "DeleteFile",
     "icon": "icons/TrashIcon.png",
     "routeToActivePanel": true
@@ -149,6 +187,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "Rename Node/Region",
+    "hotkeyText": "",
     "callbackKey": "renameFile",
     "icon": "icons/RenameIcon.png",
     "routeToActivePanel": true
@@ -157,6 +196,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "Update Edges",
+    "hotkeyText": "",
     "callbackKey": "UpdateEdges",
     "icon": "icons/LinkIcon.png",
     "routeToActivePanel": true
@@ -165,6 +205,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "Export Graph",
+    "hotkeyText": "",
     "script": "ExportGraph.js",
     "icon": "icons/Download.png"
   },
@@ -172,6 +213,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "Refresh Graph",
+    "hotkeyText": "",
     "callbackKey": "UpdateEdges",
     "icon": "icons/Sync.png",
     "routeToActivePanel": true
@@ -180,6 +222,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
     "heading": "Verify Graph",
+    "hotkeyText": "",
     "callbackKey": "RefreshGraphNodes",
     "icon": "icons/Sync.png",
     "routeToActivePanel": true
@@ -187,12 +230,23 @@
   {
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
+    "heading": "Manager View",
+    "hotkeyText": "",
+    "script": "graphManagerLayerControlsWidget.mjs",
+    "widget": "managerPanelSwitcher",
+    "selectedPanel": "GraphManager"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
     "heading": "Graph Layers",
+    "hotkeyText": "",
     "script": "graphManagerLayerControlsWidget.mjs"
   },
   {
     "ToolbarCategory": "File",
     "heading": "Save File",
+    "hotkeyText": "Ctrl/Cmd+S",
     "callbackKey": "saveFile",
     "icon": "icons/SaveIcon.png",
     "availability": ["fileOpen", "panelType:EditorPanel"]
@@ -200,24 +254,28 @@
   {
     "ToolbarCategory": "File",
     "heading": "View PHP Deployment",
+    "hotkeyText": "",
     "callbackKey": "viewPHPdeployment",
     "icon": "icons/ViewDeploymentIconPHP.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "View Node.js Deployment",
+    "hotkeyText": "",
     "callbackKey": "viewNodevisionDeployment",
     "icon": "icons/ViewDeploymentNodevisionIcon.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "View Nodevision Document",
+    "hotkeyText": "",
     "callbackKey": "viewNodevisionDocument",
     "icon": "icons/FileIcon.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "Flash Board",
+    "hotkeyText": "",
     "callbackKey": "flashBoard",
     "icon": "icons/SaveIcon.png",
     "conditions": {
@@ -227,6 +285,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Download File",
+    "hotkeyText": "",
     "callbackKey": "downloadFile",
     "icon": "icons/Download.png",
     "availability": ["fileOpen"]
@@ -234,18 +293,21 @@
   {
     "ToolbarCategory": "File",
     "heading": "Print",
+    "hotkeyText": "",
     "callbackKey": "PrintSelectedFileOrViewer",
     "icon": "icons/FileIcon.png"
   },
   {
     "ToolbarCategory": "File",
     "heading": "Export",
+    "hotkeyText": "",
     "icon": "icons/Download.png"
   },
   {
     "ToolbarCategory": "File",
     "parentHeading": "Export",
     "heading": "Export as PDF",
+    "hotkeyText": "",
     "callbackKey": "ExportSelectedFileAsPDF",
     "icon": "icons/FileIcon.png"
   },
@@ -253,6 +315,7 @@
     "ToolbarCategory": "File",
     "parentHeading": "Export",
     "heading": "Export as STL",
+    "hotkeyText": "",
     "callbackKey": "ExportSelectedModelAsSTL",
     "icon": "icons/Download.png",
     "conditions": {
@@ -262,6 +325,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Convert to EPUB",
+    "hotkeyText": "",
     "callbackKey": "ConvertToEPUB",
     "icon": "icons/FileIcon.png",
     "conditions": {
@@ -271,6 +335,7 @@
   {
     "ToolbarCategory": "File",
     "heading": "Export virtual world as usd",
+    "hotkeyText": "",
     "callbackKey": "ExportVirtualWorldAsUSD",
     "icon": "icons/Download.png",
     "availability": ["fileOpen"]

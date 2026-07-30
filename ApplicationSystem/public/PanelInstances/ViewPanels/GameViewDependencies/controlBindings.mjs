@@ -22,7 +22,8 @@ export const defaultBindings = {
   pitchDown: "arrowdown",
   flyUp: "space",
   flyDown: "q",
-  phase: "v"
+  phase: "v",
+  run: "e"
 };
 
 export const defaultGamepadBindings = {
@@ -39,7 +40,8 @@ export const defaultGamepadBindings = {
   openInventory: "Button 8",
   lookYaw: "Axis 2",
   lookPitch: "Axis 3",
-  cycleCamera: "Button 3"
+  cycleCamera: "Button 3",
+  run: ""
 };
 
 export function normalizeKeyName(key) {
@@ -110,6 +112,7 @@ function buildBindingsFromScheme(scheme) {
     flyUp: getKey("Fly Up", defaultBindings.flyUp),
     flyDown: getKey("Fly Down", defaultBindings.flyDown),
     phase: getKey("Phase Through Objects", defaultBindings.phase),
+    run: getKey("Run", defaultBindings.run),
     gamepad: {
       moveForward: normalizeGamepadBinding(scheme?.["Move Forward"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.moveForward),
       moveBackward: normalizeGamepadBinding(scheme?.["Move Backward"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.moveBackward),
@@ -124,7 +127,8 @@ function buildBindingsFromScheme(scheme) {
       openInventory: normalizeGamepadBinding(scheme?.["Open Inventory"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.openInventory),
       lookYaw: normalizeGamepadBinding(scheme?.["Pointer X"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.lookYaw),
       lookPitch: normalizeGamepadBinding(scheme?.["Pointer Y"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.lookPitch),
-      cycleCamera: normalizeGamepadBinding(scheme?.["Cycle Camera"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.cycleCamera)
+      cycleCamera: normalizeGamepadBinding(scheme?.["Cycle Camera"]?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.cycleCamera),
+      run: normalizeGamepadBinding(scheme?.Run?.gamepad) || normalizeGamepadBinding(defaultGamepadBindings.run)
     }
   };
 }
@@ -147,7 +151,8 @@ export async function loadControlScheme(state) {
       openInventory: normalizeGamepadBinding(defaultGamepadBindings.openInventory),
       lookYaw: normalizeGamepadBinding(defaultGamepadBindings.lookYaw),
       lookPitch: normalizeGamepadBinding(defaultGamepadBindings.lookPitch),
-      cycleCamera: normalizeGamepadBinding(defaultGamepadBindings.cycleCamera)
+      cycleCamera: normalizeGamepadBinding(defaultGamepadBindings.cycleCamera),
+      run: normalizeGamepadBinding(defaultGamepadBindings.run)
     }
   };
 

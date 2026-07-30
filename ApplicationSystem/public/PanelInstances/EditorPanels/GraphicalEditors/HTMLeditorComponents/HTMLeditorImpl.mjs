@@ -539,11 +539,19 @@ function getTableColumnCells(table, columnIndex) {
 function measureTableColumnWidth(table, columnIndex) {
   const cell = getTableColumnCells(table, columnIndex)[0] || null;
   const rect = cell?.getBoundingClientRect?.();
-  return Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(rect?.width || HTML_TABLE_MIN_COLUMN_WIDTH));
+  return Math.max(
+    HTML_TABLE_MIN_COLUMN_WIDTH,
+    Math.round(cell?.offsetWidth || rect?.width || HTML_TABLE_MIN_COLUMN_WIDTH)
+  );
+}
+
+function formatTableCssPixels(value, minimum) {
+  const n = Math.max(minimum, Number(value) || minimum);
+  return (Math.round(n * 100) / 100) + "px";
 }
 
 function applyTableColumnWidth(table, columnIndex, width) {
-  const px = `${Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(width))}px`;
+  const px = formatTableCssPixels(width, HTML_TABLE_MIN_COLUMN_WIDTH);
   for (const cell of getTableColumnCells(table, columnIndex)) {
     cell.style.width = px;
     cell.style.boxSizing = "border-box";
@@ -553,7 +561,8 @@ function applyTableColumnWidth(table, columnIndex, width) {
 function freezeTableColumnWidths(table) {
   if (!table) return;
   const tableRect = table.getBoundingClientRect?.();
-  if (tableRect?.width > 0) table.style.width = `${Math.round(tableRect.width)}px`;
+  const tableWidth = table.offsetWidth || tableRect?.width || 0;
+  if (tableWidth > 0) table.style.width = Math.round(tableWidth) + "px";
   table.style.tableLayout = "fixed";
   const columnCount = getTableColumnCount(table);
   for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
@@ -563,17 +572,51 @@ function freezeTableColumnWidths(table) {
 
 function measureTableRowHeight(row) {
   const rect = row?.getBoundingClientRect?.();
-  return Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(rect?.height || HTML_TABLE_MIN_ROW_HEIGHT));
+  return Math.max(
+    HTML_TABLE_MIN_ROW_HEIGHT,
+    Math.round(row?.offsetHeight || rect?.height || HTML_TABLE_MIN_ROW_HEIGHT)
+  );
 }
 
 function applyTableRowHeight(row, height) {
   if (!row) return;
-  const px = `${Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(height))}px`;
+  const px = formatTableCssPixels(height, HTML_TABLE_MIN_ROW_HEIGHT);
   row.style.height = px;
   for (const cell of Array.from(row.cells || [])) {
     cell.style.height = px;
     cell.style.boxSizing = "border-box";
   }
+}
+
+function getClientToLayoutScale(element, axis) {
+  const rect = element?.getBoundingClientRect?.();
+  if (!rect) return 1;
+  const rendered = axis === "y" ? rect.height : rect.width;
+  const layout = axis === "y" ? element.offsetHeight : element.offsetWidth;
+  if (!Number.isFinite(rendered) || rendered <= 0 || !Number.isFinite(layout) || layout <= 0) return 1;
+  return layout / rendered;
+}
+
+function getTableColumnDividerClientX(table, columnIndex, fallbackX) {
+  const leftCell = getTableColumnCells(table, columnIndex)[0] || null;
+  const leftRect = leftCell?.getBoundingClientRect?.();
+  if (leftRect && Number.isFinite(leftRect.right)) return leftRect.right;
+
+  const rightCell = getTableColumnCells(table, columnIndex + 1)[0] || null;
+  const rightRect = rightCell?.getBoundingClientRect?.();
+  if (rightRect && Number.isFinite(rightRect.left)) return rightRect.left;
+
+  return fallbackX;
+}
+
+function getTableRowDividerClientY(rows, rowIndex, fallbackY) {
+  const topRect = rows[rowIndex]?.getBoundingClientRect?.();
+  if (topRect && Number.isFinite(topRect.bottom)) return topRect.bottom;
+
+  const bottomRect = rows[rowIndex + 1]?.getBoundingClientRect?.();
+  if (bottomRect && Number.isFinite(bottomRect.top)) return bottomRect.top;
+
+  return fallbackY;
 }
 
 function resolveTableDividerResizeHit(wysiwyg, event) {
@@ -596,16 +639,16 @@ function resolveTableDividerResizeHit(wysiwyg, event) {
   const bottom = Math.abs(event.clientY - rect.bottom);
 
   if (left <= HTML_TABLE_DIVIDER_HIT_PX && columnIndex > 0) {
-    hits.push({ kind: "column", index: columnIndex - 1, distance: left, cell, table });
+    hits.push({ kind: "column", index: columnIndex - 1, distance: left, edgeClientX: rect.left, cell, table });
   }
   if (right <= HTML_TABLE_DIVIDER_HIT_PX && columnIndex >= 0) {
-    hits.push({ kind: "column", index: columnIndex, distance: right, cell, table });
+    hits.push({ kind: "column", index: columnIndex, distance: right, edgeClientX: rect.right, cell, table });
   }
   if (top <= HTML_TABLE_DIVIDER_HIT_PX && rowIndex > 0) {
-    hits.push({ kind: "row", index: rowIndex - 1, distance: top, cell, table });
+    hits.push({ kind: "row", index: rowIndex - 1, distance: top, edgeClientY: rect.top, cell, table });
   }
   if (bottom <= HTML_TABLE_DIVIDER_HIT_PX && rowIndex >= 0) {
-    hits.push({ kind: "row", index: rowIndex, distance: bottom, cell, table });
+    hits.push({ kind: "row", index: rowIndex, distance: bottom, edgeClientY: rect.bottom, cell, table });
   }
 
   hits.sort((a, b) => a.distance - b.distance || (a.kind === "column" ? -1 : 1));
@@ -656,7 +699,9 @@ function startTableDividerResize(wysiwyg, filePath, hit, startEvent) {
       leftStart,
       rightStart,
       total: leftStart + rightStart,
-      tableStartWidth: Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(tableStartRect?.width || table.offsetWidth || leftStart)),
+      tableStartWidth: Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(table.offsetWidth || tableStartRect?.width || leftStart)),
+      dividerStartClientX: getTableColumnDividerClientX(table, leftIndex, hit.edgeClientX ?? startX),
+      clientToLayoutX: getClientToLayoutScale(table, "x"),
     };
   } else {
     const topIndex = Math.max(0, Math.min(hit.index, rows.length - 1));
@@ -672,7 +717,9 @@ function startTableDividerResize(wysiwyg, filePath, hit, startEvent) {
       topStart,
       bottomStart,
       total: topStart + bottomStart,
-      tableStartHeight: Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(tableStartRect?.height || table.offsetHeight || topStart)),
+      tableStartHeight: Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(table.offsetHeight || tableStartRect?.height || topStart)),
+      dividerStartClientY: getTableRowDividerClientY(rows, topIndex, hit.edgeClientY ?? startY),
+      clientToLayoutY: getClientToLayoutScale(table, "y"),
     };
   }
 
@@ -683,34 +730,40 @@ function startTableDividerResize(wysiwyg, filePath, hit, startEvent) {
     if (Math.abs(dx) > 1 || Math.abs(dy) > 1) moved = true;
 
     if (resizeState.kind === "column") {
+      const pointerDelta = (moveEvent.clientX - resizeState.dividerStartClientX) * resizeState.clientToLayoutX;
       if (resizeState.rightIndex !== null) {
         const leftWidth = Math.max(
           HTML_TABLE_MIN_COLUMN_WIDTH,
-          Math.min(resizeState.total - HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.leftStart + dx)
+          Math.min(resizeState.total - HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.leftStart + pointerDelta)
         );
+        if (Math.abs(leftWidth - resizeState.leftStart) > 0.5) moved = true;
         applyTableColumnWidth(table, resizeState.leftIndex, leftWidth);
         applyTableColumnWidth(table, resizeState.rightIndex, resizeState.total - leftWidth);
-        table.style.width = `${resizeState.tableStartWidth}px`;
+        table.style.width = resizeState.tableStartWidth + "px";
       } else {
-        const nextWidth = Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.leftStart + dx);
+        const nextWidth = Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.leftStart + pointerDelta);
+        if (Math.abs(nextWidth - resizeState.leftStart) > 0.5) moved = true;
         applyTableColumnWidth(table, resizeState.leftIndex, nextWidth);
-        table.style.width = `${Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.tableStartWidth + (nextWidth - resizeState.leftStart))}px`;
+        table.style.width = Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, resizeState.tableStartWidth + (nextWidth - resizeState.leftStart)) + "px";
       }
       return;
     }
 
+    const pointerDelta = (moveEvent.clientY - resizeState.dividerStartClientY) * resizeState.clientToLayoutY;
     if (resizeState.bottomRow) {
       const topHeight = Math.max(
         HTML_TABLE_MIN_ROW_HEIGHT,
-        Math.min(resizeState.total - HTML_TABLE_MIN_ROW_HEIGHT, resizeState.topStart + dy)
+        Math.min(resizeState.total - HTML_TABLE_MIN_ROW_HEIGHT, resizeState.topStart + pointerDelta)
       );
+      if (Math.abs(topHeight - resizeState.topStart) > 0.5) moved = true;
       applyTableRowHeight(resizeState.topRow, topHeight);
       applyTableRowHeight(resizeState.bottomRow, resizeState.total - topHeight);
-      table.style.height = `${resizeState.tableStartHeight}px`;
+      table.style.height = resizeState.tableStartHeight + "px";
     } else {
-      const nextHeight = Math.max(HTML_TABLE_MIN_ROW_HEIGHT, resizeState.topStart + dy);
+      const nextHeight = Math.max(HTML_TABLE_MIN_ROW_HEIGHT, resizeState.topStart + pointerDelta);
+      if (Math.abs(nextHeight - resizeState.topStart) > 0.5) moved = true;
       applyTableRowHeight(resizeState.topRow, nextHeight);
-      table.style.height = `${Math.max(HTML_TABLE_MIN_ROW_HEIGHT, resizeState.tableStartHeight + (nextHeight - resizeState.topStart))}px`;
+      table.style.height = Math.max(HTML_TABLE_MIN_ROW_HEIGHT, resizeState.tableStartHeight + (nextHeight - resizeState.topStart)) + "px";
     }
   };
 

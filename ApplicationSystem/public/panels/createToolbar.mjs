@@ -13,11 +13,17 @@ let subToolbarContainer = null;
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
 const toolbarScriptModuleCache = new Map();
+const TOOLBAR_SEARCH_HEADING = "SearchBar";
+const TOOLBAR_USER_HEADING = "User";
+const USER_TOOLBAR_ICON = "icons/UserIcon.svg";
 const TOOLBAR_HIGHLIGHT_SOUND_URLS = [
   "/soundEffects/Tic.wav",
   "/soundEffects/Tic.mp3"
 ];
 let lastToolbarHighlightSoundAt = 0;
+let toolbarSessionIdentity = null;
+let toolbarSessionIdentityLoaded = false;
+let toolbarSessionIdentityPromise = null;
 
 function playToolbarHighlightSound() {
   const now = Date.now();
@@ -54,6 +60,21 @@ window.NodevisionState = window.NodevisionState || {
   virtualWorldMode: "survival",
   activeActionHandler: null,
 };
+
+if (!window.__nvToolbarUserPreferencesBound) {
+  window.addEventListener("nodevision-user-preferences-changed", (evt) => {
+    const preferences = evt?.detail?.preferences;
+    if (!preferences || typeof preferences !== "object") return;
+    window.NodevisionUserPreferences = {
+      ...(window.NodevisionUserPreferences || {}),
+      ...preferences,
+    };
+    if (toolbarDataCache["defaultToolbar.json"]) {
+      updateToolbarState({ userPreferences: window.NodevisionUserPreferences });
+    }
+  });
+  window.__nvToolbarUserPreferencesBound = true;
+}
 
 function normalizeToolbarFilePath(value) {
   let cleaned = String(value || "").trim();
@@ -354,17 +375,256 @@ async function attachToolbarScript(item, hostElement) {
   }
 }
 
+function toolbarItemLabel(item, fallback = "toolbar action") {
+  return String(item?.tooltipText || item?.heading || item?.label || item?.shortLabel || fallback).trim() || fallback;
+}
+
+const TEMPORARY_TOOLBAR_ICON_KEYWORDS = [
+  ["merge", "M"],
+  ["split", "/"],
+  ["column", "C"],
+  ["row", "R"],
+  ["table", "#"],
+  ["image", "IM"],
+  ["media", "ME"],
+  ["audio", "AU"],
+  ["video", "VI"],
+  ["model", "3D"],
+  ["world", "W"],
+  ["graph", "G"],
+  ["terminal", ">_"],
+  ["settings", "*"],
+  ["search", "?"],
+  ["user", "@"],
+  ["link", "@"],
+  ["file", "F"],
+  ["folder", "D"],
+  ["edit", "E"],
+  ["draw", "~"],
+  ["delete", "X"],
+  ["remove", "X"],
+  ["close", "X"],
+  ["clear", "X"],
+  ["download", "DL"],
+  ["upload", "UP"],
+  ["import", "IN"],
+  ["export", "EX"],
+  ["add", "+"],
+  ["insert", "+"],
+  ["new", "+"],
+  ["open", ">"],
+  ["save", "S"],
+];
+
+function trimToolbarGlyph(value, maxLength = 3) {
+  return Array.from(String(value || "").trim()).slice(0, maxLength).join("");
+}
+
+function toolbarTemporaryIconText(item) {
+  const explicit = trimToolbarGlyph(item?.temporaryIcon || item?.iconText || item?.emoji || item?.glyph);
+  if (explicit) return explicit;
+
+  const shortLabel = trimToolbarGlyph(item?.shortLabel);
+  if (shortLabel) return shortLabel;
+
+  const label = toolbarItemLabel(item, "");
+  const normalizedLabel = label.toLowerCase();
+  for (const [keyword, glyph] of TEMPORARY_TOOLBAR_ICON_KEYWORDS) {
+    if (normalizedLabel.includes(keyword)) return glyph;
+  }
+
+  const words = label.match(/[A-Za-z0-9]+/g) || [];
+  if (words.length > 1) {
+    return words.slice(0, 2).map((word) => word.charAt(0)).join("").toUpperCase();
+  }
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return "?";
+}
+
+function toolbarHotkeyText(item) {
+  const raw = item?.hotkeyText ?? item?.shortcutText ?? item?.hotkey ?? item?.shortcut ?? item?.keybinding ?? "";
+  if (Array.isArray(raw)) {
+    return raw.map((value) => String(value || "").trim()).filter(Boolean).join(", ");
+  }
+  return String(raw || "").trim();
+}
+
+function toolbarHasHotkeyField(item) {
+  if (!item || typeof item !== "object") return false;
+  return ["hotkeyText", "shortcutText", "hotkey", "shortcut", "keybinding"]
+    .some((key) => Object.prototype.hasOwnProperty.call(item, key));
+}
+
+function toolbarShortcutDisplayText(item) {
+  return toolbarHotkeyText(item) || (toolbarHasHotkeyField(item) ? "Not assigned" : "");
+}
+
+function toolbarTooltipText(item, fallback = "toolbar action") {
+  const label = toolbarItemLabel(item, fallback);
+  const hotkey = toolbarShortcutDisplayText(item);
+  return hotkey ? `${label}\nShortcut: ${hotkey}` : label;
+}
+
+function toolbarAriaLabel(item, fallback = "toolbar action") {
+  const label = toolbarItemLabel(item, fallback);
+  const hotkey = toolbarShortcutDisplayText(item);
+  return hotkey ? `${label}. Shortcut: ${hotkey}.` : label;
+}
+
+function applyToolbarTooltip(element, item, { aria = false } = {}) {
+  if (!element) return;
+  const tooltip = toolbarTooltipText(item);
+  element.title = tooltip;
+  element.dataset.tooltipText = tooltip;
+  const hotkey = toolbarHotkeyText(item);
+  if (hotkey) element.dataset.hotkeyText = hotkey;
+  else delete element.dataset.hotkeyText;
+  if (aria) element.setAttribute("aria-label", toolbarAriaLabel(item));
+}
+
+
+function toolbarLogicalHeading(item) {
+  return String(item?.toolbarHeading || item?.originalHeading || item?.menuHeading || item?.heading || "").trim();
+}
+
+function isSearchToolbarItem(item) {
+  return toolbarLogicalHeading(item) === TOOLBAR_SEARCH_HEADING;
+}
+
+function isUserToolbarItem(item) {
+  return toolbarLogicalHeading(item) === TOOLBAR_USER_HEADING || item?.toolbarSlot === "user";
+}
+
+function isConditionalMainToolbarItem(item) {
+  return !!item?.conditions && Object.keys(item.conditions).length > 0;
+}
+
+function humanizeUsername(value) {
+  const clean = String(value || "").trim();
+  if (!clean) return "";
+  const base = clean.split("@")[0] || clean;
+  const words = base.split(/[^A-Za-z0-9]+/).map((part) => part.trim()).filter(Boolean);
+  if (!words.length) return clean;
+  return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+
+function resolveUserNickname(identity) {
+  const candidates = [
+    identity?.nickname,
+    identity?.displayName,
+    identity?.name,
+    identity?.profile?.nickname,
+    identity?.profile?.displayName,
+    identity?.user?.nickname,
+    identity?.user?.displayName,
+    window.NodevisionUserPreferences?.nickname,
+    window.NodevisionUserPreferences?.displayName,
+    window.NodevisionUser?.nickname,
+    window.NodevisionUser?.displayName,
+  ];
+
+  for (const candidate of candidates) {
+    const label = String(candidate || "").trim();
+    if (label) return label;
+  }
+
+  return humanizeUsername(identity?.username || identity?.user?.username || window.NodevisionUser?.username) || "User";
+}
+
+async function ensureToolbarSessionIdentity() {
+  if (toolbarSessionIdentityLoaded) return toolbarSessionIdentity;
+  if (toolbarSessionIdentityPromise) return toolbarSessionIdentityPromise;
+
+  toolbarSessionIdentityPromise = fetch("/api/session", {
+    cache: "no-store",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  })
+    .then(async (res) => {
+      const payload = await res.json().catch(() => ({}));
+      toolbarSessionIdentityLoaded = true;
+      toolbarSessionIdentity = payload?.loggedIn === false
+        ? null
+        : (payload?.identity || payload?.user || null);
+      if (toolbarSessionIdentity) {
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.identity = toolbarSessionIdentity;
+        window.NodevisionUser = toolbarSessionIdentity;
+      }
+      return toolbarSessionIdentity;
+    })
+    .catch((err) => {
+      toolbarSessionIdentityLoaded = true;
+      toolbarSessionIdentity = null;
+      console.warn("Unable to load toolbar user identity:", err);
+      return null;
+    })
+    .finally(() => {
+      toolbarSessionIdentityPromise = null;
+    });
+
+  return toolbarSessionIdentityPromise;
+}
+
+function orderMainToolbarItems(items = []) {
+  const standardItems = [];
+  const searchItems = [];
+  const conditionalItems = [];
+  const userItems = [];
+
+  items.forEach((item) => {
+    if (isUserToolbarItem(item)) {
+      userItems.push(item);
+    } else if (isSearchToolbarItem(item)) {
+      searchItems.push(item);
+    } else if (isConditionalMainToolbarItem(item)) {
+      conditionalItems.push(item);
+    } else {
+      standardItems.push(item);
+    }
+  });
+
+  return [...standardItems, ...searchItems, ...conditionalItems, ...userItems];
+}
+
+function decorateMainToolbarItem(item) {
+  if (!isUserToolbarItem(item)) return item;
+
+  const nickname = resolveUserNickname(toolbarSessionIdentity || window.NodevisionState?.identity || null);
+  return {
+    ...item,
+    heading: nickname,
+    toolbarHeading: TOOLBAR_USER_HEADING,
+    originalHeading: TOOLBAR_USER_HEADING,
+    toolbarSlot: "user",
+    icon: USER_TOOLBAR_ICON,
+    showIconOnMainToolbar: true,
+    tooltipText: "User: " + nickname,
+  };
+}
+
+function prepareMainToolbarItems(items = []) {
+  return orderMainToolbarItems(items).map((item) => decorateMainToolbarItem(item));
+}
+
+function addMainToolbarWrapperClasses(btnWrapper, item) {
+  if (!btnWrapper) return;
+  if (isSearchToolbarItem(item)) btnWrapper.classList.add("toolbar-button--search-anchor");
+  if (isConditionalMainToolbarItem(item)) btnWrapper.classList.add("toolbar-button--conditional-action");
+  if (isUserToolbarItem(item)) btnWrapper.classList.add("toolbar-button--user");
+}
+
 function createToolbarIconElement(item, { allowFallback = true } = {}) {
   const makeFallback = () => {
     if (!allowFallback) return null;
     const fallback = document.createElement("span");
+    const fallbackText = toolbarTemporaryIconText(item);
     fallback.setAttribute("aria-hidden", "true");
     fallback.className = "nv-toolbar-icon-fallback";
-    const fallbackLabel = String(item?.shortLabel || item?.label || "").trim();
-    if (fallbackLabel) {
-      fallback.textContent = fallbackLabel.slice(0, 3);
-      fallback.title = item?.heading || fallbackLabel;
-    }
+    fallback.dataset.temporaryIcon = "true";
+    fallback.dataset.iconLength = String(fallbackText.length);
+    fallback.textContent = fallbackText;
+    fallback.title = toolbarTooltipText(item, fallbackText);
     return fallback;
   };
 
@@ -475,6 +735,7 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
 
   // ✅ Prebuild dropdowns for each heading
   rebuildPrebuiltDropdowns();
+  await ensureToolbarSessionIdentity();
 
   // Prefer current Nodevision mode over the default argument when available.
   const effectiveMode =
@@ -496,7 +757,7 @@ return true;
   });
 
   // Build main toolbar from filtered items
-  buildToolbar(toolbar, filteredToolbar);
+  buildToolbar(toolbar, prepareMainToolbarItems(filteredToolbar));
   ensureGlobalToolbarHeightObserver();
 
   setStatus("Toolbar ready", `Mode: ${effectiveMode}`);
@@ -514,12 +775,15 @@ function buildToolbar(container, items, parentHeading = null) {
     if (item.parentHeading && !parentHeading) return;
     const enabled = checkToolbarConditions(item, state);
     if (!enabled) return;
+    const menuHeading = toolbarLogicalHeading(item);
 
     // Inline custom content widget (e.g., search bar)
     if (item.content) {
       const contentWrapper = document.createElement("div");
       contentWrapper.className = "toolbar-inline-widget";
-      contentWrapper.dataset.heading = item.heading || "";
+      contentWrapper.dataset.heading = menuHeading || item.heading || "";
+      if (!isDropdownContainer) addMainToolbarWrapperClasses(contentWrapper, item);
+      applyToolbarTooltip(contentWrapper, item);
       contentWrapper.innerHTML = item.content;
       container.appendChild(contentWrapper);
       attachToolbarScript(item, contentWrapper);
@@ -530,14 +794,17 @@ function buildToolbar(container, items, parentHeading = null) {
     btnWrapper.className = isDropdownContainer
       ? "toolbar-button toolbar-button--dropdown-item"
       : "toolbar-button toolbar-button--main-item";
-    btnWrapper.dataset.heading = item.heading;
+    btnWrapper.dataset.heading = menuHeading || item.heading || "";
+    if (!isDropdownContainer) addMainToolbarWrapperClasses(btnWrapper, item);
 
     const btn = document.createElement("button");
     btn.className = isDropdownContainer ? "toolbar-dropdown-button" : "toolbar-main-button";
     btn.textContent = item.heading;
+    applyToolbarTooltip(btn, item, { aria: true });
+    applyToolbarTooltip(btnWrapper, item);
 
-    // Main toolbar is text-only. Dropdown entries are icon + text.
-    if (isDropdownContainer) {
+    // Dropdown entries are icon + text; selected main toolbar items can opt in.
+    if (isDropdownContainer || item.showIconOnMainToolbar === true || isUserToolbarItem(item)) {
       const iconEl = createToolbarIconElement(item, { allowFallback: true });
       if (iconEl) btn.prepend(iconEl);
     }
@@ -546,7 +813,7 @@ function buildToolbar(container, items, parentHeading = null) {
     btn.addEventListener("mouseenter", playToolbarHighlightSound);
 
     // Dropdown handling
-    const dropdown = prebuiltDropdowns[item.heading];
+    const dropdown = prebuiltDropdowns[menuHeading];
     if (dropdown) {
       btnWrapper.appendChild(dropdown);
       let hoverTimeout;
@@ -596,7 +863,7 @@ if (item.panelTemplateId || item.panelTemplate) {
       if (dropdown) {
         dropdown.style.display = "block";
       } else if (item.preventAutoSubToolbar !== true) {
-        if (subToolbarContainer) showSubToolbar(item.heading);
+        if (subToolbarContainer) showSubToolbar(menuHeading);
       }
 
     });
@@ -690,6 +957,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
       const host = document.createElement("div");
       host.className = "nv-subtoolbar-widget";
       host.classList.add("nv-subtoolbar-widget--compact-script");
+      applyToolbarTooltip(host, item);
       if (hasWidgetContent) {
         host.innerHTML = item.content;
       }
@@ -702,8 +970,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 
     const btn = document.createElement("button");
     btn.className = "nv-subtoolbar-icon-btn";
-    btn.title = item.heading || "";
-    btn.setAttribute("aria-label", item.heading || "toolbar action");
+    applyToolbarTooltip(btn, item, { aria: true });
 
     // Sub-toolbar is icon-only.
     const iconEl = createToolbarIconElement(item, { allowFallback: true });
@@ -814,7 +1081,7 @@ return true;
   });
 
   // Rebuild toolbar using filtered items
-  buildToolbar(toolbar, filteredToolbar);
+  buildToolbar(toolbar, prepareMainToolbarItems(filteredToolbar));
   ensureGlobalToolbarHeightObserver();
 
   console.log(`🔁 Toolbar updated for mode: ${currentMode}`);

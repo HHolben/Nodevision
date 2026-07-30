@@ -2,6 +2,7 @@
   {
     "ToolbarCategory": "Styles",
     "heading": "Font",
+    "hotkeyText": "",
     "modes": ["HTMLediting"],
     "preventDropdown": true
   },
@@ -9,6 +10,7 @@
     "ToolbarCategory": "Styles",
     "parentHeading": "Font",
     "heading": "Font Controls",
+    "hotkeyText": "",
     "modes": ["HTMLediting"],
     "content": "<div id=\"nv-html-font-toolbar\"></div>",
     "script": "htmlFontToolbar.mjs"
@@ -16,6 +18,7 @@
   {
     "ToolbarCategory": "Styles",
     "heading": "Text",
+    "hotkeyText": "",
     "modes": ["HTMLediting"],
     "preventDropdown": true
   },
@@ -23,6 +26,7 @@
     "ToolbarCategory": "Styles",
     "parentHeading": "Text",
     "heading": "Text Style Controls",
+    "hotkeyText": "",
     "modes": ["HTMLediting"],
     "content": "<div id=\"nv-html-text-style-toolbar\"></div>",
     "script": "htmlTextStyleToolbar.mjs"
@@ -30,6 +34,7 @@
   {
     "ToolbarCategory": "Styles",
     "heading": "Document",
+    "hotkeyText": "",
     "modes": ["HTMLediting"],
     "preventDropdown": true
   },
@@ -37,6 +42,7 @@
     "ToolbarCategory": "Styles",
     "parentHeading": "Document",
     "heading": "Document Style Controls",
+    "hotkeyText": "",
     "modes": ["HTMLediting"],
     "content": "<div id=\"nv-html-document-style-toolbar\"></div>",
     "script": "htmlDocumentStyleToolbar.mjs"

@@ -49,6 +49,41 @@ let imagePlaneLoaderPromise = null;
 let stlLoaderPromise = null;
 let metaWorldRuntimePromise = null;
 
+const IFRAME_HOST_PAGE_SOURCE = "nodevision://host-page";
+const IFRAME_HOST_PAGE_KIND = "host-page";
+
+function readIframeObjectSourceKind(def = {}) {
+  const iframe = def.iframeObject && typeof def.iframeObject === "object" ? def.iframeObject : {};
+  return String(def.iframeSourceKind || def.sourceKind || iframe.iframeSourceKind || iframe.sourceKind || "").trim().toLowerCase();
+}
+
+function isHostPageIframeSource(src, sourceKind = "") {
+  return String(sourceKind || "").trim().toLowerCase() === IFRAME_HOST_PAGE_KIND
+    || String(src || "").trim().toLowerCase() === IFRAME_HOST_PAGE_SOURCE;
+}
+
+function readEmbeddingHostPageUrl() {
+  if (typeof window === "undefined") return "about:blank";
+  const candidates = [];
+  let framed = false;
+  try {
+    framed = Boolean(window.parent && window.parent !== window);
+  } catch {
+    framed = true;
+  }
+  if (framed) {
+    try {
+      if (window.parent?.location?.href) candidates.push(window.parent.location.href);
+    } catch {}
+    try {
+      if (window.top && window.top !== window && window.top.location?.href) candidates.push(window.top.location.href);
+    } catch {}
+    if (typeof document !== "undefined" && document.referrer) candidates.push(document.referrer);
+  }
+  if (window.location?.href) candidates.push(window.location.href);
+  return candidates.map((value) => String(value || "").trim()).find(Boolean) || "about:blank";
+}
+
 async function ensureMetaWorldRuntime() {
   if (!metaWorldRuntimePromise) {
     metaWorldRuntimePromise = import("/MetaWorld/MetaWorldRuntime.mjs");
@@ -189,6 +224,182 @@ function removeObjectFromArray(items, value) {
 }
 
 const PRIMITIVE_WORLD_OBJECT_TYPES = new Set(["box", "sphere", "cylinder", "torus", "cone", "pyramid"]);
+const SOUND_OBJECT_DEFAULT_VOLUME = 0.8;
+const SOUND_OBJECT_DEFAULT_RANGE = 14;
+const VOXEL_PATTERN_TYPE = "voxel-pattern";
+
+function round3(n) {
+  return Math.round(Number(n) * 1000) / 1000;
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function finiteNumberArray(value, length) {
+  if (!Array.isArray(value) || value.length < length) return null;
+  const numbers = value.slice(0, length).map(Number);
+  return numbers.every(Number.isFinite) ? numbers : null;
+}
+
+function isVoxelPatternDefinition(def) {
+  const type = String(def?.type || "").trim().toLowerCase();
+  return type === VOXEL_PATTERN_TYPE || Boolean(def?.voxelPattern && typeof def.voxelPattern === "object");
+}
+
+function readPatternCount(value, fallback = 1) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(1, Math.floor(number)) : fallback;
+}
+
+function readVoxelPatternCounts(pattern = {}) {
+  const arraySource = Array.isArray(pattern.counts)
+    ? pattern.counts
+    : Array.isArray(pattern.dimensions)
+      ? pattern.dimensions
+      : Array.isArray(pattern.size)
+        ? pattern.size
+        : null;
+  if (arraySource && arraySource.length >= 3) {
+    return [
+      readPatternCount(arraySource[0]),
+      readPatternCount(arraySource[1]),
+      readPatternCount(arraySource[2])
+    ];
+  }
+  if (arraySource && arraySource.length >= 2) {
+    return [readPatternCount(arraySource[0]), 1, readPatternCount(arraySource[1])];
+  }
+  const base = Number(pattern.base);
+  const shape = String(pattern.shape || "").trim().toLowerCase();
+  if (shape === "square" && Number.isFinite(base) && base > 0) {
+    const count = readPatternCount(base);
+    return [count, 1, count];
+  }
+  if (shape === "cube" && Number.isFinite(base) && base > 0) {
+    const count = readPatternCount(base);
+    return [count, count, count];
+  }
+  return [
+    readPatternCount(pattern.x ?? pattern.width ?? pattern.columns ?? pattern.countX),
+    readPatternCount(pattern.y ?? pattern.height ?? pattern.layers ?? pattern.countY),
+    readPatternCount(pattern.z ?? pattern.depth ?? pattern.rows ?? pattern.countZ)
+  ];
+}
+
+function readVoxelTemplateStep(template = {}) {
+  const size = finiteNumberArray(template.size, 3);
+  if (size && size.every((value) => value > 0)) return size.map((value) => round3(Math.abs(value)));
+  const voxel = template.voxelPlacer && typeof template.voxelPlacer === "object" ? template.voxelPlacer : {};
+  const voxelSize = Number(template.voxelSize ?? voxel.size);
+  const safeSize = Number.isFinite(voxelSize) && voxelSize > 0 ? round3(Math.abs(voxelSize)) : 1;
+  return [safeSize, safeSize, safeSize];
+}
+
+function readVoxelPatternStep(pattern = {}, template = {}) {
+  const fallback = readVoxelTemplateStep(template);
+  const source = pattern.step ?? pattern.spacing ?? pattern.cellSize ?? pattern.unit;
+  if (Array.isArray(source) && source.length >= 3) {
+    const step = source.slice(0, 3).map(Number);
+    return step.every((value) => Number.isFinite(value) && value > 0) ? step.map(round3) : fallback;
+  }
+  if (Array.isArray(source) && source.length >= 2) {
+    const x = Number(source[0]);
+    const z = Number(source[1]);
+    if (Number.isFinite(x) && x > 0 && Number.isFinite(z) && z > 0) return [round3(x), fallback[1], round3(z)];
+  }
+  const scalar = Number(source);
+  if (Number.isFinite(scalar) && scalar > 0) {
+    const unit = round3(scalar);
+    return [unit, unit, unit];
+  }
+  return fallback;
+}
+
+function buildVoxelPatternTemplate(def = {}) {
+  const rawTemplate = def.voxel && typeof def.voxel === "object"
+    ? def.voxel
+    : def.template && typeof def.template === "object"
+      ? def.template
+      : null;
+  const template = rawTemplate ? cloneJson(rawTemplate) : cloneJson(def);
+  delete template.pattern;
+  delete template.voxelPattern;
+  delete template.voxel;
+  delete template.template;
+  delete template.position;
+  delete template.id;
+  delete template.tag;
+  delete template.name;
+  if (!template.type || String(template.type).toLowerCase() === VOXEL_PATTERN_TYPE) template.type = "box";
+  template.isVoxel = true;
+  template.voxel = true;
+  return template;
+}
+
+function inheritVoxelPatternField(clone, def, key) {
+  if (clone[key] === undefined && def[key] !== undefined) clone[key] = cloneJson(def[key]);
+}
+
+function expandVoxelPatternDefinition(def, index) {
+  if (!isVoxelPatternDefinition(def)) return [def];
+  const pattern = def.pattern && typeof def.pattern === "object" ? def.pattern : (def.voxelPattern || {});
+  const rawTemplate = def.voxel && typeof def.voxel === "object"
+    ? def.voxel
+    : def.template && typeof def.template === "object"
+      ? def.template
+      : null;
+  const rawTemplatePosition = rawTemplate?.position;
+  const template = buildVoxelPatternTemplate(def);
+  [
+    "color",
+    "isSolid",
+    "collider",
+    "collidable",
+    "breakable",
+    "physicsMaterialId",
+    "physicsMaterialFile",
+    "materialName",
+    "MatterState",
+    "matterState",
+    "voxelSize",
+    "voxelPlacer",
+    "hidden",
+    "visible"
+  ].forEach((key) => inheritVoxelPatternField(template, def, key));
+  const counts = readVoxelPatternCounts(pattern);
+  const step = readVoxelPatternStep(pattern, template);
+  const basePosition = finiteNumberArray(def.position, 3) || finiteNumberArray(rawTemplatePosition, 3) || [0, 0, 0];
+  const patternId = [def.id, def.tag, def.name]
+    .find((value) => typeof value === "string" && value.trim()) || "voxel-pattern-" + index;
+  const expanded = [];
+  for (let y = 0; y < counts[1]; y += 1) {
+    for (let z = 0; z < counts[2]; z += 1) {
+      for (let x = 0; x < counts[0]; x += 1) {
+        const clone = cloneJson(template);
+        clone.id = patternId + "-" + x + "-" + y + "-" + z;
+        clone.position = [
+          round3(basePosition[0] + x * step[0]),
+          round3(basePosition[1] + y * step[1]),
+          round3(basePosition[2] + z * step[2])
+        ];
+        if (!Array.isArray(clone.size) || clone.size.length < 3) clone.size = step.slice();
+        clone.voxelPatternInstance = { source: patternId, cell: [x, y, z] };
+        expanded.push(clone);
+      }
+    }
+  }
+  return expanded;
+}
+
+function expandVoxelPatternDefinitions(defs = []) {
+  const expanded = [];
+  for (let index = 0; index < defs.length; index += 1) {
+    expanded.push(...expandVoxelPatternDefinition(defs[index], index));
+  }
+  return expanded;
+}
+
 
 function ensurePrimitiveSize(def) {
   const type = String(def?.type || "box").toLowerCase();
@@ -214,6 +425,210 @@ function createWorldMeshMaterial(THREE, materialOpts = null, fallbackColor = "#8
     });
   }
   return new THREE.MeshStandardMaterial(opts);
+}
+
+function clampSoundNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function normalizeSoundObjectVolume(value, fallback = SOUND_OBJECT_DEFAULT_VOLUME) {
+  return clampSoundNumber(value, 0, 1, fallback);
+}
+
+function normalizeSoundObjectRange(value, fallback = SOUND_OBJECT_DEFAULT_RANGE) {
+  return clampSoundNumber(value, 0, 10000, fallback);
+}
+
+function readSoundObjectSource(def = {}) {
+  return String(def.audioDataUrl || def.soundDataUrl || def.dataUrl || def.audioFile || def.soundFile || def.audioSrc || def.src || def.audioAssetPath || "").trim();
+}
+
+function isSoundObjectDefinition(def) {
+  const type = String(def?.type || "").toLowerCase();
+  return type === "sound-object" || type === "sound" || (type === "asset" && String(def?.assetType || "").toLowerCase() === "audio");
+}
+
+function isAbsoluteMediaSource(value) {
+  const text = String(value || "").trim();
+  return text.startsWith("data:") || text.startsWith("blob:") || /^https?:/i.test(text) || text.startsWith("/");
+}
+
+function notebookMediaUrl(path) {
+  const normalized = normalizeWorldPath(String(path || ""));
+  const segments = normalized.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment));
+  return segments.length ? "/Notebook/" + segments.join("/") : "";
+}
+
+function dirnameNotebookPath(path = "") {
+  const normalized = normalizeWorldPath(String(path || ""));
+  const parts = normalized.split("/").filter(Boolean);
+  parts.pop();
+  return parts.join("/");
+}
+
+function joinNotebookRelativePath(basePath = "", relativePath = "") {
+  const stack = dirnameNotebookPath(basePath).split("/").filter(Boolean);
+  String(relativePath || "").split("/").forEach((part) => {
+    if (!part || part === ".") return;
+    if (part === "..") stack.pop();
+    else stack.push(part);
+  });
+  return stack.join("/");
+}
+
+function resolveSoundObjectUrl(def = {}, baseWorldPath = "") {
+  const inline = String(def.audioDataUrl || def.soundDataUrl || def.dataUrl || "").trim();
+  if (inline) return inline;
+  const linked = String(def.audioLinkedPath || def.linkedPath || def.audioFile || def.soundFile || "").trim();
+  const source = linked || String(def.audioSrc || def.src || def.audioAssetPath || "").trim();
+  if (!source) return "";
+  if (isAbsoluteMediaSource(source)) return source;
+  const notebookPath = source.startsWith("./") || source.startsWith("../")
+    ? joinNotebookRelativePath(baseWorldPath || window.VRWorldContext?.currentWorldPath || window.selectedFilePath || "", source)
+    : normalizeWorldPath(source);
+  return notebookMediaUrl(notebookPath);
+}
+
+function soundDefinitionFromMesh(mesh) {
+  const data = mesh?.userData || {};
+  const sound = data.soundObject && typeof data.soundObject === "object" ? data.soundObject : {};
+  return {
+    ...sound,
+    src: data.soundSource || sound.src || data.audioAssetPath || "",
+    audioFile: data.soundFile || sound.audioFile || "",
+    audioDataUrl: data.soundDataUrl || sound.audioDataUrl || "",
+    audioLinkedPath: data.soundLinkedPath || sound.audioLinkedPath || sound.linkedPath || "",
+    volume: data.soundVolume ?? sound.volume,
+    range: data.soundRange ?? sound.range,
+    loop: data.soundLoop !== false && sound.loop !== false
+  };
+}
+
+const blockedSoundRuntimes = new Set();
+let soundUnlockHandlersInstalled = false;
+
+function flushBlockedSoundRuntimes() {
+  Array.from(blockedSoundRuntimes).forEach((runtime) => {
+    blockedSoundRuntimes.delete(runtime);
+    if (runtime) runtime.playBlocked = false;
+    tryPlaySoundRuntime(runtime);
+  });
+}
+
+function ensureSoundUnlockHandlers() {
+  if (soundUnlockHandlersInstalled || typeof document === "undefined") return;
+  soundUnlockHandlersInstalled = true;
+  document.addEventListener("pointerdown", flushBlockedSoundRuntimes, true);
+  document.addEventListener("keydown", flushBlockedSoundRuntimes, true);
+}
+
+function tryPlaySoundRuntime(runtime) {
+  if (!runtime?.audio || runtime.playPromise || runtime.playBlocked) return;
+  const result = runtime.audio.play?.();
+  if (!result || typeof result.then !== "function") return;
+  runtime.playPromise = result
+    .catch(() => {
+      runtime.playBlocked = true;
+      blockedSoundRuntimes.add(runtime);
+      ensureSoundUnlockHandlers();
+    })
+    .finally(() => {
+      runtime.playPromise = null;
+    });
+}
+
+export function disposeSoundObjectRuntime(target) {
+  const runtime = target?.audio ? target : target?.userData?.soundRuntime;
+  if (!runtime) return;
+  blockedSoundRuntimes.delete(runtime);
+  try {
+    runtime.audio?.pause?.();
+    if (runtime.audio) runtime.audio.src = "";
+    runtime.audio?.load?.();
+  } catch (err) {
+    console.warn("Sound Object cleanup failed:", err);
+  }
+  if (target?.userData?.soundRuntime === runtime) delete target.userData.soundRuntime;
+}
+
+function updateSoundObjectRuntime(mesh, listenerPosition = null) {
+  const runtime = mesh?.userData?.soundRuntime;
+  if (!runtime?.audio) return;
+  const sound = soundDefinitionFromMesh(mesh);
+  runtime.baseVolume = normalizeSoundObjectVolume(sound.volume);
+  runtime.range = normalizeSoundObjectRange(sound.range);
+  const visible = mesh.visible !== false && mesh.userData?.soundEnabled !== false;
+  let attenuation = visible ? 1 : 0;
+  if (listenerPosition?.distanceTo) {
+    const distance = listenerPosition.distanceTo(mesh.position);
+    attenuation = runtime.range > 0 ? Math.max(0, 1 - distance / runtime.range) : (distance <= 0.001 ? 1 : 0);
+  }
+  runtime.audio.loop = sound.loop !== false;
+  runtime.audio.volume = Math.max(0, Math.min(1, runtime.baseVolume * attenuation));
+  if (runtime.audio.paused && visible && runtime.sourceUrl) tryPlaySoundRuntime(runtime);
+}
+
+function attachSoundObjectRuntime(mesh, def = {}, baseWorldPath = "") {
+  if (!mesh?.userData) return null;
+  const sourceUrl = resolveSoundObjectUrl(def, baseWorldPath);
+  const existing = mesh.userData.soundRuntime;
+  if (existing && existing.sourceUrl !== sourceUrl) disposeSoundObjectRuntime(mesh);
+  if (!sourceUrl || typeof Audio === "undefined") return null;
+  if (mesh.userData.soundRuntime) {
+    updateSoundObjectRuntime(mesh, window.VRWorldContext?.controls?.getObject?.().position || window.VRWorldContext?.camera?.position || null);
+    return mesh.userData.soundRuntime;
+  }
+  const audio = new Audio(sourceUrl);
+  audio.loop = def.loop !== false;
+  audio.preload = "auto";
+  audio.volume = 0;
+  const runtime = { audio, sourceUrl, target: mesh, baseVolume: normalizeSoundObjectVolume(def.volume), range: normalizeSoundObjectRange(def.range), playPromise: null, playBlocked: false };
+  mesh.userData.soundRuntime = runtime;
+  mesh.userData.updateSoundObjectRuntime = (listenerPosition) => updateSoundObjectRuntime(mesh, listenerPosition);
+  mesh.userData.syncSoundObjectRuntime = () => attachSoundObjectRuntime(mesh, soundDefinitionFromMesh(mesh), baseWorldPath);
+  updateSoundObjectRuntime(mesh, window.VRWorldContext?.controls?.getObject?.().position || window.VRWorldContext?.camera?.position || null);
+  return runtime;
+}
+
+function attachSoundObjectDefinitionToMesh(mesh, def = {}, baseWorldPath = "") {
+  if (!mesh?.userData) return false;
+  const source = readSoundObjectSource(def);
+  const volume = normalizeSoundObjectVolume(def.volume ?? def.soundVolume);
+  const range = normalizeSoundObjectRange(def.range ?? def.soundRange);
+  const linked = String(def.audioLinkedPath || def.linkedPath || def.audioFile || def.soundFile || "").trim();
+  const inline = String(def.audioDataUrl || def.soundDataUrl || def.dataUrl || "").trim();
+  mesh.userData.nvType = "sound-object";
+  mesh.userData.audioAssetPath = source;
+  mesh.userData.soundSource = source;
+  mesh.userData.soundFile = linked;
+  mesh.userData.soundLinkedPath = linked;
+  mesh.userData.soundDataUrl = inline;
+  mesh.userData.soundVolume = volume;
+  mesh.userData.soundRange = range;
+  mesh.userData.soundLoop = def.loop !== false;
+  mesh.userData.soundObject = {
+    src: source,
+    audioFile: linked,
+    audioDataUrl: inline,
+    audioLinkedPath: linked,
+    volume,
+    range,
+    loop: def.loop !== false
+  };
+  attachSoundObjectRuntime(mesh, { ...mesh.userData.soundObject }, baseWorldPath);
+  return Boolean(source);
+}
+
+function createSoundObjectMesh(THREE, def = {}, baseWorldPath = "") {
+  const size = Array.isArray(def.size) && Number.isFinite(Number(def.size[0])) ? Math.max(0.08, Number(def.size[0])) : 0.25;
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(size, 24, 16),
+    createWorldMeshMaterial(THREE, { color: def.color || "#44aaff", emissive: def.emissive || "#113355", emissiveIntensity: Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.35 })
+  );
+  attachSoundObjectDefinitionToMesh(mesh, def, baseWorldPath);
+  return mesh;
 }
 
 function createPrimitiveWorldMesh(THREE, def, materialOpts = null) {
@@ -311,6 +726,353 @@ function makeObjectColliderRef(THREE, mesh, def, shape) {
   return attachPhysicsMaterialToCollider({ type: "box", box: new THREE.Box3().setFromObject(mesh) }, materialId);
 }
 
+function attachObjectFileDefinitionToMesh(mesh, def = {}) {
+  if (!mesh?.userData) return false;
+  const objectPath = typeof def.objectFile === "string" ? def.objectFile : "";
+  const objectFormat = typeof def.objectFormat === "string"
+    ? def.objectFormat
+    : (typeof def.objectFileFormat === "string" ? def.objectFileFormat : "");
+  const objectName = typeof def.objectFileName === "string" ? def.objectFileName : "";
+  const objectDataUrl = typeof def.objectDataUrl === "string"
+    ? def.objectDataUrl
+    : (typeof def.objectFileDataUrl === "string" ? def.objectFileDataUrl : "");
+  const objectText = typeof def.objectText === "string"
+    ? def.objectText
+    : (typeof def.objectFileText === "string" ? def.objectFileText : "");
+  mesh.userData.objectFilePath = objectPath;
+  mesh.userData.objectFileFormat = objectFormat;
+  mesh.userData.objectFileName = objectName;
+  mesh.userData.objectFileDataUrl = objectDataUrl;
+  mesh.userData.objectFileText = objectText;
+  mesh.userData.objectFileColliderBinding = def.colliderBinding === "geometry" || def.collider === true || def.collidable === true || def.isSolid === true ? "geometry" : "none";
+  return Boolean(objectPath || objectDataUrl || objectText);
+}
+
+function readIframeObjectSource(def = {}) {
+  const iframe = def.iframeObject && typeof def.iframeObject === "object" ? def.iframeObject : {};
+  const sourceKind = readIframeObjectSourceKind(def);
+  const src = String(def.iframeSrc || def.src || def.url || def.href || iframe.src || iframe.iframeSrc || "").trim();
+  return isHostPageIframeSource(src, sourceKind) ? IFRAME_HOST_PAGE_SOURCE : src;
+}
+
+function readIframeObjectTitle(def = {}) {
+  const iframe = def.iframeObject && typeof def.iframeObject === "object" ? def.iframeObject : {};
+  return String(def.iframeTitle || def.title || iframe.title || iframe.iframeTitle || def.name || "iFrame").trim() || "iFrame";
+}
+
+function normalizeIframeObjectSize(def = {}) {
+  const size = Array.isArray(def.size) ? def.size : [];
+  const width = Number(size[0]);
+  const height = Number(size[1]);
+  const depth = Number(size[2]);
+  return [
+    Number.isFinite(width) && width > 0 ? width : 1.6,
+    Number.isFinite(height) && height > 0 ? height : 0.9,
+    Number.isFinite(depth) && depth > 0 ? depth : 0.04
+  ];
+}
+
+function shortenIframeLabel(value, maxLength = 54) {
+  const text = String(value || "").trim();
+  if (text.length <= maxLength) return text;
+  return text.slice(0, Math.max(0, maxLength - 3)) + "...";
+}
+
+function createIframeObjectTexture(THREE, def = {}) {
+  if (!THREE?.CanvasTexture || typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 288;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const sourceKind = readIframeObjectSourceKind(def);
+  const rawSrc = readIframeObjectSource(def) || "about:blank";
+  const src = isHostPageIframeSource(rawSrc, sourceKind) ? "containing webpage" : rawSrc;
+  const title = readIframeObjectTitle(def);
+  ctx.fillStyle = def.color || "#f8fbff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#1f6feb";
+  ctx.fillRect(0, 0, canvas.width, 42);
+  ctx.strokeStyle = "#163760";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "700 24px system-ui, sans-serif";
+  ctx.fillText("iFrame", 18, 29);
+  ctx.fillStyle = "#172033";
+  ctx.font = "700 30px system-ui, sans-serif";
+  ctx.fillText(shortenIframeLabel(title, 30), 28, 108);
+  ctx.font = "18px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  ctx.fillStyle = "#526173";
+  ctx.fillText(shortenIframeLabel(src, 45), 28, 152);
+  ctx.fillStyle = "#dbeafe";
+  ctx.fillRect(28, 188, canvas.width - 56, 44);
+  ctx.fillStyle = "#174268";
+  ctx.font = "16px system-ui, sans-serif";
+  ctx.fillText("Embedded web page surface", 44, 216);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function createIframeObjectMaterial(THREE, def = {}) {
+  const texture = createIframeObjectTexture(THREE, def);
+  if (!texture) {
+    return createWorldMeshMaterial(THREE, {
+      color: def.color || "#f8fbff",
+      emissive: "#183a5f",
+      emissiveIntensity: 0.28
+    });
+  }
+  const material = new THREE.MeshBasicMaterial({ color: "#ffffff", map: texture });
+  material.userData = { ...(material.userData || {}), nvGeneratedIframeMaterial: true };
+  return material;
+}
+
+function disposeIframeGeneratedMaterial(mesh) {
+  const materials = Array.isArray(mesh?.material) ? mesh.material : [mesh?.material];
+  materials.forEach((material) => {
+    if (!material?.userData?.nvGeneratedIframeMaterial) return;
+    material.map?.dispose?.();
+    material.dispose?.();
+  });
+}
+
+function iframeDefinitionFromMesh(mesh) {
+  const data = mesh?.userData || {};
+  const iframe = data.iframeObject && typeof data.iframeObject === "object" ? data.iframeObject : {};
+  const sourceKind = readIframeObjectSourceKind(data);
+  const src = isHostPageIframeSource(data.iframeSrc || iframe.iframeSrc || iframe.src, sourceKind)
+    ? IFRAME_HOST_PAGE_SOURCE
+    : (data.iframeSrc || iframe.iframeSrc || iframe.src || "about:blank");
+  const normalizedSourceKind = isHostPageIframeSource(src, sourceKind) ? IFRAME_HOST_PAGE_KIND : sourceKind;
+  return {
+    src,
+    iframeSrc: src,
+    iframeSourceKind: normalizedSourceKind,
+    title: data.iframeTitle || iframe.title || "Embedded Page",
+    iframeTitle: data.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page",
+    sandbox: data.iframeSandbox || iframe.sandbox || "",
+    allow: data.iframeAllow || iframe.allow || "",
+    color: data.iframeColor || "#f8fbff"
+  };
+}
+
+function attachIframeObjectDefinitionToMesh(THREE, mesh, def = {}) {
+  if (!mesh?.userData) return false;
+  const src = readIframeObjectSource(def) || "about:blank";
+  const sourceKind = isHostPageIframeSource(src, readIframeObjectSourceKind(def)) ? IFRAME_HOST_PAGE_KIND : readIframeObjectSourceKind(def);
+  const title = readIframeObjectTitle(def) || "Embedded Page";
+  const sandbox = String(def.sandbox || def.iframeSandbox || "").trim();
+  const allow = String(def.allow || def.iframeAllow || "").trim();
+  mesh.userData.nvType = "iframe";
+  mesh.userData.iframeSrc = src;
+  mesh.userData.iframeTitle = title;
+  mesh.userData.iframeSourceKind = sourceKind;
+  mesh.userData.iframeSandbox = sandbox;
+  mesh.userData.iframeAllow = allow;
+  mesh.userData.iframeColor = def.color || "#f8fbff";
+  mesh.userData.iframeObject = { src, iframeSrc: src, iframeSourceKind: sourceKind, title, iframeTitle: title, sandbox, allow };
+  mesh.userData.refreshIframeObjectMaterial = () => {
+    disposeIframeGeneratedMaterial(mesh);
+    mesh.material = createIframeObjectMaterial(THREE, iframeDefinitionFromMesh(mesh));
+  };
+  disposeIframeGeneratedMaterial(mesh);
+  mesh.material = createIframeObjectMaterial(THREE, { ...def, src, iframeSrc: src, iframeSourceKind: sourceKind, iframeTitle: title, title, sandbox, allow });
+  return true;
+}
+
+function createIframeObjectMesh(THREE, def = {}) {
+  const size = normalizeIframeObjectSize(def);
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(size[0], size[1], size[2]),
+    createIframeObjectMaterial(THREE, def)
+  );
+  attachIframeObjectDefinitionToMesh(THREE, mesh, def);
+  return mesh;
+}
+
+function resolveIframeObjectDomSource(src, sourceKind = "") {
+  const text = String(src || "").trim() || "about:blank";
+  if (isHostPageIframeSource(text, sourceKind)) return readEmbeddingHostPageUrl();
+  if (text.startsWith("/") || text.startsWith("#") || text.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(text)) return text;
+  let normalized = text;
+  if (normalized.startsWith("./")) normalized = normalized.slice(2);
+  while (normalized.startsWith("/")) normalized = normalized.slice(1);
+  if (normalized.startsWith("Notebook/")) return "/" + normalized;
+  return "/Notebook/" + normalized;
+}
+
+function getIframeOverlayLayer(panel) {
+  if (!panel || typeof document === "undefined") return null;
+  let layer = panel._vrIframeObjectOverlayLayer;
+  if (layer?.isConnected) return layer;
+  layer = document.createElement("div");
+  layer.className = "gameview-iframe-object-overlays";
+  Object.assign(layer.style, {
+    position: "absolute",
+    inset: "0",
+    overflow: "hidden",
+    pointerEvents: "none",
+    zIndex: "2"
+  });
+  panel.appendChild(layer);
+  panel._vrIframeObjectOverlayLayer = layer;
+  return layer;
+}
+
+function disposeIframeObjectOverlay(target) {
+  const overlay = target?.userData?.iframeOverlay;
+  overlay?.element?.remove?.();
+  if (target?.userData) delete target.userData.iframeOverlay;
+}
+
+function syncIframeObjectOverlay(target, { panel, THREE, camera }) {
+  if (!target?.userData || String(target.userData.nvType || "").toLowerCase() !== "iframe") return;
+  const layer = getIframeOverlayLayer(panel);
+  if (!layer || !THREE?.Vector3 || !camera) return;
+
+  let overlay = target.userData.iframeOverlay;
+  if (!overlay?.element?.isConnected) {
+    const element = document.createElement("div");
+    const frame = document.createElement("iframe");
+    Object.assign(element.style, {
+      position: "absolute",
+      left: "0",
+      top: "0",
+      display: "none",
+      overflow: "hidden",
+      background: "#ffffff",
+      border: "1px solid rgba(31, 111, 235, 0.48)",
+      boxShadow: "0 8px 22px rgba(15, 23, 42, 0.18)",
+      transformOrigin: "0 0"
+    });
+    Object.assign(frame.style, {
+      width: "100%",
+      height: "100%",
+      border: "0",
+      display: "block",
+      background: "#ffffff",
+      pointerEvents: "none"
+    });
+    frame.loading = "lazy";
+    element.appendChild(frame);
+    layer.appendChild(element);
+    overlay = { element, frame, sourceKey: "", title: "", sandbox: "", allow: "" };
+    target.userData.iframeOverlay = overlay;
+  }
+
+  const data = target.userData;
+  const iframe = data.iframeObject && typeof data.iframeObject === "object" ? data.iframeObject : {};
+  const sourceKind = readIframeObjectSourceKind(data);
+  const src = isHostPageIframeSource(data.iframeSrc || iframe.iframeSrc || iframe.src, sourceKind)
+    ? IFRAME_HOST_PAGE_SOURCE
+    : (data.iframeSrc || iframe.iframeSrc || iframe.src || "about:blank");
+  const title = data.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page";
+  const sandbox = String(data.iframeSandbox || iframe.sandbox || "").trim();
+  const allow = String(data.iframeAllow || iframe.allow || "").trim();
+  const sourceKey = resolveIframeObjectDomSource(src, sourceKind);
+  if (overlay.sourceKey !== sourceKey) {
+    overlay.frame.setAttribute("src", sourceKey);
+    overlay.sourceKey = sourceKey;
+  }
+  if (overlay.title !== title) {
+    overlay.frame.title = title;
+    overlay.title = title;
+  }
+  if (overlay.sandbox !== sandbox) {
+    if (sandbox) overlay.frame.setAttribute("sandbox", sandbox);
+    else overlay.frame.removeAttribute("sandbox");
+    overlay.sandbox = sandbox;
+  }
+  if (overlay.allow !== allow) {
+    if (allow) overlay.frame.setAttribute("allow", allow);
+    else overlay.frame.removeAttribute("allow");
+    overlay.allow = allow;
+  }
+
+  if (target.visible === false || target.parent?.visible === false) {
+    overlay.element.style.display = "none";
+    return;
+  }
+  target.updateMatrixWorld?.(true);
+  camera.updateMatrixWorld?.();
+  const params = target.geometry?.parameters || {};
+  const halfW = Math.max(0.01, Number(params.width) || 1.6) * 0.5;
+  const halfH = Math.max(0.01, Number(params.height) || 0.9) * 0.5;
+  const halfD = Math.max(0.001, Number(params.depth) || 0.04) * 0.5 + 0.002;
+  const corners = [
+    new THREE.Vector3(-halfW, halfH, halfD),
+    new THREE.Vector3(halfW, halfH, halfD),
+    new THREE.Vector3(halfW, -halfH, halfD),
+    new THREE.Vector3(-halfW, -halfH, halfD)
+  ].map((point) => point.applyMatrix4(target.matrixWorld).project(camera));
+  const center = new THREE.Vector3().setFromMatrixPosition(target.matrixWorld).project(camera);
+  if (!Number.isFinite(center.x) || !Number.isFinite(center.y) || center.z < -1 || center.z > 1) {
+    overlay.element.style.display = "none";
+    return;
+  }
+  const viewportW = panel.clientWidth || 1;
+  const viewportH = panel.clientHeight || 1;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  corners.forEach((point) => {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+    const x = (point.x * 0.5 + 0.5) * viewportW;
+    const y = (-point.y * 0.5 + 0.5) * viewportH;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  });
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+    overlay.element.style.display = "none";
+    return;
+  }
+  const width = Math.max(24, maxX - minX);
+  const height = Math.max(16, maxY - minY);
+  overlay.element.style.display = "block";
+  overlay.element.style.width = Math.round(width) + "px";
+  overlay.element.style.height = Math.round(height) + "px";
+  overlay.element.style.transform = "translate(" + Math.round(minX) + "px, " + Math.round(minY) + "px)";
+  overlay.element.style.zIndex = String(1000 + Math.round((1 - center.z) * 1000));
+}
+
+export function updateIframeObjectOverlays({ panel, THREE, objects, camera }) {
+  const list = Array.isArray(objects) ? objects : [];
+  const active = new Set();
+  list.forEach((object) => {
+    if (String(object?.userData?.nvType || "").toLowerCase() !== "iframe") {
+      disposeIframeObjectOverlay(object);
+      return;
+    }
+    syncIframeObjectOverlay(object, { panel, THREE, camera });
+    if (object?.userData?.iframeOverlay?.element) active.add(object.userData.iframeOverlay.element);
+  });
+  const layer = panel?._vrIframeObjectOverlayLayer;
+  if (!layer) return;
+  Array.from(layer.children).forEach((child) => {
+    if (!active.has(child)) child.remove();
+  });
+}
+
+function disposeIframeObjectRuntime(target) {
+  disposeIframeGeneratedMaterial(target);
+  disposeIframeObjectOverlay(target);
+  if (target?.userData) {
+    delete target.userData.refreshIframeObjectMaterial;
+  }
+}
+
+function applyObjectFileGeometryAsync(mesh) {
+  void (async () => {
+    const applier = await ensureObjectFileGeometryApplier();
+    if (applier) await applier(mesh);
+  })();
+}
+
 function makeUniqueObjectId(layerEntries, preferredId, type) {
   const existing = new Set(layerEntries.map((entry) => entry.id));
   const base = String(preferredId || "shape-" + (type || "object") + "-" + Date.now().toString(36)).trim();
@@ -393,7 +1155,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       entry.object3d.userData.onBreakTarget = () => bridge.removeExpressionLayer(entry.id);
       return;
     }
-    if (isEquationObjectDefinition(entry.def) || entry.def?.type === "portal") {
+    if (isEquationObjectDefinition(entry.def) || entry.def?.type === "portal" || entry.def?.type === "sound-object" || entry.def?.type === "iframe") {
       entry.object3d.userData.breakable = true;
       entry.object3d.userData.placedByPlayer = true;
       entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id);
@@ -406,6 +1168,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     delete object3d.userData.colliderRef;
   };
   const removeGameObjectRuntimeRefs = (object3d) => {
+    disposeSoundObjectRuntime(object3d);
+    disposeIframeObjectRuntime(object3d);
     const portalRef = object3d?.userData?.portalRef;
     if (portalRef) {
       removeObjectFromArray(portals, portalRef);
@@ -709,6 +1473,24 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         if (def.collider !== false) def.collider = true;
         def.isSolid = def.collider !== false;
         if (def.breakable !== false) def.breakable = true;
+      } else if (def.type === "iframe") {
+        meshShape = "box";
+        def.shape = "box";
+        def.size = normalizeIframeObjectSize(def);
+        if (!def.color) def.color = "#f8fbff";
+        const iframeSrc = readIframeObjectSource(def) || "about:blank";
+        def.src = iframeSrc;
+        def.iframeSrc = iframeSrc;
+        const iframeSourceKind = isHostPageIframeSource(iframeSrc, readIframeObjectSourceKind(def)) ? IFRAME_HOST_PAGE_KIND : readIframeObjectSourceKind(def);
+        if (iframeSourceKind) def.iframeSourceKind = iframeSourceKind;
+        else delete def.iframeSourceKind;
+        def.iframeTitle = readIframeObjectTitle(def) || "Embedded Page";
+        def.sandbox = String(def.sandbox || def.iframeSandbox || "allow-scripts allow-same-origin allow-forms").trim();
+        def.allow = String(def.allow || def.iframeAllow || "fullscreen").trim();
+        def.collider = def.collider === true || def.collidable === true || def.isSolid === true;
+        def.collidable = def.collider;
+        def.isSolid = def.collider;
+        if (def.breakable !== false) def.breakable = true;
       } else {
         return null;
       }
@@ -727,7 +1509,9 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         materialOpts.emissive = def.emissive;
         materialOpts.emissiveIntensity = def.emissiveIntensity;
       }
-      const mesh = createPrimitiveWorldMesh(THREE, meshDef, materialOpts);
+      const mesh = def.type === "iframe"
+        ? createIframeObjectMesh(THREE, def)
+        : createPrimitiveWorldMesh(THREE, meshDef, materialOpts);
       if (!mesh) return null;
 
       this.recordHistory();
@@ -818,6 +1602,111 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       markMetaWorldLayersDirty(worldData);
       syncBridgeWorldState(state, worldData);
       notifyMetaWorldLayersChanged({ reason: "gameObjectLayerAdded", objectId });
+      return def;
+    },
+    addObjectFileLayer(objectDef = {}) {
+      if (!THREE || !scene || !Array.isArray(objects) || !worldData) return null;
+      const def = objectDef && typeof objectDef === "object" ? JSON.parse(JSON.stringify(objectDef)) : {};
+      def.type = "object-file";
+      if (!Array.isArray(def.position) || def.position.length < 3) def.position = [0, 0.5, -2];
+      if (!Array.isArray(def.size) || def.size.length < 3) def.size = [1, 1, 1];
+      def.size = [0, 1, 2].map((index) => {
+        const value = Number(def.size[index]);
+        return Number.isFinite(value) && value > 0 ? value : 1;
+      });
+      if (!def.objectFormat && typeof def.objectFileFormat === "string") def.objectFormat = def.objectFileFormat;
+      if (!def.objectDataUrl && typeof def.objectFileDataUrl === "string") def.objectDataUrl = def.objectFileDataUrl;
+      if (!def.objectText && typeof def.objectFileText === "string") def.objectText = def.objectFileText;
+
+      const objectId = makeUniqueObjectId(layerEntries, def.id || def.tag || def.name, def.type);
+      def.id = objectId;
+      def.tag = typeof def.tag === "string" && def.tag.trim() ? def.tag.trim() : objectId;
+      def.name = typeof def.name === "string" && def.name.trim() ? def.name.trim() : readLayerObjectName(def, objectId, layerEntries.length);
+      if (typeof def.objectFileName !== "string" || !def.objectFileName.trim()) def.objectFileName = def.name;
+      if (!def.color) def.color = "#8aa0b8";
+
+      const colliderRequested = def.colliderBinding === "none" || def.collider === false ? false : true;
+      def.collider = colliderRequested;
+      def.colliderBinding = colliderRequested ? "geometry" : "none";
+      def.collidable = colliderRequested;
+      def.isSolid = colliderRequested;
+      if (def.breakable !== false) def.breakable = true;
+      const physicsMaterialId = ensureWorldObjectPhysicsMaterial(def);
+
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]),
+        createWorldMeshMaterial(THREE, { color: def.color || "#8aa0b8" })
+      );
+
+      this.recordHistory();
+      worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
+      worldData.objects.push(def);
+      mesh.position.set(...def.position);
+      mesh.userData.nvType = "object-file";
+      mesh.userData.metaWorldLayerId = objectId;
+      mesh.userData.tag = def.tag;
+      mesh.userData.isSolid = colliderRequested;
+      mesh.userData.breakable = def.breakable !== false;
+      mesh.userData.placedByPlayer = true;
+      mesh.userData.placeholderHalfHeight = def.size[1] / 2;
+      applyPhysicsMaterialToMesh(mesh, physicsMaterialId);
+      const hasObjectFile = attachObjectFileDefinitionToMesh(mesh, def);
+      if (def.hidden === true || def.visible === false) mesh.visible = false;
+      scene.add(mesh);
+      objects.push(mesh);
+      const colliderRef = colliderRequested ? makeObjectColliderRef(THREE, mesh, def, "box") : null;
+      if (colliderRef && Array.isArray(colliders)) {
+        colliders.push(colliderRef);
+        mesh.userData.colliderRef = colliderRef;
+      }
+      if (hasObjectFile) applyObjectFileGeometryAsync(mesh);
+      layerEntries.push({ id: objectId, def, object3d: mesh });
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "objectFileLayerAdded", objectId });
+      return def;
+    },
+    addSoundObjectLayer(soundDef = {}) {
+      if (!THREE || !scene || !Array.isArray(objects) || !worldData) return null;
+      const def = soundDef && typeof soundDef === "object" ? JSON.parse(JSON.stringify(soundDef)) : {};
+      def.type = "sound-object";
+      if (!Array.isArray(def.position) || def.position.length < 3) def.position = [0, 0.8, -2];
+      if (!Array.isArray(def.size) || def.size.length === 0) def.size = [0.25];
+      def.size = [Math.max(0.08, Number(def.size[0]) || 0.25)];
+      if (!def.color) def.color = "#44aaff";
+      def.volume = normalizeSoundObjectVolume(def.volume ?? def.soundVolume);
+      def.range = normalizeSoundObjectRange(def.range ?? def.soundRange);
+      def.loop = def.loop !== false;
+      def.isSolid = false;
+      def.collidable = false;
+      def.collider = false;
+      if (def.breakable !== false) def.breakable = true;
+
+      const objectId = makeUniqueObjectId(layerEntries, def.id || def.tag || def.name, def.type);
+      def.id = objectId;
+      def.tag = typeof def.tag === "string" && def.tag.trim() ? def.tag.trim() : objectId;
+      def.name = typeof def.name === "string" && def.name.trim() ? def.name.trim() : readLayerObjectName(def, objectId, layerEntries.length);
+
+      const mesh = createSoundObjectMesh(THREE, def, filePath);
+      if (!mesh) return null;
+      this.recordHistory();
+      worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
+      worldData.objects.push(def);
+      mesh.position.set(...def.position);
+      mesh.userData.nvType = "sound-object";
+      mesh.userData.metaWorldLayerId = objectId;
+      mesh.userData.tag = def.tag;
+      mesh.userData.isSolid = false;
+      mesh.userData.physicsEnabled = false;
+      mesh.userData.breakable = def.breakable !== false;
+      mesh.userData.placedByPlayer = true;
+      if (def.hidden === true || def.visible === false) mesh.visible = false;
+      scene.add(mesh);
+      objects.push(mesh);
+      layerEntries.push({ id: objectId, def, object3d: mesh });
+      markMetaWorldLayersDirty(worldData);
+      syncBridgeWorldState(state, worldData);
+      notifyMetaWorldLayersChanged({ reason: "soundObjectLayerAdded", objectId });
       return def;
     },
     upsertObjectLayerFromMesh({ mesh, def, reason = "objectLayerUpserted" } = {}) {
@@ -1246,7 +2135,11 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
   if (ctx.canvas) ctx.canvas.style.display = "block";
   if (ctx.metaWorldHost?.parentNode) ctx.metaWorldHost.parentNode.removeChild(ctx.metaWorldHost);
   ctx.metaWorldHost = null;
-  objects?.forEach(obj => scene.remove(obj));
+  objects?.forEach((obj) => {
+    disposeSoundObjectRuntime(obj);
+    disposeIframeObjectRuntime(obj);
+    scene.remove(obj);
+  });
   if (objects) objects.length = 0;
   if (colliders) colliders.length = 0;
   if (portals) portals.length = 0;
@@ -1365,7 +2258,11 @@ async function loadStlWorld(filePath, state, THREE) {
   ctx.metaWorldHost = null;
   if (!scene || !movementState || !ground) return;
 
-  objects?.forEach((obj) => scene.remove(obj));
+  objects?.forEach((obj) => {
+    disposeSoundObjectRuntime(obj);
+    disposeIframeObjectRuntime(obj);
+    scene.remove(obj);
+  });
   if (objects) objects.length = 0;
   if (colliders) colliders.length = 0;
   if (lights) {
@@ -1573,6 +2470,21 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         allowToolUse: readRule("allowToolUse", false),
         allowSave: readRule("allowSave", false)
       };
+      const editorGravityValue = worldData?.editorGravityEnabled ?? worldData?.metadata?.editorGravityEnabled ?? worldData?.metadata?.editor?.gravityEnabled;
+      movementState.editorGravityEnabled = typeof editorGravityValue === "boolean" ? editorGravityValue : true;
+      const playerCharacter = worldData?.playerCharacter
+        || worldData?.character
+        || worldData?.metadata?.playerCharacter
+        || null;
+      movementState.playerCharacter = playerCharacter && typeof playerCharacter === "object" ? JSON.parse(JSON.stringify(playerCharacter)) : null;
+      const playerSkills = worldData?.playerSkills
+        || worldData?.metadata?.playerSkills
+        || playerCharacter?.skills
+        || {
+          walking: { id: "walking", name: "Walking", type: "active", level: 1 },
+          running: { id: "running", name: "Running", type: "modifier", modifierSkill: true, stacksOn: "walking", level: 0 }
+        };
+      movementState.playerSkills = playerSkills && typeof playerSkills === "object" ? JSON.parse(JSON.stringify(playerSkills)) : {};
 
       const rawEnvDef =
         worldData?.metadata?.environment
@@ -1607,7 +2519,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       worldData.multiplayer = multiplayerDef;
       worldData.metadata.multiplayer = multiplayerDef;
     }
-    objects.forEach(obj => scene.remove(obj));
+    objects.forEach((obj) => {
+      disposeSoundObjectRuntime(obj);
+      disposeIframeObjectRuntime(obj);
+      scene.remove(obj);
+    });
     objects.length = 0;
     colliders.length = 0;
     if (portals) portals.length = 0;
@@ -1813,6 +2729,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     if (isUsdLike) {
       objectDefs = normalizeUsdObjects(objectDefs);
     }
+    objectDefs = expandVoxelPatternDefinitions(objectDefs);
     if (worldData) worldData.objects = objectDefs;
     if (state) {
       state.currentWorldDefinition = worldData ? JSON.parse(JSON.stringify(worldData)) : null;
@@ -2085,11 +3002,24 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             if (applier) await applier(mesh, THREE);
           })();
         } else if (assetType === "audio") {
-          mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(0.25, 24, 16),
-            new THREE.MeshStandardMaterial({ color: def.color || "#44aaff", emissive: "#113355", emissiveIntensity: 0.35 })
-          );
-          mesh.userData.audioAssetPath = src;
+          def.type = "sound-object";
+          def.src = src;
+          if (!Number.isFinite(def.volume)) def.volume = SOUND_OBJECT_DEFAULT_VOLUME;
+          if (!Number.isFinite(def.range)) def.range = SOUND_OBJECT_DEFAULT_RANGE;
+          mesh = createSoundObjectMesh(THREE, def, filePath);
+        } else if (assetType === "iframe" || assetType === "html") {
+          def.type = "iframe";
+          def.src = src || readIframeObjectSource(def) || "about:blank";
+          def.iframeSrc = def.src;
+          const iframeSourceKind = isHostPageIframeSource(def.src, readIframeObjectSourceKind(def)) ? IFRAME_HOST_PAGE_KIND : readIframeObjectSourceKind(def);
+          if (iframeSourceKind) def.iframeSourceKind = iframeSourceKind;
+          else delete def.iframeSourceKind;
+          if (!def.iframeTitle) def.iframeTitle = def.title || def.name || "Embedded Page";
+          def.size = Array.isArray(def.size) && def.size.length >= 2
+            ? normalizeIframeObjectSize(def)
+            : [Number.isFinite(scale[0]) ? scale[0] * 1.6 : 1.6, Number.isFinite(scale[1]) ? scale[1] : 0.9, 0.04];
+          if (!def.color) def.color = "#f8fbff";
+          mesh = createIframeObjectMesh(THREE, def);
         } else if (assetType === "video") {
           mesh = new THREE.Mesh(
             new THREE.PlaneGeometry(Number.isFinite(scale[0]) ? scale[0] * 1.6 : 1.6, Number.isFinite(scale[1]) ? scale[1] : 1),
@@ -2102,6 +3032,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             new THREE.MeshStandardMaterial({ color: def.color || "#8aa0b8" })
           );
           mesh.userData.objectFilePath = src;
+          mesh.userData.objectFileColliderBinding = def.colliderBinding === "geometry" || def.collider === true || def.collidable === true || def.isSolid === true ? "geometry" : "none";
           void (async () => {
             const applier = await ensureObjectFileGeometryApplier();
             if (applier) await applier(mesh);
@@ -2130,6 +3061,23 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         }
       } else if (def.type === "math-function") {
         mesh = createMathFunctionMesh(def);
+      } else if (def.type === "iframe") {
+        def.shape = "box";
+        def.size = normalizeIframeObjectSize(def);
+        if (!def.color) def.color = "#f8fbff";
+        const iframeSrc = readIframeObjectSource(def) || "about:blank";
+        def.src = iframeSrc;
+        def.iframeSrc = iframeSrc;
+        const iframeSourceKind = isHostPageIframeSource(iframeSrc, readIframeObjectSourceKind(def)) ? IFRAME_HOST_PAGE_KIND : readIframeObjectSourceKind(def);
+        if (iframeSourceKind) def.iframeSourceKind = iframeSourceKind;
+        else delete def.iframeSourceKind;
+        def.iframeTitle = readIframeObjectTitle(def) || "Embedded Page";
+        def.sandbox = String(def.sandbox || def.iframeSandbox || "allow-scripts allow-same-origin allow-forms").trim();
+        def.allow = String(def.allow || def.iframeAllow || "fullscreen").trim();
+        def.collider = def.collider === true || def.collidable === true || def.isSolid === true;
+        def.collidable = def.collider;
+        def.isSolid = def.collider;
+        mesh = createIframeObjectMesh(THREE, def);
       } else if (def.type === "console") {
         const size = Array.isArray(def.size) && def.size.length >= 3 ? def.size : [0.9, 1.15, 0.7];
         mesh = new THREE.Mesh(
@@ -2158,15 +3106,18 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           new THREE.BoxGeometry(size[0], size[1], size[2]),
           createWorldMeshMaterial(THREE, materialOpts)
         );
-        if (typeof def.objectFile === "string" && def.objectFile) {
-          mesh.userData.objectFilePath = def.objectFile;
-          void (async () => {
-            const applier = await ensureObjectFileGeometryApplier();
-            if (applier) {
-              await applier(mesh);
-            }
-          })();
-        }
+        mesh.userData.placeholderHalfHeight = size[1] / 2;
+        const hasObjectFile = attachObjectFileDefinitionToMesh(mesh, def);
+        if (hasObjectFile) applyObjectFileGeometryAsync(mesh);
+      } else if (def.type === "sound-object" || def.type === "sound") {
+        if (!Array.isArray(def.size) || def.size.length === 0) def.size = [0.25];
+        if (!def.color) def.color = "#44aaff";
+        if (!Number.isFinite(def.volume)) def.volume = SOUND_OBJECT_DEFAULT_VOLUME;
+        if (!Number.isFinite(def.range)) def.range = SOUND_OBJECT_DEFAULT_RANGE;
+        def.loop = def.loop !== false;
+        def.isSolid = false;
+        def.collidable = false;
+        mesh = createSoundObjectMesh(THREE, def, filePath);
       } else if (def.type === "image-plane") {
         const size = Array.isArray(def.size) && def.size.length >= 2 ? def.size : [2, 2];
         mesh = new THREE.Mesh(
@@ -2301,6 +3252,22 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         mesh.userData.MatterState = isLiquidDefinition ? "liquid" : readWorldObjectMatterState(def);
         mesh.userData.matterState = mesh.userData.MatterState || "";
         applyPhysicsMaterialToMesh(mesh, physicsMaterialId);
+        if (def.isVoxel === true || def.voxel === true || def.voxelPlacer) {
+          const voxel = def.voxelPlacer && typeof def.voxelPlacer === "object" ? def.voxelPlacer : {};
+          const voxelSize = Number(def.voxelSize ?? voxel.size);
+          mesh.userData.isVoxel = true;
+          mesh.userData.voxel = true;
+          if (Number.isFinite(voxelSize)) mesh.userData.voxelSize = voxelSize;
+          mesh.userData.voxelPlacer = {
+            size: Number.isFinite(voxelSize) ? voxelSize : undefined,
+            materialId: voxel.materialId || def.physicsMaterialId || "",
+            materialFile: voxel.materialFile || def.physicsMaterialFile || "",
+            materialName: voxel.materialName || def.materialName || "",
+            matterState: voxel.matterState || def.MatterState || def.matterState || "",
+            color: voxel.color || def.color || "",
+            collider: def.collider === true || def.collidable === true || def.isSolid === true
+          };
+        }
         if (isEquationObjectDefinition(def)) {
           mesh.userData.equationExpression = def.equationExpression || def.expression || mesh.userData.equationExpression || "";
           mesh.userData.equationTemporal = def.equationTemporal === true || def.equationCollider?.equationTemporal === true || mesh.userData.equationTemporal === true;

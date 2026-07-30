@@ -9,6 +9,8 @@ import { STLLoader } from "/lib/three/STLLoader.js";
 
 import { evaluateScalar, evaluateVector, kindOfType, NODE_KINDS, NODE_TYPES } from "./sceneTree.mjs";
 
+const SCAD_VIEWER_ZOOM_SPEED = 0.04;
+
 function disposeObject3D(obj) {
   obj.traverse((child) => {
     if (child.geometry) child.geometry.dispose?.();
@@ -156,6 +158,9 @@ export function createSCADViewer(containerEl, opts = {}) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
+  controls.zoomSpeed = SCAD_VIEWER_ZOOM_SPEED;
+  controls.panSpeed = 0.65;
+  controls.rotateSpeed = 0.75;
   controls.target.set(0, 0, 0);
 
   const overlayScene = new THREE.Scene();

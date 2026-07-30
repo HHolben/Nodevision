@@ -11,9 +11,11 @@ const OBJECT_FILE_COLLIDER_MAX_BOXES = 96;
 const OBJECT_FILE_COLLIDER_MIN_AXIS_CELLS = 3;
 const OBJECT_FILE_COLLIDER_LARGE_TRIANGLE_LIMIT = 120000;
 const OBJECT_FILE_COLLIDER_SAMPLE_TRIANGLE_LIMIT = 80000;
+const OBJECT_FILE_COLLIDER_TRIANGLE_LIMIT = 5000;
 const OBJECT_FILE_COLLIDER_SURFACE_AREA_RATIO = 0.003;
 const OBJECT_FILE_COLLIDER_SURFACE_THICKNESS_RATIO = 0.012;
-const SUPPORTED_OBJECT_FILE_EXTENSIONS = new Set(["stl", "obj"]);
+const SUPPORTED_OBJECT_FILE_EXTENSIONS = new Set(["stl", "obj", "scad"]);
+const EXACT_OBJECT_FILE_COLLIDER_EXTENSIONS = new Set(["stl", "obj"]);
 const stlLoader = new STLLoader();
 const geometryCache = new Map();
 const scratchVector = new Vector3();
@@ -49,12 +51,38 @@ function objectFileExtension(path = "") {
   return String(path || "").split(/[?#]/)[0].split(".").pop()?.toLowerCase() || "";
 }
 
-async function fetchObjectFilePayload(normalizedPath, expectedExtension) {
+function arrayBufferFromDataUrl(dataUrl = "") {
+  const raw = String(dataUrl || "").trim();
+  const commaIndex = raw.indexOf(",");
+  if (!raw.startsWith("data:") || commaIndex < 0) return null;
+  const header = raw.slice(0, commaIndex);
+  const payload = raw.slice(commaIndex + 1);
+  if (/;base64/i.test(header)) {
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+  }
+  const text = decodeURIComponent(payload);
+  return new TextEncoder().encode(text).buffer;
+}
+
+function textFromObjectPayload(payload) {
+  if (typeof payload === "string") return payload;
+  if (payload instanceof ArrayBuffer) return new TextDecoder("utf-8").decode(payload);
+  if (payload?.buffer instanceof ArrayBuffer) return new TextDecoder("utf-8").decode(payload);
+  return "";
+}
+
+async function fetchObjectFilePayload(normalizedPath, expectedExtension, options = {}) {
   if (!normalizedPath) throw new Error("Missing path for object-file model.");
-  const url = buildNotebookUrl(normalizedPath);
-  if (!url) throw new Error("Unable to resolve object-file URL.");
-  const cacheKey = expectedExtension + ":" + url;
-  if (geometryCache.has(cacheKey)) return geometryCache.get(cacheKey);
+  const baseUrl = buildNotebookUrl(normalizedPath);
+  if (!baseUrl) throw new Error("Unable to resolve object-file URL.");
+  const cacheKey = expectedExtension + ":" + baseUrl;
+  const cacheBust = options?.cacheBust === true;
+  if (cacheBust) geometryCache.delete(cacheKey);
+  if (!cacheBust && geometryCache.has(cacheKey)) return geometryCache.get(cacheKey);
+  const url = cacheBust ? baseUrl + (baseUrl.indexOf("?") === -1 ? "?" : "&") + "nv=" + Date.now() : baseUrl;
 
   const promise = (async () => {
     const res = await fetch(url, { cache: "no-store" });
@@ -67,20 +95,18 @@ async function fetchObjectFilePayload(normalizedPath, expectedExtension) {
     throw err;
   });
 
-  geometryCache.set(cacheKey, promise);
+  if (!cacheBust) geometryCache.set(cacheKey, promise);
   return promise;
 }
 
-async function loadStlGeometry(normalizedPath) {
-  const data = await fetchObjectFilePayload(normalizedPath, "stl");
+function parseStlGeometryFromPayload(payload) {
   let geometry;
   try {
-    geometry = stlLoader.parse(data);
+    geometry = stlLoader.parse(payload);
   } catch (err) {
     if (err instanceof RangeError) {
       try {
-        const text = new TextDecoder("utf-8").decode(data);
-        geometry = stlLoader.parse(text);
+        geometry = stlLoader.parse(textFromObjectPayload(payload));
       } catch (fallbackErr) {
         console.warn("STL parse failed after RangeError; returning no geometry to avoid repeat errors.", fallbackErr);
         return null;
@@ -93,6 +119,11 @@ async function loadStlGeometry(normalizedPath) {
   if (geometry.computeBoundingBox) geometry.computeBoundingBox();
   if (geometry.computeVertexNormals) geometry.computeVertexNormals();
   return geometry;
+}
+
+async function loadStlGeometry(normalizedPath, options = {}) {
+  const data = await fetchObjectFilePayload(normalizedPath, "stl", options);
+  return parseStlGeometryFromPayload(data);
 }
 
 function parseObjVertexIndex(rawToken, vertexCount) {
@@ -140,17 +171,50 @@ function parseObjGeometry(source = "") {
   return geometry;
 }
 
-async function loadObjGeometry(normalizedPath) {
-  const data = await fetchObjectFilePayload(normalizedPath, "obj");
-  const text = new TextDecoder("utf-8").decode(data);
+function loadObjGeometryFromText(text) {
   const geometry = parseObjGeometry(text);
   if (!geometry) throw new Error("OBJ file does not contain triangle faces that can be loaded.");
   return geometry;
 }
 
-async function loadObjectFileGeometry(normalizedPath, extension) {
-  if (extension === "stl") return loadStlGeometry(normalizedPath);
-  if (extension === "obj") return loadObjGeometry(normalizedPath);
+async function loadObjGeometry(normalizedPath, options = {}) {
+  const data = await fetchObjectFilePayload(normalizedPath, "obj", options);
+  return loadObjGeometryFromText(textFromObjectPayload(data));
+}
+
+async function renderScadGeometryFromText(scadText) {
+  const source = String(scadText || "");
+  if (!source.trim()) throw new Error("SCAD file is empty.");
+  const res = await fetch("/api/scad/render", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scadCode: source, format: "stl" })
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => null);
+    const text = json ? "" : await res.text().catch(() => "");
+    throw new Error(json?.error || text || "SCAD render failed (" + res.status + ")");
+  }
+  const stlPayload = await res.arrayBuffer();
+  return parseStlGeometryFromPayload(stlPayload);
+}
+
+async function loadScadGeometry(normalizedPath, options = {}) {
+  const data = await fetchObjectFilePayload(normalizedPath, "scad", options);
+  return renderScadGeometryFromText(textFromObjectPayload(data));
+}
+
+async function loadInlineObjectFileGeometry(payload, extension) {
+  if (extension === "stl") return parseStlGeometryFromPayload(payload);
+  if (extension === "obj") return loadObjGeometryFromText(textFromObjectPayload(payload));
+  if (extension === "scad") return renderScadGeometryFromText(textFromObjectPayload(payload));
+  return null;
+}
+
+async function loadObjectFileGeometry(normalizedPath, extension, options = {}) {
+  if (extension === "stl") return loadStlGeometry(normalizedPath, options);
+  if (extension === "obj") return loadObjGeometry(normalizedPath, options);
+  if (extension === "scad") return loadScadGeometry(normalizedPath, options);
   return null;
 }
 
@@ -183,6 +247,13 @@ function readGeometryTriangle(geometry, attr, triangleIndex, outA, outB, outC) {
   readGeometryVertex(geometry, attr, base, outA);
   readGeometryVertex(geometry, attr, base + 1, outB);
   readGeometryVertex(geometry, attr, base + 2, outC);
+}
+
+function geometryTriangleCount(geometry, attr) {
+  if (!attr || attr.count < 3) return 0;
+  return geometry.index?.array
+    ? Math.floor(geometry.index.array.length / 3)
+    : Math.floor(attr.count / 3);
 }
 
 function triangleArea(a, b, c) {
@@ -306,6 +377,18 @@ function buildLargeSurfaceColliderBoxesForGeometry(geometry, bounds, triangleCou
   return { boxes, triangles, strategy: "surface", minSurfaceArea };
 }
 
+function collectGeometryColliderTriangles(geometry, triangleCount, maxTriangles = OBJECT_FILE_COLLIDER_TRIANGLE_LIMIT) {
+  const attr = geometry?.getAttribute?.("position");
+  if (!attr || attr.count < 3 || triangleCount <= 0) return [];
+  if (Number.isFinite(maxTriangles) && triangleCount > maxTriangles) return [];
+  const triangles = [];
+  for (let tri = 0; tri < triangleCount; tri += 1) {
+    readGeometryTriangle(geometry, attr, tri, scratchVector, scratchVectorB, scratchVectorC);
+    triangles.push([scratchVector.clone(), scratchVectorB.clone(), scratchVectorC.clone()]);
+  }
+  return triangles;
+}
+
 function buildVoxelColliderBoxesForGeometry(geometry, bounds, triangleCount) {
   const attr = geometry?.getAttribute?.("position");
   if (!attr || attr.count < 3) return [];
@@ -335,6 +418,24 @@ function buildVoxelColliderBoxesForGeometry(geometry, bounds, triangleCount) {
   return [bounds.clone()];
 }
 
+function buildExactColliderForGeometry(geometry) {
+  const attr = geometry?.getAttribute?.("position");
+  if (!attr || attr.count < 3) return { boxes: [], triangles: [], strategy: "none", minSurfaceArea: 0, exactGeometry: false };
+  if (!geometry.boundingBox && geometry.computeBoundingBox) geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox?.clone?.();
+  if (!bounds || bounds.isEmpty()) return { boxes: [], triangles: [], strategy: "none", minSurfaceArea: 0, exactGeometry: false };
+
+  const triangleCount = geometryTriangleCount(geometry, attr);
+  const triangles = collectGeometryColliderTriangles(geometry, triangleCount, Infinity);
+  return {
+    boxes: [bounds.clone()],
+    triangles,
+    strategy: triangles.length ? "exact-triangle-surface" : "bounds",
+    minSurfaceArea: 0,
+    exactGeometry: triangles.length > 0
+  };
+}
+
 function buildColliderBoxesForGeometry(geometry) {
   const attr = geometry?.getAttribute?.("position");
   if (!attr || attr.count < 3) return { boxes: [], strategy: "none", minSurfaceArea: 0 };
@@ -342,15 +443,19 @@ function buildColliderBoxesForGeometry(geometry) {
   const bounds = geometry.boundingBox?.clone?.();
   if (!bounds || bounds.isEmpty()) return { boxes: [], strategy: "none", minSurfaceArea: 0 };
 
-  const triangleCount = geometry.index?.array
-    ? Math.floor(geometry.index.array.length / 3)
-    : Math.floor(attr.count / 3);
+  const triangleCount = geometryTriangleCount(geometry, attr);
+  const colliderTriangles = collectGeometryColliderTriangles(geometry, triangleCount);
   const surface = buildLargeSurfaceColliderBoxesForGeometry(geometry, bounds, triangleCount);
-  if (surface.boxes.length > 0) return surface;
+  if (surface.boxes.length > 0) {
+    return {
+      ...surface,
+      triangles: colliderTriangles.length ? colliderTriangles : (surface.triangles || [])
+    };
+  }
 
   return {
     boxes: buildVoxelColliderBoxesForGeometry(geometry, bounds, triangleCount),
-    triangles: [],
+    triangles: colliderTriangles,
     strategy: surface.strategy === "surface-too-detailed" ? "voxel-after-surface-limit" : "voxel",
     minSurfaceArea: surface.minSurfaceArea || colliderSurfaceAreaThreshold(bounds)
   };
@@ -404,6 +509,16 @@ function updateCompoundColliderRef(ref) {
   return ref;
 }
 
+function shouldUseExactObjectFileCollider(mesh, extension) {
+  const normalizedExtension = String(extension || "").toLowerCase();
+  if (!EXACT_OBJECT_FILE_COLLIDER_EXTENSIONS.has(normalizedExtension)) return false;
+  const data = mesh?.userData || {};
+  return data.objectFileColliderBinding === "geometry"
+    || data.colliderBinding === "geometry"
+    || data.objectFileExactCollider === true
+    || Boolean(data.colliderRef);
+}
+
 function configureCompoundColliderRef(mesh, colliderRef, localBoxes, sourceFormat = "object-file", colliderStats = {}) {
   if (!mesh || !colliderRef || !Array.isArray(localBoxes) || localBoxes.length === 0) return null;
   delete colliderRef.center;
@@ -413,6 +528,8 @@ function configureCompoundColliderRef(mesh, colliderRef, localBoxes, sourceForma
   colliderRef.source = "object-file";
   colliderRef.sourceFormat = sourceFormat;
   colliderRef.colliderStrategy = colliderStats.strategy || "compound";
+  colliderRef.colliderBinding = colliderStats.exactGeometry ? "geometry" : (mesh.userData?.objectFileColliderBinding || "geometry");
+  colliderRef.exactGeometry = Boolean(colliderStats.exactGeometry);
   colliderRef.minSurfaceArea = Number.isFinite(colliderStats.minSurfaceArea) ? colliderStats.minSurfaceArea : 0;
   colliderRef.target = mesh;
   colliderRef.boxes = localBoxes.map((localBox) => ({
@@ -423,28 +540,45 @@ function configureCompoundColliderRef(mesh, colliderRef, localBoxes, sourceForma
     ? colliderStats.triangles.map((triangle) => triangle.map((point) => point.clone()))
     : [];
   colliderRef.worldTriangles = [];
+  const triangleMeshType = colliderStats.exactGeometry
+    ? "exact-triangle-surface"
+    : (colliderRef.localTriangles.length ? "triangle-surface" : "compound-boxes");
   colliderRef.lowPolyMesh = {
-    type: colliderRef.localTriangles.length ? "triangle-surface" : "compound-boxes",
+    type: triangleMeshType,
     triangleCount: colliderRef.localTriangles.length,
-    boxCount: localBoxes.length
+    boxCount: localBoxes.length,
+    exactGeometry: Boolean(colliderStats.exactGeometry)
   };
   colliderRef.update = () => updateCompoundColliderRef(colliderRef);
   return updateCompoundColliderRef(colliderRef);
 }
 
-export async function applyObjectFileGeometry(mesh) {
-  if (!mesh?.userData?.objectFilePath) return null;
-  const objectPath = mesh.userData.objectFilePath;
-  console.debug("[ObjectFileLoader] applying geometry for", objectPath);
-  const extension = objectFileExtension(objectPath);
+export async function applyObjectFileGeometry(mesh, options = {}) {
+  if (!mesh?.userData) return null;
+  const objectPath = String(mesh.userData.objectFilePath || "").trim();
+  const inlineDataUrl = String(mesh.userData.objectFileDataUrl || "").trim();
+  const inlineText = typeof mesh.userData.objectFileText === "string" ? mesh.userData.objectFileText : "";
+  const objectName = String(mesh.userData.objectFileName || objectPath || "").trim();
+  const declaredExtension = String(mesh.userData.objectFileFormat || mesh.userData.objectFileExtensionHint || "").trim().toLowerCase();
+  const extension = declaredExtension || objectFileExtension(objectPath || objectName);
+  if (!objectPath && !inlineDataUrl && !inlineText) return null;
+  console.debug("[ObjectFileLoader] applying geometry for", objectPath || objectName || ("inline " + extension));
   if (!SUPPORTED_OBJECT_FILE_EXTENSIONS.has(extension)) return null;
-  const normalized = normalizeNotebookPath(objectPath);
-  if (!normalized) return null;
+
+  let normalized = "";
   let geometry;
   try {
-    geometry = await loadObjectFileGeometry(normalized, extension);
+    if (inlineDataUrl || inlineText) {
+      const inlinePayload = inlineDataUrl ? arrayBufferFromDataUrl(inlineDataUrl) : inlineText;
+      if (!inlinePayload) throw new Error("Missing inline object-file payload.");
+      geometry = await loadInlineObjectFileGeometry(inlinePayload, extension);
+    } else {
+      normalized = normalizeNotebookPath(objectPath);
+      if (!normalized) return null;
+      geometry = await loadObjectFileGeometry(normalized, extension, options);
+    }
   } catch (err) {
-    console.warn(`${extension.toUpperCase()} geometry load failed:`, err);
+    console.warn(extension.toUpperCase() + " geometry load failed:", err);
     return null;
   }
   if (!geometry) {
@@ -465,8 +599,9 @@ export async function applyObjectFileGeometry(mesh) {
   const halfHeight = resultBounds ? (resultBounds.max.y - resultBounds.min.y) * 0.5 : 0;
   const placeholderHalf = Number(mesh.userData.placeholderHalfHeight ?? 0.5);
   let colliderBuild = { boxes: resultBounds ? [resultBounds.clone()] : [], triangles: [], strategy: "bounds", minSurfaceArea: 0 };
+  const exactColliderRequested = shouldUseExactObjectFileCollider(mesh, extension);
   try {
-    const generated = buildColliderBoxesForGeometry(clone);
+    const generated = exactColliderRequested ? buildExactColliderForGeometry(clone) : buildColliderBoxesForGeometry(clone);
     if (generated.boxes.length > 0) colliderBuild = generated;
   } catch (err) {
     console.warn(`${extension.toUpperCase()} collider generation failed; using bounding collider fallback.`, err);
@@ -476,14 +611,18 @@ export async function applyObjectFileGeometry(mesh) {
   mesh.position.y += halfHeight - placeholderHalf;
   mesh.userData.placeholderHalfHeight = halfHeight;
   mesh.userData.objectFileNormalizedPath = normalized;
-  mesh.userData.objectFileUrl = buildNotebookUrl(normalized);
+  mesh.userData.objectFileUrl = normalized ? buildNotebookUrl(normalized) : "";
   mesh.userData.objectFileExtension = extension;
-  mesh.userData.objectFileColliderShape = "compound-surface";
+  mesh.userData.objectFileFormat = extension;
+  mesh.userData.objectFileInline = Boolean(inlineDataUrl || inlineText);
+  if (objectName) mesh.userData.objectFileName = objectName;
+  mesh.userData.objectFileColliderShape = colliderBuild.exactGeometry ? "exact-triangle-surface" : "compound-surface";
   mesh.userData.objectFileUseBoundsPicking = true;
   mesh.userData.objectFileColliderBoxCount = colliderBuild.boxes.length;
   mesh.userData.objectFileColliderTriangleCount = Array.isArray(colliderBuild.triangles) ? colliderBuild.triangles.length : 0;
   mesh.userData.objectFileColliderStrategy = colliderBuild.strategy;
   mesh.userData.objectFileColliderMinSurfaceArea = colliderBuild.minSurfaceArea;
+  mesh.userData.objectFileExactCollider = Boolean(colliderBuild.exactGeometry);
   mesh.userData.objectFileColliderFactory = (colliderRef) => configureCompoundColliderRef(mesh, colliderRef, colliderBuild.boxes, extension, colliderBuild);
   if (mesh.userData.colliderRef) {
     mesh.userData.objectFileColliderFactory(mesh.userData.colliderRef);

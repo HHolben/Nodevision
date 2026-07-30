@@ -127,6 +127,28 @@ function ensureTableToolsInstalled() {
     return null;
   };
 
+  const syncSharedTableSelection = () => {
+    const cell = requireCell();
+    const table = cell?.closest?.("table") || requireTable();
+    window.__nvHtmlTableActiveCell = cell || null;
+    window.__nvHtmlTableActiveTable = table || null;
+    return cell;
+  };
+
+  const runSharedTableTool = (method, ...args) => {
+    syncSharedTableSelection();
+    import("/ToolbarCallbacks/insert/tableTools.mjs")
+      .then((mod) => {
+        const fn = mod?.[method];
+        if (typeof fn !== "function") return false;
+        return fn(...args);
+      })
+      .then((ok) => {
+        if (ok === false) alert("That table operation is not available for the selected cell range.");
+      })
+      .catch((err) => console.warn("Table tool failed:", err));
+  };
+
   const addRow = (direction) => {
     const cell = requireCell();
     const table = requireTable();
@@ -216,6 +238,10 @@ function ensureTableToolsInstalled() {
     makeBtn("Col Right", () => addColumn("right")),
     makeBtn("Toggle Header Row", toggleHeaderRow),
     makeBtn("Toggle Header Column", toggleHeaderColumn),
+    makeBtn("Merge Cells", () => runSharedTableTool("mergeSelectedTableCells")),
+    makeBtn("Merge Right", () => runSharedTableTool("mergeActiveTableCell", "right")),
+    makeBtn("Merge Down", () => runSharedTableTool("mergeActiveTableCell", "down")),
+    makeBtn("Split Cell", () => runSharedTableTool("splitCurrentTableCell")),
   ];
   buttons.forEach((b) => toolbar.appendChild(b));
   document.body.appendChild(toolbar);

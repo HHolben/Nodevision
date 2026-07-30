@@ -87,7 +87,7 @@ function renderSelection(selection) {
         ${detailRow("Target", target)}
         ${detailRow("Raw Link", record.targetRaw)}
         ${detailRow("Link Text", record.linkText)}
-        ${detailRow("Graph Text", record.displayText)}
+        ${detailRow("Label", record.label || record.displayText)}
       </div>
       <div class="nv-link-section">
         <div class="nv-link-label">Tags</div>

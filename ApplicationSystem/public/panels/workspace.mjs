@@ -1144,6 +1144,65 @@ export function ensureSvgEditingSplit({
 }
 
 
+
+function cleanupPanelCells(root) {
+  const cells = Array.from(root?.querySelectorAll?.(".panel-cell") || []);
+  for (const cell of cells) {
+    if (typeof cell.cleanup === "function") {
+      try {
+        cell.cleanup();
+      } catch (err) {
+        console.warn("Panel cleanup failed before workspace replacement:", err);
+      }
+    }
+    cell.cleanup = null;
+  }
+}
+
+export async function replaceWorkspaceWithPanel(panelType, panelVars = {}) {
+  const workspace = ensureWorkspace();
+  const requestedPanelType = String(panelType || "").trim();
+  const normalizedPanelType = normalizePanelIdentifier(requestedPanelType) || requestedPanelType;
+  if (!normalizedPanelType) return null;
+
+  const {
+    panelClass = "InfoPanel",
+    displayName = normalizedPanelType,
+    ...remainingPanelVars
+  } = panelVars || {};
+
+  cleanupPanelCells(workspace);
+  workspace.innerHTML = "";
+
+  const row = createPanelRow("row", "1 1 auto");
+  workspace.appendChild(row);
+
+  const cell = makePanelCell("1 1 auto");
+  setCellIdentity(cell, {
+    id: normalizedPanelType,
+    panelClass,
+    flex: "1 1 auto",
+  });
+  row.appendChild(cell);
+
+  window.activeCell = cell;
+  window.activePanel = normalizedPanelType;
+  window.activePanelClass = panelClass;
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activePanelType = panelClass;
+
+  await loadPanelIntoCell(normalizedPanelType, {
+    id: normalizedPanelType,
+    displayName,
+    ...remainingPanelVars,
+  });
+
+  rebuildLayoutDividersForContainer(row, false);
+  highlightActiveCell(cell);
+  return cell;
+}
+
+
 /**
  * Dynamically load a panel based on its id and/or module path.
  * Supports multiple search directories and layout-specified module paths.

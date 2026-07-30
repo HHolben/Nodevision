@@ -13,6 +13,8 @@ const APPLYING_SCROLL_KEY = "__nvPanelZoomPanApplyingScroll";
 const RESIZE_OBSERVER_KEY = "__nvPanelZoomPanResizeObserver";
 const RESIZE_FRAME_KEY = "__nvPanelZoomPanResizeFrame";
 const CONTENT_RESIZE_FRAME_KEY = "__nvPanelZoomPanContentResizeFrame";
+const INLINE_FIT_ATTR = "data-nv-zoom-inline-fit";
+const INLINE_FIT_STRETCH_ON_ZOOM_OUT = "stretch-on-zoom-out";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 8;
@@ -178,6 +180,24 @@ function applyLayerStyles(layer) {
     transformOrigin: "0 0",
     willChange: "transform",
   });
+}
+
+function findZoomInlineFitMarker(root) {
+  if (!root) return null;
+  if (root.nodeType === 1 && root.hasAttribute?.(INLINE_FIT_ATTR)) return root;
+  return root.querySelector?.("[" + INLINE_FIT_ATTR + "]") || null;
+}
+
+function getPanelZoomAxes(panelContent, refs, zoom = 1) {
+  const z = clamp(zoom, MIN_ZOOM, MAX_ZOOM, 1);
+  const marker = findZoomInlineFitMarker(refs?.layer) || findZoomInlineFitMarker(panelContent);
+  const fitMode = marker?.getAttribute?.(INLINE_FIT_ATTR) || "";
+  const stretchInline = z < 1 && fitMode === INLINE_FIT_STRETCH_ON_ZOOM_OUT;
+  return {
+    x: stretchInline ? 1 : z,
+    y: z,
+    stretchInline,
+  };
 }
 
 function getExistingViewportLayer(panelContent) {
@@ -378,8 +398,9 @@ function measureLayerBaseSize(panelContent, refs, zoom = 1) {
   const viewportW = Math.max(1, refs.viewport.clientWidth || panelContent.clientWidth || 1);
   const viewportH = Math.max(1, refs.viewport.clientHeight || panelContent.clientHeight || 1);
   const effectiveZoom = clamp(zoom, MIN_ZOOM, MAX_ZOOM, 1);
-  const zoomedOutW = Math.ceil(viewportW / effectiveZoom);
-  const zoomedOutH = Math.ceil(viewportH / effectiveZoom);
+  const axes = getPanelZoomAxes(panelContent, refs, effectiveZoom);
+  const zoomedOutW = Math.ceil(viewportW / axes.x);
+  const zoomedOutH = Math.ceil(viewportH / axes.y);
 
   refs.layer.style.width = `${Math.max(viewportW, zoomedOutW)}px`;
   refs.layer.style.height = `${Math.max(viewportH, zoomedOutH)}px`;
@@ -389,6 +410,8 @@ function measureLayerBaseSize(panelContent, refs, zoom = 1) {
     height: Math.max(1, Math.ceil(refs.layer.scrollHeight || refs.layer.offsetHeight || viewportH), zoomedOutH),
     viewportW,
     viewportH,
+    scaleX: axes.x,
+    scaleY: axes.y,
   };
 }
 
@@ -397,13 +420,22 @@ function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
     return { panX, panY };
   }
 
-  const { width: baseW, height: baseH, viewportW, viewportH } = measureLayerBaseSize(panelContent, refs, zoom);
-  const layerLeft = Math.max(0, panX);
-  const layerTop = Math.max(0, panY);
-  const desiredScrollLeft = Math.max(0, -panX);
-  const desiredScrollTop = Math.max(0, -panY);
-  const scaledW = Math.max(1, Math.ceil(baseW * zoom));
-  const scaledH = Math.max(1, Math.ceil(baseH * zoom));
+  const {
+    width: baseW,
+    height: baseH,
+    viewportW,
+    viewportH,
+    scaleX,
+    scaleY,
+  } = measureLayerBaseSize(panelContent, refs, zoom);
+  const scaledW = Math.max(1, Math.ceil(baseW * scaleX));
+  const scaledH = Math.max(1, Math.ceil(baseH * scaleY));
+  const boundedPanX = scaledW > viewportW + 1 ? panX : 0;
+  const boundedPanY = scaledH > viewportH + 1 ? panY : 0;
+  const layerLeft = Math.max(0, boundedPanX);
+  const layerTop = Math.max(0, boundedPanY);
+  const desiredScrollLeft = Math.max(0, -boundedPanX);
+  const desiredScrollTop = Math.max(0, -boundedPanY);
 
   refs.layer.style.left = `${round(layerLeft, 3)}px`;
   refs.layer.style.top = `${round(layerTop, 3)}px`;
@@ -411,9 +443,9 @@ function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
   refs.layer.style.height = `${baseH}px`;
   refs.layer.style.setProperty("--nv-panel-content-width", `${baseW}px`);
   refs.layer.style.setProperty("--nv-panel-content-height", `${baseH}px`);
-  refs.layer.style.setProperty("--nv-panel-visible-width", `${Math.ceil(viewportW / zoom)}px`);
-  refs.layer.style.setProperty("--nv-panel-visible-height", `${Math.ceil(viewportH / zoom)}px`);
-  refs.layer.style.transform = `scale(${round(zoom, 5)})`;
+  refs.layer.style.setProperty("--nv-panel-visible-width", `${Math.ceil(viewportW / scaleX)}px`);
+  refs.layer.style.setProperty("--nv-panel-visible-height", `${Math.ceil(viewportH / scaleY)}px`);
+  refs.layer.style.transform = `scale(${round(scaleX, 5)}, ${round(scaleY, 5)})`;
 
   refs.spacer.style.width = `${Math.max(viewportW, Math.ceil(layerLeft + scaledW), Math.ceil(desiredScrollLeft + viewportW))}px`;
   refs.spacer.style.height = `${Math.max(viewportH, Math.ceil(layerTop + scaledH), Math.ceil(desiredScrollTop + viewportH))}px`;
@@ -433,8 +465,8 @@ function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
     baseH,
     viewportW,
     viewportH,
-    visibleW: Math.ceil(viewportW / zoom),
-    visibleH: Math.ceil(viewportH / zoom),
+    visibleW: Math.ceil(viewportW / scaleX),
+    visibleH: Math.ceil(viewportH / scaleY),
   };
 }
 
@@ -589,14 +621,17 @@ export function zoomPanelAt(panel = null, clientX = null, clientY = null, factor
   const localX = Number(clientX) - rect.left;
   const localY = Number(clientY) - rect.top;
   const effectivePan = getEffectivePanelPan(content, state);
-  const contentX = (localX - effectivePan.panX) / currentZoom;
-  const contentY = (localY - effectivePan.panY) / currentZoom;
+  const refs = getExistingViewportLayer(content);
+  const currentAxes = getPanelZoomAxes(content, refs, currentZoom);
+  const nextAxes = getPanelZoomAxes(content, refs, nextZoom);
+  const contentX = (localX - effectivePan.panX) / currentAxes.x;
+  const contentY = (localY - effectivePan.panY) / currentAxes.y;
 
   return setPanelViewportState(
     {
       zoom: nextZoom,
-      panX: localX - contentX * nextZoom,
-      panY: localY - contentY * nextZoom,
+      panX: localX - contentX * nextAxes.x,
+      panY: localY - contentY * nextAxes.y,
     },
     target
   );

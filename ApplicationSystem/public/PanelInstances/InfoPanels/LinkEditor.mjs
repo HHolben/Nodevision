@@ -95,7 +95,7 @@ function renderSelection(selection) {
       ${field({ id: "nv-link-text", label: "Link Text", value: record.linkText, disabled: !record.editableText })}
       ${field({ id: "nv-link-tags", label: "Tags", value: listToCsv(record.tags), disabled: !record.editableMetadata, placeholder: "reference, draft" })}
       ${field({ id: "nv-link-symbols", label: "Symbols", value: normalizeSymbols(record.symbols).join(" "), disabled: !record.editableMetadata, placeholder: "*, ?" })}
-      ${field({ id: "nv-link-display", label: "Graph Text", value: record.displayText, disabled: !record.editableMetadata })}
+      ${field({ id: "nv-link-label", label: "Label", value: record.label || record.displayText, disabled: !record.editableMetadata })}
       <div class="nv-link-actions">
         <button class="nv-link-primary" type="submit"${canEdit ? "" : " disabled"}>Save Link</button>
         <button class="nv-link-btn" type="button" data-role="refresh">Refresh</button>
@@ -140,12 +140,14 @@ function samePath(a = "", b = "") {
 }
 
 function readPatchFromForm() {
+  const label = rootEl.querySelector("#nv-link-label")?.value || "";
   return {
     targetRaw: rootEl.querySelector("#nv-link-target")?.value || "",
     linkText: rootEl.querySelector("#nv-link-text")?.value || "",
     tags: csvToList(rootEl.querySelector("#nv-link-tags")?.value || ""),
     symbols: normalizeSymbols(rootEl.querySelector("#nv-link-symbols")?.value || ""),
-    displayText: rootEl.querySelector("#nv-link-display")?.value || "",
+    label,
+    displayText: label,
   };
 }
 

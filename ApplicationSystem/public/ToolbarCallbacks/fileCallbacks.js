@@ -42,6 +42,41 @@ function refuseLegacyMismatchedSave(editorLabel, editorPath, savePath) {
   return true;
 }
 
+function detectSpreadsheetImportDelimiter(file, text) {
+  const name = String(file?.name || "").toLowerCase();
+  const type = String(file?.type || "").toLowerCase();
+  if (name.endsWith(".tsv") || type.includes("tab-separated-values")) return "\t";
+
+  const firstLine = String(text || "").split(/\r?\n/).find((line) => line.trim()) || "";
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  return tabCount > commaCount ? "\t" : ",";
+}
+
+function chooseSpreadsheetImportFile() {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".csv,.tsv,text/csv,text/tab-separated-values,text/plain";
+    input.style.position = "fixed";
+    input.style.left = "-10000px";
+    input.style.top = "0";
+
+    const cleanup = () => {
+      input.remove();
+    };
+    const finish = (file) => {
+      cleanup();
+      resolve(file || null);
+    };
+
+    input.addEventListener("change", () => finish(input.files?.[0] || null), { once: true });
+    input.addEventListener("cancel", () => finish(null), { once: true });
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
 window.fileCallbacks = {
 saveFile: async () => {
   const filePath =
@@ -264,6 +299,35 @@ saveFile: async () => {
   console.error("Cannot save: editor state not recognized.");
 },
 
+
+importSpreadsheet: async () => {
+  const mode = window.NodevisionState?.currentMode || window.currentMode || "";
+  const csvEditor = window.__nvCsvEditor;
+  if (mode !== "CSVediting" || typeof csvEditor?.importText !== "function") {
+    alert("Open a CSV or TSV file in the graphical editor before importing a spreadsheet.");
+    return;
+  }
+
+  const file = await chooseSpreadsheetImportFile();
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const delimiter = detectSpreadsheetImportDelimiter(file, text);
+    const existing = typeof window.getEditorHTML === "function" ? window.getEditorHTML() : "";
+    if (String(existing || "").trim()) {
+      const ok = confirm(`Import "${file.name}" and replace the current spreadsheet contents?`);
+      if (!ok) return;
+    }
+
+    const rows = csvEditor.importText(text, { delimiter, sourceName: file.name, markDirty: true });
+    const rowCount = Array.isArray(rows) ? rows.length : 0;
+    console.log(`Imported spreadsheet ${file.name}: ${rowCount} row${rowCount === 1 ? "" : "s"}`);
+  } catch (err) {
+    console.error("Failed to import spreadsheet:", err);
+    alert(`Failed to import spreadsheet:\n${err.message}`);
+  }
+},
 
 NewFile: async () => {
   const module = await import("/TemplateSystem/NewDocumentController.mjs");

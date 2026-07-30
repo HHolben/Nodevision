@@ -2,8 +2,10 @@
 // Renders and executes the Insert Model workflow with New/Existing, inline previews, and static linked 3D viewer panels.
 
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, saveNotebookText, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
-import { fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, readFileAsText, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
+import { fetchUrlAsDataUrl, fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, readFileAsText, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
 import { insertUSDScenePanelAtCaret } from "./insertUSDScenePanel.mjs";
+import { setStatus } from "/StatusBar.mjs";
+import { ensureEditableMetaWorldBridge, readCameraPlacement } from "./worldShapeWidget.mjs";
 
 function ensureExt(fileName, ext) {
   const name = String(fileName || "").trim();
@@ -33,6 +35,7 @@ def Xform "Scene"
     }
 }
 `;
+  if (ext === "scad") return "// " + label + ".scad\ncube([1, 1, 1], center=true);\n";
   if (ext === "gltf") return JSON.stringify({ asset: { version: "2.0", generator: "Nodevision Insert Media" } }, null, 2) + "\n";
   return `# New ${ext} model placeholder (${label})\n`;
 }
@@ -45,6 +48,7 @@ function pickDefaultExt(exts) {
 const STATIC_MODEL_VIEWER_SCRIPT_KEY = "nv-static-model-panels";
 const USD_SCENE_EXTENSIONS = new Set(["usd", "usda", "usdc"]);
 const MODEL_VIEWER_SUPPORTED_EXTENSIONS = new Set(["glb", "gltf", "obj", "ply", "stl"]);
+const VIRTUAL_WORLD_MODEL_EXTENSIONS = new Set(["stl", "obj", "scad"]);
 const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
   "use strict";
   const RUNTIME_KEY = "nv-static-model-panels";
@@ -289,12 +293,84 @@ function insertLinkedModelViewerAtCaret(options = {}) {
   }
 }
 
-export function renderInsertModel(root, exts = []) {
-  const extensions = Array.from(new Set(exts)).map((e) => String(e).toLowerCase()).filter(Boolean).sort((a, b) => a.localeCompare(b));
+function worldModelLabel(source, fallback = "3D model") {
+  const raw = String(source || "").trim();
+  const clean = raw.split("?")[0].split("#")[0].replace(/\\/g, "/");
+  const name = clean.split("/").pop() || clean || raw || fallback;
+  return String(name || fallback).trim() || fallback;
+}
+
+function makeWorldModelId(label) {
+  const slug = String(label || "model").toLowerCase().replace(/[^a-z0-9_-]+/g, "-").split("-").filter(Boolean).join("-").slice(0, 36) || "model";
+  return "model-" + slug + "-" + Date.now().toString(36) + "-" + Math.floor(Math.random() * 1000).toString(36);
+}
+
+function assertVirtualWorldModelExtension(source, fallback = "") {
+  const ext = modelExtensionFromSource(source, fallback);
+  if (!VIRTUAL_WORLD_MODEL_EXTENSIONS.has(ext)) {
+    throw new Error("Virtual world models currently support STL, OBJ, and SCAD files.");
+  }
+  return ext;
+}
+
+function shouldStoreWorldModelAsText(ext, text = "") {
+  const value = String(text || "");
+  if (!value) return false;
+  if (ext === "obj" || ext === "scad") return true;
+  return ext === "stl" && value.trimStart().toLowerCase().startsWith("solid");
+}
+
+async function insertWorldModelObject(model = {}) {
+  const label = worldModelLabel(model.label || model.objectFile || model.objectFileName, "3D model");
+  const ext = assertVirtualWorldModelExtension(model.objectFile || label, model.ext || "");
+  const bindCollider = model.bindCollider !== false;
+  const def = {
+    id: makeWorldModelId(label),
+    tag: "",
+    name: label,
+    type: "object-file",
+    position: readCameraPlacement(),
+    size: [1, 1, 1],
+    color: "#8aa0b8",
+    objectFile: String(model.objectFile || ""),
+    objectFormat: ext,
+    objectFileName: label,
+    collider: bindCollider,
+    colliderBinding: bindCollider ? "geometry" : "none",
+    collidable: bindCollider,
+    isSolid: bindCollider,
+    breakable: true
+  };
+  if (typeof model.objectDataUrl === "string" && model.objectDataUrl) def.objectDataUrl = model.objectDataUrl;
+  if (typeof model.objectText === "string" && model.objectText) def.objectText = model.objectText;
+  if (!def.objectFile && !def.objectDataUrl && !def.objectText) throw new Error("Missing 3D model content.");
+
+  const bridge = await ensureEditableMetaWorldBridge();
+  if (!bridge?.addObjectFileLayer) throw new Error("Open a MetaWorld editor before inserting 3D models.");
+  const added = bridge.addObjectFileLayer(def);
+  if (!added) throw new Error("Could not add 3D model to the virtual world.");
+  setStatus(label + " added to MetaWorld.");
+  return added;
+}
+
+export function renderInsertModel(root, exts = [], renderOptions = {}) {
+  const target = renderOptions?.target === "virtualWorld" ? "virtualWorld" : "html";
+  const inWorld = target === "virtualWorld";
+  let extensions = Array.from(new Set(exts)).map((e) => String(e).toLowerCase()).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  if (inWorld) {
+    extensions = Array.from(new Set([...extensions.filter((ext) => VIRTUAL_WORLD_MODEL_EXTENSIONS.has(ext)), ...VIRTUAL_WORLD_MODEL_EXTENSIONS])).sort((a, b) => a.localeCompare(b));
+  }
   const defaultExt = pickDefaultExt(extensions);
   const options = extensions.length ? extensions : [defaultExt];
+  const sourceLegend = inWorld ? "3D Model Source" : "Model Source";
+  const newSourceLabel = inWorld ? "New 3D Model" : "New Model";
+  const existingSourceLabel = inWorld ? "Existing 3D Model" : "Existing Model";
+  const referencedLabel = inWorld ? "Linked Model File" : "Referenced (3D viewer panel)";
+  const inlineLabel = inWorld ? "Internally Defined Model" : "Inline (embed preview text)";
+  const storageHint = inWorld ? "Linked stores a model file reference; internally defined stores the model payload in the world." : "Inline inserts a text preview; Referenced inserts a small linked 3D panel.";
+  const colliderHtml = inWorld ? `<fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>World Collider</legend><label style="display:block;"><input type="checkbox" data-field="worldCollider" checked> Bind geometry collider</label></fieldset>` : "";
 
-  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:660px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Model Source</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> New Model</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> Existing Model</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> Referenced (3D viewer panel)</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> Inline (embed preview text)</label></fieldset><div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Model Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${options.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>New Model File Name<input data-field="fileName" type="text" placeholder="model.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="font-size:11px;color:#666;line-height:1.3;">Inline inserts a text preview; Referenced inserts a small linked 3D panel.</div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="models/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
+  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:660px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(sourceLegend)}</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> ${escapeHtml(newSourceLabel)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> ${escapeHtml(existingSourceLabel)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> ${escapeHtml(referencedLabel)}</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> ${escapeHtml(inlineLabel)}</label></fieldset>${colliderHtml}<div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Model Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${options.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>New Model File Name<input data-field="fileName" type="text" placeholder="model.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="font-size:11px;color:#666;line-height:1.3;">${escapeHtml(storageHint)}</div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="models/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
   const sourceEls = () => Array.from(root.querySelectorAll('input[name="nv-source"]'));
@@ -307,6 +383,7 @@ export function renderInsertModel(root, exts = []) {
   const existingSourceEl = root.querySelector('[data-field="existingSource"]');
   const existingFileStatus = root.querySelector('[data-field="existingFileStatus"]');
   const statusEl = root.querySelector('[data-field="status"]');
+  const worldColliderEl = root.querySelector('[data-field="worldCollider"]');
 
   const hiddenExisting = document.createElement("input");
   hiddenExisting.type = "file";
@@ -373,6 +450,69 @@ export function renderInsertModel(root, exts = []) {
       const editorPath = getActiveEditorNotebookPath();
       const baseDir = dirname(editorPath);
       const defaultDir = joinNotebookPath(baseDir, "models");
+
+      if (inWorld) {
+        const bindCollider = worldColliderEl?.checked !== false;
+        let worldModel = null;
+
+        if (sourceMode === "new") {
+          const ext = String(formatEl.value || defaultExt).trim().toLowerCase() || defaultExt;
+          const fileName = ensureExt(fileEl.value || ("model-" + Date.now()), ext) || ("model-" + Date.now() + "." + ext);
+          const dotIndex = fileName.lastIndexOf(".");
+          const baseName = dotIndex > 0 ? fileName.slice(0, dotIndex) : fileName;
+          const content = defaultModelContent(ext, baseName);
+          if (storageMode === "inline") {
+            worldModel = { label: fileName, ext, objectText: content };
+          } else {
+            const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, fileName));
+            await saveNotebookText(notebookPath, content, "text/plain");
+            worldModel = { label: fileName, ext, objectFile: notebookPath };
+          }
+        } else {
+          const entered = String(existingSourceEl.value || "").trim();
+          const localSelected = Boolean(existingLocal.dataUrl && existingSourceEl.dataset.localFile === "true");
+          if (!entered && !localSelected) throw new Error("Enter an existing model source or choose a local file.");
+          const label = localSelected ? (existingLocal.name || "model") : worldModelLabel(entered, "model");
+          const ext = assertVirtualWorldModelExtension(label || entered, defaultExt);
+
+          if (storageMode === "inline") {
+            if (localSelected) {
+              worldModel = shouldStoreWorldModelAsText(ext, existingLocal.text)
+                ? { label, ext, objectText: existingLocal.text }
+                : { label, ext, objectDataUrl: existingLocal.dataUrl };
+            } else {
+              const url = looksLikeUrlOrAbsPath(entered) ? entered : notebookHrefFromPath(normalizeNotebookPath(entered));
+              if (ext === "obj" || ext === "scad") {
+                worldModel = { label, ext, objectText: await fetchUrlAsText(url) };
+              } else {
+                worldModel = { label, ext, objectDataUrl: await fetchUrlAsDataUrl(url) };
+              }
+            }
+          } else if (localSelected) {
+            const saveName = ensureExt(existingLocal.name || label || ("model-" + Date.now()), ext);
+            const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, saveName));
+            await saveNotebookBinaryFromDataUrl(notebookPath, existingLocal.dataUrl, "application/octet-stream");
+            worldModel = { label: saveName, ext, objectFile: notebookPath };
+          } else if (notebookPathFromModelSource(entered)) {
+            const notebookPath = notebookPathFromModelSource(entered);
+            worldModel = { label: worldModelLabel(notebookPath, label), ext, objectFile: notebookPath };
+          } else if (!looksLikeUrlOrAbsPath(entered)) {
+            const notebookPath = normalizeNotebookPath(entered);
+            worldModel = { label: worldModelLabel(notebookPath, label), ext, objectFile: notebookPath };
+          } else {
+            const dataUrl = await fetchUrlAsDataUrl(entered);
+            const saveName = ensureExt(label || ("model-" + Date.now()), ext);
+            const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, saveName));
+            await saveNotebookBinaryFromDataUrl(notebookPath, dataUrl, "application/octet-stream");
+            worldModel = { label: saveName, ext, objectFile: notebookPath };
+          }
+        }
+
+        await insertWorldModelObject({ ...worldModel, bindCollider });
+        setStatus("Inserted.");
+        return;
+      }
+
       let html = "";
       let modelViewer = null;
 
