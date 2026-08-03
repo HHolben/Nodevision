@@ -42,6 +42,7 @@ function ensureStyles() {
     .nv-stl-viewport canvas { display:block; width:100%; height:100%; }
     .nv-stl-error { margin:12px; color:#b00020; }
     .nv-stl-editor.nv-stl-sculpt-active .nv-stl-viewport canvas { cursor: crosshair; }
+    .nv-stl-editor.nv-stl-slice-preview-active .nv-stl-viewport canvas { cursor: crosshair; }
     .nv-stl-selection-box { position:fixed; border:1px solid #f59e0b; background:rgba(245,158,11,0.14); pointer-events:none; z-index:10000; display:none; }
   `;
   document.head.appendChild(style);
@@ -261,6 +262,8 @@ export async function renderEditor(
     commandBuffer: "",
     commandTimer: null,
     selectionBox: null,
+    slicePreviewActive: false,
+    slicePreviewEdge: null,
     sculpt: {
       tool: "select",
       radius: 1,
@@ -355,6 +358,7 @@ export async function renderEditor(
   let selectedVertexPoints = null;
   let customEdgeLines = null;
   let brushRing = null;
+  let slicePreviewMarker = null;
 
   function setModeLabel(extra = "") {
     const suffix = extra ? ` (${extra})` : "";
@@ -1181,6 +1185,235 @@ export async function renderEditor(
     return false;
   }
 
+
+  function topologyEdgeRecords() {
+    const records = [];
+    const seen = new Set();
+    const addEdge = (a, b) => {
+      if (!Number.isInteger(a) || !Number.isInteger(b) || a === b) return;
+      if (!state.topology?.vertices?.[a] || !state.topology?.vertices?.[b]) return;
+      const key = edgeKey(a, b);
+      if (seen.has(key)) return;
+      seen.add(key);
+      records.push({ a, b });
+    };
+    for (const face of state.topology?.faces || []) {
+      if (!Array.isArray(face) || face.length < 2) continue;
+      for (let i = 0; i < face.length; i += 1) addEdge(face[i], face[(i + 1) % face.length]);
+    }
+    for (const edge of state.topology?.customEdges || []) {
+      if (!Array.isArray(edge) || edge.length < 2) continue;
+      addEdge(edge[0], edge[1]);
+    }
+    return records;
+  }
+
+  function screenPointFromWorldPoint(point) {
+    if (!point) return null;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    camera.updateMatrixWorld?.();
+    const projected = point.clone().project(camera);
+    if (projected.z < -1 || projected.z > 1) return null;
+    return {
+      x: rect.left + (projected.x * 0.5 + 0.5) * rect.width,
+      y: rect.top + (-projected.y * 0.5 + 0.5) * rect.height,
+    };
+  }
+
+  function distanceToScreenSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq <= 1e-9) return Math.hypot(px - ax, py - ay);
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+    return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+  }
+
+  function nearestSliceEdgeFromEvent(evt, maxDistance = 14) {
+    if (!state.topology) return null;
+    let best = null;
+    topologyEdgeRecords().forEach((edge) => {
+      const a = state.topology.vertices[edge.a];
+      const b = state.topology.vertices[edge.b];
+      const screenA = screenPointFromWorldPoint(a);
+      const screenB = screenPointFromWorldPoint(b);
+      if (!screenA || !screenB) return;
+      const distance = distanceToScreenSegment(evt.clientX, evt.clientY, screenA.x, screenA.y, screenB.x, screenB.y);
+      if (distance > maxDistance || (best && distance >= best.distance)) return;
+      best = { ...edge, distance };
+    });
+    return best;
+  }
+
+  function ensureSlicePreviewMarker() {
+    if (slicePreviewMarker) return slicePreviewMarker;
+    slicePreviewMarker = new THREE.LineSegments(
+      new THREE.BufferGeometry(),
+      new THREE.LineBasicMaterial({ color: 0x2563eb, transparent: true, opacity: 0.98, depthTest: false })
+    );
+    slicePreviewMarker.name = "STLSlicePreviewMarker";
+    slicePreviewMarker.visible = false;
+    slicePreviewMarker.renderOrder = 20;
+    scene.add(slicePreviewMarker);
+    return slicePreviewMarker;
+  }
+
+  function updateSlicePreviewMarker(edge) {
+    const marker = ensureSlicePreviewMarker();
+    const a = state.topology?.vertices?.[edge?.a];
+    const b = state.topology?.vertices?.[edge?.b];
+    if (!a || !b) {
+      marker.visible = false;
+      return;
+    }
+    const midpoint = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+    if (right.lengthSq() < 1e-12) right.set(1, 0, 0);
+    if (up.lengthSq() < 1e-12) up.set(0, 1, 0);
+    const radius = Math.max(0.05, state.maxDim * 0.018, camera.position.distanceTo(midpoint) * 0.006);
+    right.normalize().multiplyScalar(radius);
+    up.normalize().multiplyScalar(radius);
+    const points = [
+      midpoint.clone().sub(right).sub(up), midpoint.clone().add(right).add(up),
+      midpoint.clone().sub(right).add(up), midpoint.clone().add(right).sub(up),
+    ];
+    marker.geometry.dispose?.();
+    marker.geometry = new THREE.BufferGeometry().setFromPoints(points);
+    marker.visible = true;
+  }
+
+  function clearSlicePreviewMarker() {
+    state.slicePreviewEdge = null;
+    if (slicePreviewMarker) slicePreviewMarker.visible = false;
+  }
+
+  function setSlicePreviewActive(active) {
+    const next = Boolean(active);
+    if (!next) {
+      state.slicePreviewActive = false;
+      container.classList.remove("nv-stl-slice-preview-active");
+      clearSlicePreviewMarker();
+      return true;
+    }
+    if (state.mode === "grab" || state.mode === "scale" || state.mode === "rotate") commitAction();
+    if (isSculptToolActive()) setSculptTool("select");
+    if (!topologyEdgeRecords().length) {
+      setModeLabel("no edges available to slice");
+      return true;
+    }
+    state.slicePreviewActive = true;
+    container.classList.add("nv-stl-slice-preview-active");
+    clearSlicePreviewMarker();
+    setModeLabel("slice preview: hover an edge, click to insert midpoint vertex");
+    return true;
+  }
+
+  function updateSlicePreviewFromEvent(evt) {
+    if (!state.slicePreviewActive) return false;
+    const edge = nearestSliceEdgeFromEvent(evt);
+    state.slicePreviewEdge = edge ? { a: edge.a, b: edge.b } : null;
+    updateSlicePreviewMarker(edge);
+    return true;
+  }
+
+  function replaceSlicedCustomEdges(a, b, newIndex) {
+    const targetKey = edgeKey(a, b);
+    const next = [];
+    let touched = false;
+    for (const edge of state.topology?.customEdges || []) {
+      if (!Array.isArray(edge) || edge.length < 2) continue;
+      if (edgeKey(edge[0], edge[1]) === targetKey) {
+        touched = true;
+      } else {
+        next.push(edge);
+      }
+    }
+    state.topology.customEdges = next;
+    if (touched) {
+      ensureCustomEdge(a, newIndex);
+      ensureCustomEdge(newIndex, b);
+    }
+    return touched;
+  }
+
+  function splitFaceWithSlicedEdge(face, a, b, newIndex) {
+    if (!Array.isArray(face) || face.length < 3) return null;
+    const targetKey = edgeKey(a, b);
+    let edgeStart = -1;
+    for (let i = 0; i < face.length; i += 1) {
+      if (edgeKey(face[i], face[(i + 1) % face.length]) === targetKey) {
+        edgeStart = i;
+        break;
+      }
+    }
+    if (edgeStart < 0) return null;
+    if (face.length === 3) {
+      const u = face[edgeStart];
+      const v = face[(edgeStart + 1) % 3];
+      const w = face[(edgeStart + 2) % 3];
+      return [[u, newIndex, w], [newIndex, v, w]];
+    }
+    const polygon = [];
+    for (let i = 0; i < face.length; i += 1) {
+      polygon.push(face[i]);
+      if (i === edgeStart) polygon.push(newIndex);
+    }
+    const triangles = [];
+    for (let i = 1; i < polygon.length - 1; i += 1) triangles.push([polygon[0], polygon[i], polygon[i + 1]]);
+    return triangles;
+  }
+
+  function sliceTopologyEdge(a, b) {
+    if (!state.topology || !topologyHasEdge(a, b)) {
+      setModeLabel("select two joined vertices or hover an edge first");
+      return false;
+    }
+    const sourceA = state.topology.vertices[a];
+    const sourceB = state.topology.vertices[b];
+    if (!sourceA || !sourceB) return false;
+    const newIndex = state.topology.vertices.length;
+    state.topology.vertices.push(new THREE.Vector3().addVectors(sourceA, sourceB).multiplyScalar(0.5));
+    const nextFaces = [];
+    let splitCount = 0;
+    for (const face of state.topology.faces || []) {
+      const split = splitFaceWithSlicedEdge(face, a, b, newIndex);
+      if (split) {
+        nextFaces.push(...split);
+        splitCount += 1;
+      } else {
+        nextFaces.push(face);
+      }
+    }
+    state.topology.faces = nextFaces;
+    const customTouched = replaceSlicedCustomEdges(a, b, newIndex);
+    if (!splitCount && !customTouched) {
+      state.topology.vertices.pop();
+      setModeLabel("selected vertices are not joined by an edge");
+      return false;
+    }
+    state.selection = new Set([newIndex]);
+    state.maxDim = computeBounds().maxDim;
+    setSlicePreviewActive(false);
+    rebuildDisplayGeometry();
+    markDirty("Edge sliced");
+    return true;
+  }
+
+  function sliceSelectionOrPreview() {
+    if (state.mode === "grab" || state.mode === "scale" || state.mode === "rotate") commitAction();
+    if (isSculptToolActive()) setSculptTool("select");
+    const selected = Array.from(state.selection || []);
+    if (selected.length === 2) {
+      if (sliceTopologyEdge(selected[0], selected[1])) return true;
+      setModeLabel("selected vertices are not joined by an edge");
+      return true;
+    }
+    if (state.slicePreviewActive && state.slicePreviewEdge) return sliceTopologyEdge(state.slicePreviewEdge.a, state.slicePreviewEdge.b);
+    return setSlicePreviewActive(true);
+  }
+
   function selectedFaceIndicesForSelection() {
     const selectedFaces = [];
     if (!state.topology) return selectedFaces;
@@ -1959,6 +2192,8 @@ export async function renderEditor(
       },
       stlExtrude: () => extrudeSelection(),
       stlFillOrConnect: () => fillOrConnectSelection(),
+      meshSliceEdges: () => sliceSelectionOrPreview(),
+      stlSliceEdges: () => sliceSelectionOrPreview(),
       stlUnion: () => runStlBooleanOperation("union"),
       stlDifference: () => runStlBooleanOperation("difference"),
       stlIntersection: () => runStlBooleanOperation("intersection"),
@@ -2113,6 +2348,13 @@ export async function renderEditor(
       return;
     }
     if (evt.button !== 0) return;
+    if (state.slicePreviewActive) {
+      evt.preventDefault();
+      const edge = state.slicePreviewEdge || nearestSliceEdgeFromEvent(evt);
+      if (edge) sliceTopologyEdge(edge.a, edge.b);
+      else setModeLabel("slice preview: hover an edge, click to insert midpoint vertex");
+      return;
+    }
     if (isSculptToolActive()) {
       beginSculptStroke(evt);
       return;
@@ -2128,6 +2370,10 @@ export async function renderEditor(
       return;
     }
     if (state.mode === "rotate") return;
+    if (state.slicePreviewActive) {
+      updateSlicePreviewFromEvent(evt);
+      return;
+    }
     if (updateSelectionBox(evt)) return;
     if (state.sculpt.stroke) {
       continueSculptStroke(evt);
@@ -2137,6 +2383,7 @@ export async function renderEditor(
   }
 
   function onPointerUp(evt) {
+    if (state.slicePreviewActive) return;
     if (finishSelectionBox(evt)) return;
     endSculptStroke();
   }
@@ -2180,6 +2427,9 @@ export async function renderEditor(
         endSculptStroke();
       } else if (isSculptToolActive()) {
         setSculptTool("select");
+      } else if (state.slicePreviewActive) {
+        setSlicePreviewActive(false);
+        setModeLabel();
       } else {
         cancelAction();
       }
@@ -2387,6 +2637,12 @@ export async function renderEditor(
         brushRing.geometry.dispose();
         brushRing.material.dispose();
         brushRing = null;
+      }
+      if (slicePreviewMarker) {
+        scene.remove(slicePreviewMarker);
+        slicePreviewMarker.geometry.dispose?.();
+        slicePreviewMarker.material.dispose?.();
+        slicePreviewMarker = null;
       }
       scene.remove(floorGrid);
       floorGrid.geometry?.dispose?.();

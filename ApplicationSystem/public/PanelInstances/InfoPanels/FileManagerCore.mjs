@@ -376,6 +376,41 @@ function markSelectedFileItem(selectedLink) {
   });
 }
 
+function selectFileManagerItem(item, options = {}) {
+  if (!item) return;
+
+  navigationState.setLastInfoPanelType("FileManager");
+  navigationState.setLastFileSelectionPanelType?.("FileManager");
+  const selectedIsDirectory = item.dataset.isDirectory === "true";
+
+  requestNodevisionFileSelection(item.dataset.fullPath, {
+    isDirectory: selectedIsDirectory,
+    onSelected: async (selectedPath) => {
+      // FileView installs a selectedFilePath proxy that syncs NodevisionState + toolbar.
+      // If that proxy isn't installed (e.g., FileView panel not loaded yet), do it here.
+      if (!window._selectedFileProxyInstalled) {
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.selectedFile = selectedPath || null;
+        window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
+        updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
+      }
+      if (selectedIsDirectory) {
+        navigationState.setLastOpenedDirectory(selectedPath, "FileManager");
+      }
+      console.log("Selected file:", selectedPath);
+      markSelectedFileItem(item);
+      if (typeof options.afterSelected === "function") {
+        try {
+          await options.afterSelected(selectedPath, selectedIsDirectory);
+        } catch (err) {
+          console.error("File Manager selected action failed:", err);
+          alert(`File Manager action failed: ${err.message || err}`);
+        }
+      }
+    },
+  });
+}
+
 
 
 export function OpenDirectoryOrFileInfo(listElem,link, li)
@@ -735,7 +770,7 @@ console.log("Opening "+ listElem + " at "+ link + " and "+ li);
     listElem.appendChild(li);
   });
 
-  // ✅ Attach file selection logic
+  // Attach file selection logic
   attachFileClickHandlers();
 }
 
@@ -748,23 +783,7 @@ export function attachFileClickHandlers() {
   fileItems.forEach(item => {
     item.addEventListener("click", e => {
       e.preventDefault();
-
-      navigationState.setLastInfoPanelType("FileManager");
-      navigationState.setLastFileSelectionPanelType?.("FileManager");
-
-      requestNodevisionFileSelection(item.dataset.fullPath, {
-        onSelected: (selectedPath) => {
-          // FileView installs a selectedFilePath proxy that syncs NodevisionState + toolbar.
-          // If that proxy isn't installed (e.g., FileView panel not loaded yet), do it here.
-          if (!window._selectedFileProxyInstalled) {
-            window.NodevisionState = window.NodevisionState || {};
-            window.NodevisionState.selectedFile = selectedPath || null;
-            updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
-          }
-          console.log("Selected file:", selectedPath);
-          markSelectedFileItem(item);
-        },
-      });
+      selectFileManagerItem(item);
     });
   });
 }

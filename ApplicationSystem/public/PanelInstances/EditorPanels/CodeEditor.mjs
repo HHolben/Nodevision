@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs
 // This file defines browser-side Code Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
+
+import { clearEditorContext, getEditingContext, saveEditingContext, setBusyOperation, setEditorContext, setSelectionContext } from "../../EditorAttentionState.mjs";
 import "/EditorSwitchGuard.mjs";
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
@@ -840,6 +842,17 @@ export async function openCodeEditor(filePath) {
   targetCell.appendChild(outputWrap);
   targetCell.style.display = "flex";
   targetCell.style.flexDirection = "column";
+  targetCell.cleanup = () => {
+    persistCodeEditorAttention(filePath, editorInstance);
+    clearEditorContext(filePath);
+    if (editorInstance) {
+      editorInstance.dispose();
+      editorInstance = null;
+    }
+    editorInstanceContainer = null;
+    editorContainer = null;
+    commonVarOverlay = null;
+  };
 
   // 🪄 Load file content
   await updateEditorPanel(filePath);
@@ -871,11 +884,13 @@ export async function updateEditorPanel(filePath) {
   pendingEditedPath = filePath;
 
   console.log("📝 Loading file in editor:", filePath);
+  setBusyOperation({ id: "code-editor-loading", label: "Loading code editor", detail: filePath, cancellable: false });
 
   try {
     if (isNbtFilePath(filePath)) {
       const nbtData = await loadNbtCodeContent(filePath);
       if (!isLatestEditorLoad(loadRequestId, filePath)) {
+        setBusyOperation(null);
         console.warn("[CodeEditor] Ignoring stale NBT load for:", filePath);
         return;
       }
@@ -898,6 +913,7 @@ export async function updateEditorPanel(filePath) {
     if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
     const data = await res.json();
     if (!isLatestEditorLoad(loadRequestId, filePath)) {
+      setBusyOperation(null);
       console.warn("[CodeEditor] Ignoring stale file load for:", filePath);
       return;
     }
@@ -909,9 +925,11 @@ export async function updateEditorPanel(filePath) {
     initializeMonaco(filePath, data.content, loadRequestId);
   } catch (err) {
     if (!isLatestEditorLoad(loadRequestId, filePath)) {
+      setBusyOperation(null);
       console.warn("[CodeEditor] Ignoring stale load error for:", filePath, err);
       return;
     }
+    setBusyOperation(null);
     console.error("[CodeEditor] Error loading file:", err);
     if (editorContainer)
       editorContainer.innerHTML = `<pre style="color:red;">${err.message}</pre>`;
@@ -988,6 +1006,10 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
       foldingHighlight: true,
       wordWrap: "off",
     });
+    setBusyOperation(null);
+    reportCodeEditorAttention(filePath, editorInstance);
+    editorInstance.onDidChangeCursorPosition?.(() => persistCodeEditorAttention(filePath, editorInstance));
+    editorInstance.onDidScrollChange?.(() => persistCodeEditorAttention(filePath, editorInstance));
 
     // 4. Register globals for the SaveFile.mjs router
     // These variables are critical for the main save function to recognize the active editor.
@@ -1437,3 +1459,47 @@ export async function setupPanel(panelElem, panelVars = {}) {
 // Expose globally
 window.openCodeEditor = openCodeEditor;
 window.updateEditorPanel = updateEditorPanel;
+
+
+function reportCodeEditorAttention(filePath, editor = null) {
+  setEditorContext({
+    filePath,
+    fileFamily: filePath?.split(".").pop()?.toLowerCase() || "code",
+    fileFamilyLabel: "Code",
+    editorMode: "code",
+    editorModeLabel: "Code Editing",
+    activeTool: "text-cursor",
+    activeToolLabel: "Text Cursor",
+  });
+  setSelectionContext({ selectedObjectType: null, selectedObjectId: null, hasEditableSelection: false });
+  const saved = getEditingContext(filePath);
+  if (editor && saved) {
+    try {
+      if (saved.cursorPosition && typeof editor.setPosition === "function") editor.setPosition(saved.cursorPosition);
+      if (saved.scroll && typeof editor.setScrollTop === "function") {
+        editor.setScrollTop(saved.scroll.top || 0);
+        if (typeof editor.setScrollLeft === "function") editor.setScrollLeft(saved.scroll.left || 0);
+      }
+    } catch (error) {
+      console.warn("Unable to restore code editor context", error);
+    }
+  }
+}
+
+function persistCodeEditorAttention(filePath, editor) {
+  if (!filePath || !editor) return;
+  try {
+    saveEditingContext(filePath, {
+      editorMode: "code",
+      activeTool: "text-cursor",
+      cursorPosition: typeof editor.getPosition === "function" ? editor.getPosition() : null,
+      selection: typeof editor.getSelection === "function" ? editor.getSelection() : null,
+      scroll: {
+        top: typeof editor.getScrollTop === "function" ? editor.getScrollTop() : 0,
+        left: typeof editor.getScrollLeft === "function" ? editor.getScrollLeft() : 0,
+      },
+    });
+  } catch (error) {
+    console.warn("Unable to persist code editor context", error);
+  }
+}

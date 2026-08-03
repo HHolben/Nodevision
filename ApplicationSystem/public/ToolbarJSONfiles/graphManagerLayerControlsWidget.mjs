@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/graphManagerLayerControlsWidget.mjs
-// Compact Graph Manager layer toggles and File/Graph Manager switcher widgets for the sub-toolbar.
+// This module renders compact Graph Manager layer toggles and File or Graph Manager switcher widgets for the Nodevision sub-toolbar.
 
 function managerPanelTypeFromValue(value = "") {
   return String(value || "").trim() === "FileManager" ? "FileManager" : "GraphManager";
@@ -104,6 +104,65 @@ function renderManagerPanelSwitcher(hostElement, item = {}) {
   hostElement.appendChild(wrapper);
 }
 
+function graphExternalLinkedFilesVisible() {
+  const getter = window.getGraphManagerExternalLinkedFilesVisible;
+  return typeof getter === "function" ? Boolean(getter()) : true;
+}
+
+function renderGraphExternalLinkedFilesToggle(hostElement) {
+  hostElement.innerHTML = "";
+  hostElement.style.display = "flex";
+  hostElement.style.alignItems = "center";
+  hostElement.style.gap = "8px";
+  hostElement.style.flexWrap = "nowrap";
+
+  const wrapper = document.createElement("label");
+  wrapper.dataset.graphManagerExternalLinkedFilesToggle = "true";
+  wrapper.title = "Show or hide external linked files in the graph";
+  wrapper.style.cssText = "display:flex;align-items:center;gap:7px;font:12px system-ui,sans-serif;color:#1f2937;white-space:nowrap;";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = graphExternalLinkedFilesVisible();
+  checkbox.setAttribute("aria-label", "Show external linked files in Graph Manager");
+  checkbox.style.cssText = "width:16px;height:16px;accent-color:#2563eb;cursor:pointer;";
+
+  const text = document.createElement("span");
+  text.textContent = "External linked files";
+
+  const syncFromGraph = (event = null) => {
+    if (!hostElement.isConnected) {
+      window.removeEventListener("graphManagerExternalLinkedFilesVisibilityChanged", syncFromGraph);
+      window.removeEventListener("graphManagerExternalLinkedFilesReady", syncFromGraph);
+      return;
+    }
+    const setterReady = typeof window.setGraphManagerExternalLinkedFilesVisible === "function";
+    checkbox.disabled = !setterReady;
+    checkbox.title = setterReady ? "Show external linked files" : "Open Graph Manager first";
+    const nextVisible = event?.detail && Object.prototype.hasOwnProperty.call(event.detail, "visible")
+      ? Boolean(event.detail.visible)
+      : graphExternalLinkedFilesVisible();
+    checkbox.checked = nextVisible;
+  };
+
+  checkbox.addEventListener("change", () => {
+    const setter = window.setGraphManagerExternalLinkedFilesVisible;
+    if (typeof setter === "function") {
+      checkbox.checked = Boolean(setter(checkbox.checked));
+    } else {
+      syncFromGraph();
+    }
+  });
+
+  window.addEventListener("graphManagerExternalLinkedFilesVisibilityChanged", syncFromGraph);
+  window.addEventListener("graphManagerExternalLinkedFilesReady", syncFromGraph);
+  window.setTimeout(syncFromGraph, 50);
+  syncFromGraph();
+
+  wrapper.append(checkbox, text);
+  hostElement.appendChild(wrapper);
+}
+
 function renderGraphManagerLayerControls(hostElement) {
   hostElement.innerHTML = "";
   hostElement.style.display = "flex";
@@ -136,6 +195,10 @@ export function initToolbarWidget(hostElement, item = {}) {
   if (!hostElement) return;
   if (item?.widget === "managerPanelSwitcher") {
     renderManagerPanelSwitcher(hostElement, item);
+    return;
+  }
+  if (item?.widget === "externalLinkedFilesToggle") {
+    renderGraphExternalLinkedFilesToggle(hostElement);
     return;
   }
   renderGraphManagerLayerControls(hostElement);

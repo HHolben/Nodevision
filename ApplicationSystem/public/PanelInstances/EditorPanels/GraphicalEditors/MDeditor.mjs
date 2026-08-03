@@ -3,115 +3,185 @@
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { countWords } from "./FamilyEditorCommon.mjs";
-import { setWordCount } from "/StatusBar.mjs";
+import { setWordCount, setWordsAddedCount } from "/StatusBar.mjs";
+import { applyMarkdownRenderClass, ensureMarkdownStyles, renderMarkdown } from "/utils/markdownRenderer.mjs";
 
-// --------------------------------------------------
-// Fallback Hotkeys (self-contained)
-// --------------------------------------------------
 function registerMDFallbackHotkeys(textarea, filePath) {
   const surroundSelection = (before, after = before) => {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selected = textarea.value.slice(start, end);
 
-    textarea.setRangeText(
-      `${before}${selected}${after}`,
-      start,
-      end,
-      "end"
-    );
+    textarea.setRangeText(`${before}${selected}${after}`, start, end, "end");
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
     textarea.focus();
   };
 
-  const handlers = {
-    "Control+s": (e) => {
-      e.preventDefault();
-      if (window.saveMDFile) {
-        window.saveMDFile(filePath);
-      }
-      console.log("🔧 Fallback hotkey: Save");
-    },
+  const handler = (e) => {
+    if (document.activeElement !== textarea) return;
 
-    "Control+b": (e) => {
+    const isMac = window.navigator.platform.toUpperCase().includes("MAC");
+    const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+    if (!ctrlOrCmd || e.altKey) return;
+
+    const key = e.key?.toLowerCase?.();
+    if (key === "s" && !e.shiftKey) {
+      e.preventDefault();
+      window.saveMDFile?.(filePath);
+      return;
+    }
+    if (key === "b" && !e.shiftKey) {
       e.preventDefault();
       surroundSelection("**");
-      console.log("🔧 Fallback hotkey: Bold");
-    },
-
-    "Control+i": (e) => {
+      return;
+    }
+    if (key === "i" && !e.shiftKey) {
       e.preventDefault();
       surroundSelection("*");
-      console.log("🔧 Fallback hotkey: Italic");
-    },
-
-    "Control+u": (e) => {
+      return;
+    }
+    if (key === "u" && !e.shiftKey) {
       e.preventDefault();
       surroundSelection("<u>", "</u>");
-      console.log("🔧 Fallback hotkey: Underline");
-    },
-
-    "Control+z": (e) => {
+      return;
+    }
+    if (key === "z") {
       e.preventDefault();
-      document.execCommand("undo");
-      console.log("🔧 Fallback hotkey: Undo");
-    },
-
-    "Control+Shift+z": (e) => {
-      e.preventDefault();
-      document.execCommand("redo");
-      console.log("🔧 Fallback hotkey: Redo");
+      document.execCommand(e.shiftKey ? "redo" : "undo");
     }
   };
 
-  document.addEventListener("keydown", (e) => {
-    const key =
-      (e.ctrlKey ? "Control+" : "") +
-      (e.shiftKey ? "Shift+" : "") +
-      e.key;
-
-    if (handlers[key]) {
-      handlers[key](e);
-    }
-  });
-
-  console.log("🔧 Markdown Fallback Hotkeys Loaded");
+  document.addEventListener("keydown", handler);
+  return () => document.removeEventListener("keydown", handler);
 }
 
-// --------------------------------------------------
-// Main Markdown Editor
-// --------------------------------------------------
+function createEditorLabel(text) {
+  const label = document.createElement("div");
+  label.textContent = text;
+  label.style.cssText = "font:600 12px/1.4 system-ui,sans-serif;color:#374151;";
+  return label;
+}
+
+function createLoadError(message) {
+  const error = document.createElement("div");
+  error.textContent = "Failed to load file: " + String(message || "");
+  error.style.cssText = "color:red;padding:12px;";
+  return error;
+}
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   container.innerHTML = "";
 
-  // Set mode
+  window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.currentMode = "MDediting";
-  updateToolbarState({ currentMode: "MDediting" });
+  window.NodevisionState.selectedFile = filePath;
+  window.NodevisionState.activeEditorFilePath = filePath;
+  window.currentActiveFilePath = filePath;
+  window.__nvMarkdownActivePath = filePath;
+  updateToolbarState({ currentMode: "MDediting", selectedFile: filePath, activeEditorFilePath: filePath });
+  ensureMarkdownStyles(document);
 
-  // Root container
   const wrapper = document.createElement("div");
   wrapper.id = "editor-root";
-  wrapper.style.display = "flex";
-  wrapper.style.flexDirection = "column";
-  wrapper.style.height = "100%";
-  wrapper.style.width = "100%";
+  wrapper.style.cssText = [
+    "display:flex",
+    "flex-direction:column",
+    "height:100%",
+    "width:100%",
+    "box-sizing:border-box",
+    "gap:8px",
+    "padding:10px",
+    "overflow:hidden",
+  ].join(";");
   container.appendChild(wrapper);
 
-  // Markdown textarea
+  const editorSurface = document.createElement("div");
+  editorSurface.style.cssText = [
+    "display:flex",
+    "flex:1 1 auto",
+    "min-height:0",
+    "width:100%",
+    "gap:12px",
+    "align-items:stretch",
+    "flex-wrap:wrap",
+    "overflow:auto",
+  ].join(";");
+  wrapper.appendChild(editorSurface);
+
+  const sourcePane = document.createElement("section");
+  sourcePane.style.cssText = "display:flex;flex:1 1 360px;min-width:260px;min-height:0;flex-direction:column;gap:6px;";
+  sourcePane.appendChild(createEditorLabel("Markdown Source"));
+
   const textarea = document.createElement("textarea");
   textarea.id = "markdown-editor";
-  textarea.style.flex = "1";
-  textarea.style.width = "100%";
-  textarea.style.resize = "none";
-  textarea.style.padding = "12px";
-  textarea.style.fontFamily = "monospace";
-  textarea.style.fontSize = "14px";
-  textarea.style.lineHeight = "1.5";
+  textarea.dataset.nodevisionMarkdownEditor = "true";
+  textarea.style.cssText = [
+    "flex:1 1 auto",
+    "width:100%",
+    "min-height:0",
+    "resize:none",
+    "padding:12px",
+    "box-sizing:border-box",
+    "font:14px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    "border:1px solid #c9c9c9",
+    "border-radius:6px",
+    "background:#fff",
+    "color:#111827",
+  ].join(";");
   textarea.spellcheck = true;
-  wrapper.appendChild(textarea);
-  const updateCount = () => setWordCount(countWords(textarea.value));
-  textarea.addEventListener("input", updateCount);
+  sourcePane.appendChild(textarea);
+
+  const previewPane = document.createElement("section");
+  previewPane.style.cssText = "display:flex;flex:1 1 360px;min-width:260px;min-height:0;flex-direction:column;gap:6px;";
+  previewPane.appendChild(createEditorLabel("Preview"));
+
+  const preview = document.createElement("div");
+  applyMarkdownRenderClass(preview);
+  preview.setAttribute("aria-label", "Rendered Markdown preview");
+  preview.style.cssText = [
+    "flex:1 1 auto",
+    "min-height:0",
+    "overflow:auto",
+    "padding:14px",
+    "box-sizing:border-box",
+    "border:1px solid #d1d5db",
+    "border-radius:6px",
+    "background:var(--nv-panel-bg, #ffffff)",
+  ].join(";");
+  previewPane.appendChild(preview);
+
+  editorSurface.append(sourcePane, previewPane);
+
+  let previousWordCount = 0;
+  let wordsAddedSinceOpen = 0;
+  let previewFrame = 0;
+
+  const renderPreviewNow = () => {
+    previewFrame = 0;
+    preview.innerHTML = renderMarkdown(textarea.value, { filePath });
+  };
+
+  const schedulePreviewUpdate = () => {
+    if (previewFrame) cancelAnimationFrame(previewFrame);
+    previewFrame = requestAnimationFrame(renderPreviewNow);
+  };
+
+  const updateCount = () => {
+    const currentWordCount = countWords(textarea.value);
+    const addedSinceLastCount = currentWordCount - previousWordCount;
+    if (addedSinceLastCount > 0) {
+      wordsAddedSinceOpen += addedSinceLastCount;
+    }
+    previousWordCount = currentWordCount;
+    setWordCount(currentWordCount);
+    setWordsAddedCount(wordsAddedSinceOpen);
+  };
+
+  textarea.addEventListener("input", () => {
+    updateCount();
+    schedulePreviewUpdate();
+  });
 
   try {
     const res = await fetch(`/Notebook/${filePath}`);
@@ -119,17 +189,20 @@ export async function renderEditor(filePath, container) {
 
     const mdText = await res.text();
     textarea.value = mdText;
+    previousWordCount = countWords(mdText);
+    wordsAddedSinceOpen = 0;
     updateCount();
+    renderPreviewNow();
 
-    // Expose editor helpers
     window.getEditorMarkdown = () => textarea.value;
 
     window.setEditorMarkdown = (md) => {
       textarea.value = md || "";
       updateCount();
+      renderPreviewNow();
     };
 
-    window.saveMDFile = async (path) => {
+    window.saveMDFile = async (path = filePath) => {
       const content = window.getEditorMarkdown();
       await fetch("/api/save", {
         method: "POST",
@@ -138,16 +211,17 @@ export async function renderEditor(filePath, container) {
       });
       console.log("Saved Markdown file:", path || filePath);
     };
-
   } catch (err) {
-    wrapper.innerHTML =
-      `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
+    wrapper.replaceChildren(createLoadError(err?.message || String(err)));
     console.error(err);
     setWordCount(0);
+    setWordsAddedCount(0);
   }
 
-  // --------------------------------------------------
-  // Enable fallback hotkeys
-  // --------------------------------------------------
-  registerMDFallbackHotkeys(textarea, filePath);
+  const cleanupHotkeys = registerMDFallbackHotkeys(textarea, filePath);
+  container.__nvActiveEditorCleanup = () => {
+    cleanupHotkeys();
+    if (previewFrame) cancelAnimationFrame(previewFrame);
+    if (window.__nvMarkdownActivePath === filePath) window.__nvMarkdownActivePath = null;
+  };
 }

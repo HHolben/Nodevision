@@ -132,6 +132,116 @@ export class HttpSyncTransport extends SyncTransport {
   }
 }
 
+
+function normalizePeerUrlList(peerUrls) {
+  const raw = Array.isArray(peerUrls) ? peerUrls : [peerUrls];
+  const urls = [];
+  for (const value of raw) {
+    try {
+      const peerUrl = normalizePeerUrl(value);
+      if (peerUrl && !urls.includes(peerUrl)) urls.push(peerUrl);
+    } catch {
+      // Ignore malformed optional peer URLs.
+    }
+  }
+  return urls;
+}
+
+function createMultiEndpointError({ peerUrls, operation, errors }) {
+  const first = Array.isArray(errors) && errors.length ? errors[0] : null;
+  const err = new Error(`Unable to complete ${operation} using any configured sync endpoint`);
+  err.name = first?.name || "PeerSyncNetworkError";
+  err.peerUrls = [...peerUrls];
+  err.peerUrl = first?.peerUrl || peerUrls[0] || "";
+  err.endpointPath = first?.endpointPath || operation;
+  err.errors = Array.isArray(errors) ? errors : [];
+  err.cause = first || undefined;
+  return err;
+}
+
+export class MultiEndpointHttpSyncTransport extends SyncTransport {
+  constructor({ peerUrls, runtimeRoot } = {}) {
+    super({ kind: "http-combined" });
+    this.peerUrls = normalizePeerUrlList(peerUrls);
+    if (!this.peerUrls.length) throw new Error("Combined HTTP sync transport requires at least one peer URL");
+    this.peerUrl = this.peerUrls[0];
+    this.runtimeRoot = runtimeRoot;
+    this.transports = this.peerUrls.map((peerUrl) => new HttpSyncTransport({ peerUrl, runtimeRoot }));
+    this.nextWriteIndex = 0;
+    this.nextExternalIndex = 0;
+  }
+
+  get endpointCount() {
+    return this.transports.length;
+  }
+
+  selectTransport() {
+    const index = this.nextWriteIndex % this.transports.length;
+    this.nextWriteIndex = (this.nextWriteIndex + 1) % this.transports.length;
+    return this.transports[index];
+  }
+
+  getPeerUrlForOperation() {
+    const index = this.nextExternalIndex % this.peerUrls.length;
+    this.nextExternalIndex = (this.nextExternalIndex + 1) % this.peerUrls.length;
+    return this.peerUrls[index] || this.peerUrl;
+  }
+
+  async readFromAny(operation, call) {
+    const errors = [];
+    return new Promise((resolve, reject) => {
+      let pending = this.transports.length;
+      let settled = false;
+      for (const transport of this.transports) {
+        Promise.resolve()
+          .then(() => call(transport))
+          .then((value) => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+          })
+          .catch((err) => {
+            errors.push(err);
+            pending -= 1;
+            if (!settled && pending === 0) {
+              reject(createMultiEndpointError({ peerUrls: this.peerUrls, operation, errors }));
+            }
+          });
+      }
+    });
+  }
+
+  async status() {
+    return this.readFromAny("status", (transport) => transport.status());
+  }
+
+  async listFiles(scope) {
+    return this.readFromAny("listFiles", (transport) => transport.listFiles(scope));
+  }
+
+  async getFile(scope, relativePath) {
+    return this.readFromAny("getFile", (transport) => transport.getFile(scope, relativePath));
+  }
+
+  async putFile(scope, relativePath, data, metadata = {}) {
+    return this.selectTransport().putFile(scope, relativePath, data, metadata);
+  }
+
+  async deleteFile(scope, relativePath) {
+    const transport = this.selectTransport();
+    if (typeof transport.deleteFile !== "function") return super.deleteFile(scope, relativePath);
+    return transport.deleteFile(scope, relativePath);
+  }
+
+  async sendControlMessage(message = {}) {
+    return this.selectTransport().sendControlMessage(message);
+  }
+}
+
 export function createHttpSyncTransport(options = {}) {
   return new HttpSyncTransport(options);
+}
+
+export function createMultiEndpointHttpSyncTransport(options = {}) {
+  return new MultiEndpointHttpSyncTransport(options);
 }

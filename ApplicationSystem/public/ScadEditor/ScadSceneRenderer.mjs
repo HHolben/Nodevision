@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/ScadEditor/ScadSceneRenderer.mjs
-// Three.js approximate preview adapter for graphical SCAD models.
+// This module provides the Three.js approximate preview adapter for graphical SCAD models and keeps widget mounting separate from SCAD document serialization.
 
 import { mountWidget } from "/Widgets/WidgetHost.mjs";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
@@ -800,6 +800,12 @@ export async function createScadSceneRenderer(container, options = {}) {
   return {
     domElement: renderer.domElement,
     renderModel,
+    worldToClientPoint(point = {}) {
+      const vector = Array.isArray(point)
+        ? new THREE.Vector3(Number(point[0] || 0), Number(point[1] || 0), Number(point[2] || 0))
+        : new THREE.Vector3(Number(point.x || 0), Number(point.y || 0), Number(point.z || 0));
+      return screenPointFromWorldPoint(vector);
+    },
     setSelectedId(id) {
       selectedIds = id ? new Set([id]) : new Set();
       if (modelRef) renderModel(modelRef);

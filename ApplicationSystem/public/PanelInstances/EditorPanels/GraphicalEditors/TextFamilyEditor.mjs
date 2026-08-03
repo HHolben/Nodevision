@@ -9,7 +9,7 @@ import {
   countWords,
   fileExt,
 } from "./FamilyEditorCommon.mjs";
-import { setWordCount } from "/StatusBar.mjs";
+import { setWordCount, setWordsAddedCount } from "/StatusBar.mjs";
 import { renderEditor as renderIcsCalendarEditor } from "./ICSCalendarEditor.mjs";
 
 export async function renderEditor(filePath, container) {
@@ -19,6 +19,7 @@ export async function renderEditor(filePath, container) {
   if (ext === "ics") {
     ensureNodevisionState("ICSCalendarEditing");
     setWordCount(0);
+    setWordsAddedCount(0);
     await renderIcsCalendarEditor(filePath, container);
     return;
   }
@@ -49,7 +50,18 @@ export async function renderEditor(filePath, container) {
 
     body.appendChild(textarea);
 
-    const updateCount = () => setWordCount(countWords(textarea.value));
+    let previousWordCount = countWords(text);
+    let wordsAddedSinceOpen = 0;
+    const updateCount = () => {
+      const currentWordCount = countWords(textarea.value);
+      const addedSinceLastCount = currentWordCount - previousWordCount;
+      if (addedSinceLastCount > 0) {
+        wordsAddedSinceOpen += addedSinceLastCount;
+      }
+      previousWordCount = currentWordCount;
+      setWordCount(currentWordCount);
+      setWordsAddedCount(wordsAddedSinceOpen);
+    };
     textarea.addEventListener("input", updateCount);
 
     window.getEditorMarkdown = () => textarea.value;
@@ -63,5 +75,6 @@ export async function renderEditor(filePath, container) {
     body.innerHTML = `<div style="color:#b00020;font:13px monospace;">Failed to load text: ${err.message}</div>`;
     status.textContent = "Load failed";
     setWordCount(0);
+    setWordsAddedCount(0);
   }
 }

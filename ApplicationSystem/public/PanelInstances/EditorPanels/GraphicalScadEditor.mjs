@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalScadEditor.mjs
-// Graphical parametric OpenSCAD editor for .scad files.
+// This module provides the graphical parametric OpenSCAD editor for .scad files, including scene setup, object editing, serialization, and toolbar integration.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { ensureScadEditorModeLayout } from "/panels/workspace.mjs";
@@ -17,6 +17,7 @@ const SCAD_MODE = "SCADediting";
 const SCAD_ACTION_AXIS_TYPES = new Set(["x", "y", "z"]);
 const SCAD_FACE_OBJECT_TYPES = new Set(["circle", "rectangle", "square", "triangle", "polygon", "text"]);
 const SCAD_SOLID_OBJECT_TYPES = new Set(["sphere", "cube", "cylinder", "polyhedron"]);
+const SCAD_SLICE_OBJECT_TYPES = new Set(["vertexPath", "line", "polygon", "triangle", "rectangle", "square"]);
 const SCAD_SCALE_DRAG_UNITS = 60;
 const SCAD_MIN_SCALE_FACTOR = 0.05;
 
@@ -148,6 +149,9 @@ export async function renderEditor(filePath, container) {
   let lastModelPoint = [0, 0];
   let grabState = null;
   let scadPlacementPanel = null;
+  let scadSlicePreviewActive = false;
+  let scadSlicePreviewEdge = null;
+  let scadSlicePreviewMarker = null;
 
   container.innerHTML = "";
   container.style.width = "100%";
@@ -418,6 +422,206 @@ export async function renderEditor(filePath, container) {
       return { a: vertices[0], b: vertices[1] };
     }
     return null;
+  }
+
+
+  function scadSliceEdgeCandidates() {
+    const candidates = [];
+    const addCandidate = (obj, points, pointIndex, nextIndex, closed) => {
+      const a = points[pointIndex];
+      const b = points[nextIndex];
+      if (!a || !b) return;
+      candidates.push({ objectId: obj.id, type: obj.type, pointIndex, nextIndex, closed: Boolean(closed), a: { ...a }, b: { ...b } });
+    };
+    model.objects.forEach((obj) => {
+      if (!obj || !SCAD_SLICE_OBJECT_TYPES.has(obj.type) || !isObjectEditable(model, obj)) return;
+      const points = obj.type === "vertexPath" || obj.type === "line" ? scadVertexPathWorldPoints(obj) : scadShapeWorldPoints(obj);
+      if (points.length < 2) return;
+      const closed = obj.type === "polygon" || obj.type === "triangle" || obj.type === "rectangle" || obj.type === "square" || Boolean(obj.params?.closed);
+      for (let i = 0; i < points.length - 1; i += 1) addCandidate(obj, points, i, i + 1, closed);
+      if (closed && points.length > 2) addCandidate(obj, points, points.length - 1, 0, closed);
+    });
+    return candidates;
+  }
+
+  function scadScreenDistanceToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq <= 1e-9) return Math.hypot(px - ax, py - ay);
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+    return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+  }
+
+  function nearestScadSliceEdgeFromEvent(event, maxDistance = 14) {
+    if (typeof renderer?.worldToClientPoint !== "function") return null;
+    let best = null;
+    scadSliceEdgeCandidates().forEach((edge) => {
+      const screenA = renderer.worldToClientPoint(edge.a);
+      const screenB = renderer.worldToClientPoint(edge.b);
+      if (!screenA || !screenB) return;
+      const distance = scadScreenDistanceToSegment(event.clientX, event.clientY, screenA.x, screenA.y, screenB.x, screenB.y);
+      if (distance > maxDistance || (best && distance >= best.distance)) return;
+      best = { ...edge, distance };
+    });
+    return best;
+  }
+
+  function ensureScadSlicePreviewMarker() {
+    if (scadSlicePreviewMarker) return scadSlicePreviewMarker;
+    const marker = document.createElement("div");
+    Object.assign(marker.style, {
+      position: "absolute",
+      left: "0",
+      top: "0",
+      width: "18px",
+      height: "18px",
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
+      zIndex: "35",
+      display: "none",
+    });
+    const lineA = document.createElement("span");
+    const lineB = document.createElement("span");
+    [lineA, lineB].forEach((line) => Object.assign(line.style, {
+      position: "absolute",
+      left: "1px",
+      right: "1px",
+      top: "8px",
+      height: "2px",
+      background: "#2563eb",
+      borderRadius: "2px",
+      boxShadow: "0 0 0 1px rgba(255,255,255,0.8)",
+    }));
+    lineA.style.transform = "rotate(45deg)";
+    lineB.style.transform = "rotate(-45deg)";
+    marker.append(lineA, lineB);
+    previewMount.appendChild(marker);
+    scadSlicePreviewMarker = marker;
+    return marker;
+  }
+
+  function updateScadSlicePreviewMarker(edge) {
+    const marker = ensureScadSlicePreviewMarker();
+    if (!edge) {
+      marker.style.display = "none";
+      return;
+    }
+    const midpoint = {
+      x: (numberOrZero(edge.a?.x) + numberOrZero(edge.b?.x)) / 2,
+      y: (numberOrZero(edge.a?.y) + numberOrZero(edge.b?.y)) / 2,
+      z: (numberOrZero(edge.a?.z) + numberOrZero(edge.b?.z)) / 2,
+    };
+    const screen = renderer?.worldToClientPoint?.(midpoint);
+    if (!screen) {
+      marker.style.display = "none";
+      return;
+    }
+    const rect = previewMount.getBoundingClientRect();
+    marker.style.left = String(screen.x - rect.left) + "px";
+    marker.style.top = String(screen.y - rect.top) + "px";
+    marker.style.display = "block";
+  }
+
+  function clearScadSlicePreviewMarker() {
+    scadSlicePreviewEdge = null;
+    if (scadSlicePreviewMarker) scadSlicePreviewMarker.style.display = "none";
+  }
+
+  function setScadSlicePreviewActive(active) {
+    const next = Boolean(active);
+    if (!next) {
+      scadSlicePreviewActive = false;
+      previewMount.style.cursor = "";
+      clearScadSlicePreviewMarker();
+      return true;
+    }
+    if (grabState) finishGrab();
+    activeTool = "select";
+    polygonPoints = [];
+    if (!scadSliceEdgeCandidates().length) {
+      setStatus("No editable SCAD edges are available to slice.");
+      return true;
+    }
+    scadSlicePreviewActive = true;
+    previewMount.style.cursor = "crosshair";
+    clearScadSlicePreviewMarker();
+    setStatus("SCAD slice preview: hover an edge, click to insert midpoint vertex.");
+    return true;
+  }
+
+  function updateScadSlicePreviewFromEvent(event) {
+    if (!scadSlicePreviewActive) return false;
+    const edge = nearestScadSliceEdgeFromEvent(event);
+    scadSlicePreviewEdge = edge || null;
+    updateScadSlicePreviewMarker(edge);
+    return true;
+  }
+
+  function scadCandidateFromSelectedVertices() {
+    const refs = selectedScadVertices();
+    if (refs.length !== 2 || refs[0].id !== refs[1].id) return null;
+    const obj = objectById(refs[0].id);
+    if (!obj || !SCAD_SLICE_OBJECT_TYPES.has(obj.type) || !isObjectEditable(model, obj)) return null;
+    const points = obj.type === "vertexPath" || obj.type === "line" ? scadVertexPathWorldPoints(obj) : scadShapeWorldPoints(obj);
+    if (points.length < 2) return null;
+    const aIndex = Number.isInteger(refs[0].pointIndex) ? refs[0].pointIndex : 0;
+    const bIndex = Number.isInteger(refs[1].pointIndex) ? refs[1].pointIndex : 0;
+    const closed = obj.type === "polygon" || obj.type === "triangle" || obj.type === "rectangle" || obj.type === "square" || Boolean(obj.params?.closed);
+    const adjacent = Math.abs(aIndex - bIndex) === 1 || (closed && points.length > 2 && Math.abs(aIndex - bIndex) === points.length - 1);
+    if (!adjacent) return null;
+    const pointIndex = (aIndex + 1) % points.length === bIndex ? aIndex : bIndex;
+    const nextIndex = (pointIndex + 1) % points.length;
+    return { objectId: obj.id, type: obj.type, pointIndex, nextIndex, closed, a: { ...points[pointIndex] }, b: { ...points[nextIndex] } };
+  }
+
+  function selectedScadSliceEdge() {
+    const fromVertices = scadCandidateFromSelectedVertices();
+    if (fromVertices) return fromVertices;
+    const selected = selectedObjects(model, selectedIds).filter((obj) => isObjectEditable(model, obj));
+    if (selected.length !== 1 || !SCAD_SLICE_OBJECT_TYPES.has(selected[0].type)) return null;
+    const obj = selected[0];
+    const points = obj.type === "vertexPath" || obj.type === "line" ? scadVertexPathWorldPoints(obj) : scadShapeWorldPoints(obj);
+    if (points.length !== 2) return null;
+    return { objectId: obj.id, type: obj.type, pointIndex: 0, nextIndex: 1, closed: false, a: { ...points[0] }, b: { ...points[1] } };
+  }
+
+  function insertScadSlicePoint(edge) {
+    const obj = objectById(edge?.objectId);
+    if (!obj || !SCAD_SLICE_OBJECT_TYPES.has(obj.type) || !isObjectEditable(model, obj)) return false;
+    const points = obj.type === "vertexPath" || obj.type === "line" ? scadVertexPathWorldPoints(obj) : scadShapeWorldPoints(obj);
+    if (points.length < 2) return false;
+    const insertAt = edge.nextIndex === 0 ? points.length : edge.nextIndex;
+    const midpoint = {
+      x: (numberOrZero(edge.a?.x) + numberOrZero(edge.b?.x)) / 2,
+      y: (numberOrZero(edge.a?.y) + numberOrZero(edge.b?.y)) / 2,
+      z: (numberOrZero(edge.a?.z) + numberOrZero(edge.b?.z)) / 2,
+    };
+    const nextPoints = points.slice(0, insertAt).concat([midpoint], points.slice(insertAt));
+    const usePath = obj.type === "vertexPath" || obj.type === "line";
+    if (usePath) {
+      if (obj.type === "line" && nextPoints.length > 2) obj.type = "vertexPath";
+      setVertexPathWorldPoints(obj, nextPoints, Boolean(obj.params?.closed));
+      setSelection([obj.id], [{ id: obj.id, pointIndex: insertAt }]);
+    } else {
+      obj.type = "polygon";
+      setPolygonWorldPoints(obj, nextPoints);
+      setSelection([obj.id], []);
+    }
+    addTimelineStep(model, { type: "modify", objectIds: [obj.id], label: "Slice Edge", params: { operation: "sliceEdge", objectId: obj.id } });
+    setScadSlicePreviewActive(false);
+    markDirty();
+    setStatus("SCAD edge sliced.");
+    refresh();
+    return true;
+  }
+
+  function sliceSelectedScadEdgeOrPreview() {
+    if (grabState) finishGrab();
+    const edge = selectedScadSliceEdge();
+    if (edge) return insertScadSlicePoint(edge);
+    if (scadSlicePreviewActive && scadSlicePreviewEdge) return insertScadSlicePoint(scadSlicePreviewEdge);
+    return setScadSlicePreviewActive(true);
   }
 
   function pointWithDelta(point, delta) {
@@ -1476,6 +1680,7 @@ export async function renderEditor(filePath, container) {
     };
     if (insertMap[key]) return setTool(insertMap[key]);
     if (key === "scadSelectTool") return setTool("select");
+    if (key === "meshSliceEdges" || key === "scadSliceEdges") return sliceSelectedScadEdgeOrPreview();
     if (key === "scadExtrude") return runExtrude();
     if (key === "scadCutout") return runBoolean("cutout");
     if (key === "scadUnion") return runBoolean("union");
@@ -1526,6 +1731,12 @@ export async function renderEditor(filePath, container) {
       toggleGrabDirection(event);
       return;
     }
+    if (key === "escape" && scadSlicePreviewActive) {
+      event.preventDefault();
+      setScadSlicePreviewActive(false);
+      setStatus("SCAD slice preview canceled.");
+      return;
+    }
     if (key === "escape" && grabState) {
       event.preventDefault();
       finishGrab({ cancel: true });
@@ -1565,6 +1776,35 @@ export async function renderEditor(filePath, container) {
       fillOrConnectSelectedVertices();
     }
   }
+
+
+  function handleScadSlicePointerDown(event) {
+    if (!scadSlicePreviewActive || event.button !== 0) return;
+    previewMount.focus?.();
+    lastModelPoint = clientToModelPoint(event, previewMount);
+    event.preventDefault();
+    event.stopPropagation();
+    const edge = scadSlicePreviewEdge || nearestScadSliceEdgeFromEvent(event);
+    if (edge) insertScadSlicePoint(edge);
+    else setStatus("SCAD slice preview: hover an edge, click to insert midpoint vertex.");
+  }
+
+  function handleScadSlicePointerMove(event) {
+    if (!scadSlicePreviewActive) return;
+    lastModelPoint = clientToModelPoint(event, previewMount);
+    updateScadSlicePreviewFromEvent(event);
+  }
+
+  function handleScadSlicePointerUp(event) {
+    if (!scadSlicePreviewActive) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  previewMount.addEventListener("pointerdown", handleScadSlicePointerDown, true);
+  previewMount.addEventListener("pointermove", handleScadSlicePointerMove, true);
+  previewMount.addEventListener("pointerup", handleScadSlicePointerUp, true);
+  previewMount.addEventListener("pointercancel", handleScadSlicePointerUp, true);
 
   previewMount.addEventListener("pointermove", (event) => {
     lastModelPoint = clientToModelPoint(event, previewMount);
@@ -1693,6 +1933,12 @@ export async function renderEditor(filePath, container) {
       disposed = true;
       closeScadPlacementPanel();
       window.removeEventListener("keydown", handleEditorKeyDown, true);
+      previewMount.removeEventListener("pointerdown", handleScadSlicePointerDown, true);
+      previewMount.removeEventListener("pointermove", handleScadSlicePointerMove, true);
+      previewMount.removeEventListener("pointerup", handleScadSlicePointerUp, true);
+      previewMount.removeEventListener("pointercancel", handleScadSlicePointerUp, true);
+      scadSlicePreviewMarker?.remove?.();
+      scadSlicePreviewMarker = null;
       renderer?.dispose?.();
       clearScadLayersContext(scadController);
       if (window.NodevisionState?.activeActionHandler === handleToolbarAction) {

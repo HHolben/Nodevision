@@ -22,7 +22,7 @@
     "hotkeyText": "",
     "icon": "icons/InsertSensitiveIcon.png",
     "callbackKey": "fileMenu",
-    "modes": ["CodeEditing", "GraphicalEditing", "HTMLediting", "HTMLviewing", "EPUBediting", "MIDIediting", "STLediting", "SVG Editing", "SCADediting", "CIRediting", "EquationEditing", "ICSCalendarEditing", "3D World Viewing", "VR World Editing", "Virtual World Editing", "ArduinoBlockEditing"]
+    "modes": ["CodeEditing", "GraphicalEditing", "MDediting", "HTMLediting", "HTMLviewing", "EPUBediting", "MIDIediting", "STLediting", "SVG Editing", "SCADediting", "CIRediting", "EquationEditing", "ICSCalendarEditing", "3D World Viewing", "VR World Editing", "Virtual World Editing", "ArduinoBlockEditing"]
   },
   {
     "heading": "Table",

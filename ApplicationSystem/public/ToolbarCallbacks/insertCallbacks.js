@@ -11,6 +11,27 @@ function getWysiwyg() {
   return document.querySelector("#wysiwyg[contenteditable='true']");
 }
 
+function maybeRunMarkdownInsert(run) {
+  const mode = String(window.NodevisionState?.currentMode || "");
+  const active = document.activeElement;
+  const activePath = String(
+    window.__nvMarkdownActivePath ||
+    window.currentActiveFilePath ||
+    window.NodevisionState?.activeEditorFilePath ||
+    window.selectedFilePath ||
+    window.NodevisionState?.selectedFile ||
+    ""
+  ).split(/[?#]/)[0];
+  const isMarkdownPath = /\.(md|markdown)$/i.test(activePath);
+  const isPossibleMarkdownContext = mode === "MDediting" || (active?.id === "markdown-editor" && isMarkdownPath);
+  if (!isPossibleMarkdownContext) return false;
+
+  import("/ToolbarCallbacks/insert/utils/markdownInsertHelpers.mjs")
+    .then((mod) => run(mod))
+    .catch((err) => console.warn("Failed to apply Markdown insert command:", err));
+  return true;
+}
+
 function createTable(rows, cols) {
   const table = document.createElement("table");
   table.style.borderCollapse = "collapse";
@@ -316,21 +337,27 @@ window.insertCallbacks = {
       });
   },
   insertH1: () => {
+    if (maybeRunMarkdownInsert((mod) => mod.insertMarkdownHeadingIfActive?.(1))) return;
     document.execCommand('insertHTML', false, '<h1>Heading 1</h1>');
   },
   insertH2: () => {
+    if (maybeRunMarkdownInsert((mod) => mod.insertMarkdownHeadingIfActive?.(2))) return;
     document.execCommand('insertHTML', false, '<h2>Heading 2</h2>');
   },
   insertH3: () => {
+    if (maybeRunMarkdownInsert((mod) => mod.insertMarkdownHeadingIfActive?.(3))) return;
     document.execCommand('insertHTML', false, '<h3>Heading 3</h3>');
   },
   insertH4: () => {
+    if (maybeRunMarkdownInsert((mod) => mod.insertMarkdownHeadingIfActive?.(4))) return;
     document.execCommand('insertHTML', false, '<h4>Heading 4</h4>');
   },
   insertH5: () => {
+    if (maybeRunMarkdownInsert((mod) => mod.insertMarkdownHeadingIfActive?.(5))) return;
     document.execCommand('insertHTML', false, '<h5>Heading 5</h5>');
   },
   insertH6: () => {
+    if (maybeRunMarkdownInsert((mod) => mod.insertMarkdownHeadingIfActive?.(6))) return;
     document.execCommand('insertHTML', false, '<h6>Heading 6</h6>');
   },
     insertParagraph: () => {
@@ -508,6 +535,7 @@ insertFootnote: () => {
     document.execCommand('insertHTML', false, `<i>italics</i>`);
   },
   insertBold: () => {
+    if (maybeRunMarkdownInsert((mod) => mod.insertMarkdownBoldIfActive?.())) return;
     document.execCommand('insertHTML', false, `<b>bold text</b>`);
   },
   insertUnderline: () => {

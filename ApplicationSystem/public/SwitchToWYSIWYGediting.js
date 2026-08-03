@@ -109,6 +109,7 @@ if (!window.__nvFormatShortcutsBound) {
     };
     const targetCb = callbackMap[key];
     if (!targetCb) return;
+    if (String(window.NodevisionState?.currentMode || "") === "MDediting") return;
 
     e.preventDefault();
 

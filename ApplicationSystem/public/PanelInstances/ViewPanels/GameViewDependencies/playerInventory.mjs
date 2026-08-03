@@ -14,7 +14,7 @@ const CATEGORY_META = {
   "building-blocks": { label: "Building Blocks", emptyText: "No building blocks carried." }
 };
 const TOOL_IDS = new Set(["select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
-const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "math-function", "object-file", "image-plane", "iframe", "console", "portal"]);
+const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "flying-carpet", "math-function", "object-file", "image-plane", "iframe", "console", "portal"]);
 const RESOURCE_IDS = new Set(["ore", "wood", "stone", "energy-cell", "water", "fuel"]);
 const PASSIVE_IDS = new Set(["armor", "helmet", "boots", "jetpack", "oxygen-tank"]);
 const HOTBAR_INSTRUMENT_ID = "item-hotbar";
@@ -79,6 +79,7 @@ export function createPlayerInventory({ panel }) {
       { id: "box", label: "Box", count: 10, category: "building-blocks", placeable: true },
       { id: "sphere", label: "Sphere", count: 6, category: "building-blocks", placeable: true },
       { id: "cylinder", label: "Cylinder", count: 6, category: "building-blocks", placeable: true },
+      { id: "flying-carpet", label: "Flying Carpet", count: 3, category: "building-blocks", placeable: true },
       { id: "math-function", label: "Math Function", count: 4, category: "building-blocks", placeable: true },
       { id: "object-file", label: "Object File", count: 0, category: "building-blocks", placeable: true },
       { id: "image-plane", label: "Image Plane", count: 0, category: "building-blocks", placeable: true },
@@ -258,6 +259,31 @@ export function createPlayerInventory({ panel }) {
       icon.style.boxSizing = "border-box";
       icon.style.border = "5px solid #6dd5ff";
       icon.style.boxShadow = "0 0 8px rgba(109, 213, 255, 0.75)";
+      return icon;
+    }
+    if (id === "flying-carpet") {
+      icon.style.position = "relative";
+      icon.style.borderRadius = "5px";
+      icon.style.background = "linear-gradient(135deg, #8b7cff 0%, #7254dc 52%, #4655b8 100%)";
+      icon.style.border = "1px solid rgba(230, 226, 255, 0.9)";
+      icon.style.boxShadow = "-4px 4px 0 rgba(0, 0, 0, 0.25)";
+      const trim = document.createElement("div");
+      trim.style.position = "absolute";
+      trim.style.left = "4px";
+      trim.style.right = "4px";
+      trim.style.top = "6px";
+      trim.style.height = "3px";
+      trim.style.background = "rgba(236, 232, 255, 0.75)";
+      trim.style.borderRadius = "2px";
+      const edge = document.createElement("div");
+      edge.style.position = "absolute";
+      edge.style.left = "5px";
+      edge.style.right = "5px";
+      edge.style.bottom = "5px";
+      edge.style.height = "2px";
+      edge.style.background = "rgba(33, 31, 96, 0.6)";
+      icon.appendChild(trim);
+      icon.appendChild(edge);
       return icon;
     }
     if (id === "svg-camera") {

@@ -1,6 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManager.mjs
-// Sets up the Graph Manager panel and loads GraphManagerCore.mjs
-// Provides toolbar integration through panelCapabilities
+// This module sets up the Graph Manager panel, loads GraphManagerCore.mjs, and provides toolbar integration through panelCapabilities.
 
 import { updateToolbarState } from '/panels/createToolbar.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
@@ -13,7 +12,7 @@ const navigationState = getNodevisionNavigationState();
 export const panelCapabilities = {
   supportedActions: [
     'NewFile', 'NewDirectory', 'DeleteFile', 'renameFile',
-    'copyFile', 'cutFile', 'pasteFile'
+    'copyFile', 'cutFile', 'pasteFile', 'reopenGraphRootFromSelection'
   ],
   panelType: 'GraphManager'
 };
@@ -50,7 +49,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
         <div id="mqtt-device-inspector" style="display:none;position:absolute;right:10px;top:10px;z-index:5;width:min(310px,35%);max-height:70%;overflow:auto;background:rgba(255,255,255,0.96);border:1px solid #d8dde6;border-radius:8px;padding:10px;font-size:12px;box-shadow:0 8px 22px rgba(15,23,42,0.14);"></div>
         <div id="graph-link-inspector" style="display:none;position:absolute;right:10px;bottom:10px;z-index:6;width:min(420px,48%);max-width:calc(100% - 20px);background:rgba(255,255,255,0.96);border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:12px system-ui,sans-serif;box-shadow:0 8px 22px rgba(15,23,42,0.14);"></div>
       </div>
-      
+
       <div id="graph-error" style="flex:0 0 auto;color:red; padding: 10px; font-weight: bold;"></div>
     </div>
   `;
@@ -74,17 +73,17 @@ export async function setupPanel(panelElem, panelVars = {}) {
   // We keep the heavy Cytoscape/Logic in 'Core' just like the File Manager
   try {
     const mod = await import("/PanelInstances/InfoPanels/GraphManagerCore.mjs");
-    
+
     // Initialize the graph logic
     // We pass the root directory and the container ID
     await mod.initGraphView({
       containerId: 'cy',
-      rootPath: panelVars.currentDirectory || '',      
+      rootPath: panelVars.currentDirectory || '',
       statusElemId: null,
       mqttInspectorId: 'mqtt-device-inspector',
       linkInspectorId: 'graph-link-inspector'
     });
-    
+
     console.log("✅ GraphManagerCore loaded and initialized.");
   } catch (err) {
     console.error("❌ Failed to load GraphManagerCore.mjs:", err);

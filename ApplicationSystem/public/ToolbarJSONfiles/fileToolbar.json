@@ -195,6 +195,25 @@
   {
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
+    "heading": "Selection as Root",
+    "hotkeyText": "",
+    "callbackKey": "reopenGraphRootFromSelection",
+    "icon": "icons/GraphManager.png",
+    "shortLabel": "Root",
+    "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Show External Links",
+    "hotkeyText": "",
+    "script": "graphManagerLayerControlsWidget.mjs",
+    "widget": "externalLinkedFilesToggle",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
     "heading": "Update Edges",
     "hotkeyText": "",
     "callbackKey": "UpdateEdges",

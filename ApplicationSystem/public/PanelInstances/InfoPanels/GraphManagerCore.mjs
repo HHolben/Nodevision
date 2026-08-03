@@ -30,6 +30,7 @@ let expandedDirectoryCollisionFrame = null;
 let expandedDirectoryCollisionNodeId = null;
 const htmlPreviewCache = new Map(); // path -> url | null
 let externalNodesLoaded = false;
+let externalLinkedFilesVisible = true;
 let graphViewportResizeFrame = 0;
 let graphViewportResizeShouldFit = false;
 let graphViewportEventCleanup = null;
@@ -174,6 +175,70 @@ async function fetchExternalNodes() {
     }
 }
 
+function edgeTouchesExternalLinkedFile(edge) {
+    if (!edge) return false;
+    const sourcePath = String(edge.data?.("sourcePath") || "");
+    const targetPath = String(edge.data?.("targetPath") || "");
+    const targetKind = String(edge.data?.("targetKind") || "");
+    if (targetKind === "external") return true;
+    if (sourcePath.startsWith("external:") || targetPath.startsWith("external:")) return true;
+    try {
+        return edge.source?.().data?.("type") === "external" || edge.target?.().data?.("type") === "external";
+    } catch (_) {
+        return false;
+    }
+}
+
+function externalLinkedFileEdges() {
+    if (!cy) return null;
+    return cy.edges().filter(edgeTouchesExternalLinkedFile);
+}
+
+function notifyExternalLinkedFilesVisibility() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("graphManagerExternalLinkedFilesVisibilityChanged", {
+        detail: { visible: externalLinkedFilesVisible }
+    }));
+}
+
+function applyExternalLinkedFilesVisibility() {
+    if (!cy) {
+        notifyExternalLinkedFilesVisibility();
+        return;
+    }
+
+    const externalNodes = cy.nodes('node[type="external"]');
+    const externalEdges = externalLinkedFileEdges();
+    if (externalLinkedFilesVisible) {
+        externalNodes.show();
+        externalEdges?.show?.();
+    } else {
+        externalEdges?.hide?.();
+        externalNodes.hide();
+    }
+    notifyExternalLinkedFilesVisibility();
+}
+
+export function getGraphManagerExternalLinkedFilesVisible() {
+    return externalLinkedFilesVisible;
+}
+
+export function setGraphManagerExternalLinkedFilesVisible(visible = true) {
+    const nextVisible = visible !== false;
+    const changed = nextVisible !== externalLinkedFilesVisible;
+    externalLinkedFilesVisible = nextVisible;
+    applyExternalLinkedFilesVisibility();
+    if (changed) {
+        queueRelayout({ fit: true, reason: nextVisible ? "show-external-linked-files" : "hide-external-linked-files" });
+    }
+    return externalLinkedFilesVisible;
+}
+
+if (typeof window !== "undefined") {
+    window.getGraphManagerExternalLinkedFilesVisible = getGraphManagerExternalLinkedFilesVisible;
+    window.setGraphManagerExternalLinkedFilesVisible = setGraphManagerExternalLinkedFilesVisible;
+}
+
 function addExternalNodesToGraph(nodes = []) {
     if (!cy) return;
     const elements = [];
@@ -211,6 +276,7 @@ function addExternalNodesToGraph(nodes = []) {
 
     if (elements.length) {
         cy.add(elements);
+        applyExternalLinkedFilesVisibility();
         queueRelayout({ fit: true, reason: 'external-nodes' });
     }
 }
@@ -771,6 +837,66 @@ async function revealPathInGraphManager(path, options = {}) {
 window.openDirectoryInGraphManager = openDirectoryInGraphManager;
 window.revealPathInGraphManager = revealPathInGraphManager;
 
+function selectedPathForGraphRootAction() {
+    const state = window.NodevisionState || {};
+    return normalizePath(window.selectedFilePath || state.selectedFile || "");
+}
+
+function selectedPathIsDirectory(path = "") {
+    const cleanPath = normalizePath(path);
+    const state = window.NodevisionState || {};
+    const stateSelectedPath = normalizePath(window.selectedFilePath || state.selectedFile || "");
+    const stateFlag = state.selectedFileIsDirectory;
+    if (cleanPath && cleanPath === stateSelectedPath && typeof stateFlag === "boolean") return stateFlag;
+
+    const node = cy?.getElementById?.(cleanPath);
+    if (node && typeof node.empty === "function" && !node.empty()) {
+        return node.data("type") === "directory";
+    }
+
+    return false;
+}
+
+function directoryRootForSelectedPath(path = "") {
+    const cleanPath = normalizePath(path || "");
+    if (!cleanPath) return null;
+    return selectedPathIsDirectory(cleanPath) ? cleanPath : dirname(cleanPath);
+}
+
+export async function reopenGraphRootFromSelection() {
+    if (!cy) {
+        alert("Graph Manager is not ready yet.");
+        return false;
+    }
+
+    const selectedPath = selectedPathForGraphRootAction();
+    if (!selectedPath) {
+        alert("Select a file or folder first.");
+        return false;
+    }
+
+    const nextRoot = directoryRootForSelectedPath(selectedPath);
+    if (nextRoot === null) {
+        alert("Select a file or folder first.");
+        return false;
+    }
+
+    currentRootPath = normalizePath(nextRoot);
+    navigationState.setLastOpenedDirectory(currentRootPath, "GraphManager");
+    await refreshGraphView({ fit: true, reason: "selection-as-root" });
+
+    const rootNodeId = currentRootPath || "Root";
+    const rootNode = cy.getElementById(rootNodeId);
+    if (rootNode && !rootNode.empty()) {
+        try { cy.nodes().unselect(); rootNode.select(); } catch (_) { /* ignore */ }
+        try { cy.center(rootNode); } catch (_) { /* ignore */ }
+    }
+
+    return true;
+}
+
+window.reopenGraphRootFromSelection = reopenGraphRootFromSelection;
+
 function setupCtrlDragMoveHandlers() {
     if (!cy) return;
     dragMoveState = {
@@ -1190,6 +1316,7 @@ function rebuildVisibleEdges() {
             cy.add([...edgeMap.values()]);
         }
     });
+    applyExternalLinkedFilesVisibility();
 }
 
 
@@ -1631,6 +1758,22 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 }
             },
             {
+                selector: 'node:selected',
+                style: {
+                    'overlay-color': '#ffffff',
+                    'overlay-opacity': 0.48,
+                    'overlay-padding': 8,
+                    'overlay-shape': 'ellipse',
+                    'underlay-color': '#86efac',
+                    'underlay-opacity': 0.95,
+                    'underlay-padding': 12,
+                    'underlay-shape': 'ellipse',
+                    'border-color': '#86efac',
+                    'border-width': 3,
+                    'z-index': 40
+                }
+            },
+            {
                 selector: 'node[type="external"]',
                 style: {
                     'shape': 'diamond',
@@ -1761,10 +1904,18 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
 
     cy.on('tap', 'node', (evt) => {
         const path = evt.target.data('fullPath');
+        const selectedIsDirectory = evt.target.data('type') === 'directory';
         if (path !== undefined) {
             navigationState.setLastInfoPanelType("GraphManager");
             navigationState.setLastFileSelectionPanelType?.("GraphManager");
-            requestNodevisionFileSelection(path);
+            requestNodevisionFileSelection(path, {
+                isDirectory: selectedIsDirectory,
+                onSelected: (selectedPath) => {
+                    if (selectedIsDirectory) {
+                        navigationState.setLastOpenedDirectory(selectedPath, "GraphManager");
+                    }
+                },
+            });
         }
         if (evt.target.data('type') === 'external' && evt.target.data('url')) {
             window.selectedExternalUrl = evt.target.data('url');
@@ -1826,6 +1977,9 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     });
     bindGraphManagerLayerControls(document.querySelector("[data-graph-manager-layer-controls]"));
     window.dispatchEvent(new CustomEvent("graphManagerLayersReady"));
+    window.dispatchEvent(new CustomEvent("graphManagerExternalLinkedFilesReady", {
+        detail: { visible: externalLinkedFilesVisible }
+    }));
 
     await loadExternalNodes();
 
@@ -2058,6 +2212,11 @@ function fileActionModuleCandidates(actionKey = "") {
 
 export async function handleGraphManagerAction(actionKey) {
     console.log(`GraphManagerCore: handling toolbar action "${actionKey}"`);
+
+    if (actionKey === "reopenGraphRootFromSelection") {
+        await reopenGraphRootFromSelection();
+        return;
+    }
 
     const modulePaths = fileActionModuleCandidates(actionKey);
     const importErrors = [];

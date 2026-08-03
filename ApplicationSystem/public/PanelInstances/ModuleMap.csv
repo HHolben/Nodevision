@@ -88,6 +88,7 @@ lammps,Publication,ViewText.mjs,TextFamilyEditor.mjs
 log,Publication,ViewText.mjs,TextFamilyEditor.mjs
 ly,Publication,ViewLilyPond.mjs,DocumentFamilyEditor.mjs
 md,Publication,ViewMD.mjs,MDeditor.mjs
+markdown,Publication,ViewMD.mjs,MDeditor.mjs
 mei.xml,Publication,ViewMEI.mjs,DocumentFamilyEditor.mjs
 mobi,Publication,ViewBinary.mjs,BinaryFamilyEditor.mjs
 musicxml,Publication,ViewMusicXML.mjs,DocumentFamilyEditor.mjs

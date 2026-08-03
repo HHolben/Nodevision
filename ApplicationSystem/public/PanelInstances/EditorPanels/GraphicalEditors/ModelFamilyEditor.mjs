@@ -830,6 +830,9 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
   let edgePickTargets = [];
   let selectedEdgeIndex = null;
   let selectedVertexIndices = new Set();
+  let objSlicePreviewActive = false;
+  let objSlicePreviewEdge = null;
+  let objSlicePreviewMarker = null;
   let grabState = null;
   let currentSourceText = String(sourceText || "");
   const lastPointerClient = { x: 0, y: 0 };
@@ -927,6 +930,201 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       });
     });
     return records;
+  }
+
+
+  function objScreenPointFromWorldPoint(point) {
+    if (!point) return null;
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    camera.updateMatrixWorld?.();
+    const projected = point.clone().project(camera);
+    if (projected.z < -1 || projected.z > 1) return null;
+    return {
+      x: rect.left + (projected.x * 0.5 + 0.5) * rect.width,
+      y: rect.top + (-projected.y * 0.5 + 0.5) * rect.height,
+    };
+  }
+
+  function objDistanceToScreenSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq <= 1e-9) return Math.hypot(px - ax, py - ay);
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+    return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+  }
+
+  function nearestObjSliceEdgeFromEvent(event, maxDistance = 14) {
+    if (!parsedObj) return null;
+    let best = null;
+    edgeRecords.forEach((edge) => {
+      const a = objPoint(edge.a);
+      const b = objPoint(edge.b);
+      const screenA = objScreenPointFromWorldPoint(a);
+      const screenB = objScreenPointFromWorldPoint(b);
+      if (!screenA || !screenB) return;
+      const distance = objDistanceToScreenSegment(event.clientX, event.clientY, screenA.x, screenA.y, screenB.x, screenB.y);
+      if (distance > maxDistance || (best && distance >= best.distance)) return;
+      best = { ...edge, distance };
+    });
+    return best;
+  }
+
+  function ensureObjSlicePreviewMarker() {
+    if (objSlicePreviewMarker) return objSlicePreviewMarker;
+    objSlicePreviewMarker = new THREE.LineSegments(
+      new THREE.BufferGeometry(),
+      new THREE.LineBasicMaterial({ color: 0x2563eb, transparent: true, opacity: 0.98, depthTest: false })
+    );
+    objSlicePreviewMarker.name = "OBJSlicePreviewMarker";
+    objSlicePreviewMarker.visible = false;
+    objSlicePreviewMarker.renderOrder = 20;
+    scene.add(objSlicePreviewMarker);
+    return objSlicePreviewMarker;
+  }
+
+  function updateObjSlicePreviewMarker(edge) {
+    const marker = ensureObjSlicePreviewMarker();
+    const a = objPoint(edge?.a);
+    const b = objPoint(edge?.b);
+    if (!a || !b) {
+      marker.visible = false;
+      return;
+    }
+    const midpoint = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+    if (right.lengthSq() < 1e-12) right.set(1, 0, 0);
+    if (up.lengthSq() < 1e-12) up.set(0, 1, 0);
+    const box = new THREE.Box3().setFromObject(modelRoot);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 1);
+    const radius = Math.max(0.05, maxDim * 0.018, camera.position.distanceTo(midpoint) * 0.006);
+    right.normalize().multiplyScalar(radius);
+    up.normalize().multiplyScalar(radius);
+    const points = [
+      midpoint.clone().sub(right).sub(up), midpoint.clone().add(right).add(up),
+      midpoint.clone().sub(right).add(up), midpoint.clone().add(right).sub(up),
+    ];
+    marker.geometry.dispose?.();
+    marker.geometry = new THREE.BufferGeometry().setFromPoints(points);
+    marker.visible = true;
+  }
+
+  function clearObjSlicePreviewMarker() {
+    objSlicePreviewEdge = null;
+    if (objSlicePreviewMarker) objSlicePreviewMarker.visible = false;
+  }
+
+  function setObjSlicePreviewActive(active) {
+    const next = Boolean(active);
+    if (!next) {
+      objSlicePreviewActive = false;
+      host.classList.remove("nv-obj-slice-preview-active");
+      renderer.domElement.style.cursor = "";
+      clearObjSlicePreviewMarker();
+      return true;
+    }
+    if (grabState) finishObjEdgeGrab(false);
+    if (!edgeRecords.length) {
+      status.textContent = "OBJ has no edges available to slice.";
+      return true;
+    }
+    objSlicePreviewActive = true;
+    host.classList.add("nv-obj-slice-preview-active");
+    renderer.domElement.style.cursor = "crosshair";
+    clearObjSlicePreviewMarker();
+    status.textContent = "OBJ slice preview: hover an edge, click to insert midpoint vertex.";
+    return true;
+  }
+
+  function updateObjSlicePreviewFromEvent(event) {
+    if (!objSlicePreviewActive) return false;
+    const edge = nearestObjSliceEdgeFromEvent(event);
+    objSlicePreviewEdge = edge ? { a: edge.a, b: edge.b } : null;
+    updateObjSlicePreviewMarker(edge);
+    return true;
+  }
+
+  function insertObjIndexBetween(sequence = [], a, b, newIndex, closed = false) {
+    if (!Array.isArray(sequence) || sequence.length < 2) return { sequence, changed: false };
+    const targetKey = a < b ? String(a) + ":" + String(b) : String(b) + ":" + String(a);
+    const next = [];
+    let changed = false;
+    for (let i = 0; i < sequence.length; i += 1) {
+      const current = sequence[i];
+      next.push(current);
+      const hasNext = i < sequence.length - 1 || closed;
+      if (!hasNext) continue;
+      const following = sequence[(i + 1) % sequence.length];
+      const key = current < following ? String(current) + ":" + String(following) : String(following) + ":" + String(current);
+      if (key === targetKey) {
+        next.push(newIndex);
+        changed = true;
+      }
+    }
+    return { sequence: changed ? next : sequence, changed };
+  }
+
+  function selectedObjSliceEdge() {
+    const selectedVertices = Array.from(selectedVertexIndices).filter((index) => Number.isInteger(index) && objPoint(index));
+    if (selectedVertices.length === 2) {
+      const [a, b] = selectedVertices;
+      const match = edgeRecords.find((entry) => (entry.a === a && entry.b === b) || (entry.a === b && entry.b === a));
+      if (match) return match;
+    }
+    return selectedEdgeRecord();
+  }
+
+  function sliceObjEdge(edge) {
+    if (!parsedObj || !edge) return false;
+    const a = objPoint(edge.a);
+    const b = objPoint(edge.b);
+    if (!a || !b) return false;
+    const newIndex = parsedObj.vertices.length;
+    const midpoint = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+    parsedObj.vertices.push([midpoint.x, midpoint.y, midpoint.z]);
+    let touched = false;
+    parsedObj.parts.forEach((part) => {
+      let partTouched = false;
+      part.faces = part.faces.map((face) => {
+        const result = insertObjIndexBetween(face, edge.a, edge.b, newIndex, true);
+        if (result.changed) partTouched = true;
+        return result.sequence;
+      });
+      part.lines = part.lines.map((line) => {
+        const result = insertObjIndexBetween(line, edge.a, edge.b, newIndex, false);
+        if (result.changed) partTouched = true;
+        return result.sequence;
+      });
+      if (partTouched) {
+        touched = true;
+        part.pointIndices.add(newIndex);
+      }
+    });
+    if (!touched) {
+      parsedObj.vertices.pop();
+      status.textContent = "Select two joined OBJ vertices or hover an edge first.";
+      return false;
+    }
+    selectedIds = new Set();
+    selectedEdgeIndex = null;
+    selectedVertexIndices = new Set([newIndex]);
+    setObjSlicePreviewActive(false);
+    syncObjSourceFromParsed();
+    rebuildObjDisplayFromParsed();
+    status.textContent = "OBJ edge sliced.";
+    notifyObjToolbarState({ fileIsDirty: true });
+    return true;
+  }
+
+  function sliceObjSelectionOrPreview() {
+    if (grabState) finishObjEdgeGrab(false);
+    const edge = selectedObjSliceEdge();
+    if (edge) return sliceObjEdge(edge);
+    if (objSlicePreviewActive && objSlicePreviewEdge) return sliceObjEdge(objSlicePreviewEdge);
+    return setObjSlicePreviewActive(true);
   }
 
   function rebuildEdgeEditOverlay() {
@@ -1345,6 +1543,8 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       objClearSelection: () => clearObjSelection(),
       objGrab: () => grabObjSelection(),
       objExtrude: () => extrudeObjSelection(),
+      meshSliceEdges: () => sliceObjSelectionOrPreview(),
+      objSliceEdges: () => sliceObjSelectionOrPreview(),
       objUnion: () => runObjBooleanOperation("union"),
       objDifference: () => runObjBooleanOperation("difference"),
       objIntersection: () => runObjBooleanOperation("intersection"),
@@ -1681,6 +1881,13 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       return;
     }
     if (event.button !== 0) return;
+    if (objSlicePreviewActive) {
+      event.preventDefault();
+      const edge = objSlicePreviewEdge || nearestObjSliceEdgeFromEvent(event);
+      if (edge) sliceObjEdge(edge);
+      else status.textContent = "OBJ slice preview: hover an edge, click to insert midpoint vertex.";
+      return;
+    }
     event.preventDefault();
     startSelectionBox(event);
   }
@@ -1692,11 +1899,16 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       updateObjEdgeGrab(event);
       return;
     }
+    if (objSlicePreviewActive) {
+      updateObjSlicePreviewFromEvent(event);
+      return;
+    }
     updateSelectionBox(event);
   }
 
   function onPointerUp(event) {
     if (grabState) return;
+    if (objSlicePreviewActive) return;
     finishSelectionBox(event);
   }
 
@@ -1705,6 +1917,12 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
     if (active !== host && !host.contains(active)) return;
     if (["input", "textarea", "select"].includes(active?.tagName?.toLowerCase?.())) return;
     const key = String(event.key || "").toLowerCase();
+    if (key === "escape" && objSlicePreviewActive) {
+      event.preventDefault();
+      setObjSlicePreviewActive(false);
+      status.textContent = "OBJ ready. Click an edge or drag to select parts.";
+      return;
+    }
     if (key === "escape" && grabState) {
       event.preventDefault();
       finishObjEdgeGrab(true);
@@ -1788,6 +2006,12 @@ export async function createObjGraphicalPreview(host, sourceText, status, option
       else window.removeEventListener("resize", resize);
       selectionBox?.el?.remove?.();
       selectionBox = null;
+      if (objSlicePreviewMarker) {
+        scene.remove(objSlicePreviewMarker);
+        objSlicePreviewMarker.geometry.dispose?.();
+        objSlicePreviewMarker.material.dispose?.();
+        objSlicePreviewMarker = null;
+      }
       orientationWidget?.destroy?.();
       controls.dispose?.();
       clearObjectChildren(modelRoot);

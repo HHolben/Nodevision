@@ -1,4 +1,4 @@
-/* Nodevision/ApplicationSystem/public/StatusBarStyles.css */
+/* Nodevision/ApplicationSystem/public/Stylesheets/StatusBarStyles.css */
 /* This file defines UI styles for Status Bar Styles in the Nodevision browser client. It controls layout and appearance across related views. */
 #status-bar {
   height: 22px;
@@ -16,6 +16,17 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+#status-left {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#status-words,
+#status-words-added,
+#status-right {
+  flex: 0 0 auto;
 }
 
 /* === Dark mode (UI only) === */

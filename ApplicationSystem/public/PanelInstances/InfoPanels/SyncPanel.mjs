@@ -3,7 +3,7 @@
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { getNodevisionNavigationState } from "/NodevisionNavigationState.mjs";
-import { getActivePeerUrl, normalizeSyncTransport, withActivePeerUrlFromDiscoveredPeer } from "/SyncTransportSettings.mjs";
+import { getActivePeerUrl, getActivePeerUrls, normalizeSyncTransport, withActivePeerUrlFromDiscoveredPeer } from "/SyncTransportSettings.mjs";
 
 const navigationState = getNodevisionNavigationState();
 
@@ -57,17 +57,22 @@ const TEMPLATE = `
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0 10px;">
         <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;">Connection Type
-          <select data-sync-transport style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:150px;">
+          <select data-sync-transport style="padding:7px;border:1px solid #bbb;border-radius:6px;min-width:170px;">
             <option value="wireless">Wireless / LAN</option>
             <option value="usb">Direct / USB Ethernet</option>
+            <option value="combined">Wireless + Direct</option>
             <option value="offline-package">Offline Package</option>
           </select>
         </label>
-        <label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;flex:1;min-width:230px;">Peer URL
+        <label data-peer-url-label style="display:flex;flex-direction:column;font-size:0.9em;gap:4px;flex:1;min-width:230px;"><span data-peer-url-label-text>Peer URL</span>
           <input data-peer-url type="url" inputmode="url" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
+        </label>
+        <label data-combined-usb-peer-url-label style="display:none;flex-direction:column;font-size:0.9em;gap:4px;flex:1;min-width:230px;">Direct Peer URL
+          <input data-usb-peer-url type="url" inputmode="url" style="padding:7px;border:1px solid #bbb;border-radius:6px;width:100%;box-sizing:border-box;">
         </label>
       </div>
       <div data-usb-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eef6ff;color:#24527a;font-size:0.82em;line-height:1.35;">Direct / USB Ethernet mode uses normal Nodevision peer sync over a wired, Thunderbolt, USB tethering, or USB Ethernet network interface. If the adapter has no IPv4 address, Nodevision cannot discover the peer.</div>
+      <div data-combined-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#eefaf6;color:#245f4b;font-size:0.82em;line-height:1.35;">Wireless + Direct sync can use both peer URLs for the same trusted device. Keep the wireless/LAN URL and the wired, Thunderbolt, USB tethering, or USB Ethernet URL filled in to give sync two network paths.</div>
       <div data-offline-help style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f4f0ff;color:#4b367c;font-size:0.82em;line-height:1.35;">Offline Package mode exports signed sync bundles that can be moved by USB drive, external disk, SD card, or another trusted physical medium without using wireless networking.</div>
       <div data-usb-diagnostics style="display:none;margin:0 0 10px;padding:8px 10px;border-radius:6px;background:#f8fbff;border:1px solid #d6e6f7;color:#24425f;font-size:0.8em;line-height:1.35;"></div>
       <section data-wired-diagnostics-panel style="display:none;margin:0 0 10px;padding:9px;border:1px solid #cfdbea;border-radius:8px;background:#fbfdff;">
@@ -269,6 +274,7 @@ function persistSyncTransportSettings(settings = {}) {
 function syncTransportLabel(value) {
   const transport = normalizeSyncTransport(value);
   if (transport === "usb") return "Direct / USB Ethernet";
+  if (transport === "combined") return "Wireless + Direct";
   if (transport === "offline-package") return "Offline Package";
   return "Wireless / LAN";
 }
@@ -444,7 +450,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const peerListEl = panelElem.querySelector("[data-peer-list]");
   const syncTransportSelect = panelElem.querySelector("[data-sync-transport]");
   const peerUrlInput = panelElem.querySelector("[data-peer-url]");
+  const peerUrlLabelTextEl = panelElem.querySelector("[data-peer-url-label-text]");
+  const usbPeerUrlInput = panelElem.querySelector("[data-usb-peer-url]");
+  const combinedUsbPeerUrlLabelEl = panelElem.querySelector("[data-combined-usb-peer-url-label]");
   const usbHelpEl = panelElem.querySelector("[data-usb-help]");
+  const combinedHelpEl = panelElem.querySelector("[data-combined-help]");
   const offlineHelpEl = panelElem.querySelector("[data-offline-help]");
   const usbDiagnosticsEl = panelElem.querySelector("[data-usb-diagnostics]");
   const wiredDiagnosticsPanelEl = panelElem.querySelector("[data-wired-diagnostics-panel]");
@@ -539,15 +549,24 @@ export async function setupPanel(panelElem, panelVars = {}) {
     state.syncSettings.syncTransport = normalizeSyncTransport(state.syncSettings.syncTransport);
     const transport = state.syncSettings.syncTransport;
     if (syncTransportSelect && syncTransportSelect.value !== transport) syncTransportSelect.value = transport;
+    const combinedMode = transport === "combined";
+    if (peerUrlLabelTextEl) peerUrlLabelTextEl.textContent = combinedMode ? "Wireless Peer URL" : "Peer URL";
     if (peerUrlInput) {
-      peerUrlInput.value = getActivePeerUrl(state.syncSettings);
+      peerUrlInput.value = combinedMode ? String(state.syncSettings.wirelessPeerUrl || state.syncSettings.peerUrl || "").trim() : getActivePeerUrl(state.syncSettings);
       peerUrlInput.placeholder = transport === "offline-package" ? OFFLINE_PEER_URL_PLACEHOLDER : transport === "usb" ? USB_PEER_URL_PLACEHOLDER : WIRELESS_PEER_URL_PLACEHOLDER;
       peerUrlInput.disabled = state.busy || transport === "offline-package";
     }
+    if (combinedUsbPeerUrlLabelEl) combinedUsbPeerUrlLabelEl.style.display = combinedMode ? "flex" : "none";
+    if (usbPeerUrlInput) {
+      usbPeerUrlInput.value = String(state.syncSettings.usbPeerUrl || "").trim();
+      usbPeerUrlInput.placeholder = USB_PEER_URL_PLACEHOLDER;
+      usbPeerUrlInput.disabled = state.busy || !combinedMode;
+    }
     if (usbHelpEl) usbHelpEl.style.display = transport === "usb" ? "block" : "none";
+    if (combinedHelpEl) combinedHelpEl.style.display = combinedMode ? "block" : "none";
     if (offlineHelpEl) offlineHelpEl.style.display = transport === "offline-package" ? "block" : "none";
     if (usbDiagnosticsEl) {
-      const html = transport === "usb" ? renderUsbDiagnosticsHtml(state.status.usbNetworkDiagnostics) : "";
+      const html = (transport === "usb" || combinedMode) ? renderUsbDiagnosticsHtml(state.status.usbNetworkDiagnostics) : "";
       usbDiagnosticsEl.style.display = html ? "block" : "none";
       usbDiagnosticsEl.innerHTML = html;
     }
@@ -556,7 +575,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const renderWiredDiagnostics = () => {
     const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
-    const visible = transport === "usb";
+    const visible = transport === "usb" || transport === "combined";
     if (wiredDiagnosticsPanelEl) wiredDiagnosticsPanelEl.style.display = visible ? "block" : "none";
     if (!visible) return;
     const report = state.wiredDiagnosticsReport;
@@ -579,6 +598,11 @@ export async function setupPanel(panelElem, panelVars = {}) {
     persistSyncTransportSettings(state.syncSettings);
   };
 
+  const setActiveUsbPeerUrl = (value) => {
+    state.syncSettings.usbPeerUrl = String(value || "").trim();
+    persistSyncTransportSettings(state.syncSettings);
+  };
+
   const getSelectedPeer = () => {
     const deviceId = state.status.selectedPeerDeviceId;
     return (Array.isArray(state.status.discoveredPeers) ? state.status.discoveredPeers : []).find((peer) => peer?.deviceId === deviceId) || null;
@@ -593,8 +617,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
   };
 
   const ensureActivePeerUrlForSelectedPeer = (peer) => {
-    const existingPeerUrl = getActivePeerUrl(state.syncSettings);
-    if (existingPeerUrl) return existingPeerUrl;
+    const existingPeerUrls = getActivePeerUrls(state.syncSettings);
+    if (existingPeerUrls.length) return existingPeerUrls[0];
     const discoveredPeerUrl = autofillPeerUrlFromPeer(peer);
     if (discoveredPeerUrl) return discoveredPeerUrl;
     setError(errorEl, "Enter a " + syncTransportLabel(state.syncSettings.syncTransport) + " peer URL.");
@@ -631,7 +655,19 @@ export async function setupPanel(panelElem, panelVars = {}) {
   };
 
   const syncRunBody = ({ deviceId, scope, dryRun }) => {
-    const body = { deviceId, scope, peerUrl: getActivePeerUrl(state.syncSettings), syncTransport: state.syncSettings.syncTransport, dryRun: Boolean(dryRun), syncDirection: state.syncDirection, direction: state.syncDirection };
+    const peerUrls = getActivePeerUrls(state.syncSettings);
+    const body = {
+      deviceId,
+      scope,
+      peerUrl: peerUrls[0] || "",
+      peerUrls,
+      wirelessPeerUrl: String(state.syncSettings.wirelessPeerUrl || state.syncSettings.peerUrl || "").trim(),
+      usbPeerUrl: String(state.syncSettings.usbPeerUrl || "").trim(),
+      syncTransport: state.syncSettings.syncTransport,
+      dryRun: Boolean(dryRun),
+      syncDirection: state.syncDirection,
+      direction: state.syncDirection,
+    };
     const maxFileSizeBytes = getMaxFileSizeBytes();
     if (maxFileSizeBytes !== null) body.maxFileSizeBytes = maxFileSizeBytes;
     body.onFileError = state.pauseOnFileError ? "pause" : "fail";
@@ -681,9 +717,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const discoverable = state.status.discovery?.discoverable === true;
     const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
     const usbMode = transport === "usb";
+    const combinedMode = transport === "combined";
     const offlineMode = transport === "offline-package";
-    scanningBtn.textContent = offlineMode ? "Peer Scan Unused" : scanning ? "Stop Scanning" : (usbMode ? "Scan Direct Network" : "Scan for Devices");
-    discoverableBtn.textContent = offlineMode ? "Discoverability Unused" : discoverable ? "Stop Discoverability" : (usbMode ? "Make Discoverable on Direct Network" : "Make This Device Discoverable");
+    scanningBtn.textContent = offlineMode ? "Peer Scan Unused" : scanning ? "Stop Scanning" : (combinedMode ? "Scan Wireless + Direct" : usbMode ? "Scan Direct Network" : "Scan for Devices");
+    discoverableBtn.textContent = offlineMode ? "Discoverability Unused" : discoverable ? "Stop Discoverability" : (combinedMode ? "Make Discoverable on Both" : usbMode ? "Make Discoverable on Direct Network" : "Make This Device Discoverable");
     scanningBtn.disabled = state.busy || offlineMode;
     discoverableBtn.disabled = state.busy || offlineMode;
   };
@@ -881,7 +918,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   const setBusy = (busy, statusMessage = "") => {
     state.busy = Boolean(busy);
-    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, skipSameNameLocationSizeInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, receiverDropPathInput, pushPreviewBtn, pushPackageBtn, inboxRefreshBtn, inboxListEl, inboxPreviewBtn, inboxImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn, wiredDiagnosticsLocalBtn, wiredDiagnosticsPeerBtn, wiredDiagnosticsFullBtn, wiredDiagnosticsExportBtn].forEach((el) => { if (el) el.disabled = state.busy; });
+    [refreshBtn, scanningBtn, discoverableBtn, scopeSelect, syncDirectionSelect, syncTransportSelect, peerUrlInput, usbPeerUrlInput, maxFileSizeInput, pauseOnFileErrorInput, skipSameNameLocationSizeInput, syncDryBtn, syncApplyBtn, packageExportBtn, packageImportBtn, receiverDropPathInput, pushPreviewBtn, pushPackageBtn, inboxRefreshBtn, inboxListEl, inboxPreviewBtn, inboxImportBtn, foldersRefreshBtn, protectWritesEl, protectEnableBtn, protectDisableBtn, wiredDiagnosticsLocalBtn, wiredDiagnosticsPeerBtn, wiredDiagnosticsFullBtn, wiredDiagnosticsExportBtn].forEach((el) => { if (el) el.disabled = state.busy; });
     renderJob();
     renderProtection();
     renderTransportSettings();
@@ -920,6 +957,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
           enabled,
           syncTransport: state.syncSettings.syncTransport,
           peerUrl: getActivePeerUrl(state.syncSettings),
+          peerUrls: getActivePeerUrls(state.syncSettings),
+          wirelessPeerUrl: String(state.syncSettings.wirelessPeerUrl || state.syncSettings.peerUrl || "").trim(),
+          usbPeerUrl: String(state.syncSettings.usbPeerUrl || "").trim(),
         }),
       });
       await refreshStatus();
@@ -938,7 +978,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const runWiredDiagnostics = async (mode) => {
     setError(errorEl, "");
     const selectedMode = String(mode || "local");
-    const peerUrl = getActivePeerUrl(state.syncSettings);
+    const peerUrl = normalizeSyncTransport(state.syncSettings.syncTransport) === "combined"
+      ? String(state.syncSettings.usbPeerUrl || getActivePeerUrl(state.syncSettings)).trim()
+      : getActivePeerUrl(state.syncSettings);
     if ((selectedMode === "peer" || selectedMode === "full") && !peerUrl) {
       setError(errorEl, "Enter the peer URL for wired diagnostics.");
       return;
@@ -1486,6 +1528,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
   });
   peerUrlInput?.addEventListener("input", () => { setActivePeerUrl(peerUrlInput.value); });
   peerUrlInput?.addEventListener("change", () => { setActivePeerUrl(peerUrlInput.value); renderTransportSettings(); });
+  usbPeerUrlInput?.addEventListener("input", () => { setActiveUsbPeerUrl(usbPeerUrlInput.value); });
+  usbPeerUrlInput?.addEventListener("change", () => { setActiveUsbPeerUrl(usbPeerUrlInput.value); renderTransportSettings(); });
   wiredDiagnosticsLocalBtn?.addEventListener("click", () => { runWiredDiagnostics("local"); });
   wiredDiagnosticsPeerBtn?.addEventListener("click", () => { runWiredDiagnostics("peer"); });
   wiredDiagnosticsFullBtn?.addEventListener("click", () => { runWiredDiagnostics("full"); });
@@ -1560,12 +1604,16 @@ export async function setupPanel(panelElem, panelVars = {}) {
   });
   refreshBtn?.addEventListener("click", () => Promise.all([loadProtection(), loadScopes(), loadFolders(), refreshStatus()]).catch((err) => setError(errorEl, err?.message || "Refresh failed")));
   scanningBtn?.addEventListener("click", () => {
-    const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
-    runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : (usbMode ? "Starting direct network scan" : "Starting scan"));
+    const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
+    const usbMode = transport === "usb";
+    const combinedMode = transport === "combined";
+    runToggle("/api/sync/discovery/scanning", !(state.status.discovery?.scanning === true), state.status.discovery?.scanning ? "Stopping scan" : (combinedMode ? "Starting wireless + direct scan" : usbMode ? "Starting direct network scan" : "Starting scan"));
   });
   discoverableBtn?.addEventListener("click", () => {
-    const usbMode = normalizeSyncTransport(state.syncSettings.syncTransport) === "usb";
-    runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : (usbMode ? "Enabling direct network discoverability" : "Enabling discoverability"));
+    const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
+    const usbMode = transport === "usb";
+    const combinedMode = transport === "combined";
+    runToggle("/api/sync/discovery/discoverable", !(state.status.discovery?.discoverable === true), state.status.discovery?.discoverable ? "Disabling discoverability" : (combinedMode ? "Enabling wireless + direct discoverability" : usbMode ? "Enabling direct network discoverability" : "Enabling discoverability"));
   });
   protectWritesEl?.addEventListener("change", () => toggleProtection(protectWritesEl.checked));
   protectEnableBtn?.addEventListener("click", () => toggleProtection(true));

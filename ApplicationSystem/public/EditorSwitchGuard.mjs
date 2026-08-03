@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/EditorSwitchGuard.mjs
-// Shared unsaved-change guard for switching the active file from file/graph managers.
+// This module provides a shared unsaved-change guard for switching the active file from File Manager, Graph Manager, and related navigation surfaces.
 
 import saveFile from "/ToolbarCallbacks/file/saveFile.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
@@ -222,13 +222,21 @@ export function guardFileSwitch(nextPath, proceed) {
 export function requestNodevisionFileSelection(filePath, options = {}) {
   const nextPath = normalizePath(filePath);
   if (!nextPath) return;
+  const selectedIsDirectory = Boolean(options.isDirectory);
   guardFileSwitch(nextPath, () => {
     window.__nvFileSwitchGuardBypass = true;
+    window.__nvPendingSelectedFileMetadata = { path: nextPath, isDirectory: selectedIsDirectory };
     try {
       window.selectedFilePath = nextPath;
     } finally {
       window.__nvFileSwitchGuardBypass = false;
+      if (window.__nvPendingSelectedFileMetadata?.path === nextPath) {
+        window.__nvPendingSelectedFileMetadata = null;
+      }
     }
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.selectedFile = nextPath;
+    window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
     options.onSelected?.(nextPath);
   });
 }

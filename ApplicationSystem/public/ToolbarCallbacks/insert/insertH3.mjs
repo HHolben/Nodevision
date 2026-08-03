@@ -1,8 +1,11 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertH3.mjs
 // This file defines browser-side insert H3 logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { insertMarkdownHeadingIfActive } from "./utils/markdownInsertHelpers.mjs";
 import { insertBlock } from "./utils/insertHelpers.mjs";
 
 export default function insertH3() {
+  if (insertMarkdownHeadingIfActive(3)) return;
+
   const panel = document.querySelector(
     ".editor-panel.active, .active-editor, [data-editor-active='true'], #editor-root"
   );

@@ -1,13 +1,16 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertH5.mjs
 // This file defines browser-side insert H5 logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { insertMarkdownHeadingIfActive } from "./utils/markdownInsertHelpers.mjs";
 import { insertBlock } from "./utils/insertHelpers.mjs";
 
 export default function insertH5() {
+  if (insertMarkdownHeadingIfActive(5)) return;
+
   const panel = document.querySelector(
     ".editor-panel.active, .active-editor, [data-editor-active='true'], #editor-root"
   );
   if (!panel) {
-    console.warn("insertH6: No active editor panel found.");
+    console.warn("insertH5: No active editor panel found.");
     return;
   }
 

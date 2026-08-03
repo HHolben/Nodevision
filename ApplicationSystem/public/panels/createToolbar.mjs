@@ -5,10 +5,14 @@ import { createPanel } from '/panels/panelManager.mjs';
 import { dockPanel } from '/panels/panelControls.mjs';
 import { loadCallback } from "/callbackLoader.mjs";
 import { setStatus } from "./../StatusBar.mjs";
+import { getSnapshot as getEditorAttentionSnapshot, subscribe as subscribeEditorAttention } from "../EditorAttentionState.mjs";
+import { evaluateToolbarItemState } from "./toolbarConditions.mjs";
+import { ensureSingleContextualToolbarRender } from "./contextualToolbarRegistry.mjs";
 
 
 
 let currentSubToolbarHeading = null;
+let toolbarAttentionUnsubscribe = null;
 let subToolbarContainer = null;
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
@@ -232,58 +236,43 @@ if (!window.__nvPanelHeaderLayoutBound) {
 
 
 // === Helper: Check toolbar item conditions ===
-function checkToolbarConditions(item, state) {
-  // === Handle 'modes' property ===
-  if (item.modes) {
-    const allowedModes = Array.isArray(item.modes) ? item.modes : [item.modes];
-    if (!allowedModes.includes(state.currentMode)) {
-      return false;
-    }
-  }
-
-  // === Handle 'conditions' property as before ===
-  if (!item.conditions) return true;
-
-  if (item.conditions.activePanelType) {
-    const allowed = Array.isArray(item.conditions.activePanelType)
-      ? item.conditions.activePanelType
-      : [item.conditions.activePanelType];
-    if (!allowed.includes(state.activePanelType)) return false;
-  }
-
-  if (item.conditions.fileIsDirty !== undefined) {
-    if (item.conditions.fileIsDirty !== state.fileIsDirty) return false;
-  }
-
-  if (item.conditions.requiresFile && !state.selectedFile) return false;
-
-  if (item.conditions.activeFileIsIno !== undefined) {
-    if (isToolbarActiveFileIno(state) !== item.conditions.activeFileIsIno) return false;
-  }
-
-  if (item.conditions.activeFileIsHtml !== undefined) {
-    if (isToolbarActiveFileHtml(state) !== item.conditions.activeFileIsHtml) return false;
-  }
-
-  if (item.conditions.activeFileCanConvertToEpub !== undefined) {
-    if (canToolbarActiveFileConvertToEpub(state) !== item.conditions.activeFileCanConvertToEpub) return false;
-  }
-
-  // Generic condition support: any additional condition key maps to NodevisionState key.
-  // Allows domain-specific toolbar gating (e.g., midiHasSelection, midiSelectedType).
-  const reserved = new Set(["activePanelType", "fileIsDirty", "requiresFile", "activeFileIsIno", "activeFileIsHtml", "activeFileCanConvertToEpub"]);
-  for (const [key, expected] of Object.entries(item.conditions)) {
-    if (reserved.has(key)) continue;
-    const actual = state[key];
-    if (Array.isArray(expected)) {
-      if (!expected.includes(actual)) return false;
-    } else if (actual !== expected) {
-      return false;
-    }
-  }
-
-  return true;
+function getToolbarItemState(item, state = window.NodevisionState || {}) {
+  const enhancedState = {
+    ...state,
+    activeFileIsIno: isToolbarActiveFileIno(state),
+    activeFileIsHtml: isToolbarActiveFileHtml(state),
+    activeFileCanConvertToEpub: canToolbarActiveFileConvertToEpub(state),
+    requiresFile: Boolean(state.selectedFile || state.activeEditorFilePath || resolveToolbarActiveFilePath(state)),
+  };
+  return evaluateToolbarItemState(item, {
+    state: enhancedState,
+    attentionSnapshot: getEditorAttentionSnapshot(),
+    conditionResolvers: window.NodevisionToolbarConditions || {},
+  });
 }
+
+function checkToolbarConditions(item, state = window.NodevisionState || {}) {
+  return getToolbarItemState(item, state).visible;
+}
+
+function applyToolbarButtonState(button, itemState) {
+  if (!button || !itemState) return;
+  const disabled = itemState.enabled === false;
+  button.disabled = disabled;
+  button.setAttribute("aria-disabled", String(disabled));
+  button.classList.toggle("nv-toolbar-button-disabled", disabled);
+  if (disabled && itemState.disabledReason) {
+    const baseTitle = button.dataset.tooltipText || button.title || "";
+    const nextTitle = baseTitle.includes(itemState.disabledReason)
+      ? baseTitle
+      : `${baseTitle}${baseTitle ? "\n" : ""}${itemState.disabledReason}`;
+    button.title = nextTitle;
+    button.setAttribute("aria-description", itemState.disabledReason);
+  } else {
+    button.removeAttribute("aria-description");
+  }
+}
+
 
 
 function toolbarChildrenForHeading(heading) {
@@ -743,22 +732,20 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
       ? window.NodevisionState.currentMode
       : currentMode;
 
-  // ✅ Apply mode filtering before building toolbar
+  // Apply declarative toolbar visibility before building.
   const defaultToolbar = toolbarDataCache["defaultToolbar.json"] || [];
-  const filteredToolbar = defaultToolbar.filter(item => {
-    // Only include items that match currentMode (or have no mode)
-// Support both "mode" and "modes"
-if (item.modes) {
-  const allowed = Array.isArray(item.modes) ? item.modes : [item.modes];
-  return allowed.includes(effectiveMode);
-}
-if (item.mode) return item.mode === effectiveMode;
-return true;
-  });
+  const state = { ...(window.NodevisionState || {}), currentMode: effectiveMode };
+  const filteredToolbar = defaultToolbar.filter(item => getToolbarItemState(item, state).visible);
 
   // Build main toolbar from filtered items
   buildToolbar(toolbar, prepareMainToolbarItems(filteredToolbar));
   ensureGlobalToolbarHeightObserver();
+  if (!toolbarAttentionUnsubscribe) {
+    toolbarAttentionUnsubscribe = subscribeEditorAttention(() => {
+      updateToolbarState();
+      if (currentSubToolbarHeading) showSubToolbar(currentSubToolbarHeading, { force: true, toggle: false });
+    }, { immediate: false });
+  }
 
   setStatus("Toolbar ready", `Mode: ${effectiveMode}`);
 
@@ -773,8 +760,8 @@ function buildToolbar(container, items, parentHeading = null) {
 
   items.forEach(item => {
     if (item.parentHeading && !parentHeading) return;
-    const enabled = checkToolbarConditions(item, state);
-    if (!enabled) return;
+    const itemState = getToolbarItemState(item, state);
+    if (!itemState.visible) return;
     const menuHeading = toolbarLogicalHeading(item);
 
     // Inline custom content widget (e.g., search bar)
@@ -802,6 +789,7 @@ function buildToolbar(container, items, parentHeading = null) {
     btn.textContent = item.heading;
     applyToolbarTooltip(btn, item, { aria: true });
     applyToolbarTooltip(btnWrapper, item);
+    applyToolbarButtonState(btn, itemState);
 
     // Dropdown entries are icon + text; selected main toolbar items can opt in.
     if (isDropdownContainer || item.showIconOnMainToolbar === true || isUserToolbarItem(item)) {
@@ -831,6 +819,7 @@ function buildToolbar(container, items, parentHeading = null) {
     // Click
     btn.addEventListener("click", e => {
       e.stopPropagation();
+      if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
 
       // Close other dropdowns
       hideUnrelatedDropdowns(dropdown);
@@ -938,6 +927,15 @@ function buildDropdownFromItem(item) {
 
 
 
+function toolbarSubItemInstanceKey(item = {}, index = 0) {
+  return [
+    item.parentHeading || item.toolbarHeading || currentSubToolbarHeading || "sub-toolbar",
+    item.heading || item.label || item.shortLabel || "item",
+    item.callbackKey || item.script || item.panelTemplateId || item.panelTemplate || item.ToolbarCategory || "action",
+    index,
+  ].map(value => String(value || "").trim()).join("::");
+}
+
 // === Build sub-toolbar ===
 function buildSubToolbar(items, container = subToolbarContainer) {
   if (!container) return;
@@ -949,13 +947,15 @@ function buildSubToolbar(items, container = subToolbarContainer) {
     display: "flex",
   });
 
-  items.forEach(item => {
-    if (!checkToolbarConditions(item, state)) return;
+  items.forEach((item, index) => {
+    const itemState = getToolbarItemState(item, state);
+    if (!itemState.visible) return;
 
     const hasWidgetContent = typeof item?.content === "string" && item.content.trim() !== "";
     if (hasWidgetContent || item.script) {
       const host = document.createElement("div");
       host.className = "nv-subtoolbar-widget";
+      host.dataset.nvContextualToolbarInstance = toolbarSubItemInstanceKey(item, index);
       host.classList.add("nv-subtoolbar-widget--compact-script");
       applyToolbarTooltip(host, item);
       if (hasWidgetContent) {
@@ -970,7 +970,9 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 
     const btn = document.createElement("button");
     btn.className = "nv-subtoolbar-icon-btn";
+    btn.dataset.nvContextualToolbarInstance = toolbarSubItemInstanceKey(item, index);
     applyToolbarTooltip(btn, item, { aria: true });
+    applyToolbarButtonState(btn, itemState);
 
     // Sub-toolbar is icon-only.
     const iconEl = createToolbarIconElement(item, { allowFallback: true });
@@ -979,6 +981,7 @@ function buildSubToolbar(items, container = subToolbarContainer) {
 
     btn.addEventListener("click", e => {
       e.stopPropagation();
+      if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
 
       if (item.panelTemplateId || item.panelTemplate) {
         const templateId = item.panelTemplateId || item.panelTemplate;
@@ -1038,7 +1041,7 @@ function showSubToolbar(panelHeading, options = {}) {
     return;
   }
 
-  buildSubToolbar(items);
+  ensureSingleContextualToolbarRender(subToolbarContainer, panelHeading, () => buildSubToolbar(items), { force: true });
   currentSubToolbarHeading = panelHeading;
 }
 
@@ -1070,15 +1073,8 @@ setStatus("Mode", currentMode);
 
   rebuildPrebuiltDropdowns();
 
-  // ✅ Filter based on mode
-  const filteredToolbar = defaultToolbar.filter(item => {
-if (item.modes) {
-  const allowed = Array.isArray(item.modes) ? item.modes : [item.modes];
-  return allowed.includes(currentMode);
-}
-if (item.mode) return item.mode === currentMode;
-return true;
-  });
+  // Filter with legacy mode checks and contextual attention predicates.
+  const filteredToolbar = defaultToolbar.filter(item => getToolbarItemState(item, { ...(window.NodevisionState || {}), currentMode }).visible);
 
   // Rebuild toolbar using filtered items
   buildToolbar(toolbar, prepareMainToolbarItems(filteredToolbar));

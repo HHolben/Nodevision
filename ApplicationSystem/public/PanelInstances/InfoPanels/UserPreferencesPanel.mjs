@@ -1,11 +1,14 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/UserPreferencesPanel.mjs
-// Defines the browser-side User Preferences panel.
+// This module defines the browser-side User Preferences panel and validates editor attention settings before they are displayed or stored.
+
+import { EDITOR_ATTENTION_PREFERENCE_FIELDS, editorAttentionPreferenceDefaults, validateEditorAttentionSettings } from "../../EditorAttentionState.mjs";
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 const STORAGE_KEY = "nodevision.userPreferences";
 
 const DEFAULT_PREFERENCES = Object.freeze({
+  ...editorAttentionPreferenceDefaults(),
   theme: "system",
   interfaceDensity: "comfortable",
   accentColor: "#0a84ff",
@@ -48,6 +51,17 @@ const DEFAULT_PREFERENCES = Object.freeze({
   syncFrequency: "manual",
 });
 
+
+const EDITOR_ERGONOMICS_FIELDS = EDITOR_ATTENTION_PREFERENCE_FIELDS.map((field) => ({
+  key: field.key,
+  label: field.label,
+  type: field.type,
+  help: field.help,
+  options: Array.isArray(field.options)
+    ? field.options.map((option) => Array.isArray(option) ? option : [option.value, option.label])
+    : undefined,
+}));
+
 const SECTIONS = Object.freeze([
   {
     title: "Interface",
@@ -78,6 +92,10 @@ const SECTIONS = Object.freeze([
       { key: "handwritingExperimentalStrokeRecognitionEnabled", label: "Experimental stroke recognition", type: "checkbox" },
       { key: "handwritingStrokeContextRanking", label: "Stroke context ranking", type: "checkbox" },
     ],
+  },
+  {
+    title: "Editor Ergonomics",
+    fields: EDITOR_ERGONOMICS_FIELDS,
   },
   {
     title: "Files And Graph",
@@ -138,9 +156,11 @@ function isPlainObject(value) {
 function readPreferences() {
   try {
     const stored = JSON.parse(window.localStorage?.getItem(STORAGE_KEY) || "{}");
+    const safeStored = isPlainObject(stored) ? stored : {};
     return {
       ...DEFAULT_PREFERENCES,
-      ...(isPlainObject(stored) ? stored : {}),
+      ...safeStored,
+      ...validateEditorAttentionSettings(safeStored),
     };
   } catch (err) {
     console.warn("Unable to read user preferences:", err);
@@ -149,7 +169,8 @@ function readPreferences() {
 }
 
 function writePreferences(preferences) {
-  const normalized = { ...DEFAULT_PREFERENCES, ...(isPlainObject(preferences) ? preferences : {}) };
+  const safePreferences = isPlainObject(preferences) ? preferences : {};
+  const normalized = { ...DEFAULT_PREFERENCES, ...safePreferences, ...validateEditorAttentionSettings(safePreferences) };
   try {
     window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(normalized, null, 2));
   } catch (err) {
@@ -200,6 +221,7 @@ function renderControl(field, preferences) {
       <label class="nv-user-prefs__check">
         <input ${baseAttrs} type="checkbox"${checked} />
         <span>${escapeHtml(field.label)}</span>
+        ${field.help ? `<small class="nv-user-prefs__help">${escapeHtml(field.help)}</small>` : ""}
       </label>
     `;
   }
@@ -211,6 +233,7 @@ function renderControl(field, preferences) {
         <select ${baseAttrs} style="${controlStyle}padding:7px 8px;">
           ${optionMarkup(field.options, value)}
         </select>
+        ${field.help ? `<small class="nv-user-prefs__help">${escapeHtml(field.help)}</small>` : ""}
       </label>
     `;
   }
@@ -220,6 +243,7 @@ function renderControl(field, preferences) {
       <label class="nv-user-prefs__field nv-user-prefs__color-field">
         <span>${escapeHtml(field.label)}</span>
         <input ${baseAttrs} type="color" value="${escapeHtml(value)}" style="width:44px;height:32px;border:1px solid #aaa;border-radius:4px;background:#fff;padding:2px;" />
+        ${field.help ? `<small class="nv-user-prefs__help">${escapeHtml(field.help)}</small>` : ""}
       </label>
     `;
   }
@@ -230,6 +254,7 @@ function renderControl(field, preferences) {
         <span>${escapeHtml(field.label)}</span>
         <input ${baseAttrs} type="range" min="${escapeHtml(field.min)}" max="${escapeHtml(field.max)}" step="${escapeHtml(field.step)}" value="${escapeHtml(value)}" />
         <output data-range-output-for="${escapeHtml(field.key)}">${escapeHtml(formatRangeValue(value, field.suffix || ""))}</output>
+        ${field.help ? `<small class="nv-user-prefs__help">${escapeHtml(field.help)}</small>` : ""}
       </label>
     `;
   }
@@ -239,6 +264,7 @@ function renderControl(field, preferences) {
       <span>${escapeHtml(field.label)}</span>
       <input ${baseAttrs} type="number" min="${escapeHtml(field.min ?? "")}" max="${escapeHtml(field.max ?? "")}" step="${escapeHtml(field.step ?? "1")}" value="${escapeHtml(value)}" style="${controlStyle}padding:7px 8px;" />
       ${field.suffix ? `<small>${escapeHtml(field.suffix)}</small>` : ""}
+      ${field.help ? `<small class="nv-user-prefs__help">${escapeHtml(field.help)}</small>` : ""}
     </label>
   `;
 }
@@ -347,6 +373,13 @@ function renderPanel(preferences) {
       .nv-user-prefs__field > span,
       .nv-user-prefs__check > span {
         overflow-wrap:anywhere;
+      }
+      .nv-user-prefs__help {
+        display:block;
+        grid-column:1 / -1;
+        color:#58646f;
+        font-size:0.78rem;
+        line-height:1.25;
       }
       .nv-user-prefs__check {
         min-height:34px;

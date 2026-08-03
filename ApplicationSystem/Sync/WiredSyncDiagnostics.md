@@ -1,10 +1,13 @@
+<!-- Nodevision/ApplicationSystem/Sync/WiredSyncDiagnostics.md -->
+<!-- This document inventories the wired and direct-network sync implementation and describes a safe diagnostic workflow that avoids changing sync state or transferring private Notebook contents. -->
+
 # Wired Sync Diagnostics
 
 This note inventories the current wired/direct-network sync implementation and documents the new safe diagnostic workflow. The diagnostics are read-only: they do not run sync, transfer Notebook file contents, apply manifests, import packages, edit trusted peers, disable the firewall, or change NetworkManager connections.
 
 ## Existing Architecture
 
-Wired mode is selected in the Sync Panel at `ApplicationSystem/public/PanelInstances/InfoPanels/SyncPanel.mjs`. The visible label is `Direct / USB Ethernet`, and the normalized transport value is `usb`.
+Wired mode is selected in the Sync Panel at `ApplicationSystem/public/PanelInstances/InfoPanels/SyncPanel.mjs`. The visible label is `Direct / USB Ethernet`, and the normalized transport value is `usb`. The panel also supports `Wireless + Direct`, normalized as `combined`, which sends both the wireless/LAN peer URL and the wired/direct peer URL for the same trusted device.
 
 The UI stores transport state in browser local storage:
 
@@ -13,7 +16,7 @@ The UI stores transport state in browser local storage:
 - `nodevision.sync.wirelessPeerUrl`
 - `nodevision.sync.usbPeerUrl`
 
-Transport normalization lives in `ApplicationSystem/public/SyncTransportSettings.mjs` and `ApplicationSystem/server/routes/syncPanelRoutes.mjs`. Values such as `usb`, `usb-network`, `usb ethernet`, `direct`, and `direct network` normalize to `usb`.
+Transport normalization lives in `ApplicationSystem/public/SyncTransportSettings.mjs` and `ApplicationSystem/server/routes/syncPanelRoutes.mjs`. Values such as `usb`, `usb-network`, `usb ethernet`, `direct`, and `direct network` normalize to `usb`. Values such as `combined`, `hybrid`, `wifi+ethernet`, and `wireless + direct` normalize to `combined`.
 
 Peer discovery is implemented by `ApplicationSystem/Sync/PeerDiscovery.mjs`. It uses UDP over IPv4, not mDNS. The defaults are:
 
@@ -26,7 +29,7 @@ Peer discovery is implemented by `ApplicationSystem/Sync/PeerDiscovery.mjs`. It 
 
 Direct/USB mode also probes explicit and inferred HTTP peer URLs from `ApplicationSystem/server/routes/syncPanelRoutes.mjs`. Candidate hosts come from non-wireless local IPv4 interfaces, ARP entries, common USB/direct addresses, and any manually entered peer URL. Probes call `GET /api/peer/status`.
 
-Actual wired sync uses the same `HttpSyncTransport` class as LAN sync: `ApplicationSystem/Sync/SyncTransport.mjs`. USB Network is an alias for direct HTTP peer sync, not a separate transport implementation. `HttpSyncTransport` calls:
+Actual wired sync uses the same `HttpSyncTransport` class as LAN sync: `ApplicationSystem/Sync/SyncTransport.mjs`. USB Network is an alias for direct HTTP peer sync, not a separate transport implementation. Combined mode uses `MultiEndpointHttpSyncTransport` from the same module after the server probes the requested endpoints and verifies they identify as the selected peer. Read operations can use the first successful endpoint, while write operations are distributed across the configured endpoints rather than duplicated. Combined mode does not stripe bytes from a single file across both links; it combines available paths at the sync-operation level. `HttpSyncTransport` calls:
 
 - `GET /api/peer/status`
 - `POST /api/peer/scope/manifest`
@@ -46,7 +49,7 @@ Current sync discovery depends on:
 - mDNS: no current Nodevision sync dependency found.
 - UDP broadcast/multicast: yes, via `PeerDiscovery.mjs`.
 - Subnet probing: partially, for direct/USB HTTP status probes derived from non-wireless IPv4 interfaces and common direct-link hosts.
-- Configured peer URL: yes, required for strict direct/USB sync requests.
+- Configured peer URL: yes, required for strict direct/USB sync requests. Combined mode can accept `peerUrls[]`, `wirelessPeerUrl`, and `usbPeerUrl`; it works best when both wireless and direct URLs are filled in.
 - IPv4 link-local: supported as an address class; direct cable setups without DHCP commonly need IPv4 link-local or static IPv4 on both laptops.
 - IPv6 link-local: detected by diagnostics; existing peer URL helpers have limited support because IPv6 link-local URLs need a zone identifier.
 - NetworkManager metadata: not required by code; Fedora commands are documented only as optional operator diagnostics.

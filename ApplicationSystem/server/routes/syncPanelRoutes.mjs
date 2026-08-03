@@ -25,6 +25,7 @@ import {
 import { loadSyncProtection, saveSyncProtection } from "../../Sync/SyncProtection.mjs";
 import { runFullDiagnostics, runLocalDiagnostics, runPeerDiagnostics } from "../../Sync/WiredSyncDiagnostics.mjs";
 import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
+import { createMultiEndpointHttpSyncTransport } from "../../Sync/SyncTransport.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
 import {
   startPeerDiscoveryListener,
@@ -232,7 +233,11 @@ function buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl = "", options =
       // ignore invalid preferred peer URL
     }
   };
-  addUrl(preferredPeerUrl);
+  const preferredPeerUrls = Array.isArray(preferredPeerUrl) ? preferredPeerUrl : [preferredPeerUrl];
+  for (const url of preferredPeerUrls) addUrl(url);
+  if (Array.isArray(options?.preferredPeerUrls)) {
+    for (const url of options.preferredPeerUrls) addUrl(url);
+  }
   if (strictPreferredPeerUrl) return candidates;
   if (!address || !isValidPort(port)) return candidates;
   const add = (candidateAddress) => {
@@ -301,13 +306,75 @@ async function runScopeSyncWithPeerUrlFallback({
   syncDirection = "sync",
   syncRunnerOptions = null,
   preferredPeerUrl = "",
+  preferredPeerUrls = null,
   strictPreferredPeerUrl = false,
+  useCombinedTransport = false,
 } = {}) {
-  const candidates = buildPeerUrlCandidates(discoveredPeer, preferredPeerUrl, { strictPreferredPeerUrl });
+  const requestedPreferredPeerUrls = Array.isArray(preferredPeerUrls) && preferredPeerUrls.length ? preferredPeerUrls : preferredPeerUrl;
+  const candidates = buildPeerUrlCandidates(discoveredPeer, requestedPreferredPeerUrls, { strictPreferredPeerUrl });
   const expectedDeviceId = String(discoveredPeer?.deviceId ?? "").trim();
   const attemptedPeerUrls = [];
   const normalizedSyncDirection = normalizeSyncDirection(syncDirection);
   let lastNetworkError = null;
+
+  if (useCombinedTransport) {
+    const reachablePeerUrls = [];
+    let peerCapabilities = null;
+    for (const peerUrl of candidates) {
+      attemptedPeerUrls.push(peerUrl);
+      const probe = await probePeerCandidateUrl(peerUrl, { expectedDeviceId });
+      if (!probe.ok) {
+        if (probe.reason === "network_error") {
+          const networkError = new Error(`Unable to reach peer at ${peerUrl}: ${probe.error?.message || "network request failed"}`);
+          networkError.name = "PeerSyncNetworkError";
+          networkError.peerUrl = peerUrl;
+          networkError.endpointPath = "/api/peer/status";
+          networkError.cause = probe.error;
+          lastNetworkError = networkError;
+        }
+        continue;
+      }
+      try {
+        peerCapabilities = await enforcePeerSyncDirectionCapabilities({ peerUrl, syncDirection: normalizedSyncDirection });
+        if (!reachablePeerUrls.includes(peerUrl)) reachablePeerUrls.push(peerUrl);
+      } catch (err) {
+        throw attachAttemptedPeerUrls(err, attemptedPeerUrls);
+      }
+    }
+
+    if (reachablePeerUrls.length) {
+      const runnerOptions = syncRunnerOptions && typeof syncRunnerOptions === "object" ? { ...syncRunnerOptions } : {};
+      if (!runnerOptions.transport) {
+        runnerOptions.transport = createMultiEndpointHttpSyncTransport({ peerUrls: reachablePeerUrls, runtimeRoot });
+      }
+      const sync = await syncRunner({
+        peerUrl: reachablePeerUrls[0],
+        peerUrls: reachablePeerUrls,
+        scope,
+        runtimeRoot,
+        dryRun,
+        ...runnerOptions,
+        syncDirection: normalizedSyncDirection,
+      });
+      return {
+        sync,
+        resolvedPeerUrl: reachablePeerUrls[0],
+        resolvedPeerUrls: [...reachablePeerUrls],
+        attemptedPeerUrls: [...new Set(attemptedPeerUrls)],
+        peerCapabilities,
+        syncDirection: normalizedSyncDirection,
+      };
+    }
+
+    if (lastNetworkError) {
+      throw attachAttemptedPeerUrls(lastNetworkError, attemptedPeerUrls);
+    }
+
+    const combinedError = new Error(`Unable to reach peer at ${candidates[0] || "unknown peer URL"}: no combined endpoint identified the selected peer`);
+    combinedError.name = "PeerSyncNetworkError";
+    combinedError.peerUrl = candidates[0] || "";
+    throw attachAttemptedPeerUrls(combinedError, attemptedPeerUrls);
+  }
 
   for (const peerUrl of candidates) {
     attemptedPeerUrls.push(peerUrl);
@@ -512,12 +579,18 @@ function parseSyncTransport(body) {
     : "wireless";
   const text = String(raw || "wireless").trim().toLowerCase();
   if (text === "usb" || text === "usb-cable" || text === "usb cable" || text === "usb-network" || text === "usb network" || text === "usb-ethernet" || text === "usb ethernet" || text === "direct" || text === "direct-network" || text === "direct network" || text === "direct / usb ethernet") return "usb";
+  if (text === "combined" || text === "hybrid" || text === "wifi+ethernet" || text === "wifi + ethernet" || text === "wireless+direct" || text === "wireless + direct" || text === "wireless+usb" || text === "wireless + usb" || text === "lan+usb" || text === "lan + usb") return "combined";
   if (text === "offline" || text === "offline-package" || text === "offline package" || text === "package") return "offline-package";
   return "wireless";
 }
 
 function syncTransportRequiresExplicitPeerUrl(syncTransport) {
   return parseSyncTransport({ syncTransport }) === "usb";
+}
+
+function syncTransportUsesUsbCandidates(syncTransport) {
+  const transport = parseSyncTransport({ syncTransport });
+  return transport === "usb" || transport === "combined";
 }
 
 function shouldRecoverPeerEndpointForTransport(syncTransport) {
@@ -544,6 +617,27 @@ function normalizeUsbDiscoveryPort(value) {
 function addParsedPeerUrlOrigin(targets, value) {
   const origin = parsePeerUrlOrigin(value);
   if (origin && !targets.includes(origin)) targets.push(origin);
+}
+
+function getRequestedPeerUrlsFromBody(body, syncTransport = parseSyncTransport(body)) {
+  const urls = [];
+  const add = (value) => addParsedPeerUrlOrigin(urls, value);
+  if (Array.isArray(body?.peerUrls)) {
+    for (const peerUrl of body.peerUrls) add(peerUrl);
+  }
+  const transport = parseSyncTransport({ syncTransport });
+  if (transport === "combined") {
+    add(body?.wirelessPeerUrl);
+    add(body?.peerUrl);
+    add(body?.usbPeerUrl);
+  } else if (transport === "usb") {
+    add(body?.peerUrl);
+    add(body?.usbPeerUrl);
+  } else {
+    add(body?.peerUrl);
+    add(body?.wirelessPeerUrl);
+  }
+  return urls;
 }
 
 function parseIpv4Octets(address) {
@@ -643,7 +737,8 @@ function getUsbDiscoveryPorts(body, ctx = {}) {
     const port = normalizeUsbDiscoveryPort(value);
     if (port && !ports.includes(port)) ports.push(port);
   };
-  for (const value of [body?.peerUrl, body?.usbPeerUrl]) {
+  const configuredPeerUrls = Array.isArray(body?.peerUrls) ? body.peerUrls : [];
+  for (const value of [body?.peerUrl, body?.wirelessPeerUrl, body?.usbPeerUrl, ...configuredPeerUrls]) {
     try { addPort(new URL(String(value || "")).port); } catch {}
   }
   addPort(ctx?.port);
@@ -660,7 +755,11 @@ function getUsbPeerDiscoveryCandidateUrls(body, ctx = {}) {
   }
 
   const urls = [];
+  if (Array.isArray(body?.peerUrls)) {
+    for (const peerUrl of body.peerUrls) addParsedPeerUrlOrigin(urls, peerUrl);
+  }
   addParsedPeerUrlOrigin(urls, body?.peerUrl);
+  addParsedPeerUrlOrigin(urls, body?.wirelessPeerUrl);
   addParsedPeerUrlOrigin(urls, body?.usbPeerUrl);
 
   const hosts = getLocalUsbCandidateHosts(ctx);
@@ -694,9 +793,9 @@ async function discoverPeersFromUsbCandidates(state, body, ctx) {
 function getDiscoveryOptionsFromRequestBody(body, ctx = {}) {
   const syncTransport = parseSyncTransport(body);
   const options = { syncTransport };
-  if (syncTransportRequiresExplicitPeerUrl(syncTransport)) {
+  if (syncTransportUsesUsbCandidates(syncTransport)) {
     const targets = getLocalUsbDiscoveryTargetAddresses(ctx);
-    const peerUrl = parsePeerUrlOrigin(body?.peerUrl || body?.usbPeerUrl || "");
+    const peerUrl = parsePeerUrlOrigin(body?.usbPeerUrl || body?.peerUrl || "");
     if (peerUrl) {
       try {
         const parsed = new URL(peerUrl);
@@ -1509,7 +1608,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       if (enabled) {
         ensureListener(state, ctx);
         const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body, ctx);
-        if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
+        if (syncTransportUsesUsbCandidates(discoveryOptions.syncTransport)) {
           await discoverPeersFromUsbCandidates(state, req.body, ctx);
         }
       } else {
@@ -1535,7 +1634,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       if (enabled) {
         const discoveryOptions = getDiscoveryOptionsFromRequestBody(req.body, ctx);
         ensureBroadcaster(state, ctx, discoveryOptions);
-        if (syncTransportRequiresExplicitPeerUrl(discoveryOptions.syncTransport)) {
+        if (syncTransportUsesUsbCandidates(discoveryOptions.syncTransport)) {
           await discoverPeersFromUsbCandidates(state, req.body, ctx);
         }
       } else {
@@ -1624,8 +1723,6 @@ export function registerSyncPanelRoutes(app, ctx) {
     }
   });
 
-  const getRequestedPeerUrl = (body) => parsePeerUrlOrigin(body?.peerUrl || body?.usbPeerUrl || "");
-
   app.post("/api/sync/preflight", async (req, res) => {
     if (!requireSession(req, res)) return;
 
@@ -1683,8 +1780,9 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
-    const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncTransport = parseSyncTransport(body);
+    const requestedPeerUrls = getRequestedPeerUrlsFromBody(body, syncTransport);
+    const requestedPeerUrl = requestedPeerUrls[0] || "";
     if (syncTransport === "offline-package") {
       return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
     }
@@ -1697,7 +1795,9 @@ export function registerSyncPanelRoutes(app, ctx) {
       const syncResult = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
         preferredPeerUrl: requestedPeerUrl,
+        preferredPeerUrls: requestedPeerUrls,
         strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
+        useCombinedTransport: syncTransport === "combined",
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
@@ -1725,6 +1825,8 @@ export function registerSyncPanelRoutes(app, ctx) {
         dryRun: true,
         syncDirection,
         syncTransport,
+        peerUrls: syncResult.resolvedPeerUrls || requestedPeerUrls,
+        requestedPeerUrls,
         peerCapabilities: syncResult.peerCapabilities || null,
         sync: syncResult.sync,
       });
@@ -1817,8 +1919,9 @@ export function registerSyncPanelRoutes(app, ctx) {
     } catch {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
-    const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncTransport = parseSyncTransport(body);
+    const requestedPeerUrls = getRequestedPeerUrlsFromBody(body, syncTransport);
+    const requestedPeerUrl = requestedPeerUrls[0] || "";
     if (syncTransport === "offline-package") {
       return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
     }
@@ -1831,7 +1934,9 @@ export function registerSyncPanelRoutes(app, ctx) {
       const syncResult = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
         preferredPeerUrl: requestedPeerUrl,
+        preferredPeerUrls: requestedPeerUrls,
         strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
+        useCombinedTransport: syncTransport === "combined",
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun,
@@ -1857,6 +1962,8 @@ export function registerSyncPanelRoutes(app, ctx) {
         dryRun,
         syncDirection,
         syncTransport,
+        peerUrls: syncResult.resolvedPeerUrls || requestedPeerUrls,
+        requestedPeerUrls,
         peerCapabilities: syncResult.peerCapabilities || null,
         sync: syncResult.sync,
       });
@@ -2003,8 +2110,9 @@ export function registerSyncPanelRoutes(app, ctx) {
       return res.status(403).json({ ok: false, error: "Selected peer is not eligible for sync" });
     }
     const dryRun = body?.dryRun === undefined ? false : Boolean(body.dryRun);
-    const requestedPeerUrl = getRequestedPeerUrl(body);
     const syncTransport = parseSyncTransport(body);
+    const requestedPeerUrls = getRequestedPeerUrlsFromBody(body, syncTransport);
+    const requestedPeerUrl = requestedPeerUrls[0] || "";
     if (syncTransport === "offline-package") {
       return res.status(400).json({ ok: false, error: "Offline Package mode uses package export and import routes instead of peer sync." });
     }
@@ -2020,11 +2128,14 @@ export function registerSyncPanelRoutes(app, ctx) {
     const syncRunner = resolveSyncRunner(ctx);
 
     let peerCapabilities = null;
+    let resolvedPeerUrls = [];
     try {
       const capabilityPreflight = await runScopeSyncWithPeerUrlFallback({
         discoveredPeer,
         preferredPeerUrl: requestedPeerUrl,
+        preferredPeerUrls: requestedPeerUrls,
         strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
+        useCombinedTransport: syncTransport === "combined",
         scope,
         runtimeRoot: ctx?.runtimeRoot,
         dryRun: true,
@@ -2032,6 +2143,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         syncDirection,
       });
       peerCapabilities = capabilityPreflight.peerCapabilities || null;
+      resolvedPeerUrls = Array.isArray(capabilityPreflight.resolvedPeerUrls) ? capabilityPreflight.resolvedPeerUrls : requestedPeerUrls;
       peerUrl = capabilityPreflight.resolvedPeerUrl || peerUrl;
       discoveredPeer = maybePersistResolvedPeerEndpointForTransport(state, discoveredPeer, peerUrl, syncTransport);
     } catch (err) {
@@ -2064,7 +2176,9 @@ export function registerSyncPanelRoutes(app, ctx) {
           const syncResult = await runScopeSyncWithPeerUrlFallback({
             discoveredPeer: discoveredPeerSnapshot,
             preferredPeerUrl: requestedPeerUrl,
+            preferredPeerUrls: requestedPeerUrls,
             strictPreferredPeerUrl: syncTransportRequiresExplicitPeerUrl(syncTransport),
+            useCombinedTransport: syncTransport === "combined",
             scope,
             runtimeRoot: ctx?.runtimeRoot,
             dryRun,
@@ -2096,7 +2210,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         syncTransport,
         peerCapabilities,
       });
-      return res.status(202).json({ ok: true, jobId: started.jobId, job: started, syncDirection, syncTransport, peerCapabilities });
+      return res.status(202).json({ ok: true, jobId: started.jobId, job: started, syncDirection, syncTransport, peerUrls: resolvedPeerUrls.length ? resolvedPeerUrls : requestedPeerUrls, peerCapabilities });
     } catch (err) {
       logSyncJobCreationDecision(req, body, protection, "rejected", {
         statusCode: 500,

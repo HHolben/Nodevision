@@ -617,6 +617,15 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Slice Edges",
+    "hotkeyText": "",
+    "shortLabel": "Slice",
+    "callbackKey": "meshSliceEdges",
+    "routeToActivePanel": true,
+    "modes": ["STLediting", "OBJediting", "SCADediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "Boolean Operations",
     "hotkeyText": "",
     "modes": ["STLediting", "OBJediting", "SCADediting"],

@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntime.mjs
-// This module implements the SVG editor runtime. This module manages pointer interactions so users can select, draw, and transform SVG elements. This module exposes a stable window context so Nodevision tool callbacks and panels can control the editor.
+// This module implements the SVG editor runtime, manages pointer interactions for selecting and drawing SVG elements, and exposes a stable window context for Nodevision tool callbacks and panels.
+
+import { clearEditorContext, getEditingContext, saveEditingContext, setActiveTool, setEditorContext, setSelectionContext } from "../../../../EditorAttentionState.mjs";
 
 import { createElementLayers } from "../ElementLayers.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
@@ -209,6 +211,7 @@ function resolveEditorHookSavePath(editorLabel, editorPath, requestedPath) {
 }
 
 export async function renderEditor(filePath, container) {
+  setEditorContext({ filePath, fileFamily: "svg", fileFamilyLabel: "SVG", editorMode: "SVGediting", editorModeLabel: "SVG Editing", activeTool: "select", activeToolLabel: "Selection Tool" });
   if (!container) throw new Error("Container required");
   const renderToken = Symbol("svg-editor:" + filePath);
   container.__nvEditorRenderToken = renderToken;
@@ -2406,6 +2409,7 @@ export async function renderEditor(filePath, container) {
 
   let selectionChangeRaf = 0;
   function notifySelectionChanged() {
+    reportSvgAttentionSelection(selectedElement);
     if (selectionChangeRaf) return;
     selectionChangeRaf = window.requestAnimationFrame(() => {
       selectionChangeRaf = 0;
@@ -3479,6 +3483,7 @@ export async function renderEditor(filePath, container) {
       window.NodevisionState.svgDrawTool = mode;
     }
     toolState.mode = mode;
+    setActiveTool(mode, `${String(mode).replace(/[-_]+/g, " ").replace(/\b\w/g, char => char.toUpperCase())} Tool`);
     toolState.drawing = false;
     toolState.tempShape = null;
     toolState.startPoint = null;
@@ -5031,7 +5036,45 @@ export async function renderEditor(filePath, container) {
     console.warn("SVG editor: failed to apply SVG editor mode layout:", err);
   }
 
-  setMode(window.NodevisionState?.svgDrawTool || "select");
+  const savedSvgAttention = getEditingContext(filePath);
+  setMode(savedSvgAttention?.activeTool || window.NodevisionState?.svgDrawTool || "select");
+  requestAnimationFrame(() => {
+    if (savedSvgAttention?.scroll) {
+      container.scrollTop = savedSvgAttention.scroll.top || 0;
+      container.scrollLeft = savedSvgAttention.scroll.left || 0;
+    }
+  });
   window.dispatchEvent(new CustomEvent("nv-svg-editor-context-ready", { detail: { filePath, context: window.SVGEditorContext } }));
   console.log("SVG editor loaded for:", filePath);
+  const persistCurrentSvgAttention = () => persistSvgAttention(filePath, container, toolState.mode);
+  container.addEventListener("scroll", persistCurrentSvgAttention, { passive: true });
+  return () => {
+    container.removeEventListener("scroll", persistCurrentSvgAttention);
+    persistCurrentSvgAttention();
+    clearEditorContext(filePath);
+  };
+}
+
+
+function reportSvgAttentionSelection(element) {
+  if (!element) {
+    setSelectionContext({ selectedObjectType: null, selectedObjectId: null, hasEditableSelection: false });
+    return;
+  }
+  const type = element.tagName?.toLowerCase?.() || "svg-element";
+  setSelectionContext({
+    selectedObjectType: type,
+    selectedObjectId: element.id || null,
+    selectedObjectLabel: type === "g" ? "Group" : type,
+    hasEditableSelection: true,
+  });
+}
+
+function persistSvgAttention(filePath, root, tool) {
+  if (!filePath) return;
+  saveEditingContext(filePath, {
+    editorMode: "SVGediting",
+    activeTool: tool || null,
+    scroll: { top: root?.scrollTop || 0, left: root?.scrollLeft || 0 },
+  });
 }

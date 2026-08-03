@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/NodevisionNavigationState.mjs
-// Shared, notebook-relative navigation state for FileManager/GraphManager/search interactions.
+// This module stores shared notebook-relative navigation state for File Manager, Graph Manager, search, and viewer interactions.
 
 import { normalizeNotebookRelativePath } from "/utils/notebookPath.mjs";
 
@@ -19,16 +19,15 @@ function normalizeDirectoryPath(directoryPath) {
 }
 
 function attachStateMethods(state) {
-  if (typeof state.setLastOpenedDirectory !== "function") {
-    state.setLastOpenedDirectory = (directoryPath = "", panelType = null) => {
-      state.lastOpenedDirectory = normalizeDirectoryPath(directoryPath);
-      const cleanPanelType = normalizeInfoPanelType(panelType);
-      if (cleanPanelType) {
-        state.lastInfoPanelType = cleanPanelType;
-      }
-      return state.lastOpenedDirectory;
-    };
-  }
+  state.setLastOpenedDirectory = (directoryPath = "", panelType = null) => {
+    state.lastOpenedDirectory = normalizeDirectoryPath(directoryPath);
+    const cleanPanelType = normalizeInfoPanelType(panelType);
+    if (cleanPanelType) {
+      state.lastInfoPanelType = cleanPanelType;
+      state.lastOpenedDirectoryPanelType = cleanPanelType;
+    }
+    return state.lastOpenedDirectory;
+  };
 
   if (typeof state.getSearchRoot !== "function") {
     state.getSearchRoot = () => normalizeDirectoryPath(state.lastOpenedDirectory);
@@ -36,6 +35,10 @@ function attachStateMethods(state) {
 
   if (typeof state.getLastInfoPanelType !== "function") {
     state.getLastInfoPanelType = () => normalizeInfoPanelType(state.lastInfoPanelType);
+  }
+
+  if (typeof state.getLastOpenedDirectoryPanelType !== "function") {
+    state.getLastOpenedDirectoryPanelType = () => normalizeInfoPanelType(state.lastOpenedDirectoryPanelType);
   }
 
   if (typeof state.getLastFileSelectionPanelType !== "function") {
@@ -67,6 +70,7 @@ function attachStateMethods(state) {
   }
   state.lastOpenedDirectory = normalizeDirectoryPath(state.lastOpenedDirectory);
   state.lastInfoPanelType = normalizeInfoPanelType(state.lastInfoPanelType);
+  state.lastOpenedDirectoryPanelType = normalizeInfoPanelType(state.lastOpenedDirectoryPanelType);
   state.lastFileSelectionPanelType = normalizeInfoPanelType(state.lastFileSelectionPanelType);
 
   return state;
@@ -81,6 +85,7 @@ export function getNodevisionNavigationState() {
   const created = {
     lastOpenedDirectory: "",
     lastInfoPanelType: null,
+    lastOpenedDirectoryPanelType: null,
     lastFileSelectionPanelType: null,
   };
   window.NodevisionNavigationState = attachStateMethods(created);

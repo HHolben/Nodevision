@@ -64,6 +64,14 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const selectedItemActions = new Map();
   const VOXEL_PLACER_TOOL_ID = "voxel-placer";
   const VOXEL_EXTRUDER_TOOL_ID = "voxel-extruder";
+  const FLYING_CARPET_ITEM_ID = "flying-carpet";
+  const FLYING_CARPET_WIDTH = 2;
+  const FLYING_CARPET_HEIGHT = 0.08;
+  const FLYING_CARPET_DEPTH = 2;
+  const FLYING_CARPET_COLOR = 0x6f63d9;
+  const FLYING_CARPET_EMISSIVE = 0x24205f;
+  const FLYING_CARPET_SPEED_MULTIPLIER = 0.92;
+  const FLYING_CARPET_VERTICAL_SPEED_MULTIPLIER = 0.78;
   const DEFAULT_VOXEL_PLACER_CONFIG = Object.freeze({
     size: 1,
     materialId: DEFAULT_WORLD_OBJECT_MATERIAL_ID,
@@ -1186,6 +1194,247 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const handler = actionMap && actionMap[actionName];
     if (typeof handler !== "function") return false;
     return handler(context) !== false;
+  }
+
+  function finiteFlyingCarpetSize(value, fallback, minimum = 0.02) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(minimum, Math.abs(n)) : fallback;
+  }
+
+  function readFlyingCarpetSize(mesh = null) {
+    const config = mesh?.userData?.flyingCarpet && typeof mesh.userData.flyingCarpet === "object" ? mesh.userData.flyingCarpet : {};
+    const configSize = Array.isArray(config.size) ? config.size : null;
+    const params = mesh?.geometry?.parameters || {};
+    const sx = Math.abs(mesh?.scale?.x || 1);
+    const sy = Math.abs(mesh?.scale?.y || 1);
+    const sz = Math.abs(mesh?.scale?.z || 1);
+    const geometryWidth = Number(params.width);
+    const geometryHeight = Number(params.height);
+    const geometryDepth = Number(params.depth);
+    const baseWidth = Number.isFinite(geometryWidth) ? geometryWidth : (configSize?.[0] ?? config.width ?? FLYING_CARPET_WIDTH);
+    const baseHeight = Number.isFinite(geometryHeight) ? geometryHeight : (configSize?.[1] ?? config.height ?? FLYING_CARPET_HEIGHT);
+    const baseDepth = Number.isFinite(geometryDepth) ? geometryDepth : (configSize?.[2] ?? config.depth ?? FLYING_CARPET_DEPTH);
+    return {
+      width: finiteFlyingCarpetSize(baseWidth * sx, FLYING_CARPET_WIDTH, 0.2),
+      height: finiteFlyingCarpetSize(baseHeight * sy, FLYING_CARPET_HEIGHT, 0.02),
+      depth: finiteFlyingCarpetSize(baseDepth * sz, FLYING_CARPET_DEPTH, 0.2)
+    };
+  }
+
+  function readFlyingCarpetHalfExtents(mesh = null) {
+    const size = readFlyingCarpetSize(mesh);
+    return new THREE.Vector3(size.width / 2, size.height / 2, size.depth / 2);
+  }
+
+  function isFlyingCarpetObject(target) {
+    const data = target?.userData || {};
+    const type = String(data.nvType || data.vehicleType || "").toLowerCase();
+    return target?.isMesh && (type === FLYING_CARPET_ITEM_ID || data.flyingCarpet);
+  }
+
+  function ensureFlyingCarpetRuntime(mesh) {
+    if (!mesh?.isMesh) return null;
+    const previous = mesh.userData?.flyingCarpet && typeof mesh.userData.flyingCarpet === "object" ? mesh.userData.flyingCarpet : {};
+    const size = readFlyingCarpetSize(mesh);
+    const speedMultiplier = Number(previous.speedMultiplier);
+    const verticalSpeedMultiplier = Number(previous.verticalSpeedMultiplier);
+    const riderSurfaceOffset = Number(previous.riderSurfaceOffset);
+    mesh.userData.nvType = FLYING_CARPET_ITEM_ID;
+    mesh.userData.isVehicle = true;
+    mesh.userData.vehicleType = FLYING_CARPET_ITEM_ID;
+    mesh.userData.mountable = true;
+    mesh.userData.flyingCarpet = {
+      ...previous,
+      size: [size.width, size.height, size.depth],
+      speedMultiplier: Number.isFinite(speedMultiplier) ? speedMultiplier : FLYING_CARPET_SPEED_MULTIPLIER,
+      verticalSpeedMultiplier: Number.isFinite(verticalSpeedMultiplier) ? verticalSpeedMultiplier : FLYING_CARPET_VERTICAL_SPEED_MULTIPLIER,
+      riderSurfaceOffset: Number.isFinite(riderSurfaceOffset) ? Math.max(0, riderSurfaceOffset) : 0.03
+    };
+    return mesh.userData.flyingCarpet;
+  }
+
+  function createFlyingCarpetMesh(size = []) {
+    const width = finiteFlyingCarpetSize(size?.[0], FLYING_CARPET_WIDTH, 0.2);
+    const height = finiteFlyingCarpetSize(size?.[1], FLYING_CARPET_HEIGHT, 0.02);
+    const depth = finiteFlyingCarpetSize(size?.[2], FLYING_CARPET_DEPTH, 0.2);
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(width, height, depth),
+      new THREE.MeshStandardMaterial({
+        color: FLYING_CARPET_COLOR,
+        emissive: FLYING_CARPET_EMISSIVE,
+        emissiveIntensity: 0.2,
+        roughness: 0.78,
+        metalness: 0.03
+      })
+    );
+    ensureFlyingCarpetRuntime(mesh);
+    return mesh;
+  }
+
+  function flyingCarpetBox(mesh) {
+    if (!mesh) return null;
+    const colliderRef = mesh.userData?.colliderRef || null;
+    if (colliderRef?.type === "box" && colliderRef.box) {
+      updateColliderForTarget(mesh);
+      return colliderRef.box;
+    }
+    mesh.updateWorldMatrix?.(true, false);
+    const box = new THREE.Box3().setFromObject(mesh);
+    return box.isEmpty?.() ? null : box;
+  }
+
+  function findBoardableFlyingCarpet(position) {
+    if (!position || !Array.isArray(objects)) return null;
+    const footY = position.y - movementState.playerHeight;
+    const yTolerance = Math.max(0.38, Math.abs(Number(movementState.velocityY) || 0) + 0.18);
+    let best = null;
+    let bestDistanceSq = Infinity;
+    for (const object of objects) {
+      if (!isFlyingCarpetObject(object) || object.visible === false) continue;
+      ensureFlyingCarpetRuntime(object);
+      const box = flyingCarpetBox(object);
+      if (!box) continue;
+      const standingOnTop = footY >= box.max.y - 0.16 && footY <= box.max.y + yTolerance;
+      const withinX = position.x >= box.min.x - 0.04 && position.x <= box.max.x + 0.04;
+      const withinZ = position.z >= box.min.z - 0.04 && position.z <= box.max.z + 0.04;
+      if (!standingOnTop || !withinX || !withinZ) continue;
+      const dx = position.x - object.position.x;
+      const dz = position.z - object.position.z;
+      const distanceSq = dx * dx + dz * dz;
+      if (distanceSq < bestDistanceSq) {
+        best = object;
+        bestDistanceSq = distanceSq;
+      }
+    }
+    return best;
+  }
+
+  function clampOffset(value, limit) {
+    return Math.max(-limit, Math.min(limit, value));
+  }
+
+  function alignPlayerToFlyingCarpet(mount) {
+    const carpet = mount?.object;
+    if (!carpet) return;
+    const player = controls.getObject();
+    const half = readFlyingCarpetHalfExtents(carpet);
+    const config = ensureFlyingCarpetRuntime(carpet) || {};
+    const offset = mount.riderLocalOffset || new THREE.Vector3(0, 0, 0);
+    const limitX = Math.max(0, half.x - playerRadius * 0.35);
+    const limitZ = Math.max(0, half.z - playerRadius * 0.35);
+    player.position.x = carpet.position.x + clampOffset(Number(offset.x) || 0, limitX);
+    player.position.z = carpet.position.z + clampOffset(Number(offset.z) || 0, limitZ);
+    player.position.y = carpet.position.y + half.y + movementState.playerHeight + (Number(config.riderSurfaceOffset) || 0);
+  }
+
+  function dismountMountedVehicle({ showStatus = true } = {}) {
+    const mount = movementState.mountedVehicle || null;
+    if (!mount) return false;
+    if (mount.object?.userData) mount.object.userData.vehicleMounted = false;
+    movementState.mountedVehicle = null;
+    movementState.isMounted = false;
+    movementState.activeVehicleType = "";
+    movementState.velocityY = 0;
+    movementState.isGrounded = true;
+    if (showStatus) setStatus("Stepped off flying carpet.");
+    return true;
+  }
+
+  function getActiveMountedVehicle() {
+    const mount = movementState.mountedVehicle || null;
+    if (!mount) {
+      movementState.isMounted = false;
+      movementState.activeVehicleType = "";
+      return null;
+    }
+    const object = mount.object || null;
+    if (!object || !object.parent || object.visible === false || !isFlyingCarpetObject(object)) {
+      dismountMountedVehicle({ showStatus: false });
+      return null;
+    }
+    ensureFlyingCarpetRuntime(object);
+    movementState.isMounted = true;
+    movementState.activeVehicleType = mount.type || FLYING_CARPET_ITEM_ID;
+    return mount;
+  }
+
+  function boardFlyingCarpet(carpet) {
+    if (!isFlyingCarpetObject(carpet)) return false;
+    if (movementState.mountedVehicle?.object === carpet) return true;
+    if (movementState.mountedVehicle) dismountMountedVehicle({ showStatus: false });
+    const config = ensureFlyingCarpetRuntime(carpet) || {};
+    const player = controls.getObject();
+    const half = readFlyingCarpetHalfExtents(carpet);
+    const offset = new THREE.Vector3(player.position.x - carpet.position.x, 0, player.position.z - carpet.position.z);
+    offset.x = clampOffset(offset.x, Math.max(0, half.x - playerRadius * 0.35));
+    offset.z = clampOffset(offset.z, Math.max(0, half.z - playerRadius * 0.35));
+    carpet.userData.vehicleMounted = true;
+    movementState.mountedVehicle = {
+      type: FLYING_CARPET_ITEM_ID,
+      object: carpet,
+      riderLocalOffset: offset,
+      riderSurfaceOffset: Number(config.riderSurfaceOffset) || 0.03
+    };
+    movementState.isMounted = true;
+    movementState.activeVehicleType = FLYING_CARPET_ITEM_ID;
+    movementState.isFlying = false;
+    movementState.velocityY = 0;
+    movementState.isGrounded = false;
+    alignPlayerToFlyingCarpet(movementState.mountedVehicle);
+    setStatus("Boarded flying carpet. Use movement, ascend, and descend controls to fly.");
+    return true;
+  }
+
+  function tryUseFlyingCarpet() {
+    if (movementState.worldMode === "2d") return false;
+    if (getActiveMountedVehicle()) return dismountMountedVehicle();
+    const carpet = findBoardableFlyingCarpet(controls.getObject().position);
+    return carpet ? boardFlyingCarpet(carpet) : false;
+  }
+
+  function updateMountedFlyingCarpet(mount, inputState, speed) {
+    const carpet = mount?.object || null;
+    if (!isFlyingCarpetObject(carpet)) return false;
+    const config = ensureFlyingCarpetRuntime(carpet) || {};
+    const half = readFlyingCarpetHalfExtents(carpet);
+    const player = controls.getObject();
+    const moveSpeed = speed * (Number.isFinite(Number(config.speedMultiplier)) ? Number(config.speedMultiplier) : FLYING_CARPET_SPEED_MULTIPLIER);
+    const verticalSpeed = speed * (Number.isFinite(Number(config.verticalSpeedMultiplier)) ? Number(config.verticalSpeedMultiplier) : FLYING_CARPET_VERTICAL_SPEED_MULTIPLIER);
+    const delta = new THREE.Vector3();
+    controls.getDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() < 1e-8) forward.set(0, 0, -1);
+    forward.normalize();
+    right.crossVectors(forward, up);
+    if (right.lengthSq() < 1e-8) right.set(1, 0, 0);
+    right.normalize();
+    if (inputState.moveForward) delta.add(forward);
+    if (inputState.moveBackward) delta.sub(forward);
+    if (inputState.moveRight) delta.add(right);
+    if (inputState.moveLeft) delta.sub(right);
+    if (delta.lengthSq() > 0) delta.normalize().multiplyScalar(moveSpeed);
+    if (inputState.flyUp) delta.y += verticalSpeed;
+    if (inputState.flyDown) delta.y -= verticalSpeed;
+
+    if (delta.lengthSq() > 0) {
+      const nextCarpetPosition = carpet.position.clone().add(delta);
+      if (nextCarpetPosition.y < half.y) nextCarpetPosition.y = half.y;
+      const actualDelta = nextCarpetPosition.clone().sub(carpet.position);
+      const nextPlayerPosition = player.position.clone().add(actualDelta);
+      nextPlayerPosition.y = nextCarpetPosition.y + half.y + movementState.playerHeight + (Number(config.riderSurfaceOffset) || 0);
+      const ignoreCollider = carpet.userData?.colliderRef || null;
+      const carpetShape = { type: "box", half };
+      if (!wouldCollide(nextPlayerPosition, { ignoreCollider }) && !intersectsExistingColliders(nextCarpetPosition, carpetShape, { ignoreCollider })) {
+        carpet.position.copy(nextCarpetPosition);
+        updateColliderForTarget(carpet);
+      }
+    }
+
+    movementState.velocityY = 0;
+    movementState.isGrounded = false;
+    movementState.isFlying = false;
+    alignPlayerToFlyingCarpet(mount);
+    return true;
   }
 
   function updateSoundObjectRuntimes(listenerPosition) {
@@ -2370,6 +2619,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   }
 
   function removeVoxelMesh(target) {
+    if (movementState.mountedVehicle?.object === target) {
+      dismountMountedVehicle({ showStatus: false });
+    }
+
     scene.remove(target);
     const objIndex = objects.indexOf(target);
     if (objIndex !== -1) objects.splice(objIndex, 1);
@@ -2572,6 +2825,12 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         collider: { type: "cylinder", radius: 0.5, halfHeight: 0.5 }
       };
     }
+    if (id === FLYING_CARPET_ITEM_ID) {
+      return {
+        mesh: createFlyingCarpetMesh(),
+        collider: { type: "box", half: new THREE.Vector3(FLYING_CARPET_WIDTH / 2, FLYING_CARPET_HEIGHT / 2, FLYING_CARPET_DEPTH / 2) }
+      };
+    }
     if (id === "math-function") {
       const panelRef = functionPlotterPanel || window.VRWorldContext?.functionPlotterPanel;
       const pending = panelRef?.consumePendingConfig?.() || null;
@@ -2725,8 +2984,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return radialSq <= totalR * totalR && overlapsY;
   }
 
-  function intersectsExistingColliders(position, shape) {
+  function intersectsExistingColliders(position, shape, options = {}) {
     if (!shape) return false;
+    const ignoreCollider = options?.ignoreCollider || null;
+    const ignoreColliders = options?.ignoreColliders instanceof Set ? options.ignoreColliders : null;
     const overlapEpsilon = 0.001;
 
     function boxesPenetrate(a, b) {
@@ -2737,6 +2998,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
 
     for (const collider of colliders) {
+      if (!collider || collider === ignoreCollider || ignoreColliders?.has(collider)) continue;
       if (shape.type === "box" && collider.type === "box") {
         const newBox = new THREE.Box3(
           new THREE.Vector3(position.x - shape.half.x, position.y - shape.half.y, position.z - shape.half.z),
@@ -3283,6 +3545,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       if (handled) return true;
     }
 
+    if (movementState.mountedVehicle?.object === target) {
+      dismountMountedVehicle({ showStatus: false });
+    }
+
     scene.remove(target);
     const objIndex = objects.indexOf(target);
     if (objIndex !== -1) objects.splice(objIndex, 1);
@@ -3339,6 +3605,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         itemType === "box"
         || itemType === "sphere"
         || itemType === "cylinder"
+        || itemType === FLYING_CARPET_ITEM_ID
         || itemType === "console"
         || itemType === "portal"
         || itemType === "spawn"
@@ -3347,7 +3614,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         || itemType === "image-plane"
         || itemType === "iframe"
       ) {
-        inventory.addItem(itemType, 1, itemType.charAt(0).toUpperCase() + itemType.slice(1));
+        const label = itemType === FLYING_CARPET_ITEM_ID ? "Flying Carpet" : itemType.charAt(0).toUpperCase() + itemType.slice(1);
+        inventory.addItem(itemType, 1, label);
         if (itemType === "object-file" && target.userData?.objectFilePath && inventory?.setSelectedObjectFile) {
           inventory.setSelectedObjectFile(target.userData.objectFilePath);
         }
@@ -3815,62 +4083,72 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
 
     const playerPos = controls.getObject().position;
-    const torsoPosition = playerPos.clone();
-    torsoPosition.y = playerPos.y - Math.max(0.35, movementState.playerHeight * 0.45);
-    const activeWaterVolume = getWaterVolumeAtPosition(torsoPosition);
-    const swimActive = Boolean(activeWaterVolume);
-    movementState.isSwimming = swimActive;
+    const mountedVehicle = getActiveMountedVehicle();
+    let swimActive = false;
+    let movementGroundLevel = groundLevel;
 
     updateGrabbedObjectFollow();
     updateGizmoHandleOrientations();
 
-    applyDirectionalMovement({
-      THREE,
-      controls,
-      movementState,
-      inputState,
-      forward,
-      right,
-      up,
-      speed,
-      crawling,
-      crouching,
-      wouldCollide,
-      stepHeight,
-      allowVerticalMovement: movementState.isFlying || swimActive
-    });
-
-    const movementGroundLevel = sampleExpressionTerrainGroundLevel(controls.getObject().position, groundLevel);
-
-    if (movementState.isFlying || swimActive) {
-      const buoyancyBase = Number.isFinite(movementState.playerBuoyancy) ? movementState.playerBuoyancy : 0;
-      const waterScale = swimActive && Number.isFinite(activeWaterVolume?.buoyancyScale) ? activeWaterVolume.buoyancyScale : 1;
-      const buoyancy = swimActive ? buoyancyBase * waterScale : 0;
-      const swimSpeed = swimActive
-        ? speed * (Number.isFinite(movementState.swimSpeedMultiplier) ? movementState.swimSpeedMultiplier : baseSwimSpeedMultiplier)
-        : speed;
-      movementState.isGrounded = false;
-      applyFlyingMovement({ THREE, controls, inputState, speed: swimSpeed, wouldCollide, buoyancy });
-    } else if (editorGravityDisabled) {
-      movementState.isGrounded = false;
+    if (mountedVehicle) {
+      movementState.playerHeight = basePlayerHeight;
+      movementState.isSwimming = false;
+      updateMountedFlyingCarpet(mountedVehicle, inputState, speed);
     } else {
-      applyGroundMovement({
+      const torsoPosition = playerPos.clone();
+      torsoPosition.y = playerPos.y - Math.max(0.35, movementState.playerHeight * 0.45);
+      const activeWaterVolume = getWaterVolumeAtPosition(torsoPosition);
+      swimActive = Boolean(activeWaterVolume);
+      movementState.isSwimming = swimActive;
+
+      applyDirectionalMovement({
+        THREE,
         controls,
-        inputState,
         movementState,
-        gravity,
-        jumpSpeed,
+        inputState,
+        forward,
+        right,
+        up,
+        speed,
+        crawling,
         crouching,
-        crouchJumpMultiplier: Number.isFinite(movementState.crouchJumpMultiplier)
-          ? movementState.crouchJumpMultiplier
-          : defaultCrouchJumpMultiplier,
-        groundLevel: movementGroundLevel,
         wouldCollide,
-        resolveGroundBounce: bounceConfigForCollider
+        stepHeight,
+        allowVerticalMovement: movementState.isFlying || swimActive
       });
+
+      movementGroundLevel = sampleExpressionTerrainGroundLevel(controls.getObject().position, groundLevel);
+
+      if (movementState.isFlying || swimActive) {
+        const buoyancyBase = Number.isFinite(movementState.playerBuoyancy) ? movementState.playerBuoyancy : 0;
+        const waterScale = swimActive && Number.isFinite(activeWaterVolume?.buoyancyScale) ? activeWaterVolume.buoyancyScale : 1;
+        const buoyancy = swimActive ? buoyancyBase * waterScale : 0;
+        const swimSpeed = swimActive
+          ? speed * (Number.isFinite(movementState.swimSpeedMultiplier) ? movementState.swimSpeedMultiplier : baseSwimSpeedMultiplier)
+          : speed;
+        movementState.isGrounded = false;
+        applyFlyingMovement({ THREE, controls, inputState, speed: swimSpeed, wouldCollide, buoyancy });
+      } else if (editorGravityDisabled) {
+        movementState.isGrounded = false;
+      } else {
+        applyGroundMovement({
+          controls,
+          inputState,
+          movementState,
+          gravity,
+          jumpSpeed,
+          crouching,
+          crouchJumpMultiplier: Number.isFinite(movementState.crouchJumpMultiplier)
+            ? movementState.crouchJumpMultiplier
+            : defaultCrouchJumpMultiplier,
+          groundLevel: movementGroundLevel,
+          wouldCollide,
+          resolveGroundBounce: bounceConfigForCollider
+        });
+      }
     }
 
-    if (!movementState.isFlying && !swimActive) {
+    if (!mountedVehicle && !movementState.isFlying && !swimActive) {
       const onExpressionGround = movementState.isGrounded === true
         && movementState.pendingExpressionTerrainColliderId
         && movementGroundLevel > groundLevel + 0.001;
@@ -4068,6 +4346,10 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       // Same physical input can map to both use + attack (e.g. RB). Suppress attack for this press window.
       movementState.attackLatch = true;
       movementState.suppressAttackUntilMs = nowMs + 180;
+      if (tryUseFlyingCarpet()) {
+        movementState.suppressAttackUntilMs = nowMs + 220;
+        return;
+      }
       if (handleSelectedItemAction("use", { snapToGrid: !!inputState.snapPlace, nowMs })) {
         movementState.suppressAttackUntilMs = nowMs + 220;
         return;

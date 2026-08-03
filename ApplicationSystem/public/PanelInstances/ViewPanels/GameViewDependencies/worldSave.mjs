@@ -151,6 +151,7 @@ function getMeshType(mesh) {
     || hint === "pyramid"
     || hint === "torus"
     || hint === "math-function"
+    || hint === "flying-carpet"
     || hint === "equation-collider-plane"
     || hint === "equation-inequality"
     || hint === "console"
@@ -568,6 +569,33 @@ function serializeMesh(mesh) {
     def.resolution = Math.max(16, Math.min(192, Math.floor(rawResolution)));
     def.limits = Array.isArray(props.limits) ? props.limits.slice(0, 2).map(round3) : [-8, 8];
     def.collider = props.collider !== false;
+  } else if (type === "flying-carpet") {
+    const carpet = mesh.userData?.flyingCarpet && typeof mesh.userData.flyingCarpet === "object" ? mesh.userData.flyingCarpet : {};
+    const carpetSize = Array.isArray(carpet.size) ? carpet.size : null;
+    const p = g?.parameters || {};
+    const width = Number(p.width);
+    const height = Number(p.height);
+    const depth = Number(p.depth);
+    const storedWidth = Number(carpetSize?.[0]);
+    const storedHeight = Number(carpetSize?.[1]);
+    const storedDepth = Number(carpetSize?.[2]);
+    def.shape = "box";
+    def.size = [
+      round3((Number.isFinite(width) ? width : (Number.isFinite(storedWidth) ? storedWidth : 2)) * sx),
+      round3((Number.isFinite(height) ? height : (Number.isFinite(storedHeight) ? storedHeight : 0.08)) * sy),
+      round3((Number.isFinite(depth) ? depth : (Number.isFinite(storedDepth) ? storedDepth : 2)) * sz)
+    ];
+    def.collider = mesh.userData?.colliderRef ? true : mesh.userData?.isSolid !== false;
+    def.collidable = def.collider;
+    def.isSolid = def.collider;
+    def.breakable = mesh.userData?.breakable !== false;
+    def.vehicle = true;
+    def.mountable = true;
+    def.flyingCarpet = {
+      speedMultiplier: round3(Number.isFinite(Number(carpet.speedMultiplier)) ? Number(carpet.speedMultiplier) : 0.92),
+      verticalSpeedMultiplier: round3(Number.isFinite(Number(carpet.verticalSpeedMultiplier)) ? Number(carpet.verticalSpeedMultiplier) : 0.78),
+      riderSurfaceOffset: round3(Number.isFinite(Number(carpet.riderSurfaceOffset)) ? Math.max(0, Number(carpet.riderSurfaceOffset)) : 0.03)
+    };
   } else if (type === "equation-collider-plane" || type === "equation-inequality") {
     const props = normalizePlaneEquationConfig(mesh.userData?.equationCollider || {});
     const inequality = type === "equation-inequality" || props.inequality === true;

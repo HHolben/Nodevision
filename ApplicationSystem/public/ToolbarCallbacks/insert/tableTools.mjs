@@ -1,5 +1,10 @@
-// Shared HTML table editing helpers for toolbar callbacks.
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/tableTools.mjs
+// This module provides shared HTML table editing helpers for toolbar callbacks so table row, column, and cell operations can reuse consistent selection and mutation behavior.
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+
+const TABLE_SELECTED_CELL_CLASS = "nv-html-table-selected-cell";
+const TABLE_SELECTION_ANCHOR_CLASS = "nv-html-table-selection-anchor";
+const TABLE_SELECTION_FOCUS_CLASS = "nv-html-table-selection-focus";
 
 function getTableEditorRoot() {
   const registeredRoot = window.__nvTableEditorRoot;
@@ -33,6 +38,145 @@ export function setActiveTableCell(cell) {
   return activeCell;
 }
 
+function cellsWithTableSelectionClasses(root = getTableEditorRoot()) {
+  if (!root?.querySelectorAll) return [];
+  return Array.from(root.querySelectorAll(`.${TABLE_SELECTED_CELL_CLASS}, .${TABLE_SELECTION_ANCHOR_CLASS}, .${TABLE_SELECTION_FOCUS_CLASS}`));
+}
+
+export function clearTableCellSelection(options = {}) {
+  const keepActive = options.keepActive !== false;
+  for (const cell of cellsWithTableSelectionClasses()) {
+    cell.classList.remove(TABLE_SELECTED_CELL_CLASS, TABLE_SELECTION_ANCHOR_CLASS, TABLE_SELECTION_FOCUS_CLASS);
+    cell.removeAttribute("data-nv-html-table-selected");
+  }
+
+  window.__nvHtmlTableSelectedCells = [];
+  window.__nvHtmlTableSelectedTable = null;
+  window.__nvHtmlTableSelectionMode = null;
+
+  if (!keepActive) {
+    setActiveTableCell(null);
+    updateToolbarState({ htmlTableSelected: false });
+  }
+}
+
+export function getSelectedTableCells(table = null) {
+  const wysiwyg = getTableEditorRoot();
+  const saved = Array.isArray(window.__nvHtmlTableSelectedCells)
+    ? window.__nvHtmlTableSelectedCells
+    : [];
+  const cells = saved.filter((cell) => isCellInEditor(cell, wysiwyg) && (!table || cell.closest("table") === table));
+  if (cells.length) return cells;
+
+  return cellsWithTableSelectionClasses(wysiwyg)
+    .filter((cell) => isCellInEditor(cell, wysiwyg) && (!table || cell.closest("table") === table));
+}
+
+export function setSelectedTableCells(cells = [], options = {}) {
+  const wysiwyg = getTableEditorRoot();
+  const valid = [];
+  const seen = new Set();
+  for (const cell of cells) {
+    if (!isCellInEditor(cell, wysiwyg) || seen.has(cell)) continue;
+    seen.add(cell);
+    valid.push(cell);
+  }
+
+  clearTableCellSelection({ keepActive: true });
+
+  const activeCell = valid.includes(options.activeCell)
+    ? options.activeCell
+    : valid[valid.length - 1] || null;
+  const anchorCell = valid.includes(options.anchorCell) ? options.anchorCell : valid[0] || null;
+
+  for (const cell of valid) {
+    cell.classList.add(TABLE_SELECTED_CELL_CLASS);
+    cell.setAttribute("data-nv-html-table-selected", "true");
+  }
+  anchorCell?.classList.add(TABLE_SELECTION_ANCHOR_CLASS);
+  activeCell?.classList.add(TABLE_SELECTION_FOCUS_CLASS);
+
+  window.__nvHtmlTableSelectedCells = valid;
+  window.__nvHtmlTableSelectedTable = valid[0]?.closest("table") || null;
+  window.__nvHtmlTableSelectionMode = valid.length ? (options.mode || "cells") : null;
+  setActiveTableCell(activeCell);
+  updateToolbarState({ htmlTableSelected: Boolean(activeCell) });
+
+  return valid;
+}
+
+function maxGridColumnCount(model) {
+  return Math.max(0, ...model.grid.map((row) => row?.length || 0));
+}
+
+function expandRectToWholeCellSpans(model, rect) {
+  let next = { ...rect };
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let rowIndex = next.top; rowIndex < next.bottom; rowIndex += 1) {
+      for (let colIndex = next.left; colIndex < next.right; colIndex += 1) {
+        const origin = model.grid[rowIndex]?.[colIndex] || null;
+        if (!origin) continue;
+        const top = Math.min(next.top, origin.rowIndex);
+        const left = Math.min(next.left, origin.colIndex);
+        const bottom = Math.max(next.bottom, origin.rowIndex + origin.rowSpan);
+        const right = Math.max(next.right, origin.colIndex + origin.colSpan);
+        if (top !== next.top || left !== next.left || bottom !== next.bottom || right !== next.right) {
+          next = { top, left, bottom, right };
+          changed = true;
+        }
+      }
+    }
+  }
+  return next;
+}
+
+export function selectTableCellRange(anchorCell, focusCell, options = {}) {
+  const table = anchorCell?.closest?.("table") || null;
+  if (!table || focusCell?.closest?.("table") !== table) return [];
+
+  const model = buildTableGrid(table);
+  const anchor = model.origins.get(anchorCell);
+  const focus = model.origins.get(focusCell);
+  if (!anchor || !focus) return [];
+
+  const mode = options.mode || "cells";
+  const maxColumns = maxGridColumnCount(model);
+  let rect;
+  if (mode === "rows") {
+    rect = {
+      top: Math.min(anchor.rowIndex, focus.rowIndex),
+      left: 0,
+      bottom: Math.max(anchor.rowIndex + anchor.rowSpan, focus.rowIndex + focus.rowSpan),
+      right: maxColumns,
+    };
+  } else if (mode === "columns") {
+    rect = {
+      top: 0,
+      left: Math.min(anchor.colIndex, focus.colIndex),
+      bottom: model.grid.length,
+      right: Math.max(anchor.colIndex + anchor.colSpan, focus.colIndex + focus.colSpan),
+    };
+  } else {
+    rect = {
+      top: Math.min(anchor.rowIndex, focus.rowIndex),
+      left: Math.min(anchor.colIndex, focus.colIndex),
+      bottom: Math.max(anchor.rowIndex + anchor.rowSpan, focus.rowIndex + focus.rowSpan),
+      right: Math.max(anchor.colIndex + anchor.colSpan, focus.colIndex + focus.colSpan),
+    };
+  }
+
+  rect = expandRectToWholeCellSpans(model, rect);
+  const origins = collectExistingOriginsInRect(model, rect.top, rect.left, rect.bottom, rect.right);
+  const selectedCells = sortOriginsByVisualPosition(origins).map((origin) => origin.cell);
+  return setSelectedTableCells(selectedCells, {
+    activeCell: focusCell,
+    anchorCell,
+    mode,
+  });
+}
+
 export function getActiveTableCell() {
   const wysiwyg = getTableEditorRoot();
   const saved = window.__nvHtmlTableActiveCell;
@@ -44,6 +188,7 @@ export function getActiveTableCell() {
 
 export function focusTableCell(cell, { atEnd = false } = {}) {
   if (!cell) return false;
+  clearTableCellSelection({ keepActive: true });
   const sel = window.getSelection?.();
   if (!sel) return false;
   const range = document.createRange();
@@ -132,6 +277,20 @@ function collectOriginsInRect(model, top, left, bottom, right) {
   return origins;
 }
 
+function collectExistingOriginsInRect(model, top, left, bottom, right) {
+  const seen = new Set();
+  const origins = [];
+  for (let rowIndex = top; rowIndex < bottom; rowIndex += 1) {
+    for (let colIndex = left; colIndex < right; colIndex += 1) {
+      const origin = model.grid[rowIndex]?.[colIndex] || null;
+      if (!origin || seen.has(origin.cell)) continue;
+      seen.add(origin.cell);
+      origins.push(origin);
+    }
+  }
+  return origins;
+}
+
 function sortOriginsByVisualPosition(origins = []) {
   return [...origins].sort((a, b) =>
     (a.rowIndex - b.rowIndex) ||
@@ -170,6 +329,19 @@ function rangeIntersectsNode(range, node) {
 }
 
 function selectedOriginsInTable(table, model) {
+  const selectedCells = getSelectedTableCells(table);
+  if (selectedCells.length) {
+    const seen = new Set();
+    const origins = [];
+    for (const cell of selectedCells) {
+      const origin = model.origins.get(cell);
+      if (!origin || seen.has(origin.cell)) continue;
+      seen.add(origin.cell);
+      origins.push(origin);
+    }
+    return origins;
+  }
+
   const selection = window.getSelection?.();
   if (!selection || selection.isCollapsed || selection.rangeCount < 1) return [];
 

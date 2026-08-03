@@ -1,11 +1,13 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditor.mjs
+// This file defines browser-side Graphical Editor logic for the Nodevision UI. It resolves editor modules from ModuleMap.csv, manages editor lifecycle cleanup, and keeps shared toolbar and attention state aligned with the active file.
+
+import { clearEditorContext, setBusyOperation, setEditorContext } from "../../EditorAttentionState.mjs";
 import "/EditorSwitchGuard.mjs";
-// This file defines browser-side Graphical Editor logic for the Nodevision UI. It renders interface components and handles user interactions.
-// using ModuleMap.csv as the single source of truth.
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setWordCountVisibility } from "/StatusBar.mjs";
 
 let lastEditedPath = null;
+let currentGraphicalEditorCleanup = null;
 let moduleMapCache = null;
 const FALLBACK_EDITOR_BY_EXT = {
   png: "PNGeditor.mjs",
@@ -181,13 +183,16 @@ function shouldShowWordCount({ family = null, ext = "" } = {}) {
 function cleanupEditorHost(editorDiv) {
   if (!editorDiv) return;
   const cleanup = editorDiv.__nvActiveEditorCleanup;
-  if (typeof cleanup !== "function") return;
-  try {
-    cleanup();
-  } catch (err) {
-    console.warn("Graphical editor cleanup hook failed:", err);
+  if (typeof cleanup === "function") {
+    try {
+      cleanup();
+    } catch (err) {
+      console.warn("Graphical editor cleanup hook failed:", err);
+    }
   }
   editorDiv.__nvActiveEditorCleanup = null;
+  if (currentGraphicalEditorCleanup === cleanup) currentGraphicalEditorCleanup = null;
+  clearEditorContext(window.currentActiveFilePath || window.filePath || null);
 }
 
 /* ---------------------------------------------------------
@@ -257,6 +262,7 @@ export async function updateGraphicalEditor(
   }
 
   if (!filePath) {
+    cleanupGraphicalEditorAttention(lastEditedPath || window.currentActiveFilePath || null);
     setWordCountVisibility(false);
     window.NodevisionState = window.NodevisionState || {};
     window.NodevisionState.activePanelType = "GraphicalEditor";
@@ -308,8 +314,17 @@ export async function updateGraphicalEditor(
   console.log("🧭 Loading graphical editor for:", filePath);
 
   try {
+    setBusyOperation({ id: "editor-loading", label: "Loading editor", detail: filePath, cancellable: false });
     const resolution = await resolveEditorModule(filePath);
     const { modulePath, family, ext } = resolution;
+    const attentionFamily = (family || ext || "graphical").toLowerCase();
+    setEditorContext({
+      filePath,
+      fileFamily: attentionFamily,
+      fileFamilyLabel: family || ext?.toUpperCase?.() || "Graphical",
+      editorMode: `${ext || attentionFamily}-graphical`,
+      editorModeLabel: family ? `${family} Editing` : `${(ext || "Graphical").toUpperCase()} Editing`,
+    });
     setWordCountVisibility(shouldShowWordCount({ family, ext }));
     const editorFile = modulePath.split("/").pop();
     window.__nodevisionGraphicalEditorLastError = null;
@@ -328,12 +343,21 @@ export async function updateGraphicalEditor(
     const editor = await import(editorImportPath);
 
     if (typeof editor.renderEditor === "function") {
-      await editor.renderEditor(filePath, editorDiv);
+      const cleanup = await editor.renderEditor(filePath, editorDiv);
+      if (typeof cleanup === "function") {
+        currentGraphicalEditorCleanup = cleanup;
+        editorDiv.__nvActiveEditorCleanup = cleanup;
+      } else if (cleanup && typeof cleanup.destroy === "function") {
+        currentGraphicalEditorCleanup = () => cleanup.destroy();
+        editorDiv.__nvActiveEditorCleanup = currentGraphicalEditorCleanup;
+      }
+      setBusyOperation(null);
       console.log("✅ Editor rendered:", modulePath);
     } else {
       throw new Error("renderEditor() not found");
     }
   } catch (err) {
+    setBusyOperation(null);
     setWordCountVisibility(false);
     console.error("❌ Failed to load editor:", err);
     const attempt = window.__nodevisionGraphicalEditorLastAttempt || {};
@@ -354,3 +378,14 @@ export async function updateGraphicalEditor(
 
 // Expose globally
 window.updateGraphicalEditor = updateGraphicalEditor;
+
+
+function cleanupGraphicalEditorAttention(filePath) {
+  try {
+    currentGraphicalEditorCleanup?.();
+  } catch (error) {
+    console.warn("Graphical editor cleanup failed", error);
+  }
+  currentGraphicalEditorCleanup = null;
+  clearEditorContext(filePath || window.currentActiveFilePath || window.filePath || null);
+}

@@ -343,6 +343,26 @@ async function main() {
     assert(usbStrictRunWithUsbPeerUrl.payload?.discoveredPeer?.url === `http://127.0.0.1:${reachableProbePort}`, "Expected USB run to report explicit usbPeerUrl");
     assert(getDiscoveredPeer(state, "nv_dev_trusted_usb_strict")?.address === "127.0.0.1", "Expected USB run not to rewrite discovered endpoint beyond existing record");
 
+    const combinedManifestRequestsBefore = reachableManifestRequests;
+    const combinedRun = await app.request("POST", "/api/sync/run", {
+      body: {
+        deviceId: "nv_dev_trusted_usb_strict",
+        scope: "SyncTest",
+        dryRun: true,
+        syncTransport: "combined",
+        peerUrls: [`http://127.0.0.1:${reachableProbePort}`, `http://localhost:${reachableProbePort}`],
+        wirelessPeerUrl: `http://localhost:${reachableProbePort}`,
+        usbPeerUrl: `http://127.0.0.1:${reachableProbePort}`,
+      },
+    });
+    assert(combinedRun.statusCode === 200, "Expected combined Wireless + Direct run to succeed");
+    assert(combinedRun.payload?.ok === true, "Expected combined run ok=true");
+    assert(combinedRun.payload?.syncTransport === "combined", "Expected combined transport to be echoed");
+    assert(Array.isArray(combinedRun.payload?.peerUrls) && combinedRun.payload.peerUrls.includes(`http://127.0.0.1:${reachableProbePort}`), "Expected combined peerUrls to include direct URL");
+    assert(combinedRun.payload.peerUrls.includes(`http://localhost:${reachableProbePort}`), "Expected combined peerUrls to include wireless URL");
+    assert(Array.isArray(combinedRun.payload?.sync?.peerUrls) && combinedRun.payload.sync.peerUrls.length >= 2, "Expected sync result to retain combined peer URL list");
+    assert(reachableManifestRequests >= combinedManifestRequestsBefore + 1, "Expected combined run to request the peer manifest");
+
     upsertDiscoveredPeer(state, {
       deviceId: "nv_dev_trusted_port_recovery",
       deviceName: "Trusted Peer Port Recovery",

@@ -236,9 +236,11 @@ function compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, pl
 }
 
 export function createCollisionChecker({ colliders, movementState, playerRadius }) {
-  return function wouldCollide(nextPosition) {
+  return function wouldCollide(nextPosition, options = {}) {
     if (movementState) movementState.lastCollisionCollider = null;
     if (movementState?.phaseThroughObjects === true) return false;
+    const ignoreCollider = options?.ignoreCollider || null;
+    const ignoreColliders = options?.ignoreColliders instanceof Set ? options.ignoreColliders : null;
     const hit = (collider) => {
       if (movementState) movementState.lastCollisionCollider = collider || null;
       return true;
@@ -246,6 +248,7 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
     const playerMinY = nextPosition.y - movementState.playerHeight;
     const playerMaxY = nextPosition.y;
     for (const collider of colliders) {
+      if (!collider || collider === ignoreCollider || ignoreColliders?.has(collider)) continue;
       if (collider.type === "box") {
         if (boxCutsPlayer(collider.box, nextPosition, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       } else if (collider.type === "compound") {

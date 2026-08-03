@@ -99,6 +99,35 @@ function normalizeFileErrorMode(value) {
   return mode === "pause" || mode === "skip" ? mode : "fail";
 }
 
+function getTransportPeerUrls(syncTransport, fallbackPeerUrl) {
+  const urls = [];
+  const add = (value) => {
+    try {
+      const peerUrl = normalizePeerUrl(value);
+      if (peerUrl && !urls.includes(peerUrl)) urls.push(peerUrl);
+    } catch {
+      // Ignore malformed optional transport URLs.
+    }
+  };
+  if (Array.isArray(syncTransport?.peerUrls)) {
+    for (const peerUrl of syncTransport.peerUrls) add(peerUrl);
+  }
+  add(fallbackPeerUrl);
+  return urls;
+}
+
+function selectPeerUrlForTransfer(syncTransport, fallbackPeerUrl, details = {}) {
+  try {
+    if (typeof syncTransport?.getPeerUrlForOperation === "function") {
+      const selected = syncTransport.getPeerUrlForOperation(details);
+      if (selected) return normalizePeerUrl(selected);
+    }
+  } catch {
+    // Fall through to the primary peer URL if a transport cannot select an endpoint.
+  }
+  return fallbackPeerUrl;
+}
+
 export function normalizeSyncDirection(value) {
   const direction = String(value || "sync").trim().toLowerCase();
   if (direction === "pull" || direction === "pull-from-peer" || direction === "peer-to-local") return "pull";
@@ -545,6 +574,7 @@ export async function runScopeSyncTwoWay({
   const resolvedRuntimeRoot = resolveRuntimeRoot({ runtimeRoot });
   const syncTransport = transport || new HttpSyncTransport({ peerUrl, runtimeRoot: resolvedRuntimeRoot });
   const normalizedPeerUrl = syncTransport.peerUrl ? normalizePeerUrl(syncTransport.peerUrl) : String(peerUrl || syncTransport.kind || "sync-transport");
+  const normalizedPeerUrls = getTransportPeerUrls(syncTransport, normalizedPeerUrl);
   const normalizedScope = validateSyncScope(scope);
   const loaded = await loadSyncScopes({ runtimeRoot: resolvedRuntimeRoot });
   if (!loaded.syncScopes.includes(normalizedScope)) throw new Error(`Scope is not enabled: ${normalizedScope}`);
@@ -606,7 +636,7 @@ export async function runScopeSyncTwoWay({
   emitProgress("plan");
 
   if (dryRun) {
-    return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, syncDirection: normalizedSyncDirection, maxFileSizeBytes: limited.maxFileSizeBytes, skipSameNameLocationSize: sameNameLocationSizeFiltered.skipSameNameLocationSize, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed, skipped: { same: plan.same, oversized: limited.skippedBySize, sameNameLocationSize: sameNameLocationSizeFiltered.skippedSameNameLocationSize, direction: directional.skippedByDirection } } };
+    return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, peerUrls: normalizedPeerUrls, syncDirection: normalizedSyncDirection, maxFileSizeBytes: limited.maxFileSizeBytes, skipSameNameLocationSize: sameNameLocationSizeFiltered.skipSameNameLocationSize, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed, skipped: { same: plan.same, oversized: limited.skippedBySize, sameNameLocationSize: sameNameLocationSizeFiltered.skippedSameNameLocationSize, direction: directional.skippedByDirection } } };
   }
 
   const pulled = []; const pushed = []; const conflicts = [];
@@ -692,7 +722,7 @@ export async function runScopeSyncTwoWay({
         try {
           pulledReport = useStream
             ? await pullOneStream({
-              peerUrl: normalizedPeerUrl,
+              peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "pull", relativePath: rp, transferMode: "stream" }),
               scope: normalizedScope,
               relativePath: rp,
               notebookDir,
@@ -715,7 +745,7 @@ export async function runScopeSyncTwoWay({
           if (!useStream && isJsonPullTooLargeError(err)) {
             useStream = true;
             pulledReport = await pullOneStream({
-              peerUrl: normalizedPeerUrl,
+              peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "pull", relativePath: rp, transferMode: "stream" }),
               scope: normalizedScope,
               relativePath: rp,
               notebookDir,
@@ -768,7 +798,7 @@ export async function runScopeSyncTwoWay({
         try {
           pushedReport = useStream
             ? await pushOneStream({
-              peerUrl: normalizedPeerUrl,
+              peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "push", relativePath: rp, transferMode: "stream" }),
               scope: normalizedScope,
               relativePath: rp,
               notebookDir,
@@ -791,7 +821,7 @@ export async function runScopeSyncTwoWay({
           if (!useStream && isJsonPushTooLargeError(err)) {
             useStream = true;
             pushedReport = await pushOneStream({
-              peerUrl: normalizedPeerUrl,
+              peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "push", relativePath: rp, transferMode: "stream" }),
               scope: normalizedScope,
               relativePath: rp,
               notebookDir,
@@ -847,7 +877,7 @@ export async function runScopeSyncTwoWay({
           try {
             conflictReport = normalizePushedConflictReport(rp, useStream
               ? await pushOneStream({
-                peerUrl: normalizedPeerUrl,
+                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "conflict-push", relativePath: rp, transferMode: "stream" }),
                 scope: normalizedScope,
                 relativePath: rp,
                 notebookDir,
@@ -870,7 +900,7 @@ export async function runScopeSyncTwoWay({
             if (!useStream && isJsonPushTooLargeError(err)) {
               useStream = true;
               conflictReport = normalizePushedConflictReport(rp, await pushOneStream({
-                peerUrl: normalizedPeerUrl,
+                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "conflict-push", relativePath: rp, transferMode: "stream" }),
                 scope: normalizedScope,
                 relativePath: rp,
                 notebookDir,
@@ -890,7 +920,7 @@ export async function runScopeSyncTwoWay({
           useStream = shouldUseStreamTransfer(remoteEntry);
           conflictReport = useStream
             ? await pullConflictStream({
-              peerUrl: normalizedPeerUrl,
+              peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "conflict-pull", relativePath: rp, transferMode: "stream" }),
               scope: normalizedScope,
               relativePath: rp,
               notebookDir,
@@ -944,6 +974,7 @@ export async function runScopeSyncTwoWay({
     dryRun: false,
     scope: normalizedScope,
     peerUrl: normalizedPeerUrl,
+    peerUrls: normalizedPeerUrls,
     syncDirection: normalizedSyncDirection,
     maxFileSizeBytes: limited.maxFileSizeBytes,
     skipSameNameLocationSize: sameNameLocationSizeFiltered.skipSameNameLocationSize,

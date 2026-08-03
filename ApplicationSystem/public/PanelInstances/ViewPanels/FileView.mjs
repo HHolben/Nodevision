@@ -451,6 +451,198 @@ function notebookAssetUrl(pathValue = "") {
   return "/Notebook/" + parts.join("/");
 }
 
+function notebookIndexPathForDirectory(directoryPath = "") {
+  const cleanDirectory = normalizeResolvedNotebookPath(directoryPath || "");
+  return cleanDirectory ? cleanDirectory + "/index.html" : "index.html";
+}
+
+function openNavigatorPanelTypes() {
+  return ["FileManager", "GraphManager"].filter((panelType) => isNavigatorPanelOpen(panelType));
+}
+
+function defaultIndexDirectory() {
+  const openPanels = openNavigatorPanelTypes();
+  if (openPanels.length === 0) return "";
+
+  const lastDirectoryPanelType = navigationState.getLastOpenedDirectoryPanelType?.() || navigationState.getLastInfoPanelType?.();
+  if (lastDirectoryPanelType && !openPanels.includes(lastDirectoryPanelType)) {
+    return openPanels.includes("FileManager") ? normalizeResolvedNotebookPath(window.currentDirectoryPath || "") : "";
+  }
+
+  const rememberedDirectory = normalizeResolvedNotebookPath(navigationState.getSearchRoot?.() || "");
+  if (rememberedDirectory || !openPanels.includes("FileManager")) return rememberedDirectory;
+  return normalizeResolvedNotebookPath(window.currentDirectoryPath || "");
+}
+
+function selectedPathMatchesDirectoryRequest(pathValue = "") {
+  const cleanPath = normalizeResolvedNotebookPath(pathValue || "");
+  if (!cleanPath) return false;
+
+  const pending = window.__nvPendingSelectedFileMetadata;
+  if (pending && sameNotebookPath(pending.path, cleanPath)) {
+    return Boolean(pending.isDirectory);
+  }
+
+  const state = window.NodevisionState || {};
+  const selectedPath = normalizeResolvedNotebookPath(state.selectedFile || window.selectedFilePath || "");
+  return Boolean(state.selectedFileIsDirectory && selectedPath && sameNotebookPath(selectedPath, cleanPath));
+}
+
+async function notebookFileExists(pathValue = "") {
+  const cleanPath = normalizeResolvedNotebookPath(pathValue || "");
+  if (!cleanPath) return false;
+
+  const url = notebookAssetUrl(cleanPath);
+  try {
+    const head = await fetch(url, { method: "HEAD", cache: "no-store" });
+    if (head.ok) return true;
+    if (head.status !== 405) return false;
+  } catch {
+    // Some static handlers do not support HEAD; the GET probe below covers those.
+  }
+
+  try {
+    const res = await fetch(url, { cache: "no-store", headers: { Range: "bytes=0-0" } });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveDefaultIndexTarget() {
+  const directoryPath = defaultIndexDirectory();
+  const indexPath = notebookIndexPathForDirectory(directoryPath);
+  return {
+    directoryPath,
+    indexPath,
+    exists: await notebookFileExists(indexPath),
+  };
+}
+
+function prepareViewPanelForInlineState(viewPanel) {
+  if (typeof viewPanel?._dispose === "function") {
+    try {
+      viewPanel._dispose();
+    } catch (err) {
+      console.warn("[FileView] Previous viewer cleanup failed:", err);
+    }
+    viewPanel._dispose = null;
+  }
+  viewPanel.innerHTML = "";
+  delete viewPanel.dataset.nvZoomInlineFit;
+  lastRenderedPath = null;
+  currentLinkViewSelection = null;
+  viewPanel.closest(".panel-cell")?.removeAttribute("data-current-link-id");
+}
+
+function setSelectedFilePathFromFileView(pathValue = "", isDirectory = false) {
+  const cleanPath = normalizeResolvedNotebookPath(pathValue || "");
+  if (!cleanPath) return false;
+
+  window.__nvFileSwitchGuardBypass = true;
+  window.__nvPendingSelectedFileMetadata = { path: cleanPath, isDirectory: Boolean(isDirectory) };
+  try {
+    window.selectedFilePath = cleanPath;
+  } finally {
+    window.__nvFileSwitchGuardBypass = false;
+    if (window.__nvPendingSelectedFileMetadata?.path === cleanPath) {
+      window.__nvPendingSelectedFileMetadata = null;
+    }
+  }
+
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.selectedFile = cleanPath;
+  window.NodevisionState.selectedFileIsDirectory = Boolean(isDirectory);
+  return true;
+}
+
+async function createNotebookFile(relativePath = "") {
+  const cleanPath = normalizeResolvedNotebookPath(relativePath || "");
+  if (!cleanPath) throw new Error("File path is required.");
+
+  const response = await fetch("/api/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path: cleanPath }),
+  });
+
+  if (response.ok || response.status === 409) {
+    return { path: cleanPath, existed: response.status === 409 };
+  }
+
+  const message = await response.text().catch(() => "");
+  throw new Error(message || "Failed to create " + cleanPath + ".");
+}
+
+async function refreshNavigatorsForDirectory(directoryPath = "") {
+  const cleanDirectory = normalizeResolvedNotebookPath(directoryPath || "");
+  const tasks = [];
+  if (typeof window.refreshFileManager === "function") {
+    tasks.push(window.refreshFileManager(cleanDirectory));
+  }
+  if (typeof window.refreshGraphManager === "function") {
+    tasks.push(window.refreshGraphManager({ fit: false, reason: "create-index-html" }));
+  }
+  await Promise.allSettled(tasks);
+}
+
+function renderCreateIndexButton(viewPanel, directoryPath = "", options = {}) {
+  if (!viewPanel) return false;
+
+  const cleanDirectory = normalizeResolvedNotebookPath(directoryPath || "");
+  const indexPath = notebookIndexPathForDirectory(cleanDirectory);
+  const selectCreatedFile = options.selectCreatedFile !== false;
+  prepareViewPanelForInlineState(viewPanel);
+
+  const style = document.createElement("style");
+  style.textContent = [
+    ".nv-create-index-shell{min-height:100%;display:grid;place-items:center;padding:16px;box-sizing:border-box;background:#f8fafc}",
+    ".nv-create-index-btn{appearance:none;border:1px solid #1d4ed8;border-radius:6px;background:#1f6feb;color:#fff;font:600 13px/1.2 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:9px 14px;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.16)}",
+    ".nv-create-index-btn:hover:not(:disabled){background:#1a5fd0}",
+    ".nv-create-index-btn:disabled{opacity:.65;cursor:wait}"
+  ].join("\n");
+
+  const shell = document.createElement("div");
+  shell.className = "nv-create-index-shell";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "nv-create-index-btn";
+  button.textContent = "Create index.html";
+  shell.appendChild(button);
+  viewPanel.append(style, shell);
+  setFileViewStatus("File Viewer", "Missing: " + indexPath);
+
+  button.addEventListener("click", () => {
+    const proceed = async () => {
+      button.disabled = true;
+      button.textContent = "Creating...";
+      try {
+        await createNotebookFile(indexPath);
+        await refreshNavigatorsForDirectory(cleanDirectory);
+        if (selectCreatedFile) {
+          setSelectedFilePathFromFileView(indexPath, false);
+          await updateViewPanel(indexPath, { force: true });
+        } else {
+          await updateViewPanel(cleanDirectory, { force: true });
+        }
+      } catch (err) {
+        console.error("[FileView] Failed to create index.html:", err);
+        button.disabled = false;
+        button.textContent = "Create index.html";
+        setFileViewStatus("File Viewer", "Create failed: " + (err?.message || err));
+      }
+    };
+
+    if (typeof guardFileSwitch === "function") {
+      guardFileSwitch(indexPath, proceed);
+    } else {
+      proceed();
+    }
+  });
+
+  return true;
+}
+
 function linkTargetDisplay(record = {}) {
   return record.targetKind === "external" ? (record.targetRaw || record.targetPath || "") : (record.targetPath || record.targetRaw || "");
 }
@@ -1329,7 +1521,14 @@ export async function setupPanel(panel, instanceVars = {}) {
             console.log("📂 selectedFilePath changed:", value);
             internalPath = value;
             window.NodevisionState = window.NodevisionState || {};
+            const pendingSelection = window.__nvPendingSelectedFileMetadata;
+            const selectedIsDirectory = Boolean(
+              pendingSelection &&
+              sameNotebookPath(pendingSelection.path, normalizeNotebookPath(value)) &&
+              pendingSelection.isDirectory
+            );
             window.NodevisionState.selectedFile = internalPath || null;
+            window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
             try {
               updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
             } catch (err) {
@@ -1378,27 +1577,35 @@ export async function setupPanel(panel, instanceVars = {}) {
     return;
   }
 
-  const initialPath = getActiveFilePath(instanceVars.filePath);
+  const explicitInitialPath = normalizeNotebookPath(instanceVars.filePath || "");
+  const selectedInitialPath = normalizeNotebookPath(window.selectedFilePath || window.NodevisionState?.selectedFile || "");
+  let initialPath = explicitInitialPath || selectedInitialPath;
+  if (initialPath && selectedPathMatchesDirectoryRequest(initialPath) && openNavigatorPanelTypes().length === 0) {
+    initialPath = "";
+  }
   if (!initialPath) {
-    console.warn("⚠️ FileView activated with no active file selected.");
-    setFileViewStatus("File Viewer", "No active file selected");
+    const defaultTarget = await resolveDefaultIndexTarget();
     const viewPanel = getViewPanelElement();
-    if (viewPanel) {
-      viewPanel.innerHTML = "<em>No active file selected.</em>";
+    if (!defaultTarget.exists) {
+      console.warn("⚠️ FileView default index missing:", defaultTarget.indexPath);
+      renderCreateIndexButton(viewPanel, defaultTarget.directoryPath, { selectCreatedFile: true });
+      return;
     }
-    return;
+    initialPath = defaultTarget.indexPath;
   }
 
   console.log("📂 FileView activation resolved path:", initialPath);
   setFileViewStatus("File Viewer", initialPath);
 
+  const initialPathIsDirectory = selectedPathMatchesDirectoryRequest(initialPath);
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = initialPath;
+  window.NodevisionState.selectedFileIsDirectory = initialPathIsDirectory;
   window.currentActiveFilePath = initialPath;
   panel.dataset.currentFilePath = initialPath;
 
-  if (window.selectedFilePath !== initialPath) {
-    window.selectedFilePath = initialPath;
+  if (!sameNotebookPath(window.selectedFilePath, initialPath)) {
+    setSelectedFilePathFromFileView(initialPath, initialPathIsDirectory);
   }
 
   lastRenderedPath = null;
@@ -1418,12 +1625,21 @@ export async function updateViewPanel(element, { force = false } = {}) {
     return false;
   }
 
-  const filename = getActiveFilePath(element);
+  let filename = getActiveFilePath(element);
+  if (filename && selectedPathMatchesDirectoryRequest(filename) && openNavigatorPanelTypes().length === 0) {
+    filename = "";
+  }
+  let preserveSelectedFolder = false;
+  let selectedFolderPath = "";
+
   if (!filename) {
-    viewPanel.innerHTML = "<em>No file selected.</em>";
-    console.warn("⚠️ FileView update aborted: no active file selected.");
-    setFileViewStatus("File Viewer", "No active file selected");
-    return false;
+    const defaultTarget = await resolveDefaultIndexTarget();
+    if (!defaultTarget.exists) {
+      console.warn("⚠️ FileView default index missing:", defaultTarget.indexPath);
+      renderCreateIndexButton(viewPanel, defaultTarget.directoryPath, { selectCreatedFile: true });
+      return false;
+    }
+    filename = defaultTarget.indexPath;
   }
 
   currentLinkViewSelection = null;
@@ -1432,24 +1648,30 @@ export async function updateViewPanel(element, { force = false } = {}) {
   console.log("📍 FileView resolved path:", filename);
   viewPanel.closest(".panel-cell")?.setAttribute("data-current-file-path", filename);
 
-  // Skip rendering for directories (no extension or known directory names)
-  const ext = resolveExtension(filename);
+  let ext = resolveExtension(filename);
   const lowerFilename = filename.toLowerCase();
-  if (!ext || lowerFilename === ext || !filename.includes('.')) {
-    if (typeof viewPanel._dispose === "function") {
-      try {
-        viewPanel._dispose();
-      } catch (err) {
-        console.warn("[FileView] Previous viewer cleanup failed:", err);
-      }
-      viewPanel._dispose = null;
+  const selectedDirectoryRequest = selectedPathMatchesDirectoryRequest(filename);
+  const shouldResolveDirectoryIndex = selectedDirectoryRequest || !ext || lowerFilename === ext || !filename.includes(".");
+
+  if (shouldResolveDirectoryIndex) {
+    const directoryPath = normalizeResolvedNotebookPath(filename);
+    const indexPath = notebookIndexPathForDirectory(directoryPath);
+    if (!(await notebookFileExists(indexPath))) {
+      console.log("📁 Directory index missing:", indexPath);
+      renderCreateIndexButton(viewPanel, directoryPath, { selectCreatedFile: !selectedDirectoryRequest });
+      return false;
     }
-    viewPanel.innerHTML = "";
-    delete viewPanel.dataset.nvZoomInlineFit;
-    lastRenderedPath = null;
-    console.log("📁 Skipping directory view for:", filename);
-    setFileViewStatus("File Viewer", `Directory selected: ${filename}`);
-    return false;
+
+    preserveSelectedFolder = selectedDirectoryRequest;
+    selectedFolderPath = directoryPath;
+    navigationState.setLastOpenedDirectory(
+      directoryPath,
+      navigationState.getLastFileSelectionPanelType?.() || navigationState.getLastInfoPanelType?.()
+    );
+    filename = indexPath;
+    ext = resolveExtension(filename);
+    viewPanel.closest(".panel-cell")?.setAttribute("data-current-file-path", filename);
+    console.log("📁 FileView directory index resolved:", filename);
   }
 
   // Prevent redundant rerenders unless forced
@@ -1463,9 +1685,12 @@ export async function updateViewPanel(element, { force = false } = {}) {
   console.log("🧭 Updating view panel for file:", filename);
   window.currentActiveFilePath = filename;
   window.NodevisionState = window.NodevisionState || {};
-  window.NodevisionState.selectedFile = filename;
+  const toolbarSelectedPath = preserveSelectedFolder ? selectedFolderPath : filename;
+  window.NodevisionState.selectedFile = toolbarSelectedPath;
+  window.NodevisionState.selectedFileIsDirectory = preserveSelectedFolder;
+  window.NodevisionState.activeFileViewPath = filename;
   window.NodevisionModelExportContext = null;
-  updateToolbarState({ currentMode: "Default", selectedFile: filename, modelCanExportSTL: false });
+  updateToolbarState({ currentMode: "Default", selectedFile: toolbarSelectedPath, modelCanExportSTL: false });
   setFileViewStatus("File Viewer", filename);
   if (typeof viewPanel._dispose === "function") {
     try {

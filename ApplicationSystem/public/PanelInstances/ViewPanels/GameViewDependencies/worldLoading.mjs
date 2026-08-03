@@ -224,6 +224,10 @@ function removeObjectFromArray(items, value) {
 }
 
 const PRIMITIVE_WORLD_OBJECT_TYPES = new Set(["box", "sphere", "cylinder", "torus", "cone", "pyramid"]);
+const FLYING_CARPET_TYPE = "flying-carpet";
+const FLYING_CARPET_DEFAULT_SIZE = [2, 0.08, 2];
+const FLYING_CARPET_DEFAULT_COLOR = "#6f63d9";
+const FLYING_CARPET_DEFAULT_EMISSIVE = "#24205f";
 const SOUND_OBJECT_DEFAULT_VOLUME = 0.8;
 const SOUND_OBJECT_DEFAULT_RANGE = 14;
 const VOXEL_PATTERN_TYPE = "voxel-pattern";
@@ -667,6 +671,50 @@ function createPrimitiveWorldMesh(THREE, def, materialOpts = null) {
     return new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 16, 64), material);
   }
   return null;
+}
+
+function normalizeFlyingCarpetSize(def = {}) {
+  const size = finiteNumberArray(def.size, 3) || FLYING_CARPET_DEFAULT_SIZE;
+  return [
+    Math.max(0.2, Math.abs(size[0])),
+    Math.max(0.02, Math.abs(size[1])),
+    Math.max(0.2, Math.abs(size[2]))
+  ];
+}
+
+function createFlyingCarpetWorldMesh(THREE, def = {}) {
+  const size = normalizeFlyingCarpetSize(def);
+  const carpet = def.flyingCarpet && typeof def.flyingCarpet === "object" ? def.flyingCarpet : {};
+  def.size = size;
+  def.shape = "box";
+  if (!def.color) def.color = FLYING_CARPET_DEFAULT_COLOR;
+  def.collider = def.collider !== false;
+  def.collidable = def.collider;
+  def.isSolid = def.collider;
+  def.vehicle = true;
+  def.mountable = true;
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(size[0], size[1], size[2]),
+    createWorldMeshMaterial(THREE, {
+      color: def.color || FLYING_CARPET_DEFAULT_COLOR,
+      emissive: def.emissive || FLYING_CARPET_DEFAULT_EMISSIVE,
+      emissiveIntensity: Number.isFinite(def.emissiveIntensity) ? def.emissiveIntensity : 0.2,
+      roughness: Number.isFinite(def.roughness) ? def.roughness : 0.78,
+      metalness: Number.isFinite(def.metalness) ? def.metalness : 0.03
+    }, FLYING_CARPET_DEFAULT_COLOR)
+  );
+  mesh.userData.nvType = FLYING_CARPET_TYPE;
+  mesh.userData.isVehicle = true;
+  mesh.userData.vehicleType = FLYING_CARPET_TYPE;
+  mesh.userData.mountable = true;
+  mesh.userData.flyingCarpet = {
+    ...carpet,
+    size,
+    speedMultiplier: Number.isFinite(Number(carpet.speedMultiplier)) ? Number(carpet.speedMultiplier) : 0.92,
+    verticalSpeedMultiplier: Number.isFinite(Number(carpet.verticalSpeedMultiplier)) ? Number(carpet.verticalSpeedMultiplier) : 0.78,
+    riderSurfaceOffset: Number.isFinite(Number(carpet.riderSurfaceOffset)) ? Math.max(0, Number(carpet.riderSurfaceOffset)) : 0.03
+  };
+  return mesh;
 }
 
 function readMaterialName(def = {}) {
@@ -2919,6 +2967,16 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       const portalSpawnPoint = def.spawnPoint ?? def.spawnId ?? null;
       const isSpawnPoint = def.type === "spawn" || def.tag === "spawn" || def.isSpawn === true;
       const spawnCandidate = isSpawnPoint ? recordSpawnPoint(def, layerObjectId) : null;
+      if (def.type === FLYING_CARPET_TYPE) {
+        def.size = normalizeFlyingCarpetSize(def);
+        def.shape = "box";
+        if (!def.color) def.color = FLYING_CARPET_DEFAULT_COLOR;
+        def.collider = def.collider !== false;
+        def.collidable = def.collider;
+        def.isSolid = def.collider;
+        def.vehicle = true;
+        def.mountable = true;
+      }
       const isLiquidDefinition = isLiquidMaterialDefinition(def);
       const physicsMaterialId = readResolvedPhysicsMaterialId(def);
       const isEquationInequalityDefinition = def.type === "equation-inequality"
@@ -3059,6 +3117,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           mesh.userData.expressionLayerId = def.id || layerObjectId;
           if (!Array.isArray(def.position)) def.position = [0, 0, 0];
         }
+      } else if (def.type === FLYING_CARPET_TYPE) {
+        mesh = createFlyingCarpetWorldMesh(THREE, def);
       } else if (def.type === "math-function") {
         mesh = createMathFunctionMesh(def);
       } else if (def.type === "iframe") {
