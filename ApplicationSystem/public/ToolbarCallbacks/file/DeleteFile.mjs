@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/DeleteFile.mjs
-// This creates the callback needed for delteting files
+// This module creates the toolbar callback that deletes the currently selected file after user confirmation.
 
 export default async function DeleteFile() {
   const selectedFile = window.selectedFilePath;

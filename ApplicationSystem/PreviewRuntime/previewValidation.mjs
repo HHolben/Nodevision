@@ -1,4 +1,4 @@
-// Nodevision/ApplicationSystem/PreviewRuntime/previewValidation.js
+// Nodevision/ApplicationSystem/PreviewRuntime/previewValidation.mjs
 // This file defines the preview Validation module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import path from 'node:path';
 import { normalizeLanguage, isSupportedExtensionForLanguage } from './previewTypes.mjs';

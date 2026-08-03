@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/README.manual-tests.md -->
+<!-- This document lists manual verification steps for the Nodevision KML editor, renderer, layer tree, and save workflows. -->
 # KML Editor Manual Tests
 
 Run these in Nodevision with `.kml` files opened in File View or Graphical Editing.

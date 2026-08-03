@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/insertTable.mjs
+// This toolbar callback prompts for table dimensions and inserts a new HTML table at the current caret.
 import { insertTableAtCaret } from "./tableTools.mjs";
 
 export default function insertTable() {

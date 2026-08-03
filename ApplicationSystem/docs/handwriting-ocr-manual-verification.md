@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/docs/handwriting-ocr-manual-verification.md -->
+<!-- This document provides a manual verification checklist for local handwriting OCR behavior without storing private handwriting samples. -->
 # Handwriting OCR Manual Verification
 
 Use synthetic or throwaway handwriting for this checklist. Do not copy private handwriting samples into the repository.

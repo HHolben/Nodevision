@@ -1,6 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManager.mjs
-// Sets up the File Manager panel and loads FileManagerCore.mjs
-// Provides toolbar integration through panelCapabilities
+// This module initializes the File Manager panel, loads the FileManagerCore implementation, and exposes toolbar integration through panel capabilities.
 
 import { updateToolbarState } from '/panels/createToolbar.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';

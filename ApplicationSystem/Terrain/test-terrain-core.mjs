@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/Terrain/test-terrain-core.mjs
+// This test module verifies terrain source selection, terrarium encoding, region geometry, contours, manifests, and offline package creation.
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";

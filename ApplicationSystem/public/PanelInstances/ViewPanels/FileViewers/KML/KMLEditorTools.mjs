@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLEditorTools.mjs
+// This module builds the KML editor toolbar controls for adding placemarks, drawing geometry, selecting modes, and saving changes.
 export function createKMLEditorTools(container, actions = {}) {
   container.className = "nv-kml-toolbar";
   const buttons = [

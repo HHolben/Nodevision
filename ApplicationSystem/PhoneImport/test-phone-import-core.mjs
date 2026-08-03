@@ -1,4 +1,5 @@
-// Synthetic tests for Phone Import. No real phone data is used.
+// Nodevision/ApplicationSystem/PhoneImport/test-phone-import-core.mjs
+// This test module verifies Phone Import parsing, attachment handling, archive rendering, and reporting with only synthetic local data.
 
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";

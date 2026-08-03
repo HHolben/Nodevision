@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/CelestialBackdrop.mjs
+// This module builds a celestial star and grid backdrop for the KML globe renderer.
 import * as THREE from "/lib/three/three.module.js";
 
 const DEG_TO_RAD = Math.PI / 180;

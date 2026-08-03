@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/AviationChartPacks.md -->
+<!-- This document explains how local aviation chart packs are referenced and displayed as KML viewer basemaps. -->
 # Aviation Chart Packs
 
 The KML viewer can display a local aviation chart pack as a read-only Leaflet basemap under editable KML overlays.

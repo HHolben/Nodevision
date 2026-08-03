@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLGlobeRenderer.mjs
+// This module renders KML features on a Three.js globe and converts globe interactions into editable geographic coordinates.
 import { formatCoordinates } from "./KMLParser.mjs";
 import * as THREE from "/lib/three/three.module.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";

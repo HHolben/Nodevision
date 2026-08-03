@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLFlatMapRenderer.mjs
+// This module renders KML features on a Leaflet flat map and translates map interactions into editable KML coordinates.
 import { formatCoordinates } from "./KMLParser.mjs";
 import { createAviationBaseLayerManager, createStreetBaseLayer, KML_BASEMAP_TYPES } from "./KMLBaseLayerManager.mjs";
 import { createTerrainBaseLayerManager } from "./TerrainViewLayer.mjs";

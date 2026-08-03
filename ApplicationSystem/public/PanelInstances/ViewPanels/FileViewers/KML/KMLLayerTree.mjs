@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLLayerTree.mjs
+// This module renders KML layer tree controls used to inspect and select documents, folders, placemarks, and geometry records.
 import { getFeatureLabel } from "./KMLParser.mjs";
 
 const TYPE_ICONS = {

@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGDrawingAssistImplementation.md -->
+<!-- This document describes the SVG drawing assistance implementation, integration points, recognition flow, and verification plan. -->
 # SVG Drawing Assist Implementation
 
 This document describes the first major Nodevision SVG drawing-assistance phase. The implementation extends the existing SVG graphical editor runtime rather than creating a parallel editor.

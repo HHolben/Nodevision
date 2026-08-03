@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/docs/experimental-stroke-handwriting-recognition.md -->
+<!-- This document describes the experimental local stroke handwriting recognizer, its integration path, manual checks, and implementation notes. -->
 # Experimental Stroke Handwriting Recognition
 
 ## Existing Flow

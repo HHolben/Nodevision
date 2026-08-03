@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/PhoneImport/PhoneImport.md -->
+<!-- This document describes the local Phone Import MVP scope, privacy boundaries, data flow, routes, and verification expectations. -->
 # Nodevision Phone Import MVP
 
 ## Scope

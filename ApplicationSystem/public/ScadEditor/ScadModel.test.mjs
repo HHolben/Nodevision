@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ScadEditor/ScadModel.test.mjs
+// This test module verifies ScadEditor model creation, layer management, object assignment, and timeline behavior.
 import assert from "node:assert/strict";
 import { createEmptyScadModel, addObject, addLayer, moveObjectToLayer, setLayerVisibility, setLayerLocked, addTimelineStep } from "./ScadModel.mjs";
 

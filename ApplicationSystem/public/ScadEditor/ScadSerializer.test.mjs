@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ScadEditor/ScadSerializer.test.mjs
+// This test module verifies ScadEditor serialization for parsed and programmatically constructed SCAD models.
 import assert from "node:assert/strict";
 import { createEmptyScadModel, addObject, setParameter } from "./ScadModel.mjs";
 import { extrudeObjects, addBooleanOperation, scaleObjects } from "./ScadOperations.mjs";

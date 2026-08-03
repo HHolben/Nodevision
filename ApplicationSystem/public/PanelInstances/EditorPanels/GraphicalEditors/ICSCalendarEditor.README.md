@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ICSCalendarEditor.README.md -->
+<!-- This document records manual verification steps for the Nodevision ICS calendar editor and viewer workflows. -->
 # ICSCalendarEditor Manual Test Notes
 
 Run these checks inside Nodevision Graphical Editing on an `.ics` file mapped through `TextFamilyEditor.mjs`.

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLEditor.mjs
+// This module coordinates the browser KML viewer and editor UI, including map rendering, layer trees, properties, and save actions.
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { ensureKMLEditorModeLayout, ensureKMLViewerModeLayout } from "/panels/workspace.mjs";
 import { parseKML, refreshKMLRecords } from "./KMLParser.mjs";

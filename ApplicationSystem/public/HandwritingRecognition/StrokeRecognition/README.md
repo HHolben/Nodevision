@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/HandwritingRecognition/StrokeRecognition/README.md -->
+<!-- This document explains the experimental isolated-character stroke recognition modules, template format, and local-only recognition behavior. -->
 # Experimental Stroke Handwriting Recognition
 
 This module implements a local, deterministic, Scribblenauts-like isolated-character stroke recognizer. It compares ordered pointer trajectories to human-readable JSON stroke templates. It does not rasterize handwriting for OCR and it does not call a network service.

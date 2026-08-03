@@ -9,37 +9,9 @@ import {
   escapeHTML,
 } from "./FamilyEditorCommon.mjs";
 import { renderAudioWaveformFromUrl } from "/PanelInstances/Common/AudioWaveform.mjs";
+import { chooseRecordingMimeType, toBase64FromBlob } from "./SoundRecordingHelpers.mjs";
 
 const NOTEBOOK_BASE = "/Notebook";
-
-function chooseRecordingMimeType(ext) {
-  const preferred = [];
-  if (ext === "ogg" || ext === "opus") preferred.push("audio/ogg;codecs=opus", "audio/ogg");
-  if (ext === "webm") preferred.push("audio/webm;codecs=opus", "audio/webm");
-  preferred.push("audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/ogg");
-
-  if (typeof MediaRecorder === "undefined") return "";
-  for (const mime of preferred) {
-    try {
-      if (MediaRecorder.isTypeSupported(mime)) return mime;
-    } catch (_) {
-      // ignore and continue
-    }
-  }
-  return "";
-}
-
-function toBase64FromBlob(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataURL = String(reader.result || "");
-      resolve(dataURL.split(",")[1] || "");
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
 
 export async function renderEditor(filePath, container) {
   resetEditorHooks();

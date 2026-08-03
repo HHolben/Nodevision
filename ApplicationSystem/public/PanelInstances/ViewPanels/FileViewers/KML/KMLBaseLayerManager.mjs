@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLBaseLayerManager.mjs
+// This module defines KML basemap options and creates base layer managers for street, aviation, and terrain map views.
 export const KML_BASEMAP_TYPES = Object.freeze({
   STREET: "street",
   AVIATION: "aviation",

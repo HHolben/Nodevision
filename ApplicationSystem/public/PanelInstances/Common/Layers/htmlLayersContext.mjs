@@ -1,6 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/Common/Layers/htmlLayersContext.mjs
-// Generic layer context for HTML documents. Provides an attachHost(host) API
-// so the shared Layers panel can render checkboxes to toggle element visibility.
+// This module provides a generic layer context for HTML documents so the shared Layers panel can attach to a host and toggle element visibility.
 
 const DEFAULT_TAGS = new Set([
   "SECTION", "ARTICLE", "ASIDE", "MAIN", "HEADER", "FOOTER", "NAV",

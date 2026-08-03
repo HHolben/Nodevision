@@ -1,3 +1,5 @@
+/* Nodevision/ApplicationSystem/public/Stylesheets/PanelInstances/EditorPanels/GraphicalEditors/ICSCalendarEditor.css */
+/* This stylesheet defines the editable calendar layout and event interaction states for the Nodevision ICS calendar editor. */
 :root {
   --nv-ics-slot-height: 18px;
   --nv-ics-quarter-height: var(--nv-ics-slot-height);

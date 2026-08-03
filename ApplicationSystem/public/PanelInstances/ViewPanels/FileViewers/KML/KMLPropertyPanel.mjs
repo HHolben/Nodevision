@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLPropertyPanel.mjs
+// This module renders the KML property panel used to inspect and edit selected map feature records.
 import { formatCoordinates } from "./KMLParser.mjs";
 
 function xmlString(record) {

@@ -1,3 +1,5 @@
+/* Nodevision/ApplicationSystem/public/Stylesheets/InfoPanels/ICSViewer/ICSViewer.css */
+/* This stylesheet defines the weekly calendar grid, controls, and responsive states for the Nodevision ICS viewer. */
 :root {
   --slot-height: 22px;
   --rows-per-day: 24;

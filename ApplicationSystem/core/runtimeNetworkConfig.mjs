@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/core/runtimeNetworkConfig.mjs
+// This module resolves the server host, port, development mode, and fallback network settings used when Nodevision starts its runtime.
 import fs from "node:fs";
 import path from "node:path";
 import { createServerContext } from "../shared/serverContext.mjs";

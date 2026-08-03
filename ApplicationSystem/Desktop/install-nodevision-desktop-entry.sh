@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Nodevision/ApplicationSystem/Desktop/install-nodevision-desktop-entry.sh
+# This shell script installs the Nodevision desktop entry and makes the associated launcher executable for the current Linux user.
 set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="${HOME}/.local/share/applications"

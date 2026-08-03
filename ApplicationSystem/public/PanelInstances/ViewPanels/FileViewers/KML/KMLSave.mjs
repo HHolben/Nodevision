@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLSave.mjs
+// This module serializes KML edits back into XML text, including coordinates and feature visibility changes.
 import { formatCoordinates, parseCoordinates } from "./KMLParser.mjs";
 
 function localName(node) {

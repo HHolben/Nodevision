@@ -1,4 +1,5 @@
 // Nodevision/ApplicationSystem/Terrain/TerrainSourceRegistry.mjs
+// This module registers terrain data sources and chooses a supported source based on offline package request settings.
 
 import { USGS3DEPSource } from "./Sources/USGS3DEPSource.mjs";
 import { CopernicusDEMSource } from "./Sources/CopernicusDEMSource.mjs";

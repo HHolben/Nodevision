@@ -1,4 +1,4 @@
-// Nodevision/ApplicationSystem/PreviewRuntime/workspaceManager.js
+// Nodevision/ApplicationSystem/PreviewRuntime/workspaceManager.mjs
 // This file defines the workspace Manager module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import fs from 'node:fs/promises';
 import path from 'node:path';

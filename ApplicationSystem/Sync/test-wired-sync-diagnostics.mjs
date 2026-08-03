@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/Sync/test-wired-sync-diagnostics.mjs
+// This test module exercises the wired sync diagnostics workflow without requiring real network peers or destructive file operations.
 // Focused tests for wired/direct-network sync diagnostics.
 
 import assert from "node:assert/strict";

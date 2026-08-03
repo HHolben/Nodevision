@@ -1,6 +1,5 @@
 // Nodevision/ApplicationSystem/Sync/WiredSyncDiagnostics.mjs
-// Safe, non-destructive wired/direct-network sync diagnostics for local CLI,
-// server endpoints, and Sync Panel UI probes.
+// This module provides safe, non-destructive wired and direct-network sync diagnostics for local CLI checks, server endpoints, and Sync Panel UI probes.
 
 import fs from "node:fs";
 import fsp from "node:fs/promises";

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarJSONfiles/metadataToolbar.mjs
+// This toolbar widget builds document metadata controls for editing title, description, author, tag, and date fields.
 const FIELD_DEFS = [
   { key: "title", label: "Title", type: "text", placeholder: "Document title" },
   { key: "description", label: "Description", type: "text", placeholder: "Short description" },

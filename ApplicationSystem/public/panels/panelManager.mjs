@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/panels/panelManager.mjs
-// Handles creating and managing panels dynamically (backwards-compatible)
+// This module creates and manages browser panels dynamically while preserving compatibility with older panel initialization flows.
 
 export async function createPanel(panelType, instanceVars = {}, panelPath = null, targetElem = null) {
   try {

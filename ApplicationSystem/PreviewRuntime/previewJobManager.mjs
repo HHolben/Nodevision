@@ -1,4 +1,4 @@
-// Nodevision/ApplicationSystem/PreviewRuntime/previewJobManager.js
+// Nodevision/ApplicationSystem/PreviewRuntime/previewJobManager.mjs
 // This file defines the preview Job Manager module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import crypto from 'node:crypto';
 

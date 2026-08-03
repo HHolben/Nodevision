@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/utils/midiPreview.test.mjs
+// This test module verifies MIDI note extraction helpers used by Nodevision preview and staff rendering features.
 import { extractNoteOnEventsFromMIDI, extractNoteRangesFromMIDI } from "./midiPreview.mjs";
 
 function assertEquals(actual, expected, message = "Values differ") {

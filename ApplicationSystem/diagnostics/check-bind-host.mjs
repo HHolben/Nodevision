@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/diagnostics/check-bind-host.mjs
+// This diagnostic module reports the configured Nodevision bind host and explains whether the server is limited to local loopback access.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

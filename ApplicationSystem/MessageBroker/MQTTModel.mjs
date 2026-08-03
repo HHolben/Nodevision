@@ -1,7 +1,5 @@
 // Nodevision/ApplicationSystem/MessageBroker/MQTTModel.mjs
-// Shared live MQTT model derived from the singleton broker. Browser panels and
-// graph adapters consume snapshots/events from this service instead of building
-// their own topic or device models.
+// This module exposes a shared live MQTT model derived from the singleton broker for browser panels and graph adapters.
 
 import { getBroker } from "./BrokerSingleton.mjs";
 import { getMqttServerStatus } from "./MQTT/MqttTcpServer.mjs";

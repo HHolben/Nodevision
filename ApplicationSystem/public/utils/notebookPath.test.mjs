@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/utils/notebookPath.test.mjs
+// This test module verifies Notebook-relative path normalization and asset URL generation helpers.
 import { normalizeNotebookRelativePath, toNotebookAssetUrl } from "./notebookPath.mjs";
 
 function assertEquals(actual, expected, message = "Values differ") {

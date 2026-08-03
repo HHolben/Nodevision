@@ -1,4 +1,4 @@
-// Nodevision/ApplicationSystem/PreviewRuntime/previewRuntimeServer.js
+// Nodevision/ApplicationSystem/PreviewRuntime/previewRuntimeServer.mjs
 // This file defines the preview Runtime Server module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import http from 'node:http';
 import { URL } from 'node:url';

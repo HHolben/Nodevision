@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/GIFFrameDecoder.test.mjs
+// This test module verifies GIF frame decoding behavior for graphical editor image workflows.
 import assert from "node:assert/strict";
 import { decodeGifFrames } from "./GIFFrameDecoder.mjs";
 

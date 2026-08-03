@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLMapRenderer.mjs
+// This module coordinates the flat map and globe renderers for KML viewer modes and exports shared KML map helpers.
 import { createKMLGlobeRenderer, coordinatesFromGlobeLayer } from "./KMLGlobeRenderer.mjs";
 import { createKMLFlatMapRenderer, coordinatesFromLeafletLayer, ensureLeaflet, ensureLeafletLoaded } from "./KMLFlatMapRenderer.mjs";
 

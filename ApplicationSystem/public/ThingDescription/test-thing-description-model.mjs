@@ -1,4 +1,5 @@
 // Nodevision/ApplicationSystem/public/ThingDescription/test-thing-description-model.mjs
+// This test module verifies Thing Description model creation, cloning, graph derivation, and normalization behavior.
 
 import assert from "node:assert/strict";
 

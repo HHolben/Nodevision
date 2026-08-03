@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/core/test-runtime-network-config.mjs
+// This test module verifies runtime network configuration precedence and validation behavior for the Nodevision server runtime.
 import { resolveRuntimeNetworkConfig } from "./runtimeNetworkConfig.mjs";
 
 function assert(condition, message) {

@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/ToolbarJSONfiles/citationToolbar.mjs
+// This toolbar widget builds the citation form controls and inserts formatted citation markup into the current document.
 import { escapeHtml, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 
 const FORMAT_OPTIONS = [

@@ -1,35 +1,11 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/KML/KMLParser.mjs
+// This module parses KML XML into editable records and refreshes those records after document structure changes.
+import { directChild, directText, elementChildren, firstDescendant, localName } from "./KMLDomHelpers.mjs";
+
 let nextRecordId = 1;
 
 const GEOMETRY_TYPES = ["Point", "LineString", "LinearRing", "Polygon"];
 const EMPTY_KML_DOCUMENT = '<kml xmlns="http://www.opengis.net/kml/2.2"><Document/></kml>';
-
-function localName(node) {
-  return node?.localName || node?.nodeName || "";
-}
-
-function elementChildren(node) {
-  return Array.from(node?.childNodes || []).filter((child) => child.nodeType === 1);
-}
-
-function directChild(node, name) {
-  return elementChildren(node).find((child) => localName(child) === name) || null;
-}
-
-function directText(node, name) {
-  const child = directChild(node, name);
-  return child ? child.textContent || "" : "";
-}
-
-function firstDescendant(node, name) {
-  if (!node) return null;
-  const queue = [...elementChildren(node)];
-  while (queue.length) {
-    const current = queue.shift();
-    if (localName(current) === name) return current;
-    queue.push(...elementChildren(current));
-  }
-  return null;
-}
 
 function findGeometryNode(placemarkNode) {
   for (const type of GEOMETRY_TYPES) {

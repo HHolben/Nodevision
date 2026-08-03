@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/Widgets/Widgets.md -->
+<!-- This document explains the purpose, structure, and expected integration boundaries for reusable Nodevision browser widgets. -->
 # Nodevision Widgets
 
 Widgets are reusable UI tools that mount inside an editor, viewer, or panel. They are smaller than full panels and are meant for editor-adjacent controls that can be shared across related file types.

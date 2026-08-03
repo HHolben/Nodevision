@@ -1,3 +1,5 @@
+/* Nodevision/ApplicationSystem/public/ArduinoFlash/FlashPanel.css */
+/* This stylesheet defines layout and control states for the Arduino Flash panel in the Nodevision browser client. */
 .nv-flash-panel {
   display: flex;
   flex-direction: column;

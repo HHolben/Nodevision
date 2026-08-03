@@ -1,3 +1,6 @@
+# Nodevision/ApplicationSystem/Desktop/nodevision.desktop
+# This desktop entry registers Nodevision as a Linux application and file opener.
+
 [Desktop Entry]
 Version=1.0
 Type=Application

@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/Sync/LocalSyncPackageTransport.md -->
+<!-- This document describes the offline ZIP package layout and transport behavior used by Nodevision local sync workflows. -->
 # Local Sync Package Transport
 
 Nodevision offline sync packages are ZIP files with this inspectable layout:

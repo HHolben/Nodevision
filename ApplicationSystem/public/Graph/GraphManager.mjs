@@ -1,6 +1,5 @@
 // Nodevision/ApplicationSystem/public/Graph/GraphManager.mjs
-// Core Graph Manager: generates and manages graph data
-// Output: nodes/ and edges/by-destination/ in this directory
+// This module generates and manages browser graph data for Nodevision, including node records and edges stored under the public graph data directories.
 
 import fs from 'fs/promises';
 import path from 'path';

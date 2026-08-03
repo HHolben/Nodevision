@@ -1,7 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FolderView.mjs
-// This module defines a panel that shows information about selected folders,
-// including folder size and which users/devices have permissions to read,
-// write, or edit its contents.
+// This module defines the folder view panel that summarizes selected folders, including folder size and user or device permissions.
 
 export default class FolderViewPanel {
   constructor(containerEl) {

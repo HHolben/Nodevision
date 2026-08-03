@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/InfoPanels/ICSViewer/ICSViewer.js
+// This browser script renders ICS calendar data as weekly schedule views inside the Nodevision ICS viewer.
 (function () {
   "use strict";
 

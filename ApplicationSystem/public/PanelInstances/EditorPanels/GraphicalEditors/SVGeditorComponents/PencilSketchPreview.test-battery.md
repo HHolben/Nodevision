@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/PencilSketchPreview.test-battery.md -->
+<!-- This document lists manual pencil sketch preview test cases for the SVG drawing assistance implementation. -->
 # Pencil Sketch Preview Two-Segment Angle Test Battery
 
 Use this battery for the active sketch preview layer. Raw pencil strokes should remain visible underneath the ghost preview until the user accepts/renders the preview. These cases focus only on the open two-segment angle hypothesis and full endpoint extension.

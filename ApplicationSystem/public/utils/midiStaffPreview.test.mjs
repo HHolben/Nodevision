@@ -1,3 +1,5 @@
+// Nodevision/ApplicationSystem/public/utils/midiStaffPreview.test.mjs
+// This test module verifies MIDI staff planning helpers used to render note ranges as readable musical notation.
 import { buildPolyphonicStaffPlan, buildStaffEventsFromNoteRanges, quantizeDurationTicks } from "./midiStaffPreview.mjs";
 
 function assertEquals(actual, expected, message = "Values differ") {

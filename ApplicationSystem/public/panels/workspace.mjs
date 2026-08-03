@@ -1,6 +1,5 @@
 // Nodevision/ApplicationSystem/public/panels/workspace.mjs
-// Handles workspace, rows, cells, and resizable dividers, with dynamic multi-directory panel loading
-// Adds activeCell/activePanel tracking and toolbar-based panel replacement
+// This module manages workspace rows, cells, resizable dividers, active panel tracking, and toolbar-based panel replacement.
 
 import { logStatus } from "./../StatusBar.mjs";
 import { setStatus } from "./../StatusBar.mjs";

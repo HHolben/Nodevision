@@ -1,3 +1,5 @@
+<!-- Nodevision/ApplicationSystem/docs/terrain-region-workflow.md -->
+<!-- This document explains the KML terrain-region export workflow, offline package structure, verification steps, and source responsibilities. -->
 # Nodevision KML Terrain Region Workflow
 
 This document covers the first Nodevision terrain-region workflow wired into the existing KML viewer/editor.
