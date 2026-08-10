@@ -33,6 +33,24 @@ function firstLegacySavePath(...paths) {
   return paths.find((path) => String(path || "").trim()) || "";
 }
 
+function buildLegacyServedNotebookUrl(pathValue, route = "Notebook") {
+  let clean = normalizeLegacySavePath(pathValue);
+  if (clean.toLowerCase().startsWith("php/")) {
+    clean = clean.slice("php/".length);
+  }
+  const encoded = clean
+    .split("/")
+    .filter(Boolean)
+    .map(encodeURIComponent)
+    .join("/");
+  const cleanRoute = String(route || "Notebook").split("/").filter(Boolean).join("/") || "Notebook";
+  let origin = String(window.location?.origin || "");
+  while (origin.length > 1 && origin.endsWith("/")) {
+    origin = origin.slice(0, -1);
+  }
+  return origin + "/" + cleanRoute + "/" + encoded;
+}
+
 function refuseLegacyMismatchedSave(editorLabel, editorPath, savePath) {
   if (!editorPath || !savePath || sameLegacySavePath(editorPath, savePath)) return false;
   console.error("Refusing to save " + editorLabel + " buffer into a different path.", {
@@ -338,7 +356,7 @@ NewFile: async () => {
   viewNodevisionDeployment: () => {
     const activeNode = window.ActiveNode;
     if (activeNode) {
-      const deploymentUrl = `http://localhost:3000/Notebook/${activeNode}`;
+      const deploymentUrl = buildLegacyServedNotebookUrl(activeNode, "Notebook");
       window.open(deploymentUrl, "_blank");
     } else {
       alert("No active node specified in the URL.");
@@ -347,7 +365,7 @@ NewFile: async () => {
   viewPHPdeployment: () => {
     const activeNode = window.ActiveNode;
     if (activeNode) {
-      const deploymentUrl = `${window.location.origin}/php/${activeNode}`;
+      const deploymentUrl = buildLegacyServedNotebookUrl(activeNode, "php");
       window.open(deploymentUrl, "_blank");
     } else {
       alert("No active node specified in the URL.");

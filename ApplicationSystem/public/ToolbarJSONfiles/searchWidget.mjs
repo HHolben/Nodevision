@@ -110,10 +110,22 @@ function getInfoPanelTypeCandidate() {
   return panelType === "FileManager" || panelType === "GraphManager" ? panelType : null;
 }
 
-async function openPathInPanel(panelType, path, { isDirectory = false } = {}) {
+function getSearchRootForToolbar() {
+  const activePanelType = getInfoPanelTypeCandidate();
+  const rootPanelType = navigationState.getLastOpenedDirectoryPanelType?.();
+  const fileManagerIsOpen = Boolean(document.getElementById("file-list"));
+  const fileManagerOwnsRoot =
+    rootPanelType === "FileManager" ||
+    (fileManagerIsOpen && activePanelType !== "GraphManager" && !rootPanelType);
+
+  return fileManagerOwnsRoot ? navigationState.getSearchRoot() : "";
+}
+
+async function openPathInPanel(panelType, path, options = {}) {
+  const isDirectory = Boolean(options.isDirectory);
   if (panelType === "FileManager") {
     if (typeof window.revealPathInFileManager === "function") {
-      const revealed = await window.revealPathInFileManager(path, { isDirectory });
+      const revealed = await window.revealPathInFileManager(path, { isDirectory, selectFile: options.selectFile });
       if (revealed) return true;
     }
     if (isDirectory && typeof window.openDirectoryInFileManager === "function") {
@@ -125,7 +137,7 @@ async function openPathInPanel(panelType, path, { isDirectory = false } = {}) {
 
   if (panelType === "GraphManager") {
     if (typeof window.revealPathInGraphManager === "function") {
-      const revealed = await window.revealPathInGraphManager(path, { isDirectory });
+      const revealed = await window.revealPathInGraphManager(path, { isDirectory, selectFile: options.selectFile });
       if (revealed) return true;
     }
     if (isDirectory && typeof window.openDirectoryInGraphManager === "function") {
@@ -138,7 +150,8 @@ async function openPathInPanel(panelType, path, { isDirectory = false } = {}) {
   return false;
 }
 
-async function openPathInPreferredInfoPanel(path, { isDirectory = false } = {}) {
+async function openPathInPreferredInfoPanel(path, options = {}) {
+  const isDirectory = Boolean(options.isDirectory);
   const panelCandidates = uniqueValues([
     navigationState.getLastInfoPanelType(),
     getInfoPanelTypeCandidate(),
@@ -148,7 +161,7 @@ async function openPathInPreferredInfoPanel(path, { isDirectory = false } = {}) 
 
   for (const panelType of panelCandidates) {
     try {
-      const opened = await openPathInPanel(panelType, path, { isDirectory });
+      const opened = await openPathInPanel(panelType, path, { ...options, isDirectory });
       if (opened) {
         return true;
       }
@@ -200,7 +213,7 @@ async function runSearch(inputEl, scopeEl, resultsEl) {
       scope,
       limit: "100",
     });
-    const searchRoot = navigationState.getSearchRoot();
+    const searchRoot = getSearchRootForToolbar();
     if (searchRoot) {
       params.set("root", searchRoot);
     }
@@ -246,7 +259,10 @@ function bindResultClicks(root, resultsEl) {
       }
     } else {
       openFileInView(path);
-      await openPathInPreferredInfoPanel(dirname(path), { isDirectory: true });
+      const opened = await openPathInPreferredInfoPanel(path, { isDirectory: false, selectFile: false });
+      if (!opened) {
+        await openPathInPreferredInfoPanel(dirname(path), { isDirectory: true });
+      }
     }
 
     hideResults(resultsEl);

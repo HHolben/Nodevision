@@ -3,6 +3,7 @@
 
 import { createCollisionChecker } from "./collisionCheck.mjs";
 import { getPlaneRayIntersection } from "./equationColliderTool.mjs";
+import { normalizeGravityModel } from "./gravityModel.mjs";
 import { applyDirectionalMovement, applyFlyingMovement, applyGroundMovement, applyRollPitch } from "./movementSteps.mjs";
 import { triggerSvgCameraCapture } from "./svgCameraTool.mjs";
 import { setStatus } from "/StatusBar.mjs";
@@ -25,7 +26,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const useRangeMax = 6;
   const useRepeatMs = 180;
   const baseSwimSpeedMultiplier = 0.72;
-  const defaultCrouchJumpMultiplier = 1.85;
+  const defaultCrouchJumpMultiplier = 1.5;
   let cycleCameraLatch = false;
   let pauseLatch = false;
   let inventoryToggleLatch = false;
@@ -40,6 +41,11 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
   const raycaster = new THREE.Raycaster();
   raycaster.params.Sprite = { threshold: 0.4 }; // expand hit area for 2D sprite handles
   const raycastDirection = new THREE.Vector3();
+  const vectorGravityVelocity = new THREE.Vector3();
+  const vectorGravityAcceleration = new THREE.Vector3();
+  const vectorGravityNextPosition = new THREE.Vector3();
+  const gravityPointPosition = new THREE.Vector3();
+  const zeroGravityKickDirection = new THREE.Vector3();
   const mouseLikeEuler = new THREE.Euler(0, 0, 0, "YXZ");
   const halfPi = Math.PI / 2;
   let noTroubleSplash = null;
@@ -287,6 +293,28 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       .map(boundsPickHit)
       .filter(Boolean)
       .filter((h) => Number.isFinite(h.distance) && h.distance <= maxDistance && h.object?.visible);
+    return meshHits
+      .concat(boundsHits)
+      .filter((h) => Number.isFinite(h.distance) && h.distance <= maxDistance && h.object?.visible)
+      .sort((a, b) => a.distance - b.distance)[0] || null;
+  }
+
+  function getOppositeFacingSurfaceHit(maxDistance = useRangeMax) {
+    const object = controls.getObject();
+    const origin = camera.getWorldPosition ? camera.getWorldPosition(new THREE.Vector3()) : object.position.clone();
+    controls.getDirection(zeroGravityKickDirection);
+    if (zeroGravityKickDirection.lengthSq() < 1e-8) zeroGravityKickDirection.set(0, 0, -1);
+    zeroGravityKickDirection.normalize();
+    raycaster.set(origin, zeroGravityKickDirection.clone().negate(), 0, maxDistance);
+    const objectCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const split = splitBoundsPickCandidates(objectCandidates);
+    const candidates = [];
+    if (ground?.visible) candidates.push(ground);
+    candidates.push(...split.raycast);
+    const meshHits = raycaster.intersectObjects(candidates, false);
+    const boundsHits = split.bounds
+      .map(boundsPickHit)
+      .filter(Boolean);
     return meshHits
       .concat(boundsHits)
       .filter((h) => Number.isFinite(h.distance) && h.distance <= maxDistance && h.object?.visible)
@@ -1163,22 +1191,173 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return readPlayerSkillLevel(["run", "running"]);
   }
 
-  function runSpeedMultiplier(inputState, { crouching = false, crawling = false } = {}) {
+  function clampJumpForce(value, fallback = jumpSpeed) {
+    const force = Number(value);
+    if (!Number.isFinite(force) || force <= 0) return fallback;
+    return Math.max(0.01, Math.min(4, force));
+  }
+
+  function readJumpForce() {
+    if (playerMode() === "creative") {
+      return clampJumpForce(movementState.editorJumpForce, jumpSpeed);
+    }
+    const skillForce = readPlayerSkillLevel(["jump", "jumping"]);
+    return skillForce > 0 ? clampJumpForce(skillForce, jumpSpeed) : jumpSpeed;
+  }
+
+  function clearRunState() {
+    movementState.isRunning = false;
+    movementState.activeRunSkillLevel = 0;
+    movementState.activeRunSpeedMultiplier = 1;
+  }
+
+  function runSpeedMultiplier(inputState, { crouching = false, crawling = false, walkingAllowed = true } = {}) {
     const moving = inputState?.moveForward || inputState?.moveBackward || inputState?.moveLeft || inputState?.moveRight;
-    if (!inputState?.run || !moving || crouching || crawling) {
-      movementState.isRunning = false;
-      movementState.activeRunSkillLevel = 0;
+    if (!walkingAllowed || !inputState?.run || !moving || crouching || crawling) {
+      clearRunState();
       return 1;
     }
     const level = readRunSkillLevel();
     if (level <= 0) {
-      movementState.isRunning = false;
-      movementState.activeRunSkillLevel = 0;
+      clearRunState();
       return 1;
     }
+    const multiplier = Math.max(1, Math.min(4, 1 + level / 10));
     movementState.isRunning = true;
     movementState.activeRunSkillLevel = level;
-    return Math.max(1, Math.min(4, 1 + level / 10));
+    movementState.activeRunSpeedMultiplier = multiplier;
+    return multiplier;
+  }
+
+  function readActiveGravityModel() {
+    const worldDef = window.VRWorldContext?.currentWorldDefinition || {};
+    const model = normalizeGravityModel(
+      movementState?.gravityModel
+      || worldDef.gravityModel
+      || worldDef.metadata?.gravityModel
+      || worldDef.physics?.gravityModel
+      || { mode: "flat", flatG: gravity }
+    );
+    movementState.gravityModel = model;
+    movementState.activeGravityModel = model.mode;
+    return model;
+  }
+
+  function clearVectorGravityMotion({ preserveScalarVelocity = false } = {}) {
+    vectorGravityVelocity.set(0, 0, 0);
+    vectorGravityAcceleration.set(0, 0, 0);
+    movementState.vectorGravityVelocity = { x: 0, y: 0, z: 0 };
+    movementState.vectorGravityAcceleration = { x: 0, y: 0, z: 0 };
+    if (!preserveScalarVelocity) movementState.velocityY = 0;
+  }
+
+  function writeVectorGravityState() {
+    movementState.vectorGravityVelocity = {
+      x: vectorGravityVelocity.x,
+      y: vectorGravityVelocity.y,
+      z: vectorGravityVelocity.z
+    };
+    movementState.vectorGravityAcceleration = {
+      x: vectorGravityAcceleration.x,
+      y: vectorGravityAcceleration.y,
+      z: vectorGravityAcceleration.z
+    };
+    movementState.velocityY = vectorGravityVelocity.y;
+  }
+
+  function objectIdMatchesGravityPoint(obj, pointObjectId) {
+    if (!pointObjectId || !obj) return false;
+    const key = pointObjectId.toLowerCase();
+    const userData = obj.userData || {};
+    const candidates = [
+      obj.name,
+      userData.id,
+      userData.nvId,
+      userData.objectId,
+      userData.worldObjectId,
+      userData.mathFunctionProperties?.id,
+      userData.mathFunctionProperties?.name
+    ];
+    return candidates.some((candidate) => String(candidate || "").trim().toLowerCase() === key);
+  }
+
+  function resolveGravityPointPosition(gravityModel) {
+    const pointObjectId = String(gravityModel?.pointObjectId || "").trim();
+    const sourceObject = pointObjectId
+      ? (objects || []).find((obj) => objectIdMatchesGravityPoint(obj, pointObjectId))
+      : null;
+    if (sourceObject?.getWorldPosition) {
+      sourceObject.getWorldPosition(gravityPointPosition);
+      return gravityPointPosition;
+    }
+    const point = gravityModel?.position || {};
+    gravityPointPosition.set(Number(point.x) || 0, Number(point.y) || 0, Number(point.z) || 0);
+    return gravityPointPosition;
+  }
+
+  function applyVectorGravityMovement(gravityModel, { applyAcceleration = false } = {}) {
+    const object = controls.getObject();
+    if (applyAcceleration) {
+      const point = resolveGravityPointPosition(gravityModel);
+      vectorGravityAcceleration.copy(point).sub(object.position);
+      const distanceSq = Math.max(0.0001, vectorGravityAcceleration.lengthSq());
+      const acceleration = Math.max(0, Number(gravityModel.bigG) || 0) * Math.max(0, Number(gravityModel.mass) || 0) / distanceSq;
+      if (vectorGravityAcceleration.lengthSq() > 1e-8 && acceleration > 0) {
+        vectorGravityAcceleration.normalize().multiplyScalar(Math.min(4, acceleration));
+        vectorGravityVelocity.add(vectorGravityAcceleration);
+      } else {
+        vectorGravityAcceleration.set(0, 0, 0);
+      }
+      movementState.activeGravityPoint = { x: point.x, y: point.y, z: point.z };
+      movementState.activeGravityAcceleration = acceleration;
+    } else {
+      vectorGravityAcceleration.set(0, 0, 0);
+      movementState.activeGravityAcceleration = 0;
+    }
+    writeVectorGravityState();
+    if (vectorGravityVelocity.lengthSq() < 1e-10) return;
+    vectorGravityNextPosition.copy(object.position).add(vectorGravityVelocity);
+    if (movementState.worldMode === "2d" && movementState.cameraMode === "side" && Number.isFinite(movementState.planeZ)) {
+      vectorGravityNextPosition.z = movementState.planeZ;
+    }
+    if (!wouldCollide(vectorGravityNextPosition)) {
+      object.position.copy(vectorGravityNextPosition);
+      movementState.isGrounded = false;
+      writeVectorGravityState();
+      return;
+    }
+    movementState.lastVectorGravityCollision = movementState.lastCollisionCollider || null;
+    clearVectorGravityMotion();
+    movementState.isGrounded = true;
+  }
+
+  function tryZeroGravitySurfaceKick(gravityModel, inputState, baseJumpForce) {
+    if (!inputState?.jump) {
+      movementState.jumpLatch = false;
+      return;
+    }
+    if (movementState.jumpLatch) return;
+    movementState.jumpLatch = true;
+    const hit = getOppositeFacingSurfaceHit(gravityModel.surfaceKickRange || useRangeMax);
+    if (!hit) {
+      movementState.lastZeroGravityKick = { ok: false, reason: "no-surface" };
+      return;
+    }
+    controls.getDirection(zeroGravityKickDirection);
+    if (zeroGravityKickDirection.lengthSq() < 1e-8) zeroGravityKickDirection.set(0, 0, -1);
+    zeroGravityKickDirection.normalize();
+    const explicitMultiplier = Number(inputState.jumpForceMultiplier);
+    const jumpMultiplier = Number.isFinite(explicitMultiplier) && explicitMultiplier > 0 ? Math.max(0.05, Math.min(4, explicitMultiplier)) : 1;
+    const impulse = Math.max(0.001, Number(baseJumpForce) || gravityModel.propellantImpulse || jumpSpeed) * jumpMultiplier;
+    vectorGravityVelocity.addScaledVector(zeroGravityKickDirection, impulse);
+    movementState.lastZeroGravityKick = {
+      ok: true,
+      distance: hit.distance,
+      impulse,
+      targetType: String(hit.object?.userData?.nvType || hit.object?.type || "surface")
+    };
+    movementState.isGrounded = false;
+    writeVectorGravityState();
   }
 
   function getSelectedInventoryItem() {
@@ -1532,6 +1711,16 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       ? colliderDef.playerBounce
       : (def.playerBounce && typeof def.playerBounce === "object" ? def.playerBounce : {});
     const restitution = readBounceNumber(playerBounce.restitution, readBounceNumber(colliderDef.restitution, 0));
+    const springConstantNewtonsPerMeter = readBounceNumber(
+      playerBounce.springConstantNewtonsPerMeter,
+      readBounceNumber(
+        playerBounce.springConstant,
+        readBounceNumber(
+          colliderDef.springConstantNewtonsPerMeter,
+          readBounceNumber(colliderDef.springConstant, readBounceNumber(def.springConstantNewtonsPerMeter, readBounceNumber(def.springConstant, 0)))
+        )
+      )
+    );
     const enabled = playerBounce.enabled === true || restitution > 0;
     if (!enabled || restitution <= 0) return null;
     return {
@@ -1541,7 +1730,13 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       damping: readBounceNumber(playerBounce.damping, 1),
       minIncomingSpeed: readBounceNumber(playerBounce.minIncomingSpeed, 0.08),
       minBounceSpeed: readBounceNumber(playerBounce.minBounceSpeed, 0),
-      maxBounceSpeed: readBounceNumber(playerBounce.maxBounceSpeed, Infinity)
+      maxBounceSpeed: readBounceNumber(playerBounce.maxBounceSpeed, Infinity),
+      springConstantNewtonsPerMeter,
+      playerMassKg: readBounceNumber(playerBounce.playerMassKg, readBounceNumber(colliderDef.playerMassKg, 80)),
+      surfaceCompressionScale: readBounceNumber(playerBounce.surfaceCompressionScale, readBounceNumber(colliderDef.surfaceCompressionScale, 30)),
+      minSurfaceCompression: readBounceNumber(playerBounce.minSurfaceCompression, readBounceNumber(colliderDef.minSurfaceCompression, 0.015)),
+      maxSurfaceCompression: readBounceNumber(playerBounce.maxSurfaceCompression, readBounceNumber(colliderDef.maxSurfaceCompression, 0.65)),
+      surfaceReturnRate: readBounceNumber(playerBounce.surfaceReturnRate, readBounceNumber(colliderDef.surfaceReturnRate, NaN))
     };
   }
 
@@ -1669,8 +1864,22 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     return 0;
   }
 
+  function readTextWorldActionInput() {
+    const action = movementState?.textWorldAction;
+    if (!action || typeof action !== "object") return {};
+    const frames = Number(action.framesRemaining);
+    if (!Number.isFinite(frames) || frames <= 0) {
+      movementState.textWorldAction = null;
+      return {};
+    }
+    action.framesRemaining = frames - 1;
+    const input = action.input && typeof action.input === "object" ? action.input : {};
+    if (action.framesRemaining <= 0) movementState.textWorldAction = null;
+    return input;
+  }
+
   function buildInputState(bindings) {
-    const gp = getPrimaryGamepad();
+    const gp = getPrimaryGaViewmepad();
     const gpBindings = bindings?.gamepad || {};
     const rightBumperPressed = !!gp?.buttons?.[5]?.pressed;
 
@@ -1689,6 +1898,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
 
     const jump = heldKeys[bindings.jump] || readGamepadBinding(gp, gpBindings.jump) > 0;
     const crouch = heldKeys[bindings.crouch];
+    const jumpMode = jump && crouch ? "high" : jump && heldKeys.shift ? "hop" : "normal";
+    const jumpForceMultiplier = jumpMode === "high" ? 1.5 : jumpMode === "hop" ? 0.5 : 1;
     const crawl = heldKeys[bindings.crawl];
     const useBinding = String(bindings.use || "").toLowerCase();
     const useBindingIsMouse0 = useBinding === "mouse0";
@@ -1735,12 +1946,15 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     }
     const handSwitch = heldKeys["-"] || heldKeys.minus;
 
-    return {
+    const textInput = readTextWorldActionInput();
+    const mergedInputState = {
       moveForward,
       moveBackward,
       moveLeft,
       moveRight,
       jump,
+      jumpForceMultiplier,
+      jumpMode,
       crouch,
       crawl,
       use,
@@ -1773,6 +1987,21 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       inventoryMenuRight,
       inventoryMenuConfirm
     };
+    Object.entries(textInput).forEach(([key, value]) => {
+      if (typeof value === "boolean") mergedInputState[key] = mergedInputState[key] === true || value === true;
+    });
+    ["lookYaw", "lookPitch"].forEach((key) => {
+      const value = Number(textInput[key]);
+      if (Number.isFinite(value)) mergedInputState[key] = (Number(mergedInputState[key]) || 0) + value;
+    });
+    const textJumpMultiplier = Number(textInput.jumpForceMultiplier);
+    if (Number.isFinite(textJumpMultiplier) && textJumpMultiplier > 0) {
+      mergedInputState.jumpForceMultiplier = textJumpMultiplier;
+    }
+    if (typeof textInput.jumpMode === "string" && textInput.jumpMode.trim()) {
+      mergedInputState.jumpMode = textInput.jumpMode.trim();
+    }
+    return mergedInputState;
   }
 
   function applyStandUpAlignment() {
@@ -3888,8 +4117,9 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const unlockedInspectKey = String(unlockedBindings.inspect || "y").toLowerCase();
     const unlockedInspecting = !typingIntoField && (heldKeys?.[unlockedInspectKey] || heldKeys?.y);
     const listenerPosition = controls?.getObject?.()?.position || camera?.position || null;
+    const textConsoleActive = movementState.textWorldConsoleActive === true || String(movementState.cameraMode || "").toLowerCase() === "text";
     updateSoundObjectRuntimes(listenerPosition);
-    if (!controls.isLocked) {
+    if (!controls.isLocked && !textConsoleActive) {
       // Keep grabbed objects in sync even when pointer lock drops.
       updateGrabbedObjectFollow();
       updateGizmoHandleOrientations();
@@ -3925,7 +4155,7 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     const inspecting = inputState.inspect;
     const inventory = window.VRWorldContext?.inventory;
     const inEditorMode = playerMode() === "creative";
-    const speed = baseSpeed * runSpeedMultiplier(inputState, { crouching, crawling });
+    const speed = baseSpeed;
 
     if (inputState.openInventory && !inventoryToggleLatch) {
       inventoryToggleLatch = true;
@@ -4093,6 +4323,8 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
     if (mountedVehicle) {
       movementState.playerHeight = basePlayerHeight;
       movementState.isSwimming = false;
+      movementState.walkInputBlockedByFall = false;
+      clearRunState();
       updateMountedFlyingCarpet(mountedVehicle, inputState, speed);
     } else {
       const torsoPosition = playerPos.clone();
@@ -4100,26 +4332,51 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
       const activeWaterVolume = getWaterVolumeAtPosition(torsoPosition);
       swimActive = Boolean(activeWaterVolume);
       movementState.isSwimming = swimActive;
-
-      applyDirectionalMovement({
-        THREE,
-        controls,
-        movementState,
-        inputState,
-        forward,
-        right,
-        up,
-        speed,
-        crawling,
+      const activeGravityModel = readActiveGravityModel();
+      const flatGravityActive = activeGravityModel.mode === "flat";
+      const zeroGravityWalkingDisabled = activeGravityModel.mode === "none" && !inEditorMode;
+      const fallingWithoutEditorControl = flatGravityActive && !inEditorMode
+        && !movementState.isFlying
+        && !swimActive
+        && movementState.isGrounded !== true
+        && Number(movementState.velocityY) < 0;
+      movementState.walkInputBlockedByFall = fallingWithoutEditorControl;
+      const directionalWalkingAllowed = !zeroGravityWalkingDisabled && !fallingWithoutEditorControl;
+      const runWalkingAllowed = directionalWalkingAllowed
+        && !movementState.isFlying
+        && !swimActive
+        && (inEditorMode || movementState.isGrounded === true);
+      const directionalSpeed = speed * runSpeedMultiplier(inputState, {
         crouching,
-        wouldCollide,
-        stepHeight,
-        allowVerticalMovement: movementState.isFlying || swimActive
+        crawling,
+        walkingAllowed: runWalkingAllowed
       });
+
+      if (directionalWalkingAllowed) {
+        applyDirectionalMovement({
+          THREE,
+          controls,
+          movementState,
+          inputState,
+          forward,
+          right,
+          up,
+          speed: directionalSpeed,
+          crawling,
+          crouching,
+          wouldCollide,
+          stepHeight,
+          allowVerticalMovement: movementState.isFlying || swimActive
+        });
+      }
 
       movementGroundLevel = sampleExpressionTerrainGroundLevel(controls.getObject().position, groundLevel);
 
+      const activeJumpForce = readJumpForce();
+      movementState.activeJumpForce = activeJumpForce;
+
       if (movementState.isFlying || swimActive) {
+        clearVectorGravityMotion();
         const buoyancyBase = Number.isFinite(movementState.playerBuoyancy) ? movementState.playerBuoyancy : 0;
         const waterScale = swimActive && Number.isFinite(activeWaterVolume?.buoyancyScale) ? activeWaterVolume.buoyancyScale : 1;
         const buoyancy = swimActive ? buoyancyBase * waterScale : 0;
@@ -4129,14 +4386,22 @@ export function createMovementUpdater({ THREE, scene, objects, camera, controls,
         movementState.isGrounded = false;
         applyFlyingMovement({ THREE, controls, inputState, speed: swimSpeed, wouldCollide, buoyancy });
       } else if (editorGravityDisabled) {
+        clearVectorGravityMotion();
         movementState.isGrounded = false;
+      } else if (activeGravityModel.mode === "none") {
+        tryZeroGravitySurfaceKick(activeGravityModel, inputState, activeJumpForce);
+        applyVectorGravityMovement(activeGravityModel, { applyAcceleration: false });
+      } else if (activeGravityModel.mode === "point-mass") {
+        applyVectorGravityMovement(activeGravityModel, { applyAcceleration: true });
       } else {
+        clearVectorGravityMotion({ preserveScalarVelocity: true });
+        movementState.activeFlatGravity = activeGravityModel.flatG;
         applyGroundMovement({
           controls,
           inputState,
           movementState,
-          gravity,
-          jumpSpeed,
+          gravity: activeGravityModel.flatG,
+          jumpSpeed: activeJumpForce,
           crouching,
           crouchJumpMultiplier: Number.isFinite(movementState.crouchJumpMultiplier)
             ? movementState.crouchJumpMultiplier

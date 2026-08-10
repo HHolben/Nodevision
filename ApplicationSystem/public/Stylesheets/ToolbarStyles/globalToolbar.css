@@ -155,6 +155,9 @@
   display: none;
   min-width: 100%;
   width: max-content;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  overflow-x: auto;
 }
 
 /* Compact icon-only buttons used in #sub-toolbar */

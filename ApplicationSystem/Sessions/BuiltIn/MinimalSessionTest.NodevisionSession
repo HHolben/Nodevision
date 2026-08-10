@@ -1,0 +1,13 @@
+// Nodevision/ApplicationSystem/Sessions/BuiltIn/MinimalSessionTest.NodevisionSession
+// This built-in Session demonstrates the minimal Nodevision Session lifecycle by taking UI ownership, showing overlay messages, waiting for user input, and then restoring the workspace.
+// @title Minimal Session Test
+// @description Takes over Nodevision, shows a message through the overlay system, waits for user input, and restores the normal workspace.
+// @source bundled
+
+let message = "Nodevision Session mode is active.";
+run("overlay.show", message);
+wait("session.continue");
+
+run("overlay.show", "The Session is complete.");
+wait("session.continue");
+

@@ -8,6 +8,7 @@ const STATE_KEY = "__nvPanelZoomPanState";
 const ORIGINAL_OVERFLOW_KEY = "__nvPanelZoomPanOriginalOverflow";
 const ORIGINAL_POSITION_KEY = "__nvPanelZoomPanOriginalPosition";
 const LAST_PANEL_KEY = "__nvLastActiveZoomPanPanel";
+const ACTIVE_PANEL_MEMORY_KEY = "__nvPanelZoomPanActivePanelMemory";
 const SCROLL_BOUND_KEY = "__nvPanelZoomPanScrollBound";
 const APPLYING_SCROLL_KEY = "__nvPanelZoomPanApplyingScroll";
 const RESIZE_OBSERVER_KEY = "__nvPanelZoomPanResizeObserver";
@@ -42,6 +43,29 @@ function isTargetElement(el) {
 function getDirectChildByClass(parent, className) {
   if (!parent?.children?.length || !className) return null;
   return Array.from(parent.children).find((child) => child?.classList?.contains(className)) || null;
+}
+
+function panelFromCell(cell) {
+  if (!cell?.isConnected || !cell.classList?.contains("panel-cell")) return null;
+  return getDirectChildByClass(cell, "panel") || cell;
+}
+
+function findPanelByIdentity(identity = "") {
+  const value = String(identity || "").trim();
+  if (!value || typeof document === "undefined") return null;
+  const panel = Array.from(document.querySelectorAll(".panel")).find((candidate) =>
+    candidate?.dataset?.instanceName === value ||
+    candidate?.dataset?.instanceId === value ||
+    candidate?.dataset?.panelClass === value
+  );
+  if (isTargetElement(panel)) return panel;
+
+  const cell = Array.from(document.querySelectorAll(".panel-cell")).find((candidate) =>
+    candidate?.dataset?.id === value ||
+    candidate?.dataset?.panelId === value ||
+    candidate?.dataset?.panelClass === value
+  );
+  return panelFromCell(cell);
 }
 
 function parsePixelValue(value) {
@@ -85,7 +109,22 @@ function rememberPanel(panel) {
   window[LAST_PANEL_KEY] = panel;
 }
 
+function rememberPanelFromActiveEvent(event) {
+  const detail = event?.detail || {};
+  const panel = panelFromCell(detail.cell) ||
+    findPanelByIdentity(detail.panel) ||
+    findPanelByIdentity(window.activePanel);
+  if (panel) rememberPanel(panel);
+}
+
+function bindPanelActivationMemory() {
+  if (typeof window === "undefined" || window[ACTIVE_PANEL_MEMORY_KEY]) return;
+  window.addEventListener("activePanelChanged", rememberPanelFromActiveEvent);
+  window[ACTIVE_PANEL_MEMORY_KEY] = true;
+}
+
 export function getActivePanelElement() {
+  bindPanelActivationMemory();
   const fromCell = queryPanelFromActiveCell();
   if (fromCell) {
     rememberPanel(fromCell);
@@ -754,6 +793,7 @@ function getZoomShortcutAction(event) {
 
 export function installPanelZoomShortcuts() {
   if (typeof window === "undefined") return null;
+  bindPanelActivationMemory();
   if (window.__nvPanelZoomShortcutsInstalled) {
     return window.__nvPanelZoomShortcutsInstalled;
   }

@@ -1,5 +1,12 @@
 {
-    "phpPort": 8080,
-    "nodePort": 3000
+  "phpPort": 8080,
+  "nodePort": 3000,
+  "handwriting": {
+    "nativeCpp": {
+      "enabled": false,
+      "executablePath": "",
+      "timeoutMs": 1500,
+      "candidateLimit": 5
+    }
   }
-  
+}

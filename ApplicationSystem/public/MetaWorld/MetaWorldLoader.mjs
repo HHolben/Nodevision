@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/MetaWorldLoader.mjs
 // MetaWorld loader parses and validates embedded Nodevision world definitions.
 
+import { readWorldGravityModel } from "../PanelInstances/ViewPanels/GameViewDependencies/gravityModel.mjs";
+
 const WORLD_SCRIPT_ID = "nodevision-metaworld";
 
 function fail(message) {
@@ -211,6 +213,7 @@ export function validateMetaWorldDefinition(definition) {
     type: world.type.trim(),
     worldType,
     gravity: readVector3(world.gravity ?? physics.gravity, "gravity", { x: 0, y: -9.81, z: 0 }),
+    gravityModel: readWorldGravityModel(world),
     timestep: requireNumber(world.timestep ?? physics.timestep ?? 1 / 60, "timestep"),
     spawnPosition: readVector3(world.spawnPosition, "spawnPosition", { x: 0, y: 1.7, z: 8 }),
     worldMode: typeof world.worldMode === "string" ? world.worldMode.trim() : "",

@@ -8,6 +8,7 @@
     { "name": "lanCooperationRoutes", "path": "./routes/api/lanCooperationRoutes.js" },
     { "name": "metaWorldMultiplayerRoutes", "path": "./routes/api/metaWorldMultiplayerRoutes.js" },
     { "name": "templateRoutes", "path": "./Templates/TemplateRoutes.mjs" },
+    { "name": "sessionRoutes", "path": "./Sessions/SessionRoutes.mjs" },
     { "name": "regenerateNodesRoutes", "path": "./routes/api/regenerateNodesRoutes.js" },
     { "name": "generateEdgesRoutes", "path": "./routes/api/generateEdgesRoutes.js" },
     { "name": "extractEdges", "path": "./routes/api/extractEdges.js" },

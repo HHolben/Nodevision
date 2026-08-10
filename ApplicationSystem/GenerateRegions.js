@@ -23,11 +23,11 @@ function generateRegions(dir, parent = null, relativeDir = '') {
 
         if (entry.isDirectory()) {
             // Check if directory.png exists in this directory
-            let imageUrl = 'http://localhost:3000/DefaultRegionImage.png';
+            let imageUrl = '/DefaultRegionImage.png';
             const customImagePath = path.join(fullPath, 'directory.png');
 
             if (fs.existsSync(customImagePath)) {
-                imageUrl = `http://localhost:3000/Notebook/${currentPath}/directory.png`;
+                imageUrl = "/Notebook/" + currentPath.split(path.sep).join("/") + "/directory.png";
             }
 
             // Create a region node with the expanded flag set to false by default

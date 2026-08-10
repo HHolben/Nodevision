@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/utils/markdownInsertHelpers.mjs
-// This module applies Insert Text toolbar commands to the Markdown graphical editor by transforming selected textarea text into Markdown syntax without changing HTML editor behavior.
+// This module applies Insert Text toolbar commands to Markdown graphical editor surfaces without changing HTML editor behavior.
 
-const MARKDOWN_EDITOR_SELECTOR = "textarea#markdown-editor, input#markdown-editor";
+const MARKDOWN_EDITOR_SELECTOR = "#markdown-editor[data-nodevision-markdown-editor=\"true\"], textarea#markdown-editor, input#markdown-editor";
 
 function clampHeadingLevel(level) {
   const parsed = Number.parseInt(level, 10);
@@ -32,6 +32,7 @@ function isMarkdownEditingContext(target) {
 }
 
 function textTargetCanEdit(target) {
+  if (target?.isContentEditable) return true;
   const tag = target?.tagName?.toUpperCase?.();
   if (tag === "TEXTAREA") return true;
   if (tag !== "INPUT") return false;
@@ -72,6 +73,12 @@ function applyTextResult(target, result) {
   if (typeof target.setSelectionRange === "function") {
     target.setSelectionRange(result.selectionStart, result.selectionEnd);
   }
+  dispatchInput(target);
+}
+
+function runContentEditableCommand(target, command, value = null) {
+  target.focus();
+  document.execCommand(command, false, value);
   dispatchInput(target);
 }
 
@@ -157,6 +164,10 @@ function markdownModeIsActive() {
 export function insertMarkdownBoldIfActive() {
   const target = findMarkdownTextTarget();
   if (!target) return markdownModeIsActive();
+  if (target.isContentEditable) {
+    runContentEditableCommand(target, "bold");
+    return true;
+  }
   applyTextResult(target, applyMarkdownBold(target.value, target.selectionStart, target.selectionEnd));
   return true;
 }
@@ -164,6 +175,10 @@ export function insertMarkdownBoldIfActive() {
 export function insertMarkdownHeadingIfActive(level) {
   const target = findMarkdownTextTarget();
   if (!target) return markdownModeIsActive();
+  if (target.isContentEditable) {
+    runContentEditableCommand(target, "formatBlock", "H" + clampHeadingLevel(level));
+    return true;
+  }
   applyTextResult(target, applyMarkdownHeading(target.value, target.selectionStart, target.selectionEnd, level));
   return true;
 }

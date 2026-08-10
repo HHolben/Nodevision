@@ -69,7 +69,8 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     { id: "second", label: "Second Person" },
     { id: "third", label: "Third Person" },
     { id: "topdown", label: "Top Down" },
-    { id: "side", label: "Side Scroller" }
+    { id: "side", label: "Side Scroller" },
+    { id: "text", label: "Text Console" }
   ];
   let modeIndex = 0;
   let appliedDefaultViewMode = null;
@@ -88,8 +89,10 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   }
 
   function modeIndexForViewMode(viewMode) {
-    const normalized = String(viewMode || "").toLowerCase();
-    const match = modes.findIndex((mode) => mode.id === normalized);
+    const normalized = String(viewMode || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const aliases = { console: "text", textconsole: "text" };
+    const modeId = aliases[normalized] || normalized;
+    const match = modes.findIndex((mode) => mode.id === modeId);
     return match >= 0 ? match : 0;
   }
 
@@ -163,7 +166,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
 
     const mode = currentMode().id;
     publishCameraMode();
-    if (mode === "first") {
+    if (mode === "first" || mode === "text") {
       avatar.visible = false;
       return;
     }
@@ -201,7 +204,8 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   }
 
   function getActiveCamera() {
-    return currentMode().id === "first" ? playerCamera : followCamera;
+    const id = currentMode().id;
+    return id === "first" || id === "text" ? playerCamera : followCamera;
   }
 
   function dispose() {

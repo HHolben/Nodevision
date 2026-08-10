@@ -30,6 +30,9 @@ const navigationState = getNodevisionNavigationState();
 const FILE_MANAGER_AUTO_SCROLL_EDGE_RATIO = 0.05;
 const FILE_MANAGER_AUTO_SCROLL_MIN_EDGE_PX = 18;
 const FILE_MANAGER_AUTO_SCROLL_MAX_SPEED = 22;
+const FILE_MANAGER_ITEM_HEIGHT = "28px";
+const FILE_MANAGER_ICON_SIZE = "20px";
+const FILE_MANAGER_ICON_BORDER = "1px solid transparent";
 let fileManagerAutoScrollState = null;
 
 function hasScrollableOverflow(element) {
@@ -214,10 +217,47 @@ function applyEmojiIcon(icon, emoji) {
   icon.style.backgroundSize = "";
   icon.style.backgroundPosition = "";
   icon.style.backgroundRepeat = "";
-  icon.style.border = "";
+  icon.style.border = FILE_MANAGER_ICON_BORDER;
   icon.textContent = emoji;
   icon.style.fontSize = "14px";
   icon.style.lineHeight = "1";
+}
+
+function applyStableFileItemLayout(link, options = {}) {
+  if (!link) return;
+  Object.assign(link.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: options.gap || "8px",
+    width: "100%",
+    height: FILE_MANAGER_ITEM_HEIGHT,
+    minHeight: FILE_MANAGER_ITEM_HEIGHT,
+    padding: "2px 8px",
+    border: "1px solid var(--nv-file-manager-item-border)",
+    borderRadius: "0",
+    textDecoration: "none",
+    fontSize: "12px",
+    lineHeight: "1.2",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    transition: "background-color 120ms ease, border-color 120ms ease, color 120ms ease"
+  });
+}
+
+function applyStableFileIconLayout(icon) {
+  if (!icon) return;
+  Object.assign(icon.style, {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: FILE_MANAGER_ICON_SIZE,
+    height: FILE_MANAGER_ICON_SIZE,
+    flex: "0 0 " + FILE_MANAGER_ICON_SIZE,
+    borderRadius: "3px",
+    border: FILE_MANAGER_ICON_BORDER,
+    boxSizing: "border-box",
+    overflow: "hidden"
+  });
 }
 
 async function findDirectoryImageUrl(entry) {
@@ -515,7 +555,8 @@ export function displayFiles(files, currentPath) {
     alignItems: "stretch",
     gap: "4px",
     width: "100%",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    overflowAnchor: "none"
   });
 
   // ".." entry — only if not at root
@@ -525,24 +566,12 @@ export function displayFiles(files, currentPath) {
     li.style.minWidth = "0";
     li.style.width = "100%";
     li.style.display = "flex";
+    li.style.flex = "0 0 auto";
     const link = document.createElement("a");
     link.href = "#";
     link.textContent = "..";
     link.classList.add("folder");
-    Object.assign(link.style, {
-      display: "flex",
-      alignItems: "center",
-      width: "100%",
-      minHeight: "24px",
-      padding: "2px 8px",
-      border: "1px solid var(--nv-file-manager-item-border)",
-      borderRadius: "0",
-      textDecoration: "none",
-      fontSize: "12px",
-      lineHeight: "1.2",
-      boxSizing: "border-box",
-      transition: "background-color 120ms ease, border-color 120ms ease, color 120ms ease"
-    });
+    applyStableFileItemLayout(link, { gap: "0" });
     applyFileItemVisualState(link, "base");
     link.addEventListener("mouseenter", () => {
       if (!link.classList.contains("selected")) applyFileItemVisualState(link, "hover");
@@ -617,22 +646,11 @@ export function displayFiles(files, currentPath) {
     li.style.minWidth = "0";
     li.style.width = "100%";
     li.style.display = "flex";
+    li.style.flex = "0 0 auto";
     const link = document.createElement("a");
     link.href = "#";
     link.classList.add(f.isDirectory ? "folder" : "file");
-    link.style.display = "flex";
-    link.style.alignItems = "center";
-    link.style.gap = "8px";
-    link.style.width = "100%";
-    link.style.minHeight = "24px";
-    link.style.padding = "2px 8px";
-    link.style.border = "1px solid var(--nv-file-manager-item-border)";
-    link.style.borderRadius = "0";
-    link.style.textDecoration = "none";
-    link.style.fontSize = "12px";
-    link.style.lineHeight = "1.2";
-    link.style.boxSizing = "border-box";
-    link.style.transition = "background-color 120ms ease, border-color 120ms ease, color 120ms ease";
+    applyStableFileItemLayout(link);
     applyFileItemVisualState(link, "base");
     link.addEventListener("mouseenter", () => {
       if (!link.classList.contains("selected")) applyFileItemVisualState(link, "hover");
@@ -643,13 +661,7 @@ export function displayFiles(files, currentPath) {
     });
 
     const icon = document.createElement("span");
-    icon.style.display = "inline-flex";
-    icon.style.alignItems = "center";
-    icon.style.justifyContent = "center";
-    icon.style.width = "20px";
-    icon.style.height = "20px";
-    icon.style.flex = "0 0 20px";
-    icon.style.borderRadius = "3px";
+    applyStableFileIconLayout(icon);
 
     const directoryImageUrl = f.isDirectory ? resolveDirectoryImageUrl(f) : "";
 

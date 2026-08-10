@@ -4,6 +4,7 @@
 import { clearEditorContext, getEditingContext, saveEditingContext, setBusyOperation, setEditorContext, setSelectionContext } from "../../EditorAttentionState.mjs";
 import "/EditorSwitchGuard.mjs";
 import saveCurrentFile from "/ToolbarCallbacks/file/saveFile.mjs";
+import { recordEditedFile } from "/RecentFiles.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus, setWordCountVisibility } from "/StatusBar.mjs";
 import { normalizeNotebookRelativePath, toNotebookAssetUrl } from "/utils/notebookPath.mjs";
@@ -1109,6 +1110,7 @@ function detectLanguage(filePath) {
     {
       js: "javascript",
       mjs: "javascript",
+      nodevisionsession: "javascript",
       ts: "typescript",
       html: "html",
       css: "css",
@@ -1267,6 +1269,9 @@ function updateDirtyState() {
   if (!model) return;
   const currentId = model.getAlternativeVersionId?.();
   window.__nvCodeEditorDirty = savedVersionId !== null && currentId !== savedVersionId;
+  if (window.__nvCodeEditorDirty) {
+    recordEditedFile(window.__nvCodeEditorActivePath || lastEditedPath || window.currentActiveFilePath);
+  }
 }
 
 function markEditorClean() {

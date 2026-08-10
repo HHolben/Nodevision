@@ -1,22 +1,18 @@
 // Nodevision/ApplicationSystem/tools/exportUsd.mjs
 // This file defines the export Usd module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
 import { readFileSync, writeFileSync } from "node:fs";
-import { extname } from "node:path";
-
-function extractJsonFromHtml(html) {
-  const match = html.match(/<script\s+type=["']application\/json["']\s*>([\s\S]*?)<\/script>/i);
-  if (!match) return null;
-  return match[1];
-}
+import { basename, extname } from "node:path";
+import { extractJsonFromHtml, toUsdLike } from "./worldJsonToUsdLike/converter.mjs";
 
 function readWorldJson(filePath) {
   const raw = readFileSync(filePath, "utf8");
+  const label = basename(filePath);
   if (extname(filePath).toLowerCase() === ".html") {
-    const jsonText = extractJsonFromHtml(raw);
-    if (!jsonText) throw new Error(`No JSON script tag found in ${filePath}`);
-    return JSON.parse(jsonText);
+    const extracted = extractJsonFromHtml(raw);
+    if (!extracted?.jsonText) throw new Error("No Nodevision MetaWorld JSON script tag found in " + filePath);
+    return toUsdLike(JSON.parse(extracted.jsonText), label);
   }
-  return JSON.parse(raw);
+  return toUsdLike(JSON.parse(raw), label);
 }
 
 function formatValue(type, value) {

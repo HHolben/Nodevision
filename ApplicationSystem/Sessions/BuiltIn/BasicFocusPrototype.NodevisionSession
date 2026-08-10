@@ -1,0 +1,18 @@
+// Nodevision/ApplicationSystem/Sessions/BuiltIn/BasicFocusPrototype.NodevisionSession
+// This built-in Session demonstrates temporary Session variables, command execution, waits, and branching without creating a separate focus-training subsystem.
+// @title Basic Focus Prototype
+// @description Demonstrates Session variables, command execution, waiting, and branching without adding a separate focus-training subsystem.
+// @source bundled
+
+let completedSteps = 0;
+
+run("overlay.show", "Choose one small Nodevision task to focus on.");
+wait("session.continue");
+
+completedSteps += 1;
+
+if (completedSteps === 1) {
+  run("overlay.show", "Good. The first focus step is recorded in temporary Session state.");
+  wait("session.continue");
+}
+

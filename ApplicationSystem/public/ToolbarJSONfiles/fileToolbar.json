@@ -353,7 +353,7 @@
   },
   {
     "ToolbarCategory": "File",
-    "heading": "Export virtual world as usd",
+    "heading": "Export Virtual World as USD",
     "hotkeyText": "",
     "callbackKey": "ExportVirtualWorldAsUSD",
     "icon": "icons/Download.png",

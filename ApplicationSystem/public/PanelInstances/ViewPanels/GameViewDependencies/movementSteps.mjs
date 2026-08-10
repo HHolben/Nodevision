@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/movementSteps.mjs
 // This file defines browser-side movement Steps logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { clearFlexibleSurfaceContact, continueFlexibleSurfaceContact, depressedPlayerY, startFlexibleSurfaceContact } from "./surfaceSpringResponse.mjs";
+
 export function applyDirectionalMovement({ THREE, controls, movementState, inputState, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight, allowVerticalMovement = false }) {
   if (!(inputState.moveForward || inputState.moveBackward || inputState.moveLeft || inputState.moveRight)) return;
   const object = controls.getObject();
@@ -84,7 +86,7 @@ function finiteNumber(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function applyGroundBounce({ movementState, incomingVelocityY, resolveGroundBounce, collider = null, groundContact = false, playerFootY = null }) {
+function applyGroundBounce({ movementState, incomingVelocityY, gravity, resolveGroundBounce, collider = null, groundContact = false, playerFootY = null, restingPlayerY = null }) {
   if (!movementState || incomingVelocityY >= 0 || typeof resolveGroundBounce !== "function") return false;
   const config = resolveGroundBounce(collider, { incomingVelocityY, groundContact, playerFootY }) || null;
   if (!config) return false;
@@ -98,6 +100,11 @@ function applyGroundBounce({ movementState, incomingVelocityY, resolveGroundBoun
   if (minBounceSpeed > 0) bounceSpeed = Math.max(minBounceSpeed, bounceSpeed);
   if (Number.isFinite(maxBounceSpeed)) bounceSpeed = Math.min(bounceSpeed, Math.max(0, maxBounceSpeed));
   if (bounceSpeed <= 0) return false;
+  if (Number.isFinite(restingPlayerY) && startFlexibleSurfaceContact({ movementState, config, incomingVelocityY, gravity, bounceSpeed, restingPlayerY })) {
+    movementState.lastBounceMaterialId = config.materialId || "";
+    movementState.lastBounceMaterialName = config.materialName || "";
+    return true;
+  }
   movementState.velocityY = bounceSpeed;
   movementState.isGrounded = false;
   movementState.lastBounceMaterialId = config.materialId || "";
@@ -105,10 +112,26 @@ function applyGroundBounce({ movementState, incomingVelocityY, resolveGroundBoun
   return true;
 }
 
-export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, crouching, crouchJumpMultiplier = 1.85, groundLevel, wouldCollide, resolveGroundBounce = null }) {
+function jumpMultiplierForInput(inputState, crouching, crouchJumpMultiplier) {
+  const explicitMultiplier = Number(inputState?.jumpForceMultiplier);
+  if (Number.isFinite(explicitMultiplier) && explicitMultiplier > 0) {
+    return Math.max(0.05, Math.min(4, explicitMultiplier));
+  }
+  return crouching ? crouchJumpMultiplier : 1;
+}
+
+export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, crouching, crouchJumpMultiplier = 1.5, groundLevel, wouldCollide, resolveGroundBounce = null }) {
+  const jumpMultiplier = jumpMultiplierForInput(inputState, crouching, crouchJumpMultiplier);
+  const jumpImpulse = jumpSpeed * jumpMultiplier;
+  if (continueFlexibleSurfaceContact({ controls, inputState, movementState, jumpImpulse })) {
+    if (!inputState.jump) movementState.jumpLatch = false;
+    return;
+  }
   if (inputState.jump && movementState.isGrounded) {
-    const jumpImpulse = crouching ? jumpSpeed * crouchJumpMultiplier : jumpSpeed;
     movementState.velocityY = jumpImpulse;
+    movementState.lastJumpForce = jumpImpulse;
+    movementState.lastJumpMultiplier = jumpMultiplier;
+    movementState.lastJumpMode = inputState.jumpMode || (crouching ? "high" : "normal");
     movementState.isGrounded = false;
     movementState.jumpLatch = true;
   }
@@ -128,15 +151,19 @@ export function applyGroundMovement({ controls, inputState, movementState, gravi
   const canSnapDown = movementState.isGrounded === true && movementState.velocityY <= 0 && footY <= groundLevel + snapDistance;
 
   if (footY <= groundLevel || canSnapDown) {
-    nextPosition.y = groundLevel + movementState.playerHeight;
+    const restingPlayerY = groundLevel + movementState.playerHeight;
+    nextPosition.y = restingPlayerY;
     const bounced = applyGroundBounce({
       movementState,
       incomingVelocityY,
+      gravity,
       resolveGroundBounce,
       collider: movementState.pendingGroundCollider || null,
       groundContact: true,
-      playerFootY: nextPosition.y - movementState.playerHeight
+      playerFootY: nextPosition.y - movementState.playerHeight,
+      restingPlayerY
     });
+    if (bounced) nextPosition.y = depressedPlayerY(movementState, nextPosition.y);
     if (!bounced) {
       movementState.velocityY = 0;
       movementState.isGrounded = true;
@@ -147,10 +174,12 @@ export function applyGroundMovement({ controls, inputState, movementState, gravi
       const bounced = applyGroundBounce({
         movementState,
         incomingVelocityY,
+        gravity,
         resolveGroundBounce,
         collider: hitCollider,
         groundContact: false,
-        playerFootY: object.position.y - movementState.playerHeight
+        playerFootY: object.position.y - movementState.playerHeight,
+        restingPlayerY: object.position.y
       });
       if (!bounced) {
         movementState.isGrounded = true;
@@ -159,9 +188,10 @@ export function applyGroundMovement({ controls, inputState, movementState, gravi
     } else {
       movementState.velocityY = 0;
     }
-    nextPosition.y = object.position.y;
+    nextPosition.y = depressedPlayerY(movementState, object.position.y);
   } else {
     movementState.isGrounded = false;
+    clearFlexibleSurfaceContact(movementState);
   }
   object.position.y = nextPosition.y;
 }

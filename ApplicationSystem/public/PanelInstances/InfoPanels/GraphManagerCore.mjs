@@ -3,6 +3,11 @@
 import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
 import { scanFileForLinkRecords } from './GraphManagerDependencies/ScanForLinks.mjs';
 import { buildSelectedGraphLink, linkRecordTargetId, makeEdgeLabel, setSelectedGraphLink, summarizeLinkRecord } from './GraphManagerDependencies/LinkRecords.mjs';
+import {
+    brokenPlaceholderId,
+    makeBrokenPlaceholderRecord,
+    retargetGraphLinkRecord
+} from './GraphManagerDependencies/BrokenLinkPlaceholders.mjs';
 import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
 import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';
 import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
@@ -20,6 +25,7 @@ const discoveredLinks = new Map(); // sourcePath -> Set(targetPath)
 const linkRecordsBySourceTarget = new Map(); // sourcePath + targetPath -> link records[]
 let linkInspectorElem = null;
 const brokenLinksBySource = new Map(); // sourcePath -> Set(brokenTargetPath)
+const brokenLinkRecordsBySourceTarget = new Map(); // sourcePath + brokenTargetPath -> link records[]
 let layoutHasInitialized = false;
 let activeLayout = null;
 let layoutDebounceTimer = null;
@@ -34,6 +40,8 @@ let externalLinkedFilesVisible = true;
 let graphViewportResizeFrame = 0;
 let graphViewportResizeShouldFit = false;
 let graphViewportEventCleanup = null;
+let placeholderRetargetState = null;
+let linkEndpointEditState = null;
 const EDGE_BUCKET_SYMBOLS = [
     ...'abcdefghijklmnopqrstuvwxyz',
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -62,7 +70,7 @@ const DIRECTORY_COLOR_FAMILIES = [
 const DIRECTORY_EXPANDED_TINT_SURFACE = "#f8fafc";
 const DIRECTORY_EXPANDED_TINT_AMOUNT = 0.42;
 const DIRECTORY_BORDER_DARKEN_AMOUNT = 0.22;
-const EXPANDED_DIRECTORY_PARENT_MARGIN = 28;
+const EXPANDED_DIRECTORY_PARENT_MARGIN = 20;
 const EXPANDED_DIRECTORY_COLLISION_GAP = 36;
 const EXPANDED_DIRECTORY_COLLISION_MAX_PASSES = 6;
 const CLIPBOARD_SHORTCUTS = {
@@ -544,6 +552,138 @@ function setDropTargetHighlight(node) {
 }
 
 
+function findFileAtRenderedPoint(renderedPos, { excludeIds } = {}) {
+    if (!cy || !renderedPos) return null;
+
+    let best = null;
+    let bestArea = Infinity;
+    cy.nodes().forEach((node) => {
+        if (!node || node.empty()) return;
+        if (node.data('type') !== 'file') return;
+        if (!node.visible()) return;
+        if (excludeIds && excludeIds.has(node.id())) return;
+
+        const box = node.renderedBoundingBox({ includeLabels: false });
+        if (!renderedPointInBox(renderedPos, box)) return;
+
+        const area = Math.max(1, (box.x2 - box.x1) * (box.y2 - box.y1));
+        if (area < bestArea) {
+            best = node;
+            bestArea = area;
+        }
+    });
+
+    return best;
+}
+
+function clearLinkDropTargetHighlight(state) {
+    if (!cy || !state?.dropTargetId) return;
+    const node = cy.getElementById(state.dropTargetId);
+    if (!node.empty()) node.removeClass('nv-link-drop-target');
+    state.dropTargetId = null;
+}
+
+function setLinkDropTargetHighlight(state, node) {
+    if (!cy || !state) return;
+    const nextId = node?.id?.() || null;
+    if (state.dropTargetId === nextId) return;
+    clearLinkDropTargetHighlight(state);
+    if (!nextId) return;
+    node.addClass('nv-link-drop-target');
+    state.dropTargetId = nextId;
+}
+
+function linkRecordsFromData(data = {}) {
+    return Array.isArray(data.linkRecords) ? data.linkRecords.filter(Boolean) : [];
+}
+
+function firstEditableTargetRecord(records = []) {
+    return records.find((record) => record?.editableTarget) || records[0] || null;
+}
+
+function graphLinkSelectionFromData(data = {}) {
+    return buildSelectedGraphLink(data, Number(data.occurrenceIndex) || 0);
+}
+
+async function retargetGraphLinkData(data, destinationPath, selection = null) {
+    const record = firstEditableTargetRecord(linkRecordsFromData(data));
+    if (!record) throw new Error("This graph edge has no source-backed link record to edit.");
+    const result = await retargetGraphLinkRecord(record, destinationPath, {
+        selection: selection || graphLinkSelectionFromData(data),
+    });
+    if (result.changed) {
+        await refreshGraphView({ fit: false, reason: "link-retarget" });
+    }
+    return result;
+}
+
+function restoreDraggedNodePosition(node, position) {
+    if (!node || node.empty?.() || !position) return;
+    try { node.position(position); } catch (_) { /* ignore */ }
+}
+
+function clearLinkEndpointEdit() {
+    if (cy) {
+        cy.edges().removeClass("nv-link-endpoint-edit");
+        cy.nodes().removeClass("nv-link-endpoint-source nv-link-endpoint-target nv-link-endpoint-dragging nv-link-drop-target");
+    }
+    linkEndpointEditState = null;
+}
+
+function selectGraphLinkFromData(data = {}) {
+    if (cy) {
+        cy.edges().removeClass("nv-selected-link");
+        const edgeId = data.id || data.edgeId || "";
+        const edge = edgeId ? cy.getElementById(edgeId) : null;
+        if (edge && !edge.empty()) edge.addClass("nv-selected-link");
+    }
+    const selection = graphLinkSelectionFromData(data);
+    setSelectedGraphLink(selection);
+    renderGraphLinkInspector(selection);
+    return selection;
+}
+
+function enableLinkEndpointEdit(edge) {
+    if (!edge || edge.empty?.()) return;
+    clearLinkEndpointEdit();
+    edge.addClass("nv-link-endpoint-edit nv-selected-link");
+    const source = edge.source?.();
+    const target = edge.target?.();
+    source?.addClass?.("nv-link-endpoint-source");
+    target?.addClass?.("nv-link-endpoint-target");
+    const selection = selectGraphLinkFromData(edge.data());
+    linkEndpointEditState = {
+        edgeId: edge.id(),
+        selection,
+        dropTargetId: null,
+        draggingNodeId: null,
+        sourcePosition: null,
+    };
+}
+
+function placeholderEdgeDataFromNode(node) {
+    if (!node || node.empty?.()) return null;
+    const data = node.data();
+    const records = linkRecordsFromData(data);
+    return {
+        id: data.edgeId || node.id(),
+        source: data.sourceId || data.sourcePath || "",
+        target: node.id(),
+        sourcePath: data.sourcePath || "",
+        targetPath: data.brokenTargetPath || data.targetPath || "",
+        targetKind: "placeholder",
+        linkRecords: records,
+        occurrenceCount: records.length,
+        edgeLabel: data.edgeLabel || "broken",
+        linkKind: data.linkKind || "link",
+        linkProperty: data.linkProperty || "",
+        linkText: data.linkText || "",
+        label: data.label || "",
+        displayText: data.displayText || ""
+    };
+}
+
+
 function collectionContainsNode(collection, targetNode) {
     if (!collection || !targetNode || typeof targetNode.empty !== "function" || targetNode.empty()) return false;
     const targetId = targetNode.id();
@@ -744,6 +884,7 @@ async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
     layoutPendingReasons.clear();
     layoutHasInitialized = false;
     brokenLinksBySource.clear();
+    brokenLinkRecordsBySourceTarget.clear();
     if (activeLayout && typeof activeLayout.stop === 'function') {
         try { activeLayout.stop(); } catch (_) { /* ignore */ }
         activeLayout = null;
@@ -751,6 +892,7 @@ async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
 
     discoveredLinks.clear();
     linkRecordsBySourceTarget.clear();
+    brokenLinkRecordsBySourceTarget.clear();
     cy.elements().not('.mqtt-live, .td-live').remove();
     externalNodesLoaded = false;
 
@@ -1091,6 +1233,126 @@ function setupCtrlDragMoveHandlers() {
     });
 }
 
+function setupPlaceholderRetargetHandlers() {
+    if (!cy) return;
+
+    cy.on('grab', 'node[type="placeholder"]', (evt) => {
+        const node = evt.target;
+        if (!node || node.empty()) return;
+        const data = placeholderEdgeDataFromNode(node);
+        if (!data) return;
+        placeholderRetargetState = {
+            active: true,
+            nodeId: node.id(),
+            edgeData: data,
+            selection: graphLinkSelectionFromData(data),
+            sourcePosition: typeof node.position === 'function' ? { ...node.position() } : null,
+            dropTargetId: null,
+        };
+        node.addClass('nv-link-endpoint-dragging');
+        selectGraphLinkFromData(data);
+    });
+
+    cy.on('drag', 'node[type="placeholder"]', (evt) => {
+        const state = placeholderRetargetState;
+        if (!state?.active) return;
+        const node = evt.target;
+        if (!node || node.empty() || node.id() !== state.nodeId) return;
+        const renderedPos = typeof node.renderedPosition === 'function' ? node.renderedPosition() : evt?.renderedPosition;
+        const fileNode = findFileAtRenderedPoint(renderedPos, { excludeIds: new Set([state.nodeId]) });
+        setLinkDropTargetHighlight(state, fileNode);
+    });
+
+    cy.on('free', 'node[type="placeholder"]', async (evt) => {
+        const state = placeholderRetargetState;
+        const node = evt.target;
+        if (!state?.active || !node || node.empty() || node.id() !== state.nodeId) return;
+
+        placeholderRetargetState = null;
+        node.removeClass('nv-link-endpoint-dragging');
+        const dropTargetId = state.dropTargetId;
+        clearLinkDropTargetHighlight(state);
+
+        if (!dropTargetId) {
+            restoreDraggedNodePosition(node, state.sourcePosition);
+            return;
+        }
+
+        const targetNode = cy.getElementById(dropTargetId);
+        const destinationPath = normalizePath(targetNode?.data?.('fullPath') || '');
+        if (!destinationPath) {
+            restoreDraggedNodePosition(node, state.sourcePosition);
+            return;
+        }
+
+        try {
+            await retargetGraphLinkData(state.edgeData, destinationPath, state.selection);
+        } catch (err) {
+            console.error('[GraphManager] Placeholder retarget failed:', err);
+            alert(`Could not repair link: ${err?.message || err}`);
+            restoreDraggedNodePosition(node, state.sourcePosition);
+        }
+    });
+}
+
+function setupLinkEndpointRetargetHandlers() {
+    if (!cy) return;
+
+    cy.on('grab', 'node.nv-link-endpoint-target', (evt) => {
+        const state = linkEndpointEditState;
+        if (!state?.edgeId) return;
+        const node = evt.target;
+        if (!node || node.empty() || node.data('type') === 'placeholder') return;
+        const edge = cy.getElementById(state.edgeId);
+        if (!edge || edge.empty()) return;
+        state.draggingNodeId = node.id();
+        state.sourcePosition = typeof node.position === 'function' ? { ...node.position() } : null;
+        state.edgeData = edge.data();
+        node.addClass('nv-link-endpoint-dragging');
+    });
+
+    cy.on('drag', 'node.nv-link-endpoint-target', (evt) => {
+        const state = linkEndpointEditState;
+        if (!state?.draggingNodeId) return;
+        const node = evt.target;
+        if (!node || node.empty() || node.id() !== state.draggingNodeId) return;
+        const renderedPos = typeof node.renderedPosition === 'function' ? node.renderedPosition() : evt?.renderedPosition;
+        const excludeIds = new Set([state.draggingNodeId, state.edgeData?.source].filter(Boolean));
+        const fileNode = findFileAtRenderedPoint(renderedPos, { excludeIds });
+        setLinkDropTargetHighlight(state, fileNode);
+    });
+
+    cy.on('free', 'node.nv-link-endpoint-target', async (evt) => {
+        const state = linkEndpointEditState;
+        const node = evt.target;
+        if (!state?.draggingNodeId || !node || node.empty() || node.id() !== state.draggingNodeId) return;
+
+        const dropTargetId = state.dropTargetId;
+        const edgeData = state.edgeData;
+        const selection = state.selection;
+        const sourcePosition = state.sourcePosition;
+        node.removeClass('nv-link-endpoint-dragging');
+        state.draggingNodeId = null;
+        state.sourcePosition = null;
+        state.edgeData = null;
+        clearLinkDropTargetHighlight(state);
+        restoreDraggedNodePosition(node, sourcePosition);
+
+        if (!dropTargetId || dropTargetId === edgeData?.targetPath || dropTargetId === edgeData?.target) return;
+        const targetNode = cy.getElementById(dropTargetId);
+        const destinationPath = normalizePath(targetNode?.data?.('fullPath') || '');
+        if (!destinationPath) return;
+
+        try {
+            await retargetGraphLinkData(edgeData, destinationPath, selection);
+        } catch (err) {
+            console.error('[GraphManager] Endpoint retarget failed:', err);
+            alert(`Could not retarget link: ${err?.message || err}`);
+        }
+    });
+}
+
+
 function edgeRecordKey(sourcePath, targetPath) {
     return normalizePath(sourcePath) + "->" + normalizePath(targetPath);
 }
@@ -1263,7 +1525,9 @@ function explicitLabelFromRecords(records = []) {
 function rebuildVisibleEdges() {
     if (!cy) return;
 
+    clearLinkEndpointEdit();
     const edgeMap = new Map();
+    const placeholderNodes = new Map();
     for (const [sourcePath, targets] of discoveredLinks.entries()) {
         const visibleSource = getVisibleNodeId(cy, sourcePath);
         if (!visibleSource) continue;
@@ -1310,8 +1574,79 @@ function rebuildVisibleEdges() {
         }
     }
 
+
+    for (const [sourcePath, targets] of brokenLinksBySource.entries()) {
+        const visibleSource = getVisibleNodeId(cy, sourcePath);
+        if (!visibleSource) continue;
+
+        for (const targetPath of targets) {
+            const records = [...(brokenLinkRecordsBySourceTarget.get(edgeRecordKey(sourcePath, targetPath)) || [])];
+            const placeholderRecords = records.length ? records : [null];
+            placeholderRecords.forEach((record, index) => {
+                const recordIndex = record?.recordIndex ?? index;
+                const placeholderId = brokenPlaceholderId(sourcePath, targetPath, recordIndex);
+                const edgeId = "broken-edge-" + visibleSource + "-" + placeholderId;
+                const linkRecords = record ? [record] : [];
+                const edgeLabel = edgeLabelFromRecords(linkRecords) || "broken";
+                const primary = record || null;
+
+                placeholderNodes.set(placeholderId, {
+                    group: "nodes",
+                    classes: "nv-broken-placeholder",
+                    data: {
+                        id: placeholderId,
+                        label: "",
+                        type: "placeholder",
+                        sourcePath,
+                        sourceId: visibleSource,
+                        targetPath,
+                        brokenTargetPath: targetPath,
+                        linkRecords,
+                        occurrenceIndex: 0,
+                        occurrenceCount: linkRecords.length,
+                        edgeId,
+                        edgeLabel,
+                        linkKind: primary?.linkKind || "link",
+                        linkProperty: primary?.linkProperty || "",
+                        linkText: primary?.linkText || "",
+                        labelText: primary?.label || "",
+                        displayText: primary?.displayText || primary?.label || ""
+                    }
+                });
+
+                edgeMap.set("broken:" + visibleSource + "->" + placeholderId, {
+                    group: "edges",
+                    classes: "nv-broken-link-edge",
+                    data: {
+                        id: edgeId,
+                        source: visibleSource,
+                        target: placeholderId,
+                        sourcePath,
+                        targetPath,
+                        brokenTargetPath: targetPath,
+                        targetKind: "placeholder",
+                        linkRecords,
+                        occurrenceCount: linkRecords.length,
+                        edgeLabel,
+                        linkKind: primary?.linkKind || "link",
+                        linkProperty: primary?.linkProperty || "",
+                        linkText: primary?.linkText || "",
+                        tags: primary?.tags || [],
+                        symbols: primary?.symbols || [],
+                        label: primary?.label || "",
+                        displayText: primary?.displayText || primary?.label || ""
+                    }
+                });
+            });
+        }
+    }
+
     cy.batch(() => {
         cy.edges().not(".mqtt-live, .td-live").remove();
+        cy.nodes('node[type="placeholder"]').remove();
+        if (placeholderNodes.size > 0) {
+            cy.add([...placeholderNodes.values()]);
+        }
         if (edgeMap.size > 0) {
             cy.add([...edgeMap.values()]);
         }
@@ -1429,7 +1764,7 @@ async function notebookAssetExists(relativePath) {
     }
 }
 
-function rememberBrokenLink(sourcePath, targetPath) {
+function rememberBrokenLink(sourcePath, targetPath, record = null) {
     const source = normalizePath(sourcePath);
     const target = normalizePath(targetPath);
     if (!source || !target) return;
@@ -1440,12 +1775,23 @@ function rememberBrokenLink(sourcePath, targetPath) {
         brokenLinksBySource.set(source, targets);
     }
     targets.add(target);
+
+    if (record && typeof record === "object") {
+        const key = edgeRecordKey(source, target);
+        const records = brokenLinkRecordsBySourceTarget.get(key) || [];
+        const duplicate = records.some((item) => item.id === record.id && item.recordIndex === record.recordIndex);
+        if (!duplicate) records.push(makeBrokenPlaceholderRecord(record, target));
+        brokenLinkRecordsBySourceTarget.set(key, records);
+    }
 }
 
 function clearBrokenLinksForSource(sourcePath) {
     const source = normalizePath(sourcePath);
     if (!source) return;
     brokenLinksBySource.delete(source);
+    for (const key of [...brokenLinkRecordsBySourceTarget.keys()]) {
+        if (key.startsWith(source + "->")) brokenLinkRecordsBySourceTarget.delete(key);
+    }
     const node = cy?.getElementById(source);
     if (node && !node.empty()) {
         node.data('brokenLinkCount', 0);
@@ -1484,10 +1830,14 @@ function renderGraphLinkInspector(selection) {
 
     linkInspectorElem.style.display = "block";
     const countText = selection.occurrenceCount > 1 ? " (" + selection.occurrenceCount + " links)" : "";
-    const targetLabel = record.targetKind === "external" ? record.targetRaw : record.targetPath;
+    const isPlaceholder = record.targetKind === "placeholder" || record.isBrokenLink === true;
+    const targetLabel = record.targetKind === "external" ? record.targetRaw : (record.targetPath || record.targetRaw);
+    const guidance = isPlaceholder
+        ? "Broken link: drag the blank red placeholder onto the file that should become this link target."
+        : (typeof window.showGraphLinkInFileView === "function" ? "Shown in File Viewer" : "Open File View to inspect and edit this link");
     linkInspectorElem.innerHTML = "<div style=\"font-weight:700;margin-bottom:4px;\">" + escapeHtml(summarizeLinkRecord(record)) + escapeHtml(countText) + "</div>" +
         "<div style=\"color:#475569;margin-bottom:6px;\">" + escapeHtml(record.sourcePath) + " -> " + escapeHtml(targetLabel) + "</div>" +
-        "<div style=\"color:#64748b;\">" + (typeof window.showGraphLinkInFileView === "function" ? "Shown in File Viewer" : "Open File View to inspect and edit this link") + "</div>";
+        "<div style=\"color:#64748b;\">" + escapeHtml(guidance) + "</div>";
 }
 
 function parseCssPixelValue(value) {
@@ -1654,6 +2004,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     navigationState.setLastOpenedDirectory(currentRootPath, "GraphManager");
     discoveredLinks.clear();
     linkRecordsBySourceTarget.clear();
+    brokenLinksBySource.clear();
+    brokenLinkRecordsBySourceTarget.clear();
     linkInspectorElem = linkInspectorId ? document.getElementById(linkInspectorId) : null;
     renderGraphLinkInspector(null);
     const container = document.getElementById(containerId);
@@ -1682,7 +2034,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 selector: 'node[type="directory"]',
                 style: {
                     'background-color': 'data(directoryColor)',
-                    'shape': 'round-rectangle',
+                    'shape': 'rectangle',
                     // Keep unexpanded directories compact while allowing expanded ones
                     // to size naturally around their children.
                     'min-width': 64,
@@ -1774,6 +2126,13 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 }
             },
             {
+                selector: 'node[type="directory"]:selected',
+                style: {
+                    'overlay-shape': 'rectangle',
+                    'underlay-shape': 'rectangle'
+                }
+            },
+            {
                 selector: 'node[type="external"]',
                 style: {
                     'shape': 'diamond',
@@ -1841,6 +2200,61 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 }
             },
             {
+                selector: 'node[type="placeholder"]',
+                style: {
+                    'width': 34,
+                    'height': 34,
+                    'shape': 'ellipse',
+                    'background-color': '#ffffff',
+                    'background-opacity': 0,
+                    'border-color': '#d32f2f',
+                    'border-style': 'dashed',
+                    'border-width': 3,
+                    'label': '',
+                    'overlay-color': '#d32f2f',
+                    'overlay-opacity': 0.08,
+                    'z-index': 35
+                }
+            },
+            {
+                selector: 'node[type="placeholder"]:selected',
+                style: {
+                    'background-opacity': 0.15,
+                    'background-color': '#ffebee',
+                    'border-width': 4,
+                    'underlay-color': '#d32f2f',
+                    'underlay-opacity': 0.36,
+                    'underlay-padding': 8
+                }
+            },
+            {
+                selector: 'node.nv-link-drop-target',
+                style: {
+                    'border-color': '#d32f2f',
+                    'border-width': 4,
+                    'overlay-color': '#d32f2f',
+                    'overlay-opacity': 0.16,
+                    'z-index': 45
+                }
+            },
+            {
+                selector: 'node.nv-link-endpoint-source, node.nv-link-endpoint-target',
+                style: {
+                    'border-color': '#2563eb',
+                    'border-width': 4,
+                    'underlay-color': '#2563eb',
+                    'underlay-opacity': 0.22,
+                    'underlay-padding': 8,
+                    'z-index': 44
+                }
+            },
+            {
+                selector: 'node.nv-link-endpoint-target',
+                style: {
+                    'border-style': 'dashed'
+                }
+            },
+            {
                 selector: 'edge',
                 style: {
                     'width': 2,
@@ -1874,6 +2288,20 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                     'z-index': 30
                 }
             },
+            {
+                selector: 'edge.nv-broken-link-edge',
+                style: {
+                    'line-color': '#d32f2f',
+                    'target-arrow-color': '#d32f2f',
+                    'line-style': 'dashed',
+                    'width': 3,
+                    'opacity': 0.95,
+                    'label': 'data(edgeLabel)',
+                    'color': '#991b1b',
+                    'text-outline-color': '#ffffff',
+                    'text-outline-width': 2
+                }
+            },
             ...MQTT_GRAPH_STYLE,
             ...THING_DESCRIPTION_GRAPH_STYLE
         ],
@@ -1903,8 +2331,14 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     }
 
     cy.on('tap', 'node', (evt) => {
-        const path = evt.target.data('fullPath');
-        const selectedIsDirectory = evt.target.data('type') === 'directory';
+        const node = evt.target;
+        if (node.data('type') === 'placeholder') {
+            const data = placeholderEdgeDataFromNode(node);
+            if (data) selectGraphLinkFromData(data);
+            return;
+        }
+        const path = node.data('fullPath');
+        const selectedIsDirectory = node.data('type') === 'directory';
         if (path !== undefined) {
             navigationState.setLastInfoPanelType("GraphManager");
             navigationState.setLastFileSelectionPanelType?.("GraphManager");
@@ -1917,8 +2351,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 },
             });
         }
-        if (evt.target.data('type') === 'external' && evt.target.data('url')) {
-            window.selectedExternalUrl = evt.target.data('url');
+        if (node.data('type') === 'external' && node.data('url')) {
+            window.selectedExternalUrl = node.data('url');
         }
     });
 
@@ -1926,6 +2360,11 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         const edge = evt.target;
         cy.edges().removeClass("nv-selected-link");
         edge.addClass("nv-selected-link");
+        if (evt?.originalEvent?.shiftKey) {
+            enableLinkEndpointEdit(edge);
+            return;
+        }
+        clearLinkEndpointEdit();
         const selection = buildSelectedGraphLink(edge.data(), 0);
         setSelectedGraphLink(selection);
         renderGraphLinkInspector(selection);
@@ -1934,6 +2373,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     cy.on("tap", (evt) => {
         if (evt.target !== cy) return;
         cy.edges().removeClass("nv-selected-link");
+        clearLinkEndpointEdit();
         setSelectedGraphLink(null);
         renderGraphLinkInspector(null);
     });
@@ -1958,6 +2398,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     });
 
     setupCtrlDragMoveHandlers();
+    setupPlaceholderRetargetHandlers();
+    setupLinkEndpointRetargetHandlers();
 
     mqttGraphLayer?.cleanup?.();
     tdGraphLayer?.cleanup?.();
@@ -2143,7 +2585,7 @@ async function handleLinkDiscovery(filePath) {
 
                 const exists = await notebookAssetExists(cleanTarget);
                 if (!exists) {
-                    rememberBrokenLink(cleanSource, cleanTarget);
+                    rememberBrokenLink(cleanSource, cleanTarget, record);
                     applyBrokenLinkBadge(cleanSource);
                     continue;
                 }

@@ -3,21 +3,11 @@
 let leftEl = null;
 let rightEl = null;
 let wordsEl = null;
-let wordsAddedEl = null;
 let wordCountVisible = false;
 
 function ensureWordCounterElements() {
   if (!wordsEl) {
     wordsEl = document.getElementById("status-words");
-  }
-  if (!wordsAddedEl) {
-    wordsAddedEl = document.getElementById("status-words-added");
-  }
-  if (!wordsAddedEl && wordsEl?.parentElement) {
-    wordsAddedEl = document.createElement("span");
-    wordsAddedEl.id = "status-words-added";
-    wordsAddedEl.setAttribute("aria-live", "polite");
-    wordsEl.after(wordsAddedEl);
   }
 }
 
@@ -31,7 +21,7 @@ export function setWordCountVisibility(show = false) {
   if (!wordsEl) return;
 
   wordCountVisible = Boolean(show);
-  [wordsEl, wordsAddedEl].forEach((el) => {
+  [wordsEl].forEach((el) => {
     if (!el) return;
     el.style.display = wordCountVisible ? "" : "none";
     el.setAttribute("aria-hidden", wordCountVisible ? "false" : "true");
@@ -39,10 +29,8 @@ export function setWordCountVisibility(show = false) {
 
   if (!wordCountVisible) {
     wordsEl.textContent = "";
-    if (wordsAddedEl) wordsAddedEl.textContent = "";
   } else {
     if (!wordsEl.textContent) wordsEl.textContent = "Words: 0";
-    if (wordsAddedEl) wordsAddedEl.textContent = "Words Added: 0";
   }
 }
 
@@ -53,10 +41,6 @@ export function initStatusBar() {
   if (wordsEl && !wordsEl.textContent) {
     wordsEl.textContent = "Words: 0";
   }
-  if (wordsAddedEl && !wordsAddedEl.textContent) {
-    wordsAddedEl.textContent = "Words Added: 0";
-  }
-
   // Hidden by default; shown only for publication-style editors.
   setWordCountVisibility(false);
 }
@@ -86,17 +70,10 @@ export function setWordCount(count = 0) {
   target.textContent = `Words: ${n.toLocaleString()}`;
 }
 
-export function setWordsAddedCount(count = 0) {
-  ensureWordCounterElements();
-  if (!wordsAddedEl || !wordCountVisible) return;
-  const n = normalizeCounterValue(count);
-  wordsAddedEl.textContent = `Words Added: ${n.toLocaleString()}`;
-}
 
 export function clearStatus() {
   setStatus("Ready", "");
   setWordCount(0);
-  setWordsAddedCount(0);
 }
 
 export function logStatus(message, detail = "") {

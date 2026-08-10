@@ -14,12 +14,17 @@ import { ensureSingleContextualToolbarRender } from "./contextualToolbarRegistry
 let currentSubToolbarHeading = null;
 let toolbarAttentionUnsubscribe = null;
 let subToolbarContainer = null;
+const NAVIGATOR_SUBTOOLBAR_PANEL_BY_HEADING = Object.freeze({
+  "File Manager": "FileManager",
+  "Graph Manager": "GraphManager",
+});
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
 const toolbarScriptModuleCache = new Map();
 const TOOLBAR_SEARCH_HEADING = "SearchBar";
 const TOOLBAR_USER_HEADING = "User";
 const USER_TOOLBAR_ICON = "icons/UserIcon.svg";
+const TOOLBAR_DROPDOWN_VIEWPORT_MARGIN = 8;
 const TOOLBAR_HIGHLIGHT_SOUND_URLS = [
   "/soundEffects/Tic.wav",
   "/soundEffects/Tic.mp3"
@@ -155,6 +160,30 @@ if (!window.__nvShowSubToolbarEventBound) {
     });
   });
   window.__nvShowSubToolbarEventBound = true;
+}
+
+if (!window.__nvSubToolbarActivePanelPruneBound) {
+  window.addEventListener("activePanelChanged", () => clearStaleNavigatorSubToolbar());
+  window.__nvSubToolbarActivePanelPruneBound = true;
+}
+
+function hideCurrentSubToolbar() {
+  if (subToolbarContainer) {
+    subToolbarContainer.style.display = "none";
+    subToolbarContainer.innerHTML = "";
+  }
+  currentSubToolbarHeading = null;
+}
+
+function clearStaleNavigatorSubToolbar(state = window.NodevisionState || {}) {
+  const expectedPanel = NAVIGATOR_SUBTOOLBAR_PANEL_BY_HEADING[currentSubToolbarHeading];
+  if (!expectedPanel) return;
+
+  const activePanelType = String(state.activePanelType || "");
+  const activePanel = String(window.activePanel || "");
+  if (activePanelType === expectedPanel || activePanel === expectedPanel) return;
+
+  hideCurrentSubToolbar();
 }
 
 function setActivePanelContextFromHeader(headerEl) {
@@ -330,6 +359,29 @@ function hideUnrelatedDropdowns(activeDropdown) {
   Object.values(prebuiltDropdowns).forEach((dropdown) => {
     if (!dropdownsAreRelated(dropdown, activeDropdown)) dropdown.style.display = "none";
   });
+}
+
+function positionToolbarDropdown(dropdown, anchor = dropdown?.parentElement) {
+  if (!dropdown || !anchor) return;
+  dropdown.style.left = "0px";
+  dropdown.style.right = "auto";
+  dropdown.style.maxWidth = "calc(100vw - " + (TOOLBAR_DROPDOWN_VIEWPORT_MARGIN * 2) + "px)";
+
+  const anchorRect = anchor.getBoundingClientRect();
+  const dropdownRect = dropdown.getBoundingClientRect();
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+  if (!viewportWidth || dropdownRect.width <= 0) return;
+
+  const minLeft = TOOLBAR_DROPDOWN_VIEWPORT_MARGIN;
+  const maxLeft = Math.max(minLeft, viewportWidth - dropdownRect.width - TOOLBAR_DROPDOWN_VIEWPORT_MARGIN);
+  const clampedViewportLeft = Math.min(Math.max(anchorRect.left, minLeft), maxLeft);
+  dropdown.style.left = Math.round(clampedViewportLeft - anchorRect.left) + "px";
+}
+
+function showToolbarDropdown(dropdown, anchor) {
+  if (!dropdown) return;
+  dropdown.style.display = "block";
+  positionToolbarDropdown(dropdown, anchor);
 }
 
 // === Dynamic callback loader ===
@@ -686,7 +738,7 @@ function ensureGlobalToolbarHeightObserver() {
 /**
  * Creates the global toolbar, loading toolbars from JSON files.
  * Each toolbar item may have a "mode" property specifying when it appears.
- * @param {string} toolbarSelector 
+ * @param {string} toolbarSelector
  * @param {string} currentMode - optional mode filter ("code", "graphical", etc.)
  */
 export async function createToolbar(toolbarSelector = "#global-toolbar", currentMode = "default") {
@@ -809,7 +861,7 @@ function buildToolbar(container, items, parentHeading = null) {
         clearTimeout(hoverTimeout);
         playToolbarHighlightSound();
         hideUnrelatedDropdowns(dropdown);
-        dropdown.style.display = "block";
+        showToolbarDropdown(dropdown, btnWrapper);
       });
       btnWrapper.addEventListener("mouseleave", () => {
         hoverTimeout = setTimeout(() => (dropdown.style.display = "none"), 250);
@@ -850,7 +902,7 @@ if (item.panelTemplateId || item.panelTemplate) {
       // If this item HAS a dropdown, do NOT open a sub-toolbar.
       // Some actions (like Draw -> Color) render their own custom sub-toolbar.
       if (dropdown) {
-        dropdown.style.display = "block";
+        showToolbarDropdown(dropdown, btnWrapper);
       } else if (item.preventAutoSubToolbar !== true) {
         if (subToolbarContainer) showSubToolbar(menuHeading);
       }
@@ -1054,6 +1106,7 @@ export function updateToolbarState(newState = {}) {
   console.log("Updating Toolbar state")
   // Merge new state into the global NodevisionState
   Object.assign(window.NodevisionState, newState);
+  clearStaleNavigatorSubToolbar(window.NodevisionState);
 
   // Determine the current mode (fallback to "default")
   const currentMode = window.NodevisionState?.currentMode || "default";

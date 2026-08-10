@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/saveFile/utils.mjs
 // This file defines helper utilities for the saveFile toolbar callback in Nodevision. It resolves active file paths, saves content via the API, and notifies listeners after writes.
 
+import { recordEditedFile } from "/RecentFiles.mjs";
+
 const RASTER_EDITING_MODES = new Set([
   "PNGediting",
   "JPGediting",
@@ -107,6 +109,7 @@ export function getFileExtension(pathValue = "") {
 }
 
 export function notifyFileSaved(path) {
+  recordEditedFile(path);
   if (!path || typeof window === "undefined" || typeof window.dispatchEvent !== "function") return false;
 
   window.dispatchEvent(

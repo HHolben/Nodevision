@@ -15,10 +15,33 @@ function makeAttr(type, value) {
   return { type, value };
 }
 
+function scriptAttr(attrs, name) {
+  const pattern = "\\b" + String(name || "") + "\\s*=\\s*[\"\x27]([^\"\x27]*)[\"\x27]";
+  const match = String(attrs || "").match(new RegExp(pattern, "i"));
+  return match ? match[1] : "";
+}
+
+function isNodevisionOnlyObject(def = {}) {
+  const type = String(def.type || def.nvType || "").toLowerCase();
+  if (type.includes("equation") || type.includes("expression") || type === "math-function") return true;
+  if (type === "functionsurface" || type === "functioncurve" || type === "parametriccurve") return true;
+  return def.metaWorldExpressionLayer === true || Boolean(def.equationCollider || def.equationExpression);
+}
+
 export function extractJsonFromHtml(html) {
-  const match = html.match(/<script\s+type=["']application\/json["']\s*>([\s\S]*?)<\/script>/i);
-  if (!match) return null;
-  return { jsonText: match[1], start: match.index, end: match.index + match[0].length };
+  const scripts = [];
+  const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let match = null;
+  while ((match = re.exec(String(html || "")))) {
+    const attrs = match[1] || "";
+    const type = scriptAttr(attrs, "type").toLowerCase();
+    const id = scriptAttr(attrs, "id").toLowerCase();
+    const preferred = /\bdata-nodevision-meta-world\b/i.test(attrs) || id === "nodevision-metaworld";
+    if (preferred || type === "application/json") {
+      scripts.push({ jsonText: match[2], start: match.index, end: match.index + match[0].length, preferred });
+    }
+  }
+  return scripts.find((entry) => entry.preferred) || scripts[0] || null;
 }
 
 export function toUsdLike(worldJson, fileLabel) {
@@ -49,7 +72,7 @@ export function toUsdLike(worldJson, fileLabel) {
   })();
 
   objects.forEach((def, index) => {
-    if (!def || typeof def !== "object") return;
+    if (!def || typeof def !== "object" || isNodevisionOnlyObject(def)) return;
     const nameBase = def.id || def.name || def.label || def.tag || def.type || `Prim${index + 1}`;
     const path = ensureUniquePath(String(nameBase).replace(/[^A-Za-z0-9_]/g, "_"));
     const attrs = {};

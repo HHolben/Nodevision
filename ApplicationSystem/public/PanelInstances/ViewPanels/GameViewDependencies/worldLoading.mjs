@@ -2,6 +2,7 @@
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
 import { createEquationColliderPlaneMesh, makePlaneColliderRef, syncPlaneWaterVolumeRef } from "./equationColliderTool.mjs";
+import { readWorldGravityModel } from "./gravityModel.mjs";
 import { createTerrainSurfaceColliderRef, createTerrainSurfaceMesh } from "./TerrainTool/terrainSurfaceMesh.mjs";
 import {
   DEFAULT_WORLD_GAS_MATERIAL_FILE,
@@ -2520,9 +2521,14 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       };
       const editorGravityValue = worldData?.editorGravityEnabled ?? worldData?.metadata?.editorGravityEnabled ?? worldData?.metadata?.editor?.gravityEnabled;
       movementState.editorGravityEnabled = typeof editorGravityValue === "boolean" ? editorGravityValue : true;
+      movementState.gravityModel = readWorldGravityModel(worldData);
+      const playableCharacter = Array.isArray(worldData?.characters)
+        ? worldData.characters.find((entry) => String(entry?.role || "").toLowerCase() === "playable")
+        : null;
       const playerCharacter = worldData?.playerCharacter
         || worldData?.character
         || worldData?.metadata?.playerCharacter
+        || playableCharacter
         || null;
       movementState.playerCharacter = playerCharacter && typeof playerCharacter === "object" ? JSON.parse(JSON.stringify(playerCharacter)) : null;
       const playerSkills = worldData?.playerSkills
@@ -2530,7 +2536,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         || playerCharacter?.skills
         || {
           walking: { id: "walking", name: "Walking", type: "active", level: 1 },
-          running: { id: "running", name: "Running", type: "modifier", modifierSkill: true, stacksOn: "walking", level: 0 }
+          running: { id: "running", name: "Running", type: "modifier", modifierSkill: true, stacksOn: "walking", level: 1 }
         };
       movementState.playerSkills = playerSkills && typeof playerSkills === "object" ? JSON.parse(JSON.stringify(playerSkills)) : {};
 

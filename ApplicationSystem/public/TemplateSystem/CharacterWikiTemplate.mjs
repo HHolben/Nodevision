@@ -35,7 +35,7 @@ const DEFAULT_SKILLS = [
   {
     name: "Running",
     type: "modifier",
-    level: 0,
+    level: 1,
     requiresAnatomy: "Left Leg, Right Leg",
     description: "Move faster by stacking a running modifier onto walking.",
     equations: "walkSpeed * (1 + skillLevel('running') / 10)",
@@ -418,7 +418,8 @@ export function enhanceTemplateForm({ form, values, options }) {
     return Array.from(skills.rowList.children).map((row, index) => {
       const [nameInput, typeInput, levelInput, requiredInput, descriptionInput, equationsInput] = rowInputs(row);
       const name = nameInput?.value?.trim() || `Skill ${index + 1}`;
-      const type = typeInput?.value === "passive" ? "passive" : "active";
+      const rawType = typeInput?.value;
+      const type = rawType === "passive" || rawType === "modifier" ? rawType : "active";
       return {
         id: slugify(name, `skill-${index + 1}`),
         name,

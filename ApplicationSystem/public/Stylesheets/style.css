@@ -69,12 +69,22 @@ background-color: #ffffff;
 .file-manager {
   width: 100%;
   height: 100%;
-  min-height: 100%;
+  min-width: 0;
+  min-height: 0;
   box-sizing: border-box;
-  overflow: auto;
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
   padding: 10px;
   background: var(--nv-file-manager-bg);
   color: var(--nv-file-manager-text);
+}
+
+.file-manager h3,
+.file-manager #loading,
+.file-manager #error {
+  min-height: 0;
 }
 
 .file-manager h3,
@@ -83,6 +93,53 @@ background-color: #ffffff;
 .file-manager .file-list,
 .file-manager .file-list li {
   color: var(--nv-file-manager-text);
+}
+
+.file-manager .file-list {
+  min-height: 0;
+  overflow: auto;
+  overflow-anchor: none;
+}
+
+.file-manager #fm-path {
+  align-self: end;
+  border-top: 1px solid var(--nv-file-manager-item-border);
+  box-sizing: border-box;
+  font-size: 0.9em;
+  line-height: 1.35;
+  margin-top: 8px;
+  max-height: 4.2em;
+  min-height: 2.35em;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: 6px 0 4px;
+  scrollbar-gutter: stable;
+  white-space: normal;
+}
+
+.file-manager #fm-path a {
+  overflow-wrap: anywhere;
+}
+
+.file-manager .file-list li {
+  flex: 0 0 auto;
+  min-height: 28px;
+}
+
+.file-manager .file-list a.file,
+.file-manager .file-list a.folder {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  height: 28px;
+  min-height: 28px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.file-manager .file-list a.file:focus,
+.file-manager .file-list a.folder:focus {
+  outline-offset: -2px;
 }
 
 .file-manager a,

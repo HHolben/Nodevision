@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPHP.mjs
 // This file defines browser-side View PHP logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { normalizeServedNotebookPath, toNotebookAssetUrl } from "/utils/notebookPath.mjs";
+
 export const wantsIframe = true;
 
 export async function renderFile(path, viewPanel, iframe, serverBase) {
@@ -29,5 +31,5 @@ export async function renderFile(path, viewPanel, iframe, serverBase) {
   // Cross-origin = no access allowed.
 
   // Load the PHP file
-  iframe.src = `${serverBase}/${path}`;
+  iframe.src = toNotebookAssetUrl(normalizeServedNotebookPath(path), { base: serverBase });
 }

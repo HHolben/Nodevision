@@ -273,6 +273,30 @@ document.getElementById('cancelBtn').addEventListener('click', function () {
 });
 
 
+function normalizeWysiwygDeploymentPath(pathValue) {
+    let clean = String(pathValue || "").split(String.fromCharCode(92)).join("/").trim();
+    clean = clean.split("?")[0].split("#")[0];
+    clean = clean.split("/").filter(Boolean).join("/");
+    if (clean.toLowerCase().startsWith("notebook/")) {
+        clean = clean.slice("Notebook/".length);
+    }
+    if (clean.toLowerCase().startsWith("php/")) {
+        clean = clean.slice("php/".length);
+    }
+    return clean.split("/").filter(Boolean).join("/");
+}
+
+function buildWysiwygDeploymentUrl(pathValue, route) {
+    const cleanPath = normalizeWysiwygDeploymentPath(pathValue);
+    const encodedPath = cleanPath.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+    const cleanRoute = String(route || "Notebook").split("/").filter(Boolean).join("/") || "Notebook";
+    let origin = String(window.location && window.location.origin || "");
+    while (origin.length > 1 && origin.endsWith("/")) {
+        origin = origin.slice(0, -1);
+    }
+    return origin + "/" + cleanRoute + "/" + encodedPath;
+}
+
 function ViewDeploymentPHP() {
     // Get the current URL
     const currentUrl = window.location.href;
@@ -283,7 +307,7 @@ function ViewDeploymentPHP() {
 
     if (activeNode) {
         // Construct the  URL
-        const deploymentUrl = `${window.location.origin}/php/${activeNode}`;
+        const deploymentUrl = buildWysiwygDeploymentUrl(activeNode, "php");
 
         // Open the URL in a new window or tab
         window.open(deploymentUrl, "_blank");
@@ -302,7 +326,7 @@ function ViewDeploymentNodevision() {
 
     if (activeNode) {
         // Construct the deployment URL
-        const deploymentUrl = `http://localhost:3000/Notebook/${activeNode}`;
+        const deploymentUrl = buildWysiwygDeploymentUrl(activeNode, "Notebook");
 
         // Open the URL in a new window or tab
         window.open(deploymentUrl, "_blank");
@@ -357,7 +381,7 @@ function ViewDeploymentNodevision() {
         // Functions for toolbar actions
        
         function exitEditor() {
-            window.open("http://localhost:3000/#");
+            window.open(String(window.location && window.location.origin || "") + "/#");
             // Implement exit functionality here
         }
 

@@ -36,6 +36,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   graphAnimatedLayout: true,
   graphShowEdgeLabels: true,
   graphOpenLinksInView: true,
+  linkPortalParity: false,
   worldMovementMode: "walk",
   worldMouseSensitivity: 1,
   worldPlacementGrid: 1,
@@ -107,6 +108,7 @@ const SECTIONS = Object.freeze([
       { key: "graphAnimatedLayout", label: "Animated graph layout", type: "checkbox" },
       { key: "graphShowEdgeLabels", label: "Graph edge labels", type: "checkbox" },
       { key: "graphOpenLinksInView", label: "Open graph links in viewer", type: "checkbox" },
+      { key: "linkPortalParity", label: "Link / portal parity", type: "checkbox", help: "When enabled, cross-world MetaWorld portals and matching Notebook hyperlinks are created together when possible." },
     ],
   },
   {

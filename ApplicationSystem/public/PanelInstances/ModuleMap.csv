@@ -172,6 +172,7 @@ ino,ProgrammingLanguage,ViewText.mjs,ArduinoBlocksEditor.mjs
 java,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 lean,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 mjs,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
+nodevisionsession,ProgrammingLanguage,ViewText.mjs,SessionEditor.mjs
 php,ProgrammingLanguage,ViewPHP.mjs,PHPeditor.mjs
 pl,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs
 prolog,ProgrammingLanguage,ViewText.mjs,TextFamilyEditor.mjs

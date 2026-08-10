@@ -2,6 +2,7 @@
 // This file defines browser-side insert Link logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { saveFoundEdge } from "../../PanelInstances/InfoPanels/GraphManagerDependencies/SaveFoundEdge.mjs";
+import { syncPortalForHyperlink } from "../../LinkPortalParity.mjs";
 import { getNodevisionNavigationState } from "../../NodevisionNavigationState.mjs";
 
 const LINK_PICKER_GRAPH_LIMIT = 2200;
@@ -783,6 +784,12 @@ export default async function insertLink() {
       });
     } catch (err) {
       console.error("insertLink: Failed to persist graph edge:", err);
+    }
+
+    try {
+      await syncPortalForHyperlink({ sourcePath, targetPath: edgeTarget });
+    } catch (err) {
+      console.warn("insertLink: Link / portal parity could not add a portal:", err);
     }
   }
 }

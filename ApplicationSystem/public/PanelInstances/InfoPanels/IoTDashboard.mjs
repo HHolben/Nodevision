@@ -67,15 +67,7 @@ const TEMPLATE = `
 
     <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fafafa;">
       <div style="font-weight:600;margin-bottom:6px;">Wokwi Connection Help</div>
-      <pre data-wokwi-help style="margin:0;white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:0.82em;user-select:text;">POST http://127.0.0.1:3000/api/iot/publish
-
-If Wokwi cannot reach 127.0.0.1, use the host computer LAN IP, for example http://192.168.x.x:3000/api/iot/publish
-
-Example ESP32 headers:
-Content-Type: application/json
-Authorization: Bearer &lt;your-device-token&gt;
-
-MQTT 3.1.1 QoS 0 support is experimental. Use localhost:1883 unless explicitly enabled for LAN.</pre>
+      <pre data-wokwi-help style="margin:0;white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;font-size:0.82em;user-select:text;"></pre>
     </section>
 
     <section style="border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;">
@@ -92,6 +84,29 @@ MQTT 3.1.1 QoS 0 support is experimental. Use localhost:1883 unless explicitly e
 `;
 
 const escapeHtml = (value = "") => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function currentNodevisionOriginLabel() {
+  let origin = String(globalThis.location?.origin || "").trim();
+  while (origin.length > 1 && origin.endsWith("/")) {
+    origin = origin.slice(0, -1);
+  }
+  return origin || "the current Nodevision address";
+}
+
+function renderWokwiHelpText() {
+  const base = currentNodevisionOriginLabel();
+  return [
+    "POST " + base + "/api/iot/publish",
+    "",
+    "If Wokwi cannot reach this browser address, use the host computer LAN IP with the same Nodevision port.",
+    "",
+    "Example ESP32 headers:",
+    "Content-Type: application/json",
+    "Authorization: Bearer <your-device-token>",
+    "",
+    "MQTT 3.1.1 QoS 0 support is experimental. Use the MQTT host and port reported in Broker Status unless explicitly enabled for LAN."
+  ].join("\n");
+}
 
 function safeTopicPrefix(value) {
   const text = String(value || "").trim();
@@ -178,6 +193,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const gardenCardEl = panelElem.querySelector("[data-garden-bed-card]");
   const gardenValuesEl = panelElem.querySelector("[data-garden-bed-values]");
   const gardenUpdatedEl = panelElem.querySelector("[data-garden-bed-updated]");
+  const wokwiHelpEl = panelElem.querySelector("[data-wokwi-help]");
+  if (wokwiHelpEl) wokwiHelpEl.textContent = renderWokwiHelpText();
 
   const state = {
     disposed: false,

@@ -21,7 +21,7 @@ function generateNodes(dir) {
           id: entry.name,
           label: entry.name,
           link: path.join('Notebook', entry.name),
-          imageUrl: 'http://localhost:3000/DefaultNodeImage.png',
+          imageUrl: '/DefaultNodeImage.png',
           IndexNumber: 1
         }
       };

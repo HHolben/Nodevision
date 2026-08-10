@@ -520,7 +520,8 @@ export async function renderKMLEditor(filePath, container, options = {}) {
   function browserLocationHelpMessage(err) {
     const message = String(err?.message || "location permission was not granted").trim();
     if (globalThis.isSecureContext === false) {
-      return "Browser location requires localhost, HTTPS, or a secure context. Open Nodevision as http://localhost:3000 or allow location for this site.";
+      const origin = String(globalThis.location?.origin || "this Nodevision address");
+      return "Browser location requires HTTPS, localhost, or another secure context. Current Nodevision address: " + origin + ".";
     }
     if (err?.code === 1) {
       return "Location permission is blocked for this site. Allow location in the browser site settings, then try My Location again.";

@@ -48,6 +48,7 @@ function slugify(value, fallback = "item") {
 
 function summarizeCharacter(character, relPath = "") {
   const levelValue = Number(character?.level?.value);
+  const skills = character?.skills && typeof character.skills === "object" ? character.skills : null;
   return {
     id: typeof character?.id === "string" && character.id.trim() ? character.id.trim() : slugify(character?.name || path.basename(relPath), "character"),
     name: typeof character?.name === "string" && character.name.trim() ? character.name.trim() : path.basename(relPath),
@@ -55,6 +56,7 @@ function summarizeCharacter(character, relPath = "") {
     level: Number.isFinite(levelValue) ? levelValue : 0,
     kind: character?.kind || "NodevisionCharacter",
     assets: character?.assets && typeof character.assets === "object" ? character.assets : {},
+    skills,
   };
 }
 
@@ -122,6 +124,7 @@ function defaultObjectForCharacter(characterPath, character, placement = "origin
     sex: summary.sex,
     level: summary.level,
     kind: "NodevisionCharacter",
+    ...(summary.skills ? { skills: summary.skills } : {}),
   };
   const base = {
     id,

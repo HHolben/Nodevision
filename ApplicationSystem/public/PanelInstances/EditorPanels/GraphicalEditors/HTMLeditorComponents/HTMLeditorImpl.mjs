@@ -8,7 +8,8 @@ import { createPanelDOM } from "./../../../../panels/panelFactory.mjs";
 import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayersContext.mjs";
 import { countWords } from "../FamilyEditorCommon.mjs";
-import { setStatus, setWordCount, setWordsAddedCount } from "/StatusBar.mjs";
+import { setStatus, setWordCount } from "/StatusBar.mjs";
+import { recordEditedFile } from "/RecentFiles.mjs";
 import {
   clearTableCellSelection,
   getSelectedTableCells,
@@ -4884,20 +4885,14 @@ export async function renderEditor(filePath, container, options = {}) {
   hidden.id = "hidden-elements";
   hidden.style.display = "none";
   wrapper.appendChild(hidden);
-  let previousWordCount = 0;
-  let wordsAddedSinceOpen = 0;
   const updateWordCount = () => {
     const currentWordCount = countWords(wysiwyg.innerText || "");
-    const addedSinceLastCount = currentWordCount - previousWordCount;
-    if (addedSinceLastCount > 0) {
-      wordsAddedSinceOpen += addedSinceLastCount;
-    }
-    previousWordCount = currentWordCount;
     setWordCount(currentWordCount);
-    setWordsAddedCount(wordsAddedSinceOpen);
   };
   updateWordCount();
+  const recordRecentHtmlEdit = () => recordEditedFile(filePath);
   wysiwyg.addEventListener("input", updateWordCount);
+  wysiwyg.addEventListener("input", recordRecentHtmlEdit);
 
   const findTableCellFromNode = (node) => getTableCellFromEditorTarget(wysiwyg, node);
   const publishTableSelection = (cell) => {
@@ -5065,8 +5060,6 @@ export async function renderEditor(filePath, container, options = {}) {
     appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
     window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
     ensureWrappingForEditableText(wysiwyg);
-    previousWordCount = countWords(wysiwyg.innerText || "");
-    wordsAddedSinceOpen = 0;
     updateWordCount();
 
     window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
@@ -5305,7 +5298,6 @@ export async function renderEditor(filePath, container, options = {}) {
       `<div style="color:red;padding:12px">Failed to load file: ${err.message}</div>`;
     console.error(err);
     setWordCount(0);
-    setWordsAddedCount(0);
   }
 
   rehydrateLayoutCanvases(wysiwyg, filePath);
@@ -5354,6 +5346,7 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLCartoonToolbar?.();
     htmlAttentionCleanup?.();
     wysiwyg.removeEventListener("input", updateWordCount);
+    wysiwyg.removeEventListener("input", recordRecentHtmlEdit);
     container.__cleanupHTMLHotkeys = null;
     container.__cleanupHTMLCanvasDeletion = null;
     container.__cleanupHTMLImageTools = null;

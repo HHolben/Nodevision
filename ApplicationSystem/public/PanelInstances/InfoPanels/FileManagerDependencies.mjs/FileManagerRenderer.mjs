@@ -10,6 +10,8 @@ const DIRECTORY_IMAGE_CANDIDATES = [
   "directory.png"
 ];
 const directoryImageCache = new Map();
+const FILE_MANAGER_ICON_SIZE = "20px";
+const FILE_MANAGER_ICON_BORDER = "1px solid transparent";
 
 function resolveDirectoryImageUrl(entry) {
   if (!entry || typeof entry !== "object") return "";
@@ -86,7 +88,7 @@ function applyEmojiIcon(icon, emoji) {
   icon.style.backgroundSize = "";
   icon.style.backgroundPosition = "";
   icon.style.backgroundRepeat = "";
-  icon.style.border = "";
+  icon.style.border = FILE_MANAGER_ICON_BORDER;
   icon.textContent = emoji;
   icon.style.fontSize = "14px";
   icon.style.lineHeight = "1";
@@ -149,10 +151,13 @@ export function renderFiles(state, files) {
     icon.style.display = "inline-flex";
     icon.style.alignItems = "center";
     icon.style.justifyContent = "center";
-    icon.style.width = "20px";
-    icon.style.height = "20px";
-    icon.style.flex = "0 0 20px";
+    icon.style.width = FILE_MANAGER_ICON_SIZE;
+    icon.style.height = FILE_MANAGER_ICON_SIZE;
+    icon.style.flex = "0 0 " + FILE_MANAGER_ICON_SIZE;
     icon.style.marginRight = "6px";
+    icon.style.border = FILE_MANAGER_ICON_BORDER;
+    icon.style.boxSizing = "border-box";
+    icon.style.overflow = "hidden";
 
     const directoryImageUrl = file.isDirectory ? resolveDirectoryImageUrl(file) : "";
     if (directoryImageUrl) {

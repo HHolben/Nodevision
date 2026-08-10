@@ -23,10 +23,12 @@ import {
 import { saveCurrentWorldFile } from "./worldSave.mjs";
 import { updateIframeObjectOverlays } from "./worldLoading.mjs";
 import { createWorldPropertiesPanel } from "./worldPropertiesPanel.mjs";
+import { DEFAULT_GRAVITY_MODEL } from "./gravityModel.mjs";
 import { createMetaWorldMultiplayerClient } from "/MetaWorld/MetaWorldMultiplayerClient.mjs";
 import { createFunctionPlotterPanel } from "./functionPlotterPanel.mjs";
 import { createEquationObjectsPanel } from "./equationObjectsPanel.mjs";
 import { createConsolePanels } from "./consolePanels.mjs";
+import { createTextWorldConsole } from "./textWorldConsole.mjs";
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 
 function clampTemporalNumber(value, min, max, fallback) {
@@ -355,7 +357,16 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     velocityY: 0,
     isGrounded: true,
     isSwimming: false,
+    isRunning: false,
+    activeRunSkillLevel: 0,
+    activeRunSpeedMultiplier: 1,
+    flexSurfaceContact: null,
+    surfaceDepressionOffset: 0,
+    activeSurfaceSpringConstant: 0,
+    textWorldAction: null,
+    textWorldConsoleActive: false,
     editorGravityEnabled: true,
+    gravityModel: { ...DEFAULT_GRAVITY_MODEL, position: { ...DEFAULT_GRAVITY_MODEL.position } },
     playerHeight: 1.75,
     playerMode: preferredMode,
     worldMode: "3d",
@@ -371,11 +382,11 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     stlPlaceLatch: false,
     playerBuoyancy: 0.015,
     swimSpeedMultiplier: 0.72,
-    crouchJumpMultiplier: 1.85,
+    crouchJumpMultiplier: 1.5,
     editorRunSkillLevel: 5,
     playerSkills: {
       walking: { id: "walking", name: "Walking", type: "active", level: 1 },
-      running: { id: "running", name: "Running", type: "modifier", modifierSkill: true, stacksOn: "walking", level: 0 }
+      running: { id: "running", name: "Running", type: "modifier", modifierSkill: true, stacksOn: "walking", level: 1 }
     },
     worldRules: {
       allowFly: false,
@@ -517,7 +528,23 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   });
   panel._vrViewController = viewController;
 
+  const textWorldConsole = createTextWorldConsole({
+    panel,
+    canvas,
+    movementState,
+    getCommandContext: () => ({ THREE, camera, controls, objects, movementState }),
+    onInputAction: (input, frames) => {
+      movementState.textWorldAction = {
+        input,
+        framesRemaining: Math.max(1, Math.min(120, Number(frames) || 1))
+      };
+    }
+  });
+  panel._vrTextWorldConsole = textWorldConsole;
+  window.VRWorldContext.textWorldConsole = textWorldConsole;
+
   const { heldKeys, dispose: disposeInputHandlers } = createInputHandlers({ getBindings, normalizeKeyName, movementState });
+  movementState.heldKeys = heldKeys;
   panel._vrDisposeInputHandlers = disposeInputHandlers;
   const movementUpdate = createMovementUpdater({
     THREE,
@@ -559,6 +586,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
     viewController.update();
+    textWorldConsole.update();
     updateIframeObjectOverlays({
       panel,
       THREE,

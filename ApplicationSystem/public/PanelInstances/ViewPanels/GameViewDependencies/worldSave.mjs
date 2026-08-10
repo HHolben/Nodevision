@@ -2,6 +2,7 @@
 // This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { expressionUsesTimeVariable, normalizePlaneEquationConfig } from "./equationColliderTool.mjs";
+import { normalizeGravityModel } from "./gravityModel.mjs";
 import { normalizeMetaWorldMultiplayer } from "/MetaWorld/MetaWorldMultiplayerConfig.mjs";
 import {
   DEFAULT_WORLD_GAS_MATERIAL_FILE,
@@ -903,6 +904,7 @@ function buildWorldDefinition({
   const finalMeshDefs = shouldFallbackToExistingObjects ? existing.objects : meshDefs;
   const worldRules = movementState?.worldRules || {};
   const environment = buildEnvironmentMeta(movementState);
+  const gravityModel = normalizeGravityModel(movementState?.gravityModel || existing?.metadata?.gravityModel || existing?.gravityModel || {});
   const multiplayer = normalizeMetaWorldMultiplayer(movementState?.multiplayer || existing?.metadata?.multiplayer || existing?.multiplayer || {});
   const temporalState = movementState?.temporal || window.VRWorldContext?.temporalController?.getSettings?.() || existing?.metadata?.temporal || {};
   const temporal = {
@@ -929,6 +931,7 @@ function buildWorldDefinition({
     playerSkills: movementState?.playerSkills || existing?.metadata?.playerSkills || existing?.playerSkills || undefined,
     playerCharacter: movementState?.playerCharacter || existing?.metadata?.playerCharacter || existing?.playerCharacter || undefined,
     environment,
+    gravityModel,
     temporal,
     multiplayer
   };
@@ -937,6 +940,7 @@ function buildWorldDefinition({
     ...existing,
     worldMode: movementState?.worldMode === "2d" ? "2d" : "3d",
     environment,
+    gravityModel,
     multiplayer,
     metadata,
     objects: finalMeshDefs.concat(lightDefs)

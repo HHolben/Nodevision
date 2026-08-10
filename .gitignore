@@ -9,6 +9,7 @@ node_modules/
 
 # Ignore build output
 ApplicationSystem/build/
+NativeComponents/HandwritingRecognizer/build/
 
 #Ignore rsync stuff
 .sync

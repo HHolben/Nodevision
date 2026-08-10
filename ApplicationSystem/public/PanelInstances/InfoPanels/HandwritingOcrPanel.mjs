@@ -33,6 +33,10 @@ import {
   recognizeGlyph,
 } from "/HandwritingRecognition/StrokeRecognition/StrokeRecognizer.mjs";
 import {
+  NativeCppRecognizer,
+  nativeCppResultToStrokeResult,
+} from "/HandwritingRecognition/NativeCppRecognizer.mjs";
+import {
   loadBuiltinStrokeTemplates,
   loadUserStrokeTemplates,
   makePersonalStrokeTemplatePayload,
@@ -66,6 +70,7 @@ const CUSTOM_RECOGNITION_ACCEPTANCE = Object.freeze({
 const USER_PREFERENCES_STORAGE_KEY = "nodevision.userPreferences";
 const RECOGNITION_METHOD_OCR = "ocr";
 const RECOGNITION_METHOD_EXPERIMENTAL_STROKE = "experimental-stroke";
+const RECOGNITION_METHOD_NATIVE_CPP = "native-cpp";
 const STROKE_RECOGNITION_PAUSE_MS = 560;
 const STROKE_RECOGNITION_LOW_CONFIDENCE = 0.46;
 const STROKE_CONTEXT_RANKING_PREF_KEY = "handwritingStrokeContextRanking";
@@ -121,6 +126,7 @@ function storedRecognitionMethod() {
   };
   const method = preferences.handwritingRecognitionMethod || preferences.handwriting?.recognitionMethod || RECOGNITION_METHOD_OCR;
   if (method === RECOGNITION_METHOD_EXPERIMENTAL_STROKE && strokeRecognitionFeatureEnabled()) return method;
+  if (method === RECOGNITION_METHOD_NATIVE_CPP) return method;
   return RECOGNITION_METHOD_OCR;
 }
 
@@ -231,6 +237,7 @@ function injectStylesOnce() {
     .nv-ocr-correction-input { width: 48px; box-sizing: border-box; padding: 5px 6px; border-radius: 5px; border: 1px solid rgba(75, 102, 140, 0.9); background: rgba(10, 18, 32, 0.92); color: #eaf7ff; font: 16px ${HENRY_SCRIPT_TEMPLATE_STACK}; text-align: center; }
     .nv-stroke-panel { display: none; gap: 8px; padding: 9px; border: 1px solid rgba(75, 102, 140, 0.72); border-radius: 6px; background: rgba(7, 12, 22, 0.78); color: #eaf7ff; }
     .nv-stroke-panel.active { display: grid; }
+    .nv-stroke-badge { justify-self: start; padding: 2px 6px; border: 1px solid rgba(240, 189, 72, 0.68); border-radius: 4px; color: #ffe2a0; background: rgba(115, 78, 18, 0.28); font-size: 11px; font-weight: 700; }
     .nv-stroke-grid { display: grid; grid-template-columns: minmax(78px, 118px) minmax(0, 1fr); gap: 9px; align-items: stretch; }
     .nv-stroke-char { min-height: 82px; display: grid; place-items: center; border: 1px solid rgba(75, 102, 140, 0.72); border-radius: 6px; background: rgba(18, 32, 52, 0.74); color: #ffffff; font: 54px/1 ${HENRY_SCRIPT_TEMPLATE_STACK}; }
     .nv-stroke-char.low-confidence { border-color: #f0bd48; box-shadow: inset 0 0 0 1px rgba(240, 189, 72, 0.42); }
@@ -401,6 +408,7 @@ export function mountHandwritingOcrPanel(container, {
   let workerPromise = null;
   let nativeRecognizer = null;
   let nativeRecognizerPromise = null;
+  let nativeCppRecognizer = null;
   let liveTimer = 0;
   let preloadTimer = 0;
   let recognizing = false;
@@ -450,15 +458,19 @@ export function mountHandwritingOcrPanel(container, {
   methodSelect.setAttribute("aria-label", "Handwriting recognition method");
   const ocrOption = document.createElement("option");
   ocrOption.value = RECOGNITION_METHOD_OCR;
-  ocrOption.textContent = "OCR / existing recognition";
+  ocrOption.textContent = "Automatic";
   methodSelect.appendChild(ocrOption);
   const strokeMethodOption = document.createElement("option");
   strokeMethodOption.value = RECOGNITION_METHOD_EXPERIMENTAL_STROKE;
   strokeMethodOption.textContent = strokeRecognitionFeatureEnabled()
-    ? "Experimental Stroke Recognition"
-    : "Experimental Stroke Recognition (disabled)";
+    ? "Nodevision strokes"
+    : "Nodevision strokes (disabled)";
   strokeMethodOption.disabled = !strokeRecognitionFeatureEnabled();
   methodSelect.appendChild(strokeMethodOption);
+  const nativeCppMethodOption = document.createElement("option");
+  nativeCppMethodOption.value = RECOGNITION_METHOD_NATIVE_CPP;
+  nativeCppMethodOption.textContent = "C++ experimental";
+  methodSelect.appendChild(nativeCppMethodOption);
   methodSelect.value = storedRecognitionMethod();
   methodLabel.appendChild(methodSelect);
   toolbar.appendChild(methodLabel);
@@ -577,6 +589,10 @@ export function mountHandwritingOcrPanel(container, {
   const strokePanel = document.createElement("section");
   strokePanel.className = "nv-stroke-panel";
   strokePanel.setAttribute("aria-label", "Experimental isolated-character stroke recognition");
+  const strokeEngineBadge = document.createElement("div");
+  strokeEngineBadge.className = "nv-stroke-badge";
+  strokeEngineBadge.textContent = "Experimental";
+  strokePanel.appendChild(strokeEngineBadge);
 
   const strokeGrid = document.createElement("div");
   strokeGrid.className = "nv-stroke-grid";
@@ -2252,8 +2268,16 @@ export function mountHandwritingOcrPanel(container, {
     }
   }
 
-  function isExperimentalStrokeMode() {
+  function isNativeCppStrokeMode() {
+    return recognitionMethod === RECOGNITION_METHOD_NATIVE_CPP;
+  }
+
+  function isNodevisionStrokeMode() {
     return recognitionMethod === RECOGNITION_METHOD_EXPERIMENTAL_STROKE && strokeRecognitionFeatureEnabled();
+  }
+
+  function isExperimentalStrokeMode() {
+    return isNodevisionStrokeMode() || isNativeCppStrokeMode();
   }
 
   function cleanStrokeCharacter(value) {
@@ -2451,6 +2475,36 @@ export function mountHandwritingOcrPanel(container, {
     }, delay);
   }
 
+  function ensureNativeCppRecognizer() {
+    if (!nativeCppRecognizer) nativeCppRecognizer = new NativeCppRecognizer();
+    return nativeCppRecognizer;
+  }
+
+  async function runNodevisionStrokeRecognizer(glyph, request) {
+    const templates = await ensureStrokeTemplates();
+    if (!strokeRecognitionRequests.isActive(request)) return null;
+    return recognizeGlyph(glyph, {
+      templates,
+      templatesAlreadyNormalized: true,
+      context: { before: getRecognitionContextText() + assembledStrokeText },
+      contextRankingEnabled: strokeContextInput.checked,
+      featureFlagEnabled: strokeRecognitionFeatureEnabled(),
+      candidateLimit: 5,
+      lowConfidenceThreshold: STROKE_RECOGNITION_LOW_CONFIDENCE,
+    });
+  }
+
+  async function runNativeCppStrokeRecognizer(glyph) {
+    const recognizer = ensureNativeCppRecognizer();
+    const result = await recognizer.recognize(glyph, {
+      candidateLimit: 5,
+      characterSet: "latin-alphanumeric",
+      preserveStrokeOrder: true,
+      usePressure: false,
+    });
+    return nativeCppResultToStrokeResult(result, STROKE_RECOGNITION_LOW_CONFIDENCE);
+  }
+
   async function recognizeExperimentalGlyph({ automatic = false } = {}) {
     if (!isExperimentalStrokeMode()) return null;
     if (drawing) return null;
@@ -2473,24 +2527,29 @@ export function mountHandwritingOcrPanel(container, {
     bar.style.width = "35%";
 
     try {
-      const templates = await ensureStrokeTemplates();
-      if (!strokeRecognitionRequests.isActive(request)) return null;
-      const result = recognizeGlyph(glyph, {
-        templates,
-        templatesAlreadyNormalized: true,
-        context: { before: `${getRecognitionContextText()}${assembledStrokeText}` },
-        contextRankingEnabled: strokeContextInput.checked,
-        featureFlagEnabled: strokeRecognitionFeatureEnabled(),
-        candidateLimit: 5,
-        lowConfidenceThreshold: STROKE_RECOGNITION_LOW_CONFIDENCE,
-      });
+      let nativeFallbackUsed = false;
+      let result = null;
+      if (isNativeCppStrokeMode()) {
+        result = await runNativeCppStrokeRecognizer(glyph);
+        if (!strokeRecognitionRequests.isActive(request)) return null;
+        if (!result?.candidates?.length) {
+          nativeFallbackUsed = true;
+          status.textContent = "C++ experimental recognizer unavailable; using Nodevision strokes.";
+          result = await runNodevisionStrokeRecognizer(glyph, request);
+        }
+      } else {
+        result = await runNodevisionStrokeRecognizer(glyph, request);
+      }
+      if (!result) return null;
       if (!strokeRecognitionRequests.isActive(request)) return null;
       lastStrokeResult = result;
       strokeSelectedCandidateIndex = 0;
       renderStrokeResult(result);
       bar.style.width = "100%";
       if (result.status === "disabled") status.textContent = "Experimental stroke recognition is disabled.";
+      else if (nativeFallbackUsed && result.candidates?.length) status.textContent = "C++ experimental unavailable; Nodevision stroke candidate ready.";
       else if (result.status === "low-confidence") status.textContent = "Low match quality. Choose an alternate, type a correction, or retry.";
+      else if (isNativeCppStrokeMode() && result.candidates?.length) status.textContent = "C++ experimental candidate ready. Accept it, choose an alternate, or type a correction.";
       else if (result.candidates?.length) status.textContent = "Candidate ready. Accept it, choose an alternate, or type a correction.";
       else status.textContent = "No character matched. Retry or type the intended character.";
       setTimeout(() => { if (strokeRecognitionRequests.isActive(request)) bar.style.width = "0%"; }, 700);
@@ -2634,8 +2693,9 @@ export function mountHandwritingOcrPanel(container, {
     const featureEnabled = strokeRecognitionFeatureEnabled();
     strokeMethodOption.disabled = !featureEnabled;
     strokeMethodOption.textContent = featureEnabled
-      ? "Experimental Stroke Recognition"
-      : "Experimental Stroke Recognition (disabled)";
+      ? "Nodevision strokes"
+      : "Nodevision strokes (disabled)";
+    nativeCppMethodOption.textContent = "C++ experimental";
     if (!featureEnabled && methodSelect.value === RECOGNITION_METHOD_EXPERIMENTAL_STROKE) {
       methodSelect.value = RECOGNITION_METHOD_OCR;
     }
@@ -2646,15 +2706,20 @@ export function mountHandwritingOcrPanel(container, {
     correctionInput.disabled = strokeMode;
     recognizeBtn.textContent = strokeMode ? "Recognize Glyph" : "Recognize Text";
     refreshDebugBtn.textContent = strokeMode ? "Refresh diagnostics" : "Refresh debug";
+    strokeEngineBadge.textContent = isNativeCppStrokeMode() ? "C++ experimental" : "Nodevision strokes experimental";
     help.textContent = strokeMode
-      ? "Experimental Stroke Recognition is local, isolated-character recognition. It does not upload handwriting or learn unless you save an example."
+      ? (isNativeCppStrokeMode()
+        ? "C++ experimental recognition is local and disabled by default; if unavailable, this panel falls back to Nodevision strokes without discarding ink."
+        : "Nodevision stroke recognition is local, isolated-character recognition. It does not upload handwriting or learn unless you save an example.")
       : describeOfflineRequirement();
     if (strokeMode) {
       correctionInput.checked = false;
       updateCorrectionView();
       updateStrokePreview({ emit: false });
       renderStrokeResult(strokeResult);
-      if (announce) status.textContent = "Experimental isolated-character stroke recognition selected.";
+      if (announce) status.textContent = isNativeCppStrokeMode()
+        ? "C++ experimental handwriting recognition selected."
+        : "Nodevision stroke recognition selected.";
     } else {
       clearStrokeTimers();
       strokeRecognitionRequests.invalidate();

@@ -26,6 +26,9 @@
       "minIncomingSpeed": 0.08,
       "minBounceSpeed": 0.32,
       "maxBounceSpeed": 0.85,
+      "maxSurfaceCompression": 0.55,
+      "surfaceCompressionScale": 36,
+      "surfaceReturnRate": 0.045,
       "damping": 1
     }
   },

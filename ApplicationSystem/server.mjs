@@ -57,6 +57,7 @@ import { registerTerrainRoutes } from "./server/routes/terrainRoutes.mjs";
 import { registerHandwritingOcrTrainingRoutes } from "./server/routes/handwritingOcrTrainingRoutes.mjs";
 import { registerStrokeHandwritingRecognitionRoutes } from "./server/routes/strokeHandwritingRecognitionRoutes.mjs";
 import { registerPhoneImportRoutes } from "./server/routes/phoneImportRoutes.mjs";
+import { registerNativeHandwritingRoutes } from "./server/handwriting/NativeHandwritingRoutes.mjs";
 
 const FAA_VFR_RASTER_CHARTS_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/vfr/";
 const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
@@ -363,6 +364,7 @@ export default async function createApp(runtimeConfig = {}) {
   const app = express();
 
   // Middleware setup (configure body size limits first)
+  app.use('/api/handwriting/native', express.json({ limit: '2mb' }));
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cookieParser());
@@ -376,6 +378,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerKmlUtilityRoutes(app, ctx);
   registerHandwritingOcrTrainingRoutes(app, ctx);
   registerStrokeHandwritingRecognitionRoutes(app, ctx);
+  registerNativeHandwritingRoutes(app, ctx);
   registerPhoneImportRoutes(app, ctx);
 
 

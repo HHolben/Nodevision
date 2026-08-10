@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/LinkRecords.mjs
 // Shared link parsing, selection, and source-edit helpers for Graph Manager link panels.
 
+import { parseMetaWorldPortalLinkRecords } from "./MetaWorldPortalLinks.mjs";
+
 const HTML_LINK_ATTRS = new Map([
   ["href", "hyperlink"],
   ["src", "source"],
@@ -20,7 +22,6 @@ const NODEVISION_METADATA_ATTRS = {
 
 const MARKDOWN_METADATA_PREFIX = "nodevision-link";
 
-const PORTAL_EDGE_TEXT = "contains a portal to:";
 const SOURCE_REFERENCE_LINK_PROPERTIES = new Set([
   "src",
   "data-src",
@@ -131,105 +132,6 @@ function defaultHtmlLinkText({ attrName = "", tagBounds = null, rawTarget = "" }
   const kind = inferHtmlReferenceKind({ tagName, linkProperty: property, rawTarget, tagSource: tagBounds?.source || "" });
   return `references ${kind} located at:`;
 }
-
-function stripJsonComments(value = "") {
-  return String(value || "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1")
-    .trim();
-}
-
-function isMetaWorldScript(attrs = "") {
-  const text = String(attrs || "");
-  return /\bdata-nodevision-meta-world\b/i.test(text) ||
-    /\bid\s*=\s*(["\x27])nodevision-metaworld\1/i.test(text) ||
-    /\btype\s*=\s*(["\x27])application\/json\1/i.test(text);
-}
-
-function extractMetaWorldScriptBodies(text = "") {
-  const scripts = [];
-  const scriptRegex = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
-  let match;
-  while ((match = scriptRegex.exec(String(text || "")))) {
-    if (!isMetaWorldScript(match[1] || "")) continue;
-    scripts.push(match[2] || "");
-  }
-  return scripts;
-}
-
-function isSameWorldPortalTarget(value = "") {
-  const normalized = String(value || "").trim().toLowerCase();
-  return normalized === "self" || normalized === "." || normalized === "same" || normalized === "current";
-}
-
-function portalTargetFromDefinition(def = {}) {
-  const candidates = [def.targetWorld, def.portalTarget, def.target, def.href, def.world];
-  const explicit = candidates.find((value) => typeof value === "string" && value.trim());
-  return explicit ? explicit.trim() : "";
-}
-
-function looksLikeMetaWorldDefinition(world) {
-  if (!world || typeof world !== "object") return false;
-  const worldType = String(world.worldType || world.type || world.kind || "").toLowerCase();
-  return worldType.includes("nodevisionmetaworld") ||
-    worldType.includes("meta-world") ||
-    Array.isArray(world.objects) ||
-    Boolean(world.worldMode || world.environment || world.metadata?.source === "GameView");
-}
-
-function collectPortalTargets(value, targets = [], seen = new Set()) {
-  if (!value || typeof value !== "object" || seen.has(value)) return targets;
-  seen.add(value);
-
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectPortalTargets(item, targets, seen));
-    return targets;
-  }
-
-  const typeText = String(value.type || value.nvType || value.kind || "").toLowerCase();
-  const isPortal = value.isPortal === true || value.portal === true || typeText === "portal";
-  if (isPortal) {
-    const target = portalTargetFromDefinition(value);
-    if (target && !isSameWorldPortalTarget(target)) targets.push(target);
-  }
-
-  Object.values(value).forEach((child) => {
-    if (child && typeof child === "object") collectPortalTargets(child, targets, seen);
-  });
-  return targets;
-}
-
-function parseMetaWorldPortalLinks(content, sourcePath, startIndex = 0) {
-  const records = [];
-  let recordIndex = startIndex;
-  for (const body of extractMetaWorldScriptBodies(content)) {
-    let parsed = null;
-    try {
-      parsed = JSON.parse(stripJsonComments(body));
-    } catch (_) {
-      parsed = null;
-    }
-    if (!looksLikeMetaWorldDefinition(parsed)) continue;
-    for (const rawTarget of collectPortalTargets(parsed)) {
-      const target = String(rawTarget || "").trim();
-      if (!target || isIgnoredLink(target)) continue;
-      records.push(buildLinkRecord({
-        sourcePath,
-        sourceFormat: "metaworld",
-        linkKind: "portal",
-        linkProperty: "targetWorld",
-        rawTarget: target,
-        linkText: PORTAL_EDGE_TEXT,
-        metadata: {},
-        recordIndex,
-        ranges: {},
-      }));
-      recordIndex += 1;
-    }
-  }
-  return records;
-}
-
 
 export function normalizeNotebookRelativePath(inputPath) {
   const parts = [];
@@ -663,7 +565,10 @@ export function parseLinkRecordsFromText(content, sourcePath) {
   const ext = normalizeNotebookRelativePath(sourcePath).split(".").pop()?.toLowerCase() || "";
   if (["html", "htm", "xhtml", "php"].includes(ext)) {
     const htmlRecords = parseHtmlLinks(content, sourcePath, 0);
-    return htmlRecords.concat(parseMetaWorldPortalLinks(content, sourcePath, htmlRecords.length));
+    return htmlRecords.concat(parseMetaWorldPortalLinkRecords(content, sourcePath, htmlRecords.length, {
+      buildLinkRecord,
+      isIgnoredLink,
+    }));
   }
   if (["md", "markdown"].includes(ext)) {
     return parseMarkdownLinks(content, sourcePath, 0);

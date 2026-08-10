@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/viewNodevisionDeployment.mjs
 // This file defines browser-side view Nodevision Deployment logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { toNotebookDeploymentUrl } from "/utils/notebookPath.mjs";
+
 export default function viewNodevisionDeployment() {
   const activeNode = window.selectedFilePath;
 
@@ -9,8 +11,7 @@ export default function viewNodevisionDeployment() {
     return;
   }
 
-  // Construct URL to the Notebook file
-  const deploymentUrl = `http://localhost:3000/Notebook/${activeNode}`;
+  const deploymentUrl = toNotebookDeploymentUrl(activeNode);
 
   // Open in new tab
   window.open(deploymentUrl, "_blank");

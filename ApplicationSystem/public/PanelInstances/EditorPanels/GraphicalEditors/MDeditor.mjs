@@ -3,63 +3,56 @@
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { countWords } from "./FamilyEditorCommon.mjs";
-import { setWordCount, setWordsAddedCount } from "/StatusBar.mjs";
+import { setWordCount } from "/StatusBar.mjs";
+import { recordEditedFile } from "/RecentFiles.mjs";
 import { applyMarkdownRenderClass, ensureMarkdownStyles, renderMarkdown } from "/utils/markdownRenderer.mjs";
+import { serializeMarkdownFromRenderedElement } from "./MarkdownRenderedEditorSerialization.mjs";
 
-function registerMDFallbackHotkeys(textarea, filePath) {
-  const surroundSelection = (before, after = before) => {
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = textarea.value.slice(start, end);
+function isRenderedEditorFocused(editor) {
+  const active = document.activeElement;
+  if (active === editor || editor.contains(active)) return true;
+  const selection = window.getSelection?.();
+  if (!selection || selection.rangeCount === 0) return false;
+  return editor.contains(selection.getRangeAt(0).commonAncestorContainer);
+}
 
-    textarea.setRangeText(`${before}${selected}${after}`, start, end, "end");
-    textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    textarea.focus();
-  };
+function runRenderedEditorCommand(editor, command) {
+  editor.focus();
+  document.execCommand(command, false, null);
+  editor.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
-  const handler = (e) => {
-    if (document.activeElement !== textarea) return;
+function registerMDFallbackHotkeys(editor, filePath) {
+  const handler = (event) => {
+    if (!isRenderedEditorFocused(editor)) return;
 
-    const isMac = window.navigator.platform.toUpperCase().includes("MAC");
-    const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
-    if (!ctrlOrCmd || e.altKey) return;
+    const platform = String(window.navigator?.platform || "").toUpperCase();
+    const ctrlOrCmd = platform.includes("MAC") ? event.metaKey : event.ctrlKey;
+    if (!ctrlOrCmd || event.altKey) return;
 
-    const key = e.key?.toLowerCase?.();
-    if (key === "s" && !e.shiftKey) {
-      e.preventDefault();
+    const key = event.key?.toLowerCase?.();
+    if (key === "s" && !event.shiftKey) {
+      event.preventDefault();
       window.saveMDFile?.(filePath);
       return;
     }
-    if (key === "b" && !e.shiftKey) {
-      e.preventDefault();
-      surroundSelection("**");
+
+    const commands = { b: "bold", i: "italic", u: "underline" };
+    if (commands[key] && !event.shiftKey) {
+      event.preventDefault();
+      runRenderedEditorCommand(editor, commands[key]);
       return;
     }
-    if (key === "i" && !e.shiftKey) {
-      e.preventDefault();
-      surroundSelection("*");
-      return;
-    }
-    if (key === "u" && !e.shiftKey) {
-      e.preventDefault();
-      surroundSelection("<u>", "</u>");
-      return;
-    }
-    if (key === "z") {
-      e.preventDefault();
-      document.execCommand(e.shiftKey ? "redo" : "undo");
+
+    if (key === "z" || key === "y") {
+      event.preventDefault();
+      const redo = key === "y" || event.shiftKey;
+      runRenderedEditorCommand(editor, redo ? "redo" : "undo");
     }
   };
 
   document.addEventListener("keydown", handler);
   return () => document.removeEventListener("keydown", handler);
-}
-
-function createEditorLabel(text) {
-  const label = document.createElement("div");
-  label.textContent = text;
-  label.style.cssText = "font:600 12px/1.4 system-ui,sans-serif;color:#374151;";
-  return label;
 }
 
 function createLoadError(message) {
@@ -90,8 +83,7 @@ export async function renderEditor(filePath, container) {
     "height:100%",
     "width:100%",
     "box-sizing:border-box",
-    "gap:8px",
-    "padding:10px",
+    "padding:0",
     "overflow:hidden",
   ].join(";");
   container.appendChild(wrapper);
@@ -110,77 +102,60 @@ export async function renderEditor(filePath, container) {
   wrapper.appendChild(editorSurface);
 
   const sourcePane = document.createElement("section");
-  sourcePane.style.cssText = "display:flex;flex:1 1 360px;min-width:260px;min-height:0;flex-direction:column;gap:6px;";
-  sourcePane.appendChild(createEditorLabel("Markdown Source"));
-
+  sourcePane.style.cssText = "display:none;";
   const textarea = document.createElement("textarea");
-  textarea.id = "markdown-editor";
-  textarea.dataset.nodevisionMarkdownEditor = "true";
-  textarea.style.cssText = [
-    "flex:1 1 auto",
-    "width:100%",
-    "min-height:0",
-    "resize:none",
-    "padding:12px",
-    "box-sizing:border-box",
-    "font:14px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-    "border:1px solid #c9c9c9",
-    "border-radius:6px",
-    "background:#fff",
-    "color:#111827",
-  ].join(";");
-  textarea.spellcheck = true;
+  textarea.id = "markdown-source-buffer";
+  textarea.hidden = true;
   sourcePane.appendChild(textarea);
 
   const previewPane = document.createElement("section");
-  previewPane.style.cssText = "display:flex;flex:1 1 360px;min-width:260px;min-height:0;flex-direction:column;gap:6px;";
-  previewPane.appendChild(createEditorLabel("Preview"));
+  previewPane.style.cssText = "display:flex;flex:1 1 100%;min-width:0;min-height:0;flex-direction:column;";
 
   const preview = document.createElement("div");
   applyMarkdownRenderClass(preview);
-  preview.setAttribute("aria-label", "Rendered Markdown preview");
+  preview.id = "markdown-editor";
+  preview.dataset.nodevisionMarkdownEditor = "true";
+  preview.contentEditable = "true";
+  preview.spellcheck = true;
+  preview.setAttribute("role", "textbox");
+  preview.setAttribute("aria-multiline", "true");
+  preview.setAttribute("aria-label", "Markdown document editor");
   preview.style.cssText = [
     "flex:1 1 auto",
-    "min-height:0",
-    "overflow:auto",
-    "padding:14px",
+    "width:100%",
+    "max-width:920px",
+    "min-height:100%",
+    "margin:0 auto",
+    "overflow:visible",
+    "padding:18px",
     "box-sizing:border-box",
-    "border:1px solid #d1d5db",
-    "border-radius:6px",
-    "background:var(--nv-panel-bg, #ffffff)",
+    "outline:none",
+    "background:transparent",
+    "caret-color:var(--nv-markdown-text, #1f2937)",
   ].join(";");
   previewPane.appendChild(preview);
 
   editorSurface.append(sourcePane, previewPane);
 
-  let previousWordCount = 0;
-  let wordsAddedSinceOpen = 0;
-  let previewFrame = 0;
-
   const renderPreviewNow = () => {
-    previewFrame = 0;
     preview.innerHTML = renderMarkdown(textarea.value, { filePath });
-  };
-
-  const schedulePreviewUpdate = () => {
-    if (previewFrame) cancelAnimationFrame(previewFrame);
-    previewFrame = requestAnimationFrame(renderPreviewNow);
+    if (!preview.innerHTML.trim()) preview.innerHTML = "<p><br></p>";
   };
 
   const updateCount = () => {
-    const currentWordCount = countWords(textarea.value);
-    const addedSinceLastCount = currentWordCount - previousWordCount;
-    if (addedSinceLastCount > 0) {
-      wordsAddedSinceOpen += addedSinceLastCount;
-    }
-    previousWordCount = currentWordCount;
+    const currentWordCount = countWords(preview.innerText || textarea.value);
     setWordCount(currentWordCount);
-    setWordsAddedCount(wordsAddedSinceOpen);
   };
 
-  textarea.addEventListener("input", () => {
+  const syncRenderedEditorToSource = () => {
+    textarea.value = serializeMarkdownFromRenderedElement(preview);
+    recordEditedFile(filePath);
     updateCount();
-    schedulePreviewUpdate();
+  };
+
+  preview.addEventListener("input", syncRenderedEditorToSource);
+  preview.addEventListener("click", (event) => {
+    if (event.target.closest?.("a")) event.preventDefault();
   });
 
   try {
@@ -189,17 +164,15 @@ export async function renderEditor(filePath, container) {
 
     const mdText = await res.text();
     textarea.value = mdText;
-    previousWordCount = countWords(mdText);
-    wordsAddedSinceOpen = 0;
-    updateCount();
     renderPreviewNow();
+    updateCount();
 
     window.getEditorMarkdown = () => textarea.value;
 
     window.setEditorMarkdown = (md) => {
       textarea.value = md || "";
-      updateCount();
       renderPreviewNow();
+      updateCount();
     };
 
     window.saveMDFile = async (path = filePath) => {
@@ -215,13 +188,11 @@ export async function renderEditor(filePath, container) {
     wrapper.replaceChildren(createLoadError(err?.message || String(err)));
     console.error(err);
     setWordCount(0);
-    setWordsAddedCount(0);
   }
 
-  const cleanupHotkeys = registerMDFallbackHotkeys(textarea, filePath);
+  const cleanupHotkeys = registerMDFallbackHotkeys(preview, filePath);
   container.__nvActiveEditorCleanup = () => {
     cleanupHotkeys();
-    if (previewFrame) cancelAnimationFrame(previewFrame);
     if (window.__nvMarkdownActivePath === filePath) window.__nvMarkdownActivePath = null;
   };
 }

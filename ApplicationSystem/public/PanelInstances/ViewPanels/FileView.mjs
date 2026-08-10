@@ -3,7 +3,12 @@
 
 import { guardFileSwitch } from "/EditorSwitchGuard.mjs";
 import { getNodevisionNavigationState } from "/NodevisionNavigationState.mjs";
-import { normalizeNotebookRelativePath } from "/utils/notebookPath.mjs";
+import {
+  getNodevisionRouteBase,
+  normalizeNotebookRelativePath,
+  toNotebookAssetUrl,
+  toPhpDeploymentUrl,
+} from "/utils/notebookPath.mjs";
 import {
   applyLinkRecordEdit,
   csvToList,
@@ -444,11 +449,7 @@ function pathExtension(pathValue = "") {
 }
 
 function notebookAssetUrl(pathValue = "") {
-  const parts = normalizeResolvedNotebookPath(pathValue)
-    .split("/")
-    .filter(Boolean)
-    .map(encodeURIComponent);
-  return "/Notebook/" + parts.join("/");
+  return toNotebookAssetUrl(normalizeResolvedNotebookPath(pathValue));
 }
 
 function notebookIndexPathForDirectory(directoryPath = "") {
@@ -969,7 +970,7 @@ async function renderDestinationPreview(body, record) {
   }
 
   const ext = pathExtension(targetPath);
-  const url = ext === "php" ? (window.location.origin + "/php/" + targetPath.split("/").map(encodeURIComponent).join("/")) : notebookAssetUrl(targetPath);
+  const url = ext === "php" ? toPhpDeploymentUrl(targetPath) : notebookAssetUrl(targetPath);
   body.innerHTML = "";
 
   if (LINK_IMAGE_PREVIEW_EXTS.has(ext) && ext !== "svg") {
@@ -1264,6 +1265,8 @@ function resolveExtension(filename) {
       .replace(/\\/g, "/")
       .replace(/[?#].*$/, "");
     if (!clean) return "";
+    if (clean.endsWith(".NodevisionSession.js") || clean.endsWith(".NodevisionSession")) return "nodevisionsession";
+    if (clean.toLowerCase().endsWith(".nodevisionsession.js") || clean.toLowerCase().endsWith(".nodevisionsession")) return "";
 
     const lower = clean.toLowerCase().replace(/%2e/gi, ".");
     if (lower.endsWith(".alto.xml")) return "alto";
@@ -1705,8 +1708,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
 
   // Determine server base depending on file type
   const isPHP = ext === "php";
-  const origin = window.location.origin;
-  const serverBase = isPHP ? `${origin}/php` : `${origin}/Notebook`;
+  const serverBase = getNodevisionRouteBase({ route: isPHP ? "php" : "Notebook" });
 
   const success = await renderFile(filename, viewPanel, serverBase);
   window.NodevisionPanelViewportTools?.applyPanelViewport?.(

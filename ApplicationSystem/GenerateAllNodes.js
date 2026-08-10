@@ -5,7 +5,7 @@ const path = require('path');
 const cheerio = require('cheerio'); // Assuming you'll use Cheerio to parse HTML files
 
 // Constants
-const DEFAULT_IMAGE_URL = 'http://localhost:3000/DefaultNodeImage.png';
+const DEFAULT_IMAGE_URL = "/DefaultNodeImage.png";
 
 
 // Function to recursively get all files in a directory
@@ -55,7 +55,8 @@ function generateNodesFromFiles(dirPath) {
       const region = path.dirname(relativePath).split(path.sep).join(' > ');
 
       const imageUrl = extractImageUrlFromHtml(file);
-      const fullImageUrl = imageUrl ? `http://localhost:8000/${path.join(path.dirname(relativePath), imageUrl)}` : DEFAULT_IMAGE_URL; // Get the full image URL
+      const imageRelativePath = imageUrl ? path.join(path.dirname(relativePath), imageUrl).split(path.sep).join("/") : "";
+      const fullImageUrl = imageRelativePath ? "/Notebook/" + imageRelativePath : DEFAULT_IMAGE_URL;
 
       const node = {
         data: {

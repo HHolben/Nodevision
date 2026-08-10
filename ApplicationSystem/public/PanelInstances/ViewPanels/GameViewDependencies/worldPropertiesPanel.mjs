@@ -3,6 +3,7 @@
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 import { normalizeMetaWorldMultiplayer } from "/MetaWorld/MetaWorldMultiplayerConfig.mjs";
+import { normalizeGravityModel } from "./gravityModel.mjs";
 
 const DEFAULT_ENVIRONMENT = {
   skyColor: "#ffffff",
@@ -163,6 +164,61 @@ export function createWorldPropertiesPanel({ movementState }) {
   const allowToolUseInput = createRuleToggle("Allow Tool Use");
   const allowSaveInput = createRuleToggle("Allow Save");
   const editorGravityInput = createRuleToggle("Editor Gravity");
+
+  const gravitySection = document.createElement("div");
+  gravitySection.style.display = "flex";
+  gravitySection.style.flexDirection = "column";
+  gravitySection.style.gap = "8px";
+  gravitySection.style.paddingTop = "6px";
+  gravitySection.style.borderTop = "1px solid rgba(255,255,255,0.1)";
+  root.appendChild(gravitySection);
+
+  const gravityTitle = document.createElement("div");
+  gravityTitle.textContent = "Gravity";
+  gravityTitle.style.fontWeight = "600";
+  gravitySection.appendChild(gravityTitle);
+
+  const gravityModeInput = createField("Gravity Model", document.createElement("select"), gravitySection);
+  [
+    ["flat", "Flat Plane"],
+    ["point-mass", "Point Mass"],
+    ["none", "No Gravity"]
+  ].forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    gravityModeInput.appendChild(option);
+  });
+
+  const gravityGrid = document.createElement("div");
+  gravityGrid.style.display = "grid";
+  gravityGrid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+  gravityGrid.style.gap = "8px";
+  gravitySection.appendChild(gravityGrid);
+
+  function gravityNumberInput(step = "0.001") {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = step;
+    input.style.fontSize = "12px";
+    return input;
+  }
+
+  const flatGravityInput = createField("Flat little g", gravityNumberInput("0.001"), gravityGrid);
+  const bigGravityInput = createField("Point big G", gravityNumberInput("0.001"), gravityGrid);
+  const pointMassInput = createField("Point Mass", gravityNumberInput("1"), gravityGrid);
+  const pointXInput = createField("Point X", gravityNumberInput("0.1"), gravityGrid);
+  const pointYInput = createField("Point Y", gravityNumberInput("0.1"), gravityGrid);
+  const pointZInput = createField("Point Z", gravityNumberInput("0.1"), gravityGrid);
+  const pointObjectIdInput = createField("Point Object ID", (() => {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Optional Math object id";
+    input.style.fontSize = "12px";
+    return input;
+  })(), gravitySection);
+  const surfaceKickRangeInput = createField("No-gravity kick range", gravityNumberInput("0.1"), gravityGrid);
+  const propellantImpulseInput = createField("No-gravity kick impulse", gravityNumberInput("0.001"), gravityGrid);
 
   const statusLine = document.createElement("div");
   statusLine.style.opacity = "0.85";
@@ -531,6 +587,74 @@ export function createWorldPropertiesPanel({ movementState }) {
   closeBtn.addEventListener("click", () => floatingPanel.setVisible(false));
   buttonRow.appendChild(closeBtn);
 
+  function formatGravityNumber(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "0";
+    return Number.isInteger(number) ? String(number) : String(Math.round(number * 1000000) / 1000000);
+  }
+
+  function getGravityModelState() {
+    const worldDef = window.VRWorldContext?.currentWorldDefinition || {};
+    return normalizeGravityModel(
+      movementState?.gravityModel
+      || worldDef?.metadata?.gravityModel
+      || worldDef?.gravityModel
+      || {}
+    );
+  }
+
+  function setGravityFields(model) {
+    const normalized = normalizeGravityModel(model);
+    gravityModeInput.value = normalized.mode;
+    flatGravityInput.value = formatGravityNumber(normalized.flatG);
+    bigGravityInput.value = formatGravityNumber(normalized.bigG);
+    pointMassInput.value = formatGravityNumber(normalized.mass);
+    pointXInput.value = formatGravityNumber(normalized.position.x);
+    pointYInput.value = formatGravityNumber(normalized.position.y);
+    pointZInput.value = formatGravityNumber(normalized.position.z);
+    pointObjectIdInput.value = normalized.pointObjectId || "";
+    surfaceKickRangeInput.value = formatGravityNumber(normalized.surfaceKickRange);
+    propellantImpulseInput.value = formatGravityNumber(normalized.propellantImpulse);
+  }
+
+  function readGravityFromFields() {
+    return normalizeGravityModel({
+      mode: gravityModeInput.value,
+      flatG: Number(flatGravityInput.value),
+      bigG: Number(bigGravityInput.value),
+      mass: Number(pointMassInput.value),
+      position: {
+        x: Number(pointXInput.value),
+        y: Number(pointYInput.value),
+        z: Number(pointZInput.value)
+      },
+      pointObjectId: pointObjectIdInput.value,
+      surfaceKickRange: Number(surfaceKickRangeInput.value),
+      propellantImpulse: Number(propellantImpulseInput.value)
+    });
+  }
+
+  function syncWorldGravityModel(gravityModel) {
+    const definition = normalizeGravityModel(gravityModel);
+    if (movementState) movementState.gravityModel = definition;
+    const worldDef = window.VRWorldContext?.currentWorldDefinition;
+    if (worldDef && typeof worldDef === "object") {
+      worldDef.gravityModel = definition;
+      worldDef.metadata = worldDef.metadata && typeof worldDef.metadata === "object" ? worldDef.metadata : {};
+      worldDef.metadata.gravityModel = definition;
+    }
+    if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
+    return definition;
+  }
+
+  function refreshGravityFields() {
+    setGravityFields(getGravityModelState());
+  }
+
+  function applyGravityModel() {
+    setGravityFields(syncWorldGravityModel(readGravityFromFields()));
+  }
+
   function refreshFromState() {
     const worldMode = movementState?.worldMode === "2d" ? "2d" : "3d";
     modeSelect.value = worldMode;
@@ -544,6 +668,7 @@ export function createWorldPropertiesPanel({ movementState }) {
     allowToolUseInput.checked = worldRules.allowToolUse === true;
     allowSaveInput.checked = worldRules.allowSave === true;
     editorGravityInput.checked = movementState?.editorGravityEnabled !== false;
+    refreshGravityFields();
 
     const metadata = window.VRWorldContext?.currentWorldDefinition?.metadata || {};
     titleInput.value = typeof metadata.title === "string" ? metadata.title : "";
@@ -702,6 +827,7 @@ export function createWorldPropertiesPanel({ movementState }) {
       allowSave: allowSaveInput.checked
     };
     movementState.editorGravityEnabled = editorGravityInput.checked;
+    applyGravityModel();
     if (!movementState.editorGravityEnabled) {
       movementState.velocityY = 0;
       movementState.isGrounded = false;

@@ -6,6 +6,7 @@ import { getActiveMetaWorldLayerBridge, notifyMetaWorldLayersChanged } from "/Me
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { normalizePlaneEquationConfig, resizeEquationColliderPlaneMesh, syncPlaneColliderRef, makePlaneColliderRef } from "./equationColliderTool.mjs";
 import { resolveLinkedWorldResource } from "./embeddedResourceEditor.mjs";
+import { syncHyperlinkForPortal } from "/LinkPortalParity.mjs";
 
 const IFRAME_HOST_PAGE_SOURCE = "nodevision://host-page";
 const IFRAME_HOST_PAGE_KIND = "host-page";
@@ -1011,6 +1012,15 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     keepPortalMaterialReadable(target);
     syncPortalRuntimeRef(target);
     syncPortalDefinition(target);
+
+    if ((mode === "world" || mode === "linkedWorldPortal") && target.userData.portalTarget) {
+      const sourcePath = window.VRWorldContext?.currentWorldPath || window.selectedFilePath || window.NodevisionState?.selectedFile || "";
+      void syncHyperlinkForPortal({
+        sourcePath,
+        targetPath: target.userData.portalTarget,
+        label: "Open " + String(target.userData.portalTarget || "MetaWorld").split(/[\/]/).filter(Boolean).pop(),
+      }).catch((err) => console.warn("Link / portal parity could not add a hyperlink:", err));
+    }
   }
 
   function populateFormFromTarget(target, distance = null) {

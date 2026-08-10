@@ -1,11 +1,13 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewText.mjs
 // This file defines browser-side View Text logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { toNotebookAssetUrl } from "/utils/notebookPath.mjs";
+
 /**
  * Renders an HTML file inside an iframe with a scaling transform.
  * @param {string} path - The relative file path inside /Notebook
  * @param {HTMLIFrameElement} iframe - The iframe element to render in
- * @param {string} serverBase - The server base path (e.g., http://localhost:3000/Notebook)
+ * @param {string} serverBase - The server base path for the active Notebook or PHP route
  * @param {number} scale - Scaling factor for preview
  */
 export function renderHTML(path, iframe, serverBase, scale = 1.0) {
@@ -27,7 +29,7 @@ export function renderHTML(path, iframe, serverBase, scale = 1.0) {
     `;
     iframeDoc.head.appendChild(styleEl);
   };
-  iframe.src = `${serverBase}/${path}`;
+  iframe.src = toNotebookAssetUrl(path, { base: serverBase });
 }
 
 /**
