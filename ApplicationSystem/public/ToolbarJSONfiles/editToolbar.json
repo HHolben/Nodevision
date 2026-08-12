@@ -50,6 +50,19 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "parentHeading": "Edit",
+    "heading": "Edit Hyperlink",
+    "hotkeyText": "",
+    "callbackKey": "editHyperlink",
+    "modes": ["CodeEditing", "HTMLediting", "EPUBediting", "PHPediting"],
+    "conditions": {
+      "htmlHyperlinkSelected": true
+    },
+    "shortLabel": "Link",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "Edit Image Here",
     "hotkeyText": "",
     "callbackKey": "editImageHere",

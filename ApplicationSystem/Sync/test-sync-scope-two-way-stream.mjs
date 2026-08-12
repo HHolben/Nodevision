@@ -126,23 +126,44 @@ async function main() {
       dryRun: false,
       syncDirection: "push",
     });
-    assert(pushConflictSync.ok === true, "Expected push mode conflict sync to succeed against writable peer");
+    assert(pushConflictSync.ok === true, "Expected push mode changed-file sync to succeed against writable peer");
     assert(Array.isArray(pushConflictSync?.operations?.pulled) && pushConflictSync.operations.pulled.length === 0, "Expected push mode to generate no pulls");
-    const pushedConflictReport = pushConflictSync?.operations?.conflicts?.find((item) => item?.originalRelativePath === pushConflictRelativePath);
-    assert(pushedConflictReport?.direction === "push", "Expected push mode conflict to report direction=push");
-    assert(typeof pushedConflictReport?.conflictRelativePath === "string" && pushedConflictReport.conflictRelativePath.includes("/.conflicts/"), "Expected push mode conflict copy on remote peer");
-    const remotePushConflictCopy = await fs.readFile(path.resolve(destNotebookDir, "Shared", pushedConflictReport.conflictRelativePath.slice("Shared/".length)), "utf8");
-    assert(remotePushConflictCopy === "local push conflict", "Expected remote push conflict copy to contain local content");
+    assert(Array.isArray(pushConflictSync?.operations?.conflicts) && pushConflictSync.operations.conflicts.length === 0, "Expected push mode changed file to avoid conflict copies");
+    const pushedConflictReport = pushConflictSync?.operations?.pushed?.find((item) => item?.relativePath === pushConflictRelativePath);
+    assert(pushedConflictReport?.mode === "replaced", "Expected push mode changed file to replace peer target");
+    const remotePushContent = await fs.readFile(path.resolve(destNotebookDir, pushConflictRelativePath), "utf8");
+    assert(remotePushContent === "local push conflict", "Expected push mode to replace remote content with local content");
     await fs.rm(path.resolve(sourceNotebookDir, pushConflictRelativePath), { force: true });
     await fs.rm(path.resolve(destNotebookDir, pushConflictRelativePath), { force: true });
-    await fs.rm(path.resolve(destNotebookDir, "Shared", pushedConflictReport.conflictRelativePath.slice("Shared/".length)), { force: true });
+
+    const largeChangedRelativePath = "Shared/direction-mode/push-conflict-large.bin";
+    const largeChangedLocal = Buffer.alloc(MAX_FILE_PUSH_BYTES + 2048, 0x44);
+    await writeScopedFile(sourceNotebookDir, largeChangedRelativePath, largeChangedLocal);
+    await writeScopedFile(destNotebookDir, largeChangedRelativePath, Buffer.alloc(MAX_FILE_PUSH_BYTES + 2048, 0x55));
+    const largeChangedSync = await runScopeSyncTwoWay({
+      peerUrl: peerServer.peerUrl,
+      scope: "Shared",
+      runtimeRoot: sourceRoot,
+      dryRun: false,
+      syncDirection: "push",
+    });
+    const largeChangedPush = largeChangedSync?.operations?.pushed?.find((item) => item?.relativePath === largeChangedRelativePath);
+    assert(largeChangedPush?.transferMode === "stream", "Expected large changed push to use stream transfer");
+    assert(largeChangedPush?.mode === "replaced", "Expected large changed push to replace peer target");
+    const largeChangedRemote = await fs.readFile(path.resolve(destNotebookDir, largeChangedRelativePath));
+    assert(sha256OfBuffer(largeChangedRemote) === sha256OfBuffer(largeChangedLocal), "Expected large changed remote content to match local content");
+    await fs.rm(path.resolve(sourceNotebookDir, largeChangedRelativePath), { force: true });
+    await fs.rm(path.resolve(destNotebookDir, largeChangedRelativePath), { force: true });
 
     await saveSyncProtection({ protectedFromPeerWrites: true }, { runtimeRoot: destRoot });
 
     const pullModeLocalOnly = "Shared/direction-mode/local-only.txt";
     const pullModeRemoteOnly = "Shared/direction-mode/remote-only.txt";
+    const pullModeChanged = "Shared/index.html";
     await writeScopedFile(sourceNotebookDir, pullModeLocalOnly, Buffer.from("local should not push in pull mode", "utf8"));
     await writeScopedFile(destNotebookDir, pullModeRemoteOnly, Buffer.from("remote should pull in pull mode", "utf8"));
+    await writeScopedFile(sourceNotebookDir, pullModeChanged, Buffer.from("local old index", "utf8"));
+    await writeScopedFile(destNotebookDir, pullModeChanged, Buffer.from("remote current index", "utf8"));
     const pullModeSync = await runScopeSyncTwoWay({
       peerUrl: peerServer.peerUrl,
       scope: "Shared",
@@ -152,8 +173,12 @@ async function main() {
     });
     assert(pullModeSync.ok === true, "Expected pull mode against protected peer to succeed");
     assert(Array.isArray(pullModeSync?.operations?.pushed) && pullModeSync.operations.pushed.length === 0, "Expected pull mode to generate no pushes");
+    assert(Array.isArray(pullModeSync?.operations?.conflicts) && pullModeSync.operations.conflicts.length === 0, "Expected pull mode changed file to avoid conflict copies");
     assert(pullModeSync?.operations?.pulled?.some((item) => item?.relativePath === pullModeRemoteOnly), "Expected pull mode to pull remote-only file");
+    const changedPullReport = pullModeSync?.operations?.pulled?.find((item) => item?.relativePath === pullModeChanged);
+    assert(changedPullReport?.mode === "replaced", "Expected pull mode changed index file to replace local target");
     assert((await fs.readFile(path.resolve(sourceNotebookDir, pullModeRemoteOnly), "utf8")) === "remote should pull in pull mode", "Expected pull mode remote file locally");
+    assert((await fs.readFile(path.resolve(sourceNotebookDir, pullModeChanged), "utf8")) === "remote current index", "Expected pull mode to replace local index content");
     try {
       await fs.stat(path.resolve(destNotebookDir, pullModeLocalOnly));
       throw new Error("Expected pull mode local-only file to remain unpushed");
@@ -162,9 +187,12 @@ async function main() {
     }
     const directionSkipped = pullModeSync?.operations?.skipped?.direction || [];
     assert(directionSkipped.some((entry) => entry?.operation === "push" && entry?.relativePath === pullModeLocalOnly), "Expected pull mode to record skipped push operation");
+    assert(directionSkipped.some((entry) => entry?.operation === "push" && entry?.relativePath === pullModeChanged), "Expected pull mode to record skipped changed-file push operation");
     await fs.rm(path.resolve(sourceNotebookDir, pullModeLocalOnly), { force: true });
     await fs.rm(path.resolve(sourceNotebookDir, pullModeRemoteOnly), { force: true });
+    await fs.rm(path.resolve(sourceNotebookDir, pullModeChanged), { force: true });
     await fs.rm(path.resolve(destNotebookDir, pullModeRemoteOnly), { force: true });
+    await fs.rm(path.resolve(destNotebookDir, pullModeChanged), { force: true });
 
     const conflictTextRelativePath = "Shared/conflict-cases/conflicting-text.txt";
     const conflictJpgRelativePath = "Shared/conflict-cases/conflicting-large.jpg";
@@ -210,6 +238,9 @@ async function main() {
         dryRun: false,
       });
       assert(conflictSync.ok === true, "Expected protected conflict sync to succeed");
+      assert(conflictSync.partial === true, "Expected conflict sync to report remaining differences");
+      assert(conflictSync.status === "completed_with_remaining_differences", "Expected remaining-differences sync status");
+      assert(conflictSync.remainingDifferences?.changed?.includes(conflictTextRelativePath), "Expected changed conflict path in remaining differences");
       const conflictReports = Array.isArray(conflictSync?.operations?.conflicts) ? conflictSync.operations.conflicts : [];
       for (const relativePath of [conflictTextRelativePath, conflictJpgRelativePath, conflictPngRelativePath, specialConflictRelativePath]) {
         const report = conflictReports.find((item) => item?.originalRelativePath === relativePath);

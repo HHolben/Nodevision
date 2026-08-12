@@ -3,8 +3,13 @@
 
 import { parseSessionScript } from "./SessionScriptParser.mjs";
 
+function expressionLabel(expr) {
+  if (!expr || typeof expr === "string") return expr || "";
+  return expr.kind === "call" ? `${expr.name}(...)` : expr.source || "";
+}
+
 function labelFor(statement) {
-  if (statement.type === "set") return `Set Variable: ${statement.name}`;
+  if (statement.type === "set") return `Set Variable: ${statement.name}${statement.expr?.kind === "call" ? " = " + expressionLabel(statement.expr) : ""}`;
   if (statement.type === "assign") return `Update Variable: ${statement.name}`;
   if (statement.type === "run") return `Run Command: ${statement.args[0] || ""}`;
   if (statement.type === "wait") return `Wait For Event: ${statement.args[0] || ""}`;

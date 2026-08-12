@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/tableTools.mjs
 // This module provides shared HTML table editing helpers for toolbar callbacks so table row, column, and cell operations can reuse consistent selection and mutation behavior.
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { readEditorHtml, recordTableEditorMutation } from "./TableProgrammaticHistory.mjs";
 
 const TABLE_SELECTED_CELL_CLASS = "nv-html-table-selected-cell";
 const TABLE_SELECTION_ANCHOR_CLASS = "nv-html-table-selection-anchor";
@@ -211,6 +212,20 @@ function focusCell(cell) {
   return focusTableCell(cell);
 }
 
+function notifyTableEditorInput(root) {
+  if (!root) return;
+  try {
+    root.dispatchEvent(new Event("input", { bubbles: true }));
+    return;
+  } catch {}
+
+  try {
+    const event = document.createEvent("Event");
+    event.initEvent("input", true, false);
+    root.dispatchEvent(event);
+  } catch {}
+}
+
 function readCellSpan(cell, attrName, rowIndex = 0, rowCount = 0) {
   const raw = Number.parseInt(cell?.getAttribute?.(attrName) || "", 10);
   if (attrName === "rowspan" && raw === 0) return Math.max(1, rowCount - rowIndex);
@@ -317,6 +332,7 @@ function appendMergedCellContent(anchor, source) {
 function makeEmptyCellLike(source) {
   const cell = document.createElement(source?.tagName || "TD");
   copyCellStyle(cell, source);
+  if (!cell.childNodes.length) cell.appendChild(document.createElement("br"));
   return cell;
 }
 
@@ -381,6 +397,8 @@ function mergeCellOrigins(model, origins, { requireExactSet = true } = {}) {
   if (new Set(rectOrigins.map((origin) => origin.row?.parentElement || null)).size > 1) return false;
   if (requireExactSet && (rectOrigins.length !== unique.length || rectOrigins.some((origin) => !selected.has(origin.cell)))) return false;
 
+  const wysiwyg = getTableEditorRoot();
+  const beforeHtml = readEditorHtml(wysiwyg);
   const sorted = sortOriginsByVisualPosition(rectOrigins);
   const anchor = sorted.find((origin) => origin.rowIndex === top && origin.colIndex === left) || sorted[0];
   const anchorCell = anchor.cell;
@@ -394,7 +412,7 @@ function mergeCellOrigins(model, origins, { requireExactSet = true } = {}) {
   setCellSpan(anchorCell, "rowspan", bottom - top);
   setCellSpan(anchorCell, "colspan", right - left);
   focusCell(anchorCell);
-  window.HTMLWysiwygTools?.markDirty?.();
+  recordTableEditorMutation(wysiwyg, beforeHtml);
   return true;
 }
 
@@ -436,14 +454,7 @@ export function mergeSelectedTableCells() {
   return mergeActiveTableCell("right") || mergeActiveTableCell("down");
 }
 
-export function splitCurrentTableCell() {
-  const cell = getActiveTableCell();
-  const table = cell?.closest("table");
-  if (!cell || !table) return false;
-  const model = buildTableGrid(table);
-  const origin = model.origins.get(cell);
-  if (!origin || (origin.rowSpan === 1 && origin.colSpan === 1)) return false;
-
+function splitMergedTableCell(cell, origin, model) {
   setCellSpan(cell, "rowspan", 1);
   setCellSpan(cell, "colspan", 1);
 
@@ -462,9 +473,76 @@ export function splitCurrentTableCell() {
       row.insertBefore(makeEmptyCellLike(cell), refCell);
     }
   }
+  return true;
+}
+
+function expandPeerCellsForColumnSplit(model, origin, extraColumns) {
+  const adjusted = new Set([origin.cell]);
+  model.grid.forEach((rowGrid, rowIndex) => {
+    if (rowIndex === origin.rowIndex) return;
+    const peer = rowGrid?.[origin.colIndex] || null;
+    if (!peer || adjusted.has(peer.cell)) return;
+    setCellSpan(peer.cell, "colspan", peer.colSpan + extraColumns);
+    adjusted.add(peer.cell);
+  });
+}
+
+function expandPeerCellsForRowSplit(model, origin, extraRows) {
+  const adjusted = new Set([origin.cell]);
+  const rowGrid = model.grid[origin.rowIndex] || [];
+  rowGrid.forEach((peer, colIndex) => {
+    const insideSplitCell = colIndex >= origin.colIndex && colIndex < origin.colIndex + origin.colSpan;
+    if (insideSplitCell || !peer || adjusted.has(peer.cell)) return;
+    setCellSpan(peer.cell, "rowspan", peer.rowSpan + extraRows);
+    adjusted.add(peer.cell);
+  });
+}
+
+function splitOrdinaryTableCell(cell, origin, model, options = {}) {
+  const direction = String(options.direction || options.mode || "columns").toLowerCase();
+  const parts = Math.max(2, Math.min(12, Number.parseInt(options.parts || 2, 10) || 2));
+  const extra = parts - 1;
+
+  if (direction === "rows" || direction === "vertical") {
+    expandPeerCellsForRowSplit(model, origin, extra);
+    let insertAfter = origin.row;
+    for (let index = 0; index < extra; index += 1) {
+      const row = document.createElement("tr");
+      row.appendChild(makeEmptyCellLike(cell));
+      origin.row.parentElement.insertBefore(row, insertAfter.nextSibling);
+      insertAfter = row;
+    }
+    return true;
+  }
+
+  expandPeerCellsForColumnSplit(model, origin, extra);
+  let insertAfter = cell;
+  for (let index = 0; index < extra; index += 1) {
+    const newCell = makeEmptyCellLike(cell);
+    origin.row.insertBefore(newCell, insertAfter.nextSibling);
+    insertAfter = newCell;
+  }
+  return true;
+}
+
+export function splitCurrentTableCell(options = {}) {
+  const cell = getActiveTableCell() || getSelectedTableCells()[0] || null;
+  const table = cell?.closest("table");
+  if (!cell || !table) return false;
+  const model = buildTableGrid(table);
+  const origin = model.origins.get(cell);
+  if (!origin) return false;
+
+  const wysiwyg = getTableEditorRoot();
+  const beforeHtml = readEditorHtml(wysiwyg);
+  const changed = origin.rowSpan === 1 && origin.colSpan === 1
+    ? splitOrdinaryTableCell(cell, origin, model, options)
+    : splitMergedTableCell(cell, origin, model);
+  if (!changed) return false;
 
   focusCell(cell);
-  window.HTMLWysiwygTools?.markDirty?.();
+  recordTableEditorMutation(wysiwyg, beforeHtml);
+  notifyTableEditorInput(wysiwyg);
   return true;
 }
 
@@ -554,6 +632,7 @@ export function insertTableAtCaret(rows = 3, cols = 3) {
 
   const rowCount = Math.max(1, Number.parseInt(rows, 10) || 3);
   const colCount = Math.max(1, Number.parseInt(cols, 10) || 3);
+  const beforeHtml = readEditorHtml(wysiwyg);
   const table = document.createElement("table");
   table.style.borderCollapse = "collapse";
   table.style.margin = "8px 0";
@@ -579,7 +658,7 @@ export function insertTableAtCaret(rows = 3, cols = 3) {
   }
 
   focusCell(table.querySelector("td, th"));
-  window.HTMLWysiwygTools?.markDirty?.();
+  recordTableEditorMutation(wysiwyg, beforeHtml);
   return true;
 }
 
@@ -589,6 +668,8 @@ export function insertTableRow(direction) {
   if (!cell || !row) return false;
 
   const refIndex = cell.cellIndex;
+  const wysiwyg = getTableEditorRoot();
+  const beforeHtml = readEditorHtml(wysiwyg);
   const newRow = document.createElement("tr");
   const sourceCells = Array.from(row.cells);
   const columnCount = Math.max(1, sourceCells.length);
@@ -604,7 +685,7 @@ export function insertTableRow(direction) {
   else row.after(newRow);
 
   focusCell(newRow.cells[Math.max(0, refIndex)] || newRow.cells[0]);
-  window.HTMLWysiwygTools?.markDirty?.();
+  recordTableEditorMutation(wysiwyg, beforeHtml);
   return true;
 }
 
@@ -615,6 +696,8 @@ export function deleteCurrentTableRow() {
   if (!cell || !row || !table) return false;
 
   const rowIndex = row.rowIndex;
+  const wysiwyg = getTableEditorRoot();
+  const beforeHtml = readEditorHtml(wysiwyg);
   row.remove();
   const nextRow = table.rows[Math.min(rowIndex, table.rows.length - 1)] || null;
   const nextCell = nextRow?.cells[Math.min(cell.cellIndex, Math.max(0, nextRow.cells.length - 1))] || null;
@@ -623,7 +706,7 @@ export function deleteCurrentTableRow() {
     setActiveTableCell(null);
     updateToolbarState({ htmlTableSelected: false });
   }
-  window.HTMLWysiwygTools?.markDirty?.();
+  recordTableEditorMutation(wysiwyg, beforeHtml);
   return true;
 }
 
@@ -633,6 +716,8 @@ export function deleteCurrentTableColumn() {
   if (!cell || !table) return false;
 
   const colIndex = cell.cellIndex;
+  const wysiwyg = getTableEditorRoot();
+  const beforeHtml = readEditorHtml(wysiwyg);
   let nextCell = null;
   for (const row of Array.from(table.rows)) {
     const removed = row.cells[colIndex];
@@ -651,7 +736,7 @@ export function deleteCurrentTableColumn() {
     setActiveTableCell(null);
     updateToolbarState({ htmlTableSelected: false });
   }
-  window.HTMLWysiwygTools?.markDirty?.();
+  recordTableEditorMutation(wysiwyg, beforeHtml);
   return true;
 }
 
@@ -661,6 +746,8 @@ export function insertTableColumn(direction) {
   if (!cell || !table) return false;
 
   const colIndex = cell.cellIndex;
+  const wysiwyg = getTableEditorRoot();
+  const beforeHtml = readEditorHtml(wysiwyg);
   for (const row of table.rows) {
     const refCell = row.cells[colIndex] || row.cells[row.cells.length - 1] || null;
     const newCell = document.createElement(refCell?.tagName || "TD");
@@ -671,6 +758,6 @@ export function insertTableColumn(direction) {
   }
 
   focusCell(getActiveTableCell());
-  window.HTMLWysiwygTools?.markDirty?.();
+  recordTableEditorMutation(wysiwyg, beforeHtml);
   return true;
 }

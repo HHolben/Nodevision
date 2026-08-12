@@ -61,15 +61,22 @@ function resolveHref(sourcePath = "", href = "") {
   return normalizeNotebookPath(base ? `${base}/${candidate}` : candidate);
 }
 
+function parityPreferenceValue(preferences) {
+  if (!preferences || typeof preferences !== "object" || !(PARITY_KEY in preferences)) return null;
+  return preferences[PARITY_KEY] !== false;
+}
+
 export function isLinkPortalParityEnabled() {
   const root = typeof window !== "undefined" ? window : globalThis;
-  const runtime = root.NodevisionUserPreferences || root.NodevisionState?.userPreferences || {};
-  if (runtime[PARITY_KEY] === true) return true;
+  const runtime = parityPreferenceValue(root.NodevisionUserPreferences);
+  if (runtime !== null) return runtime;
+  const state = parityPreferenceValue(root.NodevisionState?.userPreferences);
+  if (state !== null) return state;
   try {
-    const stored = JSON.parse(root.localStorage?.getItem(PREFERENCES_KEY) || "{}");
-    return stored?.[PARITY_KEY] === true;
+    const stored = parityPreferenceValue(JSON.parse(root.localStorage?.getItem(PREFERENCES_KEY) || "{}"));
+    return stored === null ? true : stored;
   } catch (_) {
-    return false;
+    return true;
   }
 }
 

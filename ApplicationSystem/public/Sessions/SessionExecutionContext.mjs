@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/Sessions/SessionExecutionContext.mjs
 // This module provides a running Nodevision Session with temporary state boundaries, command dispatch, and cleaned-up event waits.
 
+import { emitNodevisionEvent } from "../Commands/NodevisionEventRegistry.mjs";
 import { runNodevisionCommand } from "./SessionCommandAdapter.mjs";
 import { SessionEventBridge } from "./SessionEventBridge.mjs";
 
@@ -31,7 +32,7 @@ export class SessionExecutionContext {
   }
 
   emit(eventName, detail = null) {
-    window.dispatchEvent(new CustomEvent(eventName, { detail }));
+    return emitNodevisionEvent(eventName, detail, window);
   }
 
   addCleanup(callback) {

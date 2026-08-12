@@ -59,4 +59,26 @@ Manual verification checklist:
 7. Switch back to Street and confirm aviation chart tiles disappear.
 8. Try invalid JSON, a wrong manifest type, and a missing `tileUrl`; each should show an in-view error.
 
-This MVP only loads existing local XYZ tile folders. FAA GeoTIFF, geospatial PDF, and MBTiles conversion is intentionally future work.
+## FAA Sectional GeoTIFF Storage
+
+Server Settings now includes **Maps / Aviation -> Sectional Maps Directory**. The value is stored as a Notebook-relative path, for example:
+
+```text
+Library/Collection3_Atlases/Section2_SectionalMaps
+```
+
+Notebook-relative storage keeps the map collection portable with the Notebook. Nodevision resolves the final filesystem location through the active Notebook root and rejects traversal or paths outside the Notebook.
+
+The **Update Sectional Maps** action is explicit and user-triggered. It checks the official FAA VFR Raster Charts page, discovers the current Sectional GeoTIFF ZIP links hosted by `aeronav.faa.gov`, downloads into a hidden staging directory, and publishes completed ZIP files only after the update succeeds. Existing local maps remain usable offline and are not deleted when an update fails.
+
+The same update operation is exposed to the Nodevision Console as **Update Sectional Maps** and to Sessions as `sectionals.update`. Both call the server update job; they do not duplicate FAA download logic.
+
+Nodevision writes a small metadata file beside the downloaded packages:
+
+```text
+.nodevision-sectionals.json
+```
+
+That file records the FAA edition, update time, and managed chart filenames. The FAA ZIP packages themselves are left untouched and remain ordinary user-owned Notebook files.
+
+Other modules should use the Sectional Maps settings service rather than hard-coding a path. The current implementation stores and updates GeoTIFF packages for future KML/Terrain/Aviation consumption; it does not yet render FAA GeoTIFFs directly as map tiles.

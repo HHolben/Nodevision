@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/Sessions/SessionController.mjs
 // This module coordinates Nodevision Session selection, execution, pause handling, restart, and editor launching in the browser.
 
+import { emitNodevisionEvent } from "../Commands/NodevisionEventRegistry.mjs";
 import { createPanelDOM } from "../panels/panelFactory.mjs";
 import { openNodevisionOverlayPanel } from "../TemplateSystem/NodevisionOverlayPanel.mjs";
 import { readSession } from "./SessionApi.mjs";
@@ -66,6 +67,7 @@ export async function pauseActiveSession() {
   if (!activeSession || pauseOpen) return null;
   pauseOpen = true;
   activeSession.runtime.pause();
+  emitNodevisionEvent("session.paused", { id: activeSession.id, reason: "escape" });
   const choice = await activeSession.ui.showPauseMenu();
   pauseOpen = false;
   if (!activeSession) return null;
@@ -76,6 +78,7 @@ export async function pauseActiveSession() {
   }
   if (choice === "quit") return quitActiveSession();
   activeSession.runtime.resume();
+  emitNodevisionEvent("session.resumed", { id: activeSession.id, reason: "resume" });
   return activeSession;
 }
 
@@ -86,6 +89,7 @@ export async function quitActiveSession() {
   session.runtime.abort();
   session.context.cleanup();
   session.ui.release();
+  emitNodevisionEvent("session.quit", { id: session.id, reason: "quit" });
   return session;
 }
 

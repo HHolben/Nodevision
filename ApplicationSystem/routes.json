@@ -16,6 +16,7 @@
     { "name": "getSubNodesRoutes", "path": "./routes/api/getSubNodesRoutes.js" },
     { "name": "fileCodeContentRoutes", "path": "./routes/api/fileCodeContentRoutes.js" },
     { "name": "fileSearchRoutes", "path": "./routes/api/search.js" },
+    { "name": "recentFiles", "path": "./routes/api/recentFiles.js" },
     { "name": "graphStylesRoutes", "path": "./routes/api/graphStyles.js" },
     { "name": "uploadImageRoutes", "path": "./routes/api/uploadImage.js" },
     { "name": "sendRequest", "path": "./routes/api/sendRequest.js" },

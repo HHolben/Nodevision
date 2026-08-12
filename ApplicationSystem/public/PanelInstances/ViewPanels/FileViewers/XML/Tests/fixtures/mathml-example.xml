@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<example xmlns:m="http://www.w3.org/1998/Math/MathML">
+  <m:math display="block" onclick="alert('nope')">
+    <m:mrow>
+      <m:mi>kg</m:mi><m:mo>·</m:mo><m:mi>m</m:mi><m:mo>·</m:mo><m:msup><m:mi>s</m:mi><m:mn>-2</m:mn></m:msup>
+      <m:script>alert('not executed')</m:script>
+    </m:mrow>
+  </m:math>
+</example>

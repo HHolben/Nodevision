@@ -39,6 +39,19 @@ export function joinNotebookPath(dirPath, fileName) {
   return `${dir}/${name}`.replace(/\/+/g, "/");
 }
 
+export function notebookPathFromPickedFile(file) {
+  const candidates = [file?.path, file?.webkitRelativePath].filter(Boolean);
+  for (const candidate of candidates) {
+    const raw = String(candidate || "").trim().split(String.fromCharCode(92)).join("/");
+    if (!raw) continue;
+
+    const match = raw.match(/(?:^|\/)Notebook\/(.+)$/i);
+    if (match?.[1]) return normalizeNotebookPath(match[1]);
+    if (/^Notebook(?:\/|$)/i.test(raw)) return normalizeNotebookPath(raw);
+  }
+  return "";
+}
+
 export function getActiveEditorNotebookPath() {
   const candidates = [
     window.currentActiveFilePath,
@@ -76,8 +89,13 @@ export async function saveNotebookText(notebookPath, content, mimeType = "text/p
 export function insertHtmlAtCaret(html) {
   const tools = window.HTMLWysiwygTools;
   if (tools && typeof tools.insertHTMLAtCaret === "function") {
-    tools.insertHTMLAtCaret(html);
-    return true;
+    const inserted = tools.insertHTMLAtCaret(html);
+    if (inserted !== false) {
+      tools.markDirty?.();
+      tools.getEditorElement?.()?.focus?.();
+      return true;
+    }
+    return false;
   }
   try {
     return document.execCommand("insertHTML", false, String(html ?? ""));

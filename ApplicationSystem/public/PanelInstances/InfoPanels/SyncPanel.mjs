@@ -766,10 +766,29 @@ export async function setupPanel(panelElem, panelVars = {}) {
   };
 
   const isFinalJobStatus = (status) => ["complete", "completed", "failed", "cancelled"].includes(String(status || ""));
+  const getRemainingDifferences = (job) => {
+    const result = job?.result && typeof job.result === "object" ? job.result : {};
+    const direct = result.remainingDifferences && typeof result.remainingDifferences === "object" ? result.remainingDifferences : null;
+    const plan = result?.after?.plan && typeof result.after.plan === "object" ? result.after.plan : {};
+    const pick = (source, key) => Array.isArray(source?.[key]) ? source[key].map((item) => String(item || "")).filter(Boolean) : [];
+    const remaining = direct ? { onlyLocal: pick(direct, "onlyLocal"), onlyRemote: pick(direct, "onlyRemote"), changed: pick(direct, "changed") } : { onlyLocal: pick(plan, "onlyLocal"), onlyRemote: pick(plan, "onlyRemote"), changed: pick(plan, "changed") };
+    const count = Number.isFinite(Number(direct?.count)) ? Number(direct.count) : remaining.onlyLocal.length + remaining.onlyRemote.length + remaining.changed.length;
+    return { ...remaining, count };
+  };
+  const renderDifferenceList = (title, paths) => {
+    if (!Array.isArray(paths) || !paths.length) return "";
+    const rows = paths.slice(0, 12).map((relativePath) => {
+      const safePath = isSafeRelativePath(relativePath) || String(relativePath || "");
+      return `<li style="margin:3px 0;">` + escapeHtml(safePath) + `</li>`;
+    }).join("");
+    const extra = paths.length > 12 ? `<div style="margin-top:4px;color:#666;">` + escapeHtml(paths.length - 12) + ` more.</div>` : "";
+    return `<div style="font-weight:600;margin-top:6px;">` + escapeHtml(title) + ` (` + escapeHtml(paths.length) + `)</div><ul style="margin:0;padding-left:18px;">` + rows + `</ul>` + extra;
+  };
   const renderSkippedOperations = (job) => {
     if (!jobSkippedEl) return;
     const skipped = Array.isArray(job?.skippedOperations) ? job.skippedOperations : [];
-    if (!skipped.length) {
+    const remaining = getRemainingDifferences(job);
+    if (!skipped.length && !remaining.count) {
       jobSkippedEl.style.display = "none";
       jobSkippedEl.innerHTML = "";
       return;
@@ -779,10 +798,13 @@ export async function setupPanel(panelElem, panelVars = {}) {
       const path = isSafeRelativePath(entry?.relativePath) || String(entry?.relativePath || "");
       const operation = String(entry?.operation || entry?.type || "file");
       const error = String(entry?.error || "Skipped");
-      return `<li style="margin:3px 0;"><strong>${escapeHtml(operation)}:</strong> ${escapeHtml(path)}<br><span style="color:#666;">${escapeHtml(error)}</span></li>`;
+      return `<li style="margin:3px 0;"><strong>` + escapeHtml(operation) + `:</strong> ` + escapeHtml(path) + `<br><span style="color:#666;">` + escapeHtml(error) + `</span></li>`;
     }).join("");
-    const more = skipped.length > 25 ? `<div style="margin-top:5px;color:#666;">${escapeHtml(skipped.length - 25)} more skipped operation${skipped.length - 25 === 1 ? "" : "s"} in the job result.</div>` : "";
-    jobSkippedEl.innerHTML = `<div style="font-weight:600;margin-bottom:4px;">Skipped files (${escapeHtml(skipped.length)})</div><ul style="margin:0;padding-left:18px;">${rows}</ul>${more}`;
+    const more = skipped.length > 25 ? `<div style="margin-top:5px;color:#666;">` + escapeHtml(skipped.length - 25) + ` more skipped operations in the job result.</div>` : "";
+    const skippedHtml = skipped.length ? `<div style="font-weight:600;margin-bottom:4px;">Skipped files (` + escapeHtml(skipped.length) + `)</div><ul style="margin:0;padding-left:18px;">` + rows + `</ul>` + more : "";
+    const remainingIntro = remaining.count ? `<div style="font-weight:600;margin-top:` + (skipped.length ? "8" : "0") + `px;margin-bottom:4px;">Remaining differences (` + escapeHtml(remaining.count) + `)</div><div style="color:#666;margin-bottom:4px;">Changed files were preserved. Use Pull or Push when one side should replace the other.</div>` : "";
+    const remainingHtml = remainingIntro + renderDifferenceList("Changed", remaining.changed) + renderDifferenceList("Only local", remaining.onlyLocal) + renderDifferenceList("Only peer", remaining.onlyRemote);
+    jobSkippedEl.innerHTML = skippedHtml + remainingHtml;
   };
   const renderPauseCard = (job, status) => {
     if (!jobPauseCardEl) return;
@@ -838,7 +860,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
     if (jobProgressEl) {
       const filesSkipped = Number(job.filesSkipped || 0);
       const bytesSkipped = Number(job.bytesSkipped || 0);
-      jobProgressEl.textContent = `Files ${filesDone}/${filesTotal} | Skipped ${filesSkipped} | Bytes ${bytesDone}/${bytesTotal} | Bytes skipped ${bytesSkipped}`;
+      const remainingCount = getRemainingDifferences(job).count;
+      const remainingText = remainingCount ? " | Remaining " + remainingCount : "";
+      jobProgressEl.textContent = "Files " + filesDone + "/" + filesTotal + " | Skipped " + filesSkipped + " | Bytes " + bytesDone + "/" + bytesTotal + " | Bytes skipped " + bytesSkipped + remainingText;
     }
     renderPauseCard(job, status);
     renderSkippedOperations(job);
@@ -941,9 +965,16 @@ export async function setupPanel(panelElem, panelVars = {}) {
     renderJob();
     if (syncResultEl && state.activeJob && isFinalJobStatus(state.activeJob.status)) {
       const completed = state.activeJob.status === "complete" || state.activeJob.status === "completed";
-      syncResultEl.textContent = JSON.stringify({ ok: completed, partial: Number(state.activeJob.filesSkipped || 0) > 0, job: state.activeJob }, null, 2);
+      const skippedCount = Number(state.activeJob.filesSkipped || 0);
+      const remainingCount = getRemainingDifferences(state.activeJob).count;
+      const partial = skippedCount > 0 || remainingCount > 0;
+      let message = "Sync job completed.";
+      if (skippedCount > 0 && remainingCount > 0) message = "Sync job completed with skipped files and remaining differences.";
+      else if (skippedCount > 0) message = "Sync job completed with skipped files.";
+      else if (remainingCount > 0) message = "Sync job completed with remaining differences.";
+      syncResultEl.textContent = JSON.stringify({ ok: completed, partial, job: state.activeJob }, null, 2);
       if (syncDetailsEl) syncDetailsEl.open = true;
-      setStatus(statusEl, completed ? (Number(state.activeJob.filesSkipped || 0) > 0 ? "Sync job completed with skipped files." : "Sync job completed.") : `Sync job ${state.activeJob.status}.`);
+      setStatus(statusEl, completed ? message : "Sync job " + state.activeJob.status + ".");
     }
   };
 

@@ -4,6 +4,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { Buffer } from "node:buffer";
 import {
   addSyncScope,
   buildScopeManifest,
@@ -16,6 +17,7 @@ import {
   saveSyncScopes,
   validateSyncScope,
 } from "./SyncScopes.mjs";
+import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
 
 const assert = (c, m) => { if (!c) throw new Error(m); };
 const expectThrow = (label, fn) => { let ok = false; try { fn(); } catch { ok = true; } assert(ok, `${label} should throw`); };
@@ -64,28 +66,21 @@ async function main() {
   await writeFile(notebookDir, "Shared/.resolved-conflicts/skip.txt", "skip");
   await writeFile(notebookDir, "Shared/.conflict-backups/skip.txt", "skip");
   await writeFile(notebookDir, "Shared/sub/visible-two.txt", "visible-two");
-  const twoGiBPlusOne = (2 * 1024 * 1024 * 1024) + 1;
-  const largePath = path.resolve(notebookDir, "Shared/large-sparse.bin");
-  await fs.mkdir(path.dirname(largePath), { recursive: true });
-  const largeHandle = await fs.open(largePath, "w");
-  try {
-    await largeHandle.truncate(twoGiBPlusOne);
-  } finally {
-    await largeHandle.close();
-  }
+  const largeContent = Buffer.alloc(MAX_FILE_PUSH_BYTES + 1, 0x58);
+  await writeFile(notebookDir, "Shared/large-stream.bin", largeContent);
 
   const manifest = await buildScopeManifest({ notebookDir, scope: "Shared" });
   const paths = manifest.files.map((f) => f.relativePath);
   assert(
-    JSON.stringify(paths) === JSON.stringify(["Shared/large-sparse.bin", "Shared/sub/visible-two.txt", "Shared/visible.txt"]),
+    JSON.stringify(paths) === JSON.stringify(["Shared/large-stream.bin", "Shared/sub/visible-two.txt", "Shared/visible.txt"]),
     "manifest exclusion",
   );
-  const largeEntry = manifest.files.find((file) => file.relativePath === "Shared/large-sparse.bin");
+  const largeEntry = manifest.files.find((file) => file.relativePath === "Shared/large-stream.bin");
   assert(largeEntry, "large file included in manifest");
   assert(largeEntry.transferMode === "stream", "large file stream mode");
   assert(largeEntry.tooLargeForJson === true, "large file tooLargeForJson marker");
-  assert(largeEntry.sha256 === null, "large file sha omitted");
-  assert(largeEntry.size === twoGiBPlusOne, "large file size preserved");
+  assert(typeof largeEntry.sha256 === "string" && largeEntry.sha256.length === 64, "large file stream hash present");
+  assert(largeEntry.size === largeContent.length, "large file size preserved");
   const smallEntry = manifest.files.find((file) => file.relativePath === "Shared/visible.txt");
   assert(smallEntry?.transferMode === "json", "small file json transfer mode");
   assert(smallEntry?.tooLargeForJson === false, "small file json marker");
@@ -98,6 +93,12 @@ async function main() {
   assert(JSON.stringify(compared.onlyLocal) === JSON.stringify(["Shared/a.txt"]), "onlyLocal");
   assert(JSON.stringify(compared.onlyRemote) === JSON.stringify(["Shared/b.txt"]), "onlyRemote");
   assert(JSON.stringify(compared.changed) === JSON.stringify(["Shared/c.txt"]), "changed");
+
+  const hashMissingCompared = await compareScopeManifests(
+    { scope: "Shared", files: [ { relativePath: "Shared/large-stream.bin", size: 10, mtimeMs: 10, sha256: "a".repeat(64), transferMode: "stream" } ] },
+    { scope: "Shared", files: [ { relativePath: "Shared/large-stream.bin", size: 10, mtimeMs: 10, sha256: null, transferMode: "stream" } ] },
+  );
+  assert(hashMissingCompared.changed.includes("Shared/large-stream.bin"), "hash-present versus hash-missing entries must be changed");
 
   assert(isPathInsideScope({ relativePath: "Shared/file.txt", scope: "Shared" }) === true, "inside scope");
   assert(isPathInsideScope({ relativePath: "SyncTest/file.txt", scope: "Shared" }) === false, "outside scope");

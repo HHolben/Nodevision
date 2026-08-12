@@ -1,7 +1,8 @@
 // Nodevision/ApplicationSystem/public/Sessions/SessionExpression.mjs
 // This module evaluates a small JavaScript-like expression subset for Nodevision Sessions without exposing eval, Node.js globals, or browser internals.
 
-const TOKEN_RE = /\s*(===|!==|<=|>=|&&|\|\||[()!+\-*/<>,]|\d+(?:\.\d+)?|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|[A-Za-z_$][A-Za-z0-9_$]*|\S)/y;
+const TOKEN_RE = /\s*(===|!==|<=|>=|&&|\|\||[()!+\-*/<>,.]|\d+(?:\.\d+)?|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|[A-Za-z_$][A-Za-z0-9_$]*|\S)/y;
+const FORBIDDEN_PROPS = new Set(["__proto__", "prototype", "constructor"]);
 
 function tokenize(source = "") {
   const tokens = [];
@@ -20,6 +21,22 @@ function decodeString(token) {
     : token);
 }
 
+function isPlainObject(value) {
+  return Object.prototype.toString.call(value) === "[object Object]";
+}
+
+function readSafeProperty(value, property) {
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(property) || FORBIDDEN_PROPS.has(property)) {
+    throw new Error(`Unsupported Session property: ${property}.`);
+  }
+  if (value === null || value === undefined) return null;
+  if (property === "length" && (typeof value === "string" || Array.isArray(value))) return value.length;
+  if ((isPlainObject(value) || Array.isArray(value)) && Object.prototype.hasOwnProperty.call(value, property)) {
+    return value[property];
+  }
+  return null;
+}
+
 export function evaluateSessionExpression(source = "", state = {}) {
   const tokens = tokenize(String(source || "").trim());
   let pos = 0;
@@ -30,7 +47,7 @@ export function evaluateSessionExpression(source = "", state = {}) {
     return token;
   };
 
-  function primary() {
+  function primaryBase() {
     const token = take();
     if (token === "(") {
       const value = logicalOr();
@@ -47,6 +64,15 @@ export function evaluateSessionExpression(source = "", state = {}) {
       return state[token];
     }
     throw new Error(`Unexpected expression token: ${token}.`);
+  }
+
+  function primary() {
+    let value = primaryBase();
+    while (peek() === ".") {
+      take(".");
+      value = readSafeProperty(value, take());
+    }
+    return value;
   }
 
   function unary() {
@@ -126,4 +152,3 @@ export function evaluateSessionExpression(source = "", state = {}) {
   if (pos < tokens.length) throw new Error(`Unexpected expression token: ${tokens[pos]}.`);
   return value;
 }
-

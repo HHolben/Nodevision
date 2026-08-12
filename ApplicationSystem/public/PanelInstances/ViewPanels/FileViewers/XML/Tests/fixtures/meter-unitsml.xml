@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UnitsML xmlns="https://schema.unitsml.org/unitsml/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://schema.unitsml.org/unitsml/1.0 https://schema.unitsml.org/unitsml/unitsml-v1.0.xsd">
+  <UnitSet>
+    <Unit xml:id="m" dimensionURL="#dim_L">
+      <UnitName>metre</UnitName>
+      <UnitSymbol typeface="ASCII">m</UnitSymbol>
+    </Unit>
+  </UnitSet>
+  <DimensionSet>
+    <Dimension xml:id="dim_L">
+      <Length symbol="L" powerNumerator="1"/>
+    </Dimension>
+  </DimensionSet>
+</UnitsML>

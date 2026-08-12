@@ -63,6 +63,12 @@ function parseCall(line, name) {
   return match ? splitArgs(match[1]) : null;
 }
 
+function expressionNode(expr = "") {
+  const text = String(expr || "null").trim().replace(/;$/, "");
+  const call = /^(?:await\s+)?(run|wait)\s*\((.*)\)$/.exec(text);
+  return call ? { kind: "call", name: call[1], args: splitArgs(call[2]) } : { kind: "expr", source: text };
+}
+
 function parseStatements(lines, index = 0, stopOnElse = false) {
   const body = [];
   let i = index;
@@ -98,14 +104,14 @@ function parseStatements(lines, index = 0, stopOnElse = false) {
 
     const declaration = /^(?:let|const|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)(?:\s*=\s*(.+?))?\s*;?$/.exec(line.text);
     if (declaration) {
-      body.push({ type: "set", name: declaration[1], expr: declaration[2] || "null", line: line.line });
+      body.push({ type: "set", name: declaration[1], expr: expressionNode(declaration[2] || "null"), line: line.line });
       i += 1;
       continue;
     }
 
     const assignment = /^([A-Za-z_$][A-Za-z0-9_$]*)\s*(=|\+=|-=)\s*(.+?)\s*;?$/.exec(line.text);
     if (assignment) {
-      body.push({ type: "assign", name: assignment[1], op: assignment[2], expr: assignment[3], line: line.line });
+      body.push({ type: "assign", name: assignment[1], op: assignment[2], expr: expressionNode(assignment[3]), line: line.line });
       i += 1;
       continue;
     }

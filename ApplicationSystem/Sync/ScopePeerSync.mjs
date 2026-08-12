@@ -59,6 +59,13 @@ function normalizeNonNegativeSize(value, fieldName = "size") {
   return parsed;
 }
 
+function normalizeOptionalSaveMode(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const mode = String(value).trim().toLowerCase();
+  if (mode === "auto" || mode === "replace" || mode === "conflict") return mode;
+  throw new Error("saveMode must be one of: auto, replace, conflict");
+}
+
 function normalizeOptionalMtimeMs(value) {
   if (value === undefined || value === null || value === "") return null;
   const parsed = Number(value);
@@ -180,6 +187,7 @@ export function validateScopeFilePushMessage(message) {
     contentBase64: decoded.encoded,
     contentType: String(message.contentType || "application/octet-stream"),
     mtimeMs: normalizeOptionalMtimeMs(message.mtimeMs),
+    saveMode: normalizeOptionalSaveMode(message.saveMode),
   };
 }
 
@@ -191,6 +199,7 @@ export function validateScopeFileStreamPushMessage(message) {
     size: normalizeNonNegativeSize(message.size, "size"),
     sha256: normalizeSha256Hex(message.sha256, "sha256"),
     mtimeMs: normalizeOptionalMtimeMs(message.mtimeMs),
+    saveMode: normalizeOptionalSaveMode(message.saveMode),
   };
 }
 
@@ -232,7 +241,7 @@ export async function createSignedScopeFileRequest({ scope, relativePath }, opti
   return signScopedMessage(message, options);
 }
 
-export async function createSignedScopeFilePush({ scope, relativePath, contentBase64, contentType, mtimeMs }, options = {}) {
+export async function createSignedScopeFilePush({ scope, relativePath, contentBase64, contentType, mtimeMs, saveMode }, options = {}) {
   const identity = await ensureDeviceIdentity(options);
   const message = validateScopeFilePushMessage({
     type: TYPES.filePush,
@@ -245,11 +254,12 @@ export async function createSignedScopeFilePush({ scope, relativePath, contentBa
     contentBase64,
     contentType,
     mtimeMs,
+    saveMode,
   });
   return signScopedMessage(message, options);
 }
 
-export async function createSignedScopeFileStreamPush({ scope, relativePath, size, sha256, mtimeMs }, options = {}) {
+export async function createSignedScopeFileStreamPush({ scope, relativePath, size, sha256, mtimeMs, saveMode }, options = {}) {
   const identity = await ensureDeviceIdentity(options);
   const message = validateScopeFileStreamPushMessage({
     type: TYPES.fileStreamPush,
@@ -262,6 +272,7 @@ export async function createSignedScopeFileStreamPush({ scope, relativePath, siz
     size,
     sha256,
     mtimeMs,
+    saveMode,
   });
   return signScopedMessage(message, options);
 }

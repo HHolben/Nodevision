@@ -1,7 +1,22 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaImage.mjs
 // Insert -> Media image picker shared by graphical editors that can place images.
-import { dirname, escapeHtml, getActiveEditorNotebookPath, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath } from "./insertMediaCommon.mjs";
-import { fetchUrlAsDataUrl, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
+import {
+  dirname,
+  escapeHtml,
+  getActiveEditorNotebookPath,
+  insertHtmlAtCaret,
+  joinNotebookPath,
+  normalizeNotebookPath,
+  notebookHrefFromPath,
+  notebookPathFromPickedFile,
+} from "./insertMediaCommon.mjs";
+import {
+  fetchUrlAsDataUrl,
+  looksLikeUrlOrAbsPath,
+  notebookSourceFromPath,
+  readFileAsDataUrl,
+  saveNotebookBinaryFromDataUrl,
+} from "./insertMediaIO.mjs";
 
 const IMAGE_EXTS = ["png", "svg", "jpg", "jpeg", "gif", "webp", "bmp"];
 
@@ -124,16 +139,24 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
   hiddenExisting.style.display = "none";
   form.appendChild(hiddenExisting);
 
-  let existingFile = { dataUrl: "", name: "" };
+  let existingFile = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
   let existingFilePending = null;
   const setStatus = (message) => { statusEl.textContent = String(message || ""); };
   const editorPath = () => getActiveEditorNotebookPath();
   const sourceForNotebook = (path) => svgMode ? notebookHrefFromPath(path) : notebookSourceFromPath(path, editorPath());
 
   const updateExistingStatus = () => {
-    existingFileStatusEl.textContent = existingFilePending
-      ? `Loading: ${existingFile.name || "..."}`
-      : (existingFile.dataUrl ? `Selected local file: ${existingFile.name}` : "No local file selected.");
+    if (existingFilePending) {
+      existingFileStatusEl.textContent = `Loading: ${existingFile.name || "..."}`;
+      return;
+    }
+    if (!existingFile.dataUrl) {
+      existingFileStatusEl.textContent = "No local file selected.";
+      return;
+    }
+    existingFileStatusEl.textContent = existingFile.notebookPath
+      ? `Selected Notebook file: ${existingFile.notebookPath}`
+      : `Selected local file: ${existingFile.name}`;
   };
 
   const updateHint = () => {
@@ -169,15 +192,20 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
     const file = hiddenExisting.files?.[0] || null;
     hiddenExisting.value = "";
     if (!file) return;
-    existingFile = { dataUrl: "", name: file.name || "image.png" };
-    existingSourceEl.value = existingFile.name;
+
+    const name = file.name || "image.png";
+    const notebookPath = notebookPathFromPickedFile(file);
+    const fallbackPath = normalizeNotebookPath(joinNotebookPath(dirname(editorPath()), sanitizeName(name)));
+    const sourceValue = notebookPath || fallbackPath;
+    existingFile = { dataUrl: "", name, notebookPath, sourceValue };
+    existingSourceEl.value = sourceValue;
     existingSourceEl.dataset.localFile = "true";
     existingFilePending = readFileAsDataUrl(file);
     updateExistingStatus();
     try {
-      existingFile = { dataUrl: await existingFilePending, name: file.name || "image.png" };
+      existingFile = { dataUrl: await existingFilePending, name, notebookPath, sourceValue };
     } catch (err) {
-      existingFile = { dataUrl: "", name: "" };
+      existingFile = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
       delete existingSourceEl.dataset.localFile;
       setStatus(err?.message || String(err));
     } finally {
@@ -187,8 +215,11 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
   });
 
   existingSourceEl.addEventListener("input", () => {
-    if (existingSourceEl.dataset.localFile === "true" && existingSourceEl.value !== existingFile.name) {
-      existingFile = { dataUrl: "", name: "" };
+    if (existingSourceEl.dataset.localFile !== "true") return;
+    const entered = String(existingSourceEl.value || "").trim();
+    const notebookish = entered.replace(/^\/+/, "").toLowerCase().startsWith("notebook/");
+    if (entered && looksLikeUrlOrAbsPath(entered) && !notebookish) {
+      existingFile = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
       delete existingSourceEl.dataset.localFile;
       existingFilePending = null;
       updateExistingStatus();
@@ -235,8 +266,15 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
           if (looksLikeUrlOrAbsPath(entered) && !entered.replace(/^\/+/, "").toLowerCase().startsWith("notebook/")) {
             throw new Error("For referenced local files, enter a Notebook destination path.");
           }
-          linkedNotebookPath = normalizeNotebookPath(entered) || normalizeNotebookPath(joinNotebookPath(baseDir, sanitizeName(existingFile.name || "image.png")));
-          await saveNotebookBinaryFromDataUrl(linkedNotebookPath, existingFile.dataUrl, mimeFromExt(linkedNotebookPath.split(".").pop()));
+          const selectedPath = normalizeNotebookPath(existingFile.notebookPath);
+          const enteredPath = normalizeNotebookPath(entered);
+          const selectedWasKept = selectedPath && enteredPath.toLowerCase() === selectedPath.toLowerCase();
+          linkedNotebookPath = selectedWasKept
+            ? selectedPath
+            : (enteredPath || normalizeNotebookPath(joinNotebookPath(baseDir, sanitizeName(existingFile.name || "image.png"))));
+          if (!selectedWasKept) {
+            await saveNotebookBinaryFromDataUrl(linkedNotebookPath, existingFile.dataUrl, mimeFromExt(linkedNotebookPath.split(".").pop()));
+          }
           src = sourceForNotebook(linkedNotebookPath);
         } else if (looksLikeUrlOrAbsPath(entered)) {
           src = entered;
@@ -269,11 +307,6 @@ export function renderImage(root, exts = []) {
   renderImageForm(root, async (insertion) => {
     const linkedAttr = insertion.linkedNotebookPath ? ` data-nv-linked-path="${escapeHtml(insertion.linkedNotebookPath)}"` : "";
     const html = `<img src="${escapeHtml(insertion.src)}"${linkedAttr} alt="Inserted image">`;
-    const tools = window.HTMLWysiwygTools;
-    if (tools && typeof tools.insertHTMLAtCaret === "function") {
-      tools.insertHTMLAtCaret(html);
-      return true;
-    }
-    return document.execCommand("insertHTML", false, html);
+    return insertHtmlAtCaret(html);
   }, { svgMode: false, exts });
 }

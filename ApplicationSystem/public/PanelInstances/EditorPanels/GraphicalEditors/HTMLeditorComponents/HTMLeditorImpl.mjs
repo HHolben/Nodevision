@@ -10,6 +10,9 @@ import { createHtmlLayersContext } from "/PanelInstances/Common/Layers/htmlLayer
 import { countWords } from "../FamilyEditorCommon.mjs";
 import { setStatus, setWordCount } from "/StatusBar.mjs";
 import { recordEditedFile } from "/RecentFiles.mjs";
+import { notebookPathFromPickedFile } from "/ToolbarJSONfiles/insertMediaCommon.mjs";
+import { validateGraphicalHtmlSave } from "./HtmlSaveSafety.mjs";
+import { createWysiwygProgrammaticHistory, insertHtmlFragmentAtRange } from "./WysiwygProgrammaticHistory.mjs";
 import {
   clearTableCellSelection,
   getSelectedTableCells,
@@ -423,6 +426,14 @@ function insertNodeAtCaret(wysiwyg, node, options = {}) {
   fallbackRange.setEndAfter(node);
   applySelectionRange(fallbackRange);
   rememberCurrentSelectionRange(wysiwyg);
+}
+
+function createRangeAtEditorEnd(wysiwyg) {
+  if (!wysiwyg) return null;
+  const range = document.createRange();
+  range.selectNodeContents(wysiwyg);
+  range.collapse(false);
+  return range;
 }
 
 function registerCaretTracking(wysiwyg) {
@@ -2159,6 +2170,30 @@ function normalizeNotebookPathInput(inputPath = "") {
   return normalizePath(clean);
 }
 
+
+function notebookPathFromPickedImageFile(file) {
+  return normalizeNotebookPathInput(notebookPathFromPickedFile(file));
+}
+
+function sameNotebookImagePath(left = "", right = "") {
+  return normalizeNotebookPathInput(left).toLowerCase() === normalizeNotebookPathInput(right).toLowerCase();
+}
+
+function isExternalOrNonNotebookAbsoluteSource(input = "") {
+  const clean = String(input || "").trim();
+  if (!clean) return false;
+  if (clean.startsWith("data:")) return true;
+  if (/^(https?:)?\/\//i.test(clean)) {
+    try {
+      const url = new URL(clean, window.location.origin);
+      return url.origin !== window.location.origin || !url.pathname.startsWith(NOTEBOOK_PREFIX);
+    } catch {
+      return true;
+    }
+  }
+  return clean.startsWith("/") && !clean.replace(/^\/+/, "").toLowerCase().startsWith("notebook/");
+}
+
 function isVirtualEditorPath(filePath = "") {
   return String(filePath || "").startsWith("__epub_virtual__/");
 }
@@ -3217,17 +3252,21 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
   hiddenExistingFileInput.type = "file";
   hiddenExistingFileInput.accept = "image/*";
   hiddenExistingFileInput.style.display = "none";
-  let localFileState = { dataUrl: "", name: "" };
+  let localFileState = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
 
   const updateLocalFileStatus = () => {
     if (!existingSourceFileStatus) return;
-    existingSourceFileStatus.textContent = localFileState.dataUrl
-      ? `Selected local file: ${localFileState.name}`
-      : "No local file selected.";
+    if (!localFileState.dataUrl) {
+      existingSourceFileStatus.textContent = "No local file selected.";
+      return;
+    }
+    existingSourceFileStatus.textContent = localFileState.notebookPath
+      ? `Selected Notebook file: ${localFileState.notebookPath}`
+      : `Selected local file: ${localFileState.name}`;
   };
 
   const clearLocalFileSelection = () => {
-    localFileState = { dataUrl: "", name: "" };
+    localFileState = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
     if (existingSourceInput) {
       delete existingSourceInput.dataset.localFile;
     }
@@ -3296,7 +3335,8 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
   syncVisibility();
 
   existingSourceInput.addEventListener("input", () => {
-    if (existingSourceInput.dataset.localFile === "true" && existingSourceInput.value !== localFileState.name) {
+    if (existingSourceInput.dataset.localFile !== "true") return;
+    if (isExternalOrNonNotebookAbsoluteSource(existingSourceInput.value)) {
       clearLocalFileSelection();
     }
   });
@@ -3311,13 +3351,19 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
     hiddenExistingFileInput.value = "";
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      localFileState = { dataUrl, name: file.name };
-      existingSourceInput.value = file.name;
+      const name = file.name || "image.png";
+      const notebookPath = notebookPathFromPickedImageFile(file);
+      const fallbackPath = normalizeNotebookPathInput(
+        [defaultDir, sanitizeImageFilename(name)].filter(Boolean).join("/")
+      );
+      const sourceValue = notebookPath || fallbackPath;
+      localFileState = { dataUrl, name, notebookPath, sourceValue };
+      existingSourceInput.value = sourceValue;
       existingSourceInput.dataset.localFile = "true";
       updateLocalFileStatus();
     } catch (err) {
       existingSourceFileStatus.textContent = err?.message || "Unable to read selected file.";
-      localFileState = { dataUrl: "", name: "" };
+      localFileState = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
       delete existingSourceInput.dataset.localFile;
     }
   });
@@ -3366,16 +3412,23 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
             : await sourceInputToInlineDataUrl(existingSource, editorFilePath);
           insertion = { src: inlineDataUrl, linkedNotebookPath: "", mode: "inline-existing" };
         } else if (localFileSelected) {
+          if (isExternalOrNonNotebookAbsoluteSource(existingSource)) {
+            throw new Error("For referenced local files, enter a Notebook destination path.");
+          }
           const sanitizedName = sanitizeImageFilename(localFileState.name || "image.png");
           const specifiedPath = normalizeNotebookPathInput(existingSource);
           const fallbackPath = normalizeNotebookPathInput(
             [defaultDir, sanitizedName].filter(Boolean).join("/")
           );
-          const notebookPath = specifiedPath || fallbackPath;
+          const selectedPath = normalizeNotebookPathInput(localFileState.notebookPath);
+          const selectedWasKept = selectedPath && sameNotebookImagePath(specifiedPath, selectedPath);
+          const notebookPath = selectedWasKept ? selectedPath : (specifiedPath || fallbackPath);
           if (!notebookPath) {
             throw new Error("Enter a destination path for the selected file.");
           }
-          await saveNotebookImageFromDataUrl(notebookPath, localFileState.dataUrl);
+          if (!selectedWasKept) {
+            await saveNotebookImageFromDataUrl(notebookPath, localFileState.dataUrl);
+          }
           insertion = {
             src: sourceFromNotebookPath(notebookPath, editorFilePath),
             linkedNotebookPath: notebookPath,
@@ -3397,7 +3450,10 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
 
       const img = createImageElementFromInsertion(insertion);
       if (!img) throw new Error("Failed to prepare image insertion.");
+      const beforeHtml = String(wysiwyg.innerHTML || "");
       insertNodeAtCaret(wysiwyg, img, { preferredRange: preferredInsertRange });
+      wysiwyg.__nvProgrammaticHistory?.record?.(beforeHtml);
+      markHtmlEditorDirty(wysiwyg, editorFilePath);
       hydrateEditorImage(img, editorFilePath).catch((err) => {
         console.warn("Failed to hydrate inserted image:", err);
       });
@@ -4243,6 +4299,22 @@ function attachCanvasTools(canvas, editorFilePath) {
 }
 
 function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
+  const programmaticHistory = createWysiwygProgrammaticHistory(wysiwyg, {
+    onRestore: () => {
+      rehydrateLayoutCanvases(wysiwyg, editorFilePath);
+      hydrateEditorImages(wysiwyg, editorFilePath).catch((err) => {
+        console.warn("Failed to rehydrate images after undo/redo:", err);
+      });
+      markSelectedImage(wysiwyg, null);
+      updateSelectedImageState(null);
+      clearTableCellSelection({ keepActive: false });
+      ensureWrappingForEditableText(wysiwyg);
+      markHtmlEditorDirty(wysiwyg, editorFilePath);
+      rememberCurrentSelectionRange(wysiwyg);
+    },
+  });
+  wysiwyg.__nvProgrammaticHistory = programmaticHistory;
+
   const createLayoutCanvas = () => {
     const canvas = document.createElement("div");
     canvas.className = "nv-layout-canvas";
@@ -4292,29 +4364,39 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
   window.HTMLWysiwygTools = {
     insertImageAtCaret,
     insertHTMLAtCaret: (html) => {
+      const htmlText = String(html || "");
       const preferredRange = getCurrentSelectionRangeInEditor(wysiwyg) ||
         getRememberedSelectionRange(wysiwyg);
       const range = (isRangeInsideEditor(wysiwyg, preferredRange) ? preferredRange.cloneRange() : null) ||
         getRememberedSelectionRange(wysiwyg) ||
-        getCurrentSelectionRangeInEditor(wysiwyg);
-      if (!range) {
-        try {
-          document.execCommand("insertHTML", false, String(html || ""));
-        } catch {
-          // ignore
-        }
-        return;
-      }
+        getCurrentSelectionRangeInEditor(wysiwyg) ||
+        createRangeAtEditorEnd(wysiwyg);
+      const beforeHtml = String(wysiwyg.innerHTML || "");
       applySelectionRange(range);
       wysiwyg.focus();
+      let inserted = false;
       try {
-        document.execCommand("insertHTML", false, String(html || ""));
+        inserted = document.execCommand("insertHTML", false, htmlText);
       } catch {
-        const span = document.createElement("span");
-        span.innerHTML = String(html || "");
-        insertNodeAtCaret(wysiwyg, span, { preferredRange: range });
+        inserted = false;
       }
-      rememberCurrentSelectionRange(wysiwyg);
+      if (!inserted && String(wysiwyg.innerHTML || "") === beforeHtml) {
+        inserted = insertHtmlFragmentAtRange(wysiwyg, htmlText, range);
+      }
+      if (inserted || String(wysiwyg.innerHTML || "") !== beforeHtml) {
+        programmaticHistory.record(beforeHtml);
+        markHtmlEditorDirty(wysiwyg, editorFilePath);
+        rememberCurrentSelectionRange(wysiwyg);
+        return true;
+      }
+      return false;
+    },
+    undo: () => runUndoCommandWithProgrammaticFallback(wysiwyg, "undo", editorFilePath),
+    redo: () => runUndoCommandWithProgrammaticFallback(wysiwyg, "redo", editorFilePath),
+    recordProgrammaticChange: (beforeHtml) => {
+      const recorded = programmaticHistory.record(beforeHtml);
+      if (recorded) markHtmlEditorDirty(wysiwyg, editorFilePath);
+      return recorded;
     },
     insertLayoutCanvas,
     insertPositionableImage,
@@ -4480,13 +4562,13 @@ function registerHTMLFallbackHotkeys(wysiwyg, filePath, rootElem) {
 
     "Control+z": (e) => {
       e.preventDefault();
-      document.execCommand("undo");
+      runUndoCommandWithProgrammaticFallback(wysiwyg, "undo", filePath);
       console.log("🔧 Fallback hotkey: Undo");
     },
 
     "Control+Shift+z": (e) => {
       e.preventDefault();
-      document.execCommand("redo");
+      runUndoCommandWithProgrammaticFallback(wysiwyg, "redo", filePath);
       console.log("🔧 Fallback hotkey: Redo");
     },
 
@@ -4526,6 +4608,31 @@ function registerHTMLFallbackHotkeys(wysiwyg, filePath, rootElem) {
   console.log("🔧 HTML Fallback Hotkeys Loaded");
 
   return () => rootElem.removeEventListener("keydown", onKeyDown);
+}
+
+function runUndoCommandWithProgrammaticFallback(wysiwyg, command, filePath = "") {
+  const direction = command === "redo" ? "redo" : "undo";
+  const history = wysiwyg?.__nvProgrammaticHistory || null;
+  const beforeHtml = String(wysiwyg?.innerHTML || "");
+  let nativeChanged = false;
+  try {
+    wysiwyg?.focus?.();
+    document.execCommand(direction);
+    nativeChanged = String(wysiwyg?.innerHTML || "") !== beforeHtml;
+  } catch (err) {
+    console.warn("HTML editor " + direction + " command failed:", err);
+  }
+
+  if (nativeChanged) {
+    if (direction === "undo") history?.noteNativeUndo?.(beforeHtml);
+    else history?.noteNativeRedo?.(beforeHtml);
+    markHtmlEditorDirty(wysiwyg, filePath);
+    return true;
+  }
+
+  return direction === "undo"
+    ? Boolean(history?.undo?.())
+    : Boolean(history?.redo?.());
 }
 
 const HTML_VOID_TAGS = new Set([
@@ -5157,46 +5264,53 @@ export async function renderEditor(filePath, container, options = {}) {
     window.__nvHtmlEditorActivePath = filePath;
     const getHtmlForSave = () => {
       restoreSavedImageSources(wysiwyg);
-      const headContent = Array.from(headClone.children)
-        .map(el => el.outerHTML)
-        .join("\n");
+      try {
+        const headContent = Array.from(headClone.children)
+          .map(el => el.outerHTML)
+          .join("\n");
 
-      const bodyClone = wysiwyg.cloneNode(true);
-      window.NodevisionPoetry?.normalizeAllPoemBlocks?.(bodyClone);
-      bodyClone.querySelectorAll(".nv-poem-controls").forEach((el) => el.remove());
-      bodyClone.querySelectorAll(".nv-editor-only").forEach((el) => el.remove());
-      bodyClone.querySelectorAll("[data-nv-interactive]").forEach((el) => {
-        el.removeAttribute("data-nv-interactive");
-      });
-      bodyClone.querySelectorAll("[data-nv-resizable]").forEach((el) => {
-        el.removeAttribute("data-nv-resizable");
-      });
-      bodyClone.querySelectorAll("[data-nv-cartoon-resize-handle]").forEach((el) => el.remove());
-      bodyClone.querySelectorAll("[data-nv-cartoon-selected]").forEach((el) => {
-        el.removeAttribute("data-nv-cartoon-selected");
-      });
-      bodyClone.querySelectorAll("[data-nv-cartoon-panel], [data-nv-cartoon-layout], [data-nv-cartoon-split], [data-nv-cartoon-frame]").forEach((el) => {
-        el.removeAttribute("contenteditable");
-      });
-      bodyClone.querySelectorAll(".nv-html-table-selected-cell, .nv-html-table-selection-anchor, .nv-html-table-selection-focus, [data-nv-html-table-selected]").forEach((el) => {
-        el.classList.remove("nv-html-table-selected-cell", "nv-html-table-selection-anchor", "nv-html-table-selection-focus");
-        el.removeAttribute("data-nv-html-table-selected");
-        if (!el.getAttribute("class")) el.removeAttribute("class");
-      });
-      removeFormattingWhitespaceTextNodes(bodyClone);
-      const bodyContent = bodyClone.innerHTML;
-      const bodyStyle = wysiwyg.dataset.nvDocumentBodyStyle || documentBackgroundStyleTextFromEditor(wysiwyg);
-      const bodyAttributes = bodyStyle ? `style="${escapeHtmlAttribute(bodyStyle)}"` : "";
+        const bodyClone = wysiwyg.cloneNode(true);
+        window.NodevisionPoetry?.normalizeAllPoemBlocks?.(bodyClone);
+        bodyClone.querySelectorAll(".nv-poem-controls").forEach((el) => el.remove());
+        bodyClone.querySelectorAll(".nv-editor-only").forEach((el) => el.remove());
+        bodyClone.querySelectorAll("[data-nv-interactive]").forEach((el) => {
+          el.removeAttribute("data-nv-interactive");
+        });
+        bodyClone.querySelectorAll("[data-nv-resizable]").forEach((el) => {
+          el.removeAttribute("data-nv-resizable");
+        });
+        bodyClone.querySelectorAll("[data-nv-cartoon-resize-handle]").forEach((el) => el.remove());
+        bodyClone.querySelectorAll("[data-nv-cartoon-selected]").forEach((el) => {
+          el.removeAttribute("data-nv-cartoon-selected");
+        });
+        bodyClone.querySelectorAll("[data-nv-cartoon-panel], [data-nv-cartoon-layout], [data-nv-cartoon-split], [data-nv-cartoon-frame]").forEach((el) => {
+          el.removeAttribute("contenteditable");
+        });
+        bodyClone.querySelectorAll(".nv-html-table-selected-cell, .nv-html-table-selection-anchor, .nv-html-table-selection-focus, [data-nv-html-table-selected]").forEach((el) => {
+          el.classList.remove("nv-html-table-selected-cell", "nv-html-table-selection-anchor", "nv-html-table-selection-focus");
+          el.removeAttribute("data-nv-html-table-selected");
+          if (!el.getAttribute("class")) el.removeAttribute("class");
+        });
+        removeFormattingWhitespaceTextNodes(bodyClone);
+        const bodyContent = bodyClone.innerHTML;
+        const bodyStyle = wysiwyg.dataset.nvDocumentBodyStyle || documentBackgroundStyleTextFromEditor(wysiwyg);
+        const bodyAttributes = bodyStyle ? `style="${escapeHtmlAttribute(bodyStyle)}"` : "";
 
-      const scripts = Array.from(hidden.children)
-        .map(el => `<script>${el.dataset.script}</script>`)
-        .join("\n");
+        const scripts = Array.from(hidden.children)
+          .map(el => `<script>${el.dataset.script}</script>`)
+          .join("\n");
 
-      const serialized = serializeHtmlDocumentForSave(headContent, bodyContent, scripts, bodyAttributes);
-      hydrateEditorImages(wysiwyg, filePath).catch((err) => {
-        console.warn("Failed to rehydrate images after generating HTML:", err);
-      });
-      return serialized;
+        const serialized = serializeHtmlDocumentForSave(headContent, bodyContent, scripts, bodyAttributes);
+        const validation = validateGraphicalHtmlSave({ path: filePath, content: serialized, originalContent: htmlText });
+        if (!validation.ok) {
+          throw new Error(validation.error || "Refusing to save unsafe graphical HTML output.");
+        }
+        return serialized;
+      } finally {
+        hydrateEditorImages(wysiwyg, filePath).catch((err) => {
+          console.warn("Failed to rehydrate images after generating HTML:", err);
+        });
+      }
     };
 
     const saveHtmlForPath = async (path) => {
@@ -5208,18 +5322,25 @@ export async function renderEditor(filePath, container, options = {}) {
       const response = await fetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: targetPath, sourcePath: filePath, content }),
+        body: JSON.stringify({
+          path: targetPath,
+          sourcePath: filePath,
+          content,
+          editorKind: "html-wysiwyg",
+        }),
       });
-      if (!response.ok) {
-        let detail = response.statusText || `HTTP ${response.status}`;
-        try {
-          const data = await response.json();
-          detail = data?.error || detail;
-        } catch {
-          // Keep the HTTP status text.
-        }
+      let data = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+      if (!response.ok || !data?.success) {
+        const detail = data?.error || response.statusText || `HTTP ${response.status}`;
         throw new Error(detail);
       }
+      window.NodevisionState.fileIsDirty = false;
+      updateToolbarState({ fileIsDirty: false });
       console.log("Saved WYSIWYG file:", targetPath);
     };
 
@@ -5243,6 +5364,7 @@ export async function renderEditor(filePath, container, options = {}) {
 
     htmlEditorContext = {
       kind: "html",
+      saveKind: "html-wysiwyg",
       filePath,
       getHTML: getHtmlForSave,
       save: saveHtmlForPath,
@@ -5261,6 +5383,8 @@ export async function renderEditor(filePath, container, options = {}) {
       if (window.__nvActiveHtmlEditorContext === htmlEditorContext) window.__nvActiveHtmlEditorContext = null;
     };
     activateHtmlEditorContext();
+    window.NodevisionState.fileIsDirty = false;
+    updateToolbarState({ fileIsDirty: false });
 
     window.setEditorHTML = (html) => {
       const doc = parser.parseFromString(html, "text/html");
@@ -5289,6 +5413,7 @@ export async function renderEditor(filePath, container, options = {}) {
       markSelectedImage(wysiwyg, null);
       updateSelectedImageState(null);
       updateWordCount();
+      wysiwyg.__nvProgrammaticHistory?.clear?.();
     };
 
     window.saveWYSIWYGFile = saveHtmlForPath;
@@ -5347,6 +5472,7 @@ export async function renderEditor(filePath, container, options = {}) {
     htmlAttentionCleanup?.();
     wysiwyg.removeEventListener("input", updateWordCount);
     wysiwyg.removeEventListener("input", recordRecentHtmlEdit);
+    wysiwyg.__nvProgrammaticHistory = null;
     container.__cleanupHTMLHotkeys = null;
     container.__cleanupHTMLCanvasDeletion = null;
     container.__cleanupHTMLImageTools = null;

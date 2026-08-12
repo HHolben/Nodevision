@@ -213,14 +213,22 @@
     "callbackKey": "svgLayerToggleActiveVisibility",
     "modes": ["SVG Editing"]
   },
-    {
-    "ToolbarCategory": "File",
+  {
+    "ToolbarCategory": "View",
     "heading": "File View",
     "hotkeyText": "",
     "icon": "icons/DefaultNodeImage.png",
     "panelTemplateId": "FileView",
     "panelType": "FileView",
-    "defaultInstanceVars": { "filePath": "/Notebook/index.html", "renderMode": "Displaying.Rendered" }
+    "defaultInstanceVars": { "filePath": "/Notebook/index.html", "renderMode": "Displaying.Rendered" },
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "File View",
+    "heading": "File Viewer Navigation",
+    "hotkeyText": "",
+    "script": "fileViewerNavigationWidget.mjs"
   },
   {
     "ToolbarCategory": "View",

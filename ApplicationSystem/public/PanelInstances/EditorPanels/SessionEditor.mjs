@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/SessionEditor.mjs
 // This file implements the first Nodevision Session editor with a procedural flow preview, source editing, and command metadata discovered from the shared command registry.
 
-import { getNodevisionCommandDefinitions } from "../../Sessions/SessionCommandAdapter.mjs";
+import { renderSessionEditorCommands } from "../../Sessions/SessionEditorCommandPalette.mjs";
 import { summarizeSessionFlow } from "../../Sessions/SessionFlowModel.mjs";
 import { duplicateBuiltInSession, saveUserSession } from "../../Sessions/SessionApi.mjs";
 import { openSessionEditor, startSession } from "../../Sessions/SessionController.mjs";
@@ -121,34 +121,6 @@ function renderFlow(target, source) {
   }
 }
 
-function renderCommands(target, textarea) {
-  target.replaceChildren();
-  const heading = document.createElement("h3");
-  heading.textContent = "Commands";
-  target.appendChild(heading);
-  for (const command of getNodevisionCommandDefinitions()) {
-    const row = document.createElement("div");
-    row.className = "nv-session-command-row";
-    const info = document.createElement("div");
-    const commandId = document.createElement("strong");
-    commandId.textContent = command.id;
-    const commandDescription = document.createElement("small");
-    commandDescription.textContent = command.sessionSafe ? command.description : "Console-only command metadata.";
-    info.append(commandId, commandDescription);
-    const insert = document.createElement("button");
-    insert.type = "button";
-    insert.textContent = command.sessionSafe ? "Insert" : "Unavailable";
-    insert.disabled = !command.sessionSafe;
-    insert.addEventListener("click", () => {
-      textarea.value += `\nrun("${command.id}");\n`;
-      textarea.dispatchEvent(new Event("input"));
-      textarea.focus();
-    });
-    row.append(info, insert);
-    target.appendChild(row);
-  }
-}
-
 export function createPanel(contentElem, panelVars = {}, panelRoot = null) {
   ensureStyles();
   const session = panelVars.session || {};
@@ -196,7 +168,7 @@ export function createPanel(contentElem, panelVars = {}, panelRoot = null) {
   toolbar.append(save, run, status);
   sourcePanel.append(toolbar, textarea);
   renderFlow(flowPanel, textarea.value);
-  renderCommands(commandPanel, textarea);
+  renderSessionEditorCommands(commandPanel, textarea);
   wrapper.append(flowPanel, sourcePanel, commandPanel);
   contentElem.appendChild(wrapper);
 }

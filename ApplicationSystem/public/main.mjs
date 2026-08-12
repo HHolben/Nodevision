@@ -8,14 +8,16 @@ import { ensureWorkspace, loadDefaultLayout, renderLayout } from "./panels/works
 import { initStatusBar } from "./StatusBar.mjs";
 import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
 import { installPanelZoomShortcuts } from "./panels/panelZoomPan.mjs";
+import { installHyperlinkSelectionTracking } from "./ToolbarCallbacks/edit/hyperlinkSelection.mjs";
 
 
-//Initialize the status bar: 
+//Initialize the status bar:
 initStatusBar();
 
 async function initNodevision() {
   try {
     await createToolbar("#global-toolbar");
+    installHyperlinkSelectionTracking();
     installPanelZoomShortcuts();
 
     const workspace = ensureWorkspace();

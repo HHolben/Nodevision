@@ -219,7 +219,12 @@ export default async function saveFile(options = {}) {
       }
       const getHTML = activeHtmlContext?.getHTML || window.getEditorHTML;
       const content = getHTML();
-      await saveViaApi({ path: filePath, sourcePath: editorPath || filePath, content });
+      await saveViaApi({
+        path: filePath,
+        sourcePath: editorPath || filePath,
+        content,
+        editorKind: activeHtmlContext?.saveKind || "html-wysiwyg",
+      });
       return notifyFileSaved(filePath);
     }
 

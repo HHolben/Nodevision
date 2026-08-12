@@ -10,7 +10,7 @@ import { normalizePeerUrl, resolveRuntimeRoot } from "./sync-sync-test-two-way.m
 import { MAX_FILE_PUSH_BYTES } from "./PeerFileTransfer.mjs";
 import { createCancelledError, pullScopeFileStream } from "./pull-scope-file-stream.mjs";
 import { pushScopeFileStream } from "./push-scope-file-stream.mjs";
-import { createPreOverwriteRecoverySnapshot, createSyncRecoveryJobId } from "./SyncRecovery.mjs";
+import { createPreOverwriteRecoverySnapshot } from "./SyncRecovery.mjs";
 import { HttpSyncTransport } from "./SyncTransport.mjs";
 
 const hash = (b) => createHash("sha256").update(b).digest("hex");
@@ -317,6 +317,26 @@ function applySameNameLocationSizeSkipToPlan(plan, localEntries, remoteEntries, 
   return { plan: nextPlan, skippedSameNameLocationSize, skipSameNameLocationSize: true };
 }
 
+function changedFilesReplaceByDirection(syncDirection) {
+  return syncDirection === "pull" || syncDirection === "push";
+}
+
+function operationForChangedFile(syncDirection) {
+  if (syncDirection === "push") return "push";
+  if (syncDirection === "pull") return "pull";
+  return "conflict";
+}
+
+function buildDryRunOperations(plan, syncDirection, skipped) {
+  const changed = Array.from(plan.changed || []);
+  const wouldPull = Array.from(plan.onlyRemote || []);
+  const wouldPush = Array.from(plan.onlyLocal || []);
+  const wouldConflict = changedFilesReplaceByDirection(syncDirection) ? [] : changed;
+  if (syncDirection === "pull") wouldPull.push(...changed);
+  if (syncDirection === "push") wouldPush.push(...changed);
+  return { wouldPull, wouldPush, wouldConflict, skipped };
+}
+
 function resolveLocalPathFromRelativePath({ notebookDir, scope, relativePath }) {
   const scopeRoot = path.resolve(notebookDir, scope);
   return path.resolve(scopeRoot, relativePath.slice(`${scope}/`.length));
@@ -544,18 +564,6 @@ async function pullConflictStream({
   };
 }
 
-function normalizePushedConflictReport(relativePath, report) {
-  return {
-    originalRelativePath: relativePath,
-    conflictRelativePath: report?.conflictRelativePath || null,
-    savedRelativePath: report?.savedRelativePath || relativePath,
-    mode: report?.mode || "created",
-    bytes: toNonNegativeSize(report?.bytes),
-    sha256: String(report?.sha256 || ""),
-    transferMode: report?.transferMode || "json",
-    direction: "push",
-  };
-}
 
 export async function runScopeSyncTwoWay({
   peerUrl,
@@ -636,7 +644,29 @@ export async function runScopeSyncTwoWay({
   emitProgress("plan");
 
   if (dryRun) {
-    return { ok: true, dryRun: true, scope: normalizedScope, peerUrl: normalizedPeerUrl, peerUrls: normalizedPeerUrls, syncDirection: normalizedSyncDirection, maxFileSizeBytes: limited.maxFileSizeBytes, skipSameNameLocationSize: sameNameLocationSizeFiltered.skipSameNameLocationSize, before: { localFileCount: localBefore.files.length, remoteFileCount: remoteBefore.files.length, plan, unfilteredPlan: rawPlan }, operations: { wouldPull: plan.onlyRemote, wouldPush: plan.onlyLocal, wouldConflict: plan.changed, skipped: { same: plan.same, oversized: limited.skippedBySize, sameNameLocationSize: sameNameLocationSizeFiltered.skippedSameNameLocationSize, direction: directional.skippedByDirection } } };
+    const skipped = {
+      same: plan.same,
+      oversized: limited.skippedBySize,
+      sameNameLocationSize: sameNameLocationSizeFiltered.skippedSameNameLocationSize,
+      direction: directional.skippedByDirection,
+    };
+    return {
+      ok: true,
+      dryRun: true,
+      scope: normalizedScope,
+      peerUrl: normalizedPeerUrl,
+      peerUrls: normalizedPeerUrls,
+      syncDirection: normalizedSyncDirection,
+      maxFileSizeBytes: limited.maxFileSizeBytes,
+      skipSameNameLocationSize: sameNameLocationSizeFiltered.skipSameNameLocationSize,
+      before: {
+        localFileCount: localBefore.files.length,
+        remoteFileCount: remoteBefore.files.length,
+        plan,
+        unfilteredPlan: rawPlan,
+      },
+      operations: buildDryRunOperations(plan, normalizedSyncDirection, skipped),
+    };
   }
 
   const pulled = []; const pushed = []; const conflicts = [];
@@ -858,14 +888,16 @@ export async function runScopeSyncTwoWay({
   for (const rp of plan.changed) {
     ensureNotCancelled();
     progressState.currentFile = rp;
-    emitProgress("file-start", { operation: "conflict", relativePath: rp });
+    const changedOperation = operationForChangedFile(normalizedSyncDirection);
+    const replaceChanged = changedFilesReplaceByDirection(normalizedSyncDirection);
+    emitProgress("file-start", { operation: changedOperation, relativePath: rp });
     let retryCount = 0;
     while (true) {
       const bytesBefore = progressState.bytesDone;
       try {
         const operationDirection = normalizedSyncDirection === "push" ? "push" : "pull";
         let useStream;
-        let conflictReport;
+        let changedReport;
         if (operationDirection === "push") {
           const localEntry = localEntries.get(rp);
           useStream = await shouldUseStreamPushForLocalFile({
@@ -875,17 +907,18 @@ export async function runScopeSyncTwoWay({
             relativePath: rp,
           });
           try {
-            conflictReport = normalizePushedConflictReport(rp, useStream
+            changedReport = useStream
               ? await pushOneStream({
-                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "conflict-push", relativePath: rp, transferMode: "stream" }),
+                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: changedOperation, relativePath: rp, transferMode: "stream" }),
                 scope: normalizedScope,
                 relativePath: rp,
                 notebookDir,
                 runtimeRoot: resolvedRuntimeRoot,
                 shouldCancel,
+                saveMode: "replace",
                 onByteDelta(delta) {
                   progressState.bytesDone += toNonNegativeSize(delta);
-                  emitProgress("file-progress", { operation: "conflict", relativePath: rp, syncDirection: normalizedSyncDirection });
+                  emitProgress("file-progress", { operation: changedOperation, relativePath: rp, syncDirection: normalizedSyncDirection });
                 },
               })
               : await pushOne({
@@ -895,22 +928,74 @@ export async function runScopeSyncTwoWay({
                 relativePath: rp,
                 notebookDir,
                 runtimeRoot: resolvedRuntimeRoot,
-              }));
+                saveMode: "replace",
+              });
           } catch (err) {
             if (!useStream && isJsonPushTooLargeError(err)) {
               useStream = true;
-              conflictReport = normalizePushedConflictReport(rp, await pushOneStream({
-                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "conflict-push", relativePath: rp, transferMode: "stream" }),
+              changedReport = await pushOneStream({
+                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: changedOperation, relativePath: rp, transferMode: "stream" }),
                 scope: normalizedScope,
                 relativePath: rp,
                 notebookDir,
                 runtimeRoot: resolvedRuntimeRoot,
                 shouldCancel,
+                saveMode: "replace",
                 onByteDelta(delta) {
                   progressState.bytesDone += toNonNegativeSize(delta);
-                  emitProgress("file-progress", { operation: "conflict", relativePath: rp, syncDirection: normalizedSyncDirection });
+                  emitProgress("file-progress", { operation: changedOperation, relativePath: rp, syncDirection: normalizedSyncDirection });
                 },
-              }));
+              });
+            } else {
+              throw err;
+            }
+          }
+        } else if (replaceChanged) {
+          const remoteEntry = remoteEntries.get(rp);
+          useStream = shouldUseStreamTransfer(remoteEntry);
+          try {
+            changedReport = useStream
+              ? await pullOneStream({
+                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "pull", relativePath: rp, transferMode: "stream" }),
+                scope: normalizedScope,
+                relativePath: rp,
+                notebookDir,
+                runtimeRoot: resolvedRuntimeRoot,
+                shouldCancel,
+                saveMode: "replace",
+                incomingEntry: remoteEntry,
+                onByteDelta(delta) {
+                  progressState.bytesDone += toNonNegativeSize(delta);
+                  emitProgress("file-progress", { operation: changedOperation, relativePath: rp, syncDirection: normalizedSyncDirection });
+                },
+              })
+              : await pullOne({
+                transport: syncTransport,
+                peerUrl: normalizedPeerUrl,
+                scope: normalizedScope,
+                relativePath: rp,
+                notebookDir,
+                runtimeRoot: resolvedRuntimeRoot,
+                saveMode: "replace",
+                incomingEntry: remoteEntry,
+              });
+          } catch (err) {
+            if (!useStream && isJsonPullTooLargeError(err)) {
+              useStream = true;
+              changedReport = await pullOneStream({
+                peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "pull", relativePath: rp, transferMode: "stream" }),
+                scope: normalizedScope,
+                relativePath: rp,
+                notebookDir,
+                runtimeRoot: resolvedRuntimeRoot,
+                shouldCancel,
+                saveMode: "replace",
+                incomingEntry: remoteEntry,
+                onByteDelta(delta) {
+                  progressState.bytesDone += toNonNegativeSize(delta);
+                  emitProgress("file-progress", { operation: changedOperation, relativePath: rp, syncDirection: normalizedSyncDirection });
+                },
+              });
             } else {
               throw err;
             }
@@ -918,7 +1003,7 @@ export async function runScopeSyncTwoWay({
         } else {
           const remoteEntry = remoteEntries.get(rp);
           useStream = shouldUseStreamTransfer(remoteEntry);
-          conflictReport = useStream
+          changedReport = useStream
             ? await pullConflictStream({
               peerUrl: selectPeerUrlForTransfer(syncTransport, normalizedPeerUrl, { operation: "conflict-pull", relativePath: rp, transferMode: "stream" }),
               scope: normalizedScope,
@@ -928,7 +1013,7 @@ export async function runScopeSyncTwoWay({
               shouldCancel,
               onByteDelta(delta) {
                 progressState.bytesDone += toNonNegativeSize(delta);
-                emitProgress("file-progress", { operation: "conflict", relativePath: rp, syncDirection: normalizedSyncDirection });
+                emitProgress("file-progress", { operation: changedOperation, relativePath: rp, syncDirection: normalizedSyncDirection });
               },
             })
             : await pullConflict({
@@ -942,18 +1027,20 @@ export async function runScopeSyncTwoWay({
             });
         }
         if (!useStream) {
-          progressState.bytesDone += toNonNegativeSize(conflictReport?.bytes);
+          progressState.bytesDone += toNonNegativeSize(changedReport?.bytes);
         }
         progressState.filesDone += 1;
-        conflicts.push(conflictReport);
-        emitProgress("file-complete", { operation: "conflict", relativePath: rp });
+        if (changedOperation === "push") pushed.push(changedReport);
+        else if (changedOperation === "pull") pulled.push(changedReport);
+        else conflicts.push(changedReport);
+        emitProgress("file-complete", { operation: changedOperation, relativePath: rp });
         break;
       } catch (err) {
-        const action = await handleFailedFile({ operation: "conflict", relativePath: rp, err, retryCount, bytesBefore });
+        const action = await handleFailedFile({ operation: changedOperation, relativePath: rp, err, retryCount, bytesBefore });
         if (action === "retry") {
           retryCount += 1;
           ensureNotCancelled();
-          emitProgress("file-retry", { operation: "conflict", relativePath: rp, retryCount });
+          emitProgress("file-retry", { operation: changedOperation, relativePath: rp, retryCount });
           continue;
         }
         if (action === "skip") break;
@@ -966,11 +1053,28 @@ export async function runScopeSyncTwoWay({
   const localAfter = await buildScopeManifest({ notebookDir, scope: normalizedScope });
   const remoteAfter = await fetchManifest(syncTransport, normalizedScope);
   const afterPlan = await compareScopeManifests(localAfter, remoteAfter);
-  const partial = skippedOperations.length > 0;
+  const remainingDifferences = {
+    onlyLocal: Array.from(afterPlan.onlyLocal || []),
+    onlyRemote: Array.from(afterPlan.onlyRemote || []),
+    changed: Array.from(afterPlan.changed || []),
+  };
+  const remainingDifferenceCount = remainingDifferences.onlyLocal.length
+    + remainingDifferences.onlyRemote.length
+    + remainingDifferences.changed.length;
+  const hasSkipped = skippedOperations.length > 0;
+  const hasRemainingDifferences = remainingDifferenceCount > 0;
+  const partial = hasSkipped || hasRemainingDifferences;
+  const status = hasSkipped && hasRemainingDifferences
+    ? "completed_with_skips_and_remaining_differences"
+    : hasSkipped
+      ? "completed_with_skips"
+      : hasRemainingDifferences
+        ? "completed_with_remaining_differences"
+        : "completed";
   return {
     ok: true,
     partial,
-    status: partial ? "completed_with_skips" : "completed",
+    status,
     dryRun: false,
     scope: normalizedScope,
     peerUrl: normalizedPeerUrl,
@@ -995,6 +1099,10 @@ export async function runScopeSyncTwoWay({
     })),
     filesSkipped: skippedOperations.length,
     bytesSkipped: skippedOperations.reduce((sum, entry) => sum + toNonNegativeSize(entry.bytes), 0),
+    remainingDifferences: {
+      ...remainingDifferences,
+      count: remainingDifferenceCount,
+    },
     after: { localFileCount: localAfter.files.length, remoteFileCount: remoteAfter.files.length, plan: afterPlan },
   };
 }

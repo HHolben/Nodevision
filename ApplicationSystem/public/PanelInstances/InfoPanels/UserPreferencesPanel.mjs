@@ -36,7 +36,7 @@ const DEFAULT_PREFERENCES = Object.freeze({
   graphAnimatedLayout: true,
   graphShowEdgeLabels: true,
   graphOpenLinksInView: true,
-  linkPortalParity: false,
+  linkPortalParity: true,
   worldMovementMode: "walk",
   worldMouseSensitivity: 1,
   worldPlacementGrid: 1,

@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/Sessions/SessionRuntime.mjs
-// This module interprets parsed Nodevision Sessions by mutating Session-local state and invoking the shared Nodevision command adapter.
+// This module interprets parsed Nodevision Sessions by mutating Session-local state and invoking shared Nodevision commands.
 
 import { evaluateSessionExpression } from "./SessionExpression.mjs";
 import { parseSessionScript } from "./SessionScriptParser.mjs";
@@ -40,14 +40,30 @@ export class SessionRuntime {
   async checkpoint() {
     if (this.aborted) throw Object.assign(new Error("Session stopped."), { code: "SESSION_STOPPED" });
     if (!this.paused) return;
-    await new Promise((resolve) => {
-      this.resumeWaiter = resolve;
-    });
+    await new Promise((resolve) => { this.resumeWaiter = resolve; });
     if (this.aborted) throw Object.assign(new Error("Session stopped."), { code: "SESSION_STOPPED" });
   }
 
   value(expr) {
     return evaluateSessionExpression(expr, this.state);
+  }
+
+  async statementValue(expr) {
+    if (!expr || expr.kind !== "call") return this.value(expr?.source ?? expr);
+    return this.executeCall(expr.name, expr.args);
+  }
+
+  async executeCall(name, args = []) {
+    if (name === "run") {
+      const [commandExpr, ...argExprs] = args;
+      const commandId = this.value(commandExpr);
+      return this.context.run(commandId, argExprs.map((expr) => this.value(expr)), this);
+    }
+    if (name === "wait") {
+      const [eventExpr] = args;
+      return this.context.wait(this.value(eventExpr));
+    }
+    throw new Error(`Unsupported Session call: ${name}.`);
   }
 
   async executeBlock(body = []) {
@@ -60,19 +76,16 @@ export class SessionRuntime {
   async executeStatement(statement) {
     try {
       if (statement.type === "set") {
-        this.state[statement.name] = this.value(statement.expr);
+        this.state[statement.name] = await this.statementValue(statement.expr);
       } else if (statement.type === "assign") {
-        const next = this.value(statement.expr);
+        const next = await this.statementValue(statement.expr);
         if (statement.op === "=") this.state[statement.name] = next;
         else if (statement.op === "+=") this.state[statement.name] = (this.state[statement.name] ?? 0) + next;
         else this.state[statement.name] = Number(this.state[statement.name] ?? 0) - Number(next);
       } else if (statement.type === "run") {
-        const [commandExpr, ...argExprs] = statement.args;
-        const commandId = this.value(commandExpr);
-        await this.context.run(commandId, argExprs.map((expr) => this.value(expr)), this);
+        await this.executeCall("run", statement.args);
       } else if (statement.type === "wait") {
-        const [eventExpr] = statement.args;
-        await this.context.wait(this.value(eventExpr));
+        await this.executeCall("wait", statement.args);
       } else if (statement.type === "if") {
         await this.executeBlock(this.value(statement.condition) ? statement.consequent : statement.alternate);
       } else if (statement.type === "while") {
@@ -95,4 +108,3 @@ export class SessionRuntime {
     }
   }
 }
-

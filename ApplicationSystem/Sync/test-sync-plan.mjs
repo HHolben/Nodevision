@@ -93,6 +93,47 @@ async function testSkipSameNameLocationSizeOption() {
   }
 }
 
+async function testDirectionalChangedDryRun() {
+  const runtimeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "nodevision-directional-dry-run-"));
+  try {
+    const scope = "Shared";
+    const notebookDir = path.resolve(runtimeRoot, "Notebook");
+    const relativePath = "Shared/index.html";
+    await saveSyncScopes(["SyncTest", scope], { runtimeRoot });
+    await writeScopedFile(notebookDir, relativePath, "local index");
+
+    const remoteManifest = {
+      scope,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      files: [{
+        relativePath,
+        size: 12,
+        mtimeMs: 1,
+        sha256: sha256("remote index"),
+        transferMode: "json",
+        tooLargeForJson: false,
+      }],
+    };
+    const transport = {
+      kind: "test-transport",
+      async listFiles(requestedScope) {
+        assert(requestedScope === scope, "Expected dry-run to request the Shared scope");
+        return remoteManifest;
+      },
+    };
+
+    const pullDryRun = await runScopeSyncTwoWay({ scope, runtimeRoot, dryRun: true, transport, syncDirection: "pull" });
+    assert(pullDryRun.operations.wouldPull.includes(relativePath), "Expected pull dry-run to include changed index file");
+    assert(!pullDryRun.operations.wouldConflict.includes(relativePath), "Expected pull dry-run not to report changed index as conflict");
+
+    const pushDryRun = await runScopeSyncTwoWay({ scope, runtimeRoot, dryRun: true, transport, syncDirection: "push" });
+    assert(pushDryRun.operations.wouldPush.includes(relativePath), "Expected push dry-run to include changed index file");
+    assert(!pushDryRun.operations.wouldConflict.includes(relativePath), "Expected push dry-run not to report changed index as conflict");
+  } finally {
+    await fs.rm(runtimeRoot, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   const localManifest = createManifest([
     { relativePath: "SyncTest/only-local.txt", sha256: "sha-only-local" },
@@ -118,6 +159,7 @@ async function main() {
   assertRelativePlanPaths(plan.same);
 
   await testSkipSameNameLocationSizeOption();
+  await testDirectionalChangedDryRun();
 
   console.log("PASS");
 }

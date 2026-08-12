@@ -6,6 +6,17 @@ import { openNodevisionOverlayPanel } from "../TemplateSystem/NodevisionOverlayP
 
 const STYLE_ID = "nv-session-ui-ownership-styles";
 
+function sessionErrorMessage(session = {}, err = {}) {
+  const lines = [err?.message || "The Session stopped."];
+  const location = [];
+  if (session.id) location.push("Session: " + (session.scope || "user") + "/" + session.id);
+  if (err?.line) location.push("Line: " + err.line);
+  if (err?.commandId) location.push("Command: " + err.commandId);
+  if (err?.code) location.push("Reason: " + err.code);
+  if (location.length) lines.push("", ...location);
+  return lines.join("\n");
+}
+
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement("style");
@@ -75,6 +86,9 @@ export class SessionUiOwnership {
       heading: this.session.title || "Session",
       message,
       choices: [{ label: "Continue", value: "continue", primary: true }],
+      emitOverlayEvents: true,
+      returnPayload: true,
+      overlayId: `SessionOverlay-${Date.now()}`,
       onDone: () => {
         this.messagePanel?.remove();
         this.messagePanel = null;
@@ -103,7 +117,7 @@ export class SessionUiOwnership {
     return openNodevisionOverlayPanel("SessionOverlayPanel", {
       title: "Session Error",
       heading: "Session Error",
-      message: err?.line ? `${err.message}\nLine ${err.line}` : (err?.message || "The Session stopped."),
+      message: sessionErrorMessage(this.session, err),
       choices: [{ label: "Quit", value: "quit", primary: true }],
     });
   }

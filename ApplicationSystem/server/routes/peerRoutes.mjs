@@ -16,6 +16,11 @@ import { findTrustedPeer, getLocalPeerInfo, loadTrustedPeers } from "../../Sync/
 import { buildScopeManifest, loadSyncScopes, resolveScopeNotebookPath } from "../../Sync/SyncScopes.mjs";
 import { isProtectedFromPeerWrites } from "../../Sync/SyncProtection.mjs";
 import {
+  finalizeScopedPeerUpload,
+  normalizeScopedPeerSaveMode,
+  saveScopedPeerBuffer,
+} from "../../Sync/ScopedPeerWriteSave.mjs";
+import {
   isScopedPeerVerificationError,
   validateScopeFileRequestMessage,
   verifySignedScopeFilePush,
@@ -75,13 +80,6 @@ async function readScopedFile(scoped) {
   return { fileBuffer, hash: sha256(fileBuffer) };
 }
 
-async function hashFileByStream(filePath) {
-  const hasher = createHash("sha256");
-  for await (const chunk of createReadStream(filePath)) {
-    hasher.update(chunk);
-  }
-  return hasher.digest("hex");
-}
 
 async function rejectProtectedPeerWriteIfNeeded(res, { runtimeRoot, endpoint, peerDeviceId } = {}) {
   if (!(await isProtectedFromPeerWrites({ runtimeRoot }))) return false;
@@ -95,15 +93,11 @@ async function rejectProtectedPeerWriteIfNeeded(res, { runtimeRoot, endpoint, pe
   return true;
 }
 
-function buildScopedConflictRelativePath(originalRelativePath, peerDeviceId, timestamp) {
-  const parsed = path.posix.parse(originalRelativePath);
-  const safeTs = new Date(Date.parse(timestamp)).toISOString().replaceAll(":", "-").replaceAll(".", "-");
-  const safePeer = String(peerDeviceId || "peer").replace(/[^A-Za-z0-9_-]+/g, "-");
-  const name = parsed.ext ? `${parsed.name}.from-${safePeer}.${safeTs}${parsed.ext}` : `${parsed.base}.from-${safePeer}.${safeTs}`;
-  const segments = originalRelativePath.split("/");
-  const scope = segments[0];
-  const nestedDir = segments.slice(1, -1).join("/");
-  return nestedDir ? `${scope}/.conflicts/${nestedDir}/${name}` : `${scope}/.conflicts/${name}`;
+function normalizeScopedPeerRequestSaveMode(signedSaveMode, unsignedSaveMode) {
+  const signedText = String(signedSaveMode ?? "").trim();
+  if (signedText) return normalizeScopedPeerSaveMode(signedText);
+  const unsigned = normalizeScopedPeerSaveMode(unsignedSaveMode);
+  return unsigned === "replace" ? "auto" : unsigned;
 }
 
 function classifyScopedPeerRequestError(err, unauthorizedError) {
@@ -753,6 +747,8 @@ export function registerPeerRoutes(app, ctx) {
     let verified;
     let scoped;
     let tempPath = null;
+    let saveMode = "auto";
+    let recoveryJobId = null;
     try {
       const { payload, signatureBase64, diagnostics } = extractSignedStreamAuth(req);
       streamAuthDiagnostics = diagnostics;
@@ -766,7 +762,9 @@ export function registerPeerRoutes(app, ctx) {
       );
       if (await rejectProtectedPeerWriteIfNeeded(res, { runtimeRoot: ctx?.runtimeRoot, endpoint: "scope/file-stream-push", peerDeviceId: verified?.peer?.deviceId })) return;
       scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
-      tempPath = `${scoped.targetPath}.nodevision-upload`;
+      saveMode = normalizeScopedPeerRequestSaveMode(verified.message.saveMode, req.get("x-nodevision-sync-save-mode"));
+      recoveryJobId = String(req.get("x-nodevision-sync-job-id") || "").trim() || null;
+      tempPath = scoped.targetPath + ".nodevision-upload";
     } catch (err) {
       const classified = classifyScopedStreamRequestError(err, "Unauthorized peer scope file stream push");
       if (classified.status === 401 || classified.status === 400 || classified.status === 403) {
@@ -808,64 +806,19 @@ export function registerPeerRoutes(app, ctx) {
         return res.status(400).json({ ok: false, error: "Invalid hash" });
       }
 
-      let existingHash = null;
-      let targetExists = false;
-      try {
-        const existingStat = await fs.stat(scoped.targetPath);
-        if (!existingStat.isFile()) throw new Error("existing target path is not a file");
-        targetExists = true;
-        existingHash = await hashFileByStream(scoped.targetPath);
-      } catch (err) {
-        if (err?.code !== "ENOENT") throw err;
-      }
-
-      if (!targetExists) {
-        await fs.rename(tempPath, scoped.targetPath);
-        return res.json({
-          ok: true,
-          peer: verified.peer,
-          saved: {
-            relativePath: scoped.normalizedRelativePath,
-            bytes: bytesReceived,
-            sha256: computedSha256,
-            mode: "created",
-          },
-        });
-      }
-
-      if (existingHash === computedSha256) {
-        await fs.rm(tempPath, { force: true });
-        return res.json({
-          ok: true,
-          peer: verified.peer,
-          saved: {
-            relativePath: scoped.normalizedRelativePath,
-            bytes: bytesReceived,
-            sha256: computedSha256,
-            mode: "noop",
-          },
-        });
-      }
-
-      const conflictRelativePath = buildScopedConflictRelativePath(
-        scoped.normalizedRelativePath,
-        verified.peer.deviceId,
-        new Date().toISOString(),
-      );
-      const conflictTarget = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, conflictRelativePath);
-      await fs.mkdir(path.dirname(conflictTarget.targetPath), { recursive: true });
-      await fs.rename(tempPath, conflictTarget.targetPath);
-      return res.json({
-        ok: true,
-        peer: verified.peer,
-        saved: {
-          relativePath: scoped.normalizedRelativePath,
-          bytes: bytesReceived,
-          sha256: computedSha256,
-          mode: "conflict",
-          conflictRelativePath,
-        },
+      const saved = await finalizeScopedPeerUpload({
+        scoped,
+        tempPath,
+        bytesReceived,
+        incomingHash: computedSha256,
+        saveMode,
+        peerDevice: verified.peer,
+        runtimeRoot: ctx?.runtimeRoot,
+        recoveryJobId,
+        incomingMtimeMs: verified.message.mtimeMs,
       });
+      tempPath = null;
+      return res.json({ ok: true, peer: verified.peer, saved });
     } catch (err) {
       if (tempPath) {
         await fs.rm(tempPath, { force: true }).catch(() => {});
@@ -883,26 +836,17 @@ export function registerPeerRoutes(app, ctx) {
       const scoped = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, verified.message.relativePath);
       const incoming = decodeFilePushContent(verified.message.contentBase64);
       const incomingHash = sha256(incoming);
-      let existingHash = null;
-      let exists = false;
-      try { const existing = await fs.readFile(scoped.targetPath); exists = true; existingHash = sha256(existing); } catch {}
-      if (!exists) {
-        await fs.mkdir(path.dirname(scoped.targetPath), { recursive: true });
-        await fs.writeFile(scoped.targetPath, incoming);
-        return res.json({ ok: true, peer: verified.peer, saved: { relativePath: scoped.normalizedRelativePath, bytes: incoming.length, sha256: incomingHash, mode: "created" } });
-      }
-      if (existingHash === incomingHash) {
-        return res.json({ ok: true, peer: verified.peer, saved: { relativePath: scoped.normalizedRelativePath, bytes: incoming.length, sha256: incomingHash, mode: "noop" } });
-      }
-      const conflictRelativePath = buildScopedConflictRelativePath(
-        scoped.normalizedRelativePath,
-        verified.peer.deviceId,
-        new Date().toISOString(),
-      );
-      const conflictTarget = resolveScopedTarget(ctx?.notebookDir, verified.message.scope, conflictRelativePath);
-      await fs.mkdir(path.dirname(conflictTarget.targetPath), { recursive: true });
-      await fs.writeFile(conflictTarget.targetPath, incoming);
-      return res.json({ ok: true, peer: verified.peer, saved: { relativePath: scoped.normalizedRelativePath, bytes: incoming.length, sha256: incomingHash, mode: "conflict", conflictRelativePath } });
+      const saved = await saveScopedPeerBuffer({
+        scoped,
+        incomingBuffer: incoming,
+        incomingHash,
+        saveMode: normalizeScopedPeerRequestSaveMode(verified.message.saveMode, req.body?.saveMode),
+        peerDevice: verified.peer,
+        runtimeRoot: ctx?.runtimeRoot,
+        recoveryJobId: String(req.body?.recoveryJobId || "").trim() || null,
+        incomingMtimeMs: verified.message.mtimeMs,
+      });
+      return res.json({ ok: true, peer: verified.peer, saved });
     } catch (err) {
       const classified = classifyScopedPeerRequestError(err, "Unauthorized peer scope file push");
       return res.status(classified.status).json({ ok: false, error: classified.error });

@@ -53,9 +53,10 @@ function isGraphicalEditorOpen() {
   );
 }
 
-function activeEditorIsDirty(nextPath = "") {
+function activeEditorIsDirty(nextPath = "", options = {}) {
   const editorPath = activeEditorPath();
-  if (!editorPath || samePath(editorPath, nextPath)) return false;
+  const guardSamePath = options.guardSamePath === true;
+  if (!editorPath || (!guardSamePath && samePath(editorPath, nextPath))) return false;
 
   if (isCodeEditorOpen() && Boolean(window.__nvCodeEditorDirty)) return true;
 
@@ -181,13 +182,13 @@ function proceedWithSwitch(nextPath, proceed) {
   }));
 }
 
-export function guardFileSwitch(nextPath, proceed) {
+export function guardFileSwitch(nextPath, proceed, options = {}) {
   if (window.__nvFileSwitchGuardBypass) {
     proceed?.();
     return;
   }
 
-  if (!activeEditorIsDirty(nextPath)) {
+  if (!activeEditorIsDirty(nextPath, options)) {
     proceed?.();
     return;
   }
@@ -219,6 +220,12 @@ export function guardFileSwitch(nextPath, proceed) {
   });
 }
 
+
+export function guardEditorSwitch(nextPath, proceed) {
+  const targetPath = normalizePath(nextPath || activeEditorPath());
+  guardFileSwitch(targetPath, proceed, { guardSamePath: true });
+}
+
 export function requestNodevisionFileSelection(filePath, options = {}) {
   const nextPath = normalizePath(filePath);
   if (!nextPath) return;
@@ -243,6 +250,7 @@ export function requestNodevisionFileSelection(filePath, options = {}) {
 
 export function installEditorSwitchGuard() {
   window.__nvGuardFileSwitch = guardFileSwitch;
+  window.__nvGuardEditorSwitch = guardEditorSwitch;
   window.requestNodevisionFileSelection = requestNodevisionFileSelection;
 }
 

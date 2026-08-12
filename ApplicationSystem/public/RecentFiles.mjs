@@ -1,5 +1,8 @@
 // Nodevision/ApplicationSystem/public/RecentFiles.mjs
-// This file stores and exposes the browser-local list of recently edited Notebook files for the Nodevision toolbar and editor integrations.
+// This file normalizes, caches, and exposes the recently edited Notebook files used by the Nodevision toolbar and editor integrations.
+
+import { dispatchRecentSelection, revealRecentFileInNavigator } from "./RecentFileNavigation.mjs";
+import { getCachedRecentManifestEntries, saveRecentManifestEntries, setCachedRecentManifestEntries } from "./RecentFilesManifestClient.mjs";
 
 export const RECENT_EDITED_FILES_KEY = "nodevision.recentEditedFiles.v1";
 export const MAX_RECENT_EDITED_FILES = 20;
@@ -29,6 +32,10 @@ function safeStorage(storage) {
 }
 
 function readRawEntries(storage) {
+  if (!storage) {
+    const cached = getCachedRecentManifestEntries();
+    if (Array.isArray(cached)) return cached;
+  }
   const target = safeStorage(storage);
   if (!target) return [];
   try {
@@ -40,13 +47,17 @@ function readRawEntries(storage) {
 }
 
 function writeEntries(entries, storage) {
+  if (!storage) {
+    setCachedRecentManifestEntries(entries);
+    saveRecentManifestEntries(entries);
+  }
   const target = safeStorage(storage);
-  if (!target) return false;
+  if (!target) return !storage;
   try {
     target.setItem(RECENT_EDITED_FILES_KEY, JSON.stringify(entries));
     return true;
   } catch {
-    return false;
+    return !storage;
   }
 }
 
@@ -146,11 +157,24 @@ export function openRecentFile(pathValue) {
   const path = normalizeRecentFilePath(pathValue);
   if (!path) return false;
   const global = getGlobal();
+  const afterSelected = (selectedPath) => {
+    dispatchRecentSelection(global, selectedPath);
+    revealRecentFileInNavigator(global, selectedPath).catch((err) => {
+      console.warn("[RecentFiles] Failed to reveal recent file:", err);
+    });
+  };
+
+  if (typeof global.requestNodevisionFileSelection === "function") {
+    global.requestNodevisionFileSelection(path, { isDirectory: false, onSelected: afterSelected });
+    return true;
+  }
+
   global.NodevisionState = global.NodevisionState || {};
   global.NodevisionState.selectedFile = path;
+  global.NodevisionState.selectedFileIsDirectory = false;
   global.NodevisionState.activeEditorFilePath = path;
   global.currentActiveFilePath = path;
   global.selectedFilePath = path;
-  global.document?.dispatchEvent?.(new CustomEvent("fileSelected", { detail: { filePath: path } }));
+  afterSelected(path);
   return true;
 }

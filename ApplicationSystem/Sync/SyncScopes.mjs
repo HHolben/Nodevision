@@ -2,6 +2,7 @@
 // This module defines security-first, configurable Notebook sync scopes by validating allowed relative subtree names, resolving safe scope roots under Notebook, generating scoped manifests, and comparing manifests without allowing path escape or system-folder sync.
 
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -199,6 +200,14 @@ function shouldExcludeEntry(entryName) {
   return false;
 }
 
+async function hashFileByStream(filePath) {
+  const hasher = createHash("sha256");
+  for await (const chunk of createReadStream(filePath)) {
+    hasher.update(chunk);
+  }
+  return hasher.digest("hex");
+}
+
 async function collectScopeFiles(scopeRoot, currentDir, scope, files) {
   const entries = await fs.readdir(currentDir, { withFileTypes: true });
   for (const entry of entries) {
@@ -221,19 +230,21 @@ async function collectScopeFiles(scopeRoot, currentDir, scope, files) {
 
     const stat = await fs.stat(absolutePath);
     const isLargeForJson = Number.isFinite(stat.size) && stat.size > SCOPE_JSON_FILE_MAX_BYTES;
+    const sha256 = isLargeForJson
+      ? await hashFileByStream(absolutePath)
+      : createHash("sha256").update(await fs.readFile(absolutePath)).digest("hex");
     if (isLargeForJson) {
       files.push({
         relativePath: `${scope}/${relativeFromScope}`,
         size: stat.size,
         mtimeMs: Math.trunc(stat.mtimeMs),
-        sha256: null,
+        sha256,
         transferMode: "stream",
         tooLargeForJson: true,
       });
       continue;
     }
 
-    const sha256 = createHash("sha256").update(await fs.readFile(absolutePath)).digest("hex");
     files.push({
       relativePath: `${scope}/${relativeFromScope}`,
       size: stat.size,
@@ -291,6 +302,7 @@ function areManifestEntriesEquivalent(localEntry, remoteEntry) {
   const localSha = typeof localEntry?.sha256 === "string" ? localEntry.sha256.toLowerCase() : null;
   const remoteSha = typeof remoteEntry?.sha256 === "string" ? remoteEntry.sha256.toLowerCase() : null;
   if (localSha && remoteSha) return localSha === remoteSha;
+  if (localSha || remoteSha) return false;
   return localEntry.size === remoteEntry.size && localEntry.mtimeMs === remoteEntry.mtimeMs;
 }
 

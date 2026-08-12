@@ -1,11 +1,12 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/recentFilesDropdown.mjs
-// This file renders the main-toolbar Recents dropdown by reading the browser-local list of recently edited Notebook files.
+// This file renders the main-toolbar Recents dropdown by reading recently edited Notebook files from the shared recents manifest.
 
 import {
   filePathToNotebookHref,
   getRecentEditedFileEntries,
   openRecentFile,
 } from "/RecentFiles.mjs";
+import { loadRecentManifestEntries } from "/RecentFilesManifestClient.mjs";
 
 let closeHandlerBound = false;
 
@@ -61,6 +62,9 @@ function closeDropdown(buttonEl, dropdownEl) {
 
 function openDropdown(buttonEl, dropdownEl, searchResultsEl) {
   renderRows(dropdownEl);
+  loadRecentManifestEntries().then(() => {
+    if (dropdownEl.style.display === "block") renderRows(dropdownEl);
+  });
   if (searchResultsEl) searchResultsEl.style.display = "none";
   dropdownEl.style.display = "block";
   buttonEl?.setAttribute?.("aria-expanded", "true");
@@ -124,5 +128,6 @@ export function initRecentFilesDropdown(root) {
   window.addEventListener("nodevision-recents-changed", () => {
     if (dropdownEl.style.display === "block") renderRows(dropdownEl);
   });
+  loadRecentManifestEntries().then(() => renderRows(dropdownEl));
   bindGlobalCloseHandler();
 }

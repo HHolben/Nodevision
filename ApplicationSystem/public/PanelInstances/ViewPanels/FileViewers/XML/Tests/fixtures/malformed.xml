@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<note>
+  <title>Broken XML</title>
+  <body>This element is never closed.
+</note>

@@ -19,7 +19,7 @@ const inlineCallbacks = {
     },
     tableSplitCell: async () => {
       const mod = await import("/ToolbarCallbacks/insert/tableTools.mjs");
-      if (!mod.splitCurrentTableCell()) alert("Select a merged table cell to split.");
+      if (!mod.splitCurrentTableCell()) alert("Select a table cell to split.");
     },
   },
 };

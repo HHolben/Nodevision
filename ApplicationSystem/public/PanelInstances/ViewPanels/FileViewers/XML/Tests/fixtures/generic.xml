@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<note xmlns="https://example.org/notebook-note">
+  <title>Ordinary XML</title>
+  <body>This file should use the generic XML fallback.</body>
+</note>

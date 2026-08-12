@@ -54,10 +54,13 @@ import { registerSyncPanelRoutes } from "./server/routes/syncPanelRoutes.mjs";
 import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
 import { createDesktopOpenState, registerDesktopOpenRoutes } from "./Desktop/DesktopOpenHandler.mjs";
 import { registerTerrainRoutes } from "./server/routes/terrainRoutes.mjs";
+import { registerSectionalMapRoutes } from "./server/routes/sectionalMapRoutes.mjs";
 import { registerHandwritingOcrTrainingRoutes } from "./server/routes/handwritingOcrTrainingRoutes.mjs";
 import { registerStrokeHandwritingRecognitionRoutes } from "./server/routes/strokeHandwritingRecognitionRoutes.mjs";
 import { registerPhoneImportRoutes } from "./server/routes/phoneImportRoutes.mjs";
 import { registerNativeHandwritingRoutes } from "./server/handwriting/NativeHandwritingRoutes.mjs";
+import { discoverFaaSectionalCatalog as discoverSectionalCatalogFromFaa } from "./Aviation/SectionalMaps/FaaSectionalProvider.mjs";
+import { loadSectionalMapSettings, resolveSectionalMapsDirectory } from "./Aviation/SectionalMaps/SectionalMapSettings.mjs";
 
 const FAA_VFR_RASTER_CHARTS_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/vfr/";
 const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
@@ -170,28 +173,8 @@ function selectNearestSectional(lat, lon) {
 }
 
 async function fetchFaaSectionalCatalog() {
-  const response = await fetch(FAA_VFR_RASTER_CHARTS_URL, {
-    headers: {
-      "User-Agent": NODEVISION_KML_HTTP_USER_AGENT,
-      "Accept": "text/html,application/xhtml+xml",
-    },
-  });
-  if (!response.ok) throw new Error("FAA VFR raster catalog request failed with " + response.status + ".");
-
-  const html = await response.text();
-  const catalog = new Map();
-  const hrefPattern = /href="([^"]*sectional-files\/[^"]+\.zip)"/gi;
-  let match;
-  while ((match = hrefPattern.exec(html)) !== null) {
-    const sourceUrl = new URL(match[1], FAA_VFR_RASTER_CHARTS_URL).toString();
-    const filename = decodeURIComponent(new URL(sourceUrl).pathname.split("/").pop() || "sectional.zip");
-    const chartName = filename.replace(/\.zip$/i, "").replace(/[_+]+/g, " ").replace(/\s+/g, " ").trim();
-    const key = normalizeChartKey(chartName);
-    if (key && !catalog.has(key)) catalog.set(key, { chartName, filename, sourceUrl });
-  }
-
-  if (!catalog.size) throw new Error("FAA VFR raster catalog did not list sectional GeoTIFF ZIP files.");
-  return catalog;
+  const catalog = await discoverSectionalCatalogFromFaa({ url: FAA_VFR_RASTER_CHARTS_URL });
+  return new Map(catalog.charts.map((chart) => [normalizeChartKey(chart.chartName), chart]));
 }
 
 function findCatalogEntry(catalog, chartName) {
@@ -211,11 +194,13 @@ async function downloadSectionalResource(ctx, { lat, lon, name }) {
   const entry = findCatalogEntry(catalog, selection.name);
   if (!entry) throw new Error("The FAA catalog did not include a GeoTIFF ZIP for " + selection.name + ".");
 
+  const settings = await loadSectionalMapSettings(ctx);
+  const resolved = await resolveSectionalMapsDirectory(ctx, settings.sectionalMapsDirectory);
   const chartSegment = safePathSegment(selection.name, "sectional");
   const filename = safePathSegment(entry.filename || chartSegment + ".zip", chartSegment + ".zip");
-  const targetDir = path.join(ctx.notebookDir, "Resources", "Aviation", "Sectionals", chartSegment);
+  const targetDir = resolved.absoluteDirectory;
   const targetPath = path.join(targetDir, filename);
-  const metadataFilename = filename.replace(/\.zip$/i, "") + ".metadata.json";
+  const metadataFilename = chartSegment + ".metadata.json";
   const metadataPath = path.join(targetDir, metadataFilename);
 
   await fs.mkdir(targetDir, { recursive: true });
@@ -227,14 +212,21 @@ async function downloadSectionalResource(ctx, { lat, lon, name }) {
   });
   if (!downloadResponse.ok) throw new Error("FAA sectional download failed with " + downloadResponse.status + ".");
 
-  if (downloadResponse.body && typeof Readable.fromWeb === "function") {
-    await pipeline(Readable.fromWeb(downloadResponse.body), createWriteStream(targetPath));
-  } else {
-    await fs.writeFile(targetPath, Buffer.from(await downloadResponse.arrayBuffer()));
+  const tempPath = targetPath + ".tmp";
+  try {
+    if (downloadResponse.body && typeof Readable.fromWeb === "function") {
+      await pipeline(Readable.fromWeb(downloadResponse.body), createWriteStream(tempPath, { flags: "wx" }));
+    } else {
+      await fs.writeFile(tempPath, Buffer.from(await downloadResponse.arrayBuffer()), { flag: "wx" });
+    }
+    await fs.rename(tempPath, targetPath);
+  } catch (err) {
+    await fs.rm(tempPath, { force: true }).catch(() => {});
+    throw err;
   }
 
-  const relativePath = path.posix.join("Resources", "Aviation", "Sectionals", chartSegment, filename);
-  const metadataRelativePath = path.posix.join("Resources", "Aviation", "Sectionals", chartSegment, metadataFilename);
+  const relativePath = path.posix.join(resolved.relativeDirectory, filename);
+  const metadataRelativePath = path.posix.join(resolved.relativeDirectory, metadataFilename);
   const metadata = {
     type: "nodevision-faa-sectional-download",
     chartName: selection.name,
@@ -622,6 +614,7 @@ app.use('/api/file', uploadRoutes);
   registerMetaWorldAssetRoutes(app, ctx);
   registerWorldRoutes(app, ctx);
   registerTerrainRoutes(app, ctx);
+  registerSectionalMapRoutes(app, ctx);
 
   return app;
 }

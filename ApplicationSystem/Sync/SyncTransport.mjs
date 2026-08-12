@@ -116,6 +116,7 @@ export class HttpSyncTransport extends SyncTransport {
       contentBase64: buffer.toString("base64"),
       contentType: String(metadata.contentType || "application/octet-stream"),
       mtimeMs: Number.isFinite(Number(metadata.mtimeMs)) ? Math.trunc(Number(metadata.mtimeMs)) : undefined,
+      saveMode: metadata.saveMode || "auto",
     }, { runtimeRoot: this.runtimeRoot });
     const body = await this.postJson("/api/peer/scope/file-push", {
       ...signed,

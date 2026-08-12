@@ -1,0 +1,25 @@
+// Nodevision/ApplicationSystem/Sessions/BuiltIn/CommandEventSmoke.NodevisionSession
+// This built-in Session exercises shared command dispatch, return values, wait payloads, branching, and ordinary panel opening without implementing a learning workflow.
+// @title Command Event Smoke Session
+// @description Demonstrates shared command metadata, run() return values, wait() payloads, branching, panel commands, and clean quit behavior.
+// @source bundled
+
+let typed = run("overlay.getInput", "Type anything to test command return values.", "continue");
+
+if (typed.length === 0) {
+  run("overlay.show", "No input was submitted. The empty branch ran.");
+  wait("session.continue");
+} else {
+  run("overlay.open", "Input captured: " + typed, "Command Event Smoke");
+  let response = wait("overlay.submitted");
+  if (response.value === "continue") {
+    let viewed = run("viewer.currentFile");
+    run("overlay.show", "Current viewer path: " + viewed.path);
+    wait("session.continue");
+  }
+}
+
+run("panel.open", "FileManager", "InfoPanel");
+run("overlay.show", "Shared command and event smoke test complete.");
+wait("session.continue");
+quit();

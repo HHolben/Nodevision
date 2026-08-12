@@ -16,6 +16,17 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Directory Contents",
+      "hotkeyText": "",
+      "callbackKey": "insertDirectoryContents",
+      "modes": ["CodeEditing", "HTMLediting", "PHPediting"],
+      "icon": "icons/FileIcon.png",
+      "shortLabel": "Dir",
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
       "heading": "Citation",
       "hotkeyText": "",
       "callbackKey": "openCitationToolbar",

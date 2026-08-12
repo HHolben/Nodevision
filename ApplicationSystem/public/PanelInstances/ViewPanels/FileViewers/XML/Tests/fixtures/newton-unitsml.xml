@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UnitsML xmlns="https://schema.unitsml.org/unitsml/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://schema.unitsml.org/unitsml/1.0 https://schema.unitsml.org/unitsml/unitsml-v1.0.xsd">
+  <UnitSet>
+    <Unit xml:id="N" dimensionURL="#dim_LMT-2">
+      <UnitName>newton</UnitName>
+      <UnitSymbol typeface="ASCII">N</UnitSymbol>
+      <RootUnits>
+        <EnumeratedRootUnit unit="meter" powerNumerator="1"/>
+        <EnumeratedRootUnit unit="gram" prefix="k" powerNumerator="1"/>
+        <EnumeratedRootUnit unit="second" powerNumerator="-2"/>
+      </RootUnits>
+    </Unit>
+  </UnitSet>
+  <DimensionSet>
+    <Dimension xml:id="dim_LMT-2">
+      <Length symbol="L" powerNumerator="1"/>
+      <Mass symbol="M" powerNumerator="1"/>
+      <Time symbol="T" powerNumerator="-2"/>
+    </Dimension>
+  </DimensionSet>
+</UnitsML>

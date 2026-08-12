@@ -15,6 +15,7 @@ import {
 import { writePayloadToFile } from "./fileSaveRoutes/writePayload.js";
 import { validateSvgSavePayload } from "./fileSaveRoutes/svgSaveGuard.js";
 import { validateSaveSourcePath } from "./fileSaveRoutes/saveSourceGuard.js";
+import { validateHtmlWysiwygSavePayload } from "./fileSaveRoutes/htmlWysiwygSaveGuard.js";
 import { rejectIfLanWriteDenied } from "./lanCooperationRoutes.js";
 
 const BASE_CONTEXT = createServerContext();
@@ -34,7 +35,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
       encoding = 'utf8',
       mimeType,
       bom = false,
-      sourcePath
+      sourcePath,
+      editorKind
     } = req.body;
 
     if (!relativePath) {
@@ -66,6 +68,19 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
 
     try {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
+      const htmlValidation = await validateHtmlWysiwygSavePayload({
+        relativePath,
+        filePath,
+        content,
+        encoding,
+        editorKind,
+      });
+      if (!htmlValidation.ok) {
+        return res.status(409).json({
+          error: htmlValidation.error,
+          code: htmlValidation.code,
+        });
+      }
       const backup = await backupNotebookFileBeforeSave({
         notebookRoot: NOTEBOOK_ROOT,
         userSettingsRoot: USER_SETTINGS_ROOT,

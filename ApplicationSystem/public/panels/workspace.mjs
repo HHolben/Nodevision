@@ -3,6 +3,7 @@
 
 import { logStatus } from "./../StatusBar.mjs";
 import { setStatus } from "./../StatusBar.mjs";
+import "/EditorSwitchGuard.mjs";
 
 function normalizeNotebookPath(value) {
   let cleaned = String(value || "").trim();
@@ -1292,6 +1293,23 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
 
 
 
+
+function shouldGuardToolbarEditorSwitch(detail, panelId, panelClass) {
+  if (detail?.__nvGuardedEditorSwitch) return false;
+  if (String(panelClass || "").toLowerCase() !== "editorpanel") return false;
+  if (typeof window.__nvGuardEditorSwitch !== "function") return false;
+
+  const currentId = normalizePanelIdentifier(window.activeCell?.dataset?.id || window.activePanel || "") || "";
+  if (currentId === panelId) return false;
+  return Boolean(window.NodevisionState?.fileIsDirty || window.__nvCodeEditorDirty);
+}
+
+function replayGuardedToolbarAction(detail = {}) {
+  window.dispatchEvent(new CustomEvent("toolbarAction", {
+    detail: { ...detail, __nvGuardedEditorSwitch: true },
+  }));
+}
+
 // 🟣 Listen for toolbar events globally — replaces active cell with selected panel
 window.addEventListener("toolbarAction", async (e) => {
   const { id, type, replaceActive } = e.detail;
@@ -1300,6 +1318,11 @@ window.addEventListener("toolbarAction", async (e) => {
     console.log(`🔁 toolbarAction alias: ${id} -> ${normalizedId}`);
   }
   const panelClass = type || "InfoPanel";
+  if (shouldGuardToolbarEditorSwitch(e.detail, normalizedId, panelClass)) {
+    const nextPath = resolveActiveFilePath(e.detail?.filePath);
+    window.__nvGuardEditorSwitch(nextPath, () => replayGuardedToolbarAction(e.detail));
+    return;
+  }
 
   // If replaceActive is true, always replace the active cell's content
   if (replaceActive && window.activeCell) {

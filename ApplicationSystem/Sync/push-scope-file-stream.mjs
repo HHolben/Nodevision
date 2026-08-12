@@ -152,16 +152,16 @@ function createStreamSigningError(err, endpointLabel) {
   return wrapped;
 }
 
-async function createSignedStreamPushRequest({ scope, relativePath, size, sha256, mtimeMs, runtimeRoot, attempt, createSignedRequest }) {
+async function createSignedStreamPushRequest({ scope, relativePath, size, sha256, mtimeMs, saveMode, runtimeRoot, attempt, createSignedRequest }) {
   try {
     if (typeof createSignedRequest === "function") {
       return await createSignedRequest(
-        { scope, relativePath, size, sha256, mtimeMs },
+        { scope, relativePath, size, sha256, mtimeMs, saveMode },
         { runtimeRoot, attempt },
       );
     }
     return await createSignedScopeFileStreamPush(
-      { scope, relativePath, size, sha256, mtimeMs },
+      { scope, relativePath, size, sha256, mtimeMs, saveMode },
       { runtimeRoot },
     );
   } catch (err) {
@@ -211,6 +211,7 @@ export async function pushScopeFileStream({
       size,
       sha256,
       mtimeMs,
+      saveMode,
       runtimeRoot: resolvedRuntimeRoot,
       attempt,
       createSignedRequest,
