@@ -21,6 +21,8 @@ source "${LIB_DIR}/download.sh"
 source "${LIB_DIR}/desktop.sh"
 # shellcheck source=/dev/null
 source "${LIB_DIR}/install.sh"
+# shellcheck source=/dev/null
+source "${LIB_DIR}/speech.sh"
 
 nv_require_linux
 nv_have tar || nv_die "Need 'tar' to extract the bundle."
@@ -30,6 +32,8 @@ URL=""
 REPO="HHolben/Nodevision"
 FORCE="false"
 NON_INTERACTIVE="false"
+SPEECH_SETUP="true"
+SPEECH_INSTALL_DEPS="true"
 
 WANT_DESKTOP="" # unset -> ask in interactive mode
 DESKTOP_PATH="${HOME}/.local/share/applications/Nodevision.desktop"
@@ -49,6 +53,8 @@ while [[ $# -gt 0 ]]; do
     --repo) REPO="${2-}"; shift 2 ;;
     --force) FORCE="true"; shift ;;
     --non-interactive) NON_INTERACTIVE="true"; shift ;;
+    --skip-speech) SPEECH_SETUP="false"; shift ;;
+    --skip-speech-deps) SPEECH_INSTALL_DEPS="false"; shift ;;
     --desktop) WANT_DESKTOP="true"; shift ;;
     --no-desktop) WANT_DESKTOP="false"; shift ;;
     --desktop-path) DESKTOP_PATH="$(nv_expand_path "${2-}")"; shift 2 ;;
@@ -125,6 +131,12 @@ nv_say "Installing Nodevision to:"
 nv_say "  $INSTALL_DIR"
 
 nv_install_from_bundle_root "$bundle_root" "$INSTALL_DIR"
+
+if [[ "$SPEECH_SETUP" == "true" ]]; then
+  nv_setup_speech "$INSTALL_DIR" "$SPEECH_INSTALL_DEPS"
+else
+  nv_say "Offline speech setup skipped."
+fi
 
 # Create wrapper script (convenient stable Exec= target)
 nv_write_wrapper "$WRAPPER_PATH" "$INSTALL_DIR"

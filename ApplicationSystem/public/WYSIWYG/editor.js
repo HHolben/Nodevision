@@ -94,6 +94,12 @@ function formatHtml(html) {
 
 
 // Function to save file contents with formatted HTML
+var serializeWysiwygDocument = function(fragment) {
+    var source = String(fragment || "");
+    if (/^\s*(?:<!doctype\s+html\b|<html(?:\s|>))/i.test(source)) return source;
+    return "<!doctype html>\n<html>\n<head><meta charset=\"UTF-8\"></head>\n<body>\n" + source + "\n</body>\n</html>\n";
+};
+
 function saveFileContents() {
     const editor = document.getElementById('editor');
     if (!editor) {
@@ -103,15 +109,21 @@ function saveFileContents() {
 
     const rawContent = editor.innerHTML;
     const formattedContent = typeof formatHtml === 'function' ? formatHtml(rawContent) : rawContent;
+    const content = serializeWysiwygDocument(formattedContent);
 
     fetch('/api/save', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ path: filePath, sourcePath: filePath, content: formattedContent })
+        body: JSON.stringify({ path: filePath, sourcePath: filePath, content, editorKind: 'html-wysiwyg' })
     })
-    .then(response => response.text())
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => { throw new Error(text || ("HTTP " + response.status)); });
+        }
+        return response.text();
+    })
     .then(data => {
         const saveMessage = document.getElementById('message');
         saveMessage.textContent = 'File saved successfully!';

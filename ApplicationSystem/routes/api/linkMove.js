@@ -5,17 +5,18 @@ import express from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createServerContext } from "../../shared/serverContext.mjs";
+import {
+  getRelativeNotebookReference,
+  isExternalNotebookReference,
+  normalizeNotebookFilePath,
+  resolveNotebookReference,
+  splitNotebookReferenceSuffix,
+} from "../../public/utils/notebookPath.mjs";
 
 const BASE_CONTEXT = createServerContext();
 
 function normalizeNotebookRelativePath(inputPath) {
-  if (!inputPath) return "";
-  return String(inputPath)
-    .replace(/\\/g, "/")
-    .replace(/^\/+/, "")
-    .replace(/^Notebook\//i, "")
-    .replace(/\/+/g, "/")
-    .trim();
+  return normalizeNotebookFilePath(inputPath);
 }
 
 function sanitizeNotebookPath(inputPath) {
@@ -24,26 +25,11 @@ function sanitizeNotebookPath(inputPath) {
 }
 
 function isExternalOrAnchorLink(link) {
-  const value = String(link || "").trim();
-  return (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("//") ||
-    value.startsWith("mailto:") ||
-    value.startsWith("javascript:") ||
-    value.startsWith("data:") ||
-    value.startsWith("#")
-  );
+  return isExternalNotebookReference(link);
 }
 
 function splitLinkSuffix(rawLink) {
-  const value = String(rawLink ?? "");
-  const hashIndex = value.indexOf("#");
-  const queryIndex = value.indexOf("?");
-  const indices = [hashIndex, queryIndex].filter((idx) => idx >= 0);
-  if (indices.length === 0) return { pathPart: value, suffix: "" };
-  const cut = Math.min(...indices);
-  return { pathPart: value.slice(0, cut), suffix: value.slice(cut) };
+  return splitNotebookReferenceSuffix(rawLink);
 }
 
 function normalizeNotebookRelativeParts(value) {
@@ -61,27 +47,7 @@ function normalizeNotebookRelativeParts(value) {
 }
 
 function resolveNotebookLink(sourceFilePath, rawLink) {
-  if (typeof rawLink !== "string") return null;
-  const trimmed = rawLink.trim();
-  if (!trimmed || isExternalOrAnchorLink(trimmed)) return null;
-
-  const { pathPart } = splitLinkSuffix(trimmed);
-  let link = String(pathPart).trim();
-  if (!link) return null;
-
-  const source = normalizeNotebookRelativePath(sourceFilePath);
-  const sourceDir = source.includes("/") ? source.slice(0, source.lastIndexOf("/")) : "";
-
-  const isRootRelative = trimmed.startsWith("/") || trimmed.startsWith("Notebook/");
-  let candidate = link.replace(/^\/+/, "");
-
-  if (candidate.startsWith("Notebook/")) {
-    candidate = candidate.slice("Notebook/".length);
-  } else if (!isRootRelative && sourceDir) {
-    candidate = `${sourceDir}/${candidate}`;
-  }
-
-  return normalizeNotebookRelativeParts(candidate);
+  return resolveNotebookReference({ sourcePath: sourceFilePath, reference: rawLink });
 }
 
 function guessExtension(filePath) {
@@ -140,17 +106,11 @@ function applySpanReplacements(content, replacements) {
   return output;
 }
 
-function posixDirname(relPath) {
-  const normalized = normalizeNotebookRelativePath(relPath);
-  if (!normalized.includes("/")) return "";
-  return normalized.slice(0, normalized.lastIndexOf("/"));
-}
-
 function makeRelativeLink(fromFilePath, targetPath) {
-  const fromDir = posixDirname(fromFilePath);
-  if (!fromDir) return normalizeNotebookRelativePath(targetPath);
-  const rel = path.posix.relative(fromDir, normalizeNotebookRelativePath(targetPath));
-  return rel || ".";
+  return getRelativeNotebookReference({
+    sourcePath: fromFilePath,
+    targetPath,
+  });
 }
 
 function computeBucketChar(fileName) {

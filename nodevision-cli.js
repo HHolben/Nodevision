@@ -1,7 +1,31 @@
 import { spawn } from "node:child_process";
+import * as buffer from "node:buffer";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+function ensureNodeWebApiGlobals() {
+  const NativeBlob = buffer.Blob;
+  const NativeFile = buffer.File;
+
+  if (typeof globalThis.Blob === "undefined" && typeof NativeBlob === "function") {
+    globalThis.Blob = NativeBlob;
+  }
+
+  if (typeof globalThis.File === "undefined") {
+    if (typeof NativeFile === "function") {
+      globalThis.File = NativeFile;
+    } else if (typeof globalThis.Blob === "function") {
+      globalThis.File = class NodevisionFile extends globalThis.Blob {
+        constructor(parts, name, options = {}) {
+          super(parts, options);
+          this.name = String(name || "");
+          this.lastModified = Number(options.lastModified) || Date.now();
+        }
+      };
+    }
+  }
+}
 
 function getRuntimeRoot() {
   if (process.env.NODEVISION_ROOT) {
@@ -16,6 +40,7 @@ function getRuntimeRoot() {
 }
 
 async function loadCreateRuntime() {
+  ensureNodeWebApiGlobals();
   const runtimeRoot = getRuntimeRoot();
   const runtimePath = path.resolve(runtimeRoot, "ApplicationSystem/core/runtime.js");
 

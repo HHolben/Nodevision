@@ -112,28 +112,28 @@ export const NODEVISION_SHARED_COMMANDS = Object.freeze([
   },
   {
     id: "speech.speak", category: "Speech", label: "Speak Text",
-    description: "Speak text with browser-native speech synthesis when available.", sessionSafe: true,
+    description: "Speak text through the selected Nodevision speech provider.", sessionSafe: true,
     arguments: [arg("text", "string", { required: true })], returns: "status",
-    events: ["speech.started", "speech.boundary", "speech.finished", "speech.cancelled"],
+    events: ["speech.started", "speech.boundary", "speech.finished", "speech.cancelled", "speech.error"],
   },
   {
     id: "speech.stop", category: "Speech", label: "Stop Speech",
-    description: "Cancel active browser-native speech synthesis.", sessionSafe: true,
+    description: "Cancel active speech through the selected Nodevision speech provider.", sessionSafe: true,
     arguments: [], returns: "status", events: ["speech.cancelled"],
   },
   {
     id: "speech.pause", category: "Speech", label: "Pause Speech",
-    description: "Pause browser-native speech synthesis when supported.", sessionSafe: true,
+    description: "Pause active speech when the selected provider supports it.", sessionSafe: true,
     arguments: [], returns: "status", events: ["speech.paused"],
   },
   {
     id: "speech.resume", category: "Speech", label: "Resume Speech",
-    description: "Resume browser-native speech synthesis when supported.", sessionSafe: true,
+    description: "Resume active speech when the selected provider supports it.", sessionSafe: true,
     arguments: [], returns: "status", events: ["speech.resumed"],
   },
   {
     id: "speech.setRate", category: "Speech", label: "Set Speech Rate",
-    description: "Set the rate used for later browser-native Session speech.", sessionSafe: true,
+    description: "Set the normalized rate used for later Nodevision speech.", sessionSafe: true,
     arguments: [arg("rate", "number", { required: true })], returns: "status",
   },
   {

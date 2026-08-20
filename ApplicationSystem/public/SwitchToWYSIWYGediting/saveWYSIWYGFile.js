@@ -17,10 +17,17 @@
     console.error(msg);
   }
 
+  function serializeWysiwygDocument(fragment = '') {
+    const source = String(fragment || '');
+    if (/^\s*(?:<!doctype\s+html\b|<html(?:\s|>))/i.test(source)) return source;
+    return '<!doctype html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body>\n' + source + '\n</body>\n</html>\n';
+  }
+
   async function saveWYSIWYGFile(filePath) {
     const editor = document.getElementById('editor');
     if (!editor) {
-      return showError('Editor not found');
+      showError('Editor not found');
+      return false;
     }
 
     const clone = editor.cloneNode(true);
@@ -29,9 +36,10 @@
     }
     clone.querySelectorAll?.('.nv-poem-controls').forEach((el) => el.remove());
     const raw = clone.innerHTML;
-    const content = (typeof window.formatHtml === 'function')
+    const formatted = (typeof window.formatHtml === 'function')
       ? window.formatHtml(raw)
       : raw;
+    const content = serializeWysiwygDocument(formatted);
 
     const sourcePath = window.__nvWysiwygActivePath || window.__nvHtmlEditorActivePath || window.currentActiveFilePath || filePath;
     console.log("Saving WYSIWYG file:", filePath);
@@ -41,7 +49,7 @@
       const response = await fetch('/api/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath, sourcePath, content })
+        body: JSON.stringify({ path: filePath, sourcePath, content, editorKind: 'html-wysiwyg' })
       });
 
       if (!response.ok) {
@@ -50,8 +58,10 @@
       }
 
       showMessage('File saved successfully!');
+      return true;
     } catch (err) {
       showError('Error saving file: ' + err.message);
+      return false;
     }
   }
 

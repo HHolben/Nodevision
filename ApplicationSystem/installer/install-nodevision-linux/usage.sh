@@ -17,6 +17,8 @@ Options:
   --repo OWNER/REPO        GitHub repo for default download URL (default: HHolben/Nodevision)
   --force                  Replace existing app files (backs up existing ApplicationSystem)
   --non-interactive        Do not prompt; use defaults + provided flags
+  --skip-speech           Skip optional offline native speech setup
+  --skip-speech-deps      Do not install speech packages; still probe/build when possible
 
 Desktop entry options (Linux):
   --desktop                Create/update a desktop entry (default in interactive mode: ask)

@@ -15,6 +15,12 @@ function showError(msg) {
   console.error(msg);
 }
 
+function serializeWysiwygDocument(fragment = "") {
+  const source = String(fragment || "");
+  if (/^\s*(?:<!doctype\s+html\b|<html(?:\s|>))/i.test(source)) return source;
+  return "<!doctype html>\n<html>\n<head><meta charset=\"UTF-8\"></head>\n<body>\n" + source + "\n</body>\n</html>\n";
+}
+
 /**
  * Save the contents of the WYSIWYG editor to the specified file.
  * @param {string} filePath - The full path to the file to save.
@@ -23,12 +29,13 @@ export async function saveWYSIWYGFile(filePath) {
   const editor = document.getElementById("editor");
   if (!editor) {
     showError("Editor not found");
-    return;
+    return false;
   }
 
   const raw = editor.innerHTML;
-  const content =
+  const formatted =
     typeof window.formatHtml === "function" ? window.formatHtml(raw) : raw;
+  const content = serializeWysiwygDocument(formatted);
 
   const sourcePath = window.__nvWysiwygActivePath || window.__nvHtmlEditorActivePath || window.currentActiveFilePath || filePath;
   console.log("💾 Saving WYSIWYG file:", filePath);
@@ -38,7 +45,7 @@ export async function saveWYSIWYGFile(filePath) {
     const response = await fetch("/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: filePath, sourcePath, content }),
+      body: JSON.stringify({ path: filePath, sourcePath, content, editorKind: "html-wysiwyg" }),
     });
 
     if (!response.ok) {
@@ -47,8 +54,10 @@ export async function saveWYSIWYGFile(filePath) {
     }
 
     showMessage("✅ File saved successfully!");
+    return true;
   } catch (err) {
     showError("❌ Error saving file: " + err.message);
+    return false;
   }
 }
 

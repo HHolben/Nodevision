@@ -8,6 +8,7 @@ node_modules/
 .env
 
 # Ignore build output
+ApplicationSystem/native/speech/build/
 ApplicationSystem/build/
 NativeComponents/HandwritingRecognizer/build/
 

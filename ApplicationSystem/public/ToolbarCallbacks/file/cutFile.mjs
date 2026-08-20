@@ -14,5 +14,11 @@ export default async function cutFile() {
     sourcePath
   });
 
+  try {
+    await window.nodevisionElectron?.writeNotebookFilesToClipboard?.({ paths: [sourcePath], mode: "cut" });
+  } catch (err) {
+    console.warn("Could not write file cut to the system clipboard:", err);
+  }
+
   alert(`Cut: ${sourcePath}`);
 }

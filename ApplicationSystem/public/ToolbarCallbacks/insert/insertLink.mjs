@@ -4,16 +4,13 @@
 import { saveFoundEdge } from "../../PanelInstances/InfoPanels/GraphManagerDependencies/SaveFoundEdge.mjs";
 import { syncPortalForHyperlink } from "../../LinkPortalParity.mjs";
 import { getNodevisionNavigationState } from "../../NodevisionNavigationState.mjs";
+import { getRelativeNotebookReference, normalizeNotebookFilePath, toNotebookAssetUrl } from "../../utils/notebookPath.mjs";
 
 const LINK_PICKER_GRAPH_LIMIT = 2200;
 const navigationState = getNodevisionNavigationState();
 
 function normalizeNotebookPath(input = "") {
-  return String(input || "")
-    .trim()
-    .replace(/\\/g, "/")
-    .replace(/^\/+/, "")
-    .replace(/^Notebook\//i, "");
+  return normalizeNotebookFilePath(input);
 }
 
 function getCurrentEditorSourcePath() {
@@ -34,33 +31,14 @@ function getCurrentEditorSourcePath() {
   return "";
 }
 
-function dirname(notebookPath = "") {
-  const clean = normalizeNotebookPath(notebookPath);
-  const idx = clean.lastIndexOf("/");
-  return idx >= 0 ? clean.slice(0, idx) : "";
-}
-
 function toRelativeNotebookHref(sourcePath = "", targetPath = "") {
   const source = normalizeNotebookPath(sourcePath);
   const target = normalizeNotebookPath(targetPath);
   if (!target) return "";
   if (!source || source.startsWith("__epub_virtual__/")) {
-    return `/Notebook/${target.split("/").map(encodeURIComponent).join("/")}`;
+    return toNotebookAssetUrl(target);
   }
-
-  const fromParts = dirname(source).split("/").filter(Boolean);
-  const toParts = target.split("/").filter(Boolean);
-  let i = 0;
-  while (i < fromParts.length && i < toParts.length && fromParts[i] === toParts[i]) {
-    i += 1;
-  }
-  const up = fromParts.length - i;
-  const relParts = [
-    ...new Array(Math.max(0, up)).fill(".."),
-    ...toParts.slice(i),
-  ];
-  const rel = relParts.join("/") || target.split("/").pop() || target;
-  return encodeURI(rel);
+  return getRelativeNotebookReference({ sourcePath: source, targetPath: target });
 }
 
 function cloneSelectionRangeInsideEditor(wysiwyg) {

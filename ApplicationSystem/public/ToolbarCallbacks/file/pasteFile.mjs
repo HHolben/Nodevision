@@ -2,6 +2,7 @@
 // This file defines browser-side paste File logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { clearClipboard, getClipboard } from "./fileClipboard.mjs";
 import { maybePromptLinkMoveImpact } from "./linkMoveImpact.mjs";
+import { pasteExternalFilesFromNativeClipboard, readNativeFileClipboardSummary } from "/FileInterop/NotebookExternalFileInterop.mjs";
 
 function normalizePath(value = "") {
   return String(value).replace(/^\/+/, "").replace(/\/+/g, "/");
@@ -17,6 +18,10 @@ function currentSelection() {
 }
 
 function destinationDirectory() {
+  if (window.NodevisionState?.activePanelType === "GraphManager" && typeof window.getGraphManagerPasteDestination === "function") {
+    return normalizePath(window.getGraphManagerPasteDestination() || "");
+  }
+
   const selected = currentSelection();
   if (selected?.dataset?.isDirectory === "true") {
     return normalizePath(selected.dataset.fullPath || "");
@@ -54,15 +59,51 @@ async function nextAvailableName(dir, desiredName) {
   return `${base}_${counter}${ext}`;
 }
 
+async function pasteNativeFileClipboard(destinationDir) {
+  try {
+    const result = await pasteExternalFilesFromNativeClipboard({ destinationDir });
+    if (result.handled && result.success && result.count) {
+      if (typeof window.refreshFileManager === "function") await window.refreshFileManager(window.currentDirectoryPath || "");
+      if (typeof window.refreshGraphManager === "function") await window.refreshGraphManager({ fit: true, reason: "external-file-paste" });
+      return true;
+    }
+    if (result.handled && result.success && !result.count) {
+      alert("Clipboard did not contain readable files.");
+      return true;
+    }
+  } catch (err) {
+    console.error("Failed to paste files from the system clipboard:", err);
+    alert("Failed to paste files: " + (err.message || err));
+    return true;
+  }
+  return false;
+}
+
+async function shouldPreferNativeFileClipboard(sourcePath) {
+  try {
+    const summary = await readNativeFileClipboardSummary();
+    if (!summary.handled || !summary.hasFiles) return false;
+    const notebookPaths = Array.isArray(summary.notebookPaths) ? summary.notebookPaths.map(normalizePath) : [];
+    return !notebookPaths.includes(normalizePath(sourcePath));
+  } catch (err) {
+    console.warn("Could not inspect the system file clipboard:", err);
+    return false;
+  }
+}
+
 export default async function pasteFile() {
   const clipboard = getClipboard();
   if (!clipboard?.sourcePath || !clipboard?.mode) {
+    if (await pasteNativeFileClipboard(destinationDirectory())) return;
     alert("Clipboard is empty.");
     return;
   }
 
   const sourcePath = normalizePath(clipboard.sourcePath);
   const destinationDir = destinationDirectory();
+  if (await shouldPreferNativeFileClipboard(sourcePath)) {
+    if (await pasteNativeFileClipboard(destinationDir)) return;
+  }
   const fileName = basename(sourcePath);
 
   let destinationPath = destinationDir ? `${destinationDir}/${fileName}` : fileName;
@@ -98,6 +139,9 @@ export default async function pasteFile() {
     if (clipboard.mode === "cut") clearClipboard();
     if (typeof window.refreshFileManager === "function") {
       await window.refreshFileManager(window.currentDirectoryPath || "");
+    }
+    if (typeof window.refreshGraphManager === "function") {
+      await window.refreshGraphManager({ fit: true, reason: "file-paste" });
     }
 
     if (clipboard.mode === "cut") {

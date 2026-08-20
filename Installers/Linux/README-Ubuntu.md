@@ -22,6 +22,12 @@ bash Installers/Linux/install-nodevision-ubuntu.sh --prefix "$HOME/.local/share/
 # Skip apt dependency installation (still verifies dependencies)
 bash Installers/Linux/install-nodevision-ubuntu.sh --skip-deps
 
+# Skip optional native speech setup
+bash Installers/Linux/install-nodevision-ubuntu.sh --skip-speech
+
+# Build/probe speech without installing speech packages
+bash Installers/Linux/install-nodevision-ubuntu.sh --skip-speech-deps
+
 # Install systemd user service file
 bash Installers/Linux/install-nodevision-ubuntu.sh --install-service
 
@@ -61,11 +67,24 @@ The installer installs or verifies:
 - `python3`
 - `ca-certificates`
 
+Optional offline native speech packages:
+
+- `espeak-ng`
+- `libespeak-ng-dev`
+
+These are installed in a separate optional step so speech setup failure does not abort the main Nodevision install.
+
 Dependency install commands used by the installer:
 
 ```bash
 sudo apt update
 sudo apt install -y nodejs npm php-cli git curl build-essential python3 ca-certificates
+
+# Optional offline native speech
+sudo apt install -y espeak-ng libespeak-ng-dev
+
+# The installer then runs:
+ApplicationSystem/native/speech/build-espeak-bridge.sh
 ```
 
 ## Install Location

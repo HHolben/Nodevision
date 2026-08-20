@@ -1352,6 +1352,9 @@ function activateFileViewPanel() {
   window.dispatchEvent(new CustomEvent("activePanelChanged", {
     detail: { panel: "FileView", cell, panelClass: window.activePanelClass }
   }));
+  window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+    detail: { heading: "File View", force: false, toggle: false }
+  }));
 }
 
 function enableViewActivation(viewDiv) {
@@ -1360,8 +1363,6 @@ function enableViewActivation(viewDiv) {
   viewDiv.addEventListener("pointerdown", handler, { capture: true });
   viewDiv.addEventListener("mousedown", handler, { capture: true });
   viewDiv.addEventListener("click", handler, { capture: true });
-  viewDiv.addEventListener("pointerenter", handler, { capture: true });
-  viewDiv.addEventListener("mouseenter", handler, { capture: true });
   viewDiv.addEventListener("focusin", handler, { capture: true });
 }
 
@@ -1481,8 +1482,6 @@ function installIframeActivation(iframe) {
 
   iframe.addEventListener("mousedown", handler, { capture: true });
   iframe.addEventListener("click", handler, { capture: true });
-  iframe.addEventListener("pointerenter", handler, { capture: true });
-  iframe.addEventListener("mouseenter", handler, { capture: true });
   iframe.addEventListener("pointerdown", handler, { capture: true });
   iframe.addEventListener("focus", handler, true);
   iframe.addEventListener("load", () => {

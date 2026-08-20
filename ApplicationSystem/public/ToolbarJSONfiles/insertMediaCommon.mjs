@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaCommon.mjs
 // Shared helpers for the Insert → Media subtoolbar widget (ModuleMap parsing, saving files, inserting HTML).
+import { normalizeNotebookFilePath, toNotebookAssetUrl } from "../utils/notebookPath.mjs";
 export function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -10,18 +11,15 @@ export function escapeHtml(value) {
 }
 
 export function normalizeNotebookPath(path) {
-  const raw = String(path || "").trim().replace(/^\/+/, "");
-  const lower = raw.toLowerCase();
-  if (!raw) return "";
-  // Treat both "Notebook" and "Notebook/..." as already notebook-relative
-  if (lower === "notebook") return "Notebook";
-  if (lower.startsWith("notebook/")) return `Notebook/${raw.slice(9)}`.replace(/\/+/g, "/");
-  return `Notebook/${raw}`.replace(/\/+/g, "/");
+  const raw = String(path || "").trim().replace(/\\/g, "/").replace(/^\/+/, "");
+  const relative = normalizeNotebookFilePath(path);
+  if (relative) return `Notebook/${relative}`;
+  return raw.toLowerCase() === "notebook" ? "Notebook" : "";
 }
 
 export function notebookHrefFromPath(notebookPath) {
-  const p = normalizeNotebookPath(notebookPath);
-  return p ? `/${p}` : "";
+  const relative = normalizeNotebookFilePath(notebookPath);
+  return relative ? toNotebookAssetUrl(relative) : "";
 }
 
 export function dirname(notebookPath) {

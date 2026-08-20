@@ -14,8 +14,14 @@ import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
 import { fetchDirectoryContents as fetchDirectoryContentsAPI, moveFileOrDirectory } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
+import { installExternalFileDropTarget } from '/FileInterop/NotebookExternalFileInterop.mjs';
 import { attachMqttGraphLayer, MQTT_GRAPH_STYLE } from './GraphManagerDependencies/MQTTGraphAdapter.mjs';
 import { attachThingDescriptionGraphLayer, THING_DESCRIPTION_GRAPH_STYLE } from './GraphManagerDependencies/ThingDescriptionGraphAdapter.mjs';
+import {
+    isExternalNotebookReference,
+    normalizeNotebookFilePath,
+    resolveNotebookReference,
+} from '../../utils/notebookPath.mjs';
 
 let cy;
 let mqttGraphLayer = null;
@@ -351,54 +357,16 @@ function inferCurrentDirectoryImage(files, parentPath) {
 }
 
 function isExternalOrAnchorLink(link) {
-    return (
-        link.startsWith('http://') ||
-        link.startsWith('https://') ||
-        link.startsWith('//') ||
-        link.startsWith('mailto:') ||
-        link.startsWith('javascript:') ||
-        link.startsWith('data:') ||
-        link.startsWith('#')
-    );
+    return isExternalNotebookReference(link);
 }
 
 function normalizeNotebookRelativePath(path) {
-    const parts = [];
-    for (const part of path.split('/')) {
-        if (!part || part === '.') continue;
-        if (part === '..') {
-            if (parts.length === 0) return null;
-            parts.pop();
-            continue;
-        }
-        parts.push(part);
-    }
-    return parts.join('/');
+    return normalizeNotebookFilePath(path);
 }
 
 function resolveNotebookLink(sourceFilePath, rawLink) {
-    if (typeof rawLink !== 'string') return null;
-    let link = rawLink.trim();
-    if (!link || isExternalOrAnchorLink(link)) return null;
-
-    const hashIndex = link.indexOf('#');
-    if (hashIndex >= 0) link = link.slice(0, hashIndex);
-    const queryIndex = link.indexOf('?');
-    if (queryIndex >= 0) link = link.slice(0, queryIndex);
-    if (!link) return null;
-
-    const sourceDir = sourceFilePath.includes('/') ? sourceFilePath.slice(0, sourceFilePath.lastIndexOf('/')) : '';
-    const isRootRelative = rawLink.startsWith('/') || rawLink.startsWith('Notebook/');
-    let candidate = link.replace(/^\/+/, '');
-    if (candidate.startsWith('Notebook/')) {
-        candidate = candidate.slice('Notebook/'.length);
-    } else if (!isRootRelative && sourceDir) {
-        candidate = `${sourceDir}/${candidate}`;
-    }
-
-    return normalizeNotebookRelativePath(candidate);
+    return resolveNotebookReference({ sourcePath: sourceFilePath, reference: rawLink });
 }
-
 
 function clamp01(value) {
     return Math.max(0, Math.min(1, Number(value) || 0));
@@ -976,7 +944,48 @@ async function revealPathInGraphManager(path, options = {}) {
     return true;
 }
 
+function graphPasteDestinationDirectory() {
+    const selectedPath = selectedPathForGraphRootAction();
+    if (selectedPath) return selectedPathIsDirectory(selectedPath) ? selectedPath : dirname(selectedPath);
+    return normalizePath(currentRootPath || "");
+}
+
+function graphDropDestinationDirectory(event, container) {
+    if (!cy || !container || !event) return graphPasteDestinationDirectory();
+    const rect = container.getBoundingClientRect();
+    const directoryNode = findDirectoryAtRenderedPoint({
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+    });
+    return normalizePath(directoryNode?.data?.("fullPath") || currentRootPath || "");
+}
+
+async function refreshAfterExternalGraphImport(destinationDir = "") {
+    const cleanDestination = normalizePath(destinationDir || "");
+    await refreshGraphView({ fit: true, reason: "external-file-import" });
+    if (cleanDestination) await ensureDirectoryChainExpanded(cleanDestination);
+    if (typeof window.refreshFileManager === "function") {
+        try { await window.refreshFileManager(window.currentDirectoryPath || ""); } catch (_) { /* ignore */ }
+    }
+}
+
+function bindExternalFileDropOnGraphContainer(container) {
+    if (!container) return;
+    if (typeof container.__nvExternalFileDropCleanup === "function") {
+        container.__nvExternalFileDropCleanup();
+    }
+    container.__nvExternalFileDropCleanup = installExternalFileDropTarget(container, {
+        getDestinationDirectory: (event) => graphDropDestinationDirectory(event, container),
+        onImported: async (_result, destinationDir) => refreshAfterExternalGraphImport(destinationDir),
+        onError: (err) => {
+            console.error("Graph Manager external file import failed:", err);
+            alert("Failed to import files: " + (err.message || err));
+        },
+    });
+}
+
 window.openDirectoryInGraphManager = openDirectoryInGraphManager;
+window.getGraphManagerPasteDestination = graphPasteDestinationDirectory;
 window.revealPathInGraphManager = revealPathInGraphManager;
 
 function selectedPathForGraphRootAction() {
@@ -2310,6 +2319,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
 
     window.cy = cy;
     bindGraphViewportSizing(container);
+    bindExternalFileDropOnGraphContainer(container);
 
     // Keep Cytoscape renderer in sync with available panel space.
     if (container && typeof ResizeObserver !== "undefined") {

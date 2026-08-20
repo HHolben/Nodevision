@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { Buffer } from "node:buffer";
 import { compareManifests } from "./SyncManifest.mjs";
 import { saveSyncScopes } from "./SyncScopes.mjs";
 import { runScopeSyncTwoWay } from "./sync-scope-two-way.mjs";
@@ -54,23 +55,41 @@ async function testSkipSameNameLocationSizeOption() {
     await saveSyncScopes(["SyncTest", scope], { runtimeRoot });
     await writeScopedFile(notebookDir, relativePath, "local");
 
-    const remoteManifest = {
+    let remoteContent = "remot";
+    const remoteManifest = () => ({
       scope,
       generatedAt: "2026-01-01T00:00:00.000Z",
       files: [{
         relativePath,
-        size: 5,
+        size: Buffer.byteLength(remoteContent),
         mtimeMs: 1,
-        sha256: sha256("remot"),
+        sha256: sha256(remoteContent),
         transferMode: "json",
         tooLargeForJson: false,
       }],
-    };
+    });
     const transport = {
       kind: "test-transport",
       async listFiles(requestedScope) {
-        assert(requestedScope === scope, "Expected dry-run to request the Shared scope");
-        return remoteManifest;
+        assert(requestedScope === scope, "Expected sync to request the Shared scope");
+        return remoteManifest();
+      },
+      async getFile(requestedScope, requestedPath) {
+        assert(requestedScope === scope, "Expected pull to request the Shared scope");
+        assert(requestedPath === relativePath, "Expected pull to request the same-size file");
+        return {
+          relativePath,
+          contentBase64: Buffer.from(remoteContent, "utf8").toString("base64"),
+          sha256: sha256(remoteContent),
+          mtimeMs: 1,
+        };
+      },
+      async putFile(requestedScope, requestedPath, data, metadata = {}) {
+        assert(requestedScope === scope, "Expected push to request the Shared scope");
+        assert(requestedPath === relativePath, "Expected push to request the same-size file");
+        assert(metadata.saveMode === "replace", "Expected directional same-size push to replace");
+        remoteContent = Buffer.from(data).toString("utf8");
+        return { ok: true, saved: { relativePath, mode: "replaced" } };
       },
     };
 
@@ -88,6 +107,20 @@ async function testSkipSameNameLocationSizeOption() {
     assert(skipped[0].fileName === "same-size.jpg", "Expected skipped record to include file name");
     assert(skipped[0].location === "Shared/photos", "Expected skipped record to include location");
     assert(skipped[0].size === 5 && skipped[0].reason === "same_name_location_size", "Expected skipped record size and reason");
+
+    await writeScopedFile(notebookDir, relativePath, "local");
+    remoteContent = "remot";
+    const pullApply = await runScopeSyncTwoWay({ scope, runtimeRoot, dryRun: false, transport, syncDirection: "pull", skipSameNameLocationSize: true });
+    assert(pullApply.operations.pulled.some((entry) => entry?.relativePath === relativePath && entry?.mode === "replaced"), "Expected pull mode same-size changed file to replace local content even when same-size skip is selected");
+    assert((await fs.readFile(path.resolve(notebookDir, relativePath), "utf8")) === "remot", "Expected pull mode to update same-size existing local file");
+    assert(pullApply.operations.skipped.sameNameLocationSize.length === 0, "Expected same-size skip not to filter directional pull replacements");
+
+    await writeScopedFile(notebookDir, relativePath, "local");
+    remoteContent = "remot";
+    const pushApply = await runScopeSyncTwoWay({ scope, runtimeRoot, dryRun: false, transport, syncDirection: "push", skipSameNameLocationSize: true });
+    assert(pushApply.operations.pushed.some((entry) => entry?.relativePath === relativePath && entry?.mode === "replaced"), "Expected push mode same-size changed file to replace peer content even when same-size skip is selected");
+    assert(remoteContent === "local", "Expected push mode to update same-size existing peer file");
+    assert(pushApply.operations.skipped.sameNameLocationSize.length === 0, "Expected same-size skip not to filter directional push replacements");
   } finally {
     await fs.rm(runtimeRoot, { recursive: true, force: true });
   }

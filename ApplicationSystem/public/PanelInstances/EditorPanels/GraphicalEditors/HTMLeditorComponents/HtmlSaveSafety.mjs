@@ -28,6 +28,12 @@ function textWithoutStructuralMarkup(value = "") {
     .trim();
 }
 
+function htmlBodyMarkup(value = "") {
+  const text = String(value || "");
+  const bodyMatch = /<body\b[^>]*>([\s\S]*?)<\/body>/i.exec(text);
+  return bodyMatch ? bodyMatch[1] : text;
+}
+
 export function isHtmlLikeNotebookPath(pathValue = "") {
   const name = cleanPath(pathValue).toLowerCase().split("/").pop() || "";
   const ext = name.includes(".") ? name.split(".").pop() : "";
@@ -41,6 +47,10 @@ export function htmlContentHasMeaningfulContent(content = "") {
   if (MEANINGFUL_ELEMENT_PATTERN.test(text)) return true;
   if (MEANINGFUL_LINK_PATTERN.test(text)) return true;
   return textWithoutStructuralMarkup(text).length > 0;
+}
+
+export function htmlEditableBodyHasMeaningfulContent(content = "") {
+  return htmlContentHasMeaningfulContent(htmlBodyMarkup(content));
 }
 
 export function serializedHtmlLooksUsable(content = "") {
@@ -57,8 +67,8 @@ export function validateGraphicalHtmlSave({ path = "", content = "", originalCon
       error: "Refusing to save because the graphical HTML editor produced invalid document source.",
     };
   }
-  if (!htmlContentHasMeaningfulContent(originalContent)) return { ok: true };
-  if (htmlContentHasMeaningfulContent(content)) return { ok: true };
+  if (!htmlEditableBodyHasMeaningfulContent(originalContent)) return { ok: true };
+  if (htmlEditableBodyHasMeaningfulContent(content)) return { ok: true };
   return {
     ok: false,
     code: "HTML_WYSIWYG_EMPTY_PAYLOAD",

@@ -8,6 +8,8 @@ DRY_RUN="false"
 SKIP_DEPS="false"
 INSTALL_SERVICE="false"
 ENABLE_SERVICE="false"
+SKIP_SPEECH="false"
+SKIP_SPEECH_DEPS="false"
 
 readonly APT_PACKAGES=(
   nodejs
@@ -18,6 +20,11 @@ readonly APT_PACKAGES=(
   build-essential
   python3
   ca-certificates
+)
+
+readonly SPEECH_APT_PACKAGES=(
+  espeak-ng
+  libespeak-ng-dev
 )
 
 readonly USER_DATA_DIRS=(
@@ -40,6 +47,8 @@ Options:
   --dry-run           Print actions without making changes
   --prefix PATH       Install location (default: ~/.local/share/nodevision)
   --skip-deps         Skip apt dependency installation
+  --skip-speech       Skip optional offline native speech setup
+  --skip-speech-deps  Do not install speech packages; still probe/build when possible
   --install-service   Create a systemd user service file
   --enable-service    Create, enable, and start the systemd user service
 
@@ -360,6 +369,46 @@ WantedBy=default.target
 EOF
 }
 
+setup_speech_support() {
+  local install_dir="$1"
+  local bridge_path="$install_dir/ApplicationSystem/native/speech/build/nodevision-espeak-bridge"
+  local build_script="$install_dir/ApplicationSystem/native/speech/build-espeak-bridge.sh"
+
+  if [[ "$SKIP_SPEECH" == "true" ]]; then
+    say "Offline speech setup skipped."
+    return 0
+  fi
+
+  say "Offline speech setup starting."
+  if [[ "$SKIP_SPEECH_DEPS" != "true" && "$SKIP_DEPS" != "true" ]]; then
+    if run_cmd sudo apt install -y "${SPEECH_APT_PACKAGES[@]}"; then
+      say "Offline speech dependencies checked."
+    else
+      warn "Could not install optional eSpeak NG speech dependencies."
+    fi
+  else
+    say "Offline speech dependency installation skipped."
+  fi
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    say "[dry-run] (cd \"$install_dir\" && ApplicationSystem/native/speech/build-espeak-bridge.sh)"
+    return 0
+  fi
+
+  if [[ -x "$bridge_path" ]] && "$bridge_path" --probe >/dev/null 2>&1; then
+    say "Offline speech bridge available: $bridge_path"
+    return 0
+  fi
+
+  if [[ -f "$build_script" ]] && run_in_dir "$install_dir" ApplicationSystem/native/speech/build-espeak-bridge.sh >/dev/null 2>&1 && [[ -x "$bridge_path" ]] && "$bridge_path" --probe >/dev/null 2>&1; then
+    say "Offline speech bridge built: $bridge_path"
+    return 0
+  fi
+
+  warn "Offline native speech unavailable: eSpeak NG bridge could not be built or probed."
+  return 0
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --help)
@@ -377,6 +426,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-deps)
       SKIP_DEPS="true"
+      shift
+      ;;
+    --skip-speech)
+      SKIP_SPEECH="true"
+      shift
+      ;;
+    --skip-speech-deps)
+      SKIP_SPEECH_DEPS="true"
       shift
       ;;
     --install-service)
@@ -455,6 +512,8 @@ else
   say "Running npm install in: $INSTALL_DIR"
   run_in_dir "$INSTALL_DIR" npm install
 fi
+
+setup_speech_support "$INSTALL_DIR"
 
 write_launcher "$INSTALL_DIR" "$LAUNCHER_PATH"
 say "Launcher ready: $LAUNCHER_PATH"

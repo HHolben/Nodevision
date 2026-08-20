@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/server.mjs
 // This file initializes the Nodevision Express application and wires core middleware, static asset serving, authentication, and API routes into a single server entry point.
 
+import "./server/nodeWebApiCompat.mjs";
 import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
@@ -54,7 +55,9 @@ import { registerSyncPanelRoutes } from "./server/routes/syncPanelRoutes.mjs";
 import { registerBrokerRoutes } from "./server/routes/brokerRoutes.mjs";
 import { createDesktopOpenState, registerDesktopOpenRoutes } from "./Desktop/DesktopOpenHandler.mjs";
 import { registerTerrainRoutes } from "./server/routes/terrainRoutes.mjs";
+import { registerResourcePathRoutes } from "./server/routes/resourcePathRoutes.mjs";
 import { registerSectionalMapRoutes } from "./server/routes/sectionalMapRoutes.mjs";
+import { registerSpeechRoutes } from "./server/routes/speechRoutes.mjs";
 import { registerHandwritingOcrTrainingRoutes } from "./server/routes/handwritingOcrTrainingRoutes.mjs";
 import { registerStrokeHandwritingRecognitionRoutes } from "./server/routes/strokeHandwritingRecognitionRoutes.mjs";
 import { registerPhoneImportRoutes } from "./server/routes/phoneImportRoutes.mjs";
@@ -360,6 +363,13 @@ export default async function createApp(runtimeConfig = {}) {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cookieParser());
+  app.use((err, req, res, next) => {
+    if (err?.type === "entity.parse.failed") {
+      console.warn("[request-json] Invalid JSON body", { path: req.path });
+      return res.status(400).json({ error: "Invalid JSON request body" });
+    }
+    return next(err);
+  });
 
   app.use(identityMiddleware(AuthService));
   registerAuthRoutes(app, AuthService);
@@ -614,7 +624,9 @@ app.use('/api/file', uploadRoutes);
   registerMetaWorldAssetRoutes(app, ctx);
   registerWorldRoutes(app, ctx);
   registerTerrainRoutes(app, ctx);
+  registerResourcePathRoutes(app, ctx);
   registerSectionalMapRoutes(app, ctx);
+  registerSpeechRoutes(app, ctx);
 
   return app;
 }

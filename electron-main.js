@@ -1,4 +1,6 @@
-import { app, BrowserWindow, Menu, dialog, ipcMain, session } from 'electron';
+import { app, BrowserWindow, Menu, dialog, ipcMain, session, clipboard, nativeImage } from 'electron';
+import { registerElectronFileInterop } from './ApplicationSystem/Desktop/ElectronFileInterop.mjs';
+import { createServerContext } from './ApplicationSystem/shared/serverContext.mjs';
 import { createRuntime } from './ApplicationSystem/core/runtime.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -20,6 +22,7 @@ const runtime = createRuntime({
   dev: false,
   desktopOpenArgs,
 });
+const electronServerContext = createServerContext({ runtimeRoot: process.env.NODEVISION_ROOT });
 
 let runtimeInstance = null;
 let mainWindow = null;
@@ -160,6 +163,12 @@ async function exportHtmlToPdf(_event, payload = {}) {
 
 export function setupElectronHandlers() {
   ipcMain.handle('nodevision:export-html-to-pdf', exportHtmlToPdf);
+  registerElectronFileInterop({
+    ipcMain,
+    clipboard,
+    nativeImage,
+    getNotebookDir: () => electronServerContext.notebookDir,
+  });
 
   if (!app.requestSingleInstanceLock()) {
     app.quit();

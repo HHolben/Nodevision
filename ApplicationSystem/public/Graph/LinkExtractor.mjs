@@ -3,6 +3,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { resolveNotebookReference } from '../utils/notebookPath.mjs';
 
 // Extract links from different file types
 export async function extractLinksFromFile(filePath, sourceNodeId) {
@@ -39,7 +40,7 @@ function extractFromHTML(content, sourceNodeId) {
 
   while ((match = hrefRegex.exec(content)) !== null) {
     const href = match[1];
-    const destination = normalizeLink(href);
+    const destination = normalizeLink(href, sourceNodeId);
     if (destination) {
       edges.push({
         source: sourceNodeId,
@@ -62,7 +63,7 @@ function extractFromMarkdown(content, sourceNodeId) {
   let match;
 
   while ((match = mdLinkRegex.exec(content)) !== null) {
-    const destination = normalizeLink(match[2]);
+    const destination = normalizeLink(match[2], sourceNodeId);
     if (destination) {
       edges.push({
         source: sourceNodeId,
@@ -85,7 +86,7 @@ function extractFromPlainText(content, sourceNodeId) {
   let match;
 
   while ((match = urlRegex.exec(content)) !== null) {
-    const destination = normalizeLink(match[1]);
+    const destination = normalizeLink(match[1], sourceNodeId);
     if (destination && !destination.startsWith('http')) {
       edges.push({
         source: sourceNodeId,
@@ -99,24 +100,7 @@ function extractFromPlainText(content, sourceNodeId) {
   return edges;
 }
 
-// Normalize link to notebook-relative path
-function normalizeLink(link) {
-  if (!link || typeof link !== 'string') return null;
-
-  // Skip external links
-  if (link.startsWith('http://') || link.startsWith('https://')) return null;
-
-  // Remove anchors
-  link = link.split('#')[0];
-
-  // Normalize path separators
-  link = link.replace(/\\/g, '/');
-
-  // Remove leading/trailing whitespace
-  link = link.trim();
-
-  // Skip empty or relative parent paths
-  if (!link || link === '.' || link === '..') return null;
-
-  return link;
+// Resolve a stored link against the source document directory.
+function normalizeLink(link, sourcePath = "") {
+  return resolveNotebookReference({ sourcePath, reference: link });
 }

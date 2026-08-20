@@ -276,6 +276,37 @@ function entriesHaveSameSize(localEntry, remoteEntry) {
   return Number.isFinite(localSize) && Number.isFinite(remoteSize) && localSize === remoteSize;
 }
 
+function normalizeManifestRelativePath(value = "") {
+  return String(value || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")
+    .replace(/\/+/g, "/");
+}
+
+function relativePathIdentity(relativePath = "") {
+  const clean = normalizeManifestRelativePath(relativePath);
+  const location = path.posix.dirname(clean);
+  return {
+    fileName: path.posix.basename(clean),
+    location: location === "." ? "" : location,
+  };
+}
+
+function entriesHaveSameNameAndLocation(relativePath, localEntry, remoteEntry) {
+  const localPath = normalizeManifestRelativePath(localEntry?.relativePath || relativePath);
+  const remotePath = normalizeManifestRelativePath(remoteEntry?.relativePath || relativePath);
+  if (!localPath || !remotePath) return false;
+  const local = relativePathIdentity(localPath);
+  const remote = relativePathIdentity(remotePath);
+  return local.fileName === remote.fileName && local.location === remote.location;
+}
+
+function entriesHaveSameNameLocationAndSize(relativePath, localEntry, remoteEntry) {
+  return entriesHaveSameNameAndLocation(relativePath, localEntry, remoteEntry)
+    && entriesHaveSameSize(localEntry, remoteEntry);
+}
+
 function sameNameLocationSizeSkipRecord({ relativePath, localEntry, remoteEntry }) {
   const location = path.posix.dirname(relativePath);
   return {
@@ -307,7 +338,7 @@ function applySameNameLocationSizeSkipToPlan(plan, localEntries, remoteEntries, 
   for (const relativePath of plan.changed || []) {
     const localEntry = localEntries.get(relativePath);
     const remoteEntry = remoteEntries.get(relativePath);
-    if (entriesHaveSameSize(localEntry, remoteEntry)) {
+    if (entriesHaveSameNameLocationAndSize(relativePath, localEntry, remoteEntry)) {
       skippedSameNameLocationSize.push(sameNameLocationSizeSkipRecord({ relativePath, localEntry, remoteEntry }));
     } else {
       nextPlan.changed.push(relativePath);
@@ -593,9 +624,15 @@ export async function runScopeSyncTwoWay({
   const rawPlan = await compareScopeManifests(localBefore, remoteBefore);
   const localEntries = toManifestEntryMap(localBefore);
   const remoteEntries = toManifestEntryMap(remoteBefore);
+  const requestedSyncDirection = normalizeSyncDirection(syncDirection);
   const limited = applyFileSizeLimitToPlan(rawPlan, localEntries, remoteEntries, maxFileSizeBytes);
-  const sameNameLocationSizeFiltered = applySameNameLocationSizeSkipToPlan(limited.plan, localEntries, remoteEntries, skipSameNameLocationSize === true);
-  const directional = applySyncDirectionToPlan(sameNameLocationSizeFiltered.plan, localEntries, remoteEntries, syncDirection);
+  const sameNameLocationSizeFiltered = applySameNameLocationSizeSkipToPlan(
+    limited.plan,
+    localEntries,
+    remoteEntries,
+    skipSameNameLocationSize === true && requestedSyncDirection === "sync",
+  );
+  const directional = applySyncDirectionToPlan(sameNameLocationSizeFiltered.plan, localEntries, remoteEntries, requestedSyncDirection);
   const plan = directional.plan;
   const normalizedSyncDirection = directional.syncDirection;
   const progressState = {

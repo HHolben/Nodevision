@@ -4,7 +4,17 @@
 import { emitNodevisionEvent } from "../NodevisionEventRegistry.mjs";
 
 function nextFrame() {
-  return new Promise((resolve) => (globalThis.requestAnimationFrame || globalThis.setTimeout)(resolve, 0));
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+    const raf = globalThis.requestAnimationFrame;
+    if (typeof raf === "function") raf(finish);
+    globalThis.setTimeout(finish, 50);
+  });
 }
 
 function dispatchToolbarAction(id, type = "InfoPanel", replaceActive = false) {

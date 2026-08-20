@@ -22,11 +22,11 @@
     "callbackKey": "openUserPreferences"
   },
   {
-    "heading": "Game Controls",
+    "heading": "Control Mappings",
     "hotkeyText": "",
     "icon": "icons/CodeEditor.png",
     "ToolbarCategory": "settings",
-    "callbackKey": "openGameControls"
+    "callbackKey": "openControlsOverlay"
   },
   {
     "heading": "Connect Bluetooth Controller",
@@ -41,6 +41,13 @@
     "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",
     "callbackKey": "openSoundSettings"
+  },
+  {
+    "heading": "Set Resource Paths",
+    "hotkeyText": "",
+    "icon": "icons/EditIcon.png",
+    "ToolbarCategory": "settings",
+    "callbackKey": "openResourcePaths"
   },
   {
     "heading": "Timeout",

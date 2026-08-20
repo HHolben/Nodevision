@@ -11,6 +11,7 @@ import { countWords } from "../FamilyEditorCommon.mjs";
 import { setStatus, setWordCount } from "/StatusBar.mjs";
 import { recordEditedFile } from "/RecentFiles.mjs";
 import { notebookPathFromPickedFile } from "/ToolbarJSONfiles/insertMediaCommon.mjs";
+import { getRelativeNotebookReference, normalizeNotebookFilePath, normalizeNotebookRelativePath, resolveNotebookReference } from "/utils/notebookPath.mjs";
 import { validateGraphicalHtmlSave } from "./HtmlSaveSafety.mjs";
 import { createWysiwygProgrammaticHistory, insertHtmlFragmentAtRange } from "./WysiwygProgrammaticHistory.mjs";
 import {
@@ -2148,26 +2149,22 @@ function resolveRelativePath(baseDir = "", href = "") {
   return normalizePath([baseDir, target].filter(Boolean).join("/"));
 }
 
-function relativePath(fromDir = "", toPath = "") {
-  const from = normalizePath(fromDir).split("/").filter(Boolean);
-  const to = normalizePath(toPath).split("/").filter(Boolean);
-  let i = 0;
-  while (i < from.length && i < to.length && from[i] === to[i]) i += 1;
-  const up = new Array(Math.max(0, from.length - i)).fill("..");
-  const down = to.slice(i);
-  const rel = [...up, ...down].join("/");
-  return rel || (to[to.length - 1] || "");
-}
 
 function normalizeNotebookPathInput(inputPath = "") {
-  let clean = normalizePathSlashes(safeDecode(String(inputPath || "").trim()));
-  if (!clean) return "";
-  clean = clean.replace(/^https?:\/\/[^/]+/i, "");
-  clean = clean.replace(/^\/+/, "");
-  clean = clean.replace(/^.*\/Notebook\//i, "");
-  clean = clean.replace(/^Notebook\//i, "");
-  clean = stripQueryAndHash(clean);
-  return normalizePath(clean);
+  const raw = String(inputPath || "").trim();
+  if (!raw) return "";
+  if (/^(https?:)?\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.origin === window.location.origin && url.pathname.startsWith(NOTEBOOK_PREFIX)) {
+        return normalizeNotebookRelativePath(url.pathname);
+      }
+    } catch {
+      return "";
+    }
+    return "";
+  }
+  return normalizeNotebookFilePath(raw);
 }
 
 
@@ -2263,8 +2260,10 @@ function sourceFromNotebookPath(notebookPath = "", editorFilePath = "") {
     return encodeNotebookUrl(normalized);
   }
 
-  const fromDir = dirname(normalizeNotebookPathInput(editorFilePath));
-  return relativePath(fromDir, normalized);
+  return getRelativeNotebookReference({
+    sourcePath: editorFilePath,
+    targetPath: normalized,
+  });
 }
 
 async function resolveEditorImageDisplay(imageEl, editorFilePath) {
@@ -2527,10 +2526,9 @@ function buildImageContextFromElement(imageEl, editorFilePath = "") {
     return context;
   }
 
-  const editorDir = dirname(normalizeNotebookPathInput(editorFilePath));
-  const resolved = resolveRelativePath(editorDir, source);
+  const resolved = resolveNotebookReference({ sourcePath: editorFilePath, reference: source });
   if (resolved) {
-    context.linkedNotebookPath = normalizeNotebookPathInput(resolved);
+    context.linkedNotebookPath = resolved;
     context.extension = inferExtensionFromPath(context.linkedNotebookPath);
   }
   return context;
@@ -2606,10 +2604,9 @@ function buildAudioContextFromElement(audioEl, editorFilePath = "") {
     return context;
   }
 
-  const editorDir = dirname(normalizeNotebookPathInput(editorFilePath));
-  const resolved = resolveRelativePath(editorDir, source);
+  const resolved = resolveNotebookReference({ sourcePath: editorFilePath, reference: source });
   if (resolved) {
-    context.linkedNotebookPath = normalizeNotebookPathInput(resolved);
+    context.linkedNotebookPath = resolved;
     context.extension = inferExtensionFromPath(context.linkedNotebookPath);
   }
   return context;
@@ -3037,8 +3034,7 @@ function getNotebookPathFromSourceInput(rawSource = "", editorFilePath = "") {
     return normalizeNotebookPathInput(source);
   }
 
-  const editorDir = dirname(normalizeNotebookPathInput(editorFilePath));
-  return normalizeNotebookPathInput(resolveRelativePath(editorDir, source));
+  return resolveNotebookReference({ sourcePath: editorFilePath, reference: source }) || "";
 }
 
 async function sourceInputToInlineDataUrl(rawSource = "", editorFilePath = "") {
@@ -5002,9 +4998,24 @@ export async function renderEditor(filePath, container, options = {}) {
   wysiwyg.addEventListener("input", recordRecentHtmlEdit);
 
   const findTableCellFromNode = (node) => getTableCellFromEditorTarget(wysiwyg, node);
+  let lastPublishedTableToolbarState = null;
+  let pendingTableToolbarState = null;
+  let pendingTableToolbarFrame = 0;
+  const flushTableToolbarState = () => {
+    pendingTableToolbarFrame = 0;
+    if (pendingTableToolbarState === lastPublishedTableToolbarState) return;
+    lastPublishedTableToolbarState = pendingTableToolbarState;
+    updateToolbarState({ htmlTableSelected: pendingTableToolbarState });
+  };
+  const requestTableToolbarState = (selected) => {
+    pendingTableToolbarState = Boolean(selected);
+    if (pendingTableToolbarState === lastPublishedTableToolbarState) return;
+    if (pendingTableToolbarFrame) return;
+    pendingTableToolbarFrame = requestAnimationFrame(flushTableToolbarState);
+  };
   const publishTableSelection = (cell) => {
     const activeCell = setActiveTableCell(cell);
-    updateToolbarState({ htmlTableSelected: Boolean(activeCell) });
+    requestTableToolbarState(Boolean(activeCell));
   };
   const updateTableSelectionFromSelection = () => {
     if (window.__nvHtmlTableDragSelecting) return;
@@ -5070,6 +5081,12 @@ export async function renderEditor(filePath, container, options = {}) {
       window.__nvHtmlTableActiveCell = null;
       window.__nvHtmlTableActiveTable = null;
     }
+    if (pendingTableToolbarFrame) {
+      cancelAnimationFrame(pendingTableToolbarFrame);
+      pendingTableToolbarFrame = 0;
+    }
+    lastPublishedTableToolbarState = false;
+    pendingTableToolbarState = false;
     updateToolbarState({ htmlTableSelected: false });
   };
   container.__cleanupHTMLCartoonToolbar = installCartoonEditingBehavior(wysiwyg);
@@ -5263,6 +5280,9 @@ export async function renderEditor(filePath, container, options = {}) {
     window.__nvWysiwygActivePath = filePath;
     window.__nvHtmlEditorActivePath = filePath;
     const getHtmlForSave = () => {
+      if (htmlEditorDisposed || !container.isConnected || !wysiwyg.isConnected) {
+        throw new Error("HTML/WYSIWYG editor is no longer active; refusing to save stale editor content.");
+      }
       restoreSavedImageSources(wysiwyg);
       try {
         const headContent = Array.from(headClone.children)
@@ -5345,8 +5365,10 @@ export async function renderEditor(filePath, container, options = {}) {
     };
 
     let htmlEditorContext = null;
+    let htmlEditorDisposed = false;
+    let setEditorHtmlForPath = null;
     const activateHtmlEditorContext = () => {
-      if (!isCurrentRender()) return false;
+      if (htmlEditorDisposed || !isCurrentRender() || !container.isConnected || !wysiwyg.isConnected) return false;
       window.NodevisionState = window.NodevisionState || {};
       window.NodevisionState.currentMode = editorMode;
       window.NodevisionState.selectedFile = filePath;
@@ -5376,17 +5398,37 @@ export async function renderEditor(filePath, container, options = {}) {
     wrapper.addEventListener("pointerdown", activateHtmlEditorContext, true);
     wrapper.addEventListener("focusin", activateHtmlEditorContext, true);
     container.__cleanupHTMLActiveContext = () => {
+      htmlEditorDisposed = true;
       wrapper.removeEventListener("pointerdown", activateHtmlEditorContext, true);
       wrapper.removeEventListener("focusin", activateHtmlEditorContext, true);
+      const ownsGlobalHooks =
+        window.__nvActiveHtmlEditorContext === htmlEditorContext ||
+        window.getEditorHTML === getHtmlForSave ||
+        window.saveWYSIWYGFile === saveHtmlForPath ||
+        window.setEditorHTML === setEditorHtmlForPath;
       if (container.__nvHtmlEditorContext === htmlEditorContext) container.__nvHtmlEditorContext = null;
       if (htmlEditorCell?.__nvHtmlEditorContext === htmlEditorContext) htmlEditorCell.__nvHtmlEditorContext = null;
       if (window.__nvActiveHtmlEditorContext === htmlEditorContext) window.__nvActiveHtmlEditorContext = null;
+      if (window.getEditorHTML === getHtmlForSave) window.getEditorHTML = undefined;
+      if (window.saveWYSIWYGFile === saveHtmlForPath) window.saveWYSIWYGFile = undefined;
+      if (window.setEditorHTML === setEditorHtmlForPath) window.setEditorHTML = undefined;
+      if (ownsGlobalHooks && window.__nvWysiwygActivePath === filePath) window.__nvWysiwygActivePath = null;
+      if (ownsGlobalHooks && window.__nvHtmlEditorActivePath === filePath) window.__nvHtmlEditorActivePath = null;
+      if (window.NodevisionMetadataTools?.owner === wysiwyg) window.NodevisionMetadataTools = null;
+      try {
+        if (window.HTMLWysiwygTools?.getEditorElement?.() === wysiwyg) window.HTMLWysiwygTools = {};
+      } catch {
+        window.HTMLWysiwygTools = {};
+      }
     };
     activateHtmlEditorContext();
     window.NodevisionState.fileIsDirty = false;
     updateToolbarState({ fileIsDirty: false });
 
-    window.setEditorHTML = (html) => {
+    setEditorHtmlForPath = (html) => {
+      if (htmlEditorDisposed || !container.isConnected || !wysiwyg.isConnected) {
+        throw new Error("HTML/WYSIWYG editor is no longer active; refusing to edit stale editor content.");
+      }
       const doc = parser.parseFromString(html, "text/html");
       wysiwyg.innerHTML = "";
       hidden.innerHTML = "";
@@ -5415,6 +5457,7 @@ export async function renderEditor(filePath, container, options = {}) {
       updateWordCount();
       wysiwyg.__nvProgrammaticHistory?.clear?.();
     };
+    window.setEditorHTML = setEditorHtmlForPath;
 
     window.saveWYSIWYGFile = saveHtmlForPath;
 

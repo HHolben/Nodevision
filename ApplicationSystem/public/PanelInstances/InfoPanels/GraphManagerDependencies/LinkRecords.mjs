@@ -2,6 +2,12 @@
 // Shared link parsing, selection, and source-edit helpers for Graph Manager link panels.
 
 import { parseMetaWorldPortalLinkRecords } from "./MetaWorldPortalLinks.mjs";
+import {
+  isExternalNotebookReference,
+  normalizeNotebookFilePath,
+  resolveNotebookReference,
+  splitNotebookReferenceSuffix,
+} from "../../../utils/notebookPath.mjs";
 
 const HTML_LINK_ATTRS = new Map([
   ["href", "hyperlink"],
@@ -134,32 +140,11 @@ function defaultHtmlLinkText({ attrName = "", tagBounds = null, rawTarget = "" }
 }
 
 export function normalizeNotebookRelativePath(inputPath) {
-  const parts = [];
-  const cleaned = String(inputPath || "")
-    .replace(/\\/g, "/")
-    .replace(/[?#].*$/, "")
-    .replace(/^\/+/, "")
-    .replace(/^Notebook\//i, "")
-    .replace(/\/+/g, "/")
-    .trim();
-
-  for (const part of cleaned.split("/")) {
-    if (!part || part === ".") continue;
-    if (part === "..") {
-      if (parts.length === 0) return "";
-      parts.pop();
-      continue;
-    }
-    parts.push(part);
-  }
-  return parts.join("/");
+  return normalizeNotebookFilePath(inputPath);
 }
 
 export function isExternalLink(rawLink = "") {
-  const link = String(rawLink || "").trim();
-  return /^(https?:)?\/\//i.test(link) ||
-    /^(mailto|javascript|data|file):/i.test(link) ||
-    link.startsWith("#");
+  return isExternalNotebookReference(rawLink);
 }
 
 export function isHttpLink(rawLink = "") {
@@ -167,35 +152,11 @@ export function isHttpLink(rawLink = "") {
 }
 
 export function splitLinkSuffix(rawLink = "") {
-  const value = String(rawLink || "");
-  const hashIndex = value.indexOf("#");
-  const queryIndex = value.indexOf("?");
-  const indices = [hashIndex, queryIndex].filter((idx) => idx >= 0);
-  if (!indices.length) return { pathPart: value, suffix: "" };
-  const cut = Math.min(...indices);
-  return { pathPart: value.slice(0, cut), suffix: value.slice(cut) };
+  return splitNotebookReferenceSuffix(rawLink);
 }
 
 export function resolveNotebookLink(sourceFilePath, rawLink) {
-  const trimmed = String(rawLink || "").trim();
-  if (!trimmed || isExternalLink(trimmed)) return null;
-
-  const { pathPart } = splitLinkSuffix(trimmed);
-  let link = String(pathPart || "").trim();
-  if (!link) return null;
-
-  const source = normalizeNotebookRelativePath(sourceFilePath);
-  const sourceDir = source.includes("/") ? source.slice(0, source.lastIndexOf("/")) : "";
-  const isRootRelative = trimmed.startsWith("/") || /^Notebook\//i.test(trimmed);
-  let candidate = link.replace(/^\/+/, "");
-
-  if (/^Notebook\//i.test(candidate)) {
-    candidate = candidate.replace(/^Notebook\//i, "");
-  } else if (!isRootRelative && sourceDir) {
-    candidate = `${sourceDir}/${candidate}`;
-  }
-
-  return normalizeNotebookRelativePath(candidate);
+  return resolveNotebookReference({ sourcePath: sourceFilePath, reference: rawLink });
 }
 
 export function csvToList(value) {

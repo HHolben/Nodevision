@@ -1,9 +1,13 @@
 // Nodevision/ApplicationSystem/routes/api/extractEdges/extractHtmlEdges.js
-// This file defines the extract Html Edges API route handler for the Nodevision server. It validates requests and sends responses for extract Html Edges operations.
+// Extract HTML/PHP Notebook references into normalized Graph edge targets.
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import * as cheerio from "cheerio";
+import {
+  normalizeNotebookRelativePath,
+  resolveNotebookReference,
+} from "../../../public/utils/notebookPath.mjs";
 
 const LINK_ATTRIBUTES = [
   { selector: "a", attr: "href" },
@@ -21,32 +25,9 @@ const LINK_ATTRIBUTES = [
   { selector: "form", attr: "action" },
 ];
 
-function isExternalUrl(url) {
-  return url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("//") ||
-    url.startsWith("mailto:") ||
-    url.startsWith("javascript:") ||
-    url.startsWith("#") ||
-    url.startsWith("data:");
-}
-
-function normalizeLink(link) {
-  if (!link) return null;
-  let normalized = String(link).trim();
-  if (!normalized) return null;
-  if (isExternalUrl(normalized)) return null;
-
-  if (normalized.startsWith("/")) normalized = normalized.slice(1);
-  if (normalized.startsWith("Notebook/")) normalized = normalized.slice("Notebook/".length);
-
-  const hashIdx = normalized.indexOf("#");
-  if (hashIdx > 0) normalized = normalized.slice(0, hashIdx);
-
-  const queryIdx = normalized.indexOf("?");
-  if (queryIdx > 0) normalized = normalized.slice(0, queryIdx);
-
-  return normalized || null;
+function addCandidate(edgesSet, value) {
+  const trimmed = String(value || "").trim();
+  if (trimmed) edgesSet.add(trimmed);
 }
 
 function collectCandidateLinks($) {
@@ -61,39 +42,37 @@ function collectCandidateLinks($) {
           .split(",")
           .map((s) => s.trim().split(/\s+/)[0])
           .filter(Boolean);
-        for (const src of srcsetParts) {
-          const normalized = normalizeLink(src);
-          if (normalized) edgesSet.add(normalized);
-        }
+        for (const src of srcsetParts) addCandidate(edgesSet, src);
         return;
       }
 
-      const normalized = normalizeLink(value);
-      if (normalized) edgesSet.add(normalized);
+      addCandidate(edgesSet, value);
     });
   }
   return edgesSet;
 }
 
-async function resolveExistingEdges({ filePath, fileDir, notebookDir, edgesSet }) {
+function isWithinNotebook(targetPath, notebookDir) {
+  const relative = path.relative(notebookDir, targetPath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+async function resolveExistingEdges({ filePath, notebookDir, edgesSet }) {
   const edges = [];
+  const sourcePath = normalizeNotebookRelativePath(filePath);
 
-  for (const link of edgesSet) {
-    const candidatePaths = [
-      path.resolve(fileDir, link),
-      path.resolve(notebookDir, link),
-    ];
+  for (const reference of edgesSet) {
+    const relative = resolveNotebookReference({ sourcePath, reference });
+    if (!relative || relative === sourcePath || edges.includes(relative)) continue;
 
-    for (const targetPath of candidatePaths) {
-      if (!targetPath.startsWith(notebookDir)) continue;
-      try {
-        await fs.access(targetPath);
-        const relative = path.relative(notebookDir, targetPath).split(path.sep).join("/");
-        if (relative !== filePath && !edges.includes(relative)) edges.push(relative);
-        break;
-      } catch {
-        // try next candidate
-      }
+    const targetPath = path.resolve(notebookDir, relative);
+    if (!isWithinNotebook(targetPath, notebookDir)) continue;
+
+    try {
+      await fs.access(targetPath);
+      edges.push(relative);
+    } catch {
+      // ignore missing targets; the Graph records existing Notebook files only here
     }
   }
 
@@ -101,31 +80,34 @@ async function resolveExistingEdges({ filePath, fileDir, notebookDir, edgesSet }
 }
 
 export async function extractEdgesForFile({ filePath, notebookDir }) {
-  const fullPath = path.join(notebookDir, filePath);
-  const fileDir = path.dirname(fullPath);
+  const sourcePath = normalizeNotebookRelativePath(filePath);
+  const fullPath = path.resolve(notebookDir, sourcePath);
+  if (!isWithinNotebook(fullPath, notebookDir)) return [];
 
   const content = await fs.readFile(fullPath, "utf8");
   const $ = cheerio.load(content);
   const edgesSet = collectCandidateLinks($);
 
-  return resolveExistingEdges({ filePath, fileDir, notebookDir, edgesSet });
+  return resolveExistingEdges({ filePath: sourcePath, notebookDir, edgesSet });
 }
 
 export async function extractEdgesBatch({ files, notebookDir }) {
   const results = {};
 
   for (const filePath of files) {
-    const fullPath = path.join(notebookDir, filePath);
+    const sourcePath = normalizeNotebookRelativePath(filePath);
+    const fullPath = path.resolve(notebookDir, sourcePath);
+    if (!sourcePath || !isWithinNotebook(fullPath, notebookDir)) continue;
 
     try {
       const stat = await fs.stat(fullPath);
       if (stat.isDirectory()) continue;
 
-      const ext = path.extname(filePath).toLowerCase();
+      const ext = path.extname(sourcePath).toLowerCase();
       if (![".html", ".htm", ".php", ".xhtml"].includes(ext)) continue;
 
-      const edges = await extractEdgesForFile({ filePath, notebookDir });
-      if (edges.length > 0) results[filePath] = edges;
+      const edges = await extractEdgesForFile({ filePath: sourcePath, notebookDir });
+      if (edges.length > 0) results[sourcePath] = edges;
     } catch {
       // ignore missing/invalid files
     }

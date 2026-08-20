@@ -1,6 +1,11 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/BrokenLinkPlaceholders.mjs
 // This module provides source-backed helpers for Graph Manager broken-link placeholder nodes and target retargeting.
 import {
+  getRelativeNotebookReference,
+  normalizeNotebookFilePath,
+  toNotebookAssetUrl,
+} from "../../../utils/notebookPath.mjs";
+import {
   applyLinkRecordEdit,
   fetchNotebookText,
   saveNotebookText,
@@ -9,12 +14,7 @@ import {
 } from "./LinkRecords.mjs";
 
 function cleanPath(value = "") {
-  return String(value || "")
-    .replace(/\\/g, "/")
-    .replace(/[?#].*$/, "")
-    .replace(/^\/+/, "")
-    .replace(/^Notebook\//i, "")
-    .replace(/\/+/g, "/");
+  return normalizeNotebookFilePath(value);
 }
 
 function encodeIdPart(value = "") {
@@ -22,16 +22,7 @@ function encodeIdPart(value = "") {
 }
 
 function relativePath(fromFilePath = "", targetPath = "") {
-  const from = cleanPath(fromFilePath);
-  const target = cleanPath(targetPath);
-  const fromDir = from.includes("/") ? from.slice(0, from.lastIndexOf("/")) : "";
-  const fromParts = fromDir.split("/").filter(Boolean);
-  const targetParts = target.split("/").filter(Boolean);
-  let i = 0;
-  while (i < fromParts.length && i < targetParts.length && fromParts[i] === targetParts[i]) i += 1;
-  const ups = fromParts.slice(i).map(() => "..");
-  const downs = targetParts.slice(i);
-  return [...ups, ...downs].join("/") || targetParts[targetParts.length - 1] || target;
+  return getRelativeNotebookReference({ sourcePath: fromFilePath, targetPath });
 }
 
 export function brokenPlaceholderId(sourcePath = "", targetPath = "", recordIndex = 0) {
@@ -52,9 +43,10 @@ export function replacementTargetForRecord(record, nextTargetPath = "") {
   const next = cleanPath(nextTargetPath);
   const raw = String(record?.targetRaw || "").trim();
   if (!next) return "";
-  if (/^\/Notebook\//i.test(raw)) return `/Notebook/${next}`;
-  if (/^Notebook\//i.test(raw)) return `Notebook/${next}`;
-  if (raw.startsWith("/")) return `/${next}`;
+  const absoluteNotebook = toNotebookAssetUrl(next);
+  if (/^\/Notebook\//i.test(raw)) return absoluteNotebook;
+  if (/^Notebook\//i.test(raw)) return absoluteNotebook.replace(/^\/+/, "");
+  if (raw.startsWith("/")) return absoluteNotebook.replace(/^\/Notebook/i, "");
   const rel = relativePath(record?.sourcePath || "", next);
   if (raw.startsWith("./") && !rel.startsWith("../")) return `./${rel}`;
   return rel;

@@ -739,6 +739,29 @@ async function runPreview(filePath) {
   }
 }
 
+function cleanupCellBeforeCodeEditor(cell) {
+  if (!cell) return;
+  if (typeof cell.cleanup === "function") {
+    try {
+      cell.cleanup();
+    } catch (err) {
+      console.warn("[CodeEditor] Previous panel cleanup failed:", err);
+    }
+    cell.cleanup = null;
+  }
+
+  const graphicalHost = cell.querySelector?.("#graphical-editor");
+  const graphicalCleanup = graphicalHost?.__nvActiveEditorCleanup;
+  if (typeof graphicalCleanup === "function") {
+    try {
+      graphicalCleanup();
+    } catch (err) {
+      console.warn("[CodeEditor] Graphical editor cleanup failed:", err);
+    }
+    graphicalHost.__nvActiveEditorCleanup = null;
+  }
+}
+
 /**
  * Opens or replaces a Code Editor panel in the active cell.
  */
@@ -764,6 +787,8 @@ export async function openCodeEditor(filePath) {
     alert("Please click a panel before opening the Code Editor.");
     return;
   }
+
+  cleanupCellBeforeCodeEditor(targetCell);
 
   console.log("[CodeEditor] Replacing active cell with Code Editor:", filePath);
   targetCell.dataset.currentFilePath = filePath;

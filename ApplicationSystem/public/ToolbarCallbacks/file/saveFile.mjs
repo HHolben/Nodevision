@@ -124,8 +124,10 @@ export default async function saveFile(options = {}) {
     if (mode === "EPUBediting" && (activeHtmlContext?.save || typeof window.saveWYSIWYGFile === "function")) {
       const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
       if (refuseMismatchedEditorSave("EPUB Editor", editorPath, filePath)) return false;
-      if (activeHtmlContext?.save) await activeHtmlContext.save(filePath);
-      else await window.saveWYSIWYGFile(filePath);
+      const saved = activeHtmlContext?.save
+        ? await activeHtmlContext.save(filePath)
+        : await window.saveWYSIWYGFile(filePath);
+      if (saved === false) return false;
       return notifyFileSaved(filePath);
     }
 
@@ -253,8 +255,10 @@ export default async function saveFile(options = {}) {
         });
         return false;
       }
-      if (activeHtmlContext?.save) await activeHtmlContext.save(filePath);
-      else await window.saveWYSIWYGFile(filePath);
+      const saved = activeHtmlContext?.save
+        ? await activeHtmlContext.save(filePath)
+        : await window.saveWYSIWYGFile(filePath);
+      if (saved === false) return false;
       return notifyFileSaved(filePath);
     }
 

@@ -55,7 +55,10 @@ export async function startSession(scope, id) {
       if (activeSession?.runtime === runtime) quitActiveSession();
     })
     .catch(async (err) => {
-      if (["SESSION_STOPPED", "SESSION_WAIT_CANCELLED"].includes(err?.code)) return;
+      if (["SESSION_STOPPED", "SESSION_WAIT_CANCELLED"].includes(err?.code)) {
+        if (activeSession?.runtime === runtime) await quitActiveSession();
+        return;
+      }
       runtime.pause();
       await ui.showError(err);
       if (activeSession?.runtime === runtime) await quitActiveSession();

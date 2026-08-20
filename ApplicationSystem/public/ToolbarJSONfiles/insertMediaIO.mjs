@@ -1,7 +1,8 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaIO.mjs
 // IO helpers for Insert → Media (file pickers, fetch-to-dataURL/text, and binary dataURL saving).
 
-import { dirname, getActiveEditorNotebookPath, normalizeNotebookPath, notebookHrefFromPath } from "./insertMediaCommon.mjs";
+import { getActiveEditorNotebookPath, normalizeNotebookPath, notebookHrefFromPath } from "./insertMediaCommon.mjs";
+import { getRelativeNotebookReference } from "../utils/notebookPath.mjs";
 
 export async function readFileAsDataUrl(file) {
   const f = file;
@@ -33,20 +34,13 @@ export function looksLikeUrlOrAbsPath(value) {
 export function notebookSourceFromPath(notebookPath, editorNotebookPath = "") {
   const normalized = normalizeNotebookPath(notebookPath);
   if (!normalized) return "";
-  const mode = window.NodevisionState?.currentMode || "";
+  const mode = globalThis.window?.NodevisionState?.currentMode || "";
   if (mode === "EPUBediting") return notebookHrefFromPath(normalized);
 
-  const strip = (p) => String(p || "").replace(/^Notebook\/?/i, "");
-  const split = (p) => String(p || "").replace(/\\/g, "/").split("/").filter(Boolean);
-  const fromDir = strip(dirname(editorNotebookPath || getActiveEditorNotebookPath()));
-  const from = split(fromDir);
-  const to = split(strip(normalized));
-  let i = 0;
-  while (i < from.length && i < to.length && from[i] === to[i]) i += 1;
-  const up = new Array(Math.max(0, from.length - i)).fill("..");
-  const down = to.slice(i);
-  const rel = [...up, ...down].join("/");
-  return rel || (to[to.length - 1] || "");
+  return getRelativeNotebookReference({
+    sourcePath: editorNotebookPath || getActiveEditorNotebookPath(),
+    targetPath: normalized,
+  });
 }
 
 export async function fetchUrlAsDataUrl(url) {

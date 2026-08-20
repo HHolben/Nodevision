@@ -15,5 +15,11 @@ export default async function copyFile() {
     sourcePath
   });
 
+  try {
+    await window.nodevisionElectron?.writeNotebookFilesToClipboard?.({ paths: [sourcePath], mode: "copy" });
+  } catch (err) {
+    console.warn("Could not write file copy to the system clipboard:", err);
+  }
+
   setStatus("Copied", sourcePath);
 }

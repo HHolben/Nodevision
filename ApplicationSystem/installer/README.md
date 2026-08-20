@@ -44,3 +44,20 @@ bash ApplicationSystem/scripts/build-linux-bundle.sh
 ```
 
 This produces `dist/nodevision-linux-x64.tar.gz`, which matches the installer's default expected asset name.
+
+## Offline Native Speech
+
+The installer tries to set up Nodevision offline native speech after application files are installed. If a compatible prebuilt bridge is already present, it installs or verifies only the eSpeak NG runtime package. If no bridge is present, it tries to install source-build dependencies and runs `ApplicationSystem/native/speech/build-espeak-bridge.sh`.
+
+Package plan:
+
+```text
+Fedora runtime:        espeak-ng
+Fedora source build:   espeak-ng espeak-ng-devel gcc-c++ make pkgconf-pkg-config
+Debian/Ubuntu runtime: espeak-ng
+Debian/Ubuntu build:   espeak-ng libespeak-ng-dev g++ make pkg-config
+```
+
+Offline speech is optional. If dependency installation, bridge compilation, or `--probe` verification fails, the installer reports native speech as unavailable and still completes the Nodevision installation. Use `--skip-speech` to skip this capability setup or `--skip-speech-deps` to avoid package installation while still probing/building when possible.
+
+Release bundles should preferably include a prebuilt `ApplicationSystem/native/speech/build/nodevision-espeak-bridge` for the target Linux architecture so ordinary users need only the eSpeak NG runtime library. Source/development installs can build the bridge locally from eSpeak NG headers.

@@ -246,6 +246,11 @@ export async function setupPanel(cell, instanceVars = {}) {
   // Initial render
   const initialPath = instanceVars.filePath || window.selectedFilePath;
   await updateGraphicalEditor(initialPath, { force: true });
+
+  return () => {
+    cleanupEditorHost(container);
+    cleanupGraphicalEditorAttention(lastEditedPath || window.currentActiveFilePath || null);
+  };
 }
 
 /* ---------------------------------------------------------

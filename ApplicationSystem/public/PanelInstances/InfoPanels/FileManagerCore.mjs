@@ -6,6 +6,12 @@ import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
 import { moveFileOrDirectory as moveFileOrDirectoryAPI } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
+import {
+  hasExternalFileTransfer,
+  importExternalFilesFromDataTransfer,
+  installExternalFileDropTarget,
+  setNotebookDragTransfer,
+} from '/FileInterop/NotebookExternalFileInterop.mjs';
 
 const FILE_ITEM_SOUND_URLS = [
   "/soundEffects/Splish.mp3",
@@ -534,6 +540,42 @@ function renderBreadcrumbs(currentPath) {
   }
 }
 
+async function importExternalFilesForFileManager(dataTransfer, destinationDir, refreshPath) {
+  try {
+    const result = await importExternalFilesFromDataTransfer(dataTransfer, { destinationDir });
+    if (result.count) console.log("Imported " + result.count + " external file(s) into " + (destinationDir || "Notebook") + ".");
+    if (typeof window.refreshFileManager === "function") {
+      await window.refreshFileManager(refreshPath ?? window.currentDirectoryPath ?? "");
+    }
+    if (typeof window.refreshGraphManager === "function") {
+      await window.refreshGraphManager({ fit: true, reason: "external-file-import" });
+    }
+  } catch (err) {
+    console.error("Failed to import external files:", err);
+    alert("Failed to import files: " + (err.message || err));
+  }
+}
+
+function bindExternalFileDropOnList(listElem, currentPath) {
+  if (!listElem) return;
+  if (typeof listElem.__nvExternalFileDropCleanup === "function") {
+    listElem.__nvExternalFileDropCleanup();
+  }
+  listElem.__nvExternalFileDropCleanup = installExternalFileDropTarget(listElem, {
+    getDestinationDirectory: () => currentPath || "",
+    onImported: async () => {
+      await window.refreshFileManager(currentPath || "");
+      if (typeof window.refreshGraphManager === "function") {
+        await window.refreshGraphManager({ fit: true, reason: "external-file-import" });
+      }
+    },
+    onError: (err) => {
+      console.error("External file import failed:", err);
+      alert("Failed to import files: " + (err.message || err));
+    },
+  });
+}
+
 // ------------------------------
 // Display files in panel
 // ------------------------------
@@ -545,6 +587,7 @@ export function displayFiles(files, currentPath) {
   }
 
   listElem.innerHTML = "";
+  bindExternalFileDropOnList(listElem, currentPath || "");
   const sortedFiles = [...files].sort(naturalCompareEntries);
   Object.assign(listElem.style, {
     listStyle: "none",
@@ -595,7 +638,7 @@ export function displayFiles(files, currentPath) {
     link.addEventListener("dragover", e => {
       if (!hasDragPayload(e)) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
+      e.dataTransfer.dropEffect = hasExternalFileTransfer(e.dataTransfer) ? "copy" : "move";
     });
     link.addEventListener("dragleave", e => {
       if (!link.contains(e.relatedTarget)) {
@@ -608,6 +651,19 @@ export function displayFiles(files, currentPath) {
       stopFileManagerAutoScroll();
       applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
       link.style.outline = "";
+
+      if (hasExternalFileTransfer(e.dataTransfer)) {
+        e.stopPropagation();
+        const externalDestinationDir = link.dataset.fullPath
+          ? normalizePath(link.dataset.fullPath)
+          : (() => {
+              const segments = currentPath.split("/").filter(Boolean);
+              segments.pop();
+              return segments.join("/");
+            })();
+        await importExternalFilesForFileManager(e.dataTransfer, externalDestinationDir, currentPath);
+        return;
+      }
 
       const dragData = readDragPayload(e);
       if (!dragData?.path) return;
@@ -698,9 +754,14 @@ export function displayFiles(files, currentPath) {
         path: link.dataset.fullPath,
         isDirectory: link.dataset.isDirectory === "true",
       };
-      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.effectAllowed = "copyMove";
       e.dataTransfer.setData("application/json", JSON.stringify(payload));
       e.dataTransfer.setData("text/plain", payload.path);
+      setNotebookDragTransfer(e, {
+        path: payload.path,
+        isDirectory: payload.isDirectory,
+        nativeDrag: typeof window.nodevisionElectron?.startNotebookFileDrag === "function",
+      });
       link.style.opacity = "0.6";
       startFileManagerAutoScroll(link);
     });
@@ -719,7 +780,7 @@ export function displayFiles(files, currentPath) {
       link.addEventListener("dragover", e => {
         if (!hasDragPayload(e)) return;
         e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
+        e.dataTransfer.dropEffect = hasExternalFileTransfer(e.dataTransfer) ? "copy" : "move";
       });
       link.addEventListener("dragleave", e => {
         if (!link.contains(e.relatedTarget)) {
@@ -732,6 +793,13 @@ export function displayFiles(files, currentPath) {
         stopFileManagerAutoScroll();
         applyFileItemVisualState(link, link.classList.contains("selected") ? "selected" : "base");
         link.style.outline = "";
+
+        if (hasExternalFileTransfer(e.dataTransfer)) {
+          e.stopPropagation();
+          const externalDestinationDir = normalizePath(link.dataset.fullPath || "");
+          await importExternalFilesForFileManager(e.dataTransfer, externalDestinationDir, currentPath);
+          return;
+        }
 
         const dragData = readDragPayload(e);
         if (!dragData?.path) return;
@@ -834,6 +902,7 @@ function isSubPath(candidate, root) {
 }
 
 function hasDragPayload(evt) {
+  if (hasExternalFileTransfer(evt?.dataTransfer)) return true;
   const types = evt?.dataTransfer?.types;
   if (!types) return false;
   const asArray = Array.from(types);

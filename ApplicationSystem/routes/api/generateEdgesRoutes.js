@@ -1,13 +1,15 @@
 // Nodevision/ApplicationSystem/routes/api/generateEdgesRoutes.js
-// This file defines the generate Edges Routes API route handler for the Nodevision server. It validates requests and sends responses for generate Edges Routes operations.
-// routes/api/generateEdgesRoutes.js
-// Edge generation helpers
+// Edge generation helpers for older Graph workflows.
 
-import express from 'express';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import * as cheerio from 'cheerio';
-import { createServerContext } from '../../shared/serverContext.mjs';
+import express from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
+import * as cheerio from "cheerio";
+import { createServerContext } from "../../shared/serverContext.mjs";
+import {
+  normalizeNotebookRelativePath,
+  resolveNotebookReference,
+} from "../../public/utils/notebookPath.mjs";
 
 const BASE_CONTEXT = createServerContext();
 
@@ -29,13 +31,16 @@ async function getAllFiles(dir) {
 function extractHyperlinksFromContent(content) {
   const $ = cheerio.load(content);
   const links = [];
-  $('a').each((i, el) => {
-    const href = $(el).attr('href');
-    if (href && !href.startsWith('http') && !href.startsWith('//')) {
-      links.push(href);
-    }
+  $("a").each((i, el) => {
+    const href = $(el).attr("href");
+    if (href) links.push(href);
   });
   return links;
+}
+
+function isWithinNotebook(targetPath, notebookDir) {
+  const relative = path.relative(notebookDir, targetPath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
 export default function createGenerateEdgesRouter(ctx = BASE_CONTEXT) {
@@ -50,26 +55,26 @@ export default function createGenerateEdgesRouter(ctx = BASE_CONTEXT) {
 
     for (const filePath of allFiles) {
       try {
-        const content = await fs.readFile(filePath, 'utf8');
+        const content = await fs.readFile(filePath, "utf8");
         const links = extractHyperlinksFromContent(content);
         console.log(`File: ${filePath}`);
         console.log("Extracted links:", links);
 
-        const relativeSource = path.relative(notebookDir, filePath).split(path.sep).join('/');
+        const relativeSource = normalizeNotebookRelativePath(path.relative(notebookDir, filePath));
 
         for (const link of links) {
-          const targetPath = path.resolve(path.dirname(filePath), link);
-          if (targetPath.startsWith(notebookDir)) {
-            try {
-              await fs.access(targetPath);
-              const relativeTarget = path.relative(notebookDir, targetPath).split(path.sep).join('/');
-              if (relativeSource !== relativeTarget) {
-                console.log(`Edge found: ${relativeSource} -> ${relativeTarget}`);
-                edges.push({ source: relativeSource, target: relativeTarget });
-              }
-            } catch {
-              console.warn(`Target file ${targetPath} does not exist.`);
-            }
+          const relativeTarget = resolveNotebookReference({ sourcePath: relativeSource, reference: link });
+          if (!relativeTarget || relativeTarget === relativeSource) continue;
+
+          const targetPath = path.resolve(notebookDir, relativeTarget);
+          if (!isWithinNotebook(targetPath, notebookDir)) continue;
+
+          try {
+            await fs.access(targetPath);
+            console.log(`Edge found: ${relativeSource} -> ${relativeTarget}`);
+            edges.push({ source: relativeSource, target: relativeTarget });
+          } catch {
+            console.warn(`Target file ${targetPath} does not exist.`);
           }
         }
       } catch (err) {
@@ -81,13 +86,13 @@ export default function createGenerateEdgesRouter(ctx = BASE_CONTEXT) {
     return edges;
   }
 
-  router.post('/generateEdges', async (req, res) => {
+  router.post("/generateEdges", async (req, res) => {
     try {
       const edges = await generateEdges();
-      res.status(200).json({ message: 'Edges generated successfully', edges });
+      res.status(200).json({ message: "Edges generated successfully", edges });
     } catch (error) {
-      console.error('Error generating edges:', error);
-      res.status(500).send('Failed to generate edges');
+      console.error("Error generating edges:", error);
+      res.status(500).send("Failed to generate edges");
     }
   });
 

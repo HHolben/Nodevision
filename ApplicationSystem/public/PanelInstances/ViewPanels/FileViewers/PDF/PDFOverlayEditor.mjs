@@ -5,7 +5,6 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const NOTEBOOK_BASE = "/Notebook";
-const PDFJS_CDN_VERSION = "4.10.38";
 const UI_ATTR = "data-nv-pdf-ui";
 const ANNOTATION_ATTR = "data-nodevision-pdf-annotations";
 const DEFAULT_FALLBACK_WIDTH = 1000;
@@ -204,7 +203,6 @@ function loadAnnotationsIntoPages(workspace, groups) {
 }
 
 async function loadPdfJs() {
-  const cdnBase = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_CDN_VERSION}`;
   const candidates = [
     {
       module: "/vendor/pdfjs/build/pdf.mjs",
@@ -215,11 +213,6 @@ async function loadPdfJs() {
       module: "/vendor/pdfjs/legacy/build/pdf.mjs",
       worker: "/vendor/pdfjs/legacy/build/pdf.worker.mjs",
       label: "local legacy PDF.js",
-    },
-    {
-      module: `${cdnBase}/build/pdf.mjs`,
-      worker: `${cdnBase}/build/pdf.worker.mjs`,
-      label: "PDF.js CDN fallback",
     },
   ];
 
@@ -869,7 +862,8 @@ function installStyles(container) {
     .nv-pdf-workspace[data-tool="freehand"] .nv-pdf-overlay { cursor: crosshair; }
     .nv-pdf-annotation-selected { filter: drop-shadow(0 0 2px #1f5fbf); }
     .nv-pdf-overlay text { user-select: none; }
-    .nv-pdf-fallback-object { pointer-events: none; }
+    .nv-pdf-workspace[data-editable="false"] .nv-pdf-overlay { pointer-events: none; }
+    .nv-pdf-fallback-object, .nv-pdf-fallback-frame { pointer-events: auto; }
   `;
   container.appendChild(style);
 }
@@ -906,10 +900,16 @@ function renderFallbackPdfObject(workspace, reason) {
 
   const page = createPageShell(workspace, 1, DEFAULT_FALLBACK_WIDTH, DEFAULT_FALLBACK_HEIGHT);
   page.canvas.remove();
-  const object = document.createElement("object");
-  object.className = "nv-pdf-fallback-object";
-  object.type = "application/pdf";
-  object.data = notebookUrl(workspace.filePath);
+  const fallbackUrl = notebookUrl(workspace.filePath);
+  const object = document.createElement(workspace.editable ? "object" : "iframe");
+  object.className = workspace.editable ? "nv-pdf-fallback-object" : "nv-pdf-fallback-frame";
+  if (workspace.editable) {
+    object.type = "application/pdf";
+    object.data = fallbackUrl;
+  } else {
+    object.src = fallbackUrl;
+    object.title = "PDF Viewer";
+  }
   Object.assign(object.style, {
     display: "block",
     width: `${Math.round(DEFAULT_FALLBACK_WIDTH * workspace.scale)}px`,
@@ -967,6 +967,7 @@ export async function renderPdfWorkspace(filePath, container, options = {}) {
   const root = document.createElement("div");
   root.className = "nv-pdf-workspace";
   root.dataset.tool = "select";
+  root.dataset.editable = editable ? "true" : "false";
   root.tabIndex = 0;
   Object.assign(root.style, {
     display: "flex",

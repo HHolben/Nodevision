@@ -310,7 +310,8 @@ saveFile: async () => {
       });
       return;
     }
-    await window.saveWYSIWYGFile(filePath);
+    const saved = await window.saveWYSIWYGFile(filePath);
+    if (saved === false) return;
     return;
   }
 
