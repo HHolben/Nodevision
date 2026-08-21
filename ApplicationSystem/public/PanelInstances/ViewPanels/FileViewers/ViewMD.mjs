@@ -14,8 +14,7 @@ function escapeHTML(value = "") {
     .replaceAll(">", "&gt;");
 }
 
-export async function renderFile(filePath, panel) {
-  const serverBase = "/Notebook";
+export async function renderFile(filePath, panel, iframe = null, serverBase = "/Notebook", options = {}) {
   panel.innerHTML = "";
 
   if (!isMarkdownPath(filePath)) {
@@ -26,12 +25,16 @@ export async function renderFile(filePath, panel) {
   console.log("[ViewMD] loading", filePath);
 
   try {
-    const response = await fetch(`${serverBase}/${filePath}`);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-    }
-
-    const text = await response.text();
+    let sourceBase = String(serverBase || "/Notebook");
+    while (sourceBase.endsWith("/")) sourceBase = sourceBase.slice(0, -1);
+    const text = typeof options?.liveContent?.content === "string"
+      ? options.liveContent.content
+      : await fetch(sourceBase + "/" + filePath).then((response) => {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status + " - " + response.statusText);
+          }
+          return response.text();
+        });
     ensureMarkdownStyles(panel.ownerDocument || document);
 
     const container = document.createElement("div");

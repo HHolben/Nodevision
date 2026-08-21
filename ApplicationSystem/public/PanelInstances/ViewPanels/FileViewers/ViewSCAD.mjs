@@ -9,7 +9,7 @@ import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mj
 import { exportScadCodeToSTL } from "/ModelExport/STLExport.mjs";
 import { parseBasicScad, parseScadText } from "/ScadEditor/ScadParser.mjs";
 
-const SCAD_VIEWER_VERSION = "source-first-preview-2026-07-27";
+const SCAD_VIEWER_VERSION = "source-preview-vars-2026-08-21";
 const SCAD_VIEWER_ZOOM_SPEED = 0.04;
 
 function scadViewerUrl(pathValue = "", serverBase = "/Notebook") {
@@ -360,7 +360,7 @@ function buildApproximateModelFromScad(scadText) {
 }
 
 
-export async function renderFile(filePath, panel, iframe, serverBase = "/Notebook") {
+export async function renderFile(filePath, panel, iframe, serverBase = "/Notebook", options = {}) {
   const resolvedPath = typeof filePath === "string" ? filePath : filePath?.path || filePath?.filePath || "";
   if (!resolvedPath.toLowerCase().endsWith(".scad")) {
     panel.innerHTML = "<p>No SCAD file selected.</p>";
@@ -591,10 +591,15 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
   panel._dispose = disposeViewer;
 
   try {
-    const response = await fetch(scadViewerUrl(resolvedPath, serverBase), { cache: "no-store" });
-    if (disposed) return true;
-    if (!response.ok) throw new Error("HTTP " + String(response.status));
-    scadText = await response.text();
+    const sourceLabel = typeof options?.liveContent?.content === "string" ? "live" : "fetched";
+    if (sourceLabel === "live") {
+      scadText = options.liveContent.content;
+    } else {
+      const response = await fetch(scadViewerUrl(resolvedPath, serverBase), { cache: "no-store" });
+      if (disposed) return true;
+      if (!response.ok) throw new Error("HTTP " + String(response.status));
+      scadText = await response.text();
+    }
     if (disposed) return true;
     codePre.textContent = scadText;
     setupScene();
@@ -602,7 +607,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
     const hasSourcePreview = setSourceModel(sourcePreview);
     const objectTypes = sourcePreview?.userData?.objectTypes?.join(", ") || "none";
     const previewNote = sourcePreview?.userData?.previewNote ? "; " + sourcePreview.userData.previewNote : "";
-    diagnostic.textContent = "fetched " + String(scadText.length) + " chars; parsed " + objectTypes + previewNote;
+    diagnostic.textContent = sourceLabel + " " + String(scadText.length) + " chars; parsed " + objectTypes + previewNote;
 
     if (hasSourcePreview) {
       loading.textContent = "Rendering exact SCAD...";
@@ -610,10 +615,10 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
         const stlBuffer = await renderScadCodeToSTLBuffer(scadText);
         if (disposed) return true;
         setCompiledSTL(stlBuffer);
-        diagnostic.textContent = "fetched " + String(scadText.length) + " chars; exact STL";
+        diagnostic.textContent = sourceLabel + " " + String(scadText.length) + " chars; exact STL";
       } catch (err) {
         console.warn("[ViewSCAD] Exact render failed; keeping source preview:", err);
-        diagnostic.textContent = "fetched " + String(scadText.length) + " chars; preview " + objectTypes + previewNote;
+        diagnostic.textContent = sourceLabel + " " + String(scadText.length) + " chars; preview " + objectTypes + previewNote;
       } finally {
         loading.remove();
       }
@@ -622,7 +627,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
       const stlBuffer = await renderScadCodeToSTLBuffer(scadText);
       if (disposed) return true;
       setCompiledSTL(stlBuffer);
-      diagnostic.textContent = "fetched " + String(scadText.length) + " chars; exact STL";
+      diagnostic.textContent = sourceLabel + " " + String(scadText.length) + " chars; exact STL";
       loading.remove();
     }
 

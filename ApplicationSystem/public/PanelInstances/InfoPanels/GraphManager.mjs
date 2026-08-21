@@ -12,7 +12,7 @@ const navigationState = getNodevisionNavigationState();
 export const panelCapabilities = {
   supportedActions: [
     'NewFile', 'NewDirectory', 'DeleteFile', 'renameFile',
-    'copyFile', 'cutFile', 'pasteFile', 'reopenGraphRootFromSelection'
+    'copyFile', 'cutFile', 'pasteFile', 'setGraphAbstractionRootFromSelection'
   ],
   panelType: 'GraphManager'
 };

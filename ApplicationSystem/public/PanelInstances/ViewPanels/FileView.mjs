@@ -23,9 +23,15 @@ import {
 } from "/PanelInstances/InfoPanels/GraphManagerDependencies/LinkRecords.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus } from "/StatusBar.mjs";
+import { getLiveFileContentForPath } from "/LiveFileContent.mjs";
 
 let lastRenderedPath = null;
 let viewDivRef = null;
+
+const LIVE_FILE_VIEWER_STORAGE_KEY = "nodevision.fileView.liveViewerEnabled.v1";
+
+let liveFileViewerEnabled = readLiveFileViewerEnabled();
+let liveFileViewRefreshTimer = null;
 
 
 let moduleMapCache = null;
@@ -33,6 +39,47 @@ let moduleMapCache = null;
 const navigationState = getNodevisionNavigationState();
 let pendingFileViewAnchor = null;
 let pendingFileViewAnchorTimer = null;
+
+function readLiveFileViewerEnabled() {
+  try {
+    return window.localStorage?.getItem?.(LIVE_FILE_VIEWER_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeLiveFileViewerEnabled(enabled) {
+  try {
+    window.localStorage?.setItem?.(LIVE_FILE_VIEWER_STORAGE_KEY, enabled ? "true" : "false");
+  } catch {
+    // Keep runtime state even if storage is unavailable.
+  }
+}
+
+function dispatchLiveFileViewerState() {
+  window.dispatchEvent(new CustomEvent("nodevision-live-file-viewer-state", {
+    detail: { enabled: liveFileViewerEnabled },
+  }));
+}
+
+export function isLiveFileViewerEnabled() {
+  return Boolean(liveFileViewerEnabled);
+}
+
+export function setLiveFileViewerEnabled(enabled, options = {}) {
+  liveFileViewerEnabled = Boolean(enabled);
+  writeLiveFileViewerEnabled(liveFileViewerEnabled);
+  dispatchLiveFileViewerState();
+  if (options.refresh !== false) {
+    const path = lastRenderedPath || getActiveFilePath();
+    if (path && typeof window.updateViewPanel === "function") {
+      window.updateViewPanel(path, { force: true }).catch((err) => {
+        console.warn("[FileView] Live viewer refresh failed:", err);
+      });
+    }
+  }
+  return liveFileViewerEnabled;
+}
 
 function uniqueValues(values = []) {
   return [...new Set(values.filter(Boolean))];
@@ -1406,6 +1453,27 @@ function installFileViewFocusHandler() {
   window.__nvFileViewFocusHandlerInstalled = true;
 }
 
+function scheduleLiveFileViewRefresh(path, reason = "live-content") {
+  const targetPath = normalizeResolvedNotebookPath(path || lastRenderedPath || getActiveFilePath());
+  if (!targetPath) return;
+  window.clearTimeout(liveFileViewRefreshTimer);
+  liveFileViewRefreshTimer = window.setTimeout(() => {
+    liveFileViewRefreshTimer = null;
+    console.log("📡 FileViewer live-buffer refresh for:", targetPath, reason);
+    updateViewPanel(targetPath, { force: true }).catch((err) => {
+      console.error("❌ Live-buffer updateViewPanel failed:", err);
+    });
+  }, 350);
+}
+
+function handleLiveFileContentChanged(event) {
+  if (!liveFileViewerEnabled) return;
+  const changedPath = event?.detail?.normalizedPath || event?.detail?.filePath || "";
+  if (!changedPath || !lastRenderedPath) return;
+  if (!sameNotebookPath(changedPath, lastRenderedPath)) return;
+  scheduleLiveFileViewRefresh(lastRenderedPath, event?.detail?.reason || "live-content");
+}
+
 function handleFileSavedForView(event) {
   try {
     const savedPath = event?.detail?.filePath;
@@ -1425,6 +1493,7 @@ function handleFileSavedForView(event) {
 function installFileViewLiveRefresh() {
   if (window.__nvFileViewLiveRefreshInstalled) return;
   window.addEventListener("nodevision-file-saved", handleFileSavedForView);
+  window.addEventListener("nodevision-live-file-content-changed", handleLiveFileContentChanged);
   window.__nvFileViewLiveRefreshInstalled = true;
 }
 
@@ -1508,6 +1577,7 @@ export async function setupPanel(panel, instanceVars = {}) {
   installFileViewFocusHandler();
   installFileViewLiveRefresh();
   installGraphLinkFileViewHandler();
+  dispatchLiveFileViewerState();
 
   // Reactive watcher for window.selectedFilePath
   if (!window._selectedFileProxyInstalled) {
@@ -1692,7 +1762,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
   window.NodevisionState.selectedFileIsDirectory = preserveSelectedFolder;
   window.NodevisionState.activeFileViewPath = filename;
   window.NodevisionModelExportContext = null;
-  updateToolbarState({ currentMode: "Default", selectedFile: toolbarSelectedPath, modelCanExportSTL: false });
+  updateToolbarState({ currentMode: "Default", selectedFile: toolbarSelectedPath, modelCanExportSTL: false, liveFileViewerEnabled });
   setFileViewStatus("File Viewer", filename);
   if (typeof viewPanel._dispose === "function") {
     try {
@@ -1709,12 +1779,24 @@ export async function updateViewPanel(element, { force = false } = {}) {
   const isPHP = ext === "php";
   const serverBase = getNodevisionRouteBase({ route: isPHP ? "php" : "Notebook" });
 
-  const success = await renderFile(filename, viewPanel, serverBase);
+  const liveContent = liveFileViewerEnabled ? getLiveFileContentForPath(filename) : null;
+  if (liveContent) {
+    viewPanel.dataset.nvLiveFileViewer = "true";
+    viewPanel.dataset.nvLiveFileViewerSource = liveContent.sourceLabel || liveContent.sourceId || "Editor";
+  } else {
+    delete viewPanel.dataset.nvLiveFileViewer;
+    delete viewPanel.dataset.nvLiveFileViewerSource;
+  }
+
+  const success = await renderFile(filename, viewPanel, serverBase, {
+    liveContent,
+    liveFileViewerEnabled,
+  });
   window.NodevisionPanelViewportTools?.applyPanelViewport?.(
     viewPanel.closest?.(".panel") || viewPanel.closest?.(".panel-cell") || viewPanel
   );
   if (success) {
-    setFileViewStatus("File Viewer", `Loaded: ${filename}`);
+    setFileViewStatus(liveContent ? "Live File Viewer" : "File Viewer", (liveContent ? "Live: " : "Loaded: ") + filename);
     tryScrollToPendingFileViewAnchor(filename);
   } else {
     setFileViewStatus("File Viewer", `Render failed: ${filename}`);
@@ -1722,7 +1804,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
   return success;
 }
 
-async function renderFile(filename, viewPanel, serverBase) {
+async function renderFile(filename, viewPanel, serverBase, options = {}) {
   console.log(`📄 renderFile() called for: ${filename}`);
   let iframe = null;
 
@@ -1785,7 +1867,7 @@ async function renderFile(filename, viewPanel, serverBase) {
     }
 
     // Call viewer
-    const renderResult = await viewer.renderFile(cleanPath, viewPanel, iframe, serverBase);
+    const renderResult = await viewer.renderFile(cleanPath, viewPanel, iframe, serverBase, options);
     if (renderResult === false) {
       console.warn(`⚠️ Viewer reported render failure: ${viewerFile}`);
       return false;
@@ -1807,3 +1889,5 @@ async function renderFile(filename, viewPanel, serverBase) {
 // Expose globally
 window.updateViewPanel = updateViewPanel;
 window.renderFile = renderFile;
+window.isLiveFileViewerEnabled = isLiveFileViewerEnabled;
+window.setLiveFileViewerEnabled = setLiveFileViewerEnabled;

@@ -43,11 +43,15 @@ let expandedDirectoryCollisionNodeId = null;
 const htmlPreviewCache = new Map(); // path -> url | null
 let externalNodesLoaded = false;
 let externalLinkedFilesVisible = true;
+let graphAbstractionFilter = null;
+let graphAbstractionVisibleNodeIds = null;
+const graphAbstractionOriginalParents = new Map();
 let graphViewportResizeFrame = 0;
 let graphViewportResizeShouldFit = false;
 let graphViewportEventCleanup = null;
 let placeholderRetargetState = null;
 let linkEndpointEditState = null;
+const GRAPH_ABSTRACTION_MAX_LEVEL = 20;
 const EDGE_BUCKET_SYMBOLS = [
     ...'abcdefghijklmnopqrstuvwxyz',
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -215,21 +219,61 @@ function notifyExternalLinkedFilesVisibility() {
     }));
 }
 
+function graphScopeAllowsNodeId(nodeId = "") {
+    if (!graphAbstractionFilter || !graphAbstractionVisibleNodeIds) return true;
+    return graphAbstractionVisibleNodeIds.has(String(nodeId || ""));
+}
+
+function graphScopeAllowsEdge(edge) {
+    if (!graphAbstractionFilter || !graphAbstractionVisibleNodeIds || !edge) return true;
+    const source = typeof edge.source === "function" ? edge.source() : null;
+    const target = typeof edge.target === "function" ? edge.target() : null;
+    const sourceId = String(edge.data?.("source") || source?.id?.() || "");
+    const targetId = String(edge.data?.("target") || target?.id?.() || "");
+    return graphScopeAllowsNodeId(sourceId) && graphScopeAllowsNodeId(targetId);
+}
+
+function graphAbstractionAllowsLinkEndpoint(pathValue = "") {
+    if (!graphAbstractionFilter) return true;
+
+    const endpoint = graphEndpointId(pathValue);
+    if (!endpoint) return false;
+    if (endpoint.startsWith("external:")) return graphScopeAllowsNodeId(endpoint);
+
+    if (graphAbstractionFilter.rootType === "directory") {
+        const endpointNode = cy?.getElementById?.(endpoint);
+        if (endpointNode && !endpointNode.empty() && endpointNode.data("type") === "directory") {
+            return directoryIsWithinGraphScope(endpoint, graphAbstractionFilter.rootPath, graphAbstractionFilter.level);
+        }
+        return directoryIsWithinGraphScope(dirname(endpoint), graphAbstractionFilter.rootPath, graphAbstractionFilter.level);
+    }
+
+    return graphScopeAllowsNodeId(endpoint);
+}
+
 function applyExternalLinkedFilesVisibility() {
     if (!cy) {
         notifyExternalLinkedFilesVisibility();
         return;
     }
 
-    const externalNodes = cy.nodes('node[type="external"]');
+    const externalNodes = cy.nodes("node[type=\"external\"]");
     const externalEdges = externalLinkedFileEdges();
-    if (externalLinkedFilesVisible) {
-        externalNodes.show();
-        externalEdges?.show?.();
-    } else {
-        externalEdges?.hide?.();
-        externalNodes.hide();
-    }
+    externalNodes.forEach((node) => {
+        if (externalLinkedFilesVisible && graphScopeAllowsNodeId(node.id())) {
+            node.show();
+        } else {
+            node.hide();
+        }
+    });
+
+    externalEdges?.forEach?.((edge) => {
+        if (externalLinkedFilesVisible && graphScopeAllowsEdge(edge)) {
+            edge.show();
+        } else {
+            edge.hide();
+        }
+    });
     notifyExternalLinkedFilesVisibility();
 }
 
@@ -840,8 +884,10 @@ function scheduleExpandedDirectoryCollisionResolution(node) {
     });
 }
 
-async function refreshGraphView({ fit = true, reason = 'refresh' } = {}) {
+async function refreshGraphView({ fit = true, reason = "refresh" } = {}) {
     if (!cy) return;
+
+    resetGraphAbstractionFilterState({ restoreParents: false });
 
     // Reset layout bookkeeping.
     if (layoutDebounceTimer) {
@@ -988,13 +1034,31 @@ window.openDirectoryInGraphManager = openDirectoryInGraphManager;
 window.getGraphManagerPasteDestination = graphPasteDestinationDirectory;
 window.revealPathInGraphManager = revealPathInGraphManager;
 
+function selectedGraphNodeForScopeAction() {
+    if (!cy) return null;
+    const selectedNodes = cy.nodes(":selected").filter((node) => {
+        const type = node.data("type");
+        return type === "file" || type === "directory";
+    });
+    const node = selectedNodes && selectedNodes.length ? selectedNodes[0] : null;
+    return node && !node.empty() ? node : null;
+}
+
 function selectedPathForGraphRootAction() {
+    const selectedNode = selectedGraphNodeForScopeAction();
+    const selectedNodePath = normalizePath(selectedNode?.data?.("fullPath") || "");
+    if (selectedNodePath) return selectedNodePath;
+
     const state = window.NodevisionState || {};
     return normalizePath(window.selectedFilePath || state.selectedFile || "");
 }
 
 function selectedPathIsDirectory(path = "") {
     const cleanPath = normalizePath(path);
+    const selectedNode = selectedGraphNodeForScopeAction();
+    const selectedNodePath = normalizePath(selectedNode?.data?.("fullPath") || "");
+    if (cleanPath && cleanPath === selectedNodePath) return selectedNode.data("type") === "directory";
+
     const state = window.NodevisionState || {};
     const stateSelectedPath = normalizePath(window.selectedFilePath || state.selectedFile || "");
     const stateFlag = state.selectedFileIsDirectory;
@@ -1013,6 +1077,455 @@ function directoryRootForSelectedPath(path = "") {
     if (!cleanPath) return null;
     return selectedPathIsDirectory(cleanPath) ? cleanPath : dirname(cleanPath);
 }
+
+function graphElementIsDisplayed(element) {
+    if (!element || (typeof element.empty === "function" && element.empty())) return false;
+
+    try {
+        if (typeof element.visible === "function" && !element.visible()) return false;
+    } catch (_) {
+        return false;
+    }
+
+    try {
+        if (typeof element.style === "function" && element.style("display") === "none") return false;
+    } catch (_) {
+        // ignore
+    }
+
+    const ancestors = typeof element.ancestors === "function" ? element.ancestors() : null;
+    if (ancestors && typeof ancestors.forEach === "function") {
+        let displayed = true;
+        ancestors.forEach((ancestor) => {
+            if (!displayed) return;
+            try {
+                if (typeof ancestor.visible === "function" && !ancestor.visible()) displayed = false;
+                if (typeof ancestor.style === "function" && ancestor.style("display") === "none") displayed = false;
+            } catch (_) {
+                displayed = false;
+            }
+        });
+        if (!displayed) return false;
+    }
+
+    return true;
+}
+
+function clampGraphAbstractionLevel(value, fallback = 1) {
+    const parsed = Number.parseInt(String(value ?? fallback), 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(0, Math.min(GRAPH_ABSTRACTION_MAX_LEVEL, parsed));
+}
+
+function directoryIsWithinGraphScope(pathValue = "", rootPath = "", level = 0) {
+    const cleanPath = normalizePath(pathValue || "");
+    const cleanRoot = normalizePath(rootPath || "");
+    const maxLevel = clampGraphAbstractionLevel(level, 0);
+
+    if (cleanRoot) {
+        if (cleanPath !== cleanRoot && !cleanPath.startsWith(cleanRoot + "/")) return false;
+        const relativePath = cleanPath === cleanRoot ? "" : cleanPath.slice(cleanRoot.length + 1);
+        const relativeDepth = relativePath ? relativePath.split("/").filter(Boolean).length : 0;
+        return relativeDepth <= maxLevel;
+    }
+
+    return directoryDepth(cleanPath) <= maxLevel;
+}
+
+function directoryScopeVisibleNodeIds(rootPath = "", level = 0) {
+    const visibleIds = new Set();
+    if (!cy) return visibleIds;
+
+    cy.nodes().not(".mqtt-live, .td-live").forEach((node) => {
+        const type = node.data("type");
+        if (type !== "directory" && type !== "file") return;
+
+        const rawPath = node.data("fullPath");
+        const path = normalizePath(rawPath === undefined ? node.id() : rawPath);
+        if (type === "directory") {
+            if (directoryIsWithinGraphScope(path, rootPath, level)) visibleIds.add(node.id());
+            return;
+        }
+
+        if (directoryIsWithinGraphScope(dirname(path), rootPath, level)) {
+            visibleIds.add(node.id());
+        }
+    });
+
+    return visibleIds;
+}
+
+function graphEndpointId(value = "") {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (raw.startsWith("external:")) return raw;
+    return normalizePath(raw);
+}
+
+function addGraphAdjacencyEdge(adjacency, sourceValue, targetValue) {
+    const source = graphEndpointId(sourceValue);
+    const target = graphEndpointId(targetValue);
+    if (!source || !target) return;
+    if (!adjacency.has(source)) adjacency.set(source, new Set());
+    if (!adjacency.has(target)) adjacency.set(target, new Set());
+    adjacency.get(source).add(target);
+    adjacency.get(target).add(source);
+}
+
+function buildGraphLinkAdjacency() {
+    const adjacency = new Map();
+    for (const [sourcePath, targets] of discoveredLinks.entries()) {
+        for (const targetPath of targets || []) {
+            addGraphAdjacencyEdge(adjacency, sourcePath, targetPath);
+        }
+    }
+    return adjacency;
+}
+
+function fileScopeVisibleNodeIds(rootPath = "", linkDistance = 0) {
+    const visibleIds = new Set();
+    if (!cy) return visibleIds;
+
+    const rootId = graphEndpointId(rootPath);
+    if (!rootId) return visibleIds;
+
+    const maxDistance = clampGraphAbstractionLevel(linkDistance, 0);
+    const adjacency = buildGraphLinkAdjacency();
+    const allowedEndpoints = new Set([rootId]);
+    const queue = [{ id: rootId, distance: 0 }];
+
+    for (let index = 0; index < queue.length; index += 1) {
+        const current = queue[index];
+        if (current.distance >= maxDistance) continue;
+        const neighbors = adjacency.get(current.id);
+        if (!neighbors) continue;
+
+        for (const neighbor of neighbors) {
+            if (allowedEndpoints.has(neighbor)) continue;
+            allowedEndpoints.add(neighbor);
+            queue.push({ id: neighbor, distance: current.distance + 1 });
+        }
+    }
+
+    cy.nodes().not(".mqtt-live, .td-live").forEach((node) => {
+        const type = node.data("type");
+        if (type !== "file" && type !== "external") return;
+        const rawPath = node.data("fullPath");
+        const path = graphEndpointId(rawPath === undefined ? node.id() : rawPath);
+        const id = graphEndpointId(node.id());
+        if (allowedEndpoints.has(id) || allowedEndpoints.has(path)) visibleIds.add(node.id());
+    });
+
+    return visibleIds;
+}
+
+function graphAbstractionVisibleIdsForFilter(filter) {
+    if (!filter) return null;
+    if (filter.rootType === "directory") {
+        return directoryScopeVisibleNodeIds(filter.rootPath, filter.level);
+    }
+    return fileScopeVisibleNodeIds(filter.rootPath, filter.level);
+}
+
+function rememberGraphAbstractionParent(node) {
+    if (!node || !node.id || graphAbstractionOriginalParents.has(node.id())) return;
+    const parent = typeof node.parent === "function" ? node.parent() : null;
+    const parentId = parent && typeof parent.empty === "function" && !parent.empty() ? parent.id() : null;
+    graphAbstractionOriginalParents.set(node.id(), parentId || null);
+}
+
+function restoreGraphAbstractionParents() {
+    if (!cy || graphAbstractionOriginalParents.size === 0) {
+        graphAbstractionOriginalParents.clear();
+        return;
+    }
+
+    cy.batch(() => {
+        for (const [nodeId, parentId] of graphAbstractionOriginalParents.entries()) {
+            const node = cy.getElementById(nodeId);
+            if (!node || node.empty()) continue;
+            if (parentId && cy.getElementById(parentId).empty()) continue;
+            try {
+                node.move({ parent: parentId || null });
+            } catch (_) {
+                // ignore
+            }
+        }
+    });
+    graphAbstractionOriginalParents.clear();
+}
+
+function detachScopedNodesFromHiddenParents(visibleIds) {
+    if (!cy || !visibleIds) return;
+    cy.nodes().not(".mqtt-live, .td-live").forEach((node) => {
+        if (!visibleIds.has(node.id())) return;
+        const parent = typeof node.parent === "function" ? node.parent() : null;
+        if (!parent || typeof parent.empty !== "function" || parent.empty()) return;
+        if (visibleIds.has(parent.id())) return;
+
+        rememberGraphAbstractionParent(node);
+        try {
+            node.move({ parent: null });
+        } catch (_) {
+            // ignore
+        }
+    });
+}
+
+function setScopedGraphDisplay(visibleIds) {
+    cy.nodes().not(".mqtt-live, .td-live").forEach((node) => {
+        node.removeClass("nv-abstraction-root");
+        if (visibleIds.has(node.id())) {
+            node.show();
+        } else {
+            node.hide();
+        }
+    });
+    detachScopedNodesFromHiddenParents(visibleIds);
+}
+
+function applyGraphAbstractionFilter({ fit = true, reason = "graph-abstraction-filter" } = {}) {
+    if (!cy || !graphAbstractionFilter) return false;
+
+    restoreGraphAbstractionParents();
+    const visibleIds = graphAbstractionVisibleIdsForFilter(graphAbstractionFilter) || new Set();
+    graphAbstractionVisibleNodeIds = visibleIds;
+
+    cy.batch(() => {
+        setScopedGraphDisplay(visibleIds);
+        const rootNodeId = graphAbstractionFilter.rootNodeId || graphAbstractionFilter.rootPath;
+        const rootNode = rootNodeId ? cy.getElementById(rootNodeId) : null;
+        if (rootNode && !rootNode.empty() && visibleIds.has(rootNode.id())) {
+            rootNode.show();
+            rootNode.addClass("nv-abstraction-root");
+            try {
+                cy.nodes().unselect();
+                rootNode.select();
+            } catch (_) {
+                // ignore
+            }
+        }
+    });
+
+    rebuildVisibleEdges();
+    tdGraphLayer?.refresh?.();
+    queueRelayout({ fit: Boolean(fit), reason });
+    return true;
+}
+
+function resetGraphAbstractionFilterState({ restoreParents = true } = {}) {
+    graphAbstractionFilter = null;
+    graphAbstractionVisibleNodeIds = null;
+    if (restoreParents) {
+        restoreGraphAbstractionParents();
+    } else {
+        graphAbstractionOriginalParents.clear();
+    }
+    try { cy?.nodes?.().removeClass?.("nv-abstraction-root"); } catch (_) { /* ignore */ }
+}
+
+export function clearGraphAbstractionFilter({ fit = true, relayout = true } = {}) {
+    if (!cy) {
+        resetGraphAbstractionFilterState({ restoreParents: false });
+        return false;
+    }
+
+    resetGraphAbstractionFilterState({ restoreParents: true });
+    cy.batch(() => {
+        cy.elements().not(".mqtt-live, .td-live").removeClass("nv-abstraction-root").show();
+    });
+    rebuildVisibleEdges();
+    tdGraphLayer?.refresh?.();
+    if (relayout) queueRelayout({ fit: Boolean(fit), reason: "clear-abstraction-filter" });
+    return true;
+}
+
+async function ensureGraphDirectoryLevelsLoaded(rootPath = "", level = 0) {
+    const maxLevel = clampGraphAbstractionLevel(level, 0);
+    const visited = new Set();
+
+    async function loadDirectory(directoryPath, remainingLevels) {
+        const cleanDir = normalizePath(directoryPath || "");
+        if (visited.has(cleanDir)) return;
+        visited.add(cleanDir);
+
+        const data = await fetchDirectoryContents(cleanDir, null, null, null);
+        if (!Array.isArray(data)) return;
+
+        await renderGraphData(data, cleanDir);
+        if (remainingLevels <= 0) return;
+
+        for (const entry of data) {
+            if (!entry?.isDirectory || !entry?.name) continue;
+            const childPath = normalizePath(cleanDir ? cleanDir + "/" + entry.name : entry.name);
+            await loadDirectory(childPath, remainingLevels - 1);
+        }
+    }
+
+    await loadDirectory(rootPath, maxLevel);
+    navigationState.setLastOpenedDirectory(normalizePath(rootPath || ""), "GraphManager");
+}
+
+function styleGraphScopeDialogButton(button, variant = "secondary") {
+    button.style.cssText = "border:1px solid rgb(203,213,225);background:rgb(255,255,255);color:rgb(15,23,42);border-radius:6px;padding:7px 12px;font:600 12px system-ui,sans-serif;cursor:pointer;min-width:72px;";
+    if (variant === "primary") {
+        button.style.background = "rgb(37,99,235)";
+        button.style.borderColor = "rgb(37,99,235)";
+        button.style.color = "rgb(255,255,255)";
+    } else if (variant === "danger") {
+        button.style.color = "rgb(185,28,28)";
+        button.style.borderColor = "rgb(252,165,165)";
+    }
+}
+
+function showGraphAbstractionDialog({ rootPath = "", rootType = "directory" } = {}) {
+    return new Promise((resolve) => {
+        const existing = document.querySelector("[data-graph-abstraction-dialog]");
+        if (existing) existing.remove();
+
+        const overlay = document.createElement("div");
+        overlay.dataset.graphAbstractionDialog = "true";
+        overlay.style.cssText = "position:fixed;inset:0;z-index:32000;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.34);padding:16px;box-sizing:border-box;";
+
+        const form = document.createElement("form");
+        form.style.cssText = "width:min(360px,100%);background:rgb(255,255,255);border:1px solid rgb(203,213,225);border-radius:8px;box-shadow:0 18px 45px rgba(15,23,42,0.22);padding:14px;box-sizing:border-box;color:rgb(15,23,42);font:13px system-ui,sans-serif;";
+
+        const title = document.createElement("div");
+        title.textContent = "Graph Scope";
+        title.style.cssText = "font-weight:700;font-size:14px;margin:0 0 10px 0;";
+
+        const pathLine = document.createElement("div");
+        pathLine.textContent = rootPath || "Notebook";
+        pathLine.title = rootPath || "Notebook";
+        pathLine.style.cssText = "border:1px solid rgb(226,232,240);background:rgb(248,250,252);border-radius:6px;padding:7px 8px;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:rgb(51,65,85);";
+
+        const label = document.createElement("label");
+        label.textContent = rootType === "directory" ? "Directory levels" : "Link distance";
+        label.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;font-weight:600;";
+
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.max = String(GRAPH_ABSTRACTION_MAX_LEVEL);
+        input.step = "1";
+        input.value = String(graphAbstractionFilter?.rootPath === rootPath && graphAbstractionFilter?.rootType === rootType ? graphAbstractionFilter.level : 1);
+        input.style.cssText = "width:84px;border:1px solid rgb(148,163,184);border-radius:6px;padding:6px 8px;font:13px system-ui,sans-serif;";
+        label.appendChild(input);
+
+        const footer = document.createElement("div");
+        footer.style.cssText = "display:flex;gap:8px;justify-content:flex-end;align-items:center;";
+
+        if (graphAbstractionFilter) {
+            const clearButton = document.createElement("button");
+            clearButton.type = "button";
+            clearButton.textContent = "Clear";
+            styleGraphScopeDialogButton(clearButton, "danger");
+            clearButton.style.marginRight = "auto";
+            clearButton.addEventListener("click", () => finish({ clear: true }));
+            footer.appendChild(clearButton);
+        }
+
+        const cancelButton = document.createElement("button");
+        cancelButton.type = "button";
+        cancelButton.textContent = "Cancel";
+        styleGraphScopeDialogButton(cancelButton);
+        cancelButton.addEventListener("click", () => finish(null));
+
+        const applyButton = document.createElement("button");
+        applyButton.type = "submit";
+        applyButton.textContent = "Apply";
+        styleGraphScopeDialogButton(applyButton, "primary");
+
+        footer.appendChild(cancelButton);
+        footer.appendChild(applyButton);
+        form.appendChild(title);
+        form.appendChild(pathLine);
+        form.appendChild(label);
+        form.appendChild(footer);
+        overlay.appendChild(form);
+        document.body.appendChild(overlay);
+
+        let settled = false;
+        function finish(result) {
+            if (settled) return;
+            settled = true;
+            window.removeEventListener("keydown", handleKeyDown);
+            overlay.remove();
+            resolve(result);
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === "Escape") finish(null);
+        }
+
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const level = clampGraphAbstractionLevel(input.value, 1);
+            input.value = String(level);
+            finish({ level });
+        });
+
+        overlay.addEventListener("pointerdown", (event) => {
+            if (event.target === overlay) finish(null);
+        });
+        window.addEventListener("keydown", handleKeyDown);
+        window.setTimeout(() => {
+            try { input.focus(); input.select(); } catch (_) { /* ignore */ }
+        }, 0);
+    });
+}
+
+export async function setGraphAbstractionRootFromSelection() {
+    if (!cy) {
+        alert("Graph Manager is not ready yet.");
+        return false;
+    }
+
+    const selectedNode = selectedGraphNodeForScopeAction();
+    const selectedPath = selectedPathForGraphRootAction();
+    const selectedNodeIsNotebookRoot = selectedNode?.data?.("type") === "directory" &&
+        normalizePath(selectedNode?.data?.("fullPath") || "") === "";
+    if (!selectedPath && !selectedNodeIsNotebookRoot) {
+        alert("Select a file or folder first.");
+        return false;
+    }
+
+    const rootPath = selectedNodeIsNotebookRoot ? "" : selectedPath;
+    const rootType = selectedNodeIsNotebookRoot || selectedPathIsDirectory(rootPath) ? "directory" : "file";
+    const rootNodeId = selectedNode?.id?.() || rootPath;
+    const result = await showGraphAbstractionDialog({ rootPath, rootType });
+    if (!result) return false;
+    if (result.clear) return clearGraphAbstractionFilter({ fit: true, relayout: true });
+
+    const level = clampGraphAbstractionLevel(result.level, 1);
+    if (graphAbstractionFilter) clearGraphAbstractionFilter({ fit: false, relayout: false });
+
+    if (rootType === "directory") {
+        await ensureGraphDirectoryLevelsLoaded(rootPath, level);
+    } else {
+        if (cy.getElementById(rootPath).empty()) {
+            await ensureDirectoryChainExpanded(dirname(rootPath));
+        }
+        await handleLinkDiscovery(rootPath);
+    }
+
+    graphAbstractionFilter = {
+        rootPath,
+        rootType,
+        level,
+        rootNodeId
+    };
+
+    const applied = applyGraphAbstractionFilter({ fit: true, reason: "set-abstraction-filter" });
+    const rootNode = cy.getElementById(rootNodeId);
+    if (rootNode && !rootNode.empty()) {
+        try { cy.center(rootNode); } catch (_) { /* ignore */ }
+    }
+    return applied;
+}
+
+window.clearGraphAbstractionFilter = clearGraphAbstractionFilter;
+window.setGraphAbstractionRootFromSelection = setGraphAbstractionRootFromSelection;
 
 export async function reopenGraphRootFromSelection() {
     if (!cy) {
@@ -1490,8 +2003,9 @@ function isExpandedDirectory(nodeId) {
 }
 
 function resolveVisibleTargetNode(targetPath) {
-    // If the target is an external node, anchor directly to it.
-    if (cy && !cy.getElementById(targetPath).empty()) {
+    // If the target is directly visible, anchor directly to it.
+    const directTarget = cy ? cy.getElementById(targetPath) : null;
+    if (directTarget && !directTarget.empty() && graphElementIsDisplayed(directTarget)) {
         return targetPath;
     }
 
@@ -1509,8 +2023,8 @@ function resolveVisibleTargetNode(targetPath) {
     for (let i = parts.length; i > 0; i--) {
         const candidate = parts.slice(0, i).join('/');
         const node = cy.getElementById(candidate);
-        if (!node.empty()) {
-            if (node.data('type') !== 'directory' || node.descendants().empty()) {
+        if (!node.empty() && graphElementIsDisplayed(node)) {
+            if (node.data("type") !== "directory" || node.descendants().empty()) {
                 return candidate;
             }
         }
@@ -1538,10 +2052,12 @@ function rebuildVisibleEdges() {
     const edgeMap = new Map();
     const placeholderNodes = new Map();
     for (const [sourcePath, targets] of discoveredLinks.entries()) {
+        if (!graphAbstractionAllowsLinkEndpoint(sourcePath)) continue;
         const visibleSource = getVisibleNodeId(cy, sourcePath);
         if (!visibleSource) continue;
 
         for (const targetPath of targets) {
+            if (!graphAbstractionAllowsLinkEndpoint(targetPath)) continue;
             const visibleTarget = resolveVisibleTargetNode(targetPath);
             if (!visibleTarget) continue;
             if (visibleSource === visibleTarget) continue;
@@ -1585,10 +2101,12 @@ function rebuildVisibleEdges() {
 
 
     for (const [sourcePath, targets] of brokenLinksBySource.entries()) {
+        if (!graphAbstractionAllowsLinkEndpoint(sourcePath)) continue;
         const visibleSource = getVisibleNodeId(cy, sourcePath);
         if (!visibleSource) continue;
 
         for (const targetPath of targets) {
+            if (!graphAbstractionAllowsLinkEndpoint(targetPath)) continue;
             const records = [...(brokenLinkRecordsBySourceTarget.get(edgeRecordKey(sourcePath, targetPath)) || [])];
             const placeholderRecords = records.length ? records : [null];
             placeholderRecords.forEach((record, index) => {
@@ -2010,6 +2528,7 @@ if (typeof window !== "undefined") {
 
 export async function initGraphView({ containerId, rootPath, statusElemId, mqttControlsId = null, mqttInspectorId = null, linkInspectorId = null }) {
     currentRootPath = normalizePath(rootPath);
+    resetGraphAbstractionFilterState({ restoreParents: false });
     navigationState.setLastOpenedDirectory(currentRootPath, "GraphManager");
     discoveredLinks.clear();
     linkRecordsBySourceTarget.clear();
@@ -2264,7 +2783,18 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 }
             },
             {
-                selector: 'edge',
+                selector: "node.nv-abstraction-root",
+                style: {
+                    "border-width": 4,
+                    "border-color": "rgb(15,23,42)",
+                    "underlay-color": "rgb(245,158,11)",
+                    "underlay-opacity": 0.24,
+                    "underlay-padding": 10,
+                    "z-index": 50
+                }
+            },
+            {
+                selector: "edge",
                 style: {
                     'width': 2,
                     'line-color': '#adadad',
@@ -2638,8 +3168,12 @@ async function toggleCompoundDirectory(node) {
     navigationState.setLastOpenedDirectory(path || "", "GraphManager");
 
     updateDirectoryLevelColors();
-    rebuildVisibleEdges();
-    queueRelayout({ fit: true, reason: 'toggle-directory' });
+    if (graphAbstractionFilter) {
+        applyGraphAbstractionFilter({ fit: true, reason: "toggle-directory-scope" });
+    } else {
+        rebuildVisibleEdges();
+        queueRelayout({ fit: true, reason: "toggle-directory" });
+    }
 }
 
 function uniqueValues(values = []) {
@@ -2664,6 +3198,11 @@ function fileActionModuleCandidates(actionKey = "") {
 
 export async function handleGraphManagerAction(actionKey) {
     console.log(`GraphManagerCore: handling toolbar action "${actionKey}"`);
+
+    if (actionKey === "setGraphAbstractionRootFromSelection") {
+        await setGraphAbstractionRootFromSelection();
+        return;
+    }
 
     if (actionKey === "reopenGraphRootFromSelection") {
         await reopenGraphRootFromSelection();

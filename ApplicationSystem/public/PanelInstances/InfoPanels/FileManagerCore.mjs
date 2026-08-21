@@ -592,7 +592,7 @@ export function displayFiles(files, currentPath) {
   Object.assign(listElem.style, {
     listStyle: "none",
     margin: "0",
-    padding: "0",
+    padding: "0 0 4px",
     display: "flex",
     flexDirection: "column",
     alignItems: "stretch",

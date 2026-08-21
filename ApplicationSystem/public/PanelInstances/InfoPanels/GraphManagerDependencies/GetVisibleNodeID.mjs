@@ -1,35 +1,58 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GetVisibleNodeID.mjs
-// This file defines browser-side Get Visible Node ID logic for the Nodevision UI. It renders interface components and handles user interactions.
+// This file defines browser-side Get Visible Node ID logic for the Nodevision UI.
+import { normalizePath } from "./NormalizePath.mjs";
 
-/**
- * Finds the highest visible element in the hierarchy for a given path.
- * If the target file is nested inside a directory that is currently 
- * collapsed (removed from the graph), it returns the closest visible parent.
- */
-import { normalizePath } from './NormalizePath.mjs';
+function elementIsDisplayed(element) {
+    if (!element || (typeof element.empty === "function" && element.empty())) return false;
 
-export function getVisibleNodeId(cy, fullPath) {
-    console.log("Getting the visible node ID for "+ fullPath);
-    const cleanPath = normalizePath(fullPath);
-    console.log("clean Path"+cleanPath);
-    // 1. Check if the specific target node exists in the graph
-    const exactNode = cy.getElementById(cleanPath);
-    if (!exactNode.empty()) {
-        return cleanPath; // Success! The file is "open" or visible.
+    try {
+        if (typeof element.visible === "function" && !element.visible()) return false;
+    } catch (_) {
+        return false;
     }
 
-    // 2. If the file isn't found, find the closest visible ancestor
-    const parts = cleanPath.split('/');
-    // Start from the immediate parent and go up to the root
+    try {
+        if (typeof element.style === "function" && element.style("display") === "none") return false;
+    } catch (_) {
+        // ignore
+    }
+
+    const ancestors = typeof element.ancestors === "function" ? element.ancestors() : null;
+    if (ancestors && typeof ancestors.forEach === "function") {
+        let displayed = true;
+        ancestors.forEach((ancestor) => {
+            if (!displayed) return;
+            try {
+                if (typeof ancestor.visible === "function" && !ancestor.visible()) displayed = false;
+                if (typeof ancestor.style === "function" && ancestor.style("display") === "none") displayed = false;
+            } catch (_) {
+                displayed = false;
+            }
+        });
+        if (!displayed) return false;
+    }
+
+    return true;
+}
+
+export function getVisibleNodeId(cy, fullPath) {
+    if (!cy) return null;
+    const cleanPath = normalizePath(fullPath);
+    if (!cleanPath) return null;
+
+    const exactNode = cy.getElementById(cleanPath);
+    if (!exactNode.empty() && elementIsDisplayed(exactNode)) {
+        return cleanPath;
+    }
+
+    const parts = cleanPath.split("/");
     for (let i = parts.length - 1; i > 0; i--) {
-        const parentPath = parts.slice(0, i).join('/');
+        const parentPath = parts.slice(0, i).join("/");
         const parentNode = cy.getElementById(parentPath);
-        
-        if (!parentNode.empty()) {
+        if (!parentNode.empty() && elementIsDisplayed(parentNode)) {
             return parentPath;
         }
     }
 
-    // 3. No visible anchor found (likely invalid/non-existent target)
     return null;
 }

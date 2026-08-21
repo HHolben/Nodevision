@@ -5,9 +5,15 @@ import { clearEditorContext, setBusyOperation, setEditorContext } from "../../Ed
 import "/EditorSwitchGuard.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setWordCountVisibility } from "/StatusBar.mjs";
+import {
+  registerLiveFileContentProvider,
+  touchLiveFileContentProvider,
+} from "/LiveFileContent.mjs";
 
 let lastEditedPath = null;
 let currentGraphicalEditorCleanup = null;
+let currentGraphicalLiveCleanup = null;
+let graphicalLiveProviderSequence = 0;
 let moduleMapCache = null;
 const FALLBACK_EDITOR_BY_EXT = {
   png: "PNGeditor.mjs",
@@ -180,7 +186,90 @@ function shouldShowWordCount({ family = null, ext = "" } = {}) {
   return new Set(["html", "htm", "md", "markdown", "tex", "latex"]).has(lowerExt);
 }
 
+function liveContentMimeTypeForPath(filePath = "") {
+  const ext = resolveExtension(filePath);
+  if (ext === "html" || ext === "htm") return "text/html";
+  if (ext === "svg") return "image/svg+xml";
+  if (ext === "md" || ext === "markdown") return "text/markdown";
+  if (ext === "csv") return "text/csv";
+  if (ext === "tsv") return "text/tab-separated-values";
+  if (ext === "json" || ext.endsWith(".json")) return "application/json";
+  return "text/plain";
+}
+
+function readGraphicalLiveContent(filePath, editorDiv) {
+  const ext = resolveExtension(filePath);
+  const markdownPreferred = new Set(["md", "markdown", "txt", "tex", "latex", "scad", "usd", "usda", "mtl", "obj", "ics", "php", "json", "xml"]);
+  if (markdownPreferred.has(ext) && typeof window.getEditorMarkdown === "function") return window.getEditorMarkdown();
+  if (typeof window.getEditorHTML === "function") return window.getEditorHTML();
+  if (typeof window.getEditorMarkdown === "function") return window.getEditorMarkdown();
+  if (ext === "svg" && window.SVGEditorContext?.svgRoot) {
+    return new XMLSerializer().serializeToString(window.SVGEditorContext.svgRoot);
+  }
+  const textarea = editorDiv?.querySelector?.("textarea");
+  if (textarea) return textarea.value;
+  return undefined;
+}
+
+function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
+  if (typeof currentGraphicalLiveCleanup === "function") {
+    currentGraphicalLiveCleanup();
+    currentGraphicalLiveCleanup = null;
+  }
+  if (!filePath || !editorDiv) return null;
+
+  if (!editorDiv.dataset.nvLiveProviderId) {
+    graphicalLiveProviderSequence += 1;
+    editorDiv.dataset.nvLiveProviderId = "graphical-editor-" + String(graphicalLiveProviderSequence);
+  }
+
+  const providerId = "nodevision-" + editorDiv.dataset.nvLiveProviderId;
+  const cleanupProvider = registerLiveFileContentProvider({
+    id: providerId,
+    filePath,
+    editorKind: "graphical",
+    panelKind: "GraphicalEditor",
+    sourceLabel: "Graphical Editor",
+    mimeType: liveContentMimeTypeForPath(filePath),
+    dirty: () => Boolean(window.NodevisionState?.fileIsDirty),
+    getContent: () => readGraphicalLiveContent(filePath, editorDiv),
+  });
+
+  let timer = 0;
+  const touch = (reason = "content") => {
+    touchLiveFileContentProvider(providerId, {
+      filePath,
+      mimeType: liveContentMimeTypeForPath(filePath),
+      reason,
+    });
+  };
+  const schedule = (reason = "content") => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => touch(reason), 80);
+  };
+  const events = ["input", "change", "keyup", "paste", "cut", "pointerup", "focusin", "pointerdown"];
+  const handlers = new Map(events.map((eventName) => [eventName, () => schedule(eventName)]));
+  handlers.forEach((handler, eventName) => editorDiv.addEventListener(eventName, handler, true));
+  const observer = typeof MutationObserver !== "undefined"
+    ? new MutationObserver(() => schedule("mutation"))
+    : null;
+  observer?.observe?.(editorDiv, { subtree: true, childList: true, characterData: true, attributes: true });
+  touch("registered");
+
+  currentGraphicalLiveCleanup = () => {
+    window.clearTimeout(timer);
+    handlers.forEach((handler, eventName) => editorDiv.removeEventListener(eventName, handler, true));
+    observer?.disconnect?.();
+    cleanupProvider();
+  };
+  return currentGraphicalLiveCleanup;
+}
+
 function cleanupEditorHost(editorDiv) {
+  if (typeof currentGraphicalLiveCleanup === "function") {
+    currentGraphicalLiveCleanup();
+    currentGraphicalLiveCleanup = null;
+  }
   if (!editorDiv) return;
   const cleanup = editorDiv.__nvActiveEditorCleanup;
   if (typeof cleanup === "function") {
@@ -356,6 +445,7 @@ export async function updateGraphicalEditor(
         currentGraphicalEditorCleanup = () => cleanup.destroy();
         editorDiv.__nvActiveEditorCleanup = currentGraphicalEditorCleanup;
       }
+      registerGraphicalEditorLiveProvider(filePath, editorDiv);
       setBusyOperation(null);
       console.log("✅ Editor rendered:", modulePath);
     } else {

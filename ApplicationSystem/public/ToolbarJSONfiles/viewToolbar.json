@@ -232,6 +232,13 @@
   },
   {
     "ToolbarCategory": "View",
+    "parentHeading": "File View",
+    "heading": "Live File Viewer",
+    "hotkeyText": "",
+    "script": "fileViewerLiveToggleWidget.mjs"
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "Graph View",
     "hotkeyText": "",
     "content": "",

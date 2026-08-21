@@ -131,11 +131,71 @@ async function findDirectoryImageUrl(entry) {
   return "";
 }
 
+function normalizeFileManagerPath(value = "") {
+  let text = String(value || "").split(String.fromCharCode(92)).join("/").trim();
+  while (text.startsWith("/")) text = text.slice(1);
+  while (text.includes("//")) text = text.replaceAll("//", "/");
+  return text;
+}
+
+function parentFileManagerPath(path = "") {
+  const parts = normalizeFileManagerPath(path).split("/").filter(Boolean);
+  parts.pop();
+  return parts.join("/");
+}
+
+function styleScopedFileList(list) {
+  if (!list) return;
+  Object.assign(list.style, {
+    listStyle: "none",
+    margin: "0",
+    padding: "0 0 4px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: "4px",
+    width: "100%",
+    boxSizing: "border-box",
+    overflowAnchor: "none"
+  });
+}
+
+function appendParentDirectoryEntry(state, list) {
+  const currentPath = normalizeFileManagerPath(state.currentPath || "");
+  if (!currentPath) return;
+
+  const li = document.createElement("li");
+  const link = document.createElement("a");
+  link.href = "#";
+  link.classList.add("folder");
+  link.textContent = "..";
+  link.dataset.fullPath = parentFileManagerPath(currentPath);
+  link.dataset.isDirectory = "true";
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    state.refresh?.(link.dataset.fullPath || "");
+  });
+  li.appendChild(link);
+  list.appendChild(li);
+}
+
+function activateFileManagerEntry(state, link, entry) {
+  const path = normalizeFileManagerPath(link.dataset.fullPath || "");
+  const isDirectory = link.dataset.isDirectory === "true";
+  if (isDirectory) {
+    state.refresh?.(path);
+    return;
+  }
+  state.onEntryActivate?.({ path, isDirectory, entry, element: link });
+}
+
 export function renderFiles(state, files) {
   const list = state.panelElem.querySelector("#file-list");
   list.innerHTML = "";
+  styleScopedFileList(list);
 
   const sortedFiles = [...files].sort(naturalCompareEntries);
+  appendParentDirectoryEntry(state, list);
 
   sortedFiles.forEach(file => {
     const li = document.createElement("li");
@@ -144,8 +204,9 @@ export function renderFiles(state, files) {
     link.href = "#";
     link.classList.add(file.isDirectory ? "folder" : "file");
     link.dataset.isDirectory = String(Boolean(file.isDirectory));
-    link.dataset.fullPath =
-      state.currentPath ? `${state.currentPath}/${file.name}` : file.name;
+    link.dataset.fullPath = normalizeFileManagerPath(
+      file.path || (state.currentPath ? `${state.currentPath}/${file.name}` : file.name)
+    );
 
     const icon = document.createElement("span");
     icon.style.display = "inline-flex";
@@ -173,6 +234,12 @@ export function renderFiles(state, files) {
 
     const label = document.createElement("span");
     label.textContent = file.name;
+    Object.assign(label.style, {
+      minWidth: "0",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    });
 
     link.appendChild(icon);
     link.appendChild(label);
@@ -181,7 +248,14 @@ export function renderFiles(state, files) {
     li.appendChild(link);
     list.appendChild(li);
 
+    link.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      activateFileManagerEntry(state, link, file);
+    });
+
     attachSelectionHandlers(state, link);
-    attachDragDrop(state, link, file);
+    if (state.enableDragDrop !== false) {
+      attachDragDrop(state, link, file);
+    }
   });
 }

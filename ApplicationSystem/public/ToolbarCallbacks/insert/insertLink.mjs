@@ -2,11 +2,11 @@
 // This file defines browser-side insert Link logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { saveFoundEdge } from "../../PanelInstances/InfoPanels/GraphManagerDependencies/SaveFoundEdge.mjs";
+import { createFileManager } from "../../PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerController.mjs";
 import { syncPortalForHyperlink } from "../../LinkPortalParity.mjs";
 import { getNodevisionNavigationState } from "../../NodevisionNavigationState.mjs";
 import { getRelativeNotebookReference, normalizeNotebookFilePath, toNotebookAssetUrl } from "../../utils/notebookPath.mjs";
 
-const LINK_PICKER_GRAPH_LIMIT = 2200;
 const navigationState = getNodevisionNavigationState();
 
 function normalizeNotebookPath(input = "") {
@@ -31,14 +31,14 @@ function getCurrentEditorSourcePath() {
   return "";
 }
 
-function toRelativeNotebookHref(sourcePath = "", targetPath = "") {
+function toRelativeNotebookHref(sourcePath = "", targetPath = "", options = {}) {
   const source = normalizeNotebookPath(sourcePath);
   const target = normalizeNotebookPath(targetPath);
   if (!target) return "";
-  if (!source || source.startsWith("__epub_virtual__/")) {
-    return toNotebookAssetUrl(target);
-  }
-  return getRelativeNotebookReference({ sourcePath: source, targetPath: target });
+  const href = !source || source.startsWith("__epub_virtual__/")
+    ? toNotebookAssetUrl(target)
+    : getRelativeNotebookReference({ sourcePath: source, targetPath: target });
+  return options.isDirectory && href && !href.endsWith("/") ? href + "/" : href;
 }
 
 function cloneSelectionRangeInsideEditor(wysiwyg) {
@@ -117,58 +117,6 @@ function showLinkTypeDialog() {
   });
 }
 
-function isNotebookDirectoryEntry(entry = {}) {
-  return Boolean(entry?.isDirectory || entry?.fileType === "directory" || entry?.type === "directory");
-}
-
-function notebookEntryName(entry = {}) {
-  return String(entry?.name || entry?.filename || entry?.path || "").split(/[\\/]/).filter(Boolean).pop() || "";
-}
-
-function sortNotebookEntries(entries = []) {
-  return [...entries].sort((a, b) => {
-    if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-    return String(a.path || a.name || "").localeCompare(String(b.path || b.name || ""), undefined, { numeric: true, sensitivity: "base" });
-  });
-}
-
-async function fetchNotebookDirectoryEntries(dirPath = "") {
-  const cleanDir = normalizeNotebookPath(dirPath);
-  const res = await fetch(`/api/files?path=${encodeURIComponent(cleanDir)}`);
-  if (!res.ok) throw new Error(`Failed to list directory: ${res.status}`);
-  const payload = await res.json();
-  return Array.isArray(payload) ? payload : [];
-}
-
-async function listNotebookEntriesRecursively(dirPath = "", entries = [], seen = new Set()) {
-  const cleanDir = normalizeNotebookPath(dirPath);
-  if (seen.has(cleanDir)) return entries;
-  seen.add(cleanDir);
-
-  const children = await fetchNotebookDirectoryEntries(cleanDir);
-  for (const child of children) {
-    const name = notebookEntryName(child);
-    if (!name) continue;
-    const childPath = normalizeNotebookPath(cleanDir ? `${cleanDir}/${name}` : name);
-    const isDirectory = isNotebookDirectoryEntry(child);
-    entries.push({ name, path: childPath, isDirectory });
-    if (isDirectory) {
-      await listNotebookEntriesRecursively(childPath, entries, seen);
-    }
-  }
-
-  return entries;
-}
-
-function pickerPathParent(path = "") {
-  return dirname(normalizeNotebookPath(path));
-}
-
-function pickerPathBase(path = "") {
-  const parts = normalizeNotebookPath(path).split("/").filter(Boolean);
-  return parts[parts.length - 1] || "Notebook";
-}
-
 function showManagerSubToolbar(panelType = "GraphManager") {
   const heading = panelType === "FileManager" ? "File Manager" : "Graph Manager";
   window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
@@ -176,9 +124,6 @@ function showManagerSubToolbar(panelType = "GraphManager") {
   }));
 }
 
-function managerPanelType(value = "") {
-  return String(value || "").trim() === "FileManager" ? "FileManager" : "GraphManager";
-}
 
 function makePickerButton(label, primary = false) {
   const button = document.createElement("button");
@@ -204,96 +149,14 @@ function setButtonDisabled(button, disabled) {
   button.style.cursor = disabled ? "not-allowed" : "pointer";
 }
 
-function graphPickerNodeId(path = "", isDirectory = false) {
-  const clean = normalizeNotebookPath(path);
-  if (!clean) return "notebook-root";
-  return (isDirectory ? "dir:" : "file:") + clean;
-}
-
-function buildPickerGraphElements(entries = []) {
-  const nodes = [{ data: { id: "notebook-root", label: "Notebook", fullPath: "", type: "directory" } }];
-  const edges = [];
-  const visibleEntries = sortNotebookEntries(entries).slice(0, LINK_PICKER_GRAPH_LIMIT);
-
-  visibleEntries.forEach((entry) => {
-    const id = graphPickerNodeId(entry.path, entry.isDirectory);
-    nodes.push({
-      data: {
-        id,
-        label: entry.name || pickerPathBase(entry.path),
-        fullPath: entry.path,
-        type: entry.isDirectory ? "directory" : "file"
-      }
-    });
-    const parentPath = pickerPathParent(entry.path);
-    const parent = parentPath ? graphPickerNodeId(parentPath, true) : "notebook-root";
-    edges.push({ data: { id: `edge:${parent}->${id}`, source: parent, target: id } });
-  });
-
-  return { elements: [...nodes, ...edges], visibleCount: visibleEntries.length, totalCount: entries.length };
-}
-
-function renderInlineManagerSwitcher(host, activeView) {
-  host.innerHTML = "";
-  const label = document.createElement("label");
-  label.style.cssText = "display:flex;align-items:center;gap:7px;font:12px system-ui,sans-serif;color:#1f2937;white-space:nowrap;";
-  const fileLabel = document.createElement("span");
-  fileLabel.textContent = "File";
-  const slider = document.createElement("input");
-  slider.type = "range";
-  slider.min = "0";
-  slider.max = "1";
-  slider.step = "1";
-  slider.value = activeView === "FileManager" ? "0" : "1";
-  slider.style.cssText = "width:54px;accent-color:#2563eb;cursor:pointer;";
-  const graphLabel = document.createElement("span");
-  graphLabel.textContent = "Graph";
-  const refresh = () => {
-    fileLabel.style.fontWeight = slider.value === "0" ? "700" : "500";
-    graphLabel.style.fontWeight = slider.value === "1" ? "700" : "500";
-  };
-  slider.addEventListener("input", refresh);
-  slider.addEventListener("change", () => {
-    host.dispatchEvent(new CustomEvent("nv-manager-panel-switch", {
-      bubbles: true,
-      detail: { panelType: slider.value === "0" ? "FileManager" : "GraphManager" }
-    }));
-  });
-  refresh();
-  label.append(fileLabel, slider, graphLabel);
-  host.appendChild(label);
-}
-
-async function renderPickerManagerSwitcher(host, activeView) {
-  try {
-    const mod = await import("/ToolbarJSONfiles/graphManagerLayerControlsWidget.mjs");
-    if (typeof mod.initToolbarWidget === "function") {
-      mod.initToolbarWidget(host, {
-        widget: "managerPanelSwitcher",
-        pickerMode: true,
-        selectedPanel: activeView
-      });
-      return;
-    }
-  } catch (err) {
-    console.warn("insertLink: Failed to load manager switcher widget:", err);
-  }
-  renderInlineManagerSwitcher(host, activeView);
-}
-
-function showNotebookFileSelectionOverlay(entries = []) {
+function showNotebookFileManagerOverlay() {
   return new Promise((resolve) => {
-    let activeView = "GraphManager";
-    let activeDirectory = normalizeNotebookPath(navigationState.getSearchRoot?.() || "");
-    if (activeDirectory && !entries.some((entry) => entry.isDirectory && normalizeNotebookPath(entry.path) === activeDirectory)) {
-      activeDirectory = "";
-    }
     let selectedPath = "";
     let selectedIsDirectory = false;
-    let cy = null;
+    let currentDirectory = normalizeNotebookPath(navigationState.getSearchRoot?.() || window.currentDirectoryPath || "");
 
     const overlay = document.createElement("div");
-    overlay.dataset.nvLinkPickerOverlay = "true";
+    overlay.dataset.nvLinkFileManagerOverlay = "true";
     Object.assign(overlay.style, {
       position: "fixed",
       inset: "0",
@@ -308,8 +171,8 @@ function showNotebookFileSelectionOverlay(entries = []) {
 
     const box = document.createElement("div");
     Object.assign(box.style, {
-      width: "min(1020px, 96vw)",
-      height: "min(760px, 92vh)",
+      width: "min(760px, 96vw)",
+      height: "min(720px, 92vh)",
       minHeight: "420px",
       display: "flex",
       flexDirection: "column",
@@ -337,28 +200,18 @@ function showNotebookFileSelectionOverlay(entries = []) {
     const title = document.createElement("div");
     title.textContent = "Select Notebook Link Target";
     title.style.cssText = "font-weight:700;font-size:13px;";
+    const closeX = makePickerButton("Close");
+    header.append(title, closeX);
 
-    const switcherHost = document.createElement("div");
-    switcherHost.style.cssText = "display:flex;align-items:center;justify-content:flex-end;min-width:128px;";
-    header.append(title, switcherHost);
-
-    const viewTitle = document.createElement("div");
-    viewTitle.style.cssText = "padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;background:#ffffff;";
-
-    const content = document.createElement("div");
-    Object.assign(content.style, {
-      flex: "1 1 auto",
-      minHeight: "0",
-      position: "relative",
-      overflow: "hidden",
-      background: "#ffffff"
-    });
+    const managerShell = document.createElement("div");
+    managerShell.style.cssText = "flex:1 1 auto;min-height:0;display:flex;";
+    managerShell.innerHTML = "<div class=\"file-manager nv-link-file-manager\"><h3>File Manager</h3><div id=\"loading\" style=\"display:none;\">Loading...</div><div id=\"error\"></div><ul id=\"file-list\" class=\"file-list\"></ul><div id=\"fm-path\"></div></div>";
 
     const footer = document.createElement("div");
     Object.assign(footer.style, {
       flex: "0 0 auto",
       display: "grid",
-      gridTemplateColumns: "minmax(0, 1fr) auto auto",
+      gridTemplateColumns: "minmax(0, 1fr) auto auto auto",
       alignItems: "center",
       gap: "8px",
       padding: "10px 12px",
@@ -367,261 +220,84 @@ function showNotebookFileSelectionOverlay(entries = []) {
     });
 
     const selectedLabel = document.createElement("div");
-    selectedLabel.textContent = "No file selected.";
+    selectedLabel.textContent = "Select a Notebook file or folder.";
     selectedLabel.style.cssText = "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569;font-size:12px;";
-    const closeBtn = makePickerButton("Close");
+    const currentFolderBtn = makePickerButton("Use Current Folder");
+    const cancelBtn = makePickerButton("Cancel");
     const selectBtn = makePickerButton("Select", true);
-    footer.append(selectedLabel, closeBtn, selectBtn);
+    footer.append(selectedLabel, currentFolderBtn, cancelBtn, selectBtn);
 
-    box.append(header, viewTitle, content, footer);
+    box.append(header, managerShell, footer);
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
     const updateSelectionDisplay = () => {
       selectedLabel.textContent = selectedPath
-        ? selectedIsDirectory
-          ? `Directory selected: ${selectedPath}`
-          : `Selected: ${selectedPath}`
-        : "No file selected.";
-      setButtonDisabled(selectBtn, !selectedPath || selectedIsDirectory);
-    };
-
-    const selectCandidate = (path, isDirectory = false) => {
-      selectedPath = normalizeNotebookPath(path || "");
-      selectedIsDirectory = Boolean(isDirectory);
-      updateSelectionDisplay();
-      if (cy) {
-        try {
-          cy.nodes().removeClass("nv-link-picker-selected");
-          const node = cy.getElementById(graphPickerNodeId(selectedPath, selectedIsDirectory));
-          if (node && !node.empty()) node.addClass("nv-link-picker-selected");
-        } catch (_) {
-          // Selection styling is best effort for the embedded graph.
-        }
-      }
-      content.querySelectorAll("[data-link-picker-path]").forEach((row) => {
-        row.dataset.selected = normalizeNotebookPath(row.dataset.linkPickerPath || "") === selectedPath ? "true" : "false";
-        row.style.background = row.dataset.selected === "true" ? "#dbeafe" : "#ffffff";
-        row.style.borderColor = row.dataset.selected === "true" ? "#60a5fa" : "#d7dde8";
-      });
+        ? (selectedIsDirectory ? "Folder selected: " : "File selected: ") + selectedPath
+        : "Select a Notebook file or folder.";
+      setButtonDisabled(selectBtn, !selectedPath);
     };
 
     const finish = (value = null) => {
-      if (cy) {
-        try { cy.destroy(); } catch (_) { /* ignore */ }
-        cy = null;
-      }
       window.removeEventListener("keydown", handleKeydown, true);
       overlay.remove();
-      resolve(value ? normalizeNotebookPath(value) : null);
-    };
-
-    const renderEmptyState = (message) => {
-      content.innerHTML = "";
-      const empty = document.createElement("div");
-      empty.textContent = message;
-      empty.style.cssText = "padding:18px;color:#64748b;font-size:13px;";
-      content.appendChild(empty);
-    };
-
-    const renderGraphView = () => {
-      if (cy) {
-        try { cy.destroy(); } catch (_) { /* ignore */ }
-        cy = null;
-      }
-      activeView = "GraphManager";
-      showManagerSubToolbar(activeView);
-      viewTitle.textContent = "Graph Manager";
-      content.innerHTML = "";
-
-      const graphHost = document.createElement("div");
-      graphHost.style.cssText = "position:absolute;inset:0;background:#ffffff;";
-      content.appendChild(graphHost);
-
-      if (typeof window.cytoscape !== "function") {
-        renderEmptyState("Graph view is unavailable in this browser session.");
-        return;
-      }
-
-      const graphData = buildPickerGraphElements(entries);
-      cy = window.cytoscape({
-        container: graphHost,
-        elements: graphData.elements,
-        boxSelectionEnabled: false,
-        selectionType: "single",
-        style: [
-          { selector: "node", style: { label: "data(label)", width: 56, height: 56, "font-size": 10, "text-wrap": "wrap", "text-max-width": 90, "text-valign": "bottom", "text-halign": "center", "text-margin-y": 5, color: "#172033", "background-color": "#dbe7f5", "border-width": 1, "border-color": "#94a3b8" } },
-          { selector: "node[type='directory']", style: { shape: "round-rectangle", "background-color": "#e5e7eb", "border-color": "#94a3b8" } },
-          { selector: "node[type='file']", style: { shape: "ellipse", "background-color": "#dbeafe", "border-color": "#60a5fa" } },
-          { selector: "node.nv-link-picker-selected", style: { "border-width": 4, "border-color": "#2563eb", "background-color": "#bfdbfe" } },
-          { selector: "edge", style: { width: 1.4, "line-color": "#cbd5e1", "target-arrow-color": "#cbd5e1", "target-arrow-shape": "triangle", "curve-style": "bezier", opacity: 0.86 } }
-        ],
-        layout: { name: "breadthfirst", directed: true, spacingFactor: 1.08, padding: 24 }
-      });
-
-      cy.on("tap", "node", (evt) => {
-        const node = evt.target;
-        selectCandidate(node.data("fullPath") || "", node.data("type") === "directory");
-      });
-      cy.on("dblclick", "node", (evt) => {
-        const node = evt.target;
-        const path = normalizeNotebookPath(node.data("fullPath") || "");
-        if (!path) return;
-        if (node.data("type") === "directory") {
-          activeDirectory = path;
-          renderFileView();
-        } else {
-          finish(path);
-        }
-      });
-
-      if (graphData.totalCount > graphData.visibleCount) {
-        const note = document.createElement("div");
-        note.textContent = `Showing ${graphData.visibleCount} of ${graphData.totalCount} notebook entries in graph view.`;
-        note.style.cssText = "position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,0.94);border:1px solid #cbd5e1;border-radius:6px;padding:5px 8px;color:#475569;font-size:11px;";
-        content.appendChild(note);
-      }
-
-      window.setTimeout(() => {
-        try { cy?.resize?.(); cy?.fit?.(undefined, 24); } catch (_) { /* ignore */ }
-      }, 0);
-    };
-
-    const renderBreadcrumbs = (host) => {
-      const crumbs = document.createElement("div");
-      crumbs.style.cssText = "display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid #e2e8f0;background:#f8fafc;";
-
-      const addCrumb = (label, path) => {
-        const btn = makePickerButton(label);
-        btn.style.minHeight = "26px";
-        btn.style.padding = "3px 8px";
-        btn.addEventListener("click", () => {
-          activeDirectory = normalizeNotebookPath(path);
-          renderFileView();
-        });
-        crumbs.appendChild(btn);
-      };
-
-      addCrumb("Notebook", "");
-      let cumulative = "";
-      activeDirectory.split("/").filter(Boolean).forEach((part) => {
-        const sep = document.createElement("span");
-        sep.textContent = "/";
-        sep.style.color = "#94a3b8";
-        crumbs.appendChild(sep);
-        cumulative = cumulative ? `${cumulative}/${part}` : part;
-        addCrumb(part, cumulative);
-      });
-      host.appendChild(crumbs);
-    };
-
-    function renderFileView() {
-      if (cy) {
-        try { cy.destroy(); } catch (_) { /* ignore */ }
-        cy = null;
-      }
-      activeView = "FileManager";
-      showManagerSubToolbar(activeView);
-      viewTitle.textContent = "File Manager";
-      content.innerHTML = "";
-
-      const shell = document.createElement("div");
-      shell.style.cssText = "height:100%;min-height:0;display:flex;flex-direction:column;background:#ffffff;";
-      renderBreadcrumbs(shell);
-
-      const list = document.createElement("div");
-      list.style.cssText = "flex:1 1 auto;min-height:0;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px;";
-      shell.appendChild(list);
-      content.appendChild(shell);
-
-      const children = sortNotebookEntries(entries.filter((entry) => pickerPathParent(entry.path) === activeDirectory));
-      if (activeDirectory) {
-        const up = document.createElement("button");
-        up.type = "button";
-        up.textContent = "..";
-        up.style.cssText = "display:flex;align-items:center;width:100%;min-height:28px;padding:4px 8px;border:1px solid #d7dde8;background:#ffffff;color:#172033;text-align:left;cursor:pointer;font:12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;";
-        up.addEventListener("click", () => {
-          activeDirectory = pickerPathParent(activeDirectory);
-          renderFileView();
-        });
-        list.appendChild(up);
-      }
-
-      if (!children.length) {
-        const empty = document.createElement("div");
-        empty.textContent = "No files in this directory.";
-        empty.style.cssText = "padding:10px;color:#64748b;font-size:12px;";
-        list.appendChild(empty);
-      }
-
-      children.forEach((entry) => {
-        const row = document.createElement("button");
-        row.type = "button";
-        row.dataset.linkPickerPath = entry.path;
-        row.dataset.isDirectory = String(entry.isDirectory);
-        row.style.cssText = "display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;gap:8px;width:100%;min-height:30px;padding:4px 8px;border:1px solid #d7dde8;background:#ffffff;color:#172033;text-align:left;cursor:pointer;font:12px system-ui,sans-serif;";
-        const icon = document.createElement("span");
-        icon.textContent = entry.isDirectory ? "Dir" : "File";
-        icon.style.cssText = "font-size:10px;color:#475569;";
-        const label = document.createElement("span");
-        label.textContent = entry.name;
-        label.style.cssText = "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
-        row.append(icon, label);
-        row.addEventListener("click", () => selectCandidate(entry.path, entry.isDirectory));
-        row.addEventListener("dblclick", () => {
-          if (entry.isDirectory) {
-            activeDirectory = entry.path;
-            renderFileView();
-          } else {
-            finish(entry.path);
-          }
-        });
-        list.appendChild(row);
-      });
-
-      if (selectedPath) selectCandidate(selectedPath, selectedIsDirectory);
-    }
-
-    const setView = async (panelType) => {
-      activeView = managerPanelType(panelType);
-      navigationState.setLastFileSelectionPanelType?.(activeView);
-      navigationState.setLastInfoPanelType?.(activeView);
-      await renderPickerManagerSwitcher(switcherHost, activeView);
-      if (activeView === "FileManager") renderFileView();
-      else renderGraphView();
+      resolve(value?.path ? { path: normalizeNotebookPath(value.path), isDirectory: Boolean(value.isDirectory) } : null);
     };
 
     function handleKeydown(event) {
       if (event.key === "Escape") {
         event.preventDefault();
         finish(null);
-        return;
       }
-      if (event.key === "Enter" && selectedPath && !selectedIsDirectory) {
+      if (event.key === "Enter" && selectedPath) {
         event.preventDefault();
-        finish(selectedPath);
+        finish({ path: selectedPath, isDirectory: selectedIsDirectory });
       }
     }
 
-    overlay.addEventListener("nv-manager-panel-switch", (event) => {
-      event.stopPropagation();
-      setView(event.detail?.panelType || "GraphManager");
+    createFileManager(managerShell, currentDirectory, {
+      onDirectoryChange: ({ path }) => {
+        currentDirectory = normalizeNotebookPath(path || "");
+        selectedPath = "";
+        selectedIsDirectory = false;
+        navigationState.setLastOpenedDirectory?.(currentDirectory, "FileManager");
+        setButtonDisabled(currentFolderBtn, !currentDirectory);
+        updateSelectionDisplay();
+      },
+      onSelectionChange: ({ path, isDirectory }) => {
+        selectedPath = normalizeNotebookPath(path || "");
+        selectedIsDirectory = Boolean(isDirectory);
+        navigationState.setLastFileSelectionPanelType?.("FileManager");
+        updateSelectionDisplay();
+      },
+      onEntryActivate: ({ path, isDirectory }) => {
+        const cleanPath = normalizeNotebookPath(path || "");
+        if (cleanPath) finish({ path: cleanPath, isDirectory: Boolean(isDirectory) });
+      },
+      enableDragDrop: false
     });
-    closeBtn.addEventListener("click", () => finish(null));
+
+    closeX.addEventListener("click", () => finish(null));
+    cancelBtn.addEventListener("click", () => finish(null));
     selectBtn.addEventListener("click", () => {
-      if (selectedPath && !selectedIsDirectory) finish(selectedPath);
+      if (selectedPath) finish({ path: selectedPath, isDirectory: selectedIsDirectory });
+    });
+    currentFolderBtn.addEventListener("click", () => {
+      if (currentDirectory) finish({ path: currentDirectory, isDirectory: true });
+    });
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) finish(null);
     });
     window.addEventListener("keydown", handleKeydown, true);
 
-    updateSelectionDisplay();
-    setView("GraphManager");
+    setButtonDisabled(selectBtn, true);
+    setButtonDisabled(currentFolderBtn, !currentDirectory);
   });
 }
 
 async function chooseInternalNotebookTarget() {
-  showManagerSubToolbar("GraphManager");
-  const entries = await listNotebookEntriesRecursively("");
-  return showNotebookFileSelectionOverlay(entries);
+  showManagerSubToolbar("FileManager");
+  return showNotebookFileManagerOverlay();
 }
 
 function chooseLocalFile() {
@@ -703,17 +379,17 @@ export default async function insertLink() {
   let edgeTarget = "";
 
   if (linkType === "internal") {
-    let targetPath = null;
+    let target = null;
     try {
-      targetPath = await chooseInternalNotebookTarget();
+      target = await chooseInternalNotebookTarget();
     } catch (err) {
       console.error("insertLink: Failed to open internal file dialog:", err);
       alert("Failed to load Notebook files for internal link.");
       return;
     }
-    if (!targetPath) return;
-    edgeTarget = normalizeNotebookPath(targetPath);
-    href = toRelativeNotebookHref(sourcePath, edgeTarget);
+    if (!target) return;
+    edgeTarget = normalizeNotebookPath(target.path || target);
+    href = toRelativeNotebookHref(sourcePath, edgeTarget, { isDirectory: Boolean(target.isDirectory) });
   } else if (linkType === "local") {
     let file = null;
     try {

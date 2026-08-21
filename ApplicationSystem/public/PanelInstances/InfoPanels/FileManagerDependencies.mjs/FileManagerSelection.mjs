@@ -3,12 +3,22 @@
 export function attachSelectionHandlers(state, link) {
   link.addEventListener("click", e => {
     e.preventDefault();
-    state.selectedPath = link.dataset.fullPath;
+    const selectedPath = link.dataset.fullPath || "";
+    const selectedIsDirectory = link.dataset.isDirectory === "true";
+    state.selectedPath = selectedPath;
+    state.selectedIsDirectory = selectedIsDirectory;
 
     state.panelElem
       .querySelectorAll(".selected")
       .forEach(el => el.classList.remove("selected"));
 
     link.classList.add("selected");
+    if (typeof state.onSelectionChange === "function") {
+      state.onSelectionChange({
+        path: selectedPath,
+        isDirectory: selectedIsDirectory,
+        element: link,
+      });
+    }
   });
 }

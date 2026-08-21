@@ -99,12 +99,15 @@ export async function renderCSS(filePath, viewPanel) {
  * @param {HTMLElement} viewPanel - The container to render into
  * @param {string} serverBase - Base path
  */
-export async function renderText(filename, viewPanel, serverBase) {
+export async function renderText(filename, viewPanel, serverBase, options = {}) {
   console.log(`[ViewText] Rendering text: ${filename}`);
   viewPanel.innerHTML = '';
   try {
-    const response = await fetch(`${serverBase}/${filename}`);
-    const text = await response.text();
+    let sourceBase = String(serverBase || "/Notebook");
+    while (sourceBase.endsWith("/")) sourceBase = sourceBase.slice(0, -1);
+    const text = typeof options?.liveContent?.content === "string"
+      ? options.liveContent.content
+      : await fetch(sourceBase + "/" + filename).then((response) => response.text());
     const pre = document.createElement('pre');
     pre.style.cssText = 'background:#f4f4f4; padding:1em; overflow:auto; white-space:pre-wrap;';
     pre.textContent = text;
@@ -122,9 +125,9 @@ export async function renderText(filename, viewPanel, serverBase) {
  * @param {HTMLIFrameElement|null} iframe - Optional iframe (not used for text)
  * @param {string} serverBase - Base path
  */
-export async function renderFile(filename, viewPanel, iframe, serverBase) {
+export async function renderFile(filename, viewPanel, iframe, serverBase, options = {}) {
   console.log(`[ViewText] renderFile called for: ${filename}`);
-  await renderText(filename, viewPanel, serverBase);
+  await renderText(filename, viewPanel, serverBase, options);
 }
 
 // Expose globally (optional)

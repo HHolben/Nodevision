@@ -4,32 +4,44 @@ import { fetchDirectoryContents } from "./FileManagerAPI.mjs";
 import { renderFiles } from "./FileManagerRenderer.mjs";
 import { renderBreadcrumbs } from "./FileManagerBreadcrumbs.mjs";
 
-export function createFileManager(panelElem, initialPath = "") {
+function normalizePath(value = "") {
+  return String(value || "").replace(/^\/+/, "").replace(/\\/g, "/").replace(/\/+/g, "/").trim();
+}
+
+export function createFileManager(panelElem, initialPath = "", options = {}) {
   const state = {
     panelElem,
-    currentPath: initialPath,
+    currentPath: normalizePath(initialPath),
     selectedPath: null,
+    selectedIsDirectory: false,
+    onSelectionChange: typeof options.onSelectionChange === "function" ? options.onSelectionChange : null,
+    onDirectoryChange: typeof options.onDirectoryChange === "function" ? options.onDirectoryChange : null,
+    onEntryActivate: typeof options.onEntryActivate === "function" ? options.onEntryActivate : null,
+    enableDragDrop: options.enableDragDrop !== false,
   };
 
   async function refresh(path = state.currentPath) {
-    state.currentPath = path;
+    state.currentPath = normalizePath(path);
 
     const loading = panelElem.querySelector("#loading");
     const error = panelElem.querySelector("#error");
 
     try {
-      loading.style.display = "block";
-      const files = await fetchDirectoryContents(path);
+      if (loading) loading.style.display = "block";
+      if (error) error.textContent = "";
+      const files = await fetchDirectoryContents(state.currentPath);
       renderFiles(state, files);
       renderBreadcrumbs(state);
+      state.onDirectoryChange?.({ path: state.currentPath });
     } catch (err) {
-      error.textContent = err.message;
+      if (error) error.textContent = err.message || String(err);
     } finally {
-      loading.style.display = "none";
+      if (loading) loading.style.display = "none";
     }
   }
 
-  refresh(initialPath);
+  state.refresh = refresh;
+  refresh(state.currentPath);
 
   return { refresh, state };
 }

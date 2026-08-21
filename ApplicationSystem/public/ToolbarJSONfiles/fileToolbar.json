@@ -195,11 +195,11 @@
   {
     "ToolbarCategory": "File",
     "parentHeading": "Graph Manager",
-    "heading": "Selection as Root",
+    "heading": "Scope From Selection",
     "hotkeyText": "",
-    "callbackKey": "reopenGraphRootFromSelection",
+    "callbackKey": "setGraphAbstractionRootFromSelection",
     "icon": "icons/GraphManager.png",
-    "shortLabel": "Root",
+    "shortLabel": "Scope",
     "routeToActivePanel": true
   },
   {
