@@ -52,6 +52,19 @@ function secondsToMinutes(seconds) {
   return Math.max(1, Math.round(Number(seconds || 0) / 60));
 }
 
+function localDeadlineFromSessionPayload(payload = {}) {
+  const expiresSeconds = Number(payload.expires);
+  if (!Number.isFinite(expiresSeconds) || expiresSeconds <= 0) return 0;
+
+  const serverNowSeconds = Number(payload.serverNow);
+  if (Number.isFinite(serverNowSeconds) && serverNowSeconds > 0) {
+    const remainingMs = Math.max(0, (expiresSeconds - serverNowSeconds) * 1000);
+    return Date.now() + remainingMs;
+  }
+
+  return expiresSeconds * 1000;
+}
+
 function clearAppTimeoutTimer() {
   if (appTimeoutState.timeoutTimer) {
     window.clearTimeout(appTimeoutState.timeoutTimer);
@@ -69,7 +82,7 @@ function clearActivitySyncTimer() {
 async function logoutForAppTimeout() {
   stopAppTimeoutManager();
   try {
-    await fetch("/api/logout", { method: "POST" });
+    await fetch("/api/logout", { method: "POST", credentials: "include" });
   } catch (err) {
     console.warn("App timeout logout request failed", err);
   }
@@ -98,7 +111,7 @@ function applyAppTimeoutPayload(payload = {}) {
   if (payload.maxTimeoutSeconds) appTimeoutState.maxTimeoutSeconds = Math.max(appTimeoutState.minTimeoutSeconds, Number(payload.maxTimeoutSeconds) || appTimeoutState.maxTimeoutSeconds);
   if (payload.timeoutSeconds) appTimeoutState.timeoutSeconds = normalizeAppTimeoutSeconds(payload.timeoutSeconds);
   if (payload.expires) {
-    appTimeoutState.expiresAtMs = Number(payload.expires) * 1000;
+    appTimeoutState.expiresAtMs = localDeadlineFromSessionPayload(payload);
     scheduleAppTimeout(appTimeoutState.expiresAtMs);
   } else if (appTimeoutState.lastInputAt) {
     appTimeoutState.expiresAtMs = appTimeoutState.lastInputAt + appTimeoutState.timeoutSeconds * 1000;
@@ -108,6 +121,7 @@ function applyAppTimeoutPayload(payload = {}) {
 
 async function fetchAppTimeoutSettings() {
   const response = await fetch("/api/session/timeout", {
+    credentials: "include",
     headers: { Accept: "application/json" },
   });
   if (!response.ok) throw new Error("Unable to read timeout settings");
@@ -119,6 +133,7 @@ async function fetchAppTimeoutSettings() {
 async function saveAppTimeoutSettings(timeoutSeconds) {
   const response = await fetch("/api/session/timeout", {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
@@ -149,6 +164,7 @@ async function flushAppUserActivity() {
   try {
     const response = await fetch("/api/session/activity", {
       method: "POST",
+      credentials: "include",
       headers: { Accept: "application/json" },
     });
     const payload = await response.json().catch(() => ({}));
@@ -440,6 +456,7 @@ async function ensureLoginPanorama() {
 async function fetchSession() {
   try {
     const response = await fetch('/api/session', {
+      credentials: 'include',
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) {
@@ -478,6 +495,7 @@ function updateLoginError(message) {
 async function attemptLogin(credentials) {
   const response = await fetch('/api/login', {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',

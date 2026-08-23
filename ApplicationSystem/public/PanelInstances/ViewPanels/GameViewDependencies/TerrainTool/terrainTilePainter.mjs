@@ -31,6 +31,24 @@ function isLiquidTerrainMetadata(metadata = {}) {
   return readTerrainMatterState(metadata) === "liquid";
 }
 
+function normalizeOpacity(value, fallback = undefined) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.min(1, num));
+}
+
+function applyTerrainMaterialOpacity(mesh, metadata = {}) {
+  const materials = Array.isArray(mesh?.material) ? mesh.material : [mesh?.material];
+  materials.forEach((material) => {
+    if (!material) return;
+    const opacity = normalizeOpacity(metadata.opacity, Number.isFinite(Number(material.opacity)) ? Number(material.opacity) : 1);
+    material.opacity = opacity;
+    material.transparent = opacity < 1;
+    material.depthWrite = opacity >= 1;
+    material.needsUpdate = true;
+  });
+}
+
 function applyTerrainMaterialUserData(mesh, metadata = {}, isSolid = true) {
   if (!mesh?.userData) return;
   const matterState = readTerrainMatterState(metadata);
@@ -44,6 +62,7 @@ function applyTerrainMaterialUserData(mesh, metadata = {}, isSolid = true) {
   mesh.userData.physicsMaterialFile = metadata.physicsMaterialFile || "";
   mesh.userData.isSolid = isSolid === true && isLiquid !== true;
   mesh.userData.breakable = isLiquid !== true;
+  applyTerrainMaterialOpacity(mesh, metadata);
 }
 
 export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
@@ -116,6 +135,7 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
       texture,
       kind: metadata.kind || "grass",
       isSolid,
+      opacity: metadata.opacity,
       metadata: {
         ...metadata,
         mode: "sculpted",
@@ -245,7 +265,7 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
     const y = (Number(baseY) || 0) + (isPolygonal ? height - visualHeight / 2 : height / 2);
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(safeTileSize, visualHeight, safeTileSize),
-      createTerrainMaterial(THREE, { color, texture, kind: metadata.kind, isLiquid: isLiquidTerrainMetadata(metadata) })
+      createTerrainMaterial(THREE, { color, texture, kind: metadata.kind, isLiquid: isLiquidTerrainMetadata(metadata), opacity: metadata.opacity })
     );
     mesh.position.set(x, y, z);
     applyTerrainMaterialUserData(mesh, metadata, isSolid);

@@ -72,6 +72,7 @@ export function createMovementContext(dependencies) {
       materialId: DEFAULT_WORLD_OBJECT_MATERIAL_ID,
       materialFile: materialFileForWorldObjectMaterial(DEFAULT_WORLD_OBJECT_MATERIAL_ID),
       color: "#8ee6c1",
+      opacity: 1,
       collider: true
     }),
     voxelMaterialCatalogPromise: null,

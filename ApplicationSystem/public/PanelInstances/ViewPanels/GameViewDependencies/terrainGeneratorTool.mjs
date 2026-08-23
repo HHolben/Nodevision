@@ -28,6 +28,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   let paintModeActive = false;
   let lastPaintStatusAt = 0;
   let terrainMaterialOptions = TERRAIN_KINDS.slice();
+  let paintAlphaUserEdited = false;
 
   function syncTerrainSurfaceLayer(mesh, reason = "terrainSurfaceChanged") {
     if (!mesh?.isMesh || String(mesh.userData?.nvType || "").toLowerCase() !== "terrain-surface") return;
@@ -91,7 +92,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     return totalAmplitude > 0 ? total / totalAmplitude : 0;
   }
 
-  function createLabeledInput({ label, type = "number", value = "", step = "any", min = null, placeholder = "" }) {
+  function createLabeledInput({ label, type = "number", value = "", step = "any", min = null, max = null, placeholder = "" }) {
     const wrap = document.createElement("label");
     wrap.style.display = "grid";
     wrap.style.gap = "4px";
@@ -103,6 +104,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     input.value = String(value);
     input.step = step;
     if (min !== null) input.min = String(min);
+    if (max !== null) input.max = String(max);
     if (placeholder) input.placeholder = placeholder;
     input.style.border = "1px solid rgba(140, 180, 210, 0.65)";
     input.style.background = "rgba(8, 14, 20, 0.8)";
@@ -143,6 +145,12 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     return Number.isFinite(num) ? num : fallback;
   }
 
+  function clampOpacity(value, fallback = 1) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    return Math.max(0, Math.min(1, num));
+  }
+
   function readMatterState(value = {}) {
     return String(value.MatterState || value.matterState || "").trim().toLowerCase();
   }
@@ -153,6 +161,12 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
 
   function isLiquidBrushSettings(settings = {}) {
     return settings.isLiquid === true || readMatterState(settings) === "liquid" || settings.kind === "water";
+  }
+
+  function defaultOpacityForBrushSettings(settings = {}) {
+    const material = selectedTerrainMaterial(settings.kind);
+    if (isLiquidBrushSettings({ ...settings, isLiquid: isLiquidTerrainKind(material) })) return 0.42;
+    return settings.texture === "ripples" ? 0.82 : 1;
   }
 
   function metadataForBrushSettings(settings = {}) {
@@ -171,6 +185,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
 
   function terrainMetadataForSettings(settings = {}, metadata = {}) {
     const materialMeta = metadataForBrushSettings(settings);
+    const opacity = clampOpacity(settings.opacity, defaultOpacityForBrushSettings({ ...settings, isLiquid: materialMeta.isLiquid }));
     return {
       ...metadata,
       materialName: materialMeta.materialName,
@@ -178,7 +193,8 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
       physicsMaterialFile: materialMeta.physicsMaterialFile,
       MatterState: materialMeta.MatterState,
       matterState: materialMeta.matterState,
-      isLiquid: materialMeta.isLiquid
+      isLiquid: materialMeta.isLiquid,
+      opacity
     };
   }
 
@@ -234,6 +250,25 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   });
   const paintBaseYField = createLabeledInput({ label: "Base Y", value: "0", step: "0.1" });
   const paintColorField = createLabeledInput({ label: "Paint Color", type: "color", value: "#3f8f46" });
+  const paintAlphaField = createLabeledInput({ label: "Alpha", type: "range", value: "100", min: "0", max: "100", step: "1" });
+  const paintAlphaValue = document.createElement("span");
+  paintAlphaValue.style.fontSize = "11px";
+  paintAlphaValue.style.opacity = "0.86";
+  paintAlphaField.wrap.appendChild(paintAlphaValue);
+
+  function setPaintAlpha(opacity) {
+    const alpha = Math.round(clampOpacity(opacity, 1) * 100);
+    paintAlphaField.input.value = String(alpha);
+    paintAlphaValue.textContent = alpha + "%";
+  }
+
+  function readPaintAlpha(fallback = 1) {
+    const opacity = clampOpacity(Number(paintAlphaField.input.value) / 100, fallback);
+    setPaintAlpha(opacity);
+    return opacity;
+  }
+
+  setPaintAlpha(1);
 
   function setTerrainMaterialOptions(options = [], preferredKind = kindField.input.value) {
     if (!Array.isArray(options) || options.length < 1) return;
@@ -271,7 +306,8 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     paintRadiusField,
     brushShapeField,
     paintBaseYField,
-    paintColorField
+    paintColorField,
+    paintAlphaField
   ].forEach((entry) => paletteGrid.appendChild(entry.wrap));
 
   const grid = document.createElement("div");
@@ -398,6 +434,8 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     const brushShape = String(brushShapeField.input.value || "square");
     const baseY = parseNumber(paintBaseYField.input, 0);
     const color = paintColorField.input.value || resolveTerrainColor({ kind, biome, temperature, moisture, elevation, materialOptions: terrainMaterialOptions });
+    const fallbackOpacity = defaultOpacityForBrushSettings({ kind, texture, MatterState: materialMeta.MatterState, isLiquid: materialMeta.isLiquid });
+    const opacity = readPaintAlpha(fallbackOpacity);
     return {
       kind,
       geometryMode,
@@ -414,6 +452,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
       brushShape,
       baseY,
       color,
+      opacity,
       materialName: materialMeta.materialName,
       physicsMaterialId: materialMeta.physicsMaterialId,
       physicsMaterialFile: materialMeta.physicsMaterialFile,
@@ -435,6 +474,9 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     paintColorField.input.value = resolveTerrainColor({ ...settings, materialOptions: terrainMaterialOptions });
     const kind = selectedTerrainMaterial(settings.kind);
     const isLiquid = isLiquidBrushSettings(settings) || isLiquidTerrainKind(kind);
+    if (!paintAlphaUserEdited) {
+      setPaintAlpha(defaultOpacityForBrushSettings({ ...settings, isLiquid }));
+    }
     solidInput.checked = isLiquid ? false : kind.solid !== false;
     waterDepthField.input.disabled = !isLiquid;
     waterDepthField.input.style.opacity = isLiquid ? "1" : "0.55";
@@ -452,6 +494,11 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
   [kindField, geometryField, voxelSizeField, polygonalShapeField, textureField, biomeField, temperatureField, moistureField, paintElevationField, waterDepthField].forEach((entry) => {
     entry.input.addEventListener("input", refreshPaintColor);
     entry.input.addEventListener("change", refreshPaintColor);
+  });
+
+  paintAlphaField.input.addEventListener("input", () => {
+    paintAlphaUserEdited = true;
+    setPaintAlpha(Number(paintAlphaField.input.value) / 100);
   });
 
   paintBtn.addEventListener("click", () => {
@@ -562,6 +609,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
         color: brushSettings.color,
         texture: brushSettings.texture,
         kind: brushSettings.kind,
+        opacity: brushSettings.opacity,
         isSolid,
         metadata: terrainMetadataForSettings(brushSettings, {
           mode: "generated",
@@ -619,7 +667,7 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
 
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(tileSize, visualHeight, tileSize),
-          createTerrainMaterial(THREE, { color, texture: brushSettings.texture, kind: brushSettings.kind, isLiquid: brushIsLiquid })
+          createTerrainMaterial(THREE, { color, texture: brushSettings.texture, kind: brushSettings.kind, isLiquid: brushIsLiquid, opacity: brushSettings.opacity })
         );
         mesh.position.set(x, y, z);
         mesh.userData.isWater = brushSettings.kind === "water";
@@ -809,6 +857,10 @@ export function createTerrainToolController({ THREE, scene, objects, colliders }
     if (partial.brushShape !== undefined) brushShapeField.input.value = String(partial.brushShape);
     if (partial.baseY !== undefined) paintBaseYField.input.value = String(partial.baseY);
     if (partial.color !== undefined) paintColorField.input.value = String(partial.color);
+    if (partial.opacity !== undefined) {
+      paintAlphaUserEdited = true;
+      setPaintAlpha(partial.opacity);
+    }
     refreshPaintColor();
     if (partial.color !== undefined) paintColorField.input.value = String(partial.color);
     return readBrushSettings();

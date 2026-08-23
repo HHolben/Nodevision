@@ -29,6 +29,12 @@ export function installVoxelMaterialConfigAbility(ctx) {
     return fallback;
   }
 
+  function normalizeVoxelOpacity(value, fallback = ctx.DEFAULT_VOXEL_PLACER_CONFIG.opacity) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fallback;
+    return Math.max(0, Math.min(1, numeric));
+  }
+
   function ensureVoxelPlacerConfig() {
     const existing = movementState.voxelPlacerConfig && typeof movementState.voxelPlacerConfig === "object" ? movementState.voxelPlacerConfig : {};
     const materialId = String(existing.materialId || ctx.DEFAULT_VOXEL_PLACER_CONFIG.materialId).trim() || ctx.DEFAULT_VOXEL_PLACER_CONFIG.materialId;
@@ -39,6 +45,7 @@ export function installVoxelMaterialConfigAbility(ctx) {
       materialName: typeof existing.materialName === "string" ? existing.materialName : "",
       matterState: typeof existing.matterState === "string" ? existing.matterState : "",
       color: normalizeVoxelColor(existing.color),
+      opacity: normalizeVoxelOpacity(existing.opacity),
       collider: existing.collider !== false
     };
     movementState.voxelPlacerConfig = config;
@@ -78,6 +85,7 @@ export function installVoxelMaterialConfigAbility(ctx) {
     normalizeVoxelSize,
     isHexDigitChar,
     normalizeVoxelColor,
+    normalizeVoxelOpacity,
     ensureVoxelPlacerConfig,
     ensureVoxelMaterialCatalog,
     findVoxelMaterialEntry,

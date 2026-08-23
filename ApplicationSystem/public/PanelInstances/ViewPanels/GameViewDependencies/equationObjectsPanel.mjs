@@ -40,6 +40,7 @@ const DEFAULT_PLANE = {
   boundZ: false,
   collider: true,
   color: "#61d6d6",
+  opacity: 0.34,
   inequality: false,
   operator: "",
   expression: "z = 0",
@@ -82,6 +83,28 @@ function parseNumber(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function clampOpacity(value, fallback = DEFAULT_PLANE.opacity) {
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(1, n));
+}
+
+function alphaPercentFromOpacity(value, fallback = DEFAULT_PLANE.opacity) {
+  return Math.round(clampOpacity(value, fallback) * 100);
+}
+
+function firstMaterialOpacity(target, fallback = DEFAULT_PLANE.opacity) {
+  const material = Array.isArray(target?.material) ? target.material[0] : target?.material;
+  return Number.isFinite(material?.opacity) ? clampOpacity(material.opacity, fallback) : fallback;
+}
+
+function syncAlphaControl(input, label) {
+  if (!input) return;
+  const value = Math.round(Math.max(0, Math.min(100, Number.parseFloat(input.value) || 0)));
+  input.value = String(value);
+  if (label) label.textContent = value + "%";
+}
+
 function firstColorHex(target) {
   const material = Array.isArray(target?.material) ? target.material[0] : target?.material;
   return material?.color?.isColor ? `#${material.color.getHexString()}` : DEFAULT_PLANE.color;
@@ -89,16 +112,18 @@ function firstColorHex(target) {
 
 function applyColor(target, colorHex, THREE, options = {}) {
   const liquid = options.liquid === true || options.water === true;
+  const opacity = clampOpacity(options.opacity, liquid ? 0.48 : DEFAULT_PLANE.opacity);
   const materials = Array.isArray(target?.material) ? target.material : [target?.material];
   materials.forEach((mat) => {
     if (!mat) return;
     if (mat.color) mat.color.set(colorHex);
-    mat.transparent = true;
-    mat.opacity = liquid ? 0.48 : (!Number.isFinite(mat.opacity) || mat.opacity > 0.5 ? 0.34 : mat.opacity);
-    mat.depthWrite = false;
+    mat.transparent = opacity < 1;
+    mat.opacity = opacity;
+    mat.depthWrite = opacity >= 1;
     mat.side = THREE.DoubleSide;
     if (mat.emissive?.set) mat.emissive.set(colorHex);
     if (Number.isFinite(mat.emissiveIntensity) || liquid) mat.emissiveIntensity = liquid ? 0.22 : Math.min(mat.emissiveIntensity || 0.18, 0.22);
+    mat.needsUpdate = true;
   });
 }
 
@@ -130,6 +155,7 @@ function makeEquationLayerDefinition(mesh, config = mesh?.userData?.equationColl
     type: inequality ? "equation-inequality" : "equation-collider-plane",
     position: vec3FromObject(mesh?.position),
     color: firstColorHex(mesh),
+    opacity: firstMaterialOpacity(mesh),
     physicsMaterialId: materialId || undefined,
     physicsMaterialFile: materialFile || undefined,
     MatterState: matterState || undefined,
@@ -363,6 +389,28 @@ export function createEquationObjectsPanel({ THREE, controller, colliders, water
   colorLabel.textContent = "Color";
   colorLabel.appendChild(colorInput);
   grid.appendChild(colorLabel);
+
+  const alphaInput = document.createElement("input");
+  alphaInput.type = "range";
+  alphaInput.min = "0";
+  alphaInput.max = "100";
+  alphaInput.step = "1";
+  alphaInput.value = String(alphaPercentFromOpacity(DEFAULT_PLANE.opacity));
+  const alphaValue = document.createElement("span");
+  alphaValue.textContent = alphaInput.value + "%";
+  const alphaLabel = document.createElement("label");
+  alphaLabel.style.display = "flex";
+  alphaLabel.style.flexDirection = "column";
+  alphaLabel.style.gap = "4px";
+  alphaLabel.textContent = "Alpha";
+  const alphaWrap = document.createElement("span");
+  alphaWrap.style.display = "flex";
+  alphaWrap.style.alignItems = "center";
+  alphaWrap.style.gap = "8px";
+  alphaWrap.append(alphaInput, alphaValue);
+  alphaLabel.appendChild(alphaWrap);
+  grid.appendChild(alphaLabel);
+  alphaInput.addEventListener("input", () => syncAlphaControl(alphaInput, alphaValue));
 
   const boundsRow = document.createElement("div");
   boundsRow.style.display = "flex";
@@ -618,6 +666,7 @@ export function createEquationObjectsPanel({ THREE, controller, colliders, water
       ...current,
       collider: liquid || inequality ? false : colliderInput.checked === true,
       color: colorInput.value || DEFAULT_PLANE.color,
+      opacity: clampOpacity(Number(alphaInput.value) / 100, liquid ? 0.48 : DEFAULT_PLANE.opacity),
       inequality,
       operator,
       inequalitySide,
@@ -681,6 +730,8 @@ export function createEquationObjectsPanel({ THREE, controller, colliders, water
     waterSideSelect.value = normalizePanelWaterSide(targetData.equationLiquidSide || targetData.equationWaterSide || targetData.equationInequalitySide || config.liquidSide || config.equationLiquidSide || config.waterSide || config.equationWaterSide || normalized.inequalitySide);
     colliderInput.checked = liquidEnabled || inequalityEnabled ? false : (target ? Boolean(targetData.colliderRef) : config.collider !== false);
     colorInput.value = target ? firstColorHex(target) : (config.color || DEFAULT_PLANE.color);
+    alphaInput.value = String(alphaPercentFromOpacity(target ? firstMaterialOpacity(target, liquidEnabled ? 0.48 : DEFAULT_PLANE.opacity) : config.opacity, liquidEnabled ? 0.48 : DEFAULT_PLANE.opacity));
+    syncAlphaControl(alphaInput, alphaValue);
     modeLine.textContent = target ? (inequalityEnabled ? "Editing selected inequality" : "Editing selected plane") : "New equation object";
     refreshWaterControls();
     updateEquationLine();
@@ -742,7 +793,7 @@ export function createEquationObjectsPanel({ THREE, controller, colliders, water
       infinite: config.liquidInfinite,
       buoyancyScale: Number.isFinite(config.buoyancyScale) ? config.buoyancyScale : 1
     });
-    applyColor(target, config.color, THREE, { liquid: liquidEnabled });
+    applyColor(target, config.color, THREE, { liquid: liquidEnabled, opacity: config.opacity });
     void syncEquationLayer(target, "equationObjectUpdated");
     refreshWaterControls();
     statusLine.textContent = liquidEnabled ? "Liquid inequality volume updated." : (config.inequality ? "Equation inequality volume updated." : "Equation object updated.");

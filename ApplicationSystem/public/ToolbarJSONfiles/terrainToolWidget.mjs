@@ -16,6 +16,12 @@ function getTerrainTool() {
   return window.VRWorldContext?.terrainToolController || null;
 }
 
+function clampAlphaPercent(value, fallback = 100) {
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+}
+
 function makeSelect(label, options, value, onChange) {
   const wrap = document.createElement("label");
   wrap.className = "nv-terrain-toolbar-field";
@@ -124,7 +130,7 @@ function makeRadioGroup(label, options, value, onChange) {
   return { wrap, input };
 }
 
-function makeColor(label, value, onChange) {
+function makeColor(label, value, opacity = 1, onChange) {
   const wrap = document.createElement("label");
   wrap.className = "nv-terrain-toolbar-field nv-terrain-toolbar-field--color";
   wrap.textContent = label;
@@ -132,9 +138,30 @@ function makeColor(label, value, onChange) {
   const input = document.createElement("input");
   input.type = "color";
   input.value = value;
-  input.addEventListener("input", () => onChange(input.value));
-  wrap.appendChild(input);
-  return { wrap, input };
+  const alphaWrap = document.createElement("span");
+  alphaWrap.style.display = "flex";
+  alphaWrap.style.alignItems = "center";
+  alphaWrap.style.gap = "6px";
+  const alphaInput = document.createElement("input");
+  alphaInput.type = "range";
+  alphaInput.min = "0";
+  alphaInput.max = "100";
+  alphaInput.step = "1";
+  alphaInput.value = String(Math.round(clampAlphaPercent(Number(opacity) * 100)));
+  const alphaValue = document.createElement("span");
+  alphaValue.style.minWidth = "36px";
+  const sync = (emit = true) => {
+    const alpha = Math.round(clampAlphaPercent(alphaInput.value));
+    alphaInput.value = String(alpha);
+    alphaValue.textContent = alpha + "%";
+    if (emit) onChange({ color: input.value, opacity: alpha / 100 });
+  };
+  input.addEventListener("input", () => sync(true));
+  alphaInput.addEventListener("input", () => sync(true));
+  alphaWrap.append(alphaInput, alphaValue);
+  wrap.append(input, alphaWrap);
+  sync(false);
+  return { wrap, input, alphaInput, alphaValue };
 }
 
 function makeButton(label, onClick) {
@@ -157,6 +184,13 @@ function syncToolbarFromTool(fields, paintButton, materialOptions = TERRAIN_KIND
     if (key === "kind") {
       const selected = terrainKindById(settings.kind, materialOptions);
       if (selected?.id && input.value !== selected.id) input.value = selected.id;
+      return;
+    }
+    if (key === "opacity") {
+      const alpha = Math.round(clampAlphaPercent(Number(settings.opacity ?? 1) * 100));
+      if (input.value !== String(alpha)) input.value = String(alpha);
+      const label = input.nextElementSibling;
+      if (label) label.textContent = alpha + "%";
       return;
     }
     if (settings[key] !== undefined && input.value !== String(settings[key])) {
@@ -232,7 +266,7 @@ export function initToolbarWidget(hostElement) {
   const polygonalShape = makeSelect("Polygonal Shape", POLYGONAL_INSERT_SHAPES, settings.polygonalShape || "hills", (value) => update({ polygonalShape: value }));
   const depth = makeNumber("Depth", settings.depth || 1.5, { min: "0.05", step: "0.1" }, (value) => update({ depth: value }));
   const texture = makeSelect("Texture", TERRAIN_TEXTURES, settings.texture || "solid", (value) => update({ texture: value }));
-  const color = makeColor("Color", settings.color || "#3f8f46", (value) => update({ color: value }));
+  const color = makeColor("Color", settings.color || "#3f8f46", settings.opacity ?? 1, (value) => update(value));
 
   fields.kind = kind.input;
   fields.tileSize = brushSize.input;
@@ -245,6 +279,7 @@ export function initToolbarWidget(hostElement) {
   fields.depth = depth.input;
   fields.texture = texture.input;
   fields.color = color.input;
+  fields.opacity = color.alphaInput;
 
   const paintButton = makeButton("Paint On", (button) => {
     const active = !terrainTool.isPaintModeActive?.();

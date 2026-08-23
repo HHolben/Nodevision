@@ -35,6 +35,31 @@ export function installVoxelPlacerDialogAbility(ctx) {
     return input;
   }
 
+  function createAlphaInput(config) {
+    const input = document.createElement("input");
+    input.type = "range";
+    input.min = "0";
+    input.max = "100";
+    input.step = "1";
+    input.value = String(Math.round(ctx.api.normalizeVoxelOpacity(config.opacity) * 100));
+    ctx.api.styleVoxelDialogControl(input);
+    const value = document.createElement("span");
+    value.style.minWidth = "36px";
+    value.style.color = "#f0fffb";
+    value.style.fontSize = "12px";
+    const wrap = document.createElement("div");
+    Object.assign(wrap.style, { display: "flex", alignItems: "center", gap: "8px" });
+    const sync = () => {
+      const alpha = Math.round(ctx.api.normalizeVoxelOpacity(Number(input.value) / 100) * 100);
+      input.value = String(alpha);
+      value.textContent = alpha + "%";
+    };
+    input.addEventListener("input", sync);
+    sync();
+    wrap.append(input, value);
+    return { input, wrap };
+  }
+
   function createColliderInput(config) {
     const input = document.createElement("input");
     input.type = "checkbox";
@@ -90,6 +115,8 @@ export function installVoxelPlacerDialogAbility(ctx) {
     ctx.api.addVoxelDialogRow(panel, "Material", materialSelect);
     const colorInput = createColorInput(config);
     ctx.api.addVoxelDialogRow(panel, "Color", colorInput);
+    const alphaControl = createAlphaInput(config);
+    ctx.api.addVoxelDialogRow(panel, "Alpha", alphaControl.wrap);
     const { input: colliderInput, wrap: colliderWrap } = createColliderInput(config);
     ctx.api.addVoxelDialogRow(panel, "Physics", colliderWrap);
     const actions = document.createElement("div");
@@ -115,6 +142,7 @@ export function installVoxelPlacerDialogAbility(ctx) {
       const next = ctx.api.ensureVoxelPlacerConfig();
       next.size = ctx.api.normalizeVoxelSize(sizeInput.value);
       next.color = ctx.api.normalizeVoxelColor(colorInput.value, next.color);
+      next.opacity = ctx.api.normalizeVoxelOpacity(Number(alphaControl.input.value) / 100, next.opacity);
       next.collider = colliderInput.checked;
       ctx.api.applyVoxelMaterialEntry(next, selectedEntryFromControl(), { updateColor: false });
       movementState.voxelPlacerConfig = { ...next };
@@ -145,6 +173,7 @@ export function installVoxelPlacerDialogAbility(ctx) {
   return installMovementApi(ctx, {
     createSizeInput,
     createColorInput,
+    createAlphaInput,
     createColliderInput,
     populateMaterialOptions,
     openVoxelPlacerDialog

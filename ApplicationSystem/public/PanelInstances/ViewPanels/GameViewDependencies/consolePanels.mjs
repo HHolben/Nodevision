@@ -11,7 +11,9 @@ import {
 
 const DEFAULT_ENVIRONMENT = {
   skyColor: "#ffffff",
+  skyAlpha: 1,
   floorColor: "#d8dee4",
+  floorAlpha: 1,
   backgroundMode: "color",
   backgroundImage: "",
   floorImage: "",
@@ -88,6 +90,8 @@ function normalizeEnvironmentState(raw = {}) {
     ...DEFAULT_ENVIRONMENT,
     ...source
   };
+  environment.skyAlpha = clampFiniteNumber(source.skyAlpha ?? source.skyOpacity ?? source.backgroundAlpha, 0, 1, DEFAULT_ENVIRONMENT.skyAlpha);
+  environment.floorAlpha = clampFiniteNumber(source.floorAlpha ?? source.floorOpacity, 0, 1, DEFAULT_ENVIRONMENT.floorAlpha);
   environment.dayNightCycle = normalizeDayNightCycle(source.dayNightCycle ?? source.dayNight ?? source.lightCycle ?? DEFAULT_ENVIRONMENT.dayNightCycle);
   return environment;
 }
@@ -164,6 +168,38 @@ function createField(labelText, inputEl, container) {
   return inputEl;
 }
 
+function clampOpacity(value, fallback = 1) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.min(1, num));
+}
+
+function createAlphaField(labelText, container, value = 1) {
+  const input = document.createElement("input");
+  input.type = "range";
+  input.min = "0";
+  input.max = "100";
+  input.step = "1";
+  const field = createField(labelText, input, container);
+  const valueEl = document.createElement("span");
+  valueEl.style.opacity = "0.84";
+  valueEl.style.fontSize = "11px";
+  field.parentElement?.appendChild(valueEl);
+  const setValue = (opacity = 1) => {
+    const alpha = Math.round(clampOpacity(opacity, 1) * 100);
+    field.value = String(alpha);
+    valueEl.textContent = alpha + "%";
+  };
+  const readValue = () => {
+    const opacity = clampOpacity(Number(field.value) / 100, 1);
+    setValue(opacity);
+    return opacity;
+  };
+  field.addEventListener("input", readValue);
+  setValue(value);
+  return { input: field, setValue, readValue };
+}
+
 function formatPoint(point) {
   if (!point) return "unknown";
   return `${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.z.toFixed(2)}`;
@@ -196,6 +232,7 @@ function createPlacementPanelUI() {
     inp.type = "color";
     return inp;
   })(), fields);
+  const colorAlpha = createAlphaField("Console Alpha", fields);
 
   const colliderInput = createField("Enable Collider", (() => {
     const inp = document.createElement("input");
@@ -284,6 +321,7 @@ function createPlacementPanelUI() {
     return {
       collider: Boolean(colliderInput.checked),
       color: colorInput.value || "#33ccaa",
+      opacity: colorAlpha.readValue(),
       objectFile: String(objectInput.value || "").trim(),
       linkedObject: String(linkInput.value || "").trim(),
       inputs: {},
@@ -295,6 +333,7 @@ function createPlacementPanelUI() {
   return {
     floatingPanel,
     colorInput,
+    colorAlpha,
     colliderInput,
     objectInput,
     linkInput,
@@ -308,6 +347,7 @@ function createPlacementPanelUI() {
     setStatus: (value) => { statusLine.textContent = value; },
     setDefaults: (defaults = {}) => {
       colorInput.value = defaults.color || "#33ccaa";
+      colorAlpha.setValue(defaults.opacity ?? 1);
       colliderInput.checked = defaults.collider !== false;
       objectInput.value = defaults.objectFile || "";
       linkInput.value = defaults.linkedObject || "";
@@ -349,6 +389,7 @@ function createInspectPanelUI() {
     inp.type = "color";
     return inp;
   })(), fields);
+  const colorAlpha = createAlphaField("Console Alpha", fields);
 
   const colliderInput = createField("Enable Collider", (() => {
     const inp = document.createElement("input");
@@ -400,12 +441,14 @@ function createInspectPanelUI() {
     setInfo: (value) => { infoLine.textContent = value; },
     setValues: (config = {}) => {
       colorInput.value = config.color || "#33ccaa";
+      colorAlpha.setValue(config.opacity ?? 1);
       colliderInput.checked = config.collider !== false;
       objectInput.value = config.objectFile || "";
       linkInput.value = config.linkedObject || "";
     },
     gatherConfig: () => ({
       color: colorInput.value || "#33ccaa",
+      opacity: colorAlpha.readValue(),
       collider: Boolean(colliderInput.checked),
       objectFile: String(objectInput.value || "").trim(),
       linkedObject: String(linkInput.value || "").trim()
@@ -446,6 +489,8 @@ function createUsePanelUI() {
     inp.type = "color";
     return inp;
   })(), fields);
+  const skyAlpha = createAlphaField("Sky Alpha", fields);
+  const floorAlpha = createAlphaField("Floor Alpha", fields);
 
   const gasSelect = createField("World Gas", (() => {
     const inp = document.createElement("select");
@@ -521,7 +566,9 @@ function createUsePanelUI() {
   return {
     floatingPanel,
     skyInput,
+    skyAlpha,
     floorInput,
+    floorAlpha,
     gasSelect,
     urlField,
     loadUrlBtn,
@@ -533,7 +580,9 @@ function createUsePanelUI() {
     setStatus: (msg) => { statusLine.textContent = msg || ""; },
     setFields: (env) => {
       skyInput.value = env.skyColor || "#ffffff";
+      skyAlpha.setValue(env.skyAlpha ?? 1);
       floorInput.value = env.floorColor || "#d8dee4";
+      floorAlpha.setValue(env.floorAlpha ?? 1);
       setSelectedGas(env);
     }
   };
@@ -589,6 +638,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     if (ground?.material) {
       ground.material.map = null;
       ground.material.needsUpdate = true;
+      applyFloorAlpha();
     }
   }
 
@@ -645,6 +695,15 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     return brightness;
   }
 
+  function applyFloorAlpha() {
+    if (!ground?.material) return;
+    const alpha = clampFiniteNumber(environment.floorAlpha, 0, 1, 1);
+    ground.material.opacity = alpha;
+    ground.material.transparent = alpha < 1;
+    ground.material.depthWrite = alpha >= 1;
+    ground.material.needsUpdate = true;
+  }
+
   function applyEnvironmentState(overrides = {}) {
     const sourceOverrides = overrides && typeof overrides === "object" ? overrides : {};
     environment = normalizeEnvironmentState({
@@ -654,9 +713,11 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     syncEnvironmentState();
     const backgroundChanged = Object.prototype.hasOwnProperty.call(sourceOverrides, "backgroundMode")
       || Object.prototype.hasOwnProperty.call(sourceOverrides, "backgroundImage")
-      || Object.prototype.hasOwnProperty.call(sourceOverrides, "skyColor");
+      || Object.prototype.hasOwnProperty.call(sourceOverrides, "skyColor")
+      || Object.prototype.hasOwnProperty.call(sourceOverrides, "skyAlpha");
     const floorChanged = Object.prototype.hasOwnProperty.call(sourceOverrides, "floorImage")
-      || Object.prototype.hasOwnProperty.call(sourceOverrides, "floorColor");
+      || Object.prototype.hasOwnProperty.call(sourceOverrides, "floorColor")
+      || Object.prototype.hasOwnProperty.call(sourceOverrides, "floorAlpha");
 
     if (backgroundChanged && environment.backgroundMode === "image" && environment.backgroundImage) {
       const requestId = ++textureRequestId;
@@ -709,6 +770,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
               ground.material.color.set(floorColor);
             }
             ground.material.needsUpdate = true;
+            applyFloorAlpha();
           }
           useUI.setStatus("Floor image applied.");
         },
@@ -734,6 +796,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       ground.material.needsUpdate = true;
     }
     updateEnvironmentLighting();
+    applyFloorAlpha();
     refreshUseFields();
   }
 
@@ -741,7 +804,9 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     if (!def) return;
     const merged = {
       skyColor: def.skyColor || DEFAULT_ENVIRONMENT.skyColor,
+      skyAlpha: def.skyAlpha ?? def.skyOpacity ?? DEFAULT_ENVIRONMENT.skyAlpha,
       floorColor: def.floorColor || DEFAULT_ENVIRONMENT.floorColor,
+      floorAlpha: def.floorAlpha ?? def.floorOpacity ?? DEFAULT_ENVIRONMENT.floorAlpha,
       backgroundMode: def.backgroundMode || (def.backgroundImage ? "image" : "color"),
       backgroundImage: def.backgroundImage || "",
       floorImage: def.floorImage || "",
@@ -755,7 +820,9 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
   function getEnvironmentDefinition() {
     return {
       skyColor: environment.skyColor,
+      skyAlpha: environment.skyAlpha,
       floorColor: environment.floorColor,
+      floorAlpha: environment.floorAlpha,
       backgroundMode: environment.backgroundMode,
       backgroundImage: environment.backgroundImage,
       floorImage: environment.floorImage,
@@ -788,6 +855,7 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
     if (pendingPlacement) return false;
     const combined = {
       color: defaults.color || "#33ccaa",
+      opacity: defaults.opacity ?? 1,
       collider: defaults.collider !== false,
       objectFile: defaults.objectFile || "",
       linkedObject: defaults.linkedObject || "",
@@ -875,7 +943,9 @@ export function createConsolePanels({ THREE, scene, ground, movementState }) {
       backgroundMode: "color",
       backgroundImage: "",
       skyColor: sky,
-      floorColor: floor
+      skyAlpha: useUI.skyAlpha.readValue(),
+      floorColor: floor,
+      floorAlpha: useUI.floorAlpha.readValue()
     });
   });
 

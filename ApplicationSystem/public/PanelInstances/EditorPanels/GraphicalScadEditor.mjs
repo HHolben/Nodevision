@@ -10,7 +10,7 @@ import { addObject, addTimelineStep, removeObject, renameTimelineStep, setTimeli
 import { shapeFromTool, polygonFromPoints } from "/ScadEditor/ScadShapeTools.mjs";
 import { addBooleanOperation, deleteObjects, duplicateObjects, extrudeObjects, recordScaleTimelineStep, renameObject, rotateObjects, scaleObjects, translateObjects } from "/ScadEditor/ScadOperations.mjs";
 import { createScadSceneRenderer } from "/ScadEditor/ScadSceneRenderer.mjs";
-import { exportScadCodeToSTL } from "/ModelExport/STLExport.mjs";
+import { exportScadCodeToSTL, exportSceneToSTL } from "/ModelExport/STLExport.mjs";
 import { clearScadLayersContext, ensureScadLayersContext, notifyScadLayersChanged, notifyScadSelectionChanged } from "/ScadEditor/ScadLayerPanelContext.mjs";
 
 const SCAD_MODE = "SCADediting";
@@ -138,6 +138,7 @@ export async function renderEditor(filePath, container) {
   const scadPath = normalizePath(filePath);
   let disposed = false;
   let renderer = null;
+  let exactSTLExportUnavailable = false;
   let activeTool = "select";
   let polygonPoints = [];
   let dragStart = null;
@@ -1650,8 +1651,37 @@ export async function renderEditor(filePath, container) {
     setStatus(`Saved ${path}`);
   }
 
+  function previewExportRoot() {
+    return renderer?.getExportRoot?.() || null;
+  }
+
+  function exportPreviewSTL() {
+    const root = previewExportRoot();
+    if (!root) throw new Error("No SCAD preview mesh is available to export.");
+    const result = exportSceneToSTL(root, scadPath);
+    setStatus("Exported preview STL. Install OpenSCAD for exact SCAD export.");
+    return { ...result, source: "preview" };
+  }
+
   async function exportSTL() {
-    await exportScadCodeToSTL(serializeScadModel(model, { preserveUnsupportedSource: true }), scadPath);
+    const scadCode = serializeScadModel(model, { preserveUnsupportedSource: true });
+    if (exactSTLExportUnavailable && previewExportRoot()) return exportPreviewSTL();
+
+    const result = await exportScadCodeToSTL(scadCode, scadPath, {
+      fallbackRoot: previewExportRoot,
+      onExactExport: () => {
+        exactSTLExportUnavailable = false;
+        setStatus("Exported STL.");
+      },
+      onFallback: (err) => {
+        exactSTLExportUnavailable = true;
+        console.warn("[GraphicalScadEditor] OpenSCAD export failed; exported preview mesh instead:", err);
+        setStatus("Exported preview STL. Install OpenSCAD for exact SCAD export.");
+      },
+    });
+
+    if (result?.source === "openscad") setStatus("Exported STL.");
+    return result;
   }
 
   function showCodeNotice() {

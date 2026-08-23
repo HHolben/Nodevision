@@ -44,6 +44,62 @@ function styleInputBase(input) {
   });
 }
 
+function clampTransparency(value, fallback = 0) {
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+}
+
+function hexToRgb(value, fallback = "#000000") {
+  const text = String(value || fallback).trim();
+  const match = text.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  const raw = match
+    ? (match[1].length === 3 ? match[1].split("").map((part) => part + part).join("") : match[1])
+    : String(fallback).replace(/^#/, "");
+  return {
+    r: Number.parseInt(raw.slice(0, 2), 16) || 0,
+    g: Number.parseInt(raw.slice(2, 4), 16) || 0,
+    b: Number.parseInt(raw.slice(4, 6), 16) || 0,
+  };
+}
+
+function formatAlpha(alpha) {
+  const clamped = Math.max(0, Math.min(1, alpha));
+  if (clamped === 0 || clamped === 1) return String(clamped);
+  return String(Math.round(clamped * 100) / 100);
+}
+
+function colorWithTransparency(hex, transparency, fallback = "#000000") {
+  const rgb = hexToRgb(hex, fallback);
+  const alpha = (100 - clampTransparency(transparency)) / 100;
+  if (alpha >= 1) return String(hex || fallback);
+  return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + formatAlpha(alpha) + ")";
+}
+
+function createTransparencyControl(title) {
+  const wrap = document.createElement("span");
+  Object.assign(wrap.style, { display: "inline-flex", alignItems: "center", gap: "4px" });
+  wrap.title = title || "Transparency";
+  const input = document.createElement("input");
+  input.type = "range";
+  input.min = "0";
+  input.max = "100";
+  input.step = "1";
+  input.value = "0";
+  Object.assign(input.style, { width: "76px" });
+  const value = document.createElement("span");
+  Object.assign(value.style, { display: "inline-block", width: "34px", textAlign: "right", fontSize: "12px" });
+  const sync = () => {
+    const next = Math.round(clampTransparency(input.value));
+    input.value = String(next);
+    value.textContent = next + "%";
+  };
+  input.addEventListener("input", sync);
+  sync();
+  wrap.append(input, value);
+  return { wrap, input, value, sync };
+}
+
 function makeToggleButton(label) {
   const btn = document.createElement("button");
   btn.type = "button";
@@ -175,15 +231,23 @@ export function initToolbarWidget(hostElement) {
 
   const textColorInput = el("input", { type: "color", value: "#000000" });
   Object.assign(textColorInput.style, { height: "26px", width: "34px", padding: "0", border: "1px solid #888", borderRadius: "4px" });
+  const textTransparency = createTransparencyControl("Text transparency");
+  const textColorControls = el("span", {}, [textColorInput, textTransparency.wrap]);
+  Object.assign(textColorControls.style, { display: "inline-flex", alignItems: "center", gap: "6px" });
 
   const bgEnabledInput = el("input", { type: "checkbox", checked: false });
   const bgColorInput = el("input", { type: "color", value: "#ffffff", disabled: true });
   Object.assign(bgColorInput.style, { height: "26px", width: "34px", padding: "0", border: "1px solid #888", borderRadius: "4px" });
+  const bgTransparency = createTransparencyControl("Background transparency");
+  const bgColorControls = el("span", {}, [bgColorInput, bgTransparency.wrap]);
+  Object.assign(bgColorControls.style, { display: "inline-flex", alignItems: "center", gap: "6px", opacity: "0.55" });
+  bgTransparency.input.disabled = true;
   bgEnabledInput.addEventListener("change", () => {
-    bgColorInput.disabled = !bgEnabledInput.checked;
-    bgColorInput.style.opacity = bgEnabledInput.checked ? "1" : "0.55";
+    const enabled = bgEnabledInput.checked;
+    bgColorInput.disabled = !enabled;
+    bgTransparency.input.disabled = !enabled;
+    bgColorControls.style.opacity = enabled ? "1" : "0.55";
   });
-  bgColorInput.style.opacity = "0.55";
 
   const boldBtn = makeToggleButton("B");
   const italicBtn = makeToggleButton("I");
@@ -210,8 +274,8 @@ export function initToolbarWidget(hostElement) {
     if (!text) return;
     const fontFamily = String(fontSelect.value || "Arial");
     const fontSize = Math.max(6, Number(fontSizeInput.value || 16) || 16);
-    const textColor = String(textColorInput.value || "#000000");
-    const backgroundColor = String(bgColorInput.value || "#ffffff");
+    const textColor = colorWithTransparency(textColorInput.value || "#000000", textTransparency.input.value, "#000000");
+    const backgroundColor = colorWithTransparency(bgColorInput.value || "#ffffff", bgTransparency.input.value, "#ffffff");
     const backgroundEnabled = Boolean(bgEnabledInput.checked);
     const bold = boldBtn.dataset.on === "true";
     const italic = italicBtn.dataset.on === "true";
@@ -234,9 +298,9 @@ export function initToolbarWidget(hostElement) {
     labeled("Text", textInput),
     labeled("Font", fontSelect),
     labeled("Size", fontSizeInput),
-    labeled("Color", textColorInput),
+    labeled("Color", textColorControls),
     labeled("Bg", bgEnabledInput),
-    bgColorInput,
+    bgColorControls,
     boldBtn,
     italicBtn,
     underlineBtn,

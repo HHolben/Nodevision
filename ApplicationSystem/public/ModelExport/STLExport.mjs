@@ -39,6 +39,16 @@ function objectWorldVisible(object) {
   return true;
 }
 
+function objectExportsToSTL(object) {
+  let current = object;
+  while (current) {
+    const userData = current.userData || {};
+    if (userData.stlExport === false || userData.ignoreSTLExport === true || userData.skipSTLExport === true) return false;
+    current = current.parent;
+  }
+  return true;
+}
+
 export function serializeSceneToAsciiSTL(root, options = {}) {
   if (!root?.traverse) throw new Error("No 3D scene is available to export.");
   root.updateMatrixWorld?.(true);
@@ -46,7 +56,7 @@ export function serializeSceneToAsciiSTL(root, options = {}) {
   const meshes = [];
   let triangleCount = 0;
   root.traverse((object) => {
-    if (!object?.isMesh || !objectWorldVisible(object)) return;
+    if (!object?.isMesh || !objectWorldVisible(object) || !objectExportsToSTL(object)) return;
     const geometry = object.geometry;
     const position = geometry?.getAttribute?.("position");
     if (!position || !Number.isFinite(position.count) || position.count < 3) return;
@@ -117,24 +127,65 @@ export function exportSceneToSTL(root, pathValue = "model.stl", options = {}) {
   const solidName = fileName.replace(/\.stl$/i, "");
   const stl = serializeSceneToAsciiSTL(root, { solidName, ...options });
   downloadBlob(new Blob([stl], { type: "application/sla;charset=utf-8" }), fileName);
+  return { source: "scene", fileName };
 }
 
-export async function exportScadCodeToSTL(scadCode, pathValue = "model.scad") {
-  const response = await fetch("/api/scad/render", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ scadCode: String(scadCode || ""), format: "stl" }),
-  });
+function errorLooksLikeMissingOpenSCAD(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return message.includes("openscad cli not found")
+    || message.includes("spawn openscad enoent")
+    || message.includes("spawn flatpak-spawn enoent")
+    || message.includes("nodevision_openscad_bin")
+    || message.includes("configured openscad command")
+    || message.includes("install openscad on the server")
+    || message.includes("no such file or directory");
+}
 
-  if (!response.ok) {
-    const json = await response.json().catch(() => null);
-    const text = json ? "" : await response.text().catch(() => "");
-    const details = [json?.error || text || `${response.status} ${response.statusText}`, json?.hint]
-      .filter(Boolean)
-      .join("\n");
-    throw new Error(details || "SCAD STL export failed.");
+function fallbackRootFromOptions(options = {}) {
+  if (typeof options.fallbackRoot === "function") return options.fallbackRoot();
+  return options.fallbackRoot || null;
+}
+
+function exportFallbackScene(root, pathValue, primaryError, options = {}) {
+  try {
+    const result = exportSceneToSTL(root, pathValue, options.fallbackOptions || {});
+    options.onFallback?.(primaryError);
+    return { ...result, source: "preview", error: primaryError };
+  } catch (fallbackErr) {
+    const primaryMessage = primaryError?.message || String(primaryError || "SCAD STL export failed.");
+    const fallbackMessage = fallbackErr?.message || String(fallbackErr || "Preview STL export failed.");
+    throw new Error(primaryMessage + "\nPreview STL export also failed: " + fallbackMessage);
   }
+}
 
-  const blob = await response.blob();
-  downloadBlob(blob, stlFileName(pathValue));
+export async function exportScadCodeToSTL(scadCode, pathValue = "model.scad", options = {}) {
+  try {
+    const response = await fetch("/api/scad/render", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scadCode: String(scadCode || ""), format: "stl" }),
+    });
+
+    if (!response.ok) {
+      const json = await response.json().catch(() => null);
+      const text = json ? "" : await response.text().catch(() => "");
+      const details = [json?.error || text || String(response.status) + " " + String(response.statusText), json?.hint]
+        .filter(Boolean)
+        .join("\n");
+      throw new Error(details || "SCAD STL export failed.");
+    }
+
+    const fileName = stlFileName(pathValue);
+    const blob = await response.blob();
+    downloadBlob(blob, fileName);
+    options.onExactExport?.();
+    return { source: "openscad", fileName };
+  } catch (err) {
+    if (options.fallbackOnAnyError || errorLooksLikeMissingOpenSCAD(err)) {
+      const fallbackRoot = fallbackRootFromOptions(options);
+      if (fallbackRoot) return exportFallbackScene(fallbackRoot, pathValue, err, options);
+    }
+    throw err;
+  }
 }

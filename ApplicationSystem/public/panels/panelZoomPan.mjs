@@ -16,6 +16,7 @@ const RESIZE_FRAME_KEY = "__nvPanelZoomPanResizeFrame";
 const CONTENT_RESIZE_FRAME_KEY = "__nvPanelZoomPanContentResizeFrame";
 const INLINE_FIT_ATTR = "data-nv-zoom-inline-fit";
 const INLINE_FIT_STRETCH_ON_ZOOM_OUT = "stretch-on-zoom-out";
+const LOCAL_ZOOM_SCOPE_SELECTOR = "[data-nv-panel-zoom-scope=\"local\"]";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 8;
@@ -172,6 +173,11 @@ export function getPanelElementFromElement(element) {
 
 export function getPanelElementFromEvent(event) {
   return getPanelElementFromElement(event?.target);
+}
+
+function eventUsesLocalZoomScope(event) {
+  const target = event?.target?.nodeType === 1 ? event.target : null;
+  return Boolean(target?.closest?.(LOCAL_ZOOM_SCOPE_SELECTOR));
 }
 
 function getPanelContent(panel) {
@@ -800,6 +806,7 @@ export function installPanelZoomShortcuts() {
 
   const onWheel = (event) => {
     if (!(event.ctrlKey || event.metaKey)) return;
+    if (eventUsesLocalZoomScope(event)) return;
 
     const panel = getPanelElementFromEvent(event);
     if (!isTargetElement(panel)) return;
@@ -813,6 +820,7 @@ export function installPanelZoomShortcuts() {
   const onKeyDown = (event) => {
     const action = getZoomShortcutAction(event);
     if (!action) return;
+    if (eventUsesLocalZoomScope(event)) return;
 
     const panel = getPanelElementFromEvent(event) || getActivePanelElement();
     if (!isTargetElement(panel)) return;

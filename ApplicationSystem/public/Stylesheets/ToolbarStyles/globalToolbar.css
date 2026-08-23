@@ -147,7 +147,7 @@
 /* === Dropdown Panel === */
 .toolbar-dropdown-panel {
   position: absolute;
-  top: 100%;
+  top: calc(100% - 1px);
   left: 0;
   z-index: 1000;
   background: var(--nv-toolbar-dropdown-bg, #f5f5f5);

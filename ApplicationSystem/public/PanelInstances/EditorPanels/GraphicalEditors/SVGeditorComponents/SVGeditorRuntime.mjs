@@ -42,6 +42,12 @@ const SVG_DOCUMENT_METADATA_ID = "nv-document-metadata";
 const SVG_RULER_THICKNESS = 26;
 const SVG_RULER_SIDE = 34;
 const LINE_TOOL_AXIS_TYPES = new Set(["x", "y", "z"]);
+const SVG_ROTATION_ORIGIN_X_ATTR = "data-nv-rotation-origin-x";
+const SVG_ROTATION_ORIGIN_Y_ATTR = "data-nv-rotation-origin-y";
+const SVG_TOOL_MODES = new Set(["select", "rotate", "line", "freehand", "bezier", "sketch", "eyedropper", "eraser"]);
+const SVG_CANVAS_MIN_ZOOM = 0.1;
+const SVG_CANVAS_MAX_ZOOM = 8;
+const SVG_CANVAS_KEYBOARD_ZOOM_FACTOR = 1.1;
 
 function applyEditableSvgRootDefaults(root) {
   if (!root) return root;
@@ -219,6 +225,8 @@ export async function renderEditor(filePath, container) {
 
   const wrapper = document.createElement("div");
   wrapper.id = "editor-root";
+  wrapper.dataset.nvPanelZoomScope = "local";
+  wrapper.dataset.nvSvgEditorRoot = "true";
   Object.assign(wrapper.style, {
     display: "flex",
     flexDirection: "column",
@@ -418,9 +426,9 @@ export async function renderEditor(filePath, container) {
   function syncModeFromToolbarState() {
     const desired = window.NodevisionState?.svgDrawTool;
     if (typeof desired !== "string" || !desired) return false;
-    if (!["select", "line", "freehand", "bezier", "sketch", "eyedropper", "eraser"].includes(desired)) return false;
+    if (!SVG_TOOL_MODES.has(desired)) return false;
     if (desired === toolState.mode) return false;
-    if (toolState.drawing || dragState || marqueeState || lineHandleDragState || resizeState || rotateState) return false;
+    if (toolState.drawing || dragState || marqueeState || lineHandleDragState || resizeState || rotateState || selectionGrabState) return false;
     setMode(desired);
     return true;
   }
@@ -435,6 +443,9 @@ export async function renderEditor(filePath, container) {
   let lineHandleDragState = null;
   let resizeState = null;
   let rotateState = null;
+  let pendingRotateCommand = null;
+  let selectionGrabState = null;
+  let svgCanvasZoom = 1;
   let freehandStrokeState = null;
   let freehandRenderRaf = 0;
   let lastPointerClient = null;
@@ -461,6 +472,25 @@ export async function renderEditor(filePath, container) {
   });
   selectionBox.style.pointerEvents = "none";
   marqueeBox.style.pointerEvents = "none";
+
+  const rotationOriginMarker = createSvgEl("g", {
+    [SVG_UI_ATTR]: "rotation-origin-marker",
+    display: "none",
+  });
+  rotationOriginMarker.style.pointerEvents = "none";
+  const rotationOriginRing = createSvgEl("circle", {
+    fill: "rgba(255,255,255,0.92)",
+    stroke: "#f97316",
+  });
+  const rotationOriginHorizontal = createSvgEl("line", {
+    stroke: "#f97316",
+    "stroke-linecap": "round",
+  });
+  const rotationOriginVertical = createSvgEl("line", {
+    stroke: "#f97316",
+    "stroke-linecap": "round",
+  });
+  rotationOriginMarker.append(rotationOriginRing, rotationOriginHorizontal, rotationOriginVertical);
 
   function createOverlayHandle(kind, attrs = {}) {
     const node = createSvgEl(kind, {
@@ -491,6 +521,7 @@ export async function renderEditor(filePath, container) {
 
   overlayLayer.appendChild(selectionBox);
   overlayLayer.appendChild(marqueeBox);
+  overlayLayer.appendChild(rotationOriginMarker);
   overlayLayer.appendChild(lineStartHandle);
   overlayLayer.appendChild(lineEndHandle);
   Object.values(resizeHandles).forEach((handle) => overlayLayer.appendChild(handle));
@@ -983,6 +1014,15 @@ export async function renderEditor(filePath, container) {
     return Number(value.toFixed(6)).toString();
   }
 
+  function axisPercentToRootDistance(axis, percent) {
+    const value = Number(percent);
+    if (!Number.isFinite(value)) return null;
+    const vb = getViewBox();
+    const dimension = axis === "y" ? vb.height : vb.width;
+    if (!Number.isFinite(dimension) || dimension <= 0) return null;
+    return (dimension * value) / 100;
+  }
+
   function lineToolAngleConstraintLabel(constraint = lineToolState.constraint) {
     if (!constraint || constraint.type !== "angle") return "";
     const value = lineToolAngleRadiansToValue(constraint.angleRad, lineToolAngleUnit());
@@ -1132,7 +1172,10 @@ export async function renderEditor(filePath, container) {
     if (!origin || !Number.isFinite(distance)) return false;
     const layer = constraint.layer || lineToolState.layer || svgRoot;
     const originSpace = constraint.originSpace || getLineToolAnchorSpace(layer, origin);
-    const signedDistance = Math.abs(distance) * getLineToolAxisDirectionSign(constraint);
+    const grabPercentMode = Boolean(lineToolState.grab) && constraint.inputMode !== "position" && (constraint.type === "x" || constraint.type === "y");
+    const rawDistance = grabPercentMode ? axisPercentToRootDistance(constraint.type, Math.abs(distance)) : Math.abs(distance);
+    if (!Number.isFinite(rawDistance)) return false;
+    const signedDistance = rawDistance * getLineToolAxisDirectionSign(constraint);
     const nextSpace = constraint.type === "x"
       ? { x: originSpace.x + signedDistance, y: originSpace.y }
       : constraint.type === "y"
@@ -1141,8 +1184,10 @@ export async function renderEditor(filePath, container) {
     const next = elementPointToRootPoint(layer, nextSpace.x, nextSpace.y);
     constraint.fixedRoot = { ...next };
     if (constraint.type === "z") constraint.zDistance = signedDistance;
-    setLineToolCursorRoot(next);
-    setStatus("Line cursor moved " + constraint.type.toUpperCase() + " by " + signedDistance);
+    if (lineToolState.grab) updateLineToolGrab(next);
+    else setLineToolCursorRoot(next);
+    const amountLabel = grabPercentMode ? formatLineToolAngleNumber(Math.abs(distance)) + "%" : String(signedDistance);
+    setStatus((lineToolState.grab ? "Line grab" : "Line cursor") + " moved " + constraint.type.toUpperCase() + " by " + amountLabel);
     return true;
   }
 
@@ -1179,9 +1224,13 @@ export async function renderEditor(filePath, container) {
     delete constraint.fixedRoot;
     delete constraint.zDistance;
     delete constraint.zPosition;
-    if (lineToolState.cursorRoot) updateLineToolPreview(applyLineToolConstraint(lineToolState.cursorRoot));
-    const action = constraint.inputMode === "position" ? "type position" : "click or Enter to place";
-    setStatus("Line cursor locked to " + lineToolAxisConstraintLabel(constraint) + " axis; " + action);
+    if (lineToolState.cursorRoot) {
+      const constrainedRoot = applyLineToolConstraint(lineToolState.cursorRoot);
+      if (lineToolState.grab) updateLineToolGrab(constrainedRoot);
+      else updateLineToolPreview(constrainedRoot);
+    }
+    const action = constraint.inputMode === "position" ? "type position" : (lineToolState.grab ? "type percent, click or Enter to release" : "click or Enter to place");
+    setStatus((lineToolState.grab ? "Line grab" : "Line cursor") + " locked to " + lineToolAxisConstraintLabel(constraint) + " axis; " + action);
     return true;
   }
 
@@ -1210,7 +1259,7 @@ export async function renderEditor(filePath, container) {
       lineToolState.axisDistanceBuffer = "";
       lineToolState.angleInputBuffer = "";
       if (lineToolState.cursorRoot) updateLineToolPreview(lineToolState.cursorRoot);
-      setStatus(`Line cursor unlocked from ${axis.toUpperCase()} axis`);
+      setStatus((lineToolState.grab ? "Line grab" : "Line cursor") + " unlocked from " + axis.toUpperCase() + " axis");
       return true;
     }
     const layer = lineToolState.layer || getActiveLayer() || svgRoot;
@@ -1227,8 +1276,12 @@ export async function renderEditor(filePath, container) {
     if (Number.isFinite(distance)) {
       applyLineToolAxisDistance(Math.abs(distance));
     } else {
-      if (lineToolState.cursorRoot) updateLineToolPreview(applyLineToolConstraint(lineToolState.cursorRoot));
-      setStatus("Line cursor locked to " + lineToolAxisConstraintLabel(lineToolState.constraint) + " axis; click or Enter to place");
+      if (lineToolState.cursorRoot) {
+        const constrainedRoot = applyLineToolConstraint(lineToolState.cursorRoot);
+        if (lineToolState.grab) updateLineToolGrab(constrainedRoot);
+        else updateLineToolPreview(constrainedRoot);
+      }
+      setStatus((lineToolState.grab ? "Line grab" : "Line cursor") + " locked to " + lineToolAxisConstraintLabel(lineToolState.constraint) + " axis; " + (lineToolState.grab ? "type percent, click or Enter to release" : "click or Enter to place"));
     }
     return true;
   }
@@ -1387,7 +1440,7 @@ export async function renderEditor(filePath, container) {
     lineToolState.constraint = null;
     lineToolState.axisDistanceBuffer = "";
     lineToolState.angleInputBuffer = "";
-    setStatus("Grab vertex: move cursor, click to place, Esc to cancel");
+    setStatus("Grab vertex: move cursor, X/Y locks axis, type percent, click or Enter releases, Esc cancels");
     return true;
   }
 
@@ -1428,7 +1481,10 @@ export async function renderEditor(filePath, container) {
   function finishLineToolGrab() {
     if (!lineToolState.grab) return false;
     lineToolState.grab = null;
-    setStatus("Grabbed vertex placed");
+    lineToolState.constraint = null;
+    lineToolState.axisDistanceBuffer = "";
+    lineToolState.angleInputBuffer = "";
+    setStatus("Grabbed vertex released");
     return true;
   }
 
@@ -1473,9 +1529,13 @@ export async function renderEditor(filePath, container) {
         delete constraint.fixedRoot;
         delete constraint.zDistance;
         delete constraint.zPosition;
-        if (lineToolState.cursorRoot) updateLineToolPreview(applyLineToolConstraint(lineToolState.cursorRoot));
-        const action = isPositionMode ? "type position" : "click or Enter to place";
-        setStatus("Line cursor locked to " + lineToolAxisConstraintLabel(constraint) + " axis; " + action);
+        if (lineToolState.cursorRoot) {
+          const constrainedRoot = applyLineToolConstraint(lineToolState.cursorRoot);
+          if (lineToolState.grab) updateLineToolGrab(constrainedRoot);
+          else updateLineToolPreview(constrainedRoot);
+        }
+        const action = isPositionMode ? "type position" : (lineToolState.grab ? "type percent, click or Enter to release" : "click or Enter to place");
+        setStatus((lineToolState.grab ? "Line grab" : "Line cursor") + " locked to " + lineToolAxisConstraintLabel(constraint) + " axis; " + action);
         return true;
       }
       return reapplyLineToolAxisDistanceBuffer();
@@ -1633,15 +1693,86 @@ export async function renderEditor(filePath, container) {
     return { x: 0, y: 0, width: Math.max(1, w), height: Math.max(1, h) };
   }
 
+  function clampSvgCanvasZoom(value, fallback = svgCanvasZoom || 1) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(SVG_CANVAS_MIN_ZOOM, Math.min(SVG_CANVAS_MAX_ZOOM, n));
+  }
+
+  function svgCanvasZoomLabel() {
+    return Math.round(svgCanvasZoom * 100) + "%";
+  }
+
+  function getSvgZoomAnchorClientPoint(options = {}) {
+    const rect = svgViewport.getBoundingClientRect?.();
+    const clientX = Number(options.clientX);
+    const clientY = Number(options.clientY);
+    return {
+      clientX: Number.isFinite(clientX) ? clientX : (rect ? rect.left + rect.width / 2 : 0),
+      clientY: Number.isFinite(clientY) ? clientY : (rect ? rect.top + rect.height / 2 : 0),
+    };
+  }
+
   function updateSvgSizeToFitWidth() {
     const vb = getSvgViewBox();
     const viewportWidthPx = svgViewport.clientWidth || Math.round(svgViewportHost.getBoundingClientRect().width) || 0;
     if (!viewportWidthPx || !vb.width || !vb.height) return;
-    const heightPx = Math.max(1, Math.round(viewportWidthPx * (vb.height / vb.width)));
-    svgRoot.style.width = "100%";
+    const widthPx = Math.max(1, Math.round(viewportWidthPx * svgCanvasZoom));
+    const heightPx = Math.max(1, Math.round(widthPx * (vb.height / vb.width)));
+    svgRoot.style.width = `${widthPx}px`;
     svgRoot.style.height = `${heightPx}px`;
+    svgRoot.style.minWidth = "0";
     svgRoot.style.minHeight = "0";
     svgRoot.setAttribute("preserveAspectRatio", "xMinYMin meet");
+  }
+
+  function setSvgCanvasZoom(nextZoom, options = {}) {
+    const zoom = clampSvgCanvasZoom(nextZoom);
+    if (Math.abs(zoom - svgCanvasZoom) <= 0.0001) return false;
+
+    const anchor = getSvgZoomAnchorClientPoint(options);
+    const anchorUser = toSvgPoint(svgRoot, anchor.clientX, anchor.clientY);
+    svgCanvasZoom = zoom;
+    updateSvgRulers();
+
+    const vb = getSvgViewBox();
+    const viewportRect = svgViewport.getBoundingClientRect?.();
+    const svgRect = svgRoot.getBoundingClientRect?.();
+    if (viewportRect && svgRect && svgRect.width > 0 && svgRect.height > 0) {
+      const localX = anchor.clientX - viewportRect.left;
+      const localY = anchor.clientY - viewportRect.top;
+      const pxPerUnitX = svgRect.width / vb.width;
+      const pxPerUnitY = svgRect.height / vb.height;
+      svgViewport.scrollLeft = Math.max(0, (anchorUser.x - vb.x) * pxPerUnitX - localX);
+      svgViewport.scrollTop = Math.max(0, (anchorUser.y - vb.y) * pxPerUnitY - localY);
+    }
+
+    updateSvgRulers();
+    setStatus("Zoom: " + svgCanvasZoomLabel());
+    return true;
+  }
+
+  function zoomSvgCanvasBy(factor, options = {}) {
+    const f = Number(factor);
+    return setSvgCanvasZoom(svgCanvasZoom * (Number.isFinite(f) && f > 0 ? f : 1), options);
+  }
+
+  function getSvgCanvasZoomShortcutAction(e) {
+    if (!(e?.ctrlKey || e?.metaKey) || e.altKey) return null;
+    const key = String(e.key || "").toLowerCase();
+    const code = String(e.code || "");
+    if (key === "+" || key === "=" || code === "Equal" || code === "NumpadAdd") return "in";
+    if (key === "-" || key === "_" || code === "Minus" || code === "NumpadSubtract") return "out";
+    if (key === "0" || code === "Digit0" || code === "Numpad0") return "reset";
+    return null;
+  }
+
+  function handleSvgCanvasZoomShortcut(e) {
+    const action = getSvgCanvasZoomShortcutAction(e);
+    if (!action) return false;
+    if (action === "reset") setSvgCanvasZoom(1);
+    else zoomSvgCanvasBy(action === "in" ? SVG_CANVAS_KEYBOARD_ZOOM_FACTOR : 1 / SVG_CANVAS_KEYBOARD_ZOOM_FACTOR);
+    return true;
   }
 
   function setupRulerCanvas(canvas, cssWidth, cssHeight) {
@@ -1805,6 +1936,14 @@ export async function renderEditor(filePath, container) {
   svgRulerObserver.observe(svgViewportHost);
   window.addEventListener("resize", updateSvgRulers);
   svgViewport.addEventListener("scroll", updateSvgRulers);
+  svgViewport.addEventListener("wheel", (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const deltaY = Number.isFinite(Number(e.deltaY)) ? Number(e.deltaY) : 0;
+    const boundedDelta = Math.max(-600, Math.min(600, deltaY));
+    zoomSvgCanvasBy(Math.exp(-boundedDelta * 0.0015), { clientX: e.clientX, clientY: e.clientY });
+  }, { passive: false });
   updateSvgRulers();
 
   function setStatus(text) {
@@ -2144,6 +2283,184 @@ export async function renderEditor(filePath, container) {
     return { x: minX, y: minY, width: Math.max(0, maxX - minX), height: Math.max(0, maxY - minY) };
   }
 
+  function formatSvgNumber(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "0";
+    return Number(n.toFixed(6)).toString();
+  }
+
+  function normalizeRootPoint(point) {
+    const x = Number(point?.x);
+    const y = Number(point?.y);
+    return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+  }
+
+  function getSelectedRotationOriginElement() {
+    return selectedElements.length === 1 ? selectedElements[0] : null;
+  }
+
+  function getStoredRotationOriginLocal(el) {
+    if (!el?.hasAttribute?.(SVG_ROTATION_ORIGIN_X_ATTR) || !el?.hasAttribute?.(SVG_ROTATION_ORIGIN_Y_ATTR)) return null;
+    const x = Number.parseFloat(el.getAttribute(SVG_ROTATION_ORIGIN_X_ATTR));
+    const y = Number.parseFloat(el.getAttribute(SVG_ROTATION_ORIGIN_Y_ATTR));
+    return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+  }
+
+  function setStoredRotationOriginLocal(el, localPoint) {
+    const point = normalizeRootPoint(localPoint);
+    if (!el || !point) return false;
+    el.setAttribute(SVG_ROTATION_ORIGIN_X_ATTR, formatSvgNumber(point.x));
+    el.setAttribute(SVG_ROTATION_ORIGIN_Y_ATTR, formatSvgNumber(point.y));
+    return true;
+  }
+
+  function readStoredRotationOriginRoot(el) {
+    const localPoint = getStoredRotationOriginLocal(el);
+    return localPoint ? elementPointToRootPoint(el, localPoint.x, localPoint.y) : null;
+  }
+
+  function setElementRotationOriginRoot(el, rootPoint) {
+    const point = normalizeRootPoint(rootPoint);
+    if (!el || !point) return false;
+    return setStoredRotationOriginLocal(el, rootPointToElementPoint(el, point));
+  }
+
+  function translateStoredRotationOriginLocal(el, dx, dy) {
+    const localPoint = getStoredRotationOriginLocal(el);
+    if (!localPoint) return false;
+    return setStoredRotationOriginLocal(el, { x: localPoint.x + dx, y: localPoint.y + dy });
+  }
+
+  function applyDragRotationOriginDelta(el, base, dx, dy) {
+    const localPoint = base?.rotationOriginLocal || null;
+    if (!localPoint) return false;
+    return setStoredRotationOriginLocal(el, { x: localPoint.x + dx, y: localPoint.y + dy });
+  }
+
+  function getDefaultRotationCenterRoot() {
+    const bbox = getSelectedUnionBBox();
+    if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return null;
+    return { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
+  }
+
+  function getCurrentRotationOriginMarkerPoint() {
+    if (pendingRotateCommand?.centerRoot) return pendingRotateCommand.centerRoot;
+    const stored = readStoredRotationOriginRoot(getSelectedRotationOriginElement());
+    return stored || null;
+  }
+
+  function updateRotationOriginMarker(rootPoint = null) {
+    const point = normalizeRootPoint(rootPoint) || getCurrentRotationOriginMarkerPoint();
+    if (!point || !selectedElements.length) {
+      rotationOriginMarker.setAttribute("display", "none");
+      return;
+    }
+    const size = Math.max(2, pointerToleranceInSvgUnits(7));
+    const radius = Math.max(1.5, pointerToleranceInSvgUnits(4));
+    const strokeWidth = Math.max(0.05, pointerToleranceInSvgUnits(1.5));
+    rotationOriginMarker.setAttribute("transform", "translate(" + point.x + " " + point.y + ")");
+    rotationOriginRing.setAttribute("r", String(radius));
+    rotationOriginRing.setAttribute("stroke-width", String(strokeWidth));
+    rotationOriginHorizontal.setAttribute("x1", String(-size));
+    rotationOriginHorizontal.setAttribute("y1", "0");
+    rotationOriginHorizontal.setAttribute("x2", String(size));
+    rotationOriginHorizontal.setAttribute("y2", "0");
+    rotationOriginHorizontal.setAttribute("stroke-width", String(strokeWidth));
+    rotationOriginVertical.setAttribute("x1", "0");
+    rotationOriginVertical.setAttribute("y1", String(-size));
+    rotationOriginVertical.setAttribute("x2", "0");
+    rotationOriginVertical.setAttribute("y2", String(size));
+    rotationOriginVertical.setAttribute("stroke-width", String(strokeWidth));
+    rotationOriginMarker.setAttribute("display", "");
+  }
+
+  function targetIsInsideSingleSelection(target) {
+    const selected = getSelectedRotationOriginElement();
+    return Boolean(selected && target && (target === selected || selected.contains?.(target)));
+  }
+
+  function rotationOriginAxisLabel(axis) {
+    return axis === "x" ? "X axis" : (axis === "y" ? "Y axis" : "free point");
+  }
+
+  function updateRotationOriginPlacementStatus(message = "") {
+    const placement = pendingRotateCommand?.originPlacement || null;
+    if (!placement) return;
+    const axisText = placement.axis ? " locked to " + rotationOriginAxisLabel(placement.axis) : "";
+    setStatus(message || "Rotation origin" + axisText + ": click the selected object to place it; X/Y constrains, Enter keeps current, Esc cancels placement");
+  }
+
+  function constrainRotationOriginPoint(command, rootPoint) {
+    const point = normalizeRootPoint(rootPoint);
+    if (!command || !point) return point;
+    const placement = command.originPlacement || null;
+    const anchor = placement?.anchorRoot || command.centerRoot || getDefaultRotationCenterRoot();
+    if (!placement?.axis || !anchor) return point;
+    if (placement.axis === "x") return { x: point.x, y: anchor.y };
+    if (placement.axis === "y") return { x: anchor.x, y: point.y };
+    return point;
+  }
+
+  function setPendingRotationOriginAxis(axis) {
+    const command = pendingRotateCommand;
+    const cleanAxis = axis === "x" || axis === "y" ? axis : null;
+    if (!command || !command.originPlacement || !cleanAxis) return false;
+    command.originPlacement.axis = cleanAxis;
+    command.prefix = "ro" + cleanAxis;
+    updateRotationOriginPlacementStatus("Rotation origin locked to " + cleanAxis.toUpperCase() + " axis; click selected object to place it");
+    return true;
+  }
+
+  function startRotationOriginPlacement(axis = null) {
+    const command = pendingRotateCommand || beginPendingRotationCommand("keyboard");
+    if (!command) return true;
+    if (selectedElements.length !== 1) {
+      setStatus("Rotation origin: select exactly one object first");
+      return true;
+    }
+    const cleanAxis = axis === "x" || axis === "y" ? axis : null;
+    command.originPlacement = {
+      axis: cleanAxis,
+      anchorRoot: command.centerRoot ? { ...command.centerRoot } : getDefaultRotationCenterRoot(),
+    };
+    command.prefix = cleanAxis ? "ro" + cleanAxis : "ro";
+    updateRotationOriginMarker(command.centerRoot);
+    updateRotationOriginPlacementStatus();
+    return true;
+  }
+
+  function setSelectedRotationOriginRoot(rootPoint) {
+    const selected = getSelectedRotationOriginElement();
+    if (!selected) {
+      setStatus("Rotation origin: select one object first");
+      return false;
+    }
+    if (!setElementRotationOriginRoot(selected, rootPoint)) return false;
+    refreshSelectionAfterMutation("rotation-origin");
+    return true;
+  }
+
+  function placePendingRotationOrigin(rootPoint) {
+    const command = pendingRotateCommand;
+    if (!command?.originPlacement) return false;
+    const point = constrainRotationOriginPoint(command, rootPoint);
+    if (!point) return false;
+    const angleRad = command.angleRad || 0;
+    const hadPreview = command.applied || Math.abs(angleRad) > 1e-12;
+    if (hadPreview) restoreRotationCommandBase(command);
+    const changed = runSvgSnapshotOperation("set-rotation-origin", () => setSelectedRotationOriginRoot(point));
+    command.beforeSvgText = window.getEditorHTML?.() || command.beforeSvgText || "";
+    command.items = buildRotationCommandItems(selectedElements);
+    command.centerRoot = { ...point };
+    command.originPlacement = null;
+    command.originChanged = Boolean(command.originChanged || changed);
+    command.prefix = command.unit === "deg" ? "rd" : "r";
+    if (hadPreview) applyRotationAngleToCommand(command, angleRad, "rotation-origin");
+    else refreshSelectionVisuals();
+    updatePendingRotationStatus(changed ? "Rotation origin placed; type angle, drag selection, Enter commits" : "Rotation origin unchanged; type angle, drag selection, Enter commits");
+    return true;
+  }
+
   function isSelectedLineVertexValid() {
     const line = selectedLineVertex?.line || null;
     const which = selectedLineVertex?.which || "";
@@ -2339,6 +2656,7 @@ export async function renderEditor(filePath, container) {
       selectionBox.setAttribute("display", "none");
     }
     refreshTransformHandles();
+    updateRotationOriginMarker();
   }
 
   function isSvgImageElement(el) {
@@ -2438,6 +2756,8 @@ export async function renderEditor(filePath, container) {
   }
 
   function clearSelection() {
+    if (selectionGrabState) commitSelectionGrabCommand({ silent: true });
+    if (pendingRotateCommand) commitPendingRotationCommand({ silent: true });
     clearMaskEditState({ silent: true });
     selectedElements = [];
     clearSelectedLineVertex();
@@ -2449,6 +2769,8 @@ export async function renderEditor(filePath, container) {
   }
 
   function setSelection(elements = [], options = {}) {
+    if (selectionGrabState) commitSelectionGrabCommand({ silent: true });
+    if (pendingRotateCommand) commitPendingRotationCommand({ silent: true });
     const unique = [];
     elements.forEach((el) => {
       if (isSelectableElement(el, options) && !unique.includes(el)) unique.push(el);
@@ -2506,16 +2828,19 @@ export async function renderEditor(filePath, container) {
     if (tag === "rect" || tag === "image" || tag === "use" || tag === "foreignobject") {
       setAttrNumber(el, "x", getAttrNumber(el, "x", 0) + dx);
       setAttrNumber(el, "y", getAttrNumber(el, "y", 0) + dy);
+      translateStoredRotationOriginLocal(el, dx, dy);
       return;
     }
     if (tag === "text") {
       setAttrNumber(el, "x", getAttrNumber(el, "x", 0) + dx);
       setAttrNumber(el, "y", getAttrNumber(el, "y", 0) + dy);
+      translateStoredRotationOriginLocal(el, dx, dy);
       return;
     }
     if (tag === "circle" || tag === "ellipse") {
       setAttrNumber(el, "cx", getAttrNumber(el, "cx", 0) + dx);
       setAttrNumber(el, "cy", getAttrNumber(el, "cy", 0) + dy);
+      translateStoredRotationOriginLocal(el, dx, dy);
       return;
     }
     if (tag === "line") {
@@ -2523,11 +2848,13 @@ export async function renderEditor(filePath, container) {
       setAttrNumber(el, "y1", getAttrNumber(el, "y1", 0) + dy);
       setAttrNumber(el, "x2", getAttrNumber(el, "x2", 0) + dx);
       setAttrNumber(el, "y2", getAttrNumber(el, "y2", 0) + dy);
+      translateStoredRotationOriginLocal(el, dx, dy);
       return;
     }
     if (tag === "polygon" || tag === "polyline") {
       const moved = parsePoints(el.getAttribute("points") || "").map(([x, y]) => [x + dx, y + dy]);
       el.setAttribute("points", formatPoints(moved));
+      translateStoredRotationOriginLocal(el, dx, dy);
       return;
     }
     const prev = (el.getAttribute("transform") || "").trim();
@@ -2541,6 +2868,256 @@ export async function renderEditor(filePath, container) {
     selectedElements.forEach((el) => translateElement(el, dx, dy));
     refreshSelectionAfterMutation("move");
     return true;
+  }
+
+  function getSelectionGrabAnchorRoot() {
+    const bbox = getSelectedUnionBBox();
+    if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return null;
+    return { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
+  }
+
+  function buildSelectionGrabItems(elements = selectedElements) {
+    return elements.filter(Boolean).map((el) => ({
+      element: el,
+      space: getDragSpaceForElement(el),
+      base: getDragBaseForElement(el),
+    }));
+  }
+
+  function restoreSelectionGrabBase(grab = selectionGrabState) {
+    grab?.items?.forEach((item) => applyDragDeltaToElement(item.element, item.base, 0, 0));
+  }
+
+  function constrainSelectionGrabTarget(grab, rawRoot) {
+    if (!grab || !rawRoot) return rawRoot;
+    const axis = grab.axis;
+    if (axis !== "x" && axis !== "y") return rawRoot;
+    const sign = grab.axisDirectionSign < 0 ? -1 : 1;
+    if (axis === "x") {
+      return {
+        x: grab.anchorRoot.x + Math.abs(rawRoot.x - grab.anchorRoot.x) * sign,
+        y: grab.anchorRoot.y,
+      };
+    }
+    return {
+      x: grab.anchorRoot.x,
+      y: grab.anchorRoot.y + Math.abs(rawRoot.y - grab.anchorRoot.y) * sign,
+    };
+  }
+
+  function applySelectionGrabTargetRoot(rawRoot, reason = "grab-preview") {
+    const grab = selectionGrabState;
+    if (!grab || !rawRoot || !Number.isFinite(rawRoot.x) || !Number.isFinite(rawRoot.y)) return false;
+    grab.pointerRoot = { ...rawRoot };
+    const targetRoot = constrainSelectionGrabTarget(grab, grab.fixedRoot || rawRoot);
+    grab.currentRoot = { ...targetRoot };
+    grab.applied = true;
+    grab.items.forEach((item) => {
+      if (!item?.element || !item.base) return;
+      const anchorSpace = item.space && item.space !== svgRoot
+        ? rootPointToElementPoint(item.space, grab.anchorRoot)
+        : grab.anchorRoot;
+      const targetSpace = item.space && item.space !== svgRoot
+        ? rootPointToElementPoint(item.space, targetRoot)
+        : targetRoot;
+      applyDragDeltaToElement(item.element, item.base, targetSpace.x - anchorSpace.x, targetSpace.y - anchorSpace.y);
+    });
+    refreshSelectionAfterMutation(reason);
+    return true;
+  }
+
+  function updateSelectionGrabStatus(message = "") {
+    const grab = selectionGrabState;
+    if (!grab) return;
+    const axis = grab.axis ? grab.axis.toUpperCase() + " axis; " : "";
+    const typed = grab.buffer ? grab.buffer + "%" : "move cursor";
+    setStatus(message || "Grab selection: " + axis + typed + "; X/Y locks axis, type percent, click or Enter releases, Esc cancels");
+  }
+
+  function beginSelectionGrabCommand(source = "keyboard") {
+    if (selectionGrabState) return true;
+    if (pendingRotateCommand) commitPendingRotationCommand({ silent: true });
+    if (!selectedElements.length) {
+      setStatus("Grab: select an object first");
+      return false;
+    }
+    if (nodeEditor.isActive?.()) nodeEditor.exit?.();
+    const anchorRoot = getSelectionGrabAnchorRoot();
+    const items = buildSelectionGrabItems(selectedElements);
+    if (!anchorRoot || !items.length) {
+      setStatus("Grab: selection cannot be measured");
+      return false;
+    }
+    selectionGrabState = {
+      source,
+      anchorRoot,
+      currentRoot: { ...anchorRoot },
+      pointerRoot: { ...anchorRoot },
+      axis: null,
+      axisDirectionSign: 1,
+      buffer: "",
+      applied: false,
+      items,
+      beforeSvgText: window.getEditorHTML?.() || "",
+    };
+    updateSelectionGrabStatus("Grab selection: move cursor, X/Y locks axis, type percent, click or Enter releases, Esc cancels");
+    return true;
+  }
+
+  function setSelectionGrabAxis(axis) {
+    const grab = selectionGrabState;
+    if (!grab || (axis !== "x" && axis !== "y")) return false;
+    grab.axis = axis;
+    grab.axisDirectionSign = 1;
+    grab.buffer = "";
+    delete grab.fixedRoot;
+    if (grab.pointerRoot || lastPointerRoot) applySelectionGrabTargetRoot(grab.pointerRoot || lastPointerRoot);
+    updateSelectionGrabStatus("Grab selection locked to " + axis.toUpperCase() + " axis; type percent, click or Enter releases");
+    return true;
+  }
+
+  function applySelectionGrabPercentBuffer() {
+    const grab = selectionGrabState;
+    if (!grab || (grab.axis !== "x" && grab.axis !== "y")) return false;
+    const value = parseLineToolNumber(grab.buffer);
+    if (value === null) {
+      delete grab.fixedRoot;
+      if (grab.pointerRoot || lastPointerRoot) applySelectionGrabTargetRoot(grab.pointerRoot || lastPointerRoot);
+      else restoreSelectionGrabBase(grab);
+      updateSelectionGrabStatus();
+      return true;
+    }
+    const distance = axisPercentToRootDistance(grab.axis, Math.abs(value));
+    if (!Number.isFinite(distance)) return false;
+    const sign = grab.axisDirectionSign < 0 ? -1 : 1;
+    const targetRoot = grab.axis === "x"
+      ? { x: grab.anchorRoot.x + distance * sign, y: grab.anchorRoot.y }
+      : { x: grab.anchorRoot.x, y: grab.anchorRoot.y + distance * sign };
+    const pointerRoot = grab.pointerRoot ? { ...grab.pointerRoot } : null;
+    grab.fixedRoot = { ...targetRoot };
+    applySelectionGrabTargetRoot(targetRoot);
+    if (pointerRoot) grab.pointerRoot = pointerRoot;
+    updateSelectionGrabStatus("Grab selection moved " + grab.axis.toUpperCase() + " by " + formatLineToolAngleNumber(Math.abs(value)) + "%");
+    return true;
+  }
+
+  function toggleSelectionGrabAxisDirection(sign = null) {
+    const grab = selectionGrabState;
+    if (!grab) return false;
+    grab.axisDirectionSign = sign === 1 ? 1 : (sign === -1 ? -1 : (grab.axisDirectionSign < 0 ? 1 : -1));
+    return grab.buffer ? applySelectionGrabPercentBuffer() : ((grab.pointerRoot || lastPointerRoot) ? applySelectionGrabTargetRoot(grab.pointerRoot || lastPointerRoot) : (updateSelectionGrabStatus(), true));
+  }
+
+  function updateSelectionLayerOrderStatus(message = "") {
+    setStatus(message || "Layer order: PageUp/ArrowUp moves up, PageDown/ArrowDown moves down, Enter/Esc exits");
+  }
+
+  function beginSelectionLayerOrderCommand() {
+    const grab = selectionGrabState;
+    if (!grab) return false;
+    if (grab.applied) restoreSelectionGrabBase(grab);
+    grab.layerOrderMode = true;
+    grab.axis = null;
+    grab.buffer = "";
+    grab.applied = false;
+    delete grab.fixedRoot;
+    refreshSelectionVisuals();
+    updateSelectionLayerOrderStatus("Layer order: PageUp/ArrowUp moves up one place, PageDown/ArrowDown moves down");
+    return true;
+  }
+
+  function finishSelectionLayerOrderCommand(options = {}) {
+    if (!selectionGrabState?.layerOrderMode) return false;
+    selectionGrabState = null;
+    if (!options.silent) setStatus("Layer order shortcut ended");
+    return true;
+  }
+
+  function moveSelectionLayerOrderShortcut(direction) {
+    const moved = runSvgSnapshotOperation("layer-order", () => moveSelectionInHierarchy(direction));
+    if (moved) {
+      updateSelectionLayerOrderStatus(direction >= 0
+        ? "Moved selection up one place; PageUp/ArrowUp repeats, Enter/Esc exits"
+        : "Moved selection down one place; PageDown/ArrowDown repeats, Enter/Esc exits");
+    }
+    return true;
+  }
+
+  function commitSelectionGrabCommand(options = {}) {
+    const grab = selectionGrabState;
+    if (!grab) return false;
+    selectionGrabState = null;
+    if (grab.layerOrderMode) {
+      if (!options.silent) setStatus("Layer order shortcut ended");
+      return false;
+    }
+    if (!grab.applied) {
+      if (!options.silent) setStatus("Grab released");
+      return false;
+    }
+    const before = grab.beforeSvgText || "";
+    const after = window.getEditorHTML?.() || "";
+    if (before && after && before !== after) {
+      history.pushCustom({
+        kind: "grab-selection",
+        undo: () => { window.setEditorHTML?.(before); return { label: "grab-selection" }; },
+        redo: () => { window.setEditorHTML?.(after); return { label: "grab-selection" }; },
+      });
+      markDocumentDirty(true);
+    }
+    refreshSelectionAfterMutation("grab");
+    if (!options.silent) setStatus("Grab released");
+    return true;
+  }
+
+  function cancelSelectionGrabCommand() {
+    const grab = selectionGrabState;
+    if (!grab) return false;
+    if (grab.layerOrderMode) {
+      selectionGrabState = null;
+      setStatus("Layer order shortcut ended");
+      return true;
+    }
+    restoreSelectionGrabBase(grab);
+    selectionGrabState = null;
+    refreshSelectionAfterMutation("grab-cancel");
+    setStatus("Grab canceled");
+    return true;
+  }
+
+  function handleSelectionGrabKey(e) {
+    const key = String(e.key || "");
+    const lower = key.toLowerCase();
+    if (e.ctrlKey || e.metaKey || e.altKey) return false;
+
+    if (selectionGrabState) {
+      if (selectionGrabState.layerOrderMode) {
+        if (key === "Enter") return finishSelectionLayerOrderCommand();
+        if (key === "Escape") return cancelSelectionGrabCommand();
+        if (key === "PageUp" || key === "ArrowUp") return moveSelectionLayerOrderShortcut(1);
+        if (key === "PageDown" || key === "ArrowDown") return moveSelectionLayerOrderShortcut(-1);
+        return false;
+      }
+      if (key === "Enter") return commitSelectionGrabCommand();
+      if (key === "Escape") return cancelSelectionGrabCommand();
+      if (key === "Backspace") {
+        if (!selectionGrabState.axis) return true;
+        selectionGrabState.buffer = selectionGrabState.buffer.slice(0, -1);
+        return applySelectionGrabPercentBuffer();
+      }
+      if (lower === "z" && key.length === 1 && !selectionGrabState.axis && !selectionGrabState.buffer) return beginSelectionLayerOrderCommand();
+      if (lower === "x" || lower === "y") return setSelectionGrabAxis(lower);
+      if (key === "-") return toggleSelectionGrabAxisDirection();
+      if (key === "+") return toggleSelectionGrabAxisDirection(1);
+      if (!selectionGrabState.axis || !"0123456789.".includes(key)) return false;
+      if (key === "." && selectionGrabState.buffer.includes(".")) return false;
+      selectionGrabState.buffer += key;
+      return applySelectionGrabPercentBuffer();
+    }
+
+    if (toolState.mode !== "select" && toolState.mode !== "rotate") return false;
+    if (lower !== "g" || key.length !== 1) return false;
+    return beginSelectionGrabCommand("keyboard");
   }
 
   function rotatePointAroundCenter(point, center, angleRadians) {
@@ -2562,6 +3139,275 @@ export async function renderEditor(filePath, container) {
   function setParentSpaceTransformFromBase(el, baseTransform, operation) {
     const base = String(baseTransform || "").trim();
     el.setAttribute("transform", base ? operation + " " + base : operation);
+  }
+
+  function restoreTransformSnapshot(item) {
+    const el = item?.element;
+    if (!el) return;
+    if (item.hadTransform) el.setAttribute("transform", item.baseTransform || "");
+    else el.removeAttribute("transform");
+  }
+
+  function restoreRotationCommandBase(command) {
+    command?.items?.forEach((item) => restoreTransformSnapshot(item));
+  }
+
+  function buildRotationCommandItems(elements = selectedElements) {
+    return elements.filter(Boolean).map((el) => ({
+      element: el,
+      space: getDragSpaceForElement(el),
+      hadTransform: el.hasAttribute("transform"),
+      baseTransform: el.getAttribute("transform") || "",
+    }));
+  }
+
+  function getRotationCenterRoot() {
+    const stored = readStoredRotationOriginRoot(getSelectedRotationOriginElement());
+    return stored || getDefaultRotationCenterRoot();
+  }
+
+  function applyRotationAngleToCommand(command, angleRad, reason = "rotate-preview") {
+    if (!command || !command.items?.length || !Number.isFinite(angleRad)) return false;
+    command.angleRad = angleRad;
+    command.applied = true;
+    const angleDeg = (angleRad * 180) / Math.PI;
+    command.items.forEach((item) => {
+      if (!item?.element) return;
+      const center = item.space && item.space !== svgRoot
+        ? rootPointToElementPoint(item.space, command.centerRoot)
+        : command.centerRoot;
+      setParentSpaceTransformFromBase(
+        item.element,
+        item.baseTransform,
+        "rotate(" + angleDeg + " " + center.x + " " + center.y + ")"
+      );
+    });
+    refreshSelectionAfterMutation(reason);
+    return true;
+  }
+
+  function rotationCommandUnitLabel(command = pendingRotateCommand) {
+    return command?.unit === "deg" ? "degrees" : "radians";
+  }
+
+  function pendingRotationDisplayValue(command = pendingRotateCommand) {
+    if (!command) return "";
+    if (command.buffer) {
+      const sign = command.directionSign < 0 ? "-" : "";
+      return sign + command.buffer + " " + rotationCommandUnitLabel(command);
+    }
+    const value = command.unit === "deg"
+      ? (command.angleRad * 180) / Math.PI
+      : command.angleRad;
+    if (!Number.isFinite(value) || Math.abs(value) <= 1e-12) return "0 " + rotationCommandUnitLabel(command);
+    return formatLineToolAngleNumber(value) + " " + rotationCommandUnitLabel(command);
+  }
+
+  function updatePendingRotationStatus(message = "") {
+    if (!pendingRotateCommand) return;
+    if (pendingRotateCommand.originPlacement) {
+      updateRotationOriginPlacementStatus(message);
+      return;
+    }
+    setStatus(message || "Rotate preview: " + pendingRotationDisplayValue(pendingRotateCommand) + "; type a number, ro origin, rr radians, rd degrees, - flips, Enter commits, Esc cancels");
+  }
+
+  function beginPendingRotationCommand(source = "keyboard") {
+    if (pendingRotateCommand) return pendingRotateCommand;
+    if (!selectedElements.length) {
+      setMode("rotate");
+      setStatus("Rotate tool: select an object, then drag or type an angle");
+      return null;
+    }
+    if (nodeEditor.isActive?.()) nodeEditor.exit?.();
+    const centerRoot = getRotationCenterRoot();
+    if (!centerRoot) {
+      setStatus("Rotate: selection cannot be measured");
+      return null;
+    }
+    const items = buildRotationCommandItems(selectedElements);
+    if (!items.length) return null;
+    pendingRotateCommand = {
+      source,
+      prefix: "r",
+      unit: "rad",
+      buffer: "",
+      directionSign: 1,
+      angleRad: 0,
+      applied: false,
+      originChanged: false,
+      centerRoot,
+      items,
+      beforeSvgText: window.getEditorHTML?.() || "",
+    };
+    updateRotationOriginMarker(centerRoot);
+    updatePendingRotationStatus("Rotate preview started: type radians, ro origin, rr radians, rd degrees, drag selection, Enter commits, Esc cancels");
+    return pendingRotateCommand;
+  }
+
+  function reapplyPendingRotationBuffer() {
+    const command = pendingRotateCommand;
+    if (!command) return false;
+    const value = parseLineToolNumber(command.buffer);
+    if (value === null) {
+      restoreRotationCommandBase(command);
+      command.applied = false;
+      command.angleRad = 0;
+      refreshSelectionVisuals();
+      updatePendingRotationStatus();
+      return true;
+    }
+    const angleRad = lineToolAngleValueToRadians(Math.abs(value), command.unit) * (command.directionSign < 0 ? -1 : 1);
+    const applied = applyRotationAngleToCommand(command, angleRad);
+    updatePendingRotationStatus();
+    return applied;
+  }
+
+  function setPendingRotationUnit(unit) {
+    const command = pendingRotateCommand;
+    if (!command || command.buffer) return false;
+    command.unit = unit === "deg" ? "deg" : "rad";
+    command.prefix = command.unit === "deg" ? "rd" : "rr";
+    updatePendingRotationStatus("Rotate input set to " + rotationCommandUnitLabel(command));
+    return true;
+  }
+
+  function togglePendingRotationDirection() {
+    const command = pendingRotateCommand;
+    if (!command) return false;
+    command.directionSign = command.directionSign < 0 ? 1 : -1;
+    if (command.buffer) return reapplyPendingRotationBuffer();
+    if (command.applied || Math.abs(command.angleRad) > 1e-12) {
+      applyRotationAngleToCommand(command, -command.angleRad);
+      updatePendingRotationStatus();
+      return true;
+    }
+    updatePendingRotationStatus("Rotate sign flipped; type an angle");
+    return true;
+  }
+
+  function commitPendingRotationCommand(options = {}) {
+    const command = pendingRotateCommand;
+    if (!command) return false;
+    pendingRotateCommand = null;
+    if (!command.applied) {
+      restoreRotationCommandBase(command);
+      refreshSelectionVisuals();
+      if (!options.silent) setStatus(command.originChanged ? "Rotation origin set" : "Rotate canceled: no angle applied");
+      return Boolean(command.originChanged);
+    }
+    const before = command.beforeSvgText || "";
+    const after = window.getEditorHTML?.() || "";
+    if (before && after && before !== after) {
+      history.pushCustom({
+        kind: "rotate-selection",
+        undo: () => { window.setEditorHTML?.(before); return { label: "rotate-selection" }; },
+        redo: () => { window.setEditorHTML?.(after); return { label: "rotate-selection" }; },
+      });
+      markDocumentDirty(true);
+    }
+    refreshSelectionAfterMutation("rotate");
+    if (!options.silent) setStatus("Rotation applied");
+    return true;
+  }
+
+  function cancelPendingRotationCommand() {
+    const command = pendingRotateCommand;
+    if (!command) return false;
+    restoreRotationCommandBase(command);
+    pendingRotateCommand = null;
+    rotateState = null;
+    refreshSelectionAfterMutation("rotate-cancel");
+    setStatus("Rotate preview canceled");
+    return true;
+  }
+
+  function startPendingRotationDrag(target, pointerId, point) {
+    if (!target || !selectedElements.includes(target)) return false;
+    const command = beginPendingRotationCommand("drag");
+    if (!command) return false;
+    const center = command.centerRoot;
+    rotateState = {
+      pointerId,
+      command,
+      cx: center.x,
+      cy: center.y,
+      startAngle: Math.atan2(point.y - center.y, point.x - center.x),
+      baseAngleRad: command.angleRad || 0,
+    };
+    try {
+      svgRoot.setPointerCapture(pointerId);
+    } catch {
+      // Ignore unsupported pointer capture errors.
+    }
+    setStatus("Rotate drag: release to preview, Enter commits, Esc cancels");
+    return true;
+  }
+
+  function handleSelectionRotateKey(e) {
+    const key = String(e.key || "");
+    const lower = key.toLowerCase();
+    if (e.ctrlKey || e.metaKey || e.altKey) return false;
+
+    if (pendingRotateCommand) {
+      if (pendingRotateCommand.originPlacement) {
+        if (key === "Enter") {
+          pendingRotateCommand.originPlacement = null;
+          updatePendingRotationStatus("Rotation origin kept; type angle, drag selection, Enter commits");
+          return true;
+        }
+        if (key === "Escape") {
+          pendingRotateCommand.originPlacement = null;
+          updatePendingRotationStatus("Rotation origin placement canceled");
+          return true;
+        }
+        if (key === "Backspace") {
+          if (pendingRotateCommand.originPlacement.axis) {
+            pendingRotateCommand.originPlacement.axis = null;
+            pendingRotateCommand.prefix = "ro";
+            updateRotationOriginPlacementStatus("Rotation origin axis constraint cleared; click selected object to place it");
+            return true;
+          }
+          pendingRotateCommand.originPlacement = null;
+          updatePendingRotationStatus();
+          return true;
+        }
+        if (lower === "x" || lower === "y") return setPendingRotationOriginAxis(lower);
+        if (lower === "z") {
+          setStatus("Rotation origin is 2D; use X or Y to constrain placement");
+          return true;
+        }
+        if (lower === "o") return startRotationOriginPlacement();
+        return false;
+      }
+      if (key === "Enter") return commitPendingRotationCommand();
+      if (key === "Escape") return cancelPendingRotationCommand();
+      if (key === "Backspace") {
+        if (pendingRotateCommand.buffer) {
+          pendingRotateCommand.buffer = pendingRotateCommand.buffer.slice(0, -1);
+          return reapplyPendingRotationBuffer();
+        }
+        if (pendingRotateCommand.prefix === "rd") return setPendingRotationUnit("rad");
+        return cancelPendingRotationCommand();
+      }
+      if (key === "-") return togglePendingRotationDirection();
+      if (key === "+") {
+        pendingRotateCommand.directionSign = 1;
+        return pendingRotateCommand.buffer ? reapplyPendingRotationBuffer() : (updatePendingRotationStatus("Rotate sign set positive"), true);
+      }
+      if (!pendingRotateCommand.buffer && lower === "o") return startRotationOriginPlacement();
+      if (!pendingRotateCommand.buffer && lower === "r") return setPendingRotationUnit("rad");
+      if (!pendingRotateCommand.buffer && lower === "d") return setPendingRotationUnit("deg");
+      if (key.length !== 1 || !"0123456789.".includes(key)) return false;
+      if (key === "." && pendingRotateCommand.buffer.includes(".")) return false;
+      pendingRotateCommand.buffer += key;
+      return reapplyPendingRotationBuffer();
+    }
+
+    if (toolState.mode !== "select" && toolState.mode !== "rotate") return false;
+    if (lower !== "r" || key.length !== 1) return false;
+    beginPendingRotationCommand("keyboard");
+    return true;
   }
 
   function deleteSelection() {
@@ -2639,6 +3485,74 @@ export async function renderEditor(filePath, container) {
     }
     setStatus(mode === "front" ? "Brought selection to front" : "Sent selection to back");
     refreshSelectionVisuals();
+    return true;
+  }
+
+  function isLayerOrderableElement(el) {
+    if (!(el instanceof SVGElement)) return false;
+    if (el === overlayLayer || el.closest?.("[" + SVG_UI_ATTR + "]")) return false;
+    if (el.getAttribute?.("data-nv-sketch-session") === "true") return false;
+    if (el.getAttribute?.("data-nv-sketch-construction") === "true") return false;
+    return true;
+  }
+
+  function getHierarchyOrderSelection() {
+    return selectedElements.filter((el) => {
+      if (!el?.isConnected || !el.parentNode || !isLayerOrderableElement(el)) return false;
+      return !selectedElements.some((other) => other !== el && other?.contains?.(el));
+    });
+  }
+
+  function moveElementOneHierarchyStep(el, direction, selectedSet) {
+    const parent = el?.parentNode;
+    if (!parent?.children) return false;
+    const siblings = Array.from(parent.children).filter(isLayerOrderableElement);
+    const index = siblings.indexOf(el);
+    if (index < 0) return false;
+    if (direction >= 0) {
+      const next = siblings[index + 1];
+      if (!next || selectedSet.has(next)) return false;
+      parent.insertBefore(next, el);
+      return true;
+    }
+    const previous = siblings[index - 1];
+    if (!previous || selectedSet.has(previous)) return false;
+    parent.insertBefore(el, previous);
+    return true;
+  }
+
+  function moveSelectionInHierarchy(direction = 1) {
+    const movable = getHierarchyOrderSelection();
+    if (!movable.length) {
+      setStatus("Layer order: select an object first");
+      return false;
+    }
+    const selectedSet = new Set(movable);
+    const byParent = new Map();
+    movable.forEach((el) => {
+      const parent = el.parentNode;
+      if (!byParent.has(parent)) byParent.set(parent, []);
+      byParent.get(parent).push(el);
+    });
+    let moved = false;
+    byParent.forEach((elements, parent) => {
+      const siblings = Array.from(parent.children || []).filter(isLayerOrderableElement);
+      const ordered = elements
+        .slice()
+        .sort((a, b) => siblings.indexOf(a) - siblings.indexOf(b));
+      if (direction >= 0) ordered.reverse();
+      ordered.forEach((el) => {
+        if (moveElementOneHierarchyStep(el, direction, selectedSet)) moved = true;
+      });
+    });
+    if (!moved) {
+      setStatus(direction >= 0
+        ? "Selection is already at the top of this hierarchy"
+        : "Selection is already at the bottom of this hierarchy");
+      return false;
+    }
+    refreshSelectionAfterMutation("layer-order");
+    setStatus(direction >= 0 ? "Moved selection up one layer" : "Moved selection down one layer");
     return true;
   }
 
@@ -3458,6 +4372,8 @@ export async function renderEditor(filePath, container) {
   }
 
   function setMode(mode) {
+    if (selectionGrabState && mode !== "select") commitSelectionGrabCommand({ silent: true });
+    if (pendingRotateCommand && mode !== "rotate") commitPendingRotationCommand({ silent: true });
     if (toolState.mode === "freehand" && mode !== "freehand" && freehandStrokeState) {
       cancelFreehandStroke();
     }
@@ -3478,7 +4394,7 @@ export async function renderEditor(filePath, container) {
     if (mode !== "select" && nodeEditor.isActive?.()) {
       nodeEditor.exit?.();
     }
-    if (["select", "line", "freehand", "bezier", "sketch", "eyedropper", "eraser"].includes(mode)) {
+    if (SVG_TOOL_MODES.has(mode)) {
       window.NodevisionState = window.NodevisionState || {};
       window.NodevisionState.svgDrawTool = mode;
     }
@@ -3493,7 +4409,7 @@ export async function renderEditor(filePath, container) {
       clearSelection();
       sketchController.onModeEnter();
     }
-    const cursor = mode === "select" ? "default" : "crosshair";
+    const cursor = mode === "select" ? "default" : (mode === "rotate" ? "grab" : "crosshair");
     svgRoot.style.cursor = mode === "eyedropper" ? "copy" : (mode === "eraser" ? "not-allowed" : cursor);
     updateBrushCursor(lastPointerRoot);
     try {
@@ -3558,35 +4474,39 @@ export async function renderEditor(filePath, container) {
   }
 
   function getDragBaseForElement(el) {
+    const rotationOriginLocal = getStoredRotationOriginLocal(el);
+    const withOrigin = (base) => rotationOriginLocal
+      ? { ...base, rotationOriginLocal: { ...rotationOriginLocal } }
+      : base;
     const baseTransform = String(el.getAttribute("transform") || "").trim();
     if (baseTransform) {
-      return { kind: "transform", baseTransform };
+      return withOrigin({ kind: "transform", baseTransform });
     }
 
     const tag = el.tagName.toLowerCase();
     if (tag === "rect" || tag === "image" || tag === "use" || tag === "foreignobject") {
-      return { kind: "xy", x: getAttrNumber(el, "x", 0), y: getAttrNumber(el, "y", 0) };
+      return withOrigin({ kind: "xy", x: getAttrNumber(el, "x", 0), y: getAttrNumber(el, "y", 0) });
     }
     if (tag === "text") {
-      return { kind: "xy", x: getAttrNumber(el, "x", 0), y: getAttrNumber(el, "y", 0) };
+      return withOrigin({ kind: "xy", x: getAttrNumber(el, "x", 0), y: getAttrNumber(el, "y", 0) });
     }
     if (tag === "circle" || tag === "ellipse") {
-      return { kind: "cxy", cx: getAttrNumber(el, "cx", 0), cy: getAttrNumber(el, "cy", 0) };
+      return withOrigin({ kind: "cxy", cx: getAttrNumber(el, "cx", 0), cy: getAttrNumber(el, "cy", 0) });
     }
     if (tag === "line") {
-      return {
+      return withOrigin({
         kind: "line",
         x1: getAttrNumber(el, "x1", 0),
         y1: getAttrNumber(el, "y1", 0),
         x2: getAttrNumber(el, "x2", 0),
         y2: getAttrNumber(el, "y2", 0),
-      };
+      });
     }
     if (tag === "polygon" || tag === "polyline") {
-      return { kind: "points", points: parsePoints(el.getAttribute("points") || "") };
+      return withOrigin({ kind: "points", points: parsePoints(el.getAttribute("points") || "") });
     }
 
-    return { kind: "transform", baseTransform: "" };
+    return withOrigin({ kind: "transform", baseTransform: "" });
   }
 
   function applyDragDeltaToElement(el, base, dx, dy) {
@@ -3594,11 +4514,13 @@ export async function renderEditor(filePath, container) {
     if (base.kind === "xy") {
       setAttrNumber(el, "x", base.x + dx);
       setAttrNumber(el, "y", base.y + dy);
+      applyDragRotationOriginDelta(el, base, dx, dy);
       return;
     }
     if (base.kind === "cxy") {
       setAttrNumber(el, "cx", base.cx + dx);
       setAttrNumber(el, "cy", base.cy + dy);
+      applyDragRotationOriginDelta(el, base, dx, dy);
       return;
     }
     if (base.kind === "line") {
@@ -3606,11 +4528,13 @@ export async function renderEditor(filePath, container) {
       setAttrNumber(el, "y1", base.y1 + dy);
       setAttrNumber(el, "x2", base.x2 + dx);
       setAttrNumber(el, "y2", base.y2 + dy);
+      applyDragRotationOriginDelta(el, base, dx, dy);
       return;
     }
     if (base.kind === "points") {
       const moved = (base.points || []).map(([x, y]) => [x + dx, y + dy]);
       el.setAttribute("points", formatPoints(moved));
+      applyDragRotationOriginDelta(el, base, dx, dy);
       return;
     }
 
@@ -3835,8 +4759,9 @@ export async function renderEditor(filePath, container) {
     try {
       const bbox = getElementBBoxInRoot(target);
       if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return false;
-      const cx = bbox.x + bbox.width / 2;
-      const cy = bbox.y + bbox.height / 2;
+      const origin = readStoredRotationOriginRoot(target);
+      const cx = origin ? origin.x : bbox.x + bbox.width / 2;
+      const cy = origin ? origin.y : bbox.y + bbox.height / 2;
       const startAngle = Math.atan2(point.y - cy, point.x - cx);
       const tag = target.tagName.toLowerCase();
       rotateState = {
@@ -3895,6 +4820,11 @@ export async function renderEditor(filePath, container) {
   wrapper.addEventListener("keydown", (e) => {
     const key = String(e.key || "");
     const meta = e.ctrlKey || e.metaKey;
+    if (handleSvgCanvasZoomShortcut(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (freehandStrokeState) {
       if (key === "Escape") {
         if (freehandStrokeState.shapeActive) restoreOriginalFreehandPreview();
@@ -3972,6 +4902,14 @@ export async function renderEditor(filePath, container) {
         return;
       }
     }
+    if (handleSelectionGrabKey(e)) {
+      e.preventDefault();
+      return;
+    }
+    if (handleSelectionRotateKey(e)) {
+      e.preventDefault();
+      return;
+    }
     if (toolState.mode === "select" && nodeEditor.onKeyDown?.(e)) return;
     if (!meta && !e.altKey && key.toLowerCase() === "e" && toolState.mode === "select") {
       startLineToolExtrudeFromSelection();
@@ -3990,6 +4928,11 @@ export async function renderEditor(filePath, container) {
           clearLineToolState();
         }
         setMode("select");
+        e.preventDefault();
+        return;
+      }
+      if (key === "Enter" && lineToolState.grab) {
+        finishLineToolGrab();
         e.preventDefault();
         return;
       }
@@ -4065,9 +5008,15 @@ export async function renderEditor(filePath, container) {
       e.stopPropagation();
       return;
     }
+    if (selectionGrabState) {
+      commitSelectionGrabCommand();
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (toolState.mode !== "sketch" && nodeEditor.isActive?.() && nodeEditor.onPointerDown?.(e, e.target, p)) return;
 
-    if (toolState.mode === "select") {
+    if (toolState.mode === "select" || toolState.mode === "rotate") {
       let target = e.target instanceof SVGElement ? e.target : null;
       const geometryHit = findNearestGeometryAtPoint(p, pointerToleranceInSvgUnits(10));
       if (geometryHit && (!target || !isSelectableElement(target) || shouldPreferGeometryHit(target))) {
@@ -4075,15 +5024,53 @@ export async function renderEditor(filePath, container) {
       } else if (!target || !isSelectableElement(target)) {
         target = null;
       }
+      const rotateToolActive = toolState.mode === "rotate";
+      const rotatePreviewActive = Boolean(pendingRotateCommand);
+      if (pendingRotateCommand?.originPlacement) {
+        if (targetIsInsideSingleSelection(target)) {
+          placePendingRotationOrigin(p);
+        } else {
+          updateRotationOriginPlacementStatus("Rotation origin: click on the selected object to place it");
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (pendingRotateCommand && (!target || !selectedElements.includes(target))) {
+        commitPendingRotationCommand({ silent: true });
+      }
       if (target && isSelectableElement(target)) {
-        scheduleEyedropperHold(e, target, p);
-        const additiveSelection = e.ctrlKey || e.metaKey;
+        if (!rotateToolActive) scheduleEyedropperHold(e, target, p);
+        const additiveSelection = !rotateToolActive && (e.ctrlKey || e.metaKey);
         if (additiveSelection) {
           toggleSelection(target);
           e.preventDefault();
           e.stopPropagation();
           return;
         }
+
+        if (rotateToolActive) {
+          if (!selectedElements.includes(target) || selectedElements.length !== 1) {
+            setSelection([target], { primary: target });
+          }
+          if (startPendingRotationDrag(target, e.pointerId, p)) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        if (rotatePreviewActive && selectedElements.includes(target)) {
+          if (startPendingRotationDrag(target, e.pointerId, p)) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        }
+
         if (e.shiftKey) {
           if (!selectedElements.includes(target) || selectedElements.length !== 1) {
             setSelection([target], { primary: target });
@@ -4110,6 +5097,14 @@ export async function renderEditor(filePath, container) {
           // Ignore unsupported pointer capture errors.
         }
         e.preventDefault();
+        return;
+      }
+
+      if (pendingRotateCommand) commitPendingRotationCommand({ silent: true });
+      if (rotateToolActive) {
+        if (!e.shiftKey && !e.ctrlKey && !e.metaKey) clearSelection();
+        e.preventDefault();
+        e.stopPropagation();
         return;
       }
 
@@ -4242,6 +5237,15 @@ export async function renderEditor(filePath, container) {
     quickMenu.onPointerMove(e);
     updateBrushCursor(p);
     cancelEyedropperHoldIfMoved(p);
+    if (selectionGrabState) {
+      if (selectionGrabState.layerOrderMode) {
+        e.preventDefault();
+        return;
+      }
+      applySelectionGrabTargetRoot(p);
+      e.preventDefault();
+      return;
+    }
     if (toolState.mode === "select" && nodeEditor.onPointerMove?.(e)) return;
 
     if (lineHandleDragState && lineHandleDragState.pointerId === e.pointerId) {
@@ -4353,6 +5357,13 @@ export async function renderEditor(filePath, container) {
     }
 
     if (rotateState && rotateState.pointerId === e.pointerId) {
+      if (rotateState.command) {
+        const angle = Math.atan2(p.y - rotateState.cy, p.x - rotateState.cx) - rotateState.startAngle;
+        applyRotationAngleToCommand(rotateState.command, rotateState.baseAngleRad + angle);
+        updatePendingRotationStatus();
+        e.preventDefault();
+        return;
+      }
       const angle = Math.atan2(p.y - rotateState.cy, p.x - rotateState.cx) - rotateState.startAngle;
       const angleDeg = (angle * 180) / Math.PI;
       if (rotateState.baseLine) {
@@ -4374,12 +5385,12 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
-	    if (toolState.mode === "select") {
-	      if (dragState && dragState.pointerId === e.pointerId) {
-	        updateDragFromClient(dragState, e.clientX, e.clientY);
-	        e.preventDefault();
-	        return;
-	      }
+    if (toolState.mode === "select") {
+      if (dragState && dragState.pointerId === e.pointerId) {
+        updateDragFromClient(dragState, e.clientX, e.clientY);
+        e.preventDefault();
+        return;
+      }
 
       if (marqueeState && marqueeState.pointerId === e.pointerId) {
         marqueeState.current = p;
@@ -4400,7 +5411,7 @@ export async function renderEditor(filePath, container) {
         e.preventDefault();
         return;
       }
-	    }
+    }
 
     if (toolState.mode === "line" && lineToolState.active) {
       const next = resolveLineToolPoint(p, e);
@@ -4462,11 +5473,15 @@ export async function renderEditor(filePath, container) {
       return;
     }
     if (rotateState && rotateState.pointerId === e.pointerId) {
+      const wasPendingRotateDrag = Boolean(rotateState.command);
       rotateState = null;
       try {
         svgRoot.releasePointerCapture(e.pointerId);
       } catch {
         // Ignore unsupported pointer capture errors.
+      }
+      if (wasPendingRotateDrag && pendingRotateCommand) {
+        updatePendingRotationStatus("Rotate preview ready; Enter commits, Esc cancels");
       }
       return;
     }
@@ -4554,6 +5569,19 @@ export async function renderEditor(filePath, container) {
         svgRoot.releasePointerCapture(e.pointerId);
       } catch {
         // Ignore unsupported pointer capture errors.
+      }
+      return;
+    }
+    if (rotateState && rotateState.pointerId === e.pointerId) {
+      const wasPendingRotateDrag = Boolean(rotateState.command);
+      rotateState = null;
+      try {
+        svgRoot.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore unsupported pointer capture errors.
+      }
+      if (wasPendingRotateDrag && pendingRotateCommand) {
+        updatePendingRotationStatus("Rotate preview ready; Enter commits, Esc cancels");
       }
       return;
     }

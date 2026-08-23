@@ -23,10 +23,15 @@ export function installVoxelExtrusionAbility(ctx) {
 
   function cloneVoxelMaterial(target) {
     if (Array.isArray(target?.material)) return target.material.map((mat) => mat?.clone?.() || mat);
-    return target?.material?.clone?.() || new THREE.MeshStandardMaterial({
+    if (target?.material?.clone) return target.material.clone();
+    const opacity = ctx.api.normalizeVoxelOpacity(target?.userData?.voxelPlacer?.opacity);
+    return new THREE.MeshStandardMaterial({
       color: target?.userData?.voxelPlacer?.color || "#8ee6c1",
       roughness: 0.74,
-      metalness: 0.04
+      metalness: 0.04,
+      transparent: opacity < 1,
+      opacity,
+      depthWrite: opacity >= 1
     });
   }
 

@@ -27,7 +27,8 @@ export function installFunctionMeshAbility(ctx) {
       resolution,
       limits: [xMin, xMax],
       collider: cfg.collider !== false,
-      color: typeof cfg.color === "string" && cfg.color ? cfg.color : "#44bbff"
+      color: typeof cfg.color === "string" && cfg.color ? cfg.color : "#44bbff",
+      opacity: Number.isFinite(Number(cfg.opacity)) ? clamp(Number(cfg.opacity), 0, 1) : 1
     };
   }
 
@@ -54,7 +55,14 @@ export function installFunctionMeshAbility(ctx) {
     if (points.length < 2) return null;
     const curve = new THREE.CatmullRomCurve3(points);
     const geometry = new THREE.TubeGeometry(curve, Math.max(16, props.resolution), 0.035, 8, false);
-    const material = new THREE.MeshStandardMaterial({ color: props.color, emissive: props.color, emissiveIntensity: 0.18 });
+    const material = new THREE.MeshStandardMaterial({
+      color: props.color,
+      emissive: props.color,
+      emissiveIntensity: 0.18,
+      transparent: props.opacity < 1,
+      opacity: props.opacity,
+      depthWrite: props.opacity >= 1
+    });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.userData.mathFunctionProperties = props;
     return mesh;

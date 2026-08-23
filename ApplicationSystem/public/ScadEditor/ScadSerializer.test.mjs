@@ -5,6 +5,8 @@ import { createEmptyScadModel, addObject, setParameter } from "./ScadModel.mjs";
 import { extrudeObjects, addBooleanOperation, scaleObjects } from "./ScadOperations.mjs";
 import { serializeScadModel } from "./ScadSerializer.mjs";
 import { parseBasicScad, parseScadText } from "./ScadParser.mjs";
+import { evaluateScalar, normalizeParameters } from "../PanelInstances/ViewPanels/FileViewers/scad/sceneTree.mjs";
+import { parseProjectFromSCAD } from "../PanelInstances/ViewPanels/FileViewers/scad/scadGenerator.mjs";
 
 const model = createEmptyScadModel();
 setParameter(model, "wall_thickness", 2);
@@ -162,6 +164,15 @@ assert.deepEqual(parametricCylinders[0].transform.translate, [10, 10, 10]);
 assert.equal(parametricCylinders[0].params.radius, 8);
 assert.equal(parametricCylinders[0].params.height, 20);
 assert.equal(parametricCylinders[0].params.segments, 64);
+
+const localFnPreview = parseBasicScad("$fn = 64;\ncylinder(h = 8, r = 2, $fn = 12);");
+assert.equal(localFnPreview.parameters["$fn"], 64);
+assert.equal(localFnPreview.objects[0].params.segments, 12);
+assert.equal(normalizeParameters({ "$fn": "64" })["$fn"], "64");
+assert.equal(evaluateScalar("$fn", { "$fn": "64" }), 64);
+const legacyFnProject = parseProjectFromSCAD("$fn = 64;\ncylinder(h = 8, r = 2);");
+assert.equal(legacyFnProject.ok, true);
+assert.equal(legacyFnProject.parameters["$fn"], "64");
 assert.deepEqual(parametricCylinders[11].transform.translate, [50, 40, 30]);
 assert.equal(parametricCylinders[11].params.radius, 5);
 assert.equal(parametricCylinders[11].params.height, 15);

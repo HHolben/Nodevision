@@ -187,7 +187,7 @@ function tokenize(input) {
 
   const isSpace = (c) => c === " " || c === "\n" || c === "\t" || c === "\r";
   const isDigit = (c) => c >= "0" && c <= "9";
-  const isIdentStart = (c) => (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_";
+  const isIdentStart = (c) => (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_" || c.charCodeAt(0) === 36;
   const isIdent = (c) => isIdentStart(c) || isDigit(c);
 
   while (i < src.length) {
@@ -332,9 +332,10 @@ export function normalizeParameters(parameters = {}) {
   /** @type {Record<string, string|number>} */
   const out = {};
   for (const [k, v] of Object.entries(parameters || {})) {
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) continue;
-    if (typeof v === "number") out[k] = v;
-    else out[k] = String(v ?? "").trim();
+    const key = String(k || "");
+    if (!key || !/[A-Za-z_$]/.test(key[0]) || /[^A-Za-z0-9_$]/.test(key)) continue;
+    if (typeof v === "number") out[key] = v;
+    else out[key] = String(v ?? "").trim();
   }
   return out;
 }

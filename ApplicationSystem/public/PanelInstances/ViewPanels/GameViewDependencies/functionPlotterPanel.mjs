@@ -7,6 +7,12 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function clampAlphaPercent(value, fallback = 100) {
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n)) return fallback;
+  return clamp(n, 0, 100);
+}
+
 function parseFloatSafe(value, fallback) {
   const n = Number.parseFloat(value);
   return Number.isFinite(n) ? n : fallback;
@@ -101,6 +107,27 @@ export function createFunctionPlotterPanel() {
   colorInput.type = "color";
   colorInput.value = "#44bbff";
 
+  const alphaWrap = document.createElement("span");
+  alphaWrap.style.display = "flex";
+  alphaWrap.style.alignItems = "center";
+  alphaWrap.style.gap = "8px";
+  const alphaInput = document.createElement("input");
+  alphaInput.type = "range";
+  alphaInput.min = "0";
+  alphaInput.max = "100";
+  alphaInput.step = "1";
+  alphaInput.value = "100";
+  const alphaValue = document.createElement("span");
+  alphaValue.style.minWidth = "40px";
+  alphaValue.textContent = "100%";
+  alphaWrap.append(alphaInput, alphaValue);
+  addLabeledField("Alpha", alphaWrap);
+  alphaInput.addEventListener("input", () => {
+    const value = Math.round(clampAlphaPercent(alphaInput.value));
+    alphaInput.value = String(value);
+    alphaValue.textContent = value + "%";
+  });
+
   const statusLine = document.createElement("div");
   statusLine.style.opacity = "0.85";
   statusLine.textContent = "Configure, then click 'Use For Placement'.";
@@ -141,7 +168,8 @@ export function createFunctionPlotterPanel() {
       resolution,
       limits: [centeredMin, centeredMax],
       collider: colliderInput.checked === true,
-      color: colorInput.value || "#44bbff"
+      color: colorInput.value || "#44bbff",
+      opacity: clampAlphaPercent(alphaInput.value) / 100
     };
   }
 

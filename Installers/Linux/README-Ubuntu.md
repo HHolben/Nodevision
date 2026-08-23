@@ -61,6 +61,7 @@ The installer installs or verifies:
 - `nodejs`
 - `npm`
 - `php-cli`
+- `openscad`
 - `git`
 - `curl`
 - `build-essential`
@@ -78,7 +79,7 @@ Dependency install commands used by the installer:
 
 ```bash
 sudo apt update
-sudo apt install -y nodejs npm php-cli git curl build-essential python3 ca-certificates
+sudo apt install -y nodejs npm php-cli openscad git curl build-essential python3 ca-certificates
 
 # Optional offline native speech
 sudo apt install -y espeak-ng libespeak-ng-dev
@@ -168,7 +169,7 @@ If missing, install dependencies with apt:
 
 ```bash
 sudo apt update
-sudo apt install -y nodejs npm php-cli git curl build-essential python3 ca-certificates
+sudo apt install -y nodejs npm php-cli openscad git curl build-essential python3 ca-certificates
 ```
 
 If `nodevision` command is not found, ensure `~/.local/bin` is in `PATH` and open a new shell.

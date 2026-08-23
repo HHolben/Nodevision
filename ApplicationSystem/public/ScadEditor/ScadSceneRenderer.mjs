@@ -25,6 +25,17 @@ function layerFor(model, obj) {
   return model.layers.find((layer) => layer.id === obj.layerId) || model.layers[0] || {};
 }
 
+function scadNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function scadSegmentCount(params = {}, model = null, fallback = 48) {
+  const globalSegments = model?.parameters?.$fn ?? model?.parameters?.fn;
+  const raw = params.$fn ?? params.fn ?? params.segments ?? globalSegments;
+  return Math.max(8, Math.round(scadNumber(raw, fallback)));
+}
+
 function objectHeight(obj) {
   const op = (obj.operations || []).find((item) => item.type === "extrude" && !item.disabled);
   return Math.max(0.4, Number(op?.params?.height || 0.6));
@@ -86,11 +97,11 @@ function vertexPathPoints(THREE, obj) {
     .map((point) => new THREE.Vector3(Number(point[0] || 0), Number(point[1] || 0), Number(point[2] || 0)));
 }
 
-function solidGeometryForObject(THREE, obj) {
+function solidGeometryForObject(THREE, obj, model = null) {
   const p = obj.params || {};
   if (obj.type === "sphere") {
     const radius = Math.max(0.1, Number(p.radius || 6));
-    const segments = Math.max(8, Math.round(Number(p.segments || 48)));
+    const segments = scadSegmentCount(p, model, 48);
     return new THREE.SphereGeometry(radius, segments, Math.max(6, Math.round(segments / 2)));
   }
   if (obj.type === "cube") {
@@ -102,7 +113,7 @@ function solidGeometryForObject(THREE, obj) {
   if (obj.type === "cylinder") {
     const radius = Math.max(0.1, Number(p.radius || 5));
     const height = Math.max(0.1, Number(p.height || 16));
-    const segments = Math.max(8, Math.round(Number(p.segments || 48)));
+    const segments = scadSegmentCount(p, model, 48);
     const geometry = new THREE.CylinderGeometry(radius, radius, height, segments);
     geometry.rotateX(Math.PI / 2);
     if (p.center === false) geometry.translate(0, 0, height / 2);
@@ -246,6 +257,7 @@ export async function createScadSceneRenderer(container, options = {}) {
         depthTest: false,
       }));
       fill.userData.ignorePick = true;
+      fill.userData.ignoreSTLExport = true;
       group.add(fill);
 
       const outlineGeometry = new THREE.BufferGeometry().setFromPoints([...points, points[0]]);
@@ -370,9 +382,9 @@ export async function createScadSceneRenderer(container, options = {}) {
     return { min: Math.min(min, max), max: Math.max(min, max) };
   }
 
-  function booleanPreviewZRange(objects = []) {
+  function booleanPreviewZRange(objects = [], model = null) {
     const ranges = objects.filter(objectHas3DPreview).map((obj) => {
-      const box = objectPreviewBox(obj);
+      const box = objectPreviewBox(obj, model);
       if (box) return { min: box.min.z, max: box.max.z };
       return previewObjectWorldZRange(obj);
     }).filter(Boolean);
@@ -383,8 +395,8 @@ export async function createScadSceneRenderer(container, options = {}) {
     return { min, max };
   }
 
-  function booleanPreviewHeight(objects = []) {
-    const range = booleanPreviewZRange(objects);
+  function booleanPreviewHeight(objects = [], model = null) {
+    const range = booleanPreviewZRange(objects, model);
     if (range) return range.max - range.min;
     const source = objects.find(objectHas3DPreview) || objects[0];
     return previewObjectHeight(source);
@@ -403,12 +415,13 @@ export async function createScadSceneRenderer(container, options = {}) {
     const ignorePick = Boolean(options.ignorePick);
     const pickObjectId = options.pickObjectId || obj.id;
 
-    const solidGeometry = solidGeometryForObject(THREE, obj);
+    const solidGeometry = solidGeometryForObject(THREE, obj, model);
     if (solidGeometry) {
       const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.76, metalness: 0.05, transparent, opacity, wireframe });
       const mesh = new THREE.Mesh(solidGeometry, mat);
       mesh.userData.objectId = pickObjectId;
       mesh.userData.ignorePick = ignorePick;
+      mesh.userData.ignoreSTLExport = wireframe || ignorePick || options.ignoreSTLExport === true;
       mesh.name = obj.name || obj.id;
       applyTransform(mesh, obj);
       group.add(mesh);
@@ -467,6 +480,7 @@ export async function createScadSceneRenderer(container, options = {}) {
     const mesh = new THREE.Mesh(geometry, mat);
     mesh.userData.objectId = pickObjectId;
     mesh.userData.ignorePick = ignorePick;
+    mesh.userData.ignoreSTLExport = wireframe || ignorePick || options.ignoreSTLExport === true;
     mesh.name = obj.name || obj.id;
     applyTransform(mesh, obj);
     group.add(mesh);
@@ -474,9 +488,9 @@ export async function createScadSceneRenderer(container, options = {}) {
     return true;
   }
 
-  function objectPreviewBox(obj, depthOverride = null, depthRangeOverride = null) {
+  function objectPreviewBox(obj, model = null, depthOverride = null, depthRangeOverride = null) {
     if (!obj) return null;
-    let geometry = solidGeometryForObject(THREE, obj);
+    let geometry = solidGeometryForObject(THREE, obj, model);
     if (!geometry) {
       if (obj.type === "vertexPath" || obj.type === "line") geometry = new THREE.BufferGeometry().setFromPoints(vertexPathPoints(THREE, obj));
       else {
@@ -510,10 +524,10 @@ export async function createScadSceneRenderer(container, options = {}) {
     return box.isEmpty() ? null : box;
   }
 
-  function intersectionBoxForObjects(objects = [], depthOverride = null, depthRangeOverride = null) {
+  function intersectionBoxForObjects(objects = [], model = null, depthOverride = null, depthRangeOverride = null) {
     let result = null;
     for (const obj of objects) {
-      const box = objectPreviewBox(obj, depthOverride, depthRangeOverride);
+      const box = objectPreviewBox(obj, model, depthOverride, depthRangeOverride);
       if (!box) continue;
       result = result ? result.intersect(box) : box.clone();
       if (result.isEmpty()) return null;
@@ -523,7 +537,7 @@ export async function createScadSceneRenderer(container, options = {}) {
 
   function renderIntersectionPreview(model, step, objects, depthOverride, depthRangeOverride = null) {
     objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: 0.24, color: 0x0f766e, depthOverride, depthRangeOverride }));
-    const box = intersectionBoxForObjects(objects, depthOverride, depthRangeOverride);
+    const box = intersectionBoxForObjects(objects, model, depthOverride, depthRangeOverride);
     if (!box) return false;
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
@@ -544,8 +558,8 @@ export async function createScadSceneRenderer(container, options = {}) {
     const objects = booleanStepObjects(model, step);
     if (!keyword || objects.length < 2) return [];
     const ids = (step.objectIds || []).filter(Boolean);
-    const depthRangeOverride = booleanPreviewZRange(objects);
-    const depthOverride = depthRangeOverride ? depthRangeOverride.max - depthRangeOverride.min : booleanPreviewHeight(objects);
+    const depthRangeOverride = booleanPreviewZRange(objects, model);
+    const depthOverride = depthRangeOverride ? depthRangeOverride.max - depthRangeOverride.min : booleanPreviewHeight(objects, model);
     const selectedBoolean = ids.some((id) => selectedIds.has(id));
     if (keyword === "difference") {
       const base = objects[0];
@@ -799,6 +813,7 @@ export async function createScadSceneRenderer(container, options = {}) {
 
   return {
     domElement: renderer.domElement,
+    getExportRoot() { return group; },
     renderModel,
     worldToClientPoint(point = {}) {
       const vector = Array.isArray(point)

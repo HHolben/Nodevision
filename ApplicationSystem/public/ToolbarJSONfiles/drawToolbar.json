@@ -275,6 +275,15 @@
     "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
   },
   {
+    "heading": "Rotate",
+    "hotkeyText": "R, RO",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeRotate",
+    "icon": "icons/EditIcon.png",
+    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+  },
+  {
     "heading": "Line",
     "hotkeyText": "",
     "parentHeading": "Vector Draw",

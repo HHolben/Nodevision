@@ -2,11 +2,12 @@
 // This file registers login, logout, session, and timeout endpoints so Nodevision can authenticate users and manage idle session expiry.
 
 function sessionCookieOptions(expires) {
-  const expiresMs = Math.max(Math.floor(Number(expires || 0) * 1000 - Date.now()), 0);
+  const expiresAtMs = Math.max(Math.floor(Number(expires || 0) * 1000), Date.now());
   return {
     httpOnly: true,
     sameSite: "lax",
-    maxAge: expiresMs,
+    maxAge: Math.max(expiresAtMs - Date.now(), 0),
+    expires: new Date(expiresAtMs),
     path: "/",
   };
 }
@@ -29,32 +30,39 @@ function identityPayload(identity) {
   return { id, username, role, type };
 }
 
+function withServerNow(payload = {}) {
+  return {
+    ...payload,
+    serverNow: Math.floor(Date.now() / 1000),
+  };
+}
+
 export function registerAuthRoutes(app, AuthService) {
   app.get("/api/session", async (req, res) => {
     if (!req.identity) {
-      return res.status(200).json({ loggedIn: false });
+      return res.status(200).json(withServerNow({ loggedIn: false }));
     }
 
     const settings = await AuthService.getSessionTimeoutSettings();
-    res.status(200).json({
+    res.status(200).json(withServerNow({
       loggedIn: true,
       identity: identityPayload(req.identity),
       expires: req.identity.expires || null,
       lastActivity: req.identity.lastActivity || null,
       ...settings,
-    });
+    }));
   });
 
   app.get("/api/session/timeout", async (req, res) => {
     try {
       if (!req.identity) return res.status(401).json({ error: "Authentication required" });
       const settings = await AuthService.getSessionTimeoutSettings();
-      res.json({
+      res.json(withServerNow({
         success: true,
         expires: req.identity.expires || null,
         lastActivity: req.identity.lastActivity || null,
         ...settings,
-      });
+      }));
     } catch (err) {
       console.error("Timeout settings read error", err);
       res.status(500).json({ error: "Unable to read timeout settings" });
@@ -72,12 +80,12 @@ export function registerAuthRoutes(app, AuthService) {
         return res.status(401).json({ error: "Session expired" });
       }
       setSessionCookie(res, token, session.expires);
-      res.json({
+      res.json(withServerNow({
         success: true,
         expires: session.expires,
         lastActivity: session.lastActivity || null,
         ...settings,
-      });
+      }));
     } catch (err) {
       console.error("Timeout settings update error", err);
       res.status(400).json({ error: err?.message || "Unable to update timeout settings" });
@@ -93,12 +101,12 @@ export function registerAuthRoutes(app, AuthService) {
         return res.status(401).json({ error: "Session expired" });
       }
       setSessionCookie(res, token, session.expires);
-      res.json({
+      res.json(withServerNow({
         success: true,
         expires: session.expires,
         lastActivity: session.lastActivity || null,
         timeoutSeconds: session.timeoutSeconds,
-      });
+      }));
     } catch (err) {
       console.error("Session activity error", err);
       res.status(500).json({ error: "Unable to refresh session activity" });
@@ -120,12 +128,12 @@ export function registerAuthRoutes(app, AuthService) {
 
       setSessionCookie(res, result.token, result.expires);
 
-      res.json({
+      res.json(withServerNow({
         success: true,
         identity: result.identity,
         expires: result.expires,
         timeoutSeconds: result.timeoutSeconds,
-      });
+      }));
     } catch (err) {
       if (err?.message === "Invalid credentials") {
         return res.status(401).json({ error: "Invalid username or password" });

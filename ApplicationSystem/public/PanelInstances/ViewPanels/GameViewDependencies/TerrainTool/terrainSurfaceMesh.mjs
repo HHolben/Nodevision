@@ -104,6 +104,7 @@ export function createTerrainSurfaceMesh(THREE, {
   color = "#3f8f46",
   texture = "solid",
   kind = "grass",
+  opacity = undefined,
   isSolid = true,
   metadata = {},
   position = null
@@ -115,7 +116,11 @@ export function createTerrainSurfaceMesh(THREE, {
   const normalizedColors = normalizeColors(colors, safeColumns, safeRows, color);
   const isLiquid = isLiquidTerrainMetadata(kind, metadata);
   const matterState = readTerrainMatterState(kind, metadata);
-  const material = createTerrainMaterial(THREE, { color, texture, kind, isLiquid });
+  const opacitySource = opacity ?? metadata.opacity;
+  const materialOpacity = Number.isFinite(Number(opacitySource))
+    ? Math.max(0, Math.min(1, Number(opacitySource)))
+    : undefined;
+  const material = createTerrainMaterial(THREE, { color, texture, kind, isLiquid, opacity: materialOpacity });
   material.vertexColors = true;
   material.side = THREE.DoubleSide;
   material.needsUpdate = true;
@@ -157,6 +162,7 @@ export function createTerrainSurfaceMesh(THREE, {
     kind,
     texture,
     color,
+    opacity: materialOpacity,
     tileSize: round3(safeTileSize),
     columns: safeColumns,
     rows: safeRows,
@@ -195,6 +201,7 @@ export function createTerrainSurfaceDefinition(mesh, options = {}) {
     terrain: JSON.parse(JSON.stringify(terrain))
   };
   if (id) def.id = id;
+  if (Number.isFinite(Number(terrain.opacity))) def.opacity = round3(Number(terrain.opacity));
   if (terrain.MatterState) def.MatterState = terrain.MatterState;
   if (terrain.isLiquid === true) def.isLiquid = true;
   if (terrain.materialName) def.materialName = terrain.materialName;
@@ -235,6 +242,18 @@ export function refreshTerrainSurfaceMesh(THREE, mesh) {
   }
   positionAttr.needsUpdate = true;
   if (colorAttr) colorAttr.needsUpdate = true;
+  const opacity = Number(terrain.opacity);
+  if (Number.isFinite(opacity)) {
+    const alpha = clamp01(opacity);
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    materials.forEach((material) => {
+      if (!material) return;
+      material.opacity = alpha;
+      material.transparent = alpha < 1;
+      material.depthWrite = alpha >= 1;
+      material.needsUpdate = true;
+    });
+  }
   mesh.geometry.computeVertexNormals();
   mesh.geometry.computeBoundingBox();
   mesh.geometry.computeBoundingSphere();

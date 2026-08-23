@@ -22,6 +22,31 @@ export function installConsoleInspectionAbility(ctx) {
     });
   }
 
+  function clampOpacity(value, fallback = 1) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    return Math.max(0, Math.min(1, num));
+  }
+
+  function applyOpacityToMeshTarget(target, opacityValue) {
+    const opacity = clampOpacity(opacityValue, 1);
+    const queue = [];
+    target?.traverse?.((node) => {
+      if (node?.isMesh) queue.push(node);
+    });
+    if (queue.length === 0 && target?.isMesh) queue.push(target);
+    queue.forEach((mesh) => {
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.forEach((mat) => {
+        if (!mat) return;
+        mat.opacity = opacity;
+        mat.transparent = opacity < 1;
+        mat.depthWrite = opacity >= 1;
+        mat.needsUpdate = true;
+      });
+    });
+  }
+
   function setBoxColliderEnabled(target, enabled) {
     if (!target) return;
     const existing = target.userData?.colliderRef;
@@ -47,11 +72,13 @@ export function installConsoleInspectionAbility(ctx) {
   function applyConsoleConfig(target, config) {
     if (!target || !config) return;
     if (config.color) applyColorToMeshTarget(target, config.color);
+    if (Number.isFinite(Number(config.opacity))) applyOpacityToMeshTarget(target, config.opacity);
     setBoxColliderEnabled(target, config.collider);
     const existing = target.userData?.consoleProperties || {};
     target.userData.consoleProperties = {
       ...existing,
       color: config.color || existing.color,
+      opacity: Number.isFinite(Number(config.opacity)) ? clampOpacity(config.opacity, 1) : (existing.opacity ?? 1),
       collider: config.collider !== false,
       objectFile: config.objectFile || existing.objectFile || "",
       linkedObject: config.linkedObject || existing.linkedObject || ""

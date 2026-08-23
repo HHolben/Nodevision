@@ -16,7 +16,9 @@ export function extractEmbeddedScadModel(scadText = "") {
 }
 
 function parseNumber(value, fallback = 0) {
-  const num = Number(String(value ?? "").trim());
+  const text = String(value ?? "").trim();
+  if (!text) return fallback;
+  const num = Number(text);
   return Number.isFinite(num) ? num : fallback;
 }
 

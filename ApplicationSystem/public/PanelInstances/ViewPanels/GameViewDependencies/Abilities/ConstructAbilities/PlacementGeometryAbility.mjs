@@ -6,6 +6,12 @@ import { installMovementApi } from "../movementContext.mjs";
 export function installPlacementGeometryAbility(ctx) {
   const { THREE, scene, objects, colliders, movementState, consolePanels } = ctx;
 
+  function normalizeOpacity(value, fallback = 1) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    return Math.max(0, Math.min(1, num));
+  }
+
   async function ensureObjectFileGeometryApplier() {
     if (ctx.objectFileGeometryApplier) return ctx.objectFileGeometryApplier;
     if (!ctx.objectFileGeometryLoaderPromise) {
@@ -29,13 +35,15 @@ export function installPlacementGeometryAbility(ctx) {
     const width = Number.isFinite(config.size?.[0]) ? config.size[0] : 0.9;
     const height = Number.isFinite(config.size?.[1]) ? config.size[1] : 1.15;
     const depth = Number.isFinite(config.size?.[2]) ? config.size[2] : 0.7;
+    const opacity = normalizeOpacity(config.opacity, 1);
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(width, height, depth),
-      new THREE.MeshStandardMaterial({ color: config.color || "#33ccaa" })
+      new THREE.MeshStandardMaterial({ color: config.color || "#33ccaa", transparent: opacity < 1, opacity, depthWrite: opacity >= 1 })
     );
     mesh.userData.consoleProperties = {
       collider: config.collider !== false,
       color: config.color || "#33ccaa",
+      opacity,
       objectFile: config.objectFile || "",
       linkedObject: config.linkedObject || ""
     };

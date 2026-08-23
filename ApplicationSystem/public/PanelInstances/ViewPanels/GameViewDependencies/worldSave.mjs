@@ -23,7 +23,9 @@ function normalizeWorldPath(filePath) {
 
 const DEFAULT_ENVIRONMENT = {
   skyColor: "#ffffff",
+  skyAlpha: 1,
   floorColor: "#d8dee4",
+  floorAlpha: 1,
   backgroundMode: "color",
   backgroundImage: "",
   dayNightCycle: {
@@ -119,7 +121,9 @@ function buildEnvironmentMeta(movementState) {
   const env = movementState?.environment || {};
   return {
     skyColor: env.skyColor || DEFAULT_ENVIRONMENT.skyColor,
+    skyAlpha: clampFiniteNumber(env.skyAlpha ?? env.skyOpacity ?? env.backgroundAlpha, 0, 1, DEFAULT_ENVIRONMENT.skyAlpha),
     floorColor: env.floorColor || DEFAULT_ENVIRONMENT.floorColor,
+    floorAlpha: clampFiniteNumber(env.floorAlpha ?? env.floorOpacity, 0, 1, DEFAULT_ENVIRONMENT.floorAlpha),
     backgroundMode: env.backgroundMode || (env.backgroundImage ? "image" : "color"),
     backgroundImage: env.backgroundImage || "",
     floorImage: env.floorImage || "",
@@ -652,6 +656,7 @@ function serializeMesh(mesh) {
     def.collider = props.collider !== false;
     if (typeof props.objectFile === "string" && props.objectFile) def.objectFile = props.objectFile;
     if (typeof props.linkedObject === "string" && props.linkedObject) def.linkedObject = props.linkedObject;
+    if (Number.isFinite(Number(props.opacity))) def.opacity = round3(Math.max(0, Math.min(1, Number(props.opacity))));
     if (props.inputs && typeof props.inputs === "object") def.inputs = props.inputs;
     if (props.outputs && typeof props.outputs === "object") def.outputs = props.outputs;
     if (props.metaWorldDemo && typeof props.metaWorldDemo === "object") def.metaWorldDemo = props.metaWorldDemo;
@@ -810,6 +815,7 @@ function serializeMesh(mesh) {
       materialName: voxel.materialName || mesh.userData?.materialName || "",
       matterState: voxel.matterState || mesh.userData?.MatterState || mesh.userData?.matterState || "",
       color: voxel.color || def.color,
+      opacity: Number.isFinite(Number(voxel.opacity ?? def.opacity)) ? round3(Math.max(0, Math.min(1, Number(voxel.opacity ?? def.opacity)))) : undefined,
       collider: def.collider
     };
   }

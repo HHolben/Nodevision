@@ -62,16 +62,24 @@ function makeCanvasTexture(THREE, { baseColor, texture }) {
   return map;
 }
 
-export function createTerrainMaterial(THREE, { color = "#777777", texture = "solid", kind = "", isLiquid = false } = {}) {
+function normalizeOpacity(value, fallback = 1) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.min(1, num));
+}
+
+export function createTerrainMaterial(THREE, { color = "#777777", texture = "solid", kind = "", isLiquid = false, opacity = undefined } = {}) {
   const liquid = isLiquid === true || kind === "water";
   const baseColor = color || "#777777";
+  const defaultOpacity = liquid ? 0.42 : (texture === "ripples" ? 0.82 : 1);
+  const materialOpacity = normalizeOpacity(opacity, defaultOpacity);
 
   if (liquid) {
     const materialOptions = {
       color: baseColor,
-      transparent: true,
-      opacity: 0.42,
-      depthWrite: false,
+      transparent: materialOpacity < 1,
+      opacity: materialOpacity,
+      depthWrite: materialOpacity >= 1,
       side: THREE.DoubleSide,
       toneMapped: false
     };
@@ -91,9 +99,10 @@ export function createTerrainMaterial(THREE, { color = "#777777", texture = "sol
     ? makeCanvasTexture(THREE, { baseColor, texture })
     : null;
   if (map) materialOptions.map = map;
-  if (texture === "ripples") {
+  if (materialOpacity < 1 || texture === "ripples") {
     materialOptions.transparent = true;
-    materialOptions.opacity = 0.82;
+    materialOptions.opacity = materialOpacity;
+    materialOptions.depthWrite = materialOpacity >= 1;
   }
   return new THREE.MeshStandardMaterial(materialOptions);
 }

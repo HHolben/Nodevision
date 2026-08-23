@@ -2,6 +2,13 @@
 // This file defines browser-side callback Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 const inlineCallbacks = {
+  draw: {
+    svgModeRotate: () => {
+      window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.svgDrawTool = "rotate";
+      window.SVGEditorContext?.setMode?.("rotate");
+    },
+  },
   insert: {
     tableMergeCells: async () => {
       const mod = await import("/ToolbarCallbacks/insert/tableTools.mjs");

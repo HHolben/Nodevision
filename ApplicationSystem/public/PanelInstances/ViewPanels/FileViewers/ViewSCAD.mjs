@@ -6,7 +6,7 @@ import { OrbitControls } from "/lib/three/OrbitControls.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
-import { exportScadCodeToSTL } from "/ModelExport/STLExport.mjs";
+import { exportScadCodeToSTL, exportSceneToSTL } from "/ModelExport/STLExport.mjs";
 import { parseBasicScad, parseScadText } from "/ScadEditor/ScadParser.mjs";
 
 const SCAD_VIEWER_VERSION = "source-preview-vars-2026-08-21";
@@ -44,6 +44,7 @@ function disposeObject3D(object) {
 async function renderScadCodeToSTLBuffer(scadCode) {
   const response = await fetch("/api/scad/render", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ scadCode: String(scadCode || ""), format: "stl" }),
   });
@@ -67,6 +68,11 @@ async function renderScadCodeToSTLBuffer(scadCode) {
 function numberOr(value, fallback = 0) {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
+}
+
+function scadSegmentCount(params = {}, fallback = 48, globalSegments = undefined) {
+  const raw = params.$fn ?? params.fn ?? params.segments ?? globalSegments;
+  return Math.max(8, Math.round(numberOr(raw, fallback)));
 }
 
 function vector3(values, fallback = [0, 0, 0]) {
@@ -160,7 +166,7 @@ function geometryForScadObject(obj, options = {}) {
   const params = obj?.params || {};
   if (obj?.type === "sphere") {
     const radius = Math.max(0.1, numberOr(params.radius ?? params.r, 6));
-    const segments = Math.max(8, Math.round(numberOr(params.segments ?? params.fn ?? params.$fn, 48)));
+    const segments = scadSegmentCount(params, 48, options.globalSegments);
     return new THREE.SphereGeometry(radius, segments, Math.max(6, Math.round(segments / 2)));
   }
   if (obj?.type === "cube") {
@@ -176,7 +182,7 @@ function geometryForScadObject(obj, options = {}) {
   if (obj?.type === "cylinder") {
     const radius = Math.max(0.1, numberOr(params.radius ?? params.r, 5));
     const height = Math.max(0.1, numberOr(params.height ?? params.h, 16));
-    const segments = Math.max(8, Math.round(numberOr(params.segments ?? params.fn ?? params.$fn, 48)));
+    const segments = scadSegmentCount(params, 48, options.globalSegments);
     const geometry = new THREE.CylinderGeometry(radius, radius, height, segments);
     geometry.rotateX(Math.PI / 2);
     if (params.center === false) geometry.translate(0, 0, height / 2);
@@ -219,7 +225,7 @@ function approximateObjectIsVisible(model, obj, options = {}) {
 
 function addApproximateObject(group, model, obj, options = {}) {
   if (!approximateObjectIsVisible(model, obj, options)) return false;
-  const geometry = geometryForScadObject(obj, options);
+  const geometry = geometryForScadObject(obj, { globalSegments: model?.parameters?.$fn, ...options });
   if (!geometry) return false;
   const layer = layerForApproximateObject(model, obj);
   const opacity = Number.isFinite(options.opacity) ? options.opacity : 0.78;
@@ -235,6 +241,7 @@ function addApproximateObject(group, model, obj, options = {}) {
   mesh.name = obj.name || obj.id || obj.type || "scad-object";
   mesh.userData.objectId = obj.id || null;
   mesh.userData.booleanPreview = Boolean(options.booleanPreview);
+  mesh.userData.ignoreSTLExport = Boolean(options.wireframe || options.ignoreSTLExport);
   applyScadObjectTransform(mesh, obj.transform || {});
   group.add(mesh);
   return true;
@@ -322,20 +329,44 @@ function renderBooleanApproximation(group, model, step) {
   return ids;
 }
 
+function visibleSourcePreview(scadText) {
+  try {
+    const model = parseBasicScad(scadText);
+    return Array.isArray(model.objects) && model.objects.length ? { model, source: "visible-source" } : null;
+  } catch (err) {
+    console.warn("[ViewSCAD] Source preview parse failed:", err);
+    return null;
+  }
+}
+
+function applyVisibleGlobalFn(model, sourceModel) {
+  const globalFn = Number(sourceModel?.parameters?.$fn);
+  if (!Number.isFinite(globalFn)) return model;
+  return {
+    ...model,
+    parameters: { ...(model.parameters || {}), $fn: globalFn },
+    objects: (model.objects || []).map((obj) => {
+      if (!["circle", "sphere", "cylinder"].includes(obj?.type)) return obj;
+      return { ...obj, params: { ...(obj.params || {}), segments: globalFn } };
+    }),
+  };
+}
+
 function buildApproximateModelFromScad(scadText) {
   let parsed = null;
+  const visible = visibleSourcePreview(scadText);
+
   try {
     parsed = parseScadText(scadText);
+    if (parsed?.source === "metadata" && visible?.model?.parameters?.$fn !== undefined) {
+      parsed = { ...parsed, source: "metadata+visible-$fn", model: applyVisibleGlobalFn(parsed.model, visible.model) };
+    }
   } catch (err) {
     console.warn("[ViewSCAD] Metadata parse failed; trying visible source preview:", err);
-    try {
-      const sourceModel = parseBasicScad(scadText);
-      parsed = { model: sourceModel, source: "visible-source" };
-    } catch (sourceErr) {
-      console.warn("[ViewSCAD] Source preview parse failed:", sourceErr);
-      return null;
-    }
+    parsed = visible;
   }
+
+  if (!parsed && visible) parsed = visible;
 
   const model = parsed?.model;
   const objects = Array.isArray(model?.objects) ? model.objects : [];
@@ -419,6 +450,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
   let disposed = false;
   let scadText = "";
   let compiledModel = null;
+  let exactRenderAvailable = false;
   const stlLoader = new STLLoader();
   const initialCameraPosition = new THREE.Vector3(100, 100, 100);
   const initialCameraTarget = new THREE.Vector3(0, 0, 0);
@@ -483,6 +515,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
     });
     compiledModel = new THREE.Mesh(geometry, material);
     compiledModel.name = "compiled-scad";
+    exactRenderAvailable = true;
     scene.add(compiledModel);
     fitCameraToObject(compiledModel);
     renderer?.render?.(scene, camera);
@@ -516,6 +549,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
       compiledModel = null;
     }
     compiledModel = object;
+    exactRenderAvailable = false;
     scene.add(compiledModel);
     fitCameraToObject(compiledModel);
     renderer?.render?.(scene, camera);
@@ -588,6 +622,15 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
     animate();
   }
 
+  function exportCurrentSTL() {
+    if (compiledModel) {
+      const result = exportSceneToSTL(compiledModel, resolvedPath);
+      diagnostic.textContent = (exactRenderAvailable ? "exact" : "preview") + " STL exported";
+      return { ...result, source: exactRenderAvailable ? "openscad" : "preview" };
+    }
+    return exportScadCodeToSTL(scadText, resolvedPath);
+  }
+
   panel._dispose = disposeViewer;
 
   try {
@@ -636,7 +679,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
       token: exportToken,
       kind: "scad-viewer",
       filePath: resolvedPath,
-      exportSTL: () => exportScadCodeToSTL(scadText, resolvedPath),
+      exportSTL: exportCurrentSTL,
     };
     updateToolbarState({ currentMode: "SCADviewing", activePanelType: "ViewPanel", selectedFile: resolvedPath, modelCanExportSTL: true });
 

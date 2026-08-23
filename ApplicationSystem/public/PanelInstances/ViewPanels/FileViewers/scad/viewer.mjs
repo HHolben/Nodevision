@@ -72,6 +72,12 @@ function applyNodeTransform(obj, node, parameters) {
   }
 }
 
+function segmentCountForPrimitive(params = {}, parameters = {}, fallback = 48) {
+  const raw = params.$fn ?? params.fn ?? params.segments ?? parameters.$fn ?? parameters.fn;
+  const value = typeof raw === "number" ? raw : evaluateScalar(String(raw ?? fallback), parameters);
+  return Math.max(8, Math.round(Number.isFinite(value) ? value : fallback));
+}
+
 function meshForPrimitive(node, parameters) {
   const p = node.parameters || {};
 
@@ -88,7 +94,8 @@ function meshForPrimitive(node, parameters) {
     case NODE_TYPES.sphere: {
       const r = p.r ?? p.radius ?? 10;
       const rr = typeof r === "number" ? r : evaluateScalar(String(r), parameters);
-      const geom = new THREE.SphereGeometry(Math.max(0.001, rr), 28, 18);
+      const segments = segmentCountForPrimitive(p, parameters, 48);
+      const geom = new THREE.SphereGeometry(Math.max(0.001, rr), segments, Math.max(6, Math.round(segments / 2)));
       return new THREE.Mesh(geom, standard(0x8e24aa));
     }
     case NODE_TYPES.cylinder: {
@@ -96,7 +103,8 @@ function meshForPrimitive(node, parameters) {
       const r = p.r ?? p.radius ?? 5;
       const hh = typeof h === "number" ? h : evaluateScalar(String(h), parameters);
       const rr = typeof r === "number" ? r : evaluateScalar(String(r), parameters);
-      const geom = new THREE.CylinderGeometry(Math.max(0.001, rr), Math.max(0.001, rr), Math.max(0.001, hh), 32);
+      const segments = segmentCountForPrimitive(p, parameters, 48);
+      const geom = new THREE.CylinderGeometry(Math.max(0.001, rr), Math.max(0.001, rr), Math.max(0.001, hh), segments);
       // OpenSCAD cylinder axis is Z; Three's is Y.
       geom.rotateX(Math.PI / 2);
       return new THREE.Mesh(geom, standard(0xff7043));

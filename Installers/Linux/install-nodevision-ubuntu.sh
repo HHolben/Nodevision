@@ -15,6 +15,7 @@ readonly APT_PACKAGES=(
   nodejs
   npm
   php-cli
+  openscad
   git
   curl
   build-essential
@@ -144,6 +145,7 @@ verify_dependencies() {
   command -v node >/dev/null 2>&1 || missing+=("nodejs")
   command -v npm >/dev/null 2>&1 || missing+=("npm")
   command -v php >/dev/null 2>&1 || missing+=("php-cli")
+  command -v openscad >/dev/null 2>&1 || missing+=("openscad")
   command -v git >/dev/null 2>&1 || missing+=("git")
   command -v curl >/dev/null 2>&1 || missing+=("curl")
   command -v python3 >/dev/null 2>&1 || missing+=("python3")

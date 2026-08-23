@@ -6,6 +6,12 @@ import { installMovementApi } from "../movementContext.mjs";
 export function installPlacedMeshFactoryAbility(ctx) {
   const { THREE, functionPlotterPanel } = ctx;
 
+  function normalizeOpacity(value, fallback = 1) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    return Math.max(0, Math.min(1, num));
+  }
+
   function createPlacedMesh(selectedItem, inventory) {
     const id = String(selectedItem?.id || "").toLowerCase();
     if (id === "box") return boxPlacement();
@@ -86,8 +92,9 @@ export function installPlacedMeshFactoryAbility(ctx) {
   function consolePlacement(inventory) {
     const props = ctx.api.parseConsoleProperties(inventory);
     if (!props) return null;
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.15, 0.7), new THREE.MeshStandardMaterial({ color: props.color }));
-    mesh.userData.consoleProperties = props;
+    const opacity = normalizeOpacity(props.opacity, 1);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.15, 0.7), new THREE.MeshStandardMaterial({ color: props.color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 }));
+    mesh.userData.consoleProperties = { ...props, opacity };
     return { mesh, collider: props.collider ? { type: "box", half: new THREE.Vector3(0.45, 0.575, 0.35) } : null };
   }
 

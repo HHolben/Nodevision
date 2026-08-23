@@ -62,6 +62,7 @@ export function installVoxelPlacementAbility(ctx) {
         materialName: config.materialName || materialId,
         matterState: config.matterState || "",
         color: config.color,
+        opacity: ctx.api.normalizeVoxelOpacity(config.opacity),
         collider: colliderEnabled
       },
       physicsMaterialId: materialId,
@@ -87,6 +88,7 @@ export function installVoxelPlacementAbility(ctx) {
     }
     const config = ctx.api.ensureVoxelPlacerConfig();
     const size = ctx.api.normalizeVoxelSize(config.size);
+    const opacity = ctx.api.normalizeVoxelOpacity(config.opacity);
     const half = new THREE.Vector3(size / 2, size / 2, size / 2);
     const shape = { type: "box", half };
     const placePos = computeVoxelPlacePosition(hit, placementNormalFromHit(hit), half, snapToGrid);
@@ -101,7 +103,7 @@ export function installVoxelPlacementAbility(ctx) {
     }
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(size, size, size),
-      new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.74, metalness: 0.04 })
+      new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.74, metalness: 0.04, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 })
     );
     mesh.position.copy(placePos);
     markMeshAsVoxel(mesh, config, size, colliderEnabled);

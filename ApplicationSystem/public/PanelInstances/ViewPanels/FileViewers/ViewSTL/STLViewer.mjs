@@ -25,6 +25,32 @@ function isEmptySTLBuffer(arrayBuffer) {
   }
 }
 
+function uniqueVertexPositions(positionAttribute) {
+  const vertices = [];
+  const seen = new Set();
+  const scale = 100000;
+  for (let i = 0; i < positionAttribute.count; i += 1) {
+    const x = positionAttribute.getX(i);
+    const y = positionAttribute.getY(i);
+    const z = positionAttribute.getZ(i);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+    const key = Math.round(x * scale) + "," + Math.round(y * scale) + "," + Math.round(z * scale);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    vertices.push(new THREE.Vector3(x, y, z));
+  }
+  return vertices;
+}
+
+function disposeObjectResources(object) {
+  object.traverse?.((child) => {
+    child.geometry?.dispose?.();
+    const material = child.material;
+    if (Array.isArray(material)) material.forEach((mat) => mat?.dispose?.());
+    else material?.dispose?.();
+  });
+}
+
 export class STLViewer {
   constructor(container) {
     this.container = container;
@@ -152,6 +178,7 @@ export class STLViewer {
   }
 
   destroy() {
+    this.clearModel();
     if (this.resizeObserver) this.resizeObserver.disconnect();
     else window.removeEventListener("resize", this.resizeHandler);
     if (this.floorGrid) {
@@ -184,7 +211,10 @@ export class STLViewer {
     const removable = this.scene.children.filter(
       (ch) => ch.userData?.isModel || ch.userData?.isEdge || ch.userData?.isVertex,
     );
-    removable.forEach((ch) => this.scene.remove(ch));
+    removable.forEach((ch) => {
+      this.scene.remove(ch);
+      disposeObjectResources(ch);
+    });
   }
 
   showError(message) {
@@ -284,14 +314,19 @@ export class STLViewer {
       edgeLines.position.sub(center);
       edgeLines.userData.isEdge = true;
       this.scene.add(edgeLines);
-      const verticesMaterial = new THREE.PointsMaterial({
-        size: Math.max(0.4, maxDim * 0.05),
-        color: 0xffcc00,
+      const vertexPositions = uniqueVertexPositions(position);
+      const vertexRadius = Math.max(0.08, maxDim * 0.006);
+      const vertexGeometry = new THREE.SphereGeometry(vertexRadius, 12, 8);
+      const verticesMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+      const vertexMarkers = new THREE.InstancedMesh(vertexGeometry, verticesMaterial, vertexPositions.length);
+      const markerMatrix = new THREE.Matrix4();
+      vertexPositions.forEach((vertex, index) => {
+        markerMatrix.setPosition(vertex.x - center.x, vertex.y - center.y, vertex.z - center.z);
+        vertexMarkers.setMatrixAt(index, markerMatrix);
       });
-      const pointCloud = new THREE.Points(geometry, verticesMaterial);
-      pointCloud.position.sub(center);
-      pointCloud.userData.isVertex = true;
-      this.scene.add(pointCloud);
+      vertexMarkers.instanceMatrix.needsUpdate = true;
+      vertexMarkers.userData.isVertex = true;
+      this.scene.add(vertexMarkers);
     } catch (err) {
       console.error("[ViewSTL] Failed to load STL:", err);
       const message = err?.message || "Unknown STL load error.";

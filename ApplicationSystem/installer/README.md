@@ -45,6 +45,10 @@ bash ApplicationSystem/scripts/build-linux-bundle.sh
 
 This produces `dist/nodevision-linux-x64.tar.gz`, which matches the installer's default expected asset name.
 
+## SCAD STL Export
+
+SCAD preview and STL export use the OpenSCAD command-line renderer. Install `openscad` with your system package manager, or set `NODEVISION_OPENSCAD_BIN` to the full executable path before launching Nodevision. If Nodevision runs inside Flatpak, install OpenSCAD on the host system; Fedora users can run `sudo dnf install openscad`, and Nodevision will use `flatpak-spawn --host openscad` when available.
+
 ## Offline Native Speech
 
 The installer tries to set up Nodevision offline native speech after application files are installed. If a compatible prebuilt bridge is already present, it installs or verifies only the eSpeak NG runtime package. If no bridge is present, it tries to install source-build dependencies and runs `ApplicationSystem/native/speech/build-espeak-bridge.sh`.

@@ -27,6 +27,17 @@ function parseNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function clampAlphaPercent(value, fallback = 100) {
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+}
+
+function materialAlphaPercent(material) {
+  const opacity = Number.isFinite(material?.opacity) ? material.opacity : 1;
+  return Math.round(Math.max(0, Math.min(1, opacity)) * 100);
+}
+
 function cloneRenderableObject(THREE, target) {
   if (!target) return null;
   const clone = target.clone(true);
@@ -53,21 +64,33 @@ function firstColorHex(target) {
   return `#${material.color.getHexString()}`;
 }
 
-function applyColorToTarget(target, colorHex) {
-  if (!target) return;
+function forEachTargetMaterial(target, callback) {
+  if (!target || typeof callback !== "function") return;
   const queue = [];
   target.traverse?.((node) => {
     if (node?.isMesh) queue.push(node);
   });
   if (queue.length === 0 && target?.isMesh) queue.push(target);
   queue.forEach((mesh) => {
-    if (Array.isArray(mesh.material)) {
-      mesh.material.forEach((mat) => {
-        if (mat?.color) mat.color.set(colorHex);
-      });
-    } else if (mesh.material?.color) {
-      mesh.material.color.set(colorHex);
-    }
+    if (Array.isArray(mesh.material)) mesh.material.forEach((mat) => callback(mat, mesh));
+    else if (mesh.material) callback(mesh.material, mesh);
+  });
+}
+
+function applyColorToTarget(target, colorHex) {
+  forEachTargetMaterial(target, (mat) => {
+    if (mat?.color) mat.color.set(colorHex);
+  });
+}
+
+function applyAlphaToTarget(target, alphaPercent) {
+  const alpha = clampAlphaPercent(alphaPercent) / 100;
+  forEachTargetMaterial(target, (mat) => {
+    if (!mat) return;
+    mat.opacity = alpha;
+    mat.transparent = alpha < 1;
+    mat.depthWrite = alpha >= 1;
+    mat.needsUpdate = true;
   });
 }
 
@@ -93,10 +116,13 @@ function applyMaterialType(THREE, target, typeName, colorHex) {
 
   queue.forEach((mesh) => {
     const prev = firstMaterial(mesh);
+    const opacity = Number.isFinite(prev?.opacity) ? Math.max(0, Math.min(1, prev.opacity)) : 1;
     const next = new matCtor({
       color: colorHex,
       roughness: Number.isFinite(prev?.roughness) ? prev.roughness : 0.6,
-      metalness: Number.isFinite(prev?.metalness) ? prev.metalness : 0.2
+      metalness: Number.isFinite(prev?.metalness) ? prev.metalness : 0.2,
+      transparent: opacity < 1 || prev?.transparent === true,
+      opacity
     });
     mesh.material = next;
   });
@@ -195,6 +221,27 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   const colorInput = labeledInput("Color", document.createElement("input"));
   colorInput.type = "color";
+
+  const alphaWrap = document.createElement("span");
+  alphaWrap.style.display = "flex";
+  alphaWrap.style.alignItems = "center";
+  alphaWrap.style.gap = "8px";
+  const alphaInput = document.createElement("input");
+  alphaInput.type = "range";
+  alphaInput.min = "0";
+  alphaInput.max = "100";
+  alphaInput.step = "1";
+  alphaInput.value = "100";
+  const alphaValue = document.createElement("span");
+  alphaValue.style.minWidth = "40px";
+  alphaValue.textContent = "100%";
+  alphaWrap.append(alphaInput, alphaValue);
+  labeledInput("Alpha", alphaWrap);
+  alphaInput.addEventListener("input", () => {
+    const value = Math.round(clampAlphaPercent(alphaInput.value));
+    alphaInput.value = String(value);
+    alphaValue.textContent = value + "%";
+  });
 
   const colliderInput = labeledInput("Collider?", document.createElement("input"));
   colliderInput.type = "checkbox";
@@ -1029,6 +1076,9 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     syInput.value = String(Number(target.scale?.y || 1).toFixed(3));
     szInput.value = String(Number(target.scale?.z || 1).toFixed(3));
     colorInput.value = firstColorHex(target);
+    const alpha = materialAlphaPercent(firstMaterial(target));
+    alphaInput.value = String(alpha);
+    alphaValue.textContent = alpha + "%";
     colliderInput.checked = Boolean(target.userData?.colliderRef);
     physicsInput.checked = Boolean(target.userData?.physicsEnabled || target.userData?.isSolid);
     const mat = firstMaterial(target);
@@ -1081,14 +1131,16 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
     applyColorToTarget(activeTarget, colorInput.value);
     applyMaterialType(THREE, activeTarget, materialSelect.value, colorInput.value);
+    applyAlphaToTarget(activeTarget, alphaInput.value);
 
     if (isEquationColliderPlane(activeTarget)) {
       const materials = Array.isArray(activeTarget.material) ? activeTarget.material : [activeTarget.material];
       materials.forEach((mat) => {
         if (!mat) return;
-        mat.transparent = true;
-        if (!Number.isFinite(mat.opacity) || mat.opacity > 0.5) mat.opacity = 0.34;
-        mat.depthWrite = false;
+        const alpha = clampAlphaPercent(alphaInput.value) / 100;
+        mat.transparent = alpha < 1;
+        mat.opacity = alpha;
+        mat.depthWrite = alpha >= 1;
         mat.side = THREE.DoubleSide;
       });
     }

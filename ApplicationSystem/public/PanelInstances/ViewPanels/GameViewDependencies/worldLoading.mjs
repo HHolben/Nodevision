@@ -1631,6 +1631,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         mesh.userData.consoleProperties = {
           collider: def.collider !== false,
           color: def.color || "#33ccaa",
+          opacity: Number.isFinite(Number(def.opacity)) ? Math.max(0, Math.min(1, Number(def.opacity))) : 1,
           objectFile: typeof def.objectFile === "string" ? def.objectFile : "",
           linkedObject: typeof def.linkedObject === "string" ? def.linkedObject : "",
           inputs: def.inputs && typeof def.inputs === "object" ? def.inputs : {},
@@ -3153,6 +3154,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         mesh.userData.consoleProperties = {
           collider: def.collider !== false,
           color: def.color || "#33ccaa",
+          opacity: Number.isFinite(Number(def.opacity)) ? Math.max(0, Math.min(1, Number(def.opacity))) : 1,
           objectFile: typeof def.objectFile === "string" ? def.objectFile : "",
           linkedObject: typeof def.linkedObject === "string" ? def.linkedObject : "",
           inputs: def.inputs && typeof def.inputs === "object" ? def.inputs : {},
@@ -3331,8 +3333,19 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             materialName: voxel.materialName || def.materialName || "",
             matterState: voxel.matterState || def.MatterState || def.matterState || "",
             color: voxel.color || def.color || "",
+            opacity: Number.isFinite(Number(voxel.opacity ?? def.opacity)) ? Math.max(0, Math.min(1, Number(voxel.opacity ?? def.opacity))) : 1,
             collider: def.collider === true || def.collidable === true || def.isSolid === true
           };
+          if (Number.isFinite(mesh.userData.voxelPlacer.opacity)) {
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            materials.forEach((material) => {
+              if (!material) return;
+              material.opacity = mesh.userData.voxelPlacer.opacity;
+              material.transparent = mesh.userData.voxelPlacer.opacity < 1;
+              material.depthWrite = mesh.userData.voxelPlacer.opacity >= 1;
+              material.needsUpdate = true;
+            });
+          }
         }
         if (isEquationObjectDefinition(def)) {
           mesh.userData.equationExpression = def.equationExpression || def.expression || mesh.userData.equationExpression || "";

@@ -31,7 +31,24 @@ function ensureStyles() {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
+  align-items: center;
   gap: 10px;
+}
+.nv-html-focus-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.nv-html-focus-timer {
+  min-width: 98px;
+  padding: 4px 8px;
+  border: 1px solid #94a3b8;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  text-align: center;
+  font: 700 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .nv-html-focus-meter {
   height: 10px;
@@ -89,7 +106,13 @@ function createSurface(goal) {
   top.className = "nv-html-focus-top";
   const title = document.createElement("strong");
   title.textContent = "HTML Draft Focus Session";
+  const statsWrap = document.createElement("div");
+  statsWrap.className = "nv-html-focus-stats";
   const stats = document.createElement("span");
+  const timerDisplay = document.createElement("span");
+  timerDisplay.className = "nv-html-focus-timer";
+  timerDisplay.setAttribute("aria-live", "polite");
+  statsWrap.append(stats, timerDisplay);
   const tools = document.createElement("div");
   tools.className = "nv-html-focus-tools";
   const bold = document.createElement("button");
@@ -101,7 +124,7 @@ function createSurface(goal) {
   const finish = document.createElement("button");
   finish.textContent = "Finish";
   tools.append(bold, strike, finish);
-  top.append(title, stats, tools);
+  top.append(title, statsWrap, tools);
   const meter = document.createElement("div");
   meter.className = "nv-html-focus-meter";
   const meterFill = document.createElement("span");
@@ -112,7 +135,12 @@ function createSurface(goal) {
   editor.spellcheck = true;
   editor.dataset.placeholder = goalLabel(goal);
   surface.append(top, meter, editor);
-  return { surface, stats, meterFill, editor, bold, strike, finish };
+  return { surface, stats, timerDisplay, meterFill, editor, bold, strike, finish };
+}
+
+function timerTextForGoal(goal, progress, elapsedMs) {
+  if (goal.mode === "words") return "Time " + formatTime(elapsedMs);
+  return "Remaining " + formatTime(progress.remainingMs);
 }
 
 export async function startHTMLDraftFocus(context = {}) {
@@ -144,7 +172,8 @@ export async function startHTMLDraftFocus(context = {}) {
     const elapsed = Date.now() - started;
     const words = countDraftWords(parts.editor.innerText || "");
     const progress = progressForGoal(goal, words, elapsed);
-    parts.stats.textContent = `${words} words added · ${goalLabel(goal)}${goal.mode === "words" ? "" : " · " + formatTime(progress.remainingMs)}`;
+    parts.stats.textContent = `${words} words added · ${goalLabel(goal)}`;
+    parts.timerDisplay.textContent = timerTextForGoal(goal, progress, elapsed);
     parts.meterFill.style.width = `${Math.round(progress.percent * 100)}%`;
     if (progress.complete) window.setTimeout(finish, 450);
   };

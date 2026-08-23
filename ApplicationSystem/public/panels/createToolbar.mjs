@@ -25,6 +25,7 @@ const TOOLBAR_SEARCH_HEADING = "SearchBar";
 const TOOLBAR_USER_HEADING = "User";
 const USER_TOOLBAR_ICON = "icons/UserIcon.svg";
 const TOOLBAR_DROPDOWN_VIEWPORT_MARGIN = 8;
+const TOOLBAR_DROPDOWN_CLOSE_DELAY_MS = 450;
 const TOOLBAR_HIGHLIGHT_SOUND_URLS = [
   "/soundEffects/Tic.wav",
   "/soundEffects/Tic.mp3"
@@ -33,6 +34,7 @@ let lastToolbarHighlightSoundAt = 0;
 let toolbarSessionIdentity = null;
 let toolbarSessionIdentityLoaded = false;
 let toolbarSessionIdentityPromise = null;
+const toolbarDropdownCloseTimers = new WeakMap();
 
 function playToolbarHighlightSound() {
   const now = Date.now();
@@ -355,9 +357,42 @@ function dropdownsAreRelated(a, b) {
   return !!(a && b && (a === b || a.contains?.(b) || b.contains?.(a)));
 }
 
+function toolbarDropdownIsHovered(dropdown, anchor) {
+  return Boolean(
+    dropdown?.matches?.(":hover") ||
+    anchor?.matches?.(":hover")
+  );
+}
+
+function clearToolbarDropdownCloseTimer(dropdown) {
+  const timer = toolbarDropdownCloseTimers.get(dropdown);
+  if (!timer) return;
+  clearTimeout(timer);
+  toolbarDropdownCloseTimers.delete(dropdown);
+}
+
+function closeToolbarDropdown(dropdown) {
+  if (!dropdown) return;
+  clearToolbarDropdownCloseTimer(dropdown);
+  dropdown.style.display = "none";
+  const trigger = dropdown.parentElement?.querySelector?.(":scope > .toolbar-main-button, :scope > .toolbar-dropdown-button");
+  trigger?.setAttribute?.("aria-expanded", "false");
+}
+
+function scheduleToolbarDropdownClose(dropdown, anchor) {
+  if (!dropdown) return;
+  clearToolbarDropdownCloseTimer(dropdown);
+  const timer = setTimeout(() => {
+    toolbarDropdownCloseTimers.delete(dropdown);
+    if (toolbarDropdownIsHovered(dropdown, anchor)) return;
+    closeToolbarDropdown(dropdown);
+  }, TOOLBAR_DROPDOWN_CLOSE_DELAY_MS);
+  toolbarDropdownCloseTimers.set(dropdown, timer);
+}
+
 function hideUnrelatedDropdowns(activeDropdown) {
   Object.values(prebuiltDropdowns).forEach((dropdown) => {
-    if (!dropdownsAreRelated(dropdown, activeDropdown)) dropdown.style.display = "none";
+    if (!dropdownsAreRelated(dropdown, activeDropdown)) closeToolbarDropdown(dropdown);
   });
 }
 
@@ -380,8 +415,12 @@ function positionToolbarDropdown(dropdown, anchor = dropdown?.parentElement) {
 
 function showToolbarDropdown(dropdown, anchor) {
   if (!dropdown) return;
+  clearToolbarDropdownCloseTimer(dropdown);
+  hideUnrelatedDropdowns(dropdown);
   dropdown.style.display = "block";
   positionToolbarDropdown(dropdown, anchor);
+  const trigger = anchor?.querySelector?.(":scope > .toolbar-main-button, :scope > .toolbar-dropdown-button");
+  trigger?.setAttribute?.("aria-expanded", "true");
 }
 
 // === Dynamic callback loader ===
@@ -855,17 +894,18 @@ function buildToolbar(container, items, parentHeading = null) {
     // Dropdown handling
     const dropdown = prebuiltDropdowns[menuHeading];
     if (dropdown) {
+      btn.setAttribute("aria-haspopup", "menu");
+      btn.setAttribute("aria-expanded", "false");
       btnWrapper.appendChild(dropdown);
-      let hoverTimeout;
       btnWrapper.addEventListener("mouseenter", () => {
-        clearTimeout(hoverTimeout);
         playToolbarHighlightSound();
-        hideUnrelatedDropdowns(dropdown);
         showToolbarDropdown(dropdown, btnWrapper);
       });
       btnWrapper.addEventListener("mouseleave", () => {
-        hoverTimeout = setTimeout(() => (dropdown.style.display = "none"), 250);
+        scheduleToolbarDropdownClose(dropdown, btnWrapper);
       });
+      dropdown.addEventListener("mouseenter", () => clearToolbarDropdownCloseTimer(dropdown));
+      dropdown.addEventListener("mouseleave", () => scheduleToolbarDropdownClose(dropdown, btnWrapper));
     }
 
     // Click

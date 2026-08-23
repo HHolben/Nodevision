@@ -7,7 +7,9 @@ import { normalizeGravityModel } from "./gravityModel.mjs";
 
 const DEFAULT_ENVIRONMENT = {
   skyColor: "#ffffff",
+  skyAlpha: 1,
   floorColor: "#d8dee4",
+  floorAlpha: 1,
   backgroundMode: "color",
   backgroundImage: "",
   floorImage: "",
@@ -72,6 +74,8 @@ function normalizeEnvironmentState(raw = {}) {
     ...DEFAULT_ENVIRONMENT,
     ...source
   };
+  environment.skyAlpha = clampFiniteNumber(source.skyAlpha ?? source.skyOpacity ?? source.backgroundAlpha, 0, 1, DEFAULT_ENVIRONMENT.skyAlpha);
+  environment.floorAlpha = clampFiniteNumber(source.floorAlpha ?? source.floorOpacity, 0, 1, DEFAULT_ENVIRONMENT.floorAlpha);
   environment.dayNightCycle = normalizeDayNightCycle(source.dayNightCycle ?? source.dayNight ?? source.lightCycle ?? DEFAULT_ENVIRONMENT.dayNightCycle);
   return environment;
 }
@@ -86,6 +90,32 @@ function createField(labelText, inputEl, container) {
   wrapper.appendChild(inputEl);
   container.appendChild(wrapper);
   return inputEl;
+}
+
+function createAlphaField(labelText, container, value = 1) {
+  const input = document.createElement("input");
+  input.type = "range";
+  input.min = "0";
+  input.max = "100";
+  input.step = "1";
+  const field = createField(labelText, input, container);
+  const valueEl = document.createElement("span");
+  valueEl.style.opacity = "0.84";
+  valueEl.style.fontSize = "11px";
+  field.parentElement?.appendChild(valueEl);
+  const setValue = (opacity = 1) => {
+    const alpha = Math.round(clampFiniteNumber(opacity, 0, 1, 1) * 100);
+    field.value = String(alpha);
+    valueEl.textContent = alpha + "%";
+  };
+  const readValue = () => {
+    const opacity = clampFiniteNumber(Number(field.value) / 100, 0, 1, 1);
+    setValue(opacity);
+    return opacity;
+  };
+  field.addEventListener("input", readValue);
+  setValue(value);
+  return { input: field, setValue, readValue };
 }
 
 export function createWorldPropertiesPanel({ movementState }) {
@@ -254,6 +284,8 @@ export function createWorldPropertiesPanel({ movementState }) {
     input.type = "color";
     return input;
   })(), envGrid);
+  const skyAlphaInput = createAlphaField("Sky Alpha", envGrid);
+  const floorAlphaInput = createAlphaField("Floor Alpha", envGrid);
 
   const skyImageInput = createField("Sky Image URL", (() => {
     const input = document.createElement("input");
@@ -481,7 +513,9 @@ export function createWorldPropertiesPanel({ movementState }) {
       backgroundMode: "color",
       backgroundImage: "",
       skyColor: sky,
+      skyAlpha: skyAlphaInput.readValue(),
       floorColor: floor,
+      floorAlpha: floorAlphaInput.readValue(),
       floorImage: ""
     }, "Environment colors applied.");
   });
@@ -687,7 +721,9 @@ export function createWorldPropertiesPanel({ movementState }) {
   function refreshEnvironmentFields() {
     const env = getEnvironmentState();
     skyColorInput.value = env.skyColor || DEFAULT_ENVIRONMENT.skyColor;
+    skyAlphaInput.setValue(env.skyAlpha ?? 1);
     floorColorInput.value = env.floorColor || DEFAULT_ENVIRONMENT.floorColor;
+    floorAlphaInput.setValue(env.floorAlpha ?? 1);
     skyImageInput.value = env.backgroundImage || "";
     floorImageInput.value = env.floorImage || "";
     setCycleFields(env.dayNightCycle);
