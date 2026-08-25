@@ -536,6 +536,20 @@ function selectedPathMatchesDirectoryRequest(pathValue = "") {
   return Boolean(state.selectedFileIsDirectory && selectedPath && sameNotebookPath(selectedPath, cleanPath));
 }
 
+function selectedPathMatchesFileRequest(pathValue = "") {
+  const cleanPath = normalizeResolvedNotebookPath(pathValue || "");
+  if (!cleanPath) return false;
+
+  const pending = window.__nvPendingSelectedFileMetadata;
+  if (pending && sameNotebookPath(pending.path, cleanPath)) {
+    return pending.isDirectory === false;
+  }
+
+  const state = window.NodevisionState || {};
+  const selectedPath = normalizeResolvedNotebookPath(state.selectedFile || window.selectedFilePath || "");
+  return Boolean(selectedPath && sameNotebookPath(selectedPath, cleanPath) && state.selectedFileIsDirectory === false);
+}
+
 async function notebookFileExists(pathValue = "") {
   const cleanPath = normalizeResolvedNotebookPath(pathValue || "");
   if (!cleanPath) return false;
@@ -1723,7 +1737,10 @@ export async function updateViewPanel(element, { force = false } = {}) {
   let ext = resolveExtension(filename);
   const lowerFilename = filename.toLowerCase();
   const selectedDirectoryRequest = selectedPathMatchesDirectoryRequest(filename);
-  const shouldResolveDirectoryIndex = selectedDirectoryRequest || !ext || lowerFilename === ext || !filename.includes(".");
+  const selectedFileRequest = selectedPathMatchesFileRequest(filename);
+  const shouldResolveDirectoryIndex = selectedDirectoryRequest || (
+    !selectedFileRequest && (!ext || lowerFilename === ext || !filename.includes("."))
+  );
 
   if (shouldResolveDirectoryIndex) {
     const directoryPath = normalizeResolvedNotebookPath(filename);
@@ -1762,7 +1779,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
   window.NodevisionState.selectedFileIsDirectory = preserveSelectedFolder;
   window.NodevisionState.activeFileViewPath = filename;
   window.NodevisionModelExportContext = null;
-  updateToolbarState({ currentMode: "Default", selectedFile: toolbarSelectedPath, modelCanExportSTL: false, liveFileViewerEnabled });
+  updateToolbarState({ currentMode: "Default", selectedFile: toolbarSelectedPath, modelCanExportSTL: false, modelCanExport2DPattern: false, liveFileViewerEnabled });
   setFileViewStatus("File Viewer", filename);
   if (typeof viewPanel._dispose === "function") {
     try {

@@ -326,6 +326,9 @@ function registerKmlUtilityRoutes(app, ctx) {
 
 export default async function createApp(runtimeConfig = {}) {
   const ctx = createServerContext(runtimeConfig);
+  ctx.host = runtimeConfig.host;
+  ctx.port = runtimeConfig.port;
+  ctx.actualPort = runtimeConfig.actualPort;
   ensureServerDirectories(ctx);
 
   let deviceIdentity;

@@ -3,7 +3,7 @@
 
 export function renderScadTimelinePanel(container, state, actions = {}) {
   if (!container) return;
-  const { model, selectedIds = [] } = state;
+  const { model, selectedIds = [], activeStepId = null } = state;
   container.innerHTML = "";
   Object.assign(container.style, {
     display: "flex",
@@ -36,7 +36,8 @@ export function renderScadTimelinePanel(container, state, actions = {}) {
   steps.forEach((step, index) => {
     const card = document.createElement("button");
     card.type = "button";
-    const active = (step.objectIds || []).some((id) => selectedIds.includes(id));
+    const selectedByObject = (step.objectIds || []).some((id) => selectedIds.includes(id));
+    const active = activeStepId ? step.id === activeStepId : selectedByObject;
     const codeLine = timelineCodeLine(model, step);
     const operationLabel = (step.params && step.params.operation) || step.type || "step";
     Object.assign(card.style, {
@@ -47,12 +48,13 @@ export function renderScadTimelinePanel(container, state, actions = {}) {
       textAlign: "left",
       border: active ? "1px solid #f59e0b" : "1px solid #d1d5db",
       borderRadius: "6px",
-      background: step.disabled ? "#eef0f4" : "#fff",
+      background: active ? "#fff7ed" : (step.disabled ? "#eef0f4" : "#fff"),
       color: step.disabled ? "#7b8190" : "#111827",
       padding: "8px",
       cursor: "pointer",
       opacity: step.disabled ? "0.72" : "1",
     });
+    card.setAttribute("aria-pressed", active ? "true" : "false");
     card.innerHTML = `
       <div style="font:600 11px/1.3 system-ui,sans-serif;">${index + 1}. ${escapeHtml(step.label || step.type)}</div>
       <div style="font:11px/1.3 system-ui,sans-serif;color:#6b7280;margin-top:3px;">${escapeHtml(operationLabel)}</div>

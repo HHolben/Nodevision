@@ -2,6 +2,12 @@
 // This file defines browser-side callback Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 const inlineCallbacks = {
+  file: {
+    ExportSelectedModelAs2DPattern: async () => {
+      const mod = await import("/ModelExport/STLExport.mjs");
+      return mod.exportActiveModelAs2DPattern();
+    },
+  },
   draw: {
     svgModeRotate: () => {
       window.NodevisionState = window.NodevisionState || {};

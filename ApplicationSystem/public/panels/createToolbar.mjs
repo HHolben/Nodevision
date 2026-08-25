@@ -151,6 +151,12 @@ function canToolbarActiveFileConvertToEpub(state = window.NodevisionState || {})
   return isToolbarActiveFileHtml(state) || isToolbarActiveFileDirectory(state);
 }
 
+function isToolbarActiveFilePatternExportable(pathValue = "") {
+  const activePath = normalizeToolbarFilePath(pathValue || resolveToolbarActiveFilePath());
+  const ext = (activePath.split(".").pop() || "").toLowerCase();
+  return ext === "stl" || ext === "scad";
+}
+
 if (!window.__nvShowSubToolbarEventBound) {
   window.addEventListener("nv-show-subtoolbar", (evt) => {
     const detail = evt?.detail || {};
@@ -268,11 +274,22 @@ if (!window.__nvPanelHeaderLayoutBound) {
 
 // === Helper: Check toolbar item conditions ===
 function getToolbarItemState(item, state = window.NodevisionState || {}) {
+  const activePatternPath = resolveToolbarActiveFilePath(state);
+  const modelExportContext = window.NodevisionModelExportContext || {};
+  const contextPatternPath = normalizeToolbarFilePath(modelExportContext.filePath || modelExportContext.path || "");
+  const modelPatternContextMatchesActiveFile = Boolean(
+    activePatternPath && (!contextPatternPath || contextPatternPath === activePatternPath)
+  );
   const enhancedState = {
     ...state,
     activeFileIsIno: isToolbarActiveFileIno(state),
     activeFileIsHtml: isToolbarActiveFileHtml(state),
     activeFileCanConvertToEpub: canToolbarActiveFileConvertToEpub(state),
+    modelCanExport2DPattern: Boolean(
+      typeof modelExportContext.export2DPattern === "function"
+        && modelPatternContextMatchesActiveFile
+        && isToolbarActiveFilePatternExportable(activePatternPath)
+    ),
     requiresFile: Boolean(state.selectedFile || state.activeEditorFilePath || resolveToolbarActiveFilePath(state)),
   };
   return evaluateToolbarItemState(item, {

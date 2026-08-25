@@ -10,7 +10,7 @@ import { addObject, addTimelineStep, removeObject, renameTimelineStep, setTimeli
 import { shapeFromTool, polygonFromPoints } from "/ScadEditor/ScadShapeTools.mjs";
 import { addBooleanOperation, deleteObjects, duplicateObjects, extrudeObjects, recordScaleTimelineStep, renameObject, rotateObjects, scaleObjects, translateObjects } from "/ScadEditor/ScadOperations.mjs";
 import { createScadSceneRenderer } from "/ScadEditor/ScadSceneRenderer.mjs";
-import { exportScadCodeToSTL, exportSceneToSTL } from "/ModelExport/STLExport.mjs";
+import { exportScadCodeToSTL, exportSceneToSTL, exportScadCodeTo2DPattern, exportSceneTo2DPattern } from "/ModelExport/STLExport.mjs";
 import { clearScadLayersContext, ensureScadLayersContext, notifyScadLayersChanged, notifyScadSelectionChanged } from "/ScadEditor/ScadLayerPanelContext.mjs";
 
 const SCAD_MODE = "SCADediting";
@@ -18,6 +18,7 @@ const SCAD_ACTION_AXIS_TYPES = new Set(["x", "y", "z"]);
 const SCAD_FACE_OBJECT_TYPES = new Set(["circle", "rectangle", "square", "triangle", "polygon", "text"]);
 const SCAD_SOLID_OBJECT_TYPES = new Set(["sphere", "cube", "cylinder", "polyhedron"]);
 const SCAD_SLICE_OBJECT_TYPES = new Set(["vertexPath", "line", "polygon", "triangle", "rectangle", "square"]);
+const SCAD_TIMELINE_CREATE_TYPES = new Set(["place", "create", "duplicate", "paste"]);
 const SCAD_SCALE_DRAG_UNITS = 60;
 const SCAD_MIN_SCALE_FACTOR = 0.05;
 
@@ -28,6 +29,123 @@ function normalizePath(path = "") {
 function selectedObjects(model, ids) {
   const set = new Set(ids || []);
   return model.objects.filter((obj) => set.has(obj.id));
+}
+
+function timelineStepOperation(step) {
+  return String(step?.params?.operation || step?.type || "").trim();
+}
+
+function timelineStepIntroducesObjects(step) {
+  const operation = timelineStepOperation(step);
+  return SCAD_TIMELINE_CREATE_TYPES.has(step?.type) || SCAD_TIMELINE_CREATE_TYPES.has(operation);
+}
+
+function cloneTimelinePreviewObject(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function timelineStepHasObject(step, objectId) {
+  return (step?.objectIds || []).includes(objectId);
+}
+
+function previewVector(values = [], fallback = 0) {
+  const source = Array.isArray(values) ? values : [];
+  return [0, 1, 2].map((index) => {
+    const number = Number(source[index]);
+    return Number.isFinite(number) ? number : fallback;
+  });
+}
+
+function ensurePreviewTransform(obj) {
+  const transform = obj.transform || {};
+  obj.transform = {
+    ...transform,
+    translate: previewVector(transform.translate, 0),
+    rotate: previewVector(transform.rotate, 0),
+    scale: previewVector(transform.scale, 1),
+  };
+  return obj.transform;
+}
+
+function revertFutureTimelineTransforms(obj, timeline, cursorIndex) {
+  const transform = ensurePreviewTransform(obj);
+  for (let index = timeline.length - 1; index > cursorIndex; index -= 1) {
+    const step = timeline[index];
+    if (step?.disabled || !timelineStepHasObject(step, obj.id)) continue;
+    const operation = timelineStepOperation(step);
+    if (operation === "translate") {
+      const delta = previewVector(step.params?.delta, 0);
+      transform.translate = transform.translate.map((value, axis) => value - delta[axis]);
+    } else if (operation === "rotate") {
+      const delta = previewVector(step.params?.delta, 0);
+      transform.rotate = transform.rotate.map((value, axis) => value - delta[axis]);
+    } else if (operation === "scale") {
+      const factors = previewVector(step.params?.factors, 1);
+      transform.scale = transform.scale.map((value, axis) => {
+        const factor = Number(factors[axis]);
+        return Number.isFinite(factor) && Math.abs(factor) > 0.000001 ? value / factor : value;
+      });
+    }
+  }
+}
+
+function applyExtrudeTimelineState(obj, timeline, cursorIndex) {
+  const extrudeSteps = timeline
+    .map((step, index) => ({ step, index }))
+    .filter(({ step }) => !step?.disabled && step?.type === "extrude" && timelineStepOperation(step) === "extrude" && timelineStepHasObject(step, obj.id) && Number.isFinite(Number(step.params?.height)));
+  if (!extrudeSteps.length) return;
+  const beforeCursor = extrudeSteps.filter((entry) => entry.index <= cursorIndex).pop() || null;
+  const operations = Array.isArray(obj.operations) ? obj.operations.filter((op) => op?.type !== "extrude") : [];
+  if (beforeCursor) operations.push({ type: "extrude", params: { height: Number(beforeCursor.step.params.height) || 10 } });
+  obj.operations = operations;
+}
+
+function previewObjectAtTimelineCursor(obj, timeline, cursorIndex) {
+  const preview = cloneTimelinePreviewObject(obj);
+  revertFutureTimelineTransforms(preview, timeline, cursorIndex);
+  applyExtrudeTimelineState(preview, timeline, cursorIndex);
+  return preview;
+}
+
+function buildTimelinePreviewModel(model, stepId = null) {
+  if (!stepId) return model;
+  const timeline = Array.isArray(model?.timeline) ? model.timeline : [];
+  const cursorIndex = timeline.findIndex((step) => step?.id === stepId);
+  if (cursorIndex < 0) return model;
+
+  const creationIndexByObjectId = new Map();
+  timeline.forEach((step, index) => {
+    if (!timelineStepIntroducesObjects(step)) return;
+    (step.objectIds || []).filter(Boolean).forEach((id) => {
+      if (!creationIndexByObjectId.has(id)) creationIndexByObjectId.set(id, index);
+    });
+  });
+
+  timeline.forEach((step, index) => {
+    if (step?.type !== "extrude" || timelineStepOperation(step) !== "extrude") return;
+    (step.objectIds || []).filter(Boolean).forEach((id) => {
+      if (!creationIndexByObjectId.has(id)) creationIndexByObjectId.set(id, index);
+    });
+  });
+
+  const previewTimeline = timeline.slice(0, cursorIndex + 1);
+  const deletedIds = new Set();
+  previewTimeline.forEach((step) => {
+    if (step?.disabled) return;
+    if (step?.type !== "delete" && timelineStepOperation(step) !== "delete") return;
+    (step.objectIds || []).filter(Boolean).forEach((id) => deletedIds.add(id));
+  });
+
+  return {
+    ...model,
+    timeline: previewTimeline,
+    objects: (model.objects || [])
+      .filter((obj) => {
+        const creationIndex = creationIndexByObjectId.get(obj.id);
+        return (creationIndex === undefined || creationIndex <= cursorIndex) && !deletedIds.has(obj.id);
+      })
+      .map((obj) => previewObjectAtTimelineCursor(obj, timeline, cursorIndex)),
+  };
 }
 
 function clientToModelPoint(event, element) {
@@ -145,6 +263,7 @@ export async function renderEditor(filePath, container) {
   let activeLayerId = null;
   let selectedIds = [];
   let selectedVertexRefs = [];
+  let activeTimelineStepId = null;
   let selectedFaceRefs = [];
   let scadClipboard = null;
   let lastModelPoint = [0, 0];
@@ -1481,15 +1600,34 @@ export async function renderEditor(filePath, container) {
     return readScadDocumentMetadata();
   }
 
-  function markDirty() {
+  function markDirty(options = {}) {
+    if (!options.preserveTimelinePreview) activeTimelineStepId = null;
     window.NodevisionState = window.NodevisionState || {};
     window.NodevisionState.fileIsDirty = true;
     updateToolbarState({ fileIsDirty: true, currentMode: SCAD_MODE });
   }
 
+  function activeTimelineStep() {
+    if (!activeTimelineStepId) return null;
+    const step = (model.timeline || []).find((item) => item.id === activeTimelineStepId) || null;
+    if (!step) activeTimelineStepId = null;
+    return step;
+  }
+
+  function setTimelinePreviewStep(stepId = null) {
+    activeTimelineStepId = stepId && (model.timeline || []).some((step) => step.id === stepId) ? stepId : null;
+    return activeTimelineStep();
+  }
+
+  function timelinePreviewModel() {
+    return buildTimelinePreviewModel(model, activeTimelineStepId);
+  }
+
   function refresh() {
     if (disposed) return;
-    renderer?.renderModel(model);
+    activeTimelineStep();
+    const previewModel = timelinePreviewModel();
+    renderer?.renderModel(previewModel);
     if (typeof renderer?.setSelectedIds === "function") renderer.setSelectedIds(selectedIds);
     else renderer?.setSelectedId(selectedIds[0] || null);
     renderer?.setSelectedFaceRefs?.(selectedFaceRefs);
@@ -1497,7 +1635,7 @@ export async function renderEditor(filePath, container) {
     notifyScadSelectionChanged();
     window.NodevisionState.scadShapeSelected = selectedIds.length > 0;
     updateToolbarState({ currentMode: SCAD_MODE, scadShapeSelected: selectedIds.length > 0 });
-    window.dispatchEvent(new CustomEvent("nv-scad-model-changed", { detail: { model, selectedIds, selectedFaceRefs } }));
+    window.dispatchEvent(new CustomEvent("nv-scad-model-changed", { detail: { model, previewModel, selectedIds, selectedFaceRefs, activeTimelineStepId } }));
   }
 
   function runExtrude() {
@@ -1633,10 +1771,39 @@ export async function renderEditor(filePath, container) {
   }
 
   const timelineActions = {
-    selectStep(step) { setSelection((step.objectIds || []).filter((id) => model.objects.some((obj) => obj.id === id)), []); refresh(); },
-    toggleStep(id, disabled) { setTimelineStepDisabled(model, id, disabled); markDirty(); refresh(); },
-    renameStep(id, label) { renameTimelineStep(model, id, label); markDirty(); refresh(); },
-    deleteStep(id) { deleteTimelineStep(model, id); markDirty(); refresh(); },
+    selectStep(step) {
+      const previewStep = setTimelinePreviewStep(step?.id || null);
+      const visibleModel = timelinePreviewModel();
+      const visibleIds = new Set((visibleModel.objects || []).map((obj) => obj.id));
+      const stepOperation = timelineStepOperation(previewStep);
+      const stepIds = previewStep?.objectIds || [];
+      const selectionIds = ["union", "difference", "intersection", "cutout"].includes(stepOperation)
+        ? [previewStep?.params?.baseObjectId || stepIds[0]].filter(Boolean)
+        : stepIds;
+      setSelection(selectionIds.filter((id) => visibleIds.has(id)), []);
+      if (previewStep) {
+        const index = (model.timeline || []).findIndex((item) => item.id === previewStep.id);
+        setStatus("Viewing after CADtimeline step " + String(index + 1) + ": " + (previewStep.label || previewStep.type || "Step") + ".");
+      }
+      refresh();
+    },
+    toggleStep(id, disabled) {
+      if (!setTimelineStepDisabled(model, id, disabled)) return;
+      markDirty({ preserveTimelinePreview: true });
+      refresh();
+    },
+    renameStep(id, label) {
+      if (!renameTimelineStep(model, id, label)) return;
+      markDirty({ preserveTimelinePreview: true });
+      refresh();
+    },
+    deleteStep(id) {
+      if (!deleteTimelineStep(model, id)) return;
+      const preserveTimelinePreview = activeTimelineStepId && activeTimelineStepId !== id;
+      if (activeTimelineStepId === id) activeTimelineStepId = null;
+      markDirty({ preserveTimelinePreview });
+      refresh();
+    },
   };
 
   async function saveCurrent(path = scadPath) {
@@ -1681,6 +1848,36 @@ export async function renderEditor(filePath, container) {
     });
 
     if (result?.source === "openscad") setStatus("Exported STL.");
+    return result;
+  }
+
+  function exportPreview2DPattern(options = {}) {
+    const root = previewExportRoot();
+    if (!root) throw new Error("No SCAD preview mesh is available for pattern export.");
+    const result = exportSceneTo2DPattern(root, scadPath, options);
+    setStatus("Exported preview 2D pattern.");
+    return { ...result, source: "preview" };
+  }
+
+  async function export2DPattern(options = {}) {
+    const scadCode = serializeScadModel(model, { preserveUnsupportedSource: true });
+    if (exactSTLExportUnavailable && previewExportRoot()) return exportPreview2DPattern(options);
+
+    const result = await exportScadCodeTo2DPattern(scadCode, scadPath, {
+      ...options,
+      fallbackRoot: previewExportRoot,
+      onExactExport: () => {
+        exactSTLExportUnavailable = false;
+        setStatus("Exported 2D pattern.");
+      },
+      onFallback: (err) => {
+        exactSTLExportUnavailable = true;
+        console.warn("[GraphicalScadEditor] OpenSCAD pattern export failed; exported preview mesh instead:", err);
+        setStatus("Exported preview 2D pattern. Install OpenSCAD for exact SCAD export.");
+      },
+    });
+
+    if (result?.source === "openscad") setStatus("Exported 2D pattern.");
     return result;
   }
 
@@ -1902,8 +2099,9 @@ export async function renderEditor(filePath, container) {
     kind: "scad-editor",
     filePath: scadPath,
     exportSTL,
+    export2DPattern,
   };
-  updateToolbarState({ currentMode: SCAD_MODE, selectedFile: scadPath, activeEditorFilePath: scadPath, activeActionHandler: handleToolbarAction, scadShapeSelected: false, modelCanExportSTL: true });
+  updateToolbarState({ currentMode: SCAD_MODE, selectedFile: scadPath, activeEditorFilePath: scadPath, activeActionHandler: handleToolbarAction, scadShapeSelected: false, modelCanExportSTL: true, modelCanExport2DPattern: true });
   window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
     detail: { heading: "SCAD Primitive", force: true, toggle: false },
   }));
@@ -1911,6 +2109,7 @@ export async function renderEditor(filePath, container) {
   const scadController = {
     getModel: () => model,
     getSelectedIds: () => [...selectedIds],
+    getTimelinePreviewStepId: () => activeTimelineStepId,
     getActiveLayerId: () => activeLayerId,
     setActiveLayer,
     setTool,
@@ -1923,6 +2122,7 @@ export async function renderEditor(filePath, container) {
     refresh,
     save: saveCurrent,
     exportSTL,
+    export2DPattern,
     serialize: () => serializeScadModel(model),
     handleToolbarAction,
     selectTimelineStep: timelineActions.selectStep,
@@ -1977,7 +2177,7 @@ export async function renderEditor(filePath, container) {
       }
       if (window.NodevisionModelExportContext?.token === exportToken) {
         window.NodevisionModelExportContext = null;
-        updateToolbarState({ modelCanExportSTL: false });
+        updateToolbarState({ modelCanExportSTL: false, modelCanExport2DPattern: false });
       }
       if (window.GraphicalScadEditorContext?.handleToolbarAction === handleToolbarAction) {
         window.GraphicalScadEditorContext = null;

@@ -407,7 +407,7 @@ export async function createScadSceneRenderer(container, options = {}) {
     const layer = layerFor(model, obj);
     if (obj.visible === false && options.includeHidden !== true) return false;
     if (layer.visible === false) return false;
-    const selected = selectedIds.has(obj.id);
+    const selected = options.selected !== undefined ? Boolean(options.selected) : selectedIds.has(obj.id);
     const color = options.color !== undefined ? options.color : (selected ? selectedColor : new THREE.Color(layer.color || "#4f8cff"));
     const opacity = Number.isFinite(options.opacity) ? options.opacity : (layer.locked ? 0.42 : 0.78);
     const transparent = opacity < 1;
@@ -425,7 +425,7 @@ export async function createScadSceneRenderer(container, options = {}) {
       mesh.name = obj.name || obj.id;
       applyTransform(mesh, obj);
       group.add(mesh);
-      if (selected && !ignorePick && !wireframe) addSelectedFaceOverlay(obj.id, selectedColor);
+      if (selected && !ignorePick && !wireframe && options.suppressSelectionOverlay !== true) addSelectedFaceOverlay(obj.id, selectedColor);
       return true;
     }
 
@@ -484,7 +484,7 @@ export async function createScadSceneRenderer(container, options = {}) {
     mesh.name = obj.name || obj.id;
     applyTransform(mesh, obj);
     group.add(mesh);
-    if (selected && !ignorePick && !wireframe) addSelectedFaceOverlay(obj.id, selectedColor);
+    if (selected && !ignorePick && !wireframe && options.suppressSelectionOverlay !== true) addSelectedFaceOverlay(obj.id, selectedColor);
     return true;
   }
 
@@ -535,8 +535,7 @@ export async function createScadSceneRenderer(container, options = {}) {
     return result;
   }
 
-  function renderIntersectionPreview(model, step, objects, depthOverride, depthRangeOverride = null) {
-    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: 0.24, color: 0x0f766e, depthOverride, depthRangeOverride }));
+  function renderIntersectionPreview(model, step, objects, depthOverride, depthRangeOverride = null, selectedBoolean = false) {
     const box = intersectionBoxForObjects(objects, model, depthOverride, depthRangeOverride);
     if (!box) return false;
     const size = new THREE.Vector3();
@@ -544,7 +543,7 @@ export async function createScadSceneRenderer(container, options = {}) {
     box.getSize(size);
     box.getCenter(center);
     const geometry = new THREE.BoxGeometry(Math.max(0.01, size.x), Math.max(0.01, size.y), Math.max(0.01, size.z));
-    const material = new THREE.MeshStandardMaterial({ color: 0x14b8a6, roughness: 0.7, transparent: true, opacity: 0.48 });
+    const material = new THREE.MeshStandardMaterial({ color: selectedBoolean ? selectedColor : 0x14b8a6, roughness: 0.7, transparent: true, opacity: selectedBoolean ? 0.68 : 0.48 });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.copy(center);
     mesh.userData.objectId = step.params?.baseObjectId || objects[0]?.id || null;
@@ -561,17 +560,18 @@ export async function createScadSceneRenderer(container, options = {}) {
     const depthRangeOverride = booleanPreviewZRange(objects, model);
     const depthOverride = depthRangeOverride ? depthRangeOverride.max - depthRangeOverride.min : booleanPreviewHeight(objects, model);
     const selectedBoolean = ids.some((id) => selectedIds.has(id));
+    const resultObjectId = step.params?.baseObjectId || ids[0] || objects[0]?.id || null;
+    const resultColor = selectedBoolean ? selectedColor : new THREE.Color(layerFor(model, objects[0]).color || "#4f8cff");
     if (keyword === "difference") {
       const base = objects[0];
-      renderObjectPreview(model, base, { includeHidden: true, color: selectedBoolean ? selectedColor : undefined, depthOverride, depthRangeOverride });
-      objects.slice(1).forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, wireframe: true, opacity: selectedIds.has(obj.id) ? 0.45 : 0.28, color: 0xef4444, depthOverride, depthRangeOverride }));
+      renderObjectPreview(model, base, { includeHidden: true, color: selectedBoolean ? selectedColor : undefined, depthOverride, depthRangeOverride, pickObjectId: resultObjectId, selected: selectedBoolean });
       return ids;
     }
     if (keyword === "intersection") {
-      renderIntersectionPreview(model, step, objects, depthOverride, depthRangeOverride);
+      renderIntersectionPreview(model, step, objects, depthOverride, depthRangeOverride, selectedBoolean);
       return ids;
     }
-    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, depthOverride, depthRangeOverride }));
+    objects.forEach((obj) => renderObjectPreview(model, obj, { includeHidden: true, depthOverride, depthRangeOverride, pickObjectId: resultObjectId, color: resultColor, selected: selectedBoolean, suppressSelectionOverlay: true }));
     return ids;
   }
 

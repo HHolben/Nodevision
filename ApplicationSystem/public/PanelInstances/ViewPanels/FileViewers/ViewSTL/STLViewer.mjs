@@ -5,6 +5,7 @@ import * as THREE from "/lib/three/three.module.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { OrbitControls } from "/lib/three/OrbitControls.js";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
+import { exportSceneTo2DPattern } from "/ModelExport/STLExport.mjs";
 
 function viewerElementSize(element) {
   const rect = element.getBoundingClientRect?.();
@@ -59,6 +60,8 @@ export class STLViewer {
 
   init() {
     const container = this.container;
+    this.modelMesh = null;
+    this.modelPath = "";
 
     container.innerHTML = "";
     container.style.position = "relative";
@@ -177,6 +180,11 @@ export class STLViewer {
     return this.floorGridVisible !== false;
   }
 
+  export2DPattern(pathValue = this.modelPath || "model.stl", options = {}) {
+    if (!this.modelMesh) throw new Error("No loaded STL mesh is available for pattern export.");
+    return exportSceneTo2DPattern(this.modelMesh, pathValue, options);
+  }
+
   destroy() {
     this.clearModel();
     if (this.resizeObserver) this.resizeObserver.disconnect();
@@ -208,6 +216,8 @@ export class STLViewer {
   }
 
   clearModel() {
+    this.modelMesh = null;
+    this.modelPath = "";
     const removable = this.scene.children.filter(
       (ch) => ch.userData?.isModel || ch.userData?.isEdge || ch.userData?.isVertex,
     );
@@ -303,6 +313,8 @@ export class STLViewer {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.sub(center);
       mesh.userData.isModel = true;
+      this.modelMesh = mesh;
+      this.modelPath = filePath;
       this.scene.add(mesh);
       const fov = this.camera.fov * (Math.PI / 180);
       const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.6;

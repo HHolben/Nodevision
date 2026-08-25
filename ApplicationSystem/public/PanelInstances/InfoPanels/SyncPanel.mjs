@@ -203,6 +203,7 @@ const TEMPLATE = `
 `;
 
 const escapeHtml = (v = "") => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const escapeAttr = (v = "") => escapeHtml(v).replace(/"/g, "&quot;");
 const shortenDeviceId = (id = "") => (String(id).length <= 16 ? String(id) : `${String(id).slice(0, 8)}...${String(id).slice(-6)}`);
 const shortenJobId = (id = "") => { const text = String(id); return text.length <= 14 ? text : text.slice(0, 8) + "..."; };
 const setStatus = (el, msg = "") => { if (el) el.textContent = String(msg); };
@@ -505,8 +506,9 @@ export async function setupPanel(panelElem, panelVars = {}) {
     refreshTimer: null,
     busy: false,
     localDevice: null,
+    localPeerConnection: null,
     protection: { protectedFromPeerWrites: false },
-    status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null, usbNetworkDiagnostics: null },
+    status: { discovery: { scanning: false, discoverable: false }, discoveredPeers: [], selectedPeerDeviceId: null, usbNetworkDiagnostics: null, localPeerConnection: null },
     wiredDiagnosticsReport: null,
     scopes: ["SyncTest"],
     candidateFolders: [],
@@ -675,10 +677,37 @@ export async function setupPanel(panelElem, panelVars = {}) {
     return body;
   };
 
+  const localPeerConnectionNote = () => {
+    const transport = normalizeSyncTransport(state.syncSettings.syncTransport);
+    const connection = state.localPeerConnection || state.status.localPeerConnection || {};
+    const preferredKind = String(connection.candidates?.[0]?.kind || "");
+    if (transport === "usb" && preferredKind !== "wireless") return "Enter this URL on the other computer while both devices are connected through the same direct wired link.";
+    return "Enter this URL in the Peer URL field on the other Nodevision computer.";
+  };
+
+  const renderLocalPeerConnectionHtml = () => {
+    const connection = state.localPeerConnection || state.status.localPeerConnection || null;
+    if (!connection) return "<div style=\"margin-top:8px;color:#777;font-size:0.84em;\">Checking local connection URL...</div>";
+    const unavailableReason = String(connection.unavailableReason || "").trim();
+    if (unavailableReason) {
+      const message = String(connection.unavailableMessage || "No usable peer connection URL is available.").trim();
+      return "<div style=\"margin-top:10px;padding-top:8px;border-top:1px solid #e1e1e1;display:grid;gap:4px;\"><div style=\"font-weight:600;color:#7a3b00;\">Peer connection unavailable</div><div style=\"color:#555;font-size:0.84em;line-height:1.35;\">" + escapeHtml(message) + "</div></div>";
+    }
+    const preferred = String(connection.preferred || "").trim();
+    if (!preferred) return "<div style=\"margin-top:10px;padding-top:8px;border-top:1px solid #e1e1e1;color:#777;font-size:0.84em;\">Peer connection unavailable</div>";
+    const alternatives = Array.isArray(connection.alternatives) ? connection.alternatives.map((url) => String(url || "").trim()).filter(Boolean) : [];
+    const alternativeRows = alternatives.length
+      ? "<div style=\"margin-top:7px;\"><div style=\"color:#555;font-size:0.82em;font-weight:600;\">Other available addresses:</div><ul style=\"margin:3px 0 0;padding-left:18px;display:grid;gap:2px;\">" + alternatives.map((url) => "<li><code style=\"user-select:text;color:#333;\">" + escapeHtml(url) + "</code></li>").join("") + "</ul></div>"
+      : "";
+    const omittedCount = Math.max(0, Number(connection.omittedCount || 0));
+    const omittedLine = omittedCount ? "<div style=\"margin-top:4px;color:#666;font-size:0.8em;\">" + escapeHtml(omittedCount) + " more address" + (omittedCount === 1 ? "" : "es") + " detected.</div>" : "";
+    return "<div style=\"margin-top:10px;padding-top:8px;border-top:1px solid #e1e1e1;display:grid;gap:5px;\"><div style=\"font-weight:600;color:#333;\">Peer should connect to:</div><div style=\"display:flex;flex-wrap:wrap;gap:6px;align-items:center;\"><code style=\"user-select:all;border:1px solid #d6d6d6;border-radius:5px;background:#fff;padding:4px 6px;color:#222;\">" + escapeHtml(preferred) + "</code><button type=\"button\" data-copy-local-peer-url=\"" + escapeAttr(preferred) + "\" style=\"border:1px solid #bbb;border-radius:6px;background:#fff;padding:4px 8px;cursor:pointer;font-size:0.8em;\">Copy</button></div>" + alternativeRows + omittedLine + "<div style=\"color:#666;font-size:0.82em;line-height:1.35;\">" + escapeHtml(localPeerConnectionNote()) + "</div></div>";
+  };
+
   const renderLocalDevice = () => {
     if (!localDeviceEl) return;
     if (!state.localDevice) { localDeviceEl.textContent = "Unavailable"; return; }
-    localDeviceEl.innerHTML = `<div><strong>${escapeHtml(state.localDevice.deviceName || "Unknown Device")}</strong></div><div style="font-size:0.85em;color:#666;">${escapeHtml(state.localDevice.deviceId || "")}</div>`;
+    localDeviceEl.innerHTML = "<div><strong>" + escapeHtml(state.localDevice.deviceName || "Unknown Device") + "</strong></div><div style=\"font-size:0.85em;color:#666;\">" + escapeHtml(state.localDevice.deviceId || "") + "</div>" + renderLocalPeerConnectionHtml();
   };
 
   const renderProtection = () => {
@@ -954,7 +983,25 @@ export async function setupPanel(panelElem, panelVars = {}) {
   const loadProtection = async () => { const p = await apiFetchJson("/api/sync/protection", { cache: "no-store" }); state.protection = p.protection || { protectedFromPeerWrites: false }; renderProtection(); };
   const loadScopes = async () => { try { const p = await apiFetchJson("/api/sync/scopes", { cache: "no-store" }); state.scopes = Array.isArray(p.syncScopes) && p.syncScopes.length ? p.syncScopes : ["SyncTest"]; } catch { state.scopes = ["SyncTest"]; } renderScopes(); renderSharedScopes(); };
   const loadFolders = async () => { try { const p = await apiFetchJson("/api/sync/notebook-folders", { cache: "no-store" }); state.candidateFolders = Array.isArray(p.folders) ? p.folders : []; } catch { state.candidateFolders = []; } renderCandidateFolders(); };
-  const refreshStatus = async () => { const p = await apiFetchJson("/api/sync/status", { cache: "no-store" }); state.status = { discovery: p.discovery || { scanning: false, discoverable: false }, discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [], selectedPeerDeviceId: p.selectedPeerDeviceId || null, usbNetworkDiagnostics: p.usbNetworkDiagnostics || null }; state.protection = p.protection || state.protection; maybeDefaultDirectionForSelectedPeer(); renderDiscoveryButtons(); renderPeers(); renderProtection(); renderTransportSettings(); };
+  const refreshStatus = async () => {
+    const statusUrl = "/api/sync/status?syncTransport=" + encodeURIComponent(normalizeSyncTransport(state.syncSettings.syncTransport));
+    const p = await apiFetchJson(statusUrl, { cache: "no-store" });
+    state.localPeerConnection = p.localPeerConnection || null;
+    state.status = {
+      discovery: p.discovery || { scanning: false, discoverable: false },
+      discoveredPeers: Array.isArray(p.discoveredPeers) ? p.discoveredPeers : [],
+      selectedPeerDeviceId: p.selectedPeerDeviceId || null,
+      usbNetworkDiagnostics: p.usbNetworkDiagnostics || null,
+      localPeerConnection: state.localPeerConnection,
+    };
+    state.protection = p.protection || state.protection;
+    maybeDefaultDirectionForSelectedPeer();
+    renderDiscoveryButtons();
+    renderPeers();
+    renderProtection();
+    renderLocalDevice();
+    renderTransportSettings();
+  };
   const refreshActiveJob = async () => {
     const jobId = String(state.activeJobId || "").trim();
     if (!jobId) return;
@@ -1547,6 +1594,30 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   renderTransportSettings();
 
+  localDeviceEl?.addEventListener("click", async (event) => {
+    const button = event.target?.closest?.("[data-copy-local-peer-url]");
+    if (!button) return;
+    const url = String(button.getAttribute("data-copy-local-peer-url") || state.localPeerConnection?.preferred || "").trim();
+    if (!url) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = url;
+        input.style.position = "fixed";
+        input.style.left = "-9999px";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        input.remove();
+      }
+      setStatus(statusEl, "Local connection URL copied.");
+    } catch {
+      setStatus(statusEl, "Select the local connection URL and copy it.");
+    }
+  });
+
   syncTransportSelect?.addEventListener("change", () => {
     state.syncSettings.syncTransport = normalizeSyncTransport(syncTransportSelect.value);
     const selectedPeer = getSelectedPeer();
@@ -1556,6 +1627,7 @@ export async function setupPanel(panelElem, panelVars = {}) {
     renderDiscoveryButtons();
     renderProtection();
     setError(errorEl, "");
+    refreshStatus().catch(() => {});
   });
   peerUrlInput?.addEventListener("input", () => { setActivePeerUrl(peerUrlInput.value); });
   peerUrlInput?.addEventListener("change", () => { setActivePeerUrl(peerUrlInput.value); renderTransportSettings(); });

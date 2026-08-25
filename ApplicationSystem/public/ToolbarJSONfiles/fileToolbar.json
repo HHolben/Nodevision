@@ -343,6 +343,17 @@
   },
   {
     "ToolbarCategory": "File",
+    "parentHeading": "Export",
+    "heading": "2D Pattern",
+    "hotkeyText": "",
+    "callbackKey": "ExportSelectedModelAs2DPattern",
+    "icon": "icons/Download.png",
+    "conditions": {
+      "modelCanExport2DPattern": true
+    }
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "Convert to EPUB",
     "hotkeyText": "",
     "callbackKey": "ConvertToEPUB",

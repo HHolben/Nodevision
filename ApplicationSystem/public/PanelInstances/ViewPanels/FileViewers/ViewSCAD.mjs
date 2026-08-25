@@ -6,7 +6,7 @@ import { OrbitControls } from "/lib/three/OrbitControls.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { ViewportOrientationWidget } from "/Widgets/ViewportOrientationWidget.mjs";
-import { exportScadCodeToSTL, exportSceneToSTL } from "/ModelExport/STLExport.mjs";
+import { exportScadCodeToSTL, exportSceneToSTL, exportSceneTo2DPattern } from "/ModelExport/STLExport.mjs";
 import { parseBasicScad, parseScadText } from "/ScadEditor/ScadParser.mjs";
 
 const SCAD_VIEWER_VERSION = "source-preview-vars-2026-08-21";
@@ -412,7 +412,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
   console.info("[ViewSCAD] running " + SCAD_VIEWER_VERSION);
   panel.style.cssText = "display:flex;flex-direction:column;gap:8px;width:100%;height:100%;min-width:0;min-height:420px;overflow:hidden;box-sizing:border-box;padding:8px;";
   window.NodevisionModelExportContext = null;
-  updateToolbarState({ currentMode: "SCADviewing", activePanelType: "ViewPanel", selectedFile: resolvedPath, modelCanExportSTL: false });
+  updateToolbarState({ currentMode: "SCADviewing", activePanelType: "ViewPanel", selectedFile: resolvedPath, modelCanExportSTL: false, modelCanExport2DPattern: false });
 
   const toolbar = document.createElement("div");
   toolbar.style.cssText = "display:flex;align-items:center;gap:8px;min-width:0;";
@@ -536,7 +536,7 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
     renderer?.dispose?.();
     if (exportToken && window.NodevisionModelExportContext?.token === exportToken) {
       window.NodevisionModelExportContext = null;
-      updateToolbarState({ modelCanExportSTL: false });
+      updateToolbarState({ modelCanExportSTL: false, modelCanExport2DPattern: false });
     }
     panel._dispose = null;
   }
@@ -631,6 +631,13 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
     return exportScadCodeToSTL(scadText, resolvedPath);
   }
 
+  function exportCurrent2DPattern(options = {}) {
+    if (!compiledModel) throw new Error("No SCAD mesh is available for pattern export.");
+    const result = exportSceneTo2DPattern(compiledModel, resolvedPath, options);
+    diagnostic.textContent = (exactRenderAvailable ? "exact" : "preview") + " 2D pattern exported";
+    return { ...result, source: exactRenderAvailable ? "openscad" : "preview" };
+  }
+
   panel._dispose = disposeViewer;
 
   try {
@@ -680,8 +687,9 @@ export async function renderFile(filePath, panel, iframe, serverBase = "/Noteboo
       kind: "scad-viewer",
       filePath: resolvedPath,
       exportSTL: exportCurrentSTL,
+      export2DPattern: exportCurrent2DPattern,
     };
-    updateToolbarState({ currentMode: "SCADviewing", activePanelType: "ViewPanel", selectedFile: resolvedPath, modelCanExportSTL: true });
+    updateToolbarState({ currentMode: "SCADviewing", activePanelType: "ViewPanel", selectedFile: resolvedPath, modelCanExportSTL: true, modelCanExport2DPattern: true });
 
   } catch (err) {
     if (disposed) return true;

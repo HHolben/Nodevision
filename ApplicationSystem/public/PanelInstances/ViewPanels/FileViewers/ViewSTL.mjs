@@ -14,8 +14,15 @@ export function renderSTL(filePath, container, serverBase) {
     viewers.set(container, viewer);
   }
 
+  const exportToken = Symbol("nv-stl-viewer-pattern-context");
+  window.NodevisionModelExportContext = {
+    token: exportToken,
+    kind: "stl-viewer",
+    filePath,
+    export2DPattern: (options = {}) => viewer.export2DPattern(filePath, options),
+  };
   window.__nvStlViewerApi = viewer;
-  updateToolbarState({ currentMode: "STLviewing", activePanelType: "ViewPanel", stlViewerActive: true });
+  updateToolbarState({ currentMode: "STLviewing", activePanelType: "ViewPanel", selectedFile: filePath, stlViewerActive: true, modelCanExportSTL: false, modelCanExport2DPattern: true });
   viewer.loadSTL(filePath, serverBase);
 }
 

@@ -24,6 +24,7 @@ import {
 } from "../../Sync/OfflineSyncInbox.mjs";
 import { loadSyncProtection, saveSyncProtection } from "../../Sync/SyncProtection.mjs";
 import { runFullDiagnostics, runLocalDiagnostics, runPeerDiagnostics } from "../../Sync/WiredSyncDiagnostics.mjs";
+import { getPreferredLocalPeerUrls } from "../../Sync/LocalPeerUrls.mjs";
 import { createSyncJobManager } from "../../Sync/SyncJobManager.mjs";
 import { createMultiEndpointHttpSyncTransport } from "../../Sync/SyncTransport.mjs";
 import { buildDiscoveredPeerUrl } from "../../Sync/sync-discovered-sync-test.mjs";
@@ -1271,14 +1272,31 @@ function getDetectedNonWifiNetworkInterfaces(ctx = {}) {
 }
 
 function getListeningAddressSnapshot(ctx = {}) {
-  const host = String(ctx?.host || ctx?.hostname || ctx?.listenHost || process.env.HOST || "0.0.0.0").trim() || "0.0.0.0";
-  const port = normalizeUsbDiscoveryPort(ctx?.port) || normalizeUsbDiscoveryPort(process.env.PORT) || 3000;
+  const env = ctx?.env && typeof ctx.env === "object" ? ctx.env : process.env;
+  const host = String(ctx?.host || ctx?.hostname || ctx?.listenHost || env.HOST || "127.0.0.1").trim() || "127.0.0.1";
+  const port = normalizeUsbDiscoveryPort(ctx?.actualPort)
+    || normalizeUsbDiscoveryPort(ctx?.listeningPort)
+    || normalizeUsbDiscoveryPort(env.PORT)
+    || normalizeUsbDiscoveryPort(ctx?.port)
+    || 3000;
+  const normalizedHost = host.toLowerCase();
   return {
     host,
     port,
-    listensOnAllInterfaces: host === "0.0.0.0" || host === "::",
-    loopbackOnly: host === "127.0.0.1" || host === "localhost" || host === "::1",
+    listensOnAllInterfaces: normalizedHost === "0.0.0.0" || normalizedHost === "::",
+    loopbackOnly: normalizedHost === "localhost" || normalizedHost === "::1" || normalizedHost === "0:0:0:0:0:0:0:1" || /^127\./.test(normalizedHost),
   };
+}
+
+function getLocalPeerConnectionSnapshot(ctx = {}, syncTransport = "wireless") {
+  const listening = getListeningAddressSnapshot(ctx);
+  return getPreferredLocalPeerUrls({
+    transport: syncTransport,
+    bindHost: listening.host,
+    port: listening.port,
+    networkInterfaces: getConfiguredNetworkInterfaces(ctx),
+    systemRoot: ctx?.systemRoot,
+  });
 }
 
 function getUsbNetworkDiagnostics(ctx = {}) {
@@ -1309,8 +1327,9 @@ function getUsbNetworkDiagnostics(ctx = {}) {
   };
 }
 
-async function syncStateResponse(state, ctx) {
+async function syncStateResponse(state, ctx, options = {}) {
   const protection = await loadSyncProtection({ runtimeRoot: ctx?.runtimeRoot }).catch(() => ({ protectedFromPeerWrites: false }));
+  const syncTransport = parseSyncTransport({ syncTransport: options.syncTransport || options.transport || "wireless" });
   return {
     ok: true,
     protection,
@@ -1321,6 +1340,7 @@ async function syncStateResponse(state, ctx) {
     discoveredPeers: listDiscoveredPeers(state),
     selectedPeerDeviceId: state.selectedPeerDeviceId || null,
     usbNetworkDiagnostics: getUsbNetworkDiagnostics(ctx),
+    localPeerConnection: getLocalPeerConnectionSnapshot(ctx, syncTransport),
   };
 }
 
@@ -1418,7 +1438,7 @@ export function registerSyncPanelRoutes(app, ctx) {
 
   app.get("/api/sync/status", async (req, res) => {
     if (!requireSession(req, res)) return;
-    return res.json(await syncStateResponse(state, ctx));
+    return res.json(await syncStateResponse(state, ctx, req.query || {}));
   });
 
   app.post("/api/sync/diagnostics/wired", async (req, res) => {
@@ -1614,7 +1634,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       } else {
         await stopListener(state);
       }
-      return res.json(await syncStateResponse(state, ctx));
+      return res.json(await syncStateResponse(state, ctx, req.body || {}));
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to update scanning state" });
     }
@@ -1640,7 +1660,7 @@ export function registerSyncPanelRoutes(app, ctx) {
       } else {
         await stopBroadcaster(state);
       }
-      return res.json(await syncStateResponse(state, ctx));
+      return res.json(await syncStateResponse(state, ctx, req.body || {}));
     } catch {
       return res.status(500).json({ ok: false, error: "Failed to update discoverable state" });
     }
@@ -1654,7 +1674,7 @@ export function registerSyncPanelRoutes(app, ctx) {
         return res.status(400).json({ ok: false, error: "deviceId is required" });
       }
       setSelectedPeerDeviceId(state, deviceId);
-      return res.json(await syncStateResponse(state, ctx));
+      return res.json(await syncStateResponse(state, ctx, req.body || {}));
     } catch {
       return res.status(400).json({ ok: false, error: "Unknown discovered peer" });
     }
