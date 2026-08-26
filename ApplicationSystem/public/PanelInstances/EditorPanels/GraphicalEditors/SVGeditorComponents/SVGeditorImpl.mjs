@@ -1,6 +1,15 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorImpl.mjs
-// Entry module kept small; implementation lives in adjacent dependency files.
+// This module renders the SVG graphical editor runtime and attaches small editor-specific extensions without expanding the large runtime module.
 
-import { renderEditor } from "./SVGeditorRuntime.mjs";
+import { renderEditor as renderRuntimeEditor } from "./SVGeditorRuntime.mjs";
+import { installSvgScaleHotkeys } from "./SvgScaleHotkeys.mjs";
 
-export { renderEditor };
+// Runtime composition.
+export async function renderEditor(filePath, container) {
+  const cleanupRuntime = await renderRuntimeEditor(filePath, container);
+  const cleanupScaleHotkeys = installSvgScaleHotkeys(container);
+  return () => {
+    cleanupScaleHotkeys?.();
+    cleanupRuntime?.();
+  };
+}

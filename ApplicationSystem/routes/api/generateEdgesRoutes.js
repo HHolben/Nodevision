@@ -31,7 +31,7 @@ async function getAllFiles(dir) {
 function extractHyperlinksFromContent(content) {
   const $ = cheerio.load(content);
   const links = [];
-  $("a").each((i, el) => {
+  $("a, area").each((i, el) => {
     const href = $(el).attr("href");
     if (href) links.push(href);
   });

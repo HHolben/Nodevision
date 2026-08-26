@@ -11,6 +11,7 @@ import {
 
 const LINK_ATTRIBUTES = [
   { selector: "a", attr: "href" },
+  { selector: "area", attr: "href" },
   { selector: "img", attr: "src" },
   { selector: "script", attr: "src" },
   { selector: "link", attr: "href" },

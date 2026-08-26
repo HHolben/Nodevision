@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgScaleGeometry.mjs
 // This module provides reusable SVG scale geometry helpers for modal keyboard scaling in the graphical SVG editor.
 
+// Scale factor formatting and mode mapping.
 const MIN_SCALE_MAGNITUDE = 0.05;
 
 function cleanNumber(value, fallback = 1) {
@@ -25,6 +26,7 @@ export function scaleFactorsForMode(mode, factor) {
   return { sx: f, sy: f, local: false };
 }
 
+// Coordinate conversion helpers.
 function transformAround(point, sx, sy) {
   return "translate(" + formatScaleNumber(point.x) + " " + formatScaleNumber(point.y) + ") scale(" +
     formatScaleNumber(sx) + " " + formatScaleNumber(sy) + ") translate(" + formatScaleNumber(-point.x) + " " + formatScaleNumber(-point.y) + ")";
@@ -89,7 +91,8 @@ function elementBox(el) {
 
 function elementSpace(svgRoot, el) {
   const parent = el?.parentNode;
-  return parent instanceof SVGElement && typeof parent.getScreenCTM === "function" ? parent : svgRoot;
+  const canCheckSvgElement = typeof SVGElement !== "undefined";
+  return canCheckSvgElement && parent instanceof SVGElement && typeof parent.getScreenCTM === "function" ? parent : svgRoot;
 }
 
 function unitVector(vector, fallback) {
@@ -108,6 +111,7 @@ export function localAxisVector(svgRoot, el, axis) {
   return unitVector({ x: rootEnd.x - rootCenter.x, y: rootEnd.y - rootCenter.y }, fallback);
 }
 
+// Selected element transform preparation and application.
 export function makeScaleItem(svgRoot, el) {
   const box = elementBox(el);
   return {
@@ -143,6 +147,7 @@ export function applyScaleToItems(session, factor) {
   session.applied = true;
 }
 
+// Pointer distance and projection factor calculation.
 export function pointerScaleFactor(session, point) {
   if (!point) return session.factor || 1;
   const dx = point.x - session.centerRoot.x;

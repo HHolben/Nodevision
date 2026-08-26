@@ -59,3 +59,30 @@ const attentionSnapshot = {
   );
   assert.equal(result.visible, true, "legacy object conditions and string modes still work");
 }
+
+
+function fakeMappedImage(hasMap = true) {
+  const map = { getAttribute: (name) => name === "name" ? "diagram" : "" };
+  const root = { querySelectorAll: () => hasMap ? [map] : [] };
+  return {
+    ownerDocument: root,
+    closest: () => root,
+    getAttribute: (name) => name === "usemap" ? "#diagram" : "",
+  };
+}
+
+{
+  const result = evaluateToolbarItemState(
+    { label: "Mapped Image", conditions: { htmlImageMapSelected: true } },
+    { attentionSnapshot: {}, state: { activeHtmlImageContext: { element: fakeMappedImage(true) } }, settings }
+  );
+  assert.equal(result.visible, true, "mapped image condition passes when the selected image resolves to a map");
+}
+
+{
+  const result = evaluateToolbarItemState(
+    { label: "Mapped Image", conditions: { htmlImageMapSelected: true } },
+    { attentionSnapshot: {}, state: { activeHtmlImageContext: { element: fakeMappedImage(false) } }, settings }
+  );
+  assert.equal(result.visible, false, "mapped image condition fails when the selected image has no matching map");
+}

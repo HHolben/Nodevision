@@ -20,12 +20,14 @@ try {
     <a href="../../Books/Example.html#section-two">Example</a>
     <img src="../../Media/Images/Test%20Image.png?cache=1">
     <source srcset="../../Media/Images/Small.png 1x, ../../Media/Images/Large.png 2x">
+    <map name="diagram-map"><area shape="rect" coords="0,0,20,20" href="../../Books/ImageMapTarget.html"></map>
     <a href="https://example.com/">External</a>
     <a href="mailto:someone@example.com">Mail</a>
     <img src="data:image/png;base64,AAAA">
     <a href="#local-anchor">Local</a>
   `);
   await writeNotebookFile("Books/Example.html", "Example");
+  await writeNotebookFile("Books/ImageMapTarget.html", "Image map target");
   await writeNotebookFile("Media/Images/Test Image.png", "image");
   await writeNotebookFile("Media/Images/Small.png", "small");
   await writeNotebookFile("Media/Images/Large.png", "large");
@@ -37,6 +39,7 @@ try {
 
   assert.deepEqual([...edges].sort(), [
     "Books/Example.html",
+    "Books/ImageMapTarget.html",
     "Media/Images/Large.png",
     "Media/Images/Small.png",
     "Media/Images/Test Image.png",

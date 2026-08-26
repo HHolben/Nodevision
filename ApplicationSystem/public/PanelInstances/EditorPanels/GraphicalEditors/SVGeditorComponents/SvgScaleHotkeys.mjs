@@ -3,6 +3,7 @@
 
 import { applyScaleToItems, formatScaleNumber, localAxisVector, makeScaleItem, pointerScaleFactor, restoreScaleItem, rootPointFromClient } from "./SvgScaleGeometry.mjs";
 
+// User-facing modal status labels.
 const MODE_LABELS = Object.freeze({
   uniform: "Scale evenly",
   x: "Scale X axis",
@@ -11,15 +12,29 @@ const MODE_LABELS = Object.freeze({
   "local-y": "Scale original Y axis",
 });
 
+// Lightweight DOM and selection helpers.
 function selectedElements(ctx) {
-  const items = ctx?.getSelectedElements?.() || [ctx?.getSelectedElement?.()].filter(Boolean);
+  const listed = ctx?.getSelectedElements?.() || [];
+  const items = listed.length ? listed : [ctx?.getSelectedElement?.()].filter(Boolean);
   return Array.from(new Set(items.filter(Boolean)));
 }
 
-function parseScaleBuffer(buffer) {
+export function parseScaleBuffer(buffer) {
   if (!buffer || buffer === "." || buffer === "-" || buffer === "-.") return null;
   const next = Number(buffer);
   return Number.isFinite(next) ? next : null;
+}
+
+export function scaleModeFromPrefix(localPrefix, axis) {
+  return localPrefix ? "local-" + axis : axis;
+}
+
+export function appendScaleFactorKey(session, key) {
+  if (!session || key.length !== 1 || !"0123456789.-".includes(key)) return { handled: false, factor: null };
+  session.buffer = String(session.buffer || "");
+  if ((key === "." && session.buffer.includes(".")) || (key === "-" && session.buffer)) return { handled: false, factor: null };
+  session.buffer += key;
+  return { handled: true, factor: parseScaleBuffer(session.buffer) };
 }
 
 function inputTarget(target) {
@@ -41,9 +56,10 @@ function showStatus(host, text) {
 
 function statusText(session) {
   const factor = formatScaleNumber(session.factor || 1);
-  return MODE_LABELS[session.mode] + ": " + factor + "x; X/Y axes, RX/RY original axes, Enter commits, Esc cancels";
+  return MODE_LABELS[session.mode] + ": " + factor + "x; type factor, X/Y axes, RX/RY original axes, Enter commits, Esc cancels";
 }
 
+// Modal scaling session lifecycle helpers.
 function restoreSession(session) {
   session?.items?.forEach(restoreScaleItem);
   session?.ctx?.notifyElementChanged?.("scale-preview");
@@ -69,6 +85,7 @@ function makeSession(ctx, svgRoot, elements, bounds, lastRoot) {
   };
 }
 
+// Public installer for SVG editor scale hotkeys.
 export function installSvgScaleHotkeys(host = document) {
   let active = null;
   let lastRoot = null;
@@ -124,8 +141,10 @@ export function installSvgScaleHotkeys(host = document) {
     if (active.buffer) active.buffer = active.buffer.slice(0, -1);
     else active.localPrefix = false;
     const typed = parseScaleBuffer(active.buffer);
-    if (typed === null) restoreSession(active);
-    else preview(active, typed);
+    if (typed === null) {
+      active.factor = 1;
+      restoreSession(active);
+    } else preview(active, typed);
     refreshStatus();
     return true;
   };
@@ -143,12 +162,10 @@ export function installSvgScaleHotkeys(host = document) {
       refreshStatus();
       return true;
     }
-    if (!active.buffer && (lower === "x" || lower === "y")) return updateMode(active.localPrefix ? "local-" + lower : lower);
-    if (key.length !== 1 || !"0123456789.-".includes(key)) return false;
-    if ((key === "." && active.buffer.includes(".")) || (key === "-" && active.buffer)) return false;
-    active.buffer += key;
-    const typed = parseScaleBuffer(active.buffer);
-    if (typed !== null) preview(active, typed);
+    if (!active.buffer && (lower === "x" || lower === "y")) return updateMode(scaleModeFromPrefix(active.localPrefix, lower));
+    const input = appendScaleFactorKey(active, key);
+    if (!input.handled) return false;
+    if (input.factor !== null) preview(active, input.factor);
     refreshStatus();
     return true;
   };

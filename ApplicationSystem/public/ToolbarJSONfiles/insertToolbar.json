@@ -84,6 +84,16 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Structure",
+      "heading": "Map",
+      "hotkeyText": "",
+      "callbackKey": "insertImageMap",
+      "modes": ["HTMLediting", "EPUBediting"],
+      "icon": "icons/DefaultNodeImage.png",
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Structure",
       "heading": "Cartoon Panel",
       "hotkeyText": "",
       "callbackKey": "insertCartoonPanel",
@@ -1218,6 +1228,14 @@
     },
     {
       "ToolbarCategory": "Insert",
+      "heading": "Take Dictation",
+      "hotkeyText": "",
+      "insertGroup": "text",
+      "callbackKey": "takeDictation",
+      "parentHeading": "Insert Text"
+    },
+    {
+      "ToolbarCategory": "Insert",
       "heading": "Unicode Symbol",
       "hotkeyText": "",
       "insertGroup": "text",
@@ -1279,6 +1297,9 @@
       "heading": "Equation Element",
       "hotkeyText": "",
       "insertGroup": "text",
+      "callbackKey": "insertMathMLEquation",
+      "preventDropdown": true,
+      "preventAutoSubToolbar": true,
       "modes": ["HTMLediting"]
     },
     {

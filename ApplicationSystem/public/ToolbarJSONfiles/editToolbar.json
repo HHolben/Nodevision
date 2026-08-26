@@ -143,6 +143,18 @@
   {
     "ToolbarCategory": "Edit",
     "parentHeading": "Edit Image Here",
+    "heading": "Image Map",
+    "hotkeyText": "",
+    "callbackKey": "editImageMap",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageMapSelected": true
+    },
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit Image Here",
     "heading": "Toggle Embedded Image Editor",
     "hotkeyText": "",
     "callbackKey": "openSelectedImageEditorUndocked",

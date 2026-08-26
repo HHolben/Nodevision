@@ -7,6 +7,7 @@ import { renderVideo } from "./insertMediaVideo.mjs";
 import { renderSound } from "./insertMediaSound.mjs";
 import { renderSpreadsheet } from "./insertMediaSpreadsheet.mjs";
 import { renderImage } from "./insertMediaImage.mjs";
+import { openEquationMediaPanel } from "./insertMediaEquation.mjs";
 import { openInsertMediaPanel } from "./insertMediaPanel.mjs";
 
 export async function initToolbarWidget(hostElement) {
@@ -61,6 +62,15 @@ export async function initToolbarWidget(hostElement) {
       }
       window.HTMLWysiwygTools?.insertImageAtCaret?.();
       detail.textContent = "Insert Image opened.";
+      return;
+    }
+    if (family === "Equation") {
+      openEquationMediaPanel(exts).then(() => {
+        detail.textContent = "Opened Insert Equation panel.";
+      }).catch((err) => {
+        console.warn("[insertMediaWidget] open equation panel failed:", err);
+        detail.textContent = "Failed to open Insert Equation panel.";
+      });
       return;
     }
     const open = async () => {

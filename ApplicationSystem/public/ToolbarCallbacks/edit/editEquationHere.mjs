@@ -1,41 +1,30 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/editEquationHere.mjs
-// Open the equation editor for a selected equation link (tex/latex/mathml) or selected equation file.
+// This callback opens or updates the selected equation in the HTML editor, including inline equation spans and linked tex, latex, or MathML files.
 
 import { createPanelDOM } from "/panels/panelFactory.mjs";
+import { findElementInSelection, findSelectedInlineEquationElement, findSingleInlineEquationElement, readInlineEquationValue, writeInlineEquationValue } from "/Equation/HtmlInlineEquation.mjs";
 
 const EQUATION_EXTENSIONS = new Set(["tex", "latex", "mathml", "mml"]);
-const INLINE_EQUATION_SELECTOR = "[data-nv-inline-equation]";
-const DEFAULT_INLINE_EQUATION = "y = x";
+const LINKED_EQUATION_SELECTOR = "[data-nv-linked-path], a[href]";
 
-function normalizeInlineEquationFormat(formatRaw = "") {
-  const format = String(formatRaw || "").trim().toLowerCase();
-  if (format === "latex" || format === "mathml") return format;
-  return "tex";
-}
-
-function stripInlineEquationDelimiters(value = "") {
-  const text = String(value || "").trim();
-  if (text.startsWith("$$") && text.endsWith("$$") && text.length >= 4) {
-    return text.slice(2, -2).trim();
-  }
-  if (text.startsWith("\\(") && text.endsWith("\\)") && text.length >= 4) {
-    return text.slice(2, -2).trim();
-  }
-  return text;
-}
-
-function formatInlineEquationDisplay(equation = "", formatRaw = "tex") {
-  const format = normalizeInlineEquationFormat(formatRaw);
-  const text = String(equation || "").trim() || DEFAULT_INLINE_EQUATION;
-  if (format === "latex") return `$$${text}$$`;
-  if (format === "mathml") return text;
-  return `\\(${text}\\)`;
-}
-
+// === Equation Path Lookup ===
 function hasEquationExtension(path = "") {
   const clean = String(path || "").split(/[?#]/)[0];
   const ext = (clean.split(".").pop() || "").toLowerCase();
   return EQUATION_EXTENSIONS.has(ext);
+}
+
+function normalizeEquationPath(path = "") {
+  const raw = String(path || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw, window.location.href);
+    if (url.origin === window.location.origin && url.pathname.startsWith("/Notebook/")) return url.pathname;
+  } catch {
+    // Keep path-like values that are not URLs.
+  }
+  if (raw.startsWith("Notebook/")) return `/${raw}`;
+  return raw;
 }
 
 function getSelectedEquationFilePath() {
@@ -49,95 +38,43 @@ function getSelectedEquationFilePath() {
   return candidates.find((path) => hasEquationExtension(path)) || null;
 }
 
+function equationPathFromLink(el) {
+  const candidate = (el?.getAttribute?.("data-nv-linked-path") || el?.getAttribute?.("href") || "").trim();
+  return candidate && hasEquationExtension(candidate) ? candidate : null;
+}
+
 function getLinkedEquationPathFromSelection() {
-  const sel = window.getSelection();
-  const node = sel?.anchorNode || sel?.focusNode;
-  const el = (node instanceof Element ? node : node?.parentElement) || null;
-  const activeEl = document.activeElement instanceof Element ? document.activeElement : null;
-  const link = el?.closest?.("[data-nv-linked-path], a[href]") ||
-    activeEl?.closest?.("[data-nv-linked-path], a[href]");
-  if (!link) return null;
-
-  const candidate = (link.getAttribute("data-nv-linked-path") || link.getAttribute("href") || "").trim();
-  if (!candidate || !hasEquationExtension(candidate)) return null;
-  return candidate;
+  const scope = document.querySelector("#wysiwyg") || document.body || document;
+  const link = findElementInSelection(LINKED_EQUATION_SELECTOR, { scope });
+  return equationPathFromLink(link);
 }
 
-function getSelectedInlineEquationElement() {
-  const sel = window.getSelection();
-  const node = sel?.anchorNode || sel?.focusNode;
-  const el = (node instanceof Element ? node : node?.parentElement) || null;
-  const activeEl = document.activeElement instanceof Element ? document.activeElement : null;
-  const target = el?.closest?.(INLINE_EQUATION_SELECTOR) ||
-    activeEl?.closest?.(INLINE_EQUATION_SELECTOR);
-  return target instanceof Element ? target : null;
-}
-
-function findAnyInlineEquationInDocument() {
+function findSingleLinkedEquationInDocument() {
   const scopes = [document.querySelector("#wysiwyg"), document.body].filter(Boolean);
   for (const scope of scopes) {
-    const inlineEquations = Array.from(scope.querySelectorAll(INLINE_EQUATION_SELECTOR));
-    if (inlineEquations.length === 1) {
-      return inlineEquations[0];
-    }
+    const links = Array.from(scope.querySelectorAll(LINKED_EQUATION_SELECTOR));
+    const equationLinks = links.map(equationPathFromLink).filter(Boolean);
+    if (equationLinks.length === 1) return equationLinks[0];
   }
   return null;
 }
 
-function readInlineEquationValue(el) {
-  if (!(el instanceof Element)) return DEFAULT_INLINE_EQUATION;
-  const fromData = String(el.getAttribute("data-nv-inline-equation") || "").trim();
-  if (fromData) return stripInlineEquationDelimiters(fromData);
-  const fromText = String(el.textContent || "").trim();
-  if (fromText) return stripInlineEquationDelimiters(fromText);
-  return DEFAULT_INLINE_EQUATION;
+// === Inline Equation Editing ===
+function editInlineEquation(el) {
+  const current = readInlineEquationValue(el);
+  const edited = prompt("Edit equation:", current);
+  if (edited === null) return;
+  const format = el.getAttribute("data-nv-inline-equation-format") || "tex";
+  writeInlineEquationValue(el, edited, format);
+  el.closest?.("#wysiwyg")?.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-function writeInlineEquationValue(el, value, formatRaw = "") {
-  if (!(el instanceof Element)) return;
-  const format = normalizeInlineEquationFormat(formatRaw || el.getAttribute("data-nv-inline-equation-format") || "");
-  const equation = String(value || "").trim() || DEFAULT_INLINE_EQUATION;
-  el.setAttribute("data-nv-inline-equation-format", format);
-  el.setAttribute("data-nv-inline-equation", equation);
-  el.textContent = formatInlineEquationDisplay(equation, format);
+function getInlineEquationTarget() {
+  const scope = document.querySelector("#wysiwyg") || document.body || document;
+  return findSelectedInlineEquationElement(scope) || findSingleInlineEquationElement(scope);
 }
 
-function findAnyLinkedEquationInDocument() {
-  const scopes = [
-    document.querySelector("#wysiwyg"),
-    document.body,
-  ].filter(Boolean);
-
-  for (const scope of scopes) {
-    const links = Array.from(scope.querySelectorAll("[data-nv-linked-path], a[href]"));
-    const equationLinks = links.filter((el) => {
-      const candidate = (el.getAttribute("data-nv-linked-path") || el.getAttribute("href") || "").trim();
-      return hasEquationExtension(candidate);
-    });
-    if (equationLinks.length === 1) {
-      const el = equationLinks[0];
-      return (el.getAttribute("data-nv-linked-path") || el.getAttribute("href") || "").trim();
-    }
-  }
-
-  return null;
-}
-
-function normalizeEquationPath(path = "") {
-  const raw = String(path || "").trim();
-  if (!raw) return "";
-  try {
-    const url = new URL(raw, window.location.href);
-    if (url.origin === window.location.origin && url.pathname.startsWith("/Notebook/")) {
-      return url.pathname;
-    }
-  } catch {
-    // Not a URL; fall through.
-  }
-  if (raw.startsWith("Notebook/")) return `/${raw}`;
-  return raw;
-}
-
+// === Panel Opening ===
 async function openEquationEditorForPath(filePath) {
   const safeId = btoa(filePath).replace(/[^a-z0-9]/gi, "-");
   const instanceId = `nv-equation-editor-${safeId}`;
@@ -170,26 +107,11 @@ async function openEquationEditorForPath(filePath) {
   }
 }
 
+// === Toolbar Callback ===
 export default async function editEquationHere() {
-  const selectedInlineEquation = getSelectedInlineEquationElement();
-  if (selectedInlineEquation) {
-    const current = readInlineEquationValue(selectedInlineEquation);
-    const edited = prompt("Edit equation:", current);
-    if (edited !== null) {
-      const format = selectedInlineEquation.getAttribute("data-nv-inline-equation-format") || "tex";
-      writeInlineEquationValue(selectedInlineEquation, edited, format);
-    }
-    return;
-  }
-
-  const singleInlineEquation = findAnyInlineEquationInDocument();
-  if (singleInlineEquation) {
-    const current = readInlineEquationValue(singleInlineEquation);
-    const edited = prompt("Edit equation:", current);
-    if (edited !== null) {
-      const format = singleInlineEquation.getAttribute("data-nv-inline-equation-format") || "tex";
-      writeInlineEquationValue(singleInlineEquation, edited, format);
-    }
+  const inlineEquation = getInlineEquationTarget();
+  if (inlineEquation) {
+    editInlineEquation(inlineEquation);
     return;
   }
 
@@ -199,7 +121,7 @@ export default async function editEquationHere() {
     return;
   }
 
-  const linkedFromScan = findAnyLinkedEquationInDocument();
+  const linkedFromScan = findSingleLinkedEquationInDocument();
   if (linkedFromScan) {
     await openEquationEditorForPath(normalizeEquationPath(linkedFromScan));
     return;
@@ -211,6 +133,6 @@ export default async function editEquationHere() {
     return;
   }
 
-  console.warn("editEquationHere: no equation link or equation file selected.");
-  alert("Select an equation link in the HTML editor or choose a .tex/.latex file first, then try again.");
+  console.warn("editEquationHere: no inline equation, equation link, or equation file selected.");
+  alert("Select or highlight an inline equation, select an equation link in the HTML editor, or choose a .tex/.latex file first, then try again.");
 }

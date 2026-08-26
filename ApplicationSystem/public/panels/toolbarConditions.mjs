@@ -18,6 +18,15 @@ function matchesOne(actual, expected) {
   return expectedValues.includes(actual);
 }
 
+function selectedHtmlImageHasMap(state = {}) {
+  const image = state.activeHtmlImageContext?.element;
+  const usemap = String(image?.getAttribute?.("usemap") || "").trim().replace(/^#/, "");
+  if (!image?.ownerDocument || !usemap) return false;
+  const root = image.closest?.("#wysiwyg, [contenteditable='true']") || image.ownerDocument;
+  return Array.from(root.querySelectorAll?.("map[name]") || [])
+    .some((map) => String(map.getAttribute("name") || "") === usemap);
+}
+
 function resolveContextValue(key, context) {
   const attention = context.attentionSnapshot || {};
   const state = context.state || {};
@@ -30,6 +39,7 @@ function resolveContextValue(key, context) {
     case "selectedObjectTypes": return attention.selectedObjectType || state.selectedObjectType;
     case "hasSelection": return Boolean(attention.hasSelection || state.hasSelection || state.hasEditableSelection);
     case "hasEditableSelection": return Boolean(attention.hasEditableSelection || state.hasEditableSelection);
+    case "htmlImageMapSelected": return selectedHtmlImageHasMap(state);
     default:
       if (Object.prototype.hasOwnProperty.call(attention, key)) return attention[key];
       return state[key];
