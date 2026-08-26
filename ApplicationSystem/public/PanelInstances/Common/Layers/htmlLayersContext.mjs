@@ -1,18 +1,12 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/Common/Layers/htmlLayersContext.mjs
-// This module provides a generic layer context for HTML documents so the shared Layers panel can attach to a host and toggle element visibility.
+// This module provides a generic layer context for HTML documents so the shared Layers panel can name, select, toggle, and edit element-associated scripts from one existing provider.
 
-const DEFAULT_TAGS = new Set([
-  "SECTION", "ARTICLE", "ASIDE", "MAIN", "HEADER", "FOOTER", "NAV",
-  "DIV", "FIGURE", "FIGCAPTION", "TABLE", "THEAD", "TBODY", "TFOOT", "TR",
-  "UL", "OL", "LI", "CANVAS", "SVG", "IMG", "VIDEO", "AUDIO", "IFRAME", "FORM"
-]);
+import { isInteractiveFormElement } from "./htmlFormEventTools.mjs";
+import { htmlLayerDisplayName, isHtmlLayerElement } from "./htmlLayerNames.mjs";
+import { renderHtmlLayerScriptDetails } from "./htmlLayerScriptDetails.mjs";
 
-function elementLabel(el) {
-  const parts = [el.tagName.toLowerCase()];
-  if (el.id) parts.push(`#${el.id}`);
-  const classList = Array.from(el.classList || []);
-  if (classList.length) parts.push(classList.map((c) => `.${c}`).join(""));
-  return parts.join(" ");
+function elementFromNode(node) {
+  return node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
 }
 
 function isVisible(el, win) {
@@ -48,10 +42,8 @@ function collectLayers(root) {
     {
       acceptNode: (node) => {
         if (!(node instanceof Element)) return NodeFilter.FILTER_REJECT;
-        if (node.closest?.("[data-nv-layer-ignore]")) return NodeFilter.FILTER_REJECT;
         if (node === root) return NodeFilter.FILTER_SKIP;
-        if (node.id || DEFAULT_TAGS.has(node.tagName)) return NodeFilter.FILTER_ACCEPT;
-        return NodeFilter.FILTER_SKIP;
+        return isHtmlLayerElement(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
       },
     }
   );
@@ -64,8 +56,91 @@ function collectLayers(root) {
   return layers;
 }
 
+function closestLayerElement(root, target) {
+  let current = elementFromNode(target);
+  while (current && current !== root) {
+    if (root.contains(current) && isHtmlLayerElement(current)) return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
+function formActionTarget(root, target, includeForm = false) {
+  const selector = "button,input,select,textarea,label" + (includeForm ? ",form" : "");
+  const el = elementFromNode(target)?.closest?.(selector);
+  if (!el || !root?.contains?.(el)) return null;
+  if (el.tagName === "LABEL") return el;
+  return isInteractiveFormElement(el) ? el : null;
+}
+
+function appendMessage(list, text, color) {
+  const msg = document.createElement("div");
+  msg.textContent = text;
+  msg.style.color = color;
+  msg.style.padding = "6px 0";
+  list.appendChild(msg);
+}
+
+function styleLayerWrapper(wrapper, active) {
+  Object.assign(wrapper.style, {
+    border: active ? "1px solid #5aa9ff" : "1px solid #d5d5d5",
+    background: active ? "#eef6ff" : "#fff",
+    borderRadius: "6px",
+  });
+}
+
+function createLayerRow({ el, index, active, win, onSelect }) {
+  const row = document.createElement("div");
+  Object.assign(row.style, {
+    display: "grid",
+    gridTemplateColumns: "20px 1fr",
+    alignItems: "center",
+    gap: "8px",
+    padding: "4px 6px",
+    fontSize: "12px",
+  });
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = isVisible(el, win);
+  checkbox.title = checkbox.checked ? "Hide layer" : "Show layer";
+  checkbox.addEventListener("click", (event) => event.stopPropagation());
+  checkbox.addEventListener("change", () => setVisible(el, checkbox.checked));
+
+  const name = document.createElement("button");
+  name.type = "button";
+  name.textContent = htmlLayerDisplayName(el, index);
+  name.title = "Select " + name.textContent;
+  Object.assign(name.style, {
+    border: "none",
+    background: "transparent",
+    color: active ? "#0f4f88" : "#222",
+    cursor: "pointer",
+    overflow: "hidden",
+    padding: "2px 0",
+    textAlign: "left",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  });
+  name.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onSelect(el);
+  });
+
+  row.append(checkbox, name);
+  return row;
+}
+
 export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
   const win = root?.ownerDocument?.defaultView || window;
+  let selectedElement = null;
+  let render = () => {};
+
+  const selectElement = (el) => {
+    selectedElement = el && root?.contains?.(el) ? el : null;
+    selectedElement?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    render();
+  };
 
   return {
     title,
@@ -79,64 +154,72 @@ export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
       list.style.gap = "6px";
       host.appendChild(list);
 
-      const render = () => {
+      render = () => {
         list.innerHTML = "";
         if (!root || !root.ownerDocument?.isConnected) {
-          const msg = document.createElement("div");
-          msg.textContent = "HTML document is not available.";
-          msg.style.color = "#b00020";
-          msg.style.padding = "6px 0";
-          list.appendChild(msg);
+          appendMessage(list, "HTML document is not available.", "#b00020");
           return;
         }
+        if (selectedElement && !root.contains(selectedElement)) selectedElement = null;
 
         const layers = collectLayers(root);
         if (!layers.length) {
-          const msg = document.createElement("div");
-          msg.textContent = "No layers found in this document.";
-          msg.style.color = "#444";
-          msg.style.padding = "6px 0";
-          list.appendChild(msg);
+          appendMessage(list, "No layers found in this document.", "#444");
           return;
         }
 
-        layers.forEach((el, idx) => {
-          const row = document.createElement("label");
-          row.style.display = "flex";
-          row.style.alignItems = "center";
-          row.style.gap = "8px";
-          row.style.fontSize = "12px";
-          row.style.cursor = "pointer";
-
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = isVisible(el, win);
-          checkbox.addEventListener("change", () => {
-            setVisible(el, checkbox.checked);
-          });
-
-          const name = document.createElement("div");
-          name.textContent = elementLabel(el) || `element ${idx + 1}`;
-          name.style.flex = "1";
-          name.style.userSelect = "none";
-
-          row.appendChild(checkbox);
-          row.appendChild(name);
-          list.appendChild(row);
+        layers.forEach((el, index) => {
+          const active = el === selectedElement;
+          const wrapper = document.createElement("div");
+          styleLayerWrapper(wrapper, active);
+          wrapper.appendChild(createLayerRow({ el, index, active, win, onSelect: selectElement }));
+          if (active) renderHtmlLayerScriptDetails(wrapper, { root, element: el, requestRender: render });
+          list.appendChild(wrapper);
         });
       };
 
+      const onRootSelect = (event) => {
+        const next = closestLayerElement(root, event.target);
+        if (next) selectElement(next);
+      };
+      const onExternalSelect = (event) => {
+        const next = event?.detail?.element;
+        if (next && root.contains(next)) selectElement(next);
+      };
+      const onFormInteraction = (event) => {
+        const next = formActionTarget(root, event.target, event.type === "submit");
+        if (!next) return;
+        selectElement(next);
+        event.preventDefault();
+        event.stopPropagation();
+      };
+
       render();
+      ["mousedown", "click", "submit"].forEach((type) => root.addEventListener(type, onFormInteraction, true));
+      root.addEventListener("click", onRootSelect, true);
+      root.addEventListener("focusin", onRootSelect, true);
+      win.addEventListener("nodevision-html-layer-selected", onExternalSelect);
 
       let observer = null;
       try {
         observer = new MutationObserver(() => render());
-        observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "id", "hidden", "style"] });
+        observer.observe(root, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["class", "id", "name", "type", "for", "hidden", "placeholder", "style", "title", "aria-label"],
+        });
       } catch (_) {
-        // ignore observer errors
+        // Some embedded documents may not permit observation.
       }
 
-      return () => observer?.disconnect?.();
+      return () => {
+        observer?.disconnect?.();
+        ["mousedown", "click", "submit"].forEach((type) => root.removeEventListener(type, onFormInteraction, true));
+        root.removeEventListener("click", onRootSelect, true);
+        root.removeEventListener("focusin", onRootSelect, true);
+        win.removeEventListener("nodevision-html-layer-selected", onExternalSelect);
+      };
     },
   };
 }

@@ -68,6 +68,22 @@
     {
       "ToolbarCategory": "Insert",
       "parentHeading": "Insert",
+      "heading": "Structure",
+      "hotkeyText": "",
+      "modes": ["HTMLediting", "EPUBediting"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Insert",
+      "heading": "Form Element",
+      "hotkeyText": "",
+      "modes": ["HTMLediting"],
+      "preventDropdown": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Structure",
       "heading": "Cartoon Panel",
       "hotkeyText": "",
       "callbackKey": "insertCartoonPanel",
@@ -1181,7 +1197,7 @@
     },
 
 
-    
+
        {
       "ToolbarCategory": "Insert",
       "heading": "paragraph",
@@ -1248,7 +1264,7 @@
       "icon": "icons/InsertSensitiveIcon.png",
       "parentHeading": "Insert Text"
     },
-    
+
     {
       "ToolbarCategory": "Insert",
       "heading": "Tab",
@@ -1286,9 +1302,199 @@
       "preventDropdown": true
     },
 
-    
 
 
+
+
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Button",
+      "hotkeyText": "",
+      "callbackKey": "insertFormButton",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Btn"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Text Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormTextField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Txt"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Number Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormNumberField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "123"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Email Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormEmailField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "@"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Password Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormPasswordField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "***"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Search Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormSearchField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Sea"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Telephone Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormTelephoneField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Tel"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "URL Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormUrlField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "URL"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Date Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormDateField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Day"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Time Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormTimeField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Time"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Date/Time Field",
+      "hotkeyText": "",
+      "callbackKey": "insertFormDateTimeField",
+      "modes": ["HTMLediting"],
+      "shortLabel": "DT"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Checkbox",
+      "hotkeyText": "",
+      "callbackKey": "insertFormCheckbox",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Chk"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Radio Button",
+      "hotkeyText": "",
+      "callbackKey": "insertFormRadioButton",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Rad"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Range Slider",
+      "hotkeyText": "",
+      "callbackKey": "insertFormRangeSlider",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Rng"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Color Picker",
+      "hotkeyText": "",
+      "callbackKey": "insertFormColorPicker",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Clr"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "File Input",
+      "hotkeyText": "",
+      "callbackKey": "insertFormFileInput",
+      "modes": ["HTMLediting"],
+      "shortLabel": "File"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Text Area",
+      "hotkeyText": "",
+      "callbackKey": "insertFormTextArea",
+      "modes": ["HTMLediting"],
+      "shortLabel": "TA"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Select / Dropdown",
+      "hotkeyText": "",
+      "callbackKey": "insertFormSelectDropdown",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Sel"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Label",
+      "hotkeyText": "",
+      "callbackKey": "insertFormLabel",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Lbl"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Fieldset",
+      "hotkeyText": "",
+      "callbackKey": "insertFormFieldset",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Fld"
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Form Element",
+      "heading": "Form",
+      "hotkeyText": "",
+      "callbackKey": "insertFormForm",
+      "modes": ["HTMLediting"],
+      "shortLabel": "Form"
+    },
 
     {
       "ToolbarCategory": "Insert",
@@ -1538,7 +1744,8 @@
     },
     {
       "ToolbarCategory": "Insert",
-      "heading": "Insert Sensitive",
+      "parentHeading": "Structure",
+      "heading": "Sensitive Elements",
       "hotkeyText": "",
       "insertGroup": "text",
       "callbackKey": "insertSensitive",
@@ -1616,9 +1823,9 @@
       "insertGroup": "text",
       "callbackKey": "InsertCollapsible",
       "modes": ["HTMLediting"]
-    },  
+    },
 
-     
+
     {
   "ToolbarCategory": "Insert",
   "heading": "Insert Prism",
@@ -1627,7 +1834,7 @@
   "callbackKey": "insertPrism",
   "modes": ["VR World Editing"],
   "icon": "icons/3Dmodel.png"
-},     
+},
 {
   "ToolbarCategory": "Insert",
   "heading": "Insert STL",
@@ -1863,9 +2070,9 @@
   "parentHeading": "Cleff Selected",
   "conditions": { "midiSelectedType": "cleff" }
 }
-                        
+
   ]
-  
 
 
-  
+
+

@@ -1,6 +1,39 @@
 // Nodevision/ApplicationSystem/public/callbackLoader.mjs
 // This file defines browser-side callback Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+const formElementCallbackKinds = Object.freeze({
+  insertFormButton: "button",
+  insertFormTextField: "text",
+  insertFormNumberField: "number",
+  insertFormEmailField: "email",
+  insertFormPasswordField: "password",
+  insertFormSearchField: "search",
+  insertFormTelephoneField: "tel",
+  insertFormUrlField: "url",
+  insertFormDateField: "date",
+  insertFormTimeField: "time",
+  insertFormDateTimeField: "datetime-local",
+  insertFormCheckbox: "checkbox",
+  insertFormRadioButton: "radio",
+  insertFormRangeSlider: "range",
+  insertFormColorPicker: "color",
+  insertFormFileInput: "file",
+  insertFormTextArea: "textarea",
+  insertFormSelectDropdown: "select",
+  insertFormLabel: "label",
+  insertFormFieldset: "fieldset",
+  insertFormForm: "form",
+});
+
+function createFormElementCallbacks() {
+  return Object.fromEntries(Object.entries(formElementCallbackKinds).map(([key, kind]) => {
+    return [key, async () => {
+      const mod = await import("/ToolbarCallbacks/insert/formElementInsertTools.mjs");
+      return mod.insertFormElement(kind);
+    }];
+  }));
+}
+
 const inlineCallbacks = {
   file: {
     ExportSelectedModelAs2DPattern: async () => {
@@ -16,6 +49,7 @@ const inlineCallbacks = {
     },
   },
   insert: {
+    ...createFormElementCallbacks(),
     tableMergeCells: async () => {
       const mod = await import("/ToolbarCallbacks/insert/tableTools.mjs");
       if (!mod.mergeSelectedTableCells()) {

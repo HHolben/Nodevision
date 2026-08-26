@@ -40,6 +40,8 @@ const BUILTIN_HANDLER_LOADERS = Object.freeze({
   "sectionals.update": load("./handlers/SystemCommands.mjs", "updateSectionalsCommand"),
 });
 
+const HTML_FORM_INSERT_PREFIX = "editor.insert.form.";
+
 function cloneArgument(arg) {
   return typeof arg === "string" ? { name: arg, type: "any" } : { ...arg };
 }
@@ -99,6 +101,11 @@ export function searchNodevisionCommands(query = "", options = {}) {
 export async function getNodevisionCommandHandler(commandId) {
   const id = String(commandId || "");
   if (handlers.has(id)) return handlers.get(id);
+  if (id.startsWith(HTML_FORM_INSERT_PREFIX)) {
+    const handler = await load("./handlers/HtmlInsertCommands.mjs", "insertHtmlFormElementCommand")();
+    handlers.set(id, handler);
+    return handler;
+  }
   const loader = BUILTIN_HANDLER_LOADERS[id];
   if (!loader) return null;
   const handler = await loader();

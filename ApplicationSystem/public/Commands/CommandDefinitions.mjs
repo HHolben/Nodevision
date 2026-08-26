@@ -4,6 +4,38 @@
 const PANEL_CLASS_VALUES = ["InfoPanel", "EditorPanel", "ViewPanel", "ControlPanel", "ToolPanel", "CompositePanel"];
 const arg = (name, type = "string", options = {}) => ({ name, type, ...options });
 
+const HTML_FORM_INSERT_COMMANDS = Object.freeze([
+  ["button", "Button"],
+  ["text", "Text Field"],
+  ["number", "Number Field"],
+  ["email", "Email Field"],
+  ["password", "Password Field"],
+  ["search", "Search Field"],
+  ["telephone", "Telephone Field"],
+  ["url", "URL Field"],
+  ["date", "Date Field"],
+  ["time", "Time Field"],
+  ["date-time", "Date/Time Field"],
+  ["checkbox", "Checkbox"],
+  ["radio", "Radio Button"],
+  ["range", "Range Slider"],
+  ["color", "Color Picker"],
+  ["file", "File Input"],
+  ["text-area", "Text Area"],
+  ["select", "Select / Dropdown"],
+  ["label", "Label"],
+  ["fieldset", "Fieldset"],
+  ["form", "Form"],
+].map(([kind, label]) => ({
+  id: "editor.insert.form." + kind,
+  category: "HTML Insert",
+  label: "Insert " + label,
+  description: "Insert a standard HTML " + label.toLowerCase() + " into the active graphical HTML editor.",
+  sessionSafe: false,
+  arguments: [],
+  returns: "status",
+})));
+
 export const NODEVISION_SHARED_COMMANDS = Object.freeze([
   {
     id: "overlay.open", category: "Overlay", label: "Open Overlay",
@@ -161,4 +193,5 @@ export const NODEVISION_SHARED_COMMANDS = Object.freeze([
     description: "Run the configured FAA Sectional GeoTIFF update job.", sessionSafe: true,
     arguments: [], returns: "object",
   },
+  ...HTML_FORM_INSERT_COMMANDS,
 ]);
