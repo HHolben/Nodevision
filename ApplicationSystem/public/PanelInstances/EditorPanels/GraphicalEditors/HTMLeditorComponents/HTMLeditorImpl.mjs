@@ -14,6 +14,7 @@ import { notebookPathFromPickedFile } from "/ToolbarJSONfiles/insertMediaCommon.
 import { getRelativeNotebookReference, normalizeNotebookFilePath, normalizeNotebookRelativePath, resolveNotebookReference } from "/utils/notebookPath.mjs";
 import { validateGraphicalHtmlSave } from "./HtmlSaveSafety.mjs";
 import { createWysiwygProgrammaticHistory, insertHtmlFragmentAtRange } from "./WysiwygProgrammaticHistory.mjs";
+import { buildInlineEquationBrowserSupportHeadHtml, INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR, renderInlineEquations, serializeInlineEquationsForSave } from "/Equation/HtmlInlineEquation.mjs";
 import {
   clearTableCellSelection,
   getSelectedTableCells,
@@ -225,6 +226,26 @@ function ensureHTMLLayoutStyles() {
     #wysiwyg .${HTML_TEXT_STYLE_TARGET_CLASS} {
       outline: 2px solid #a855f7;
       outline-offset: 2px;
+    }
+    #wysiwyg .nv-inline-equation[data-nv-inline-equation] {
+      display: inline-block;
+      min-width: 1em;
+      min-height: 1.2em;
+      padding: 0 2px;
+      vertical-align: middle;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    #wysiwyg .nv-inline-equation[data-nv-equation-active="true"],
+    #wysiwyg .nv-inline-equation[data-nv-inline-equation]:focus {
+      outline: 2px solid #2f80ff;
+      outline-offset: 2px;
+    }
+    #wysiwyg .nv-inline-equation .nv-inline-equation-fallback {
+      font-family: "Times New Roman", serif;
+    }
+    #wysiwyg .nv-inline-equation mjx-container {
+      margin: 0;
     }
     .nv-image-corner-handle {
       position: fixed;
@@ -1397,7 +1418,7 @@ function ensureNodevisionFontStyleBlock(headContainer) {
 function ensureFontFaceRule(headContainer, options = {}) {
   const src = sanitizeFontUrl(options.src || options.url || "");
   const format = String(options.format || cssFormatFromFontUrl(src) || "").trim().toLowerCase();
-  const prefix = options.sourceKind === "web" ? "NodevisionWebFont" : "NodevisionFont";
+  const prefix = options.sourceKind === "web" ? "NodevisionWebFont" : options.sourceKind === "resource" ? "NodevisionResourceFont" : "NodevisionFont";
   const entries = parseFontFaceEntries(headContainer);
   const existingBySrc = entries.find((entry) => entry.src === src);
   if (existingBySrc?.family) return sanitizeSingleFontFamily(existingBySrc.family);
@@ -1815,6 +1836,14 @@ function applyFontReferenceToWysiwygSelection({ wysiwyg, headContainer, filePath
       sourceName: ref.sourceName || ref.notebookPath || ref.src,
       fontFamily: ref.fontFamily,
       sourceKind: "notebook",
+    });
+  } else if (ref.kind === "resource-font-file") {
+    family = ensureFontFaceRule(headContainer, {
+      src: ref.src || ref.url,
+      format: ref.format,
+      sourceName: ref.sourceName || ref.resourceId || ref.src,
+      fontFamily: ref.fontFamily,
+      sourceKind: "resource",
     });
   } else if (ref.kind === "web-font-file") {
     family = ensureFontFaceRule(headContainer, {
@@ -4305,6 +4334,7 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
       updateSelectedImageState(null);
       clearTableCellSelection({ keepActive: false });
       ensureWrappingForEditableText(wysiwyg);
+      renderInlineEquationsForEditor(wysiwyg);
       markHtmlEditorDirty(wysiwyg, editorFilePath);
       rememberCurrentSelectionRange(wysiwyg);
     },
@@ -4381,6 +4411,7 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
       }
       if (inserted || String(wysiwyg.innerHTML || "") !== beforeHtml) {
         programmaticHistory.record(beforeHtml);
+        renderInlineEquationsForEditor(wysiwyg);
         markHtmlEditorDirty(wysiwyg, editorFilePath);
         rememberCurrentSelectionRange(wysiwyg);
         return true;
@@ -4738,11 +4769,29 @@ async function installLineNumberedPoetryTools(wysiwyg) {
   return () => {};
 }
 
+function renderInlineEquationsForEditor(wysiwyg) {
+  if (!wysiwyg) return;
+  renderInlineEquations(wysiwyg).catch((err) => {
+    console.warn("Failed to render inline equations in HTML editor:", err);
+  });
+}
+
+function buildHtmlHeadContentForSave(headContainer, bodyClone) {
+  const headParts = Array.from(headContainer?.children || [])
+    .filter((el) => !el.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR))
+    .map((el) => el.outerHTML);
+  if (bodyClone?.querySelector?.(".nv-inline-equation[data-nv-inline-equation]")) {
+    headParts.push(buildInlineEquationBrowserSupportHeadHtml());
+  }
+  return headParts.join("\n");
+}
+
 function appendHtmlBodyNodesForEditing(body, wysiwyg, hidden) {
   if (!body || !wysiwyg || !hidden) return;
   for (const child of body.childNodes) {
     if (child.nodeType === Node.ELEMENT_NODE) {
       if (child.tagName === "SCRIPT") {
+        if (child.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR)) continue;
         const placeholder = document.createElement("div");
         placeholder.dataset.script = child.textContent;
         hidden.appendChild(placeholder);
@@ -5170,6 +5219,7 @@ export async function renderEditor(filePath, container, options = {}) {
     const headClone = document.createElement("div");
     for (const el of doc.head.children) {
       if (el.tagName === "SCRIPT") {
+        if (el.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR)) continue;
         const placeholder = document.createElement("div");
         placeholder.dataset.script = el.textContent;
         hidden.appendChild(placeholder);
@@ -5184,6 +5234,7 @@ export async function renderEditor(filePath, container, options = {}) {
     appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
     window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
     ensureWrappingForEditableText(wysiwyg);
+    renderInlineEquationsForEditor(wysiwyg);
     updateWordCount();
 
     window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
@@ -5214,10 +5265,12 @@ export async function renderEditor(filePath, container, options = {}) {
         return true;
       },
       insertTextAtSelection: (text) => {
+        const beforeHtml = wysiwyg.innerHTML;
         const node = document.createTextNode(String(text ?? ""));
         insertNodeAtCaret(wysiwyg, node, {
           preferredRange: getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg),
         });
+        wysiwyg.__nvProgrammaticHistory?.record?.(beforeHtml);
         markHtmlEditorDirty(wysiwyg, filePath);
         return true;
       },
@@ -5285,10 +5338,6 @@ export async function renderEditor(filePath, container, options = {}) {
       }
       restoreSavedImageSources(wysiwyg);
       try {
-        const headContent = Array.from(headClone.children)
-          .map(el => el.outerHTML)
-          .join("\n");
-
         const bodyClone = wysiwyg.cloneNode(true);
         window.NodevisionPoetry?.normalizeAllPoemBlocks?.(bodyClone);
         bodyClone.querySelectorAll(".nv-poem-controls").forEach((el) => el.remove());
@@ -5311,6 +5360,8 @@ export async function renderEditor(filePath, container, options = {}) {
           el.removeAttribute("data-nv-html-table-selected");
           if (!el.getAttribute("class")) el.removeAttribute("class");
         });
+        serializeInlineEquationsForSave(bodyClone);
+        const headContent = buildHtmlHeadContentForSave(headClone, bodyClone);
         removeFormattingWhitespaceTextNodes(bodyClone);
         const bodyContent = bodyClone.innerHTML;
         const bodyStyle = wysiwyg.dataset.nvDocumentBodyStyle || documentBackgroundStyleTextFromEditor(wysiwyg);
@@ -5435,6 +5486,7 @@ export async function renderEditor(filePath, container, options = {}) {
       headClone.innerHTML = "";
       for (const el of doc.head.children) {
         if (el.tagName === "SCRIPT") {
+          if (el.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR)) continue;
           const placeholder = document.createElement("div");
           placeholder.dataset.script = el.textContent;
           hidden.appendChild(placeholder);
@@ -5447,6 +5499,7 @@ export async function renderEditor(filePath, container, options = {}) {
       appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
       window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
       ensureWrappingForEditableText(wysiwyg);
+      renderInlineEquationsForEditor(wysiwyg);
 
       rehydrateLayoutCanvases(wysiwyg, filePath);
       hydrateEditorImages(wysiwyg, filePath).catch((err) => {

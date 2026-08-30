@@ -6,6 +6,7 @@ import { normalizeSpeechEvent, createUtteranceId, normalizeSpeechRate } from "./
 import { SpeechProviderRegistry } from "./SpeechProviderRegistry.mjs";
 import { segmentSpeechText } from "./SpeechTextSegments.mjs";
 import { createBrowserSpeechProvider } from "./providers/BrowserSpeechProvider.mjs";
+import { SpeechRecognitionService } from "./SpeechRecognitionService.mjs";
 import { createEspeakNativeSpeechProvider, createLinuxNativeSpeechProvider } from "./providers/LinuxNativeSpeechProvider.mjs";
 
 function providerPreference(target = globalThis.window) {
@@ -26,6 +27,7 @@ export class SpeechService {
     this.registry = options.registry || new SpeechProviderRegistry(options.providers || defaultProviders(this.target || globalThis));
     this.rate = normalizeSpeechRate(options.rate ?? 1);
     this.active = null;
+    this.recognition = options.recognitionService || new SpeechRecognitionService({ target: this.target, providers: options.recognitionProviders, registry: options.recognitionRegistry, settingsProvider: options.recognitionSettingsProvider });
     this.removeCleanup = null;
   }
 
@@ -112,6 +114,26 @@ export class SpeechService {
     const detail = normalizeSpeechEvent("speech.resumed", { reason: "command" }, { ...this.active, rate: this.rate });
     emitNodevisionEvent("speech.resumed", detail, this.target);
     return { ok: true, utteranceId: this.active.utteranceId };
+  }
+
+  startRecognition(context = {}) {
+    return this.recognition.startRecognition(context);
+  }
+
+  stopRecognition(reason = "command") {
+    return this.recognition.stopRecognition(reason);
+  }
+
+  cancelRecognition(reason = "command") {
+    return this.recognition.cancelRecognition(reason);
+  }
+
+  isRecognitionActive() {
+    return this.recognition.isRecognitionActive();
+  }
+
+  getRecognitionState() {
+    return this.recognition.getRecognitionState();
   }
 
   setRate(rate) {

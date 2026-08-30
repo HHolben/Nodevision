@@ -2,7 +2,7 @@
 // This module exposes Server Settings and explicit update routes for user-owned FAA sectional chart packages.
 
 import { createSectionalMapUpdateJobManager } from "../../Aviation/SectionalMaps/SectionalMapUpdateJobs.mjs";
-import { loadSectionalMapSettings, resolveSectionalMapsDirectory, saveSectionalMapSettings } from "../../Aviation/SectionalMaps/SectionalMapSettings.mjs";
+import { getSectionalMapsDirectory, loadSectionalMapSettings, saveSectionalMapSettings } from "../../Aviation/SectionalMaps/SectionalMapSettings.mjs";
 import { ensureSectionalMapDirectory, getSectionalMapDirectoryStatus } from "../../Aviation/SectionalMaps/SectionalMapStatus.mjs";
 
 function authenticated(req, res) {
@@ -35,7 +35,7 @@ function statusPayload(status) {
 
 async function readSettingsPayload(ctx) {
   const settings = await loadSectionalMapSettings(ctx);
-  const resolved = await resolveSectionalMapsDirectory(ctx, settings.sectionalMapsDirectory);
+  const resolved = await getSectionalMapsDirectory(ctx);
   const status = await getSectionalMapDirectoryStatus(resolved.absoluteDirectory);
   return {
     ok: true,
@@ -71,8 +71,7 @@ export function registerSectionalMapRoutes(app, ctx) {
   app.post("/api/aviation/sectionals/create-directory", async (req, res) => {
     if (!authenticated(req, res)) return;
     try {
-      const settings = await loadSectionalMapSettings(ctx);
-      const resolved = await resolveSectionalMapsDirectory(ctx, settings.sectionalMapsDirectory);
+      const resolved = await getSectionalMapsDirectory(ctx);
       const status = await ensureSectionalMapDirectory(resolved.absoluteDirectory);
       console.info("[sectionals] directory ensured", { directory: resolved.relativeDirectory });
       return res.json({ ok: true, status: statusPayload(status) });

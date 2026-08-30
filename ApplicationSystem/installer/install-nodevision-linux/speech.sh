@@ -1,5 +1,5 @@
 # Nodevision/ApplicationSystem/installer/install-nodevision-linux/speech.sh
-# This file adds optional offline eSpeak NG speech dependency setup to the Linux installer while keeping native bridge compilation delegated to Nodevision's canonical build script.
+# This file adds optional offline speech dependency setup to the Linux installer while keeping native bridge and dictation setup non-fatal.
 
 nv_speech_family_from_ids() {
   local id="$1"
@@ -89,6 +89,27 @@ nv_speech_build_bridge() {
   (cd "$install_dir" && ApplicationSystem/native/speech/build-espeak-bridge.sh >/dev/null)
 }
 
+nv_speech_whisper_model_dir() {
+  printf '%s\n' "$1/UserData/Speech/Models"
+}
+
+nv_speech_prepare_whisper() {
+  local install_dir="$1"
+  local model_dir
+  model_dir="$(nv_speech_whisper_model_dir "$install_dir")"
+  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    nv_say "[dry-run] mkdir -p \"$model_dir\""
+  else
+    mkdir -p "$model_dir" || true
+  fi
+  if command -v whisper-cli >/dev/null 2>&1; then
+    nv_say "  whisper.cpp CLI available: $(command -v whisper-cli)"
+  else
+    nv_warn "Offline dictation needs whisper-cli on PATH or a configured executable path."
+  fi
+  nv_say "  Whisper model directory: $model_dir"
+}
+
 nv_setup_speech() {
   local install_dir="$1"
   local install_deps="${2:-true}"
@@ -118,14 +139,17 @@ nv_setup_speech() {
 
   if nv_speech_probe_bridge "$bridge"; then
     nv_say "  Native speech bridge available: $bridge"
+    nv_speech_prepare_whisper "$install_dir"
     return 0
   fi
 
   if nv_speech_build_bridge "$install_dir" && nv_speech_probe_bridge "$bridge"; then
     nv_say "  Native speech bridge built: $bridge"
+    nv_speech_prepare_whisper "$install_dir"
     return 0
   fi
 
   nv_warn "Offline native speech unavailable: eSpeak NG bridge could not be built or probed."
+  nv_speech_prepare_whisper "$install_dir"
   return 0
 }

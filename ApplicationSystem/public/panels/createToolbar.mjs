@@ -26,6 +26,7 @@ const TOOLBAR_USER_HEADING = "User";
 const USER_TOOLBAR_ICON = "icons/UserIcon.svg";
 const TOOLBAR_DROPDOWN_VIEWPORT_MARGIN = 8;
 const TOOLBAR_DROPDOWN_CLOSE_DELAY_MS = 450;
+const TOOLBAR_DROPDOWN_SAFE_ZONE_PX = 14;
 const TOOLBAR_HIGHLIGHT_SOUND_URLS = [
   "/soundEffects/Tic.wav",
   "/soundEffects/Tic.mp3"
@@ -35,6 +36,16 @@ let toolbarSessionIdentity = null;
 let toolbarSessionIdentityLoaded = false;
 let toolbarSessionIdentityPromise = null;
 const toolbarDropdownCloseTimers = new WeakMap();
+const toolbarDropdownPointer = { x: 0, y: 0, hasPosition: false };
+
+if (typeof window !== "undefined" && typeof document !== "undefined" && !window.__nvToolbarDropdownPointerBound) {
+  document.addEventListener("pointermove", (event) => {
+    toolbarDropdownPointer.x = event.clientX;
+    toolbarDropdownPointer.y = event.clientY;
+    toolbarDropdownPointer.hasPosition = true;
+  }, { passive: true });
+  window.__nvToolbarDropdownPointerBound = true;
+}
 
 function playToolbarHighlightSound() {
   const now = Date.now();
@@ -374,11 +385,35 @@ function dropdownsAreRelated(a, b) {
   return !!(a && b && (a === b || a.contains?.(b) || b.contains?.(a)));
 }
 
-function toolbarDropdownIsHovered(dropdown, anchor) {
+function toolbarDropdownElementIsHovered(dropdown, anchor) {
   return Boolean(
     dropdown?.matches?.(":hover") ||
     anchor?.matches?.(":hover")
   );
+}
+
+function pointInToolbarRect(rect, point, padding = 0) {
+  if (!rect || !point?.hasPosition) return false;
+  return point.x >= rect.left - padding
+    && point.x <= rect.right + padding
+    && point.y >= rect.top - padding
+    && point.y <= rect.bottom + padding;
+}
+
+function toolbarDropdownPointerInSafeZone(dropdown, anchor) {
+  if (!dropdown || !anchor || !toolbarDropdownPointer.hasPosition) return false;
+  const dropdownRect = dropdown.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
+  if (pointInToolbarRect(dropdownRect, toolbarDropdownPointer, TOOLBAR_DROPDOWN_SAFE_ZONE_PX)) return true;
+  if (pointInToolbarRect(anchorRect, toolbarDropdownPointer, TOOLBAR_DROPDOWN_SAFE_ZONE_PX)) return true;
+
+  const bridgeRect = {
+    left: Math.min(anchorRect.left, dropdownRect.left),
+    right: Math.max(anchorRect.right, dropdownRect.right),
+    top: Math.min(anchorRect.bottom, dropdownRect.top),
+    bottom: Math.max(anchorRect.bottom, dropdownRect.top),
+  };
+  return pointInToolbarRect(bridgeRect, toolbarDropdownPointer, TOOLBAR_DROPDOWN_SAFE_ZONE_PX);
 }
 
 function clearToolbarDropdownCloseTimer(dropdown) {
@@ -401,7 +436,11 @@ function scheduleToolbarDropdownClose(dropdown, anchor) {
   clearToolbarDropdownCloseTimer(dropdown);
   const timer = setTimeout(() => {
     toolbarDropdownCloseTimers.delete(dropdown);
-    if (toolbarDropdownIsHovered(dropdown, anchor)) return;
+    if (toolbarDropdownElementIsHovered(dropdown, anchor)) return;
+    if (toolbarDropdownPointerInSafeZone(dropdown, anchor)) {
+      scheduleToolbarDropdownClose(dropdown, anchor);
+      return;
+    }
     closeToolbarDropdown(dropdown);
   }, TOOLBAR_DROPDOWN_CLOSE_DELAY_MS);
   toolbarDropdownCloseTimers.set(dropdown, timer);

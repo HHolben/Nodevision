@@ -52,6 +52,133 @@ const PANEL_EDGE_SPLIT_HOTZONE_PX = 12;
 const PANEL_EDGE_SPLIT_MIN_DRAG_PX = 18;
 const PANEL_SPLIT_MIN_PERCENT = 10;
 const PANEL_SPLIT_MAX_PERCENT = 90;
+const PANEL_EDGE_SPLIT_HANDLE_CLASS = "panel-edge-split-handle";
+const WORKSPACE_EDGE_SPLIT_HANDLE_CLASS = "workspace-edge-split-handle";
+const PANEL_EDGE_SPLIT_MODIFIER_CLASS = "nv-panel-split-modifier-active";
+
+function ensurePanelEdgeSplitHandleStyles() {
+  if (document.getElementById("nv-panel-edge-split-handle-styles")) return;
+  const style = document.createElement("style");
+  style.id = "nv-panel-edge-split-handle-styles";
+  style.textContent = `
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS},
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS} {
+      position: absolute;
+      z-index: 120;
+      pointer-events: none;
+      background: transparent;
+      opacity: 0;
+      transition: opacity 120ms ease, background 120ms ease;
+    }
+    body.${PANEL_EDGE_SPLIT_MODIFIER_CLASS} .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS},
+    body.${PANEL_EDGE_SPLIT_MODIFIER_CLASS} #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS} {
+      pointer-events: auto;
+    }
+    body.${PANEL_EDGE_SPLIT_MODIFIER_CLASS} .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}:hover,
+    body.${PANEL_EDGE_SPLIT_MODIFIER_CLASS} #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}:hover {
+      opacity: 1;
+      background: rgba(74, 144, 226, 0.16);
+    }
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="left"],
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="right"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="left"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="right"] {
+      top: 0;
+      bottom: 0;
+      width: ${PANEL_EDGE_SPLIT_HOTZONE_PX}px;
+      cursor: col-resize;
+    }
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="left"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="left"] { left: 0; }
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="right"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="right"] { right: 0; }
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="top"],
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="bottom"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="top"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="bottom"] {
+      left: 0;
+      right: 0;
+      height: ${PANEL_EDGE_SPLIT_HOTZONE_PX}px;
+      cursor: row-resize;
+    }
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="top"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="top"] { top: 0; }
+    .panel-cell > .${PANEL_EDGE_SPLIT_HANDLE_CLASS}[data-edge="bottom"],
+    #workspace > .${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}[data-edge="bottom"] { bottom: 0; }
+  `;
+  document.head.appendChild(style);
+}
+
+function ensurePanelEdgeSplitHandles(cell) {
+  if (!cell?.classList?.contains?.("panel-cell")) return;
+  ensurePanelEdgeSplitHandleStyles();
+  if (!cell.style.position) cell.style.position = "relative";
+
+  for (const edge of ["left", "right", "top", "bottom"]) {
+    let handle = Array.from(cell.children).find((child) =>
+      child.classList?.contains(PANEL_EDGE_SPLIT_HANDLE_CLASS) && child.dataset?.edge === edge
+    );
+    if (!handle) {
+      handle = document.createElement("div");
+      handle.className = PANEL_EDGE_SPLIT_HANDLE_CLASS;
+      handle.dataset.edge = edge;
+      handle.setAttribute("aria-hidden", "true");
+      cell.appendChild(handle);
+    }
+  }
+}
+
+function ensureWorkspaceEdgeSplitHandles(workspace) {
+  if (!workspace) return;
+  ensurePanelEdgeSplitHandleStyles();
+  if (!workspace.style.position) workspace.style.position = "relative";
+
+  for (const edge of ["left", "right", "top", "bottom"]) {
+    let handle = Array.from(workspace.children).find((child) =>
+      child.classList?.contains(WORKSPACE_EDGE_SPLIT_HANDLE_CLASS) && child.dataset?.edge === edge
+    );
+    if (!handle) {
+      handle = document.createElement("div");
+      handle.className = WORKSPACE_EDGE_SPLIT_HANDLE_CLASS;
+      handle.dataset.edge = edge;
+      handle.setAttribute("aria-hidden", "true");
+      workspace.appendChild(handle);
+    }
+  }
+}
+
+function showLayoutControlsToolbar() {
+  window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
+    detail: { heading: "Layout Controls", force: true, toggle: false },
+  }));
+}
+
+function pickLayoutControlsCell(...elements) {
+  const candidates = elements.flatMap((element) => collectPanelCells(element));
+  const activeCell = resolvePanelCell(window.activeCell);
+  if (activeCell && candidates.includes(activeCell)) return activeCell;
+  return candidates[0] || null;
+}
+
+function focusLayoutControlsForPanels(...elements) {
+  const cell = pickLayoutControlsCell(...elements);
+  if (cell) activatePanelCell(cell, { announce: false });
+  showLayoutControlsToolbar();
+  return cell;
+}
+
+function updatePanelSplitModifierClass(event = null) {
+  const active = Boolean(event?.ctrlKey || event?.metaKey);
+  document.body?.classList?.toggle(PANEL_EDGE_SPLIT_MODIFIER_CLASS, active);
+}
+
+function installPanelSplitModifierTracking() {
+  if (window.__nvPanelSplitModifierTrackingInstalled) return;
+  window.__nvPanelSplitModifierTrackingInstalled = true;
+  window.addEventListener("keydown", updatePanelSplitModifierClass, true);
+  window.addEventListener("keyup", updatePanelSplitModifierClass, true);
+  window.addEventListener("blur", () => document.body?.classList?.remove(PANEL_EDGE_SPLIT_MODIFIER_CLASS));
+}
 
 function isPanelSplitGesture(event) {
   return Boolean(event?.ctrlKey || event?.metaKey);
@@ -72,6 +199,50 @@ function getPanelEdgeFromPointer(cell, event) {
   };
   const [edge, distance] = Object.entries(distances).sort((a, b) => a[1] - b[1])[0] || [];
   return distance <= PANEL_EDGE_SPLIT_HOTZONE_PX ? edge : null;
+}
+
+function pointWithinRect(rect, x, y, padding = 0) {
+  return x >= rect.left - padding &&
+    x <= rect.right + padding &&
+    y >= rect.top - padding &&
+    y <= rect.bottom + padding;
+}
+
+function findWorkspaceOuterEdgeSplitTarget(event, forcedEdge = null) {
+  const workspace = document.getElementById("workspace");
+  if (!workspace || !event) return null;
+
+  const x = Number(event.clientX);
+  const y = Number(event.clientY);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  const workspaceRect = workspace.getBoundingClientRect();
+  if (!pointWithinRect(workspaceRect, x, y, PANEL_EDGE_SPLIT_HOTZONE_PX)) return null;
+
+  const distances = {
+    left: Math.abs(x - workspaceRect.left),
+    right: Math.abs(workspaceRect.right - x),
+    top: Math.abs(y - workspaceRect.top),
+    bottom: Math.abs(workspaceRect.bottom - y),
+  };
+  const [nearestEdge, nearestDistance] = Object.entries(distances).sort((a, b) => a[1] - b[1])[0] || [];
+  const edge = forcedEdge || nearestEdge;
+  if (!edge || (!forcedEdge && nearestDistance > PANEL_EDGE_SPLIT_HOTZONE_PX)) return null;
+
+  const records = collectPanelCells(workspace)
+    .map((cell) => ({ cell, rect: cell.getBoundingClientRect() }))
+    .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+
+  let candidates = [];
+  if (edge === "left" || edge === "right") {
+    candidates = records.filter(({ rect }) => y >= rect.top && y <= rect.bottom);
+    candidates.sort((a, b) => edge === "left" ? a.rect.left - b.rect.left : b.rect.right - a.rect.right);
+  } else {
+    candidates = records.filter(({ rect }) => x >= rect.left && x <= rect.right);
+    candidates.sort((a, b) => edge === "top" ? a.rect.top - b.rect.top : b.rect.bottom - a.rect.bottom);
+  }
+
+  return candidates[0] ? { cell: candidates[0].cell, edge } : null;
 }
 
 function buildSplitCell(sourceCell, flex = "1 1 0") {
@@ -95,6 +266,7 @@ function buildSplitCell(sourceCell, flex = "1 1 0") {
     userSelect: "none",
   });
   cell.appendChild(placeholder);
+  ensurePanelEdgeSplitHandles(cell);
   return cell;
 }
 
@@ -139,8 +311,7 @@ function splitPanelCellFromEdge(cell, edge, splitPercent = 50) {
   const direction = edge === "top" || edge === "bottom" ? "column" : "row";
   const newCell = buildSplitCell(cell);
   const container = insertSplitCellInParent(cell, newCell, direction, edge, clampPanelSplitPercent(splitPercent));
-  window.activeCell = newCell;
-  highlightActiveCell(newCell);
+  activatePanelCell(newCell, { announce: false });
   setStatus("Panel split", `Created ${edge} panel`);
   return { container, newCell };
 }
@@ -177,31 +348,57 @@ function startPanelSplitDrag(cell, edge, event) {
   if (!cell || !edge) return;
   event.preventDefault();
   event.stopPropagation();
+  focusLayoutControlsForPanels(cell);
   const direction = edge === "top" || edge === "bottom" ? "column" : "row";
   const startX = event.clientX;
   const startY = event.clientY;
   const rect = cell.getBoundingClientRect();
   const ghost = createSplitGhost(direction);
+  const isPointerEvent = event.pointerId !== undefined;
+  const activePointerId = isPointerEvent ? event.pointerId : null;
+  const moveEventName = isPointerEvent ? "pointermove" : "mousemove";
+  const upEventName = isPointerEvent ? "pointerup" : "mouseup";
+  const cancelEventName = isPointerEvent ? "pointercancel" : null;
   positionSplitGhost(ghost, cell, direction, event);
 
-  const onMouseMove = (moveEvent) => {
+  try {
+    if (isPointerEvent) cell.setPointerCapture?.(event.pointerId);
+  } catch {
+    // Pointer capture can fail if the original target is already detached.
+  }
+
+  const onMove = (moveEvent) => {
+    if (activePointerId !== null && moveEvent.pointerId !== activePointerId) return;
     positionSplitGhost(ghost, cell, direction, moveEvent);
   };
 
-  const onMouseUp = (upEvent) => {
+  const finish = (upEvent) => {
+    if (activePointerId !== null && upEvent?.pointerId !== undefined && upEvent.pointerId !== activePointerId) return;
     ghost.remove();
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-    const moved = Math.hypot(upEvent.clientX - startX, upEvent.clientY - startY);
+    document.removeEventListener(moveEventName, onMove, true);
+    document.removeEventListener(upEventName, finish, true);
+    if (cancelEventName) document.removeEventListener(cancelEventName, finish, true);
+    try {
+      if (activePointerId !== null) cell.releasePointerCapture?.(activePointerId);
+    } catch {
+      // The pointer may already have been released by the browser.
+    }
+
+    const endX = Number(upEvent?.clientX);
+    const endY = Number(upEvent?.clientY);
+    if (upEvent?.type === "pointercancel" || !Number.isFinite(endX) || !Number.isFinite(endY)) return;
+
+    const moved = Math.hypot(endX - startX, endY - startY);
     if (moved < PANEL_EDGE_SPLIT_MIN_DRAG_PX) return;
     const rawPercent = direction === "column"
-      ? ((upEvent.clientY - rect.top) / Math.max(rect.height, 1)) * 100
-      : ((upEvent.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
+      ? ((endY - rect.top) / Math.max(rect.height, 1)) * 100
+      : ((endX - rect.left) / Math.max(rect.width, 1)) * 100;
     splitPanelCellFromEdge(cell, edge, rawPercent);
   };
 
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("mouseup", onMouseUp);
+  document.addEventListener(moveEventName, onMove, true);
+  document.addEventListener(upEventName, finish, true);
+  if (cancelEventName) document.addEventListener(cancelEventName, finish, true);
 }
 
 const PANEL_ALIASES = Object.freeze({
@@ -328,7 +525,9 @@ export function ensureWorkspace() {
     flex: "1 1 auto",
     minHeight: "0",
     overflow: "hidden",
+    position: "relative",
   });
+  ensureWorkspaceEdgeSplitHandles(workspace);
   return workspace;
 }
 
@@ -369,6 +568,7 @@ export function createCell(row) {
   // Active panel tracking is now handled globally by setupActivePanelTracking()
 
   row.appendChild(cell);
+  ensurePanelEdgeSplitHandles(cell);
 
   // Add divider between cells
   if (row.children.length > 1) {
@@ -398,6 +598,7 @@ function createDivider(leftCell, rightCell) {
   divider.addEventListener("pointerdown", (e) => {
     if (e.button !== undefined && e.button !== 0) return;
     if (activePointerId !== null) return;
+    focusLayoutControlsForPanels(leftCell, rightCell);
     if (isPanelSplitGesture(e)) {
       startPanelSplitDrag(rightCell || leftCell, "left", e);
       return;
@@ -543,6 +744,7 @@ export function renderLayout(node, parent) {
     cell.dataset.id = normalizedCellId || requestedCellId;
     cell.dataset.panelClass = node.panelClass || "InfoPanel";
     parent.appendChild(cell);
+    ensurePanelEdgeSplitHandles(cell);
 
     window.activeCell = cell;
 
@@ -600,6 +802,7 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
     const leftEl = divider._leftCell;
     const rightEl = divider._rightCell;
     if (!leftEl || !rightEl) return;
+    focusLayoutControlsForPanels(leftEl, rightEl);
 
     if (isPanelSplitGesture(e)) {
       const splitTarget = rightEl || leftEl;
@@ -728,6 +931,7 @@ function makePanelCell(flexValue = "1 1 0") {
     minHeight: "0",
     minWidth: "0",
   });
+  ensurePanelEdgeSplitHandles(cell);
   return cell;
 }
 
@@ -1145,6 +1349,63 @@ export function ensureSvgEditingSplit({
 
 
 
+function activatePanelCell(cell, { announce = true } = {}) {
+  if (!cell) return null;
+  window.activeCell = cell;
+  const panelId = cell.dataset.id || cell.dataset.panelId || "Unknown";
+  const panelClass = cell.dataset.panelClass || "InfoPanel";
+  window.activePanel = panelId;
+  window.activePanelClass = panelClass;
+
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activePanelType = panelClass;
+
+  if (announce) {
+    logStatus(`Active panel: ${panelId} (${panelClass})`);
+    setStatus("Active panel", `${panelId} (${panelClass})`);
+  }
+
+  highlightActiveCell(cell);
+  window.dispatchEvent(new CustomEvent("activePanelChanged", {
+    detail: { panel: panelId, cell, panelClass },
+  }));
+  return cell;
+}
+
+function panelCellContentChildren(cell) {
+  return Array.from(cell?.children || []).filter((child) =>
+    !child.classList?.contains(PANEL_EDGE_SPLIT_HANDLE_CLASS)
+  );
+}
+
+function isEmptyOrPlaceholderPanelCell(cell) {
+  const children = panelCellContentChildren(cell);
+  if (children.length === 0) return true;
+  return children.every((child) =>
+    child.classList?.contains("panel-split-placeholder") ||
+    child.classList?.contains("panel-resize-placeholder")
+  );
+}
+
+async function replacePanelInCell(cell, panelId, panelClass = "InfoPanel", panelVars = {}) {
+  if (!cell || !panelId) return null;
+  if (typeof cell.cleanup === "function") {
+    try {
+      cell.cleanup();
+    } catch (err) {
+      console.warn("Panel cleanup failed before toolbar load:", err);
+    }
+  }
+  cell.cleanup = null;
+  cell.innerHTML = "";
+  setCellIdentity(cell, { id: panelId, panelClass });
+  activatePanelCell(cell, { announce: false });
+  await loadPanelIntoCell(panelId, { id: panelId, displayName: panelId, ...panelVars });
+  ensurePanelEdgeSplitHandles(cell);
+  highlightActiveCell(cell);
+  return cell;
+}
+
 function cleanupPanelCells(root) {
   const cells = Array.from(root?.querySelectorAll?.(".panel-cell") || []);
   for (const cell of cells) {
@@ -1173,6 +1434,7 @@ export async function replaceWorkspaceWithPanel(panelType, panelVars = {}) {
 
   cleanupPanelCells(workspace);
   workspace.innerHTML = "";
+  ensureWorkspaceEdgeSplitHandles(workspace);
 
   const row = createPanelRow("row", "1 1 auto");
   workspace.appendChild(row);
@@ -1287,6 +1549,7 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
     filePath: resolvedFilePath || null,
   });
   if (typeof cleanup === "function") cell.cleanup = cleanup;
+  ensurePanelEdgeSplitHandles(cell);
 
   console.log("✅ Loaded panel:", panelType);
 }
@@ -1312,7 +1575,7 @@ function replayGuardedToolbarAction(detail = {}) {
 
 // 🟣 Listen for toolbar events globally — replaces active cell with selected panel
 window.addEventListener("toolbarAction", async (e) => {
-  const { id, type, replaceActive } = e.detail;
+  const { id, type, replaceActive, panelVars = {} } = e.detail || {};
   const normalizedId = normalizePanelIdentifier(id) || id;
   if (normalizedId !== id) {
     console.log(`🔁 toolbarAction alias: ${id} -> ${normalizedId}`);
@@ -1324,32 +1587,10 @@ window.addEventListener("toolbarAction", async (e) => {
     return;
   }
 
-  // If replaceActive is true, always replace the active cell's content
-  if (replaceActive && window.activeCell) {
-    const cell = window.activeCell;
-    if (typeof cell.cleanup === "function") {
-      try {
-        cell.cleanup();
-      } catch (err) {
-        console.warn("Panel cleanup failed before replaceActive:", err);
-      }
-    }
-    cell.cleanup = null;
-    cell.innerHTML = "";
-    cell.dataset.id = normalizedId;
-    cell.dataset.panelClass = panelClass;
-
-    // Update all active panel tracking
-    window.activePanel = normalizedId;
-    window.activePanelClass = panelClass;
-    if (window.NodevisionState) {
-      window.NodevisionState.activePanelType = panelClass;
-    }
-
-    await loadPanelIntoCell(normalizedId, { id: normalizedId, displayName: normalizedId });
-    highlightActiveCell(cell);
-
-    console.log(`🔄 Replaced active panel with "${normalizedId}" (${panelClass})`);
+  const activeCell = resolvePanelCell(window.activeCell);
+  if (activeCell && (replaceActive || isEmptyOrPlaceholderPanelCell(activeCell))) {
+    await replacePanelInCell(activeCell, normalizedId, panelClass, panelVars);
+    console.log(`Replaced active panel with "${normalizedId}" (${panelClass})`);
     return;
   }
 
@@ -1358,13 +1599,7 @@ window.addEventListener("toolbarAction", async (e) => {
   if (existingCell) {
     // Panel already exists - just make it visible and active
     existingCell.style.display = "flex";
-    window.activeCell = existingCell;
-    window.activePanel = normalizedId;
-    window.activePanelClass = existingCell.dataset.panelClass || panelClass;
-    if (window.NodevisionState) {
-      window.NodevisionState.activePanelType = existingCell.dataset.panelClass || panelClass;
-    }
-    highlightActiveCell(existingCell);
+    activatePanelCell(existingCell, { announce: false });
     if (normalizedId === "FileView" && typeof window.updateViewPanel === "function") {
       const activePath = resolveActiveFilePath();
       if (activePath) {
@@ -1380,24 +1615,12 @@ window.addEventListener("toolbarAction", async (e) => {
   }
 
   // Otherwise, load into active cell
-  if (!window.activeCell) {
+  if (!activeCell) {
     console.warn("No active cell selected to replace with toolbar panel.");
     return;
   }
 
-  const cell = window.activeCell;
-  if (typeof cell.cleanup === "function") {
-    try {
-      cell.cleanup();
-    } catch (err) {
-      console.warn("Panel cleanup failed before toolbar load:", err);
-    }
-  }
-  cell.cleanup = null;
-  cell.innerHTML = "";
-  cell.dataset.id = normalizedId;
-  window.activePanel = normalizedId;
-  await loadPanelIntoCell(normalizedId, { id: normalizedId, displayName: normalizedId });
+  await replacePanelInCell(activeCell, normalizedId, panelClass, panelVars);
 });
 
 // Helper to highlight the active cell
@@ -1422,49 +1645,54 @@ window.highlightActiveCell = highlightActiveCell;
 function setupActivePanelTracking() {
   if (window._activePanelTrackingSetup) return;
   window._activePanelTrackingSetup = true;
-
-  function handlePanelActivation(cell) {
-    if (!cell) return;
-
-    window.activeCell = cell;
-    const panelId = cell.dataset.id || "Unknown";
-    const panelClass = cell.dataset.panelClass || "InfoPanel";
-    window.activePanel = panelId;
-    window.activePanelClass = panelClass;
-
-    logStatus(`🎯 Active panel: ${panelId} (${panelClass})`);
-    setStatus("🎯 Active panel", `${panelId} (${panelClass})`);
-
-    highlightActiveCell(cell);
-
-    if (window.NodevisionState) {
-      window.NodevisionState.activePanelType = panelClass;
-    }
-
-    window.dispatchEvent(
-      new CustomEvent("activePanelChanged", {
-        detail: { panel: panelId, cell, panelClass }
-      })
-    );
-  }
+  installPanelSplitModifierTracking();
 
   const activateHandler = (event) => {
     const cell = event?.target?.closest?.(".panel-cell");
     if (!cell) return;
-    handlePanelActivation(cell);
+    activatePanelCell(cell);
   };
 
   const splitGestureHandler = (event) => {
+    updatePanelSplitModifierClass(event);
     if (!isPanelSplitGesture(event)) return;
-    const cell = event?.target?.closest?.(".panel-cell");
-    if (!cell) return;
-    const edge = getPanelEdgeFromPointer(cell, event);
-    if (!edge) return;
-    handlePanelActivation(cell);
+
+    const divider = event?.target?.closest?.(".layout-divider, .divider");
+    if (divider) return;
+
+    const workspaceHandle = event?.target?.closest?.(`.${WORKSPACE_EDGE_SPLIT_HANDLE_CLASS}`);
+    if (workspaceHandle) {
+      const target = findWorkspaceOuterEdgeSplitTarget(event, workspaceHandle.dataset?.edge);
+      if (!target) return;
+      startPanelSplitDrag(target.cell, target.edge, event);
+      return;
+    }
+
+    const handle = event?.target?.closest?.(`.${PANEL_EDGE_SPLIT_HANDLE_CLASS}`);
+    const handleCell = handle?.closest?.(".panel-cell");
+    if (handleCell) {
+      const edge = handle.dataset?.edge;
+      if (!edge) return;
+      startPanelSplitDrag(handleCell, edge, event);
+      return;
+    }
+
+    let cell = event?.target?.closest?.(".panel-cell");
+    let edge = cell ? getPanelEdgeFromPointer(cell, event) : null;
+    if (!cell || !edge) {
+      const target = findWorkspaceOuterEdgeSplitTarget(event);
+      if (!target) return;
+      cell = target.cell;
+      edge = target.edge;
+    }
     startPanelSplitDrag(cell, edge, event);
   };
 
-  document.addEventListener("mousedown", splitGestureHandler, true);
+  document.addEventListener("pointerdown", splitGestureHandler, true);
+  document.addEventListener("mousedown", (event) => {
+    if (typeof PointerEvent === "function") return;
+    splitGestureHandler(event);
+  }, true);
   document.addEventListener("click", activateHandler, true);
 }
 

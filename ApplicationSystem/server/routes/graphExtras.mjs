@@ -2,27 +2,16 @@
 // This file registers graph utility endpoints so that the client can persist derived edge data into shared storage safely.
 
 import path from "node:path";
-import fsPromises from "node:fs/promises";
+import {
+  computeEdgeBucketChar,
+  dedupeEdges,
+  readEdgeBucket,
+  writeEdgeBucket,
+} from "../../shared/graphEdgeBucketUtils.mjs";
 
 export function registerGraphExtras(app, ctx) {
   const SHARED_DATA_DIR = ctx.sharedDataDir;
 
-  function edgeKey(edge) {
-    return `${edge?.source || ""}→${edge?.target || ""}`;
-  }
-
-  async function readJsonArray(filePath) {
-    try {
-      const raw = await fsPromises.readFile(filePath, "utf8");
-      const trimmed = raw.trim();
-      if (!trimmed) return [];
-      const parsed = JSON.parse(trimmed);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      if (err?.code === "ENOENT") return [];
-      throw err;
-    }
-  }
 
   app.post("/api/graph/save-edges", async (req, res) => {
     try {
@@ -34,40 +23,31 @@ export function registerGraphExtras(app, ctx) {
         return res.status(400).json({ error: "data must be a JSON object" });
       }
 
-      let char = filename.trim()[0];
-      if (!char) char = "#";
-      if (!/^[A-Za-z0-9]$/.test(char)) char = "#";
+      const char = computeEdgeBucketChar(filename);
 
       const edgesDir = path.join(SHARED_DATA_DIR, "edges");
       const targetFile = path.join(edgesDir, `${char}.json`);
-      await fsPromises.mkdir(edgesDir, { recursive: true });
 
       // Merge with existing data to avoid clients clobbering the shard.
-      const existingEdges = await readJsonArray(targetFile);
+      const warnings = [];
+      const existingEdges = await readEdgeBucket(targetFile, { repair: true, warnings });
       const incomingEdges = Array.isArray(data) ? data : [];
-      const combined = [...existingEdges, ...incomingEdges].filter((edge) => {
-        return edge && typeof edge === "object" && typeof edge.source === "string" && typeof edge.target === "string";
-      });
-      const byKey = new Map();
-      for (const edge of combined) {
-        const key = edgeKey(edge);
-        if (!edge.source || !edge.target) continue;
-        byKey.set(key, { ...(byKey.get(key) || {}), ...edge });
-      }
-      const deduped = [...byKey.values()];
+      const deduped = dedupeEdges([...existingEdges, ...incomingEdges]);
 
-      const tmpFile = `${targetFile}.tmp`;
-      await fsPromises.writeFile(tmpFile, JSON.stringify(deduped, null, 2), "utf8");
-      await fsPromises.rename(tmpFile, targetFile);
+      await writeEdgeBucket(targetFile, deduped);
 
       res.json({
         success: true,
         bucket: char,
         path: `public/data/edges/${char}.json`,
+        warnings,
       });
     } catch (err) {
       console.error("Failed to save edge bucket:", err);
-      res.status(500).json({ error: "Failed to save edge data" });
+      res.status(500).json({
+        error: "Failed to save edge data",
+        details: err?.message || "Unknown graph save error.",
+      });
     }
   });
 }

@@ -28,5 +28,6 @@ assert_eq "$(nv_speech_packages_for_family fedora build)" "espeak-ng espeak-ng-d
 assert_eq "$(nv_speech_packages_for_family debian runtime)" "espeak-ng" "debian runtime packages"
 assert_eq "$(nv_speech_packages_for_family debian build)" "espeak-ng libespeak-ng-dev g++ make pkg-config" "debian build packages"
 assert_eq "$(nv_speech_bridge_path /tmp/nodevision-test)" "/tmp/nodevision-test/ApplicationSystem/native/speech/build/nodevision-espeak-bridge" "bridge path"
+assert_eq "$(nv_speech_whisper_model_dir /tmp/nodevision-test)" "/tmp/nodevision-test/UserData/Speech/Models" "whisper model dir"
 
 printf 'speech installer tests passed.\n'

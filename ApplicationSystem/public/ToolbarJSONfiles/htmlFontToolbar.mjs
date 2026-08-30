@@ -3,18 +3,20 @@
 
 import { escapeHtml } from "./insertMediaCommon.mjs";
 import { openInsertMediaPicker } from "./insertMediaFont.mjs";
+import { loadResourceItems, resourceFontReference } from "/Resources/ResourceRegistryClient.mjs";
 
 const FONT_EXTENSIONS = [".ttf", ".otf", ".woff", ".woff2"];
+const RESOURCE_FONT_PREFIX = "__resource_font__:";
 
 const SYSTEM_FONTS = [
   { label: "Default / Inherit", value: "__inherit__" },
   { label: "Arial", value: "Arial, sans-serif" },
-  { label: "Times New Roman", value: "'Times New Roman', Times, serif" },
+  { label: "Times New Roman", value: "\"Times New Roman\", Times, serif" },
   { label: "Georgia", value: "Georgia, serif" },
   { label: "Garamond", value: "Garamond, serif" },
   { label: "Verdana", value: "Verdana, sans-serif" },
-  { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
-  { label: "Courier New", value: "'Courier New', monospace" },
+  { label: "Trebuchet MS", value: "\"Trebuchet MS\", sans-serif" },
+  { label: "Courier New", value: "\"Courier New\", monospace" },
   { label: "serif", value: "serif" },
   { label: "sans-serif", value: "sans-serif" },
   { label: "monospace", value: "monospace" },
@@ -43,30 +45,58 @@ function renderDocumentFontOptions(fonts = []) {
   return `<optgroup label="Document Fonts">${unique.map((f) => option(f.label, f.value)).join("")}</optgroup>`;
 }
 
-function renderSelect(mount) {
+function renderResourceFontOptions(state) {
+  const fonts = Array.isArray(state.resourceFonts) ? state.resourceFonts : [];
+  state.resourceFontRefs = new Map();
+  if (!fonts.length) return "";
+  const options = fonts.map((resource, index) => {
+    const key = `${RESOURCE_FONT_PREFIX}${index}`;
+    const ref = resourceFontReference(resource);
+    state.resourceFontRefs.set(key, ref);
+    const source = resource.sourceName || resource.sourceType || "Resource";
+    return option(`${ref.sourceName || ref.fontFamily} - ${source}`, key);
+  });
+  return `<optgroup label="Resource Fonts">${options.join("")}</optgroup>`;
+}
+
+function renderSelect(mount, state) {
   const docFonts = typeof tools().getDocumentFonts === "function" ? tools().getDocumentFonts() : [];
   mount.innerHTML = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:12px monospace;">
     <label style="display:flex;align-items:center;gap:6px;">Font
-      <select data-field="fontSelect" style="font:12px monospace;padding:4px 6px;border:1px solid #888;background:#fff;min-width:190px;">
+      <select data-field="fontSelect" style="font:12px monospace;padding:4px 6px;border:1px solid #888;background:#fff;min-width:210px;">
         <optgroup label="System Fonts">${SYSTEM_FONTS.map((f) => option(f.label, f.value)).join("")}</optgroup>
+        ${renderResourceFontOptions(state)}
         ${renderDocumentFontOptions(docFonts)}
       </select>
     </label>
     <button type="button" data-action="notebookFont" style="font:12px monospace;padding:5px 9px;border:1px solid #333;background:#eee;cursor:pointer;">Choose Notebook Font...</button>
     <button type="button" data-action="webFont" style="font:12px monospace;padding:5px 9px;border:1px solid #333;background:#eee;cursor:pointer;">Choose Web Font...</button>
-    <button type="button" data-action="refreshFonts" title="Refresh document fonts" aria-label="Refresh document fonts" style="font:12px monospace;padding:5px 8px;border:1px solid #777;background:#f4f4f4;cursor:pointer;">Refresh</button>
+    <button type="button" data-action="refreshFonts" title="Refresh fonts" aria-label="Refresh fonts" style="font:12px monospace;padding:5px 8px;border:1px solid #777;background:#f4f4f4;cursor:pointer;">Refresh</button>
     <span data-field="status" style="min-width:120px;color:#555;"></span>
   </div>`;
+}
+
+async function loadRegistryFonts(state) {
+  try {
+    state.resourceFonts = await loadResourceItems("font");
+    state.resourceError = "";
+  } catch (err) {
+    state.resourceFonts = [];
+    state.resourceError = err?.message || String(err);
+    console.warn("[htmlFontToolbar] Resource fonts failed to load", err);
+  }
 }
 
 export function initToolbarWidget(hostElement) {
   if (!hostElement || hostElement.dataset.nvHtmlFontToolbarBound === "true") return;
   hostElement.dataset.nvHtmlFontToolbarBound = "true";
   const mount = hostElement.querySelector("#nv-html-font-toolbar") || hostElement;
-  renderSelect(mount);
+  const state = { resourceFonts: [], resourceFontRefs: new Map(), resourceError: "" };
+  renderSelect(mount, state);
+  loadRegistryFonts(state).then(() => renderSelect(mount, state));
 
   const setStatus = (message, isError = false) => {
-    const status = mount.querySelector('[data-field="status"]');
+    const status = mount.querySelector("[data-field=status]");
     if (!status) return;
     status.textContent = String(message || "");
     status.style.color = isError ? "#b00" : "#555";
@@ -80,7 +110,7 @@ export function initToolbarWidget(hostElement) {
   mount.addEventListener("mousedown", rememberSelection, true);
 
   mount.addEventListener("change", async (evt) => {
-    const select = evt.target?.closest?.('[data-field="fontSelect"]');
+    const select = evt.target?.closest?.("[data-field=fontSelect]");
     if (!select) return;
     setStatus("");
     try {
@@ -89,6 +119,14 @@ export function initToolbarWidget(hostElement) {
         tools().restoreSavedSelection?.();
         tools().removeFontFamilyFromSelection();
         setStatus("Font reset.");
+      } else if (select.value.startsWith(RESOURCE_FONT_PREFIX)) {
+        const ref = state.resourceFontRefs.get(select.value);
+        if (!ref) throw new Error("Resource font was not found.");
+        if (typeof tools().applyFontReferenceToSelection !== "function") throw new Error("No active WYSIWYG editor.");
+        tools().restoreSavedSelection?.();
+        await tools().applyFontReferenceToSelection(ref);
+        renderSelect(mount, state);
+        setStatus("Font applied.");
       } else {
         if (typeof tools().applyFontFamilyToSelection !== "function") throw new Error("No active WYSIWYG editor.");
         tools().restoreSavedSelection?.();
@@ -109,8 +147,9 @@ export function initToolbarWidget(hostElement) {
     rememberSelection();
     try {
       if (action === "refreshFonts") {
-        renderSelect(mount);
-        setStatus("Fonts refreshed.");
+        await loadRegistryFonts(state);
+        renderSelect(mount, state);
+        setStatus(state.resourceError ? state.resourceError : "Fonts refreshed.", Boolean(state.resourceError));
         return;
       }
 
@@ -126,7 +165,8 @@ export function initToolbarWidget(hostElement) {
         if (!ref) return;
         tools().restoreSavedSelection?.();
         await tools().applyFontReferenceToSelection(ref);
-        renderSelect(mount);
+        await loadRegistryFonts(state);
+        renderSelect(mount, state);
         setStatus("Font applied.");
       }
     } catch (err) {

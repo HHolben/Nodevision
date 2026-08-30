@@ -11,6 +11,7 @@ import {
   getBuiltInResourcePathDefinitions,
   isBuiltInResourcePathKey,
 } from "./ResourcePathDefinitions.mjs";
+import { getResourceTypeDefinitions } from "../Resources/ResourceTypeDefinitions.mjs";
 import {
   normalizeResourceKey,
   normalizeResourceName,
@@ -46,11 +47,25 @@ async function loadLegacySectionalPath(ctx) {
   }
 }
 
+function recordsFromTypedResources(raw) {
+  const out = {};
+  const definitions = getResourceTypeDefinitions();
+  for (const definition of definitions) {
+    if (!definition.legacyPathKey) continue;
+    const type = raw?.resources?.[definition.id];
+    const sources = Array.isArray(type?.sources) ? type.sources : [];
+    const source = sources.find((item) => item.legacyPath && item.sourceType === "notebook") || sources.find((item) => item.sourceType === "notebook");
+    if (source?.path) out[definition.legacyPathKey] = { path: source.path };
+  }
+  return out;
+}
+
 async function readResourcePathRecords(ctx) {
   try {
     const raw = JSON.parse(await fs.readFile(getResourcePathsSettingsPath(ctx), "utf8"));
     const records = raw?.resourcePaths && typeof raw.resourcePaths === "object" ? raw.resourcePaths : raw?.paths;
-    return records && typeof records === "object" && !Array.isArray(records) ? records : {};
+    if (records && typeof records === "object" && !Array.isArray(records)) return records;
+    return recordsFromTypedResources(raw);
   } catch (err) {
     if (err?.code === "ENOENT" || err instanceof SyntaxError) return {};
     throw err;
@@ -88,7 +103,32 @@ async function publicEntry(ctx, entry) {
   };
 }
 
+function syncTypedResourcesWithLegacyPaths(resources, resourcePaths) {
+  if (!resources || typeof resources !== "object") return resources;
+  const next = JSON.parse(JSON.stringify(resources));
+  for (const definition of getResourceTypeDefinitions()) {
+    if (!definition.legacyPathKey) continue;
+    const legacy = resourcePaths[definition.legacyPathKey];
+    const legacyPath = typeof legacy === "string" ? legacy : legacy?.path;
+    if (!legacyPath) continue;
+    const sources = Array.isArray(next[definition.id]?.sources) ? next[definition.id].sources : [];
+    const source = sources.find((item) => item.legacyPath && item.sourceType === "notebook") || sources.find((item) => item.sourceType === "notebook");
+    if (source) source.path = legacyPath;
+  }
+  return next;
+}
+
+async function readRawResourcePathSettings(ctx) {
+  try {
+    return JSON.parse(await fs.readFile(getResourcePathsSettingsPath(ctx), "utf8"));
+  } catch (err) {
+    if (err?.code === "ENOENT" || err instanceof SyntaxError) return {};
+    throw err;
+  }
+}
+
 async function writeEntries(ctx, entries) {
+  const existing = await readRawResourcePathSettings(ctx);
   const resourcePaths = {};
   for (const entry of entries) {
     resourcePaths[entry.key] = entry.builtIn
@@ -98,7 +138,10 @@ async function writeEntries(ctx, entries) {
   await fs.mkdir(ctx.userSettingsDir, { recursive: true });
   const target = getResourcePathsSettingsPath(ctx);
   const temp = target + ".tmp";
-  await fs.writeFile(temp, JSON.stringify({ version: RESOURCE_PATH_CONFIG_VERSION, resourcePaths }, null, 2) + "\n");
+  const resources = syncTypedResourcesWithLegacyPaths(existing.resources, resourcePaths);
+  const version = resources ? 2 : RESOURCE_PATH_CONFIG_VERSION;
+  const payload = resources ? { ...existing, version, resources, resourcePaths } : { ...existing, version, resourcePaths };
+  await fs.writeFile(temp, JSON.stringify(payload, null, 2) + "\n");
   await fs.rename(temp, target);
 }
 

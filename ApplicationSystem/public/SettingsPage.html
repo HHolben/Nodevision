@@ -8,6 +8,13 @@
   <title>Nodevision Settings</title>
   <link rel="stylesheet" href="Stylesheets/style.css">
   <script type="module" src="Settings/SectionalMapsSettingsPanel.mjs"></script>
+  <script type="module">
+    import { createPanel as createResourcesPanel } from "/PanelInstances/InfoPanels/ResourcePathsPanel.mjs";
+    document.addEventListener("DOMContentLoaded", () => {
+      const target = document.getElementById("resources-settings");
+      if (target) createResourcesPanel(target, { onCancel: () => {} }).catch((err) => console.error("Error loading Resources panel:", err));
+    });
+  </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       fetch('GraphStyles.json')
@@ -95,6 +102,7 @@
     <button type="button" id="save-button">Save</button>
   </form>
   <section id="sectional-maps-settings"></section>
+  <section id="resources-settings"></section>
 </body>
 </html>
 <!DOCTYPE html>

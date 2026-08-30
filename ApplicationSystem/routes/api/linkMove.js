@@ -1,10 +1,16 @@
 // Nodevision/ApplicationSystem/routes/api/linkMove.js
-// Link-aware move helpers for the File Manager + Graph Manager.
+// Link-aware move helpers for the File Manager and Graph Manager.
 
 import express from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createServerContext } from "../../shared/serverContext.mjs";
+import {
+  computeEdgeBucketChar,
+  computeEdgeBucketCharsToCheck,
+  readEdgeBucket,
+  writeEdgeBucket,
+} from "../../shared/graphEdgeBucketUtils.mjs";
 import {
   getRelativeNotebookReference,
   isExternalNotebookReference,
@@ -17,19 +23,6 @@ const BASE_CONTEXT = createServerContext();
 
 function normalizeNotebookRelativePath(inputPath) {
   return normalizeNotebookFilePath(inputPath);
-}
-
-function sanitizeNotebookPath(inputPath) {
-  const cleaned = normalizeNotebookRelativePath(inputPath);
-  return normalizeNotebookRelativeParts(cleaned);
-}
-
-function isExternalOrAnchorLink(link) {
-  return isExternalNotebookReference(link);
-}
-
-function splitLinkSuffix(rawLink) {
-  return splitNotebookReferenceSuffix(rawLink);
 }
 
 function normalizeNotebookRelativeParts(value) {
@@ -46,6 +39,19 @@ function normalizeNotebookRelativeParts(value) {
   return parts.join("/");
 }
 
+function sanitizeNotebookPath(inputPath) {
+  const cleaned = normalizeNotebookRelativePath(inputPath);
+  return normalizeNotebookRelativeParts(cleaned) || "";
+}
+
+function isExternalOrAnchorLink(link) {
+  return isExternalNotebookReference(link);
+}
+
+function splitLinkSuffix(rawLink) {
+  return splitNotebookReferenceSuffix(rawLink);
+}
+
 function resolveNotebookLink(sourceFilePath, rawLink) {
   return resolveNotebookReference({ sourcePath: sourceFilePath, reference: rawLink });
 }
@@ -57,27 +63,43 @@ function guessExtension(filePath) {
   return null;
 }
 
+function parseMarkdownDestination(raw = "") {
+  const body = String(raw || "");
+  const trimmedStart = body.search(/\S/);
+  if (trimmedStart < 0) return null;
+
+  const trimmed = body.slice(trimmedStart);
+  if (trimmed.startsWith("<")) {
+    const close = trimmed.indexOf(">", 1);
+    if (close > 1) {
+      return { target: trimmed.slice(1, close), offset: trimmedStart + 1 };
+    }
+  }
+
+  const match = trimmed.match(/^\S+/);
+  if (!match) return null;
+  return { target: match[0], offset: trimmedStart };
+}
+
 function collectLinkSpans(content, kind) {
   const spans = [];
   const text = String(content ?? "");
 
   if (kind === "md") {
-    const mdRegex = /(!?\[[^\]]*?\])\(([^)]+)\)/g;
+    const mdRegex = /(!?)\[([^\]\n]*)\]\(([^)\n]+)\)/g;
     let match;
     while ((match = mdRegex.exec(text))) {
-      const label = match[1] || "";
-      const raw = match[2] || "";
-      const start = match.index + label.length + 1;
-      spans.push({
-        start,
-        end: start + raw.length,
-        raw,
-      });
+      const bang = match[1] || "";
+      const label = match[2] || "";
+      const destination = parseMarkdownDestination(match[3] || "");
+      if (!destination?.target) continue;
+      const start = match.index + bang.length + 1 + label.length + 2 + destination.offset;
+      spans.push({ start, end: start + destination.target.length, raw: destination.target });
     }
   }
 
   if (kind === "html") {
-    const attrRegex = /\b(?:href|src|data-src)\s*=\s*(["'])(.*?)\1/gi;
+    const attrRegex = /\b(?:href|src|data-src|data-nodevision-font-src)\s*=\s*(["\x27])(.*?)\1/gi;
     let match;
     while ((match = attrRegex.exec(text))) {
       const full = match[0] || "";
@@ -85,11 +107,19 @@ function collectLinkSpans(content, kind) {
       const inMatchIndex = full.indexOf(raw);
       if (inMatchIndex < 0) continue;
       const start = match.index + inMatchIndex;
-      spans.push({
-        start,
-        end: start + raw.length,
-        raw,
-      });
+      spans.push({ start, end: start + raw.length, raw });
+    }
+
+    const cssUrlRegex = /url\(\s*(?:"([^"]+)"|\x27([^\x27]+)\x27|([^\x27"\)]+))\s*\)/gi;
+    while ((match = cssUrlRegex.exec(text))) {
+      const raw = String(match[1] || match[2] || match[3] || "");
+      const target = raw.trim();
+      if (!target) continue;
+      const inMatchIndex = match[0].indexOf(raw);
+      if (inMatchIndex < 0) continue;
+      const trimOffset = raw.indexOf(target);
+      const start = match.index + inMatchIndex + Math.max(0, trimOffset);
+      spans.push({ start, end: start + target.length, raw: target });
     }
   }
 
@@ -107,90 +137,48 @@ function applySpanReplacements(content, replacements) {
 }
 
 function makeRelativeLink(fromFilePath, targetPath) {
-  return getRelativeNotebookReference({
-    sourcePath: fromFilePath,
-    targetPath,
-  });
+  return getRelativeNotebookReference({ sourcePath: fromFilePath, targetPath });
 }
 
-function computeBucketChar(fileName) {
-  const first = String(fileName || "").trim().charAt(0);
-  if (!first) return "#";
-  // Must match /api/graph/save-edges bucketing: it uses the first character as-is.
-  // (Do not force uppercase; lowercase buckets like "a.json" are valid.)
-  if (/^[A-Za-z0-9]$/.test(first)) return first;
-  return "#";
-}
+function getMovedPathInfo(candidatePath, oldRoot, newRoot) {
+  const clean = sanitizeNotebookPath(candidatePath);
+  const oldClean = sanitizeNotebookPath(oldRoot);
+  const newClean = sanitizeNotebookPath(newRoot);
 
-function computeBucketCharsToCheck(fileName) {
-  const ch = computeBucketChar(fileName);
-  if (ch === "#") return ["#"];
-  const lower = ch.toLowerCase();
-  const upper = ch.toUpperCase();
-  return [...new Set([ch, lower, upper])];
-}
-
-function edgeKey(edge) {
-  return `${edge?.source || ""}→${edge?.target || ""}`;
-}
-
-async function readJsonArray(filePath) {
-  try {
-    const raw = await fs.readFile(filePath, "utf8");
-    const trimmed = raw.trim();
-    if (!trimmed) return [];
-    const parsed = JSON.parse(trimmed);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    if (err?.code === "ENOENT") return [];
-    throw err;
+  if (!clean || !oldClean || !newClean) {
+    return { clean, changed: false, path: clean };
   }
-}
 
-async function listEdgeBucketFiles(edgesDir) {
-  try {
-    return (await fs.readdir(edgesDir)).filter((name) => name.endsWith(".json"));
-  } catch {
-    return [];
+  if (clean === oldClean) {
+    return { clean, changed: true, path: newClean };
   }
-}
 
-async function findIncomingSourcesInBuckets({ edgesDir, oldPath, bucketChars }) {
-  const sourceSet = new Set();
-  const buckets = Array.isArray(bucketChars) ? bucketChars : [];
-  for (const bucketChar of buckets) {
-    const bucketFile = path.join(edgesDir, `${bucketChar}.json`);
-    const edges = await readJsonArray(bucketFile);
-    for (const edge of edges) {
-      if (edge?.target === oldPath && typeof edge?.source === "string") {
-        sourceSet.add(edge.source);
-      }
-    }
+  if (clean.startsWith(`${oldClean}/`)) {
+    return {
+      clean,
+      changed: true,
+      path: `${newClean}/${clean.slice(oldClean.length + 1)}`,
+    };
   }
-  return [...sourceSet];
+
+  return { clean, changed: false, path: clean };
 }
 
-async function findIncomingSourcesAllBuckets({ edgesDir, oldPath }) {
-  const files = await listEdgeBucketFiles(edgesDir);
-  const sourceSet = new Set();
-  for (const name of files) {
-    const full = path.join(edgesDir, name);
-    const edges = await readJsonArray(full);
-    for (const edge of edges) {
-      if (edge?.target === oldPath && typeof edge?.source === "string") {
-        sourceSet.add(edge.source);
-      }
-    }
+function remapCleanMovedPath(candidatePath, oldRoot, newRoot) {
+  const info = getMovedPathInfo(candidatePath, oldRoot, newRoot);
+  return info.changed ? info.path : info.clean;
+}
+
+function remapGraphPath(candidatePath, oldRoot, newRoot) {
+  const info = getMovedPathInfo(candidatePath, oldRoot, newRoot);
+  return info.changed ? info.path : candidatePath;
+}
+
+function recordUpdatedFile(result, filePath) {
+  if (!filePath) return;
+  if (!result.updatedFiles.includes(filePath)) {
+    result.updatedFiles.push(filePath);
   }
-  return [...sourceSet];
-}
-
-async function writeJsonArray(filePath, data) {
-  const dir = path.dirname(filePath);
-  await fs.mkdir(dir, { recursive: true });
-  const tmp = `${filePath}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(data, null, 2), "utf8");
-  await fs.rename(tmp, filePath);
 }
 
 async function fileExists(fullPath) {
@@ -200,6 +188,282 @@ async function fileExists(fullPath) {
   } catch {
     return false;
   }
+}
+
+async function listEdgeBucketFiles(edgesDir) {
+  try {
+    return (await fs.readdir(edgesDir))
+      .filter((name) => name.endsWith(".json"))
+      .sort((a, b) => a.localeCompare(b));
+  } catch (err) {
+    if (err?.code === "ENOENT") return [];
+    throw err;
+  }
+}
+
+async function listFilesUnderDirectory(fullDir, relativeDir) {
+  const files = [];
+  const entries = await fs.readdir(fullDir, { withFileTypes: true });
+  entries.sort((a, b) => a.name.localeCompare(b.name));
+
+  for (const entry of entries) {
+    const childRelative = [relativeDir, entry.name].filter(Boolean).join("/");
+    const childFull = path.join(fullDir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await listFilesUnderDirectory(childFull, childRelative));
+    } else if (entry.isFile()) {
+      const clean = sanitizeNotebookPath(childRelative);
+      if (clean) files.push(clean);
+    }
+  }
+
+  return files;
+}
+
+async function listMovedFilePaths({ notebookDir, newPath, stat }) {
+  if (stat.isFile()) return [newPath];
+  if (!stat.isDirectory()) return [];
+  return listFilesUnderDirectory(path.join(notebookDir, newPath), newPath);
+}
+
+async function collectOutgoingTargetsForSources({ notebookDir, oldPath, newPath, sourcePaths }) {
+  const targets = new Set();
+  let supportedFiles = 0;
+  let readFailures = 0;
+
+  for (const sourcePath of sourcePaths) {
+    const kind = guessExtension(sourcePath);
+    if (!kind) continue;
+    supportedFiles += 1;
+
+    try {
+      const before = await fs.readFile(path.join(notebookDir, sourcePath), "utf8");
+      const oldSourcePath = remapCleanMovedPath(sourcePath, newPath, oldPath);
+      for (const span of collectLinkSpans(before, kind)) {
+        if (!span.raw || isExternalOrAnchorLink(span.raw)) continue;
+        const { pathPart } = splitLinkSuffix(span.raw);
+        const targetBeforeMove = resolveNotebookLink(oldSourcePath, pathPart);
+        if (!targetBeforeMove) continue;
+        const targetAfterMove = remapCleanMovedPath(targetBeforeMove, oldPath, newPath);
+        if (await fileExists(path.join(notebookDir, targetAfterMove))) {
+          targets.add(targetAfterMove);
+        }
+      }
+    } catch {
+      readFailures += 1;
+    }
+  }
+
+  return {
+    supported: supportedFiles > 0,
+    supportedFiles,
+    readFailures,
+    targets: [...targets],
+  };
+}
+
+async function collectIncomingSourcesFromBucket({ edgesDir, bucketName, oldPath, newPath, warnings }) {
+  const sourceSet = new Set();
+  const edges = await readEdgeBucket(path.join(edgesDir, bucketName), { repair: true, warnings });
+  for (const edge of edges) {
+    const targetInfo = getMovedPathInfo(edge?.target, oldPath, newPath);
+    if (targetInfo.changed && typeof edge?.source === "string") {
+      sourceSet.add(edge.source);
+    }
+  }
+  return sourceSet;
+}
+
+async function findIncomingSourcesForMovedTarget({ edgesDir, oldPath, newPath, isDirectory, warnings = null }) {
+  const sourceSet = new Set();
+  const scanned = new Set();
+
+  const scanBucket = async (bucketName) => {
+    if (!bucketName || scanned.has(bucketName)) return;
+    scanned.add(bucketName);
+    const sources = await collectIncomingSourcesFromBucket({ edgesDir, bucketName, oldPath, newPath, warnings });
+    for (const source of sources) sourceSet.add(source);
+  };
+
+  if (!isDirectory) {
+    const bucketChars = computeEdgeBucketCharsToCheck(path.posix.basename(oldPath));
+    for (const char of bucketChars) {
+      await scanBucket(`${char}.json`);
+    }
+  }
+
+  if (isDirectory || sourceSet.size === 0) {
+    const allBuckets = await listEdgeBucketFiles(edgesDir);
+    for (const bucketName of allBuckets) {
+      await scanBucket(bucketName);
+    }
+  }
+
+  return [...sourceSet];
+}
+
+async function updateOutgoingLinks({ notebookDir, oldPath, newPath, sourcePaths, result }) {
+  for (const sourcePath of sourcePaths) {
+    const kind = guessExtension(sourcePath);
+    if (!kind) continue;
+
+    const sourceFullPath = path.join(notebookDir, sourcePath);
+    const before = await fs.readFile(sourceFullPath, "utf8");
+    const oldSourcePath = remapCleanMovedPath(sourcePath, newPath, oldPath);
+    const replacements = [];
+    let replacementCount = 0;
+
+    for (const span of collectLinkSpans(before, kind)) {
+      const raw = span.raw;
+      if (!raw || isExternalOrAnchorLink(raw)) continue;
+
+      const { pathPart, suffix } = splitLinkSuffix(raw);
+      const targetBeforeMove = resolveNotebookLink(oldSourcePath, pathPart);
+      if (!targetBeforeMove) continue;
+
+      const targetAfterMove = remapCleanMovedPath(targetBeforeMove, oldPath, newPath);
+      if (!targetAfterMove) continue;
+      if (!(await fileExists(path.join(notebookDir, targetAfterMove)))) continue;
+
+      const targetCurrentInterpretation = resolveNotebookLink(sourcePath, pathPart);
+      if (targetCurrentInterpretation === targetAfterMove) continue;
+
+      const replacement = `${makeRelativeLink(sourcePath, targetAfterMove)}${suffix}`;
+      if (replacement !== raw) {
+        replacements.push({ start: span.start, end: span.end, value: replacement });
+        replacementCount += 1;
+      }
+    }
+
+    const after = applySpanReplacements(before, replacements);
+    if (after !== before) {
+      await fs.writeFile(sourceFullPath, after, "utf8");
+      result.outgoing.changed = true;
+      result.outgoing.filesChanged += 1;
+      result.outgoing.replacements += replacementCount;
+      recordUpdatedFile(result, sourcePath);
+    }
+  }
+}
+
+async function updateIncomingLinks({ notebookDir, oldPath, newPath, sourcePaths, result }) {
+  for (const sourcePathBeforeRaw of sourcePaths) {
+    const sourcePathBefore = sanitizeNotebookPath(sourcePathBeforeRaw);
+    if (!sourcePathBefore) continue;
+
+    const sourcePathCurrent = remapCleanMovedPath(sourcePathBefore, oldPath, newPath);
+    const sourceKind = guessExtension(sourcePathCurrent);
+    if (!sourceKind) continue;
+
+    const full = path.join(notebookDir, sourcePathCurrent);
+    if (!(await fileExists(full))) continue;
+
+    const before = await fs.readFile(full, "utf8");
+    const replacements = [];
+    let replacementCount = 0;
+
+    for (const span of collectLinkSpans(before, sourceKind)) {
+      const raw = span.raw;
+      if (!raw || isExternalOrAnchorLink(raw)) continue;
+
+      const { pathPart, suffix } = splitLinkSuffix(raw);
+      const targetBeforeMove = resolveNotebookLink(sourcePathBefore, pathPart);
+      if (!targetBeforeMove) continue;
+
+      const targetInfo = getMovedPathInfo(targetBeforeMove, oldPath, newPath);
+      if (!targetInfo.changed || !targetInfo.path) continue;
+      if (!(await fileExists(path.join(notebookDir, targetInfo.path)))) continue;
+
+      const currentTarget = resolveNotebookLink(sourcePathCurrent, pathPart);
+      if (currentTarget === targetInfo.path) continue;
+
+      const replacement = `${makeRelativeLink(sourcePathCurrent, targetInfo.path)}${suffix}`;
+      if (replacement !== raw) {
+        replacements.push({ start: span.start, end: span.end, value: replacement });
+        replacementCount += 1;
+      }
+    }
+
+    const after = applySpanReplacements(before, replacements);
+    if (after !== before) {
+      await fs.writeFile(full, after, "utf8");
+      result.incoming.filesChanged += 1;
+      result.incoming.replacements += replacementCount;
+      recordUpdatedFile(result, sourcePathCurrent);
+    }
+  }
+}
+
+async function updateGraphEdgeBuckets({ edgesDir, oldPath, newPath, result }) {
+  const bucketFiles = await listEdgeBucketFiles(edgesDir);
+  const touchedBuckets = new Set();
+  const movedEdgesByBucket = new Map();
+
+  for (const name of bucketFiles) {
+    const full = path.join(edgesDir, name);
+    const edges = await readEdgeBucket(full, { repair: true, warnings: result.warnings });
+    if (!edges.length) continue;
+
+    const kept = [];
+    let changed = false;
+
+    for (const edge of edges) {
+      const sourceInfo = getMovedPathInfo(edge?.source, oldPath, newPath);
+      const targetInfo = getMovedPathInfo(edge?.target, oldPath, newPath);
+
+      if (!sourceInfo.changed && !targetInfo.changed) {
+        kept.push(edge);
+        continue;
+      }
+
+      const updatedEdge = {
+        ...edge,
+        source: sourceInfo.changed ? sourceInfo.path : remapGraphPath(edge.source, oldPath, newPath),
+        target: targetInfo.changed ? targetInfo.path : remapGraphPath(edge.target, oldPath, newPath),
+      };
+
+      changed = true;
+      if (targetInfo.changed) {
+        const bucketChar = computeEdgeBucketChar(path.posix.basename(updatedEdge.target));
+        const list = movedEdgesByBucket.get(bucketChar) || [];
+        list.push(updatedEdge);
+        movedEdgesByBucket.set(bucketChar, list);
+        result.graph.edgesMoved += 1;
+      } else {
+        kept.push(updatedEdge);
+        result.graph.edgesUpdated += 1;
+      }
+    }
+
+    if (changed) {
+      await writeEdgeBucket(full, kept);
+      touchedBuckets.add(name);
+    }
+  }
+
+  for (const [bucketChar, movedEdges] of movedEdgesByBucket.entries()) {
+    const name = `${bucketChar}.json`;
+    const full = path.join(edgesDir, name);
+    const existing = await readEdgeBucket(full, { repair: true, warnings: result.warnings });
+    await writeEdgeBucket(full, [...existing, ...movedEdges]);
+    touchedBuckets.add(name);
+  }
+
+  result.graph.bucketsTouched = touchedBuckets.size;
+}
+
+function jsonRoute(handler) {
+  return async (req, res) => {
+    try {
+      await handler(req, res);
+    } catch (err) {
+      console.error("[linkMove/update] Failed:", err);
+      res.status(500).json({
+        success: false,
+        error: err?.message || "Failed to update links and graph.",
+      });
+    }
+  };
 }
 
 export default function createLinkMoveRouter(ctx = BASE_CONTEXT) {
@@ -218,72 +482,52 @@ export default function createLinkMoveRouter(ctx = BASE_CONTEXT) {
     let stat = null;
     try {
       stat = await fs.stat(newFullPath);
-    } catch (err) {
+    } catch {
       return res.status(404).json({ error: `File not found at newPath: ${newPath}` });
     }
 
-    if (!stat.isFile()) {
-      return res.json({
-        oldPath,
-        newPath,
-        isFile: false,
-        isDirectory: stat.isDirectory(),
-        outgoing: { count: 0, supported: false },
-        incoming: { count: 0, sources: [] },
-      });
+    const isFile = stat.isFile();
+    const isDirectory = stat.isDirectory();
+    if (!isFile && !isDirectory) {
+      return res.status(400).json({ error: "Only file and directory moves are supported." });
     }
 
-    const extKind = guessExtension(newPath);
-    let outgoingTargets = [];
-    let outgoingSupported = Boolean(extKind);
-
-    if (extKind) {
-      try {
-        const content = await fs.readFile(newFullPath, "utf8");
-        const spans = collectLinkSpans(content, extKind);
-        const uniqueTargets = new Set();
-        for (const span of spans) {
-          const resolved = resolveNotebookLink(oldPath, span.raw);
-          if (!resolved) continue;
-          const exists = await fileExists(path.join(notebookDir, resolved));
-          if (!exists) continue;
-          uniqueTargets.add(resolved);
-        }
-        outgoingTargets = [...uniqueTargets];
-      } catch (err) {
-        outgoingSupported = false;
-      }
-    }
-
+    const movedFiles = await listMovedFilePaths({ notebookDir, newPath, stat });
+    const outgoing = await collectOutgoingTargetsForSources({ notebookDir, oldPath, newPath, sourcePaths: movedFiles });
+    const warnings = [];
     let incomingSources = [];
+
     try {
-      const oldBase = path.posix.basename(oldPath);
-      const buckets = computeBucketCharsToCheck(oldBase);
-      incomingSources = await findIncomingSourcesInBuckets({ edgesDir, oldPath, bucketChars: buckets });
-      if (incomingSources.length === 0) {
-        incomingSources = await findIncomingSourcesAllBuckets({ edgesDir, oldPath });
-      }
+      incomingSources = await findIncomingSourcesForMovedTarget({ edgesDir, oldPath, newPath, isDirectory, warnings });
     } catch (err) {
-      console.warn("[linkMove/analyze] Failed reading edge bucket:", err);
+      warnings.push({
+        type: "incoming-analysis-failed",
+        error: err?.message || "Unable to inspect graph edge buckets.",
+      });
     }
 
     res.json({
       oldPath,
       newPath,
-      isFile: true,
+      isFile,
+      isDirectory,
+      movedFiles: movedFiles.length,
       outgoing: {
-        supported: outgoingSupported,
-        count: outgoingTargets.length,
-        targetsPreview: outgoingTargets.slice(0, 8),
+        supported: outgoing.supported,
+        supportedFiles: outgoing.supportedFiles,
+        readFailures: outgoing.readFailures,
+        count: outgoing.targets.length,
+        targetsPreview: outgoing.targets.slice(0, 8),
       },
       incoming: {
         count: incomingSources.length,
         sourcesPreview: incomingSources.slice(0, 8),
       },
+      warnings,
     });
   });
 
-  router.post("/linkMove/update", async (req, res) => {
+  router.post("/linkMove/update", jsonRoute(async (req, res) => {
     const oldPath = sanitizeNotebookPath(req.body?.oldPath);
     const newPath = sanitizeNotebookPath(req.body?.newPath);
     const updateOutgoing = req.body?.updateOutgoing !== false;
@@ -298,211 +542,56 @@ export default function createLinkMoveRouter(ctx = BASE_CONTEXT) {
     let stat = null;
     try {
       stat = await fs.stat(newFullPath);
-    } catch (err) {
+    } catch {
       return res.status(404).json({ error: `File not found at newPath: ${newPath}` });
     }
 
-    if (!stat.isFile()) {
-      return res.status(400).json({ error: "Only file moves are supported (not directories)." });
+    const isFile = stat.isFile();
+    const isDirectory = stat.isDirectory();
+    if (!isFile && !isDirectory) {
+      return res.status(400).json({ error: "Only file and directory moves are supported." });
     }
 
+    const movedFiles = await listMovedFilePaths({ notebookDir, newPath, stat });
     const result = {
       success: true,
       oldPath,
       newPath,
+      isFile,
+      isDirectory,
+      movedFiles: movedFiles.length,
       updatedFiles: [],
-      outgoing: { changed: false, replacements: 0 },
+      outgoing: { changed: false, filesChanged: 0, replacements: 0 },
       incoming: { filesChanged: 0, replacements: 0 },
       graph: { bucketsTouched: 0, edgesMoved: 0, edgesUpdated: 0 },
+      warnings: [],
     };
 
-    // --- Outgoing: update links inside the moved file so they still resolve to the same targets ---
-    if (updateOutgoing) {
-      const kind = guessExtension(newPath);
-      if (kind) {
-        const before = await fs.readFile(newFullPath, "utf8");
-        const spans = collectLinkSpans(before, kind);
-        const replacements = [];
-        let replacementCount = 0;
-
-        for (const span of spans) {
-          const raw = span.raw;
-          if (!raw || isExternalOrAnchorLink(raw)) continue;
-
-          const { pathPart, suffix } = splitLinkSuffix(raw);
-          const targetOld = resolveNotebookLink(oldPath, pathPart);
-          if (!targetOld) continue;
-          const exists = await fileExists(path.join(notebookDir, targetOld));
-          if (!exists) continue;
-
-          const targetNewInterpretation = resolveNotebookLink(newPath, pathPart);
-          if (targetNewInterpretation === targetOld) continue;
-
-          const newRel = makeRelativeLink(newPath, targetOld);
-          const replacement = `${newRel}${suffix}`;
-
-          if (replacement !== raw) {
-            replacements.push({ start: span.start, end: span.end, value: replacement });
-            replacementCount += 1;
-          }
-        }
-
-        const after = applySpanReplacements(before, replacements);
-        if (after !== before) {
-          await fs.writeFile(newFullPath, after, "utf8");
-          result.outgoing.changed = true;
-          result.outgoing.replacements = replacementCount;
-          result.updatedFiles.push(newPath);
-        }
-      }
-    }
-
-    // --- Incoming: update links in other files that point to oldPath ---
     let incomingSources = [];
     if (updateIncoming) {
-      const sourceSet = new Set();
-
-      const oldBase = path.posix.basename(oldPath);
-      const buckets = computeBucketCharsToCheck(oldBase);
-      const fromBuckets = await findIncomingSourcesInBuckets({ edgesDir, oldPath, bucketChars: buckets });
-      for (const source of fromBuckets) sourceSet.add(source);
-      if (sourceSet.size === 0) {
-        const fromAll = await findIncomingSourcesAllBuckets({ edgesDir, oldPath });
-        for (const source of fromAll) sourceSet.add(source);
-      }
-      incomingSources = [...sourceSet];
-
-      for (const sourcePath of incomingSources) {
-        const sourceKind = guessExtension(sourcePath);
-        if (!sourceKind) continue;
-        const full = path.join(notebookDir, sourcePath);
-        const exists = await fileExists(full);
-        if (!exists) continue;
-
-        const before = await fs.readFile(full, "utf8");
-        const spans = collectLinkSpans(before, sourceKind);
-        const replacements = [];
-        let replacementCount = 0;
-
-        for (const span of spans) {
-          const raw = span.raw;
-          if (!raw || isExternalOrAnchorLink(raw)) continue;
-          const { pathPart, suffix } = splitLinkSuffix(raw);
-          const resolved = resolveNotebookLink(sourcePath, pathPart);
-          if (resolved !== oldPath) continue;
-
-          const newRel = makeRelativeLink(sourcePath, newPath);
-          const replacement = `${newRel}${suffix}`;
-          if (replacement !== raw) {
-            replacements.push({ start: span.start, end: span.end, value: replacement });
-            replacementCount += 1;
-          }
-        }
-
-        const after = applySpanReplacements(before, replacements);
-        if (after !== before) {
-          await fs.writeFile(full, after, "utf8");
-          result.incoming.filesChanged += 1;
-          result.incoming.replacements += replacementCount;
-          result.updatedFiles.push(sourcePath);
-        }
-      }
+      incomingSources = await findIncomingSourcesForMovedTarget({
+        edgesDir,
+        oldPath,
+        newPath,
+        isDirectory,
+        warnings: result.warnings,
+      });
     }
 
-    // --- Graph: update shared edge shards so GraphManagerCore stays consistent ---
+    if (updateOutgoing) {
+      await updateOutgoingLinks({ notebookDir, oldPath, newPath, sourcePaths: movedFiles, result });
+    }
+
+    if (updateIncoming) {
+      await updateIncomingLinks({ notebookDir, oldPath, newPath, sourcePaths: incomingSources, result });
+    }
+
     if (updateGraph) {
-      let bucketFiles = [];
-      try {
-        bucketFiles = (await fs.readdir(edgesDir)).filter((name) => name.endsWith(".json"));
-      } catch {
-        bucketFiles = [];
-      }
-
-      const movedEdgesByBucket = new Map(); // bucketChar -> edges[]
-      let bucketsTouched = 0;
-      let edgesMoved = 0;
-      let edgesUpdated = 0;
-
-      for (const name of bucketFiles) {
-        const full = path.join(edgesDir, name);
-        const edges = await readJsonArray(full);
-        if (!edges.length) continue;
-
-        let changed = false;
-        const kept = [];
-        for (const edge of edges) {
-          if (!edge || typeof edge !== "object") continue;
-          let source = edge.source;
-          let target = edge.target;
-          let updated = false;
-
-          if (source === oldPath) {
-            source = newPath;
-            updated = true;
-          }
-
-          if (target === oldPath) {
-            target = newPath;
-            updated = true;
-            const bucketChar = computeBucketChar(path.posix.basename(newPath));
-            const movedEdge = { ...edge, source, target };
-            const list = movedEdgesByBucket.get(bucketChar) || [];
-            list.push(movedEdge);
-            movedEdgesByBucket.set(bucketChar, list);
-            edgesMoved += 1;
-            changed = true;
-            continue;
-          }
-
-          if (updated) {
-            edgesUpdated += 1;
-            kept.push({ ...edge, source, target });
-            changed = true;
-          } else {
-            kept.push(edge);
-          }
-        }
-
-        if (changed) {
-          bucketsTouched += 1;
-          // Dedupe
-          const seen = new Set();
-          const deduped = [];
-          for (const edge of kept) {
-            const key = edgeKey(edge);
-            if (!edge?.source || !edge?.target) continue;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            deduped.push(edge);
-          }
-          await writeJsonArray(full, deduped);
-        }
-      }
-
-      for (const [bucketChar, movedEdges] of movedEdgesByBucket.entries()) {
-        const targetFile = path.join(edgesDir, `${bucketChar}.json`);
-        const existing = await readJsonArray(targetFile);
-        const combined = [...existing, ...movedEdges];
-        const seen = new Set();
-        const deduped = [];
-        for (const edge of combined) {
-          if (!edge?.source || !edge?.target) continue;
-          const key = edgeKey(edge);
-          if (seen.has(key)) continue;
-          seen.add(key);
-          deduped.push(edge);
-        }
-        await writeJsonArray(targetFile, deduped);
-        bucketsTouched += 1;
-      }
-
-      result.graph.bucketsTouched = bucketsTouched;
-      result.graph.edgesMoved = edgesMoved;
-      result.graph.edgesUpdated = edgesUpdated;
+      await updateGraphEdgeBuckets({ edgesDir, oldPath, newPath, result });
     }
 
     res.json(result);
-  });
+  }));
 
   return router;
 }

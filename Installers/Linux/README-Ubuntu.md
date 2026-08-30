@@ -178,3 +178,9 @@ If `nodevision` command is not found, ensure `~/.local/bin` is in `PATH` and ope
 
 Do not run the installer with `sudo`.  
 Run as your normal user. The script only uses `sudo` for apt dependency commands.
+
+## Offline Dictation
+
+The installer creates or verifies `UserData/Speech/Models` and checks whether `whisper-cli` is available on `PATH`. It does not download whisper.cpp models.
+
+Install or build whisper.cpp separately, then place a GGML model at `UserData/Speech/Models/ggml-base.en.bin` or configure another executable/model path in Settings -> Dictation Settings.

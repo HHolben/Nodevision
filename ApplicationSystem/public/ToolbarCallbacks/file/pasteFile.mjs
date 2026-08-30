@@ -1,6 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/pasteFile.mjs
 // This file defines browser-side paste File logic for the Nodevision UI. It renders interface components and handles user interactions.
-import { clearClipboard, getClipboard } from "./fileClipboard.mjs";
+import { clearClipboard, getClipboard, getClipboardEntries, setClipboard } from "./fileClipboard.mjs";
 import { maybePromptLinkMoveImpact } from "./linkMoveImpact.mjs";
 import { pasteExternalFilesFromNativeClipboard, readNativeFileClipboardSummary } from "/FileInterop/NotebookExternalFileInterop.mjs";
 
@@ -13,8 +13,43 @@ function basename(pathValue = "") {
   return parts[parts.length - 1] || "";
 }
 
+function isSubPath(candidate = "", root = "") {
+  const cleanCandidate = normalizePath(candidate);
+  const cleanRoot = normalizePath(root);
+  if (!cleanCandidate || !cleanRoot) return false;
+  return cleanCandidate === cleanRoot || cleanCandidate.startsWith(cleanRoot + "/");
+}
+
+function filterNestedClipboardEntries(entries = []) {
+  return entries.filter((entry) => {
+    const entryPath = normalizePath(entry.path || "");
+    return !entries.some((candidateParent) => {
+      const parentPath = normalizePath(candidateParent.path || "");
+      return candidateParent.isDirectory
+        && parentPath
+        && parentPath !== entryPath
+        && isSubPath(entryPath, parentPath);
+    });
+  });
+}
+
+function retainClipboardEntries(mode, entries = []) {
+  const paths = entries.map((entry) => entry.path);
+  if (!paths.length) {
+    clearClipboard();
+    return;
+  }
+  setClipboard({
+    mode,
+    sourcePath: paths[0],
+    sourcePaths: paths,
+    entries,
+  });
+}
+
 function currentSelection() {
-  return document.querySelector("#file-list a.selected");
+  const selected = [...document.querySelectorAll("#file-list a.selected")];
+  return selected.length === 1 ? selected[0] : null;
 }
 
 function destinationDirectory() {
@@ -93,62 +128,95 @@ async function shouldPreferNativeFileClipboard(sourcePath) {
 
 export default async function pasteFile() {
   const clipboard = getClipboard();
-  if (!clipboard?.sourcePath || !clipboard?.mode) {
+  const mode = clipboard?.mode === "cut" ? "cut" : clipboard?.mode === "copy" ? "copy" : null;
+  const clipboardEntries = getClipboardEntries(clipboard);
+
+  if (!mode || !clipboardEntries.length) {
     if (await pasteNativeFileClipboard(destinationDirectory())) return;
     alert("Clipboard is empty.");
     return;
   }
 
-  const sourcePath = normalizePath(clipboard.sourcePath);
   const destinationDir = destinationDirectory();
-  if (await shouldPreferNativeFileClipboard(sourcePath)) {
+  if (await shouldPreferNativeFileClipboard(clipboardEntries[0]?.path || "")) {
     if (await pasteNativeFileClipboard(destinationDir)) return;
   }
-  const fileName = basename(sourcePath);
 
-  let destinationPath = destinationDir ? `${destinationDir}/${fileName}` : fileName;
+  const entriesToPaste = filterNestedClipboardEntries(clipboardEntries);
+  const endpoint = mode === "cut" ? "/api/cut" : "/api/copy";
+  const successes = [];
+  const failedEntries = [];
+  const errors = [];
 
-  // For copy operations, auto-increment name if target exists (file_name -> file_name_2)
-  if (clipboard.mode === "copy") {
-    const safeName = await nextAvailableName(destinationDir, fileName);
-    destinationPath = destinationDir ? `${destinationDir}/${safeName}` : safeName;
+  for (const entry of entriesToPaste) {
+    const sourcePath = normalizePath(entry.path || "");
+    const fileName = basename(sourcePath);
+    if (!sourcePath || !fileName) continue;
+
+    let destinationPath = destinationDir ? destinationDir + "/" + fileName : fileName;
+    if (mode === "copy") {
+      const safeName = await nextAvailableName(destinationDir, fileName);
+      destinationPath = destinationDir ? destinationDir + "/" + safeName : safeName;
+    }
+
+    if (!destinationPath || sourcePath === destinationPath) {
+      errors.push(sourcePath + ": choose a different destination");
+      failedEntries.push(entry);
+      continue;
+    }
+
+    if (entry.isDirectory && isSubPath(destinationDir, sourcePath)) {
+      errors.push(sourcePath + ": cannot move a folder into itself or one of its subfolders");
+      failedEntries.push(entry);
+      continue;
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: sourcePath,
+          destination: destinationPath
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.error || "Paste failed (" + response.status + ")");
+      }
+
+      successes.push({ sourcePath, destinationPath, isDirectory: Boolean(entry.isDirectory) });
+    } catch (err) {
+      failedEntries.push(entry);
+      errors.push(sourcePath + ": " + (err?.message || err));
+    }
   }
 
-  if (!destinationPath || sourcePath === destinationPath) {
+  if (mode === "cut") {
+    retainClipboardEntries("cut", failedEntries);
+  }
+
+  for (const moved of successes) {
+    if (mode === "cut") {
+      await maybePromptLinkMoveImpact({ oldPath: moved.sourcePath, newPath: moved.destinationPath });
+    }
+  }
+
+  if (typeof window.refreshFileManager === "function") {
+    await window.refreshFileManager(window.currentDirectoryPath || "");
+  }
+  if (typeof window.refreshGraphManager === "function") {
+    await window.refreshGraphManager({ fit: true, reason: "file-paste" });
+  }
+
+  if (!successes.length && !errors.length) {
     alert("Choose a different destination.");
     return;
   }
 
-  const endpoint = clipboard.mode === "cut" ? "/api/cut" : "/api/copy";
-
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source: sourcePath,
-        destination: destinationPath
-      })
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload?.success === false) {
-      throw new Error(payload?.error || `Paste failed (${response.status})`);
-    }
-
-    if (clipboard.mode === "cut") clearClipboard();
-    if (typeof window.refreshFileManager === "function") {
-      await window.refreshFileManager(window.currentDirectoryPath || "");
-    }
-    if (typeof window.refreshGraphManager === "function") {
-      await window.refreshGraphManager({ fit: true, reason: "file-paste" });
-    }
-
-    if (clipboard.mode === "cut") {
-      await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
-    }
-  } catch (err) {
-    console.error("Failed to paste file or directory:", err);
-    alert(`Failed to paste: ${err.message}`);
+  if (errors.length) {
+    console.error("Failed to paste some files:", errors);
+    alert("Some files could not be pasted:" + String.fromCharCode(10) + errors.join(String.fromCharCode(10)));
   }
 }

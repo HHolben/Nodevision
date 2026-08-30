@@ -431,6 +431,24 @@ export async function renderEditor(
     disposeMaterial(ref.material);
   }
 
+  function vertexMarkerRadius(scale, minimum) {
+    return Math.max(minimum, state.maxDim * scale);
+  }
+
+  function createVertexSphereMarkers(vertices, color, radius, name) {
+    const geometry = new THREE.SphereGeometry(radius, 12, 8);
+    const material = new THREE.MeshBasicMaterial({ color });
+    const markers = new THREE.InstancedMesh(geometry, material, vertices.length);
+    const matrix = new THREE.Matrix4();
+    vertices.forEach((vertex, index) => {
+      matrix.setPosition(vertex.x, vertex.y, vertex.z);
+      markers.setMatrixAt(index, matrix);
+    });
+    markers.instanceMatrix.needsUpdate = true;
+    markers.name = name;
+    return markers;
+  }
+
   function clearDisplayGeometry() {
     disposeScenePrimitive(mesh);
     disposeScenePrimitive(edgeLines);
@@ -486,6 +504,7 @@ export async function renderEditor(
           color: 0xadd8e6,
           transparent: true,
           opacity: 0.95,
+          side: THREE.DoubleSide,
         }),
       );
       mesh.userData.isModel = true;
@@ -507,34 +526,19 @@ export async function renderEditor(
     edgeLines.userData.isEdge = true;
     scene.add(edgeLines);
 
-    const vertexPos = new Float32Array(state.topology.vertices.length * 3);
-    state.topology.vertices.forEach((v, i) => {
-      const o = i * 3;
-      vertexPos[o + 0] = v.x;
-      vertexPos[o + 1] = v.y;
-      vertexPos[o + 2] = v.z;
-    });
-
-    const vertexGeometry = new THREE.BufferGeometry();
-    vertexGeometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(vertexPos, 3),
-    );
-
-    if (!vertexPoints) {
-      vertexPoints = new THREE.Points(
-        vertexGeometry,
-        new THREE.PointsMaterial({
-          size: Math.max(0.4, state.maxDim * 0.01),
-          color: 0xffcc00,
-        }),
+    if (vertexPoints) {
+      disposeScenePrimitive(vertexPoints);
+      vertexPoints = null;
+    }
+    if (state.topology.vertices.length > 0) {
+      vertexPoints = createVertexSphereMarkers(
+        state.topology.vertices,
+        0xffcc00,
+        vertexMarkerRadius(0.0045, 0.12),
+        "STLVertexMarkers",
       );
       vertexPoints.userData.isVertex = true;
       scene.add(vertexPoints);
-    } else {
-      vertexPoints.geometry.dispose();
-      vertexPoints.geometry = vertexGeometry;
-      vertexPoints.material.size = Math.max(0.4, state.maxDim * 0.01);
     }
 
     rebuildSelectionDisplay();
@@ -550,23 +554,15 @@ export async function renderEditor(
     }
 
     if (!state.topology || state.selection.size === 0) return;
-    const pos = new Float32Array(state.selection.size * 3);
-    let idx = 0;
-    for (const vi of state.selection) {
-      const v = state.topology.vertices[vi];
-      if (!v) continue;
-      pos[idx++] = v.x;
-      pos[idx++] = v.y;
-      pos[idx++] = v.z;
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(pos.slice(0, idx), 3));
-    selectedVertexPoints = new THREE.Points(
-      g,
-      new THREE.PointsMaterial({
-        size: Math.max(0.7, state.maxDim * 0.016),
-        color: 0xff3333,
-      }),
+    const vertices = Array.from(state.selection)
+      .map((vi) => state.topology.vertices[vi])
+      .filter(Boolean);
+    if (vertices.length === 0) return;
+    selectedVertexPoints = createVertexSphereMarkers(
+      vertices,
+      0xff3333,
+      vertexMarkerRadius(0.007, 0.18),
+      "STLSelectedVertexMarkers",
     );
     selectedVertexPoints.userData.isSelectedVertex = true;
     scene.add(selectedVertexPoints);
@@ -2325,7 +2321,7 @@ export async function renderEditor(
       }
       return;
     }
-    const pointIndex = hits[0].index;
+    const pointIndex = Number.isInteger(hits[0].instanceId) ? hits[0].instanceId : hits[0].index;
     if (!Number.isInteger(pointIndex)) return;
 
     if (evt.shiftKey) {

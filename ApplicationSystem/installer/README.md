@@ -65,3 +65,9 @@ Debian/Ubuntu build:   espeak-ng libespeak-ng-dev g++ make pkg-config
 Offline speech is optional. If dependency installation, bridge compilation, or `--probe` verification fails, the installer reports native speech as unavailable and still completes the Nodevision installation. Use `--skip-speech` to skip this capability setup or `--skip-speech-deps` to avoid package installation while still probing/building when possible.
 
 Release bundles should preferably include a prebuilt `ApplicationSystem/native/speech/build/nodevision-espeak-bridge` for the target Linux architecture so ordinary users need only the eSpeak NG runtime library. Source/development installs can build the bridge locally from eSpeak NG headers.
+
+## Offline Dictation
+
+The Linux installer prepares `UserData/Speech/Models` and reports whether `whisper-cli` is visible on `PATH`. It does not clone whisper.cpp or download model files.
+
+For local dictation, install or build whisper.cpp separately, then place a GGML model at `UserData/Speech/Models/ggml-base.en.bin` or configure another executable/model path in Settings -> Dictation Settings. Browser SpeechRecognition remains an explicit fallback because some browser implementations use external recognition services.

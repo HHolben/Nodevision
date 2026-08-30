@@ -413,17 +413,182 @@ function refreshFileItemVisualStates() {
   });
 }
 
-function markSelectedFileItem(selectedLink) {
+function fileSelectionEntryFromItem(item) {
+  const path = normalizePath(item?.dataset?.fullPath || "");
+  if (!path) return null;
+  return {
+    path,
+    isDirectory: item?.dataset?.isDirectory === "true",
+  };
+}
+
+function uniqueFileSelectionEntries(entries = []) {
+  const byPath = new Map();
+  for (const entry of entries) {
+    const path = normalizePath(entry?.path || "");
+    if (!path) continue;
+    byPath.set(path, { path, isDirectory: Boolean(entry?.isDirectory) });
+  }
+  return [...byPath.values()];
+}
+
+function publishSelectedFileEntries(entries = [], primaryEntry = null) {
+  const cleanEntries = uniqueFileSelectionEntries(entries);
+  const primary = primaryEntry?.path ? primaryEntry : cleanEntries[cleanEntries.length - 1] || null;
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.selectedFiles = cleanEntries;
+  window.NodevisionState.selectedFileCount = cleanEntries.length;
+  window.NodevisionState.selectedFilesOwner = "FileManager";
+  window.selectedFilePaths = cleanEntries.map((entry) => entry.path);
+  window.NodevisionState.selectedFile = primary?.path || null;
+  window.NodevisionState.selectedFileIsDirectory = Boolean(primary?.isDirectory);
+  try {
+    updateToolbarState({ selectedFile: primary?.path || null });
+  } catch (err) {
+    console.warn("Failed to update toolbar state for file selection set:", err);
+  }
+  window.dispatchEvent(new CustomEvent("nodevision-file-selection-set-changed", {
+    detail: {
+      entries: cleanEntries,
+      paths: cleanEntries.map((entry) => entry.path),
+      primaryPath: primary?.path || null,
+    },
+  }));
+}
+
+function selectedFileEntriesFromDom() {
+  return uniqueFileSelectionEntries(
+    [...document.querySelectorAll("#file-list a.file.selected, #file-list a.folder.selected")]
+      .map(fileSelectionEntryFromItem)
+      .filter(Boolean)
+  );
+}
+
+function selectedFileEntriesFromState() {
+  const state = window.NodevisionState || {};
+  if (state.selectedFilesOwner && state.selectedFilesOwner !== "FileManager") return [];
+  if (Array.isArray(state.selectedFiles)) return uniqueFileSelectionEntries(state.selectedFiles);
+  if (Array.isArray(window.selectedFilePaths)) {
+    return uniqueFileSelectionEntries(window.selectedFilePaths.map((path) => ({ path })));
+  }
+  return [];
+}
+
+function markSelectedFileItems(entries = []) {
+  const selectedPaths = new Set(uniqueFileSelectionEntries(entries).map((entry) => entry.path));
   const allItems = document.querySelectorAll("#file-list a.file, #file-list a.folder");
   allItems.forEach((item) => {
-    const isSelected = item === selectedLink;
+    const itemPath = normalizePath(item?.dataset?.fullPath || "");
+    const isSelected = selectedPaths.has(itemPath);
     item.classList.toggle("selected", isSelected);
     applyFileItemVisualState(item, isSelected ? "selected" : "base");
   });
 }
 
+function markSelectedFileItem(selectedLink) {
+  const entry = fileSelectionEntryFromItem(selectedLink);
+  const entries = entry ? [entry] : [];
+  publishSelectedFileEntries(entries, entry);
+  markSelectedFileItems(entries);
+}
+
+function toggleFileManagerItemSelection(item) {
+  const entry = fileSelectionEntryFromItem(item);
+  if (!entry) return;
+
+  const byPath = new Map(selectedFileEntriesFromDom().map((selected) => [selected.path, selected]));
+  if (byPath.has(entry.path)) {
+    byPath.delete(entry.path);
+  } else {
+    byPath.set(entry.path, entry);
+  }
+
+  const nextEntries = [...byPath.values()];
+  const primary = byPath.has(entry.path) ? entry : nextEntries[nextEntries.length - 1] || null;
+  navigationState.setLastInfoPanelType("FileManager");
+  navigationState.setLastFileSelectionPanelType?.("FileManager");
+  publishSelectedFileEntries(nextEntries, primary);
+  markSelectedFileItems(nextEntries);
+}
+
+
+function fileSelectionEntriesForDragItem(item) {
+  const entry = fileSelectionEntryFromItem(item);
+  if (!entry) return [];
+  const selectedEntries = selectedFileEntriesFromDom();
+  if (item.classList.contains("selected") && selectedEntries.some((selected) => selected.path === entry.path)) {
+    return filterNestedFileSelectionEntries(selectedEntries);
+  }
+  return [entry];
+}
+
+function entriesFromDragPayload(dragData) {
+  if (!dragData || typeof dragData !== "object") return [];
+  if (Array.isArray(dragData.entries)) return uniqueFileSelectionEntries(dragData.entries);
+  if (Array.isArray(dragData.paths)) {
+    return uniqueFileSelectionEntries(dragData.paths.map((path) => ({
+      path,
+      isDirectory: normalizePath(path) === normalizePath(dragData.path) ? Boolean(dragData.isDirectory) : false,
+    })));
+  }
+  if (dragData.path) return uniqueFileSelectionEntries([{ path: dragData.path, isDirectory: Boolean(dragData.isDirectory) }]);
+  return [];
+}
+
+function filterNestedFileSelectionEntries(entries = []) {
+  const cleanEntries = uniqueFileSelectionEntries(entries);
+  return cleanEntries.filter((entry) => {
+    return !cleanEntries.some((candidateParent) => {
+      return candidateParent.isDirectory
+        && candidateParent.path !== entry.path
+        && isSubPath(entry.path, candidateParent.path);
+    });
+  });
+}
+
+async function moveFileManagerSelectionEntries(entries = [], destinationDir = "", refreshPath = window.currentDirectoryPath || "") {
+  const destination = normalizePath(destinationDir);
+  const moveEntries = filterNestedFileSelectionEntries(entries);
+  const errors = [];
+  let movedCount = 0;
+
+  for (const entry of moveEntries) {
+    const sourcePath = normalizePath(entry.path || "");
+    if (!sourcePath) continue;
+    if (sourcePath === destination || isSameParent(sourcePath, destination)) continue;
+    if (entry.isDirectory && isSubPath(destination, sourcePath)) {
+      errors.push(sourcePath + ": cannot move a folder into itself or one of its subfolders");
+      continue;
+    }
+
+    const destinationPath = destination ? destination + "/" + basename(sourcePath) : basename(sourcePath);
+    try {
+      await moveFileOrDirectoryAPI(sourcePath, destination);
+      movedCount += 1;
+      await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
+    } catch (err) {
+      errors.push(sourcePath + ": " + (err?.message || err));
+    }
+  }
+
+  if (typeof window.refreshFileManager === "function") {
+    await window.refreshFileManager(refreshPath || window.currentDirectoryPath || "");
+  }
+
+  if (errors.length) {
+    console.error("Some file moves failed:", errors);
+    alert("Some files could not be moved:" + String.fromCharCode(10) + errors.join(String.fromCharCode(10)));
+  }
+
+  return { movedCount, errors };
+}
+
 function selectFileManagerItem(item, options = {}) {
   if (!item) return;
+  if (options.additive) {
+    toggleFileManagerItemSelection(item);
+    return;
+  }
 
   navigationState.setLastInfoPanelType("FileManager");
   navigationState.setLastFileSelectionPanelType?.("FileManager");
@@ -666,26 +831,15 @@ export function displayFiles(files, currentPath) {
       }
 
       const dragData = readDragPayload(e);
-      if (!dragData?.path) return;
+      const moveEntries = entriesFromDragPayload(dragData);
+      if (!moveEntries.length) return;
 
-      const sourcePath = normalizePath(dragData.path);
       const segments = currentPath.split("/").filter(Boolean);
       segments.pop();
       const destinationDir = segments.join("/");
-      if (isSameParent(sourcePath, destinationDir)) return;
-      if (dragData.isDirectory && isSubPath(destinationDir, sourcePath)) {
-        console.warn("Cannot move a directory into itself or one of its descendants.");
-        return;
-      }
-
-      const destinationPath = destinationDir ? `${destinationDir}/${basename(sourcePath)}` : basename(sourcePath);
 
       try {
-        await moveFileOrDirectoryAPI(sourcePath, destinationDir);
-        if (!dragData.isDirectory) {
-          await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
-        }
-        await window.refreshFileManager(currentPath);
+        await moveFileManagerSelectionEntries(moveEntries, destinationDir, currentPath);
       } catch (err) {
         console.error("Failed to move file or directory via parent drop:", err);
       }
@@ -750,9 +904,13 @@ export function displayFiles(files, currentPath) {
     // Drag & drop
     link.draggable = true;
     link.addEventListener("dragstart", e => {
+      const entries = fileSelectionEntriesForDragItem(link);
+      const primaryEntry = fileSelectionEntryFromItem(link) || entries[0] || null;
       const payload = {
-        path: link.dataset.fullPath,
-        isDirectory: link.dataset.isDirectory === "true",
+        path: primaryEntry?.path || normalizePath(link.dataset.fullPath || ""),
+        isDirectory: Boolean(primaryEntry?.isDirectory),
+        paths: entries.map((entry) => entry.path),
+        entries,
       };
       e.dataTransfer.effectAllowed = "copyMove";
       e.dataTransfer.setData("application/json", JSON.stringify(payload));
@@ -760,7 +918,7 @@ export function displayFiles(files, currentPath) {
       setNotebookDragTransfer(e, {
         path: payload.path,
         isDirectory: payload.isDirectory,
-        nativeDrag: typeof window.nodevisionElectron?.startNotebookFileDrag === "function",
+        nativeDrag: entries.length === 1 && typeof window.nodevisionElectron?.startNotebookFileDrag === "function",
       });
       link.style.opacity = "0.6";
       startFileManagerAutoScroll(link);
@@ -802,26 +960,13 @@ export function displayFiles(files, currentPath) {
         }
 
         const dragData = readDragPayload(e);
-        if (!dragData?.path) return;
+        const moveEntries = entriesFromDragPayload(dragData);
+        if (!moveEntries.length) return;
 
-        const sourcePath = normalizePath(dragData.path);
         const destinationDir = normalizePath(link.dataset.fullPath);
 
-        if (sourcePath === destinationDir) return;
-        if (isSameParent(sourcePath, destinationDir)) return;
-
-        if (dragData.isDirectory && isSubPath(destinationDir, sourcePath)) {
-          console.warn("Cannot move a directory into itself or one of its descendants.");
-          return;
-        }
-
         try {
-          await moveFileOrDirectoryAPI(sourcePath, destinationDir);
-          if (!dragData.isDirectory) {
-            const destinationPath = destinationDir ? `${destinationDir}/${basename(sourcePath)}` : basename(sourcePath);
-            await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
-          }
-          await window.refreshFileManager(currentPath);
+          await moveFileManagerSelectionEntries(moveEntries, destinationDir, currentPath);
         } catch (err) {
           console.error("Failed to move file or directory:", err);
         }
@@ -850,9 +995,12 @@ console.log("Opening "+ listElem + " at "+ link + " and "+ li);
     listElem.appendChild(li);
   });
 
+  markSelectedFileItems(selectedFileEntriesFromState());
+
   // Attach file selection logic
   attachFileClickHandlers();
 }
+
 
 // ------------------------------
 // Selection logic
@@ -863,7 +1011,7 @@ export function attachFileClickHandlers() {
   fileItems.forEach(item => {
     item.addEventListener("click", e => {
       e.preventDefault();
-      selectFileManagerItem(item);
+      selectFileManagerItem(item, { additive: Boolean(e.ctrlKey || e.metaKey) });
     });
   });
 }

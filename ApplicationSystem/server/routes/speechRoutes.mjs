@@ -3,6 +3,7 @@
 
 import { createEspeakCliProvider } from "../speech/EspeakCliProvider.mjs";
 import { createEspeakNativeBridgeProvider } from "../speech/EspeakNativeBridgeProvider.mjs";
+import { registerSpeechRecognitionRoutes } from "./speechRecognitionRoutes.mjs";
 
 function authenticated(req, res) {
   if (req.identity) return true;
@@ -52,6 +53,7 @@ async function statusPayload(provider) {
 
 export function registerSpeechRoutes(app, ctx, options = {}) {
   const providers = providerList(ctx, options);
+  registerSpeechRecognitionRoutes(app, ctx, { providers: options.recognitionProviders, provider: options.recognitionProvider });
 
   app.get("/api/speech/providers", async (req, res) => {
     if (!authenticated(req, res)) return;

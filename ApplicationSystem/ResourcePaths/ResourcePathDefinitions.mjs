@@ -36,6 +36,18 @@ export const BUILT_IN_RESOURCE_PATHS = Object.freeze([
     description: "Notebook-owned dictionaries and word lists.",
   },
   {
+    key: "materials",
+    name: "Materials",
+    defaultPath: "Resources/Materials",
+    description: "Notebook-owned material definitions for world tools.",
+  },
+  {
+    key: "electronics.components",
+    name: "Circuit Component Libraries",
+    defaultPath: "Library/Electronics/Components",
+    description: "Notebook-owned circuit component library documents and related electronics assets.",
+  },
+  {
     key: "contacts",
     name: "Contacts",
     defaultPath: "Resources/Contacts",

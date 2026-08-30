@@ -309,6 +309,7 @@ export class STLViewer {
         color: 0xadd8e6,
         transparent: true,
         opacity: 0.9,
+        side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.sub(center);

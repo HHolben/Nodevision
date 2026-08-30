@@ -7,7 +7,7 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { discoverFaaSectionalCatalog, NODEVISION_FAA_USER_AGENT } from "./FaaSectionalProvider.mjs";
-import { loadSectionalMapSettings, resolveSectionalMapsDirectory } from "./SectionalMapSettings.mjs";
+import { getSectionalMapsDirectory } from "./SectionalMapSettings.mjs";
 import { isMetadataCurrent, loadSectionalMetadata, makeSectionalMetadata, saveSectionalMetadata } from "./SectionalMapMetadata.mjs";
 
 function safeFilename(filename, fallback) {
@@ -84,8 +84,7 @@ async function publishStagedCharts(directory, stagedCharts) {
 export async function updateSectionalMaps(ctx, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const logger = options.logger || console;
-  const settings = await loadSectionalMapSettings(ctx);
-  const resolved = await resolveSectionalMapsDirectory(ctx, settings.sectionalMapsDirectory);
+  const resolved = await getSectionalMapsDirectory(ctx);
   logger.info?.("[sectionals] update requested", { directory: resolved.relativeDirectory });
 
   if (options.createDirectory) await fs.mkdir(resolved.absoluteDirectory, { recursive: true });

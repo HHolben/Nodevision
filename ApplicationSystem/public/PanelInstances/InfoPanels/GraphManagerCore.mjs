@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
 // This file defines browser-side Graph Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
+import { updateToolbarState } from '/panels/createToolbar.mjs';
 import { scanFileForLinkRecords } from './GraphManagerDependencies/ScanForLinks.mjs';
 import { buildSelectedGraphLink, linkRecordTargetId, makeEdgeLabel, setSelectedGraphLink, summarizeLinkRecord } from './GraphManagerDependencies/LinkRecords.mjs';
 import {
@@ -980,6 +981,7 @@ async function revealPathInGraphManager(path, options = {}) {
     const node = cy?.getElementById(cleanPath);
     if (node && !node.empty()) {
         try { cy.nodes().unselect(); node.select(); } catch (_) { /* ignore */ }
+        selectSingleGraphNodeFile(node);
         try { cy.center(node); } catch (_) { /* ignore */ }
     }
 
@@ -991,6 +993,7 @@ async function revealPathInGraphManager(path, options = {}) {
 }
 
 function graphPasteDestinationDirectory() {
+    if (graphSelectionEntriesFromState().length > 1) return normalizePath(currentRootPath || "");
     const selectedPath = selectedPathForGraphRootAction();
     if (selectedPath) return selectedPathIsDirectory(selectedPath) ? selectedPath : dirname(selectedPath);
     return normalizePath(currentRootPath || "");
@@ -1070,6 +1073,118 @@ function selectedPathIsDirectory(path = "") {
     }
 
     return false;
+}
+
+function graphSelectionEntryFromNode(node) {
+    if (!node || (typeof node.empty === "function" && node.empty())) return null;
+    const type = node.data("type");
+    if (type !== "file" && type !== "directory") return null;
+    const pathValue = normalizePath(node.data("fullPath") ?? "");
+    if (!pathValue) return null;
+    return { path: pathValue, isDirectory: type === "directory" };
+}
+
+function uniqueGraphSelectionEntries(entries = []) {
+    const byPath = new Map();
+    for (const entry of entries) {
+        const pathValue = normalizePath(entry?.path || "");
+        if (!pathValue) continue;
+        byPath.set(pathValue, { path: pathValue, isDirectory: Boolean(entry?.isDirectory) });
+    }
+    return [...byPath.values()];
+}
+
+function graphSelectionEntriesFromState() {
+    const state = window.NodevisionState || {};
+    if (state.selectedFilesOwner && state.selectedFilesOwner !== "GraphManager") return graphSelectionEntriesFromCy();
+    if (Array.isArray(state.selectedFiles)) return uniqueGraphSelectionEntries(state.selectedFiles);
+    if (Array.isArray(window.selectedFilePaths)) {
+        return uniqueGraphSelectionEntries(window.selectedFilePaths.map((pathValue) => ({ path: pathValue })));
+    }
+    return [];
+}
+
+function graphSelectionEntriesFromCy() {
+    if (!cy) return [];
+    return uniqueGraphSelectionEntries(
+        cy.nodes(":selected")
+            .map((node) => graphSelectionEntryFromNode(node))
+            .filter(Boolean)
+    );
+}
+
+function publishGraphSelectedFileEntries(entries = [], primaryEntry = null) {
+    const cleanEntries = uniqueGraphSelectionEntries(entries);
+    const primary = primaryEntry?.path ? primaryEntry : cleanEntries[cleanEntries.length - 1] || null;
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.selectedFiles = cleanEntries;
+    window.NodevisionState.selectedFileCount = cleanEntries.length;
+    window.NodevisionState.selectedFilesOwner = "GraphManager";
+    window.selectedFilePaths = cleanEntries.map((entry) => entry.path);
+    window.NodevisionState.selectedFile = primary?.path || null;
+    window.NodevisionState.selectedFileIsDirectory = Boolean(primary?.isDirectory);
+    try {
+        updateToolbarState({ selectedFile: primary?.path || null });
+    } catch (err) {
+        console.warn("Failed to update toolbar state for graph selection set:", err);
+    }
+    window.dispatchEvent(new CustomEvent("nodevision-file-selection-set-changed", {
+        detail: {
+            entries: cleanEntries,
+            paths: cleanEntries.map((entry) => entry.path),
+            primaryPath: primary?.path || null,
+        },
+    }));
+}
+
+function applyGraphSelectedFileEntries(entries = []) {
+    if (!cy) return;
+    const selectedPaths = new Set(uniqueGraphSelectionEntries(entries).map((entry) => entry.path));
+    cy.nodes().forEach((node) => {
+        const entry = graphSelectionEntryFromNode(node);
+        const shouldSelect = entry ? selectedPaths.has(entry.path) : false;
+        try {
+            if (shouldSelect) node.select();
+            else node.unselect();
+        } catch (_) {
+            // Ignore selection errors from transient Cytoscape nodes.
+        }
+    });
+}
+
+function toggleGraphNodeFileSelection(node) {
+    const entry = graphSelectionEntryFromNode(node);
+    if (!entry) return;
+    const state = window.NodevisionState || {};
+    const existingEntries = state.selectedFilesOwner && state.selectedFilesOwner !== "GraphManager"
+        ? []
+        : graphSelectionEntriesFromState();
+    const byPath = new Map(existingEntries.map((selected) => [selected.path, selected]));
+    if (byPath.has(entry.path)) byPath.delete(entry.path);
+    else byPath.set(entry.path, entry);
+
+    const nextEntries = [...byPath.values()];
+    const primary = byPath.has(entry.path) ? entry : nextEntries[nextEntries.length - 1] || null;
+    publishGraphSelectedFileEntries(nextEntries, primary);
+    applyGraphSelectedFileEntries(nextEntries);
+}
+
+function selectSingleGraphNodeFile(node) {
+    const entry = graphSelectionEntryFromNode(node);
+    const entries = entry ? [entry] : [];
+    publishGraphSelectedFileEntries(entries, entry);
+    applyGraphSelectedFileEntries(entries);
+}
+
+function filterNestedGraphSelectionEntries(entries = []) {
+    const cleanEntries = uniqueGraphSelectionEntries(entries);
+    return cleanEntries.filter((entry) => {
+        return !cleanEntries.some((candidateParent) => {
+            return candidateParent.isDirectory
+                && candidateParent.path !== entry.path
+                && isDirectoryMoveIntoSelfOrDescendant({ sourcePath: candidateParent.path, destinationDir: entry.path });
+        });
+    });
 }
 
 function directoryRootForSelectedPath(path = "") {
@@ -1570,6 +1685,7 @@ function setupCtrlDragMoveHandlers() {
         sourceType: null,
         sourceParentId: null,
         sourcePosition: null,
+        sourceEntries: [],
         dropTargetId: null,
     };
 
@@ -1587,10 +1703,17 @@ function setupCtrlDragMoveHandlers() {
         const fullPath = normalizePath(node.data('fullPath') ?? '');
         if (!fullPath) return; // do not move Root / empty
 
+        const nodeEntry = graphSelectionEntryFromNode(node) || { path: fullPath, isDirectory: type === 'directory' };
+        const selectedEntries = graphSelectionEntriesFromCy();
+        const sourceEntries = node.selected() && selectedEntries.some((entry) => entry.path === nodeEntry.path)
+            ? filterNestedGraphSelectionEntries(selectedEntries)
+            : [nodeEntry];
+
         dragMoveState.active = true;
         dragMoveState.sourceId = node.id();
         dragMoveState.sourcePath = fullPath;
         dragMoveState.sourceType = type;
+        dragMoveState.sourceEntries = sourceEntries;
         const parent = typeof node.parent === 'function' ? node.parent() : null;
         dragMoveState.sourceParentId = parent && typeof parent.id === 'function' ? parent.id() : null;
         dragMoveState.sourcePosition = typeof node.position === 'function'
@@ -1624,6 +1747,9 @@ function setupCtrlDragMoveHandlers() {
 
         const excludeIds = new Set();
         if (dragMoveState.sourceParentId) excludeIds.add(dragMoveState.sourceParentId);
+        for (const entry of dragMoveState.sourceEntries || []) {
+            if (entry.isDirectory && entry.path) excludeIds.add(entry.path);
+        }
         if (dragMoveState.sourceType === 'directory' && dragMoveState.sourceId) excludeIds.add(dragMoveState.sourceId);
 
         const targetDir = findDirectoryAtRenderedPoint(renderedPos, { excludeIds });
@@ -1645,11 +1771,12 @@ function setupCtrlDragMoveHandlers() {
 
         // Avoid suggesting moving into itself/descendant.
         const destinationDir = normalizePath(targetDir.data('fullPath') ?? '');
-        if (dragMoveState.sourceType === 'directory') {
-            if (isDirectoryMoveIntoSelfOrDescendant({ sourcePath: dragMoveState.sourcePath, destinationDir })) {
-                setDropTargetHighlight(null);
-                return;
-            }
+        const movingDirectoryIntoSelf = (dragMoveState.sourceEntries || []).some((entry) => {
+            return entry.isDirectory && isDirectoryMoveIntoSelfOrDescendant({ sourcePath: entry.path, destinationDir });
+        });
+        if (movingDirectoryIntoSelf) {
+            setDropTargetHighlight(null);
+            return;
         }
 
         // If dropping onto the current parent directory, allow but don't emphasize.
@@ -1668,6 +1795,9 @@ function setupCtrlDragMoveHandlers() {
         const dropTargetId = dragMoveState.dropTargetId;
         const sourceParentId = dragMoveState.sourceParentId;
         const sourcePosition = dragMoveState.sourcePosition;
+        const sourceEntries = dragMoveState.sourceEntries?.length
+            ? filterNestedGraphSelectionEntries(dragMoveState.sourceEntries)
+            : [{ path: sourcePath, isDirectory: sourceType === 'directory' }];
 
         dragMoveState.active = false;
         dragMoveState.sourceId = null;
@@ -1675,6 +1805,7 @@ function setupCtrlDragMoveHandlers() {
         dragMoveState.sourceType = null;
         dragMoveState.sourceParentId = null;
         dragMoveState.sourcePosition = null;
+        dragMoveState.sourceEntries = [];
         clearDropTargetHighlight();
 
         if (!sourcePath) return;
@@ -1697,43 +1828,43 @@ function setupCtrlDragMoveHandlers() {
         }
 
         const destinationDir = normalizePath(targetNode.data('fullPath') ?? '');
-        const destinationPath = destinationDir ? `${destinationDir}/${basename(sourcePath)}` : basename(sourcePath);
-        if (!destinationPath || destinationPath === sourcePath) {
-            try {
-                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
-                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
-            } catch (_) { /* ignore */ }
-            return;
-        }
+        const moveErrors = [];
+        let movedCount = 0;
 
-        if (sourceType === 'directory' && isDirectoryMoveIntoSelfOrDescendant({ sourcePath, destinationDir })) {
-            alert("Cannot move a folder into itself (or one of its subfolders).");
-            try {
-                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
-                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
-            } catch (_) { /* ignore */ }
-            return;
-        }
+        for (const entry of sourceEntries) {
+            const entryPath = normalizePath(entry.path || '');
+            if (!entryPath) continue;
+            const destinationPath = destinationDir ? destinationDir + '/' + basename(entryPath) : basename(entryPath);
+            if (!destinationPath || destinationPath === entryPath) continue;
 
-        try {
-            await moveFileOrDirectory(sourcePath, destinationDir);
-        } catch (err) {
-            console.error('[GraphManager] Move failed:', err);
-            alert(`Move failed: ${err?.message || err}`);
-            try {
-                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
-                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
-            } catch (_) { /* ignore */ }
-            return;
-        }
-
-        // Link/graph impact callout for files (same behavior as File Manager).
-        if (sourceType === 'file') {
-            try {
-                await maybePromptLinkMoveImpact({ oldPath: sourcePath, newPath: destinationPath });
-            } catch (err) {
-                console.warn('[GraphManager] Link impact prompt failed:', err);
+            if (entry.isDirectory && isDirectoryMoveIntoSelfOrDescendant({ sourcePath: entryPath, destinationDir })) {
+                moveErrors.push(entryPath + ': cannot move a folder into itself or one of its subfolders');
+                continue;
             }
+
+            try {
+                await moveFileOrDirectory(entryPath, destinationDir);
+                movedCount += 1;
+                await maybePromptLinkMoveImpact({ oldPath: entryPath, newPath: destinationPath });
+            } catch (err) {
+                console.error('[GraphManager] Move failed:', err);
+                moveErrors.push(entryPath + ': ' + (err?.message || err));
+            }
+        }
+
+        if (!movedCount) {
+            try {
+                if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
+                if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
+            } catch (_) { /* ignore */ }
+            if (moveErrors.length) {
+                alert('Move failed:' + String.fromCharCode(10) + moveErrors.join(String.fromCharCode(10)));
+            }
+            return;
+        }
+
+        if (moveErrors.length) {
+            alert('Some files could not be moved:' + String.fromCharCode(10) + moveErrors.join(String.fromCharCode(10)));
         }
 
         // Refresh the graph so the moved node appears in the right place.
@@ -2543,7 +2674,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     cy = cytoscape({
         container: container,
         boxSelectionEnabled: false,
-        selectionType: 'single',
+        selectionType: 'additive',
         style: [
             {
                 selector: 'node',
@@ -2872,16 +3003,27 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
 
     cy.on('tap', 'node', (evt) => {
         const node = evt.target;
-        if (node.data('type') === 'placeholder') {
+        const nodeType = node.data('type');
+        if (nodeType === 'placeholder') {
             const data = placeholderEdgeDataFromNode(node);
             if (data) selectGraphLinkFromData(data);
             return;
         }
+
         const path = node.data('fullPath');
-        const selectedIsDirectory = node.data('type') === 'directory';
-        if (path !== undefined) {
+        const selectedIsDirectory = nodeType === 'directory';
+        const isSelectionModifier = Boolean(evt?.originalEvent?.ctrlKey || evt?.originalEvent?.metaKey);
+
+        if (path !== undefined && (nodeType === 'file' || nodeType === 'directory')) {
             navigationState.setLastInfoPanelType("GraphManager");
             navigationState.setLastFileSelectionPanelType?.("GraphManager");
+
+            if (isSelectionModifier) {
+                toggleGraphNodeFileSelection(node);
+                return;
+            }
+
+            selectSingleGraphNodeFile(node);
             requestNodevisionFileSelection(path, {
                 isDirectory: selectedIsDirectory,
                 onSelected: (selectedPath) => {
@@ -2891,7 +3033,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 },
             });
         }
-        if (node.data('type') === 'external' && node.data('url')) {
+        if (nodeType === 'external' && node.data('url')) {
             window.selectedExternalUrl = node.data('url');
         }
     });
@@ -2912,6 +3054,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
 
     cy.on("tap", (evt) => {
         if (evt.target !== cy) return;
+        publishGraphSelectedFileEntries([]);
+        applyGraphSelectedFileEntries([]);
         cy.edges().removeClass("nv-selected-link");
         clearLinkEndpointEdit();
         setSelectedGraphLink(null);

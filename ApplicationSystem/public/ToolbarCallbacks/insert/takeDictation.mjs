@@ -1,7 +1,10 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/insert/takeDictation.mjs
-// This callback starts and stops browser speech recognition and inserts final dictated text into the active Nodevision editor selection.
+// This callback toggles shared Nodevision speech recognition and inserts finalized dictation text into the active editor selection.
 
-const DICTATION_CONFIRMATION_KEY = "nodevision.takeDictation.browserSpeechConfirmed";
+import { setStatus } from "/StatusBar.mjs";
+import { getSpeechService } from "/Speech/SpeechService.mjs";
+
+const DICTATION_SOURCE = "take-dictation-toolbar";
 
 // === Destination Lookup ===
 function textInputSelection(el) {
@@ -76,60 +79,28 @@ function insertDictatedText(destination, transcript) {
   return false;
 }
 
-// === Speech Recognition ===
-function speechRecognitionConstructor() {
-  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+function shortStatusText(text = "") {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  return clean.length > 64 ? `${clean.slice(0, 61)}...` : clean;
 }
 
-function confirmBrowserDictation() {
-  try {
-    if (window.localStorage?.getItem(DICTATION_CONFIRMATION_KEY) === "true") return true;
-  } catch {
-    // Continue without persisted preference if storage is unavailable.
-  }
-
-  const ok = typeof window.confirm === "function"
-    ? window.confirm("Take Dictation uses your browser's speech recognition and microphone permission. Continue?")
-    : true;
-  if (ok) {
-    try {
-      window.localStorage?.setItem(DICTATION_CONFIRMATION_KEY, "true");
-    } catch {
-      // Storage is optional.
-    }
-  }
-  return ok;
-}
-
-function stopActiveSession() {
-  const session = window.__nvTakeDictationSession;
-  if (!session?.recognition) return false;
-  session.stopping = true;
-  try {
-    session.recognition.stop();
-  } catch {
-    window.__nvTakeDictationSession = null;
-  }
-  return true;
-}
-
-function collectFinalTranscript(event) {
-  let text = "";
-  for (let i = event.resultIndex || 0; i < event.results.length; i += 1) {
-    const result = event.results[i];
-    if (result?.isFinal) text += result[0]?.transcript || "";
-  }
-  return text;
+function reportDictationError(err) {
+  const message = err?.message || String(err || "Take Dictation could not start.");
+  setStatus("Dictation", "Unavailable");
+  console.warn("takeDictation: speech recognition error.", err);
+  alert(message);
 }
 
 // === Toolbar Callback ===
-export default function takeDictation() {
-  if (stopActiveSession()) return;
-  if (!confirmBrowserDictation()) return;
-
-  const Recognition = speechRecognitionConstructor();
-  if (!Recognition) {
-    alert("Take Dictation is not available in this browser.");
+export default async function takeDictation() {
+  const service = getSpeechService();
+  if (service.isRecognitionActive?.()) {
+    setStatus("Dictation", "Processing");
+    try {
+      await service.stopRecognition("command");
+    } catch (err) {
+      reportDictationError(err);
+    }
     return;
   }
 
@@ -139,31 +110,30 @@ export default function takeDictation() {
     return;
   }
 
-  const recognition = new Recognition();
-  recognition.continuous = true;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-  recognition.lang = navigator.language || "en-US";
-
-  const session = { recognition, destination, stopping: false };
-  window.__nvTakeDictationSession = session;
-
-  recognition.onresult = (event) => {
-    if (window.__nvTakeDictationSession !== session) return;
-    insertDictatedText(destination, collectFinalTranscript(event));
-  };
-  recognition.onerror = (event) => {
-    console.warn("takeDictation: speech recognition error.", event?.error || event);
-  };
-  recognition.onend = () => {
-    if (window.__nvTakeDictationSession === session) window.__nvTakeDictationSession = null;
-  };
-
   try {
-    recognition.start();
+    await service.startRecognition({
+      source: DICTATION_SOURCE,
+      onPartialText: (text) => {
+        const preview = shortStatusText(text);
+        setStatus("Dictation", preview ? `Listening: ${preview}` : "Listening");
+      },
+      onFinalText: (text) => {
+        if (insertDictatedText(destination, text)) setStatus("Dictation", "Inserted text");
+      },
+      onState: (state) => {
+        if (state === "processing") setStatus("Dictation", "Processing");
+      },
+      onEvent: (eventName, detail) => {
+        if (eventName === "speech.recognition.started") setStatus("Dictation", "Listening");
+        if (eventName === "speech.recognition.finished") setStatus("Dictation", "Stopped");
+        if (eventName === "speech.recognition.cancelled") setStatus("Dictation", "Stopped");
+        if (eventName === "speech.recognition.error") {
+          setStatus("Dictation", "Error");
+          alert(detail?.error || "Take Dictation stopped.");
+        }
+      },
+    });
   } catch (err) {
-    window.__nvTakeDictationSession = null;
-    console.warn("takeDictation: unable to start speech recognition.", err);
-    alert(err?.message || "Take Dictation could not start.");
+    reportDictationError(err);
   }
 }

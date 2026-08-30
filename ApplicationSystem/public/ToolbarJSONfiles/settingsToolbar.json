@@ -43,7 +43,14 @@
     "callbackKey": "openSoundSettings"
   },
   {
-    "heading": "Set Resource Paths",
+    "heading": "Dictation Settings",
+    "hotkeyText": "",
+    "icon": "icons/EditIcon.png",
+    "ToolbarCategory": "settings",
+    "callbackKey": "openSpeechRecognitionSettings"
+  },
+  {
+    "heading": "Resources",
     "hotkeyText": "",
     "icon": "icons/EditIcon.png",
     "ToolbarCategory": "settings",

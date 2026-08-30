@@ -194,6 +194,15 @@ function defaultMaterialFilesById() {
   return defaultWorldObjectMaterialFileMap;
 }
 
+function rememberMaterialCatalogFiles(entries = []) {
+  const map = defaultMaterialFilesById();
+  for (const entry of entries || []) {
+    const id = normalizeWorldObjectMaterialId(entry?.materialId || entry?.materialName || "", "");
+    const file = String(entry?.materialFile || "").trim();
+    if (id && file) map.set(id.toLowerCase(), file);
+  }
+}
+
 export function materialFileForWorldObjectMaterial(value) {
   const id = normalizeWorldObjectMaterialId(value, "");
   if (!id) return "";
@@ -281,6 +290,33 @@ async function enrichMaterialCatalog(entries, fetcher, cacheMode) {
   }));
 }
 
+async function loadRegistryMaterialCatalog(fetcher, cacheMode) {
+  if (typeof fetcher !== "function") return [];
+  try {
+    const response = await fetcher("/api/resource-paths/resources/material", { cache: cacheMode });
+    if (!response?.ok) throw new Error("HTTP " + (response?.status || "error"));
+    const payload = await response.json();
+    return (payload.resources || []).map(normalizeRegistryMaterialEntry).filter((entry) => entry.materialName && entry.materialFile);
+  } catch (err) {
+    console.warn("World object material registry failed to load:", err);
+    return [];
+  }
+}
+
+function normalizeRegistryMaterialEntry(resource = {}) {
+  const materialDefinition = resource.data || resource.materialDefinition || {};
+  const materialId = normalizeWorldObjectMaterialId(materialDefinition.id || resource.materialId || resource.id, resource.displayName);
+  const materialName = materialDefinition.displayName || resource.displayName || materialId;
+  const materialFile = resource.url || materialDefinition.materialFile || "";
+  return enrichMaterialCatalogEntry({
+    materialName,
+    materialJSONfile: resource.path || materialFile,
+    materialFile,
+    materialId,
+    matterState: readWorldObjectMatterState(materialDefinition),
+  }, materialDefinition);
+}
+
 export async function loadWorldObjectMaterialCatalog(options = {}) {
   const force = options.force === true;
   if (!force && materialCatalogPromise) return materialCatalogPromise;
@@ -288,6 +324,11 @@ export async function loadWorldObjectMaterialCatalog(options = {}) {
   materialCatalogPromise = (async () => {
     const fetcher = options.fetch || globalThis.fetch;
     const cacheMode = force ? "reload" : "no-cache";
+    const registryEntries = await loadRegistryMaterialCatalog(fetcher, cacheMode);
+    if (registryEntries.length > 0) {
+      rememberMaterialCatalogFiles(registryEntries);
+      return registryEntries;
+    }
     let entries = fallbackWorldObjectMaterialCatalog();
     if (typeof fetcher === "function") {
       try {
@@ -299,7 +340,9 @@ export async function loadWorldObjectMaterialCatalog(options = {}) {
         console.warn("World object material catalog failed to load:", err);
       }
     }
-    return enrichMaterialCatalog(entries, fetcher, cacheMode);
+    const enriched = await enrichMaterialCatalog(entries, fetcher, cacheMode);
+    rememberMaterialCatalogFiles(enriched);
+    return enriched;
   })();
 
   return materialCatalogPromise;

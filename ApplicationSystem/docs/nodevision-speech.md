@@ -159,3 +159,45 @@ Greek text requires an appropriate eSpeak voice for reliable word events. With `
 Source/development installs may build `ApplicationSystem/native/speech/build/nodevision-espeak-bridge` locally from eSpeak NG headers. Release bundles should preferably ship a compatible prebuilt bridge for each supported Linux architecture so ordinary users only need the eSpeak NG runtime library. The bridge and eSpeak NG dependency remain open source and transparent; do not hide or replace them with a cloud speech service.
 
 This repository is normally installed as a host Linux application. When running inside a Flatpak/container, host `espeak-ng` binaries and libraries may not be visible inside the sandbox. Synchronization-capable speech requires the Nodevision bridge process to execute in an environment where `libespeak-ng` is loadable; `flatpak-spawn --host espeak-ng` is only a speech-only CLI fallback and cannot provide word callbacks.
+
+## Dictation / Speech Recognition
+
+Take Dictation uses the same shared speech facade:
+
+```text
+Insert -> Text -> Take Dictation -> SpeechService -> SpeechRecognitionService -> selected recognition provider
+```
+
+The default local provider is `whisper-cpp`. Browser code captures microphone audio only after the user starts dictation, encodes mono 16-bit PCM WAV chunks locally, and sends those chunks to authenticated `/api/speech/recognition/*` routes on the Nodevision server. The server writes each chunk to a transient cache file, starts `whisper-cli` with an argument array and `shell: false`, polls provider events, then removes the temporary audio file. Final transcript events are inserted through the existing editor APIs; partial transcript events are transient UI/status data only.
+
+Recognition events are provider-independent:
+
+```text
+speech.recognition.started
+speech.recognition.partial
+speech.recognition.processing
+speech.recognition.final
+speech.recognition.finished
+speech.recognition.cancelled
+speech.recognition.error
+```
+
+`browser-recognition` wraps `SpeechRecognition` / `webkitSpeechRecognition` as an explicit fallback provider. Browser recognition can depend on a browser-managed external service; Nodevision does not select it automatically unless the user enables the browser recognition option in Dictation Settings.
+
+## whisper.cpp Setup
+
+Nodevision does not download models or vendor whisper.cpp binaries during dictation. Install or build whisper.cpp separately so `whisper-cli` is on `PATH`, or set the executable path in Settings -> Dictation Settings.
+
+Place a local GGML model at:
+
+```text
+UserData/Speech/Models/ggml-base.en.bin
+```
+
+or set another model path in Dictation Settings. Recognition settings are saved in:
+
+```text
+UserSettings/SpeechRecognitionSettings.json
+```
+
+Model files and whisper.cpp binaries are not Notebook content and should not be stored through Resource Paths.
