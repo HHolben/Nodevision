@@ -308,6 +308,11 @@ async function packageReferencedAssets({ doc, zip, sourcePath, manifestItems, as
     await packageAttribute(element, "src", "assets");
   }
 
+  const circuitElements = Array.from(doc.querySelectorAll("[data-nodevision-circuit-src]"));
+  for (const element of circuitElements) {
+    await packageAttribute(element, "data-nodevision-circuit-src", "assets", "cir");
+  }
+
   const svgImages = Array.from(doc.getElementsByTagName("image")).filter((element) => element.hasAttribute("href") || element.hasAttribute("xlink:href"));
   for (const element of svgImages) {
     await packageAttribute(element, "href", "assets");

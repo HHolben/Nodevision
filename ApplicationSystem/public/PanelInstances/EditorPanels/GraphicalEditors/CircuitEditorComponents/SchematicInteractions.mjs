@@ -1,11 +1,29 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CircuitEditorComponents/SchematicInteractions.mjs
 // This file defines pointer and keyboard interactions for the circuit editor. This file manages placement, selection, dragging, wiring, and deletion.
-import { snapPoint, rectFromPoints, pointInRect } from "./CircuitGridUtils.mjs";
+import { snapPoint, rectFromPoints, pointInRect, orthogonalStep } from "./CircuitGridUtils.mjs";
 import { setSelection, clearSelection, toggleSelection, isSelected } from "./CircuitSelectionModel.mjs";
 import { createComponent, createWire, cloneObjects } from "./CircuitObjectFactories.mjs";
 import { componentPinsWorld } from "./SchematicRenderer.mjs";
 import { distancePointToSegment, rotatePoint, translatePoint } from "./CircuitGeometry.mjs";
 import { getSymbol } from "./SymbolLibrary.mjs";
+import {
+  buildExtrusionDraftPoints,
+  directionFromArrowKey,
+  nearestWireInDirection,
+  selectedExtrusionNode,
+} from "./CircuitWireExtrusion.mjs";
+
+function hitTestWirePoint(state, point) {
+  for (const wire of state.document.wires) {
+    for (let i = 0; i < wire.points.length; i += 1) {
+      const pt = wire.points[i];
+      if (Math.hypot(point.x - pt.x, point.y - pt.y) < 8) {
+        return { type: "wire-point", id: `${wire.id}:pt:${i}`, wireId: wire.id };
+      }
+    }
+  }
+  return null;
+}
 
 function hitTest(state, point) {
   for (const c of state.document.components) {
@@ -30,6 +48,9 @@ function hitTest(state, point) {
       return { type: "component", id: c.id };
     }
   }
+  const node = hitTestWirePoint(state, point);
+  if (node) return node;
+
   const wire = state.document.wires.find((w) => {
     for (let i = 0; i < w.points.length - 1; i += 1) {
       if (distancePointToSegment(point, w.points[i], w.points[i + 1]) < 6) return { segIndex: i };
@@ -141,6 +162,65 @@ export function setupInteractions(canvas, state, renderer, inspector, hooks) {
     return best;
   }
 
+  function cancelExtrusion(message = "Extrusion canceled") {
+    state.extrudeDraft = null;
+    if (state.wireDraft?.extrude) state.wireDraft = null;
+    hooks.onMessage?.(message);
+    renderer.render();
+  }
+
+  function startExtrusionFromSelection() {
+    const node = selectedExtrusionNode(state);
+    if (!node) {
+      hooks.onMessage?.("Select a pin or wire node before pressing E.");
+      return false;
+    }
+    state.extrudeDraft = { node, direction: null, target: null };
+    state.wireDraft = null;
+    state.placeDraft = null;
+    hooks.onMessage?.("Extrude wire: press an arrow key to preview a target wire.");
+    renderer.render();
+    return true;
+  }
+
+  function previewExtrusion(direction) {
+    const draft = state.extrudeDraft;
+    if (!draft?.node) return false;
+    const targetHit = nearestWireInDirection(state.document, draft.node.point, direction, {
+      excludeWireIds: [draft.node.sourceWireId].filter(Boolean),
+    });
+    if (!targetHit) {
+      state.wireDraft = null;
+      state.extrudeDraft = { ...draft, direction, target: null };
+      hooks.onMessage?.(`No crossing wire found ${direction.name} of selected node.`);
+      renderer.render();
+      return true;
+    }
+    const points = buildExtrusionDraftPoints(draft.node, targetHit);
+    state.extrudeDraft = { ...draft, direction, target: targetHit, points };
+    state.wireDraft = { points, startHit: draft.node.hit, targetHit: targetHit.hit, extrude: true };
+    hooks.onMessage?.("Extrusion preview ready. Click or press Enter to finalize.");
+    renderer.render();
+    return true;
+  }
+
+  function commitExtrusion() {
+    const points = state.extrudeDraft?.points || state.wireDraft?.points || [];
+    if (!state.extrudeDraft?.target || points.length < 2) {
+      hooks.onMessage?.("Press an arrow key first to preview an extrusion.");
+      return false;
+    }
+    const wire = createWire(points);
+    state.document.wires.push(wire);
+    state.extrudeDraft = null;
+    state.wireDraft = null;
+    setSelection(state, [wire.id]);
+    inspector.render();
+    hooks.onChange?.("Extruded wire");
+    renderer.render();
+    return true;
+  }
+
   function startWire(point, hit) {
     let snapped = snapWithPins(point);
     if (hit?.type === "pin") {
@@ -234,6 +314,11 @@ export function setupInteractions(canvas, state, renderer, inspector, hooks) {
   target.addEventListener("pointerdown", (evt) => {
     if (evt.button !== 0 || evt.altKey || evt.button === 1 || evt.button === 2) return;
     const world = snapWithPins(canvas.toWorld(evt));
+    if (state.extrudeDraft) {
+      evt.preventDefault();
+      if (!commitExtrusion()) cancelExtrusion();
+      return;
+    }
     if (state.tool === "place" && state.activeSymbol) {
       placeComponent(world);
       return;
@@ -254,6 +339,7 @@ export function setupInteractions(canvas, state, renderer, inspector, hooks) {
       inspector.render();
       renderer.render();
       const selectedComponents = state.document.components.filter((c) => isSelected(state, c.id));
+      if (!selectedComponents.length) return;
       const originals = cloneObjects(selectedComponents);
       const wireSnapshots = new Map(
         state.document.wires.map((w) => [w.id, { points: w.points.map((p) => ({ ...p })) }])
@@ -269,7 +355,7 @@ export function setupInteractions(canvas, state, renderer, inspector, hooks) {
 
   target.addEventListener("pointermove", (evt) => {
     const world = snapWithPins(canvas.toWorld(evt));
-    if (state.wireDraft) {
+    if (state.wireDraft && !state.wireDraft.extrude) {
       const start = state.wireDraft.points[0];
       const corner = Math.abs(world.x - start.x) >= Math.abs(world.y - start.y)
         ? { x: world.x, y: start.y }
@@ -334,6 +420,34 @@ export function setupInteractions(canvas, state, renderer, inspector, hooks) {
   });
 
   window.addEventListener("keydown", (evt) => {
+    const editingTarget = evt.target?.closest?.("input, textarea, select, [contenteditable='true']");
+    if (editingTarget) return;
+
+    const direction = directionFromArrowKey(evt.key);
+    if (state.extrudeDraft) {
+      if (direction) {
+        evt.preventDefault();
+        previewExtrusion(direction);
+        return;
+      }
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        commitExtrusion();
+        return;
+      }
+      if (evt.key === "Escape") {
+        evt.preventDefault();
+        cancelExtrusion();
+        return;
+      }
+    }
+
+    if (evt.key?.toLowerCase?.() === "e" && !evt.ctrlKey && !evt.metaKey && !evt.altKey) {
+      evt.preventDefault();
+      startExtrusionFromSelection();
+      return;
+    }
+
     if (evt.key === "Escape") {
       if (state.wireDraft) {
         state.wireDraft = null;

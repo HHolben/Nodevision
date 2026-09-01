@@ -15,7 +15,7 @@ export function make(el, attrs = {}) {
   return n;
 }
 
-function arcPath(cx, cy, r, start, end) {
+export function arcPath(cx, cy, r, start, end) {
   const sx = cx + r * Math.cos(start);
   const sy = cy + r * Math.sin(start);
   const ex = cx + r * Math.cos(end);
@@ -25,6 +25,26 @@ function arcPath(cx, cy, r, start, end) {
   return `M ${sx} ${sy} A ${r} ${r} 0 ${large} ${sweep} ${ex} ${ey}`;
 }
 
+export function parseShapePoints(points = "") {
+  return String(points || "")
+    .trim()
+    .split(/\s+/)
+    .map((pair) => {
+      const [x, y] = pair.split(",").map((value) => Number.parseFloat(value));
+      return { x, y };
+    })
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
+export function visitSymbolShapes(symbol, visitor) {
+  if (!symbol || typeof visitor !== "function") return;
+  (symbol.shapes || []).forEach((shape) => visitor(shape));
+}
+
+export function componentSymbolLabelText(component) {
+  return `${component.properties?.ref || ""} ${component.properties?.value || ""}`.trim();
+}
+
 export function drawSymbol(component) {
   const sym = getSymbol(component.type);
   if (!sym) return null;
@@ -32,7 +52,7 @@ export function drawSymbol(component) {
     transform: `translate(${component.x} ${component.y}) rotate(${component.rotation || 0})`,
     "data-id": component.id,
   });
-  sym.shapes.forEach((shape) => {
+  visitSymbolShapes(sym, (shape) => {
     if (shape.type === "line") {
       g.appendChild(make("line", {
         x1: shape.x1,
@@ -104,7 +124,7 @@ export function drawSymbol(component) {
     "font-family": "Inter, sans-serif",
     fill: "#0f172a",
   });
-  label.textContent = `${component.properties?.ref || ""} ${component.properties?.value || ""}`.trim();
+  label.textContent = componentSymbolLabelText(component);
   g.appendChild(label);
   return g;
 }

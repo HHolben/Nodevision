@@ -30,6 +30,7 @@ The following are the principles of Nodevision's design.
 9. Files as Nodes, Links as Edges
 10. Files as Worlds
 11. Customizable Workspaces
+12. Flexibile and Layered Content Dependency System
 
 #### Principle 1. Free and Open Source
 Nodevision is available for free under the MIT License. This software is to be used at the user's own risk. No formal agreement or obligation is to exist between the users and developers of this project. Each Nodevision user ought to be considered the full and rightful owner of his or her copy of Nodevision, free to modify, distribute, delete, or sell this copy. As such, the codebase must only include or utilize free and open-source dependencies that grant the same level of autonomy in their usage as Nodevision itself. No portion of Nodevision's native source code is to be obfuscated. The architecture and entire codebase of the system are to be transparent.
@@ -80,10 +81,12 @@ Nodevision Game Worlds are defined using a single Javascript variable defining a
 #### Principle 11. Customizable Workspaces
 Nodevision should allow each user to configure the workspace around the activity the user is performing. The user should be able to save the current arrangement of panels, editors, viewers, toolbars, graph views, file views, and other workspace elements as a named layout for future use. These saved workspaces should be treated as user-owned settings rather than Notebook content, should be restorable whenever the user begins the same activity again, and should not reduce the independent deployability of the Notebook itself. The layout system should preserve user privacy, work offline, and remain transparent and editable enough that users can understand and repair their own saved configurations.
 
+#### Principle 12. Flexibile and Layered Content Dependency System
+Nodevision should use two distinct models for dependency inclusion. The Nodevision Application system depends on many third party dependncies, which should be installed inside the ApplicationSystem directory in such places as Nodevision/node_modules. These should apply to dependencies that are required for the user's installed Nodevision modules to function correctly. 
 
+However, there is a need for a second set of dependencies, useful only to the user's personal use case. Examples of these include fonts, circuit libraries, aviation sectional maps, dictionaries and spelling/definition check references, materials, 3D models,etc. A user's selection of these to function with or in or on a user's Notebook is specific to each user. Therefore the user should have autonomy over where these dependencies are to be installed. The user should have the option to A. install such third party dependencies in a Nodevision/ServerSettings/NotebookDependencies directory, where the dependencies will stay out of the user's way; or B. Install the dependencies inside the user's own Notebook directory, where the user may see and work with the dependencies as a part of their Notebook's own structure. Users furthermore be able to layer dependencies on top of eachother- overriding, or adding to objects. One example of this is dictionary definitions, which the user should be able to rewrite or add to by identifying one file as having priority over another file of the same definitions.
 
 ### Application System Structure
-
 The Nodevision root directory contains the following directories:
 1. ApplicationSystem: This contains the main code base that powers the application.
 2. Notebook: This directory contains files and directories the user may edit while using the application. All files within this directory are to be edited by the user.

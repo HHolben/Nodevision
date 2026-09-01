@@ -667,6 +667,11 @@ svgSendToBack: () => {
 editRecordingHere: async () => {
     const mod = await import("./edit/editRecordingHere.mjs");
     await mod.default();
+},
+
+editCircuitHere: async () => {
+    const mod = await import("./edit/editCircuitHere.mjs");
+    await mod.default();
 }
 
 

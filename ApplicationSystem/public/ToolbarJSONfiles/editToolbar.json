@@ -50,6 +50,18 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Edit Circuit",
+    "hotkeyText": "",
+    "callbackKey": "editCircuitHere",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlCircuitSelected": true
+    },
+    "shortLabel": "Circuit",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Edit",
     "parentHeading": "Edit",
     "heading": "Edit Hyperlink",
     "hotkeyText": "",

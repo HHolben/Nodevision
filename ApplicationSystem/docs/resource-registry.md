@@ -84,6 +84,26 @@ The component registry currently parses JSON component-library documents and pro
 
 The adapters are intentionally narrow. Rich KiCad, SPICE, IBIS, STEP, and STL parsing can be added behind the same normalized component document shape.
 
+## HTML Referenced Circuits
+
+The HTML graphical editor stores embedded circuits as references to Notebook `.cir` files, not as duplicated schematic payloads. Insert > Insert Media > Circuit creates or selects the `.cir` file, then writes markup shaped like:
+
+```html
+<div class="nodevision-circuit-reference"
+     data-nodevision-resource-type="circuit"
+     data-nodevision-circuit-mode="referenced"
+     data-nodevision-circuit-src="../Electronics/Circuits/Test.cir"
+     data-nv-linked-path="Notebook/Electronics/Circuits/Test.cir"
+     contenteditable="false"
+     style="width:480px;height:320px;">
+  <canvas class="nodevision-circuit-canvas"></canvas>
+</div>
+```
+
+`data-nodevision-circuit-src` is the durable portable reference and follows the same source-relative Notebook rules as image `src` and hyperlink `href` values. `data-nv-linked-path` is a Notebook-normalized editor convenience attribute. Width and height are presentation only; the `.cir` file remains the source of truth. The HTML editor hydrates the canvas by loading the `.cir` through the existing circuit parser/model, drawing with the shared schematic symbol library, and checking `electronics.component` resources for component-resource diagnostics.
+
+Graph extraction and link-move repair read `data-nodevision-circuit-src`, so circuit dependencies appear in Notebook graph edges and are rewritten when referenced files move. Selecting the embedded circuit exposes Edit > Edit Circuit, which opens the referenced `.cir` in the existing Circuit graphical editor.
+
 ## Compatibility
 
 The existing `resourcePaths` object in `UserSettings/ResourcePaths.json` is still read and mirrored for legacy keys such as `fonts`, `dictionaries`, `aviation.sectionalMaps`, `materials`, and `electronics.components`. Older settings files keep working, and new resource sources live alongside the legacy object in the same JSON file.

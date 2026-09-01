@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CircuitEditorComponents/CircuitFileFormat.mjs
-// This file defines load and save helpers for the native .nvcircuit.json format. This file keeps defaults merged so corrupted files do not crash the editor.
+// This file defines load, save, and blank-file helpers for Nodevision circuit documents and .cir netlists.
 
 import { fetchText, saveText } from "../FamilyEditorCommon.mjs";
 import { createDefaultDocument } from "./CircuitEditorState.mjs";
@@ -28,27 +28,34 @@ function mergeDefaults(parsed) {
   };
 }
 
+export function createBlankCircuitDocument() {
+  return createDefaultDocument();
+}
+
+export function serializeCircuitFileContent(path, document = createBlankCircuitDocument()) {
+  const target = path || "Notebook/untitled.nvcircuit.json";
+  if (target.toLowerCase().endsWith(".cir")) return serializeNetlist(document);
+  return JSON.stringify(document, null, 2);
+}
+
+export function createBlankCircuitFileContent(path = "Notebook/untitled.cir") {
+  return serializeCircuitFileContent(path, createBlankCircuitDocument());
+}
+
+export async function loadCircuitFileStrict(path) {
+  if (!path) throw new Error("No circuit file selected.");
+  const text = await fetchText(path);
+  if (path.toLowerCase().endsWith(".cir")) {
+    if (looksLikeJson(text)) return mergeDefaults(JSON.parse(text));
+    return netlistToDocument(text);
+  }
+  return mergeDefaults(JSON.parse(text));
+}
+
 export async function loadCircuitFile(path) {
   if (!path) return createDefaultDocument();
-
-  if (path.toLowerCase().endsWith(".cir")) {
-    try {
-      const text = await fetchText(path);
-      if (looksLikeJson(text)) {
-        const parsed = JSON.parse(text);
-        return mergeDefaults(parsed);
-      }
-      return netlistToDocument(text);
-    } catch (err) {
-      console.warn("Circuit editor: failed to import .cir, using blank document", err);
-      return createDefaultDocument();
-    }
-  }
-
   try {
-    const text = await fetchText(path);
-    const parsed = JSON.parse(text);
-    return mergeDefaults(parsed);
+    return await loadCircuitFileStrict(path);
   } catch (err) {
     console.warn("Circuit editor: failed to load file, using blank document", err);
     return createDefaultDocument();
@@ -57,16 +64,16 @@ export async function loadCircuitFile(path) {
 
 export async function saveCircuitFile(path, document) {
   const target = path || "Notebook/untitled.nvcircuit.json";
-  const isNetlist = target.toLowerCase().endsWith(".cir");
+  await saveText(target, serializeCircuitFileContent(target, document));
+  emitCircuitFileSaved(target);
+}
 
-  if (isNetlist) {
-    const netlist = serializeNetlist(document);
-    await saveText(target, netlist);
-    return;
-  }
-
-  const text = JSON.stringify(document, null, 2);
-  await saveText(target, text);
+function emitCircuitFileSaved(filePath) {
+  const appWindow = globalThis.window;
+  if (!appWindow || typeof appWindow.dispatchEvent !== "function" || typeof globalThis.CustomEvent !== "function") return;
+  appWindow.dispatchEvent(new CustomEvent("nodevision-file-saved", {
+    detail: { filePath, path: filePath, resourceType: "circuit" },
+  }));
 }
 
 // --- Netlist serialization -------------------------------------------------

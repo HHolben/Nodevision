@@ -7,6 +7,7 @@ import { renderVideo } from "./insertMediaVideo.mjs";
 import { renderSound } from "./insertMediaSound.mjs";
 import { renderSpreadsheet } from "./insertMediaSpreadsheet.mjs";
 import { renderImage } from "./insertMediaImage.mjs";
+import { renderCircuit } from "./insertMediaCircuit.mjs";
 import { openEquationMediaPanel } from "./insertMediaEquation.mjs";
 import { openInsertMediaPanel } from "./insertMediaPanel.mjs";
 
@@ -78,6 +79,7 @@ export async function initToolbarWidget(hostElement) {
       if (family === "Video") return renderVideo(panel.mount, exts);
       if (family === "Sound") return renderSound(panel.mount, exts, { target: inVirtualWorld ? "virtualWorld" : "html" });
       if (family === "Spreadsheet") return renderSpreadsheet(panel.mount, exts);
+      if (family === "Circuit") return renderCircuit(panel.mount, exts);
       if (family === "Model") return renderInsertModel(panel.mount, exts, { target: inVirtualWorld ? "virtualWorld" : "html" });
       return renderGenericLink(panel.mount, family, exts);
     };

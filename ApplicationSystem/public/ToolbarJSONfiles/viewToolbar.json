@@ -127,6 +127,21 @@
   },
   {
     "ToolbarCategory": "View",
+    "parentHeading": "View",
+    "heading": "Listen",
+    "hotkeyText": "",
+    "temporaryIcon": "LI",
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Listen",
+    "heading": "Reading Controls",
+    "hotkeyText": "",
+    "script": "listenControlsWidget.mjs"
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "dark mode",
     "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",

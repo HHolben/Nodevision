@@ -2,6 +2,7 @@
 // Native Nodevision PDF workspace. PDF pages render to canvases when PDF.js is available, and annotations live in SVG overlays that can be edited with SVG-editor-compatible toolbar hooks.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { PDF_LISTEN_TEXT_LAYER_CLASS, PDF_LISTEN_TEXT_LAYER_CSS, renderPdfTextLayer, resetPdfListenText } from "./PDFListenTextLayer.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const NOTEBOOK_BASE = "/Notebook";
@@ -529,6 +530,19 @@ function createPageShell(workspace, pageNumber, baseWidth, baseHeight) {
     height: `${Math.round(baseHeight * workspace.scale)}px`,
   });
 
+  const textLayer = document.createElement("div");
+  textLayer.className = PDF_LISTEN_TEXT_LAYER_CLASS;
+  Object.assign(textLayer.style, {
+    position: "absolute",
+    inset: "0",
+    width: Math.round(baseWidth * workspace.scale) + "px",
+    height: Math.round(baseHeight * workspace.scale) + "px",
+    overflow: "hidden",
+    pointerEvents: "none",
+    userSelect: "none",
+    zIndex: "1",
+  });
+
   const overlaySvg = createSvgEl("svg", {
     class: "nv-pdf-overlay",
     width: String(baseWidth),
@@ -542,12 +556,13 @@ function createPageShell(workspace, pageNumber, baseWidth, baseHeight) {
     width: `${Math.round(baseWidth * workspace.scale)}px`,
     height: `${Math.round(baseHeight * workspace.scale)}px`,
     cursor: workspace.editable ? "crosshair" : "default",
+    zIndex: "2",
   });
 
   const annotationLayer = createSvgEl("g", { "data-nv-pdf-annotation-layer": "true" });
   overlaySvg.appendChild(annotationLayer);
 
-  pageWrap.append(canvas, overlaySvg);
+  pageWrap.append(canvas, textLayer, overlaySvg);
   workspace.pagesHost.appendChild(pageWrap);
 
   const page = {
@@ -556,6 +571,7 @@ function createPageShell(workspace, pageNumber, baseWidth, baseHeight) {
     baseHeight,
     wrap: pageWrap,
     canvas,
+    textLayer,
     overlaySvg,
     annotationLayer,
     pdfPage: null,
@@ -734,6 +750,10 @@ function renderPageSize(page, workspace) {
     page.canvas.style.width = width + "px";
     page.canvas.style.height = height + "px";
   }
+  if (page.textLayer) {
+    page.textLayer.style.width = width + "px";
+    page.textLayer.style.height = height + "px";
+  }
   if (page.fallbackObject) {
     page.fallbackObject.style.width = width + "px";
     page.fallbackObject.style.height = height + "px";
@@ -749,21 +769,27 @@ async function renderPdfPage(workspace, page) {
   const canvas = page.canvas;
   canvas.width = Math.max(1, Math.floor(viewport.width * dpr));
   canvas.height = Math.max(1, Math.floor(viewport.height * dpr));
-  canvas.style.width = `${Math.round(viewport.width)}px`;
-  canvas.style.height = `${Math.round(viewport.height)}px`;
-  page.wrap.style.width = `${Math.round(viewport.width)}px`;
-  page.wrap.style.minHeight = `${Math.round(viewport.height)}px`;
-  page.overlaySvg.style.width = `${Math.round(viewport.width)}px`;
-  page.overlaySvg.style.height = `${Math.round(viewport.height)}px`;
+  canvas.style.width = Math.round(viewport.width) + "px";
+  canvas.style.height = Math.round(viewport.height) + "px";
+  page.wrap.style.width = Math.round(viewport.width) + "px";
+  page.wrap.style.minHeight = Math.round(viewport.height) + "px";
+  if (page.textLayer) {
+    page.textLayer.style.width = Math.round(viewport.width) + "px";
+    page.textLayer.style.height = Math.round(viewport.height) + "px";
+  }
+  page.overlaySvg.style.width = Math.round(viewport.width) + "px";
+  page.overlaySvg.style.height = Math.round(viewport.height) + "px";
 
   const context = canvas.getContext("2d");
   context.setTransform(dpr, 0, 0, dpr, 0, 0);
   await page.pdfPage.render({ canvasContext: context, viewport }).promise;
+  await renderPdfTextLayer(workspace, page, viewport);
 }
 
 async function rerenderPages(workspace) {
   workspace.zoomLabel.textContent = `${Math.round(workspace.scale * 100)}%`;
   if (workspace.pdfDocument) {
+    resetPdfListenText(workspace);
     for (const page of workspace.pages) {
       await renderPdfPage(workspace, page);
     }
@@ -863,6 +889,7 @@ function installStyles(container) {
     .nv-pdf-annotation-selected { filter: drop-shadow(0 0 2px #1f5fbf); }
     .nv-pdf-overlay text { user-select: none; }
     .nv-pdf-workspace[data-editable="false"] .nv-pdf-overlay { pointer-events: none; }
+    ${PDF_LISTEN_TEXT_LAYER_CSS}
     .nv-pdf-fallback-object, .nv-pdf-fallback-frame { pointer-events: auto; }
   `;
   container.appendChild(style);
@@ -879,6 +906,7 @@ async function renderWithPdfJs(workspace, pdfjs) {
   workspace.pageCountLabel.textContent = `${workspace.pdfDocument.numPages} page${workspace.pdfDocument.numPages === 1 ? "" : "s"}`;
   workspace.pagesHost.innerHTML = "";
   workspace.pages = [];
+  resetPdfListenText(workspace);
 
   for (let pageNumber = 1; pageNumber <= workspace.pdfDocument.numPages; pageNumber += 1) {
     const pdfPage = await workspace.pdfDocument.getPage(pageNumber);
@@ -896,6 +924,7 @@ function renderFallbackPdfObject(workspace, reason) {
   workspace.pdfDocument = null;
   workspace.pagesHost.innerHTML = "";
   workspace.pages = [];
+  resetPdfListenText(workspace);
   workspace.pageCountLabel.textContent = "Fallback";
 
   const page = createPageShell(workspace, 1, DEFAULT_FALLBACK_WIDTH, DEFAULT_FALLBACK_HEIGHT);
@@ -955,6 +984,7 @@ export async function renderPdfWorkspace(filePath, container, options = {}) {
     dragState: null,
     drawState: null,
     clipboard: null,
+    __nvPdfListenText: "",
     dirty: false,
     mode: "select",
     styleState: {
@@ -979,6 +1009,8 @@ export async function renderPdfWorkspace(filePath, container, options = {}) {
     overflow: "hidden",
   });
   workspace.root = root;
+  root.__nvPdfWorkspace = workspace;
+  resetPdfListenText(workspace);
   installStyles(root);
 
   const toolbar = createToolbar(workspace);
@@ -1003,6 +1035,8 @@ export async function renderPdfWorkspace(filePath, container, options = {}) {
 
   root.append(toolbar, pagesHost);
   container.appendChild(root);
+  container.__nvPdfWorkspace = workspace;
+  window.__nvActivePdfWorkspace = workspace;
 
   if (editable) {
     window.NodevisionState = window.NodevisionState || {};
@@ -1041,6 +1075,8 @@ export async function renderPdfWorkspace(filePath, container, options = {}) {
   }
 
   container.__nvActiveEditorCleanup = () => {
+    if (window.__nvActivePdfWorkspace === workspace) window.__nvActivePdfWorkspace = null;
+    if (container.__nvPdfWorkspace === workspace) container.__nvPdfWorkspace = null;
     if (window.__nvPdfEditorActivePath === normalizedPath) {
       window.__nvPdfEditorActivePath = null;
       window.currentSavePDFAnnotations = undefined;

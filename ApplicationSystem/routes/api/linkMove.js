@@ -99,7 +99,7 @@ function collectLinkSpans(content, kind) {
   }
 
   if (kind === "html") {
-    const attrRegex = /\b(?:href|src|data-src|data-nodevision-font-src)\s*=\s*(["\x27])(.*?)\1/gi;
+    const attrRegex = /\b(?:href|src|data-src|data-nodevision-font-src|data-nodevision-circuit-src)\s*=\s*(["\x27])(.*?)\1/gi;
     let match;
     while ((match = attrRegex.exec(text))) {
       const full = match[0] || "";

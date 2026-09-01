@@ -23,6 +23,7 @@ export function createCircuitState(doc = createDefaultDocument()) {
     hover: null,
     drag: null,
     wireDraft: null,
+    extrudeDraft: null,
     placeDraft: null,
     refCounters: {},
     zoom: 1,

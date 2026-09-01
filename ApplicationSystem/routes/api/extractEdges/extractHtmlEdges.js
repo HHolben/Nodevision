@@ -22,6 +22,7 @@ const LINK_ATTRIBUTES = [
   { selector: "embed", attr: "src" },
   { selector: "object", attr: "data" },
   { selector: "[data-src]", attr: "data-src" },
+  { selector: "[data-nodevision-circuit-src]", attr: "data-nodevision-circuit-src" },
   { selector: "[srcset]", attr: "srcset" },
   { selector: "form", attr: "action" },
 ];

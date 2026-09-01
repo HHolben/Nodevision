@@ -47,7 +47,11 @@ export async function renderFile(path, viewPanel, iframe, serverBase, options = 
   window.HTMLViewLayersContext = null;
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.currentMode = "HTMLviewing";
-  updateToolbarState({ currentMode: "HTMLviewing" });
+  window.NodevisionState.selectedFile = path;
+  window.NodevisionState.activeFileViewPath = path;
+  window.currentActiveFilePath = path;
+  window.filePath = path;
+  updateToolbarState({ currentMode: "HTMLviewing", selectedFile: path, activeFileViewPath: path });
 
   // Set up error and load handlers
   iframe.onerror = () => {

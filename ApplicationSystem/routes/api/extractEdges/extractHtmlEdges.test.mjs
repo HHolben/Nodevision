@@ -20,6 +20,7 @@ try {
     <a href="../../Books/Example.html#section-two">Example</a>
     <img src="../../Media/Images/Test%20Image.png?cache=1">
     <source srcset="../../Media/Images/Small.png 1x, ../../Media/Images/Large.png 2x">
+    <div class="nodevision-circuit-reference" data-nodevision-circuit-src="../../Electronics/Circuits/Test.cir"><canvas></canvas></div>
     <map name="diagram-map"><area shape="rect" coords="0,0,20,20" href="../../Books/ImageMapTarget.html"></map>
     <a href="https://example.com/">External</a>
     <a href="mailto:someone@example.com">Mail</a>
@@ -31,6 +32,7 @@ try {
   await writeNotebookFile("Media/Images/Test Image.png", "image");
   await writeNotebookFile("Media/Images/Small.png", "small");
   await writeNotebookFile("Media/Images/Large.png", "large");
+  await writeNotebookFile("Electronics/Circuits/Test.cir", "* test\n.END\n");
 
   const edges = await extractEdgesForFile({
     filePath: "Notes/Topic/Page.html",
@@ -40,6 +42,7 @@ try {
   assert.deepEqual([...edges].sort(), [
     "Books/Example.html",
     "Books/ImageMapTarget.html",
+    "Electronics/Circuits/Test.cir",
     "Media/Images/Large.png",
     "Media/Images/Small.png",
     "Media/Images/Test Image.png",

@@ -216,6 +216,9 @@ export async function renderEditor(filePath, container) {
     onTransientChange: () => layout.message.textContent = "Moving...",
     deleteSelection,
     onToolChange: () => toolbar.update?.(),
+    onMessage: (msg) => {
+      layout.message.textContent = msg;
+    },
     onHover: (id) => {
       state.hover = id;
       renderer.render();

@@ -123,13 +123,24 @@ function normalizeToolbarFilePath(value) {
 }
 
 function resolveToolbarActiveFilePath(state = window.NodevisionState || {}) {
-  const candidates = [
+  const mode = String(state.currentMode || "");
+  const viewerModeActive = mode === "HTMLviewing" || mode === "PDF Viewing" || mode.endsWith("viewing") || mode.endsWith("Viewing");
+  const candidates = viewerModeActive ? [
+    state.activeFileViewPath,
+    window.currentActiveFilePath,
+    window.selectedFilePath,
+    state.selectedFile,
+    window.ActiveNode,
+    window.filePath,
+    state.activeEditorFilePath,
+  ] : [
     state.activeEditorFilePath,
     window.currentActiveFilePath,
     window.selectedFilePath,
     state.selectedFile,
     window.ActiveNode,
     window.filePath,
+    state.activeFileViewPath,
   ];
 
   for (const candidate of candidates) {
@@ -146,6 +157,10 @@ function isToolbarActiveFileIno(state = window.NodevisionState || {}) {
 
 function isToolbarActiveFileHtml(state = window.NodevisionState || {}) {
   return new Set(["html", "htm", "xhtml"]).has((resolveToolbarActiveFilePath(state).split(".").pop() || "").toLowerCase());
+}
+
+function isToolbarActiveFilePdf(state = window.NodevisionState || {}) {
+  return (resolveToolbarActiveFilePath(state).split(".").pop() || "").toLowerCase() === "pdf";
 }
 
 function isToolbarActiveFileDirectory(state = window.NodevisionState || {}) {
@@ -295,6 +310,8 @@ function getToolbarItemState(item, state = window.NodevisionState || {}) {
     ...state,
     activeFileIsIno: isToolbarActiveFileIno(state),
     activeFileIsHtml: isToolbarActiveFileHtml(state),
+    activeFileIsPdf: isToolbarActiveFilePdf(state),
+    activeFileIsReadablePage: isToolbarActiveFileHtml(state) || isToolbarActiveFilePdf(state),
     activeFileCanConvertToEpub: canToolbarActiveFileConvertToEpub(state),
     modelCanExport2DPattern: Boolean(
       typeof modelExportContext.export2DPattern === "function"

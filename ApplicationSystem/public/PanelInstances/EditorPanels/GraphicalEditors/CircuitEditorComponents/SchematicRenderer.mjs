@@ -112,6 +112,21 @@ export function createSchematicRenderer(layers, state) {
         });
         layers.overlayLayer.appendChild(poly);
       }
+      const wirePoint = id.match(/^(.+):pt:(\d+)$/);
+      if (wirePoint) {
+        const selectedWire = state.document.wires.find((w) => w.id === wirePoint[1]);
+        const point = selectedWire?.points?.[Number.parseInt(wirePoint[2], 10)];
+        if (point) {
+          layers.overlayLayer.appendChild(make("circle", {
+            cx: point.x,
+            cy: point.y,
+            r: 7,
+            fill: "#38bdf8",
+            stroke: "#0f172a",
+            "stroke-width": 1,
+          }));
+        }
+      }
     });
   }
 
