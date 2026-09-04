@@ -9,12 +9,38 @@ import {
   applySourceHyperlinkEdit,
   findSourceHyperlinkContext,
 } from "./sourceHyperlinkTools.mjs";
+import { normalizeNotebookFilePath } from "../../utils/notebookPath.mjs";
+import {
+  applyFallbackReferencesToElement,
+  normalizeFallbackReferencesForSource,
+  normalizeReferenceForSource,
+  readFallbackReferencesFromElement
+} from "../../utils/referenceFallbacks.mjs";
+import { showReferenceDetailsDialog } from "../../ToolbarJSONfiles/referenceDetailsDialog.mjs";
 
 function storedHyperlinkContext() {
   const context = window.NodevisionState?.activeHtmlHyperlinkContext;
   if (context?.element instanceof HTMLAnchorElement && context.element.isConnected) return context;
   if (context?.range && context.kind) return context;
   return null;
+}
+
+function currentEditorSourcePath(context = {}) {
+  const candidates = [
+    context.filePath,
+    window.NodevisionState?.activeEditorFilePath,
+    window.__nvWysiwygActivePath,
+    window.__nvHtmlEditorActivePath,
+    window.__nvCodeEditorActivePath,
+    window.currentActiveFilePath,
+    window.selectedFilePath,
+    window.NodevisionState?.selectedFile,
+  ];
+  for (const value of candidates) {
+    const normalized = normalizeNotebookFilePath(value || "");
+    if (normalized) return normalized;
+  }
+  return "";
 }
 
 function selectedHyperlinkContext() {
@@ -25,6 +51,7 @@ function selectedHyperlinkContext() {
       element: live,
       href: live.getAttribute("href") || "",
       text: live.textContent || "",
+      fallbacks: readFallbackReferencesFromElement(live),
     };
   }
   return findSourceHyperlinkContext() || storedHyperlinkContext();
@@ -65,18 +92,31 @@ export default async function editHyperlink() {
     return;
   }
 
-  const nextHref = prompt("Hyperlink URL:", context.href || "");
-  if (nextHref === null) return;
+  const details = await showReferenceDetailsDialog({
+    title: "Edit Link",
+    primaryLabel: "Destination",
+    primaryValue: context.href || "",
+    textLabel: "Link text",
+    textValue: context.text || context.href || "",
+    requireText: false,
+    fallbacks: context.fallbacks || []
+  });
+  if (!details) return;
 
-  const href = nextHref.trim();
+  const sourcePath = currentEditorSourcePath(context);
+  const href = normalizeReferenceForSource(details.primary, { sourcePath });
   if (!href) {
-    alert("Hyperlink URL cannot be empty.");
+    alert("Hyperlink destination cannot be empty or unsafe.");
     return;
   }
+  const fallbacks = normalizeFallbackReferencesForSource(details.fallbacks, {
+    sourcePath,
+    primary: href
+  });
+  const nextText = details.text;
 
-  const nextText = prompt("Hyperlink text:", context.text || context.href || "");
   if (context.kind !== "dom") {
-    if (!applySourceHyperlinkEdit(context, { href, text: nextText })) {
+    if (!applySourceHyperlinkEdit(context, { href, text: nextText, fallbacks })) {
       alert("Nodevision could not update the selected hyperlink source.");
     }
     refreshHyperlinkSelectionState({ force: true });
@@ -86,6 +126,7 @@ export default async function editHyperlink() {
   const link = context.element;
   link.setAttribute("href", href);
   updateExternalLinkAttributes(link, href);
+  applyFallbackReferencesToElement(link, fallbacks, { primary: href });
   if (nextText !== null) link.textContent = nextText;
 
   selectEditedLink(link);

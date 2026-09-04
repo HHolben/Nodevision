@@ -1,7 +1,5 @@
 // Nodevision/ApplicationSystem/GenerateEdges.js
-// This file defines the Generate Edges module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules.
-// GenerateEdges.js
-// Purpose: Create edges and relationships between graph nodes based on file links
+// This file defines the Generate Edges module for the Nodevision ApplicationSystem. It provides helper logic and exports functionality for other modules to establisrh relationships as edges based on file links and references.
 
 const fs = require('fs');
 const path = require('path');
@@ -57,13 +55,13 @@ function uniqueLinks(links) {
 // Function to extract hyperlinks and CSS asset references from HTML content
 function extractHyperlinks(htmlContent) {
     const links = [];
-    const attrRegex = /(?:href|src|data-nodevision-font-src|data-nodevision-font-stylesheet)\s*=\s*(["'])(.*?)\1/gi;
+    const attrRegex = /(?:href|src|data-src|data-nodevision-image-src|data-nodevision-citation-source|data-nodevision-font-src|data-nodevision-font-stylesheet|data-nodevision-circuit-src|data-nodevision-fallback-\d+)\s*=\s*(["'])(.*?)\1/gi;
     for (const match of htmlContent.matchAll(attrRegex)) {
         links.push(match[2]);
     }
-    const cssUrlRegex = /url\(\s*(?:"([^"]+)"|'([^']+)'|([^'"\)]+))\s*\)/gi;
+    const cssUrlRegex = /url\(\s*(?:"([^"]+)"|'([^']+)'|&quot;([^&]*?)&quot;|&#39;([^&]*?)&#39;|([^'"\)]+))\s*\)/gi;
     for (const match of htmlContent.matchAll(cssUrlRegex)) {
-        links.push(match[1] || match[2] || match[3]);
+        links.push(match[1] || match[2] || match[3] || match[4] || match[5]);
     }
     // External http(s) URLs are left in the result. TODO: create external graph nodes when supported.
     return uniqueLinks(links);

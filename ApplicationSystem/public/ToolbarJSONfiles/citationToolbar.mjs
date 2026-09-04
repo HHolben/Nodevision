@@ -1,6 +1,12 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/citationToolbar.mjs
 // This toolbar widget builds the citation form controls and inserts formatted citation markup into the current document.
-import { escapeHtml, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
+import { escapeHtml, getActiveEditorNotebookPath, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
+import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import {
+  normalizeFallbackReferencesForSource,
+  normalizeReferenceForSource,
+  serializeFallbackAttributes
+} from "../utils/referenceFallbacks.mjs";
 
 const FORMAT_OPTIONS = [
   ["mla", "MLA 9"],
@@ -57,6 +63,9 @@ function ensureCitationStyles() {
       width: min(280px, 30vw);
       min-width: 170px;
     }
+    #sub-toolbar .nv-citation-fallback-host details {
+      min-width: min(360px, 84vw);
+    }
     #sub-toolbar .nv-citation-toolbar input[type="date"] {
       width: 132px;
     }
@@ -87,17 +96,27 @@ function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function normalizeUrl(value) {
+function normalizeCitationDestination(value, sourcePath = "") {
   const raw = normalizeText(value);
   if (!raw) return null;
-  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
-  try {
-    const url = new URL(candidate);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    return url.href;
-  } catch {
-    return null;
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      return new URL(raw).href;
+    } catch {
+      return null;
+    }
   }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) {
+    return normalizeReferenceForSource(raw, { sourcePath }) || null;
+  }
+  if (/^[^\s/]+\.[^\s/]+(?:[/?#].*)?$/i.test(raw)) {
+    try {
+      return new URL(`https://${raw}`).href;
+    } catch {
+      return null;
+    }
+  }
+  return normalizeReferenceForSource(raw, { sourcePath }) || null;
 }
 
 function formatDate(value) {
@@ -152,12 +171,18 @@ function asComma(value) {
   return /[,]$/.test(text) ? text : `${text},`;
 }
 
-function collectFields(form) {
+function collectFields(form, fallbackList) {
   const data = new FormData(form);
-  const href = normalizeUrl(data.get("url"));
+  const sourcePath = getActiveEditorNotebookPath();
+  const href = normalizeCitationDestination(data.get("url"), sourcePath);
   return {
     format: normalizeText(data.get("format")) || "mla",
     href,
+    sourcePath,
+    fallbacks: normalizeFallbackReferencesForSource(fallbackList?.getFallbacks?.() || [], {
+      sourcePath,
+      primary: href || ""
+    }),
     urlInput: normalizeText(data.get("url")),
     title: normalizeText(data.get("title")),
     author: normalizeText(data.get("author")),
@@ -255,7 +280,9 @@ function citationClass(format) {
 
 function buildCitationHtml(fields) {
   const citation = formatCitation(fields);
-  return `<p class="nodevision-citation-entry" data-citation-format="${escapeHtml(fields.format)}"><cite class="${citationClass(fields.format)}">${citation}</cite></p>`;
+  const fallbackAttrs = serializeFallbackAttributes(fields.fallbacks || [], { primary: fields.href });
+  const sourceAttr = fields.href ? ` data-nodevision-citation-source="${escapeHtml(fields.href)}"` : "";
+  return `<p class="nodevision-citation-entry" data-citation-format="${escapeHtml(fields.format)}"${sourceAttr}${fallbackAttrs}><cite class="${citationClass(fields.format)}">${citation}</cite></p>`;
 }
 
 function markEditorChanged() {
@@ -333,19 +360,24 @@ export function initToolbarWidget(mount) {
         Accessed
         <input name="accessed" type="date" value="${escapeHtml(today)}">
       </label>
-      <button type="submit">Insert web source</button>
+      <span class="nv-citation-fallback-host"></span>
+      <button type="submit">Insert source</button>
       <span class="nv-citation-status" role="status" aria-live="polite"></span>
     </form>
   `;
 
   const form = mount.querySelector("form");
   const status = mount.querySelector(".nv-citation-status");
+  const fallbackList = attachFallbackReferenceList({
+    container: mount.querySelector(".nv-citation-fallback-host"),
+    primaryInput: form?.elements?.namedItem?.("url")
+  });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const fields = collectFields(form);
+    const fields = collectFields(form, fallbackList);
     if (!fields.href) {
-      status.textContent = "Enter a valid http or https link.";
+      status.textContent = "Enter a valid source link.";
       return;
     }
     const inserted = insertHtmlAtCaret(buildCitationHtml(fields));

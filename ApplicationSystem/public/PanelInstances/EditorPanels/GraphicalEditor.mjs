@@ -11,6 +11,7 @@ import {
 } from "/LiveFileContent.mjs";
 
 let lastEditedPath = null;
+let graphicalEditorHostRef = null;
 let currentGraphicalEditorCleanup = null;
 let currentGraphicalLiveCleanup = null;
 let graphicalLiveProviderSequence = 0;
@@ -284,18 +285,84 @@ function cleanupEditorHost(editorDiv) {
   clearEditorContext(window.currentActiveFilePath || window.filePath || null);
 }
 
+function claimGraphicalEditorHost(host) {
+  if (!host) return null;
+  document.querySelectorAll("#graphical-editor").forEach((node) => {
+    if (node !== host) {
+      node.dataset.nvInactiveElementId = "graphical-editor";
+      node.removeAttribute("id");
+    }
+  });
+  host.id = "graphical-editor";
+  host.dataset.nvGraphicalEditorRoot = "true";
+  graphicalEditorHostRef = host;
+  return host;
+}
+
+function activeGraphicalEditorHost() {
+  const activeContent = document.querySelector(".panel-cell.active-panel .nv-panel-tab-content:not([hidden])");
+  return activeContent?.querySelector?.("[data-nv-graphical-editor-root=\"true\"], #graphical-editor") || null;
+}
+
+function getGraphicalEditorHost(host = null) {
+  const explicit = host?.matches?.("[data-nv-graphical-editor-root=\"true\"], #graphical-editor")
+    ? host
+    : host?.querySelector?.("[data-nv-graphical-editor-root=\"true\"], #graphical-editor");
+  if (explicit) return claimGraphicalEditorHost(explicit);
+
+  const activeHost = activeGraphicalEditorHost();
+  if (activeHost) return claimGraphicalEditorHost(activeHost);
+
+  if (graphicalEditorHostRef && document.body.contains(graphicalEditorHostRef) && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(graphicalEditorHostRef))) {
+    return claimGraphicalEditorHost(graphicalEditorHostRef);
+  }
+
+  const byId = document.getElementById("graphical-editor");
+  if (byId && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(byId))) return claimGraphicalEditorHost(byId);
+  return null;
+}
+
+function activateGraphicalEditorHost(host) {
+  const editorDiv = getGraphicalEditorHost(host);
+  if (!editorDiv) return false;
+  const filePath = editorDiv.dataset.nvGraphicalEditorPath ||
+    editorDiv.dataset.currentFilePath ||
+    editorDiv.closest(".nv-panel-tab-content")?.dataset?.currentFilePath ||
+    lastEditedPath ||
+    "";
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activePanelType = "GraphicalEditor";
+  window.NodevisionState.currentMode = "GraphicalEditing";
+  window.NodevisionState.activeActionHandler = null;
+  if (filePath) {
+    window.currentActiveFilePath = filePath;
+    window.filePath = filePath;
+    window.NodevisionState.selectedFile = filePath;
+    window.NodevisionState.activeEditorFilePath = filePath;
+  }
+  updateToolbarState({
+    currentMode: "GraphicalEditing",
+    selectedFile: filePath || null,
+    activeEditorFilePath: filePath || null,
+    activeActionHandler: null,
+  });
+  return true;
+}
+
 /* ---------------------------------------------------------
  * Panel setup
  * --------------------------------------------------------- */
 export async function setupPanel(cell, instanceVars = {}) {
   const container = document.createElement("div");
-  container.id = "graphical-editor";
+  container.className = "nv-graphical-editor-host";
+  container.dataset.nvGraphicalEditorRoot = "true";
   container.style.width = "100%";
   container.style.height = "100%";
   container.style.display = "flex";
   container.style.alignItems = "center";
   container.style.justifyContent = "center";
   cell.appendChild(container);
+  claimGraphicalEditorHost(container);
 
   // Reactive watcher for selectedFilePath
   if (!window._graphicalEditorProxyInstalled) {
@@ -309,10 +376,13 @@ export async function setupPanel(cell, instanceVars = {}) {
         if (value !== internalPath) {
           const applyChange = () => {
             internalPath = value;
-            updateGraphicalEditor(value);
+            const editorHost = getGraphicalEditorHost();
+            if (editorHost && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(editorHost))) {
+              updateGraphicalEditor(value, { host: editorHost });
+            }
 
             const viewPanel = document.getElementById("element-view");
-            if (viewPanel && typeof window.updateViewPanel === "function") {
+            if (viewPanel && typeof window.updateViewPanel === "function" && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(viewPanel))) {
               window.updateViewPanel(value).catch((err) => {
                 console.error("❌ GraphicalEditor -> FileView sync failed:", err);
               });
@@ -334,7 +404,7 @@ export async function setupPanel(cell, instanceVars = {}) {
 
   // Initial render
   const initialPath = instanceVars.filePath || window.selectedFilePath;
-  await updateGraphicalEditor(initialPath, { force: true });
+  await updateGraphicalEditor(initialPath, { force: true, host: container });
 
   return () => {
     cleanupEditorHost(container);
@@ -347,9 +417,9 @@ export async function setupPanel(cell, instanceVars = {}) {
  * --------------------------------------------------------- */
 export async function updateGraphicalEditor(
   filePath,
-  { force = false } = {}
+  { force = false, host = null } = {}
 ) {
-  const editorDiv = document.getElementById("graphical-editor");
+  const editorDiv = getGraphicalEditorHost(host);
   if (!editorDiv) {
     console.error("Graphical editor element not found.");
     return;
@@ -387,6 +457,9 @@ export async function updateGraphicalEditor(
 
   lastEditedPath = filePath;
   cleanupEditorHost(editorDiv);
+  editorDiv.dataset.currentFilePath = filePath;
+  editorDiv.dataset.nvGraphicalEditorPath = filePath;
+  editorDiv.closest(".nv-panel-tab-content")?.setAttribute("data-current-file-path", filePath);
   editorDiv.closest(".panel-cell")?.setAttribute("data-current-file-path", filePath);
   editorDiv.innerHTML = "";
 
@@ -473,6 +546,7 @@ export async function updateGraphicalEditor(
 
 // Expose globally
 window.updateGraphicalEditor = updateGraphicalEditor;
+window.__nvActivateGraphicalEditorHost = activateGraphicalEditorHost;
 
 
 function cleanupGraphicalEditorAttention(filePath) {

@@ -1815,7 +1815,7 @@
       "hotkeyText": "",
       "insertGroup": "media",
       "callbackKey": "insertMedia",
-      "modes": ["HTMLediting", "SVG Editing", "Virtual World Editing", "VR World Editing"],
+      "modes": ["HTMLediting", "GraphicalEditing", "SVG Editing", "Virtual World Editing", "VR World Editing"],
       "icon": "icons/ImageIcon.png"
     },
     {
@@ -1823,9 +1823,23 @@
       "heading": "Insert Media Widget",
       "hotkeyText": "",
       "parentHeading": "Media",
-      "modes": ["HTMLediting", "SVG Editing", "Virtual World Editing", "VR World Editing"],
+      "modes": ["HTMLediting", "GraphicalEditing", "SVG Editing", "Virtual World Editing", "VR World Editing"],
       "content": "<div id=\"nv-insert-media-widget\" style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap;\"></div>",
       "script": "insertMediaWidget.mjs",
+      "preventAutoSubToolbar": true
+    },
+    {
+      "ToolbarCategory": "Insert",
+      "parentHeading": "Media",
+      "heading": "Replace Selected Text with Image",
+      "hotkeyText": "",
+      "insertGroup": "image",
+      "callbackKey": "replaceSelectedTextWithImage",
+      "modes": ["HTMLediting", "EPUBediting"],
+      "conditions": {
+        "htmlTextSelectionActive": true
+      },
+      "icon": "icons/ImageIcon.png",
       "preventAutoSubToolbar": true
     },
 

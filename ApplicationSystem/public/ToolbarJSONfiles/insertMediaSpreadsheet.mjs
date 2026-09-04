@@ -3,6 +3,8 @@
 
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, saveNotebookText, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { dataUrlFromText, fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsText } from "./insertMediaIO.mjs";
+import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import { normalizeFallbackReferencesForSource, serializeFallbackAttributes } from "../utils/referenceFallbacks.mjs";
 
 function pickDefaultExt(exts) {
   const list = Array.from(new Set(exts || [])).map((e) => String(e).toLowerCase()).filter(Boolean).sort((a, b) => a.localeCompare(b));
@@ -41,6 +43,7 @@ export function renderSpreadsheet(root, exts = []) {
       </div>
       <div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div>
     </div>
+    <div data-field="fallbackHost"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div>
     <div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div>
   </form>`;
@@ -56,6 +59,10 @@ export function renderSpreadsheet(root, exts = []) {
   const fileEl = root.querySelector('[data-field="fileName"]');
   const csvEl = root.querySelector('[data-field="csv"]');
   const existingSourceEl = root.querySelector('[data-field="existingSource"]');
+  const fallbackList = attachFallbackReferenceList({
+    container: root.querySelector("[data-field=\"fallbackHost\"]"),
+    primaryInput: existingSourceEl
+  });
   const existingFileStatus = root.querySelector('[data-field="existingFileStatus"]');
   const statusEl = root.querySelector('[data-field="status"]');
 
@@ -168,11 +175,15 @@ export function renderSpreadsheet(root, exts = []) {
       const id = `nv-sheet-${Date.now()}`;
       const linkedAttr = linked ? ` data-nv-linked-path="${escapeHtml(linked)}"` : "";
       const escapedSrc = escapeHtml(src);
+      const fallbackAttrs = serializeFallbackAttributes(normalizeFallbackReferencesForSource(fallbackList.getFallbacks(), {
+        sourcePath: editorPath,
+        primary: src
+      }), { primary: src });
 
       if (renderMode === "flashcards") {
-        insertHtmlAtCaret(`<div id="${id}"${linkedAttr} style="border:1px solid #ccc;padding:10px;max-width:520px;"></div><script>(function(){const el=document.getElementById(${JSON.stringify(id)});if(!el)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(t=>{const lines=t.split(/\\r?\\n/).filter(Boolean);const rows=lines.slice(1).map(l=>l.split(','));const cards=rows.map(r=>({front:(r[0]||'').trim(),back:(r[1]||'').trim()})).filter(c=>c.front&&c.back);if(!cards.length){el.textContent='No cards';return;}let i=0,side='front';const card=document.createElement('div');card.style.cursor='pointer';card.style.textAlign='center';card.style.padding='12px';card.style.userSelect='none';const nav=document.createElement('div');nav.style.display='flex';nav.style.justifyContent='space-between';nav.style.marginTop='8px';const prev=document.createElement('button');prev.textContent='Prev';const next=document.createElement('button');next.textContent='Next';nav.append(prev,next);el.append(card,nav);const render=()=>{card.textContent=cards[i][side];};card.onclick=()=>{side=side==='front'?'back':'front';render();};prev.onclick=()=>{i=(i-1+cards.length)%cards.length;side='front';render();};next.onclick=()=>{i=(i+1)%cards.length;side='front';render();};render();});})();</script>`);
+        insertHtmlAtCaret(`<div id="${id}" data-src="${escapedSrc}"${linkedAttr}${fallbackAttrs} style="border:1px solid #ccc;padding:10px;max-width:520px;"></div><script>(function(){const el=document.getElementById(${JSON.stringify(id)});if(!el)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(t=>{const lines=t.split(/\\r?\\n/).filter(Boolean);const rows=lines.slice(1).map(l=>l.split(','));const cards=rows.map(r=>({front:(r[0]||'').trim(),back:(r[1]||'').trim()})).filter(c=>c.front&&c.back);if(!cards.length){el.textContent='No cards';return;}let i=0,side='front';const card=document.createElement('div');card.style.cursor='pointer';card.style.textAlign='center';card.style.padding='12px';card.style.userSelect='none';const nav=document.createElement('div');nav.style.display='flex';nav.style.justifyContent='space-between';nav.style.marginTop='8px';const prev=document.createElement('button');prev.textContent='Prev';const next=document.createElement('button');next.textContent='Next';nav.append(prev,next);el.append(card,nav);const render=()=>{card.textContent=cards[i][side];};card.onclick=()=>{side=side==='front'?'back':'front';render();};prev.onclick=()=>{i=(i-1+cards.length)%cards.length;side='front';render();};next.onclick=()=>{i=(i+1)%cards.length;side='front';render();};render();});})();</script>`);
       } else {
-        insertHtmlAtCaret(`<table id="${id}"${linkedAttr} style="border-collapse:collapse;width:100%;max-width:700px;"></table><script>(function(){const t=document.getElementById(${JSON.stringify(id)});if(!t)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(txt=>{const lines=txt.split(/\\r?\\n/).filter(l=>l.trim().length);const rows=lines.map(l=>l.split(','));if(!rows.length)return;const thead=document.createElement('thead');const trh=document.createElement('tr');rows[0].forEach(h=>{const th=document.createElement('th');th.textContent=h.trim();th.style.border='1px solid #ccc';th.style.padding='4px 6px';trh.appendChild(th);});thead.appendChild(trh);const tbody=document.createElement('tbody');rows.slice(1).forEach(r=>{const tr=document.createElement('tr');r.forEach(c=>{const td=document.createElement('td');td.textContent=c.trim();td.style.border='1px solid #ccc';td.style.padding='4px 6px';tr.appendChild(td);});tbody.appendChild(tr);});t.append(thead,tbody);});})();</script>`);
+        insertHtmlAtCaret(`<table id="${id}" data-src="${escapedSrc}"${linkedAttr}${fallbackAttrs} style="border-collapse:collapse;width:100%;max-width:700px;"></table><script>(function(){const t=document.getElementById(${JSON.stringify(id)});if(!t)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(txt=>{const lines=txt.split(/\\r?\\n/).filter(l=>l.trim().length);const rows=lines.map(l=>l.split(','));if(!rows.length)return;const thead=document.createElement('thead');const trh=document.createElement('tr');rows[0].forEach(h=>{const th=document.createElement('th');th.textContent=h.trim();th.style.border='1px solid #ccc';th.style.padding='4px 6px';trh.appendChild(th);});thead.appendChild(trh);const tbody=document.createElement('tbody');rows.slice(1).forEach(r=>{const tr=document.createElement('tr');r.forEach(c=>{const td=document.createElement('td');td.textContent=c.trim();td.style.border='1px solid #ccc';td.style.padding='4px 6px';tr.appendChild(td);});tbody.appendChild(tr);});t.append(thead,tbody);});})();</script>`);
       }
       setStatus("Inserted.");
     } catch (err) {

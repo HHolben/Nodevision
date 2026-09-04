@@ -2,6 +2,8 @@
 // Shared renderer for binary A/V inserts (Video + Sound) with New/Existing and Referenced/Inline.
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { fetchUrlAsDataUrl, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
+import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import { normalizeFallbackReferencesForSource, serializeFallbackAttributes } from "../utils/referenceFallbacks.mjs";
 import { ensureEditableMetaWorldBridge, readCameraPlacement } from "./worldShapeWidget.mjs";
 
 function pickDefaultExt(exts, preferred) {
@@ -110,7 +112,7 @@ export function renderBinaryAv(root, cfg) {
   const newChooserLabel = isSound ? "Choose Directory..." : "Choose File...";
   const newChooserDefault = isSound ? "No directory selected. Using current file folder." : "No local file selected.";
 
-  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:280px;max-width:540px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(kind)} Source</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> New ${escapeHtml(kind)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> Existing ${escapeHtml(kind)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> Referenced (src points to file path)</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> Inline (embed as data URL)</label></fieldset><div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><button type="button" data-action="choose-new" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">${escapeHtml(newChooserLabel)}</button><span data-field="newFileStatus" style="font-size:11px;color:#4b4b4b;">${escapeHtml(newChooserDefault)}</span></div><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New ${escapeHtml(kind)} Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${extensions.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>Destination File Name (optional)<input data-field="newName" type="text" placeholder="${escapeHtml(kind.toLowerCase())}.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="${escapeHtml(dirName)}/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
+  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:280px;max-width:540px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(kind)} Source</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> New ${escapeHtml(kind)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> Existing ${escapeHtml(kind)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> Referenced (src points to file path)</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> Inline (embed as data URL)</label></fieldset><div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><button type="button" data-action="choose-new" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">${escapeHtml(newChooserLabel)}</button><span data-field="newFileStatus" style="font-size:11px;color:#4b4b4b;">${escapeHtml(newChooserDefault)}</span></div><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New ${escapeHtml(kind)} Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${extensions.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>Destination File Name (optional)<input data-field="newName" type="text" placeholder="${escapeHtml(kind.toLowerCase())}.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="${escapeHtml(dirName)}/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div data-field="fallbackHost"></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
   const sourceEls = () => Array.from(root.querySelectorAll('input[name="nv-source"]'));
@@ -124,6 +126,10 @@ export function renderBinaryAv(root, cfg) {
   const statusEl = root.querySelector('[data-field="status"]');
   const newFileStatus = root.querySelector('[data-field="newFileStatus"]');
   const existingFileStatus = root.querySelector('[data-field="existingFileStatus"]');
+  const fallbackList = attachFallbackReferenceList({
+    container: root.querySelector("[data-field=\"fallbackHost\"]"),
+    primaryInput: existingSourceEl
+  });
 
   const hiddenNew = document.createElement("input");
   hiddenNew.type = "file";
@@ -380,6 +386,11 @@ export function renderBinaryAv(root, cfg) {
         }
       }
 
+      const fallbacks = normalizeFallbackReferencesForSource(fallbackList.getFallbacks(), {
+        sourcePath: editorPath,
+        primary: src
+      });
+
       if (target === "virtualWorld" && isSound) {
         const label = linked || existingSourceEl.value || newFile.name || existingFile.name || newNameEl.value || sourceMode + " sound";
         await insertWorldSoundObject({
@@ -404,8 +415,9 @@ export function renderBinaryAv(root, cfg) {
       }
 
       const linkedAttr = linked ? " data-nv-linked-path=\"" + escapeHtml(linked) + "\"" : "";
-      const styleAttr = elementStyle ? ` style="${escapeHtml(elementStyle)}"` : "";
-      insertHtmlAtCaret(`<${tag} controls${styleAttr} src="${escapeHtml(src)}"${linkedAttr}></${tag}>`);
+      const styleAttr = elementStyle ? " style=\"" + escapeHtml(elementStyle) + "\"" : "";
+      const fallbackAttrs = serializeFallbackAttributes(fallbacks, { primary: src });
+      insertHtmlAtCaret("<" + tag + " controls" + styleAttr + " src=\"" + escapeHtml(src) + "\"" + linkedAttr + fallbackAttrs + "></" + tag + ">");
       try {
         // Update managers so the new media shows up immediately.
         if (linked) {

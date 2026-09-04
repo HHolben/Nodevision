@@ -17,6 +17,11 @@ import {
   readFileAsDataUrl,
   saveNotebookBinaryFromDataUrl,
 } from "./insertMediaIO.mjs";
+import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import {
+  normalizeFallbackReferencesForSource,
+  serializeFallbackAttributes
+} from "../utils/referenceFallbacks.mjs";
 
 const IMAGE_EXTS = ["png", "svg", "jpg", "jpeg", "gif", "webp", "bmp"];
 
@@ -117,6 +122,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
       </div>
       <div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div>
     </div>
+    <div data-field="fallbackHost"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div>
     <div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div>
   </form>`;
@@ -133,6 +139,10 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
   const existingSourceEl = root.querySelector('[data-field="existingSource"]');
   const existingFileStatusEl = root.querySelector('[data-field="existingFileStatus"]');
   const statusEl = root.querySelector('[data-field="status"]');
+  const fallbackList = attachFallbackReferenceList({
+    container: root.querySelector("[data-field=\"fallbackHost\"]"),
+    primaryInput: existingSourceEl
+  });
   const hiddenExisting = document.createElement("input");
   hiddenExisting.type = "file";
   hiddenExisting.accept = "image/*";
@@ -284,7 +294,17 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
         }
       }
 
-      const inserted = await onInsert({ src, linkedNotebookPath, sourceName, mode: `${storageMode}-${sourceMode}` });
+      const fallbacks = normalizeFallbackReferencesForSource(fallbackList.getFallbacks(), {
+        sourcePath: editorPath(),
+        primary: src
+      });
+      const inserted = await onInsert({
+        src,
+        linkedNotebookPath,
+        sourceName,
+        mode: storageMode + "-" + sourceMode,
+        fallbacks
+      });
       if (inserted === false) throw new Error("Image insertion was not available.");
       refreshLinkedManagers(linkedNotebookPath);
       setStatus("Inserted.");
@@ -305,8 +325,9 @@ export function renderImage(root, exts = []) {
   }
 
   renderImageForm(root, async (insertion) => {
-    const linkedAttr = insertion.linkedNotebookPath ? ` data-nv-linked-path="${escapeHtml(insertion.linkedNotebookPath)}"` : "";
-    const html = `<img src="${escapeHtml(insertion.src)}"${linkedAttr} alt="Inserted image">`;
+    const linkedAttr = insertion.linkedNotebookPath ? " data-nv-linked-path=\"" + escapeHtml(insertion.linkedNotebookPath) + "\"" : "";
+    const fallbackAttrs = serializeFallbackAttributes(insertion.fallbacks || [], { primary: insertion.src });
+    const html = "<img src=\"" + escapeHtml(insertion.src) + "\"" + linkedAttr + fallbackAttrs + " alt=\"Inserted image\">";
     return insertHtmlAtCaret(html);
   }, { svgMode: false, exts });
 }

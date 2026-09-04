@@ -11,8 +11,10 @@ import {
   saveNotebookText,
 } from "./insertMediaCommon.mjs";
 import { readFileAsText } from "./insertMediaIO.mjs";
+import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import { normalizeFallbackReferencesForSource } from "../utils/referenceFallbacks.mjs";
 import { createBlankCircuitFileContent } from "/PanelInstances/EditorPanels/GraphicalEditors/CircuitEditorComponents/CircuitFileFormat.mjs";
-import { buildCircuitReferenceMarkup } from "/PanelInstances/EditorPanels/GraphicalEditors/CircuitEditorComponents/CircuitReferenceElement.mjs";
+import { buildCircuitReferenceMarkup, circuitReferenceSourceForHtml } from "/PanelInstances/EditorPanels/GraphicalEditors/CircuitEditorComponents/CircuitReferenceElement.mjs";
 
 function sanitizeName(name = "") {
   return String(name || "").trim().replace(/[^\w.\-]+/g, "_").replace(/^_+|_+$/g, "") || `circuit-${Date.now()}.cir`;
@@ -86,6 +88,7 @@ export function renderCircuit(root) {
       <label style="flex:1;">Width (px)<input data-field="width" type="number" min="120" max="4096" value="480" style="display:block;width:100%;margin-top:4px;" /></label>
       <label style="flex:1;">Height (px)<input data-field="height" type="number" min="120" max="4096" value="320" style="display:block;width:100%;margin-top:4px;" /></label>
     </div>
+    <div data-field="fallbackHost"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div>
     <div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div>
   </form>`;
@@ -95,6 +98,10 @@ export function renderCircuit(root) {
   const newNameEl = root.querySelector('[data-field="newName"]');
   const targetHintEl = root.querySelector('[data-field="targetHint"]');
   const existingSourceEl = root.querySelector('[data-field="existingSource"]');
+  const fallbackList = attachFallbackReferenceList({
+    container: root.querySelector("[data-field=\"fallbackHost\"]"),
+    primaryInput: existingSourceEl
+  });
   const existingFileStatusEl = root.querySelector('[data-field="existingFileStatus"]');
   const widthEl = root.querySelector('[data-field="width"]');
   const heightEl = root.querySelector('[data-field="height"]');
@@ -157,9 +164,16 @@ export function renderCircuit(root) {
           await createNotebookTextFile(linkedNotebookPath, existingFile.text);
         }
       }
+      const activeEditorPath = editorPath();
+      const primarySource = circuitReferenceSourceForHtml({ notebookPath: linkedNotebookPath, editorFilePath: activeEditorPath });
+      const fallbacks = normalizeFallbackReferencesForSource(fallbackList.getFallbacks(), {
+        sourcePath: activeEditorPath,
+        primary: primarySource
+      });
       const html = buildCircuitReferenceMarkup({
         notebookPath: linkedNotebookPath,
-        editorFilePath: editorPath(),
+        editorFilePath: activeEditorPath,
+        fallbacks,
         width: clampDimension(widthEl.value, 480),
         height: clampDimension(heightEl.value, 320),
         title: linkedNotebookPath.split("/").pop() || "Circuit",

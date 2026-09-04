@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/closePanel.mjs
 // This file defines browser-side close Panel logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { closePanelTab, getActivePanelTab } from "/panels/panelTabs.mjs";
 import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 
 export function closeActivePanel() {
@@ -42,9 +43,19 @@ export function closeActivePanel() {
       }
       return;
     }
+    const ownerTab = getActivePanelTab(ownerCell);
+    if (ownerTab) {
+      closePanelTab(ownerCell, ownerTab.tabId);
+      return;
+    }
   }
 
-  const cell = window.activeCell;
+  const cell = window.activeCell?.closest?.(".panel-cell") || window.activeCell;
+  const activeTab = getActivePanelTab(cell);
+  if (activeTab) {
+    closePanelTab(cell, activeTab.tabId);
+    return;
+  }
   if (!cell) {
     console.warn("No active cell to close.");
     return;

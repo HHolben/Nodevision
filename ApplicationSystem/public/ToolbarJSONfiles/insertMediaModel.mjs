@@ -5,6 +5,8 @@ import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, nor
 import { fetchUrlAsDataUrl, fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, readFileAsText, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
 import { insertUSDScenePanelAtCaret } from "./insertUSDScenePanel.mjs";
 import { setStatus } from "/StatusBar.mjs";
+import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import { normalizeFallbackReferencesForSource, serializeFallbackAttributes } from "../utils/referenceFallbacks.mjs";
 import { ensureEditableMetaWorldBridge, readCameraPlacement } from "./worldShapeWidget.mjs";
 
 function ensureExt(fileName, ext) {
@@ -264,16 +266,17 @@ function notebookPathFromModelSource(source) {
   return /^notebook(?:\/|$)/i.test(raw) ? normalizeNotebookPath(raw) : "";
 }
 
-function buildLinkedModelViewerHtml({ src, label, linkedPath = "", ext = "" } = {}) {
+function buildLinkedModelViewerHtml({ src, label, linkedPath = "", ext = "", fallbacks = [] } = {}) {
   const source = String(src || "").trim();
   const modelExt = modelExtensionFromSource(source, ext);
   const displayLabel = String(label || source.split("/").pop() || "3D model").trim() || "3D model";
   const id = "nv-model-panel-" + Date.now().toString(36) + "-" + Math.floor(Math.random() * 10000).toString(36);
   const linkedAttr = linkedPath ? ` data-nv-linked-path="${escapeHtml(linkedPath)}"` : "";
+  const fallbackAttrs = serializeFallbackAttributes(fallbacks, { primary: source });
   const title = MODEL_VIEWER_SUPPORTED_EXTENSIONS.has(modelExt)
     ? displayLabel
     : `${displayLabel} (${modelExt || "unknown"})`;
-  return `<div id="${escapeHtml(id)}" class="nv-3d-model-panel" data-nv-static-model-viewer data-src="${escapeHtml(source)}" data-ext="${escapeHtml(modelExt)}" data-label="${escapeHtml(displayLabel)}"${linkedAttr} contenteditable="false" style="position:relative;width:min(100%,360px);height:240px;margin:12px 0;border:1px solid #c7d0da;border-radius:8px;overflow:hidden;background:#f6f7f9;box-shadow:0 1px 3px rgba(15,23,42,0.12);"><canvas data-nv-model-canvas style="display:block;width:100%;height:100%;"></canvas><div data-nv-model-status style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font:12px system-ui,sans-serif;color:#26313d;background:rgba(255,255,255,0.86);box-sizing:border-box;">Loading 3D model...</div><a href="${escapeHtml(source)}" style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:3px 6px;border-radius:4px;background:rgba(255,255,255,0.86);color:#1d4ed8;font:11px system-ui,sans-serif;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(title)}</a></div>`;
+  return `<div id="${escapeHtml(id)}" class="nv-3d-model-panel" data-nv-static-model-viewer data-src="${escapeHtml(source)}"${fallbackAttrs} data-ext="${escapeHtml(modelExt)}" data-label="${escapeHtml(displayLabel)}"${linkedAttr} contenteditable="false" style="position:relative;width:min(100%,360px);height:240px;margin:12px 0;border:1px solid #c7d0da;border-radius:8px;overflow:hidden;background:#f6f7f9;box-shadow:0 1px 3px rgba(15,23,42,0.12);"><canvas data-nv-model-canvas style="display:block;width:100%;height:100%;"></canvas><div data-nv-model-status style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font:12px system-ui,sans-serif;color:#26313d;background:rgba(255,255,255,0.86);box-sizing:border-box;">Loading 3D model...</div><a href="${escapeHtml(source)}" style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:3px 6px;border-radius:4px;background:rgba(255,255,255,0.86);color:#1d4ed8;font:11px system-ui,sans-serif;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(title)}</a></div>`;
 }
 
 function insertLinkedModelViewerAtCaret(options = {}) {
@@ -370,7 +373,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
   const storageHint = inWorld ? "Linked stores a model file reference; internally defined stores the model payload in the world." : "Inline inserts a text preview; Referenced inserts a small linked 3D panel.";
   const colliderHtml = inWorld ? `<fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>World Collider</legend><label style="display:block;"><input type="checkbox" data-field="worldCollider" checked> Bind geometry collider</label></fieldset>` : "";
 
-  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:660px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(sourceLegend)}</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> ${escapeHtml(newSourceLabel)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> ${escapeHtml(existingSourceLabel)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> ${escapeHtml(referencedLabel)}</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> ${escapeHtml(inlineLabel)}</label></fieldset>${colliderHtml}<div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Model Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${options.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>New Model File Name<input data-field="fileName" type="text" placeholder="model.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="font-size:11px;color:#666;line-height:1.3;">${escapeHtml(storageHint)}</div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="models/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
+  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:660px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(sourceLegend)}</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> ${escapeHtml(newSourceLabel)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> ${escapeHtml(existingSourceLabel)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> ${escapeHtml(referencedLabel)}</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> ${escapeHtml(inlineLabel)}</label></fieldset>${colliderHtml}<div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Model Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${options.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>New Model File Name<input data-field="fileName" type="text" placeholder="model.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="font-size:11px;color:#666;line-height:1.3;">${escapeHtml(storageHint)}</div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="models/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div data-field="fallbackHost"></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
   const sourceEls = () => Array.from(root.querySelectorAll('input[name="nv-source"]'));
@@ -381,6 +384,10 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
   const formatEl = root.querySelector('[data-field="format"]');
   const fileEl = root.querySelector('[data-field="fileName"]');
   const existingSourceEl = root.querySelector('[data-field="existingSource"]');
+  const fallbackList = attachFallbackReferenceList({
+    container: root.querySelector("[data-field=\"fallbackHost\"]"),
+    primaryInput: existingSourceEl
+  });
   const existingFileStatus = root.querySelector('[data-field="existingFileStatus"]');
   const statusEl = root.querySelector('[data-field="status"]');
   const worldColliderEl = root.querySelector('[data-field="worldCollider"]');
@@ -568,6 +575,10 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
       }
 
       if (modelViewer) {
+        modelViewer.fallbacks = normalizeFallbackReferencesForSource(fallbackList.getFallbacks(), {
+          sourcePath: editorPath,
+          primary: modelViewer.src
+        });
         const sceneExt = modelExtensionFromSource(modelViewer.src || modelViewer.label || "", modelViewer.ext || "");
         if (USD_SCENE_EXTENSIONS.has(sceneExt)) insertUSDScenePanelAtCaret(modelViewer);
         else insertLinkedModelViewerAtCaret(modelViewer);

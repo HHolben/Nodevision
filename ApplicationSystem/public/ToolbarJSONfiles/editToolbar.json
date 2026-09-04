@@ -177,6 +177,52 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Edit Text Image",
+    "hotkeyText": "",
+    "callbackKey": "changeSelectedTextImage",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageTextSelected": true
+    },
+    "shortLabel": "TxtImg"
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit Text Image",
+    "heading": "Change Image",
+    "hotkeyText": "",
+    "callbackKey": "changeSelectedTextImage",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageTextSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit Text Image",
+    "heading": "Text Image Layout",
+    "hotkeyText": "",
+    "content": "<div id=\"nv-html-image-text-toolbar\"></div>",
+    "script": "htmlImageTextToolbar.mjs",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageTextSelected": true
+    },
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Edit",
+    "parentHeading": "Edit Text Image",
+    "heading": "Remove Text Image",
+    "hotkeyText": "",
+    "callbackKey": "removeSelectedTextImage",
+    "modes": ["HTMLediting", "EPUBediting"],
+    "conditions": {
+      "htmlImageTextSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "Auto Format",
     "hotkeyText": "",
     "callbackKey": "autoFormatFile",

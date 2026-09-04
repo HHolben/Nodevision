@@ -7,6 +7,13 @@ import { moveFileOrDirectory as moveFileOrDirectoryAPI } from '/PanelInstances/I
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
 import {
+  DIRECTORY_APPEARANCE_CHANGED_EVENT,
+  getCachedDirectoryAppearance,
+  loadDirectoryAppearanceMap,
+  normalizeDirectoryMetadataPath,
+  resolveDirectoryAppearanceFileManagerPalette,
+} from '/GraphManagement/DirectoryAppearanceClient.mjs';
+import {
   hasExternalFileTransfer,
   importExternalFilesFromDataTransfer,
   installExternalFileDropTarget,
@@ -370,6 +377,32 @@ function playFileItemHoverSound() {
   }
 }
 
+function directoryAppearanceForFileItem(link) {
+  if (!link || link.dataset?.isDirectory !== "true") return {};
+  return getCachedDirectoryAppearance(link.dataset.fullPath || "");
+}
+
+function applyFileManagerDirectoryBackground(pathValue = window.currentDirectoryPath || "") {
+  const manager = document.querySelector(".file-manager");
+  if (!manager) return;
+  const appearance = getCachedDirectoryAppearance(pathValue || "");
+  if (!appearance?.fillColor) {
+    manager.style.removeProperty("--nv-file-manager-bg");
+    return;
+  }
+
+  const rootStyles = getComputedStyle(document.documentElement);
+  const base = { backgroundColor: rootStyles.getPropertyValue("--nv-file-manager-bg").trim() || "#f5f5f5" };
+  const palette = resolveDirectoryAppearanceFileManagerPalette({ appearance, state: "base", base });
+  manager.style.setProperty("--nv-file-manager-bg", palette.backgroundColor || appearance.fillColor);
+}
+
+function refreshCurrentDirectoryAppearance(targetPath) {
+  const current = normalizeDirectoryMetadataPath(window.currentDirectoryPath || "");
+  if (arguments.length > 0 && normalizeDirectoryMetadataPath(targetPath || "") !== current) return;
+  applyFileManagerDirectoryBackground(current);
+}
+
 function applyFileItemVisualState(link, state = "base") {
   if (!link) return;
   const paletteRoot = link.closest(".file-manager") || document.documentElement;
@@ -390,10 +423,18 @@ function applyFileItemVisualState(link, state = "base") {
     borderColor: read("--nv-file-manager-item-selected-border", "#9f7aea"),
     color: read("--nv-file-manager-item-selected-text", "#1f1630")
   };
-  const palette = state === "selected" ? selected : state === "hover" ? hover : base;
+  const palette = resolveDirectoryAppearanceFileManagerPalette({
+    appearance: directoryAppearanceForFileItem(link),
+    state,
+    base,
+    hover,
+    selected,
+  });
+
   link.style.backgroundColor = palette.backgroundColor;
   link.style.borderColor = palette.borderColor;
   link.style.color = palette.color;
+  link.style.boxShadow = state === "selected" ? "inset 0 0 0 2px " + selected.borderColor : "";
 }
 
 function applyFileDropTargetVisualState(link) {
@@ -411,6 +452,30 @@ function refreshFileItemVisualStates() {
   allItems.forEach((item) => {
     applyFileItemVisualState(item, item.classList.contains("selected") ? "selected" : "base");
   });
+}
+
+function refreshDirectoryAppearanceFileManagerItems(targetPath) {
+  const hasTarget = arguments.length > 0;
+  const cleanTarget = normalizeDirectoryMetadataPath(targetPath || "");
+  const directoryItems = document.querySelectorAll("#file-list a.folder");
+  directoryItems.forEach((item) => {
+    const itemPath = normalizeDirectoryMetadataPath(item?.dataset?.fullPath || "");
+    if (hasTarget && itemPath !== cleanTarget) return;
+    applyFileItemVisualState(item, item.classList.contains("selected") ? "selected" : "base");
+  });
+}
+
+if (typeof window !== "undefined" && !window.__nvFileManagerDirectoryAppearanceBound) {
+  window.addEventListener(DIRECTORY_APPEARANCE_CHANGED_EVENT, (event) => {
+    if (event?.detail && Object.prototype.hasOwnProperty.call(event.detail, "path")) {
+      refreshDirectoryAppearanceFileManagerItems(event.detail.path);
+      refreshCurrentDirectoryAppearance(event.detail.path);
+      return;
+    }
+    refreshDirectoryAppearanceFileManagerItems();
+    refreshCurrentDirectoryAppearance();
+  });
+  window.__nvFileManagerDirectoryAppearanceBound = true;
 }
 
 function fileSelectionEntryFromItem(item) {
@@ -659,11 +724,13 @@ export async function fetchDirectoryContents(path, callback, errorElem, loadingE
     if (!response.ok) throw new Error(`Failed to fetch directory: ${path}`);
 
     const data = await response.json();
+    await loadDirectoryAppearanceMap({ force: true });
     console.log("Fetched directory contents:", data);
 
+    window.currentDirectoryPath = cleanPath;
+    applyFileManagerDirectoryBackground(cleanPath);
     if (typeof callback === "function") callback(data, cleanPath);
 
-    window.currentDirectoryPath = cleanPath;
     navigationState.setLastOpenedDirectory(cleanPath, "FileManager");
   } catch (err) {
     console.error(err);
@@ -1298,6 +1365,9 @@ function registerFileManagerClipboardShortcuts() {
 registerFileManagerClipboardShortcuts();
 
 if (!window.__nvFileManagerThemeRefreshBound) {
-  window.addEventListener("nv-theme-changed", refreshFileItemVisualStates);
+  window.addEventListener("nv-theme-changed", () => {
+    refreshFileItemVisualStates();
+    refreshCurrentDirectoryAppearance();
+  });
   window.__nvFileManagerThemeRefreshBound = true;
 }

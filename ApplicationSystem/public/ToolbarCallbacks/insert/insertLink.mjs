@@ -5,7 +5,19 @@ import { saveFoundEdge } from "../../PanelInstances/InfoPanels/GraphManagerDepen
 import { createFileManager } from "../../PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerController.mjs";
 import { syncPortalForHyperlink } from "../../LinkPortalParity.mjs";
 import { getNodevisionNavigationState } from "../../NodevisionNavigationState.mjs";
-import { getRelativeNotebookReference, normalizeNotebookFilePath, toNotebookAssetUrl } from "../../utils/notebookPath.mjs";
+import {
+  getRelativeNotebookReference,
+  isExternalNotebookReference,
+  normalizeNotebookFilePath,
+  resolveNotebookReference,
+  toNotebookAssetUrl
+} from "../../utils/notebookPath.mjs";
+import {
+  applyFallbackReferencesToElement,
+  normalizeFallbackReferencesForSource,
+  normalizeReferenceForSource
+} from "../../utils/referenceFallbacks.mjs";
+import { showReferenceDetailsDialog } from "../../ToolbarJSONfiles/referenceDetailsDialog.mjs";
 
 const navigationState = getNodevisionNavigationState();
 
@@ -330,7 +342,14 @@ async function uploadLocalFileToNotebook(file) {
   return normalizeNotebookPath(payload?.filename || file.name);
 }
 
-function insertAnchorAtSelection(wysiwyg, href, linkText, linkType = "external", savedRange = null) {
+function edgeTargetFromHref(sourcePath = "", href = "", fallbackTarget = "") {
+  const resolved = !isExternalNotebookReference(href)
+    ? resolveNotebookReference({ sourcePath, reference: href })
+    : "";
+  return resolved || fallbackTarget || href;
+}
+
+function insertAnchorAtSelection(wysiwyg, href, linkText, linkType = "external", savedRange = null, fallbacks = []) {
   const sel = window.getSelection();
   if (!sel) return null;
   restoreSelectionRange(savedRange);
@@ -341,13 +360,14 @@ function insertAnchorAtSelection(wysiwyg, href, linkText, linkType = "external",
   const resolvedText = linkText || selectedText || href;
 
   const a = document.createElement("a");
-  a.href = href;
+  a.setAttribute("href", href);
   a.textContent = resolvedText;
   a.dataset.nvLinkType = linkType;
   if (linkType === "external") {
     a.target = "_blank";
     a.rel = "noopener noreferrer";
   }
+  applyFallbackReferencesToElement(a, fallbacks, { primary: href });
 
   range.deleteContents();
   range.insertNode(a);
@@ -415,11 +435,28 @@ export default async function insertLink() {
     href = trimmed;
   }
 
-  const linkText = prompt(
-    "Enter link text (leave blank to use selected text or URL):"
-  ) || "";
+  const details = await showReferenceDetailsDialog({
+    title: "Insert Link",
+    primaryLabel: "Destination",
+    primaryValue: href,
+    textLabel: "Link text",
+    textValue: savedRange?.toString?.() || "",
+    requireText: false,
+    fallbacks: []
+  });
+  if (!details) return;
 
-  const inserted = insertAnchorAtSelection(wysiwyg, href, linkText, linkType, savedRange);
+  href = normalizeReferenceForSource(details.primary, { sourcePath });
+  if (!href) return;
+  edgeTarget = edgeTargetFromHref(sourcePath, href, edgeTarget);
+  const fallbacks = normalizeFallbackReferencesForSource(details.fallbacks, {
+    sourcePath,
+    primary: href
+  });
+  const linkText = details.text || "";
+  const resolvedLinkType = /^https?:\/\//i.test(href) ? "external" : linkType;
+
+  const inserted = insertAnchorAtSelection(wysiwyg, href, linkText, resolvedLinkType, savedRange, fallbacks);
   if (!inserted) {
     console.warn("insertLink: Could not insert link at current selection.");
     return;

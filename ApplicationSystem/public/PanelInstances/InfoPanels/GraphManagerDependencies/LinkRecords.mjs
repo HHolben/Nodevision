@@ -8,6 +8,10 @@ import {
   resolveNotebookReference,
   splitNotebookReferenceSuffix,
 } from "../../../utils/notebookPath.mjs";
+import {
+  isFallbackAttributeName,
+  parseFallbackAttributesFromTagSource
+} from "../../../utils/referenceFallbacks.mjs";
 
 const HTML_LINK_ATTRS = new Map([
   ["href", "hyperlink"],
@@ -16,6 +20,9 @@ const HTML_LINK_ATTRS = new Map([
   ["action", "form-action"],
   ["poster", "poster"],
   ["data-src", "source"],
+  ["data-nodevision-image-src", "text-image-source"],
+  ["data-nodevision-citation-source", "citation-source"],
+  ["data-nodevision-circuit-src", "circuit-source"],
   ["data-nodevision-font-src", "font-source"],
   ["data-nodevision-font-stylesheet", "font-stylesheet"],
 ]);
@@ -31,6 +38,9 @@ const MARKDOWN_METADATA_PREFIX = "nodevision-link";
 const SOURCE_REFERENCE_LINK_PROPERTIES = new Set([
   "src",
   "data-src",
+  "data-nodevision-image-src",
+  "data-nodevision-citation-source",
+  "data-nodevision-circuit-src",
   "poster",
   "data",
   "data-nodevision-font-src",
@@ -105,7 +115,9 @@ function readHtmlAttributeValue(tagSource = "", attrName = "") {
 function inferHtmlReferenceKind({ tagName = "", linkProperty = "", rawTarget = "", tagSource = "" } = {}) {
   const tag = String(tagName || "").toLowerCase();
   const property = String(linkProperty || "").toLowerCase();
+  if (property.includes("circuit")) return "circuit";
   if (property.includes("font")) return "font";
+  if (property === "data-nodevision-image-src") return "image";
   if (property === "poster") return "image";
   if (tag === "img" || tag === "picture") return "image";
   if (tag === "audio") return "audio";
@@ -294,6 +306,11 @@ function buildLinkRecord({
   ranges = {},
   metadata = {},
   recordIndex,
+  referenceRole = "primary",
+  fallbackPriority = 0,
+  primaryTargetRaw = "",
+  primaryLinkProperty = "",
+  referenceGroupId = "",
 }) {
   const source = normalizeNotebookRelativePath(sourcePath);
   const targetRaw = String(rawTarget || "").trim();
@@ -323,6 +340,11 @@ function buildLinkRecord({
     label,
     displayText,
     edgeLabel,
+    referenceRole,
+    fallbackPriority,
+    primaryTargetRaw,
+    primaryLinkProperty,
+    referenceGroupId,
     editableTarget: Boolean(ranges?.target),
     editableText: Boolean(ranges?.text),
     editableMetadata: Boolean(ranges?.metadata || ranges?.htmlTag),
@@ -362,6 +384,7 @@ function parseHtmlLinks(content, sourcePath, startIndex) {
     const tagBounds = findHtmlTagBounds(text, match.index);
     const metadata = readHtmlMetadata(text, tagBounds);
     const anchorText = parseAnchorTextRange(text, tagBounds);
+    const referenceGroupId = "html:" + (tagBounds?.start ?? -1) + ":" + attrName + ":" + valueStart;
 
     records.push(buildLinkRecord({
       sourcePath,
@@ -372,6 +395,7 @@ function parseHtmlLinks(content, sourcePath, startIndex) {
       linkText: anchorText?.text || defaultHtmlLinkText({ attrName, tagBounds, rawTarget }),
       metadata,
       recordIndex,
+      referenceGroupId,
       ranges: {
         target: { start: valueStart, end: valueEnd },
         text: anchorText?.range || null,
@@ -381,18 +405,60 @@ function parseHtmlLinks(content, sourcePath, startIndex) {
               end: tagBounds.end,
               insertAt: tagBounds.insertAt,
               tagName: tagBounds.tagName,
+              source: tagBounds.source,
               attrRanges: metadata.attrRanges || {},
             }
           : null,
       },
     }));
     recordIndex += 1;
+
+    if (tagBounds) {
+      const fallbackAttrs = parseFallbackAttributesFromTagSource(tagBounds.source, tagBounds.start);
+      for (const fallback of fallbackAttrs) {
+        if (!fallback.rawTarget || isIgnoredLink(fallback.rawTarget)) continue;
+        records.push(buildLinkRecord({
+          sourcePath,
+          sourceFormat: "html",
+          linkKind: HTML_LINK_ATTRS.get(attrName) || attrName,
+          linkProperty: fallback.attributeName,
+          rawTarget: fallback.rawTarget,
+          linkText: "fallback " + fallback.priority + " for " + (anchorText?.text || rawTarget),
+          metadata: {
+            ...metadata,
+            displayText: metadata.displayText || "Fallback " + fallback.priority,
+          },
+          recordIndex,
+          referenceGroupId,
+          referenceRole: "fallback",
+          fallbackPriority: fallback.priority,
+          primaryTargetRaw: rawTarget,
+          primaryLinkProperty: attrName,
+          ranges: {
+            target: fallback.range,
+            htmlTag: tagBounds
+              ? {
+                  start: tagBounds.start,
+                  end: tagBounds.end,
+                  insertAt: tagBounds.insertAt,
+                  tagName: tagBounds.tagName,
+                  source: tagBounds.source,
+                  attrRanges: metadata.attrRanges || {},
+                }
+              : null,
+          },
+        }));
+        recordIndex += 1;
+      }
+    }
   }
 
-  const cssUrlRegex = /url\(\s*(?:"([^"]+)"|'([^']+)'|([^'"\)]+))\s*\)/gi;
+  const cssUrlRegex = /url\(\s*(?:"([^"]+)"|'([^']+)'|&quot;([^&]*?)&quot;|&#39;([^&]*?)&#39;|([^'"\)]+))\s*\)/gi;
   while ((match = cssUrlRegex.exec(text))) {
-    const rawTarget = String(match[1] || match[2] || match[3] || "").trim();
+    const rawTarget = String(match[1] || match[2] || match[3] || match[4] || match[5] || "").trim();
     if (!rawTarget || isIgnoredLink(rawTarget)) continue;
+    const tagBounds = findHtmlTagBounds(text, match.index);
+    if (tagBounds && readHtmlAttributeValue(tagBounds.source, "data-nodevision-image-src")) continue;
     const valueStart = match.index + match[0].indexOf(rawTarget);
     records.push(buildLinkRecord({
       sourcePath,
@@ -654,6 +720,98 @@ function htmlMetadataReplacements(record, patch) {
   return replacements;
 }
 
+function findHtmlAttributeRange(tagSource = "", attrName = "") {
+  const source = String(tagSource || "");
+  const lower = source.toLowerCase();
+  const wanted = String(attrName || "").toLowerCase();
+  const doubleQuote = String.fromCharCode(34);
+  const singleQuote = String.fromCharCode(39);
+  if (!wanted) return null;
+
+  let index = 0;
+  while (index < source.length) {
+    const found = lower.indexOf(wanted, index);
+    if (found < 0) return null;
+    const before = source[found - 1] || "";
+    const after = source[found + wanted.length] || "";
+    if (isHtmlAttributeNameChar(before) || isHtmlAttributeNameChar(after)) {
+      index = found + wanted.length;
+      continue;
+    }
+
+    let pos = found + wanted.length;
+    while (isHtmlSpace(source[pos] || "")) pos += 1;
+    if (source[pos] !== "=") {
+      index = found + wanted.length;
+      continue;
+    }
+    pos += 1;
+    while (isHtmlSpace(source[pos] || "")) pos += 1;
+
+    const quote = source[pos] || "";
+    if (quote !== doubleQuote && quote !== singleQuote && quote !== "`") return null;
+    const end = source.indexOf(quote, pos + 1);
+    if (end < 0) return null;
+    return {
+      wholeStart: found,
+      wholeEnd: end + 1,
+      valueStart: pos + 1,
+      valueEnd: end,
+      value: source.slice(pos + 1, end),
+      quote,
+    };
+  }
+  return null;
+}
+
+function cssUrlForHtmlStyleAttribute(value = "") {
+  const escaped = escapeHtmlAttribute(String(value || ""))
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\A ")
+    .replace(/\r/g, "");
+  return `url(&quot;${escaped}&quot;)`;
+}
+
+function syncImageTextStyleDeclaration(styleValue = "", nextTarget = "") {
+  const cssUrl = cssUrlForHtmlStyleAttribute(nextTarget);
+  const sourceDeclaration = `--nodevision-image-text-src:${cssUrl};`;
+  const backgroundDeclaration = "background-image:var(--nodevision-image-text-src);";
+  let style = String(styleValue || "");
+  if (/--nodevision-image-text-src\s*:/i.test(style)) {
+    style = style.replace(/--nodevision-image-text-src\s*:\s*[^;]*(;?)/i, sourceDeclaration);
+  } else {
+    const separator = style.trim() && !style.trim().endsWith(";") ? ";" : "";
+    style = `${style}${separator}${sourceDeclaration}`;
+  }
+  if (!/background-image\s*:\s*var\(--nodevision-image-text-src\)/i.test(style)) {
+    const separator = style.trim() && !style.trim().endsWith(";") ? ";" : "";
+    style = `${style}${separator}${backgroundDeclaration}`;
+  }
+  return style;
+}
+
+function htmlImageTextStyleReplacements(record, nextTarget) {
+  if (record?.sourceFormat !== "html" || record?.linkProperty !== "data-nodevision-image-src") return [];
+  const htmlTag = record?.ranges?.htmlTag || null;
+  if (!htmlTag?.source || !Number.isFinite(htmlTag.start) || !Number.isFinite(htmlTag.insertAt)) return [];
+
+  const styleRange = findHtmlAttributeRange(htmlTag.source, "style");
+  if (styleRange) {
+    return [{
+      start: htmlTag.start + styleRange.valueStart,
+      end: htmlTag.start + styleRange.valueEnd,
+      value: syncImageTextStyleDeclaration(styleRange.value, nextTarget),
+    }];
+  }
+
+  const styleValue = syncImageTextStyleDeclaration("", nextTarget);
+  return [{
+    start: htmlTag.insertAt,
+    end: htmlTag.insertAt,
+    value: ` style="${styleValue}"`,
+  }];
+}
+
 function markdownMetadataReplacement(content, record, patch) {
   const metadata = record?.ranges?.metadata;
   if (!metadata) return null;
@@ -689,8 +847,9 @@ export function applyLinkRecordEdit(content, selectedRecord, patch = {}) {
     replacements.push({
       start: record.ranges.target.start,
       end: record.ranges.target.end,
-      value: nextTarget,
+      value: record.ranges.target.escapeHtmlAttribute || isFallbackAttributeName(record.linkProperty) ? escapeHtmlAttribute(nextTarget) : nextTarget,
     });
+    replacements.push(...htmlImageTextStyleReplacements(record, nextTarget));
   }
 
   if (record.ranges?.text && patch.linkText !== undefined) {

@@ -7,6 +7,7 @@ import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createServerContext } from '../../shared/serverContext.mjs';
+import { remapDirectoryAppearancePath } from '../../server/graph/DirectoryAppearanceStore.mjs';
 
 const BASE_CONTEXT = createServerContext();
 const userTrashRelative = 'Trash';
@@ -25,6 +26,16 @@ export default function createFolderRouter(ctx = BASE_CONTEXT) {
   const notebookDir = ctx.notebookDir;
   const userSettingsDir = ctx.userSettingsDir;
   const toolbarDir = path.join(ctx.publicDir, 'ToolbarJSONfiles');
+
+  async function remapDirectoryAppearanceAfterMove(oldPath, newPath) {
+    try {
+      const result = await remapDirectoryAppearancePath(ctx, oldPath, newPath);
+      return { changed: Boolean(result.changed) };
+    } catch (err) {
+      console.warn("Failed to remap directory appearance metadata:", err);
+      return { changed: false, warning: err?.message || "Directory appearance metadata was not remapped." };
+    }
+  }
 
   fs.mkdir(notebookDir, { recursive: true })
     .then(() => console.log(`Notebook directory verified at ${notebookDir}`))
@@ -156,7 +167,9 @@ export default function createFolderRouter(ctx = BASE_CONTEXT) {
     try {
       await fs.mkdir(destDir, { recursive: true });
       await fs.rename(sourceFullPath, destinationFullPath);
-      res.status(200).json({ message: `Moved "${source}" to "${destination}".` });
+      const destinationPath = normalizeClientPath(destination ? destination + "/" + path.basename(source) : path.basename(source));
+      const directoryAppearance = await remapDirectoryAppearanceAfterMove(source, destinationPath);
+      res.status(200).json({ message: "Moved \"" + source + "\" to \"" + destination + "\".", directoryAppearance });
     } catch (error) {
       console.error('Error moving file or directory:', error);
       res.status(500).json({ error: 'Failed to move file or directory.', details: error.message });

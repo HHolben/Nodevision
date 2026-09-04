@@ -6,14 +6,18 @@ import fs from "node:fs";
 import fsPromises from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
+function isExpressRouter(value) {
+  return typeof value === "function" && typeof value.handle === "function" && typeof value.use === "function";
+}
+
 export async function loadRoutes(app, ctx) {
   try {
     const data = await fsPromises.readFile(ctx.routesJsonPath, "utf8");
     const { routes } = JSON.parse(data);
 
-    for (const { name, path: routePath } of routes) {
+    for (const { name, path: routePath, mountPath = "/api" } of routes) {
       const absoluteRoutePath = path.resolve(ctx.applicationSystemRoot, routePath);
-      console.log(`Attempting to load route: ${name} from ${routePath}`);
+      console.log(`Attempting to load route: ${name} from ${routePath} at ${mountPath}`);
 
       if (!fs.existsSync(absoluteRoutePath)) {
         console.error(`❌ Route file not found: ${absoluteRoutePath}`);
@@ -25,7 +29,9 @@ export async function loadRoutes(app, ctx) {
         const factory = mod.default ?? mod;
         let route;
 
-        if (typeof factory === "function") {
+        if (isExpressRouter(factory)) {
+          route = factory;
+        } else if (typeof factory === "function") {
           try {
             route = factory(ctx);
           } catch (err) {
@@ -40,8 +46,8 @@ export async function loadRoutes(app, ctx) {
         }
 
         if (!route) throw new Error("Route factory returned nothing");
-        app.use("/api", route);
-        console.log(`✅ Loaded route: ${name} from ${absoluteRoutePath}`);
+        app.use(mountPath, route);
+        console.log(`✅ Loaded route: ${name} from ${absoluteRoutePath} at ${mountPath}`);
       } catch (err) {
         console.error(`❌ Error importing route ${name} from ${routePath}:`, err);
       }

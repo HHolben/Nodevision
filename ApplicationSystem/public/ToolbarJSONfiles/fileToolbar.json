@@ -150,6 +150,14 @@
   {
     "ToolbarCategory": "File",
     "parentHeading": "File Manager",
+    "heading": "Directory Colors",
+    "hotkeyText": "",
+    "script": "directoryAppearanceWidget.mjs",
+    "owner": "FileManager"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
     "heading": "Manager View",
     "hotkeyText": "",
     "script": "graphManagerLayerControlsWidget.mjs",
@@ -245,6 +253,14 @@
     "callbackKey": "RefreshGraphNodes",
     "icon": "icons/Sync.png",
     "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Graph Manager",
+    "heading": "Directory Colors",
+    "hotkeyText": "",
+    "script": "directoryAppearanceWidget.mjs",
+    "owner": "GraphManager"
   },
   {
     "ToolbarCategory": "File",

@@ -9,7 +9,7 @@
  * @param {string} serverBase - Base URL of the server to fetch the file from.
  */
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
-  viewPanel.dataset.nvZoomInlineFit = "stretch-on-zoom-out";
+  viewPanel.dataset.nvZoomInlineFit = "scale-content";
   try {
     const url = `${serverBase}/${filename}`;
 
@@ -19,15 +19,21 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
       50% / 20px 20px
     `;
 
+    viewPanel.style.display = 'flex';
+    viewPanel.style.alignItems = 'center';
+    viewPanel.style.justifyContent = 'center';
+
     const img = document.createElement('img');
     img.alt = filename;
     img.src = `${url}?t=${Date.now()}`;
 
-    img.style.width = '100%';
-    img.style.height = '100%';
+    img.style.width = 'auto';
+    img.style.height = 'auto';
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '100%';
     img.style.objectFit = 'contain';
     img.style.display = 'block';
-    img.style.margin = '0 auto';
+    img.style.flex = '0 0 auto';
     // Keep scaled pixel art sharp (disable interpolation/blur).
     img.style.imageRendering = 'pixelated';
 

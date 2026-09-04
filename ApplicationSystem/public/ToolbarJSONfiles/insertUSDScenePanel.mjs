@@ -3,6 +3,7 @@
 
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
+import { serializeFallbackAttributes } from "../utils/referenceFallbacks.mjs";
 
 const STATIC_USD_SCENE_SCRIPT_KEY = "nv-static-usd-scene-panels";
 const USD_EXTENSIONS = ["usd", "usda", "usdc"];
@@ -346,14 +347,15 @@ function sanitizeCssDimension(value = "", fallback = "320px") {
   return clean;
 }
 
-function buildUSDScenePanelHtml({ src, linkedPath = "", label = "", width = "min(100%,520px)", height = "320px" } = {}) {
+function buildUSDScenePanelHtml({ src, linkedPath = "", label = "", width = "min(100%,520px)", height = "320px", fallbacks = [] } = {}) {
   const source = String(src || "").trim();
   const displayLabel = String(label || sourceLabel(source) || "USD scene").trim();
   const id = "nv-usd-scene-" + Date.now().toString(36) + "-" + Math.floor(Math.random() * 10000).toString(36);
   const linkedAttr = linkedPath ? ` data-nv-linked-path="${escapeHtml(linkedPath)}"` : "";
   const safeWidth = sanitizeCssDimension(width, "min(100%,520px)");
   const safeHeight = sanitizeCssDimension(height, "320px");
-  return `<div id="${escapeHtml(id)}" class="nv-usd-scene-panel" data-nv-static-usd-scene data-nv-resizable data-src="${escapeHtml(source)}" data-label="${escapeHtml(displayLabel)}"${linkedAttr} contenteditable="false" style="position:relative;width:${escapeHtml(safeWidth)};height:${escapeHtml(safeHeight)};min-width:220px;min-height:180px;margin:12px 0;border:1px solid #2f3a48;border-radius:8px;overflow:hidden;background:#151a20;box-sizing:border-box;"><canvas data-nv-usd-canvas style="display:block;width:100%;height:100%;"></canvas><div data-nv-usd-status>Loading USD scene...</div><a data-nv-usd-link href="${escapeHtml(source)}">${escapeHtml(displayLabel)}</a></div>`;
+  const fallbackAttrs = serializeFallbackAttributes(fallbacks, { primary: source });
+  return `<div id="${escapeHtml(id)}" class="nv-usd-scene-panel" data-nv-static-usd-scene data-nv-resizable data-src="${escapeHtml(source)}"${fallbackAttrs} data-label="${escapeHtml(displayLabel)}"${linkedAttr} contenteditable="false" style="position:relative;width:${escapeHtml(safeWidth)};height:${escapeHtml(safeHeight)};min-width:220px;min-height:180px;margin:12px 0;border:1px solid #2f3a48;border-radius:8px;overflow:hidden;background:#151a20;box-sizing:border-box;"><canvas data-nv-usd-canvas style="display:block;width:100%;height:100%;"></canvas><div data-nv-usd-status>Loading USD scene...</div><a data-nv-usd-link href="${escapeHtml(source)}">${escapeHtml(displayLabel)}</a></div>`;
 }
 
 function insertUSDScenePanelAtCaret(options = {}) {

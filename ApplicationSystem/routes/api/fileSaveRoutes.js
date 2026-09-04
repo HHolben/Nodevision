@@ -17,6 +17,7 @@ import { validateSvgSavePayload } from "./fileSaveRoutes/svgSaveGuard.js";
 import { validateSaveSourcePath } from "./fileSaveRoutes/saveSourceGuard.js";
 import { validateHtmlWysiwygSavePayload } from "./fileSaveRoutes/htmlWysiwygSaveGuard.js";
 import { rejectIfLanWriteDenied } from "./lanCooperationRoutes.js";
+import { remapDirectoryAppearancePath } from "../../server/graph/DirectoryAppearanceStore.mjs";
 
 const BASE_CONTEXT = createServerContext();
 
@@ -25,6 +26,16 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
   const NOTEBOOK_ROOT = ctx.notebookDir;
   const USER_SETTINGS_ROOT = ctx.userSettingsDir;
   const USER_TRASH_ROOT = path.join(USER_SETTINGS_ROOT, 'Trash');
+
+  async function remapDirectoryAppearanceAfterMove(oldPath, newPath) {
+    try {
+      const result = await remapDirectoryAppearancePath(ctx, oldPath, newPath);
+      return { changed: Boolean(result.changed) };
+    } catch (err) {
+      console.warn("Failed to remap directory appearance metadata:", err);
+      return { changed: false, warning: err?.message || "Directory appearance metadata was not remapped." };
+    }
+  }
 
   router.post('/save', async (req, res) => {
     if (await rejectIfLanWriteDenied(req, res, ctx)) return;
@@ -214,7 +225,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     try {
       await fs.mkdir(path.dirname(dest), { recursive: true });
       await fs.rename(src, dest);
-      res.json({ success: true, oldPath, newPath });
+      const directoryAppearance = await remapDirectoryAppearanceAfterMove(oldPath, newPath);
+      res.json({ success: true, oldPath, newPath, directoryAppearance });
     } catch (err) {
       console.error('Error renaming/moving:', err);
       res.status(500).send('Error renaming/moving');
@@ -263,7 +275,8 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     try {
       await fs.mkdir(path.dirname(dest), { recursive: true });
       await fs.rename(src, dest);
-      res.json({ success: true, source, destination });
+      const directoryAppearance = await remapDirectoryAppearanceAfterMove(source, destination);
+      res.json({ success: true, source, destination, directoryAppearance });
     } catch (err) {
       console.error('Error cutting/moving:', err);
       res.status(500).send('Error cutting/moving');

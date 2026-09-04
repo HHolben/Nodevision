@@ -7,15 +7,25 @@ function currentViewerPath() {
   return window.NodevisionState?.activeFileViewPath || window.currentActiveFilePath || window.selectedFilePath || "";
 }
 
-function dispatchViewerOpen(path) {
+function activePanelCell() {
+  const candidate = window.activeCell?.closest?.(".panel-cell") || window.activeCell;
+  return candidate?.classList?.contains("panel-cell") ? candidate : null;
+}
+
+async function dispatchViewerOpen(path) {
   window.selectedFilePath = path;
-  window.dispatchEvent(new CustomEvent("toolbarAction", { detail: { id: "FileView", type: "ViewPanel", replaceActive: false } }));
+  const cell = activePanelCell();
+  if (cell && typeof window.__nvOpenPanelTab === "function") {
+    return window.__nvOpenPanelTab(cell, "FileView", "ViewPanel", { filePath: path });
+  }
+  window.dispatchEvent(new CustomEvent("toolbarAction", { detail: { id: "FileView", type: "ViewPanel", replaceActive: false, panelVars: { filePath: path } } }));
+  return null;
 }
 
 export async function openViewerCommand([path]) {
-  dispatchViewerOpen(path);
-  let rendered = null;
-  if (typeof window.updateViewPanel === "function") rendered = await window.updateViewPanel(path, { force: true });
+  const opened = await dispatchViewerOpen(path);
+  let rendered = Boolean(opened);
+  if (!opened && typeof window.updateViewPanel === "function") rendered = await window.updateViewPanel(path, { force: true });
   const detail = { path, rendered: rendered !== false };
   emitNodevisionEvent("viewer.opened", detail);
   return { ok: true, ...detail };

@@ -56,6 +56,9 @@ export default async function renameFile() {
     if (typeof window.refreshFileManager === "function") {
       await window.refreshFileManager(window.currentDirectoryPath || "");
     }
+    if (typeof window.refreshGraphManager === "function") {
+      await window.refreshGraphManager({ fit: true, reason: "file-rename" });
+    }
 
     await maybePromptLinkMoveImpact({ oldPath, newPath });
   } catch (err) {

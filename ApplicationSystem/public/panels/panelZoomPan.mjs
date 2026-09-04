@@ -16,6 +16,7 @@ const RESIZE_FRAME_KEY = "__nvPanelZoomPanResizeFrame";
 const CONTENT_RESIZE_FRAME_KEY = "__nvPanelZoomPanContentResizeFrame";
 const INLINE_FIT_ATTR = "data-nv-zoom-inline-fit";
 const INLINE_FIT_STRETCH_ON_ZOOM_OUT = "stretch-on-zoom-out";
+const INLINE_FIT_SCALE_CONTENT = "scale-content";
 const LOCAL_ZOOM_SCOPE_SELECTOR = "[data-nv-panel-zoom-scope=\"local\"]";
 
 const MIN_ZOOM = 0.1;
@@ -233,15 +234,21 @@ function findZoomInlineFitMarker(root) {
   return root.querySelector?.("[" + INLINE_FIT_ATTR + "]") || null;
 }
 
+function getPanelZoomFitMode(panelContent, refs) {
+  const marker = findZoomInlineFitMarker(refs?.layer) || findZoomInlineFitMarker(panelContent);
+  return marker?.getAttribute?.(INLINE_FIT_ATTR) || "";
+}
+
 function getPanelZoomAxes(panelContent, refs, zoom = 1) {
   const z = clamp(zoom, MIN_ZOOM, MAX_ZOOM, 1);
-  const marker = findZoomInlineFitMarker(refs?.layer) || findZoomInlineFitMarker(panelContent);
-  const fitMode = marker?.getAttribute?.(INLINE_FIT_ATTR) || "";
+  const fitMode = getPanelZoomFitMode(panelContent, refs);
   const stretchInline = z < 1 && fitMode === INLINE_FIT_STRETCH_ON_ZOOM_OUT;
+  const scaleContent = fitMode === INLINE_FIT_SCALE_CONTENT;
   return {
     x: stretchInline ? 1 : z,
     y: z,
     stretchInline,
+    scaleContent,
   };
 }
 
@@ -444,8 +451,8 @@ function measureLayerBaseSize(panelContent, refs, zoom = 1) {
   const viewportH = Math.max(1, refs.viewport.clientHeight || panelContent.clientHeight || 1);
   const effectiveZoom = clamp(zoom, MIN_ZOOM, MAX_ZOOM, 1);
   const axes = getPanelZoomAxes(panelContent, refs, effectiveZoom);
-  const zoomedOutW = Math.ceil(viewportW / axes.x);
-  const zoomedOutH = Math.ceil(viewportH / axes.y);
+  const zoomedOutW = axes.scaleContent ? viewportW : Math.ceil(viewportW / axes.x);
+  const zoomedOutH = axes.scaleContent ? viewportH : Math.ceil(viewportH / axes.y);
 
   refs.layer.style.width = `${Math.max(viewportW, zoomedOutW)}px`;
   refs.layer.style.height = `${Math.max(viewportH, zoomedOutH)}px`;
@@ -457,6 +464,7 @@ function measureLayerBaseSize(panelContent, refs, zoom = 1) {
     viewportH,
     scaleX: axes.x,
     scaleY: axes.y,
+    scaleContent: axes.scaleContent,
   };
 }
 
@@ -472,11 +480,14 @@ function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
     viewportH,
     scaleX,
     scaleY,
+    scaleContent,
   } = measureLayerBaseSize(panelContent, refs, zoom);
   const scaledW = Math.max(1, Math.ceil(baseW * scaleX));
   const scaledH = Math.max(1, Math.ceil(baseH * scaleY));
-  const boundedPanX = scaledW > viewportW + 1 ? panX : 0;
-  const boundedPanY = scaledH > viewportH + 1 ? panY : 0;
+  const centeredPanX = scaleContent && scaledW <= viewportW + 1 ? (viewportW - scaledW) / 2 : 0;
+  const centeredPanY = scaleContent && scaledH <= viewportH + 1 ? (viewportH - scaledH) / 2 : 0;
+  const boundedPanX = scaledW > viewportW + 1 ? panX : centeredPanX;
+  const boundedPanY = scaledH > viewportH + 1 ? panY : centeredPanY;
   const layerLeft = Math.max(0, boundedPanX);
   const layerTop = Math.max(0, boundedPanY);
   const desiredScrollLeft = Math.max(0, -boundedPanX);
@@ -486,8 +497,10 @@ function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
   refs.layer.style.top = `${round(layerTop, 3)}px`;
   refs.layer.style.width = `${baseW}px`;
   refs.layer.style.height = `${baseH}px`;
-  refs.layer.style.setProperty("--nv-panel-content-width", `${baseW}px`);
-  refs.layer.style.setProperty("--nv-panel-content-height", `${baseH}px`);
+  refs.layer.style.setProperty("--nv-panel-content-width", String(baseW) + "px");
+  refs.layer.style.setProperty("--nv-panel-content-height", String(baseH) + "px");
+  refs.layer.style.setProperty("--nv-panel-viewport-width", String(viewportW) + "px");
+  refs.layer.style.setProperty("--nv-panel-viewport-height", String(viewportH) + "px");
   refs.layer.style.setProperty("--nv-panel-visible-width", `${Math.ceil(viewportW / scaleX)}px`);
   refs.layer.style.setProperty("--nv-panel-visible-height", `${Math.ceil(viewportH / scaleY)}px`);
   refs.layer.style.transform = `scale(${round(scaleX, 5)}, ${round(scaleY, 5)})`;

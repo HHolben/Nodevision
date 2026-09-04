@@ -3,6 +3,14 @@
 
 import { logStatus } from "./../StatusBar.mjs";
 import { setStatus } from "./../StatusBar.mjs";
+import {
+  activatePanelTab,
+  closePanelTabsInCell,
+  findPanelTabMatch,
+  getActivePanelTab,
+  openPanelTabInCell,
+  serializePanelTabsForCell,
+} from "./panelTabs.mjs";
 import "/EditorSwitchGuard.mjs";
 
 function normalizeNotebookPath(value) {
@@ -405,6 +413,7 @@ const PANEL_ALIASES = Object.freeze({
   ViewPanel: "FileView",
   FileViewer: "FileView",
   FileViewerPanel: "FileView",
+  CodeEditorPanel: "CodeEditor",
 });
 
 function normalizePanelIdentifier(value) {
@@ -743,18 +752,27 @@ export function renderLayout(node, parent) {
     Object.assign(cell.style, cellStyles);
     cell.dataset.id = normalizedCellId || requestedCellId;
     cell.dataset.panelClass = node.panelClass || "InfoPanel";
+    if (node.tabOrientation || node.tabsOrientation) {
+      cell.dataset.nvTabOrientation = node.tabOrientation || node.tabsOrientation;
+    }
     parent.appendChild(cell);
     ensurePanelEdgeSplitHandles(cell);
 
     window.activeCell = cell;
 
-    const requestedPanelType = node.panelType || node.instanceName || (node.module ? node.module.replace(/^\/PanelInstances\//, "").replace(/\.mjs$/, "") : "InfoPanel");
+    const requestedPanelType = node.panelType || node.instanceName || (node.module ? String(node.module).split("/").pop().replace(/\.mjs$/, "") : "InfoPanel");
     const panelType = normalizePanelIdentifier(requestedPanelType) || requestedPanelType;
+
+    if (Array.isArray(node.tabs) && node.tabs.length) {
+      restorePanelTabsForCell(cell, node).catch((err) => console.warn("Failed to restore panel tabs:", err));
+      return;
+    }
 
     if (node.deferLoad !== true) {
       loadPanelIntoCell(panelType, {
         id: normalizedCellId || requestedCellId,
         displayName: node.displayName || normalizedCellId || requestedCellId,
+        tabOrientation: node.tabOrientation || node.tabsOrientation || "top",
         ...node.panelVars
       });
     }
@@ -1013,10 +1031,32 @@ async function loadPanelIntoSpecificCell(cell, panelType, panelVars = {}) {
   const previousActiveCell = window.activeCell;
   window.activeCell = cell;
   try {
-    await loadPanelIntoCell(panelType, panelVars);
+    return await loadPanelIntoCell(panelType, panelVars);
   } finally {
     window.activeCell = previousActiveCell;
   }
+}
+
+async function restorePanelTabsForCell(cell, node = {}) {
+  const tabs = Array.isArray(node.tabs) ? node.tabs : [];
+  if (!cell || !tabs.length) return;
+  const activeTabId = node.activeTabId || tabs[0]?.tabId || "";
+  for (let index = 0; index < tabs.length; index += 1) {
+    const tab = tabs[index] || {};
+    const tabPanelType = normalizePanelIdentifier(tab.panelType || tab.panelId || tab.id) || tab.panelType || tab.panelId || tab.id;
+    if (!tabPanelType) continue;
+    await loadPanelIntoSpecificCell(cell, tabPanelType, {
+      ...(tab.panelVars || {}),
+      id: tabPanelType,
+      displayName: tab.displayName || tabPanelType,
+      panelClass: tab.panelClass || node.panelClass || "InfoPanel",
+      tabOrientation: node.tabOrientation || node.tabsOrientation || "top",
+      allowDuplicateTab: true,
+      __nvTabId: tab.tabId,
+      __nvTabIndex: index,
+    });
+  }
+  if (activeTabId) activatePanelTab(cell, activeTabId, { announce: false });
 }
 
 async function importModeLayout({ userModulePath, defaultModulePath, fallbackModulePaths = [] }) {
@@ -1351,6 +1391,12 @@ export function ensureSvgEditingSplit({
 
 function activatePanelCell(cell, { announce = true } = {}) {
   if (!cell) return null;
+  const activeTab = getActivePanelTab(cell);
+  if (activeTab) {
+    activatePanelTab(cell, activeTab.tabId, { announce });
+    return cell;
+  }
+
   window.activeCell = cell;
   const panelId = cell.dataset.id || cell.dataset.panelId || "Unknown";
   const panelClass = cell.dataset.panelClass || "InfoPanel";
@@ -1361,8 +1407,8 @@ function activatePanelCell(cell, { announce = true } = {}) {
   window.NodevisionState.activePanelType = panelClass;
 
   if (announce) {
-    logStatus(`Active panel: ${panelId} (${panelClass})`);
-    setStatus("Active panel", `${panelId} (${panelClass})`);
+    logStatus("Active panel: " + panelId + " (" + panelClass + ")");
+    setStatus("Active panel", panelId + " (" + panelClass + ")");
   }
 
   highlightActiveCell(cell);
@@ -1374,7 +1420,8 @@ function activatePanelCell(cell, { announce = true } = {}) {
 
 function panelCellContentChildren(cell) {
   return Array.from(cell?.children || []).filter((child) =>
-    !child.classList?.contains(PANEL_EDGE_SPLIT_HANDLE_CLASS)
+    !child.classList?.contains(PANEL_EDGE_SPLIT_HANDLE_CLASS) &&
+    !child.classList?.contains("nv-panel-tab-shell")
   );
 }
 
@@ -1389,18 +1436,9 @@ function isEmptyOrPlaceholderPanelCell(cell) {
 
 async function replacePanelInCell(cell, panelId, panelClass = "InfoPanel", panelVars = {}) {
   if (!cell || !panelId) return null;
-  if (typeof cell.cleanup === "function") {
-    try {
-      cell.cleanup();
-    } catch (err) {
-      console.warn("Panel cleanup failed before toolbar load:", err);
-    }
-  }
-  cell.cleanup = null;
-  cell.innerHTML = "";
   setCellIdentity(cell, { id: panelId, panelClass });
   activatePanelCell(cell, { announce: false });
-  await loadPanelIntoCell(panelId, { id: panelId, displayName: panelId, ...panelVars });
+  await loadPanelIntoCell(panelId, { id: panelId, displayName: panelId, panelClass, ...panelVars });
   ensurePanelEdgeSplitHandles(cell);
   highlightActiveCell(cell);
   return cell;
@@ -1409,6 +1447,7 @@ async function replacePanelInCell(cell, panelId, panelClass = "InfoPanel", panel
 function cleanupPanelCells(root) {
   const cells = Array.from(root?.querySelectorAll?.(".panel-cell") || []);
   for (const cell of cells) {
+    closePanelTabsInCell(cell, { force: true });
     if (typeof cell.cleanup === "function") {
       try {
         cell.cleanup();
@@ -1465,26 +1504,8 @@ export async function replaceWorkspaceWithPanel(panelType, panelVars = {}) {
 }
 
 
-/**
- * Dynamically load a panel based on its id and/or module path.
- * Supports multiple search directories and layout-specified module paths.
- */
-export async function loadPanelIntoCell(panelType, panelVars = {}) {
-  const cell = window.activeCell;
-  if (!cell) {
-    console.warn("⚠️ No active cell selected for loading panel:", panelType);
-    return;
-  }
-
-  const requestedPanelType = panelType;
-  panelType = normalizePanelIdentifier(panelType) || panelType;
-  console.log("Panel Type:", requestedPanelType);
-  if (requestedPanelType !== panelType) {
-    console.log(`🔁 Normalized panel type: ${requestedPanelType} → ${panelType}`);
-  }
-
-  // Try multiple search paths for panels, honoring the target cell class first.
-  const panelClass = String(cell.dataset.panelClass || "").toLowerCase();
+function panelModuleSearchPaths(panelType, panelClassValue = "") {
+  const panelClass = String(panelClassValue || "").toLowerCase();
   const preferredFolder = {
     editorpanel: "EditorPanels",
     infopanel: "InfoPanels",
@@ -1492,70 +1513,98 @@ export async function loadPanelIntoCell(panelType, panelVars = {}) {
     controlpanel: "ControlPanels",
   }[panelClass];
   const candidatePaths = [
-    preferredFolder ? `/PanelInstances/${preferredFolder}/${panelType}.mjs` : null,
-    `/PanelInstances/${panelType}.mjs`,
-    `/PanelInstances/EditorPanels/${panelType}.mjs`,
-    `/PanelInstances/InfoPanels/${panelType}.mjs`,
-    `/PanelInstances/ViewPanels/${panelType}.mjs`,
-    `/PanelInstances/ControlPanels/${panelType}.mjs`,
-    `/panels/${panelType}.mjs`,
+    preferredFolder ? "/PanelInstances/" + preferredFolder + "/" + panelType + ".mjs" : null,
+    "/PanelInstances/" + panelType + ".mjs",
+    "/PanelInstances/EditorPanels/" + panelType + ".mjs",
+    "/PanelInstances/InfoPanels/" + panelType + ".mjs",
+    "/PanelInstances/ViewPanels/" + panelType + ".mjs",
+    "/PanelInstances/ControlPanels/" + panelType + ".mjs",
+    "/panels/" + panelType + ".mjs",
   ].filter(Boolean);
-  const possiblePaths = [...new Set(candidatePaths)];
+  return [...new Set(candidatePaths)];
+}
 
-  let module = null;
-  for (const path of possiblePaths) {
+async function resolvePanelModule(panelType, panelClassValue = "") {
+  for (const path of panelModuleSearchPaths(panelType, panelClassValue)) {
     try {
       console.log("🔍 Trying to import panel:", path);
-      if (!window.__nvModuleCacheBust) {
-        window.__nvModuleCacheBust = Date.now();
-      }
-      const importPath = `${path}${path.includes("?") ? "&" : "?"}v=${window.__nvModuleCacheBust}`;
+      if (!window.__nvModuleCacheBust) window.__nvModuleCacheBust = Date.now();
+      const importPath = path + (path.includes("?") ? "&" : "?") + "v=" + window.__nvModuleCacheBust;
       const candidateModule = await import(importPath);
       if (typeof candidateModule.setupPanel !== "function") {
         console.warn("⚠️ Panel module has no setupPanel(), trying next candidate:", path);
         continue;
       }
-      module = candidateModule;
       console.log("✅ Successfully imported:", path);
-      break;
+      return candidateModule;
     } catch (err) {
-      // Only log 404s; ignore missing paths
+      // Missing candidate paths are expected while probing panel families.
     }
   }
+  console.warn("⚠️ No panel module with setupPanel found for", panelType);
+  return null;
+}
 
+async function mountPanelModuleIntoElement(host, panelType, panelVars = {}, panelClassValue = "InfoPanel") {
+  const module = await resolvePanelModule(panelType, panelClassValue);
   if (!module) {
-    console.warn("⚠️ No panel module with setupPanel found for", panelType);
-    return;
+    host.innerHTML = "<div class=\"panel-loading\">Panel module unavailable.</div>";
+    return null;
   }
-
-  if (typeof cell.cleanup === "function") {
-    try {
-      cell.cleanup();
-    } catch (err) {
-      console.warn("Panel cleanup failed before reload:", err);
-    }
-  }
-  cell.cleanup = null;
-  cell.innerHTML = "";
 
   const resolvedFilePath = resolveActiveFilePath(panelVars.filePath);
-  if (resolvedFilePath) {
-    cell.dataset.currentFilePath = resolvedFilePath;
-  } else {
-    delete cell.dataset.currentFilePath;
-  }
-  const cleanup = await module.setupPanel(cell, {
+  if (resolvedFilePath) host.dataset.currentFilePath = resolvedFilePath;
+  else delete host.dataset.currentFilePath;
+
+  const cleanup = await module.setupPanel(host, {
     ...panelVars,
     filePath: resolvedFilePath || null,
   });
-  if (typeof cleanup === "function") cell.cleanup = cleanup;
-  ensurePanelEdgeSplitHandles(cell);
-
-  console.log("✅ Loaded panel:", panelType);
+  if (typeof cleanup === "function") host.cleanup = cleanup;
+  return cleanup;
 }
 
+export async function loadPanelIntoCell(panelType, panelVars = {}) {
+  const cell = resolvePanelCell(window.activeCell) || window.activeCell;
+  if (!cell?.classList?.contains?.("panel-cell")) {
+    console.warn("⚠️ No active cell selected for loading panel:", panelType);
+    return null;
+  }
 
+  const requestedPanelType = panelType;
+  const normalizedPanelType = normalizePanelIdentifier(panelType) || panelType;
+  console.log("Panel Type:", requestedPanelType);
+  if (requestedPanelType !== normalizedPanelType) {
+    console.log("🔁 Normalized panel type: " + requestedPanelType + " → " + normalizedPanelType);
+  }
 
+  const panelClass = panelVars.panelClass || cell.dataset.panelClass || "InfoPanel";
+  const tab = await openPanelTabInCell(cell, {
+    panelType: normalizedPanelType,
+    panelClass,
+    panelVars: { ...panelVars, panelClass },
+    tabOrientation: panelVars.tabOrientation || cell.dataset.nvTabOrientation || "top",
+    allowDuplicate: panelVars.allowDuplicateTab === true,
+    tabId: panelVars.__nvTabId || panelVars.tabId || null,
+    index: panelVars.__nvTabIndex,
+  }, (host, vars) => mountPanelModuleIntoElement(host, normalizedPanelType, vars, panelClass));
+
+  ensurePanelEdgeSplitHandles(cell);
+  console.log("✅ Loaded panel tab:", normalizedPanelType);
+  return tab;
+}
+
+window.__nvOpenPanelTab = (cell, panelType, panelClass = "InfoPanel", panelVars = {}) => {
+  const targetCell = resolvePanelCell(cell) || cell;
+  if (!targetCell?.classList?.contains?.("panel-cell")) return null;
+  const previousActiveCell = window.activeCell;
+  window.activeCell = targetCell;
+  const openPromise = loadPanelIntoCell(panelType, { ...panelVars, panelClass });
+  return Promise.resolve(openPromise).finally(() => {
+    if (!window.activeCell || window.activeCell === targetCell) window.activeCell = targetCell;
+    else window.activeCell = previousActiveCell || targetCell;
+  });
+};
 
 function shouldGuardToolbarEditorSwitch(detail, panelId, panelClass) {
   if (detail?.__nvGuardedEditorSwitch) return false;
@@ -1563,7 +1612,10 @@ function shouldGuardToolbarEditorSwitch(detail, panelId, panelClass) {
   if (typeof window.__nvGuardEditorSwitch !== "function") return false;
 
   const currentId = normalizePanelIdentifier(window.activeCell?.dataset?.id || window.activePanel || "") || "";
-  if (currentId === panelId) return false;
+  const activeTab = getActivePanelTab(resolvePanelCell(window.activeCell));
+  const nextPath = normalizeNotebookPath(detail?.panelVars?.filePath || detail?.filePath || "");
+  const currentPath = normalizeNotebookPath(activeTab?.resourcePath || window.__nvCodeEditorActivePath || window.currentActiveFilePath || "");
+  if (currentId === panelId && (!nextPath || nextPath === currentPath)) return false;
   return Boolean(window.NodevisionState?.fileIsDirty || window.__nvCodeEditorDirty);
 }
 
@@ -1582,7 +1634,7 @@ window.addEventListener("toolbarAction", async (e) => {
   }
   const panelClass = type || "InfoPanel";
   if (shouldGuardToolbarEditorSwitch(e.detail, normalizedId, panelClass)) {
-    const nextPath = resolveActiveFilePath(e.detail?.filePath);
+    const nextPath = resolveActiveFilePath(e.detail?.panelVars?.filePath || e.detail?.filePath);
     window.__nvGuardEditorSwitch(nextPath, () => replayGuardedToolbarAction(e.detail));
     return;
   }
@@ -1594,23 +1646,20 @@ window.addEventListener("toolbarAction", async (e) => {
     return;
   }
 
-  // Default behavior: check if this panel already exists in the layout
-  const existingCell = document.querySelector(`[data-id="${normalizedId}"]`);
-  if (existingCell) {
-    // Panel already exists - just make it visible and active
+  // Default behavior: activate an exact tab identity match, or a legacy whole-cell panel.
+  const existingMatch = findPanelTabMatch({ panelType: normalizedId, panelClass, panelVars });
+  if (existingMatch) {
+    existingMatch.cell.style.display = "flex";
+    activatePanelTab(existingMatch.cell, existingMatch.tab.tabId, { announce: false });
+    console.log("📌 Panel tab already exists, activated:", normalizedId);
+    return;
+  }
+
+  const existingCell = document.querySelector("[data-id=\"" + normalizedId + "\"]");
+  if (existingCell && !existingCell.__nvPanelTabs) {
     existingCell.style.display = "flex";
     activatePanelCell(existingCell, { announce: false });
-    if (normalizedId === "FileView" && typeof window.updateViewPanel === "function") {
-      const activePath = resolveActiveFilePath();
-      if (activePath) {
-        window.updateViewPanel(activePath, { force: true }).catch((err) => {
-          console.error("❌ FileView reactivation failed:", err);
-        });
-      } else {
-        setStatus("File Viewer", "No active file selected");
-      }
-    }
-    console.log(`📌 Panel "${normalizedId}" already exists, activated.`);
+    console.log("📌 Panel already exists, activated:", normalizedId);
     return;
   }
 
@@ -1622,6 +1671,49 @@ window.addEventListener("toolbarAction", async (e) => {
 
   await replacePanelInCell(activeCell, normalizedId, panelClass, panelVars);
 });
+
+function serializableLayoutChildren(node) {
+  return Array.from(node?.children || []).filter((child) =>
+    child.classList?.contains("panel-row") || child.classList?.contains("panel-cell")
+  );
+}
+
+function serializeWorkspaceNode(node) {
+  if (!node) return null;
+  if (node.classList?.contains("panel-row")) {
+    const direction = node.dataset.direction || (node.dataset.isVertical === "1" ? "column" : "row");
+    return {
+      type: direction === "column" ? "vertical" : "row",
+      direction,
+      flex: node.style.flex || "",
+      children: serializableLayoutChildren(node).map(serializeWorkspaceNode).filter(Boolean),
+    };
+  }
+  if (node.classList?.contains("panel-cell")) {
+    const tabState = serializePanelTabsForCell(node);
+    const activeTab = getActivePanelTab(node);
+    return {
+      type: "cell",
+      id: node.dataset.panelId || node.dataset.id || "Panel",
+      panelType: activeTab?.panelType || node.dataset.id || node.dataset.panelId || "Panel",
+      panelClass: activeTab?.panelClass || node.dataset.panelClass || "InfoPanel",
+      flex: node.style.flex || "",
+      tabOrientation: tabState?.tabOrientation || node.dataset.nvTabOrientation || "top",
+      ...(tabState || {}),
+    };
+  }
+  return null;
+}
+
+export function serializeWorkspace(workspace) {
+  const children = serializableLayoutChildren(workspace);
+  if (children.length === 1) return serializeWorkspaceNode(children[0]);
+  return {
+    type: "row",
+    direction: "column",
+    children: children.map(serializeWorkspaceNode).filter(Boolean),
+  };
+}
 
 // Helper to highlight the active cell
 function highlightActiveCell(cell) {

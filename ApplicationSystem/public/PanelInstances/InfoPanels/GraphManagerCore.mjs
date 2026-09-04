@@ -12,6 +12,12 @@ import {
 import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
 import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';
 import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
+import {
+    DIRECTORY_APPEARANCE_CHANGED_EVENT,
+    getCachedDirectoryAppearance,
+    loadDirectoryAppearanceMap,
+    resolveDirectoryAppearanceGraphColors,
+} from '/GraphManagement/DirectoryAppearanceClient.mjs';
 import { fetchDirectoryContents as fetchDirectoryContentsAPI, moveFileOrDirectory } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
@@ -68,19 +74,9 @@ const DIRECTORY_IMAGE_CANDIDATES = [
 ];
 const BROKEN_LINK_BADGE_URL =
     'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23fbc02d" d="M1 21h22L12 2 1 21z"/><path fill="%23000" d="M12 8.5c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1s1-.45 1-1v-4c0-.55-.45-1-1-1zm0 7c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>';
-const DIRECTORY_NOTEBOOK_COLOR = "#e5e7eb";
-const DIRECTORY_COLOR_FAMILIES = [
-    ["#8b5cf6", "#a855f7", "#7c3aed", "#c084fc"],
-    ["#2563eb", "#3b82f6", "#1d4ed8", "#60a5fa"],
-    ["#06b6d4", "#0891b2", "#22d3ee", "#0e7490"],
-    ["#22c55e", "#16a34a", "#10b981", "#15803d"],
-    ["#eab308", "#facc15", "#ca8a04", "#fde047"],
-    ["#f97316", "#fb923c", "#ea580c", "#fdba74"],
-    ["#dc2626", "#ef4444", "#b91c1c", "#f87171"],
-];
-const DIRECTORY_EXPANDED_TINT_SURFACE = "#f8fafc";
-const DIRECTORY_EXPANDED_TINT_AMOUNT = 0.42;
-const DIRECTORY_BORDER_DARKEN_AMOUNT = 0.22;
+const DIRECTORY_DEFAULT_COLOR = "#e5e7eb";
+const DIRECTORY_DEFAULT_FILL_COLOR = "#f8fafc";
+const DIRECTORY_DEFAULT_BORDER_COLOR = "#6b7280";
 const EXPANDED_DIRECTORY_PARENT_MARGIN = 20;
 const EXPANDED_DIRECTORY_COLLISION_GAP = 36;
 const EXPANDED_DIRECTORY_COLLISION_MAX_PASSES = 6;
@@ -413,83 +409,66 @@ function resolveNotebookLink(sourceFilePath, rawLink) {
     return resolveNotebookReference({ sourcePath: sourceFilePath, reference: rawLink });
 }
 
-function clamp01(value) {
-    return Math.max(0, Math.min(1, Number(value) || 0));
-}
-
-function hexToRgb(hex) {
-    const clean = String(hex || "").replace(/^#/, "");
-    const value = clean.length === 3
-        ? clean.split("").map((ch) => ch + ch).join("")
-        : clean.padEnd(6, "0").slice(0, 6);
-    const num = Number.parseInt(value, 16);
-    return {
-        r: (num >> 16) & 255,
-        g: (num >> 8) & 255,
-        b: num & 255,
-    };
-}
-
-function rgbToHex({ r, g, b }) {
-    return "#" + [r, g, b]
-        .map((value) => Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, "0"))
-        .join("");
-}
-
-function mixHexColors(fromHex, toHex, amount) {
-    const t = clamp01(amount);
-    const from = hexToRgb(fromHex);
-    const to = hexToRgb(toHex);
-    return rgbToHex({
-        r: from.r + (to.r - from.r) * t,
-        g: from.g + (to.g - from.g) * t,
-        b: from.b + (to.b - from.b) * t,
-    });
-}
-
 function directoryDepth(pathValue = "") {
     const clean = normalizePath(pathValue || "");
     if (!clean) return 0;
     return clean.split("/").filter(Boolean).length;
 }
 
-function directoryVisualLevel(pathValue = "") {
-    const clean = normalizePath(pathValue || "");
-    if (!clean) return -1;
-    return Math.max(0, directoryDepth(clean) - 1);
-}
-
-function directoryColorForLevel(level) {
-    if (level < 0) return DIRECTORY_NOTEBOOK_COLOR;
-    const familyIndex = level % DIRECTORY_COLOR_FAMILIES.length;
-    const family = DIRECTORY_COLOR_FAMILIES[familyIndex] || DIRECTORY_COLOR_FAMILIES[0];
-    const shadeIndex = Math.floor(level / DIRECTORY_COLOR_FAMILIES.length) % family.length;
-    return family[shadeIndex];
-}
-
 function directoryVisualData(pathValue = "") {
-    const level = directoryVisualLevel(pathValue);
-    const color = directoryColorForLevel(level);
-    return {
-        directoryLevel: level,
-        directoryColor: color,
-        directoryFillColor: mixHexColors(color, DIRECTORY_EXPANDED_TINT_SURFACE, DIRECTORY_EXPANDED_TINT_AMOUNT),
-        directoryBorderColor: mixHexColors(color, "#111827", DIRECTORY_BORDER_DARKEN_AMOUNT),
-    };
+    const appearance = getCachedDirectoryAppearance(pathValue);
+    return resolveDirectoryAppearanceGraphColors({
+        appearance,
+        directoryColor: DIRECTORY_DEFAULT_COLOR,
+        directoryFillColor: DIRECTORY_DEFAULT_FILL_COLOR,
+        directoryBorderColor: DIRECTORY_DEFAULT_BORDER_COLOR,
+        directoryExpandedBorderColor: DIRECTORY_DEFAULT_BORDER_COLOR,
+    });
 }
 
-function updateDirectoryLevelColors() {
+function applyDirectoryVisualDataToNode(node) {
+    if (!node || (typeof node.empty === "function" && node.empty())) return;
+    const visual = directoryVisualData(node.data("fullPath") ?? node.id());
+    node.data("directoryColor", visual.directoryColor);
+    node.data("directoryFillColor", visual.directoryFillColor);
+    node.data("directoryBorderColor", visual.directoryBorderColor);
+    node.data("directoryExpandedBorderColor", visual.directoryExpandedBorderColor);
+    node.data("directoryFillOpacity", visual.directoryFillOpacity);
+    node.data("directoryBorderOpacity", visual.directoryBorderOpacity);
+    node.data("directoryExpandedBorderOpacity", visual.directoryExpandedBorderOpacity);
+}
+
+function updateDirectoryVisualData() {
     if (!cy) return;
     const directories = cy.nodes('node[type="directory"]');
     if (!directories.length) return;
 
     directories.forEach((node) => {
-        const visual = directoryVisualData(node.data("fullPath") || node.id());
-        node.data("directoryLevel", visual.directoryLevel);
-        node.data("directoryColor", visual.directoryColor);
-        node.data("directoryFillColor", visual.directoryFillColor);
-        node.data("directoryBorderColor", visual.directoryBorderColor);
+        applyDirectoryVisualDataToNode(node);
     });
+}
+
+function updateGraphDirectoryAppearance(targetPath) {
+    if (!cy) return;
+    const hasTarget = arguments.length > 0;
+    const cleanTarget = normalizePath(targetPath || "");
+    cy.nodes('node[type="directory"]').forEach((node) => {
+        const nodePath = normalizePath(node.data("fullPath") ?? node.id());
+        if (hasTarget && nodePath !== cleanTarget) return;
+        applyDirectoryVisualDataToNode(node);
+    });
+}
+
+function bindDirectoryAppearanceEvents() {
+    if (typeof window === "undefined" || window.__nvGraphDirectoryAppearanceBound) return;
+    window.addEventListener(DIRECTORY_APPEARANCE_CHANGED_EVENT, (event) => {
+        if (event?.detail && Object.prototype.hasOwnProperty.call(event.detail, "path")) {
+            updateGraphDirectoryAppearance(event.detail.path);
+            return;
+        }
+        updateGraphDirectoryAppearance();
+    });
+    window.__nvGraphDirectoryAppearanceBound = true;
 }
 
 function basename(pathValue = '') {
@@ -911,6 +890,7 @@ async function refreshGraphView({ fit = true, reason = "refresh" } = {}) {
     cy.elements().not('.mqtt-live, .td-live').remove();
     externalNodesLoaded = false;
 
+    await loadDirectoryAppearanceMap({ force: true });
     await loadExternalNodes();
 
     await hydrateDiscoveredLinksFromBuckets();
@@ -2670,6 +2650,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     const container = document.getElementById(containerId);
     const statusElem = statusElemId ? document.getElementById(statusElemId) : null;
     const edgeStyleOverrides = await loadEdgeStyleOverrides();
+    await loadDirectoryAppearanceMap();
+    bindDirectoryAppearanceEvents();
 
     cy = cytoscape({
         container: container,
@@ -2693,13 +2675,15 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                 selector: 'node[type="directory"]',
                 style: {
                     'background-color': 'data(directoryColor)',
+                    'background-opacity': 'data(directoryFillOpacity)',
                     'shape': 'rectangle',
                     // Keep unexpanded directories compact while allowing expanded ones
                     // to size naturally around their children.
                     'min-width': 64,
                     'min-height': 64,
                     'border-width': 1,
-                    'border-color': 'data(directoryBorderColor)'
+                    'border-color': 'data(directoryBorderColor)',
+                    'border-opacity': 'data(directoryBorderOpacity)'
                 }
             },
             {
@@ -2717,17 +2701,20 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                     'background-position-x': '50%',
                     'background-position-y': '50%',
                     'background-repeat': 'no-repeat',
-                    'background-opacity': 1,
+                    'background-opacity': 'data(directoryFillOpacity)',
+                    'background-image-opacity': 1,
                     'border-width': 1,
-                    'border-color': 'data(directoryBorderColor)'
+                    'border-color': 'data(directoryBorderColor)',
+                    'border-opacity': 'data(directoryBorderOpacity)'
                 }
             },
             {
                 selector: ':parent',
                 style: {
-                    'background-opacity': 1,
+                    'background-opacity': 'data(directoryFillOpacity)',
                     'background-color': 'data(directoryFillColor)',
-                    'border-color': 'data(directoryColor)',
+                    'border-color': 'data(directoryExpandedBorderColor)',
+                    'border-opacity': 'data(directoryExpandedBorderOpacity)',
                     'border-width': 3,
                     'text-valign': 'top',
                     'text-halign': 'center',
@@ -2746,7 +2733,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
                     'background-position-x': '50%',
                     'background-position-y': '50%',
                     'background-repeat': 'no-repeat',
-                    'background-opacity': 1,
+                    'background-opacity': 'data(directoryFillOpacity)',
                     'background-image-opacity': 0.75
                 }
             },
@@ -3142,6 +3129,7 @@ async function renderGraphData(files, parentPath) {
         const parentNode = cy.getElementById(parentId);
         parentNode.data('directoryImageUrl', currentDirectoryImage);
         parentNode.data('hasDirectoryImage', currentDirectoryImage ? 1 : 0);
+        applyDirectoryVisualDataToNode(parentNode);
     }
 
     const filesToScan = [];
@@ -3162,29 +3150,30 @@ async function renderGraphData(files, parentPath) {
                     previewFetches.push({ id: fullPath, path: fullPath });
                 }
             }
-            
-                if (cy.getElementById(fullPath).empty()) {
-                    cy.add({
-                        group: 'nodes',
-                        data: {
-                            id: fullPath,
-                            label: f.name,
-                            fullPath: fullPath,
-                            type: f.isDirectory ? 'directory' : 'file',
-                            parent: parentId,
-                            directoryImageUrl,
-                            hasDirectoryImage: directoryImageUrl ? 1 : 0,
-                            ...(f.isDirectory ? directoryVisualData(fullPath) : {}),
-                            previewUrl,
-                            hasPreview,
-                            hasBrokenLinks: 0,
-                            brokenLinkCount: 0
-                        }
-                    });
-                } else if (f.isDirectory) {
-                    const existing = cy.getElementById(fullPath);
-                    existing.data('directoryImageUrl', directoryImageUrl);
+
+            if (cy.getElementById(fullPath).empty()) {
+                cy.add({
+                    group: 'nodes',
+                    data: {
+                        id: fullPath,
+                        label: f.name,
+                        fullPath: fullPath,
+                        type: f.isDirectory ? 'directory' : 'file',
+                        parent: parentId,
+                        directoryImageUrl,
+                        hasDirectoryImage: directoryImageUrl ? 1 : 0,
+                        ...(f.isDirectory ? directoryVisualData(fullPath) : {}),
+                        previewUrl,
+                        hasPreview,
+                        hasBrokenLinks: 0,
+                        brokenLinkCount: 0
+                    }
+                });
+            } else if (f.isDirectory) {
+                const existing = cy.getElementById(fullPath);
+                existing.data('directoryImageUrl', directoryImageUrl);
                 existing.data('hasDirectoryImage', directoryImageUrl ? 1 : 0);
+                applyDirectoryVisualDataToNode(existing);
             } else {
                 const existing = cy.getElementById(fullPath);
                 if (!existing.empty()) {
@@ -3204,7 +3193,7 @@ async function renderGraphData(files, parentPath) {
         });
     });
 
-    updateDirectoryLevelColors();
+    updateDirectoryVisualData();
 
     // Give newly added nodes a reasonable placement quickly.
     queueRelayout({ fit: false, reason: 'nodes-added' });
@@ -3231,6 +3220,51 @@ async function renderGraphData(files, parentPath) {
     queueRelayout({ fit: true, reason: 'edges-updated' });
 }
 
+function referenceGroupKey(record = {}) {
+    const source = normalizePath(record.sourcePath || "");
+    const explicit = String(record.referenceGroupId || "").trim();
+    if (explicit) return source + "::" + explicit;
+
+    const isFallback = record?.referenceRole === "fallback";
+    const primaryProperty = isFallback
+        ? String(record.primaryLinkProperty || "").trim()
+        : String(record.linkProperty || "").trim();
+    const primaryTarget = isFallback
+        ? String(record.primaryTargetRaw || "").trim()
+        : String(record.targetRaw || "").trim();
+    if (!source || !primaryProperty || !primaryTarget) return "";
+    return source + "::" + primaryProperty + "::" + primaryTarget;
+}
+
+async function collectAvailableFallbackGroups(records = []) {
+    const groups = new Set();
+    const existsCache = new Map();
+    for (const record of records) {
+        if (record?.referenceRole !== "fallback") continue;
+        const rawTarget = String(record.targetRaw || "").trim();
+        if (!rawTarget || isHttpLink(rawTarget)) continue;
+        const cleanTarget = normalizePath(linkRecordTargetId(record));
+        if (!cleanTarget) continue;
+
+        let exists = existsCache.get(cleanTarget);
+        if (exists === undefined) {
+            exists = await notebookAssetExists(cleanTarget);
+            existsCache.set(cleanTarget, exists);
+        }
+        if (!exists) continue;
+
+        const key = referenceGroupKey(record);
+        if (key) groups.add(key);
+    }
+    return groups;
+}
+
+function primaryReferenceHasAvailableFallback(record, availableFallbackGroups) {
+    if (record?.referenceRole === "fallback") return false;
+    const key = referenceGroupKey(record);
+    return Boolean(key && availableFallbackGroups?.has?.(key));
+}
+
 async function handleLinkDiscovery(filePath) {
     const cleanSource = normalizePath(filePath);
     clearBrokenLinksForSource(cleanSource);
@@ -3239,6 +3273,7 @@ async function handleLinkDiscovery(filePath) {
         const records = await scanFileForLinkRecords(cleanSource);
 
         if (records && Array.isArray(records)) {
+            const availableFallbackGroups = await collectAvailableFallbackGroups(records);
             for (const record of records) {
                 const rawTarget = record.targetRaw;
                 if (!rawTarget) continue;
@@ -3269,6 +3304,7 @@ async function handleLinkDiscovery(filePath) {
 
                 const exists = await notebookAssetExists(cleanTarget);
                 if (!exists) {
+                    if (primaryReferenceHasAvailableFallback(record, availableFallbackGroups)) continue;
                     rememberBrokenLink(cleanSource, cleanTarget, record);
                     applyBrokenLinkBadge(cleanSource);
                     continue;
@@ -3311,7 +3347,7 @@ async function toggleCompoundDirectory(node) {
 
     navigationState.setLastOpenedDirectory(path || "", "GraphManager");
 
-    updateDirectoryLevelColors();
+    updateDirectoryVisualData();
     if (graphAbstractionFilter) {
         applyGraphAbstractionFilter({ fit: true, reason: "toggle-directory-scope" });
     } else {

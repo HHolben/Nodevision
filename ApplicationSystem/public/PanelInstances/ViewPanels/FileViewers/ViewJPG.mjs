@@ -9,7 +9,7 @@
  * @param {string} serverBase - Base URL of the server to fetch the file from.
  */
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
-  viewPanel.dataset.nvZoomInlineFit = "stretch-on-zoom-out";
+  viewPanel.dataset.nvZoomInlineFit = "scale-content";
   try {
     const url = `${serverBase}/${filename}`;
 
@@ -22,11 +22,17 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     img.alt = filename;
     img.src = `${url}?t=${Date.now()}`; // cache-busting
 
-    img.style.width = '100%';
-    img.style.height = '100%';
+    viewPanel.style.display = 'flex';
+    viewPanel.style.alignItems = 'center';
+    viewPanel.style.justifyContent = 'center';
+
+    img.style.width = 'auto';
+    img.style.height = 'auto';
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '100%';
     img.style.objectFit = 'contain';
     img.style.display = 'block';
-    img.style.margin = '0 auto';
+    img.style.flex = '0 0 auto';
 
     img.onload = () => {
       img.title = `${img.naturalWidth} × ${img.naturalHeight}`;

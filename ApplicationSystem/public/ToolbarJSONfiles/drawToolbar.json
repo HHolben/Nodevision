@@ -217,7 +217,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "PickColor",
     "preventAutoSubToolbar": true,
-    "modes": ["PNGediting", "GIFediting", "GraphicalEditing"]
+    "modes": ["PNGediting", "GIFediting"]
   },
   {
     "heading": "Layout",
@@ -236,7 +236,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "GifAnimations",
     "preventDropdown": true,
-    "modes": ["GIFediting", "GraphicalEditing"],
+    "modes": ["GIFediting"],
     "shortLabel": "Anim"
   },
   {
@@ -253,7 +253,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "DrawSVG",
     "preventDropdown": true,
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Pencil Sketching",
@@ -263,7 +263,7 @@
     "callbackKey": "PencilSketching",
     "preventDropdown": true,
     "icon": "icons/imageEditIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Select",
@@ -272,7 +272,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeSelect",
     "icon": "icons/EditIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Rotate",
@@ -281,7 +281,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeRotate",
     "icon": "icons/EditIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Line",
@@ -290,7 +290,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeLine",
     "icon": "icons/DefaultNodeImage.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Bezier",
@@ -299,7 +299,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeBezier",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Freehand",
@@ -308,7 +308,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeFreehand",
     "icon": "icons/imageEditIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Eyedropper",
@@ -317,7 +317,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeEyedropper",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Eraser",
@@ -326,7 +326,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeEraser",
     "icon": "icons/ExitIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Sketch",
@@ -335,7 +335,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgModeSketch",
     "icon": "icons/imageEditIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Undo Stroke",
@@ -344,7 +344,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgUndoSketchStroke",
     "icon": "icons/EditIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Finalize Sketch",
@@ -353,7 +353,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgFinalizeSketch",
     "icon": "icons/DefaultNodeImage.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Clear Sketch",
@@ -362,7 +362,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgClearSketch",
     "icon": "icons/ExitIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Cancel Sketch",
@@ -371,7 +371,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgCancelSketchMode",
     "icon": "icons/ExitIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Keep Construction",
@@ -380,7 +380,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgToggleKeepSketchConstruction",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Toggle Construction",
@@ -389,35 +389,35 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgToggleSketchConstructionVisibility",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Prediction Mode",
     "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "script": "sketchPredictionModeWidget.mjs",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Color stroke order",
     "hotkeyText": "",
     "parentHeading": "Pencil Sketching",
     "script": "sketchStrokeOrderWidget.mjs",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "SVG Styles",
     "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "script": "svgStyleWidget.mjs",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Drawing Assist Controls",
     "hotkeyText": "",
     "parentHeading": "Vector Draw",
     "script": "svgDrawingAssistWidget.mjs",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Delete",
@@ -426,7 +426,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "svgDeleteSelection",
     "icon": "icons/ExitIcon.png",
-    "modes": ["SVG Editing", "GraphicalEditing", "FontEditing"]
+    "modes": ["SVG Editing", "FontEditing"]
   },
   {
     "heading": "Add Placemark",

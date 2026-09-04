@@ -359,6 +359,46 @@
   {
     "ToolbarCategory": "View",
     "parentHeading": "Layout Controls",
+    "heading": "Panel Tabs",
+    "hotkeyText": "",
+    "icon": "icons/CanvasIcon.png",
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Panel Tabs",
+    "heading": "Top",
+    "hotkeyText": "",
+    "icon": "icons/PositionArrowIcon.png",
+    "callbackKey": "PanelTabsTop"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Panel Tabs",
+    "heading": "Bottom",
+    "hotkeyText": "",
+    "icon": "icons/PositionArrowIcon.png",
+    "callbackKey": "PanelTabsBottom"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Panel Tabs",
+    "heading": "Left",
+    "hotkeyText": "",
+    "icon": "icons/PositionArrowIcon.png",
+    "callbackKey": "PanelTabsLeft"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Panel Tabs",
+    "heading": "Right",
+    "hotkeyText": "",
+    "icon": "icons/PositionArrowIcon.png",
+    "callbackKey": "PanelTabsRight"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
     "heading": "Fullscreen Panel",
     "hotkeyText": "",
     "icon": "icons/StretchArrowIcon.png",

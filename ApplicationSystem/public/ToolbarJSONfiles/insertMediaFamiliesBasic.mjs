@@ -4,6 +4,8 @@
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, saveNotebookText, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath } from "./insertMediaIO.mjs";
 import { renderEquation } from "./insertMediaEquation.mjs";
+import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import { normalizeFallbackReferencesForSource, serializeFallbackAttributes } from "../utils/referenceFallbacks.mjs";
 
 // === Shared Button ===
 export function button(label) {
@@ -24,17 +26,27 @@ function genericFamilyDir(family) {
   return `assets/${slug || "media"}`;
 }
 
-function linkHtmlForSource(source, editorPath) {
+function fallbackAttrsForSource(primary, editorPath, fallbacks = []) {
+  return serializeFallbackAttributes(normalizeFallbackReferencesForSource(fallbacks, {
+    sourcePath: editorPath,
+    primary
+  }), { primary });
+}
+
+function linkHtmlForSource(source, editorPath, fallbacks = []) {
   const entered = String(source || "").trim();
   if (!entered) throw new Error("Enter an existing source.");
   if (looksLikeUrlOrAbsPath(entered)) {
-    return `<a href="${escapeHtml(entered)}">${escapeHtml(entered.split("/").pop() || entered)}</a>`;
+    const label = entered.split("/").pop() || entered;
+    const fallbackAttrs = fallbackAttrsForSource(entered, editorPath, fallbacks);
+    return "<a href=\"" + escapeHtml(entered) + "\"" + fallbackAttrs + ">" + escapeHtml(label) + "</a>";
   }
 
   const notebookPath = normalizeNotebookPath(entered);
   const href = notebookSourceFromPath(notebookPath, editorPath);
   const label = notebookPath.split("/").pop() || notebookPath;
-  return `<a href="${escapeHtml(href)}" data-nv-linked-path="${escapeHtml(notebookPath)}">${escapeHtml(label)}</a>`;
+  const fallbackAttrs = fallbackAttrsForSource(href, editorPath, fallbacks);
+  return "<a href=\"" + escapeHtml(href) + "\" data-nv-linked-path=\"" + escapeHtml(notebookPath) + "\"" + fallbackAttrs + ">" + escapeHtml(label) + "</a>";
 }
 
 export function renderGenericLink(root, familyLabel, exts = []) {
@@ -50,7 +62,7 @@ export function renderGenericLink(root, familyLabel, exts = []) {
     ? extensions.map((e) => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join("")
     : `<option value="${escapeHtml(defaultExt)}">${escapeHtml(defaultExt)}</option>`;
 
-  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:280px;max-width:560px;"><div style="font-weight:600;">${escapeHtml(family)}</div><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Source</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> New</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> Existing</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> Referenced</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> Inline</label></fieldset><div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${optionHtml}</select></label><label>New File Name<input data-field="newName" type="text" placeholder="file.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><label>Inline Content<textarea data-field="inlineContent" rows="5" style="display:block;width:100%;margin-top:4px;white-space:pre;">New ${escapeHtml(family)} item</textarea></label></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><label>Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="path/to/file or https://..." style="display:block;width:100%;margin-top:4px;" /></label></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
+  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:280px;max-width:560px;"><div style="font-weight:600;">${escapeHtml(family)}</div><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Source</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> New</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> Existing</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> Referenced</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> Inline</label></fieldset><div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${optionHtml}</select></label><label>New File Name<input data-field="newName" type="text" placeholder="file.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><label>Inline Content<textarea data-field="inlineContent" rows="5" style="display:block;width:100%;margin-top:4px;white-space:pre;">New ${escapeHtml(family)} item</textarea></label></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><label>Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="path/to/file or https://..." style="display:block;width:100%;margin-top:4px;" /></label></div><div data-field="fallbackHost"></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
   const sourceEls = () => root.querySelectorAll("input[name=\"nv-source\"]");
@@ -63,6 +75,10 @@ export function renderGenericLink(root, familyLabel, exts = []) {
   const inlineContentEl = root.querySelector("[data-field=\"inlineContent\"]");
   const existingSourceEl = root.querySelector("[data-field=\"existingSource\"]");
   const statusEl = root.querySelector("[data-field=\"status\"]");
+  const fallbackList = attachFallbackReferenceList({
+    container: root.querySelector("[data-field=\"fallbackHost\"]"),
+    primaryInput: existingSourceEl
+  });
   const setStatus = (t) => { statusEl.textContent = String(t || ""); };
 
   const sync = () => {
@@ -91,7 +107,7 @@ export function renderGenericLink(root, familyLabel, exts = []) {
         const fileName = rawName.includes(".") ? rawName : `${rawName}.${fmt}`;
         const notebookPath = normalizeNotebookPath(joinNotebookPath(joinNotebookPath(dirname(editorPath), genericFamilyDir(family)), fileName));
         await saveNotebookText(notebookPath, `New ${family}: ${fileName}\n`, "text/plain");
-        html = linkHtmlForSource(notebookPath, editorPath);
+        html = linkHtmlForSource(notebookPath, editorPath, fallbackList.getFallbacks());
       } else if (sourceMode === "new") {
         html = `<pre style="white-space:pre-wrap;border:1px solid #ccc;padding:8px;">${escapeHtml(String(inlineContentEl.value || ""))}</pre>`;
       } else if (storageMode === "inline") {
@@ -99,7 +115,7 @@ export function renderGenericLink(root, familyLabel, exts = []) {
         const url = looksLikeUrlOrAbsPath(entered) ? entered : notebookSourceFromPath(normalizeNotebookPath(entered), editorPath);
         html = `<pre style="white-space:pre-wrap;border:1px solid #ccc;padding:8px;">${escapeHtml(await fetchUrlAsText(url))}</pre>`;
       } else {
-        html = linkHtmlForSource(existingSourceEl.value, editorPath);
+        html = linkHtmlForSource(existingSourceEl.value, editorPath, fallbackList.getFallbacks());
       }
 
       insertHtmlAtCaret(html);

@@ -3,6 +3,7 @@
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { findSourceHyperlinkContext } from "./sourceHyperlinkTools.mjs";
+import { readFallbackReferencesFromElement } from "../../utils/referenceFallbacks.mjs";
 
 const EDITABLE_HTML_MODES = new Set(["HTMLediting", "EPUBediting"]);
 let installed = false;
@@ -77,6 +78,7 @@ export function selectedHyperlinkContext() {
     element: link,
     href: link.getAttribute("href") || "",
     text: link.textContent || "",
+    fallbacks: readFallbackReferencesFromElement(link),
   };
 }
 

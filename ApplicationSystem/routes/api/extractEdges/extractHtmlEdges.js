@@ -22,6 +22,10 @@ const LINK_ATTRIBUTES = [
   { selector: "embed", attr: "src" },
   { selector: "object", attr: "data" },
   { selector: "[data-src]", attr: "data-src" },
+  { selector: "[data-nodevision-image-src]", attr: "data-nodevision-image-src" },
+  { selector: "[data-nodevision-citation-source]", attr: "data-nodevision-citation-source" },
+  { selector: "[data-nodevision-font-src]", attr: "data-nodevision-font-src" },
+  { selector: "[data-nodevision-font-stylesheet]", attr: "data-nodevision-font-stylesheet" },
   { selector: "[data-nodevision-circuit-src]", attr: "data-nodevision-circuit-src" },
   { selector: "[srcset]", attr: "srcset" },
   { selector: "form", attr: "action" },
@@ -51,6 +55,11 @@ function collectCandidateLinks($) {
       addCandidate(edgesSet, value);
     });
   }
+  $("*").each((i, el) => {
+    for (const [name, value] of Object.entries(el?.attribs || {})) {
+      if (/^data-nodevision-fallback-\d+$/i.test(name)) addCandidate(edgesSet, value);
+    }
+  });
   return edgesSet;
 }
 

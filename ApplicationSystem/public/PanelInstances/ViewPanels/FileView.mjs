@@ -1247,16 +1247,40 @@ function getActiveFilePath(preferredPath = null) {
   return "";
 }
 
+function claimFileViewHost(viewDiv) {
+  if (!viewDiv) return null;
+  document.querySelectorAll("#element-view").forEach((node) => {
+    if (node !== viewDiv) {
+      node.dataset.nvInactiveElementId = "element-view";
+      node.removeAttribute("id");
+    }
+  });
+  viewDiv.id = "element-view";
+  viewDiv.dataset.nvFileViewRoot = "true";
+  viewDivRef = viewDiv;
+  return viewDiv;
+}
+
+function activeFileViewRoot() {
+  const activeContent = document.querySelector(".panel-cell.active-panel .nv-panel-tab-content:not([hidden])");
+  return activeContent?.querySelector?.("[data-nv-file-view-root=\"true\"], #element-view") || null;
+}
+
 function getViewPanelElement() {
-  if (viewDivRef && document.body.contains(viewDivRef)) {
-    return viewDivRef;
+  const activeRoot = activeFileViewRoot();
+  if (activeRoot) return claimFileViewHost(activeRoot);
+
+  if (viewDivRef && document.body.contains(viewDivRef) && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(viewDivRef))) {
+    return claimFileViewHost(viewDivRef);
   }
 
   const cell = getFileViewCell();
-  const fromCell = cell?.querySelector?.("#element-view");
-  if (fromCell) return fromCell;
+  const fromCell = cell?.querySelector?.("#element-view, [data-nv-file-view-root=\"true\"]");
+  if (fromCell && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(fromCell))) return claimFileViewHost(fromCell);
 
-  return document.getElementById("element-view");
+  const byId = document.getElementById("element-view");
+  if (byId && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(byId))) return claimFileViewHost(byId);
+  return null;
 }
 
 function setFileViewStatus(message, detail = "") {
@@ -1416,6 +1440,34 @@ function activateFileViewPanel() {
   window.dispatchEvent(new CustomEvent("nv-show-subtoolbar", {
     detail: { heading: "File View", force: false, toggle: false }
   }));
+}
+
+function activateFileViewHost(host) {
+  const viewDiv = host?.matches?.("[data-nv-file-view-root=\"true\"]")
+    ? host
+    : host?.querySelector?.("[data-nv-file-view-root=\"true\"], #element-view");
+  if (!claimFileViewHost(viewDiv)) return false;
+  activateFileViewPanel();
+  const path = normalizeNotebookPath(
+    viewDiv.dataset.nvFileViewRenderedPath ||
+    viewDiv.dataset.currentFilePath ||
+    viewDiv.closest(".nv-panel-tab-content")?.dataset?.currentFilePath ||
+    viewDiv.closest(".panel-cell")?.dataset?.currentFilePath ||
+    ""
+  );
+  if (path) {
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.selectedFile = path;
+    window.NodevisionState.activeFileViewPath = path;
+    window.currentActiveFilePath = path;
+    try {
+      updateToolbarState({ currentMode: "Default", selectedFile: path, activeFileViewPath: path, liveFileViewerEnabled });
+    } catch (err) {
+      console.warn("Failed to update toolbar state for FileView tab activation:", err);
+    }
+    setFileViewStatus("File Viewer", path);
+  }
+  return true;
 }
 
 function enableViewActivation(viewDiv) {
@@ -1578,12 +1630,12 @@ function installIframeActivation(iframe) {
 export async function setupPanel(panel, instanceVars = {}) {
   // Create container for view content
   const viewDiv = document.createElement("div");
-  viewDiv.id = "element-view";
   viewDiv.style.width = "100%";
   viewDiv.style.height = "100%";
   viewDiv.style.overflow = "auto";
-  viewDivRef = viewDiv;
+  viewDiv.dataset.nvFileViewRoot = "true";
   panel.appendChild(viewDiv);
+  claimFileViewHost(viewDiv);
   enableViewActivation(viewDiv);
   installFileViewLinkNavigation(viewDiv);
   observeViewIframes(viewDiv);
@@ -1621,7 +1673,7 @@ export async function setupPanel(panel, instanceVars = {}) {
               console.warn("Failed to update toolbar state for selectedFilePath change:", err);
             }
             const viewPanel = getViewPanelElement();
-            if (viewPanel) {
+            if (viewPanel && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(viewPanel))) {
               updateViewPanel(value, { force: true }).catch(err => {
                 console.error("❌ updateViewPanel error:", err);
               });
@@ -1770,6 +1822,9 @@ export async function updateViewPanel(element, { force = false } = {}) {
     return true;
   }
   lastRenderedPath = filename;
+  viewPanel.dataset.currentFilePath = filename;
+  viewPanel.dataset.nvFileViewRenderedPath = filename;
+  viewPanel.closest(".nv-panel-tab-content")?.setAttribute("data-current-file-path", filename);
 
   console.log("🧭 Updating view panel for file:", filename);
   window.currentActiveFilePath = filename;
@@ -1908,3 +1963,4 @@ window.updateViewPanel = updateViewPanel;
 window.renderFile = renderFile;
 window.isLiveFileViewerEnabled = isLiveFileViewerEnabled;
 window.setLiveFileViewerEnabled = setLiveFileViewerEnabled;
+window.__nvActivateFileViewHost = activateFileViewHost;

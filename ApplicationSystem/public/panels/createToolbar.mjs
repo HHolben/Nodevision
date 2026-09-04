@@ -998,7 +998,8 @@ if (item.panelTemplateId || item.panelTemplate) {
     detail: {
       id: templateId,
       type: panelType,
-      replaceActive: item.replaceActive === true
+      replaceActive: item.replaceActive === true,
+      panelVars: { ...(item.defaultInstanceVars || {}) }
     }
   });
   window.dispatchEvent(event);

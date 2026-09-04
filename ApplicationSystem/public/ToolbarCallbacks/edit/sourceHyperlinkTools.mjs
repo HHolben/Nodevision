@@ -1,6 +1,11 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/edit/sourceHyperlinkTools.mjs
 // This module detects and edits literal HTML anchor tags in source-style HTML and PHP editors.
 
+import {
+  parseFallbackAttributesFromTagSource,
+  replaceFallbackAttributesInHtmlTag
+} from "../../utils/referenceFallbacks.mjs";
+
 const SOURCE_LINK_MODES = new Set(["CodeEditing", "PHPediting"]);
 const SOURCE_LINK_EXTENSIONS = new Set(["html", "htm", "xhtml", "php"]);
 const ANCHOR_PATTERN = /<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1[^>]*>[\s\S]*?<\/a>/gi;
@@ -54,6 +59,7 @@ function textFromEditor() {
       text: model.getValue(),
       start: model.getOffsetAt(selection.getStartPosition()),
       end: model.getOffsetAt(selection.getEndPosition()),
+      filePath: activeFilePath(),
     };
   }
   if (mode === "PHPediting") {
@@ -65,6 +71,7 @@ function textFromEditor() {
       text: input.value,
       start: input.selectionStart,
       end: input.selectionEnd,
+      filePath: activeFilePath(),
     };
   }
   return null;
@@ -87,12 +94,14 @@ function anchorContext(match, textRange) {
   const end = start + source.length;
   const openEnd = source.indexOf(">");
   const closeStart = source.toLowerCase().lastIndexOf("</a>");
+  const openTagSource = openEnd >= 0 ? source.slice(0, openEnd + 1) : source;
   return {
     ...textRange,
     source,
     href: hrefMatch[2] || "",
     quote: hrefMatch[1] || '"',
     range: { start, end },
+    fallbacks: parseFallbackAttributesFromTagSource(openTagSource, start).map((fallback) => fallback.rawTarget),
     innerText: openEnd >= 0 && closeStart > openEnd ? stripTags(source.slice(openEnd + 1, closeStart)) : "",
   };
 }
@@ -135,18 +144,25 @@ function escapeText(value = "") {
   }[ch]));
 }
 
-function replaceAnchorSource(context, href, text) {
+function replaceAnchorSource(context, href, text, fallbacks = null) {
   const quote = context.quote || '"';
-  let source = String(context.source || "").replace(HREF_PATTERN, `href=${quote}${escapeAttribute(href, quote)}${quote}`);
+  let source = String(context.source || "").replace(HREF_PATTERN, "href=" + quote + escapeAttribute(href, quote) + quote);
+  if (Array.isArray(fallbacks)) {
+    const openEnd = source.indexOf(">");
+    if (openEnd >= 0) {
+      const openTag = source.slice(0, openEnd + 1);
+      source = replaceFallbackAttributesInHtmlTag(openTag, fallbacks, { primary: href }) + source.slice(openEnd + 1);
+    }
+  }
   if (text !== null && text !== undefined && text !== context.innerText) {
-    source = source.replace(/(<a\b[^>]*>)[\s\S]*?(<\/a>)/i, `$1${escapeText(text)}$2`);
+    source = source.replace(/(<a\b[^>]*>)[\s\S]*?(<\/a>)/i, "$1" + escapeText(text) + "$2");
   }
   return source;
 }
 
-export function applySourceHyperlinkEdit(context, { href = "", text = null } = {}) {
+export function applySourceHyperlinkEdit(context, { href = "", text = null, fallbacks = null } = {}) {
   if (!context?.range) return false;
-  const replacement = replaceAnchorSource(context, href, text);
+  const replacement = replaceAnchorSource(context, href, text, fallbacks);
   if (context.kind === "monaco" && context.editor?.executeEdits && context.model?.getPositionAt) {
     const start = context.model.getPositionAt(context.range.start);
     const end = context.model.getPositionAt(context.range.end);

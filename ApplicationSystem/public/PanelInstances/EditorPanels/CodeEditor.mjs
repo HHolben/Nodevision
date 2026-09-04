@@ -769,10 +769,57 @@ function cleanupCellBeforeCodeEditor(cell) {
   }
 }
 
+function codeEditorSessionFromHost(host) {
+  if (!host) return null;
+  if (host.__nvCodeEditorSession) return host.__nvCodeEditorSession;
+  return host.querySelector?.(".monaco-editor-container")?.__nvCodeEditorSession || null;
+}
+
+function activateCodeEditorHost(host) {
+  const session = codeEditorSessionFromHost(host);
+  if (!session?.editor || !session.editorContainer?.isConnected) return false;
+  editorInstance = session.editor;
+  editorContainer = session.editorContainer;
+  editorInstanceContainer = session.editorContainer;
+  lastEditedPath = session.filePath;
+  currentLoadedEncoding = session.encoding || "utf8";
+  currentLoadedBom = Boolean(session.bom);
+  currentLoadedIsBinary = Boolean(session.isBinary);
+  currentLoadedFileFormat = session.fileFormat || "text";
+  currentLoadedNbtWasGzip = Boolean(session.nbtWasGzip);
+  savedVersionId = session.savedVersionId ?? session.editor.getModel?.()?.getAlternativeVersionId?.() ?? null;
+  window.monacoEditor = editorInstance;
+  window.__nvCodeEditorActivePath = session.filePath;
+  window.currentActiveFilePath = session.filePath;
+  window.currentFileEncoding = currentLoadedEncoding;
+  window.currentFileBom = currentLoadedBom;
+  if (currentLoadedFileFormat === "nbt") {
+    window.saveCodeFile = saveNbtCodeFile;
+    window.__nvCodeEditorSaveFormat = "nbt";
+    installNbtTagEditorContext(session.filePath);
+  } else if (window.__nvCodeEditorSaveFormat === "nbt") {
+    window.saveCodeFile = null;
+    window.__nvCodeEditorSaveFormat = null;
+    clearNbtTagEditorContext();
+  }
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.selectedFile = session.filePath;
+  window.NodevisionState.activeEditorFilePath = session.filePath;
+  window.NodevisionState.currentMode = "CodeEditing";
+  window.NodevisionState.activeActionHandler = null;
+  setWordCountVisibility(false);
+  updateToolbarState({ currentMode: "CodeEditing", selectedFile: session.filePath, activeEditorFilePath: session.filePath, activeActionHandler: null });
+  reportCodeEditorAttention(session.filePath, editorInstance);
+  session.touchLive = registerCodeEditorLiveProvider(session.filePath, session.editorContainer);
+  updateDirtyState();
+  window.requestAnimationFrame?.(() => editorInstance?.layout?.());
+  return true;
+}
+
 /**
  * Opens or replaces a Code Editor panel in the active cell.
  */
-export async function openCodeEditor(filePath) {
+export async function openCodeEditor(filePath, options = {}) {
   if (!filePath) {
     alert("No file selected to open in Code Editor.");
     return;
@@ -787,7 +834,19 @@ export async function openCodeEditor(filePath) {
     return;
   }
 
-  let targetCell = window.activeCell;
+  if (!options.__nvGuardedEditorSwitch && !options.bypassTabs && window.__nvCodeEditorDirty && typeof window.__nvGuardEditorSwitch === "function" && normalizeEditorPath(filePath) !== normalizeEditorPath(window.__nvCodeEditorActivePath || lastEditedPath)) {
+    window.__nvGuardEditorSwitch(filePath, () => openCodeEditor(filePath, { ...options, __nvGuardedEditorSwitch: true }));
+    return;
+  }
+
+  if (!options.bypassTabs && typeof window.__nvOpenPanelTab === "function") {
+    const activeCell = window.activeCell?.closest?.(".panel-cell") || window.activeCell;
+    if (activeCell?.classList?.contains("panel-cell") && workspace.contains(activeCell)) {
+      return window.__nvOpenPanelTab(activeCell, "CodeEditor", "EditorPanel", { filePath });
+    }
+  }
+
+  let targetCell = options.targetElement || window.activeCell;
 
   // 🟥 No active cell selected
   if (!targetCell || !workspace.contains(targetCell)) {
@@ -799,6 +858,7 @@ export async function openCodeEditor(filePath) {
 
   console.log("[CodeEditor] Replacing active cell with Code Editor:", filePath);
   targetCell.dataset.currentFilePath = filePath;
+  targetCell.dataset.nvCodeEditorRoot = "true";
 
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = filePath;
@@ -876,18 +936,23 @@ export async function openCodeEditor(filePath) {
   targetCell.style.display = "flex";
   targetCell.style.flexDirection = "column";
   targetCell.cleanup = () => {
-    persistCodeEditorAttention(filePath, editorInstance);
-    if (typeof codeEditorLiveCleanup === "function") {
+    const session = targetCell.__nvCodeEditorSession || editorContainer?.__nvCodeEditorSession;
+    const ownedEditor = session?.editor || (editorInstanceContainer && targetCell.contains(editorInstanceContainer) ? editorInstance : null);
+    persistCodeEditorAttention(filePath, ownedEditor || editorInstance);
+    if (session?.editor === editorInstance && typeof codeEditorLiveCleanup === "function") {
       codeEditorLiveCleanup();
       codeEditorLiveCleanup = null;
     }
     clearEditorContext(filePath);
-    if (editorInstance) {
-      editorInstance.dispose();
+    ownedEditor?.dispose?.();
+    if (!ownedEditor || editorInstance === ownedEditor) {
       editorInstance = null;
+      editorInstanceContainer = null;
+      editorContainer = null;
+      window.monacoEditor = null;
     }
-    editorInstanceContainer = null;
-    editorContainer = null;
+    if (session?.editorContainer) session.editorContainer.__nvCodeEditorSession = null;
+    targetCell.__nvCodeEditorSession = null;
     commonVarOverlay = null;
   };
 
@@ -1030,15 +1095,27 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
     return;
   }
 
-  // 1. Clean up existing editor instance
+  // 1. Move any active editor into its tab session before creating another one.
   if (typeof codeEditorLiveCleanup === "function") {
     codeEditorLiveCleanup();
     codeEditorLiveCleanup = null;
   }
-  if (editorInstance) {
+  if (editorInstance && editorInstanceContainer && editorInstanceContainer !== targetContainer) {
+    const previousSession = editorInstanceContainer.__nvCodeEditorSession;
+    if (previousSession) {
+      previousSession.savedVersionId = savedVersionId;
+      previousSession.dirty = Boolean(window.__nvCodeEditorDirty);
+      previousSession.encoding = currentLoadedEncoding;
+      previousSession.bom = currentLoadedBom;
+      previousSession.isBinary = currentLoadedIsBinary;
+      previousSession.fileFormat = currentLoadedFileFormat;
+      previousSession.nbtWasGzip = currentLoadedNbtWasGzip;
+    }
+    persistCodeEditorAttention(lastEditedPath || window.__nvCodeEditorActivePath, editorInstance);
+  } else if (editorInstance) {
     editorInstance.dispose();
-    editorInstance = null;
   }
+  editorInstance = null;
   editorInstanceContainer = null;
   commonVarOverlay = null;
   savedVersionId = null;
@@ -1165,11 +1242,31 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
     });
 
     const model = editorInstance.getModel();
-    savedVersionId = model?.getAlternativeVersionId?.() || null;
+    const session = {
+      editor: editorInstance,
+      editorContainer: targetContainer,
+      filePath,
+      encoding: currentLoadedEncoding,
+      bom: currentLoadedBom,
+      isBinary: currentLoadedIsBinary,
+      fileFormat: currentLoadedFileFormat,
+      nbtWasGzip: currentLoadedNbtWasGzip,
+      savedVersionId: model?.getAlternativeVersionId?.() || null,
+      dirty: false,
+    };
+    targetContainer.__nvCodeEditorSession = session;
+    const host = targetContainer.closest(".nv-panel-tab-content") || targetContainer.parentElement;
+    if (host) {
+      host.__nvCodeEditorSession = session;
+      host.dataset.currentFilePath = filePath;
+      host.dataset.nvCodeEditorRoot = "true";
+    }
+    savedVersionId = session.savedVersionId;
     window.__nvCodeEditorDirty = false;
     window.__nvCodeEditorActivePath = filePath;
     lastEditedPath = filePath;
     touchCodeEditorLive = registerCodeEditorLiveProvider(filePath, targetContainer);
+    session.touchLive = touchCodeEditorLive;
 
     window.addEventListener("nodevision-file-saved", (evt) => {
       const savedPath = evt?.detail?.filePath;
@@ -1348,6 +1445,8 @@ function updateDirtyState() {
   if (!model) return;
   const currentId = model.getAlternativeVersionId?.();
   window.__nvCodeEditorDirty = savedVersionId !== null && currentId !== savedVersionId;
+  const session = editorContainer?.__nvCodeEditorSession || editorInstanceContainer?.__nvCodeEditorSession;
+  if (session?.editor === editorInstance) session.dirty = window.__nvCodeEditorDirty;
   if (window.__nvCodeEditorDirty) {
     recordEditedFile(window.__nvCodeEditorActivePath || lastEditedPath || window.currentActiveFilePath);
   }
@@ -1357,6 +1456,11 @@ function markEditorClean() {
   const model = editorInstance?.getModel?.();
   if (!model) return;
   savedVersionId = model.getAlternativeVersionId?.() || null;
+  const session = editorContainer?.__nvCodeEditorSession || editorInstanceContainer?.__nvCodeEditorSession;
+  if (session?.editor === editorInstance) {
+    session.savedVersionId = savedVersionId;
+    session.dirty = false;
+  }
   window.__nvCodeEditorDirty = false;
   touchLiveFileContentProvider(CODE_EDITOR_LIVE_PROVIDER_ID, {
     filePath: window.__nvCodeEditorActivePath || lastEditedPath || window.currentActiveFilePath || "",
@@ -1541,12 +1645,13 @@ export async function setupPanel(panelElem, panelVars = {}) {
   window.activeCell = panelElem;
 
   // Now reuse your existing logic
-  await openCodeEditor(filePath || "Untitled");
+  await openCodeEditor(filePath || "Untitled", { targetElement: panelElem, bypassTabs: true });
 }
 
 // Expose globally
 window.openCodeEditor = openCodeEditor;
 window.updateEditorPanel = updateEditorPanel;
+window.__nvActivateCodeEditorHost = activateCodeEditorHost;
 
 
 function reportCodeEditorAttention(filePath, editor = null) {

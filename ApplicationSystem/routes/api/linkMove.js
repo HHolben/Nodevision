@@ -99,7 +99,7 @@ function collectLinkSpans(content, kind) {
   }
 
   if (kind === "html") {
-    const attrRegex = /\b(?:href|src|data-src|data-nodevision-font-src|data-nodevision-circuit-src)\s*=\s*(["\x27])(.*?)\1/gi;
+    const attrRegex = /\b(?:href|src|data-src|data-nodevision-image-src|data-nodevision-citation-source|data-nodevision-font-src|data-nodevision-font-stylesheet|data-nodevision-circuit-src|data-nodevision-fallback-\d+)\s*=\s*(["\x27])(.*?)\1/gi;
     let match;
     while ((match = attrRegex.exec(text))) {
       const full = match[0] || "";
@@ -110,9 +110,9 @@ function collectLinkSpans(content, kind) {
       spans.push({ start, end: start + raw.length, raw });
     }
 
-    const cssUrlRegex = /url\(\s*(?:"([^"]+)"|\x27([^\x27]+)\x27|([^\x27"\)]+))\s*\)/gi;
+    const cssUrlRegex = /url\(\s*(?:"([^"]+)"|\x27([^\x27]+)\x27|&quot;([^&]*?)&quot;|&#39;([^&]*?)&#39;|([^\x27"\)]+))\s*\)/gi;
     while ((match = cssUrlRegex.exec(text))) {
-      const raw = String(match[1] || match[2] || match[3] || "");
+      const raw = String(match[1] || match[2] || match[3] || match[4] || match[5] || "");
       const target = raw.trim();
       if (!target) continue;
       const inMatchIndex = match[0].indexOf(raw);
@@ -465,6 +465,13 @@ function jsonRoute(handler) {
     }
   };
 }
+
+export {
+  collectLinkSpans,
+  applySpanReplacements,
+  getMovedPathInfo,
+  remapCleanMovedPath,
+};
 
 export default function createLinkMoveRouter(ctx = BASE_CONTEXT) {
   const router = express.Router();

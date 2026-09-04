@@ -6,6 +6,7 @@ import {
   normalizeNotebookRelativePath,
   resolveNotebookReference,
 } from "../../../../utils/notebookPath.mjs";
+import { serializeFallbackAttributes } from "../../../../utils/referenceFallbacks.mjs";
 
 export const CIRCUIT_REFERENCE_CLASS = "nodevision-circuit-reference";
 export const CIRCUIT_CANVAS_CLASS = "nodevision-circuit-canvas";
@@ -44,6 +45,7 @@ export function buildCircuitReferenceMarkup({
   width = DEFAULT_CIRCUIT_VIEW_SIZE.width,
   height = DEFAULT_CIRCUIT_VIEW_SIZE.height,
   title = "Circuit",
+  fallbacks = [],
 } = {}) {
   const linkedNotebookPath = normalizeCircuitNotebookPath(notebookPath);
   if (!linkedNotebookPath) throw new Error("Missing circuit Notebook path.");
@@ -53,8 +55,9 @@ export function buildCircuitReferenceMarkup({
   const displayWidth = normalizeCircuitDisplayDimension(width, DEFAULT_CIRCUIT_VIEW_SIZE.width);
   const displayHeight = normalizeCircuitDisplayDimension(height, DEFAULT_CIRCUIT_VIEW_SIZE.height);
   const label = title || linkedNotebookPath.split("/").pop() || "Circuit";
+  const fallbackAttrs = serializeFallbackAttributes(fallbacks, { primary: source });
 
-  return `<div class="${CIRCUIT_REFERENCE_CLASS}" data-nodevision-resource-type="circuit" data-nodevision-circuit-mode="referenced" data-nodevision-circuit-src="${escapeHtmlAttribute(source)}" data-nv-linked-path="${escapeHtmlAttribute(linkedNotebookPath)}" contenteditable="false" role="img" aria-label="${escapeHtmlAttribute(label)}" style="width:${displayWidth}px;height:${displayHeight}px;"><canvas class="${CIRCUIT_CANVAS_CLASS}"></canvas></div>`;
+  return `<div class="${CIRCUIT_REFERENCE_CLASS}" data-nodevision-resource-type="circuit" data-nodevision-circuit-mode="referenced" data-nodevision-circuit-src="${escapeHtmlAttribute(source)}"${fallbackAttrs} data-nv-linked-path="${escapeHtmlAttribute(linkedNotebookPath)}" contenteditable="false" role="img" aria-label="${escapeHtmlAttribute(label)}" style="width:${displayWidth}px;height:${displayHeight}px;"><canvas class="${CIRCUIT_CANVAS_CLASS}"></canvas></div>`;
 }
 
 export function isCircuitReferenceElement(element) {

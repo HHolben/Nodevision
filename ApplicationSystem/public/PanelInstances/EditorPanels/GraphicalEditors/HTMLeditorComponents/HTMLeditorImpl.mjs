@@ -12,6 +12,12 @@ import { setStatus, setWordCount } from "/StatusBar.mjs";
 import { recordEditedFile } from "/RecentFiles.mjs";
 import { notebookPathFromPickedFile } from "/ToolbarJSONfiles/insertMediaCommon.mjs";
 import { getRelativeNotebookReference, normalizeNotebookFilePath, normalizeNotebookRelativePath, resolveNotebookReference } from "/utils/notebookPath.mjs";
+import { installNodevisionMediaFallbackRuntime } from "/utils/mediaFallbackRuntime.mjs";
+import {
+  applyFallbackReferencesToElement,
+  normalizeFallbackReferencesForSource
+} from "/utils/referenceFallbacks.mjs";
+import { attachFallbackReferenceList } from "/ToolbarJSONfiles/referenceFallbackRows.mjs";
 import { validateGraphicalHtmlSave } from "./HtmlSaveSafety.mjs";
 import { createWysiwygProgrammaticHistory, insertHtmlFragmentAtRange } from "./WysiwygProgrammaticHistory.mjs";
 import { buildInlineEquationBrowserSupportHeadHtml, INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR, renderInlineEquations, serializeInlineEquationsForSave } from "/Equation/HtmlInlineEquation.mjs";
@@ -25,6 +31,22 @@ import {
 import { installCartoonEditingBehavior } from "/ToolbarCallbacks/insert/cartoonTools.mjs";
 import { CIRCUIT_CANVAS_CLASS, findCircuitReferenceElement, readCircuitReferenceFromElement } from "../CircuitEditorComponents/CircuitReferenceElement.mjs";
 import { installReferencedCircuitRendering, refreshReferencedCircuits } from "../CircuitEditorComponents/HtmlReferencedCircuitIntegration.mjs";
+import {
+  clearImageTextSelection,
+  findImageTextElementFromNode,
+  findImageTextElementFromRange,
+  getImageTextRangeError,
+  readImageTextContext,
+  readImageTextLayout,
+  applyImageTextLayout,
+  applyImageTextPresentation,
+  selectImageTextElement,
+  syncImageTextPresentation,
+  unwrapImageTextElement,
+  wrapRangeWithImageText,
+  IMAGE_TEXT_CLASS,
+  IMAGE_TEXT_SELECTED_CLASS,
+} from "./HtmlImageText.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico"]);
@@ -242,6 +264,29 @@ function ensureHTMLLayoutStyles() {
     #wysiwyg img.nv-selected-image {
       outline: 2px solid #2f80ff;
       outline-offset: 2px;
+    }
+    #wysiwyg .${IMAGE_TEXT_CLASS} {
+      position: relative;
+      display: inline-block;
+      min-width: 1em;
+      min-height: 1em;
+      background-image: var(--nodevision-image-text-src);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      color: transparent;
+      text-shadow: none;
+      user-select: text;
+      vertical-align: baseline;
+    }
+    #wysiwyg .${IMAGE_TEXT_CLASS} * {
+      color: transparent !important;
+      text-shadow: none !important;
+    }
+    #wysiwyg .${IMAGE_TEXT_CLASS}.${IMAGE_TEXT_SELECTED_CLASS} {
+      outline: 2px solid #f59e0b;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25);
     }
     #wysiwyg audio.nv-selected-audio {
       outline: 2px dashed #2f80ff;
@@ -2708,6 +2753,9 @@ function decorateInsertedImage(img, insertion) {
     img.style.width = `${NEW_IMAGE_DEFAULT_DISPLAY_WIDTH}px`;
     img.style.height = `${NEW_IMAGE_DEFAULT_DISPLAY_HEIGHT}px`;
   }
+  if (Array.isArray(insertion?.fallbacks)) {
+    applyFallbackReferencesToElement(img, insertion.fallbacks, { primary: insertion.src });
+  }
   if (insertion?.linkedNotebookPath) {
     img.setAttribute("data-nv-linked-path", normalizeNotebookPathInput(insertion.linkedNotebookPath));
   } else {
@@ -2779,6 +2827,7 @@ async function chooseImageInsertion(editorFilePath = "") {
 }
 
 function markSelectedImage(wysiwyg, imageEl) {
+  clearImageTextSelection(wysiwyg);
   wysiwyg.querySelectorAll(".nv-selected-image").forEach((img) => {
     img.classList.remove("nv-selected-image");
   });
@@ -2803,10 +2852,131 @@ function markSelectedAudio(wysiwyg, audioEl) {
 function updateSelectedImageState(context) {
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activeHtmlImageContext = context || null;
-  updateToolbarState({
+  const patch = {
     htmlImageSelected: Boolean(context && context.element),
     htmlImagePath: context?.linkedNotebookPath || null,
+  };
+  if (context?.element) {
+    window.NodevisionState.activeHtmlImageTextContext = null;
+    patch.htmlImageTextSelected = false;
+    patch.htmlImageTextPath = null;
+  }
+  updateToolbarState(patch);
+}
+
+function buildImageTextContextFromElement(element, editorFilePath = "") {
+  const context = readImageTextContext(element);
+  if (!context) return null;
+
+  const source = String(context.src || "").trim();
+  const explicitLinked = normalizeNotebookPathInput(context.linkedNotebookPath || "");
+  context.linkedNotebookPath = "";
+  context.isInline = false;
+  context.isExternal = false;
+  context.extension = "";
+
+  if (!source) return context;
+  if (source.startsWith("data:image/")) {
+    context.isInline = true;
+    context.extension = inferExtensionFromMime(parseDataUrl(source)?.mimeType || "");
+    return context;
+  }
+  const notebookPath = getNotebookPathFromSourceInput(source, editorFilePath);
+  if (notebookPath) {
+    context.linkedNotebookPath = notebookPath;
+    context.extension = inferExtensionFromPath(notebookPath);
+  } else if (explicitLinked) {
+    context.linkedNotebookPath = explicitLinked;
+    context.extension = inferExtensionFromPath(explicitLinked);
+  } else if (/^(https?:)?\/\//i.test(source)) {
+    context.isExternal = true;
+  }
+  return context;
+}
+
+function syncEditorImageTextPresentation(root, editorFilePath = "") {
+  syncImageTextPresentation(root, {
+    resolveNotebookPath: (source) => getNotebookPathFromSourceInput(source, editorFilePath),
   });
+}
+
+function markSelectedImageText(wysiwyg, element) {
+  if (!wysiwyg) return null;
+  wysiwyg.querySelectorAll(".nv-selected-image").forEach((img) => {
+    img.classList.remove("nv-selected-image");
+  });
+  wysiwyg.querySelectorAll(".nv-selected-image-item").forEach((item) => {
+    item.classList.remove("nv-selected-image-item");
+  });
+  return selectImageTextElement(wysiwyg, element);
+}
+
+function updateSelectedImageTextState(context, options = {}) {
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activeHtmlImageTextContext = context || null;
+  const patch = {
+    htmlImageTextSelected: Boolean(context && context.element),
+    htmlImageTextPath: context?.linkedNotebookPath || context?.src || null,
+  };
+  if (Object.prototype.hasOwnProperty.call(options, "htmlTextSelectionActive")) {
+    patch.htmlTextSelectionActive = Boolean(options.htmlTextSelectionActive);
+  }
+  if (options.clearHtmlImageSelection) {
+    window.NodevisionState.activeHtmlImageContext = null;
+    patch.htmlImageSelected = false;
+    patch.htmlImagePath = null;
+  }
+  updateToolbarState(patch);
+}
+
+function findActiveImageTextElement(wysiwyg) {
+  const active = window.NodevisionState?.activeHtmlImageTextContext?.element || null;
+  if (active instanceof HTMLElement && active.isConnected && wysiwyg?.contains(active)) return active;
+  const range = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
+  return findImageTextElementFromRange(wysiwyg, range);
+}
+
+function updateImageTextStateFromSelection(wysiwyg, editorFilePath, range = null) {
+  const selectedRange = range || getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
+  const imageTextElement = findImageTextElementFromRange(wysiwyg, selectedRange);
+  const rangeError = getImageTextRangeError(selectedRange);
+  if (imageTextElement) {
+    markSelectedImageText(wysiwyg, imageTextElement);
+    updateSelectedImageTextState(
+      buildImageTextContextFromElement(imageTextElement, editorFilePath),
+      { clearHtmlImageSelection: true, htmlTextSelectionActive: false },
+    );
+    return;
+  }
+  if (!rangeError) markSelectedImage(wysiwyg, null);
+  clearImageTextSelection(wysiwyg);
+  updateSelectedImageTextState(null, {
+    htmlTextSelectionActive: !rangeError,
+    clearHtmlImageSelection: !rangeError,
+  });
+}
+
+function registerImageTextInteractionTools(wysiwyg, editorFilePath) {
+  if (!wysiwyg) return () => {};
+  const sync = () => syncEditorImageTextPresentation(wysiwyg, editorFilePath);
+  const onClick = (evt) => {
+    const element = findImageTextElementFromNode(wysiwyg, evt.target);
+    if (!element) return;
+    markSelectedImageText(wysiwyg, element);
+    updateSelectedImageTextState(
+      buildImageTextContextFromElement(element, editorFilePath),
+      { clearHtmlImageSelection: true, htmlTextSelectionActive: false },
+    );
+  };
+  wysiwyg.addEventListener("click", onClick);
+  wysiwyg.addEventListener("input", sync);
+  sync();
+  return () => {
+    wysiwyg.removeEventListener("click", onClick);
+    wysiwyg.removeEventListener("input", sync);
+    clearImageTextSelection(wysiwyg);
+    updateSelectedImageTextState(null, { htmlTextSelectionActive: false });
+  };
 }
 
 function updateSelectedAudioState(context) {
@@ -3179,7 +3349,7 @@ function createGeneratedImageDataUrl(format = "png", width = 512, height = 512) 
   return canvas.toDataURL(mimeType);
 }
 
-async function createInsertImagePanel() {
+async function createInsertImagePanel(displayName = "Insert Image") {
   const instanceId = "nv-insert-image-panel";
   const existing = document.querySelector(`.panel[data-instance-id="${instanceId}"]`);
   if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
@@ -3188,7 +3358,7 @@ async function createInsertImagePanel() {
     "InsertImageFormPanel",
     instanceId,
     "GenericPanel",
-    { displayName: "Insert Image" }
+    { displayName }
   );
 
   document.body.appendChild(panelInst.panel);
@@ -3219,8 +3389,8 @@ async function createInsertImagePanel() {
   };
 }
 
-async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange = null) {
-  const panel = await createInsertImagePanel();
+async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange = null, options = {}) {
+  const panel = await createInsertImagePanel(options.title || "Insert Image");
   const defaultDir = getDefaultNotebookImageDir(editorFilePath);
 
   const form = document.createElement("form");
@@ -3287,6 +3457,8 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
       <div id="nv-insert-existing-file-status" style="font-size:11px;color:#4b4b4b;">No local file selected.</div>
     </div>
 
+    <div id="nv-insert-image-fallbacks"></div>
+
     <div id="nv-insert-image-error" style="color:#b00020;min-height:16px;"></div>
 
     <div style="display:flex;justify-content:flex-end;gap:8px;">
@@ -3308,11 +3480,16 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
   const newHeightInput = form.querySelector("#nv-insert-new-height");
   const newReferencedTarget = form.querySelector("#nv-new-referenced-target");
   const existingSourceInput = form.querySelector("#nv-insert-existing-source");
+  const fallbackList = attachFallbackReferenceList({
+    container: form.querySelector("#nv-insert-image-fallbacks"),
+    primaryInput: existingSourceInput
+  });
   const existingSourceFileBtn = form.querySelector("#nv-insert-existing-source-file");
   const existingSourceFileStatus = form.querySelector("#nv-insert-existing-file-status");
   const errorEl = form.querySelector("#nv-insert-image-error");
   const cancelBtn = form.querySelector("#nv-insert-cancel");
   const applyBtn = form.querySelector("#nv-insert-apply");
+  if (options.applyLabel && applyBtn) applyBtn.textContent = String(options.applyLabel);
   const hiddenExistingFileInput = document.createElement("input");
   hiddenExistingFileInput.type = "file";
   hiddenExistingFileInput.accept = "image/*";
@@ -3511,6 +3688,26 @@ async function openInsertImageForm(wysiwyg, editorFilePath, preferredInsertRange
             insertion = { src: existingSource, linkedNotebookPath: "", mode: "referenced-existing" };
           }
         }
+      }
+
+      insertion.fallbacks = normalizeFallbackReferencesForSource(fallbackList.getFallbacks(), {
+        sourcePath: editorFilePath,
+        primary: insertion.src
+      });
+
+      if (typeof options.applyInsertion === "function") {
+        const beforeHtml = String(wysiwyg.innerHTML || "");
+        const applied = await options.applyInsertion(insertion, {
+          wysiwyg,
+          editorFilePath,
+          preferredInsertRange,
+        });
+        if (!applied) throw new Error("Failed to apply image to selected text.");
+        wysiwyg.__nvProgrammaticHistory?.record?.(beforeHtml);
+        markHtmlEditorDirty(wysiwyg, editorFilePath);
+        syncEditorImageTextPresentation(wysiwyg, editorFilePath);
+        closePanel();
+        return;
       }
 
       const img = createImageElementFromInsertion(insertion);
@@ -4392,9 +4589,12 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
       hydrateEditorImages(wysiwyg, editorFilePath).catch((err) => {
         console.warn("Failed to rehydrate images after undo/redo:", err);
       });
+      syncEditorImageTextPresentation(wysiwyg, editorFilePath);
       refreshCircuitReferences();
       markSelectedImage(wysiwyg, null);
       updateSelectedImageState(null);
+      clearImageTextSelection(wysiwyg);
+      updateSelectedImageTextState(null, { htmlTextSelectionActive: false });
       markSelectedAudio(wysiwyg, null);
       updateSelectedAudioState(null);
       markSelectedCircuit(wysiwyg, null);
@@ -4454,8 +4654,101 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
     await openInsertImageForm(wysiwyg, editorFilePath, preferredRange);
   };
 
+  const replaceSelectedTextWithImage = async () => {
+    const range = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
+    const rangeError = getImageTextRangeError(range);
+    if (rangeError) {
+      setStatus("Text Image", rangeError);
+      alert(rangeError);
+      return false;
+    }
+
+    const selectedText = String(range.toString() || "");
+    const savedRange = range.cloneRange();
+    await openInsertImageForm(wysiwyg, editorFilePath, savedRange, {
+      title: "Replace Selected Text with Image",
+      applyLabel: "Use Image",
+      applyInsertion: async (insertion) => {
+        const element = wrapRangeWithImageText(savedRange, insertion, { expectedText: selectedText });
+        markSelectedImageText(wysiwyg, element);
+        updateSelectedImageTextState(
+          buildImageTextContextFromElement(element, editorFilePath),
+          { clearHtmlImageSelection: true, htmlTextSelectionActive: false },
+        );
+        rememberCurrentSelectionRange(wysiwyg);
+        return element;
+      },
+    });
+    return true;
+  };
+
+  const changeSelectedTextImage = async () => {
+    const element = findActiveImageTextElement(wysiwyg);
+    if (!element) {
+      alert("Select image-backed text first.");
+      return false;
+    }
+    await openInsertImageForm(wysiwyg, editorFilePath, null, {
+      title: "Change Text Image",
+      applyLabel: "Update Image",
+      applyInsertion: async (insertion) => {
+        applyImageTextPresentation(element, insertion);
+        markSelectedImageText(wysiwyg, element);
+        updateSelectedImageTextState(
+          buildImageTextContextFromElement(element, editorFilePath),
+          { clearHtmlImageSelection: true, htmlTextSelectionActive: false },
+        );
+        return element;
+      },
+    });
+    return true;
+  };
+
+  const removeSelectedTextImage = () => {
+    const element = findActiveImageTextElement(wysiwyg);
+    if (!element) {
+      alert("Select image-backed text first.");
+      return false;
+    }
+    const beforeHtml = String(wysiwyg.innerHTML || "");
+    const removed = unwrapImageTextElement(element);
+    if (!removed) return false;
+    programmaticHistory.record(beforeHtml);
+    markHtmlEditorDirty(wysiwyg, editorFilePath);
+    updateSelectedImageTextState(null, { htmlTextSelectionActive: false });
+    rememberCurrentSelectionRange(wysiwyg);
+    return true;
+  };
+
+  const readSelectedTextImageLayout = () => {
+    const element = findActiveImageTextElement(wysiwyg);
+    return element ? readImageTextLayout(element) : null;
+  };
+
+  const applySelectedTextImageLayout = (layout = {}) => {
+    const element = findActiveImageTextElement(wysiwyg);
+    if (!element) return null;
+    const beforeHtml = String(wysiwyg.innerHTML || "");
+    const nextLayout = applyImageTextLayout(element, layout);
+    if (String(wysiwyg.innerHTML || "") !== beforeHtml) {
+      programmaticHistory.record(beforeHtml);
+      markHtmlEditorDirty(wysiwyg, editorFilePath);
+    }
+    markSelectedImageText(wysiwyg, element);
+    updateSelectedImageTextState(
+      buildImageTextContextFromElement(element, editorFilePath),
+      { clearHtmlImageSelection: true, htmlTextSelectionActive: false },
+    );
+    return nextLayout;
+  };
+
   window.HTMLWysiwygTools = {
     insertImageAtCaret,
+    replaceSelectedTextWithImage,
+    changeSelectedTextImage,
+    removeSelectedTextImage,
+    readSelectedTextImageLayout,
+    applySelectedTextImageLayout,
     insertHTMLAtCaret: (html) => {
       const htmlText = String(html || "");
       const preferredRange = getCurrentSelectionRangeInEditor(wysiwyg) ||
@@ -5008,6 +5301,10 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLImageTools();
     container.__cleanupHTMLImageTools = null;
   }
+  if (typeof container.__cleanupHTMLImageTextTools === "function") {
+    container.__cleanupHTMLImageTextTools();
+    container.__cleanupHTMLImageTextTools = null;
+  }
   if (typeof container.__cleanupHTMLCaretTracking === "function") {
     container.__cleanupHTMLCaretTracking();
     container.__cleanupHTMLCaretTracking = null;
@@ -5070,6 +5367,9 @@ export async function renderEditor(filePath, container, options = {}) {
     htmlImageSelected: false,
     htmlAudioSelected: false,
     htmlTextSelected: false,
+    htmlTextSelectionActive: false,
+    htmlImageTextSelected: false,
+    htmlImageTextPath: null,
     htmlImagePath: null,
     htmlAudioPath: null,
     htmlCircuitSelected: false,
@@ -5101,6 +5401,7 @@ export async function renderEditor(filePath, container, options = {}) {
   wysiwyg.style.overflowWrap = "anywhere";
   wysiwyg.style.wordBreak = "break-word";
   wrapper.appendChild(wysiwyg);
+  installNodevisionMediaFallbackRuntime(wysiwyg);
   window.__nvTableEditorRoot = wysiwyg;
   const htmlAttentionCleanup = installHtmlAttentionReporting(filePath, wysiwyg);
   container.__cleanupHTMLTableDividerResizing = registerTableDividerResizing(wysiwyg, filePath);
@@ -5364,6 +5665,7 @@ export async function renderEditor(filePath, container, options = {}) {
     window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
     ensureWrappingForEditableText(wysiwyg);
     renderInlineEquationsForEditor(wysiwyg);
+    syncEditorImageTextPresentation(wysiwyg, filePath);
     updateWordCount();
 
     window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
@@ -5466,8 +5768,10 @@ export async function renderEditor(filePath, container, options = {}) {
         throw new Error("HTML/WYSIWYG editor is no longer active; refusing to save stale editor content.");
       }
       restoreSavedImageSources(wysiwyg);
+      syncEditorImageTextPresentation(wysiwyg, filePath);
       try {
         const bodyClone = wysiwyg.cloneNode(true);
+        syncEditorImageTextPresentation(bodyClone, filePath);
         bodyClone.querySelectorAll("[data-nv-listen-highlight]").forEach((el) => {
           const parent = el.parentNode;
           if (!parent) return;
@@ -5480,6 +5784,10 @@ export async function renderEditor(filePath, container, options = {}) {
         bodyClone.querySelectorAll(".nv-editor-only").forEach((el) => el.remove());
         bodyClone.querySelectorAll(".nv-selected-circuit").forEach((el) => {
           el.classList.remove("nv-selected-circuit");
+          if (!el.getAttribute("class")) el.removeAttribute("class");
+        });
+        bodyClone.querySelectorAll(`.${IMAGE_TEXT_SELECTED_CLASS}`).forEach((el) => {
+          el.classList.remove(IMAGE_TEXT_SELECTED_CLASS);
           if (!el.getAttribute("class")) el.removeAttribute("class");
         });
         bodyClone.querySelectorAll(`canvas.${CIRCUIT_CANVAS_CLASS}`).forEach((canvas) => {
@@ -5651,8 +5959,11 @@ export async function renderEditor(filePath, container, options = {}) {
       hydrateEditorImages(wysiwyg, filePath).catch((err) => {
         console.warn("Failed to rehydrate images after setEditorHTML:", err);
       });
+      syncEditorImageTextPresentation(wysiwyg, filePath);
       markSelectedImage(wysiwyg, null);
       updateSelectedImageState(null);
+      clearImageTextSelection(wysiwyg);
+      updateSelectedImageTextState(null, { htmlTextSelectionActive: false });
       markSelectedAudio(wysiwyg, null);
       updateSelectedAudioState(null);
       markSelectedCircuit(wysiwyg, null);
@@ -5678,6 +5989,7 @@ export async function renderEditor(filePath, container, options = {}) {
   } catch (err) {
     console.warn("Failed to hydrate editor images:", err);
   }
+  syncEditorImageTextPresentation(wysiwyg, filePath);
   refreshCircuitReferences();
 
   // --------------------------------------------------
@@ -5686,12 +5998,14 @@ export async function renderEditor(filePath, container, options = {}) {
   container.__cleanupHTMLHotkeys = registerHTMLFallbackHotkeys(wysiwyg, filePath, wrapper);
   container.__cleanupHTMLCanvasDeletion = registerCanvasDeletionHotkeys(wysiwyg);
   container.__cleanupHTMLImageTools = imageTools.destroy;
+  container.__cleanupHTMLImageTextTools = registerImageTextInteractionTools(wysiwyg, filePath);
   container.__cleanupHTMLCaretTracking = registerCaretTracking(wysiwyg);
   container.__cleanupHTMLTextWrapping = registerEditableTextWrapping(wysiwyg);
   container.__cleanupHTMLPoetry = await installLineNumberedPoetryTools(wysiwyg);
   const updateTextTargetFromSelection = () => {
     const range = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);
     updateTextStyleSelectionState(wysiwyg, findTextStyleTargetFromRange(wysiwyg, range));
+    updateImageTextStateFromSelection(wysiwyg, filePath, range);
   };
   wysiwyg.addEventListener("mouseup", updateTextTargetFromSelection);
   wysiwyg.addEventListener("keyup", updateTextTargetFromSelection);
@@ -5703,12 +6017,14 @@ export async function renderEditor(filePath, container, options = {}) {
     wysiwyg.removeEventListener("keyup", updateTextTargetFromSelection);
     wysiwyg.removeEventListener("focus", updateTextTargetFromSelection);
     updateTextStyleSelectionState(wysiwyg, null);
+    updateSelectedImageTextState(null, { htmlTextSelectionActive: false });
   };
   container.__cleanupHTMLAttention = htmlAttentionCleanup;
   return () => {
     container.__cleanupHTMLHotkeys?.();
     container.__cleanupHTMLCanvasDeletion?.();
     container.__cleanupHTMLImageTools?.();
+    container.__cleanupHTMLImageTextTools?.();
     container.__cleanupHTMLCaretTracking?.();
     container.__cleanupHTMLTextWrapping?.();
     container.__cleanupHTMLActiveContext?.();
@@ -5725,6 +6041,7 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLHotkeys = null;
     container.__cleanupHTMLCanvasDeletion = null;
     container.__cleanupHTMLImageTools = null;
+    container.__cleanupHTMLImageTextTools = null;
     container.__cleanupHTMLCaretTracking = null;
     container.__cleanupHTMLTextWrapping = null;
     container.__cleanupHTMLActiveContext = null;

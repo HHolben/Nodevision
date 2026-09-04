@@ -10,7 +10,7 @@ function currentEditorPath() {
 function dispatchEditorOpen(path) {
   window.selectedFilePath = path;
   window.currentActiveFilePath = path;
-  window.dispatchEvent(new CustomEvent("toolbarAction", { detail: { id: "CodeEditor", type: "EditorPanel", replaceActive: false } }));
+  window.dispatchEvent(new CustomEvent("toolbarAction", { detail: { id: "CodeEditor", type: "EditorPanel", replaceActive: false, panelVars: { filePath: path } } }));
 }
 
 export async function openEditorCommand([path]) {

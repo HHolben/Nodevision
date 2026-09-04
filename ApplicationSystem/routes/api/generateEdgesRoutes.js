@@ -31,9 +31,28 @@ async function getAllFiles(dir) {
 function extractHyperlinksFromContent(content) {
   const $ = cheerio.load(content);
   const links = [];
-  $("a, area").each((i, el) => {
-    const href = $(el).attr("href");
-    if (href) links.push(href);
+  const attrs = [
+    ["a, area, link", "href"],
+    ["img, script, iframe, audio, video, source, embed", "src"],
+    ["object", "data"],
+    ["form", "action"],
+    ["[data-src]", "data-src"],
+    ["[data-nodevision-image-src]", "data-nodevision-image-src"],
+    ["[data-nodevision-citation-source]", "data-nodevision-citation-source"],
+    ["[data-nodevision-font-src]", "data-nodevision-font-src"],
+    ["[data-nodevision-font-stylesheet]", "data-nodevision-font-stylesheet"],
+    ["[data-nodevision-circuit-src]", "data-nodevision-circuit-src"],
+  ];
+  for (const [selector, attr] of attrs) {
+    $(selector).each((i, el) => {
+      const value = $(el).attr(attr);
+      if (value) links.push(value);
+    });
+  }
+  $("*").each((i, el) => {
+    for (const [name, value] of Object.entries(el?.attribs || {})) {
+      if (/^data-nodevision-fallback-\d+$/i.test(name) && value) links.push(value);
+    }
   });
   return links;
 }
