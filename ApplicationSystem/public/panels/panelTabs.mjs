@@ -270,6 +270,8 @@ function tabLooksDirty(tab, state = null) {
   if (!isEditor) return false;
   const session = tab.contentElement?.__nvCodeEditorSession;
   if (session?.dirty) return true;
+  const svgContext = tab.contentElement?.__nvSvgEditorContext;
+  if (svgContext?.isDirty?.() || svgContext?.dirty) return true;
   const active = !state || tab.tabId === state.activeTabId;
   return active && Boolean(window.__nvCodeEditorDirty || window.NodevisionState?.fileIsDirty);
 }

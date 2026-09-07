@@ -1712,10 +1712,19 @@ export async function setupPanel(panel, instanceVars = {}) {
             internalPath = value;
             window.NodevisionState = window.NodevisionState || {};
             const pendingSelection = window.__nvPendingSelectedFileMetadata;
+            const normalizedValue = normalizeNotebookPath(value);
+            const existingSelectionIsSameDirectory = Boolean(
+              !pendingSelection &&
+              window.NodevisionState.selectedFileIsDirectory &&
+              sameNotebookPath(window.NodevisionState.selectedFile, normalizedValue)
+            );
             const selectedIsDirectory = Boolean(
-              pendingSelection &&
-              sameNotebookPath(pendingSelection.path, normalizeNotebookPath(value)) &&
-              pendingSelection.isDirectory
+              existingSelectionIsSameDirectory ||
+              (
+                pendingSelection &&
+                sameNotebookPath(pendingSelection.path, normalizedValue) &&
+                pendingSelection.isDirectory
+              )
             );
             window.NodevisionState.selectedFile = internalPath || null;
             window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;

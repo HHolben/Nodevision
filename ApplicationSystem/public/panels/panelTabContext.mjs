@@ -77,6 +77,7 @@ function applyGraphicalEditorContext(tab) {
   window.filePath = path || null;
   window.NodevisionState.currentMode = "GraphicalEditing";
   window.NodevisionState.selectedFile = path || null;
+  window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = path || null;
   updateToolbarState({ currentMode: "GraphicalEditing", selectedFile: path || null, activeEditorFilePath: path || null });
 }
@@ -92,6 +93,7 @@ function applyCodeEditorContext(tab) {
   setWordCountVisibility(false);
   window.NodevisionState.currentMode = "CodeEditing";
   window.NodevisionState.selectedFile = path || null;
+  window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = path || null;
   updateToolbarState({ currentMode: "CodeEditing", selectedFile: path || null, activeEditorFilePath: path || null });
   return activated;

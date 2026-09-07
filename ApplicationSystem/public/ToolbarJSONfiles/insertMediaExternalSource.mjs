@@ -251,6 +251,7 @@ export async function launchInsertMediaWebResourceBrowser(options = {}) {
       originPanelType: originSnapshot.originPanelType,
       originPanelClass: originSnapshot.originPanelClass,
       originEditorPath: originSnapshot.originEditorPath || options.originEditorPath || "",
+      originEditorInstanceId: originSnapshot.originEditorInstanceId || options.originEditorInstanceId || "",
       targetMode: originSnapshot.targetMode || options.targetMode || window.NodevisionState?.currentMode || "",
       insertMediaState: options.insertMediaState || {},
       insertMediaOriginContext: originSnapshot,

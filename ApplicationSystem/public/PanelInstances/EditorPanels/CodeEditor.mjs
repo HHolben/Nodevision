@@ -38,6 +38,10 @@ let pendingEditedPath = null;
 let codeEditorLiveCleanup = null;
 
 const CODE_EDITOR_LIVE_PROVIDER_ID = "nodevision-code-editor";
+const CODE_EDITOR_MIN_FONT_SIZE = 8;
+const CODE_EDITOR_MAX_FONT_SIZE = 40;
+const CODE_EDITOR_FONT_SIZE_STEP = 1;
+const CODE_EDITOR_DEFAULT_FONT_SIZE_FALLBACK = 14;
 
 const TAG_END = 0;
 const TAG_BYTE = 1;
@@ -101,6 +105,45 @@ function normalizeEditorPath(filePath) {
 
 function isLatestEditorLoad(requestId, filePath) {
   return requestId === editorLoadRequestId && normalizeEditorPath(pendingEditedPath) === normalizeEditorPath(filePath);
+}
+
+function clampCodeEditorFontSize(value, fallback = CODE_EDITOR_DEFAULT_FONT_SIZE_FALLBACK) {
+  const n = Number(value);
+  const base = Number.isFinite(n) ? n : fallback;
+  return Math.max(CODE_EDITOR_MIN_FONT_SIZE, Math.min(CODE_EDITOR_MAX_FONT_SIZE, Math.round(base)));
+}
+
+function codeEditorFontSize(editor, session = null) {
+  if (!editor) return clampCodeEditorFontSize(session?.fontSize);
+  try {
+    const option = monaco?.editor?.EditorOption?.fontSize;
+    if (option !== undefined && typeof editor.getOption === "function") {
+      return clampCodeEditorFontSize(editor.getOption(option), session?.fontSize);
+    }
+  } catch {
+    return clampCodeEditorFontSize(session?.fontSize);
+  }
+  return clampCodeEditorFontSize(session?.fontSize);
+}
+
+function applyCodeEditorFontSize(editor, size, session = null) {
+  if (!editor?.updateOptions) return false;
+  const nextSize = clampCodeEditorFontSize(size, session?.defaultFontSize);
+  editor.updateOptions({ fontSize: nextSize });
+  if (session) session.fontSize = nextSize;
+  window.requestAnimationFrame?.(() => editor.layout?.());
+  setStatus("Code editor", "Font size " + nextSize + "px");
+  return true;
+}
+
+function zoomCodeEditorFont(editor, direction, session = null) {
+  if (!editor?.updateOptions) return false;
+  const currentSize = codeEditorFontSize(editor, session);
+  const defaultSize = clampCodeEditorFontSize(session?.defaultFontSize, CODE_EDITOR_DEFAULT_FONT_SIZE_FALLBACK);
+  const nextSize = direction === "reset"
+    ? defaultSize
+    : currentSize + (direction === "in" ? CODE_EDITOR_FONT_SIZE_STEP : -CODE_EDITOR_FONT_SIZE_STEP);
+  return applyCodeEditorFontSize(editor, nextSize, session);
 }
 
 function nbtNotebookUrl(filePath) {
@@ -775,6 +818,102 @@ function codeEditorSessionFromHost(host) {
   return host.querySelector?.(".monaco-editor-container")?.__nvCodeEditorSession || null;
 }
 
+function codeEditorSessionFromEvent(event) {
+  const target = event?.target?.nodeType === 1 ? event.target : event?.target?.parentElement || null;
+  const container = target?.closest?.(".monaco-editor-container");
+  return container?.__nvCodeEditorSession || null;
+}
+
+function eventTargetsCodeEditorContainer(event) {
+  const target = event?.target?.nodeType === 1 ? event.target : event?.target?.parentElement || null;
+  return Boolean(target?.closest?.(".monaco-editor-container"));
+}
+
+function focusedCodeEditorSession() {
+  const focused = document.activeElement?.nodeType === 1 ? document.activeElement : null;
+  const focusedSession = focused?.closest?.(".monaco-editor-container")?.__nvCodeEditorSession || null;
+  if (focusedSession?.editor?.hasTextFocus?.()) return focusedSession;
+
+  const activeSession = editorInstanceContainer?.__nvCodeEditorSession || editorContainer?.__nvCodeEditorSession || null;
+  if (activeSession?.editor?.hasTextFocus?.()) return activeSession;
+  return null;
+}
+
+function codeEditorZoomActionFromKeyboardEvent(event) {
+  if (!(event?.ctrlKey || event?.metaKey) || event.altKey) return null;
+  const key = String(event.key || "").toLowerCase();
+  const code = String(event.code || "");
+  if (key === "+" || key === "=" || code === "Equal" || code === "NumpadAdd" || code === "NumpadEqual") return "in";
+  if (key === "-" || key === "_" || code === "Minus" || code === "NumpadSubtract") return "out";
+  if (key === "0" || code === "Digit0" || code === "Numpad0") return "reset";
+  return null;
+}
+
+function codeEditorSessionForZoomEvent(event, { allowPointer = false } = {}) {
+  const eventSession = codeEditorSessionFromEvent(event);
+  if (eventSession?.editor) return eventSession;
+  const focusSession = focusedCodeEditorSession();
+  if (focusSession?.editor) return focusSession;
+  if (!allowPointer) return null;
+  const target = event?.target?.nodeType === 1 ? event.target : event?.target?.parentElement || null;
+  const activeSession = editorInstanceContainer?.__nvCodeEditorSession || editorContainer?.__nvCodeEditorSession || null;
+  if (target && activeSession?.editorContainer?.contains?.(target)) return activeSession;
+  return null;
+}
+
+function consumeCodeEditorZoomEvent(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  event?.stopImmediatePropagation?.();
+}
+
+function handleCodeEditorZoomShortcut(event, context = {}) {
+  const action = context.action || codeEditorZoomActionFromKeyboardEvent(event);
+  if (!action) return false;
+  const session = codeEditorSessionForZoomEvent(event);
+  if (!session?.editor) {
+    if (!eventTargetsCodeEditorContainer(event)) return false;
+    consumeCodeEditorZoomEvent(event);
+    return true;
+  }
+  consumeCodeEditorZoomEvent(event);
+  zoomCodeEditorFont(session.editor, action, session);
+  return true;
+}
+
+function handleCodeEditorZoomWheel(event) {
+  if (!(event?.ctrlKey || event?.metaKey) || event.altKey) return false;
+  const session = codeEditorSessionForZoomEvent(event, { allowPointer: true });
+  if (!session?.editor) {
+    if (!eventTargetsCodeEditorContainer(event)) return false;
+    consumeCodeEditorZoomEvent(event);
+    return true;
+  }
+  consumeCodeEditorZoomEvent(event);
+  const deltaY = Number(event.deltaY);
+  if (Number.isFinite(deltaY) && deltaY !== 0) {
+    zoomCodeEditorFont(session.editor, deltaY < 0 ? "in" : "out", session);
+  }
+  return true;
+}
+
+function installCodeEditorZoomHandlers(targetContainer) {
+  if (!targetContainer) return;
+  targetContainer.setAttribute("data-nv-panel-zoom-scope", "local");
+  if (targetContainer.__nvCodeEditorZoomHandlersInstalled) return;
+  const onKeyDown = (event) => handleCodeEditorZoomShortcut(event);
+  const onWheel = (event) => handleCodeEditorZoomWheel(event);
+  targetContainer.addEventListener("keydown", onKeyDown, { capture: true });
+  targetContainer.addEventListener("wheel", onWheel, { capture: true, passive: false });
+  targetContainer.__nvCodeEditorZoomHandlersInstalled = {
+    dispose() {
+      targetContainer.removeEventListener("keydown", onKeyDown, { capture: true });
+      targetContainer.removeEventListener("wheel", onWheel, { capture: true });
+      targetContainer.__nvCodeEditorZoomHandlersInstalled = null;
+    },
+  };
+}
+
 function activateCodeEditorHost(host) {
   const session = codeEditorSessionFromHost(host);
   if (!session?.editor || !session.editorContainer?.isConnected) return false;
@@ -804,6 +943,7 @@ function activateCodeEditorHost(host) {
   }
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = session.filePath;
+  window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = session.filePath;
   window.NodevisionState.currentMode = "CodeEditing";
   window.NodevisionState.activeActionHandler = null;
@@ -862,6 +1002,7 @@ export async function openCodeEditor(filePath, options = {}) {
 
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = filePath;
+  window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = filePath;
   window.NodevisionState.currentMode = "CodeEditing";
   window.NodevisionState.activeActionHandler = null;
@@ -915,6 +1056,7 @@ export async function openCodeEditor(filePath, options = {}) {
     width: "100%",
     height: "100%",
   });
+  installCodeEditorZoomHandlers(editorContainer);
 
   // 🧩 Assemble cell
   targetCell.appendChild(header);
@@ -1110,6 +1252,7 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
       previousSession.isBinary = currentLoadedIsBinary;
       previousSession.fileFormat = currentLoadedFileFormat;
       previousSession.nbtWasGzip = currentLoadedNbtWasGzip;
+      previousSession.fontSize = codeEditorFontSize(editorInstance, previousSession);
     }
     persistCodeEditorAttention(lastEditedPath || window.__nvCodeEditorActivePath, editorInstance);
   } else if (editorInstance) {
@@ -1242,6 +1385,7 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
     });
 
     const model = editorInstance.getModel();
+    const initialFontSize = codeEditorFontSize(editorInstance);
     const session = {
       editor: editorInstance,
       editorContainer: targetContainer,
@@ -1252,6 +1396,8 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
       fileFormat: currentLoadedFileFormat,
       nbtWasGzip: currentLoadedNbtWasGzip,
       savedVersionId: model?.getAlternativeVersionId?.() || null,
+      defaultFontSize: initialFontSize,
+      fontSize: initialFontSize,
       dirty: false,
     };
     targetContainer.__nvCodeEditorSession = session;
@@ -1663,6 +1809,8 @@ export async function setupPanel(panelElem, panelVars = {}) {
 window.openCodeEditor = openCodeEditor;
 window.updateEditorPanel = updateEditorPanel;
 window.__nvActivateCodeEditorHost = activateCodeEditorHost;
+window.__nvHandleCodeEditorZoomShortcut = handleCodeEditorZoomShortcut;
+window.__nvHandleCodeEditorZoomWheel = handleCodeEditorZoomWheel;
 
 
 function reportCodeEditorAttention(filePath, editor = null, options = {}) {

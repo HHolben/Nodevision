@@ -59,6 +59,17 @@ function pathForCell(cell) {
   );
 }
 
+function svgEditorInstanceIdForCell(cell) {
+  const activeTab = activeTabForCell(cell);
+  return String(
+    activeTab?.svgEditorInstanceId ||
+    activeTab?.contentElement?.dataset?.nvSvgEditorInstanceId ||
+    activeTab?.contentElement?.__nvSvgEditorContext?.__nvInsertMediaIdentity?.instanceId ||
+    cell?.querySelector?.("[data-nv-svg-editor-instance-id]")?.dataset?.nvSvgEditorInstanceId ||
+    ""
+  );
+}
+
 function candidateEditorPaths() {
   const state = window.NodevisionState || {};
   return [
@@ -164,6 +175,7 @@ export function snapshotInsertMediaOriginContext(cell, overrides = {}) {
     originPanelType: String(overrides.originPanelType || panelTypeForCell(originCell) || ""),
     originPanelClass: String(overrides.originPanelClass || panelClassForCell(originCell) || ""),
     originEditorPath: normalizeNotebookPath(overrides.originEditorPath || pathForCell(originCell) || candidateEditorPaths()[0] || ""),
+    originEditorInstanceId: String(overrides.originEditorInstanceId || svgEditorInstanceIdForCell(originCell) || ""),
     targetMode: String(overrides.targetMode || window.NodevisionState?.currentMode || ""),
     mediaFamily: String(overrides.mediaFamily || overrides.familyKey || ""),
   };
@@ -196,6 +208,7 @@ export function attachInsertMediaOriginContext(target, context = {}) {
     if (normalized.originTabId) target.dataset.nvInsertMediaOriginTabId = normalized.originTabId;
     if (normalized.originPanelType) target.dataset.nvInsertMediaOriginPanelType = normalized.originPanelType;
     if (normalized.originEditorPath) target.dataset.nvInsertMediaOriginEditorPath = normalized.originEditorPath;
+    if (normalized.originEditorInstanceId) target.dataset.nvInsertMediaOriginEditorInstanceId = normalized.originEditorInstanceId;
     if (normalized.targetMode) target.dataset.nvInsertMediaOriginTargetMode = normalized.targetMode;
   }
   return normalized;
@@ -251,6 +264,147 @@ export function describeInsertMediaOriginCell(cell) {
     } : null,
     ancestry,
   };
+}
+
+const SVG_EDITOR_CONTEXTS_KEY = "__nvSvgEditorInsertMediaContexts";
+let svgEditorContextSequence = 0;
+
+function svgEditorContextRegistry() {
+  if (typeof window === "undefined") return new Map();
+  if (!window[SVG_EDITOR_CONTEXTS_KEY]) window[SVG_EDITOR_CONTEXTS_KEY] = new Map();
+  return window[SVG_EDITOR_CONTEXTS_KEY];
+}
+
+function nextSvgEditorInstanceId() {
+  svgEditorContextSequence += 1;
+  return "svg-editor-" + Date.now().toString(36) + "-" + svgEditorContextSequence.toString(36);
+}
+
+function svgEditorRecordIsLive(record) {
+  if (!record?.context || typeof record.context.insertImageFromInsertion !== "function") return false;
+  if (record.context.svgRoot && record.context.svgRoot.isConnected === false) return false;
+  if (record.container && record.container.isConnected === false) return false;
+  if (record.wrapper && record.wrapper.isConnected === false) return false;
+  return true;
+}
+
+function pruneSvgEditorContextRegistry() {
+  const registry = svgEditorContextRegistry();
+  for (const entry of registry.entries()) {
+    const id = entry[0];
+    const record = entry[1];
+    if (!svgEditorRecordIsLive(record)) registry.delete(id);
+  }
+  return registry;
+}
+
+function contextDiagnostic(originContext = {}, extra = {}) {
+  return {
+    originCellId: String(originContext.originCellId || ""),
+    originTabId: String(originContext.originTabId || ""),
+    originPanelType: String(originContext.originPanelType || ""),
+    originEditorPath: normalizeNotebookPath(originContext.originEditorPath || ""),
+    originEditorInstanceId: String(originContext.originEditorInstanceId || ""),
+    ...extra,
+  };
+}
+
+function resolveStrictOriginCell(context = {}) {
+  const liveCell = asPanelCell(context.originCell);
+  if (liveCell?.isConnected && (!context.originCellId || liveCell.dataset?.nvWorkspaceCellId === context.originCellId)) return liveCell;
+  if (!context.originCellId) return null;
+  const escaped = String(context.originCellId || "");
+  return document.querySelector?.(".panel-cell[data-nv-workspace-cell-id=\"" + escaped + "\"]") || null;
+}
+
+function recordMatchesSvgOrigin(record, context = {}) {
+  if (!svgEditorRecordIsLive(record)) return false;
+  const editorPath = normalizeNotebookPath(context.originEditorPath || "");
+  if (context.originCellId && record.cellId !== context.originCellId) return false;
+  if (context.originTabId && record.tabId !== context.originTabId) return false;
+  if (editorPath && record.editorPath && record.editorPath !== editorPath) return false;
+  return true;
+}
+
+function svgInsertMediaFailure(code, message, originContext = {}, extra = {}) {
+  return { ok: false, code, message, diagnostic: contextDiagnostic(originContext, extra) };
+}
+
+export function registerSvgEditorContextForInsertMedia({ context, container, wrapper = null, filePath = "" } = {}) {
+  if (!context || !container) return { instanceId: "", dispose() {} };
+  const registry = pruneSvgEditorContextRegistry();
+  const cell = asPanelCell(container);
+  const activeTab = activeTabForCell(cell);
+  const instanceId = container.dataset?.nvSvgEditorInstanceId || wrapper?.dataset?.nvSvgEditorInstanceId || nextSvgEditorInstanceId();
+  const cellId = ensureInsertMediaOriginCellId(cell);
+  const tabId = String(activeTab?.tabId || cell?.dataset?.currentPanelTabId || "");
+  const editorPath = normalizeNotebookPath(filePath || pathForCell(cell));
+  if (container.dataset) container.dataset.nvSvgEditorInstanceId = instanceId;
+  if (wrapper?.dataset) wrapper.dataset.nvSvgEditorInstanceId = instanceId;
+
+  const identity = { instanceId, cellId, tabId, editorPath, panelType: panelTypeForCell(cell), panelClass: panelClassForCell(cell) };
+  context.__nvInsertMediaIdentity = identity;
+  container.__nvSvgEditorContext = context;
+  if (wrapper) wrapper.__nvSvgEditorContext = context;
+  if (activeTab) {
+    activeTab.svgEditorInstanceId = instanceId;
+    if (activeTab.contentElement) activeTab.contentElement.__nvSvgEditorContext = context;
+  }
+
+  const record = { ...identity, context, container, wrapper, cell };
+  registry.set(instanceId, record);
+  return {
+    instanceId,
+    dispose() {
+      const current = registry.get(instanceId);
+      if (current?.context === context) registry.delete(instanceId);
+      if (container.__nvSvgEditorContext === context) container.__nvSvgEditorContext = null;
+      if (wrapper && wrapper.__nvSvgEditorContext === context) wrapper.__nvSvgEditorContext = null;
+      if (activeTab?.contentElement?.__nvSvgEditorContext === context) activeTab.contentElement.__nvSvgEditorContext = null;
+      if (context.__nvInsertMediaIdentity === identity) delete context.__nvInsertMediaIdentity;
+    },
+  };
+}
+
+export function resolveSvgEditorContextForInsertMedia(originContext = {}) {
+  const context = originContext || {};
+  const hasOriginIdentity = Boolean(context.originEditorInstanceId || context.originCellId || context.originTabId || context.originEditorPath);
+  if (!hasOriginIdentity) {
+    return svgInsertMediaFailure("missing-origin", "No originating SVG editor identity was captured.", context);
+  }
+
+  const registry = pruneSvgEditorContextRegistry();
+  const instanceId = String(context.originEditorInstanceId || "");
+  if (instanceId) {
+    const record = registry.get(instanceId);
+    if (!record) return svgInsertMediaFailure("origin-closed", "The SVG editor that opened Insert Media is no longer available.", context);
+    if (!recordMatchesSvgOrigin(record, context)) {
+      return svgInsertMediaFailure("origin-mismatch", "The originating SVG editor identity no longer matches the open editor.", context, { resolvedEditorPath: record.editorPath });
+    }
+    return { ok: true, context: record.context, record, diagnostic: contextDiagnostic(context, { resolvedEditorPath: record.editorPath }) };
+  }
+
+  const cell = resolveStrictOriginCell(context);
+  if ((context.originCellId || context.originTabId) && !cell) {
+    return svgInsertMediaFailure("origin-closed", "The SVG editor that opened Insert Media is no longer available.", context);
+  }
+
+  if (cell && context.originTabId) {
+    const tab = tabListForCell(cell).find((candidate) => candidate.tabId === context.originTabId) || null;
+    if (!tab) return svgInsertMediaFailure("origin-closed", "The SVG editor that opened Insert Media is no longer available.", context);
+    const tabContext = tab.contentElement?.__nvSvgEditorContext || null;
+    const tabRecord = Array.from(registry.values()).find((record) => record.context === tabContext && recordMatchesSvgOrigin(record, context));
+    if (tabRecord) return { ok: true, context: tabRecord.context, record: tabRecord, diagnostic: contextDiagnostic(context, { resolvedEditorPath: tabRecord.editorPath }) };
+  }
+
+  const matches = Array.from(registry.values()).filter((record) => recordMatchesSvgOrigin(record, context));
+  if (matches.length === 1) {
+    return { ok: true, context: matches[0].context, record: matches[0], diagnostic: contextDiagnostic(context, { resolvedEditorPath: matches[0].editorPath }) };
+  }
+  if (matches.length > 1) {
+    return svgInsertMediaFailure("ambiguous-origin", "Multiple SVG editors match the Insert Media origin.", context, { matchCount: matches.length });
+  }
+  return svgInsertMediaFailure("api-unavailable", "SVG image insertion was unavailable for the originating editor.", context);
 }
 
 export async function openInsertMediaPanel(title, familyKey = "", options = {}) {

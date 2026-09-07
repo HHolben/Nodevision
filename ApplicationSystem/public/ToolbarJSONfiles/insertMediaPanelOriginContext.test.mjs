@@ -82,7 +82,7 @@ function connectTree(node) {
 function loadModuleSource(source) {
   let transformed = source.replace(/import[\s\S]*?from\s+"[^"]+";\n?/g, "");
   transformed = transformed.replace(/export\s+/g, "");
-  return new Function(transformed + "\nreturn { captureInsertMediaOriginContext, resolveInsertMediaOriginCell, isInsertMediaBrowserCell, describeInsertMediaOriginCell };" )();
+  return new Function(transformed + "\nreturn { captureInsertMediaOriginContext, resolveInsertMediaOriginCell, isInsertMediaBrowserCell, describeInsertMediaOriginCell, snapshotInsertMediaOriginContext, registerSvgEditorContextForInsertMedia, resolveSvgEditorContextForInsertMedia };" )();
 }
 
 function makeCell(panelType, path = "", panelClass = "EditorPanel") {
@@ -174,6 +174,53 @@ const savedDocument = globalThis.document;
   assert.equal(context.originPanelType, "GameView", "virtual-world origin should not be hard-coded to GraphicalEditor");
   assert.equal(context.originEditorPath, "Worlds/room.meta", "virtual-world origin should store the world path");
   assert.equal(mod.isInsertMediaBrowserCell(context.originCell), false, "virtual-world origin should not resolve to the browser cell");
+}
+
+
+{
+  globalThis.document = new FakeDocument();
+  const workspace = new FakeElement("div");
+  workspace.id = "workspace";
+  const row = new FakeElement("div");
+  row.className = "panel-row";
+  const editorA = makeCell("GraphicalEditor", "Notebook/A.svg");
+  const editorB = makeCell("GraphicalEditor", "Notebook/B.svg");
+  const contentA = editorA.__nvPanelTabs.tabs[0].contentElement;
+  const contentB = editorB.__nvPanelTabs.tabs[0].contentElement;
+  editorA.appendChild(contentA);
+  editorB.appendChild(contentB);
+  row.appendChild(editorA);
+  row.appendChild(editorB);
+  workspace.appendChild(row);
+  document.body.appendChild(workspace);
+  connectTree(document);
+
+  globalThis.window = {
+    activeCell: editorA,
+    NodevisionState: { currentMode: "SVG Editing", activeEditorFilePath: "Notebook/A.svg" },
+  };
+
+  const svgA = { isConnected: true };
+  const svgB = { isConnected: true };
+  const contextA = { svgRoot: svgA, inserted: [], insertImageFromInsertion(insertion) { this.inserted.push(insertion); return { localName: "image" }; } };
+  const contextB = { svgRoot: svgB, inserted: [], insertImageFromInsertion(insertion) { this.inserted.push(insertion); return { localName: "image" }; } };
+  const registrationA = mod.registerSvgEditorContextForInsertMedia({ context: contextA, container: contentA, filePath: "Notebook/A.svg" });
+  mod.registerSvgEditorContextForInsertMedia({ context: contextB, container: contentB, filePath: "Notebook/B.svg" });
+  const originA = mod.snapshotInsertMediaOriginContext(editorA, { targetMode: "SVG Editing", mediaFamily: "Image" });
+  assert.equal(originA.originEditorInstanceId, registrationA.instanceId, "SVG origin should capture the editor instance id");
+
+  window.activeCell = editorB;
+  window.NodevisionState.activeEditorFilePath = "Notebook/B.svg";
+  const resolvedA = mod.resolveSvgEditorContextForInsertMedia(originA);
+  assert.equal(resolvedA.ok, true, "SVG A origin should resolve after SVG B becomes active");
+  assert.equal(resolvedA.context, contextA, "SVG insertion should target the originating editor instance");
+  assert.notEqual(resolvedA.context, contextB, "SVG insertion must not use the newly active SVG editor");
+
+  contentA.isConnected = false;
+  svgA.isConnected = false;
+  const closedA = mod.resolveSvgEditorContextForInsertMedia(originA);
+  assert.equal(closedA.ok, false, "closed originating SVG editor should fail cleanly");
+  assert.equal(closedA.code, "origin-closed", "closed SVG origin should report origin-closed");
 }
 
 if (savedWindow === undefined) delete globalThis.window;

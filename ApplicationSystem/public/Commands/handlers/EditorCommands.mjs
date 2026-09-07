@@ -7,6 +7,23 @@ function currentEditorPath() {
   return window.__nvCodeEditorActivePath || window.NodevisionState?.activeEditorFilePath || window.currentActiveFilePath || "";
 }
 
+function normalizeNotebookPath(value = "") {
+  return String(value || "")
+    .trim()
+    .replace(/[?#].*$/, "")
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")
+    .replace(/^Notebook\/+/, "")
+    .replace(/\/+/g, "/");
+}
+
+function commandTargetsSelectedDirectory(path = "") {
+  const state = window.NodevisionState || {};
+  const targetPath = normalizeNotebookPath(path);
+  const selectedPath = normalizeNotebookPath(state.selectedFile || window.selectedFilePath || "");
+  return Boolean(targetPath && selectedPath && state.selectedFileIsDirectory && targetPath.toLowerCase() === selectedPath.toLowerCase());
+}
+
 function dispatchEditorOpen(path) {
   window.selectedFilePath = path;
   window.currentActiveFilePath = path;
@@ -14,6 +31,11 @@ function dispatchEditorOpen(path) {
 }
 
 export async function openEditorCommand([path]) {
+  if (commandTargetsSelectedDirectory(path) && typeof window.openDirectoryEditingWorkspace === "function") {
+    await window.openDirectoryEditingWorkspace(path);
+    emitNodevisionEvent("editor.opened", { path, directoryWorkspace: true });
+    return { ok: true, path, directoryWorkspace: true };
+  }
   if (typeof window.openCodeEditor === "function") await window.openCodeEditor(path);
   else dispatchEditorOpen(path);
   emitNodevisionEvent("editor.opened", { path });

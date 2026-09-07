@@ -15,6 +15,7 @@ const invocation = normalizeWebResourceBrowserInvocation({
   resourceType: "IMAGE",
   mediaFamily: "Image",
   originEditorPath: "Notebook/Pages/index.html?cache=1",
+  originEditorInstanceId: "svg-editor-a",
   originCellId: "origin-cell-a",
   originTabId: "tab-a",
   originPanelType: "GraphicalEditor",
@@ -32,8 +33,10 @@ assert.equal(invocation.originCellId, "origin-cell-a");
 assert.equal(invocation.originTabId, "tab-a");
 assert.equal(invocation.originPanelType, "GraphicalEditor");
 assert.equal(invocation.originPanelClass, "EditorPanel");
+assert.equal(invocation.originEditorInstanceId, "svg-editor-a");
 assert.equal(invocation.insertMediaOriginContext.originCellId, "origin-cell-a");
 assert.equal(invocation.insertMediaOriginContext.originEditorPath, "Notebook/Pages/index.html?cache=1");
+assert.equal(invocation.insertMediaOriginContext.originEditorInstanceId, "svg-editor-a");
 assert.equal(Object.prototype.hasOwnProperty.call(invocation.insertMediaOriginContext, "originCell"), false);
 assert.equal(invocation.returnToken, "fixed-token");
 assert.deepEqual(invocation.insertMediaState, { fields: { existingSource: "old.png" } });

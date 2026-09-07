@@ -40,6 +40,7 @@ function normalizeOriginContext(value = {}) {
     originPanelType: clean(source.originPanelType || ""),
     originPanelClass: clean(source.originPanelClass || ""),
     originEditorPath: clean(source.originEditorPath || source.editorPath || ""),
+    originEditorInstanceId: clean(source.originEditorInstanceId || ""),
     targetMode: clean(source.targetMode || ""),
     mediaFamily: clean(source.mediaFamily || source.familyKey || ""),
   };
@@ -55,6 +56,7 @@ export function normalizeWebResourceBrowserInvocation(input = {}) {
   const originPanelType = clean(input.originPanelType || suppliedOriginContext.originPanelType || "");
   const originPanelClass = clean(input.originPanelClass || suppliedOriginContext.originPanelClass || "");
   const originEditorPath = clean(input.originEditorPath || input.editorPath || suppliedOriginContext.originEditorPath || "");
+  const originEditorInstanceId = clean(input.originEditorInstanceId || suppliedOriginContext.originEditorInstanceId || "");
   const targetMode = clean(input.targetMode || suppliedOriginContext.targetMode || globalThis.window?.NodevisionState?.currentMode || "");
   const insertMediaOriginContext = {
     ...suppliedOriginContext,
@@ -63,6 +65,7 @@ export function normalizeWebResourceBrowserInvocation(input = {}) {
     originPanelType,
     originPanelClass,
     originEditorPath,
+    originEditorInstanceId,
     targetMode,
     mediaFamily,
   };
@@ -77,6 +80,7 @@ export function normalizeWebResourceBrowserInvocation(input = {}) {
     originPanelType,
     originPanelClass,
     originEditorPath,
+    originEditorInstanceId,
     targetMode,
     insertMediaState: clonePlain(input.insertMediaState || {}) || {},
     insertMediaOriginContext,
@@ -142,6 +146,13 @@ export function originContextIsAvailable(invocation = {}) {
   }
 
   if (mode === "SVG Editing") {
+    const registry = globalThis.window?.__nvSvgEditorInsertMediaContexts;
+    const instanceId = clean(invocation.originEditorInstanceId || invocation.insertMediaOriginContext?.originEditorInstanceId || "");
+    if (instanceId && registry?.get) {
+      const record = registry.get(instanceId);
+      if (record?.context && typeof record.context.insertImageFromInsertion === "function" && record.context.svgRoot?.isConnected !== false && record.container?.isConnected !== false) return { ok: true };
+      return { ok: false, reason: "The original SVG editor is no longer available." };
+    }
     if (typeof globalThis.window?.SVGEditorContext?.insertImageFromInsertion !== "function") {
       return { ok: false, reason: "The original SVG editor is no longer available." };
     }

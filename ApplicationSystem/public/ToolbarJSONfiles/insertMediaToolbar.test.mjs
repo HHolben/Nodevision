@@ -74,6 +74,8 @@ assert.match(imageSource, /browse-web-resource/, "Image Insert Media should expo
 assert.match(imageSource, /resourceType:\s*"image"/, "Image Browse Web handoff should request image resources");
 assert.match(imageSource, /restoreNamedInsertMediaState/, "Image Browse Web return should restore captured form state");
 assert.match(imageSource, /originContext/, "Image Browse Web handoff should preserve Insert Media origin context");
+assert.match(imageSource, /resolveSvgEditorContextForInsertMedia/, "SVG Image Insert Media should resolve the originating SVG editor instance");
+assert.doesNotMatch(imageSource, /window\.SVGEditorContext\?\.insertImageFromInsertion/, "Deferred SVG Image Insert Media should not target mutable global SVGEditorContext");
 
 const modelSource = await readFile(new URL("./insertMediaModel.mjs", import.meta.url), "utf8");
 assert.match(modelSource, /browse-web-resource/, "Model Insert Media should expose Browse Web for existing sources");

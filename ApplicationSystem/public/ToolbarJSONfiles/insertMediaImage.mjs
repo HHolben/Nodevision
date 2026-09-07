@@ -18,7 +18,7 @@ import {
   saveNotebookBinaryFromDataUrl,
 } from "./insertMediaIO.mjs";
 import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
-import { getInsertMediaOriginContext, openInsertMediaPanel } from "./insertMediaPanel.mjs";
+import { getInsertMediaOriginContext, openInsertMediaPanel, resolveSvgEditorContextForInsertMedia } from "./insertMediaPanel.mjs";
 import {
   attachInsertMediaBrowseWebHandler,
   captureNamedInsertMediaState,
@@ -190,8 +190,9 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
   let existingFile = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
   let existingFilePending = null;
   const setStatus = (message) => { statusEl.textContent = String(message || ""); };
-  const editorPath = () => getActiveEditorNotebookPath();
   const formOriginContext = originContext || getInsertMediaOriginContext(root) || null;
+  const originEditorNotebookPath = normalizeNotebookPath(formOriginContext?.originEditorPath || "");
+  const editorPath = () => originEditorNotebookPath || getActiveEditorNotebookPath();
   const sourceForNotebook = (path) => svgMode ? notebookHrefFromPath(path) : notebookSourceFromPath(path, editorPath());
 
   const updateExistingStatus = () => {
@@ -384,7 +385,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
         fallbacks,
         resource
       });
-      if (inserted === false) throw new Error("Image insertion was not available.");
+      if (inserted === false || inserted == null) throw new Error("Image insertion failed.");
       refreshLinkedManagers(linkedNotebookPath);
       setStatus("Inserted.");
     } catch (err) {
@@ -394,12 +395,40 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
   });
 }
 
+function isSvgInsertOrigin(originContext = null) {
+  const context = originContext || {};
+  const mode = String(context.targetMode || window.NodevisionState?.currentMode || "").toLowerCase();
+  const panelType = String(context.originPanelType || "").toLowerCase();
+  const editorPath = String(context.originEditorPath || window.__nvSvgEditorActivePath || "").toLowerCase();
+  return mode.includes("svg") || panelType.includes("svg") || (panelType.includes("graphical") && editorPath.endsWith(".svg"));
+}
+
+async function insertImageIntoOriginatingSvg(insertion = {}, originContext = null) {
+  const src = String(insertion.src || insertion.resource?.src || "").trim();
+  if (!src) throw new Error("Image source invalid: no image source was provided.");
+  const resolved = resolveSvgEditorContextForInsertMedia(originContext || {});
+  if (!resolved.ok) {
+    console.warn("[insertMediaImage] SVG origin resolution failed", resolved.diagnostic || {}, resolved.code || "unknown");
+    throw new Error(resolved.message || "SVG image insertion was unavailable for the originating editor.");
+  }
+  const api = resolved.context;
+  if (typeof api?.insertImageFromInsertion !== "function") {
+    console.warn("[insertMediaImage] SVG insertion API unavailable", resolved.diagnostic || {});
+    throw new Error("SVG insertion API unavailable for the originating editor.");
+  }
+  const inserted = await api.insertImageFromInsertion(insertion);
+  if (!inserted) {
+    console.warn("[insertMediaImage] SVG element insertion failed", resolved.diagnostic || {});
+    throw new Error("SVG element insertion failed.");
+  }
+  return inserted;
+}
+
 export function renderImage(root, exts = [], renderOptions = {}) {
   const originContext = renderOptions.originContext || getInsertMediaOriginContext(root) || null;
-  if (window.NodevisionState?.currentMode === "SVG Editing") {
+  if (isSvgInsertOrigin(originContext)) {
     renderImageForm(root, async (insertion) => {
-      if (typeof window.SVGEditorContext?.insertImageFromInsertion !== "function") return false;
-      return await window.SVGEditorContext.insertImageFromInsertion(insertion);
+      return await insertImageIntoOriginatingSvg(insertion, originContext);
     }, { svgMode: true, exts, originContext });
     return;
   }

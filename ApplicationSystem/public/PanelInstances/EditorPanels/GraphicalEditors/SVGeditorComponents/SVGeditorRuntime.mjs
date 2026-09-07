@@ -6,6 +6,7 @@ import { clearEditorContext, getEditingContext, saveEditingContext, setActiveToo
 import { createElementLayers } from "../ElementLayers.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { createPanelDOM } from "/panels/panelFactory.mjs";
+import { registerSvgEditorContextForInsertMedia } from "/ToolbarJSONfiles/insertMediaPanel.mjs";
 import { ensureSvgEditorModeLayout } from "/panels/workspace.mjs";
 import {
   createSvgEl,
@@ -1950,8 +1951,17 @@ export async function renderEditor(filePath, container) {
     status.textContent = text;
   }
 
+  let svgDocumentDirty = false;
+  let svgEditorContext = null;
+
+  function isActiveSvgEditorRuntime() {
+    return !svgEditorContext || window.SVGEditorContext === svgEditorContext || window.__nvSvgEditorActivePath === filePath;
+  }
+
   function markDocumentDirty(dirty = true) {
-    updateToolbarState({ fileIsDirty: Boolean(dirty) });
+    svgDocumentDirty = Boolean(dirty);
+    if (svgEditorContext) svgEditorContext.dirty = svgDocumentDirty;
+    if (isActiveSvgEditorRuntime()) updateToolbarState({ fileIsDirty: svgDocumentDirty });
   }
 
   window.NodevisionMetadataTools = {
@@ -2449,7 +2459,7 @@ export async function renderEditor(filePath, container) {
     const hadPreview = command.applied || Math.abs(angleRad) > 1e-12;
     if (hadPreview) restoreRotationCommandBase(command);
     const changed = runSvgSnapshotOperation("set-rotation-origin", () => setSelectedRotationOriginRoot(point));
-    command.beforeSvgText = window.getEditorHTML?.() || command.beforeSvgText || "";
+    command.beforeSvgText = serializeSvgForSave() || command.beforeSvgText || "";
     command.items = buildRotationCommandItems(selectedElements);
     command.centerRoot = { ...point };
     command.originPlacement = null;
@@ -2958,7 +2968,7 @@ export async function renderEditor(filePath, container) {
       buffer: "",
       applied: false,
       items,
-      beforeSvgText: window.getEditorHTML?.() || "",
+      beforeSvgText: serializeSvgForSave(),
     };
     updateSelectionGrabStatus("Grab selection: move cursor, X/Y locks axis, type percent, click or Enter releases, Esc cancels");
     return true;
@@ -3056,12 +3066,12 @@ export async function renderEditor(filePath, container) {
       return false;
     }
     const before = grab.beforeSvgText || "";
-    const after = window.getEditorHTML?.() || "";
+    const after = serializeSvgForSave();
     if (before && after && before !== after) {
       history.pushCustom({
         kind: "grab-selection",
-        undo: () => { window.setEditorHTML?.(before); return { label: "grab-selection" }; },
-        redo: () => { window.setEditorHTML?.(after); return { label: "grab-selection" }; },
+        undo: () => { setSvgFromString(before); return { label: "grab-selection" }; },
+        redo: () => { setSvgFromString(after); return { label: "grab-selection" }; },
       });
       markDocumentDirty(true);
     }
@@ -3238,7 +3248,7 @@ export async function renderEditor(filePath, container) {
       originChanged: false,
       centerRoot,
       items,
-      beforeSvgText: window.getEditorHTML?.() || "",
+      beforeSvgText: serializeSvgForSave(),
     };
     updateRotationOriginMarker(centerRoot);
     updatePendingRotationStatus("Rotate preview started: type radians, ro origin, rr radians, rd degrees, drag selection, Enter commits, Esc cancels");
@@ -3297,12 +3307,12 @@ export async function renderEditor(filePath, container) {
       return Boolean(command.originChanged);
     }
     const before = command.beforeSvgText || "";
-    const after = window.getEditorHTML?.() || "";
+    const after = serializeSvgForSave();
     if (before && after && before !== after) {
       history.pushCustom({
         kind: "rotate-selection",
-        undo: () => { window.setEditorHTML?.(before); return { label: "rotate-selection" }; },
-        redo: () => { window.setEditorHTML?.(after); return { label: "rotate-selection" }; },
+        undo: () => { setSvgFromString(before); return { label: "rotate-selection" }; },
+        redo: () => { setSvgFromString(after); return { label: "rotate-selection" }; },
       });
       markDocumentDirty(true);
     }
@@ -4271,8 +4281,8 @@ export async function renderEditor(filePath, container) {
     return internalPngController.insertInternalPng();
   }
 
-  function insertImageFromInsertion(insertion) {
-    return internalPngController.insertImageFromInsertion(insertion);
+  async function insertImageFromInsertion(insertion) {
+    return await runSvgSnapshotOperationAsync("insert-image", () => internalPngController.insertImageFromInsertion(insertion));
   }
 
   function replaceSelectedInternalPng() {
@@ -5600,7 +5610,7 @@ export async function renderEditor(filePath, container) {
   if (!isCurrentRender()) return;
   window.__nvSvgEditorActivePath = filePath;
   window.__nvWysiwygActivePath = filePath;
-  window.getEditorHTML = () => {
+  function serializeSvgForSave() {
     const clone = svgRoot.cloneNode(true);
     clone.querySelectorAll(`[${SVG_UI_ATTR}]`).forEach((el) => el.remove());
     clone.querySelectorAll("[data-selected]").forEach((el) => el.removeAttribute("data-selected"));
@@ -5611,9 +5621,9 @@ export async function renderEditor(filePath, container) {
       }
     });
     return new XMLSerializer().serializeToString(clone);
-  };
+  }
 
-  window.setEditorHTML = (svgString) => {
+  function setSvgFromString(svgString) {
     const parsed = parseEditableSvgRoot(svgString);
     const fresh = parsed.root;
 
@@ -5643,11 +5653,14 @@ export async function renderEditor(filePath, container) {
     clearSelection();
     updateSvgRulers();
     markDocumentDirty(false);
-  };
+  }
+
+  window.getEditorHTML = serializeSvgForSave;
+  window.setEditorHTML = setSvgFromString;
 
   window.saveWYSIWYGFile = async (path) => {
     const targetPath = resolveEditorHookSavePath("SVG Editor", filePath, path);
-    const content = window.getEditorHTML();
+    const content = serializeSvgForSave();
     const response = await fetch("/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -5668,18 +5681,39 @@ export async function renderEditor(filePath, container) {
   };
 
   function runSvgSnapshotOperation(label, operation) {
-    const before = window.getEditorHTML?.() || "";
+    const before = serializeSvgForSave();
     const result = operation?.();
-    const after = window.getEditorHTML?.() || "";
+    const after = serializeSvgForSave();
     if (!result || before === after) return result;
     history.pushCustom({
       kind: label || "svg-operation",
       undo: () => {
-        window.setEditorHTML?.(before);
+        setSvgFromString(before);
         return { label };
       },
       redo: () => {
-        window.setEditorHTML?.(after);
+        setSvgFromString(after);
+        return { label };
+      },
+    });
+    markDocumentDirty(true);
+    refreshSelectionAfterMutation(label || "svg-operation");
+    return result;
+  }
+
+  async function runSvgSnapshotOperationAsync(label, operation) {
+    const before = serializeSvgForSave();
+    const result = await operation?.();
+    const after = serializeSvgForSave();
+    if (!result || before === after) return result;
+    history.pushCustom({
+      kind: label || "svg-operation",
+      undo: () => {
+        setSvgFromString(before);
+        return { label };
+      },
+      redo: () => {
+        setSvgFromString(after);
         return { label };
       },
     });
@@ -5692,6 +5726,12 @@ export async function renderEditor(filePath, container) {
   window.toggleSVGElementSelection = toggleSelection;
   window.SVGEditorContext = {
     svgRoot,
+    getEditorHTML: serializeSvgForSave,
+    setEditorHTML: setSvgFromString,
+    dirty: svgDocumentDirty,
+    isDirty() {
+      return svgDocumentDirty;
+    },
     layers: layersMgr,
     setMode,
     recordSvgSnapshot(label, operation) {
@@ -6053,7 +6093,15 @@ export async function renderEditor(filePath, container) {
       setStatus(`Selected ${selectedElements.length} element(s)`);
     }
   };
+  svgEditorContext = window.SVGEditorContext;
   window.toggleSVGLayersPanel = toggleLayersPanel;
+  const svgInsertMediaRegistration = registerSvgEditorContextForInsertMedia({
+    context: window.SVGEditorContext,
+    container,
+    wrapper,
+    filePath,
+  });
+
 
   try {
     const editorCell = container?.closest?.(".panel-cell");
@@ -6079,6 +6127,10 @@ export async function renderEditor(filePath, container) {
   return () => {
     container.removeEventListener("scroll", persistCurrentSvgAttention);
     persistCurrentSvgAttention();
+    svgInsertMediaRegistration?.dispose?.();
+    if (window.SVGEditorContext?.__nvInsertMediaIdentity?.instanceId === svgInsertMediaRegistration?.instanceId) {
+      window.SVGEditorContext = null;
+    }
     clearEditorContext(filePath);
   };
 }

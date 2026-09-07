@@ -201,12 +201,14 @@ function liveContentMimeTypeForPath(filePath = "") {
 function readGraphicalLiveContent(filePath, editorDiv) {
   const ext = resolveExtension(filePath);
   const markdownPreferred = new Set(["md", "markdown", "txt", "tex", "latex", "scad", "usd", "usda", "mtl", "obj", "ics", "php", "json", "xml"]);
+  if (ext === "svg") {
+    const svgContext = editorDiv?.__nvSvgEditorContext || window.SVGEditorContext || null;
+    if (typeof svgContext?.getEditorHTML === "function") return svgContext.getEditorHTML();
+    if (svgContext?.svgRoot) return new XMLSerializer().serializeToString(svgContext.svgRoot);
+  }
   if (markdownPreferred.has(ext) && typeof window.getEditorMarkdown === "function") return window.getEditorMarkdown();
   if (typeof window.getEditorHTML === "function") return window.getEditorHTML();
   if (typeof window.getEditorMarkdown === "function") return window.getEditorMarkdown();
-  if (ext === "svg" && window.SVGEditorContext?.svgRoot) {
-    return new XMLSerializer().serializeToString(window.SVGEditorContext.svgRoot);
-  }
   const textarea = editorDiv?.querySelector?.("textarea");
   if (textarea) return textarea.value;
   return undefined;
@@ -254,7 +256,7 @@ function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
     panelKind: "GraphicalEditor",
     sourceLabel: "Graphical Editor",
     mimeType: liveContentMimeTypeForPath(filePath),
-    dirty: () => Boolean(window.NodevisionState?.fileIsDirty),
+    dirty: () => Boolean(editorDiv?.__nvSvgEditorContext?.isDirty?.() ?? window.NodevisionState?.fileIsDirty),
     getContent: () => readGraphicalLiveContent(filePath, editorDiv),
   });
 
@@ -372,6 +374,7 @@ function activateGraphicalEditorHost(host) {
     window.currentActiveFilePath = filePath;
     window.filePath = filePath;
     window.NodevisionState.selectedFile = filePath;
+    window.NodevisionState.selectedFileIsDirectory = false;
     window.NodevisionState.activeEditorFilePath = filePath;
   }
   updateToolbarState({
@@ -527,6 +530,7 @@ export async function updateGraphicalEditor(
   window.NodevisionState.currentMode = "GraphicalEditing";
   window.NodevisionState.activeActionHandler = null;
   window.NodevisionState.selectedFile = filePath;
+  window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = filePath;
   updateToolbarState({
     currentMode: "GraphicalEditing",

@@ -823,10 +823,20 @@ function getZoomShortcutAction(event) {
   const key = String(event.key || "").toLowerCase();
   const code = String(event.code || "");
 
-  if (key === "+" || key === "=" || code === "NumpadAdd") return "in";
-  if (key === "-" || key === "_" || code === "NumpadSubtract") return "out";
+  if (key === "+" || key === "=" || code === "Equal" || code === "NumpadAdd" || code === "NumpadEqual") return "in";
+  if (key === "-" || key === "_" || code === "Minus" || code === "NumpadSubtract") return "out";
   if (key === "0" || code === "Digit0" || code === "Numpad0") return "reset";
   return null;
+}
+
+function tryHandleCodeEditorZoomWheel(event) {
+  const handler = window.__nvHandleCodeEditorZoomWheel;
+  return typeof handler === "function" && handler(event) === true;
+}
+
+function tryHandleCodeEditorZoomShortcut(event, action) {
+  const handler = window.__nvHandleCodeEditorZoomShortcut;
+  return typeof handler === "function" && handler(event, { action }) === true;
 }
 
 export function installPanelZoomShortcuts() {
@@ -838,6 +848,7 @@ export function installPanelZoomShortcuts() {
 
   const onWheel = (event) => {
     if (!(event.ctrlKey || event.metaKey)) return;
+    if (tryHandleCodeEditorZoomWheel(event)) return;
     if (eventUsesLocalZoomScope(event)) return;
 
     const activePanel = getActivePanelElement();
@@ -855,6 +866,7 @@ export function installPanelZoomShortcuts() {
   const onKeyDown = (event) => {
     const action = getZoomShortcutAction(event);
     if (!action) return;
+    if (tryHandleCodeEditorZoomShortcut(event, action)) return;
     if (eventUsesLocalZoomScope(event)) return;
 
     const activePanel = getActivePanelElement();

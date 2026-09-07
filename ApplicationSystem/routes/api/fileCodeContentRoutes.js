@@ -112,6 +112,12 @@ export default function createFileCodeContentRouter(ctx = BASE_CONTEXT) {
         isBinary: decoded.isBinary,
       });
     } catch (err) {
+      if (err?.code === 'ENOENT') {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      if (err?.code === 'EISDIR') {
+        return res.status(400).json({ error: 'Path is a directory' });
+      }
       console.error('Error reading file:', err);
       res.status(500).json({ error: 'Error reading file' });
     }

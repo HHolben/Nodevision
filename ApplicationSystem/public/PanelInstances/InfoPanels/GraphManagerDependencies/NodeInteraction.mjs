@@ -34,6 +34,7 @@ export async function highlight(node) {
 
   // Set global path - FileView's reactive watcher will handle rendering.
   requestNodevisionFileSelection(cleanPath, {
+    isDirectory: node.data("type") === "directory",
     onSelected: () => {
       const viewCell = document.querySelector('[data-id="FileView"]');
       if (viewCell) {
