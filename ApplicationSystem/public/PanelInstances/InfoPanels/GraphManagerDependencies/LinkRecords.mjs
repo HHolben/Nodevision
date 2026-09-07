@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/LinkRecords.mjs
 // Shared link parsing, selection, and source-edit helpers for Graph Manager link panels.
 
-import { parseMetaWorldPortalLinkRecords } from "./MetaWorldPortalLinks.mjs";
+import { parseMetaWorldPortalLinkRecords, parseMetaWorldResourceLinkRecords } from "./MetaWorldPortalLinks.mjs";
 import {
   isExternalNotebookReference,
   normalizeNotebookFilePath,
@@ -592,10 +592,15 @@ export function parseLinkRecordsFromText(content, sourcePath) {
   const ext = normalizeNotebookRelativePath(sourcePath).split(".").pop()?.toLowerCase() || "";
   if (["html", "htm", "xhtml", "php"].includes(ext)) {
     const htmlRecords = parseHtmlLinks(content, sourcePath, 0);
-    return htmlRecords.concat(parseMetaWorldPortalLinkRecords(content, sourcePath, htmlRecords.length, {
+    const portalRecords = parseMetaWorldPortalLinkRecords(content, sourcePath, htmlRecords.length, {
       buildLinkRecord,
       isIgnoredLink,
-    }));
+    });
+    const resourceRecords = parseMetaWorldResourceLinkRecords(content, sourcePath, htmlRecords.length + portalRecords.length, {
+      buildLinkRecord,
+      isIgnoredLink,
+    });
+    return htmlRecords.concat(portalRecords, resourceRecords);
   }
   if (["md", "markdown"].includes(ext)) {
     return parseMarkdownLinks(content, sourcePath, 0);

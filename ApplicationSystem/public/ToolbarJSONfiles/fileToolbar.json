@@ -34,6 +34,14 @@
   },
   {
     "ToolbarCategory": "File",
+    "heading": "Find / Install Resource",
+    "hotkeyText": "",
+    "callbackKey": "findInstallResource",
+    "icon": "icons/Download.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
     "parentHeading": "Import",
     "heading": "From Phone",
     "hotkeyText": "",
@@ -146,6 +154,15 @@
     "callbackKey": "pasteFile",
     "icon": "icons/PasteIcon.png",
     "routeToActivePanel": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "File Manager",
+    "heading": "Find / Install Resource",
+    "hotkeyText": "",
+    "callbackKey": "findInstallResource",
+    "icon": "icons/Download.png",
+    "preventAutoSubToolbar": true
   },
   {
     "ToolbarCategory": "File",

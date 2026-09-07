@@ -8,16 +8,56 @@ import { installMovementApi } from "../movementContext.mjs";
 export function installVoxelPlacementAbility(ctx) {
   const { THREE, scene, objects, colliders, movementState } = ctx;
 
-  function computeVoxelPlacePosition(hit, normal, half, snapToGrid) {
-    const n = normal.clone().normalize();
-    const offset = Math.abs(n.x) * half.x + Math.abs(n.y) * half.y + Math.abs(n.z) * half.z + 0.001;
-    const placePos = hit.point.clone().addScaledVector(n, offset);
-    if (snapToGrid) {
-      const size = Math.max(0.05, half.x * 2);
-      placePos.x = Math.round(placePos.x / size) * size;
-      placePos.y = Math.round((placePos.y - half.y) / size) * size + half.y;
-      placePos.z = Math.round(placePos.z / size) * size;
+  function dominantAxisFromNormal(normal) {
+    const x = Math.abs(normal.x);
+    const y = Math.abs(normal.y);
+    const z = Math.abs(normal.z);
+    if (x >= y && x >= z) return new THREE.Vector3(Math.sign(normal.x) || 1, 0, 0);
+    if (y >= x && y >= z) return new THREE.Vector3(0, Math.sign(normal.y) || 1, 0);
+    return new THREE.Vector3(0, 0, Math.sign(normal.z) || 1);
+  }
+
+  function computeTargetFacePlacement(hit, normal, half) {
+    const target = hit?.object || null;
+    const geometry = target?.geometry || null;
+    if (!target || !geometry) return null;
+    if (!geometry.boundingBox && typeof geometry.computeBoundingBox === "function") geometry.computeBoundingBox();
+    const box = geometry.boundingBox;
+    if (!box?.min || !box?.max) return null;
+    const localNormal = normal.clone().normalize();
+    if (target.matrixWorld) {
+      const inverseWorld = new THREE.Matrix4().copy(target.matrixWorld).invert();
+      localNormal.transformDirection(inverseWorld).normalize();
     }
+    const localAxis = dominantAxisFromNormal(localNormal);
+    const faceCenter = box.min.clone().add(box.max).multiplyScalar(0.5);
+    if (localAxis.x > 0) faceCenter.x = box.max.x;
+    else if (localAxis.x < 0) faceCenter.x = box.min.x;
+    else if (localAxis.y > 0) faceCenter.y = box.max.y;
+    else if (localAxis.y < 0) faceCenter.y = box.min.y;
+    else if (localAxis.z > 0) faceCenter.z = box.max.z;
+    else faceCenter.z = box.min.z;
+    const worldCenter = faceCenter.clone();
+    if (target.matrixWorld) worldCenter.applyMatrix4(target.matrixWorld);
+    const worldNormal = localAxis.clone();
+    if (target.matrixWorld) worldNormal.transformDirection(target.matrixWorld).normalize();
+    else worldNormal.normalize();
+    const offset = Math.abs(worldNormal.x) * half.x + Math.abs(worldNormal.y) * half.y + Math.abs(worldNormal.z) * half.z;
+    return worldCenter.addScaledVector(worldNormal, offset);
+  }
+
+  function snapVoxelPositionToGrid(placePos, half) {
+    const size = Math.max(0.05, half.x * 2);
+    placePos.x = Math.round(placePos.x / size) * size;
+    placePos.y = Math.round((placePos.y - half.y) / size) * size + half.y;
+    placePos.z = Math.round(placePos.z / size) * size;
+  }
+
+  function computeVoxelPlacePosition(hit, normal, half, snapToGrid, options = {}) {
+    const n = normal.clone().normalize();
+    const snappedPos = options.faceCenterSnap ? computeTargetFacePlacement(hit, n, half) : null;
+    const placePos = snappedPos || hit.point.clone().addScaledVector(n, Math.abs(n.x) * half.x + Math.abs(n.y) * half.y + Math.abs(n.z) * half.z + 0.001);
+    if (snapToGrid && !snappedPos) snapVoxelPositionToGrid(placePos, half);
     if (placePos.y < half.y) placePos.y = half.y;
     return placePos;
   }
@@ -63,7 +103,8 @@ export function installVoxelPlacementAbility(ctx) {
         matterState: config.matterState || "",
         color: config.color,
         opacity: ctx.api.normalizeVoxelOpacity(config.opacity),
-        collider: colliderEnabled
+        collider: colliderEnabled,
+        faceCenterSnap: config.faceCenterSnap === true
       },
       physicsMaterialId: materialId,
       physicsMaterialFile: materialFile,
@@ -91,7 +132,7 @@ export function installVoxelPlacementAbility(ctx) {
     const opacity = ctx.api.normalizeVoxelOpacity(config.opacity);
     const half = new THREE.Vector3(size / 2, size / 2, size / 2);
     const shape = { type: "box", half };
-    const placePos = computeVoxelPlacePosition(hit, placementNormalFromHit(hit), half, snapToGrid);
+    const placePos = computeVoxelPlacePosition(hit, placementNormalFromHit(hit), half, snapToGrid, { faceCenterSnap: config.faceCenterSnap === true });
     const colliderEnabled = config.collider !== false;
     if (colliderEnabled && ctx.api.intersectsPlayer(placePos, shape)) {
       setStatus("Voxel would intersect the player.");
@@ -119,6 +160,9 @@ export function installVoxelPlacementAbility(ctx) {
   }
 
   return installMovementApi(ctx, {
+    dominantAxisFromNormal,
+    computeTargetFacePlacement,
+    snapVoxelPositionToGrid,
     computeVoxelPlacePosition,
     placementNormalFromHit,
     createVoxelColliderRef,

@@ -37,16 +37,52 @@ function normalizeNotebookPath(value) {
   return cleaned.trim();
 }
 
-function resolveActiveFilePath(preferredPath = null) {
-  const candidates = [
-    preferredPath,
-    window.currentActiveFilePath,
-    window.NodevisionState?.activeEditorFilePath,
+function panelCellLooksLikeEditor(cell) {
+  const activeTab = getActivePanelTab(cell);
+  const panelClass = String(activeTab?.panelClass || cell?.dataset?.panelClass || "").toLowerCase();
+  const panelType = normalizePanelIdentifier(activeTab?.panelType || cell?.dataset?.id || cell?.dataset?.panelId || "");
+  return panelClass === "editorpanel" || panelType === "CodeEditor" || panelType === "GraphicalEditor";
+}
+
+function activeWorkspacePanelLooksLikeEditor() {
+  const activeCell = resolvePanelCell(window.activeCell);
+  if (panelCellLooksLikeEditor(activeCell)) return true;
+  const panelClass = String(window.activePanelClass || "").toLowerCase();
+  const panelType = normalizePanelIdentifier(window.activePanel || "");
+  return panelClass === "editorpanel" || panelType === "CodeEditor" || panelType === "GraphicalEditor";
+}
+
+function isEditorPanelRequest(panelType = "", panelClass = "") {
+  const normalizedType = normalizePanelIdentifier(panelType) || panelType;
+  return String(panelClass || "").toLowerCase() === "editorpanel" ||
+    normalizedType === "CodeEditor" ||
+    normalizedType === "GraphicalEditor";
+}
+
+function resolveActiveFilePath(preferredPath = null, options = {}) {
+  const state = window.NodevisionState || {};
+  const selectedCandidates = [
     window.selectedFilePath,
-    window.NodevisionState?.selectedFile,
+    state.selectedFile,
+  ];
+  const activeEditorCandidates = [
+    state.activeEditorFilePath,
+    window.__nvCodeEditorActivePath,
+    window.__nvMarkdownActivePath,
+    window.__nvWysiwygActivePath,
+    window.__nvHtmlEditorActivePath,
+    window.__nvSvgEditorActivePath,
+  ];
+  const renderedCandidates = [
+    window.currentActiveFilePath,
+    state.activeFileViewPath,
     window.ActiveNode,
     window.filePath,
   ];
+  const editorRequest = isEditorPanelRequest(options.panelType, options.panelClass);
+  const candidates = editorRequest && !activeWorkspacePanelLooksLikeEditor()
+    ? [preferredPath, ...selectedCandidates, ...activeEditorCandidates, ...renderedCandidates]
+    : [preferredPath, ...activeEditorCandidates, ...renderedCandidates, ...selectedCandidates];
 
   for (const candidate of candidates) {
     const normalized = normalizeNotebookPath(candidate);
@@ -283,14 +319,14 @@ function insertSplitCellInParent(cell, newCell, direction, edge, splitPercent) {
   if (!parent) return null;
 
   const placeBefore = edge === "left" || edge === "top";
-  const newPercent = placeBefore ? splitPercent : 100 - splitPercent;
-  const existingPercent = 100 - newPercent;
-  const targetFlex = `0 0 ${existingPercent}%`;
-  const splitFlex = `0 0 ${newPercent}%`;
+  const newShare = (placeBefore ? splitPercent : 100 - splitPercent) / 100;
+  const existingShare = 1 - newShare;
+  const targetWeight = flexAllocationWeight(cell, direction);
 
   if (parent.classList?.contains?.("panel-row") && parent.dataset?.direction === direction) {
-    cell.style.flex = targetFlex;
-    newCell.style.flex = splitFlex;
+    normalizeSiblingFlexAllocations(parent, direction);
+    setProportionalFlex(cell, targetWeight * existingShare);
+    setProportionalFlex(newCell, targetWeight * newShare);
     if (placeBefore) parent.insertBefore(newCell, cell);
     else parent.insertBefore(newCell, cell.nextSibling);
     rebuildLayoutDividersForContainer(parent, direction === "column");
@@ -300,8 +336,8 @@ function insertSplitCellInParent(cell, newCell, direction, edge, splitPercent) {
   const originalFlex = cell.style.flex || "1 1 0";
   const wrapper = createPanelRow(direction, originalFlex);
   parent.replaceChild(wrapper, cell);
-  cell.style.flex = targetFlex;
-  newCell.style.flex = splitFlex;
+  setProportionalFlex(cell, existingShare * 100);
+  setProportionalFlex(newCell, newShare * 100);
   if (placeBefore) {
     wrapper.appendChild(newCell);
     wrapper.appendChild(cell);
@@ -322,6 +358,83 @@ function splitPanelCellFromEdge(cell, edge, splitPercent = 50) {
   activatePanelCell(newCell, { announce: false });
   setStatus("Panel split", `Created ${edge} panel`);
   return { container, newCell };
+}
+
+function directPanelCellChildren(container) {
+  return Array.from(container?.children || []).filter((child) => child.classList?.contains?.("panel-cell"));
+}
+
+function adjacentSiblingPanelCell(cell, edge = "right") {
+  const parent = cell?.parentElement;
+  if (!parent?.classList?.contains?.("panel-row")) return null;
+  const direction = parent.dataset?.direction || (parent.dataset?.isVertical === "1" ? "column" : "row");
+  const horizontal = edge === "left" || edge === "right";
+  if ((horizontal && direction !== "row") || (!horizontal && direction !== "column")) return null;
+  const cells = directPanelCellChildren(parent);
+  const index = cells.indexOf(cell);
+  if (index < 0) return null;
+  const offset = edge === "left" || edge === "top" ? -1 : 1;
+  return cells[index + offset] || null;
+}
+
+function cellContainsPanelTab(cell, panelType) {
+  const normalizedType = normalizePanelIdentifier(panelType) || panelType;
+  if (!cell || !normalizedType) return false;
+  if (normalizePanelIdentifier(cell.dataset?.id || cell.dataset?.panelId) === normalizedType) return true;
+  return Array.from(cell.__nvPanelTabs?.tabs || []).some((tab) => {
+    return (normalizePanelIdentifier(tab.panelType || tab.panelId || tab.id) || tab.panelType || tab.panelId || tab.id) === normalizedType;
+  });
+}
+
+function findWorkspacePanelCell(panelType, excludeCell = null) {
+  const normalizedType = normalizePanelIdentifier(panelType) || panelType;
+  if (!normalizedType) return null;
+  return Array.from(document.querySelectorAll(".panel-cell")).find((cell) => {
+    return cell !== excludeCell && !cell.contains?.(excludeCell) && cellContainsPanelTab(cell, normalizedType);
+  }) || null;
+}
+
+export function ensureAdjacentPanelCell({
+  originCell = null,
+  panelId = "InfoPanel",
+  panelClass = "InfoPanel",
+  edge = "right",
+  splitPercent = 68,
+  reuseExistingPanel = true,
+  reuseAdjacentSibling = true,
+} = {}) {
+  const origin = resolvePanelCell(originCell || window.activeCell);
+  if (!origin) return null;
+
+  const normalizedPanelId = normalizePanelIdentifier(panelId) || panelId;
+  if (reuseExistingPanel) {
+    const existingPanelCell = findWorkspacePanelCell(normalizedPanelId, origin);
+    if (existingPanelCell) {
+      existingPanelCell.style.display = existingPanelCell.style.display || "flex";
+      ensurePanelEdgeSplitHandles(existingPanelCell);
+      return { cell: existingPanelCell, originCell: origin, didCreate: false, reused: "existing-panel" };
+    }
+  }
+
+  if (reuseAdjacentSibling) {
+    const sibling = adjacentSiblingPanelCell(origin, edge);
+    if (sibling && !panelCellLooksLikeEditor(sibling)) {
+      sibling.style.display = sibling.style.display || "flex";
+      ensurePanelEdgeSplitHandles(sibling);
+      return { cell: sibling, originCell: origin, didCreate: false, reused: "adjacent-sibling" };
+    }
+  }
+
+  const split = splitPanelCellFromEdge(origin, edge, splitPercent);
+  const cell = split?.newCell || null;
+  if (!cell) return null;
+  setCellIdentity(cell, {
+    id: normalizedPanelId,
+    panelClass,
+    flex: cell.style.flex || null,
+  });
+  ensurePanelEdgeSplitHandles(cell);
+  return { cell, originCell: origin, didCreate: true, reused: "split", container: split.container || null };
 }
 
 function createSplitGhost(direction) {
@@ -436,6 +549,47 @@ function toFlexValue(value) {
   const raw = String(value).trim();
   if (!raw) return "";
   return /\s/.test(raw) ? raw : `${raw} 1 0`;
+}
+
+function numericFlexPart(value) {
+  const n = Number.parseFloat(String(value || ""));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function flexAllocationWeight(element, axis = "row") {
+  const raw = String(element?.style?.flex || "").trim();
+  if (raw) {
+    const parts = raw.split(/\s+/);
+    const grow = numericFlexPart(parts[0]);
+    if (grow) return grow;
+    const percent = raw.match(/(?:^|\s|calc\()([0-9]+(?:\.[0-9]+)?)%/);
+    if (percent) return numericFlexPart(percent[1]);
+    const px = raw.match(/(?:^|\s)([0-9]+(?:\.[0-9]+)?)px(?:\s|$|\))/);
+    if (px) return numericFlexPart(px[1]);
+  }
+  const rect = typeof element?.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
+  const size = axis === "column" ? rect?.height : rect?.width;
+  return numericFlexPart(size) || 1;
+}
+
+function setProportionalFlex(element, weight) {
+  if (!element?.style) return;
+  const cleanWeight = Math.max(0.001, Number(weight) || 1);
+  element.style.flex = `${cleanWeight} 1 0px`;
+  element.style.minWidth = "0";
+  element.style.minHeight = "0";
+}
+
+function directLayoutChildren(container) {
+  return Array.from(container?.children || []).filter((child) =>
+    child.classList?.contains?.("panel-cell") || child.classList?.contains?.("panel-row")
+  );
+}
+
+function normalizeSiblingFlexAllocations(container, axis = "row") {
+  const children = directLayoutChildren(container);
+  children.forEach((child) => setProportionalFlex(child, flexAllocationWeight(child, axis)));
+  return children;
 }
 
 function collectPanelCells(root) {
@@ -617,14 +771,12 @@ function createDivider(leftCell, rightCell) {
     activePointerId = e.pointerId ?? "mouse";
     startX = e.clientX;
 
-    const row = divider.parentElement;
     const leftRect = leftCell.getBoundingClientRect();
     const rightRect = rightCell.getBoundingClientRect();
-    const rowRect = row.getBoundingClientRect();
 
     startLeftWidth = leftRect.width;
     startRightWidth = rightRect.width;
-    totalWidth = rowRect.width;
+    totalWidth = Math.max(1, startLeftWidth + startRightWidth);
 
     leftCell.style.transition = "none";
     rightCell.style.transition = "none";
@@ -649,8 +801,8 @@ function createDivider(leftCell, rightCell) {
     if (newRightWidth < min) newRightWidth = min;
     const leftPercent = (newLeftWidth / totalWidth) * 100;
     const rightPercent = (newRightWidth / totalWidth) * 100;
-    leftCell.style.flex = `0 0 ${leftPercent}%`;
-    rightCell.style.flex = `0 0 ${rightPercent}%`;
+    setProportionalFlex(leftCell, leftPercent);
+    setProportionalFlex(rightCell, rightPercent);
   }
 
   function onPointerUp(e) {
@@ -692,7 +844,9 @@ export async function loadDefaultLayout() {
   }
 }
 
-export function renderLayout(node, parent) {
+export function renderLayout(node, parent, options = {}) {
+  const loadPromises = options.loadPromises || [];
+  const isRootRender = !options.loadPromises;
   const isContainer = node.direction || node.type === "row" || node.type === "vertical";
 
   if (isContainer && node.children) {
@@ -715,7 +869,7 @@ export function renderLayout(node, parent) {
 
     // First render all children
     node.children.forEach((child) => {
-      renderLayout(child, container);
+      renderLayout(child, container, { ...options, loadPromises });
     });
 
     // Now insert dividers between the children
@@ -764,19 +918,23 @@ export function renderLayout(node, parent) {
     const panelType = normalizePanelIdentifier(requestedPanelType) || requestedPanelType;
 
     if (Array.isArray(node.tabs) && node.tabs.length) {
-      restorePanelTabsForCell(cell, node).catch((err) => console.warn("Failed to restore panel tabs:", err));
-      return;
+      const tabRestore = restorePanelTabsForCell(cell, node).catch((err) => console.warn("Failed to restore panel tabs:", err));
+      loadPromises.push(Promise.resolve(tabRestore));
+      return isRootRender ? Promise.allSettled(loadPromises) : loadPromises;
     }
 
     if (node.deferLoad !== true) {
-      loadPanelIntoCell(panelType, {
+      const panelLoad = loadPanelIntoCell(panelType, {
         id: normalizedCellId || requestedCellId,
         displayName: node.displayName || normalizedCellId || requestedCellId,
         tabOrientation: node.tabOrientation || node.tabsOrientation || "top",
         ...node.panelVars
       });
+      loadPromises.push(Promise.resolve(panelLoad));
     }
   }
+
+  return isRootRender ? Promise.allSettled(loadPromises) : loadPromises;
 }
 
 // Create a resizable divider for layout (horizontal or vertical)
@@ -831,21 +989,19 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
     e.preventDefault();
     activePointerId = e.pointerId ?? "mouse";
 
-    const container = divider.parentElement;
     const leftRect = leftEl.getBoundingClientRect();
     const rightRect = rightEl.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
 
     if (isVertical) {
       startPos = e.clientY;
       startLeftSize = leftRect.height;
       startRightSize = rightRect.height;
-      totalSize = containerRect.height;
+      totalSize = Math.max(1, startLeftSize + startRightSize);
     } else {
       startPos = e.clientX;
       startLeftSize = leftRect.width;
       startRightSize = rightRect.width;
-      totalSize = containerRect.width;
+      totalSize = Math.max(1, startLeftSize + startRightSize);
     }
 
     leftEl.style.transition = "none";
@@ -880,8 +1036,8 @@ function createLayoutDivider(leftCell, rightCell, isVertical = false) {
     const leftPercent = (newLeftSize / totalSize) * 100;
     const rightPercent = (newRightSize / totalSize) * 100;
 
-    leftEl.style.flex = `0 0 ${leftPercent}%`;
-    rightEl.style.flex = `0 0 ${rightPercent}%`;
+    setProportionalFlex(leftEl, leftPercent);
+    setProportionalFlex(rightEl, rightPercent);
   }
 
   function onPointerUp(e) {
@@ -1418,6 +1574,24 @@ function activatePanelCell(cell, { announce = true } = {}) {
   return cell;
 }
 
+export function clearActivePanelSelection({ announce = true } = {}) {
+  window.activeCell = null;
+  window.activePanel = "";
+  window.activePanelClass = "";
+  window.__nvActivePanelElement = null;
+  window.__nvLastActiveZoomPanPanel = null;
+  window.NodevisionState = window.NodevisionState || {};
+  window.NodevisionState.activePanelType = "";
+  highlightActiveCell(null);
+  if (announce) {
+    logStatus("No active panel");
+    setStatus("Active panel", "None");
+  }
+  window.dispatchEvent(new CustomEvent("activePanelChanged", {
+    detail: { panel: null, cell: null, panelClass: "" },
+  }));
+}
+
 function panelCellContentChildren(cell) {
   return Array.from(cell?.children || []).filter((child) =>
     !child.classList?.contains(PANEL_EDGE_SPLIT_HANDLE_CLASS) &&
@@ -1552,7 +1726,10 @@ async function mountPanelModuleIntoElement(host, panelType, panelVars = {}, pane
     return null;
   }
 
-  const resolvedFilePath = resolveActiveFilePath(panelVars.filePath);
+  const resolvedFilePath = resolveActiveFilePath(panelVars.filePath, {
+    panelType,
+    panelClass: panelClassValue,
+  });
   if (resolvedFilePath) host.dataset.currentFilePath = resolvedFilePath;
   else delete host.dataset.currentFilePath;
 
@@ -1634,7 +1811,10 @@ window.addEventListener("toolbarAction", async (e) => {
   }
   const panelClass = type || "InfoPanel";
   if (shouldGuardToolbarEditorSwitch(e.detail, normalizedId, panelClass)) {
-    const nextPath = resolveActiveFilePath(e.detail?.panelVars?.filePath || e.detail?.filePath);
+    const nextPath = resolveActiveFilePath(e.detail?.panelVars?.filePath || e.detail?.filePath, {
+      panelType: normalizedId,
+      panelClass,
+    });
     window.__nvGuardEditorSwitch(nextPath, () => replayGuardedToolbarAction(e.detail));
     return;
   }
@@ -1740,9 +1920,16 @@ function setupActivePanelTracking() {
   installPanelSplitModifierTracking();
 
   const activateHandler = (event) => {
-    const cell = event?.target?.closest?.(".panel-cell");
-    if (!cell) return;
-    activatePanelCell(cell);
+    const target = event?.target?.nodeType === 1 ? event.target : null;
+    const cell = target?.closest?.(".panel-cell");
+    if (cell) {
+      activatePanelCell(cell);
+      return;
+    }
+
+    if (target?.closest?.("#workspace")) {
+      clearActivePanelSelection();
+    }
   };
 
   const splitGestureHandler = (event) => {

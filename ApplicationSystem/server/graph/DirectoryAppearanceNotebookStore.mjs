@@ -214,6 +214,31 @@ async function migrateLegacyEntry(ctx, cssRecords, directoryMap, pathValue, lega
   directoryMap.set(pathValue, { appearance: sanitizeDirectoryAppearance(legacyAppearance) });
 }
 
+async function readDirectoryAppearanceRecord(ctx, pathValue, legacyManifest = null) {
+  const cleanPath = cleanDirectoryPath(pathValue);
+  const cssRecord = await readDirectoryCss(ctx, cleanPath);
+  const legacy = legacyManifest || await readLegacyDirectoryAppearanceManifest(ctx);
+  const legacyAppearance = legacy.directories?.[cleanPath]?.appearance || {};
+  if (cssRecord.parsed?.hasNodevisionProperties) {
+    return { path: cleanPath, appearance: mergeLegacyMissingProperties(cssRecord, legacyAppearance) };
+  }
+  return { path: cleanPath, appearance: sanitizeDirectoryAppearance(legacyAppearance) };
+}
+
+export async function readDirectoryAppearanceRecords(ctx, pathValues = []) {
+  const directories = {};
+  const paths = [];
+  const requestedPathValues = Array.isArray(pathValues) ? pathValues : [pathValues];
+  if (!requestedPathValues.length) return { paths, directories };
+  const legacy = await readLegacyDirectoryAppearanceManifest(ctx);
+  for (const pathValue of requestedPathValues) {
+    const record = await readDirectoryAppearanceRecord(ctx, pathValue, legacy);
+    paths.push(record.path);
+    directories[record.path] = { appearance: sanitizeDirectoryAppearance(record.appearance) };
+  }
+  return { paths, directories: sortedObjectFromEntries(Object.entries(directories)) };
+}
+
 export async function readDirectoryAppearanceManifest(ctx, options = {}) {
   const cssRecords = await readAllDirectoryCss(ctx);
   const directoryMap = new Map();
@@ -236,5 +261,5 @@ export async function saveDirectoryAppearance(ctx, pathValue, appearanceValue, o
   }
   const written = await writeDirectoryCss(ctx, record.cleanPath, appearance);
   await removeLegacyEntry(ctx, record.cleanPath);
-  return { manifest: await readDirectoryAppearanceManifest(ctx, { migrate: false }), path: written.path, appearance: written.appearance };
+  return { path: written.path, appearance: written.appearance };
 }

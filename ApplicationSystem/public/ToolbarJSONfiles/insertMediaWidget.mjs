@@ -9,7 +9,7 @@ import { renderSpreadsheet } from "./insertMediaSpreadsheet.mjs";
 import { renderImage } from "./insertMediaImage.mjs";
 import { renderCircuit } from "./insertMediaCircuit.mjs";
 import { openEquationMediaPanel } from "./insertMediaEquation.mjs";
-import { openInsertMediaPanel } from "./insertMediaPanel.mjs";
+import { captureInsertMediaOriginContext, openInsertMediaPanel } from "./insertMediaPanel.mjs";
 
 export async function initToolbarWidget(hostElement) {
   if (!hostElement || hostElement.dataset.nvInsertMediaBound === "true") return;
@@ -43,26 +43,22 @@ export async function initToolbarWidget(hostElement) {
   const byFamily = moduleMap.extensionsByFamily || new Map();
 
   const show = (family) => {
+    const originContext = captureInsertMediaOriginContext({ familyKey: family, mediaFamily: family });
     detail.innerHTML = "";
     let exts = Array.from(byFamily.get(family) || []);
     if (inVirtualWorld && family === "Model") exts = exts.filter((ext) => virtualWorldModelExts.has(ext));
 
     if (family === "Image") {
-      if (window.NodevisionState?.currentMode === "SVG Editing") {
-        const open = async () => {
-          const panel = await openInsertMediaPanel("Insert Image", "Image");
-          return renderImage(panel.mount, exts);
-        };
-        open().then(() => {
-          detail.textContent = "Opened Insert Image panel.";
-        }).catch((err) => {
-          console.warn("[insertMediaWidget] open image panel failed:", err);
-          detail.textContent = "Failed to open Insert Image panel.";
-        });
-        return;
-      }
-      window.HTMLWysiwygTools?.insertImageAtCaret?.();
-      detail.textContent = "Insert Image opened.";
+      const open = async () => {
+        const panel = await openInsertMediaPanel("Insert Image", "Image", { originContext });
+        return renderImage(panel.mount, exts, { originContext: panel.originContext || originContext });
+      };
+      open().then(() => {
+        detail.textContent = "Opened Insert Image panel.";
+      }).catch((err) => {
+        console.warn("[insertMediaWidget] open image panel failed:", err);
+        detail.textContent = "Failed to open Insert Image panel.";
+      });
       return;
     }
     if (family === "Equation") {
@@ -75,12 +71,12 @@ export async function initToolbarWidget(hostElement) {
       return;
     }
     const open = async () => {
-      const panel = await openInsertMediaPanel(`Insert ${family}`, family);
+      const panel = await openInsertMediaPanel(`Insert ${family}`, family, { originContext });
       if (family === "Video") return renderVideo(panel.mount, exts);
       if (family === "Sound") return renderSound(panel.mount, exts, { target: inVirtualWorld ? "virtualWorld" : "html" });
       if (family === "Spreadsheet") return renderSpreadsheet(panel.mount, exts);
       if (family === "Circuit") return renderCircuit(panel.mount, exts);
-      if (family === "Model") return renderInsertModel(panel.mount, exts, { target: inVirtualWorld ? "virtualWorld" : "html" });
+      if (family === "Model") return renderInsertModel(panel.mount, exts, { target: inVirtualWorld ? "virtualWorld" : "html", originContext: panel.originContext || originContext });
       return renderGenericLink(panel.mount, family, exts);
     };
     open().then(() => {

@@ -9,8 +9,7 @@ const KEYBOARD_KEYS = new Map([
 ]);
 const MAX_WHITE_KEY_WIDTH_CM = 2.35;
 const CSS_PX_PER_CM = 96 / 2.54;
-const MIN_KEY_HEIGHT_PX = 120;
-const KEYBOARD_VERTICAL_PADDING_PX = 16;
+const FALLBACK_KEY_HEIGHT_PX = 96;
 
 let audioContext = null;
 let masterGain = null;
@@ -20,7 +19,10 @@ export async function setupPanel(panel, instanceVars = {}) {
   Object.assign(panel.style, {
     display: "flex",
     flexDirection: "column",
+    height: "100%",
     minHeight: "0",
+    flex: "1 1 auto",
+    boxSizing: "border-box",
     overflow: "hidden",
     padding: "8px",
     gap: "8px",
@@ -60,11 +62,20 @@ export async function setupPanel(panel, instanceVars = {}) {
   panel.appendChild(status);
 
   const keyboard = document.createElement("div");
-  keyboard.style.cssText = "position:relative;flex:1;min-height:118px;overflow:auto;border:1px solid #b8b8b8;background:#d9d9d9;padding:8px;";
+  keyboard.style.cssText = "position:relative;flex:1 1 auto;min-height:0;overflow:hidden;border:1px solid #b8b8b8;background:#d9d9d9;padding:8px;box-sizing:border-box;";
   panel.appendChild(keyboard);
   let resizeFrame = null;
 
+  function scheduleRender() {
+    if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = null;
+      render();
+    });
+  }
+
   function render() {
+    if ((keyboard.clientWidth || 0) <= 0 || (keyboard.clientHeight || 0) <= 0) return;
     keyboard.innerHTML = "";
     const whiteKeys = [];
     for (let midi = state.baseMidi; midi < state.baseMidi + 25; midi += 1) {
@@ -73,7 +84,7 @@ export async function setupPanel(panel, instanceVars = {}) {
 
     const whiteWidth = calculateWhiteKeyWidth(keyboard, whiteKeys.length);
     const keyHeight = calculateKeyHeight(keyboard);
-    const blackHeight = Math.max(72, Math.floor(keyHeight * 0.62));
+    const blackHeight = Math.max(8, Math.floor(keyHeight * 0.62));
     const blackWidth = Math.max(14, whiteWidth * 0.62);
     const whiteRow = document.createElement("div");
     whiteRow.style.cssText = `display:flex;height:${keyHeight}px;position:relative;width:${whiteWidth * whiteKeys.length}px;`;
@@ -82,7 +93,7 @@ export async function setupPanel(panel, instanceVars = {}) {
     whiteKeys.forEach((midi) => {
       const key = button(noteName(midi));
       key.dataset.midi = String(midi);
-      key.style.cssText = `width:${whiteWidth}px;height:${keyHeight}px;border:1px solid #777;box-sizing:border-box;background:#fff;color:#111;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font:12px sans-serif;flex:0 0 ${whiteWidth}px;`;
+      key.style.cssText = "width:" + whiteWidth + "px;height:" + keyHeight + "px;border:1px solid #777;box-sizing:border-box;background:#fff;color:#111;display:flex;align-items:flex-end;justify-content:center;padding-bottom:" + Math.min(8, Math.max(2, keyHeight * 0.08)) + "px;font:12px sans-serif;flex:0 0 " + whiteWidth + "px;";
       key.addEventListener("pointerdown", () => pressMidi(midi));
       whiteRow.appendChild(key);
     });
@@ -93,7 +104,7 @@ export async function setupPanel(panel, instanceVars = {}) {
       if (!previousWhite) continue;
       const black = button(noteName(midi));
       black.dataset.midi = String(midi);
-      black.style.cssText = `position:absolute;left:${previousWhite * whiteWidth - blackWidth / 2}px;top:8px;width:${blackWidth}px;height:${blackHeight}px;border:1px solid #111;box-sizing:border-box;background:#111;color:#fff;z-index:2;font:10px sans-serif;padding-top:${Math.max(32, blackHeight - 28)}px;`;
+      black.style.cssText = "position:absolute;left:" + (previousWhite * whiteWidth - blackWidth / 2) + "px;top:8px;width:" + blackWidth + "px;height:" + blackHeight + "px;border:1px solid #111;box-sizing:border-box;background:#111;color:#fff;z-index:2;font:10px sans-serif;display:flex;align-items:flex-end;justify-content:center;padding-bottom:" + Math.min(6, Math.max(1, blackHeight * 0.08)) + "px;";
       black.addEventListener("pointerdown", () => pressMidi(midi));
       keyboard.appendChild(black);
     }
@@ -112,11 +123,11 @@ export async function setupPanel(panel, instanceVars = {}) {
 
   octaveDown.addEventListener("click", () => {
     state.baseMidi = Math.max(24, state.baseMidi - 12);
-    render();
+    scheduleRender();
   });
   octaveUp.addEventListener("click", () => {
     state.baseMidi = Math.min(84, state.baseMidi + 12);
-    render();
+    scheduleRender();
   });
 
   const keydown = (event) => {
@@ -127,15 +138,8 @@ export async function setupPanel(panel, instanceVars = {}) {
     pressMidi(state.baseMidi + (offset - 60));
   };
   document.addEventListener("keydown", keydown);
-  const resizeObserver = typeof ResizeObserver === "function"
-    ? new ResizeObserver(() => {
-      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
-      resizeFrame = requestAnimationFrame(() => {
-        resizeFrame = null;
-        render();
-      });
-    })
-    : null;
+  const resizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleRender) : null;
+  resizeObserver?.observe(panel);
   resizeObserver?.observe(keyboard);
 
   panel.cleanup = () => {
@@ -144,7 +148,7 @@ export async function setupPanel(panel, instanceVars = {}) {
     if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
   };
 
-  render();
+  scheduleRender();
 }
 
 function calculateWhiteKeyWidth(keyboard, whiteKeyCount) {
@@ -160,7 +164,7 @@ function calculateKeyHeight(keyboard) {
   const styles = window.getComputedStyle?.(keyboard);
   const padding = (Number.parseFloat(styles?.paddingTop) || 0) + (Number.parseFloat(styles?.paddingBottom) || 0);
   const available = Math.max(0, (keyboard.clientHeight || 0) - padding);
-  return Math.max(MIN_KEY_HEIGHT_PX, available || MIN_KEY_HEIGHT_PX) - KEYBOARD_VERTICAL_PADDING_PX;
+  return available > 0 ? available : FALLBACK_KEY_HEIGHT_PX;
 }
 
 function button(label) {

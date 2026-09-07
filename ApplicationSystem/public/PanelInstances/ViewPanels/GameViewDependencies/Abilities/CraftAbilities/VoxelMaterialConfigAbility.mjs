@@ -46,7 +46,8 @@ export function installVoxelMaterialConfigAbility(ctx) {
       matterState: typeof existing.matterState === "string" ? existing.matterState : "",
       color: normalizeVoxelColor(existing.color),
       opacity: normalizeVoxelOpacity(existing.opacity),
-      collider: existing.collider !== false
+      collider: existing.collider !== false,
+      faceCenterSnap: existing.faceCenterSnap === true
     };
     movementState.voxelPlacerConfig = config;
     return config;

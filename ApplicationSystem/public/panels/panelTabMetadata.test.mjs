@@ -39,6 +39,29 @@ assert.notEqual(codeTab.identityKey, fileTab.identityKey);
 const globalFileTab = buildPanelTabMetadata({ panelType: "FileView" });
 assert.equal(globalFileTab.resourcePath, "global.md");
 
+window.NodevisionState = {
+  selectedFile: "Notebook/projects/other/index.html",
+  activeFileViewPath: "Notebook/index.html",
+};
+window.currentActiveFilePath = "Notebook/index.html";
+window.selectedFilePath = "Notebook/projects/other/index.html";
+window.activePanel = "FileManager";
+window.activePanelClass = "InfoPanel";
+const selectedCodeTab = buildPanelTabMetadata({ panelType: "CodeEditor", panelClass: "EditorPanel" });
+assert.equal(selectedCodeTab.resourcePath, "projects/other/index.html");
+assert.equal(selectedCodeTab.fullDisplayName, "Code Editor: projects/other/index.html");
+
+window.NodevisionState = {
+  selectedFile: "Notebook/projects/other/index.html",
+  activeEditorFilePath: "Notebook/current.js",
+};
+window.__nvCodeEditorActivePath = "Notebook/current.js";
+window.currentActiveFilePath = "Notebook/projects/other/index.html";
+window.activePanel = "CodeEditor";
+window.activePanelClass = "EditorPanel";
+const activeCodeTab = buildPanelTabMetadata({ panelType: "CodeEditor", panelClass: "EditorPanel" });
+assert.equal(activeCodeTab.resourcePath, "current.js");
+
 const fileManagerTab = buildPanelTabMetadata({ panelType: "FileManager" });
 assert.equal(fileManagerTab.displayName, "File Manager");
 assert.equal(fileManagerTab.resourcePath, "");

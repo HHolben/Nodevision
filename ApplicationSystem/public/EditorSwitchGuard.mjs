@@ -231,6 +231,11 @@ export function requestNodevisionFileSelection(filePath, options = {}) {
   if (!nextPath) return;
   const selectedIsDirectory = Boolean(options.isDirectory);
   guardFileSwitch(nextPath, () => {
+    try {
+      options.beforeSelected?.(nextPath);
+    } catch (err) {
+      console.warn("[FileSelection] beforeSelected hook failed:", err);
+    }
     window.__nvFileSwitchGuardBypass = true;
     window.__nvPendingSelectedFileMetadata = { path: nextPath, isDirectory: selectedIsDirectory };
     try {

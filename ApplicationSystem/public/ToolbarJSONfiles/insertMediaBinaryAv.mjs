@@ -4,6 +4,7 @@ import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, nor
 import { fetchUrlAsDataUrl, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
 import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
 import { normalizeFallbackReferencesForSource, serializeFallbackAttributes } from "../utils/referenceFallbacks.mjs";
+import { createResourceReference, RESOURCE_SOURCE_KINDS } from "/Resources/ResourceReference.mjs";
 import { ensureEditableMetaWorldBridge, readCameraPlacement } from "./worldShapeWidget.mjs";
 
 function pickDefaultExt(exts, preferred) {
@@ -30,9 +31,27 @@ function soundObjectLabel(value, fallback = "Sound Object") {
   return raw.replace(/\.[a-z0-9]+$/i, "").trim() || fallback;
 }
 
-async function insertWorldSoundObject({ src = "", linked = "", label = "", inline = false } = {}) {
+function resourceFromAv({ kind = "Media", src = "", linked = "", label = "", fallbacks = [], sourcePath = "" } = {}) {
   const source = String(src || "").trim();
-  const linkedPath = String(linked || "").trim();
+  const linkedPath = normalizeNotebookPath(linked);
+  const inline = source.startsWith("data:");
+  return createResourceReference({
+    resourceType: String(kind || "media").toLowerCase() === "sound" ? "audio" : "video",
+    sourceKind: inline ? RESOURCE_SOURCE_KINDS.INLINE : (linkedPath ? RESOURCE_SOURCE_KINDS.NOTEBOOK : (looksLikeUrlOrAbsPath(source) ? RESOURCE_SOURCE_KINDS.URL : RESOURCE_SOURCE_KINDS.UNKNOWN)),
+    sourcePath,
+    sourceName: label,
+    src: source,
+    notebookPath: linkedPath,
+    inlineDataUrl: inline ? source : "",
+    fallbacks,
+    metadata: { title: label || linkedPath || source, license: "unknown" },
+  });
+}
+
+async function insertWorldSoundObject({ src = "", linked = "", label = "", inline = false, resource = null } = {}) {
+  const ref = resource || null;
+  const source = String(ref?.src || src || "").trim();
+  const linkedPath = String(ref?.notebookPath || linked || "").trim();
   if (!source && !linkedPath) throw new Error("Missing sound source.");
   const name = soundObjectLabel(label || linkedPath || source, "Sound Object");
   const def = {
@@ -390,14 +409,16 @@ export function renderBinaryAv(root, cfg) {
         sourcePath: editorPath,
         primary: src
       });
+      const label = linked || existingSourceEl.value || newFile.name || existingFile.name || newNameEl.value || sourceMode + " " + kind.toLowerCase();
+      const resource = resourceFromAv({ kind, src, linked, label, fallbacks, sourcePath: editorPath });
 
       if (target === "virtualWorld" && isSound) {
-        const label = linked || existingSourceEl.value || newFile.name || existingFile.name || newNameEl.value || sourceMode + " sound";
         await insertWorldSoundObject({
-          src,
-          linked,
-          label,
-          inline: storageMode === "inline"
+          src: resource.src,
+          linked: resource.notebookPath,
+          label: resource.metadata?.title || label,
+          inline: storageMode === "inline",
+          resource
         });
         try {
           if (linked) {
@@ -414,10 +435,11 @@ export function renderBinaryAv(root, cfg) {
         return;
       }
 
-      const linkedAttr = linked ? " data-nv-linked-path=\"" + escapeHtml(linked) + "\"" : "";
+      const mediaSrc = resource.src || src;
+      const linkedAttr = resource.notebookPath ? " data-nv-linked-path=\"" + escapeHtml(resource.notebookPath) + "\"" : "";
       const styleAttr = elementStyle ? " style=\"" + escapeHtml(elementStyle) + "\"" : "";
-      const fallbackAttrs = serializeFallbackAttributes(fallbacks, { primary: src });
-      insertHtmlAtCaret("<" + tag + " controls" + styleAttr + " src=\"" + escapeHtml(src) + "\"" + linkedAttr + fallbackAttrs + "></" + tag + ">");
+      const fallbackAttrs = serializeFallbackAttributes(resource.fallbacks || fallbacks, { primary: mediaSrc });
+      insertHtmlAtCaret("<" + tag + " controls" + styleAttr + " src=\"" + escapeHtml(mediaSrc) + "\"" + linkedAttr + fallbackAttrs + "></" + tag + ">");
       try {
         // Update managers so the new media shows up immediately.
         if (linked) {

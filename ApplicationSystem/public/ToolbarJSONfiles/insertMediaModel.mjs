@@ -6,7 +6,16 @@ import { fetchUrlAsDataUrl, fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourc
 import { insertUSDScenePanelAtCaret } from "./insertUSDScenePanel.mjs";
 import { setStatus } from "/StatusBar.mjs";
 import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import { getInsertMediaOriginContext, openInsertMediaPanel } from "./insertMediaPanel.mjs";
+import {
+  attachInsertMediaBrowseWebHandler,
+  captureNamedInsertMediaState,
+  populateExistingSourceFromResource,
+  restoreNamedInsertMediaState,
+  setRadioValue,
+} from "./insertMediaExternalSource.mjs";
 import { normalizeFallbackReferencesForSource, serializeFallbackAttributes } from "../utils/referenceFallbacks.mjs";
+import { createResourceReference, RESOURCE_SOURCE_KINDS } from "/Resources/ResourceReference.mjs";
 import { ensureEditableMetaWorldBridge, readCameraPlacement } from "./worldShapeWidget.mjs";
 
 function ensureExt(fileName, ext) {
@@ -266,13 +275,33 @@ function notebookPathFromModelSource(source) {
   return /^notebook(?:\/|$)/i.test(raw) ? normalizeNotebookPath(raw) : "";
 }
 
-function buildLinkedModelViewerHtml({ src, label, linkedPath = "", ext = "", fallbacks = [] } = {}) {
-  const source = String(src || "").trim();
-  const modelExt = modelExtensionFromSource(source, ext);
-  const displayLabel = String(label || source.split("/").pop() || "3D model").trim() || "3D model";
+function resourceFromModel({ src = "", label = "", linkedPath = "", objectDataUrl = "", objectText = "", ext = "", fallbacks = [], sourcePath = "" } = {}) {
+  const source = String(src || linkedPath || objectDataUrl || "").trim();
+  const linked = normalizeNotebookPath(linkedPath);
+  const inline = Boolean(objectDataUrl || objectText || source.startsWith("data:"));
+  return createResourceReference({
+    resourceType: "model",
+    sourceKind: inline ? RESOURCE_SOURCE_KINDS.INLINE : (linked ? RESOURCE_SOURCE_KINDS.NOTEBOOK : (looksLikeUrlOrAbsPath(source) ? RESOURCE_SOURCE_KINDS.URL : RESOURCE_SOURCE_KINDS.UNKNOWN)),
+    sourcePath,
+    sourceName: label,
+    src: source,
+    notebookPath: linked,
+    inlineDataUrl: objectDataUrl || (source.startsWith("data:") ? source : ""),
+    inlineText: objectText,
+    fallbacks,
+    metadata: { title: label || linked || source, license: "unknown", extension: ext },
+  });
+}
+
+function buildLinkedModelViewerHtml({ src, label, linkedPath = "", ext = "", fallbacks = [], resource = null } = {}) {
+  const ref = resource || null;
+  const source = String(ref?.src || src || "").trim();
+  const modelExt = modelExtensionFromSource(source, ext || ref?.metadata?.extension || "");
+  const displayLabel = String(label || ref?.metadata?.title || source.split("/").pop() || "3D model").trim() || "3D model";
   const id = "nv-model-panel-" + Date.now().toString(36) + "-" + Math.floor(Math.random() * 10000).toString(36);
-  const linkedAttr = linkedPath ? ` data-nv-linked-path="${escapeHtml(linkedPath)}"` : "";
-  const fallbackAttrs = serializeFallbackAttributes(fallbacks, { primary: source });
+  const linked = ref?.notebookPath || linkedPath || "";
+  const linkedAttr = linked ? " data-nv-linked-path=\"" + escapeHtml(linked) + "\"" : "";
+  const fallbackAttrs = serializeFallbackAttributes(ref?.fallbacks || fallbacks, { primary: source });
   const title = MODEL_VIEWER_SUPPORTED_EXTENSIONS.has(modelExt)
     ? displayLabel
     : `${displayLabel} (${modelExt || "unknown"})`;
@@ -324,8 +353,12 @@ function shouldStoreWorldModelAsText(ext, text = "") {
 }
 
 async function insertWorldModelObject(model = {}) {
-  const label = worldModelLabel(model.label || model.objectFile || model.objectFileName, "3D model");
-  const ext = assertVirtualWorldModelExtension(model.objectFile || label, model.ext || "");
+  const ref = model.resource || null;
+  const refPath = ref?.notebookPath || model.objectFile || "";
+  const refDataUrl = ref?.inlineDataUrl || model.objectDataUrl || "";
+  const refText = typeof ref?.inlineText === "string" ? ref.inlineText : (typeof model.objectText === "string" ? model.objectText : "");
+  const label = worldModelLabel(model.label || ref?.metadata?.title || refPath || model.objectFileName, "3D model");
+  const ext = assertVirtualWorldModelExtension(refPath || label, model.ext || ref?.metadata?.extension || "");
   const bindCollider = model.bindCollider !== false;
   const def = {
     id: makeWorldModelId(label),
@@ -335,7 +368,7 @@ async function insertWorldModelObject(model = {}) {
     position: readCameraPlacement(),
     size: [1, 1, 1],
     color: "#8aa0b8",
-    objectFile: String(model.objectFile || ""),
+    objectFile: String(refPath || ""),
     objectFormat: ext,
     objectFileName: label,
     collider: bindCollider,
@@ -344,8 +377,8 @@ async function insertWorldModelObject(model = {}) {
     isSolid: bindCollider,
     breakable: true
   };
-  if (typeof model.objectDataUrl === "string" && model.objectDataUrl) def.objectDataUrl = model.objectDataUrl;
-  if (typeof model.objectText === "string" && model.objectText) def.objectText = model.objectText;
+  if (refDataUrl) def.objectDataUrl = refDataUrl;
+  if (refText) def.objectText = refText;
   if (!def.objectFile && !def.objectDataUrl && !def.objectText) throw new Error("Missing 3D model content.");
 
   const bridge = await ensureEditableMetaWorldBridge();
@@ -358,6 +391,9 @@ async function insertWorldModelObject(model = {}) {
 
 export function renderInsertModel(root, exts = [], renderOptions = {}) {
   const target = renderOptions?.target === "virtualWorld" ? "virtualWorld" : "html";
+  const initialState = renderOptions?.initialState || null;
+  const initialResource = renderOptions?.initialResource || null;
+  const originContext = renderOptions?.originContext || getInsertMediaOriginContext(root) || null;
   const inWorld = target === "virtualWorld";
   let extensions = Array.from(new Set(exts)).map((e) => String(e).toLowerCase()).filter(Boolean).sort((a, b) => a.localeCompare(b));
   if (inWorld) {
@@ -373,7 +409,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
   const storageHint = inWorld ? "Linked stores a model file reference; internally defined stores the model payload in the world." : "Inline inserts a text preview; Referenced inserts a small linked 3D panel.";
   const colliderHtml = inWorld ? `<fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>World Collider</legend><label style="display:block;"><input type="checkbox" data-field="worldCollider" checked> Bind geometry collider</label></fieldset>` : "";
 
-  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:660px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(sourceLegend)}</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> ${escapeHtml(newSourceLabel)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> ${escapeHtml(existingSourceLabel)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> ${escapeHtml(referencedLabel)}</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> ${escapeHtml(inlineLabel)}</label></fieldset>${colliderHtml}<div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Model Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${options.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>New Model File Name<input data-field="fileName" type="text" placeholder="model.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="font-size:11px;color:#666;line-height:1.3;">${escapeHtml(storageHint)}</div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="models/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div data-field="fallbackHost"></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
+  root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:660px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(sourceLegend)}</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> ${escapeHtml(newSourceLabel)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> ${escapeHtml(existingSourceLabel)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> ${escapeHtml(referencedLabel)}</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> ${escapeHtml(inlineLabel)}</label></fieldset>${colliderHtml}<div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Model Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${options.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>New Model File Name<input data-field="fileName" type="text" placeholder="model.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="font-size:11px;color:#666;line-height:1.3;">${escapeHtml(storageHint)}</div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="models/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button><button type="button" data-action="browse-web-resource" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Browse Web...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div data-field="fallbackHost"></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
   const sourceEls = () => Array.from(root.querySelectorAll('input[name="nv-source"]'));
@@ -387,6 +423,16 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
   const fallbackList = attachFallbackReferenceList({
     container: root.querySelector("[data-field=\"fallbackHost\"]"),
     primaryInput: existingSourceEl
+  });
+  const stateConfig = () => ({
+    radios: { sourceMode: "nv-source", storageMode: "nv-storage" },
+    fields: {
+      format: '[data-field="format"]',
+      fileName: '[data-field="fileName"]',
+      existingSource: '[data-field="existingSource"]',
+      worldCollider: '[data-field="worldCollider"]',
+    },
+    fallbackList,
   });
   const existingFileStatus = root.querySelector('[data-field="existingFileStatus"]');
   const statusEl = root.querySelector('[data-field="status"]');
@@ -417,8 +463,44 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
     existingFileStatus.textContent = existingLocal.dataUrl ? `Selected: ${existingLocal.name}` : "No local file selected.";
   };
   updateExistingLabel();
+  if (initialState) restoreNamedInsertMediaState(root, initialState, stateConfig());
+  if (initialResource) {
+    setRadioValue(root, "nv-source", "existing");
+    populateExistingSourceFromResource(root, initialResource, {
+      sourceSelector: '[data-field="existingSource"]',
+      fallbackList,
+    });
+    existingLocal = { dataUrl: "", text: "", name: "" };
+    delete existingSourceEl.dataset.localFile;
+    updateExistingLabel();
+    sync();
+  }
 
   root.querySelector('[data-action="choose-existing"]').addEventListener("click", () => hiddenExisting.click());
+  attachInsertMediaBrowseWebHandler(root.querySelector('[data-action="browse-web-resource"]'), () => {
+    const insertMediaState = captureNamedInsertMediaState(root, stateConfig());
+    return {
+      root,
+      resourceType: "model",
+      mediaFamily: "Model",
+      sourceMode: "existing",
+      originContext,
+      originEditorPath: originContext?.originEditorPath || getActiveEditorNotebookPath(),
+      targetMode: originContext?.targetMode || window.NodevisionState?.currentMode || "",
+      insertMediaState,
+      onStatus: (message) => setStatus(message),
+      reopenInsertMedia: async ({ invocation, resource }) => {
+        const returnOriginContext = invocation.insertMediaOriginContext || originContext;
+        const panel = await openInsertMediaPanel("Insert Model", "Model", { originContext: returnOriginContext });
+        renderInsertModel(panel.mount, exts, {
+          ...renderOptions,
+          initialState: invocation.insertMediaState,
+          initialResource: resource,
+          originContext: panel.originContext || returnOriginContext,
+        });
+      },
+    };
+  }, { setStatus });
   hiddenExisting.addEventListener("change", async () => {
     const file = hiddenExisting.files?.[0];
     hiddenExisting.value = "";
@@ -515,7 +597,16 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
           }
         }
 
-        await insertWorldModelObject({ ...worldModel, bindCollider });
+        const resource = resourceFromModel({
+          src: worldModel.objectFile || worldModel.objectDataUrl || "",
+          label: worldModel.label,
+          linkedPath: worldModel.objectFile || "",
+          objectDataUrl: worldModel.objectDataUrl || "",
+          objectText: worldModel.objectText || "",
+          ext: worldModel.ext || "",
+          sourcePath: editorPath,
+        });
+        await insertWorldModelObject({ ...worldModel, bindCollider, resource });
         setStatus("Inserted.");
         return;
       }
@@ -578,6 +669,14 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
         modelViewer.fallbacks = normalizeFallbackReferencesForSource(fallbackList.getFallbacks(), {
           sourcePath: editorPath,
           primary: modelViewer.src
+        });
+        modelViewer.resource = resourceFromModel({
+          src: modelViewer.src,
+          label: modelViewer.label,
+          linkedPath: modelViewer.linkedPath || "",
+          ext: modelViewer.ext || "",
+          fallbacks: modelViewer.fallbacks,
+          sourcePath: editorPath,
         });
         const sceneExt = modelExtensionFromSource(modelViewer.src || modelViewer.label || "", modelViewer.ext || "");
         if (USD_SCENE_EXTENSIONS.has(sceneExt)) insertUSDScenePanelAtCaret(modelViewer);

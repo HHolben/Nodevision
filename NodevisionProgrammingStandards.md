@@ -31,6 +31,8 @@ The following are the principles of Nodevision's design.
 10. Files as Worlds
 11. Customizable Workspaces
 12. Flexibile and Layered Content Dependency System
+13. 
+14. 
 
 #### Principle 1. Free and Open Source
 Nodevision is available for free under the MIT License. This software is to be used at the user's own risk. No formal agreement or obligation is to exist between the users and developers of this project. Each Nodevision user ought to be considered the full and rightful owner of his or her copy of Nodevision, free to modify, distribute, delete, or sell this copy. As such, the codebase must only include or utilize free and open-source dependencies that grant the same level of autonomy in their usage as Nodevision itself. No portion of Nodevision's native source code is to be obfuscated. The architecture and entire codebase of the system are to be transparent.
@@ -60,7 +62,7 @@ One close exception to this rule is the Nodevision Virtual World Feature, which 
 #### Principle 8. Linux-First Development
 While releases on other operating systems are planned, Nodevision is to be designed for and tested on Linux first. Any feature of Nodevision that does not work on Linux does not deserve to work anywhere else.
 
-#### Principle 9. Files as Nodes, Links as Edges
+#### Principle 9. Files Represented as Nodes, Links Represented as Edges
 Nodevision contains an alternative to its built-in file manager called the Graph Manager. This panel creates a graph of the files and folders within the Nodevision/Notebook directory. In this model, individual files are conceptualized as nodes, links such as hyperlinks or source (src)links, or other references such as get and post requests are diagrammed as edges between the nodes in the graph. Directories are conceptualized as compound nodes: parent nodes that may be expanded to show their child nodes or collapsed to simplify the graph for the viewer. When collapsed, directories are used within the graph as the source of the links from and the destination of links its child nodes. When expanded, directories are the sources and destinations of zero links.
 
 Two kinds of nodes are known: internal and external. In this context, an external node is a file that exiss outside of the Nodevision/Notebook directory. It can include files on the public internet. Technically, a third kind of node, called a "Placeholder Node" is used to render broken edges- that is edges that link to files within the Notebook folder that do not exist.
@@ -68,6 +70,8 @@ Two kinds of nodes are known: internal and external. In this context, an externa
 The graph manager allows for the instant rendering of concept maps or mind maps generated from the structure of the user's Notebook. The creation of a mind map using this feature can set up a more detailed Notebook or vice-versa.
 
 This graph manager also allows users to more easily conceptualize and understand their projects as graphs- allowing for quick visual checks that all needed file links are present, or quick references to file dependencies. It also allows users to prototype quickly. A software application that is drawn with the app's graph as a finite state machine, for example, will necesarily set up the files and strucctures described in that finite state machine.
+
+While the graph is to be cached by nodevision, all information pertaining to the graph is to be generated from the structure and contents of the user's Notebook. Nodevision. The notebook is the single source of truth for the graph.
 
 The default view of the graph manager is the expanded root Notebook directory with all of its child directories collapsed.
 

@@ -52,6 +52,42 @@ function makeEmptyPlaceholder(cell) {
   cell.appendChild(placeholder);
 }
 
+function legacyContentChildren(cell) {
+  return Array.from(cell?.children || []).filter((child) => !isSystemChild(child));
+}
+
+function adoptLegacyContentAsTab(state, legacyChildren = []) {
+  if (!state || !legacyChildren.length) return null;
+  const cell = state.cell;
+  const panelType = cell.dataset.id || cell.dataset.panelId || "Panel";
+  const panelClass = cell.dataset.panelClass || "InfoPanel";
+  const filePath = cell.dataset.currentFilePath || "";
+  const tab = {
+    ...buildPanelTabMetadata({
+      panelType,
+      panelClass,
+      panelVars: { filePath },
+      tabId: nextTabId(),
+    }),
+    panelVars: { filePath },
+  };
+  tab.contentElement = createContentElement(tab);
+  const cleanups = [cell.cleanup, ...legacyChildren.map((child) => child.cleanup)].filter((fn, index, arr) =>
+    typeof fn === "function" && arr.indexOf(fn) === index
+  );
+  if (cleanups.length) {
+    tab.cleanup = () => cleanups.forEach((cleanup) => {
+      try { cleanup(); } catch (err) { console.warn("Legacy panel tab cleanup failed:", err); }
+    });
+    cell.cleanup = null;
+  }
+  legacyChildren.forEach((child) => tab.contentElement.appendChild(child));
+  state.tabs.push(tab);
+  state.stack.appendChild(tab.contentElement);
+  state.activeTabId = tab.tabId;
+  return tab;
+}
+
 function applyOrientation(state) {
   state.orientation = normalizeTabOrientation(state.orientation);
   state.cell.dataset.nvTabOrientation = state.orientation;
@@ -69,6 +105,7 @@ export function ensurePanelTabs(cell, options = {}) {
     return state;
   }
 
+  const legacyChildren = legacyContentChildren(cell);
   removeEmptyPlaceholders(cell);
   const shell = document.createElement("div");
   shell.className = "nv-panel-tab-shell";
@@ -91,6 +128,7 @@ export function ensurePanelTabs(cell, options = {}) {
   };
   cell.__nvPanelTabs = state;
   applyOrientation(state);
+  adoptLegacyContentAsTab(state, legacyChildren);
   return state;
 }
 
@@ -335,8 +373,7 @@ function tabDropTargetFromEvent(event) {
     .map((el) => el.closest?.(".panel-cell"))
     .find(Boolean);
   if (!cell) return null;
-  const state = ensurePanelTabs(cell);
-  return state ? { cell, tabList: state.tabList } : null;
+  return { cell, tabList: cell.__nvPanelTabs?.tabList || null };
 }
 
 function dropIndexForState(state, tabList, event) {
@@ -350,52 +387,90 @@ function updateDragHover(event) {
   const target = tabDropTargetFromEvent(event);
   if (!target?.cell) return clearDragHover();
   const { cell, tabList } = target;
-  const state = ensurePanelTabs(cell);
-  const index = dropIndexForState(state, tabList, event);
+  const state = cell.__nvPanelTabs || null;
   if (activeDropCell && activeDropCell !== cell) clearDragHover();
   activeDropCell = cell;
+  if (!state) {
+    cell.classList?.add("nv-panel-tab-cell--drop-target");
+    return;
+  }
+  const index = dropIndexForState(state, tabList, event);
   state.dropIndex = index;
   state.tabList.classList.add("nv-panel-tab-list--drop-target");
   renderPanelTabs(cell);
 }
 
 function clearDragHover() {
-  if (!activeDropCell?.__nvPanelTabs) return;
-  const state = activeDropCell.__nvPanelTabs;
-  state.dropIndex = -1;
-  state.tabList.classList.remove("nv-panel-tab-list--drop-target");
-  state.shell.classList.remove("nv-panel-tab-shell--drop-target");
-  renderPanelTabs(activeDropCell);
+  if (!activeDropCell) return;
+  const cell = activeDropCell;
+  const state = cell.__nvPanelTabs || null;
+  cell.classList?.remove("nv-panel-tab-cell--drop-target");
+  if (state) {
+    state.dropIndex = -1;
+    state.tabList.classList.remove("nv-panel-tab-list--drop-target");
+    state.shell.classList.remove("nv-panel-tab-shell--drop-target");
+    renderPanelTabs(cell);
+  }
   activeDropCell = null;
 }
 
 function finishDrag(drag, event) {
   if (!activeDropCell && event) updateDragHover(event);
   const targetCell = activeDropCell;
-  const targetState = targetCell?.__nvPanelTabs;
-  if (!drag?.sourceCell || !targetCell || !targetState) return;
+  if (!drag?.sourceCell || !targetCell) return;
+  const targetState = targetCell.__nvPanelTabs || ensurePanelTabs(targetCell);
+  if (!targetState) return;
   movePanelTab(drag.sourceCell, drag.tabId, targetCell, targetState.dropIndex);
+}
+
+function notifyPanelTabMoved(tab, sourceCell, targetCell) {
+  const detail = { tab, sourceCell, targetCell, panelType: tab?.panelType || "" };
+  tab?.contentElement?.dispatchEvent?.(new CustomEvent("nv-panel-tab-moved", { bubbles: true, detail }));
+  window.dispatchEvent(new CustomEvent("nv-panel-tab-moved", { detail }));
+  tab?.contentElement?.dispatchEvent?.(new CustomEvent("nv-panel-content-bounds-changed", { bubbles: true, detail }));
+  window.dispatchEvent(new CustomEvent("nv-panel-content-bounds-changed", { detail }));
+  window.dispatchEvent(new Event("resize"));
 }
 
 export function movePanelTab(sourceCell, tabId, targetCell, rawIndex = -1) {
   const sourceState = sourceCell?.__nvPanelTabs;
-  const targetState = ensurePanelTabs(targetCell);
   const tab = tabById(sourceState, tabId);
-  if (!tab || !targetState) return null;
+  if (!tab) return null;
+
   const sourceIndex = sourceState.tabs.indexOf(tab);
+  if (sourceIndex < 0) return null;
+
+  const targetState = ensurePanelTabs(targetCell);
+  if (!targetState?.stack) return null;
+
   let index = rawIndex < 0 ? targetState.tabs.length : rawIndex;
-  sourceState.tabs.splice(sourceIndex, 1);
-  if (sourceState !== targetState && sourceState.activeTabId === tab.tabId) {
-    const nextSourceTab = sourceState.tabs[Math.max(0, sourceIndex - 1)] || sourceState.tabs[sourceIndex] || null;
-    sourceState.activeTabId = nextSourceTab?.tabId || null;
+  if (sourceState === targetState) {
+    sourceState.tabs.splice(sourceIndex, 1);
+    if (sourceIndex < index) index -= 1;
+    index = Math.max(0, Math.min(index, sourceState.tabs.length));
+    sourceState.tabs.splice(index, 0, tab);
+    renderPanelTabs(sourceCell);
+    const activated = activatePanelTab(sourceCell, tab.tabId, { announce: false });
+    notifyPanelTabMoved(tab, sourceCell, sourceCell);
+    return activated;
   }
-  if (sourceState === targetState && sourceIndex < index) index -= 1;
+
   index = Math.max(0, Math.min(index, targetState.tabs.length));
   targetState.tabs.splice(index, 0, tab);
   targetState.stack.appendChild(tab.contentElement);
-  if (!sourceState.tabs.length && sourceState !== targetState) emptyPanelTabs(sourceCell);
+
+  sourceState.tabs.splice(sourceIndex, 1);
+  if (sourceState.activeTabId === tab.tabId) {
+    const nextSourceTab = sourceState.tabs[Math.max(0, sourceIndex - 1)] || sourceState.tabs[sourceIndex] || null;
+    sourceState.activeTabId = nextSourceTab?.tabId || null;
+  }
+
+  if (!sourceState.tabs.length) emptyPanelTabs(sourceCell);
   else renderPanelTabs(sourceCell);
-  return activatePanelTab(targetCell, tab.tabId, { announce: false });
+
+  const activated = activatePanelTab(targetCell, tab.tabId, { announce: false });
+  notifyPanelTabMoved(tab, sourceCell, targetCell);
+  return activated;
 }
 
 export function panelTabContentIsActive(node) {

@@ -4,7 +4,7 @@
 import { browseResourceDirectories, loadResourceRegistry, saveResourceSources } from "/ResourcePaths/ResourcePathsClient.mjs";
 
 const STYLE_ID = "nv-resource-paths-style";
-const TYPE_ORDER = ["font", "dictionary", "faa.sectional", "material", "electronics.component"];
+const TYPE_ORDER = ["image", "audio", "video", "model", "font", "dictionary", "faa.sectional", "material", "electronics.component"];
 
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;

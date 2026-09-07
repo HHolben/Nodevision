@@ -18,10 +18,19 @@ import {
   saveNotebookBinaryFromDataUrl,
 } from "./insertMediaIO.mjs";
 import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
+import { getInsertMediaOriginContext, openInsertMediaPanel } from "./insertMediaPanel.mjs";
+import {
+  attachInsertMediaBrowseWebHandler,
+  captureNamedInsertMediaState,
+  populateExistingSourceFromResource,
+  restoreNamedInsertMediaState,
+  setRadioValue,
+} from "./insertMediaExternalSource.mjs";
 import {
   normalizeFallbackReferencesForSource,
   serializeFallbackAttributes
 } from "../utils/referenceFallbacks.mjs";
+import { createResourceReference, RESOURCE_SOURCE_KINDS } from "/Resources/ResourceReference.mjs";
 
 const IMAGE_EXTS = ["png", "svg", "jpg", "jpeg", "gif", "webp", "bmp"];
 
@@ -87,7 +96,24 @@ function refreshLinkedManagers(linkedPath = "") {
   }
 }
 
-function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
+function resourceFromInsertion({ src = "", linkedNotebookPath = "", sourceName = "", fallbacks = [], editorPath = "" } = {}) {
+  const source = String(src || "").trim();
+  const linked = normalizeNotebookPath(linkedNotebookPath);
+  const inline = source.startsWith("data:");
+  return createResourceReference({
+    resourceType: "image",
+    sourceKind: inline ? RESOURCE_SOURCE_KINDS.INLINE : (linked ? RESOURCE_SOURCE_KINDS.NOTEBOOK : (looksLikeUrlOrAbsPath(source) ? RESOURCE_SOURCE_KINDS.URL : RESOURCE_SOURCE_KINDS.UNKNOWN)),
+    sourcePath: editorPath,
+    sourceName,
+    src: source,
+    notebookPath: linked,
+    inlineDataUrl: inline ? source : "",
+    fallbacks,
+    metadata: { title: sourceName || linked || source, license: "unknown" },
+  });
+}
+
+function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialState = null, initialResource = null, originContext = null } = {}) {
   const extensions = Array.from(new Set([...(exts || []), ...IMAGE_EXTS]))
     .map((e) => String(e).toLowerCase())
     .filter(Boolean);
@@ -119,6 +145,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
       <div style="display:flex;gap:8px;align-items:flex-end;">
         <label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="images/example.png or https://..." style="display:block;width:100%;margin-top:4px;" /></label>
         <button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button>
+        <button type="button" data-action="browse-web-resource" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Browse Web...</button>
       </div>
       <div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div>
     </div>
@@ -143,6 +170,17 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
     container: root.querySelector("[data-field=\"fallbackHost\"]"),
     primaryInput: existingSourceEl
   });
+  const stateConfig = () => ({
+    radios: { sourceMode: "nv-image-source", storageMode: "nv-image-storage" },
+    fields: {
+      format: '[data-field="format"]',
+      newName: '[data-field="newName"]',
+      width: '[data-field="width"]',
+      height: '[data-field="height"]',
+      existingSource: '[data-field="existingSource"]',
+    },
+    fallbackList,
+  });
   const hiddenExisting = document.createElement("input");
   hiddenExisting.type = "file";
   hiddenExisting.accept = "image/*";
@@ -153,6 +191,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
   let existingFilePending = null;
   const setStatus = (message) => { statusEl.textContent = String(message || ""); };
   const editorPath = () => getActiveEditorNotebookPath();
+  const formOriginContext = originContext || getInsertMediaOriginContext(root) || null;
   const sourceForNotebook = (path) => svgMode ? notebookHrefFromPath(path) : notebookSourceFromPath(path, editorPath());
 
   const updateExistingStatus = () => {
@@ -196,8 +235,46 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
   newNameEl.addEventListener("input", updateHint);
   syncDefaultName();
   updateExistingStatus();
+  if (initialState) restoreNamedInsertMediaState(root, initialState, stateConfig());
+  if (initialResource) {
+    setRadioValue(root, "nv-image-source", "existing");
+    populateExistingSourceFromResource(root, initialResource, {
+      sourceSelector: '[data-field="existingSource"]',
+      fallbackList,
+    });
+    existingFile = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
+    delete existingSourceEl.dataset.localFile;
+    existingFilePending = null;
+    updateExistingStatus();
+    updateHint();
+  }
 
   root.querySelector('[data-action="choose-existing"]').addEventListener("click", () => hiddenExisting.click());
+  attachInsertMediaBrowseWebHandler(root.querySelector('[data-action="browse-web-resource"]'), () => {
+    const insertMediaState = captureNamedInsertMediaState(root, stateConfig());
+    return {
+      root,
+      resourceType: "image",
+      mediaFamily: "Image",
+      sourceMode: "existing",
+      originContext: formOriginContext,
+      originEditorPath: formOriginContext?.originEditorPath || editorPath(),
+      targetMode: formOriginContext?.targetMode || window.NodevisionState?.currentMode || "",
+      insertMediaState,
+      onStatus: (message) => setStatus(message),
+      reopenInsertMedia: async ({ invocation, resource }) => {
+        const returnOriginContext = invocation.insertMediaOriginContext || formOriginContext;
+        const panel = await openInsertMediaPanel("Insert Image", "Image", { originContext: returnOriginContext });
+        renderImageForm(panel.mount, onInsert, {
+          svgMode,
+          exts,
+          initialState: invocation.insertMediaState,
+          initialResource: resource,
+          originContext: panel.originContext || returnOriginContext,
+        });
+      },
+    };
+  }, { setStatus });
   hiddenExisting.addEventListener("change", async () => {
     const file = hiddenExisting.files?.[0] || null;
     hiddenExisting.value = "";
@@ -298,12 +375,14 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
         sourcePath: editorPath(),
         primary: src
       });
+      const resource = resourceFromInsertion({ src, linkedNotebookPath, sourceName, fallbacks, editorPath: editorPath() });
       const inserted = await onInsert({
         src,
         linkedNotebookPath,
         sourceName,
         mode: storageMode + "-" + sourceMode,
-        fallbacks
+        fallbacks,
+        resource
       });
       if (inserted === false) throw new Error("Image insertion was not available.");
       refreshLinkedManagers(linkedNotebookPath);
@@ -315,19 +394,24 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [] } = {}) {
   });
 }
 
-export function renderImage(root, exts = []) {
+export function renderImage(root, exts = [], renderOptions = {}) {
+  const originContext = renderOptions.originContext || getInsertMediaOriginContext(root) || null;
   if (window.NodevisionState?.currentMode === "SVG Editing") {
     renderImageForm(root, async (insertion) => {
       if (typeof window.SVGEditorContext?.insertImageFromInsertion !== "function") return false;
       return await window.SVGEditorContext.insertImageFromInsertion(insertion);
-    }, { svgMode: true, exts });
+    }, { svgMode: true, exts, originContext });
     return;
   }
 
   renderImageForm(root, async (insertion) => {
-    const linkedAttr = insertion.linkedNotebookPath ? " data-nv-linked-path=\"" + escapeHtml(insertion.linkedNotebookPath) + "\"" : "";
-    const fallbackAttrs = serializeFallbackAttributes(insertion.fallbacks || [], { primary: insertion.src });
-    const html = "<img src=\"" + escapeHtml(insertion.src) + "\"" + linkedAttr + fallbackAttrs + " alt=\"Inserted image\">";
+    const resource = insertion.resource || {};
+    const src = resource.src || insertion.src || "";
+    const linkedPath = resource.notebookPath || insertion.linkedNotebookPath || "";
+    const fallbacks = resource.fallbacks || insertion.fallbacks || [];
+    const linkedAttr = linkedPath ? " data-nv-linked-path=\"" + escapeHtml(linkedPath) + "\"" : "";
+    const fallbackAttrs = serializeFallbackAttributes(fallbacks, { primary: src });
+    const html = "<img src=\"" + escapeHtml(src) + "\"" + linkedAttr + fallbackAttrs + " alt=\"Inserted image\">";
     return insertHtmlAtCaret(html);
-  }, { svgMode: false, exts });
+  }, { svgMode: false, exts, originContext });
 }

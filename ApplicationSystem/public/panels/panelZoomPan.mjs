@@ -17,6 +17,7 @@ const CONTENT_RESIZE_FRAME_KEY = "__nvPanelZoomPanContentResizeFrame";
 const INLINE_FIT_ATTR = "data-nv-zoom-inline-fit";
 const INLINE_FIT_STRETCH_ON_ZOOM_OUT = "stretch-on-zoom-out";
 const INLINE_FIT_SCALE_CONTENT = "scale-content";
+const INLINE_FIT_ANCHOR_TOP_LEFT = "anchor-top-left";
 const LOCAL_ZOOM_SCOPE_SELECTOR = "[data-nv-panel-zoom-scope=\"local\"]";
 
 const MIN_ZOOM = 0.1;
@@ -39,7 +40,8 @@ function isTargetElement(el) {
   if (!el?.isConnected || !el.classList) return false;
   return el.classList.contains("panel") ||
     el.classList.contains("panel-cell") ||
-    el.classList.contains("panel-content");
+    el.classList.contains("panel-content") ||
+    el.classList.contains("nv-panel-tab-content");
 }
 
 function getDirectChildByClass(parent, className) {
@@ -49,6 +51,9 @@ function getDirectChildByClass(parent, className) {
 
 function panelFromCell(cell) {
   if (!cell?.isConnected || !cell.classList?.contains("panel-cell")) return null;
+  const tabState = cell.__nvPanelTabs || null;
+  const activeTab = tabState?.tabs?.find?.((tab) => tab.tabId === tabState.activeTabId) || null;
+  if (activeTab?.contentElement?.isConnected) return activeTab.contentElement;
   return getDirectChildByClass(cell, "panel") || cell;
 }
 
@@ -89,19 +94,13 @@ function queryPanelFromActiveCell() {
       ? activeRef
       : activeRef.closest?.(".panel-cell");
     if (activeCell?.isConnected) {
-      const panelInCell = getDirectChildByClass(activeCell, "panel");
-      if (panelInCell?.isConnected) {
-        return panelInCell;
-      }
-      return activeCell;
+      return panelFromCell(activeCell);
     }
   }
 
   const highlightedCell = document.querySelector(".panel-cell.active-panel");
   if (highlightedCell?.isConnected) {
-    const panel = getDirectChildByClass(highlightedCell, "panel");
-    if (panel?.isConnected) return panel;
-    return highlightedCell;
+    return panelFromCell(highlightedCell);
   }
   return null;
 }
@@ -113,6 +112,11 @@ function rememberPanel(panel) {
 
 function rememberPanelFromActiveEvent(event) {
   const detail = event?.detail || {};
+  if (!detail.panel && !detail.cell) {
+    window[LAST_PANEL_KEY] = null;
+    window.__nvActivePanelElement = null;
+    return;
+  }
   const panel = panelFromCell(detail.cell) ||
     findPanelByIdentity(detail.panel) ||
     findPanelByIdentity(window.activePanel);
@@ -152,10 +156,6 @@ export function getActivePanelElement() {
       return fallbackCell;
     }
   }
-  const cached = window[LAST_PANEL_KEY];
-  if (isTargetElement(cached)) {
-    return cached;
-  }
   return null;
 }
 
@@ -166,10 +166,13 @@ export function getPanelElementFromElement(element) {
   const panel = start.closest?.(".panel");
   if (isTargetElement(panel)) return panel;
 
+  const tabContent = start.closest?.(".nv-panel-tab-content");
+  if (isTargetElement(tabContent)) return tabContent;
+
   const cell = start.closest?.(".panel-cell");
   if (!isTargetElement(cell)) return null;
 
-  return getDirectChildByClass(cell, "panel") || cell;
+  return panelFromCell(cell);
 }
 
 export function getPanelElementFromEvent(event) {
@@ -185,6 +188,7 @@ function getPanelContent(panel) {
   if (!panel?.isConnected) return null;
   if (panel.classList?.contains("panel-cell")) return panel;
   if (panel.classList?.contains("panel-content")) return panel;
+  if (panel.classList?.contains("nv-panel-tab-content")) return panel;
   const direct = getDirectChildByClass(panel, "panel-content");
   if (direct?.isConnected) return direct;
 
@@ -237,6 +241,12 @@ function findZoomInlineFitMarker(root) {
 function getPanelZoomFitMode(panelContent, refs) {
   const marker = findZoomInlineFitMarker(refs?.layer) || findZoomInlineFitMarker(panelContent);
   return marker?.getAttribute?.(INLINE_FIT_ATTR) || "";
+}
+
+function panelLocksZoomToTopLeft(panel) {
+  const panelContent = getPanelContent(panel);
+  if (!panelContent) return false;
+  return getPanelZoomFitMode(panelContent, getExistingViewportLayer(panelContent)) === INLINE_FIT_ANCHOR_TOP_LEFT;
 }
 
 function getPanelZoomAxes(panelContent, refs, zoom = 1) {
@@ -484,14 +494,15 @@ function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
   } = measureLayerBaseSize(panelContent, refs, zoom);
   const scaledW = Math.max(1, Math.ceil(baseW * scaleX));
   const scaledH = Math.max(1, Math.ceil(baseH * scaleY));
-  const centeredPanX = scaleContent && scaledW <= viewportW + 1 ? (viewportW - scaledW) / 2 : 0;
-  const centeredPanY = scaleContent && scaledH <= viewportH + 1 ? (viewportH - scaledH) / 2 : 0;
-  const boundedPanX = scaledW > viewportW + 1 ? panX : centeredPanX;
-  const boundedPanY = scaledH > viewportH + 1 ? panY : centeredPanY;
-  const layerLeft = Math.max(0, boundedPanX);
-  const layerTop = Math.max(0, boundedPanY);
-  const desiredScrollLeft = Math.max(0, -boundedPanX);
-  const desiredScrollTop = Math.max(0, -boundedPanY);
+  const lockTopLeft = getPanelZoomFitMode(panelContent, refs) === INLINE_FIT_ANCHOR_TOP_LEFT;
+  const centerX = scaleContent && !lockTopLeft && scaledW <= viewportW + 1;
+  const centerY = scaleContent && !lockTopLeft && scaledH <= viewportH + 1;
+  const layerLeft = centerX ? (viewportW - scaledW) / 2 : (lockTopLeft ? 0 : Math.max(0, panX));
+  const layerTop = centerY ? (viewportH - scaledH) / 2 : (lockTopLeft ? 0 : Math.max(0, panY));
+  const maxScrollLeft = Math.max(0, Math.ceil(layerLeft + scaledW - viewportW));
+  const maxScrollTop = Math.max(0, Math.ceil(layerTop + scaledH - viewportH));
+  const desiredScrollLeft = centerX ? 0 : clamp(-panX, 0, maxScrollLeft, 0);
+  const desiredScrollTop = centerY ? 0 : clamp(-panY, 0, maxScrollTop, 0);
 
   refs.layer.style.left = `${round(layerLeft, 3)}px`;
   refs.layer.style.top = `${round(layerTop, 3)}px`;
@@ -505,8 +516,8 @@ function updateViewportGeometry(panelContent, refs, zoom, panX, panY) {
   refs.layer.style.setProperty("--nv-panel-visible-height", `${Math.ceil(viewportH / scaleY)}px`);
   refs.layer.style.transform = `scale(${round(scaleX, 5)}, ${round(scaleY, 5)})`;
 
-  refs.spacer.style.width = `${Math.max(viewportW, Math.ceil(layerLeft + scaledW), Math.ceil(desiredScrollLeft + viewportW))}px`;
-  refs.spacer.style.height = `${Math.max(viewportH, Math.ceil(layerTop + scaledH), Math.ceil(desiredScrollTop + viewportH))}px`;
+  refs.spacer.style.width = `${Math.max(viewportW, Math.ceil(layerLeft + scaledW))}px`;
+  refs.spacer.style.height = `${Math.max(viewportH, Math.ceil(layerTop + scaledH))}px`;
 
   refs.viewport[APPLYING_SCROLL_KEY] = true;
   refs.viewport.scrollLeft = desiredScrollLeft;
@@ -646,6 +657,9 @@ export function zoomPanelBy(delta = 0, panel = null) {
   if (!state) return null;
   const currentZoom = Number.isFinite(Number(state.zoom)) ? Number(state.zoom) : 1;
   const nextZoom = clamp(currentZoom + Number(delta || 0), MIN_ZOOM, MAX_ZOOM, currentZoom);
+  if (panelLocksZoomToTopLeft(target)) {
+    return setPanelViewportState({ zoom: nextZoom, panX: 0, panY: 0 }, target);
+  }
   const factor = currentZoom > 0 ? nextZoom / currentZoom : 1;
   return zoomPanelAtCenter(target, factor);
 }
@@ -665,6 +679,10 @@ export function zoomPanelAt(panel = null, clientX = null, clientY = null, factor
     MAX_ZOOM,
     currentZoom
   );
+
+  if (panelLocksZoomToTopLeft(target)) {
+    return setPanelViewportState({ zoom: nextZoom, panX: 0, panY: 0 }, target);
+  }
 
   const content = getPanelContent(target);
   if (!content || !Number.isFinite(Number(clientX)) || !Number.isFinite(Number(clientY))) {
@@ -726,8 +744,9 @@ export function fitPanelViewport(panel = null, options = {}) {
   const zoom = clamp(Math.min(dstW / srcW, dstH / srcH), MIN_ZOOM, MAX_ZOOM, 1);
   const scaledW = srcW * zoom;
   const scaledH = srcH * zoom;
-  const panX = (panelContent.clientWidth - scaledW) / 2;
-  const panY = (panelContent.clientHeight - scaledH) / 2;
+  const lockTopLeft = panelLocksZoomToTopLeft(target);
+  const panX = lockTopLeft ? 0 : (panelContent.clientWidth - scaledW) / 2;
+  const panY = lockTopLeft ? 0 : (panelContent.clientHeight - scaledH) / 2;
   return setPanelViewportState({ zoom, panX, panY }, target);
 }
 
@@ -736,7 +755,7 @@ function activatePanelForViewport(panel) {
   rememberPanel(panel);
 
   const owningCell = panel.classList?.contains("panel-cell") ? panel : panel.closest?.(".panel-cell");
-  const panelElement = panel.classList?.contains("panel")
+  const panelElement = panel.classList?.contains("panel") || panel.classList?.contains("nv-panel-tab-content")
     ? panel
     : panel.closest?.(".panel") || getDirectChildByClass(panel, "panel");
 
@@ -821,6 +840,9 @@ export function installPanelZoomShortcuts() {
     if (!(event.ctrlKey || event.metaKey)) return;
     if (eventUsesLocalZoomScope(event)) return;
 
+    const activePanel = getActivePanelElement();
+    if (!isTargetElement(activePanel)) return;
+
     const panel = getPanelElementFromEvent(event);
     if (!isTargetElement(panel)) return;
 
@@ -835,7 +857,10 @@ export function installPanelZoomShortcuts() {
     if (!action) return;
     if (eventUsesLocalZoomScope(event)) return;
 
-    const panel = getPanelElementFromEvent(event) || getActivePanelElement();
+    const activePanel = getActivePanelElement();
+    if (!isTargetElement(activePanel)) return;
+
+    const panel = getPanelElementFromEvent(event) || activePanel;
     if (!isTargetElement(panel)) return;
 
     event.preventDefault();

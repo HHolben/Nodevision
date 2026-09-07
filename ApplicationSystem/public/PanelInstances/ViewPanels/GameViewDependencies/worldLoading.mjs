@@ -3334,7 +3334,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             matterState: voxel.matterState || def.MatterState || def.matterState || "",
             color: voxel.color || def.color || "",
             opacity: Number.isFinite(Number(voxel.opacity ?? def.opacity)) ? Math.max(0, Math.min(1, Number(voxel.opacity ?? def.opacity))) : 1,
-            collider: def.collider === true || def.collidable === true || def.isSolid === true
+            collider: def.collider === true || def.collidable === true || def.isSolid === true,
+            faceCenterSnap: voxel.faceCenterSnap === true
           };
           if (Number.isFinite(mesh.userData.voxelPlacer.opacity)) {
             const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];

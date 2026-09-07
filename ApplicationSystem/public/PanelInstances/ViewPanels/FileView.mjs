@@ -39,6 +39,37 @@ let moduleMapCache = null;
 const navigationState = getNodevisionNavigationState();
 let pendingFileViewAnchor = null;
 let pendingFileViewAnchorTimer = null;
+const SELECTED_FILE_VIEW_RENDER_DELAY_MS = 40;
+let selectedFileViewRenderTimer = null;
+let selectedFileViewRenderToken = 0;
+
+function cancelScheduledSelectedFileViewRender() {
+  if (selectedFileViewRenderTimer) {
+    window.clearTimeout(selectedFileViewRenderTimer);
+    selectedFileViewRenderTimer = null;
+  }
+  selectedFileViewRenderToken += 1;
+}
+
+function scheduleSelectedFileViewRender(path) {
+  const token = ++selectedFileViewRenderToken;
+  if (selectedFileViewRenderTimer) {
+    window.clearTimeout(selectedFileViewRenderTimer);
+  }
+
+  selectedFileViewRenderTimer = window.setTimeout(() => {
+    selectedFileViewRenderTimer = null;
+    if (token !== selectedFileViewRenderToken) return;
+
+    const viewPanel = getViewPanelElement();
+    if (!viewPanel) return;
+    if (window.__nvPanelTabContentIsActive && !window.__nvPanelTabContentIsActive(viewPanel)) return;
+
+    updateViewPanel(path, { force: true }).catch((err) => {
+      console.error("❌ Error updating view panel:", err);
+    });
+  }, SELECTED_FILE_VIEW_RENDER_DELAY_MS);
+}
 
 function readLiveFileViewerEnabled() {
   try {
@@ -1283,6 +1314,25 @@ function getViewPanelElement() {
   return null;
 }
 
+function fileViewRootPath(viewDiv) {
+  return normalizeNotebookPath(
+    viewDiv?.dataset?.nvFileViewRenderedPath ||
+    viewDiv?.dataset?.currentFilePath ||
+    viewDiv?.closest?.(".nv-panel-tab-content")?.dataset?.currentFilePath ||
+    viewDiv?.closest?.(".panel-cell")?.dataset?.currentFilePath ||
+    ""
+  );
+}
+
+export function activeFileViewCanRefreshPath(path) {
+  const targetPath = normalizeResolvedNotebookPath(path || "");
+  if (!targetPath) return false;
+  const activeRoot = activeFileViewRoot();
+  if (!activeRoot) return false;
+  const activePath = fileViewRootPath(activeRoot) || lastRenderedPath;
+  return Boolean(activePath && sameNotebookPath(activePath, targetPath));
+}
+
 function setFileViewStatus(message, detail = "") {
   try {
     setStatus(message, detail);
@@ -1525,6 +1575,7 @@ function scheduleLiveFileViewRefresh(path, reason = "live-content") {
   window.clearTimeout(liveFileViewRefreshTimer);
   liveFileViewRefreshTimer = window.setTimeout(() => {
     liveFileViewRefreshTimer = null;
+    if (!activeFileViewCanRefreshPath(targetPath)) return;
     console.log("📡 FileViewer live-buffer refresh for:", targetPath, reason);
     updateViewPanel(targetPath, { force: true }).catch((err) => {
       console.error("❌ Live-buffer updateViewPanel failed:", err);
@@ -1537,6 +1588,7 @@ function handleLiveFileContentChanged(event) {
   const changedPath = event?.detail?.normalizedPath || event?.detail?.filePath || "";
   if (!changedPath || !lastRenderedPath) return;
   if (!sameNotebookPath(changedPath, lastRenderedPath)) return;
+  if (!activeFileViewCanRefreshPath(lastRenderedPath)) return;
   scheduleLiveFileViewRefresh(lastRenderedPath, event?.detail?.reason || "live-content");
 }
 
@@ -1672,12 +1724,7 @@ export async function setupPanel(panel, instanceVars = {}) {
             } catch (err) {
               console.warn("Failed to update toolbar state for selectedFilePath change:", err);
             }
-            const viewPanel = getViewPanelElement();
-            if (viewPanel && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(viewPanel))) {
-              updateViewPanel(value, { force: true }).catch(err => {
-                console.error("❌ updateViewPanel error:", err);
-              });
-            }
+            scheduleSelectedFileViewRender(value);
 
             const codeEditorActive = typeof window.isCodeEditorActive === "function" ? window.isCodeEditorActive() : false;
             if (codeEditorActive && typeof window.updateEditorPanel === "function") {
@@ -1756,6 +1803,7 @@ export async function setupPanel(panel, instanceVars = {}) {
 }
 
 export async function updateViewPanel(element, { force = false } = {}) {
+  cancelScheduledSelectedFileViewRender();
   const viewPanel = getViewPanelElement();
   if (!viewPanel) {
     console.error("View panel element not found.");
@@ -1865,7 +1913,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
     liveFileViewerEnabled,
   });
   window.NodevisionPanelViewportTools?.applyPanelViewport?.(
-    viewPanel.closest?.(".panel") || viewPanel.closest?.(".panel-cell") || viewPanel
+    viewPanel.closest?.(".panel") || viewPanel.closest?.(".nv-panel-tab-content") || viewPanel.closest?.(".panel-cell") || viewPanel
   );
   if (success) {
     setFileViewStatus(liveContent ? "Live File Viewer" : "File Viewer", (liveContent ? "Live: " : "Loaded: ") + filename);

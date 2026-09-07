@@ -13,6 +13,10 @@ export const RESOURCE_RESOLUTION_STRATEGIES = Object.freeze({
 });
 
 export const RESOURCE_TYPE_IDS = Object.freeze({
+  IMAGE: "image",
+  AUDIO: "audio",
+  VIDEO: "video",
+  MODEL: "model",
   FONT: "font",
   DICTIONARY: "dictionary",
   FAA_SECTIONAL: "faa.sectional",
@@ -20,6 +24,10 @@ export const RESOURCE_TYPE_IDS = Object.freeze({
   ELECTRONICS_COMPONENT: "electronics.component",
 });
 
+const IMAGE_EXTENSIONS = Object.freeze([".apng", ".avif", ".bmp", ".gif", ".ico", ".jpeg", ".jpg", ".png", ".svg", ".webp"]);
+const AUDIO_EXTENSIONS = Object.freeze([".aac", ".flac", ".m4a", ".mp3", ".oga", ".ogg", ".opus", ".wav", ".weba"]);
+const VIDEO_EXTENSIONS = Object.freeze([".avi", ".m4v", ".mov", ".mp4", ".mpeg", ".ogv", ".webm"]);
+const MODEL_EXTENSIONS = Object.freeze([".3mf", ".dae", ".fbx", ".glb", ".gltf", ".obj", ".ply", ".scad", ".stl", ".usd", ".usda", ".usdc", ".usdz"]);
 const FONT_EXTENSIONS = Object.freeze([".ttf", ".otf", ".woff", ".woff2"]);
 const DICTIONARY_EXTENSIONS = Object.freeze([".json", ".dictionary.json", ".wordlist", ".txt"]);
 const FAA_SECTIONAL_EXTENSIONS = Object.freeze([".zip", ".tif", ".tiff", ".geotiff"]);
@@ -47,6 +55,55 @@ const ELECTRONICS_COMPONENT_EXTENSIONS = Object.freeze([
 ]);
 
 export const RESOURCE_TYPES = Object.freeze([
+  Object.freeze({
+    id: RESOURCE_TYPE_IDS.IMAGE,
+    displayName: "Images",
+    description: "Image files available to documents, SVG tools, and world-object surfaces.",
+    resolutionStrategy: RESOURCE_RESOLUTION_STRATEGIES.COLLECTION,
+    legacyPathKey: "media.images",
+    supportedExtensions: IMAGE_EXTENSIONS,
+    defaultSources: Object.freeze([
+      Object.freeze({ id: "image.managed", name: "Managed Images", sourceType: RESOURCE_SOURCE_TYPES.MANAGED, path: "Resources/Media/Images", enabled: true, priority: 100, protected: true, removable: false, editable: false }),
+      Object.freeze({ id: "image.notebook.default", name: "Notebook Images", sourceType: RESOURCE_SOURCE_TYPES.NOTEBOOK, path: "Resources/Media/Images", enabled: true, priority: 200, protected: true, removable: false, editable: true, legacyPath: true }),
+    ]),
+  }),
+  Object.freeze({
+    id: RESOURCE_TYPE_IDS.AUDIO,
+    displayName: "Audio",
+    description: "Audio files available to HTML documents and virtual world sound objects.",
+    resolutionStrategy: RESOURCE_RESOLUTION_STRATEGIES.COLLECTION,
+    legacyPathKey: "media.audio",
+    supportedExtensions: AUDIO_EXTENSIONS,
+    defaultSources: Object.freeze([
+      Object.freeze({ id: "audio.managed", name: "Managed Audio", sourceType: RESOURCE_SOURCE_TYPES.MANAGED, path: "Resources/Media/Audio", enabled: true, priority: 100, protected: true, removable: false, editable: false }),
+      Object.freeze({ id: "audio.notebook.default", name: "Notebook Audio", sourceType: RESOURCE_SOURCE_TYPES.NOTEBOOK, path: "Resources/Media/Audio", enabled: true, priority: 200, protected: true, removable: false, editable: true, legacyPath: true }),
+    ]),
+  }),
+  Object.freeze({
+    id: RESOURCE_TYPE_IDS.VIDEO,
+    displayName: "Video",
+    description: "Video files available to HTML documents and media panels.",
+    resolutionStrategy: RESOURCE_RESOLUTION_STRATEGIES.COLLECTION,
+    legacyPathKey: "media.video",
+    supportedExtensions: VIDEO_EXTENSIONS,
+    defaultSources: Object.freeze([
+      Object.freeze({ id: "video.managed", name: "Managed Video", sourceType: RESOURCE_SOURCE_TYPES.MANAGED, path: "Resources/Media/Video", enabled: true, priority: 100, protected: true, removable: false, editable: false }),
+      Object.freeze({ id: "video.notebook.default", name: "Notebook Video", sourceType: RESOURCE_SOURCE_TYPES.NOTEBOOK, path: "Resources/Media/Video", enabled: true, priority: 200, protected: true, removable: false, editable: true, legacyPath: true }),
+    ]),
+  }),
+  Object.freeze({
+    id: RESOURCE_TYPE_IDS.MODEL,
+    displayName: "3D Models",
+    description: "3D model files available to HTML model panels and virtual world object-file layers.",
+    resolutionStrategy: RESOURCE_RESOLUTION_STRATEGIES.COLLECTION,
+    legacyPathKey: "models",
+    supportedExtensions: MODEL_EXTENSIONS,
+    defaultSources: Object.freeze([
+      Object.freeze({ id: "model.managed", name: "Managed 3D Models", sourceType: RESOURCE_SOURCE_TYPES.MANAGED, path: "Resources/Models", enabled: true, priority: 100, protected: true, removable: false, editable: false }),
+      Object.freeze({ id: "model.notebook.default", name: "Notebook 3D Models", sourceType: RESOURCE_SOURCE_TYPES.NOTEBOOK, path: "Resources/Models", enabled: true, priority: 200, protected: true, removable: false, editable: true, legacyPath: true }),
+      Object.freeze({ id: "model.notebook.legacy", name: "Notebook Models", sourceType: RESOURCE_SOURCE_TYPES.NOTEBOOK, path: "models", enabled: true, priority: 300, protected: true, removable: false, editable: true }),
+    ]),
+  }),
   Object.freeze({
     id: RESOURCE_TYPE_IDS.FONT,
     displayName: "Fonts",

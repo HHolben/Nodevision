@@ -68,6 +68,38 @@ function compactResourceName(resourcePath = "", fallback = "") {
   return clean.split("/").filter(Boolean).pop() || clean;
 }
 
+function activePanelLooksLikeEditor() {
+  if (typeof window === "undefined") return false;
+  const activePanel = String(window.activePanel || "").toLowerCase();
+  const activePanelClass = String(window.activePanelClass || "").toLowerCase();
+  return activePanel.includes("codeeditor") ||
+    activePanelClass === "editorpanel";
+}
+
+function editorResourcePathCandidates(state = {}) {
+  const activeEditorCandidates = [
+    state.activeEditorFilePath,
+    window.__nvCodeEditorActivePath,
+    window.__nvMarkdownActivePath,
+    window.__nvWysiwygActivePath,
+    window.__nvHtmlEditorActivePath,
+    window.__nvSvgEditorActivePath,
+  ];
+  const selectedCandidates = [
+    window.selectedFilePath,
+    state.selectedFile,
+  ];
+  const renderedCandidates = [
+    window.currentActiveFilePath,
+    state.activeFileViewPath,
+    window.ActiveNode,
+    window.filePath,
+  ];
+  return activePanelLooksLikeEditor()
+    ? [...activeEditorCandidates, ...renderedCandidates, ...selectedCandidates]
+    : [...selectedCandidates, ...activeEditorCandidates, ...renderedCandidates];
+}
+
 function firstResourcePath(panelVars = {}, panelType = "") {
   const explicitPath = normalizeNotebookPath(
     panelVars.filePath ||
@@ -79,16 +111,22 @@ function firstResourcePath(panelVars = {}, panelType = "") {
   if (explicitPath) return explicitPath;
   if (!FILE_BACKED_PANEL_TYPES.has(panelType) || typeof window === "undefined") return "";
   const state = window.NodevisionState || {};
-  return normalizeNotebookPath(
-    state.activeEditorFilePath ||
-    state.activeFileViewPath ||
-    window.currentActiveFilePath ||
-    window.selectedFilePath ||
-    state.selectedFile ||
-    window.ActiveNode ||
-    window.filePath ||
-    ""
-  );
+  const candidates = panelType === "CodeEditor" || panelType === "CodeEditorPanel" || panelType === "GraphicalEditor"
+    ? editorResourcePathCandidates(state)
+    : [
+        state.activeFileViewPath,
+        window.currentActiveFilePath,
+        window.selectedFilePath,
+        state.selectedFile,
+        state.activeEditorFilePath,
+        window.ActiveNode,
+        window.filePath,
+      ];
+  for (const candidate of candidates) {
+    const normalized = normalizeNotebookPath(candidate);
+    if (normalized) return normalized;
+  }
+  return "";
 }
 
 function objectNameForPanel(panelType, panelVars = {}) {

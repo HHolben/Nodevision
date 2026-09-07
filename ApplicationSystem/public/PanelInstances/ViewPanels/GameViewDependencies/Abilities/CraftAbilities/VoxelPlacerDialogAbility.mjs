@@ -78,6 +78,24 @@ export function installVoxelPlacerDialogAbility(ctx) {
     return { input, wrap };
   }
 
+  function createFaceCenterSnapInput(config) {
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = config.faceCenterSnap === true;
+    input.style.width = "18px";
+    input.style.height = "18px";
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.alignItems = "center";
+    wrap.style.gap = "8px";
+    wrap.appendChild(input);
+    const text = document.createElement("span");
+    text.textContent = "Snap to target face";
+    text.style.color = "#f0fffb";
+    wrap.appendChild(text);
+    return { input, wrap };
+  }
+
   function populateMaterialOptions(materialSelect, entries, config) {
     const catalog = Array.isArray(entries) ? entries : [];
     materialSelect.textContent = "";
@@ -119,6 +137,8 @@ export function installVoxelPlacerDialogAbility(ctx) {
     ctx.api.addVoxelDialogRow(panel, "Alpha", alphaControl.wrap);
     const { input: colliderInput, wrap: colliderWrap } = createColliderInput(config);
     ctx.api.addVoxelDialogRow(panel, "Physics", colliderWrap);
+    const { input: faceCenterSnapInput, wrap: faceCenterSnapWrap } = createFaceCenterSnapInput(config);
+    ctx.api.addVoxelDialogRow(panel, "Placement", faceCenterSnapWrap);
     const actions = document.createElement("div");
     Object.assign(actions.style, { display: "flex", justifyContent: "end", gap: "8px", marginTop: "14px" });
     panel.appendChild(actions);
@@ -144,9 +164,10 @@ export function installVoxelPlacerDialogAbility(ctx) {
       next.color = ctx.api.normalizeVoxelColor(colorInput.value, next.color);
       next.opacity = ctx.api.normalizeVoxelOpacity(Number(alphaControl.input.value) / 100, next.opacity);
       next.collider = colliderInput.checked;
+      next.faceCenterSnap = faceCenterSnapInput.checked;
       ctx.api.applyVoxelMaterialEntry(next, selectedEntryFromControl(), { updateColor: false });
       movementState.voxelPlacerConfig = { ...next };
-      setStatus("Voxel Placer updated: size " + next.size + ", " + (next.collider ? "collider" : "visual only") + ".");
+      setStatus("Voxel Placer updated: size " + next.size + ", " + (next.collider ? "collider" : "visual only") + (next.faceCenterSnap ? ", target-face snap" : "") + ".");
       ctx.api.closeVoxelPlacerDialog();
     });
     closeButton.addEventListener("click", ctx.api.closeVoxelPlacerDialog);
@@ -175,6 +196,7 @@ export function installVoxelPlacerDialogAbility(ctx) {
     createColorInput,
     createAlphaInput,
     createColliderInput,
+    createFaceCenterSnapInput,
     populateMaterialOptions,
     openVoxelPlacerDialog
   });

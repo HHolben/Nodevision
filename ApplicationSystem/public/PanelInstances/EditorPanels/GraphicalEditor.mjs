@@ -212,6 +212,28 @@ function readGraphicalLiveContent(filePath, editorDiv) {
   return undefined;
 }
 
+function isGraphicalEditorHostAppAttribute(name = "") {
+  const attr = String(name || "").toLowerCase();
+  return attr === "id" ||
+    attr === "class" ||
+    attr === "style" ||
+    attr === "hidden" ||
+    attr === "role" ||
+    attr === "tabindex" ||
+    attr.startsWith("aria-") ||
+    attr === "data-current-file-path" ||
+    attr.startsWith("data-nv-");
+}
+
+export function graphicalLiveMutationRecordsContainDocumentChange(records = [], editorDiv = null) {
+  return Array.from(records || []).some((record) => {
+    if (!record) return false;
+    if (record.type !== "attributes") return true;
+    if (record.target === editorDiv && isGraphicalEditorHostAppAttribute(record.attributeName)) return false;
+    return true;
+  });
+}
+
 function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
   if (typeof currentGraphicalLiveCleanup === "function") {
     currentGraphicalLiveCleanup();
@@ -252,7 +274,9 @@ function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
   const handlers = new Map(events.map((eventName) => [eventName, () => schedule(eventName)]));
   handlers.forEach((handler, eventName) => editorDiv.addEventListener(eventName, handler, true));
   const observer = typeof MutationObserver !== "undefined"
-    ? new MutationObserver(() => schedule("mutation"))
+    ? new MutationObserver((records) => {
+        if (graphicalLiveMutationRecordsContainDocumentChange(records, editorDiv)) schedule("mutation");
+      })
     : null;
   observer?.observe?.(editorDiv, { subtree: true, childList: true, characterData: true, attributes: true });
   touch("registered");
@@ -330,11 +354,21 @@ function activateGraphicalEditorHost(host) {
     editorDiv.closest(".nv-panel-tab-content")?.dataset?.currentFilePath ||
     lastEditedPath ||
     "";
+  const owningCell = editorDiv.closest?.(".panel-cell") || null;
+  if (owningCell) {
+    window.activeCell = owningCell;
+    window.activePanel = "GraphicalEditor";
+    window.activePanelClass = "EditorPanel";
+    owningCell.dataset.id = "GraphicalEditor";
+    owningCell.dataset.panelId = "GraphicalEditor";
+    owningCell.dataset.panelClass = "EditorPanel";
+  }
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activePanelType = "GraphicalEditor";
   window.NodevisionState.currentMode = "GraphicalEditing";
   window.NodevisionState.activeActionHandler = null;
   if (filePath) {
+    if (owningCell) owningCell.dataset.currentFilePath = filePath;
     window.currentActiveFilePath = filePath;
     window.filePath = filePath;
     window.NodevisionState.selectedFile = filePath;
@@ -346,7 +380,26 @@ function activateGraphicalEditorHost(host) {
     activeEditorFilePath: filePath || null,
     activeActionHandler: null,
   });
+  window.highlightActiveCell?.(owningCell);
+  if (owningCell) {
+    window.dispatchEvent(new CustomEvent("activePanelChanged", {
+      detail: { panel: "GraphicalEditor", cell: owningCell, panelClass: "EditorPanel" },
+    }));
+  }
   return true;
+}
+
+function enableGraphicalEditorActivation(editorDiv) {
+  if (!editorDiv || editorDiv.dataset.nvGraphicalEditorActivationBound === "true") return;
+  editorDiv.dataset.nvGraphicalEditorActivationBound = "true";
+  const activate = () => {
+    if (window.__nvPanelTabContentIsActive && !window.__nvPanelTabContentIsActive(editorDiv)) return;
+    activateGraphicalEditorHost(editorDiv);
+  };
+  editorDiv.addEventListener("pointerdown", activate, { capture: true });
+  editorDiv.addEventListener("mousedown", activate, { capture: true });
+  editorDiv.addEventListener("click", activate, { capture: true });
+  editorDiv.addEventListener("focusin", activate, { capture: true });
 }
 
 /* ---------------------------------------------------------
@@ -363,6 +416,7 @@ export async function setupPanel(cell, instanceVars = {}) {
   container.style.justifyContent = "center";
   cell.appendChild(container);
   claimGraphicalEditorHost(container);
+  enableGraphicalEditorActivation(container);
 
   // Reactive watcher for selectedFilePath
   if (!window._graphicalEditorProxyInstalled) {
@@ -405,6 +459,7 @@ export async function setupPanel(cell, instanceVars = {}) {
   // Initial render
   const initialPath = instanceVars.filePath || window.selectedFilePath;
   await updateGraphicalEditor(initialPath, { force: true, host: container });
+  activateGraphicalEditorHost(container);
 
   return () => {
     cleanupEditorHost(container);

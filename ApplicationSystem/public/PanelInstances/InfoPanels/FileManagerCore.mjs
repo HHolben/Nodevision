@@ -9,7 +9,7 @@ import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
 import {
   DIRECTORY_APPEARANCE_CHANGED_EVENT,
   getCachedDirectoryAppearance,
-  loadDirectoryAppearanceMap,
+  loadDirectoryAppearancesForPaths,
   normalizeDirectoryMetadataPath,
   resolveDirectoryAppearanceFileManagerPalette,
 } from '/GraphManagement/DirectoryAppearanceClient.mjs';
@@ -539,22 +539,35 @@ function selectedFileEntriesFromState() {
   return [];
 }
 
+function setFileItemSelected(item, isSelected) {
+  if (!item) return;
+  const selected = Boolean(isSelected);
+  item.classList.toggle("selected", selected);
+  applyFileItemVisualState(item, selected ? "selected" : "base");
+}
+
 function markSelectedFileItems(entries = []) {
   const selectedPaths = new Set(uniqueFileSelectionEntries(entries).map((entry) => entry.path));
   const allItems = document.querySelectorAll("#file-list a.file, #file-list a.folder");
   allItems.forEach((item) => {
     const itemPath = normalizePath(item?.dataset?.fullPath || "");
-    const isSelected = selectedPaths.has(itemPath);
-    item.classList.toggle("selected", isSelected);
-    applyFileItemVisualState(item, isSelected ? "selected" : "base");
+    setFileItemSelected(item, selectedPaths.has(itemPath));
   });
+}
+
+function markSelectedFileItemVisualOnly(selectedLink) {
+  const hasEntry = Boolean(fileSelectionEntryFromItem(selectedLink));
+  document.querySelectorAll("#file-list a.file.selected, #file-list a.folder.selected").forEach((item) => {
+    if (item !== selectedLink) setFileItemSelected(item, false);
+  });
+  if (hasEntry) setFileItemSelected(selectedLink, true);
 }
 
 function markSelectedFileItem(selectedLink) {
   const entry = fileSelectionEntryFromItem(selectedLink);
   const entries = entry ? [entry] : [];
   publishSelectedFileEntries(entries, entry);
-  markSelectedFileItems(entries);
+  markSelectedFileItemVisualOnly(selectedLink);
 }
 
 function toggleFileManagerItemSelection(item) {
@@ -661,6 +674,9 @@ function selectFileManagerItem(item, options = {}) {
 
   requestNodevisionFileSelection(item.dataset.fullPath, {
     isDirectory: selectedIsDirectory,
+    beforeSelected: () => {
+      markSelectedFileItemVisualOnly(item);
+    },
     onSelected: async (selectedPath) => {
       // FileView installs a selectedFilePath proxy that syncs NodevisionState + toolbar.
       // If that proxy isn't installed (e.g., FileView panel not loaded yet), do it here.
@@ -691,8 +707,7 @@ function selectFileManagerItem(item, options = {}) {
 
 export function OpenDirectoryOrFileInfo(listElem,link, li)
 {
-  console.log("Opening "+ listElem + " at "+ link + " and "+ li);
-      // Click: open directory or file info
+        // Click: open directory or file info
     link.addEventListener("dblclick", async e => {
       e.preventDefault();
       if (f.isDirectory) {
@@ -724,12 +739,27 @@ export async function fetchDirectoryContents(path, callback, errorElem, loadingE
     if (!response.ok) throw new Error(`Failed to fetch directory: ${path}`);
 
     const data = await response.json();
-    await loadDirectoryAppearanceMap({ force: true });
+    const visibleDirectoryPaths = [
+      cleanPath,
+      ...(Array.isArray(data) ? data : [])
+        .filter((entry) => entry?.isDirectory)
+        .map((entry) => (cleanPath ? cleanPath + "/" + entry.name : entry.name).replace(/\/+/g, "/")),
+    ];
     console.log("Fetched directory contents:", data);
 
     window.currentDirectoryPath = cleanPath;
     applyFileManagerDirectoryBackground(cleanPath);
     if (typeof callback === "function") callback(data, cleanPath);
+
+    loadDirectoryAppearancesForPaths(visibleDirectoryPaths)
+      .then(() => {
+        if (normalizePath(window.currentDirectoryPath || "") !== cleanPath) return;
+        applyFileManagerDirectoryBackground(cleanPath);
+        refreshDirectoryAppearanceFileManagerItems();
+      })
+      .catch((err) => {
+        console.warn("Failed to load visible directory appearance metadata:", err);
+      });
 
     navigationState.setLastOpenedDirectory(cleanPath, "FileManager");
   } catch (err) {
@@ -1041,7 +1071,6 @@ export function displayFiles(files, currentPath) {
     }
     
     // Click: open directory or file info
-console.log("Opening "+ listElem + " at "+ link + " and "+ li);
       // Click: open directory or file info
     link.addEventListener("dblclick", async e => {
       e.preventDefault();
@@ -1243,6 +1272,12 @@ window.revealPathInFileManager = async function revealPathInFileManager(path = "
   }
 
   requestNodevisionFileSelection(cleanPath, {
+    beforeSelected: () => {
+      const fileItem = findFileManagerItemByPath(cleanPath);
+      if (fileItem) {
+        markSelectedFileItemVisualOnly(fileItem);
+      }
+    },
     onSelected: () => {
       const fileItem = findFileManagerItemByPath(cleanPath);
       if (fileItem) {

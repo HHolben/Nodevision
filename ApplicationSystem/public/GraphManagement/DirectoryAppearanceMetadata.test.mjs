@@ -116,4 +116,31 @@ assert.deepEqual(resolveDirectoryAppearanceGraphColors({
   directoryExpandedBorderOpacity: 0.75,
 });
 
+const clientFetchCalls = [];
+globalThis.fetch = async (url) => {
+  clientFetchCalls.push(String(url));
+  const parsedUrl = new URL(String(url), "http://nodevision.test");
+  const requested = JSON.parse(parsedUrl.searchParams.get("paths") || "[]");
+  return {
+    ok: true,
+    async json() {
+      return {
+        paths: requested,
+        directories: Object.fromEntries(requested.map((path) => [path, {
+          appearance: path === "Projects" ? { fillColor: "#abc" } : {},
+        }])),
+      };
+    },
+  };
+};
+const directoryAppearanceClient = await import("./DirectoryAppearanceClient.mjs");
+await directoryAppearanceClient.loadDirectoryAppearancesForPaths(["Projects", "Empty"]);
+assert.equal(clientFetchCalls.length, 1);
+assert.deepEqual(directoryAppearanceClient.getCachedDirectoryAppearance("Projects"), { fillColor: "#AABBCC" });
+assert.deepEqual(directoryAppearanceClient.getCachedDirectoryAppearance("Empty"), {});
+await directoryAppearanceClient.loadDirectoryAppearancesForPaths(["Projects", "Empty"]);
+assert.equal(clientFetchCalls.length, 1);
+await directoryAppearanceClient.loadDirectoryAppearancesForPaths(["Empty"], { force: true });
+assert.equal(clientFetchCalls.length, 2);
+
 console.log("Directory appearance metadata tests passed.");

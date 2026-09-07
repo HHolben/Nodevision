@@ -17,7 +17,7 @@ function tabResourcePath(tab = {}) {
   return normalizePath(tab.resourcePath || tab.panelVars?.filePath || tab.contentElement?.dataset?.currentFilePath || "");
 }
 
-function removeDuplicateActiveIds(cell, tab) {
+export function removeDuplicateActiveIds(cell, tab) {
   const fixedIds = ["element-view", "graphical-editor"];
   for (const id of fixedIds) {
     document.querySelectorAll(`#${id}`).forEach((node) => {

@@ -73,7 +73,8 @@ export function createMovementContext(dependencies) {
       materialFile: materialFileForWorldObjectMaterial(DEFAULT_WORLD_OBJECT_MATERIAL_ID),
       color: "#8ee6c1",
       opacity: 1,
-      collider: true
+      collider: true,
+      faceCenterSnap: false
     }),
     voxelMaterialCatalogPromise: null,
     bounceMaterialsByKey: new Map()

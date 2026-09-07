@@ -13,6 +13,11 @@ import {
 
 
 
+function directoryAppearancePaths(ctx) {
+  const graphDir = path.join(ctx.userDataDir, "graph");
+  return { graphDir, filePath: path.join(graphDir, "directory-appearance.json") };
+}
+
 async function readJsonFile(filePath) {
   try {
     const raw = await fs.readFile(filePath, "utf8");

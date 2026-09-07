@@ -809,7 +809,7 @@ function activateCodeEditorHost(host) {
   window.NodevisionState.activeActionHandler = null;
   setWordCountVisibility(false);
   updateToolbarState({ currentMode: "CodeEditing", selectedFile: session.filePath, activeEditorFilePath: session.filePath, activeActionHandler: null });
-  reportCodeEditorAttention(session.filePath, editorInstance);
+  reportCodeEditorAttention(session.filePath, editorInstance, { restore: false });
   session.touchLive = registerCodeEditorLiveProvider(session.filePath, session.editorContainer);
   updateDirtyState();
   window.requestAnimationFrame?.(() => editorInstance?.layout?.());
@@ -1160,7 +1160,7 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
       wordWrap: "off",
     });
     setBusyOperation(null);
-    reportCodeEditorAttention(filePath, editorInstance);
+    reportCodeEditorAttention(filePath, editorInstance, { restore: true });
     editorInstance.onDidChangeCursorPosition?.(() => persistCodeEditorAttention(filePath, editorInstance));
     editorInstance.onDidScrollChange?.(() => persistCodeEditorAttention(filePath, editorInstance));
 
@@ -1591,8 +1591,19 @@ function ensureUnsavedPrompt() {
 }
 
 function isCodeEditorActive() {
-  const activePanel = (window.activePanel || window.NodevisionState?.activePanelType || "").toLowerCase();
-  return activePanel.includes("codeeditor") || !!document.querySelector('[data-id="CodeEditorPanel"]');
+  const activeCell = window.activeCell?.closest?.(".panel-cell") || window.activeCell;
+  const activeTabState = activeCell?.__nvPanelTabs || null;
+  const activeTab = activeTabState?.tabs?.find?.((tab) => tab.tabId === activeTabState.activeTabId) || null;
+  const panelNames = [
+    activeTab?.panelType,
+    activeCell?.dataset?.id,
+    activeCell?.dataset?.panelId,
+    window.activePanel,
+  ].map((value) => String(value || "").toLowerCase());
+  if (panelNames.some((value) => value === "codeeditor" || value === "codeeditorpanel")) return true;
+
+  const editorDom = window.monacoEditor?.getDomNode?.();
+  return Boolean(editorDom && activeCell?.contains?.(editorDom) && window.NodevisionState?.currentMode === "CodeEditing");
 }
 
 function guardFileSwitch(nextPath, proceed) {
@@ -1654,7 +1665,7 @@ window.updateEditorPanel = updateEditorPanel;
 window.__nvActivateCodeEditorHost = activateCodeEditorHost;
 
 
-function reportCodeEditorAttention(filePath, editor = null) {
+function reportCodeEditorAttention(filePath, editor = null, options = {}) {
   setEditorContext({
     filePath,
     fileFamily: filePath?.split(".").pop()?.toLowerCase() || "code",
@@ -1666,9 +1677,10 @@ function reportCodeEditorAttention(filePath, editor = null) {
   });
   setSelectionContext({ selectedObjectType: null, selectedObjectId: null, hasEditableSelection: false });
   const saved = getEditingContext(filePath);
-  if (editor && saved) {
+  if (editor && saved && options.restore === true) {
     try {
-      if (saved.cursorPosition && typeof editor.setPosition === "function") editor.setPosition(saved.cursorPosition);
+      if (saved.selection && typeof editor.setSelection === "function") editor.setSelection(saved.selection);
+      else if (saved.cursorPosition && typeof editor.setPosition === "function") editor.setPosition(saved.cursorPosition);
       if (saved.scroll && typeof editor.setScrollTop === "function") {
         editor.setScrollTop(saved.scroll.top || 0);
         if (typeof editor.setScrollLeft === "function") editor.setScrollLeft(saved.scroll.left || 0);

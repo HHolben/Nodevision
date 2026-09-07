@@ -816,7 +816,8 @@ function serializeMesh(mesh) {
       matterState: voxel.matterState || mesh.userData?.MatterState || mesh.userData?.matterState || "",
       color: voxel.color || def.color,
       opacity: Number.isFinite(Number(voxel.opacity ?? def.opacity)) ? round3(Math.max(0, Math.min(1, Number(voxel.opacity ?? def.opacity)))) : undefined,
-      collider: def.collider
+      collider: def.collider,
+      faceCenterSnap: voxel.faceCenterSnap === true
     };
   }
 

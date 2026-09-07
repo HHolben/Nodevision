@@ -20,6 +20,7 @@ import {
 } from "./DirectoryAppearanceMetadata.mjs";
 
 let appearanceCache = new Map();
+let appearanceKnownPaths = new Set();
 let appearanceLoaded = false;
 let appearanceLoadPromise = null;
 
@@ -35,6 +36,7 @@ function cacheFromManifest(manifest) {
   }
 
   appearanceCache = next;
+  appearanceKnownPaths = new Set(Object.keys(clean.directories || {}));
   appearanceLoaded = true;
   return appearanceCache;
 }
@@ -60,13 +62,46 @@ export async function loadDirectoryAppearanceMap(options = {}) {
   return appearanceLoadPromise;
 }
 
+function rememberDirectoryAppearance(pathValue = "", appearanceValue = {}) {
+  const path = normalizeDirectoryMetadataPath(pathValue);
+  const appearance = sanitizeDirectoryAppearance(appearanceValue);
+  appearanceKnownPaths.add(path);
+  if (isDirectoryAppearanceEmpty(appearance)) {
+    appearanceCache.delete(path);
+  } else {
+    appearanceCache.set(path, appearance);
+  }
+  return appearance;
+}
+
+function directoryAppearancePathIsCached(pathValue = "") {
+  const path = normalizeDirectoryMetadataPath(pathValue);
+  return appearanceLoaded || appearanceKnownPaths.has(path) || appearanceCache.has(path);
+}
+
+export async function loadDirectoryAppearancesForPaths(pathValues = [], options = {}) {
+  const paths = [...new Set((Array.isArray(pathValues) ? pathValues : [pathValues]).map(normalizeDirectoryMetadataPath))];
+  const requestedPaths = paths.filter((path) => options.force === true || !directoryAppearancePathIsCached(path));
+  if (!requestedPaths.length) return appearanceCache;
+
+  const query = encodeURIComponent(JSON.stringify(requestedPaths));
+  const res = await fetch("/api/graph/directory-appearance?paths=" + query, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load directory appearance metadata.");
+  const payload = await res.json();
+  const directories = payload?.directories && typeof payload.directories === "object" ? payload.directories : {};
+  for (const path of requestedPaths) {
+    rememberDirectoryAppearance(path, directories[path]?.appearance || {});
+  }
+  return appearanceCache;
+}
+
 export function getCachedDirectoryAppearance(pathValue = "") {
   const cleanPath = normalizeDirectoryMetadataPath(pathValue);
   return appearanceCache.get(cleanPath) || {};
 }
 
 export async function readDirectoryAppearance(pathValue = "") {
-  await loadDirectoryAppearanceMap();
+  await loadDirectoryAppearancesForPaths([pathValue]);
   return getCachedDirectoryAppearance(pathValue);
 }
 
@@ -134,11 +169,7 @@ export async function saveDirectoryAppearance(pathValue = "", appearanceValue = 
   }
 
   const savedAppearance = sanitizeDirectoryAppearance(payload?.appearance || appearance);
-  if (isDirectoryAppearanceEmpty(savedAppearance)) {
-    appearanceCache.delete(path);
-  } else {
-    appearanceCache.set(path, savedAppearance);
-  }
+  rememberDirectoryAppearance(path, savedAppearance);
   appearanceLoaded = true;
   publishDirectoryAppearanceChanged(path, savedAppearance);
   return savedAppearance;
