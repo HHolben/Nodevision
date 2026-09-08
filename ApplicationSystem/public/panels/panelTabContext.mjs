@@ -80,6 +80,10 @@ function applyGraphicalEditorContext(tab) {
   window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = path || null;
   updateToolbarState({ currentMode: "GraphicalEditing", selectedFile: path || null, activeEditorFilePath: path || null });
+  const htmlContext = host?.__nvHtmlEditorContext || tab.contentElement?.__nvHtmlEditorContext || null;
+  if (htmlContext?.kind === "html" && typeof htmlContext.activate === "function") {
+    htmlContext.activate();
+  }
 }
 
 function applyCodeEditorContext(tab) {

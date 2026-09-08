@@ -621,6 +621,7 @@ function prepareViewPanelForInlineState(viewPanel) {
     }
     viewPanel._dispose = null;
   }
+  cleanupViewIframeActivation(viewPanel);
   viewPanel.innerHTML = "";
   delete viewPanel.dataset.nvZoomInlineFit;
   lastRenderedPath = null;
@@ -1178,6 +1179,8 @@ export async function showGraphLinkInFileView(selection = selectedGraphLink()) {
     viewPanel._dispose = null;
   }
 
+  cleanupViewIframeActivation(viewPanel);
+
   currentLinkViewSelection = selection;
   lastRenderedPath = null;
   viewPanel.innerHTML = "";
@@ -1187,7 +1190,7 @@ export async function showGraphLinkInFileView(selection = selectedGraphLink()) {
   owningCell?.setAttribute("data-current-link-id", selection.edgeId || record.id || "link");
   setFileViewStatus("Link Viewer", summarizeLinkRecord(record));
   updateToolbarState({ currentMode: "LinkViewing", selectedGraphLink: selection });
-  activateFileViewPanel();
+  activateFileViewHost(viewPanel);
 
   const style = document.createElement("style");
   style.textContent = linkFileViewCss();
@@ -1469,13 +1472,18 @@ function resolveExtension(filename) {
   return "";
 }
 
-function activateFileViewPanel() {
-  const cell = getFileViewCell();
+function fileViewActivePanelElement(cell) {
+  const activeTabContent = cell?.querySelector?.(".nv-panel-tab-content:not([hidden])");
+  return activeTabContent?.querySelector?.(".panel") || activeTabContent || cell?.querySelector?.(".panel") || cell || null;
+}
+
+function activateFileViewPanel(cell = getFileViewCell()) {
   if (!cell) return;
 
   window.activeCell = cell;
   window.activePanel = "FileView";
   window.activePanelClass = cell.dataset.panelClass || "ViewPanel";
+  window.__nvActivePanelElement = fileViewActivePanelElement(cell);
   if (window.NodevisionState) {
     window.NodevisionState.activePanelType = window.activePanelClass;
   }
@@ -1497,7 +1505,7 @@ function activateFileViewHost(host) {
     ? host
     : host?.querySelector?.("[data-nv-file-view-root=\"true\"], #element-view");
   if (!claimFileViewHost(viewDiv)) return false;
-  activateFileViewPanel();
+  activateFileViewPanel(viewDiv.closest?.(".panel-cell") || getFileViewCell());
   const path = normalizeNotebookPath(
     viewDiv.dataset.nvFileViewRenderedPath ||
     viewDiv.dataset.currentFilePath ||
@@ -1522,7 +1530,7 @@ function activateFileViewHost(host) {
 
 function enableViewActivation(viewDiv) {
   if (!viewDiv) return;
-  const handler = () => activateFileViewPanel();
+  const handler = () => activateFileViewHost(viewDiv);
   viewDiv.addEventListener("pointerdown", handler, { capture: true });
   viewDiv.addEventListener("mousedown", handler, { capture: true });
   viewDiv.addEventListener("click", handler, { capture: true });
@@ -1539,14 +1547,156 @@ function getFileViewCell() {
   return document.querySelector(`[data-id="FileView"]`);
 }
 
+function fileViewRootFromTarget(target) {
+  if (!target) return null;
+  if (target.matches?.("[data-nv-file-view-root=\"true\"], #element-view")) return target;
+  return target.closest?.("[data-nv-file-view-root=\"true\"], #element-view") || null;
+}
+
+function fileViewRootFromFrameWindow(frameWindow) {
+  if (!frameWindow) return null;
+  const roots = document.querySelectorAll("[data-nv-file-view-root=\"true\"], #element-view");
+  for (const root of roots) {
+    for (const iframe of root.querySelectorAll?.("iframe") || []) {
+      try {
+        if (iframe.contentWindow === frameWindow) return root;
+      } catch {
+        // Cross-origin frame handles are still safe to compare when available, but access can fail.
+      }
+    }
+  }
+  return null;
+}
+
+function fileViewIframeDebugEnabled() {
+  try {
+    return Boolean(
+      window.__nvFileViewIframeDebug ||
+      window.NodevisionState?.debugFileViewIframes ||
+      window.localStorage?.getItem?.("nodevision.fileView.iframeDebug") === "true"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function describeFileViewElement(element) {
+  if (!element) return null;
+  return {
+    tag: element.tagName || element.nodeName || "",
+    id: element.id || "",
+    className: typeof element.className === "string" ? element.className : "",
+    panelId: element.dataset?.id || element.dataset?.panelId || "",
+    panelClass: element.dataset?.panelClass || "",
+    tabId: element.dataset?.nvPanelTabId || element.closest?.(".nv-panel-tab-content")?.dataset?.nvPanelTabId || "",
+    filePath: element.dataset?.nvFileViewRenderedPath || element.dataset?.currentFilePath || "",
+    connected: Boolean(element.isConnected),
+  };
+}
+
+function describeFileViewOwner(root, iframe = null) {
+  const cell = root?.closest?.(".panel-cell") || null;
+  const tab = root?.closest?.(".nv-panel-tab-content") || null;
+  return {
+    root: describeFileViewElement(root),
+    cell: describeFileViewElement(cell),
+    tab: describeFileViewElement(tab),
+    path: fileViewRootPath(root),
+    iframe: iframe ? {
+      src: iframe.getAttribute?.("src") || iframe.src || "",
+      connected: Boolean(iframe.isConnected),
+      readyState: (() => {
+        try { return iframe.contentDocument?.readyState || ""; } catch { return "inaccessible"; }
+      })(),
+      activeElement: document.activeElement === iframe,
+    } : null,
+  };
+}
+
+function debugFileViewIframe(label, details = {}) {
+  if (!fileViewIframeDebugEnabled()) return;
+  try {
+    const payload = typeof details === "function" ? details() : details;
+    console.debug?.("[FileView][iframe] " + label, payload);
+  } catch (err) {
+    console.debug?.("[FileView][iframe] " + label, { diagnosticError: err?.message || String(err) });
+  }
+}
+
+function describeIframeEvent(event) {
+  return {
+    type: event?.type || "",
+    target: describeFileViewElement(event?.target),
+    activeElement: describeFileViewElement(document.activeElement),
+    clientX: Number.isFinite(event?.clientX) ? event.clientX : null,
+    clientY: Number.isFinite(event?.clientY) ? event.clientY : null,
+  };
+}
+
+function describeSvgDocumentHitTest(iframe, doc) {
+  const svg = doc?.documentElement || null;
+  const tag = String(svg?.tagName || svg?.nodeName || "").toLowerCase();
+  if (tag !== "svg") return null;
+  const rect = svg.getBoundingClientRect?.() || null;
+  const centerX = rect ? Math.max(0, Math.min(rect.width - 1, rect.width / 2)) : 0;
+  const centerY = rect ? Math.max(0, Math.min(rect.height - 1, rect.height / 2)) : 0;
+  let computed = null;
+  let hit = null;
+  try { computed = doc.defaultView?.getComputedStyle?.(svg) || null; } catch {}
+  try { hit = doc.elementFromPoint?.(centerX, centerY) || null; } catch {}
+  return {
+    iframe: describeFileViewElement(iframe),
+    documentReadyState: doc.readyState || "",
+    documentContentType: doc.contentType || "",
+    svg: {
+      width: svg.getAttribute?.("width") || "",
+      height: svg.getAttribute?.("height") || "",
+      viewBox: svg.getAttribute?.("viewBox") || "",
+      rect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
+      pointerEvents: computed?.pointerEvents || "",
+      display: computed?.display || "",
+      visibility: computed?.visibility || "",
+      elementFromCenter: describeFileViewElement(hit),
+    },
+  };
+}
+
+function installIframeDebugEventDiagnostics(iframe, doc, root) {
+  if (!fileViewIframeDebugEnabled() || !doc) return null;
+  const cleanup = [];
+  const attach = (target, targetName, events, options = { capture: true }) => {
+    if (!target?.addEventListener) return;
+    for (const type of events) {
+      const handler = (event) => debugFileViewIframe("event:" + targetName + ":" + type, () => ({
+        owner: describeFileViewOwner(root, iframe),
+        event: describeIframeEvent(event),
+        svgHitTest: describeSvgDocumentHitTest(iframe, doc),
+      }));
+      target.addEventListener(type, handler, options);
+      cleanup.push(() => target.removeEventListener(type, handler, options));
+    }
+  };
+
+  const events = ["pointerdown", "mousedown", "click", "focusin", "focus", "contextmenu"];
+  attach(doc, "document", events);
+  attach(doc.documentElement, "documentElement", events);
+  try { attach(iframe.contentWindow, "window", events, true); } catch {}
+  debugFileViewIframe("svg-hit-test", () => ({
+    owner: describeFileViewOwner(root, iframe),
+    svgHitTest: describeSvgDocumentHitTest(iframe, doc),
+  }));
+  return () => cleanup.forEach((fn) => {
+    try { fn(); } catch {}
+  });
+}
+
 function installFileViewPointerTracking() {
   if (window.__nvFileViewPointerTrackingInstalled) return;
 
   const handler = (event) => {
     if (!event?.target) return;
-    const cell = getFileViewCell();
-    if (!cell || !cell.contains(event.target)) return;
-    activateFileViewPanel();
+    const root = fileViewRootFromTarget(event.target);
+    if (root) activateFileViewHost(root);
   };
 
   document.addEventListener("pointerdown", handler, true);
@@ -1558,11 +1708,8 @@ function installFileViewFocusHandler() {
   if (window.__nvFileViewFocusHandlerInstalled) return;
 
   const focusHandler = (event) => {
-    const cell = getFileViewCell();
-    if (!cell || !cell.contains(event?.target)) {
-      return;
-    }
-    activateFileViewPanel();
+    const root = fileViewRootFromTarget(event?.target);
+    if (root) activateFileViewHost(root);
   };
 
   document.addEventListener("focusin", focusHandler, true);
@@ -1615,12 +1762,13 @@ function installFileViewLiveRefresh() {
   window.__nvFileViewLiveRefreshInstalled = true;
 }
 
-function attachIframeActivation(node) {
+function attachIframeActivation(node, ownerRoot = null) {
   if (!node) return;
+  const root = ownerRoot || fileViewRootFromTarget(node);
   if (node instanceof HTMLIFrameElement) {
-    installIframeActivation(node);
+    installIframeActivation(node, root);
   } else if (node.querySelectorAll) {
-    node.querySelectorAll("iframe").forEach((iframe) => installIframeActivation(iframe));
+    node.querySelectorAll("iframe").forEach((iframe) => installIframeActivation(iframe, root || fileViewRootFromTarget(iframe)));
   }
 }
 
@@ -1631,53 +1779,219 @@ function observeViewIframes(viewDiv) {
   const observer = new MutationObserver((records) => {
     for (const record of records) {
       for (const node of record.addedNodes) {
-        attachIframeActivation(node);
+        attachIframeActivation(node, viewDiv);
+      }
+      for (const node of record.removedNodes || []) {
+        cleanupViewIframeActivation(node);
       }
     }
   });
 
   viewDiv.__nvIframeObserver = observer;
   observer.observe(viewDiv, { childList: true, subtree: true });
-  attachIframeActivation(viewDiv);
+  attachIframeActivation(viewDiv, viewDiv);
 }
 
-function installIframeActivation(iframe) {
-  if (!iframe) return;
-  if (iframe.__nvFileViewActivationAttached) return;
-  iframe.__nvFileViewActivationAttached = true;
-
-  const handler = () => activateFileViewPanel();
-
-  const tryAttachDocument = () => {
+function cleanupViewIframeActivation(viewDiv, options = {}) {
+  if (!viewDiv) return;
+  const iframes = [];
+  if (viewDiv instanceof HTMLIFrameElement) iframes.push(viewDiv);
+  viewDiv.querySelectorAll?.("iframe").forEach((iframe) => iframes.push(iframe));
+  for (const iframe of iframes) {
     try {
-      const doc = iframe.contentDocument;
-      if (!doc) return;
-      if (!doc.__nvFileViewLinkNavigationAttached) {
-        doc.__nvFileViewLinkNavigationAttached = true;
-        doc.addEventListener("click", handleFileViewLinkClick, { capture: true });
-      }
-      if (doc.__nvFileViewActivationAttached) return;
-      doc.__nvFileViewActivationAttached = true;
-      doc.addEventListener("click", handler, { capture: true });
-      doc.addEventListener("mousedown", handler, { capture: true });
-      doc.addEventListener("pointerdown", handler, { capture: true });
-      doc.addEventListener("focusin", handler, { capture: true });
+      iframe.__nvFileViewActivationBridge?.cleanup?.();
     } catch (err) {
-      // Accessing cross-origin documents will throw; ignore indicator.
+      console.warn?.("[FileView] iframe activation cleanup failed:", err);
+    }
+  }
+  if (options.disconnectObserver && viewDiv.__nvIframeObserver) {
+    viewDiv.__nvIframeObserver.disconnect();
+    viewDiv.__nvIframeObserver = null;
+  }
+}
+
+function installIframeActivation(iframe, ownerRoot = null) {
+  if (!iframe) return;
+  const root = ownerRoot || fileViewRootFromTarget(iframe);
+  if (!root) {
+    console.warn?.("[FileView] iframe activation skipped: owning File Viewer root unavailable.");
+    return;
+  }
+
+  if (iframe.__nvFileViewActivationBridge) {
+    iframe.__nvFileViewActivationBridge.updateOwner(root);
+    return;
+  }
+
+  let attachedDoc = null;
+  let documentCleanup = null;
+  let attachedFrameWindow = null;
+  let frameWindowCleanup = null;
+  let pendingFocusedFrameCheck = 0;
+
+  const iframeActivationOptions = { capture: true };
+  const docActivationOptions = { capture: true };
+
+  const activateOwner = (reason = "iframe-interaction", event = null) => {
+    debugFileViewIframe("activate:" + reason, () => ({
+      owner: describeFileViewOwner(root, iframe),
+      event: describeIframeEvent(event),
+      before: {
+        activeCell: describeFileViewElement(window.activeCell),
+        activePanel: window.activePanel || "",
+        activePanelClass: window.activePanelClass || "",
+        activePanelElement: describeFileViewElement(window.__nvActivePanelElement),
+        activePanelType: window.NodevisionState?.activePanelType || "",
+        documentActiveElement: describeFileViewElement(document.activeElement),
+      },
+    }));
+    const activated = activateFileViewHost(root);
+    debugFileViewIframe("activated:" + reason, () => ({
+      activated,
+      after: {
+        activeCell: describeFileViewElement(window.activeCell),
+        activePanel: window.activePanel || "",
+        activePanelClass: window.activePanelClass || "",
+        activePanelElement: describeFileViewElement(window.__nvActivePanelElement),
+        activePanelType: window.NodevisionState?.activePanelType || "",
+        documentActiveElement: describeFileViewElement(document.activeElement),
+      },
+    }));
+    return activated;
+  };
+
+  const onIframeShellInteraction = (event) => activateOwner("iframe-shell-" + (event?.type || "event"), event);
+  const onIframeDocumentInteraction = (event) => activateOwner("iframe-document-" + (event?.type || "event"), event);
+  const onFrameWindowFocus = (event) => activateOwner("iframe-window-focus", event);
+
+  const scheduleFocusedFrameActivation = (reason) => {
+    if (pendingFocusedFrameCheck) return;
+    const run = () => {
+      pendingFocusedFrameCheck = 0;
+      const iframeHasFocus = document.activeElement === iframe;
+      debugFileViewIframe("focused-frame-check:" + reason, () => ({
+        owner: describeFileViewOwner(root, iframe),
+        iframeHasFocus,
+        activeElement: describeFileViewElement(document.activeElement),
+      }));
+      if (iframeHasFocus) activateOwner(reason);
+    };
+    pendingFocusedFrameCheck = window.setTimeout(run, 0);
+  };
+
+  const removeDocumentListeners = () => {
+    if (typeof documentCleanup === "function") {
+      documentCleanup();
+      documentCleanup = null;
+    }
+    attachedDoc = null;
+  };
+
+  const removeFrameWindowListeners = () => {
+    if (typeof frameWindowCleanup === "function") {
+      frameWindowCleanup();
+      frameWindowCleanup = null;
+    }
+    attachedFrameWindow = null;
+  };
+
+  const tryAttachFrameWindow = () => {
+    try {
+      const frameWindow = iframe.contentWindow;
+      if (!frameWindow || frameWindow === attachedFrameWindow) return;
+      removeFrameWindowListeners();
+      frameWindow.addEventListener("focus", onFrameWindowFocus, true);
+      attachedFrameWindow = frameWindow;
+      frameWindowCleanup = () => {
+        frameWindow.removeEventListener("focus", onFrameWindowFocus, true);
+      };
+      debugFileViewIframe("frame-window-listeners-installed", () => describeFileViewOwner(root, iframe));
+    } catch (err) {
+      debugFileViewIframe("frame-window-inaccessible", () => ({ message: err?.message || String(err), owner: describeFileViewOwner(root, iframe) }));
     }
   };
 
-  iframe.addEventListener("mousedown", handler, { capture: true });
-  iframe.addEventListener("click", handler, { capture: true });
-  iframe.addEventListener("pointerdown", handler, { capture: true });
-  iframe.addEventListener("focus", handler, true);
-  iframe.addEventListener("load", () => {
-    tryAttachDocument();
-    tryScrollToPendingFileViewAnchor(getActiveFilePath());
-  });
-  tryAttachDocument();
-}
+  const tryAttachDocument = (reason = "document-attach") => {
+    try {
+      const doc = iframe.contentDocument;
+      if (!doc) {
+        debugFileViewIframe("document-unavailable:" + reason, () => describeFileViewOwner(root, iframe));
+        return;
+      }
+      if (doc === attachedDoc) return;
+      removeDocumentListeners();
 
+      doc.addEventListener("click", handleFileViewLinkClick, { capture: true });
+      doc.addEventListener("pointerdown", onIframeDocumentInteraction, docActivationOptions);
+      doc.addEventListener("mousedown", onIframeDocumentInteraction, docActivationOptions);
+      doc.addEventListener("focusin", onIframeDocumentInteraction, docActivationOptions);
+      doc.addEventListener("contextmenu", onIframeDocumentInteraction, docActivationOptions);
+      const debugCleanup = installIframeDebugEventDiagnostics(iframe, doc, root);
+
+      attachedDoc = doc;
+      documentCleanup = () => {
+        doc.removeEventListener("click", handleFileViewLinkClick, { capture: true });
+        doc.removeEventListener("pointerdown", onIframeDocumentInteraction, docActivationOptions);
+        doc.removeEventListener("mousedown", onIframeDocumentInteraction, docActivationOptions);
+        doc.removeEventListener("focusin", onIframeDocumentInteraction, docActivationOptions);
+        doc.removeEventListener("contextmenu", onIframeDocumentInteraction, docActivationOptions);
+        debugCleanup?.();
+      };
+      debugFileViewIframe("document-listeners-installed:" + reason, () => ({
+        owner: describeFileViewOwner(root, iframe),
+        svgHitTest: describeSvgDocumentHitTest(iframe, doc),
+      }));
+    } catch (err) {
+      debugFileViewIframe("document-inaccessible:" + reason, () => ({ message: err?.message || String(err), owner: describeFileViewOwner(root, iframe) }));
+    }
+  };
+
+  const onLoad = (event) => {
+    debugFileViewIframe("iframe-load", () => ({ owner: describeFileViewOwner(root, iframe), event: describeIframeEvent(event) }));
+    tryAttachFrameWindow();
+    tryAttachDocument("load");
+    scheduleFocusedFrameActivation("iframe-load-active-element");
+    tryScrollToPendingFileViewAnchor(getActiveFilePath());
+  };
+
+  const onParentWindowBlur = () => scheduleFocusedFrameActivation("parent-window-blur-active-element");
+
+  iframe.addEventListener("pointerdown", onIframeShellInteraction, iframeActivationOptions);
+  iframe.addEventListener("mousedown", onIframeShellInteraction, iframeActivationOptions);
+  iframe.addEventListener("contextmenu", onIframeShellInteraction, iframeActivationOptions);
+  iframe.addEventListener("focus", onIframeShellInteraction, true);
+  iframe.addEventListener("load", onLoad);
+  window.addEventListener("blur", onParentWindowBlur, true);
+
+  iframe.__nvFileViewActivationBridge = {
+    updateOwner(nextRoot) {
+      if (!nextRoot || nextRoot === root) return;
+      this.cleanup();
+      installIframeActivation(iframe, nextRoot);
+    },
+    cleanup() {
+      if (pendingFocusedFrameCheck) {
+        window.clearTimeout(pendingFocusedFrameCheck);
+        pendingFocusedFrameCheck = 0;
+      }
+      removeDocumentListeners();
+      removeFrameWindowListeners();
+      iframe.removeEventListener("pointerdown", onIframeShellInteraction, iframeActivationOptions);
+      iframe.removeEventListener("mousedown", onIframeShellInteraction, iframeActivationOptions);
+      iframe.removeEventListener("contextmenu", onIframeShellInteraction, iframeActivationOptions);
+      iframe.removeEventListener("focus", onIframeShellInteraction, true);
+      iframe.removeEventListener("load", onLoad);
+      window.removeEventListener("blur", onParentWindowBlur, true);
+      iframe.__nvFileViewActivationBridge = null;
+      debugFileViewIframe("bridge-cleaned", () => describeFileViewOwner(root, iframe));
+    },
+  };
+
+  debugFileViewIframe("bridge-installed", () => describeFileViewOwner(root, iframe));
+  tryAttachFrameWindow();
+  tryAttachDocument("initial");
+  if (document.activeElement === iframe) scheduleFocusedFrameActivation("already-focused-active-element");
+}
 
 export async function setupPanel(panel, instanceVars = {}) {
   // Create container for view content
@@ -1691,6 +2005,16 @@ export async function setupPanel(panel, instanceVars = {}) {
   enableViewActivation(viewDiv);
   installFileViewLinkNavigation(viewDiv);
   observeViewIframes(viewDiv);
+  const cleanupFileViewPanel = () => cleanupViewIframeActivation(viewDiv, { disconnectObserver: true });
+  if (typeof panel.cleanup === "function") {
+    const previousCleanup = panel.cleanup;
+    panel.cleanup = () => {
+      cleanupFileViewPanel();
+      previousCleanup();
+    };
+  } else {
+    panel.cleanup = cleanupFileViewPanel;
+  }
   installFileViewPointerTracking();
   installFileViewFocusHandler();
   installFileViewLiveRefresh();
@@ -1760,8 +2084,11 @@ export async function setupPanel(panel, instanceVars = {}) {
   // Listen for iframe -> parent click messages
   window.addEventListener("message", (event) => {
     if (event.data?.type === "activatePanel" && event.data?.id === "FileView") {
-      activateFileViewPanel();
-      console.log("Active panel via postMessage:", window.activePanel);
+      const root = fileViewRootFromFrameWindow(event.source);
+      if (root) {
+        activateFileViewHost(root);
+        console.log("Active panel via postMessage:", window.activePanel);
+      }
     }
   });
 
@@ -1901,6 +2228,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
     }
     viewPanel._dispose = null;
   }
+  cleanupViewIframeActivation(viewPanel);
   viewPanel.innerHTML = "";
   delete viewPanel.dataset.nvZoomInlineFit;
 
@@ -1974,7 +2302,7 @@ async function renderFile(filename, viewPanel, serverBase, options = {}) {
       });
       iframe.src = "about:blank";
       viewPanel.appendChild(iframe);
-      installIframeActivation(iframe);
+      installIframeActivation(iframe, viewPanel);
     }
 
     const normalizeNotebookPath = (value) => {
@@ -2011,7 +2339,8 @@ async function renderFile(filename, viewPanel, serverBase, options = {}) {
     return false;
 
   } finally {
-    installIframeActivation(iframe);
+    attachIframeActivation(viewPanel, viewPanel);
+    installIframeActivation(iframe, viewPanel);
   }
 }
 

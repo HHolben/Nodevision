@@ -5886,6 +5886,11 @@ export async function renderEditor(filePath, container, options = {}) {
       window.__nvActiveHtmlEditorContext = htmlEditorContext;
       window.getEditorHTML = getHtmlForSave;
       window.saveWYSIWYGFile = saveHtmlForPath;
+      updateToolbarState({
+        currentMode: editorMode,
+        selectedFile: filePath,
+        activeEditorFilePath: filePath,
+      });
       return true;
     };
 

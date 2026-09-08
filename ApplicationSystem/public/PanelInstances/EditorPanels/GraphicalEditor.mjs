@@ -383,6 +383,10 @@ function activateGraphicalEditorHost(host) {
     activeEditorFilePath: filePath || null,
     activeActionHandler: null,
   });
+  const htmlContext = editorDiv.__nvHtmlEditorContext || owningCell?.__nvHtmlEditorContext || null;
+  if (htmlContext?.kind === "html" && typeof htmlContext.activate === "function") {
+    htmlContext.activate();
+  }
   window.highlightActiveCell?.(owningCell);
   if (owningCell) {
     window.dispatchEvent(new CustomEvent("activePanelChanged", {
