@@ -5884,6 +5884,16 @@ export async function renderEditor(filePath, container, options = {}) {
       window.__nvWysiwygActivePath = filePath;
       window.__nvHtmlEditorActivePath = filePath;
       window.__nvActiveHtmlEditorContext = htmlEditorContext;
+      window.__nvTableEditorRoot = wysiwyg;
+      window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
+        getEditorElement: () => wysiwyg,
+        markDirty: () => markHtmlEditorDirty(wysiwyg, filePath),
+        recordProgrammaticChange: (beforeHtml) => {
+          const recorded = wysiwyg.__nvProgrammaticHistory?.record?.(beforeHtml);
+          if (recorded) markHtmlEditorDirty(wysiwyg, filePath);
+          return Boolean(recorded);
+        },
+      });
       window.getEditorHTML = getHtmlForSave;
       window.saveWYSIWYGFile = saveHtmlForPath;
       updateToolbarState({
@@ -5900,6 +5910,8 @@ export async function renderEditor(filePath, container, options = {}) {
       filePath,
       getHTML: getHtmlForSave,
       save: saveHtmlForPath,
+      getEditorElement: () => wysiwyg,
+      editorElement: wysiwyg,
       activate: activateHtmlEditorContext,
     };
     container.__nvHtmlEditorContext = htmlEditorContext;

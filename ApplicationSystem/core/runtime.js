@@ -18,6 +18,7 @@ import {
 import { startMqttServerFromEnv } from '../MessageBroker/MQTT/MqttTcpServer.mjs';
 import { getBroker } from '../MessageBroker/BrokerSingleton.mjs';
 import { startMqttCsvLoggers } from '../MessageBroker/MQTTCsvLogger.mjs';
+import { createServerPerformanceOperation } from '../server/performanceDiagnostics.mjs';
 
 function detectRuntimeType(config) {
   if (config.runtimeType) return config.runtimeType;
@@ -135,6 +136,7 @@ export function createRuntime(options = {}) {
   }
 
   async function start() {
+    const perf = createServerPerformanceOperation("runtime startup", { runtimeType: config.runtimeType });
     if (runtimeInstance) {
       return runtimeInstance;
     }
@@ -148,6 +150,7 @@ export function createRuntime(options = {}) {
 
     try {
       const phpResult = await phpSupervisor.start();
+      perf.mark("php");
       if (phpResult?.ok && phpResult?.url) {
         config.phpProxyTarget = phpResult.url;
       }
@@ -156,14 +159,17 @@ export function createRuntime(options = {}) {
     }
 
     const app = await createApp(config);
+    perf.mark("server-app");
 
     const listening = await listenWithFallback(app);
+    perf.mark("http-listen", { port: listening.port });
     server = listening.server;
     config.actualPort = listening.port;
     process.env.PORT = String(listening.port);
 
     try {
       mqttServer = await startMqttServerFromEnv({ runtimeRoot });
+      perf.mark("mqtt");
     } catch (err) {
       console.warn('Failed to start MQTT broker:', err?.message || err);
     }
@@ -183,6 +189,7 @@ export function createRuntime(options = {}) {
 
     const baseUrl = `http://${config.host}:${listening.port}`;
     console.log(`Nodevision ${runtimeMeta.type} runtime ready at ${baseUrl}`);
+    perf.end({ success: true, actualPort: listening.port });
     runtimeInstance = {
       server,
       url: baseUrl,

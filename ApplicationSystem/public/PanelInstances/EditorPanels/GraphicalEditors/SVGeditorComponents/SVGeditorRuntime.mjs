@@ -1958,6 +1958,45 @@ export async function renderEditor(filePath, container) {
     return !svgEditorContext || window.SVGEditorContext === svgEditorContext || window.__nvSvgEditorActivePath === filePath;
   }
 
+  function activateSvgEditorContext() {
+    if (!isCurrentRender()) return false;
+    window.__nvSvgEditorActivePath = filePath;
+    window.__nvWysiwygActivePath = filePath;
+    window.currentActiveFilePath = filePath;
+    window.filePath = filePath;
+    window.NodevisionState = window.NodevisionState || {};
+    window.NodevisionState.activePanelType = "GraphicalEditor";
+    window.NodevisionState.currentMode = "SVG Editing";
+    window.NodevisionState.selectedFile = filePath;
+    window.NodevisionState.selectedFileIsDirectory = false;
+    window.NodevisionState.activeEditorFilePath = filePath;
+    window.NodevisionState.activeActionHandler = null;
+    window.NodevisionState.fileIsDirty = svgDocumentDirty;
+
+    const activeTool = toolState?.mode || window.NodevisionState.svgDrawTool || "select";
+    setEditorContext({
+      filePath,
+      fileFamily: "svg",
+      fileFamilyLabel: "SVG",
+      editorMode: "SVGediting",
+      editorModeLabel: "SVG Editing",
+      activeTool,
+      activeToolLabel: String(activeTool || "select") + " Tool",
+    });
+    reportSvgAttentionSelection(selectedElement);
+    const imageContext = selectedSvgImageContext();
+    updateToolbarState({
+      currentMode: "SVG Editing",
+      selectedFile: filePath,
+      activeEditorFilePath: filePath,
+      activeActionHandler: null,
+      fileIsDirty: svgDocumentDirty,
+      svgImageSelected: Boolean(imageContext?.element),
+      svgImagePath: imageContext?.linkedNotebookPath || null,
+    });
+    return true;
+  }
+
   function markDocumentDirty(dirty = true) {
     svgDocumentDirty = Boolean(dirty);
     if (svgEditorContext) svgEditorContext.dirty = svgDocumentDirty;
@@ -5725,7 +5764,10 @@ export async function renderEditor(filePath, container) {
   window.selectSVGElement = selectElement;
   window.toggleSVGElementSelection = toggleSelection;
   window.SVGEditorContext = {
+    kind: "svg",
+    filePath,
     svgRoot,
+    activate: activateSvgEditorContext,
     getEditorHTML: serializeSvgForSave,
     setEditorHTML: setSvgFromString,
     dirty: svgDocumentDirty,
@@ -6094,6 +6136,9 @@ export async function renderEditor(filePath, container) {
     }
   };
   svgEditorContext = window.SVGEditorContext;
+  container.__nvSvgEditorContext = svgEditorContext;
+  const svgEditorCell = container?.closest?.(".panel-cell") || null;
+  if (svgEditorCell) svgEditorCell.__nvSvgEditorContext = svgEditorContext;
   window.toggleSVGLayersPanel = toggleLayersPanel;
   const svgInsertMediaRegistration = registerSvgEditorContextForInsertMedia({
     context: window.SVGEditorContext,
@@ -6131,6 +6176,8 @@ export async function renderEditor(filePath, container) {
     if (window.SVGEditorContext?.__nvInsertMediaIdentity?.instanceId === svgInsertMediaRegistration?.instanceId) {
       window.SVGEditorContext = null;
     }
+    if (container.__nvSvgEditorContext === svgEditorContext) container.__nvSvgEditorContext = null;
+    if (svgEditorCell?.__nvSvgEditorContext === svgEditorContext) svgEditorCell.__nvSvgEditorContext = null;
     clearEditorContext(filePath);
   };
 }

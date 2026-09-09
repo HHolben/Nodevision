@@ -8,6 +8,9 @@ import { evaluateToolbarItemState } from "./toolbarConditions.mjs";
 const contextSource = await readFile(new URL("./panelTabContext.mjs", import.meta.url), "utf8");
 const graphicalEditorSource = await readFile(new URL("../PanelInstances/EditorPanels/GraphicalEditor.mjs", import.meta.url), "utf8");
 const htmlEditorSource = await readFile(new URL("../PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImpl.mjs", import.meta.url), "utf8");
+const svgEditorSource = await readFile(new URL("../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntime.mjs", import.meta.url), "utf8");
+const tableToolsSource = await readFile(new URL("../ToolbarCallbacks/insert/tableTools.mjs", import.meta.url), "utf8");
+const drawToolbar = JSON.parse(await readFile(new URL("../ToolbarJSONfiles/drawToolbar.json", import.meta.url), "utf8"));
 const insertToolbar = JSON.parse(await readFile(new URL("../ToolbarJSONfiles/insertToolbar.json", import.meta.url), "utf8"));
 
 const mediaItem = insertToolbar.find((item) => item.ToolbarCategory === "Insert" && item.heading === "Media");
@@ -65,5 +68,22 @@ assert.match(graphicalEditorSource, /__nvHtmlEditorContext/, "GraphicalEditor ac
 assert.match(graphicalEditorSource, /htmlContext\.activate\(\)/, "GraphicalEditor activation should restore HTMLediting toolbar context when present");
 assert.match(graphicalEditorSource, /await updateGraphicalEditor\(initialPath, \{ force: true, host: container \}\);\s*activateGraphicalEditorHost\(container\);/, "GraphicalEditor setup should reapply editor context after initial render");
 assert.match(htmlEditorSource, /currentMode:\s*editorMode/, "HTML editor activation should refresh toolbar state with HTMLediting mode");
+assert.match(htmlEditorSource, /window.__nvTableEditorRoot = wysiwyg/, "HTML editor activation should publish the active table editor root");
+assert.match(htmlEditorSource, /getEditorElement:\s*\(\) => wysiwyg/, "HTML editor context should expose its WYSIWYG element");
+assert.match(tableToolsSource, /HTMLWysiwygTools\?\.getEditorElement/, "Table insertion should prefer the active HTML WYSIWYG tools root");
+assert.match(tableToolsSource, /__nvActiveHtmlEditorContext/, "Table insertion should fall back to the active HTML editor context before old DOM lookup");
+
+const svgInsertShapeItem = insertToolbar.find((item) => item.heading === "Insert Shape" && item.modes?.includes?.("SVG Editing"));
+const svgVectorDrawItem = drawToolbar.find((item) => item.heading === "Vector Draw" && item.parentHeading === "Draw" && item.modes?.includes?.("SVG Editing"));
+assert.ok(svgInsertShapeItem, "SVG Insert -> Insert Shape should be available in SVG Editing mode");
+assert.ok(svgVectorDrawItem, "SVG Draw -> Vector Draw should be available in SVG Editing mode");
+assert.equal(evaluateToolbarItemState(svgInsertShapeItem, { state: { currentMode: "SVG Editing" } }).visible, true, "SVG Insert Shape should pass SVG Editing filtering");
+assert.equal(evaluateToolbarItemState(svgVectorDrawItem, { state: { currentMode: "SVG Editing" } }).visible, true, "SVG Vector Draw should pass SVG Editing filtering");
+assert.match(svgEditorSource, /activateSvgEditorContext/, "SVG editor should expose a precise activation hook");
+assert.match(svgEditorSource, /currentMode:\s*"SVG Editing"/, "SVG activation should refresh toolbar state with SVG Editing mode");
+assert.match(svgEditorSource, /container.__nvSvgEditorContext = svgEditorContext/, "SVG editor context should be stored on its host for tab activation");
+assert.match(graphicalEditorSource, /__nvSvgEditorContext/, "GraphicalEditor activation should detect embedded SVG editor context");
+assert.match(graphicalEditorSource, /svgContext\.activate\(\)/, "GraphicalEditor activation should restore SVG toolbar context when present");
+assert.match(contextSource, /svgContext\.activate\(\)/, "Tab activation should restore SVG toolbar context when present");
 
 console.log("ok - active panel tab context switches between FileView and GraphicalEditor toolbar modes");

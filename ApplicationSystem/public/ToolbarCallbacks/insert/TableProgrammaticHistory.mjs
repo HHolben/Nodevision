@@ -11,11 +11,19 @@ export function recordTableEditorMutation(root, beforeHtml) {
   if (readEditorHtml(root) === before) return false;
 
   const tools = window.HTMLWysiwygTools || {};
-  if (typeof tools.recordProgrammaticChange === "function") {
+  let toolsOwnRoot = false;
+  try {
+    toolsOwnRoot = tools.getEditorElement?.() === root;
+  } catch {
+    toolsOwnRoot = false;
+  }
+
+  if (toolsOwnRoot && typeof tools.recordProgrammaticChange === "function") {
     return tools.recordProgrammaticChange(before);
   }
 
-  root.__nvProgrammaticHistory?.record?.(before);
-  tools.markDirty?.();
-  return true;
+  const recorded = root.__nvProgrammaticHistory?.record?.(before);
+  if (toolsOwnRoot && typeof tools.markDirty === "function") tools.markDirty();
+  else root.dispatchEvent?.(new Event("input", { bubbles: true }));
+  return recorded !== false;
 }

@@ -7,6 +7,7 @@ import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createServerContext } from '../../shared/serverContext.mjs';
+import { createServerPerformanceOperation } from '../../server/performanceDiagnostics.mjs';
 
 const BASE_CONTEXT = createServerContext();
 const DIRECTORY_IMAGE_CANDIDATES = [
@@ -80,14 +81,16 @@ function toNotebookAssetUrl(relativePath) {
   return `/Notebook/${parts.join('/')}`;
 }
 
-async function findDirectoryImage(directoryFullPath, directoryRelativePath) {
+async function findDirectoryImage(directoryFullPath, directoryRelativePath, stats = null) {
   for (const candidate of DIRECTORY_IMAGE_CANDIDATES) {
+    if (stats) stats.directoryImageProbeAttempts = Number(stats.directoryImageProbeAttempts || 0) + 1;
     const candidateFullPath = path.join(directoryFullPath, candidate);
     try {
       await fs.access(candidateFullPath);
       const rel = directoryRelativePath
         ? `${directoryRelativePath.split(path.sep).join('/')}/${candidate}`
         : candidate;
+      if (stats) stats.directoryImagesFound = Number(stats.directoryImagesFound || 0) + 1;
       return {
         directoryImageName: candidate,
         directoryImageUrl: toNotebookAssetUrl(rel),
@@ -103,13 +106,14 @@ async function findDirectoryImage(directoryFullPath, directoryRelativePath) {
   };
 }
 
-async function readDirectory(baseNotebookPath, dir) {
+async function readDirectory(baseNotebookPath, dir, stats = null) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const result = await Promise.all(entries.map(async (entry) => {
     const fullPath = path.join(dir, entry.name);
     const relativePath = path.relative(baseNotebookPath, fullPath);
     if (entry.isDirectory()) {
-      const imageInfo = await findDirectoryImage(fullPath, relativePath);
+      if (stats) stats.directories = Number(stats.directories || 0) + 1;
+      const imageInfo = await findDirectoryImage(fullPath, relativePath, stats);
       return {
         name: entry.name,
         path: relativePath,
@@ -171,14 +175,25 @@ export default function createFilesRouter(ctx = BASE_CONTEXT) {
   };
 
   router.get('/api/files', async (req, res) => {
-    const dir = req.query.path
-      ? path.join(notebookBasePath, req.query.path)
+    const requestPath = req.query.path || "";
+    const dir = requestPath
+      ? path.join(notebookBasePath, requestPath)
       : notebookBasePath;
+    const stats = { directories: 0, directoryImageProbeAttempts: 0, directoryImagesFound: 0 };
+    const perf = createServerPerformanceOperation("api files directory", { path: requestPath });
 
     try {
-      const structure = await readDirectory(notebookBasePath, dir);
+      const structure = await readDirectory(notebookBasePath, dir, stats);
+      perf.end({
+        success: true,
+        children: structure.length,
+        directories: stats.directories,
+        directoryImageProbeAttempts: stats.directoryImageProbeAttempts,
+        directoryImagesFound: stats.directoryImagesFound,
+      });
       res.json(structure);
     } catch (error) {
+      perf.end({ success: false, error: error?.message || String(error) });
       console.error('Error reading directory structure:', error);
       res.status(500).json({ error: 'Error reading directory structure' });
     }

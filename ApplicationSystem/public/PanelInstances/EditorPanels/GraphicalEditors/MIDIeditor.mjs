@@ -446,6 +446,14 @@ function selectSingleIndex(index) {
   updateSelectionType();
 }
 
+function addIndexToSelection(index) {
+  if (index < 0 || index >= currentNotesData.length) return;
+  selectedNoteIndices.add(index);
+  selectedNoteIndex = index;
+  if (selectionAnchorIndex < 0) selectionAnchorIndex = index;
+  updateSelectionType();
+}
+
 function selectRangeToIndex(index) {
   const anchor = selectionAnchorIndex >= 0 ? selectionAnchorIndex : selectedNoteIndex;
   if (anchor < 0) {
@@ -688,7 +696,10 @@ function renderSheetMusic() {
         return;
       }
 
-      if (event.shiftKey) {
+      const additiveSelection = event.ctrlKey || event.metaKey;
+      if (additiveSelection) {
+        addIndexToSelection(idx);
+      } else if (event.shiftKey) {
         selectRangeToIndex(idx);
       } else if (!isIndexSelected(idx)) {
         selectSingleIndex(idx);
@@ -699,7 +710,7 @@ function renderSheetMusic() {
 
       const selected = currentNotesData[idx];
       previewNoteEntry(selected);
-      if (!event.shiftKey && selected && !selected.rest && Number.isFinite(selected.midi)) {
+      if (!event.shiftKey && !additiveSelection && selected && !selected.rest && Number.isFinite(selected.midi)) {
         const dragIndices = getSelectedIndices().filter((noteIndex) => {
           const note = currentNotesData[noteIndex];
           return note && !note.rest && Number.isFinite(note.midi);

@@ -9,13 +9,13 @@ import {
   registerLiveFileContentProvider,
   touchLiveFileContentProvider,
 } from "/LiveFileContent.mjs";
+import { loadModuleMap as loadSharedModuleMap } from "/PanelInstances/ModuleMapLoader.mjs";
 
 let lastEditedPath = null;
 let graphicalEditorHostRef = null;
 let currentGraphicalEditorCleanup = null;
 let currentGraphicalLiveCleanup = null;
 let graphicalLiveProviderSequence = 0;
-let moduleMapCache = null;
 const FALLBACK_EDITOR_BY_EXT = {
   png: "PNGeditor.mjs",
   ico: "PNGeditor.mjs",
@@ -25,43 +25,8 @@ const FALLBACK_EDITOR_BY_EXT = {
  * ModuleMap loader (mirrors FileView.mjs behavior)
  * --------------------------------------------------------- */
 async function loadModuleMap() {
-  // Only use cache if it has actual entries (avoid caching failed/empty loads).
-  if (moduleMapCache && Object.keys(moduleMapCache).length > 0) return moduleMapCache;
-
   try {
-    const csvUrl = "/PanelInstances/ModuleMap.csv";
-    const res = await fetch(csvUrl, { cache: "no-store" });
-    if (!res.ok) {
-      console.error("❌ Failed to load ModuleMap.csv, status:", res.status);
-      return {};
-    }
-
-    const text = await res.text();
-    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-    const header = lines.shift()?.split(",").map((h) => h.trim()) || [];
-    const idx = {
-      ext: header.indexOf("Extension"),
-      editor: header.indexOf("GraphicalEditorModule"),
-      family: header.indexOf("Family"),
-    };
-
-    if (idx.ext < 0 || idx.editor < 0) {
-      console.error("❌ ModuleMap.csv header missing required columns:", header);
-      return {};
-    }
-
-    const map = {};
-    for (const line of lines) {
-      const cols = line.split(",").map((c) => c.trim());
-      const ext = (cols[idx.ext] || "").toLowerCase();
-      map[ext] = {
-        editor: cols[idx.editor] || null,
-        family: idx.family >= 0 ? cols[idx.family] || null : null,
-      };
-    }
-
-    moduleMapCache = map;
-    return map;
+    return await loadSharedModuleMap();
   } catch (err) {
     console.error("❌ Error loading ModuleMap.csv:", err);
     return {};
@@ -383,9 +348,14 @@ function activateGraphicalEditorHost(host) {
     activeEditorFilePath: filePath || null,
     activeActionHandler: null,
   });
-  const htmlContext = editorDiv.__nvHtmlEditorContext || owningCell?.__nvHtmlEditorContext || null;
-  if (htmlContext?.kind === "html" && typeof htmlContext.activate === "function") {
-    htmlContext.activate();
+  const svgContext = editorDiv.__nvSvgEditorContext || owningCell?.__nvSvgEditorContext || null;
+  if (svgContext?.kind === "svg" && typeof svgContext.activate === "function" && svgContext.activate()) {
+    // SVG files need their precise toolbar mode; the generic GraphicalEditing mode hides SVG Draw/Insert items.
+  } else {
+    const htmlContext = editorDiv.__nvHtmlEditorContext || owningCell?.__nvHtmlEditorContext || null;
+    if (htmlContext?.kind === "html" && typeof htmlContext.activate === "function") {
+      htmlContext.activate();
+    }
   }
   window.highlightActiveCell?.(owningCell);
   if (owningCell) {

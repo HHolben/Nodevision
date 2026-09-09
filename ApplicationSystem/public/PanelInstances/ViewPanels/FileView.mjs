@@ -24,6 +24,8 @@ import {
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { setStatus } from "/StatusBar.mjs";
 import { getLiveFileContentForPath } from "/LiveFileContent.mjs";
+import { createPerformanceOperation, incrementPerformanceCounter } from "/PerformanceDiagnostics.mjs";
+import { loadModuleMap as loadSharedModuleMap } from "/PanelInstances/ModuleMapLoader.mjs";
 
 let lastRenderedPath = null;
 let viewDivRef = null;
@@ -34,7 +36,7 @@ let liveFileViewerEnabled = readLiveFileViewerEnabled();
 let liveFileViewRefreshTimer = null;
 
 
-let moduleMapCache = null;
+const loadedViewerModuleUrls = new Set();
 
 const navigationState = getNodevisionNavigationState();
 let pendingFileViewAnchor = null;
@@ -1226,6 +1228,22 @@ export async function showGraphLinkInFileView(selection = selectedGraphLink()) {
   return true;
 }
 
+function handleFileViewWindowMessage(event) {
+  if (event.data?.type === "activatePanel" && event.data?.id === "FileView") {
+    const root = fileViewRootFromFrameWindow(event.source);
+    if (root) {
+      activateFileViewHost(root);
+      console.log("Active panel via postMessage:", window.activePanel);
+    }
+  }
+}
+
+function installFileViewMessageListener() {
+  if (window.__nvFileViewMessageListenerInstalled) return;
+  window.addEventListener("message", handleFileViewWindowMessage);
+  window.__nvFileViewMessageListenerInstalled = true;
+}
+
 function installGraphLinkFileViewHandler() {
   if (window.__nvGraphLinkFileViewHandlerInstalled) return;
   window.__nvGraphLinkFileViewHandlerInstalled = true;
@@ -1345,52 +1363,21 @@ function setFileViewStatus(message, detail = "") {
 }
 
 async function loadModuleMap() {
-  // Only use cache if it has actual entries (not empty from failed load)
-  if (moduleMapCache && Object.keys(moduleMapCache).length > 0) {
-    return moduleMapCache;
-  }
-
   try {
-    // Use relative path - browser will resolve through current origin/proxy
-    const csvUrl = "/PanelInstances/ModuleMap.csv";
-    console.log("📦 Fetching ModuleMap from:", csvUrl);
-    const res = await fetch(csvUrl, { cache: "no-store" });
-    console.log("📦 ModuleMap fetch status:", res.status, res.statusText);
-    if (!res.ok) {
-      console.error("❌ Failed to load ModuleMap.csv, status:", res.status);
-      // Don't cache failures - allow retry
-      return {};
-    }
-
-    const text = await res.text();
-    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-
-    const header = lines.shift().split(",").map(h => h.trim());
-    const idx = {
-      ext: header.indexOf("Extension"),
-      viewer: header.indexOf("ViewerModule"),
-      editor: header.indexOf("GraphicalEditorModule"),
-    };
-
-    const map = {};
-
-    for (const line of lines) {
-      const cols = line.split(",").map(c => c.trim());
-      const ext = cols[idx.ext] || "";
-      map[ext.toLowerCase()] = {
-        viewer: cols[idx.viewer] || null,
-        editor: cols[idx.editor] || null,
-      };
-    }
-
-    moduleMapCache = map;
-    console.log("📦 moduleMap loaded:", map);
-    return map;
+    return await loadSharedModuleMap();
   } catch (err) {
     console.error("❌ Error loading ModuleMap.csv:", err);
-    moduleMapCache = {};
-    return moduleMapCache;
+    return {};
   }
+}
+
+function stableModuleImportUrl(modulePath, queryName = "v") {
+  if (typeof window !== "undefined") {
+    if (!window.__nvModuleCacheBust) window.__nvModuleCacheBust = Date.now();
+    const separator = modulePath.includes("?") ? "&" : "?";
+    return modulePath + separator + queryName + "=" + window.__nvModuleCacheBust;
+  }
+  return modulePath;
 }
 
 function resolveExtension(filename) {
@@ -2081,16 +2068,7 @@ export async function setupPanel(panel, instanceVars = {}) {
     console.log("✅ Reactive selectedFilePath watcher installed.");
   }
 
-  // Listen for iframe -> parent click messages
-  window.addEventListener("message", (event) => {
-    if (event.data?.type === "activatePanel" && event.data?.id === "FileView") {
-      const root = fileViewRootFromFrameWindow(event.source);
-      if (root) {
-        activateFileViewHost(root);
-        console.log("Active panel via postMessage:", window.activePanel);
-      }
-    }
-  });
+  installFileViewMessageListener();
 
   const activeGraphLinkSelection = selectedGraphLink();
   if (activeGraphLinkSelection?.record) {
@@ -2262,7 +2240,8 @@ export async function updateViewPanel(element, { force = false } = {}) {
 }
 
 async function renderFile(filename, viewPanel, serverBase, options = {}) {
-  console.log(`📄 renderFile() called for: ${filename}`);
+  console.log("📄 renderFile() called for: " + filename);
+  const perf = createPerformanceOperation("FileView render", { path: filename });
   let iframe = null;
 
   try {
@@ -2270,6 +2249,7 @@ async function renderFile(filename, viewPanel, serverBase, options = {}) {
     console.log("📦 Loading module map...");
     const moduleMap = await loadModuleMap();
     console.log("📦 Module map loaded, keys:", Object.keys(moduleMap).slice(0, 10));
+    perf.mark("module-map", { entries: Object.keys(moduleMap).length });
     const basePath = "/PanelInstances/ViewPanels/FileViewers";
 
     // 2. Determine file extension and lookup viewer
@@ -2285,10 +2265,17 @@ async function renderFile(filename, viewPanel, serverBase, options = {}) {
     }
 
     const modulePath = basePath + "/" + viewerFile;
-    const moduleUrl = modulePath + "?nvViewer=" + String(Date.now());
+    const moduleUrl = stableModuleImportUrl(modulePath, "v");
+    const moduleAlreadyLoaded = loadedViewerModuleUrls.has(moduleUrl);
+    incrementPerformanceCounter("FileView.viewerImportAttempts");
+    if (!moduleAlreadyLoaded) incrementPerformanceCounter("FileView.viewerModuleFirstLoads");
+    perf.count("viewerImportAttempts");
+    perf.count(moduleAlreadyLoaded ? "viewerModuleCacheHits" : "viewerModuleFirstLoads");
     console.log("🔍 Loading viewer module: " + moduleUrl);
 
     const viewer = await import(moduleUrl);
+    loadedViewerModuleUrls.add(moduleUrl);
+    perf.mark("viewer-import", { viewerFile, moduleAlreadyLoaded });
 
     // Let viewer specify if it wants an iframe
     const wantsIframe = viewer.wantsIframe === true;
@@ -2325,17 +2312,21 @@ async function renderFile(filename, viewPanel, serverBase, options = {}) {
 
     // Call viewer
     const renderResult = await viewer.renderFile(cleanPath, viewPanel, iframe, serverBase, options);
+    perf.mark("viewer-render", { viewerFile });
     if (renderResult === false) {
-      console.warn(`⚠️ Viewer reported render failure: ${viewerFile}`);
+      console.warn("⚠️ Viewer reported render failure: " + viewerFile);
+      perf.end({ ext, viewerFile, success: false, reportedFailure: true });
       return false;
     }
 
-    console.log(`✅ Rendered with ${viewerFile}`);
+    console.log("✅ Rendered with " + viewerFile);
+    perf.end({ ext, viewerFile, success: true });
     return true;
 
   } catch (err) {
     console.error(`❌ renderFile failed for ${filename}:`, err);
-    viewPanel.innerHTML = `<em>Error loading viewer for ${filename}: ${err.message}</em>`;
+    viewPanel.innerHTML = "<em>Error loading viewer for " + filename + ": " + err.message + "</em>";
+    perf.end({ success: false, error: err?.message || String(err) });
     return false;
 
   } finally {

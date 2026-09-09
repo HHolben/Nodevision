@@ -7,9 +7,24 @@ const TABLE_SELECTED_CELL_CLASS = "nv-html-table-selected-cell";
 const TABLE_SELECTION_ANCHOR_CLASS = "nv-html-table-selection-anchor";
 const TABLE_SELECTION_FOCUS_CLASS = "nv-html-table-selection-focus";
 
+function isEditableTableRoot(root) {
+  return Boolean(root && root.isConnected && (root.isContentEditable || root.getAttribute?.("contenteditable") === "true"));
+}
+
 function getTableEditorRoot() {
+  try {
+    const toolsRoot = window.HTMLWysiwygTools?.getEditorElement?.();
+    if (isEditableTableRoot(toolsRoot)) return toolsRoot;
+  } catch {}
+
+  try {
+    const context = window.__nvActiveHtmlEditorContext || null;
+    const contextRoot = context?.getEditorElement?.() || context?.editorElement || null;
+    if (isEditableTableRoot(contextRoot)) return contextRoot;
+  } catch {}
+
   const registeredRoot = window.__nvTableEditorRoot;
-  if (registeredRoot && registeredRoot.isConnected) return registeredRoot;
+  if (isEditableTableRoot(registeredRoot)) return registeredRoot;
   return document.querySelector("#wysiwyg[contenteditable='true']");
 }
 

@@ -9,6 +9,7 @@ import {
   normalizeDirectoryMetadataPath,
   sanitizeDirectoryAppearance,
 } from "../../public/GraphManagement/DirectoryAppearanceMetadata.mjs";
+import { createServerPerformanceOperation } from '../../server/performanceDiagnostics.mjs';
 import {
   readDirectoryAppearanceManifest,
   readDirectoryAppearanceRecords,
@@ -48,12 +49,17 @@ export default function createDirectoryAppearanceRouter(ctx = BASE_CONTEXT) {
   const router = express.Router();
 
   router.get("/directory-appearance", async (req, res) => {
+    const perf = createServerPerformanceOperation("directory appearance read", {
+      mode: requestHasPath(req.query) ? "single" : Object.prototype.hasOwnProperty.call(req.query, "paths") ? "paths" : "manifest",
+    });
     try {
       if (requestHasPath(req.query)) {
         if (!directoryMetadataPathIsSafe(req.query.path)) {
+          perf.end({ success: false, error: "invalid-directory-path" });
           return res.status(400).json({ error: "Invalid directory path." });
         }
         const records = await readDirectoryAppearanceRecords(ctx, [req.query.path]);
+        perf.end({ success: true, paths: 1 });
         const path = normalizeDirectoryMetadataPath(req.query.path);
         return res.json({
           path,
@@ -64,13 +70,19 @@ export default function createDirectoryAppearanceRouter(ctx = BASE_CONTEXT) {
       if (Object.prototype.hasOwnProperty.call(req.query, "paths")) {
         const paths = parseDirectoryAppearancePathList(req.query.paths);
         if (paths.some((entry) => !directoryMetadataPathIsSafe(entry))) {
+          perf.end({ success: false, error: "invalid-directory-path" });
           return res.status(400).json({ error: "Invalid directory path." });
         }
-        return res.json(await readDirectoryAppearanceRecords(ctx, paths));
+        const payload = await readDirectoryAppearanceRecords(ctx, paths);
+        perf.end({ success: true, paths: paths.length });
+        return res.json(payload);
       }
 
-      return res.json(await readDirectoryAppearanceManifest(ctx));
+      const payload = await readDirectoryAppearanceManifest(ctx);
+      perf.end({ success: true, directories: Object.keys(payload?.directories || {}).length });
+      return res.json(payload);
     } catch (err) {
+      perf.end({ success: false, error: err?.message || String(err) });
       console.error("[directoryAppearance] Failed to load directory appearance:", err);
       return res.status(500).json({ error: "Failed to load directory appearance." });
     }

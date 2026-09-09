@@ -2,6 +2,7 @@
 // Hosts a linked Notebook resource editor inside the virtual world editor.
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { loadModuleMap as loadSharedModuleMap } from "/PanelInstances/ModuleMapLoader.mjs";
 
 const GRAPHICAL_EDITORS_BASE = "/PanelInstances/EditorPanels/GraphicalEditors";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico"]);
@@ -33,7 +34,6 @@ const WINDOW_HOOKS = [
   "NodevisionModelExportContext",
 ];
 
-let moduleMapCache = null;
 
 function normalizeNotebookPath(rawPath = "") {
   let clean = String(rawPath || "").trim();
@@ -119,28 +119,8 @@ export function resolveLinkedWorldResource(target) {
 }
 
 async function loadModuleMap() {
-  if (moduleMapCache && Object.keys(moduleMapCache).length > 0) return moduleMapCache;
   try {
-    const res = await fetch("/PanelInstances/ModuleMap.csv", { cache: "no-store" });
-    if (!res.ok) return {};
-    const text = await res.text();
-    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-    const header = lines.shift()?.split(",").map((value) => value.trim()) || [];
-    const extIndex = header.indexOf("Extension");
-    const familyIndex = header.indexOf("Family");
-    const editorIndex = header.indexOf("GraphicalEditorModule");
-    if (extIndex < 0 || editorIndex < 0) return {};
-    const map = {};
-    lines.forEach((line) => {
-      const cols = line.split(",").map((value) => value.trim());
-      const ext = String(cols[extIndex] || "").toLowerCase();
-      map[ext] = {
-        family: familyIndex >= 0 ? cols[familyIndex] || null : null,
-        editor: cols[editorIndex] || null,
-      };
-    });
-    moduleMapCache = map;
-    return map;
+    return await loadSharedModuleMap();
   } catch (err) {
     console.warn("Virtual world embedded resource editor: failed to load ModuleMap.csv", err);
     return {};

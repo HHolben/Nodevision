@@ -12,8 +12,23 @@ import {
   registerLiveFileContentProvider,
   touchLiveFileContentProvider,
 } from "/LiveFileContent.mjs";
+import { createPerformanceOperation, incrementPerformanceCounter } from "/PerformanceDiagnostics.mjs";
 import { parseNBT } from "../ViewPanels/FileViewers/ViewNBT/parseNBT.mjs";
 import { serializeNBT } from "../ViewPanels/FileViewers/ViewNBT/serializeNBT.mjs";
+
+let codeEditorFileSavedListenerInstalled = false;
+
+function handleCodeEditorFileSaved(evt) {
+  const savedPath = evt?.detail?.filePath;
+  if (!savedPath || savedPath !== window.__nvCodeEditorActivePath) return;
+  markEditorClean();
+}
+
+function installCodeEditorFileSavedListener() {
+  if (codeEditorFileSavedListenerInstalled) return;
+  window.addEventListener("nodevision-file-saved", handleCodeEditorFileSaved);
+  codeEditorFileSavedListenerInstalled = true;
+}
 
 let editorInstance = null;
 let editorContainer = null;
@@ -1086,6 +1101,7 @@ export async function openCodeEditor(filePath, options = {}) {
       codeEditorLiveCleanup = null;
     }
     clearEditorContext(filePath);
+    if (ownedEditor) incrementPerformanceCounter("CodeEditor.monacoDisposeCalls");
     ownedEditor?.dispose?.();
     if (!ownedEditor || editorInstance === ownedEditor) {
       editorInstance = null;
@@ -1227,13 +1243,17 @@ function toggleEditorWordWrap(editor = editorInstance) {
 }
 
 function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId) {
+  const perf = createPerformanceOperation("CodeEditor Monaco init", { path: filePath });
+  incrementPerformanceCounter("CodeEditor.initializeMonacoCalls");
   const targetContainer = editorContainer;
   if (!targetContainer) {
     console.error("[CodeEditor] Editor container not found.");
+    perf.end({ success: false, error: "container-missing" });
     return;
   }
   if (!isLatestEditorLoad(loadRequestId, filePath)) {
     console.warn("[CodeEditor] Skipping stale Monaco initialization for:", filePath);
+    perf.end({ success: false, stale: true });
     return;
   }
 
@@ -1256,6 +1276,7 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
     }
     persistCodeEditorAttention(lastEditedPath || window.__nvCodeEditorActivePath, editorInstance);
   } else if (editorInstance) {
+    incrementPerformanceCounter("CodeEditor.monacoDisposeCalls");
     editorInstance.dispose();
   }
   editorInstance = null;
@@ -1266,6 +1287,7 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
 
   if (typeof require === "undefined") {
     targetContainer.innerHTML = "<p style='color:red;'>Monaco Editor not loaded.</p>";
+    perf.end({ success: false, error: "require-missing" });
     return;
   }
 
@@ -1289,10 +1311,13 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
   require(["vs/editor/editor.main"], function () {
     if (editorContainer !== targetContainer || !targetContainer.isConnected || !isLatestEditorLoad(loadRequestId, filePath)) {
       console.warn("[CodeEditor] Ignoring stale Monaco initialization for:", filePath);
+      perf.end({ success: false, stale: true, phase: "require-callback" });
       return;
     }
 
     // 3. Create the editor instance
+    incrementPerformanceCounter("CodeEditor.monacoCreateCalls");
+    perf.mark("monaco-loaded");
     editorInstance = monaco.editor.create(targetContainer, {
       value: content || "",
       language: detectLanguage(filePath),
@@ -1413,11 +1438,10 @@ function initializeMonaco(filePath, content, loadRequestId = editorLoadRequestId
     lastEditedPath = filePath;
     touchCodeEditorLive = registerCodeEditorLiveProvider(filePath, targetContainer);
     session.touchLive = touchCodeEditorLive;
-
-    window.addEventListener("nodevision-file-saved", (evt) => {
-      const savedPath = evt?.detail?.filePath;
-      if (!savedPath || savedPath !== window.__nvCodeEditorActivePath) return;
-      markEditorClean();
+    installCodeEditorFileSavedListener();
+    perf.end({
+      success: true,
+      modelCount: typeof monaco?.editor?.getModels === "function" ? monaco.editor.getModels().length : undefined,
     });
 
   });

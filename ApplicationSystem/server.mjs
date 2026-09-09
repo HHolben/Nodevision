@@ -40,8 +40,10 @@ import { registerHandwritingOcrTrainingRoutes } from "./server/routes/handwritin
 import { registerStrokeHandwritingRecognitionRoutes } from "./server/routes/strokeHandwritingRecognitionRoutes.mjs";
 import { registerPhoneImportRoutes } from "./server/routes/phoneImportRoutes.mjs";
 import { registerNativeHandwritingRoutes } from "./server/handwriting/NativeHandwritingRoutes.mjs";
+import { createServerPerformanceOperation } from "./server/performanceDiagnostics.mjs";
 
 export default async function createApp(runtimeConfig = {}) {
+  const perf = createServerPerformanceOperation("server app creation", { runtimeType: runtimeConfig.runtimeType });
   const ctx = createServerContext(runtimeConfig);
   ctx.host = runtimeConfig.host;
   ctx.port = runtimeConfig.port;
@@ -51,6 +53,7 @@ export default async function createApp(runtimeConfig = {}) {
   let deviceIdentity;
   try {
     deviceIdentity = await ensureDeviceIdentity({ runtimeRoot: ctx.runtimeRoot });
+    perf.mark("device-identity");
     console.log('Device identity:', { deviceId: deviceIdentity.deviceId, deviceName: deviceIdentity.deviceName });
   } catch (err) {
     console.error('Failed to initialize device identity:', err);
@@ -59,6 +62,7 @@ export default async function createApp(runtimeConfig = {}) {
 
   try {
     await ensureDefaultAdminAccount();
+    perf.mark("auth-bootstrap");
   } catch (err) {
     console.error('Failed to bootstrap authentication data:', err);
   }
@@ -103,6 +107,7 @@ export default async function createApp(runtimeConfig = {}) {
 
 
   await loadRoutes(app, ctx);
+  perf.mark("dynamic-routes");
 
   app.use('/lib/monaco', express.static(path.join(PUBLIC_DIR, 'lib/monaco')));
 
@@ -160,6 +165,8 @@ export default async function createApp(runtimeConfig = {}) {
   registerResourcePathRoutes(app, ctx);
   registerSectionalMapRoutes(app, ctx);
   registerSpeechRoutes(app, ctx);
+  perf.mark("static-and-registered-routes");
 
+  perf.end({ success: true });
   return app;
 }

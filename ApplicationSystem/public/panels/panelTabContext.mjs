@@ -80,6 +80,10 @@ function applyGraphicalEditorContext(tab) {
   window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = path || null;
   updateToolbarState({ currentMode: "GraphicalEditing", selectedFile: path || null, activeEditorFilePath: path || null });
+  const svgContext = host?.__nvSvgEditorContext || tab.contentElement?.__nvSvgEditorContext || tab.contentElement?.querySelector?.("[data-nv-graphical-editor-root]")?.__nvSvgEditorContext || null;
+  if (svgContext?.kind === "svg" && typeof svgContext.activate === "function" && svgContext.activate()) {
+    return;
+  }
   const htmlContext = host?.__nvHtmlEditorContext || tab.contentElement?.__nvHtmlEditorContext || null;
   if (htmlContext?.kind === "html" && typeof htmlContext.activate === "function") {
     htmlContext.activate();

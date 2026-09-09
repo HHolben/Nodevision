@@ -9,37 +9,45 @@ import { initStatusBar } from "./StatusBar.mjs";
 import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
 import { installPanelZoomShortcuts } from "./panels/panelZoomPan.mjs";
 import { installHyperlinkSelectionTracking } from "./ToolbarCallbacks/edit/hyperlinkSelection.mjs";
+import { createPerformanceOperation } from "./PerformanceDiagnostics.mjs";
 
 
 //Initialize the status bar:
 initStatusBar();
 
 async function initNodevision() {
+  const perf = createPerformanceOperation("browser startup");
   try {
     await createToolbar("#global-toolbar");
+    perf.mark("toolbar");
     installHyperlinkSelectionTracking();
     installPanelZoomShortcuts();
 
     const workspace = ensureWorkspace();
+    perf.mark("workspace");
     console.log("Workspace initialized:", workspace);
 
     const layout = await loadDefaultLayout();
+    perf.mark("default-layout", { hasLayout: Boolean(layout) });
     console.log("Fetched layout file:", layout);
 
     const root = layout?.workspace || layout;
     if (root?.children?.length > 0) {
       console.log("Loaded declarative layout:", root);
       await Promise.resolve(renderLayout(root, workspace));
+      perf.mark("render-layout");
       clearActivePanelSelection({ announce: false });
     } else {
       console.warn("No valid DefaultLayout.json found, using fallback layout.");
     }
 
     addDividers();
+    perf.end({ success: true });
     setTimeout(() => {
       handleDesktopOpenStartup().catch((err) => console.error("Desktop open startup failed:", err));
     }, 250);
   } catch (err) {
+    perf.end({ success: false, error: err?.message || String(err) });
     console.error("Error during initialization:", err);
   }
 }

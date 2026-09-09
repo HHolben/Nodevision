@@ -19,6 +19,8 @@ import {
   installExternalFileDropTarget,
   setNotebookDragTransfer,
 } from '/FileInterop/NotebookExternalFileInterop.mjs';
+import { findDirectoryImageUrl, resolveDirectoryImageUrl } from '/PanelInstances/InfoPanels/FileManagerDirectoryImages.mjs';
+import { createPerformanceOperation } from '/PerformanceDiagnostics.mjs';
 
 const FILE_ITEM_SOUND_URLS = [
   "/soundEffects/Splish.mp3",
@@ -31,13 +33,6 @@ const CLIPBOARD_SHORTCUTS = {
   v: "pasteFile",
   x: "cutFile"
 };
-const DIRECTORY_IMAGE_CANDIDATES = [
-  ".directory.svg",
-  "directory.svg",
-  ".directory.png",
-  "directory.png"
-];
-const directoryImageCache = new Map();
 const navigationState = getNodevisionNavigationState();
 
 const FILE_MANAGER_AUTO_SCROLL_EDGE_RATIO = 0.05;
@@ -156,21 +151,6 @@ function startFileManagerAutoScroll(fromElement = null) {
   document.addEventListener("dragend", stopFileManagerAutoScroll, true);
 }
 
-function resolveDirectoryImageUrl(entry) {
-  if (!entry || typeof entry !== "object") return "";
-  const direct = typeof entry.directoryImageUrl === "string" ? entry.directoryImageUrl.trim() : "";
-  if (direct) return direct;
-
-  const name = typeof entry.directoryImageName === "string" ? entry.directoryImageName.trim() : "";
-  const relPath = typeof entry.path === "string" ? entry.path : "";
-  if (!name || !relPath) return "";
-
-  const normalized = relPath.replace(/\\/g, "/").replace(/^\/+/, "");
-  const parts = normalized.split("/").filter(Boolean).map(encodeURIComponent);
-  parts.push(encodeURIComponent(name));
-  return `/Notebook/${parts.join("/")}`;
-}
-
 function tokenizeName(value) {
   return String(value ?? "")
     .split(/(\d+)/)
@@ -273,42 +253,6 @@ function applyStableFileIconLayout(icon) {
   });
 }
 
-async function findDirectoryImageUrl(entry) {
-  if (!entry?.isDirectory) return "";
-
-  const cacheKey = normalizePath(entry.path || entry.name || "");
-  if (directoryImageCache.has(cacheKey)) {
-    return directoryImageCache.get(cacheKey) || "";
-  }
-
-  const direct = resolveDirectoryImageUrl(entry);
-  if (direct) {
-    directoryImageCache.set(cacheKey, direct);
-    return direct;
-  }
-
-  if (!cacheKey) {
-    directoryImageCache.set(cacheKey, "");
-    return "";
-  }
-
-  for (const candidate of DIRECTORY_IMAGE_CANDIDATES) {
-    const guessUrl = resolveDirectoryImageUrl({ path: cacheKey, directoryImageName: candidate });
-    if (!guessUrl) continue;
-    try {
-      const res = await fetch(guessUrl, { method: "HEAD", cache: "no-store" });
-      if (res.ok) {
-        directoryImageCache.set(cacheKey, guessUrl);
-        return guessUrl;
-      }
-    } catch {
-      // Ignore network errors and try the next candidate.
-    }
-  }
-
-  directoryImageCache.set(cacheKey, "");
-  return "";
-}
 let fileItemHoverAudio = null;
 let fileItemHoverAudioIndex = 0;
 let lastFileItemHoverSoundAt = 0;
@@ -731,14 +675,20 @@ export function OpenDirectoryOrFileInfo(listElem,link, li)
 // Fetch directory contents
 // ------------------------------
 export async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
+  const perf = createPerformanceOperation("FileManager directory open", { path: path || "" });
   try {
     if (loadingElem) loadingElem.style.display = "block";
 
     const cleanPath = path?.replace(/^\/+/, '') ?? '';
-    const response = await fetch(`/api/files?path=${encodeURIComponent(cleanPath)}`);
-    if (!response.ok) throw new Error(`Failed to fetch directory: ${path}`);
+    const response = await fetch("/api/files?path=" + encodeURIComponent(cleanPath));
+    perf.mark("api-files", { status: response.status });
+    if (!response.ok) throw new Error("Failed to fetch directory: " + path);
 
     const data = await response.json();
+    const children = Array.isArray(data) ? data : [];
+    perf.count("children", children.length);
+    perf.count("directories", children.filter((entry) => entry?.isDirectory).length);
+    perf.count("directoryImages", children.filter((entry) => entry?.isDirectory && entry.directoryImageUrl).length);
     const visibleDirectoryPaths = [
       cleanPath,
       ...(Array.isArray(data) ? data : [])
@@ -751,8 +701,10 @@ export async function fetchDirectoryContents(path, callback, errorElem, loadingE
     applyFileManagerDirectoryBackground(cleanPath);
     if (typeof callback === "function") callback(data, cleanPath);
 
+    const appearanceStartedAt = globalThis.performance?.now?.() ?? Date.now();
     loadDirectoryAppearancesForPaths(visibleDirectoryPaths)
       .then(() => {
+        perf.mark("directory-appearance", { paths: visibleDirectoryPaths.length, durationMs: Math.round(((globalThis.performance?.now?.() ?? Date.now()) - appearanceStartedAt) * 10) / 10 });
         if (normalizePath(window.currentDirectoryPath || "") !== cleanPath) return;
         applyFileManagerDirectoryBackground(cleanPath);
         refreshDirectoryAppearanceFileManagerItems();
@@ -762,7 +714,9 @@ export async function fetchDirectoryContents(path, callback, errorElem, loadingE
       });
 
     navigationState.setLastOpenedDirectory(cleanPath, "FileManager");
+    perf.end({ success: true });
   } catch (err) {
+    perf.end({ success: false, error: err?.message || String(err) });
     console.error(err);
     if (errorElem) errorElem.textContent = err.message;
   } finally {
