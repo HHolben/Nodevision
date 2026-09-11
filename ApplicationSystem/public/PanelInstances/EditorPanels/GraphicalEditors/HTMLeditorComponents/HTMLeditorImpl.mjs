@@ -46,7 +46,14 @@ import {
   wrapRangeWithImageText,
   IMAGE_TEXT_CLASS,
   IMAGE_TEXT_SELECTED_CLASS,
+  IMAGE_TEXT_SELECTOR,
+  IMAGE_TEXT_SOURCE_ATTR,
+  isImageTextElement,
 } from "./HtmlImageText.mjs";
+import {
+  installHtmlTypingLatencyProbe,
+  recordHtmlTypingOperation,
+} from "./HTMLTypingLatencyDiagnostics.mjs";
 
 const NOTEBOOK_PREFIX = "/Notebook/";
 const RASTER_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico"]);
@@ -107,6 +114,18 @@ function ensureHTMLLayoutStyles() {
   const style = document.createElement("style");
   style.id = "nv-html-layout-style";
   style.textContent = `
+    #wysiwyg > section,
+    #wysiwyg > article,
+    #wysiwyg > main,
+    #wysiwyg > aside,
+    #wysiwyg > div {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 96px;
+    }
+    #wysiwyg > :focus-within {
+      content-visibility: visible;
+      contain-intrinsic-size: auto;
+    }
     .nv-layout-canvas {
       position: relative;
       min-height: 260px;
@@ -574,6 +593,26 @@ function markHtmlEditorDirty(wysiwyg, filePath = "") {
     }));
   } catch {
     // Non-critical notification only.
+  }
+}
+
+function markHtmlEditorNativeInputDirty(filePath = "") {
+  window.NodevisionState = window.NodevisionState || {};
+  const wasDirty = Boolean(window.NodevisionState.fileIsDirty);
+  window.NodevisionState.fileIsDirty = true;
+  if (filePath) {
+    window.NodevisionState.selectedFile = filePath;
+    window.NodevisionState.activeEditorFilePath = filePath;
+  }
+  if (!wasDirty) {
+    updateToolbarState({ fileIsDirty: true });
+    try {
+      window.dispatchEvent(new CustomEvent("nodevision-editor-dirty", {
+        detail: { filePath: filePath || window.NodevisionState.selectedFile || "" },
+      }));
+    } catch {
+      // Non-critical notification only.
+    }
   }
 }
 
@@ -2900,6 +2939,58 @@ function syncEditorImageTextPresentation(root, editorFilePath = "") {
   });
 }
 
+function syncEditorImageTextElementPresentation(element, editorFilePath = "") {
+  if (!isImageTextElement(element)) return false;
+  const source = String(element.getAttribute(IMAGE_TEXT_SOURCE_ATTR) || "").trim();
+  if (!source) return false;
+  applyImageTextPresentation(element, {
+    src: source,
+    linkedNotebookPath: getNotebookPathFromSourceInput(source, editorFilePath) || "",
+  });
+  return true;
+}
+
+function syncEditorImageTextPresentationForNode(wysiwyg, node, editorFilePath = "") {
+  if (!wysiwyg || !node) return 0;
+  const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  if (!(element instanceof HTMLElement) || !wysiwyg.contains(element)) return 0;
+  const candidates = new Set();
+  const nearest = element.closest?.(IMAGE_TEXT_SELECTOR);
+  if (nearest && wysiwyg.contains(nearest)) candidates.add(nearest);
+  if (isImageTextElement(element)) candidates.add(element);
+  element.querySelectorAll?.(IMAGE_TEXT_SELECTOR)?.forEach((child) => candidates.add(child));
+  let synced = 0;
+  candidates.forEach((candidate) => {
+    if (syncEditorImageTextElementPresentation(candidate, editorFilePath)) synced += 1;
+  });
+  return synced;
+}
+
+const IMAGE_TEXT_PRESENTATION_ATTRIBUTE_NAMES = new Set([
+  "class",
+  "style",
+  IMAGE_TEXT_SOURCE_ATTR,
+  "data-nodevision-image-text",
+  "data-nv-linked-path",
+]);
+
+function imageTextMutationNeedsPresentationSync(record) {
+  if (!record) return false;
+  if (record.type === "attributes") {
+    return IMAGE_TEXT_PRESENTATION_ATTRIBUTE_NAMES.has(String(record.attributeName || ""));
+  }
+  if (record.type === "childList") {
+    return Boolean(record.addedNodes?.length || record.removedNodes?.length);
+  }
+  return false;
+}
+
+function imageTextMutationSyncTargets(record) {
+  if (!imageTextMutationNeedsPresentationSync(record)) return [];
+  if (record.type === "attributes") return [record.target].filter(Boolean);
+  return Array.from(record.addedNodes || []).filter(Boolean);
+}
+
 function markSelectedImageText(wysiwyg, element) {
   if (!wysiwyg) return null;
   wysiwyg.querySelectorAll(".nv-selected-image").forEach((img) => {
@@ -2958,7 +3049,31 @@ function updateImageTextStateFromSelection(wysiwyg, editorFilePath, range = null
 
 function registerImageTextInteractionTools(wysiwyg, editorFilePath) {
   if (!wysiwyg) return () => {};
-  const sync = () => syncEditorImageTextPresentation(wysiwyg, editorFilePath);
+  let pendingFrame = 0;
+  let pendingFullSync = false;
+  const pendingTargets = new Set();
+  const flushSync = () => {
+    pendingFrame = 0;
+    if (pendingFullSync) {
+      pendingFullSync = false;
+      pendingTargets.clear();
+      syncEditorImageTextPresentation(wysiwyg, editorFilePath);
+      recordHtmlTypingOperation("image-text-full-sync");
+      return;
+    }
+    let synced = 0;
+    pendingTargets.forEach((target) => {
+      synced += syncEditorImageTextPresentationForNode(wysiwyg, target, editorFilePath);
+    });
+    pendingTargets.clear();
+    if (synced > 0) recordHtmlTypingOperation("image-text-local-sync", { synced });
+  };
+  const scheduleSync = (target = null, { full = false } = {}) => {
+    if (full) pendingFullSync = true;
+    else if (target) pendingTargets.add(target);
+    if (pendingFrame) return;
+    pendingFrame = requestAnimationFrame(flushSync);
+  };
   const onClick = (evt) => {
     const element = findImageTextElementFromNode(wysiwyg, evt.target);
     if (!element) return;
@@ -2968,12 +3083,36 @@ function registerImageTextInteractionTools(wysiwyg, editorFilePath) {
       { clearHtmlImageSelection: true, htmlTextSelectionActive: false },
     );
   };
+  let observer = null;
+  try {
+    observer = new MutationObserver((records) => {
+      let sawRelevantMutation = false;
+      for (const record of records || []) {
+        const targets = imageTextMutationSyncTargets(record);
+        if (!targets.length) continue;
+        sawRelevantMutation = true;
+        targets.forEach((target) => scheduleSync(target));
+      }
+      if (sawRelevantMutation) recordHtmlTypingOperation("image-text-mutation-batch");
+    });
+    observer.observe(wysiwyg, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: Array.from(IMAGE_TEXT_PRESENTATION_ATTRIBUTE_NAMES),
+    });
+  } catch {
+    observer = null;
+  }
+
   wysiwyg.addEventListener("click", onClick);
-  wysiwyg.addEventListener("input", sync);
-  sync();
+  syncEditorImageTextPresentation(wysiwyg, editorFilePath);
   return () => {
+    if (pendingFrame) cancelAnimationFrame(pendingFrame);
+    pendingFrame = 0;
+    pendingTargets.clear();
+    observer?.disconnect?.();
     wysiwyg.removeEventListener("click", onClick);
-    wysiwyg.removeEventListener("input", sync);
     clearImageTextSelection(wysiwyg);
     updateSelectedImageTextState(null, { htmlTextSelectionActive: false });
   };
@@ -5074,37 +5213,94 @@ function removeFormattingWhitespaceTextNodes(root) {
   nodesToRemove.forEach((node) => node.remove());
 }
 
+function normalizeWhiteSpaceForEditableElement(el, { normalizeComputed = false } = {}) {
+  if (!(el instanceof HTMLElement) || isPreformattedEditingElement(el)) return false;
+  const inlineWhiteSpace = (el.style.whiteSpace || "").toLowerCase();
+  const computedWhiteSpace = normalizeComputed
+    ? (window.getComputedStyle(el).whiteSpace || "").toLowerCase()
+    : "";
+  if (inlineWhiteSpace === "pre" || inlineWhiteSpace === "nowrap" || computedWhiteSpace === "nowrap") {
+    el.style.whiteSpace = "normal";
+    return true;
+  }
+  return false;
+}
+
+function closestEditableTextWrapTarget(root, target) {
+  const element = target?.nodeType === Node.TEXT_NODE ? target.parentElement : target;
+  if (!(element instanceof HTMLElement) || !root?.contains?.(element)) return root;
+  return element.closest?.(HTML_TEXT_BLOCK_SELECTOR) || root;
+}
+
+function ensureWrappingForEditableTextTarget(root, target, options = {}) {
+  if (!root) return;
+  const normalizedTarget = target instanceof HTMLElement && root.contains(target) ? target : root;
+  const changed = normalizeWhiteSpaceForEditableElement(normalizedTarget, options);
+  recordHtmlTypingOperation("wrapping-target", { changed: changed ? 1 : 0 });
+}
+
 function ensureWrappingForEditableText(root, options = {}) {
   if (!root) return;
-  const normalizeComputed = Boolean(options.normalizeComputed);
+  let visited = 0;
+  let changed = 0;
   const targets = [root, ...root.querySelectorAll(HTML_TEXT_BLOCK_SELECTOR)];
   for (const el of targets) {
-    if (!(el instanceof HTMLElement) || isPreformattedEditingElement(el)) continue;
-    const inlineWhiteSpace = (el.style.whiteSpace || "").toLowerCase();
-    const computedWhiteSpace = normalizeComputed
-      ? (window.getComputedStyle(el).whiteSpace || "").toLowerCase()
-      : "";
-    if (inlineWhiteSpace === "pre" || inlineWhiteSpace === "nowrap" || computedWhiteSpace === "nowrap") {
-      el.style.whiteSpace = "normal";
-    }
+    visited += 1;
+    if (normalizeWhiteSpaceForEditableElement(el, options)) changed += 1;
   }
+  recordHtmlTypingOperation("wrapping-full-scan", {
+    targets: visited,
+    changed,
+    normalizeComputed: Boolean(options.normalizeComputed),
+  });
+}
+
+function isInlineTextInput(event) {
+  const inputType = String(event?.inputType || "");
+  return inputType === "insertText" ||
+    inputType === "insertCompositionText" ||
+    inputType === "deleteContentBackward" ||
+    inputType === "deleteContentForward" ||
+    inputType === "deleteByCut";
 }
 
 function registerEditableTextWrapping(wysiwyg) {
   if (!wysiwyg) return () => {};
-  let pending = false;
+  let pendingFrame = 0;
+  let pendingTarget = null;
+  let needsFullScan = false;
+  let legacyFullScan = false;
 
-  const schedule = () => {
-    if (pending) return;
-    pending = true;
-    requestAnimationFrame(() => {
-      pending = false;
-      ensureWrappingForEditableText(wysiwyg, { normalizeComputed: true });
-    });
+  const flush = () => {
+    pendingFrame = 0;
+    if (needsFullScan) {
+      const normalizeComputed = legacyFullScan;
+      needsFullScan = false;
+      legacyFullScan = false;
+      pendingTarget = null;
+      ensureWrappingForEditableText(wysiwyg, { normalizeComputed });
+      return;
+    }
+    const target = pendingTarget || closestEditableTextWrapTarget(wysiwyg, document.getSelection?.()?.anchorNode || null);
+    pendingTarget = null;
+    ensureWrappingForEditableTextTarget(wysiwyg, target, { normalizeComputed: false });
+  };
+
+  const schedule = (event = null, options = {}) => {
+    if (window.__nvHtmlTypingLegacyInputWork === true) {
+      needsFullScan = true;
+      legacyFullScan = true;
+    } else if (options.fullScan || !isInlineTextInput(event)) {
+      needsFullScan = true;
+    } else if (!needsFullScan) {
+      pendingTarget = closestEditableTextWrapTarget(wysiwyg, event?.target || document.getSelection?.()?.anchorNode || null);
+    }
+    if (pendingFrame) return;
+    pendingFrame = requestAnimationFrame(flush);
   };
 
   const onKeyDown = (evt) => {
-    if (evt.key === "Enter") schedule();
+    if (evt.key === "Enter") schedule(evt, { fullScan: true });
   };
 
   wysiwyg.addEventListener("input", schedule);
@@ -5112,6 +5308,7 @@ function registerEditableTextWrapping(wysiwyg) {
   ensureWrappingForEditableText(wysiwyg);
 
   return () => {
+    if (pendingFrame) cancelAnimationFrame(pendingFrame);
     wysiwyg.removeEventListener("input", schedule);
     wysiwyg.removeEventListener("keydown", onKeyDown);
   };
@@ -5309,6 +5506,10 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLCaretTracking();
     container.__cleanupHTMLCaretTracking = null;
   }
+  if (typeof container.__cleanupHTMLTypingDiagnostics === "function") {
+    container.__cleanupHTMLTypingDiagnostics();
+    container.__cleanupHTMLTypingDiagnostics = null;
+  }
   if (typeof container.__cleanupHTMLTextWrapping === "function") {
     container.__cleanupHTMLTextWrapping();
     container.__cleanupHTMLTextWrapping = null;
@@ -5402,6 +5603,7 @@ export async function renderEditor(filePath, container, options = {}) {
   wysiwyg.style.wordBreak = "break-word";
   wrapper.appendChild(wysiwyg);
   installNodevisionMediaFallbackRuntime(wysiwyg);
+  container.__cleanupHTMLTypingDiagnostics = installHtmlTypingLatencyProbe(wysiwyg, { filePath });
   window.__nvTableEditorRoot = wysiwyg;
   const htmlAttentionCleanup = installHtmlAttentionReporting(filePath, wysiwyg);
   container.__cleanupHTMLTableDividerResizing = registerTableDividerResizing(wysiwyg, filePath);
@@ -5412,14 +5614,49 @@ export async function renderEditor(filePath, container, options = {}) {
   hidden.id = "hidden-elements";
   hidden.style.display = "none";
   wrapper.appendChild(hidden);
+  let pendingWordCountTimer = 0;
+  let pendingRecentEditTimer = 0;
   const updateWordCount = () => {
-    const currentWordCount = countWords(wysiwyg.innerText || "");
+    const text = wysiwyg.textContent || "";
+    const currentWordCount = countWords(text);
     setWordCount(currentWordCount);
+    recordHtmlTypingOperation("word-count", { characters: Number(text.length || 0) });
+  };
+  const updateWordCountLegacy = () => {
+    const text = wysiwyg.innerText || "";
+    const currentWordCount = countWords(text);
+    setWordCount(currentWordCount);
+    recordHtmlTypingOperation("word-count-legacy", { characters: Number(text.length || 0) });
+  };
+  const scheduleWordCountUpdate = () => {
+    if (pendingWordCountTimer) window.clearTimeout(pendingWordCountTimer);
+    pendingWordCountTimer = window.setTimeout(() => {
+      pendingWordCountTimer = 0;
+      updateWordCount();
+    }, 160);
+  };
+  const flushRecentHtmlEdit = () => {
+    pendingRecentEditTimer = 0;
+    recordEditedFile(filePath);
+    recordHtmlTypingOperation("recent-file-recorded", { filePath });
+  };
+  const scheduleRecentHtmlEdit = () => {
+    if (pendingRecentEditTimer) window.clearTimeout(pendingRecentEditTimer);
+    pendingRecentEditTimer = window.setTimeout(flushRecentHtmlEdit, 600);
+  };
+  const handleNativeHtmlInput = () => {
+    markHtmlEditorNativeInputDirty(filePath);
+    if (window.__nvHtmlTypingLegacyInputWork === true) {
+      updateWordCountLegacy();
+      recordEditedFile(filePath);
+      recordHtmlTypingOperation("recent-file-recorded-legacy", { filePath });
+      return;
+    }
+    scheduleWordCountUpdate();
+    scheduleRecentHtmlEdit();
   };
   updateWordCount();
-  const recordRecentHtmlEdit = () => recordEditedFile(filePath);
-  wysiwyg.addEventListener("input", updateWordCount);
-  wysiwyg.addEventListener("input", recordRecentHtmlEdit);
+  wysiwyg.addEventListener("input", handleNativeHtmlInput);
 
   const findTableCellFromNode = (node) => getTableCellFromEditorTarget(wysiwyg, node);
   let lastPublishedTableToolbarState = null;
@@ -6043,6 +6280,7 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLImageTools?.();
     container.__cleanupHTMLImageTextTools?.();
     container.__cleanupHTMLCaretTracking?.();
+    container.__cleanupHTMLTypingDiagnostics?.();
     container.__cleanupHTMLTextWrapping?.();
     container.__cleanupHTMLActiveContext?.();
     container.__cleanupHTMLPoetry?.();
@@ -6052,14 +6290,22 @@ export async function renderEditor(filePath, container, options = {}) {
     container.__cleanupHTMLCartoonToolbar?.();
     container.__cleanupHTMLCircuits?.();
     htmlAttentionCleanup?.();
-    wysiwyg.removeEventListener("input", updateWordCount);
-    wysiwyg.removeEventListener("input", recordRecentHtmlEdit);
+    wysiwyg.removeEventListener("input", handleNativeHtmlInput);
+    if (pendingWordCountTimer) {
+      window.clearTimeout(pendingWordCountTimer);
+      pendingWordCountTimer = 0;
+    }
+    if (pendingRecentEditTimer) {
+      window.clearTimeout(pendingRecentEditTimer);
+      flushRecentHtmlEdit();
+    }
     wysiwyg.__nvProgrammaticHistory = null;
     container.__cleanupHTMLHotkeys = null;
     container.__cleanupHTMLCanvasDeletion = null;
     container.__cleanupHTMLImageTools = null;
     container.__cleanupHTMLImageTextTools = null;
     container.__cleanupHTMLCaretTracking = null;
+    container.__cleanupHTMLTypingDiagnostics = null;
     container.__cleanupHTMLTextWrapping = null;
     container.__cleanupHTMLActiveContext = null;
     container.__cleanupHTMLPoetry = null;

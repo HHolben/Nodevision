@@ -95,6 +95,13 @@
   background: #e5e5e5;
 }
 
+.toolbar-main-button.nv-toolbar-button-active,
+.toolbar-dropdown-button.nv-toolbar-button-active {
+  background: #dbeafe;
+  color: #111827;
+  box-shadow: inset 3px 0 0 #2563eb;
+}
+
 /* Disabled state */
 .toolbar-main-button:disabled {
   opacity: 0.45;
@@ -215,6 +222,13 @@ html[data-nv-theme="dark"] .toolbar-dropdown-button {
 
 html[data-nv-theme="dark"] .toolbar-dropdown-button:hover {
   background: #1f2937;
+}
+
+html[data-nv-theme="dark"] .toolbar-main-button.nv-toolbar-button-active,
+html[data-nv-theme="dark"] .toolbar-dropdown-button.nv-toolbar-button-active {
+  background: #1e3a5f;
+  color: #eff6ff;
+  box-shadow: inset 3px 0 0 #60a5fa;
 }
 
 html[data-nv-theme="dark"] .toolbar-button[data-heading="dark mode"] .toolbar-dropdown-button {

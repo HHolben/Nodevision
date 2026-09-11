@@ -217,7 +217,7 @@
     "ToolbarCategory": "draw",
     "callbackKey": "PickColor",
     "preventAutoSubToolbar": true,
-    "modes": ["PNGediting", "GIFediting"]
+    "modes": ["GraphicalEditing", "PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting"]
   },
   {
     "heading": "Layout",
@@ -227,7 +227,17 @@
     "callbackKey": "ImageLayout",
     "preventAutoSubToolbar": true,
     "icon": "icons/CanvasIcon.png",
-    "modes": ["PNGediting", "GIFediting", "SVG Editing", "FontEditing"]
+    "modes": ["GraphicalEditing", "PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting", "SVG Editing", "FontEditing"]
+  },
+  {
+    "heading": "Image Stitching",
+    "hotkeyText": "",
+    "parentHeading": "Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "openImageStitching",
+    "preventDropdown": true,
+    "modes": ["GraphicalEditing", "PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting"],
+    "shortLabel": "Stitch"
   },
   {
     "heading": "Animations",

@@ -189,6 +189,11 @@ export const NODEVISION_SHARED_COMMANDS = Object.freeze([
     arguments: [], returns: "status", events: ["htmlDraftFocus.finished"],
   },
   {
+    id: "imageStitcher.open", category: "Session", label: "Open Image Stitcher",
+    description: "Open the landmark-based image stitching Session surface.", sessionSafe: true,
+    arguments: [], returns: "status", events: ["session.imageStitcher.finished"],
+  },
+  {
     id: "sectionals.update", category: "Aviation", label: "Update FAA Sectional Maps",
     description: "Run the configured FAA Sectional GeoTIFF update job.", sessionSafe: true,
     arguments: [], returns: "object",

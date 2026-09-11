@@ -26,6 +26,16 @@ import { setStatus } from "/StatusBar.mjs";
 import { getLiveFileContentForPath } from "/LiveFileContent.mjs";
 import { createPerformanceOperation, incrementPerformanceCounter } from "/PerformanceDiagnostics.mjs";
 import { loadModuleMap as loadSharedModuleMap } from "/PanelInstances/ModuleMapLoader.mjs";
+import {
+  createDirectoryReference,
+  createFileReference,
+  createNotebookReference,
+  referenceToApiPath,
+  resolveDirectoryIndexReference,
+  serializeNodevisionReference,
+} from "/NodevisionReference.mjs";
+import { refreshPanelTabMetadata } from "/panels/panelTabMetadata.mjs";
+import { renderPanelTabs } from "/panels/panelTabs.mjs";
 
 let lastRenderedPath = null;
 let viewDivRef = null;
@@ -44,16 +54,22 @@ let pendingFileViewAnchorTimer = null;
 const SELECTED_FILE_VIEW_RENDER_DELAY_MS = 40;
 let selectedFileViewRenderTimer = null;
 let selectedFileViewRenderToken = 0;
+let fileViewSelectionFollowerRefs = 0;
+let fileViewSelectionFollowerInstalled = false;
+let selectionFollowingFileViewRootRef = null;
 
 function cancelScheduledSelectedFileViewRender() {
   if (selectedFileViewRenderTimer) {
     window.clearTimeout(selectedFileViewRenderTimer);
     selectedFileViewRenderTimer = null;
+    incrementPerformanceCounter("FileView.selectedRenderTimersCleared");
   }
   selectedFileViewRenderToken += 1;
 }
 
-function scheduleSelectedFileViewRender(path) {
+function scheduleSelectedFileViewRender(path, options = {}) {
+  const selectionReference = options.selectionReference ? createNotebookReference(options.selectionReference) : null;
+  const explicitViewPanel = options.viewPanel || null;
   const token = ++selectedFileViewRenderToken;
   if (selectedFileViewRenderTimer) {
     window.clearTimeout(selectedFileViewRenderTimer);
@@ -63,14 +79,130 @@ function scheduleSelectedFileViewRender(path) {
     selectedFileViewRenderTimer = null;
     if (token !== selectedFileViewRenderToken) return;
 
-    const viewPanel = getViewPanelElement();
+    const viewPanel = explicitViewPanel || getViewPanelElement();
     if (!viewPanel) return;
     if (window.__nvPanelTabContentIsActive && !window.__nvPanelTabContentIsActive(viewPanel)) return;
 
-    updateViewPanel(path, { force: true }).catch((err) => {
+    updateViewPanel(path, { force: true, selectionReference, viewPanel }).catch((err) => {
       console.error("❌ Error updating view panel:", err);
     });
   }, SELECTED_FILE_VIEW_RENDER_DELAY_MS);
+}
+
+function nodevisionReferenceFromSelectionDetail(detail = {}) {
+  if (detail?.reference?.path) return createNotebookReference(detail.reference);
+  const path = detail?.path || detail?.filePath || "";
+  if (!path) return null;
+  return createNotebookReference({
+    path,
+    rootId: detail?.rootId,
+    kind: detail?.isDirectory ? "directory" : "file",
+  });
+}
+
+function currentWorkspaceSelectionReference() {
+  const selection = window.NodevisionSelection?.get?.();
+  if (selection?.path) return createNotebookReference(selection);
+  const state = window.NodevisionState || {};
+  if (state.selectedReference?.path) return createNotebookReference(state.selectedReference);
+  const path = state.selectedFile || window.selectedFilePath || "";
+  if (!path) return null;
+  return createNotebookReference({ path, kind: state.selectedFileIsDirectory ? "directory" : "file" });
+}
+
+function fileViewRootIsVisible(root) {
+  if (!root?.isConnected) return false;
+  const tabContent = root.closest?.(".nv-panel-tab-content") || null;
+  if (tabContent?.hidden || tabContent?.style?.display === "none") return false;
+  const cell = root.closest?.(".panel-cell") || null;
+  if (cell?.hidden || cell?.style?.display === "none") return false;
+  if (typeof window.__nvPanelTabContentIsActive === "function" && !window.__nvPanelTabContentIsActive(root)) return false;
+  return true;
+}
+
+function rememberSelectionFollowingFileView(viewPanel) {
+  const root = viewPanel?.matches?.("[data-nv-file-view-root=\"true\"], #element-view")
+    ? viewPanel
+    : viewPanel?.querySelector?.("[data-nv-file-view-root=\"true\"], #element-view");
+  if (!fileViewRootIsVisible(root)) return null;
+  selectionFollowingFileViewRootRef = root;
+  return root;
+}
+
+function clearSelectionFollowingFileView(viewPanel) {
+  const root = viewPanel?.matches?.("[data-nv-file-view-root=\"true\"], #element-view")
+    ? viewPanel
+    : viewPanel?.querySelector?.("[data-nv-file-view-root=\"true\"], #element-view");
+  if (root && selectionFollowingFileViewRootRef === root) selectionFollowingFileViewRootRef = null;
+}
+
+function getSelectionFollowingFileViewRoot() {
+  if (fileViewRootIsVisible(selectionFollowingFileViewRootRef)) {
+    return claimFileViewHost(selectionFollowingFileViewRootRef);
+  }
+  selectionFollowingFileViewRootRef = null;
+
+  const activeRoot = activeFileViewRoot();
+  if (fileViewRootIsVisible(activeRoot)) return rememberSelectionFollowingFileView(claimFileViewHost(activeRoot));
+
+  if (fileViewRootIsVisible(viewDivRef)) return rememberSelectionFollowingFileView(claimFileViewHost(viewDivRef));
+
+  const visibleRoot = [...document.querySelectorAll("[data-nv-file-view-root=\"true\"], #element-view")]
+    .find((root) => fileViewRootIsVisible(root));
+  return visibleRoot ? rememberSelectionFollowingFileView(claimFileViewHost(visibleRoot)) : null;
+}
+
+function syncFileViewTabReference(viewPanel, reference) {
+  if (!viewPanel || !reference?.path) return null;
+  const renderReference = createNotebookReference(reference);
+  const tabContent = viewPanel.closest?.(".nv-panel-tab-content") || null;
+  const cell = viewPanel.closest?.(".panel-cell") || null;
+  if (tabContent) {
+    tabContent.__nvNodevisionReference = renderReference;
+    tabContent.dataset.currentFilePath = renderReference.path;
+  }
+  if (cell) cell.dataset.currentFilePath = renderReference.path;
+  const tab = cell?.__nvPanelTabs?.tabs?.find?.((candidate) => candidate.contentElement === tabContent) || null;
+  if (tab) {
+    tab.panelVars = {
+      ...(tab.panelVars || {}),
+      filePath: renderReference.path,
+      isDirectory: renderReference.kind === "directory",
+      reference: serializeNodevisionReference(renderReference),
+    };
+    tab.resourcePath = renderReference.path;
+    tab.reference = renderReference;
+    refreshPanelTabMetadata(tab, cell);
+    renderPanelTabs(cell);
+  }
+  return renderReference;
+}
+
+function handleNodevisionSelectionChanged(event) {
+  const selectionReference = nodevisionReferenceFromSelectionDetail(event?.detail);
+  const selectedPath = referenceToApiPath(selectionReference);
+  if (!selectedPath) return;
+  const viewPanel = getSelectionFollowingFileViewRoot();
+  if (!viewPanel) return;
+  scheduleSelectedFileViewRender(selectedPath, { selectionReference, viewPanel });
+}
+
+function retainFileViewSelectionFollower() {
+  fileViewSelectionFollowerRefs += 1;
+  if (!fileViewSelectionFollowerInstalled) {
+    window.addEventListener("nodevision-selection-changed", handleNodevisionSelectionChanged);
+    fileViewSelectionFollowerInstalled = true;
+  }
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    fileViewSelectionFollowerRefs = Math.max(0, fileViewSelectionFollowerRefs - 1);
+    if (fileViewSelectionFollowerRefs === 0 && fileViewSelectionFollowerInstalled) {
+      window.removeEventListener("nodevision-selection-changed", handleNodevisionSelectionChanged);
+      fileViewSelectionFollowerInstalled = false;
+    }
+  };
 }
 
 function readLiveFileViewerEnabled() {
@@ -353,6 +485,7 @@ function setPendingFileViewAnchor(path, hash) {
     if (pendingFileViewAnchorTimer) {
       window.clearTimeout(pendingFileViewAnchorTimer);
       pendingFileViewAnchorTimer = null;
+      incrementPerformanceCounter("FileView.pendingAnchorTimersCleared");
     }
     return;
   }
@@ -534,7 +667,7 @@ function notebookAssetUrl(pathValue = "") {
 
 function notebookIndexPathForDirectory(directoryPath = "") {
   const cleanDirectory = normalizeResolvedNotebookPath(directoryPath || "");
-  return cleanDirectory ? cleanDirectory + "/index.html" : "index.html";
+  return referenceToApiPath(resolveDirectoryIndexReference(createDirectoryReference({ path: cleanDirectory })));
 }
 
 function openNavigatorPanelTypes() {
@@ -1492,6 +1625,7 @@ function activateFileViewHost(host) {
     ? host
     : host?.querySelector?.("[data-nv-file-view-root=\"true\"], #element-view");
   if (!claimFileViewHost(viewDiv)) return false;
+  rememberSelectionFollowingFileView(viewDiv);
   activateFileViewPanel(viewDiv.closest?.(".panel-cell") || getFileViewCell());
   const path = normalizeNotebookPath(
     viewDiv.dataset.nvFileViewRenderedPath ||
@@ -1501,12 +1635,15 @@ function activateFileViewHost(host) {
     ""
   );
   if (path) {
+    const selectedPath = normalizeNotebookPath(viewDiv.dataset.nvFileViewSelectionPath || path);
+    const selectedIsDirectory = viewDiv.dataset.nvFileViewSelectionIsDirectory === "true";
     window.NodevisionState = window.NodevisionState || {};
-    window.NodevisionState.selectedFile = path;
+    window.NodevisionState.selectedFile = selectedPath;
+    window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
     window.NodevisionState.activeFileViewPath = path;
     window.currentActiveFilePath = path;
     try {
-      updateToolbarState({ currentMode: "Default", selectedFile: path, activeFileViewPath: path, liveFileViewerEnabled });
+      updateToolbarState({ currentMode: "Default", selectedFile: selectedPath, activeFileViewPath: path, liveFileViewerEnabled });
     } catch (err) {
       console.warn("Failed to update toolbar state for FileView tab activation:", err);
     }
@@ -1776,6 +1913,7 @@ function observeViewIframes(viewDiv) {
 
   viewDiv.__nvIframeObserver = observer;
   observer.observe(viewDiv, { childList: true, subtree: true });
+  incrementPerformanceCounter("FileView.iframeObserversAdded");
   attachIframeActivation(viewDiv, viewDiv);
 }
 
@@ -1784,6 +1922,7 @@ function cleanupViewIframeActivation(viewDiv, options = {}) {
   const iframes = [];
   if (viewDiv instanceof HTMLIFrameElement) iframes.push(viewDiv);
   viewDiv.querySelectorAll?.("iframe").forEach((iframe) => iframes.push(iframe));
+  if (iframes.length) incrementPerformanceCounter("FileView.iframeActivationCleanupCalls", iframes.length);
   for (const iframe of iframes) {
     try {
       iframe.__nvFileViewActivationBridge?.cleanup?.();
@@ -1794,6 +1933,7 @@ function cleanupViewIframeActivation(viewDiv, options = {}) {
   if (options.disconnectObserver && viewDiv.__nvIframeObserver) {
     viewDiv.__nvIframeObserver.disconnect();
     viewDiv.__nvIframeObserver = null;
+    incrementPerformanceCounter("FileView.iframeObserversDisconnected");
   }
 }
 
@@ -1989,10 +2129,32 @@ export async function setupPanel(panel, instanceVars = {}) {
   viewDiv.dataset.nvFileViewRoot = "true";
   panel.appendChild(viewDiv);
   claimFileViewHost(viewDiv);
+  rememberSelectionFollowingFileView(viewDiv);
   enableViewActivation(viewDiv);
   installFileViewLinkNavigation(viewDiv);
   observeViewIframes(viewDiv);
-  const cleanupFileViewPanel = () => cleanupViewIframeActivation(viewDiv, { disconnectObserver: true });
+  const releaseFileViewSelectionFollower = retainFileViewSelectionFollower();
+  const quietFileViewPanel = () => {
+    incrementPerformanceCounter("FileView.lifecycleDeactivateCalls");
+    cancelScheduledSelectedFileViewRender();
+    if (pendingFileViewAnchorTimer) {
+      window.clearTimeout(pendingFileViewAnchorTimer);
+      pendingFileViewAnchorTimer = null;
+      incrementPerformanceCounter("FileView.pendingAnchorTimersCleared");
+    }
+    if (liveFileViewRefreshTimer) {
+      window.clearTimeout(liveFileViewRefreshTimer);
+      liveFileViewRefreshTimer = null;
+      incrementPerformanceCounter("FileView.liveRefreshTimersCleared");
+    }
+    cleanupViewIframeActivation(viewDiv);
+  };
+  const cleanupFileViewPanel = () => {
+    quietFileViewPanel();
+    clearSelectionFollowingFileView(viewDiv);
+    releaseFileViewSelectionFollower();
+    cleanupViewIframeActivation(viewDiv, { disconnectObserver: true });
+  };
   if (typeof panel.cleanup === "function") {
     const previousCleanup = panel.cleanup;
     panel.cleanup = () => {
@@ -2002,82 +2164,36 @@ export async function setupPanel(panel, instanceVars = {}) {
   } else {
     panel.cleanup = cleanupFileViewPanel;
   }
+  const fileViewLifecycle = {
+    activate: () => {
+      claimFileViewHost(viewDiv);
+      observeViewIframes(viewDiv);
+      activateFileViewHost(viewDiv);
+    },
+    deactivate: quietFileViewPanel,
+    destroy: cleanupFileViewPanel,
+  };
+
   installFileViewPointerTracking();
   installFileViewFocusHandler();
   installFileViewLiveRefresh();
   installGraphLinkFileViewHandler();
   dispatchLiveFileViewerState();
 
-  // Reactive watcher for window.selectedFilePath
-  if (!window._selectedFileProxyInstalled) {
-    let internalPath = window.selectedFilePath || null;
-
-    Object.defineProperty(window, "selectedFilePath", {
-      get() {
-        return internalPath;
-      },
-      set(value) {
-        if (value !== internalPath) {
-          const applyChange = () => {
-            console.log("📂 selectedFilePath changed:", value);
-            internalPath = value;
-            window.NodevisionState = window.NodevisionState || {};
-            const pendingSelection = window.__nvPendingSelectedFileMetadata;
-            const normalizedValue = normalizeNotebookPath(value);
-            const existingSelectionIsSameDirectory = Boolean(
-              !pendingSelection &&
-              window.NodevisionState.selectedFileIsDirectory &&
-              sameNotebookPath(window.NodevisionState.selectedFile, normalizedValue)
-            );
-            const selectedIsDirectory = Boolean(
-              existingSelectionIsSameDirectory ||
-              (
-                pendingSelection &&
-                sameNotebookPath(pendingSelection.path, normalizedValue) &&
-                pendingSelection.isDirectory
-              )
-            );
-            window.NodevisionState.selectedFile = internalPath || null;
-            window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
-            try {
-              updateToolbarState({ selectedFile: window.NodevisionState.selectedFile });
-            } catch (err) {
-              console.warn("Failed to update toolbar state for selectedFilePath change:", err);
-            }
-            scheduleSelectedFileViewRender(value);
-
-            const codeEditorActive = typeof window.isCodeEditorActive === "function" ? window.isCodeEditorActive() : false;
-            if (codeEditorActive && typeof window.updateEditorPanel === "function") {
-              window.NodevisionState.activeEditorFilePath = value;
-              window.currentActiveFilePath = value;
-              window.updateEditorPanel(value);
-            }
-          };
-
-          if (typeof window.__nvGuardFileSwitch === "function") {
-            window.__nvGuardFileSwitch(value, applyChange);
-          } else {
-            applyChange();
-          }
-        }
-      },
-      configurable: true,
-    });
-
-    window._selectedFileProxyInstalled = true;
-    console.log("✅ Reactive selectedFilePath watcher installed.");
-  }
 
   installFileViewMessageListener();
 
   const activeGraphLinkSelection = selectedGraphLink();
   if (activeGraphLinkSelection?.record) {
     await showGraphLinkInFileView(activeGraphLinkSelection);
-    return;
+    return fileViewLifecycle;
   }
 
-  const explicitInitialPath = normalizeNotebookPath(instanceVars.filePath || "");
-  const selectedInitialPath = normalizeNotebookPath(window.selectedFilePath || window.NodevisionState?.selectedFile || "");
+  const explicitInitialReference = instanceVars.reference ? createNotebookReference(instanceVars.reference) : null;
+  const selectedInitialReference = explicitInitialReference ? null : currentWorkspaceSelectionReference();
+  const initialReference = explicitInitialReference || selectedInitialReference;
+  const explicitInitialPath = normalizeNotebookPath(instanceVars.filePath || referenceToApiPath(explicitInitialReference) || "");
+  const selectedInitialPath = normalizeNotebookPath(referenceToApiPath(selectedInitialReference) || window.selectedFilePath || window.NodevisionState?.selectedFile || "");
   let initialPath = explicitInitialPath || selectedInitialPath;
   if (initialPath && selectedPathMatchesDirectoryRequest(initialPath) && openNavigatorPanelTypes().length === 0) {
     initialPath = "";
@@ -2088,7 +2204,7 @@ export async function setupPanel(panel, instanceVars = {}) {
     if (!defaultTarget.exists) {
       console.warn("⚠️ FileView default index missing:", defaultTarget.indexPath);
       renderCreateIndexButton(viewPanel, defaultTarget.directoryPath, { selectCreatedFile: true });
-      return;
+      return fileViewLifecycle;
     }
     initialPath = defaultTarget.indexPath;
   }
@@ -2096,36 +2212,38 @@ export async function setupPanel(panel, instanceVars = {}) {
   console.log("📂 FileView activation resolved path:", initialPath);
   setFileViewStatus("File Viewer", initialPath);
 
-  const initialPathIsDirectory = selectedPathMatchesDirectoryRequest(initialPath);
+  const initialPathIsDirectory = initialReference?.kind === "directory" || selectedPathMatchesDirectoryRequest(initialPath);
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.selectedFile = initialPath;
   window.NodevisionState.selectedFileIsDirectory = initialPathIsDirectory;
   window.currentActiveFilePath = initialPath;
   panel.dataset.currentFilePath = initialPath;
 
-  if (!sameNotebookPath(window.selectedFilePath, initialPath)) {
-    setSelectedFilePathFromFileView(initialPath, initialPathIsDirectory);
-  }
 
   lastRenderedPath = null;
   try {
-    await updateViewPanel(initialPath, { force: true });
+    await updateViewPanel(initialPath, { force: true, selectionReference: initialReference, viewPanel: viewDiv });
   } catch (err) {
     console.error("❌ Initial updateViewPanel error:", err);
     setFileViewStatus("File Viewer", `Render failed: ${err?.message || err}`);
   }
+
+  return fileViewLifecycle;
 }
 
-export async function updateViewPanel(element, { force = false } = {}) {
+
+export async function updateViewPanel(element, { force = false, selectionReference = null, viewPanel: requestedViewPanel = null } = {}) {
   cancelScheduledSelectedFileViewRender();
-  const viewPanel = getViewPanelElement();
+  const viewPanel = requestedViewPanel || getViewPanelElement();
   if (!viewPanel) {
     console.error("View panel element not found.");
     setFileViewStatus("File Viewer", "Render failed: panel not found");
     return false;
   }
 
-  let filename = getActiveFilePath(element);
+  const requestedReference = selectionReference ? createNotebookReference(selectionReference) : null;
+  let renderReference = requestedReference?.kind === "file" ? requestedReference : null;
+  let filename = referenceToApiPath(requestedReference) || getActiveFilePath(element);
   if (filename && selectedPathMatchesDirectoryRequest(filename) && openNavigatorPanelTypes().length === 0) {
     filename = "";
   }
@@ -2150,17 +2268,28 @@ export async function updateViewPanel(element, { force = false } = {}) {
 
   let ext = resolveExtension(filename);
   const lowerFilename = filename.toLowerCase();
-  const selectedDirectoryRequest = selectedPathMatchesDirectoryRequest(filename);
-  const selectedFileRequest = selectedPathMatchesFileRequest(filename);
+  const selectedDirectoryRequest = requestedReference?.kind === "directory" || selectedPathMatchesDirectoryRequest(filename);
+  const selectedFileRequest = requestedReference?.kind === "file" || selectedPathMatchesFileRequest(filename);
   const shouldResolveDirectoryIndex = selectedDirectoryRequest || (
     !selectedFileRequest && (!ext || lowerFilename === ext || !filename.includes("."))
   );
 
   if (shouldResolveDirectoryIndex) {
-    const directoryPath = normalizeResolvedNotebookPath(filename);
-    const indexPath = notebookIndexPathForDirectory(directoryPath);
+    const directoryReference = requestedReference?.kind === "directory"
+      ? requestedReference
+      : createDirectoryReference({ path: filename });
+    const directoryPath = referenceToApiPath(directoryReference);
+    const indexReference = resolveDirectoryIndexReference(directoryReference);
+    const indexPath = referenceToApiPath(indexReference);
     if (!(await notebookFileExists(indexPath))) {
       console.log("📁 Directory index missing:", indexPath);
+      lastRenderedPath = directoryPath;
+      viewPanel.dataset.currentFilePath = directoryPath;
+      viewPanel.dataset.nvFileViewRenderedPath = directoryPath;
+      viewPanel.dataset.nvFileViewSelectionPath = directoryPath;
+      viewPanel.dataset.nvFileViewSelectionIsDirectory = "true";
+      viewPanel.closest(".nv-panel-tab-content")?.setAttribute("data-current-file-path", directoryPath);
+      syncFileViewTabReference(viewPanel, directoryReference);
       renderCreateIndexButton(viewPanel, directoryPath, { selectCreatedFile: !selectedDirectoryRequest });
       return false;
     }
@@ -2172,6 +2301,7 @@ export async function updateViewPanel(element, { force = false } = {}) {
       navigationState.getLastFileSelectionPanelType?.() || navigationState.getLastInfoPanelType?.()
     );
     filename = indexPath;
+    renderReference = indexReference;
     ext = resolveExtension(filename);
     viewPanel.closest(".panel-cell")?.setAttribute("data-current-file-path", filename);
     console.log("📁 FileView directory index resolved:", filename);
@@ -2183,15 +2313,19 @@ export async function updateViewPanel(element, { force = false } = {}) {
     setFileViewStatus("File Viewer", filename);
     return true;
   }
+  if (!renderReference) renderReference = createFileReference({ path: filename });
+  const toolbarSelectedPath = preserveSelectedFolder ? selectedFolderPath : filename;
   lastRenderedPath = filename;
   viewPanel.dataset.currentFilePath = filename;
   viewPanel.dataset.nvFileViewRenderedPath = filename;
+  viewPanel.dataset.nvFileViewSelectionPath = toolbarSelectedPath;
+  viewPanel.dataset.nvFileViewSelectionIsDirectory = String(preserveSelectedFolder);
   viewPanel.closest(".nv-panel-tab-content")?.setAttribute("data-current-file-path", filename);
+  syncFileViewTabReference(viewPanel, renderReference);
 
   console.log("🧭 Updating view panel for file:", filename);
   window.currentActiveFilePath = filename;
   window.NodevisionState = window.NodevisionState || {};
-  const toolbarSelectedPath = preserveSelectedFolder ? selectedFolderPath : filename;
   window.NodevisionState.selectedFile = toolbarSelectedPath;
   window.NodevisionState.selectedFileIsDirectory = preserveSelectedFolder;
   window.NodevisionState.activeFileViewPath = filename;
@@ -2226,6 +2360,8 @@ export async function updateViewPanel(element, { force = false } = {}) {
   const success = await renderFile(filename, viewPanel, serverBase, {
     liveContent,
     liveFileViewerEnabled,
+    selectionPath: toolbarSelectedPath,
+    selectionIsDirectory: preserveSelectedFolder,
   });
   window.NodevisionPanelViewportTools?.applyPanelViewport?.(
     viewPanel.closest?.(".panel") || viewPanel.closest?.(".nv-panel-tab-content") || viewPanel.closest?.(".panel-cell") || viewPanel

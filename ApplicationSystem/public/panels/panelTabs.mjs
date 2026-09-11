@@ -2,6 +2,12 @@
 // This module owns per-panel tab collections for Nodevision workspace cells. It creates compact tab bars, preserves mounted content sessions where possible, and exposes generic operations for opening, activating, closing, reordering, moving, orienting, and serializing tabs.
 
 import { setStatus } from "/StatusBar.mjs";
+import {
+  activatePanelContentLifecycle,
+  deactivatePanelContentLifecycle,
+  destroyPanelContentLifecycle,
+  registerPanelContentLifecycle,
+} from "./panelContentLifecycle.mjs";
 import { applyPanelTabContext } from "./panelTabContext.mjs";
 import {
   buildPanelTabMetadata,
@@ -136,9 +142,37 @@ function tabById(state, tabId) {
   return state?.tabs?.find((tab) => tab.tabId === tabId) || null;
 }
 
+function lifecycleHooksFromMountResult(result, host) {
+  if (result && typeof result === "object") {
+    return {
+      activate: result.activate,
+      deactivate: result.deactivate,
+      destroy: result.destroy || result.cleanup,
+    };
+  }
+  if (typeof host?.__nvPanelTabActivate === "function" || typeof host?.__nvPanelTabDeactivate === "function" || typeof host?.__nvPanelTabDestroy === "function") {
+    return {
+      activate: host.__nvPanelTabActivate,
+      deactivate: host.__nvPanelTabDeactivate,
+      destroy: host.__nvPanelTabDestroy,
+    };
+  }
+  if (typeof result === "function") return { destroy: result };
+  return {};
+}
+
+function cleanupFunctionFromMountResult(result) {
+  if (typeof result === "function") return result;
+  if (result && typeof result === "object") {
+    return result.destroy || result.cleanup || null;
+  }
+  return null;
+}
+
 function composeCleanup(host, returnedCleanup) {
-  const cleanups = [returnedCleanup, host.cleanup].filter((fn, index, arr) =>
-    typeof fn === "function" && arr.indexOf(fn) === index
+  const mountedCleanup = cleanupFunctionFromMountResult(returnedCleanup);
+  const cleanups = [host.cleanup].filter((fn, index, arr) =>
+    typeof fn === "function" && fn !== mountedCleanup && arr.indexOf(fn) === index
   );
   return () => {
     cleanups.forEach((cleanup) => {
@@ -147,6 +181,7 @@ function composeCleanup(host, returnedCleanup) {
     host.cleanup = null;
   };
 }
+
 
 function createContentElement(tab) {
   const content = document.createElement("div");
@@ -157,6 +192,7 @@ function createContentElement(tab) {
   content.setAttribute("tabindex", "0");
   content.setAttribute("aria-label", tab.fullDisplayName || tab.displayName || tab.panelType);
   if (tab.resourcePath) content.dataset.currentFilePath = tab.resourcePath;
+  if (tab.reference) content.__nvNodevisionReference = tab.reference;
   return content;
 }
 
@@ -230,13 +266,22 @@ export function activatePanelTab(cell, tabId, options = {}) {
   const state = ensurePanelTabs(cell);
   const tab = tabById(state, tabId);
   if (!tab) return null;
+  const previousTab = tabById(state, state.activeTabId);
+  if (previousTab && previousTab !== tab) {
+    deactivatePanelContentLifecycle(previousTab.contentElement, { tab: previousTab, cell, reason: "tab-switch" });
+    previousTab.lifecycleState = "inactive";
+  }
   state.activeTabId = tab.tabId;
   setContentVisibility(state);
   applyPanelTabContext(cell, tab, options);
   renderPanelTabs(cell);
+  registerPanelContentLifecycle(tab.contentElement, tab.lifecycle || {}, { tabId: tab.tabId, panelType: tab.panelType, reference: tab.reference || null });
+  activatePanelContentLifecycle(tab.contentElement, { tab, cell, reason: options.reason || "tab-activate" });
+  tab.lifecycleState = "active";
   tab.contentElement.__nvOnPanelTabActivate?.(tab);
   return tab;
 }
+
 
 export async function openPanelTabInCell(cell, descriptor, mountContent) {
   const state = ensurePanelTabs(cell, { orientation: descriptor?.tabOrientation });
@@ -256,7 +301,18 @@ export async function openPanelTabInCell(cell, descriptor, mountContent) {
   window.activeCell = tab.contentElement;
   try {
     const cleanup = await mountContent(tab.contentElement, tab.panelVars, tab);
+    tab.lifecycle = lifecycleHooksFromMountResult(cleanup, tab.contentElement);
+    registerPanelContentLifecycle(tab.contentElement, tab.lifecycle, { tabId: tab.tabId, panelType: tab.panelType, reference: tab.reference || null });
     tab.cleanup = composeCleanup(tab.contentElement, cleanup);
+    if (!tab.contentElement.__nvPanelContentMountedActiveHookDelivered && typeof tab.lifecycle.activate === "function") {
+      try {
+        tab.lifecycle.activate({ host: tab.contentElement, tab, cell, reason: "mounted-active" });
+        tab.contentElement.__nvPanelContentMountedActiveHookDelivered = true;
+        tab.lifecycleState = "active";
+      } catch (err) {
+        console.warn("Panel tab activate hook failed after mount:", err);
+      }
+    }
   } finally {
     window.activeCell = cell || previousActiveCell;
   }
@@ -278,6 +334,8 @@ function tabLooksDirty(tab, state = null) {
 
 function destroyTab(state, tab) {
   const index = state.tabs.indexOf(tab);
+  destroyPanelContentLifecycle(tab.contentElement, { tab, cell: state.cell, reason: "tab-close" });
+  tab.lifecycleState = "destroyed";
   tab.cleanup?.();
   tab.contentElement.remove();
   state.tabs.splice(index, 1);

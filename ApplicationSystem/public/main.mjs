@@ -10,6 +10,7 @@ import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
 import { installPanelZoomShortcuts } from "./panels/panelZoomPan.mjs";
 import { installHyperlinkSelectionTracking } from "./ToolbarCallbacks/edit/hyperlinkSelection.mjs";
 import { createPerformanceOperation } from "./PerformanceDiagnostics.mjs";
+import { initializeFpsOverlayFromPreference } from "./FpsOverlay.mjs";
 
 
 //Initialize the status bar:
@@ -19,6 +20,7 @@ async function initNodevision() {
   const perf = createPerformanceOperation("browser startup");
   try {
     await createToolbar("#global-toolbar");
+    initializeFpsOverlayFromPreference();
     perf.mark("toolbar");
     installHyperlinkSelectionTracking();
     installPanelZoomShortcuts();

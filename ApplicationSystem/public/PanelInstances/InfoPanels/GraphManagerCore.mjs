@@ -9,13 +9,14 @@ import {
     makeBrokenPlaceholderRecord,
     retargetGraphLinkRecord
 } from './GraphManagerDependencies/BrokenLinkPlaceholders.mjs';
-import { saveFoundEdge } from './GraphManagerDependencies/SaveFoundEdge.mjs';
+import { saveFoundEdge, saveFoundEdgesBatch } from './GraphManagerDependencies/SaveFoundEdge.mjs';
+import { buildEdgeBucketHydrationPlan } from './GraphManagerDependencies/EdgeBucketHydrationPlan.mjs';
 import { getVisibleNodeId } from './GraphManagerDependencies/GetVisibleNodeID.mjs';
 import { normalizePath } from './GraphManagerDependencies/NormalizePath.mjs';
 import {
     DIRECTORY_APPEARANCE_CHANGED_EVENT,
     getCachedDirectoryAppearance,
-    loadDirectoryAppearanceMap,
+    loadDirectoryAppearancesForPaths,
     resolveDirectoryAppearanceGraphColors,
 } from '/GraphManagement/DirectoryAppearanceClient.mjs';
 import { fetchDirectoryContents as fetchDirectoryContentsAPI, moveFileOrDirectory } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
@@ -49,6 +50,7 @@ let dragMoveState = null;
 let expandedDirectoryCollisionFrame = null;
 let expandedDirectoryCollisionNodeId = null;
 const htmlPreviewCache = new Map(); // path -> url | null
+const hydratedEdgeBucketSymbols = new Set();
 let externalNodesLoaded = false;
 let externalLinkedFilesVisible = true;
 let graphAbstractionFilter = null;
@@ -58,16 +60,31 @@ let graphViewportResizeFrame = 0;
 let graphViewportResizeShouldFit = false;
 let graphViewportEventCleanup = null;
 let activeGraphRenderPerf = null;
+let activeGraphRenderExistenceCache = null;
+let activeGraphEdgePersistenceBatch = null;
+let activeGraphLinkScanCache = null;
 let placeholderRetargetState = null;
 let linkEndpointEditState = null;
 const GRAPH_ABSTRACTION_MAX_LEVEL = 20;
-const EDGE_BUCKET_SYMBOLS = [
-    ...'abcdefghijklmnopqrstuvwxyz',
-    ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-    ...'0123456789',
-    '#',
-    '_'
-];
+function graphPathsFromDirectoryEntries(files = [], parentPath = "") {
+    const cleanParent = normalizePath(parentPath || "");
+    const paths = [cleanParent];
+    for (const entry of Array.isArray(files) ? files : []) {
+        if (!entry?.name) continue;
+        paths.push(normalizePath(cleanParent ? cleanParent + "/" + entry.name : entry.name));
+    }
+    return [...new Set(paths)];
+}
+
+function graphDirectoryPathsFromDirectoryEntries(files = [], parentPath = "") {
+    const cleanParent = normalizePath(parentPath || "");
+    const paths = [cleanParent];
+    for (const entry of Array.isArray(files) ? files : []) {
+        if (!entry?.isDirectory || !entry?.name) continue;
+        paths.push(normalizePath(cleanParent ? cleanParent + "/" + entry.name : entry.name));
+    }
+    return [...new Set(paths)];
+}
 const DIRECTORY_IMAGE_CANDIDATES = [
     '.directory.svg',
     'directory.svg',
@@ -96,7 +113,7 @@ async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
         const data = await fetchDirectoryContentsAPI(cleanPath);
 
         if (typeof callback === "function") {
-            callback(data, cleanPath);
+            await callback(data, cleanPath);
         }
 
         navigationState.setLastOpenedDirectory(cleanPath, "GraphManager");
@@ -890,19 +907,14 @@ async function refreshGraphView({ fit = true, reason = "refresh" } = {}) {
     discoveredLinks.clear();
     linkRecordsBySourceTarget.clear();
     brokenLinkRecordsBySourceTarget.clear();
+    hydratedEdgeBucketSymbols.clear();
     cy.elements().not('.mqtt-live, .td-live').remove();
     externalNodesLoaded = false;
 
-    await loadDirectoryAppearanceMap({ force: true });
-    perf.mark("directory-appearance-manifest");
     await loadExternalNodes();
     perf.mark("external-nodes");
 
-    const bucketStats = await hydrateDiscoveredLinksFromBuckets();
-    perf.mark("edge-buckets", bucketStats);
-    await fetchDirectoryContents(currentRootPath, (data) => {
-        renderGraphData(data, currentRootPath);
-    }, null, null);
+    await fetchDirectoryContents(currentRootPath, (data) => renderGraphData(data, currentRootPath), null, null);
     perf.mark("directory-fetch");
 
     queueRelayout({ fit: Boolean(fit), reason });
@@ -923,9 +935,7 @@ async function ensureDirectoryChainExpanded(targetDirPath) {
     for (const part of parts) {
         cumulative = cumulative ? `${cumulative}/${part}` : part;
         // Render this directory's children so moved nodes remain reachable in the graph.
-        await fetchDirectoryContents(cumulative, (data) => {
-            renderGraphData(data, cumulative);
-        }, null, null);
+        await fetchDirectoryContents(cumulative, (data) => renderGraphData(data, cumulative), null, null);
     }
 
     navigationState.setLastOpenedDirectory(cleanTarget, "GraphManager");
@@ -2095,13 +2105,27 @@ function ingestPersistedEdgeData(data) {
     }
 }
 
-async function hydrateDiscoveredLinksFromBuckets() {
-    const stats = { requested: EDGE_BUCKET_SYMBOLS.length, loaded: 0, bytes: 0 };
-    const fetches = EDGE_BUCKET_SYMBOLS.map(async (symbol) => {
-        const bucket = `${encodeURIComponent(symbol)}.json`;
-        const url = `/public/data/edges/${bucket}`;
+async function hydrateDiscoveredLinksFromBuckets(paths = null, options = {}) {
+    const plan = buildEdgeBucketHydrationPlan(paths, {
+        all: options.all === true,
+        force: options.force === true,
+        loaded: hydratedEdgeBucketSymbols,
+        normalizePath,
+    });
+    const stats = {
+        requested: plan.requests.length,
+        loaded: 0,
+        bytes: 0,
+        targeted: plan.targeted,
+        targetBucketRequests: plan.requests.filter((request) => request.kind === "target").length,
+        sourceBucketRequests: plan.requests.filter((request) => request.kind === "source").length,
+    };
+    if (!plan.requests.length) return stats;
+
+    const fetches = plan.requests.map(async (request) => {
         try {
-            const res = await fetch(url);
+            const res = await fetch(request.url);
+            hydratedEdgeBucketSymbols.add(request.cacheKey);
             if (!res.ok) return;
             const text = await res.text();
             stats.loaded += 1;
@@ -2110,12 +2134,14 @@ async function hydrateDiscoveredLinksFromBuckets() {
             const json = JSON.parse(text);
             ingestPersistedEdgeData(json);
         } catch (err) {
-            console.warn(`[GraphManager] Failed to hydrate bucket ${bucket}:`, err);
+            console.warn(`[GraphManager] Failed to hydrate ${request.kind} bucket ${request.symbol}:`, err);
         }
     });
 
     await Promise.all(fetches);
     incrementPerformanceCounter("GraphManager.edgeBucketsRequested", stats.requested);
+    incrementPerformanceCounter("GraphManager.edgeTargetBucketsRequested", stats.targetBucketRequests);
+    incrementPerformanceCounter("GraphManager.edgeSourceBucketsRequested", stats.sourceBucketRequests);
     incrementPerformanceCounter("GraphManager.edgeBucketsLoaded", stats.loaded);
     incrementPerformanceCounter("GraphManager.edgeBucketBytes", stats.bytes);
     return stats;
@@ -2402,23 +2428,74 @@ function runRelayout({ fit = true, reasons = [] } = {}) {
     activeLayout.run();
 }
 
-async function notebookAssetExists(relativePath) {
-    if (!relativePath) return false;
-    activeGraphRenderPerf?.count("existenceRequests");
-    incrementPerformanceCounter("GraphManager.existenceRequests");
-    const url = toNotebookAssetUrl(relativePath);
-    try {
-        const headRes = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-        if (headRes.ok) return true;
-        // Some servers may not support HEAD; fall back to GET without reading body.
-        if (headRes.status === 405 || headRes.status === 501) {
-            const getRes = await fetch(url, { method: 'GET', cache: 'no-store' });
-            return getRes.ok;
-        }
-        return false;
-    } catch (_) {
-        return false;
+async function scanGraphFileForLinkRecords(sourcePath) {
+    const cleanSource = normalizePath(sourcePath);
+    if (!activeGraphLinkScanCache) return scanFileForLinkRecords(cleanSource);
+    if (activeGraphLinkScanCache.has(cleanSource)) return activeGraphLinkScanCache.get(cleanSource);
+    const scanPromise = scanFileForLinkRecords(cleanSource);
+    activeGraphLinkScanCache.set(cleanSource, scanPromise);
+    const records = await scanPromise;
+    activeGraphLinkScanCache.set(cleanSource, records);
+    return records;
+}
+
+async function persistGraphEdge(edgeData) {
+    if (!edgeData?.source || !edgeData?.target) return;
+    if (activeGraphEdgePersistenceBatch) {
+        activeGraphEdgePersistenceBatch.push(edgeData);
+        activeGraphRenderPerf?.count("edgeSaveQueued");
+        incrementPerformanceCounter("GraphManager.edgeSaveQueued");
+        return;
     }
+    activeGraphRenderPerf?.count("edgeSaveRequests");
+    incrementPerformanceCounter("GraphManager.edgeSaveRequests");
+    await saveFoundEdge(edgeData);
+}
+
+async function flushGraphEdgePersistenceBatch() {
+    const batch = activeGraphEdgePersistenceBatch;
+    if (!batch?.length) return;
+    activeGraphEdgePersistenceBatch = [];
+    activeGraphRenderPerf?.count("edgeSaveRequests");
+    activeGraphRenderPerf?.count("edgeSaveBatchRequests");
+    activeGraphRenderPerf?.count("edgeSaveEdges", batch.length);
+    incrementPerformanceCounter("GraphManager.edgeSaveRequests");
+    incrementPerformanceCounter("GraphManager.edgeSaveBatchRequests");
+    incrementPerformanceCounter("GraphManager.edgeSaveEdges", batch.length);
+    await saveFoundEdgesBatch(batch);
+}
+
+
+async function notebookAssetExists(relativePath) {
+    const cleanPath = normalizePath(relativePath || "");
+    if (!cleanPath) return false;
+
+    if (activeGraphRenderExistenceCache?.has(cleanPath)) {
+        return Boolean(await activeGraphRenderExistenceCache.get(cleanPath));
+    }
+
+    const existencePromise = (async () => {
+        activeGraphRenderPerf?.count("existenceRequests");
+        incrementPerformanceCounter("GraphManager.existenceRequests");
+        const url = toNotebookAssetUrl(cleanPath);
+        try {
+            const headRes = await fetch(url, { method: "HEAD", cache: "no-store" });
+            if (headRes.ok) return true;
+            // Some servers may not support HEAD; fall back to GET without reading body.
+            if (headRes.status === 405 || headRes.status === 501) {
+                const getRes = await fetch(url, { method: "GET", cache: "no-store" });
+                return getRes.ok;
+            }
+            return false;
+        } catch (_) {
+            return false;
+        }
+    })();
+
+    activeGraphRenderExistenceCache?.set(cleanPath, existencePromise);
+    const exists = await existencePromise;
+    activeGraphRenderExistenceCache?.set(cleanPath, exists);
+    return exists;
 }
 
 function rememberBrokenLink(sourcePath, targetPath, record = null) {
@@ -2665,14 +2742,13 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     linkRecordsBySourceTarget.clear();
     brokenLinksBySource.clear();
     brokenLinkRecordsBySourceTarget.clear();
+    hydratedEdgeBucketSymbols.clear();
     linkInspectorElem = linkInspectorId ? document.getElementById(linkInspectorId) : null;
     renderGraphLinkInspector(null);
     const container = document.getElementById(containerId);
     const statusElem = statusElemId ? document.getElementById(statusElemId) : null;
     const edgeStyleOverrides = await loadEdgeStyleOverrides();
     perf.mark("edge-styles");
-    await loadDirectoryAppearanceMap();
-    perf.mark("directory-appearance-manifest");
     bindDirectoryAppearanceEvents();
 
     cy = cytoscape({
@@ -3120,10 +3196,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     perf.mark("external-nodes");
 
     if (statusElem) statusElem.textContent = "Fetching Files...";
-    const bucketStats = await hydrateDiscoveredLinksFromBuckets();
-    perf.mark("edge-buckets", bucketStats);
-    await fetchDirectoryContents(currentRootPath, (data) => {
-        renderGraphData(data, currentRootPath);
+    await fetchDirectoryContents(currentRootPath, async (data) => {
+        await renderGraphData(data, currentRootPath);
         if (statusElem) statusElem.textContent = "Ready";
     }, null, null);
     perf.mark("directory-fetch");
@@ -3133,12 +3207,36 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
 async function renderGraphData(files, parentPath) {
     if (!files) return;
     const perf = createPerformanceOperation("GraphManager render directory", { parentPath });
+    const previousRenderPerf = activeGraphRenderPerf;
+    const previousExistenceCache = activeGraphRenderExistenceCache;
+    const previousEdgePersistenceBatch = activeGraphEdgePersistenceBatch;
+    const previousLinkScanCache = activeGraphLinkScanCache;
     activeGraphRenderPerf = perf;
     const inputFiles = Array.isArray(files) ? files : [];
     perf.count("entries", inputFiles.length);
     perf.count("directories", inputFiles.filter((entry) => entry?.isDirectory).length);
 
     const normalizedParentPath = normalizePath(parentPath);
+    const visibleGraphPaths = graphPathsFromDirectoryEntries(inputFiles, normalizedParentPath);
+    const visibleDirectoryPaths = graphDirectoryPathsFromDirectoryEntries(inputFiles, normalizedParentPath);
+    activeGraphRenderExistenceCache = new Map();
+    activeGraphEdgePersistenceBatch = [];
+    activeGraphLinkScanCache = new Map();
+    for (const visiblePath of visibleGraphPaths) {
+        activeGraphRenderExistenceCache.set(visiblePath, true);
+    }
+
+    try {
+        await loadDirectoryAppearancesForPaths(visibleDirectoryPaths);
+        perf.mark("directory-appearance", { paths: visibleDirectoryPaths.length });
+    } catch (err) {
+        console.warn("[GraphManager] Failed to load visible directory appearance metadata:", err);
+        perf.mark("directory-appearance", { paths: visibleDirectoryPaths.length, failed: true });
+    }
+
+    const bucketStats = await hydrateDiscoveredLinksFromBuckets(visibleGraphPaths);
+    perf.mark("edge-buckets", bucketStats);
+
     const parentId = normalizedParentPath || "Root";
     const currentDirectoryImage = inferCurrentDirectoryImage(files, normalizedParentPath);
     const previewFetches = [];
@@ -3236,6 +3334,7 @@ async function renderGraphData(files, parentPath) {
     for (const filePath of filesToScan) {
         await handleLinkDiscovery(filePath);
     }
+    await flushGraphEdgePersistenceBatch();
 
     for (const task of previewFetches) {
         const url = await findFirstImageInHtml(task.path);
@@ -3253,7 +3352,10 @@ async function renderGraphData(files, parentPath) {
     // Final relayout after edges exist so connected structures pack better.
     queueRelayout({ fit: true, reason: 'edges-updated' });
     perf.end({ success: true });
-    activeGraphRenderPerf = null;
+    activeGraphRenderPerf = previousRenderPerf;
+    activeGraphRenderExistenceCache = previousExistenceCache;
+    activeGraphEdgePersistenceBatch = previousEdgePersistenceBatch;
+    activeGraphLinkScanCache = previousLinkScanCache;
 }
 
 function referenceGroupKey(record = {}) {
@@ -3306,7 +3408,7 @@ async function handleLinkDiscovery(filePath) {
     clearBrokenLinksForSource(cleanSource);
     clearLinkRecordsForSource(cleanSource);
     try {
-        const records = await scanFileForLinkRecords(cleanSource);
+        const records = await scanGraphFileForLinkRecords(cleanSource);
         activeGraphRenderPerf?.count("filesScanned");
         activeGraphRenderPerf?.count("linkRecords", Array.isArray(records) ? records.length : 0);
         incrementPerformanceCounter("GraphManager.filesScanned");
@@ -3324,9 +3426,7 @@ async function handleLinkDiscovery(filePath) {
                     addExternalNodesToGraph([extNode]);
                     await persistExternalNodes([extNode]);
                     rememberLink(cleanSource, extNode.id, record);
-                    activeGraphRenderPerf?.count("edgeSaveRequests");
-                    incrementPerformanceCounter("GraphManager.edgeSaveRequests");
-                    await saveFoundEdge({
+                    await persistGraphEdge({
                         source: cleanSource,
                         target: extNode.id,
                         linkKind: record.linkKind,
@@ -3353,10 +3453,7 @@ async function handleLinkDiscovery(filePath) {
                 }
 
                 rememberLink(cleanSource, cleanTarget, record);
-                activeGraphRenderPerf?.count("edgeSaveRequests");
-                incrementPerformanceCounter("GraphManager.edgeSaveRequests");
-
-                await saveFoundEdge({
+                await persistGraphEdge({
                     source: cleanSource,
                     target: cleanTarget,
                     linkKind: record.linkKind,
@@ -3384,9 +3481,7 @@ async function toggleCompoundDirectory(node) {
     if (!descendants.empty()) {
         cy.remove(descendants);
     } else {
-        await fetchDirectoryContents(path, (data) => {
-            renderGraphData(data, path);
-        }, null, null);
+        await fetchDirectoryContents(path, (data) => renderGraphData(data, path), null, null);
     }
 
     navigationState.setLastOpenedDirectory(path || "", "GraphManager");

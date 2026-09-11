@@ -10,6 +10,7 @@ import {
   touchLiveFileContentProvider,
 } from "/LiveFileContent.mjs";
 import { loadModuleMap as loadSharedModuleMap } from "/PanelInstances/ModuleMapLoader.mjs";
+import { incrementPerformanceCounter } from "/PerformanceDiagnostics.mjs";
 
 let lastEditedPath = null;
 let graphicalEditorHostRef = null;
@@ -240,12 +241,15 @@ function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
   const events = ["input", "change", "keyup", "paste", "cut", "pointerup", "focusin", "pointerdown"];
   const handlers = new Map(events.map((eventName) => [eventName, () => schedule(eventName)]));
   handlers.forEach((handler, eventName) => editorDiv.addEventListener(eventName, handler, true));
+  incrementPerformanceCounter("GraphicalEditor.liveProviderRegistered");
+  incrementPerformanceCounter("GraphicalEditor.liveListenersAdded", events.length);
   const observer = typeof MutationObserver !== "undefined"
     ? new MutationObserver((records) => {
         if (graphicalLiveMutationRecordsContainDocumentChange(records, editorDiv)) schedule("mutation");
       })
     : null;
   observer?.observe?.(editorDiv, { subtree: true, childList: true, characterData: true, attributes: true });
+  if (observer) incrementPerformanceCounter("GraphicalEditor.liveObserversAdded");
   touch("registered");
 
   currentGraphicalLiveCleanup = () => {
@@ -253,16 +257,22 @@ function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
     handlers.forEach((handler, eventName) => editorDiv.removeEventListener(eventName, handler, true));
     observer?.disconnect?.();
     cleanupProvider();
+    incrementPerformanceCounter("GraphicalEditor.liveListenersRemoved", events.length);
+    if (observer) incrementPerformanceCounter("GraphicalEditor.liveObserversDisconnected");
+    incrementPerformanceCounter("GraphicalEditor.liveProviderRemoved");
+    if (editorDiv.__nvGraphicalLiveCleanup === currentGraphicalLiveCleanup) editorDiv.__nvGraphicalLiveCleanup = null;
   };
+  editorDiv.__nvGraphicalLiveCleanup = currentGraphicalLiveCleanup;
   return currentGraphicalLiveCleanup;
 }
 
 function cleanupEditorHost(editorDiv) {
-  if (typeof currentGraphicalLiveCleanup === "function") {
-    currentGraphicalLiveCleanup();
-    currentGraphicalLiveCleanup = null;
-  }
   if (!editorDiv) return;
+  const liveCleanup = editorDiv.__nvGraphicalLiveCleanup || currentGraphicalLiveCleanup;
+  if (typeof liveCleanup === "function") {
+    liveCleanup();
+    if (currentGraphicalLiveCleanup === liveCleanup) currentGraphicalLiveCleanup = null;
+  }
   const cleanup = editorDiv.__nvActiveEditorCleanup;
   if (typeof cleanup === "function") {
     try {
@@ -395,52 +405,28 @@ export async function setupPanel(cell, instanceVars = {}) {
   claimGraphicalEditorHost(container);
   enableGraphicalEditorActivation(container);
 
-  // Reactive watcher for selectedFilePath
-  if (!window._graphicalEditorProxyInstalled) {
-    let internalPath = window.selectedFilePath || null;
-
-    Object.defineProperty(window, "selectedFilePath", {
-      get() {
-        return internalPath;
-      },
-      set(value) {
-        if (value !== internalPath) {
-          const applyChange = () => {
-            internalPath = value;
-            const editorHost = getGraphicalEditorHost();
-            if (editorHost && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(editorHost))) {
-              updateGraphicalEditor(value, { host: editorHost });
-            }
-
-            const viewPanel = document.getElementById("element-view");
-            if (viewPanel && typeof window.updateViewPanel === "function" && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(viewPanel))) {
-              window.updateViewPanel(value).catch((err) => {
-                console.error("❌ GraphicalEditor -> FileView sync failed:", err);
-              });
-            }
-          };
-          if (typeof window.__nvGuardFileSwitch === "function") {
-            window.__nvGuardFileSwitch(value, applyChange);
-          } else {
-            applyChange();
-          }
-        }
-      },
-      configurable: true,
-    });
-
-    window._graphicalEditorProxyInstalled = true;
-    console.log("✅ GraphicalEditor reactive watcher installed.");
-  }
 
   // Initial render
   const initialPath = instanceVars.filePath || window.selectedFilePath;
   await updateGraphicalEditor(initialPath, { force: true, host: container });
   activateGraphicalEditorHost(container);
 
-  return () => {
+  const destroy = () => {
     cleanupEditorHost(container);
-    cleanupGraphicalEditorAttention(lastEditedPath || window.currentActiveFilePath || null);
+    cleanupGraphicalEditorAttention(container.dataset.currentFilePath || lastEditedPath || window.currentActiveFilePath || null);
+  };
+  return {
+    activate: () => {
+      activateGraphicalEditorHost(container);
+      if (!container.__nvGraphicalLiveCleanup && container.dataset.currentFilePath) {
+        registerGraphicalEditorLiveProvider(container.dataset.currentFilePath, container);
+      }
+    },
+    deactivate: () => {
+      const cleanup = container.__nvGraphicalLiveCleanup;
+      if (typeof cleanup === "function") cleanup();
+    },
+    destroy,
   };
 }
 

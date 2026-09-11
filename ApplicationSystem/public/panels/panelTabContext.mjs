@@ -3,6 +3,7 @@
 
 import { setStatus, setWordCountVisibility } from "/StatusBar.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import { referenceToApiPath } from "../NodevisionReference.mjs";
 
 function normalizePath(value = "") {
   return String(value || "")
@@ -14,7 +15,7 @@ function normalizePath(value = "") {
 }
 
 function tabResourcePath(tab = {}) {
-  return normalizePath(tab.resourcePath || tab.panelVars?.filePath || tab.contentElement?.dataset?.currentFilePath || "");
+  return normalizePath(referenceToApiPath(tab.reference || null) || tab.resourcePath || tab.panelVars?.filePath || tab.contentElement?.dataset?.currentFilePath || "");
 }
 
 export function removeDuplicateActiveIds(cell, tab) {

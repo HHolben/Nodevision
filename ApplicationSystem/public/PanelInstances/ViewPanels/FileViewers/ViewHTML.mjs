@@ -136,12 +136,15 @@ export async function renderFile(path, viewPanel, iframe, serverBase, options = 
   // Reset previous layer context when switching files
   window.HTMLViewLayersContext = null;
   window.NodevisionState = window.NodevisionState || {};
+  const selectedPath = options.selectionPath || path;
+  const selectedIsDirectory = Boolean(options.selectionIsDirectory);
   window.NodevisionState.currentMode = "HTMLviewing";
-  window.NodevisionState.selectedFile = path;
+  window.NodevisionState.selectedFile = selectedPath;
+  window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
   window.NodevisionState.activeFileViewPath = path;
   window.currentActiveFilePath = path;
   window.filePath = path;
-  updateToolbarState({ currentMode: "HTMLviewing", selectedFile: path, activeFileViewPath: path });
+  updateToolbarState({ currentMode: "HTMLviewing", selectedFile: selectedPath, activeFileViewPath: path });
 
   // Set up error and load handlers
   iframe.onerror = () => {

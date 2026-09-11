@@ -3,6 +3,7 @@
 
 import { updateToolbarState } from '/panels/createToolbar.mjs';
 import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
+import { setNodevisionSelectionEntries } from '/NodevisionSelection.mjs';
 import { moveFileOrDirectory as moveFileOrDirectoryAPI } from '/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerAPI.mjs';
 import { maybePromptLinkMoveImpact } from '/ToolbarCallbacks/file/linkMoveImpact.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
@@ -441,16 +442,15 @@ function uniqueFileSelectionEntries(entries = []) {
   return [...byPath.values()];
 }
 
-function publishSelectedFileEntries(entries = [], primaryEntry = null) {
+function publishSelectedFileEntries(entries = [], primaryEntry = null, options = {}) {
   const cleanEntries = uniqueFileSelectionEntries(entries);
   const primary = primaryEntry?.path ? primaryEntry : cleanEntries[cleanEntries.length - 1] || null;
+  const canonicalEntries = primary
+    ? [...cleanEntries.filter((entry) => entry.path !== primary.path), primary]
+    : cleanEntries;
+  setNodevisionSelectionEntries(canonicalEntries, { silent: options.silentSelection === true });
   window.NodevisionState = window.NodevisionState || {};
-  window.NodevisionState.selectedFiles = cleanEntries;
-  window.NodevisionState.selectedFileCount = cleanEntries.length;
   window.NodevisionState.selectedFilesOwner = "FileManager";
-  window.selectedFilePaths = cleanEntries.map((entry) => entry.path);
-  window.NodevisionState.selectedFile = primary?.path || null;
-  window.NodevisionState.selectedFileIsDirectory = Boolean(primary?.isDirectory);
   try {
     updateToolbarState({ selectedFile: primary?.path || null });
   } catch (err) {
@@ -507,10 +507,10 @@ function markSelectedFileItemVisualOnly(selectedLink) {
   if (hasEntry) setFileItemSelected(selectedLink, true);
 }
 
-function markSelectedFileItem(selectedLink) {
+function markSelectedFileItem(selectedLink, options = {}) {
   const entry = fileSelectionEntryFromItem(selectedLink);
   const entries = entry ? [entry] : [];
-  publishSelectedFileEntries(entries, entry);
+  publishSelectedFileEntries(entries, entry, options);
   markSelectedFileItemVisualOnly(selectedLink);
 }
 
@@ -622,8 +622,8 @@ function selectFileManagerItem(item, options = {}) {
       markSelectedFileItemVisualOnly(item);
     },
     onSelected: async (selectedPath) => {
-      // FileView installs a selectedFilePath proxy that syncs NodevisionState + toolbar.
-      // If that proxy isn't installed (e.g., FileView panel not loaded yet), do it here.
+      // NodevisionSelection owns selectedFilePath; keep legacy toolbar state available
+      // even if selection compatibility has not initialized yet.
       if (!window._selectedFileProxyInstalled) {
         window.NodevisionState = window.NodevisionState || {};
         window.NodevisionState.selectedFile = selectedPath || null;
@@ -634,7 +634,7 @@ function selectFileManagerItem(item, options = {}) {
         navigationState.setLastOpenedDirectory(selectedPath, "FileManager");
       }
       console.log("Selected file:", selectedPath);
-      markSelectedFileItem(item);
+      markSelectedFileItem(item, { silentSelection: true });
       if (typeof options.afterSelected === "function") {
         try {
           await options.afterSelected(selectedPath, selectedIsDirectory);

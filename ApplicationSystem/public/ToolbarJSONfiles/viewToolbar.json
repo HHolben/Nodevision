@@ -142,6 +142,14 @@
   },
   {
     "ToolbarCategory": "View",
+    "heading": "Show FPS",
+    "hotkeyText": "",
+    "callbackKey": "toggleFpsOverlay",
+    "checkedStateKey": "fpsOverlayVisible",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "dark mode",
     "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",

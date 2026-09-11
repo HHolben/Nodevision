@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/panels/panelTabMetadata.test.mjs
-// This test verifies compact panel tab labels, resource normalization, duplicate identities, and orientation normalization.
+// This test verifies compact panel tab labels, canonical references, resource normalization, duplicate identities, and orientation normalization.
 
 import assert from "node:assert/strict";
 import {
@@ -7,6 +7,7 @@ import {
   normalizeNotebookPath,
   normalizeTabOrientation,
   panelContentLabel,
+  serializePanelTab,
 } from "./panelTabMetadata.mjs";
 
 globalThis.window = {
@@ -28,6 +29,7 @@ const fileTab = buildPanelTabMetadata({
 assert.equal(fileTab.displayName, "File Viewer: readme.md");
 assert.equal(fileTab.fullDisplayName, "File Viewer: docs/readme.md");
 assert.equal(fileTab.resourcePath, "docs/readme.md");
+assert.equal(fileTab.reference.path, "docs/readme.md");
 
 const codeTab = buildPanelTabMetadata({
   panelType: "CodeEditor",
@@ -70,5 +72,45 @@ const graphTab = buildPanelTabMetadata({ panelType: "GraphManager" });
 assert.equal(graphTab.displayName, "Graph View: Notebook");
 assert.equal(graphTab.resourcePath, "");
 
-console.log("panelTabMetadata tests passed");
+const sameNameA = buildPanelTabMetadata({
+  panelType: "FileView",
+  panelClass: "ViewPanel",
+  panelVars: { filePath: "Notebook/a/Readme.md" },
+});
+const sameNameB = buildPanelTabMetadata({
+  panelType: "FileView",
+  panelClass: "ViewPanel",
+  panelVars: { filePath: "Notebook/b/Readme.md" },
+});
+assert.notEqual(sameNameA.identityKey, sameNameB.identityKey, "same basename in different folders needs distinct tab identity");
 
+const caseA = buildPanelTabMetadata({
+  panelType: "FileView",
+  panelClass: "ViewPanel",
+  panelVars: { filePath: "Notebook/Case/Alpha.md" },
+});
+const caseB = buildPanelTabMetadata({
+  panelType: "FileView",
+  panelClass: "ViewPanel",
+  panelVars: { filePath: "Notebook/case/Alpha.md" },
+});
+assert.notEqual(caseA.identityKey, caseB.identityKey, "case-sensitive Notebook paths must remain distinct");
+
+const directoryTab = buildPanelTabMetadata({
+  panelType: "FileView",
+  panelClass: "ViewPanel",
+  panelVars: { filePath: "Notebook/projects/site", isDirectory: true },
+});
+assert.equal(directoryTab.reference.kind, "directory");
+assert.equal(directoryTab.identityKey.includes("notebook:local-notebook:directory:projects/site"), true);
+
+const serialized = serializePanelTab(directoryTab);
+assert.deepEqual(serialized.reference, {
+  type: "notebook",
+  rootId: "local-notebook",
+  kind: "directory",
+  path: "projects/site",
+});
+assert.deepEqual(serialized.panelVars.reference, serialized.reference);
+
+console.log("panelTabMetadata tests passed");

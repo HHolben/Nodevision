@@ -1,5 +1,12 @@
 // Nodevision/ApplicationSystem/public/panels/panelTabMetadata.mjs
-// This module builds compact panel tab labels and stable content-session identities for Nodevision workspace panels. It keeps display names separate from full resource identities so panel tabs can stay small while still distinguishing files, tools, and future content sessions.
+// This module builds compact panel tab labels, canonical target references, and stable content-session identities for Nodevision workspace panels. It keeps display names separate from full resource identities so panel tabs can stay small while still distinguishing files, tools, roots, and future content sessions.
+
+import {
+  createNotebookReference,
+  referenceDisplayName,
+  referenceFullDisplayName,
+  serializeNodevisionReference,
+} from "../NodevisionReference.mjs";
 
 export const PANEL_TAB_ORIENTATIONS = Object.freeze(["top", "bottom", "left", "right"]);
 
@@ -34,22 +41,7 @@ export function normalizeTabOrientation(value = "top") {
 }
 
 export function normalizeNotebookPath(value = "") {
-  let cleaned = String(value || "").trim();
-  if (!cleaned) return "";
-  try {
-    const origin = typeof window !== "undefined" ? window.location?.origin : "http://localhost";
-    const parsed = new URL(cleaned, origin || "http://localhost");
-    cleaned = parsed.pathname || cleaned;
-  } catch {
-    // Non-URL values are already path-like.
-  }
-  cleaned = cleaned
-    .replace(/\\/g, "/")
-    .replace(/[?#].*$/, "")
-    .replace(/^https?:\/\/[^/]+/i, "")
-    .replace(/^\/+/, "");
-  if (cleaned.toLowerCase().startsWith("notebook/")) cleaned = cleaned.slice("Notebook/".length);
-  return cleaned.replace(/\/+/g, "/").trim();
+  return createNotebookReference({ path: value }).path;
 }
 
 export function panelContentLabel(panelType = "") {
@@ -63,8 +55,8 @@ export function panelContentLabel(panelType = "") {
 }
 
 function compactResourceName(resourcePath = "", fallback = "") {
-  const clean = normalizeNotebookPath(resourcePath || fallback);
-  if (!clean) return "";
+  const clean = normalizeNotebookPath(resourcePath || "");
+  if (!clean) return String(fallback || "").trim();
   return clean.split("/").filter(Boolean).pop() || clean;
 }
 
@@ -86,6 +78,7 @@ function editorResourcePathCandidates(state = {}) {
     window.__nvSvgEditorActivePath,
   ];
   const selectedCandidates = [
+    window.NodevisionSelection?.get?.()?.path,
     window.selectedFilePath,
     state.selectedFile,
   ];
@@ -116,6 +109,7 @@ function firstResourcePath(panelVars = {}, panelType = "") {
     : [
         state.activeFileViewPath,
         window.currentActiveFilePath,
+        window.NodevisionSelection?.get?.()?.path,
         window.selectedFilePath,
         state.selectedFile,
         state.activeEditorFilePath,
@@ -136,27 +130,45 @@ function objectNameForPanel(panelType, panelVars = {}) {
   return "";
 }
 
+function referenceForPanel(panelVars = {}, panelType = "") {
+  if (panelVars.reference) return createNotebookReference(panelVars.reference);
+  const resourcePath = firstResourcePath(panelVars, panelType);
+  if (!resourcePath) return null;
+  return createNotebookReference({
+    path: resourcePath,
+    rootId: panelVars.rootId,
+    kind: panelVars.isDirectory || panelVars.kind === "directory" ? "directory" : "file",
+  });
+}
+
+function identityForReference(reference = null, fallback = "") {
+  if (!reference) return normalizeNotebookPath(fallback || "");
+  return [reference.type, reference.rootId, reference.kind, reference.path].join(":");
+}
+
 export function buildPanelTabMetadata({ panelType, panelClass = "", panelVars = {}, tabId = "" } = {}) {
   const cleanType = String(panelType || "").trim() || "Panel";
   const contentName = panelContentLabel(cleanType);
-  const resourcePath = firstResourcePath(panelVars, cleanType);
+  const reference = referenceForPanel(panelVars, cleanType);
+  const resourcePath = reference?.path || "";
   const objectName = objectNameForPanel(cleanType, panelVars);
-  const shortName = compactResourceName(resourcePath, objectName);
+  const shortName = reference ? referenceDisplayName(reference, objectName) : compactResourceName(resourcePath, objectName);
   const displayName = shortName ? `${contentName}: ${shortName}` : contentName;
-  const fullDisplayName = resourcePath ? `${contentName}: ${resourcePath}` : displayName;
+  const fullDisplayName = resourcePath ? `${contentName}: ${referenceFullDisplayName(reference)}` : displayName;
   const identityParts = [
     cleanType,
-    normalizeNotebookPath(resourcePath || objectName || panelVars.id || ""),
+    identityForReference(reference, resourcePath || objectName || panelVars.id || ""),
     String(panelVars.mode || panelVars.renderMode || panelVars.editorMode || ""),
   ];
   return {
     tabId,
     panelType: cleanType,
     panelClass: String(panelClass || "InfoPanel"),
+    reference,
     resourcePath,
     displayName,
     fullDisplayName,
-    identityKey: identityParts.map((part) => String(part || "").toLowerCase()).join("::"),
+    identityKey: identityParts.map((part) => String(part || "")).join("::"),
   };
 }
 
@@ -167,13 +179,17 @@ export function refreshPanelTabMetadata(tab, cell = null) {
   const resourcePath = contentPath || cellPath || tab.resourcePath || "";
   if (!resourcePath) return tab;
   const contentName = panelContentLabel(tab.panelType);
+  tab.reference = tab.reference && tab.reference.path === resourcePath
+    ? tab.reference
+    : createNotebookReference({ path: resourcePath, kind: tab.panelVars?.isDirectory ? "directory" : "file", rootId: tab.panelVars?.rootId });
   tab.resourcePath = resourcePath;
   tab.displayName = `${contentName}: ${compactResourceName(resourcePath)}`;
-  tab.fullDisplayName = `${contentName}: ${resourcePath}`;
-  tab.identityKey = [tab.panelType, resourcePath, tab.panelVars?.mode || tab.panelVars?.renderMode || ""]
-    .map((part) => String(part || "").toLowerCase())
+  tab.fullDisplayName = `${contentName}: ${referenceFullDisplayName(tab.reference)}`;
+  tab.identityKey = [tab.panelType, identityForReference(tab.reference, resourcePath), tab.panelVars?.mode || tab.panelVars?.renderMode || ""]
+    .map((part) => String(part || ""))
     .join("::");
-  tab.panelVars = { ...(tab.panelVars || {}), filePath: resourcePath };
+  tab.panelVars = { ...(tab.panelVars || {}), filePath: resourcePath, reference: serializeNodevisionReference(tab.reference) };
+  if (tab.contentElement) tab.contentElement.__nvNodevisionReference = tab.reference;
   return tab;
 }
 
@@ -182,7 +198,8 @@ export function serializePanelTab(tab) {
     tabId: tab.tabId,
     panelType: tab.panelType,
     panelClass: tab.panelClass,
-    panelVars: { ...(tab.panelVars || {}), filePath: tab.resourcePath || tab.panelVars?.filePath || null },
+    panelVars: { ...(tab.panelVars || {}), filePath: tab.resourcePath || tab.panelVars?.filePath || null, reference: serializeNodevisionReference(tab.reference || null) },
+    reference: serializeNodevisionReference(tab.reference || null),
     displayName: tab.displayName,
     fullDisplayName: tab.fullDisplayName,
     resourcePath: tab.resourcePath || "",

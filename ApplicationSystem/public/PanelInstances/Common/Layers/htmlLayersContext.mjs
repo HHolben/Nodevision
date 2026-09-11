@@ -201,8 +201,21 @@ export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
       win.addEventListener("nodevision-html-layer-selected", onExternalSelect);
 
       let observer = null;
+      let pendingRenderFrame = 0;
+      const scheduleRender = () => {
+        if (pendingRenderFrame) return;
+        pendingRenderFrame = requestAnimationFrame(() => {
+          pendingRenderFrame = 0;
+          render();
+        });
+      };
       try {
-        observer = new MutationObserver(() => render());
+        observer = new MutationObserver((records) => {
+          const needsRender = Array.from(records || []).some((record) => (
+            record?.type === "childList" || record?.type === "attributes"
+          ));
+          if (needsRender) scheduleRender();
+        });
         observer.observe(root, {
           childList: true,
           subtree: true,
@@ -215,6 +228,10 @@ export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
 
       return () => {
         observer?.disconnect?.();
+        if (pendingRenderFrame) {
+          cancelAnimationFrame(pendingRenderFrame);
+          pendingRenderFrame = 0;
+        }
         ["mousedown", "click", "submit"].forEach((type) => root.removeEventListener(type, onFormInteraction, true));
         root.removeEventListener("click", onRootSelect, true);
         root.removeEventListener("focusin", onRootSelect, true);

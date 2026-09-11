@@ -39,7 +39,7 @@
     "heading": "Draw",
     "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["PNGediting", "GIFediting", "SVG Editing", "FontEditing", "NBTediting", "STLediting", "OBJediting"]
+    "modes": ["GraphicalEditing", "PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting", "SVG Editing", "FontEditing", "NBTediting", "STLediting", "OBJediting"]
   },
   {
     "heading": "Draw",

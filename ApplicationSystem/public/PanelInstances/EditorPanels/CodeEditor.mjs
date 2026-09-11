@@ -1096,9 +1096,10 @@ export async function openCodeEditor(filePath, options = {}) {
     const session = targetCell.__nvCodeEditorSession || editorContainer?.__nvCodeEditorSession;
     const ownedEditor = session?.editor || (editorInstanceContainer && targetCell.contains(editorInstanceContainer) ? editorInstance : null);
     persistCodeEditorAttention(filePath, ownedEditor || editorInstance);
-    if (session?.editor === editorInstance && typeof codeEditorLiveCleanup === "function") {
-      codeEditorLiveCleanup();
-      codeEditorLiveCleanup = null;
+    const liveCleanup = session?.editorContainer?.__nvCodeEditorLiveCleanup || (session?.editor === editorInstance ? codeEditorLiveCleanup : null);
+    if (typeof liveCleanup === "function") {
+      liveCleanup();
+      if (codeEditorLiveCleanup === liveCleanup) codeEditorLiveCleanup = null;
     }
     clearEditorContext(filePath);
     if (ownedEditor) incrementPerformanceCounter("CodeEditor.monacoDisposeCalls");
@@ -1142,8 +1143,9 @@ function registerCodeEditorLiveProvider(filePath, targetContainer) {
     codeEditorLiveCleanup();
     codeEditorLiveCleanup = null;
   }
+  targetContainer?.__nvCodeEditorLiveCleanup?.();
 
-  codeEditorLiveCleanup = registerLiveFileContentProvider({
+  const cleanupProvider = registerLiveFileContentProvider({
     id: CODE_EDITOR_LIVE_PROVIDER_ID,
     filePath,
     editorKind: "code",
@@ -1167,10 +1169,25 @@ function registerCodeEditorLiveProvider(filePath, targetContainer) {
     });
   };
 
-  targetContainer?.addEventListener?.("pointerdown", () => touch("attention"), { capture: true });
-  targetContainer?.addEventListener?.("focusin", () => touch("attention"), { capture: true });
+  const pointerHandler = () => touch("attention");
+  const focusHandler = () => touch("attention");
+  targetContainer?.addEventListener?.("pointerdown", pointerHandler, { capture: true });
+  targetContainer?.addEventListener?.("focusin", focusHandler, { capture: true });
+  incrementPerformanceCounter("CodeEditor.liveProviderRegistered");
+  incrementPerformanceCounter("CodeEditor.liveListenersAdded", 2);
+
+  codeEditorLiveCleanup = () => {
+    targetContainer?.removeEventListener?.("pointerdown", pointerHandler, { capture: true });
+    targetContainer?.removeEventListener?.("focusin", focusHandler, { capture: true });
+    cleanupProvider?.();
+    incrementPerformanceCounter("CodeEditor.liveListenersRemoved", 2);
+    incrementPerformanceCounter("CodeEditor.liveProviderRemoved");
+    if (targetContainer?.__nvCodeEditorLiveCleanup === codeEditorLiveCleanup) targetContainer.__nvCodeEditorLiveCleanup = null;
+  };
+  if (targetContainer) targetContainer.__nvCodeEditorLiveCleanup = codeEditorLiveCleanup;
   return touch;
 }
+
 
 export async function updateEditorPanel(filePath) {
   if (!filePath) return;
@@ -1827,6 +1844,16 @@ export async function setupPanel(panelElem, panelVars = {}) {
 
   // Now reuse your existing logic
   await openCodeEditor(filePath || "Untitled", { targetElement: panelElem, bypassTabs: true });
+  return {
+    activate: () => activateCodeEditorHost(panelElem),
+    deactivate: () => {
+      const session = codeEditorSessionFromHost(panelElem);
+      if (session?.editor) persistCodeEditorAttention(session.filePath, session.editor);
+      const cleanup = session?.editorContainer?.__nvCodeEditorLiveCleanup;
+      if (typeof cleanup === "function") cleanup();
+    },
+    destroy: panelElem.cleanup,
+  };
 }
 
 // Expose globally

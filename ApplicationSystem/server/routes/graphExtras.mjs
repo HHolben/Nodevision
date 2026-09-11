@@ -12,34 +12,65 @@ import {
 export function registerGraphExtras(app, ctx) {
   const SHARED_DATA_DIR = ctx.sharedDataDir;
 
+  function groupEdgesByBucket(edges = [], edgeKey = "target", fallbackFilename = "") {
+    const groups = new Map();
+    for (const edge of Array.isArray(edges) ? edges : []) {
+      if (!edge || typeof edge !== "object" || !edge.source || !edge.target) continue;
+      const pathValue = edgeKey === "source" ? edge.source : edge.target;
+      const fileName = String(pathValue).split("/").pop() || fallbackFilename || "unknown";
+      const char = computeEdgeBucketChar(fileName);
+      const bucketEdges = groups.get(char) || [];
+      bucketEdges.push(edge);
+      groups.set(char, bucketEdges);
+    }
+    return groups;
+  }
+
+  async function writeGroupedBuckets(baseDir, groupedEdges, warnings) {
+    const results = [];
+    for (const [char, bucketEdges] of groupedEdges.entries()) {
+      const targetFile = path.join(baseDir, `${char}.json`);
+      const existingEdges = await readEdgeBucket(targetFile, { repair: true, warnings });
+      const deduped = dedupeEdges([...existingEdges, ...bucketEdges]);
+      await writeEdgeBucket(targetFile, deduped);
+      results.push({
+        bucket: char,
+        path: "public/data/edges/" + path.relative(path.join(SHARED_DATA_DIR, "edges"), targetFile).split(path.sep).join("/"),
+        edgeCount: bucketEdges.length,
+        storedEdgeCount: deduped.length,
+      });
+    }
+    return results;
+  }
 
   app.post("/api/graph/save-edges", async (req, res) => {
     try {
-      const { filename, data } = req.body;
-      if (!filename || typeof filename !== "string") {
-        return res.status(400).json({ error: "filename is required" });
-      }
+      const { filename = "", data } = req.body;
       if (typeof data !== "object") {
         return res.status(400).json({ error: "data must be a JSON object" });
       }
 
-      const char = computeEdgeBucketChar(filename);
+      const incomingEdges = Array.isArray(data) ? data : [];
+      const targetGroups = groupEdgesByBucket(incomingEdges, "target", filename);
+      if (!targetGroups.size) {
+        return res.json({ success: true, edgeCount: 0, bucketCount: 0, sourceBucketCount: 0, results: [], sourceResults: [] });
+      }
 
       const edgesDir = path.join(SHARED_DATA_DIR, "edges");
-      const targetFile = path.join(edgesDir, `${char}.json`);
-
-      // Merge with existing data to avoid clients clobbering the shard.
+      const sourceEdgesDir = path.join(edgesDir, "by-source");
       const warnings = [];
-      const existingEdges = await readEdgeBucket(targetFile, { repair: true, warnings });
-      const incomingEdges = Array.isArray(data) ? data : [];
-      const deduped = dedupeEdges([...existingEdges, ...incomingEdges]);
-
-      await writeEdgeBucket(targetFile, deduped);
+      const results = await writeGroupedBuckets(edgesDir, targetGroups, warnings);
+      const sourceResults = await writeGroupedBuckets(sourceEdgesDir, groupEdgesByBucket(incomingEdges, "source", filename), warnings);
 
       res.json({
         success: true,
-        bucket: char,
-        path: `public/data/edges/${char}.json`,
+        edgeCount: incomingEdges.length,
+        bucketCount: results.length,
+        sourceBucketCount: sourceResults.length,
+        bucket: results[0]?.bucket,
+        path: results[0]?.path,
+        results,
+        sourceResults,
         warnings,
       });
     } catch (err) {

@@ -3,6 +3,10 @@
 
 import saveFile from "/ToolbarCallbacks/file/saveFile.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
+import {
+  installNodevisionSelectionCompatibility,
+  setNodevisionSelectedPath,
+} from "./NodevisionSelection.mjs";
 
 let promptEl = null;
 let promptOpen = false;
@@ -239,7 +243,7 @@ export function requestNodevisionFileSelection(filePath, options = {}) {
     window.__nvFileSwitchGuardBypass = true;
     window.__nvPendingSelectedFileMetadata = { path: nextPath, isDirectory: selectedIsDirectory };
     try {
-      window.selectedFilePath = nextPath;
+      setNodevisionSelectedPath(nextPath, { isDirectory: selectedIsDirectory });
     } finally {
       window.__nvFileSwitchGuardBypass = false;
       if (window.__nvPendingSelectedFileMetadata?.path === nextPath) {
@@ -247,13 +251,12 @@ export function requestNodevisionFileSelection(filePath, options = {}) {
       }
     }
     window.NodevisionState = window.NodevisionState || {};
-    window.NodevisionState.selectedFile = nextPath;
-    window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
     options.onSelected?.(nextPath);
   });
 }
 
 export function installEditorSwitchGuard() {
+  installNodevisionSelectionCompatibility();
   window.__nvGuardFileSwitch = guardFileSwitch;
   window.__nvGuardEditorSwitch = guardEditorSwitch;
   window.requestNodevisionFileSelection = requestNodevisionFileSelection;

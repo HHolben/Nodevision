@@ -320,11 +320,15 @@ function getToolbarItemState(item, state = window.NodevisionState || {}) {
     ),
     requiresFile: Boolean(state.selectedFile || state.activeEditorFilePath || resolveToolbarActiveFilePath(state)),
   };
-  return evaluateToolbarItemState(item, {
+  const itemState = evaluateToolbarItemState(item, {
     state: enhancedState,
     attentionSnapshot: getEditorAttentionSnapshot(),
     conditionResolvers: window.NodevisionToolbarConditions || {},
   });
+  if (item.checkedStateKey) {
+    itemState.checked = Boolean(enhancedState[item.checkedStateKey]);
+  }
+  return itemState;
 }
 
 function checkToolbarConditions(item, state = window.NodevisionState || {}) {
@@ -337,6 +341,13 @@ function applyToolbarButtonState(button, itemState) {
   button.disabled = disabled;
   button.setAttribute("aria-disabled", String(disabled));
   button.classList.toggle("nv-toolbar-button-disabled", disabled);
+  if (Object.prototype.hasOwnProperty.call(itemState, "checked")) {
+    button.setAttribute("aria-pressed", itemState.checked ? "true" : "false");
+    button.classList.toggle("nv-toolbar-button-active", Boolean(itemState.checked));
+  } else {
+    button.removeAttribute("aria-pressed");
+    button.classList.remove("nv-toolbar-button-active");
+  }
   if (disabled && itemState.disabledReason) {
     const baseTitle = button.dataset.tooltipText || button.title || "";
     const nextTitle = baseTitle.includes(itemState.disabledReason)
