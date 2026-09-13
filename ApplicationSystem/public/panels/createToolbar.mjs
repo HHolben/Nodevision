@@ -8,6 +8,7 @@ import { setStatus } from "./../StatusBar.mjs";
 import { getSnapshot as getEditorAttentionSnapshot, subscribe as subscribeEditorAttention } from "../EditorAttentionState.mjs";
 import { evaluateToolbarItemState } from "./toolbarConditions.mjs";
 import { ensureSingleContextualToolbarRender } from "./contextualToolbarRegistry.mjs";
+import { ensureToolbarRegionCollapseControl } from "./toolbarRegionCollapse.mjs";
 
 
 
@@ -832,9 +833,7 @@ function updateGlobalToolbarHeightVar() {
   const toolbar = document.querySelector("#global-toolbar");
   if (!toolbar) return;
   const height = Math.ceil(toolbar.getBoundingClientRect().height || toolbar.offsetHeight || 0);
-  if (height > 0) {
-    document.documentElement.style.setProperty("--nv-global-toolbar-height", `${height}px`);
-  }
+  document.documentElement.style.setProperty("--nv-global-toolbar-height", `${height}px`);
 }
 
 function ensureGlobalToolbarHeightObserver() {
@@ -864,6 +863,8 @@ function ensureGlobalToolbarHeightObserver() {
  * @param {string} toolbarSelector
  * @param {string} currentMode - optional mode filter ("code", "graphical", etc.)
  */
+window.updateGlobalToolbarHeightVar = updateGlobalToolbarHeightVar;
+
 export async function createToolbar(toolbarSelector = "#global-toolbar", currentMode = "default") {
   const toolbar = document.querySelector(toolbarSelector);
   subToolbarContainer = document.querySelector("#sub-toolbar");
@@ -915,6 +916,7 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
   // Build main toolbar from filtered items
   buildToolbar(toolbar, prepareMainToolbarItems(filteredToolbar));
   ensureGlobalToolbarHeightObserver();
+  ensureToolbarRegionCollapseControl();
   if (!toolbarAttentionUnsubscribe) {
     toolbarAttentionUnsubscribe = subscribeEditorAttention(() => {
       updateToolbarState();

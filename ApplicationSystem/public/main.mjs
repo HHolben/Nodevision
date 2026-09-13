@@ -5,6 +5,7 @@ import "/ToolbarCallbacks/file/saveFile.mjs"; // registers saveFile/saveCurrentF
 import "/KeyboardShortcuts/ShortcutSave.js"; // installs Ctrl+S shortcut handler
 import { createToolbar } from './panels/createToolbar.mjs';
 import { clearActivePanelSelection, ensureWorkspace, loadDefaultLayout, renderLayout } from "./panels/workspace.mjs";
+import { applySerializedWorkspaceCollapseState, installWorkspaceLayoutCollapse } from "./panels/workspaceLayoutCollapseIntegration.mjs";
 import { initStatusBar } from "./StatusBar.mjs";
 import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
 import { installPanelZoomShortcuts } from "./panels/panelZoomPan.mjs";
@@ -26,6 +27,7 @@ async function initNodevision() {
     installPanelZoomShortcuts();
 
     const workspace = ensureWorkspace();
+    installWorkspaceLayoutCollapse(workspace);
     perf.mark("workspace");
     console.log("Workspace initialized:", workspace);
 
@@ -37,6 +39,7 @@ async function initNodevision() {
     if (root?.children?.length > 0) {
       console.log("Loaded declarative layout:", root);
       await Promise.resolve(renderLayout(root, workspace));
+      applySerializedWorkspaceCollapseState(workspace, root);
       perf.mark("render-layout");
       clearActivePanelSelection({ announce: false });
     } else {

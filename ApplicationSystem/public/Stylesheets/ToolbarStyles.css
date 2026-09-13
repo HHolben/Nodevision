@@ -2,3 +2,4 @@
 /* This file defines UI styles for Toolbar Styles in the Nodevision browser client. It controls layout and appearance across related views. */
 @import "./ToolbarStyles/globalToolbar.css";
 @import "./ToolbarStyles/subToolbar.css";
+@import "./ToolbarStyles/toolbarRegionCollapse.css";

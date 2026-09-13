@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/panels/rowManager.mjs
-//This script handles the insertion of adjustable horizontal dividers.
+// This module inserts adjustable horizontal row dividers for workspace docking. It delegates shared collapse behavior to the workspace layout collapse helper.
+
+import { createDividerCollapseControls, restoreCollapsedChildrenBeforeResize } from "./workspaceLayoutCollapse.mjs";
 
 export function ensureWorkspace() {
   let workspace = document.getElementById("workspace");
@@ -31,6 +33,7 @@ export function createRow() {
 
 export function insertRowWithDivider(workspace) {
   const row = createRow();
+  const rowAbove = workspace.lastElementChild;
   if (workspace.children.length > 0) {
     const divider = document.createElement("div");
     divider.className = "row-divider";
@@ -46,6 +49,10 @@ export function insertRowWithDivider(workspace) {
     makeDividerAdjustable(divider, row);
   }
   workspace.appendChild(row);
+  const divider = row.previousElementSibling;
+  if (divider?.classList?.contains?.("row-divider") && rowAbove?.classList?.contains?.("panel-row")) {
+    createDividerCollapseControls(divider, rowAbove, row, true);
+  }
   return row;
 }
 
@@ -62,6 +69,7 @@ function makeDividerAdjustable(divider, rowBelow) {
     startY = e.clientY;
     prevRow = divider.previousElementSibling;
     if (!prevRow || !prevRow.classList.contains("panel-row")) return;
+    restoreCollapsedChildrenBeforeResize(prevRow, rowBelow);
     activePointerId = e.pointerId ?? "mouse";
     startHeight = prevRow.offsetHeight;
     document.body.style.cursor = "row-resize";

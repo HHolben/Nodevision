@@ -366,6 +366,14 @@
   {
     "ToolbarCategory": "File",
     "parentHeading": "Export",
+    "heading": "Convert to SVG",
+    "hotkeyText": "",
+    "callbackKey": "ConvertToSVG",
+    "icon": "icons/FileIcon.png"
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "Export",
     "heading": "Export as STL",
     "hotkeyText": "",
     "callbackKey": "ExportSelectedModelAsSTL",

@@ -2,6 +2,7 @@
 // This file defines browser-side Save Current Layout logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { serializeWorkspace } from "/panels/workspace.mjs";
+import { serializeWorkspaceCollapseState } from "/panels/workspaceLayoutCollapseIntegration.mjs";
 
 export async function onToolbarClick() {
   try {
@@ -14,7 +15,7 @@ export async function onToolbarClick() {
     }
 
     // Serialize current layout
-    const layout = serializeWorkspace(window.workspace);
+    const layout = serializeWorkspaceCollapseState(serializeWorkspace(window.workspace), window.workspace);
     console.log("Saving current layout:", layout);
 
     // Send to server

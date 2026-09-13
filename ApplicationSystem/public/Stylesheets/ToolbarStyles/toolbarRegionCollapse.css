@@ -1,0 +1,78 @@
+/* Nodevision/ApplicationSystem/public/Stylesheets/ToolbarStyles/toolbarRegionCollapse.css */
+/* This stylesheet defines the single shared collapse strip for the main and contextual toolbar region while preserving toolbar DOM state. */
+#toolbar-collapse-strip {
+  flex: 0 0 11px;
+  min-height: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #333;
+  border-bottom: 1px solid #444;
+  position: relative;
+  z-index: 1995;
+}
+
+#toolbar-collapse-strip::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76px;
+  height: 38px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.nv-toolbar-collapse-button {
+  width: 42px;
+  height: 13px;
+  padding: 0;
+  border: 1px solid #666;
+  border-radius: 3px;
+  background: #f4f4f4;
+  color: #1f2933;
+  font: 10px/11px system-ui, sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+  transition: opacity 140ms ease;
+}
+
+#toolbar-collapse-strip:hover .nv-toolbar-collapse-button,
+#toolbar-collapse-strip:focus-within .nv-toolbar-collapse-button,
+.nv-toolbar-collapse-button:hover,
+.nv-toolbar-collapse-button:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nv-toolbar-collapse-button:hover,
+.nv-toolbar-collapse-button:focus-visible {
+  outline: 1px solid #8ab4ff;
+  outline-offset: 1px;
+  background: #e7f1ff;
+}
+
+#app-shell.nv-toolbar-region--collapsed #global-toolbar,
+#app-shell.nv-toolbar-region--collapsed #sub-toolbar {
+  display: none !important;
+}
+
+html[data-nv-theme="dark"] #toolbar-collapse-strip {
+  background: #0b1220;
+  border-bottom-color: #334155;
+}
+
+html[data-nv-theme="dark"] .nv-toolbar-collapse-button {
+  border-color: #64748b;
+  background: #1f2937;
+  color: #f8fafc;
+}
+
+html[data-nv-theme="dark"] .nv-toolbar-collapse-button:hover,
+html[data-nv-theme="dark"] .nv-toolbar-collapse-button:focus-visible {
+  background: #334155;
+  outline-color: #93c5fd;
+}
