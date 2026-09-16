@@ -64,22 +64,7 @@ export function createElementLayers(svgRoot, hostPanel = null) {
   }
 
   function normalizeInitialLayers() {
-    let layers = getLayers();
-    if (layers.length === 0) {
-      const layer1 = ensureGroup(svgRoot, "Layer 1");
-      const children = Array.from(svgRoot.childNodes);
-      children.forEach((child) => {
-        if (isEditorUiNode(child)) return;
-        layer1.appendChild(child);
-      });
-      const firstUiNode = Array.from(svgRoot.childNodes).find((node) => isEditorUiNode(node)) || null;
-      if (firstUiNode) {
-        svgRoot.insertBefore(layer1, firstUiNode);
-      } else {
-        svgRoot.appendChild(layer1);
-      }
-      layers = [layer1];
-    }
+    const layers = getLayers();
     layers.forEach((layer, i) => {
       if (!layer.getAttribute("id")) {
         layer.setAttribute("id", `layer-${i + 1}`);
@@ -116,8 +101,12 @@ export function createElementLayers(svgRoot, hostPanel = null) {
 
   function appendToActiveLayer(node) {
     const layer = getActiveLayer();
-    if (!layer) return;
-    layer.appendChild(node);
+    if (layer) {
+      layer.appendChild(node);
+    } else {
+      const firstUiNode = Array.from(svgRoot.childNodes).find((child) => isEditorUiNode(child)) || null;
+      svgRoot.insertBefore(node, firstUiNode);
+    }
     queueRender();
   }
 

@@ -5,6 +5,10 @@ import { isInteractiveFormElement } from "./htmlFormEventTools.mjs";
 import { htmlLayerDisplayName, isHtmlLayerElement } from "./htmlLayerNames.mjs";
 import { renderHtmlLayerScriptDetails } from "./htmlLayerScriptDetails.mjs";
 
+const HTML_LAYER_VIRTUALIZE_AFTER = 400;
+const HTML_LAYER_ROW_HEIGHT = 34;
+const HTML_LAYER_OVERSCAN = 10;
+
 function elementFromNode(node) {
   return node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
 }
@@ -89,7 +93,7 @@ function styleLayerWrapper(wrapper, active) {
   });
 }
 
-function createLayerRow({ el, index, active, win, onSelect }) {
+function createLayerRow({ el, index, active, win, attachHandlers = true, onSelect }) {
   const row = document.createElement("div");
   Object.assign(row.style, {
     display: "grid",
@@ -104,13 +108,17 @@ function createLayerRow({ el, index, active, win, onSelect }) {
   checkbox.type = "checkbox";
   checkbox.checked = isVisible(el, win);
   checkbox.title = checkbox.checked ? "Hide layer" : "Show layer";
-  checkbox.addEventListener("click", (event) => event.stopPropagation());
-  checkbox.addEventListener("change", () => setVisible(el, checkbox.checked));
+  checkbox.dataset.layerIndex = String(index);
+  if (attachHandlers) {
+    checkbox.addEventListener("click", (event) => event.stopPropagation());
+    checkbox.addEventListener("change", () => setVisible(el, checkbox.checked));
+  }
 
   const name = document.createElement("button");
   name.type = "button";
   name.textContent = htmlLayerDisplayName(el, index);
   name.title = "Select " + name.textContent;
+  name.dataset.layerIndex = String(index);
   Object.assign(name.style, {
     border: "none",
     background: "transparent",
@@ -122,13 +130,55 @@ function createLayerRow({ el, index, active, win, onSelect }) {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   });
-  name.addEventListener("click", (event) => {
-    event.stopPropagation();
-    onSelect(el);
-  });
+  if (attachHandlers) {
+    name.addEventListener("click", (event) => {
+      event.stopPropagation();
+      onSelect(el);
+    });
+  }
 
   row.append(checkbox, name);
   return row;
+}
+
+function styleVirtualLayerList(list, layersLength) {
+  Object.assign(list.style, {
+    display: "block",
+    flexDirection: "",
+    gap: "",
+    height: String(Math.max(1, layersLength) * HTML_LAYER_ROW_HEIGHT) + "px",
+    position: "relative",
+  });
+}
+
+function styleStandardLayerList(list) {
+  Object.assign(list.style, {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    height: "",
+    position: "",
+  });
+}
+
+export function htmlLayerVisibleRange(host, layerCount) {
+  const rawViewportHeight = host?.clientHeight || HTML_LAYER_ROW_HEIGHT * 16;
+  const viewportHeight = Math.max(HTML_LAYER_ROW_HEIGHT, Math.min(rawViewportHeight, HTML_LAYER_ROW_HEIGHT * 36));
+  const first = Math.max(0, Math.floor((host?.scrollTop || 0) / HTML_LAYER_ROW_HEIGHT) - HTML_LAYER_OVERSCAN);
+  const visibleCount = Math.ceil(viewportHeight / HTML_LAYER_ROW_HEIGHT) + HTML_LAYER_OVERSCAN * 2;
+  const end = Math.min(layerCount, first + visibleCount);
+  return { start: first, end };
+}
+
+function nodeListContainsElement(nodes) {
+  return Array.from(nodes || []).some((node) => node?.nodeType === Node.ELEMENT_NODE);
+}
+
+export function htmlLayerMutationChangesStructure(record) {
+  if (!record) return false;
+  if (record.type === "attributes") return true;
+  if (record.type !== "childList") return false;
+  return nodeListContainsElement(record.addedNodes) || nodeListContainsElement(record.removedNodes);
 }
 
 export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
@@ -149,32 +199,74 @@ export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
 
       host.innerHTML = "";
       const list = document.createElement("div");
-      list.style.display = "flex";
-      list.style.flexDirection = "column";
-      list.style.gap = "6px";
+      styleStandardLayerList(list);
       host.appendChild(list);
+
+      let latestLayers = [];
+      let virtualList = false;
+      let pendingVirtualRenderFrame = 0;
+
+      const renderLayerWrapper = (el, index, virtualized) => {
+        const active = el === selectedElement;
+        const wrapper = document.createElement("div");
+        styleLayerWrapper(wrapper, active);
+        if (virtualized) {
+          Object.assign(wrapper.style, {
+            boxSizing: "border-box",
+            left: "0",
+            minHeight: String(HTML_LAYER_ROW_HEIGHT - 4) + "px",
+            position: "absolute",
+            right: "0",
+            top: String(index * HTML_LAYER_ROW_HEIGHT) + "px",
+          });
+        }
+        wrapper.appendChild(createLayerRow({ el, index, active, win, attachHandlers: false, onSelect: selectElement }));
+        if (active && !virtualized) renderHtmlLayerScriptDetails(wrapper, { root, element: el, requestRender: render });
+        return wrapper;
+      };
+
+      const renderVirtualWindow = () => {
+        list.innerHTML = "";
+        styleVirtualLayerList(list, latestLayers.length);
+        const { start, end } = htmlLayerVisibleRange(host, latestLayers.length);
+        for (let index = start; index < end; index += 1) {
+          list.appendChild(renderLayerWrapper(latestLayers[index], index, true));
+        }
+      };
 
       render = () => {
         list.innerHTML = "";
+        latestLayers = [];
+        virtualList = false;
+        styleStandardLayerList(list);
         if (!root || !root.ownerDocument?.isConnected) {
           appendMessage(list, "HTML document is not available.", "#b00020");
           return;
         }
         if (selectedElement && !root.contains(selectedElement)) selectedElement = null;
 
-        const layers = collectLayers(root);
-        if (!layers.length) {
+        latestLayers = collectLayers(root);
+        if (!latestLayers.length) {
           appendMessage(list, "No layers found in this document.", "#444");
           return;
         }
 
-        layers.forEach((el, index) => {
-          const active = el === selectedElement;
-          const wrapper = document.createElement("div");
-          styleLayerWrapper(wrapper, active);
-          wrapper.appendChild(createLayerRow({ el, index, active, win, onSelect: selectElement }));
-          if (active) renderHtmlLayerScriptDetails(wrapper, { root, element: el, requestRender: render });
-          list.appendChild(wrapper);
+        virtualList = latestLayers.length > HTML_LAYER_VIRTUALIZE_AFTER;
+        if (virtualList) {
+          const selectedIndex = selectedElement ? latestLayers.indexOf(selectedElement) : -1;
+          if (selectedIndex >= 0 && host.clientHeight > 0) {
+            const rowTop = selectedIndex * HTML_LAYER_ROW_HEIGHT;
+            const rowBottom = rowTop + HTML_LAYER_ROW_HEIGHT;
+            if (rowTop < host.scrollTop || rowBottom > host.scrollTop + host.clientHeight) {
+              host.scrollTop = Math.max(0, rowTop - HTML_LAYER_ROW_HEIGHT * HTML_LAYER_OVERSCAN);
+            }
+          }
+          renderVirtualWindow();
+          return;
+        }
+
+        latestLayers.forEach((el, index) => {
+          list.appendChild(renderLayerWrapper(el, index, false));
         });
       };
 
@@ -194,6 +286,42 @@ export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
         event.stopPropagation();
       };
 
+      const layerIndexFromControl = (control) => {
+        if (!control || !list.contains(control)) return -1;
+        const index = Number(control.dataset.layerIndex);
+        return Number.isInteger(index) && index >= 0 && index < latestLayers.length ? index : -1;
+      };
+      const onListClick = (event) => {
+        const checkbox = event.target?.closest?.("input[type=\"checkbox\"][data-layer-index]");
+        if (checkbox && list.contains(checkbox)) {
+          event.stopPropagation();
+          return;
+        }
+        const button = event.target?.closest?.("button[data-layer-index]");
+        const index = layerIndexFromControl(button);
+        if (index < 0) return;
+        event.stopPropagation();
+        selectElement(latestLayers[index]);
+      };
+      const onListChange = (event) => {
+        const checkbox = event.target?.closest?.("input[type=\"checkbox\"][data-layer-index]");
+        const index = layerIndexFromControl(checkbox);
+        if (index < 0) return;
+        setVisible(latestLayers[index], checkbox.checked);
+      };
+      const scheduleVirtualWindowRender = () => {
+        if (!virtualList || pendingVirtualRenderFrame) return;
+        pendingVirtualRenderFrame = requestAnimationFrame(() => {
+          pendingVirtualRenderFrame = 0;
+          if (virtualList) renderVirtualWindow();
+        });
+      };
+      const onHostScroll = () => scheduleVirtualWindowRender();
+
+      list.addEventListener("click", onListClick);
+      list.addEventListener("change", onListChange);
+      host.addEventListener("scroll", onHostScroll, { passive: true });
+
       render();
       ["mousedown", "click", "submit"].forEach((type) => root.addEventListener(type, onFormInteraction, true));
       root.addEventListener("click", onRootSelect, true);
@@ -211,9 +339,7 @@ export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
       };
       try {
         observer = new MutationObserver((records) => {
-          const needsRender = Array.from(records || []).some((record) => (
-            record?.type === "childList" || record?.type === "attributes"
-          ));
+          const needsRender = Array.from(records || []).some(htmlLayerMutationChangesStructure);
           if (needsRender) scheduleRender();
         });
         observer.observe(root, {
@@ -232,6 +358,13 @@ export function createHtmlLayersContext(root, { title = "HTML Layers" } = {}) {
           cancelAnimationFrame(pendingRenderFrame);
           pendingRenderFrame = 0;
         }
+        if (pendingVirtualRenderFrame) {
+          cancelAnimationFrame(pendingVirtualRenderFrame);
+          pendingVirtualRenderFrame = 0;
+        }
+        list.removeEventListener("click", onListClick);
+        list.removeEventListener("change", onListChange);
+        host.removeEventListener("scroll", onHostScroll);
         ["mousedown", "click", "submit"].forEach((type) => root.removeEventListener(type, onFormInteraction, true));
         root.removeEventListener("click", onRootSelect, true);
         root.removeEventListener("focusin", onRootSelect, true);

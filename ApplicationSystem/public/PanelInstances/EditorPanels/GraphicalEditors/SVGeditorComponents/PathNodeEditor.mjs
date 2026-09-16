@@ -2,6 +2,7 @@
 // This module implements Bezier node editing overlays for existing SVG paths. This module renders anchors and handles, hit-tests them, and updates the path model while keeping handle constraints consistent.
 import {
   parsePathToModel,
+  analyzePathNodeEditSupport,
   modelToPathD,
   cloneModel,
   moveNode,
@@ -114,6 +115,11 @@ export function createPathNodeEditor(deps) {
 
   function enter(pathEl) {
     if (!pathEl || pathEl.tagName.toLowerCase() !== "path") return false;
+    const support = analyzePathNodeEditSupport(pathEl.getAttribute("d") || "");
+    if (!support.supported) {
+      setStatus?.(`Node edit disabled: path command ${support.unsupportedCommand} is not safely editable yet; path preserved.`);
+      return false;
+    }
     state.pathEl = pathEl;
     state.model = parsePathToModel(pathEl);
     state.active = true;

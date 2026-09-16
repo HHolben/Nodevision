@@ -1,0 +1,6059 @@
+{
+  "generatedAt": "2026-09-15T03:27:06.329Z",
+  "note": "Synthetic benchmark only. Fixtures are generated under Notebook/__nv_html_app_stack_typing during the run and then removed.",
+  "configuration": {
+    "repetitions": 3,
+    "configs": [
+      {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      {
+        "id": "bare-nodevision-css",
+        "label": "Bare editable + Nodevision CSS",
+        "kind": "bare",
+        "nodevisionCss": true
+      },
+      {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      {
+        "id": "html-direct-cleaned",
+        "label": "HTML editor DOM after cleanup",
+        "kind": "html-direct",
+        "cleanupMode": "all"
+      },
+      {
+        "id": "html-direct-no-diagnostics",
+        "label": "HTML editor minus diagnostics",
+        "kind": "html-direct",
+        "cleanupMode": "diagnostics"
+      },
+      {
+        "id": "html-direct-no-selection",
+        "label": "HTML editor minus selection sync",
+        "kind": "html-direct",
+        "cleanupMode": "selection"
+      },
+      {
+        "id": "html-direct-no-text-wrapping",
+        "label": "HTML editor minus text wrapping",
+        "kind": "html-direct",
+        "cleanupMode": "textWrapping"
+      },
+      {
+        "id": "html-direct-no-observers",
+        "label": "HTML editor minus extra observers",
+        "kind": "html-direct",
+        "cleanupMode": "observers"
+      },
+      {
+        "id": "html-direct-full",
+        "label": "HTML editor direct full runtime",
+        "kind": "html-direct",
+        "cleanupMode": "none"
+      },
+      {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      {
+        "id": "graphical-empty-side-panel",
+        "label": "Graphical editor + empty side panel",
+        "kind": "graphical",
+        "layers": "empty"
+      },
+      {
+        "id": "graphical-layers-visible",
+        "label": "Graphical editor + Layers visible",
+        "kind": "graphical",
+        "layers": "visible"
+      },
+      {
+        "id": "graphical-layers-hidden",
+        "label": "Graphical editor + Layers hidden",
+        "kind": "graphical",
+        "layers": "hidden"
+      },
+      {
+        "id": "full-workspace",
+        "label": "Full representative workspace",
+        "kind": "workspace",
+        "layers": "visible",
+        "stressTabs": 0
+      },
+      {
+        "id": "multi-panel-stress",
+        "label": "Multiple-panel/tab stress",
+        "kind": "workspace",
+        "layers": "visible",
+        "stressTabs": 6
+      }
+    ],
+    "modes": [
+      {
+        "id": "single",
+        "label": "Single char",
+        "delayMs": 0,
+        "typedCharacters": 1
+      },
+      {
+        "id": "ten",
+        "label": "10-char burst",
+        "delayMs": 0,
+        "typedCharacters": 10
+      },
+      {
+        "id": "rapid",
+        "label": "Rapid batch",
+        "delayMs": 0,
+        "typedCharacters": 42
+      }
+    ],
+    "lifecycleCheckpoints": [
+      0,
+      5,
+      20,
+      50,
+      100
+    ]
+  },
+  "environment": {
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97",
+    "node": "24.15.0",
+    "v8": "14.8.178.14-electron.0",
+    "platform": "linux",
+    "release": "6.19.10-300.fc44.x86_64",
+    "arch": "x64",
+    "cpus": 8,
+    "totalMemoryBytes": 16468275200
+  },
+  "fixtures": [
+    {
+      "id": "clean",
+      "label": "Clean 20k",
+      "relativePath": "__nv_html_app_stack_typing/clean.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      }
+    },
+    {
+      "id": "moderate",
+      "label": "Moderately fragmented 20k",
+      "relativePath": "__nv_html_app_stack_typing/moderate.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 4951,
+        "elementCount": 2150,
+        "textNodeCount": 2801,
+        "emptyBlockCount": 400,
+        "divCount": 1600,
+        "spanCount": 145,
+        "linkCount": 5,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      }
+    },
+    {
+      "id": "fragmented",
+      "label": "Fragmented 20k",
+      "relativePath": "__nv_html_app_stack_typing/fragmented.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      }
+    },
+    {
+      "id": "heavy",
+      "label": "Heavily fragmented 20k",
+      "relativePath": "__nv_html_app_stack_typing/heavy.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 22431,
+        "elementCount": 8430,
+        "textNodeCount": 14001,
+        "emptyBlockCount": 400,
+        "divCount": 7200,
+        "spanCount": 812,
+        "linkCount": 18,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      }
+    }
+  ],
+  "passes": [
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "bare-contenteditable",
+      "configLabel": "Bare contenteditable",
+      "config": {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 1,
+      "mount": {
+        "mounted": true,
+        "environment": "bare",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 40600,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 92,
+        "averageFrameMs": 16.5,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 60.7
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 17.1,
+        "median": 16.5,
+        "p95": 36.9,
+        "max": 40.8
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 18.1,
+        "median": 17.5,
+        "p95": 37.9,
+        "max": 41.8
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.2,
+            "HTML.editorRoot:input": 1
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.2
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.2
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 2,
+          "totalAdded": 2,
+          "totalRemoved": 0,
+          "byOwnerType": {
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": []
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 1,
+          "totalDisconnected": 0,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": null,
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 0,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {},
+      "nodevisionTypingSampleCount": 0
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "bare-contenteditable",
+      "configLabel": "Bare contenteditable",
+      "config": {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 2,
+      "mount": {
+        "mounted": true,
+        "environment": "bare",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 40600,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.2
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 16.4,
+        "median": 15.9,
+        "p95": 34.2,
+        "max": 37.9
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 17.2,
+        "median": 16.6,
+        "p95": 34.9,
+        "max": 38.6
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.3,
+            "HTML.editorRoot:input": 0.4
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.2
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 2,
+          "totalAdded": 4,
+          "totalRemoved": 2,
+          "byOwnerType": {
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": []
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 2,
+          "totalDisconnected": 1,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": null,
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 0,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {},
+      "nodevisionTypingSampleCount": 0
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "bare-contenteditable",
+      "configLabel": "Bare contenteditable",
+      "config": {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 3,
+      "mount": {
+        "mounted": true,
+        "environment": "bare",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 40600,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.4,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 21,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 15.8,
+        "median": 13.9,
+        "p95": 34.9,
+        "max": 38
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 16.7,
+        "median": 14.7,
+        "p95": 35.7,
+        "max": 38.8
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.3,
+            "HTML.editorRoot:input": 0.5
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 2,
+          "totalAdded": 6,
+          "totalRemoved": 4,
+          "byOwnerType": {
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": []
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 3,
+          "totalDisconnected": 2,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": null,
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 0,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {},
+      "nodevisionTypingSampleCount": 0
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "bare-editor-scaffold",
+      "configLabel": "Bare editable in editor scaffold",
+      "config": {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 1,
+      "mount": {
+        "mounted": true,
+        "environment": "bare-editor-scaffold",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 40600,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 92,
+        "averageFrameMs": 16.5,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 60.8
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 18,
+        "median": 15.8,
+        "p95": 39.9,
+        "max": 43.3
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 18.9,
+        "median": 16.7,
+        "p95": 40.9,
+        "max": 44.3
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.8
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 2,
+          "totalAdded": 8,
+          "totalRemoved": 6,
+          "byOwnerType": {
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": []
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 4,
+          "totalDisconnected": 3,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": null,
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {},
+      "nodevisionTypingSampleCount": 0
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "bare-editor-scaffold",
+      "configLabel": "Bare editable in editor scaffold",
+      "config": {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 2,
+      "mount": {
+        "mounted": true,
+        "environment": "bare-editor-scaffold",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 40600,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 92,
+        "averageFrameMs": 16.5,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 60.7
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 17.1,
+        "median": 14.9,
+        "p95": 38.7,
+        "max": 42.7
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 18.1,
+        "median": 15.9,
+        "p95": 39.6,
+        "max": 43.6
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.2,
+            "HTML.editorRoot:input": 0.3
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.3
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 2,
+          "totalAdded": 10,
+          "totalRemoved": 8,
+          "byOwnerType": {
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": []
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 5,
+          "totalDisconnected": 4,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": null,
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {},
+      "nodevisionTypingSampleCount": 0
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "bare-editor-scaffold",
+      "configLabel": "Bare editable in editor scaffold",
+      "config": {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 3,
+      "mount": {
+        "mounted": true,
+        "environment": "bare-editor-scaffold",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 40600,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.2
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 15.7,
+        "median": 15.2,
+        "p95": 33.9,
+        "max": 37.7
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 16.6,
+        "median": 16.1,
+        "p95": 34.8,
+        "max": 38.5
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.5
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.3
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 2,
+          "totalAdded": 12,
+          "totalRemoved": 10,
+          "byOwnerType": {
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": []
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 6,
+          "totalDisconnected": 5,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": null,
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {},
+      "nodevisionTypingSampleCount": 0
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "graphical-only",
+      "configLabel": "Graphical editor only",
+      "config": {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 1,
+      "mount": {
+        "mounted": true,
+        "environment": "graphical",
+        "layers": "detached",
+        "layerMount": {
+          "attached": false,
+          "visibility": "detached"
+        }
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 34128,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.3
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 9.1,
+        "median": 7.6,
+        "p95": 20.5,
+        "max": 22.8
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 10.3,
+        "median": 8.9,
+        "p95": 21.6,
+        "max": 24.2
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 126,
+            "panel:GraphicalEditor:input": 42,
+            "HTML.editorRoot:input": 294,
+            "document:selectionchange": 4
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.4,
+            "panel:GraphicalEditor:input": 0.6,
+            "HTML.editorRoot:input": 2,
+            "document:selectionchange": 0.1
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.2,
+            "panel:GraphicalEditor:input": 0.1,
+            "HTML.editorRoot:input": 0.3,
+            "document:selectionchange": 0.1
+          },
+          "customDispatches": {
+            "window:nodevision-editor-dirty": 1
+          },
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.5,
+            "panel:GraphicalEditor@#graphical-editor": 0.4
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1,
+            "panel:GraphicalEditor@#graphical-editor": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 84,
+            "panel:GraphicalEditor@#graphical-editor:characterData": 42
+          },
+          "querySelectorAll": {
+            "HTML.editorRoot": 0
+          },
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {
+            "querySelectorAll:HTML.editorRoot": 2
+          },
+          "domOperationMs": {
+            "querySelectorAll:HTML.editorRoot": 0
+          },
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {
+            "timer": 168
+          },
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 256
+          },
+          "rafFired": {
+            "raf": 255
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 83,
+          "totalAdded": 95,
+          "totalRemoved": 12,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 1,
+            "GraphicalEditor.setupPanel:mousedown": 1,
+            "GraphicalEditor.setupPanel:click": 1,
+            "GraphicalEditor.setupPanel:focusin": 1,
+            "HTML.editorRoot:error": 1,
+            "HTML.editorRoot:load": 1,
+            "HTML.editorRoot:beforeinput": 3,
+            "HTML.editorRoot:input": 7,
+            "HTML.editorRoot:click": 5,
+            "HTML.editorRoot:keyup": 5,
+            "HTML.editorRoot:mouseup": 4,
+            "HTML.editorRoot:scroll": 2,
+            "HTML.editorRoot:pointermove": 1,
+            "HTML.editorRoot:pointerleave": 1,
+            "HTML.editorRoot:pointerdown": 4,
+            "HTML.editorRoot:focusin": 2,
+            "HTML.editorRoot:keydown": 4,
+            "document:selectionchange": 4,
+            "document:copy": 1,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 4,
+            "window:resize": 1,
+            "window:scroll": 1,
+            "window:nodevision-file-saved": 1,
+            "panel:GraphicalEditor:pointerdown": 2,
+            "panel:GraphicalEditor:focusin": 2,
+            "panel:GraphicalEditor:keydown": 1,
+            "HTML.editorRoot:focus": 3,
+            "HTML.editorRoot:paste": 1,
+            "panel:GraphicalEditor:input": 1,
+            "panel:GraphicalEditor:change": 1,
+            "panel:GraphicalEditor:keyup": 1,
+            "panel:GraphicalEditor:paste": 1,
+            "panel:GraphicalEditor:cut": 1,
+            "panel:GraphicalEditor:pointerup": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 4
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+              "count": 2
+            },
+            {
+              "key": "document|document|selectionchange|bubble|onSelectionChange",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+              "count": 2
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 6,
+          "totalCreated": 12,
+          "totalDisconnected": 6,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 5,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "duplicates": [
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            }
+          ]
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [
+          {
+            "id": "nodevision-graphical-editor-1",
+            "filePath": "__nv_html_app_stack_typing/clean.html",
+            "editorKind": "graphical",
+            "panelKind": "GraphicalEditor",
+            "sourceLabel": "Graphical Editor",
+            "dirty": true,
+            "timestamp": 1789442800096,
+            "isBinary": false
+          }
+        ],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 4,
+        "wrapping-full-scan": 2,
+        "wrapping-target": 1,
+        "recent-file-recorded": 1
+      },
+      "nodevisionTypingSampleCount": 42
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "graphical-only",
+      "configLabel": "Graphical editor only",
+      "config": {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 2,
+      "mount": {
+        "mounted": true,
+        "environment": "graphical",
+        "layers": "detached",
+        "layerMount": {
+          "attached": false,
+          "visibility": "detached"
+        }
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 34128,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 92,
+        "averageFrameMs": 16.4,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 60.8
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 10.9,
+        "median": 9.5,
+        "p95": 25.3,
+        "max": 28.4
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 12,
+        "median": 10.5,
+        "p95": 26.4,
+        "max": 29.6
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 126,
+            "panel:GraphicalEditor:input": 42,
+            "HTML.editorRoot:input": 294,
+            "document:selectionchange": 4
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.3,
+            "panel:GraphicalEditor:input": 1,
+            "HTML.editorRoot:input": 2.1,
+            "document:selectionchange": 0
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "panel:GraphicalEditor:input": 0.1,
+            "HTML.editorRoot:input": 0.2,
+            "document:selectionchange": 0
+          },
+          "customDispatches": {
+            "window:nodevision-editor-dirty": 1
+          },
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.8,
+            "panel:GraphicalEditor@#graphical-editor": 0.6
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1,
+            "panel:GraphicalEditor@#graphical-editor": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 84,
+            "panel:GraphicalEditor@#graphical-editor:characterData": 42
+          },
+          "querySelectorAll": {
+            "HTML.editorRoot": 0
+          },
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {
+            "querySelectorAll:HTML.editorRoot": 2
+          },
+          "domOperationMs": {
+            "querySelectorAll:HTML.editorRoot": 0
+          },
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {
+            "timer": 168
+          },
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 256
+          },
+          "rafFired": {
+            "raf": 255
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 93,
+          "totalAdded": 166,
+          "totalRemoved": 73,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 2,
+            "GraphicalEditor.setupPanel:mousedown": 2,
+            "GraphicalEditor.setupPanel:click": 2,
+            "GraphicalEditor.setupPanel:focusin": 2,
+            "HTML.editorRoot:error": 2,
+            "HTML.editorRoot:load": 2,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 8,
+            "HTML.editorRoot:beforeinput": 3,
+            "HTML.editorRoot:input": 7,
+            "HTML.editorRoot:click": 5,
+            "HTML.editorRoot:keyup": 5,
+            "HTML.editorRoot:mouseup": 4,
+            "HTML.editorRoot:scroll": 2,
+            "HTML.editorRoot:pointermove": 1,
+            "HTML.editorRoot:pointerleave": 1,
+            "HTML.editorRoot:pointerdown": 4,
+            "HTML.editorRoot:focusin": 2,
+            "HTML.editorRoot:keydown": 4,
+            "document:selectionchange": 4,
+            "document:copy": 1,
+            "window:resize": 1,
+            "window:scroll": 1,
+            "window:nodevision-file-saved": 1,
+            "panel:GraphicalEditor:pointerdown": 2,
+            "panel:GraphicalEditor:focusin": 2,
+            "panel:GraphicalEditor:keydown": 1,
+            "HTML.editorRoot:focus": 3,
+            "HTML.editorRoot:paste": 1,
+            "panel:GraphicalEditor:input": 1,
+            "panel:GraphicalEditor:change": 1,
+            "panel:GraphicalEditor:keyup": 1,
+            "panel:GraphicalEditor:paste": 1,
+            "panel:GraphicalEditor:cut": 1,
+            "panel:GraphicalEditor:pointerup": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 8
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 2
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 2
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 2
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+              "count": 2
+            },
+            {
+              "key": "document|document|selectionchange|bubble|onSelectionChange",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+              "count": 2
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 6,
+          "totalCreated": 18,
+          "totalDisconnected": 12,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 5,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "duplicates": [
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            }
+          ]
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [
+          {
+            "id": "nodevision-graphical-editor-1",
+            "filePath": "__nv_html_app_stack_typing/clean.html",
+            "editorKind": "graphical",
+            "panelKind": "GraphicalEditor",
+            "sourceLabel": "Graphical Editor",
+            "dirty": true,
+            "timestamp": 1789442802135,
+            "isBinary": false
+          }
+        ],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 8,
+        "wrapping-full-scan": 4,
+        "wrapping-target": 2,
+        "recent-file-recorded": 2
+      },
+      "nodevisionTypingSampleCount": 84
+    },
+    {
+      "fixtureId": "clean",
+      "fixtureLabel": "Clean 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "configId": "graphical-only",
+      "configLabel": "Graphical editor only",
+      "config": {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 3,
+      "mount": {
+        "mounted": true,
+        "environment": "graphical",
+        "layers": "detached",
+        "layerMount": {
+          "attached": false,
+          "visibility": "detached"
+        }
+      },
+      "selection": {
+        "targetTagName": "H2",
+        "targetTextLength": 9,
+        "targetCount": 620,
+        "rootScrollHeight": 34128,
+        "rootChildCount": 20
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.2
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 9,
+        "currentLength": 51,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "ection 1rapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 8.2,
+        "median": 7.2,
+        "p95": 18.3,
+        "max": 20.3
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 9.2,
+        "median": 8.2,
+        "p95": 19.3,
+        "max": 21.4
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 126,
+            "panel:GraphicalEditor:input": 42,
+            "HTML.editorRoot:input": 294,
+            "document:selectionchange": 4
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.3,
+            "panel:GraphicalEditor:input": 0.3,
+            "HTML.editorRoot:input": 1.9,
+            "document:selectionchange": 0.1
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "panel:GraphicalEditor:input": 0.1,
+            "HTML.editorRoot:input": 0.1,
+            "document:selectionchange": 0.1
+          },
+          "customDispatches": {
+            "window:nodevision-editor-dirty": 1
+          },
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.3,
+            "panel:GraphicalEditor@#graphical-editor": 0.3
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1,
+            "panel:GraphicalEditor@#graphical-editor": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 84,
+            "panel:GraphicalEditor@#graphical-editor:characterData": 42
+          },
+          "querySelectorAll": {
+            "HTML.editorRoot": 0.1
+          },
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {
+            "querySelectorAll:HTML.editorRoot": 2
+          },
+          "domOperationMs": {
+            "querySelectorAll:HTML.editorRoot": 0.1
+          },
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {
+            "timer": 168
+          },
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 256
+          },
+          "rafFired": {
+            "raf": 255
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 103,
+          "totalAdded": 237,
+          "totalRemoved": 134,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 3,
+            "GraphicalEditor.setupPanel:mousedown": 3,
+            "GraphicalEditor.setupPanel:click": 3,
+            "GraphicalEditor.setupPanel:focusin": 3,
+            "HTML.editorRoot:error": 3,
+            "HTML.editorRoot:load": 3,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 12,
+            "HTML.editorRoot:beforeinput": 3,
+            "HTML.editorRoot:input": 7,
+            "HTML.editorRoot:click": 5,
+            "HTML.editorRoot:keyup": 5,
+            "HTML.editorRoot:mouseup": 4,
+            "HTML.editorRoot:scroll": 2,
+            "HTML.editorRoot:pointermove": 1,
+            "HTML.editorRoot:pointerleave": 1,
+            "HTML.editorRoot:pointerdown": 4,
+            "HTML.editorRoot:focusin": 2,
+            "HTML.editorRoot:keydown": 4,
+            "document:selectionchange": 4,
+            "document:copy": 1,
+            "window:resize": 1,
+            "window:scroll": 1,
+            "window:nodevision-file-saved": 1,
+            "panel:GraphicalEditor:pointerdown": 2,
+            "panel:GraphicalEditor:focusin": 2,
+            "panel:GraphicalEditor:keydown": 1,
+            "HTML.editorRoot:focus": 3,
+            "HTML.editorRoot:paste": 1,
+            "panel:GraphicalEditor:input": 1,
+            "panel:GraphicalEditor:change": 1,
+            "panel:GraphicalEditor:keyup": 1,
+            "panel:GraphicalEditor:paste": 1,
+            "panel:GraphicalEditor:cut": 1,
+            "panel:GraphicalEditor:pointerup": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 12
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+              "count": 2
+            },
+            {
+              "key": "document|document|selectionchange|bubble|onSelectionChange",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+              "count": 2
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 6,
+          "totalCreated": 24,
+          "totalDisconnected": 18,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 5,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "duplicates": [
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            }
+          ]
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [
+          {
+            "id": "nodevision-graphical-editor-1",
+            "filePath": "__nv_html_app_stack_typing/clean.html",
+            "editorKind": "graphical",
+            "panelKind": "GraphicalEditor",
+            "sourceLabel": "Graphical Editor",
+            "dirty": true,
+            "timestamp": 1789442804177,
+            "isBinary": false
+          }
+        ],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 12,
+        "wrapping-full-scan": 6,
+        "wrapping-target": 3,
+        "recent-file-recorded": 3
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "bare-contenteditable",
+      "configLabel": "Bare contenteditable",
+      "config": {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 1,
+      "mount": {
+        "mounted": true,
+        "environment": "bare",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.4,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 19.4,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 60.8,
+        "median": 61.9,
+        "p95": 115.6,
+        "max": 127.2
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 66.3,
+        "median": 67.3,
+        "p95": 121.1,
+        "max": 132.7
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.4
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 120,
+            "startTime": 19080.5
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 44,
+          "totalAdded": 239,
+          "totalRemoved": 195,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 3,
+            "GraphicalEditor.setupPanel:mousedown": 3,
+            "GraphicalEditor.setupPanel:click": 3,
+            "GraphicalEditor.setupPanel:focusin": 3,
+            "HTML.editorRoot:error": 3,
+            "HTML.editorRoot:load": 3,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 12,
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 12
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 3
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 25,
+          "totalDisconnected": 24,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 0,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 12,
+        "wrapping-full-scan": 6,
+        "wrapping-target": 3,
+        "recent-file-recorded": 3
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "bare-contenteditable",
+      "configLabel": "Bare contenteditable",
+      "config": {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 2,
+      "mount": {
+        "mounted": true,
+        "environment": "bare",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.2
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 60.9,
+        "median": 62.2,
+        "p95": 115.5,
+        "max": 127.6
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 66,
+        "median": 67.2,
+        "p95": 120.5,
+        "max": 132.6
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.5
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 115,
+            "startTime": 21287.8
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 44,
+          "totalAdded": 241,
+          "totalRemoved": 197,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 3,
+            "GraphicalEditor.setupPanel:mousedown": 3,
+            "GraphicalEditor.setupPanel:click": 3,
+            "GraphicalEditor.setupPanel:focusin": 3,
+            "HTML.editorRoot:error": 3,
+            "HTML.editorRoot:load": 3,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 12,
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 12
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 3
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 26,
+          "totalDisconnected": 25,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 0,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 12,
+        "wrapping-full-scan": 6,
+        "wrapping-target": 3,
+        "recent-file-recorded": 3
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "bare-contenteditable",
+      "configLabel": "Bare contenteditable",
+      "config": {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 3,
+      "mount": {
+        "mounted": true,
+        "environment": "bare",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.2
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 68.2,
+        "median": 70.1,
+        "p95": 128.5,
+        "max": 140.1
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 78.1,
+        "median": 80,
+        "p95": 138.3,
+        "max": 149.9
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.7
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 128,
+            "startTime": 23504.2
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 44,
+          "totalAdded": 243,
+          "totalRemoved": 199,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 3,
+            "GraphicalEditor.setupPanel:mousedown": 3,
+            "GraphicalEditor.setupPanel:click": 3,
+            "GraphicalEditor.setupPanel:focusin": 3,
+            "HTML.editorRoot:error": 3,
+            "HTML.editorRoot:load": 3,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 12,
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 12
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 3
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 27,
+          "totalDisconnected": 26,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 0,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 12,
+        "wrapping-full-scan": 6,
+        "wrapping-target": 3,
+        "recent-file-recorded": 3
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "bare-editor-scaffold",
+      "configLabel": "Bare editable in editor scaffold",
+      "config": {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 1,
+      "mount": {
+        "mounted": true,
+        "environment": "bare-editor-scaffold",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.3
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 100.7,
+        "median": 103.2,
+        "p95": 190.2,
+        "max": 204.6
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 110.7,
+        "median": 113.3,
+        "p95": 200.3,
+        "max": 214.7
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.3,
+            "HTML.editorRoot:input": 1
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 175,
+            "startTime": 25791
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 44,
+          "totalAdded": 245,
+          "totalRemoved": 201,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 3,
+            "GraphicalEditor.setupPanel:mousedown": 3,
+            "GraphicalEditor.setupPanel:click": 3,
+            "GraphicalEditor.setupPanel:focusin": 3,
+            "HTML.editorRoot:error": 3,
+            "HTML.editorRoot:load": 3,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 12,
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 12
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 3
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 28,
+          "totalDisconnected": 27,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 12,
+        "wrapping-full-scan": 6,
+        "wrapping-target": 3,
+        "recent-file-recorded": 3
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "bare-editor-scaffold",
+      "configLabel": "Bare editable in editor scaffold",
+      "config": {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 2,
+      "mount": {
+        "mounted": true,
+        "environment": "bare-editor-scaffold",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.4
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 110.2,
+        "median": 112.7,
+        "p95": 209.8,
+        "max": 223.7
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 120,
+        "median": 122.6,
+        "p95": 219.7,
+        "max": 233.6
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.4
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.2
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 203,
+            "startTime": 28116.5
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 44,
+          "totalAdded": 247,
+          "totalRemoved": 203,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 3,
+            "GraphicalEditor.setupPanel:mousedown": 3,
+            "GraphicalEditor.setupPanel:click": 3,
+            "GraphicalEditor.setupPanel:focusin": 3,
+            "HTML.editorRoot:error": 3,
+            "HTML.editorRoot:load": 3,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 12,
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 12
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 3
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 29,
+          "totalDisconnected": 28,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 12,
+        "wrapping-full-scan": 6,
+        "wrapping-target": 3,
+        "recent-file-recorded": 3
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "bare-editor-scaffold",
+      "configLabel": "Bare editable in editor scaffold",
+      "config": {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 3,
+      "mount": {
+        "mounted": true,
+        "environment": "bare-editor-scaffold",
+        "layers": "detached"
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.3
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 94.4,
+        "median": 97.1,
+        "p95": 178.2,
+        "max": 190
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 103.8,
+        "median": 106.5,
+        "p95": 187.6,
+        "max": 199.4
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 42,
+            "HTML.editorRoot:input": 42
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.8
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "HTML.editorRoot:input": 0.1
+          },
+          "customDispatches": {},
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.2
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 42
+          },
+          "querySelectorAll": {},
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {},
+          "domOperationMs": {},
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {},
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 86
+          },
+          "rafFired": {
+            "raf": 85
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 169,
+            "startTime": 30448.3
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 44,
+          "totalAdded": 249,
+          "totalRemoved": 205,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 3,
+            "GraphicalEditor.setupPanel:mousedown": 3,
+            "GraphicalEditor.setupPanel:click": 3,
+            "GraphicalEditor.setupPanel:focusin": 3,
+            "HTML.editorRoot:error": 3,
+            "HTML.editorRoot:load": 3,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 12,
+            "HTML.editorRoot:beforeinput": 1,
+            "HTML.editorRoot:input": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 12
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 3
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 1,
+          "totalCreated": 30,
+          "totalDisconnected": 29,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 1
+          },
+          "duplicates": []
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 12,
+        "wrapping-full-scan": 6,
+        "wrapping-target": 3,
+        "recent-file-recorded": 3
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "graphical-only",
+      "configLabel": "Graphical editor only",
+      "config": {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 1,
+      "mount": {
+        "mounted": true,
+        "environment": "graphical",
+        "layers": "detached",
+        "layerMount": {
+          "attached": false,
+          "visibility": "detached"
+        }
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.4,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.1
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 104.1,
+        "median": 105.9,
+        "p95": 200.2,
+        "max": 211.9
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 110.9,
+        "median": 112.8,
+        "p95": 206.7,
+        "max": 218.7
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 126,
+            "panel:GraphicalEditor:input": 42,
+            "HTML.editorRoot:input": 294,
+            "document:selectionchange": 4
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.6,
+            "panel:GraphicalEditor:input": 1.6,
+            "HTML.editorRoot:input": 2,
+            "document:selectionchange": 0.3
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "panel:GraphicalEditor:input": 0.2,
+            "HTML.editorRoot:input": 0.1,
+            "document:selectionchange": 0.2
+          },
+          "customDispatches": {
+            "window:nodevision-editor-dirty": 1
+          },
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1,
+            "panel:GraphicalEditor@#graphical-editor": 0.4
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1,
+            "panel:GraphicalEditor@#graphical-editor": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 84,
+            "panel:GraphicalEditor@#graphical-editor:characterData": 42
+          },
+          "querySelectorAll": {
+            "HTML.editorRoot": 0.2
+          },
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {
+            "querySelectorAll:HTML.editorRoot": 2
+          },
+          "domOperationMs": {
+            "querySelectorAll:HTML.editorRoot": 0.2
+          },
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {
+            "timer": 168
+          },
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 256
+          },
+          "rafFired": {
+            "raf": 255
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 54,
+            "startTime": 32833.1
+          },
+          {
+            "name": "self",
+            "duration": 163,
+            "startTime": 32887.4
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 113,
+          "totalAdded": 320,
+          "totalRemoved": 207,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 4,
+            "GraphicalEditor.setupPanel:mousedown": 4,
+            "GraphicalEditor.setupPanel:click": 4,
+            "GraphicalEditor.setupPanel:focusin": 4,
+            "HTML.editorRoot:error": 4,
+            "HTML.editorRoot:load": 4,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 16,
+            "HTML.editorRoot:beforeinput": 3,
+            "HTML.editorRoot:input": 7,
+            "HTML.editorRoot:click": 5,
+            "HTML.editorRoot:keyup": 5,
+            "HTML.editorRoot:mouseup": 4,
+            "HTML.editorRoot:scroll": 2,
+            "HTML.editorRoot:pointermove": 1,
+            "HTML.editorRoot:pointerleave": 1,
+            "HTML.editorRoot:pointerdown": 4,
+            "HTML.editorRoot:focusin": 2,
+            "HTML.editorRoot:keydown": 4,
+            "document:selectionchange": 4,
+            "document:copy": 1,
+            "window:resize": 1,
+            "window:scroll": 1,
+            "window:nodevision-file-saved": 1,
+            "panel:GraphicalEditor:pointerdown": 2,
+            "panel:GraphicalEditor:focusin": 2,
+            "panel:GraphicalEditor:keydown": 1,
+            "HTML.editorRoot:focus": 3,
+            "HTML.editorRoot:paste": 1,
+            "panel:GraphicalEditor:input": 1,
+            "panel:GraphicalEditor:change": 1,
+            "panel:GraphicalEditor:keyup": 1,
+            "panel:GraphicalEditor:paste": 1,
+            "panel:GraphicalEditor:cut": 1,
+            "panel:GraphicalEditor:pointerup": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 16
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 4
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 4
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 4
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 4
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 4
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 4
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+              "count": 2
+            },
+            {
+              "key": "document|document|selectionchange|bubble|onSelectionChange",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+              "count": 2
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 6,
+          "totalCreated": 36,
+          "totalDisconnected": 30,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 5,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "duplicates": [
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            }
+          ]
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [
+          {
+            "id": "nodevision-graphical-editor-1",
+            "filePath": "__nv_html_app_stack_typing/fragmented.html",
+            "editorKind": "graphical",
+            "panelKind": "GraphicalEditor",
+            "sourceLabel": "Graphical Editor",
+            "dirty": true,
+            "timestamp": 1789442820205,
+            "isBinary": false
+          }
+        ],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 16,
+        "wrapping-full-scan": 8,
+        "wrapping-target": 4,
+        "recent-file-recorded": 4
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "graphical-only",
+      "configLabel": "Graphical editor only",
+      "config": {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 2,
+      "mount": {
+        "mounted": true,
+        "environment": "graphical",
+        "layers": "detached",
+        "layerMount": {
+          "attached": false,
+          "visibility": "detached"
+        }
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.2
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 86.4,
+        "median": 88.2,
+        "p95": 163.7,
+        "max": 175.6
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 93,
+        "median": 94.8,
+        "p95": 170.3,
+        "max": 182.3
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 126,
+            "panel:GraphicalEditor:input": 42,
+            "HTML.editorRoot:input": 294,
+            "document:selectionchange": 4
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.3,
+            "panel:GraphicalEditor:input": 1.3,
+            "HTML.editorRoot:input": 1.7,
+            "document:selectionchange": 0.5
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "panel:GraphicalEditor:input": 0.1,
+            "HTML.editorRoot:input": 0.1,
+            "document:selectionchange": 0.4
+          },
+          "customDispatches": {
+            "window:nodevision-editor-dirty": 1
+          },
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.4,
+            "panel:GraphicalEditor@#graphical-editor": 0.1
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1,
+            "panel:GraphicalEditor@#graphical-editor": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 84,
+            "panel:GraphicalEditor@#graphical-editor:characterData": 42
+          },
+          "querySelectorAll": {
+            "HTML.editorRoot": 0.3
+          },
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {
+            "querySelectorAll:HTML.editorRoot": 2
+          },
+          "domOperationMs": {
+            "querySelectorAll:HTML.editorRoot": 0.3
+          },
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {
+            "timer": 168
+          },
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 256
+          },
+          "rafFired": {
+            "raf": 255
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 159,
+            "startTime": 35226.2
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 123,
+          "totalAdded": 391,
+          "totalRemoved": 268,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 5,
+            "GraphicalEditor.setupPanel:mousedown": 5,
+            "GraphicalEditor.setupPanel:click": 5,
+            "GraphicalEditor.setupPanel:focusin": 5,
+            "HTML.editorRoot:error": 5,
+            "HTML.editorRoot:load": 5,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 20,
+            "HTML.editorRoot:beforeinput": 3,
+            "HTML.editorRoot:input": 7,
+            "HTML.editorRoot:click": 5,
+            "HTML.editorRoot:keyup": 5,
+            "HTML.editorRoot:mouseup": 4,
+            "HTML.editorRoot:scroll": 2,
+            "HTML.editorRoot:pointermove": 1,
+            "HTML.editorRoot:pointerleave": 1,
+            "HTML.editorRoot:pointerdown": 4,
+            "HTML.editorRoot:focusin": 2,
+            "HTML.editorRoot:keydown": 4,
+            "document:selectionchange": 4,
+            "document:copy": 1,
+            "window:resize": 1,
+            "window:scroll": 1,
+            "window:nodevision-file-saved": 1,
+            "panel:GraphicalEditor:pointerdown": 2,
+            "panel:GraphicalEditor:focusin": 2,
+            "panel:GraphicalEditor:keydown": 1,
+            "HTML.editorRoot:focus": 3,
+            "HTML.editorRoot:paste": 1,
+            "panel:GraphicalEditor:input": 1,
+            "panel:GraphicalEditor:change": 1,
+            "panel:GraphicalEditor:keyup": 1,
+            "panel:GraphicalEditor:paste": 1,
+            "panel:GraphicalEditor:cut": 1,
+            "panel:GraphicalEditor:pointerup": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 20
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 5
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 5
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 5
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 5
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 5
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 5
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+              "count": 2
+            },
+            {
+              "key": "document|document|selectionchange|bubble|onSelectionChange",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+              "count": 2
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 6,
+          "totalCreated": 42,
+          "totalDisconnected": 36,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 5,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "duplicates": [
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            }
+          ]
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [
+          {
+            "id": "nodevision-graphical-editor-1",
+            "filePath": "__nv_html_app_stack_typing/fragmented.html",
+            "editorKind": "graphical",
+            "panelKind": "GraphicalEditor",
+            "sourceLabel": "Graphical Editor",
+            "dirty": true,
+            "timestamp": 1789442822539,
+            "isBinary": false
+          }
+        ],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 20,
+        "wrapping-full-scan": 10,
+        "wrapping-target": 5,
+        "recent-file-recorded": 5
+      },
+      "nodevisionTypingSampleCount": 100
+    },
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "graphical-only",
+      "configLabel": "Graphical editor only",
+      "config": {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      "mode": "rapid",
+      "typedCharacters": 42,
+      "repetition": 3,
+      "mount": {
+        "mounted": true,
+        "environment": "graphical",
+        "layers": "detached",
+        "layerMount": {
+          "attached": false,
+          "visibility": "detached"
+        }
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 93,
+        "averageFrameMs": 16.3,
+        "p95FrameMs": 16.7,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.2
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 85,
+        "expectedSuffix": "rapidnativeinputburstrapidnativeinputburst",
+        "suffix": "evidencerapidnativeinputburstrapidnativeinputburst"
+      },
+      "nativeInputCount": 42,
+      "beforeInputCount": 42,
+      "inputToFirstAnimationFrame": {
+        "count": 42,
+        "mean": 86,
+        "median": 87.6,
+        "p95": 165.8,
+        "max": 177
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 42,
+        "mean": 92,
+        "median": 93.6,
+        "p95": 171.8,
+        "max": 183
+      },
+      "mutationSummary": {
+        "total": 42,
+        "characterData": 42,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 126,
+            "panel:GraphicalEditor:input": 42,
+            "HTML.editorRoot:input": 294,
+            "document:selectionchange": 4
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.4,
+            "panel:GraphicalEditor:input": 1.3,
+            "HTML.editorRoot:input": 2.3,
+            "document:selectionchange": 0.4
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.1,
+            "panel:GraphicalEditor:input": 0.1,
+            "HTML.editorRoot:input": 0.2,
+            "document:selectionchange": 0.2
+          },
+          "customDispatches": {
+            "window:nodevision-editor-dirty": 1
+          },
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0.5,
+            "panel:GraphicalEditor@#graphical-editor": 0.3
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0.1,
+            "panel:GraphicalEditor@#graphical-editor": 0.1
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 84,
+            "panel:GraphicalEditor@#graphical-editor": 42
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 84,
+            "panel:GraphicalEditor@#graphical-editor:characterData": 42
+          },
+          "querySelectorAll": {
+            "HTML.editorRoot": 0.2
+          },
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {
+            "querySelectorAll:HTML.editorRoot": 2
+          },
+          "domOperationMs": {
+            "querySelectorAll:HTML.editorRoot": 0.2
+          },
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {
+            "timer": 168
+          },
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 256
+          },
+          "rafFired": {
+            "raf": 255
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [
+          {
+            "name": "self",
+            "duration": 169,
+            "startTime": 37550.7
+          }
+        ],
+        "listenerSummary": {
+          "activeCount": 133,
+          "totalAdded": 462,
+          "totalRemoved": 329,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 6,
+            "GraphicalEditor.setupPanel:mousedown": 6,
+            "GraphicalEditor.setupPanel:click": 6,
+            "GraphicalEditor.setupPanel:focusin": 6,
+            "HTML.editorRoot:error": 6,
+            "HTML.editorRoot:load": 6,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 24,
+            "HTML.editorRoot:beforeinput": 3,
+            "HTML.editorRoot:input": 7,
+            "HTML.editorRoot:click": 5,
+            "HTML.editorRoot:keyup": 5,
+            "HTML.editorRoot:mouseup": 4,
+            "HTML.editorRoot:scroll": 2,
+            "HTML.editorRoot:pointermove": 1,
+            "HTML.editorRoot:pointerleave": 1,
+            "HTML.editorRoot:pointerdown": 4,
+            "HTML.editorRoot:focusin": 2,
+            "HTML.editorRoot:keydown": 4,
+            "document:selectionchange": 4,
+            "document:copy": 1,
+            "window:resize": 1,
+            "window:scroll": 1,
+            "window:nodevision-file-saved": 1,
+            "panel:GraphicalEditor:pointerdown": 2,
+            "panel:GraphicalEditor:focusin": 2,
+            "panel:GraphicalEditor:keydown": 1,
+            "HTML.editorRoot:focus": 3,
+            "HTML.editorRoot:paste": 1,
+            "panel:GraphicalEditor:input": 1,
+            "panel:GraphicalEditor:change": 1,
+            "panel:GraphicalEditor:keyup": 1,
+            "panel:GraphicalEditor:paste": 1,
+            "panel:GraphicalEditor:cut": 1,
+            "panel:GraphicalEditor:pointerup": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 24
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+              "count": 6
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+              "count": 6
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+              "count": 6
+            },
+            {
+              "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+              "count": 6
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+              "count": 6
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+              "count": 6
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+              "count": 2
+            },
+            {
+              "key": "document|document|selectionchange|bubble|onSelectionChange",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+              "count": 2
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 6,
+          "totalCreated": 48,
+          "totalDisconnected": 42,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 5,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "duplicates": [
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            }
+          ]
+        },
+        "activeTimers": 0,
+        "activeRafs": 0,
+        "liveProviders": [
+          {
+            "id": "nodevision-graphical-editor-1",
+            "filePath": "__nv_html_app_stack_typing/fragmented.html",
+            "editorKind": "graphical",
+            "panelKind": "GraphicalEditor",
+            "sourceLabel": "Graphical Editor",
+            "dirty": true,
+            "timestamp": 1789442824874,
+            "isBinary": false
+          }
+        ],
+        "panelLifecycle": {
+          "registered": 0,
+          "active": 0,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 0,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "panelCounts": {
+          "cells": 1,
+          "tabContents": 0,
+          "activeTabContents": 0,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 24,
+        "wrapping-full-scan": 12,
+        "wrapping-target": 6,
+        "recent-file-recorded": 6
+      },
+      "nodevisionTypingSampleCount": 100
+    }
+  ],
+  "aggregates": [
+    {
+      "fixtureId": "clean",
+      "configId": "bare-contenteditable",
+      "mode": "rapid",
+      "repetitions": 3,
+      "typedCharacters": 42,
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 3,
+        "mean": 17.3,
+        "median": 17.2,
+        "p95": 18.1,
+        "max": 18.1,
+        "stdev": 0.7
+      },
+      "inputToSecondAnimationFrameP95": {
+        "count": 3,
+        "mean": 36.2,
+        "median": 35.7,
+        "p95": 37.9,
+        "max": 37.9,
+        "stdev": 1.6
+      },
+      "fps": {
+        "count": 3,
+        "mean": 61,
+        "median": 61,
+        "p95": 61.2,
+        "max": 61.2,
+        "stdev": 0.3
+      },
+      "worstFrameMs": {
+        "count": 3,
+        "mean": 18.2,
+        "median": 16.8,
+        "p95": 21,
+        "max": 21,
+        "stdev": 2.4
+      },
+      "droppedFrames": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTasks": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTaskMs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeListeners": {
+        "count": 3,
+        "mean": 2,
+        "median": 2,
+        "p95": 2,
+        "max": 2,
+        "stdev": 0
+      },
+      "activeObservers": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "liveProviders": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeTimers": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "panelCount": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "hiddenTabs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "topEventInvocations": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 126
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 126
+        }
+      ],
+      "topEventInvocationsPerChar": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 1
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 1
+        }
+      ],
+      "topMutationCallbacks": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topMutationRecords": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topCustomDispatches": [],
+      "topDomScanMs": [],
+      "topDomOperationCalls": [],
+      "topDomOperationCallsPerChar": [],
+      "topLayoutOperationCalls": [],
+      "topLayoutOperationCallsPerChar": [],
+      "topLayoutOperationMs": [],
+      "totalEventInvocationsPerChar": 2,
+      "totalMutationCallbacksPerChar": 1,
+      "totalMutationRecordsPerChar": 1,
+      "duplicateListeners": [],
+      "duplicateObservers": []
+    },
+    {
+      "fixtureId": "clean",
+      "configId": "bare-editor-scaffold",
+      "mode": "rapid",
+      "repetitions": 3,
+      "typedCharacters": 42,
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 3,
+        "mean": 17.9,
+        "median": 18.1,
+        "p95": 18.9,
+        "max": 18.9,
+        "stdev": 1.2
+      },
+      "inputToSecondAnimationFrameP95": {
+        "count": 3,
+        "mean": 38.4,
+        "median": 39.6,
+        "p95": 40.9,
+        "max": 40.9,
+        "stdev": 3.2
+      },
+      "fps": {
+        "count": 3,
+        "mean": 60.9,
+        "median": 60.8,
+        "p95": 61.2,
+        "max": 61.2,
+        "stdev": 0.3
+      },
+      "worstFrameMs": {
+        "count": 3,
+        "mean": 16.8,
+        "median": 16.8,
+        "p95": 16.8,
+        "max": 16.8,
+        "stdev": 0
+      },
+      "droppedFrames": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTasks": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTaskMs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeListeners": {
+        "count": 3,
+        "mean": 2,
+        "median": 2,
+        "p95": 2,
+        "max": 2,
+        "stdev": 0
+      },
+      "activeObservers": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "liveProviders": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeTimers": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "panelCount": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "hiddenTabs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "topEventInvocations": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 126
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 126
+        }
+      ],
+      "topEventInvocationsPerChar": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 1
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 1
+        }
+      ],
+      "topMutationCallbacks": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topMutationRecords": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topCustomDispatches": [],
+      "topDomScanMs": [],
+      "topDomOperationCalls": [],
+      "topDomOperationCallsPerChar": [],
+      "topLayoutOperationCalls": [],
+      "topLayoutOperationCallsPerChar": [],
+      "topLayoutOperationMs": [],
+      "totalEventInvocationsPerChar": 2,
+      "totalMutationCallbacksPerChar": 1,
+      "totalMutationRecordsPerChar": 1,
+      "duplicateListeners": [],
+      "duplicateObservers": []
+    },
+    {
+      "fixtureId": "clean",
+      "configId": "graphical-only",
+      "mode": "rapid",
+      "repetitions": 3,
+      "typedCharacters": 42,
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 3,
+        "mean": 10.5,
+        "median": 10.3,
+        "p95": 12,
+        "max": 12,
+        "stdev": 1.4
+      },
+      "inputToSecondAnimationFrameP95": {
+        "count": 3,
+        "mean": 22.4,
+        "median": 21.6,
+        "p95": 26.4,
+        "max": 26.4,
+        "stdev": 3.6
+      },
+      "fps": {
+        "count": 3,
+        "mean": 61.1,
+        "median": 61.2,
+        "p95": 61.3,
+        "max": 61.3,
+        "stdev": 0.3
+      },
+      "worstFrameMs": {
+        "count": 3,
+        "mean": 16.8,
+        "median": 16.8,
+        "p95": 16.8,
+        "max": 16.8,
+        "stdev": 0
+      },
+      "droppedFrames": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTasks": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTaskMs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeListeners": {
+        "count": 3,
+        "mean": 93,
+        "median": 93,
+        "p95": 103,
+        "max": 103,
+        "stdev": 10
+      },
+      "activeObservers": {
+        "count": 3,
+        "mean": 6,
+        "median": 6,
+        "p95": 6,
+        "max": 6,
+        "stdev": 0
+      },
+      "liveProviders": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "activeTimers": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "panelCount": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "hiddenTabs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "topEventInvocations": [
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 882
+        },
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 378
+        },
+        {
+          "key": "panel:GraphicalEditor:input",
+          "value": 126
+        },
+        {
+          "key": "document:selectionchange",
+          "value": 12
+        }
+      ],
+      "topEventInvocationsPerChar": [
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 7
+        },
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 3
+        },
+        {
+          "key": "panel:GraphicalEditor:input",
+          "value": 1
+        },
+        {
+          "key": "document:selectionchange",
+          "value": 0.1
+        }
+      ],
+      "topMutationCallbacks": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 252
+        },
+        {
+          "key": "panel:GraphicalEditor@#graphical-editor",
+          "value": 126
+        }
+      ],
+      "topMutationRecords": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 252
+        },
+        {
+          "key": "panel:GraphicalEditor@#graphical-editor",
+          "value": 126
+        }
+      ],
+      "topCustomDispatches": [
+        {
+          "key": "window:nodevision-editor-dirty",
+          "value": 3
+        }
+      ],
+      "topDomScanMs": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 0.1
+        }
+      ],
+      "topDomOperationCalls": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 6
+        }
+      ],
+      "topDomOperationCallsPerChar": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 0
+        }
+      ],
+      "topLayoutOperationCalls": [],
+      "topLayoutOperationCallsPerChar": [],
+      "topLayoutOperationMs": [],
+      "totalEventInvocationsPerChar": 11.095,
+      "totalMutationCallbacksPerChar": 3,
+      "totalMutationRecordsPerChar": 3,
+      "duplicateListeners": [
+        {
+          "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+          "count": 4
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+          "count": 3
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+          "count": 2
+        },
+        {
+          "key": "document|document|selectionchange|bubble|onSelectionChange",
+          "count": 2
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+          "count": 2
+        }
+      ],
+      "duplicateObservers": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+          "count": 2
+        },
+        {
+          "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "fixtureId": "fragmented",
+      "configId": "bare-contenteditable",
+      "mode": "rapid",
+      "repetitions": 3,
+      "typedCharacters": 42,
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 3,
+        "mean": 70.1,
+        "median": 66.3,
+        "p95": 78.1,
+        "max": 78.1,
+        "stdev": 6.9
+      },
+      "inputToSecondAnimationFrameP95": {
+        "count": 3,
+        "mean": 126.6,
+        "median": 121.1,
+        "p95": 138.3,
+        "max": 138.3,
+        "stdev": 10.1
+      },
+      "fps": {
+        "count": 3,
+        "mean": 61.1,
+        "median": 61.2,
+        "p95": 61.2,
+        "max": 61.2,
+        "stdev": 0.1
+      },
+      "worstFrameMs": {
+        "count": 3,
+        "mean": 17.7,
+        "median": 16.8,
+        "p95": 19.4,
+        "max": 19.4,
+        "stdev": 1.5
+      },
+      "droppedFrames": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTasks": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "longTaskMs": {
+        "count": 3,
+        "mean": 121,
+        "median": 120,
+        "p95": 128,
+        "max": 128,
+        "stdev": 6.6
+      },
+      "activeListeners": {
+        "count": 3,
+        "mean": 44,
+        "median": 44,
+        "p95": 44,
+        "max": 44,
+        "stdev": 0
+      },
+      "activeObservers": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "liveProviders": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeTimers": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "panelCount": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "hiddenTabs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "topEventInvocations": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 126
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 126
+        }
+      ],
+      "topEventInvocationsPerChar": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 1
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 1
+        }
+      ],
+      "topMutationCallbacks": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topMutationRecords": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topCustomDispatches": [],
+      "topDomScanMs": [],
+      "topDomOperationCalls": [],
+      "topDomOperationCallsPerChar": [],
+      "topLayoutOperationCalls": [],
+      "topLayoutOperationCallsPerChar": [],
+      "topLayoutOperationMs": [],
+      "totalEventInvocationsPerChar": 2,
+      "totalMutationCallbacksPerChar": 1,
+      "totalMutationRecordsPerChar": 1,
+      "duplicateListeners": [
+        {
+          "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+          "count": 12
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+          "count": 3
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+          "count": 3
+        }
+      ],
+      "duplicateObservers": []
+    },
+    {
+      "fixtureId": "fragmented",
+      "configId": "bare-editor-scaffold",
+      "mode": "rapid",
+      "repetitions": 3,
+      "typedCharacters": 42,
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 3,
+        "mean": 111.5,
+        "median": 110.7,
+        "p95": 120,
+        "max": 120,
+        "stdev": 8.1
+      },
+      "inputToSecondAnimationFrameP95": {
+        "count": 3,
+        "mean": 202.5,
+        "median": 200.3,
+        "p95": 219.7,
+        "max": 219.7,
+        "stdev": 16.2
+      },
+      "fps": {
+        "count": 3,
+        "mean": 61.3,
+        "median": 61.3,
+        "p95": 61.4,
+        "max": 61.4,
+        "stdev": 0.1
+      },
+      "worstFrameMs": {
+        "count": 3,
+        "mean": 16.8,
+        "median": 16.8,
+        "p95": 16.8,
+        "max": 16.8,
+        "stdev": 0
+      },
+      "droppedFrames": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTasks": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "longTaskMs": {
+        "count": 3,
+        "mean": 182.3,
+        "median": 175,
+        "p95": 203,
+        "max": 203,
+        "stdev": 18.1
+      },
+      "activeListeners": {
+        "count": 3,
+        "mean": 44,
+        "median": 44,
+        "p95": 44,
+        "max": 44,
+        "stdev": 0
+      },
+      "activeObservers": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "liveProviders": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeTimers": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "panelCount": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "hiddenTabs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "topEventInvocations": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 126
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 126
+        }
+      ],
+      "topEventInvocationsPerChar": [
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 1
+        },
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 1
+        }
+      ],
+      "topMutationCallbacks": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topMutationRecords": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 126
+        }
+      ],
+      "topCustomDispatches": [],
+      "topDomScanMs": [],
+      "topDomOperationCalls": [],
+      "topDomOperationCallsPerChar": [],
+      "topLayoutOperationCalls": [],
+      "topLayoutOperationCallsPerChar": [],
+      "topLayoutOperationMs": [],
+      "totalEventInvocationsPerChar": 2,
+      "totalMutationCallbacksPerChar": 1,
+      "totalMutationRecordsPerChar": 1,
+      "duplicateListeners": [
+        {
+          "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+          "count": 12
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+          "count": 3
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+          "count": 3
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+          "count": 3
+        }
+      ],
+      "duplicateObservers": []
+    },
+    {
+      "fixtureId": "fragmented",
+      "configId": "graphical-only",
+      "mode": "rapid",
+      "repetitions": 3,
+      "typedCharacters": 42,
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 3,
+        "mean": 98.6,
+        "median": 93,
+        "p95": 110.9,
+        "max": 110.9,
+        "stdev": 10.6
+      },
+      "inputToSecondAnimationFrameP95": {
+        "count": 3,
+        "mean": 182.9,
+        "median": 171.8,
+        "p95": 206.7,
+        "max": 206.7,
+        "stdev": 20.6
+      },
+      "fps": {
+        "count": 3,
+        "mean": 61.2,
+        "median": 61.2,
+        "p95": 61.2,
+        "max": 61.2,
+        "stdev": 0.1
+      },
+      "worstFrameMs": {
+        "count": 3,
+        "mean": 16.8,
+        "median": 16.8,
+        "p95": 16.8,
+        "max": 16.8,
+        "stdev": 0
+      },
+      "droppedFrames": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTasks": {
+        "count": 3,
+        "mean": 1.3,
+        "median": 1,
+        "p95": 2,
+        "max": 2,
+        "stdev": 0.6
+      },
+      "longTaskMs": {
+        "count": 3,
+        "mean": 181.7,
+        "median": 169,
+        "p95": 217,
+        "max": 217,
+        "stdev": 31
+      },
+      "activeListeners": {
+        "count": 3,
+        "mean": 123,
+        "median": 123,
+        "p95": 133,
+        "max": 133,
+        "stdev": 10
+      },
+      "activeObservers": {
+        "count": 3,
+        "mean": 6,
+        "median": 6,
+        "p95": 6,
+        "max": 6,
+        "stdev": 0
+      },
+      "liveProviders": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "activeTimers": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "panelCount": {
+        "count": 3,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "hiddenTabs": {
+        "count": 3,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "topEventInvocations": [
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 882
+        },
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 378
+        },
+        {
+          "key": "panel:GraphicalEditor:input",
+          "value": 126
+        },
+        {
+          "key": "document:selectionchange",
+          "value": 12
+        }
+      ],
+      "topEventInvocationsPerChar": [
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 7
+        },
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 3
+        },
+        {
+          "key": "panel:GraphicalEditor:input",
+          "value": 1
+        },
+        {
+          "key": "document:selectionchange",
+          "value": 0.1
+        }
+      ],
+      "topMutationCallbacks": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 252
+        },
+        {
+          "key": "panel:GraphicalEditor@#graphical-editor",
+          "value": 126
+        }
+      ],
+      "topMutationRecords": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 252
+        },
+        {
+          "key": "panel:GraphicalEditor@#graphical-editor",
+          "value": 126
+        }
+      ],
+      "topCustomDispatches": [
+        {
+          "key": "window:nodevision-editor-dirty",
+          "value": 3
+        }
+      ],
+      "topDomScanMs": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 0.7
+        }
+      ],
+      "topDomOperationCalls": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 6
+        }
+      ],
+      "topDomOperationCallsPerChar": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 0
+        }
+      ],
+      "topLayoutOperationCalls": [],
+      "topLayoutOperationCallsPerChar": [],
+      "topLayoutOperationMs": [],
+      "totalEventInvocationsPerChar": 11.095,
+      "totalMutationCallbacksPerChar": 3,
+      "totalMutationRecordsPerChar": 3,
+      "duplicateListeners": [
+        {
+          "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+          "count": 16
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|pointerdown|capture|activate",
+          "count": 4
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|mousedown|capture|activate",
+          "count": 4
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|click|capture|activate",
+          "count": 4
+        },
+        {
+          "key": "GraphicalEditor.setupPanel|#graphical-editor|focusin|capture|activate",
+          "count": 4
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|error|capture|anonymous",
+          "count": 4
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|load|capture|anonymous",
+          "count": 4
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+          "count": 3
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+          "count": 2
+        },
+        {
+          "key": "document|document|selectionchange|bubble|onSelectionChange",
+          "count": 2
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+          "count": 2
+        }
+      ],
+      "duplicateObservers": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+          "count": 2
+        },
+        {
+          "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "matrix": [
+    {
+      "configId": "bare-contenteditable",
+      "label": "Bare contenteditable",
+      "cleanFps": 61,
+      "fragmentedFps": 61.1,
+      "cleanSecondRafP95": 36.2,
+      "fragmentedSecondRafP95": 126.6,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 121,
+      "fragmentedOverCleanSecondRaf": 4.05
+    },
+    {
+      "configId": "bare-nodevision-css",
+      "label": "Bare editable + Nodevision CSS",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "bare-editor-scaffold",
+      "label": "Bare editable in editor scaffold",
+      "cleanFps": 60.9,
+      "fragmentedFps": 61.3,
+      "cleanSecondRafP95": 38.4,
+      "fragmentedSecondRafP95": 202.5,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 182.3,
+      "fragmentedOverCleanSecondRaf": 6.23
+    },
+    {
+      "configId": "html-direct-cleaned",
+      "label": "HTML editor DOM after cleanup",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-diagnostics",
+      "label": "HTML editor minus diagnostics",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-selection",
+      "label": "HTML editor minus selection sync",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-text-wrapping",
+      "label": "HTML editor minus text wrapping",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-observers",
+      "label": "HTML editor minus extra observers",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-full",
+      "label": "HTML editor direct full runtime",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-only",
+      "label": "Graphical editor only",
+      "cleanFps": 61.1,
+      "fragmentedFps": 61.2,
+      "cleanSecondRafP95": 22.4,
+      "fragmentedSecondRafP95": 182.9,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 181.7,
+      "fragmentedOverCleanSecondRaf": 9.39
+    },
+    {
+      "configId": "graphical-empty-side-panel",
+      "label": "Graphical editor + empty side panel",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-layers-visible",
+      "label": "Graphical editor + Layers visible",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-layers-hidden",
+      "label": "Graphical editor + Layers hidden",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "full-workspace",
+      "label": "Full representative workspace",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "multi-panel-stress",
+      "label": "Multiple-panel/tab stress",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    }
+  ],
+  "lifecycle": {
+    "checkpoints": [],
+    "tabChurn": []
+  },
+  "lifecycleSummary": [],
+  "diagnosis": {
+    "fragmentedGraphicalOverBare": 1.41,
+    "fragmentedEmptySideOverDetached": 0,
+    "fragmentedLayersVisibleOverDetached": 0,
+    "fragmentedLayersHiddenOverDetached": 0,
+    "fragmentedWorkspaceOverGraphical": 0,
+    "fragmentedStressOverWorkspace": 0,
+    "lifecycleLatencyRatio": 0,
+    "listenerGrowthAfterLifecycle": 0,
+    "observerGrowthAfterLifecycle": 0,
+    "recommendation": "The dominant measured cost is still intrinsic editor/browser DOM cost; continue with DOM-fragment normalization experiments."
+  }
+}

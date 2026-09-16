@@ -2,6 +2,7 @@
 // This module defines a lightweight editable Bezier path model and helpers to convert between SVG path data and the internal structure. This module keeps node and handle data explicit so pointer interactions never mutate raw path strings directly. This module helps other tools keep node type constraints consistent.
 
 const NODE_TYPES = ["corner", "smooth", "symmetric"];
+const NODE_EDITABLE_COMMANDS = new Set(["m", "l", "c", "z"]);
 
 export function createEmptyModel(id = "path") {
   return { id, closed: false, nodes: [] };
@@ -87,6 +88,15 @@ export function parsePathToModel(pathEl) {
     }
   }
   return model;
+}
+
+export function analyzePathNodeEditSupport(d = "") {
+  const commands = String(d || "").match(/[a-zA-Z]/g) || [];
+  const unsupported = commands.find((cmd) => !NODE_EDITABLE_COMMANDS.has(cmd.toLowerCase())) || "";
+  return {
+    supported: !unsupported,
+    unsupportedCommand: unsupported,
+  };
 }
 
 export function modelToPathD(model) {

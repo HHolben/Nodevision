@@ -67,7 +67,7 @@ assert.deepEqual(
     sourcePath: "Notebook/Library/Books/Homer/index.html",
     primary: "Notebook/Library/Books/Homer/Odyssey.html",
   }),
-  ["../Scans/Odyssey.pdf", "https://archive.org/details/odyssey"],
+  ["../../Scans/Odyssey.pdf", "https://archive.org/details/odyssey"],
 );
 
 const element = new FakeElement();

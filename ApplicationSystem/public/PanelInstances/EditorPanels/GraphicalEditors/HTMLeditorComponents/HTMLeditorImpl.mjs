@@ -5587,6 +5587,7 @@ export async function renderEditor(filePath, container, options = {}) {
   wrapper.style.display = "flex";
   wrapper.style.flexDirection = "column";
   wrapper.style.height = "100%";
+  wrapper.style.minHeight = "0";
   wrapper.style.width = "100%";
   container.appendChild(wrapper);
   const isCurrentRender = () =>
@@ -5596,7 +5597,8 @@ export async function renderEditor(filePath, container, options = {}) {
   const wysiwyg = document.createElement("div");
   wysiwyg.id = "wysiwyg";
   wysiwyg.contentEditable = "true";
-  wysiwyg.style.flex = "1";
+  wysiwyg.style.flex = "1 1 0";
+  wysiwyg.style.minHeight = "0";
   wysiwyg.style.overflow = "auto";
   wysiwyg.style.padding = "12px";
   wysiwyg.style.overflowWrap = "anywhere";

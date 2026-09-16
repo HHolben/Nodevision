@@ -1,0 +1,1274 @@
+{
+  "generatedAt": "2026-09-15T04:45:59.274Z",
+  "note": "Synthetic benchmark only. Fixtures are generated under Notebook/__nv_html_app_stack_typing during the run and then removed.",
+  "configuration": {
+    "repetitions": 1,
+    "configs": [
+      {
+        "id": "bare-contenteditable",
+        "label": "Bare contenteditable",
+        "kind": "bare"
+      },
+      {
+        "id": "bare-nodevision-css",
+        "label": "Bare editable + Nodevision CSS",
+        "kind": "bare",
+        "nodevisionCss": true
+      },
+      {
+        "id": "bare-editor-scaffold",
+        "label": "Bare editable in editor scaffold",
+        "kind": "bare",
+        "editorScaffold": true
+      },
+      {
+        "id": "html-direct-cleaned",
+        "label": "HTML editor DOM after cleanup",
+        "kind": "html-direct",
+        "cleanupMode": "all"
+      },
+      {
+        "id": "html-direct-no-diagnostics",
+        "label": "HTML editor minus diagnostics",
+        "kind": "html-direct",
+        "cleanupMode": "diagnostics"
+      },
+      {
+        "id": "html-direct-no-selection",
+        "label": "HTML editor minus selection sync",
+        "kind": "html-direct",
+        "cleanupMode": "selection"
+      },
+      {
+        "id": "html-direct-no-text-wrapping",
+        "label": "HTML editor minus text wrapping",
+        "kind": "html-direct",
+        "cleanupMode": "textWrapping"
+      },
+      {
+        "id": "html-direct-no-observers",
+        "label": "HTML editor minus extra observers",
+        "kind": "html-direct",
+        "cleanupMode": "observers"
+      },
+      {
+        "id": "html-direct-full",
+        "label": "HTML editor direct full runtime",
+        "kind": "html-direct",
+        "cleanupMode": "none"
+      },
+      {
+        "id": "graphical-only",
+        "label": "Graphical editor only",
+        "kind": "graphical",
+        "layers": "detached"
+      },
+      {
+        "id": "graphical-empty-side-panel",
+        "label": "Graphical editor + empty side panel",
+        "kind": "graphical",
+        "layers": "empty"
+      },
+      {
+        "id": "graphical-layers-visible",
+        "label": "Graphical editor + Layers visible",
+        "kind": "graphical",
+        "layers": "visible"
+      },
+      {
+        "id": "graphical-layers-hidden",
+        "label": "Graphical editor + Layers hidden",
+        "kind": "graphical",
+        "layers": "hidden"
+      },
+      {
+        "id": "graphical-graphmanager",
+        "label": "Graphical editor + GraphManager",
+        "kind": "graphical",
+        "layers": "detached",
+        "graphManager": true
+      },
+      {
+        "id": "graphical-layers-graphmanager",
+        "label": "Graphical editor + Layers + GraphManager",
+        "kind": "graphical",
+        "layers": "visible",
+        "graphManager": true
+      },
+      {
+        "id": "full-workspace",
+        "label": "Full representative workspace",
+        "kind": "workspace",
+        "layers": "visible",
+        "stressTabs": 0
+      },
+      {
+        "id": "multi-panel-stress",
+        "label": "Multiple-panel/tab stress",
+        "kind": "workspace",
+        "layers": "visible",
+        "stressTabs": 6
+      }
+    ],
+    "modes": [
+      {
+        "id": "single",
+        "label": "Single char",
+        "delayMs": 0,
+        "typedCharacters": 1
+      },
+      {
+        "id": "ten",
+        "label": "10-char burst",
+        "delayMs": 0,
+        "typedCharacters": 10
+      },
+      {
+        "id": "rapid",
+        "label": "Rapid batch",
+        "delayMs": 0,
+        "typedCharacters": 42
+      }
+    ],
+    "lifecycleCheckpoints": [
+      0,
+      5,
+      20,
+      50,
+      100
+    ]
+  },
+  "environment": {
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97",
+    "node": "24.15.0",
+    "v8": "14.8.178.14-electron.0",
+    "platform": "linux",
+    "release": "6.19.10-300.fc44.x86_64",
+    "arch": "x64",
+    "cpus": 8,
+    "totalMemoryBytes": 16468275200
+  },
+  "fixtures": [
+    {
+      "id": "clean",
+      "label": "Clean 20k",
+      "relativePath": "__nv_html_app_stack_typing/clean.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 1921,
+        "elementCount": 640,
+        "textNodeCount": 1281,
+        "emptyBlockCount": 0,
+        "divCount": 0,
+        "spanCount": 0,
+        "linkCount": 0,
+        "paragraphCount": 600,
+        "sectionCount": 20,
+        "maximumDomDepth": 3
+      }
+    },
+    {
+      "id": "moderate",
+      "label": "Moderately fragmented 20k",
+      "relativePath": "__nv_html_app_stack_typing/moderate.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 4951,
+        "elementCount": 2150,
+        "textNodeCount": 2801,
+        "emptyBlockCount": 400,
+        "divCount": 1600,
+        "spanCount": 145,
+        "linkCount": 5,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      }
+    },
+    {
+      "id": "fragmented",
+      "label": "Fragmented 20k",
+      "relativePath": "__nv_html_app_stack_typing/fragmented.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      }
+    },
+    {
+      "id": "heavy",
+      "label": "Heavily fragmented 20k",
+      "relativePath": "__nv_html_app_stack_typing/heavy.html",
+      "metrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 22431,
+        "elementCount": 8430,
+        "textNodeCount": 14001,
+        "emptyBlockCount": 400,
+        "divCount": 7200,
+        "spanCount": 812,
+        "linkCount": 18,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      }
+    }
+  ],
+  "syntheticGraph": {
+    "directories": 3,
+    "files": 9,
+    "htmlFiles": 8,
+    "svgFiles": 1
+  },
+  "passes": [
+    {
+      "fixtureId": "fragmented",
+      "fixtureLabel": "Fragmented 20k",
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "configId": "graphical-graphmanager",
+      "configLabel": "Graphical editor + GraphManager",
+      "config": {
+        "id": "graphical-graphmanager",
+        "label": "Graphical editor + GraphManager",
+        "kind": "graphical",
+        "layers": "detached",
+        "graphManager": true
+      },
+      "mode": "single",
+      "typedCharacters": 1,
+      "repetition": 1,
+      "mount": {
+        "mounted": true,
+        "environment": "graphical",
+        "layers": "detached",
+        "layerMount": {
+          "attached": false,
+          "visibility": "detached"
+        },
+        "graphMount": {
+          "attached": true,
+          "valid": true,
+          "verification": {
+            "cytoscapeAvailable": true,
+            "fcoseAvailable": true,
+            "expandCollapseAvailable": false,
+            "cyExists": true,
+            "containerExists": true,
+            "containerWidth": 329,
+            "containerHeight": 2,
+            "nodeCount": 63,
+            "edgeCount": 47,
+            "elementCount": 110,
+            "rendered": true
+          }
+        }
+      },
+      "selection": {
+        "targetTagName": "DIV",
+        "targetTextLength": 43,
+        "targetCount": 4200,
+        "rootScrollHeight": 435856,
+        "rootChildCount": 4600
+      },
+      "frames": {
+        "frames": 74,
+        "averageFrameMs": 16.4,
+        "p95FrameMs": 16.8,
+        "worstFrameMs": 16.8,
+        "droppedFrames": 0,
+        "longFrames": 0,
+        "fps": 61.1
+      },
+      "verification": {
+        "ok": true,
+        "beforeLength": 43,
+        "currentLength": 44,
+        "expectedSuffix": "x",
+        "suffix": "evidencex"
+      },
+      "nativeInputCount": 1,
+      "beforeInputCount": 1,
+      "inputToFirstAnimationFrame": {
+        "count": 1,
+        "mean": 2.7,
+        "median": 2.7,
+        "p95": 2.7,
+        "max": 2.7
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 1,
+        "mean": 20.7,
+        "median": 20.7,
+        "p95": 20.7,
+        "max": 20.7
+      },
+      "mutationSummary": {
+        "total": 1,
+        "characterData": 1,
+        "childList": 0,
+        "attributes": 0,
+        "addedNodes": 0,
+        "removedNodes": 0
+      },
+      "instrumented": {
+        "metrics": {
+          "eventInvocations": {
+            "HTML.editorRoot:beforeinput": 3,
+            "panel:GraphicalEditor:input": 1,
+            "HTML.editorRoot:input": 7,
+            "document:selectionchange": 4
+          },
+          "eventTimingMs": {
+            "HTML.editorRoot:beforeinput": 0.6,
+            "panel:GraphicalEditor:input": 0,
+            "HTML.editorRoot:input": 1.2,
+            "document:selectionchange": 1
+          },
+          "eventWorstMs": {
+            "HTML.editorRoot:beforeinput": 0.4,
+            "panel:GraphicalEditor:input": 0,
+            "HTML.editorRoot:input": 0.5,
+            "document:selectionchange": 0.6
+          },
+          "customDispatches": {
+            "window:nodevision-editor-dirty": 1
+          },
+          "mutationObserverCallbacks": {
+            "HTML.editorRoot@#wysiwyg": 2,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "mutationObserverTimingMs": {
+            "HTML.editorRoot@#wysiwyg": 0,
+            "panel:GraphicalEditor@#graphical-editor": 0
+          },
+          "mutationObserverWorstMs": {
+            "HTML.editorRoot@#wysiwyg": 0,
+            "panel:GraphicalEditor@#graphical-editor": 0
+          },
+          "mutationRecords": {
+            "HTML.editorRoot@#wysiwyg": 2,
+            "panel:GraphicalEditor@#graphical-editor": 1
+          },
+          "mutationRecordTypes": {
+            "HTML.editorRoot@#wysiwyg:characterData": 2,
+            "panel:GraphicalEditor@#graphical-editor:characterData": 1
+          },
+          "querySelectorAll": {
+            "HTML.editorRoot": 0.7
+          },
+          "getComputedStyle": {},
+          "getBoundingClientRect": {},
+          "getClientRects": {},
+          "scrollIntoView": {},
+          "focusCalls": {},
+          "createTreeWalker": {},
+          "innerTextReads": {},
+          "textContentReads": {},
+          "innerHTMLReads": {},
+          "offsetWidthReads": {},
+          "offsetHeightReads": {},
+          "clientWidthReads": {},
+          "clientHeightReads": {},
+          "scrollWidthReads": {},
+          "scrollHeightReads": {},
+          "domOperationCalls": {
+            "querySelectorAll:HTML.editorRoot": 2
+          },
+          "domOperationMs": {
+            "querySelectorAll:HTML.editorRoot": 0.7
+          },
+          "layoutOperationCalls": {},
+          "layoutOperationMs": {},
+          "timeoutScheduled": {
+            "timer": 4
+          },
+          "timeoutFired": {},
+          "rafScheduled": {
+            "raf": 12
+          },
+          "rafFired": {
+            "raf": 11
+          }
+        },
+        "explicitCounters": {},
+        "explicitTimingMs": {},
+        "longTasks": [],
+        "listenerSummary": {
+          "activeCount": 152,
+          "totalAdded": 152,
+          "totalRemoved": 0,
+          "byOwnerType": {
+            "window:keydown": 1,
+            "window:keyup": 1,
+            "window:blur": 1,
+            "document:pointerdown": 1,
+            "document:mousedown": 1,
+            "document:click": 2,
+            "window:toolbarAction": 1,
+            "document:pointermove": 1,
+            "window:nodevision-user-preferences-changed": 1,
+            "window:nv-show-subtoolbar": 1,
+            "window:activePanelChanged": 1,
+            "GraphicalEditor.setupPanel:pointerdown": 1,
+            "GraphicalEditor.setupPanel:mousedown": 1,
+            "GraphicalEditor.setupPanel:click": 1,
+            "GraphicalEditor.setupPanel:focusin": 1,
+            "HTML.editorRoot:error": 1,
+            "HTML.editorRoot:load": 1,
+            "HTML.editorRoot:beforeinput": 3,
+            "HTML.editorRoot:input": 7,
+            "HTML.editorRoot:click": 5,
+            "HTML.editorRoot:keyup": 5,
+            "HTML.editorRoot:mouseup": 4,
+            "HTML.editorRoot:scroll": 2,
+            "HTML.editorRoot:pointermove": 1,
+            "HTML.editorRoot:pointerleave": 1,
+            "HTML.editorRoot:pointerdown": 4,
+            "HTML.editorRoot:focusin": 2,
+            "HTML.editorRoot:keydown": 4,
+            "document:selectionchange": 4,
+            "document:copy": 1,
+            ".nv-image-corner-handle.nv-editor-only:pointerdown": 4,
+            "window:resize": 2,
+            "window:scroll": 2,
+            "window:nodevision-file-saved": 1,
+            "panel:GraphicalEditor:pointerdown": 2,
+            "panel:GraphicalEditor:focusin": 2,
+            "panel:GraphicalEditor:keydown": 1,
+            "HTML.editorRoot:focus": 3,
+            "HTML.editorRoot:paste": 1,
+            "panel:GraphicalEditor:input": 1,
+            "panel:GraphicalEditor:change": 1,
+            "panel:GraphicalEditor:keyup": 1,
+            "panel:GraphicalEditor:paste": 1,
+            "panel:GraphicalEditor:cut": 1,
+            "panel:GraphicalEditor:pointerup": 1,
+            "GraphManager.panelSetup:click": 3,
+            "GraphManager.panelSetup:keydown": 1,
+            "GraphManager.panelSetup:pointerdown": 1,
+            "GraphManager.panelSetup:dragstart": 1,
+            "tab:GraphManager:focus": 1,
+            "tab:GraphManager:click": 1,
+            "document:keydown": 1,
+            "window:nodevision-directory-appearance-changed": 1,
+            "tab:GraphManager:transitionend": 4,
+            "tab:GraphManager:animationend": 4,
+            "tab:GraphManager:scroll": 4,
+            "panel:GraphManager:transitionend": 3,
+            "panel:GraphManager:animationend": 3,
+            "panel:GraphManager:scroll": 3,
+            "#app-stack-shell:transitionend": 1,
+            "#app-stack-shell:animationend": 1,
+            "#app-stack-shell:scroll": 1,
+            "body:transitionend": 1,
+            "body:animationend": 1,
+            "body:scroll": 1,
+            "html:transitionend": 1,
+            "html:animationend": 1,
+            "html:scroll": 1,
+            "document:transitionend": 1,
+            "document:animationend": 1,
+            "document:scroll": 1,
+            "tab:GraphManager:contextmenu": 1,
+            "tab:GraphManager:mousedown": 1,
+            "window:mousemove": 1,
+            "window:mouseup": 1,
+            "tab:GraphManager:wheel": 1,
+            "tab:GraphManager:gesturestart": 1,
+            "tab:GraphManager:gesturechange": 1,
+            "tab:GraphManager:mouseout": 1,
+            "tab:GraphManager:mouseover": 1,
+            "tab:GraphManager:touchstart": 1,
+            "window:touchmove": 1,
+            "window:touchcancel": 1,
+            "window:touchend": 1,
+            "window:nv-panel-zoom-pan-updated": 1,
+            "tab:GraphManager:dragover": 1,
+            "tab:GraphManager:dragleave": 1,
+            "tab:GraphManager:drop": 1,
+            "unknown:mqtt-model": 1,
+            ".nv-panel-tab:click": 2,
+            ".nv-panel-tab:keydown": 1,
+            ".nv-panel-tab-close:click": 1,
+            ".nv-panel-tab:pointerdown": 1,
+            ".nv-panel-tab:dragstart": 1
+          },
+          "byOwnerEventTarget": {
+            "window|keydown|window": 1,
+            "window|keyup|window": 1,
+            "window|blur|window": 1,
+            "document|pointerdown|document": 1,
+            "document|mousedown|document": 1,
+            "document|click|document": 2,
+            "window|toolbarAction|window": 1,
+            "document|pointermove|document": 1,
+            "window|nodevision-user-preferences-changed|window": 1,
+            "window|nv-show-subtoolbar|window": 1,
+            "window|activePanelChanged|window": 1,
+            "GraphicalEditor.setupPanel|pointerdown|editor-host": 1,
+            "GraphicalEditor.setupPanel|mousedown|editor-host": 1,
+            "GraphicalEditor.setupPanel|click|editor-host": 1,
+            "GraphicalEditor.setupPanel|focusin|editor-host": 1,
+            "HTML.editorRoot|error|editor-host": 1,
+            "HTML.editorRoot|load|editor-host": 1,
+            "HTML.editorRoot|beforeinput|editor-host": 3,
+            "HTML.editorRoot|input|editor-host": 7,
+            "HTML.editorRoot|click|editor-host": 5,
+            "HTML.editorRoot|keyup|editor-host": 5,
+            "HTML.editorRoot|mouseup|editor-host": 4,
+            "HTML.editorRoot|scroll|editor-host": 2,
+            "HTML.editorRoot|pointermove|editor-host": 1,
+            "HTML.editorRoot|pointerleave|editor-host": 1,
+            "HTML.editorRoot|pointerdown|editor-host": 4,
+            "HTML.editorRoot|focusin|editor-host": 2,
+            "HTML.editorRoot|keydown|editor-host": 4,
+            "document|selectionchange|document": 4,
+            "document|copy|document": 1,
+            ".nv-image-corner-handle.nv-editor-only|pointerdown|.nv-image-corner-handle.nv-editor-only": 4,
+            "window|resize|window": 2,
+            "window|scroll|window": 2,
+            "window|nodevision-file-saved|window": 1,
+            "panel:GraphicalEditor|pointerdown|editor-host": 2,
+            "panel:GraphicalEditor|focusin|editor-host": 2,
+            "panel:GraphicalEditor|keydown|editor-host": 1,
+            "HTML.editorRoot|focus|editor-host": 3,
+            "HTML.editorRoot|paste|editor-host": 1,
+            "panel:GraphicalEditor|input|editor-host": 1,
+            "panel:GraphicalEditor|change|editor-host": 1,
+            "panel:GraphicalEditor|keyup|editor-host": 1,
+            "panel:GraphicalEditor|paste|editor-host": 1,
+            "panel:GraphicalEditor|cut|editor-host": 1,
+            "panel:GraphicalEditor|pointerup|editor-host": 1,
+            "GraphManager.panelSetup|click|detached-dom": 3,
+            "GraphManager.panelSetup|keydown|detached-dom": 1,
+            "GraphManager.panelSetup|pointerdown|detached-dom": 1,
+            "GraphManager.panelSetup|dragstart|detached-dom": 1,
+            "tab:GraphManager|focus|tabs": 1,
+            "tab:GraphManager|click|tabs": 1,
+            "document|keydown|document": 1,
+            "window|nodevision-directory-appearance-changed|window": 1,
+            "tab:GraphManager|transitionend|graph-manager": 3,
+            "tab:GraphManager|animationend|graph-manager": 3,
+            "tab:GraphManager|scroll|graph-manager": 3,
+            "tab:GraphManager|transitionend|tabs": 1,
+            "tab:GraphManager|animationend|tabs": 1,
+            "tab:GraphManager|scroll|tabs": 1,
+            "panel:GraphManager|transitionend|tabs": 2,
+            "panel:GraphManager|animationend|tabs": 2,
+            "panel:GraphManager|scroll|tabs": 2,
+            "panel:GraphManager|transitionend|panel-host": 1,
+            "panel:GraphManager|animationend|panel-host": 1,
+            "panel:GraphManager|scroll|panel-host": 1,
+            "#app-stack-shell|transitionend|#app-stack-shell": 1,
+            "#app-stack-shell|animationend|#app-stack-shell": 1,
+            "#app-stack-shell|scroll|#app-stack-shell": 1,
+            "body|transitionend|body": 1,
+            "body|animationend|body": 1,
+            "body|scroll|body": 1,
+            "html|transitionend|html": 1,
+            "html|animationend|html": 1,
+            "html|scroll|html": 1,
+            "document|transitionend|document": 1,
+            "document|animationend|document": 1,
+            "document|scroll|document": 1,
+            "tab:GraphManager|contextmenu|graph-manager": 1,
+            "tab:GraphManager|mousedown|graph-manager": 1,
+            "window|mousemove|window": 1,
+            "window|mouseup|window": 1,
+            "tab:GraphManager|wheel|graph-manager": 1,
+            "tab:GraphManager|gesturestart|graph-manager": 1,
+            "tab:GraphManager|gesturechange|graph-manager": 1,
+            "tab:GraphManager|mouseout|graph-manager": 1,
+            "tab:GraphManager|mouseover|graph-manager": 1,
+            "tab:GraphManager|touchstart|graph-manager": 1,
+            "window|touchmove|window": 1,
+            "window|touchcancel|window": 1,
+            "window|touchend|window": 1,
+            "window|nv-panel-zoom-pan-updated|window": 1,
+            "tab:GraphManager|dragover|graph-manager": 1,
+            "tab:GraphManager|dragleave|graph-manager": 1,
+            "tab:GraphManager|drop|graph-manager": 1,
+            "unknown|mqtt-model|unknown": 1,
+            ".nv-panel-tab|click|tabs": 2,
+            ".nv-panel-tab|keydown|tabs": 1,
+            ".nv-panel-tab-close|click|tabs": 1,
+            ".nv-panel-tab|pointerdown|tabs": 1,
+            ".nv-panel-tab|dragstart|tabs": 1
+          },
+          "duplicates": [
+            {
+              "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+              "count": 4
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+              "count": 3
+            },
+            {
+              "key": "tab:GraphManager|.panel-cell:GraphManager|transitionend|bubble|y",
+              "count": 3
+            },
+            {
+              "key": "tab:GraphManager|.panel-cell:GraphManager|animationend|bubble|y",
+              "count": 3
+            },
+            {
+              "key": "tab:GraphManager|.panel-cell:GraphManager|scroll|bubble|y",
+              "count": 3
+            },
+            {
+              "key": "panel:GraphManager|.panel-cell:GraphManager|transitionend|bubble|y",
+              "count": 3
+            },
+            {
+              "key": "panel:GraphManager|.panel-cell:GraphManager|animationend|bubble|y",
+              "count": 3
+            },
+            {
+              "key": "panel:GraphManager|.panel-cell:GraphManager|scroll|bubble|y",
+              "count": 3
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+              "count": 2
+            },
+            {
+              "key": "document|document|selectionchange|bubble|onSelectionChange",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+              "count": 2
+            }
+          ]
+        },
+        "observerSummary": {
+          "activeCount": 8,
+          "totalCreated": 8,
+          "totalDisconnected": 0,
+          "byOwnerTarget": {
+            "HTML.editorRoot@#wysiwyg": 5,
+            "panel:GraphicalEditor@#graphical-editor": 1,
+            "tab:GraphManager@.panel-cell:GraphManager": 1,
+            "tab:GraphManager@#cy": 1
+          },
+          "duplicates": [
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            },
+            {
+              "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+              "count": 2
+            }
+          ]
+        },
+        "activeTimers": 0,
+        "activeRafs": 1,
+        "liveProviders": [
+          {
+            "id": "nodevision-graphical-editor-1",
+            "filePath": "__nv_html_app_stack_typing/fragmented.html",
+            "editorKind": "graphical",
+            "panelKind": "GraphicalEditor",
+            "sourceLabel": "Graphical Editor",
+            "dirty": true,
+            "timestamp": 1789447558077,
+            "isBinary": false
+          }
+        ],
+        "panelLifecycle": {
+          "registered": 1,
+          "active": 1,
+          "inactive": 0,
+          "destroyed": 0,
+          "activateCalls": 1,
+          "deactivateCalls": 0,
+          "destroyCalls": 0
+        },
+        "layerHostMutationRecords": 0,
+        "performanceDiagnostics": {
+          "enabled": true,
+          "entries": [
+            {
+              "name": "html typing wrapping-target",
+              "timestamp": "2026-09-15T04:45:57.998Z",
+              "changed": 0
+            },
+            {
+              "name": "html typing input-to-paint",
+              "timestamp": "2026-09-15T04:45:58.016Z",
+              "filePath": "__nv_html_app_stack_typing/fragmented.html",
+              "phase": "beforeinput",
+              "inputType": "insertText",
+              "firstRafMs": 13.9,
+              "secondRafMs": 29.3,
+              "mutations": {
+                "total": 4603,
+                "characterData": 1,
+                "childList": 4600,
+                "attributes": 2,
+                "addedNodes": 4600,
+                "removedNodes": 0,
+                "textOnly": false,
+                "structural": true
+              }
+            },
+            {
+              "name": "html typing input-to-paint",
+              "timestamp": "2026-09-15T04:45:58.016Z",
+              "filePath": "__nv_html_app_stack_typing/fragmented.html",
+              "phase": "input",
+              "inputType": "insertText",
+              "firstRafMs": 2.9,
+              "secondRafMs": 20.9,
+              "mutations": {
+                "total": 0,
+                "characterData": 0,
+                "childList": 0,
+                "attributes": 0,
+                "addedNodes": 0,
+                "removedNodes": 0,
+                "textOnly": false,
+                "structural": false
+              }
+            },
+            {
+              "name": "html typing word-count",
+              "timestamp": "2026-09-15T04:45:58.160Z",
+              "characters": 157898
+            },
+            {
+              "name": "html typing recent-file-recorded",
+              "timestamp": "2026-09-15T04:45:58.598Z",
+              "filePath": "__nv_html_app_stack_typing/fragmented.html"
+            }
+          ],
+          "counters": {}
+        },
+        "graphState": {
+          "cytoscapeAvailable": true,
+          "fcoseAvailable": true,
+          "expandCollapseAvailable": false,
+          "cyExists": true,
+          "containerExists": true,
+          "containerWidth": 329,
+          "containerHeight": 2,
+          "nodeCount": 63,
+          "edgeCount": 47,
+          "elementCount": 110,
+          "rendered": true
+        },
+        "panelCounts": {
+          "cells": 2,
+          "tabContents": 1,
+          "activeTabContents": 1,
+          "hiddenTabContents": 0
+        }
+      },
+      "nodevisionTypingCounters": {
+        "word-count": 4,
+        "wrapping-full-scan": 2,
+        "image-text-mutation-batch": 1,
+        "wrapping-target": 1,
+        "recent-file-recorded": 1
+      },
+      "nodevisionTypingSampleCount": 1
+    }
+  ],
+  "aggregates": [
+    {
+      "fixtureId": "fragmented",
+      "configId": "graphical-graphmanager",
+      "mode": "single",
+      "repetitions": 1,
+      "typedCharacters": 1,
+      "fixtureMetrics": {
+        "wordCount": 20000,
+        "totalDomNodes": 14319,
+        "elementCount": 5518,
+        "textNodeCount": 8801,
+        "emptyBlockCount": 400,
+        "divCount": 4600,
+        "spanCount": 502,
+        "linkCount": 16,
+        "paragraphCount": 0,
+        "sectionCount": 0,
+        "maximumDomDepth": 4
+      },
+      "inputToSecondAnimationFrame": {
+        "count": 1,
+        "mean": 20.7,
+        "median": 20.7,
+        "p95": 20.7,
+        "max": 20.7,
+        "stdev": 0
+      },
+      "inputToSecondAnimationFrameP95": {
+        "count": 1,
+        "mean": 20.7,
+        "median": 20.7,
+        "p95": 20.7,
+        "max": 20.7,
+        "stdev": 0
+      },
+      "fps": {
+        "count": 1,
+        "mean": 61.1,
+        "median": 61.1,
+        "p95": 61.1,
+        "max": 61.1,
+        "stdev": 0
+      },
+      "worstFrameMs": {
+        "count": 1,
+        "mean": 16.8,
+        "median": 16.8,
+        "p95": 16.8,
+        "max": 16.8,
+        "stdev": 0
+      },
+      "droppedFrames": {
+        "count": 1,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTasks": {
+        "count": 1,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "longTaskMs": {
+        "count": 1,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "activeListeners": {
+        "count": 1,
+        "mean": 152,
+        "median": 152,
+        "p95": 152,
+        "max": 152,
+        "stdev": 0
+      },
+      "activeObservers": {
+        "count": 1,
+        "mean": 8,
+        "median": 8,
+        "p95": 8,
+        "max": 8,
+        "stdev": 0
+      },
+      "liveProviders": {
+        "count": 1,
+        "mean": 1,
+        "median": 1,
+        "p95": 1,
+        "max": 1,
+        "stdev": 0
+      },
+      "activeTimers": {
+        "count": 1,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "panelCount": {
+        "count": 1,
+        "mean": 2,
+        "median": 2,
+        "p95": 2,
+        "max": 2,
+        "stdev": 0
+      },
+      "hiddenTabs": {
+        "count": 1,
+        "mean": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0,
+        "stdev": 0
+      },
+      "topEventInvocations": [
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 7
+        },
+        {
+          "key": "document:selectionchange",
+          "value": 4
+        },
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 3
+        },
+        {
+          "key": "panel:GraphicalEditor:input",
+          "value": 1
+        }
+      ],
+      "topEventInvocationsPerChar": [
+        {
+          "key": "HTML.editorRoot:input",
+          "value": 7
+        },
+        {
+          "key": "document:selectionchange",
+          "value": 4
+        },
+        {
+          "key": "HTML.editorRoot:beforeinput",
+          "value": 3
+        },
+        {
+          "key": "panel:GraphicalEditor:input",
+          "value": 1
+        }
+      ],
+      "topMutationCallbacks": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 2
+        },
+        {
+          "key": "panel:GraphicalEditor@#graphical-editor",
+          "value": 1
+        }
+      ],
+      "topMutationRecords": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg",
+          "value": 2
+        },
+        {
+          "key": "panel:GraphicalEditor@#graphical-editor",
+          "value": 1
+        }
+      ],
+      "topCustomDispatches": [
+        {
+          "key": "window:nodevision-editor-dirty",
+          "value": 1
+        }
+      ],
+      "topDomScanMs": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 0.7
+        }
+      ],
+      "topDomOperationCalls": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 2
+        }
+      ],
+      "topDomOperationCallsPerChar": [
+        {
+          "key": "querySelectorAll:HTML.editorRoot",
+          "value": 2
+        }
+      ],
+      "topLayoutOperationCalls": [],
+      "topLayoutOperationCallsPerChar": [],
+      "topLayoutOperationMs": [],
+      "totalEventInvocationsPerChar": 15,
+      "totalMutationCallbacksPerChar": 3,
+      "totalMutationRecordsPerChar": 3,
+      "duplicateListeners": [
+        {
+          "key": ".nv-image-corner-handle.nv-editor-only|.nv-image-corner-handle.nv-editor-only|pointerdown|bubble|startCornerTransform",
+          "count": 4
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|keydown|bubble|onKeyDown",
+          "count": 3
+        },
+        {
+          "key": "tab:GraphManager|.panel-cell:GraphManager|transitionend|bubble|y",
+          "count": 3
+        },
+        {
+          "key": "tab:GraphManager|.panel-cell:GraphManager|animationend|bubble|y",
+          "count": 3
+        },
+        {
+          "key": "tab:GraphManager|.panel-cell:GraphManager|scroll|bubble|y",
+          "count": 3
+        },
+        {
+          "key": "panel:GraphManager|.panel-cell:GraphManager|transitionend|bubble|y",
+          "count": 3
+        },
+        {
+          "key": "panel:GraphManager|.panel-cell:GraphManager|animationend|bubble|y",
+          "count": 3
+        },
+        {
+          "key": "panel:GraphManager|.panel-cell:GraphManager|scroll|bubble|y",
+          "count": 3
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|pointerdown|capture|onPointerDown",
+          "count": 2
+        },
+        {
+          "key": "document|document|selectionchange|bubble|onSelectionChange",
+          "count": 2
+        },
+        {
+          "key": "HTML.editorRoot|#wysiwyg|click|bubble|onClick",
+          "count": 2
+        }
+      ],
+      "duplicateObservers": [
+        {
+          "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":true,\"characterData\":true,\"subtree\":true,\"attributeFilter\":null}",
+          "count": 2
+        },
+        {
+          "key": "HTML.editorRoot@#wysiwyg:{\"childList\":true,\"attributes\":false,\"characterData\":false,\"subtree\":true,\"attributeFilter\":null}",
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "matrix": [
+    {
+      "configId": "bare-contenteditable",
+      "label": "Bare contenteditable",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "bare-nodevision-css",
+      "label": "Bare editable + Nodevision CSS",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "bare-editor-scaffold",
+      "label": "Bare editable in editor scaffold",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-cleaned",
+      "label": "HTML editor DOM after cleanup",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-diagnostics",
+      "label": "HTML editor minus diagnostics",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-selection",
+      "label": "HTML editor minus selection sync",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-text-wrapping",
+      "label": "HTML editor minus text wrapping",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-no-observers",
+      "label": "HTML editor minus extra observers",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "html-direct-full",
+      "label": "HTML editor direct full runtime",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-only",
+      "label": "Graphical editor only",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-empty-side-panel",
+      "label": "Graphical editor + empty side panel",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-layers-visible",
+      "label": "Graphical editor + Layers visible",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-layers-hidden",
+      "label": "Graphical editor + Layers hidden",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-graphmanager",
+      "label": "Graphical editor + GraphManager",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "graphical-layers-graphmanager",
+      "label": "Graphical editor + Layers + GraphManager",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "full-workspace",
+      "label": "Full representative workspace",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    },
+    {
+      "configId": "multi-panel-stress",
+      "label": "Multiple-panel/tab stress",
+      "cleanFps": 0,
+      "fragmentedFps": 0,
+      "cleanSecondRafP95": 0,
+      "fragmentedSecondRafP95": 0,
+      "cleanLongTaskMs": 0,
+      "fragmentedLongTaskMs": 0,
+      "fragmentedOverCleanSecondRaf": 0
+    }
+  ],
+  "lifecycle": {
+    "checkpoints": [],
+    "tabChurn": []
+  },
+  "lifecycleSummary": [],
+  "diagnosis": {
+    "fragmentedGraphicalOverBare": 0,
+    "fragmentedEmptySideOverDetached": 0,
+    "fragmentedLayersVisibleOverDetached": 0,
+    "fragmentedLayersHiddenOverDetached": 0,
+    "fragmentedWorkspaceOverGraphical": 0,
+    "fragmentedStressOverWorkspace": 0,
+    "lifecycleLatencyRatio": 0,
+    "listenerGrowthAfterLifecycle": 0,
+    "observerGrowthAfterLifecycle": 0,
+    "recommendation": "The dominant measured cost is still intrinsic editor/browser DOM cost; continue with DOM-fragment normalization experiments."
+  }
+}

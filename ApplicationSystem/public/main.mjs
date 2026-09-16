@@ -10,6 +10,7 @@ import { initStatusBar } from "./StatusBar.mjs";
 import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
 import { installPanelZoomShortcuts } from "./panels/panelZoomPan.mjs";
 import { installHyperlinkSelectionTracking } from "./ToolbarCallbacks/edit/hyperlinkSelection.mjs";
+import { installNodevisionMediaFallbackRuntime } from "./utils/mediaFallbackRuntime.mjs";
 import { createPerformanceOperation } from "./PerformanceDiagnostics.mjs";
 import { initializeFpsOverlayFromPreference } from "./FpsOverlay.mjs";
 
@@ -24,6 +25,7 @@ async function initNodevision() {
     initializeFpsOverlayFromPreference();
     perf.mark("toolbar");
     installHyperlinkSelectionTracking();
+    installNodevisionMediaFallbackRuntime(document);
     installPanelZoomShortcuts();
 
     const workspace = ensureWorkspace();

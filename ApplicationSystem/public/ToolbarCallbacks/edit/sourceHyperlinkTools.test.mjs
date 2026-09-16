@@ -17,7 +17,7 @@ assert.deepEqual(context.range, {
 const selected = findAnchorInSource(html, html.indexOf("<a"), html.indexOf("</a>"));
 assert.equal(selected.href, "docs/page.html");
 
-const php = '<?php echo "<a href=\\'next.php\\'>Next</a>"; ?>';
+const php = `<?php echo "<a href='next.php'>Next</a>"; ?>`;
 const phpContext = findAnchorInSource(php, php.indexOf("Next"), php.indexOf("Next"));
 assert.equal(phpContext.href, "next.php");
 

@@ -200,7 +200,8 @@ saveFile: async () => {
 
   // Check if we're in SVG editing mode first
   const svgEditor = document.getElementById("svg-editor");
-  if (svgEditor && window.currentSaveSVG && typeof window.currentSaveSVG === 'function') {
+  const modernSvgEditorActive = isSvgPath && window.SVGEditorContext?.kind === "svg" && typeof window.saveWYSIWYGFile === "function";
+  if (!modernSvgEditorActive && svgEditor && window.currentSaveSVG && typeof window.currentSaveSVG === 'function') {
     const editorPath = firstLegacySavePath(window.__nvSvgEditorActivePath);
     if (refuseLegacyMismatchedSave("SVG Editor", editorPath, filePath)) return;
     if (!isSvgPath) {
@@ -213,7 +214,7 @@ saveFile: async () => {
   }
 
   // Check for legacy SVG editing mode
-  if (svgEditor) {
+  if (!modernSvgEditorActive && svgEditor) {
     const editorPath = firstLegacySavePath(window.__nvSvgEditorActivePath);
     if (refuseLegacyMismatchedSave("SVG Editor", editorPath, filePath)) return;
     if (!isSvgPath) {
@@ -303,7 +304,7 @@ saveFile: async () => {
       window.__nvSvgEditorActivePath,
     );
     if (refuseLegacyMismatchedSave("HTML/WYSIWYG Editor", editorPath, filePath)) return;
-    if (isSvgPath && !document.getElementById("svg-editor")) {
+    if (isSvgPath && !document.getElementById("svg-editor") && !window.SVGEditorContext?.svgRoot) {
       console.error("Refusing to save HTML/WYSIWYG content into an SVG path.", {
         editorPath,
         savePath: filePath,

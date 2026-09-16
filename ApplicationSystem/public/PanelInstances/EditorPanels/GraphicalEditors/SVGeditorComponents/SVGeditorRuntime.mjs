@@ -11,13 +11,13 @@ import { ensureSvgEditorModeLayout } from "/panels/workspace.mjs";
 import {
   createSvgEl,
   toSvgPoint,
-  ensureSvgSizeAttrs,
   parsePoints,
   formatPoints,
   getAttrNumber,
   setAttrNumber,
   distancePointToSegment,
 } from "./svgDom.mjs";
+import { applyEditableSvgRootDefaults, cleanupSvgCloneForSave, prepareSvgRootForEditor } from "./SvgPreservation.mjs";
 import { fetchSvgText } from "./svgFetch.mjs";
 import { createBezierToolController } from "./BezierToolController.mjs";
 import { createPathNodeEditor } from "./PathNodeEditor.mjs";
@@ -35,6 +35,7 @@ import { createQuickMenuWidget } from "./QuickMenuWidget.mjs";
 import { applyEyedropperSample, createEyedropperIndicator, sampleSvgPaint } from "./EyedropperTool.mjs";
 import { createDrawingGuidesController } from "./DrawingGuides.mjs";
 import { createSymmetryOutputs, expandSymmetryClones } from "./SymmetryGenerator.mjs";
+import { cornerResizeScale } from "./SvgResizeGeometry.mjs";
 import { addClipPath, addMask, detachMaskOrClip, getReferencedSvgId, getSvgDefinitionByReference, invertMask, releaseClipPath, setMaskOrClipEnabled, useSelectedObjectAsClipPath, useSelectedObjectAsMask } from "./SvgMaskClipCommands.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -49,20 +50,6 @@ const SVG_TOOL_MODES = new Set(["select", "rotate", "line", "freehand", "bezier"
 const SVG_CANVAS_MIN_ZOOM = 0.1;
 const SVG_CANVAS_MAX_ZOOM = 8;
 const SVG_CANVAS_KEYBOARD_ZOOM_FACTOR = 1.1;
-
-function applyEditableSvgRootDefaults(root) {
-  if (!root) return root;
-  root.id = "svg-editor";
-  root.setAttribute("xmlns", SVG_NS);
-  ensureSvgSizeAttrs(root);
-  Object.assign(root.style, {
-    width: "100%",
-    height: "100%",
-    minHeight: "400px",
-    display: "block",
-  });
-  return root;
-}
 
 function createBlankSvgRoot() {
   const root = createSvgEl("svg", {
@@ -391,6 +378,7 @@ export async function renderEditor(filePath, container) {
   }
   svgRoot.replaceWith(parsedSvg.root);
   svgRoot = parsedSvg.root;
+  let rootRuntimeState = prepareSvgRootForEditor(svgRoot);
 
   const layersMgr = createElementLayers(svgRoot);
   let layersPanelHost = null;
@@ -4141,12 +4129,9 @@ export async function renderEditor(filePath, container) {
   function resizeCanvas(width, height) {
     const w = Math.max(1, Number.parseFloat(width) || 1);
     const h = Math.max(1, Number.parseFloat(height) || 1);
-    svgRoot.setAttribute("width", String(w));
-    svgRoot.setAttribute("height", String(h));
-    svgRoot.setAttribute("viewBox", `0 0 ${w} ${h}`);
-    setStatus(`Canvas resized to ${w}x${h}`);
-    window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
-    updateSvgRulers();
+    const current = getViewBox();
+    setViewBox({ x: current.x, y: current.y, width: w, height: h });
+    setStatus(`Canvas resized to x`);
     return { width: w, height: h };
   }
 
@@ -5341,46 +5326,11 @@ export async function renderEditor(filePath, container) {
       const sp = resizeState.multi
         ? p
         : clientToElementPoint(resizeState.space || svgRoot, e.clientX, e.clientY);
-      const minScaleMagnitude = 0.05;
-      const anchor = {
-        x: corner.includes("w") ? bbox.x + bbox.width : bbox.x,
-        y: corner.includes("n") ? bbox.y + bbox.height : bbox.y
-      };
-      const denomX = Math.max(1e-6, bbox.width);
-      const denomY = Math.max(1e-6, bbox.height);
-      const rawScaleX = corner.includes("w")
-        ? (anchor.x - sp.x) / denomX
-        : (sp.x - anchor.x) / denomX;
-      const rawScaleY = corner.includes("n")
-        ? (anchor.y - sp.y) / denomY
-        : (sp.y - anchor.y) / denomY;
-      let sx = rawScaleX;
-      let sy = rawScaleY;
       const element = resizeState.element || resizeState.items?.[0]?.element || null;
       const preserveAspect = resizeState.multi
         ? e.shiftKey
         : element?.tagName?.toLowerCase?.() === "image" ? !e.shiftKey : e.shiftKey;
-      if (preserveAspect) {
-        const cornerPoint = {
-          x: corner.includes("w") ? bbox.x : bbox.x + bbox.width,
-          y: corner.includes("n") ? bbox.y : bbox.y + bbox.height,
-        };
-        const c = { x: cornerPoint.x - anchor.x, y: cornerPoint.y - anchor.y };
-        const c2 = c.x * c.x + c.y * c.y;
-        if (c2 > 1e-12) {
-          const v = { x: sp.x - anchor.x, y: sp.y - anchor.y };
-          const s = (v.x * c.x + v.y * c.y) / c2;
-          sx = s;
-          sy = s;
-        }
-      }
-      const keepScaleOutsideDeadZone = (scale) => {
-        if (!Number.isFinite(scale)) return 1;
-        if (Math.abs(scale) >= minScaleMagnitude) return scale;
-        return scale < 0 ? -minScaleMagnitude : minScaleMagnitude;
-      };
-      sx = keepScaleOutsideDeadZone(sx);
-      sy = keepScaleOutsideDeadZone(sy);
+      const { anchor, sx, sy } = cornerResizeScale({ bbox, corner, point: sp, preserveAspect });
       if (resizeState.multi) {
         resizeState.items?.forEach((item) => {
           if (!item?.element) return;
@@ -5649,15 +5599,13 @@ export async function renderEditor(filePath, container) {
   if (!isCurrentRender()) return;
   window.__nvSvgEditorActivePath = filePath;
   window.__nvWysiwygActivePath = filePath;
+  let svgSnapshotDepth = 0;
+
   function serializeSvgForSave() {
     const clone = svgRoot.cloneNode(true);
-    clone.querySelectorAll(`[${SVG_UI_ATTR}]`).forEach((el) => el.remove());
-    clone.querySelectorAll("[data-selected]").forEach((el) => el.removeAttribute("data-selected"));
-    clone.querySelectorAll("[style]").forEach((el) => {
-      if (el.style?.filter === "drop-shadow(0 0 2px #ff2f2f)") {
-        el.style.filter = "";
-        if (!el.getAttribute("style")) el.removeAttribute("style");
-      }
+    cleanupSvgCloneForSave(clone, {
+      generatedRootId: Boolean(rootRuntimeState?.generatedRootId),
+      uiAttr: SVG_UI_ATTR,
     });
     return new XMLSerializer().serializeToString(clone);
   }
@@ -5682,6 +5630,7 @@ export async function renderEditor(filePath, container) {
     svgRoot.appendChild(overlayLayer);
 
     applyEditableSvgRootDefaults(svgRoot);
+    rootRuntimeState = prepareSvgRootForEditor(svgRoot);
     if (parsed.warning) setStatus(parsed.warning);
     drawingAssistSettings = setDrawingAssistSettings({
       ...getDrawingAssistSettings(window),
@@ -5720,45 +5669,57 @@ export async function renderEditor(filePath, container) {
   };
 
   function runSvgSnapshotOperation(label, operation) {
+    if (svgSnapshotDepth > 0) return operation?.();
+    svgSnapshotDepth += 1;
     const before = serializeSvgForSave();
-    const result = operation?.();
-    const after = serializeSvgForSave();
-    if (!result || before === after) return result;
-    history.pushCustom({
-      kind: label || "svg-operation",
-      undo: () => {
-        setSvgFromString(before);
-        return { label };
-      },
-      redo: () => {
-        setSvgFromString(after);
-        return { label };
-      },
-    });
-    markDocumentDirty(true);
-    refreshSelectionAfterMutation(label || "svg-operation");
-    return result;
+    try {
+      const result = operation?.();
+      const after = serializeSvgForSave();
+      if (!result || before === after) return result;
+      history.pushCustom({
+        kind: label || "svg-operation",
+        undo: () => {
+          setSvgFromString(before);
+          return { label };
+        },
+        redo: () => {
+          setSvgFromString(after);
+          return { label };
+        },
+      });
+      markDocumentDirty(true);
+      refreshSelectionAfterMutation(label || "svg-operation");
+      return result;
+    } finally {
+      svgSnapshotDepth -= 1;
+    }
   }
 
   async function runSvgSnapshotOperationAsync(label, operation) {
+    if (svgSnapshotDepth > 0) return await operation?.();
+    svgSnapshotDepth += 1;
     const before = serializeSvgForSave();
-    const result = await operation?.();
-    const after = serializeSvgForSave();
-    if (!result || before === after) return result;
-    history.pushCustom({
-      kind: label || "svg-operation",
-      undo: () => {
-        setSvgFromString(before);
-        return { label };
-      },
-      redo: () => {
-        setSvgFromString(after);
-        return { label };
-      },
-    });
-    markDocumentDirty(true);
-    refreshSelectionAfterMutation(label || "svg-operation");
-    return result;
+    try {
+      const result = await operation?.();
+      const after = serializeSvgForSave();
+      if (!result || before === after) return result;
+      history.pushCustom({
+        kind: label || "svg-operation",
+        undo: () => {
+          setSvgFromString(before);
+          return { label };
+        },
+        redo: () => {
+          setSvgFromString(after);
+          return { label };
+        },
+      });
+      markDocumentDirty(true);
+      refreshSelectionAfterMutation(label || "svg-operation");
+      return result;
+    } finally {
+      svgSnapshotDepth -= 1;
+    }
   }
 
   window.selectSVGElement = selectElement;
@@ -6005,24 +5966,35 @@ export async function renderEditor(filePath, container) {
         drawing: sketchController.isDrawing(),
       };
     },
-    applyCurrentStyleToSelection,
+    applyCurrentStyleToSelection() {
+      return runSvgSnapshotOperation("apply-style", () => applyCurrentStyleToSelection());
+    },
     setFillColor(value) {
-      styleState.fill = String(value || styleState.fill || "#80c0ff");
-      window.NodevisionState = window.NodevisionState || {};
-      window.NodevisionState.svgLastEditedPaint = "fill";
-      if (selectedElement) selectedElement.setAttribute("fill", styleState.fill);
+      return runSvgSnapshotOperation("set-fill-color", () => {
+        styleState.fill = String(value || styleState.fill || "#80c0ff");
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.svgLastEditedPaint = "fill";
+        if (selectedElement) selectedElement.setAttribute("fill", styleState.fill);
+        return true;
+      });
     },
     setStrokeColor(value) {
-      styleState.stroke = String(value || styleState.stroke || "#000000");
-      window.NodevisionState = window.NodevisionState || {};
-      window.NodevisionState.svgLastEditedPaint = "stroke";
-      if (selectedElement) selectedElement.setAttribute("stroke", styleState.stroke);
+      return runSvgSnapshotOperation("set-stroke-color", () => {
+        styleState.stroke = String(value || styleState.stroke || "#000000");
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.svgLastEditedPaint = "stroke";
+        if (selectedElement) selectedElement.setAttribute("stroke", styleState.stroke);
+        return true;
+      });
     },
     setStrokeWidth(value) {
-      const next = String(value || styleState.strokeWidth || "2").trim();
-      if (!next) return;
-      styleState.strokeWidth = next;
-      if (selectedElement) selectedElement.setAttribute("stroke-width", next);
+      return runSvgSnapshotOperation("set-stroke-width", () => {
+        const next = String(value || styleState.strokeWidth || "2").trim();
+        if (!next) return false;
+        styleState.strokeWidth = next;
+        if (selectedElement) selectedElement.setAttribute("stroke-width", next);
+        return true;
+      });
     },
     cropToSelection(padding = 8) {
       return cropToSelection(padding);

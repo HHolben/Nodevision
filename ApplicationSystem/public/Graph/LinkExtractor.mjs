@@ -34,21 +34,22 @@ export async function extractLinksFromFile(filePath, sourceNodeId) {
 // Extract links from HTML content
 function extractFromHTML(content, sourceNodeId) {
   const edges = [];
-  // Match href attributes
-  const hrefRegex = /href=["']([^"']+)["']/gi;
+  const attrRegex = new RegExp("\\b(href|src|data-src|data-nodevision-image-src|data-nodevision-citation-source|data-nodevision-font-src|data-nodevision-font-stylesheet|data-nodevision-circuit-src|data-nodevision-fallback-(\\d+))\\s*=\\s*[\"\\x27]([^\"\\x27]+)[\"\\x27]", "gi");
   let match;
 
-  while ((match = hrefRegex.exec(content)) !== null) {
-    const href = match[1];
-    const destination = normalizeLink(href, sourceNodeId);
-    if (destination) {
-      edges.push({
-        source: sourceNodeId,
-        destination,
-        type: 'link',
-        context: 'html-href'
-      });
-    }
+  while ((match = attrRegex.exec(content)) !== null) {
+    const attrName = String(match[1] || "").toLowerCase();
+    const destination = normalizeLink(match[3], sourceNodeId);
+    if (!destination) continue;
+    const isFallback = attrName.startsWith("data-nodevision-fallback-");
+    edges.push({
+      source: sourceNodeId,
+      destination,
+      type: "link",
+      context: isFallback ? "html-fallback" : "html-attribute",
+      referenceRole: isFallback ? "fallback" : "primary",
+      fallbackPriority: Number(match[2] || 0),
+    });
   }
 
   return edges;

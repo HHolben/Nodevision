@@ -4,6 +4,7 @@ import {
 } from "./referenceFallbacks.mjs";
 
 const fallbackStates = new WeakMap();
+const handledErrorEvents = new WeakSet();
 let installedOnDocument = false;
 
 function isFallbackMediaElement(element) {
@@ -12,7 +13,7 @@ function isFallbackMediaElement(element) {
 }
 
 function currentMediaSource(element) {
-    return element?.getAttribute?.("src") || "";
+    return element?.getAttribute?.("src") || element?.currentSrc || element?.src || "";
 }
 
 function candidateKey(candidates) {
@@ -21,26 +22,25 @@ function candidateKey(candidates) {
 
 export function applyMediaFallbackToElement(element) {
     if (!isFallbackMediaElement(element)) return false;
-    const primary = currentMediaSource(element);
-    const fallbacks = readFallbackReferencesFromElement(element);
-    const candidates = referenceCandidates(primary, fallbacks);
-    if (candidates.length < 2) return false;
-
-    const key = candidateKey(candidates);
     const current = currentMediaSource(element);
+    const fallbackKey = candidateKey(readFallbackReferencesFromElement(element));
     let state = fallbackStates.get(element);
-    if (!state || state.key !== key) {
+
+    if (!state || state.fallbackKey !== fallbackKey || !state.candidates.includes(current)) {
+        const candidates = referenceCandidates(current, readFallbackReferencesFromElement(element));
         state = {
-            key,
+            fallbackKey,
+            candidates,
             tried: new Set([current]),
             index: Math.max(0, candidates.indexOf(current))
         };
         fallbackStates.set(element, state);
     }
 
+    if (state.candidates.length < 2) return false;
     state.tried.add(current);
-    for (let index = state.index + 1; index < candidates.length; index += 1) {
-        const candidate = candidates[index];
+    for (let index = state.index + 1; index < state.candidates.length; index += 1) {
+        const candidate = state.candidates[index];
         if (!candidate || state.tried.has(candidate)) continue;
         state.index = index;
         state.tried.add(candidate);
@@ -54,12 +54,16 @@ export function applyMediaFallbackToElement(element) {
     return false;
 }
 
-export function installNodevisionMediaFallbackRuntime(root = document) {
-    const target = root?.addEventListener ? root : document;
-    if (target === document && installedOnDocument) return;
-    if (target === document) installedOnDocument = true;
+export function installNodevisionMediaFallbackRuntime(root = globalThis.document) {
+    const documentTarget = globalThis.document;
+    const target = root?.addEventListener ? root : documentTarget;
+    if (!target?.addEventListener) return false;
+    if (target === documentTarget && installedOnDocument) return false;
+    if (target === documentTarget) installedOnDocument = true;
 
     target.addEventListener("error", (event) => {
+        if (handledErrorEvents.has(event)) return;
+        handledErrorEvents.add(event);
         applyMediaFallbackToElement(event.target);
     }, true);
 
@@ -69,4 +73,5 @@ export function installNodevisionMediaFallbackRuntime(root = document) {
             fallbackStates.delete(element);
         }
     }, true);
+    return true;
 }

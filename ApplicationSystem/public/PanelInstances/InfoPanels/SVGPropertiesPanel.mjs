@@ -196,31 +196,36 @@ function applyStyleToSelection(ctx, { fill, stroke, strokeWidth, opacity }) {
   const widthValue = strokeWidth === undefined ? undefined : String(strokeWidth ?? "").trim();
   const opacityValue = opacity === undefined ? undefined : String(opacity ?? "").trim();
 
-  if (fillValue !== undefined) {
-    if (!fillValue) selected.forEach((el) => el?.removeAttribute?.("fill"));
-    else ctx.setFillColor?.(fillValue);
-  }
-  if (strokeValue !== undefined) {
-    if (!strokeValue) selected.forEach((el) => el?.removeAttribute?.("stroke"));
-    else ctx.setStrokeColor?.(strokeValue);
-  }
-  if (widthValue !== undefined) {
-    if (!widthValue) selected.forEach((el) => el?.removeAttribute?.("stroke-width"));
-    else ctx.setStrokeWidth?.(widthValue);
-  }
+  const apply = () => {
+    if (fillValue !== undefined) {
+      if (!fillValue) selected.forEach((el) => el?.removeAttribute?.("fill"));
+      else ctx.setFillColor?.(fillValue);
+    }
+    if (strokeValue !== undefined) {
+      if (!strokeValue) selected.forEach((el) => el?.removeAttribute?.("stroke"));
+      else ctx.setStrokeColor?.(strokeValue);
+    }
+    if (widthValue !== undefined) {
+      if (!widthValue) selected.forEach((el) => el?.removeAttribute?.("stroke-width"));
+      else ctx.setStrokeWidth?.(widthValue);
+    }
 
-  if (selected.length > 1) {
-    ctx.applyCurrentStyleToSelection?.();
-  }
+    if (selected.length > 1) {
+      ctx.applyCurrentStyleToSelection?.();
+    }
 
-  if (opacityValue !== undefined) {
-    selected.forEach((el) => {
-      if (!el) return;
-      if (!opacityValue) el.removeAttribute("opacity");
-      else el.setAttribute("opacity", opacityValue);
-    });
-  }
+    if (opacityValue !== undefined) {
+      selected.forEach((el) => {
+        if (!el) return;
+        if (!opacityValue) el.removeAttribute("opacity");
+        else el.setAttribute("opacity", opacityValue);
+      });
+    }
+    return true;
+  };
 
+  if (ctx.recordSvgSnapshot) ctx.recordSvgSnapshot("panel-style", apply);
+  else apply();
   ctx.notifyElementChanged?.("panel-edit");
 }
 
