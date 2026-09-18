@@ -1,6 +1,12 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/SVGPropertiesPanel.mjs
 // This module renders an SVG properties panel for the active SVG editor selection. This module edits style and geometry attributes so users can make precise changes through Nodevision panels. This module listens to editor selection events so the UI stays synchronized with canvas interactions.
 
+import { svgClickTraceMark } from "../../SvgClickFeedbackTrace.mjs";
+
+function tracePropertiesMark(label, detail = {}) {
+  if (window.NodevisionSvgClickFeedbackTrace) svgClickTraceMark(label, detail);
+}
+
 function safeNumber(value, fallback = 0) {
   const n = Number.parseFloat(value);
   return Number.isFinite(n) ? n : fallback;
@@ -168,6 +174,30 @@ function makeInput(type, placeholder = "") {
     boxSizing: "border-box",
   });
   return input;
+}
+
+function disposePropertiesPanel(panel) {
+  const cleanup = panel?.__nvCleanupPropertiesPanel;
+  if (typeof cleanup !== "function") return;
+  try {
+    cleanup();
+  } catch (err) {
+    console.warn("SVG Properties panel cleanup failed:", err);
+  }
+}
+
+function installPropertiesPanelCleanup(panel, cleanup) {
+  let cleaned = false;
+  const run = () => {
+    if (cleaned) return;
+    cleaned = true;
+    if (panel?.__nvCleanupPropertiesPanel === run) panel.__nvCleanupPropertiesPanel = null;
+    if (panel?.cleanup === run) panel.cleanup = null;
+    cleanup?.();
+  };
+  panel.__nvCleanupPropertiesPanel = run;
+  panel.cleanup = run;
+  return run;
 }
 
 function currentSelection(ctx) {
@@ -505,13 +535,14 @@ function attachExternalPropertiesPanel(panel, context, instanceVars = {}) {
     host.appendChild(message);
   }
 
-  panel.__nvCleanupPropertiesPanel = () => {
+  return installPropertiesPanelCleanup(panel, () => {
     if (typeof teardown === "function") teardown();
-  };
+  });
 }
 
 export async function setupPanel(panel, instanceVars = {}) {
   if (!panel) throw new Error("Panel container required.");
+  disposePropertiesPanel(panel);
   panel.innerHTML = "";
   Object.assign(panel.style, {
     display: "flex",
@@ -522,16 +553,16 @@ export async function setupPanel(panel, instanceVars = {}) {
 
   if (shouldUseKMLProperties(instanceVars)) {
     if (window.KMLPropertiesContext?.attachHost) {
-      attachExternalPropertiesPanel(panel, window.KMLPropertiesContext, instanceVars);
-      return;
+      return attachExternalPropertiesPanel(panel, window.KMLPropertiesContext, instanceVars);
     }
     const message = document.createElement("div");
     message.textContent = "Open a KML file to edit feature properties.";
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);
-    window.addEventListener("nv-kml-context-ready", () => setupPanel(panel, instanceVars), { once: true });
-    return;
+    const abort = new AbortController();
+    window.addEventListener("nv-kml-context-ready", () => setupPanel(panel, instanceVars), { once: true, signal: abort.signal });
+    return installPropertiesPanelCleanup(panel, () => abort.abort());
   }
 
   const header = document.createElement("div");
@@ -550,8 +581,9 @@ export async function setupPanel(panel, instanceVars = {}) {
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);
-    window.addEventListener("nv-svg-editor-context-ready", () => setupPanel(panel, instanceVars), { once: true });
-    return;
+    const abort = new AbortController();
+    window.addEventListener("nv-svg-editor-context-ready", () => setupPanel(panel, instanceVars), { once: true, signal: abort.signal });
+    return installPropertiesPanelCleanup(panel, () => abort.abort());
   }
 
   const summary = document.createElement("div");
@@ -809,20 +841,30 @@ export async function setupPanel(panel, instanceVars = {}) {
     applyFromInputs();
   });
 
-  const onSelection = () => syncFromSelection();
+  const onSelection = () => {
+    tracePropertiesMark("properties:selection-changed:start", { panelConnected: Boolean(panel.isConnected) });
+    syncFromSelection();
+    tracePropertiesMark("properties:selection-changed:end", { panelConnected: Boolean(panel.isConnected) });
+  };
   const onMutation = (event) => {
     if (event?.detail?.reason === "panel-edit") return;
+    tracePropertiesMark("properties:selection-mutated:start", { panelConnected: Boolean(panel.isConnected), reason: event?.detail?.reason || null });
     syncFromSelection();
+    tracePropertiesMark("properties:selection-mutated:end", { panelConnected: Boolean(panel.isConnected), reason: event?.detail?.reason || null });
   };
   const abort = new AbortController();
   window.addEventListener("nv-svg-editor-selection-changed", onSelection, { signal: abort.signal });
   window.addEventListener("nv-svg-editor-selection-mutated", onMutation, { signal: abort.signal });
   const disconnectObserver = new MutationObserver(() => {
     if (panel.isConnected) return;
+    cleanup();
+  });
+  const cleanup = installPropertiesPanelCleanup(panel, () => {
     abort.abort();
     disconnectObserver.disconnect();
   });
   disconnectObserver.observe(document.body, { childList: true, subtree: true });
 
   syncFromSelection();
+  return cleanup;
 }

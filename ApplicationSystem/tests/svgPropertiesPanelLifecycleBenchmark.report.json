@@ -1,0 +1,413 @@
+{
+  "generatedAt": "2026-09-16T13:34:25.454Z",
+  "note": "Synthetic benchmark. Baseline uses git HEAD version of SVGPropertiesPanel.mjs copied to a temporary public module; current uses the working-tree module.",
+  "configuration": {
+    "cycles": [
+      0,
+      1,
+      5,
+      20,
+      50
+    ],
+    "expectFixed": true
+  },
+  "environment": {
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97",
+    "node": "24.15.0",
+    "v8": "14.8.178.14-electron.0",
+    "platform": "linux",
+    "release": "6.19.10-300.fc44.x86_64",
+    "arch": "x64",
+    "cpus": 8,
+    "totalMemoryBytes": 16468287488
+  },
+  "suites": [
+    {
+      "label": "baseline",
+      "modulePath": "/__svg-properties-panel-baseline.mjs",
+      "checkpoints": [
+        {
+          "label": "baseline",
+          "cycles": 0,
+          "listenerRegistrations": 0,
+          "listenerRemovals": 0,
+          "listenerTypes": {},
+          "listenerTargets": {},
+          "callbackTypes": {},
+          "propertiesRefreshCallbacks": 0,
+          "mutationObserversCreated": 0,
+          "mutationObserversDisconnected": 0,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 32.799999999813735
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 0
+          },
+          "obsoletePanelCallbacks": 0,
+          "currentPanelCorrect": false,
+          "cleanupReturned": false,
+          "cleanupIdempotent": false,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 0,
+          "removedPanelCallbacks": 0
+        },
+        {
+          "label": "baseline",
+          "cycles": 1,
+          "listenerRegistrations": 4,
+          "listenerRemovals": 4,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 2,
+            "nv-svg-editor-selection-mutated": 2
+          },
+          "listenerTargets": {
+            "window": 4
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 1,
+            "nv-svg-editor-selection-mutated": 4
+          },
+          "propertiesRefreshCallbacks": 5,
+          "mutationObserversCreated": 2,
+          "mutationObserversDisconnected": 2,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 30.299999999813735,
+            "nv-svg-editor-selection-mutated:geometry": 33.30000000074506,
+            "nv-svg-editor-selection-mutated:style": 33.5
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 1,
+            "nv-svg-editor-selection-mutated:geometry": 1,
+            "nv-svg-editor-selection-mutated:style": 1
+          },
+          "obsoletePanelCallbacks": 1,
+          "currentPanelCorrect": true,
+          "cleanupReturned": false,
+          "cleanupIdempotent": false,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 5.599999999627471,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        },
+        {
+          "label": "baseline",
+          "cycles": 5,
+          "listenerRegistrations": 12,
+          "listenerRemovals": 12,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 6,
+            "nv-svg-editor-selection-mutated": 6
+          },
+          "listenerTargets": {
+            "window": 12
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 5,
+            "nv-svg-editor-selection-mutated": 16
+          },
+          "propertiesRefreshCallbacks": 21,
+          "mutationObserversCreated": 6,
+          "mutationObserversDisconnected": 6,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 33.299999999813735,
+            "nv-svg-editor-selection-mutated:geometry": 33.200000000186265,
+            "nv-svg-editor-selection-mutated:style": 33.39999999944121
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 5,
+            "nv-svg-editor-selection-mutated:geometry": 5,
+            "nv-svg-editor-selection-mutated:style": 5
+          },
+          "obsoletePanelCallbacks": 5,
+          "currentPanelCorrect": true,
+          "cleanupReturned": false,
+          "cleanupIdempotent": false,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 8.900000000372529,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        },
+        {
+          "label": "baseline",
+          "cycles": 20,
+          "listenerRegistrations": 42,
+          "listenerRemovals": 42,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 21,
+            "nv-svg-editor-selection-mutated": 21
+          },
+          "listenerTargets": {
+            "window": 42
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 20,
+            "nv-svg-editor-selection-mutated": 61
+          },
+          "propertiesRefreshCallbacks": 81,
+          "mutationObserversCreated": 21,
+          "mutationObserversDisconnected": 21,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 22,
+            "nv-svg-editor-selection-mutated:geometry": 33.59999999962747,
+            "nv-svg-editor-selection-mutated:style": 33.10000000055879
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 20,
+            "nv-svg-editor-selection-mutated:geometry": 20,
+            "nv-svg-editor-selection-mutated:style": 20
+          },
+          "obsoletePanelCallbacks": 20,
+          "currentPanelCorrect": true,
+          "cleanupReturned": false,
+          "cleanupIdempotent": false,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 23.799999999813735,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        },
+        {
+          "label": "baseline",
+          "cycles": 50,
+          "listenerRegistrations": 102,
+          "listenerRemovals": 102,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 51,
+            "nv-svg-editor-selection-mutated": 51
+          },
+          "listenerTargets": {
+            "window": 102
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 50,
+            "nv-svg-editor-selection-mutated": 151
+          },
+          "propertiesRefreshCallbacks": 201,
+          "mutationObserversCreated": 51,
+          "mutationObserversDisconnected": 51,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 33.40000000037253,
+            "nv-svg-editor-selection-mutated:geometry": 33.40000000037253,
+            "nv-svg-editor-selection-mutated:style": 33.200000000186265
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 50,
+            "nv-svg-editor-selection-mutated:geometry": 50,
+            "nv-svg-editor-selection-mutated:style": 50
+          },
+          "obsoletePanelCallbacks": 50,
+          "currentPanelCorrect": true,
+          "cleanupReturned": false,
+          "cleanupIdempotent": false,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 60.200000000186265,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        }
+      ]
+    },
+    {
+      "label": "current",
+      "modulePath": "/PanelInstances/InfoPanels/SVGPropertiesPanel.mjs",
+      "checkpoints": [
+        {
+          "label": "current",
+          "cycles": 0,
+          "listenerRegistrations": 0,
+          "listenerRemovals": 0,
+          "listenerTypes": {},
+          "listenerTargets": {},
+          "callbackTypes": {},
+          "propertiesRefreshCallbacks": 0,
+          "mutationObserversCreated": 0,
+          "mutationObserversDisconnected": 0,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 33.30000000074506
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 0
+          },
+          "obsoletePanelCallbacks": 0,
+          "currentPanelCorrect": false,
+          "cleanupReturned": false,
+          "cleanupIdempotent": false,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 0,
+          "removedPanelCallbacks": 0
+        },
+        {
+          "label": "current",
+          "cycles": 1,
+          "listenerRegistrations": 4,
+          "listenerRemovals": 4,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 2,
+            "nv-svg-editor-selection-mutated": 2
+          },
+          "listenerTargets": {
+            "window": 4
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 1,
+            "nv-svg-editor-selection-mutated": 3
+          },
+          "propertiesRefreshCallbacks": 4,
+          "mutationObserversCreated": 2,
+          "mutationObserversDisconnected": 2,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 33,
+            "nv-svg-editor-selection-mutated:geometry": 33.40000000037253,
+            "nv-svg-editor-selection-mutated:style": 33.200000000186265
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 1,
+            "nv-svg-editor-selection-mutated:geometry": 1,
+            "nv-svg-editor-selection-mutated:style": 1
+          },
+          "obsoletePanelCallbacks": 0,
+          "currentPanelCorrect": true,
+          "cleanupReturned": true,
+          "cleanupIdempotent": true,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 5.3999999994412065,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        },
+        {
+          "label": "current",
+          "cycles": 5,
+          "listenerRegistrations": 12,
+          "listenerRemovals": 12,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 6,
+            "nv-svg-editor-selection-mutated": 6
+          },
+          "listenerTargets": {
+            "window": 12
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 1,
+            "nv-svg-editor-selection-mutated": 3
+          },
+          "propertiesRefreshCallbacks": 4,
+          "mutationObserversCreated": 6,
+          "mutationObserversDisconnected": 6,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 33.5,
+            "nv-svg-editor-selection-mutated:geometry": 32.89999999944121,
+            "nv-svg-editor-selection-mutated:style": 33.799999999813735
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 1,
+            "nv-svg-editor-selection-mutated:geometry": 1,
+            "nv-svg-editor-selection-mutated:style": 1
+          },
+          "obsoletePanelCallbacks": 0,
+          "currentPanelCorrect": true,
+          "cleanupReturned": true,
+          "cleanupIdempotent": true,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 8.799999999813735,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        },
+        {
+          "label": "current",
+          "cycles": 20,
+          "listenerRegistrations": 42,
+          "listenerRemovals": 42,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 21,
+            "nv-svg-editor-selection-mutated": 21
+          },
+          "listenerTargets": {
+            "window": 42
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 1,
+            "nv-svg-editor-selection-mutated": 3
+          },
+          "propertiesRefreshCallbacks": 4,
+          "mutationObserversCreated": 21,
+          "mutationObserversDisconnected": 21,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 23.90000000037253,
+            "nv-svg-editor-selection-mutated:geometry": 33.5,
+            "nv-svg-editor-selection-mutated:style": 33.10000000055879
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 1,
+            "nv-svg-editor-selection-mutated:geometry": 1,
+            "nv-svg-editor-selection-mutated:style": 1
+          },
+          "obsoletePanelCallbacks": 0,
+          "currentPanelCorrect": true,
+          "cleanupReturned": true,
+          "cleanupIdempotent": true,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 24.199999999254942,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        },
+        {
+          "label": "current",
+          "cycles": 50,
+          "listenerRegistrations": 102,
+          "listenerRemovals": 102,
+          "listenerTypes": {
+            "nv-svg-editor-selection-changed": 51,
+            "nv-svg-editor-selection-mutated": 51
+          },
+          "listenerTargets": {
+            "window": 102
+          },
+          "callbackTypes": {
+            "nv-svg-editor-selection-changed": 1,
+            "nv-svg-editor-selection-mutated": 3
+          },
+          "propertiesRefreshCallbacks": 4,
+          "mutationObserversCreated": 51,
+          "mutationObserversDisconnected": 51,
+          "eventDurations": {
+            "nv-svg-editor-selection-changed:selection": 29.5,
+            "nv-svg-editor-selection-mutated:geometry": 37.200000000186265,
+            "nv-svg-editor-selection-mutated:style": 33.10000000055879
+          },
+          "eventCallbacks": {
+            "nv-svg-editor-selection-changed:selection": 1,
+            "nv-svg-editor-selection-mutated:geometry": 1,
+            "nv-svg-editor-selection-mutated:style": 1
+          },
+          "obsoletePanelCallbacks": 0,
+          "currentPanelCorrect": true,
+          "cleanupReturned": true,
+          "cleanupIdempotent": true,
+          "activeListeners": 0,
+          "activeMutationObservers": 0,
+          "retainedPanelInstances": 0,
+          "setupDurationMs": 51.69999999925494,
+          "removedPanelCallbacks": 0,
+          "lastCallbackTarget": "window"
+        }
+      ]
+    }
+  ]
+}

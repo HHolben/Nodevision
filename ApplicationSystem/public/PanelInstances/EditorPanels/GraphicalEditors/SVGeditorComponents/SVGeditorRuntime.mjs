@@ -2,6 +2,7 @@
 // This module implements the SVG editor runtime, manages pointer interactions for selecting and drawing SVG elements, and exposes a stable window context for Nodevision tool callbacks and panels.
 
 import { clearEditorContext, getEditingContext, saveEditingContext, setActiveTool, setEditorContext, setSelectionContext } from "../../../../EditorAttentionState.mjs";
+import { installSvgClickTraceOnSvgRoot, svgClickTraceMark } from "../../../../SvgClickFeedbackTrace.mjs";
 
 import { createElementLayers } from "../ElementLayers.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
@@ -575,9 +576,15 @@ export async function renderEditor(filePath, container) {
   lineToolAngleLabel.style.pointerEvents = "none";
   lineToolAngleLabel.style.mixBlendMode = "normal";
 
+  const lineToolVertexMarkerLayer = createSvgEl("g", {
+    [SVG_UI_ATTR]: "line-tool-vertex-markers",
+  });
+  lineToolVertexMarkerLayer.style.setProperty("pointer-events", "none", "important");
+
   overlayLayer.appendChild(lineToolAngleArc);
   overlayLayer.appendChild(lineToolPreviewLine);
   overlayLayer.appendChild(lineToolPreviewEnd);
+  overlayLayer.appendChild(lineToolVertexMarkerLayer);
   overlayLayer.appendChild(lineToolLengthLabel);
   overlayLayer.appendChild(lineToolAngleLabel);
 
@@ -718,7 +725,74 @@ export async function renderEditor(filePath, container) {
     angleInputBuffer: "",
     angleUnit: "deg",
     grab: null,
+    snapPointsRoot: null,
+    vertexMarkers: [],
   };
+
+  function recordLineProbe(label, detail = {}) {
+    if (window.NodevisionSvgClickFeedbackTrace) svgClickTraceMark(label, detail);
+    const probe = window.__nvSvgLinePointerProbe;
+    if (!Array.isArray(probe)) return;
+    try {
+      probe.push({ label, time: performance.now(), ...detail });
+    } catch {
+      // ignore probe failures
+    }
+  }
+
+  function clearLineToolSnapCache() {
+    lineToolState.snapPointsRoot = null;
+  }
+
+  function addLineToolSnapPoint(rootPoint) {
+    if (!Array.isArray(lineToolState.snapPointsRoot) || !rootPoint) return;
+    const x = Number(rootPoint.x);
+    const y = Number(rootPoint.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    lineToolState.snapPointsRoot.push({ x, y });
+  }
+
+  function clearLineToolVertexMarkers() {
+    lineToolState.vertexMarkers?.forEach((marker) => {
+      try {
+        marker.remove();
+      } catch {
+        // ignore stale overlay cleanup
+      }
+    });
+    lineToolState.vertexMarkers = [];
+    lineToolVertexMarkerLayer.replaceChildren();
+  }
+
+  function addLineToolVertexMarker(rootPoint) {
+    if (!rootPoint) return null;
+    const x = Number(rootPoint.x);
+    const y = Number(rootPoint.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const svgUnitsPerCssPx = pointerToleranceInSvgUnits(1);
+    const r = Math.max(2.75, 4.75 * svgUnitsPerCssPx);
+    const strokeWidth = Math.max(1, 1.5 * svgUnitsPerCssPx);
+    const marker = createSvgEl("circle", {
+      [SVG_UI_ATTR]: "line-tool-vertex-marker",
+      cx: String(x),
+      cy: String(y),
+      r: String(r),
+      fill: "#2f80ff",
+      stroke: "#ffffff",
+      "stroke-width": String(strokeWidth),
+    });
+    marker.style.setProperty("pointer-events", "none", "important");
+    marker.style.setProperty("fill", "#2f80ff", "important");
+    marker.style.setProperty("stroke", "#ffffff", "important");
+    marker.style.setProperty("stroke-width", String(strokeWidth), "important");
+    marker.style.setProperty("display", "inline", "important");
+    marker.style.setProperty("visibility", "visible", "important");
+    marker.style.setProperty("opacity", "1", "important");
+    lineToolVertexMarkerLayer.appendChild(marker);
+    lineToolState.vertexMarkers.push(marker);
+    recordLineProbe("line:vertex-marker:inserted", { markerCount: lineToolState.vertexMarkers.length });
+    return marker;
+  }
 
   function hideLineToolOverlays() {
     lineToolPreviewLine.setAttribute("display", "none");
@@ -755,6 +829,8 @@ export async function renderEditor(filePath, container) {
     lineToolState.axisDistanceBuffer = "";
     lineToolState.angleInputBuffer = "";
     lineToolState.grab = null;
+    clearLineToolSnapCache();
+    clearLineToolVertexMarkers();
     hideLineToolOverlays();
   }
 
@@ -810,6 +886,8 @@ export async function renderEditor(filePath, container) {
     lineToolState.axisDistanceBuffer = "";
     lineToolState.angleInputBuffer = "";
     lineToolState.grab = null;
+    clearLineToolSnapCache();
+    clearLineToolVertexMarkers();
     hideLineToolOverlays();
     setStatus("Line tool finished");
     return true;
@@ -1070,7 +1148,7 @@ export async function renderEditor(filePath, container) {
     let next = rawPoint;
     if (event?.shiftKey && lineToolState.startRoot) {
       const tol = pointerToleranceInSvgUnits(18);
-      const snapped = findNearestSnapPointInRoot(rawPoint, tol);
+      const snapped = findNearestSnapPointInRoot(rawPoint, tol, { snapCache: "line-tool" });
       next = snapped || snapAngleEndpointInRoot(lineToolState.startRoot, rawPoint, Math.PI / 12);
     }
     next = applyLineToolConstraint(next);
@@ -1086,9 +1164,17 @@ export async function renderEditor(filePath, container) {
   }
 
   function beginLineToolAt(rootPoint, layer = null) {
+    recordLineProbe("beginLineToolAt:start");
     const targetLayer = layer || lineToolState.layer || getActiveLayer() || svgRoot;
+    recordLineProbe("beginLineToolAt:after-target-layer", { layerTag: targetLayer?.tagName || null });
     const spacePoint = rootPointToElementPoint(targetLayer, rootPoint);
+    recordLineProbe("beginLineToolAt:after-rootPointToElementPoint", { x: spacePoint.x, y: spacePoint.y });
+    clearLineToolSnapCache();
+    recordLineProbe("beginLineToolAt:after-clear-snap-cache");
+    clearLineToolVertexMarkers();
+    recordLineProbe("beginLineToolAt:after-clear-markers");
     clearSelection();
+    recordLineProbe("beginLineToolAt:after-clear-selection");
     lineToolState.active = true;
     lineToolState.layer = targetLayer;
     lineToolState.startRoot = rootPoint;
@@ -1098,16 +1184,28 @@ export async function renderEditor(filePath, container) {
     lineToolState.pointsSpace = [[spacePoint.x, spacePoint.y]];
     lineToolState.placedLines = [];
     lineToolState.cursorRoot = rootPoint;
+    recordLineProbe("beginLineToolAt:after-state");
+    addLineToolVertexMarker(rootPoint);
+    recordLineProbe("beginLineToolAt:after-add-marker");
     updateLineToolPreview(rootPoint);
+    recordLineProbe("beginLineToolAt:after-update-preview");
     setStatus("Line tool: click next point, X/Y/Z lock axis, type distance, Enter finishes, Esc cancels");
     return true;
   }
 
   function placeLineToolVertex(rootPoint, layer = null) {
+    recordLineProbe("placeLineToolVertex:start", { active: Boolean(lineToolState.active) });
     const targetLayer = layer || lineToolState.layer || getActiveLayer() || svgRoot;
-    if (!lineToolState.active) return beginLineToolAt(rootPoint, targetLayer);
+    recordLineProbe("placeLineToolVertex:after-target-layer", { layerTag: targetLayer?.tagName || null });
+    if (!lineToolState.active) {
+      recordLineProbe("placeLineToolVertex:before-begin");
+      const began = beginLineToolAt(rootPoint, targetLayer);
+      recordLineProbe("placeLineToolVertex:after-begin");
+      return began;
+    }
     const spacePoint = rootPointToElementPoint(targetLayer, rootPoint);
     if (!lineToolState.startSpace) return false;
+    const segmentStartRoot = lineToolState.startRoot ? { ...lineToolState.startRoot } : null;
     const dx = spacePoint.x - lineToolState.startSpace.x;
     const dy = spacePoint.y - lineToolState.startSpace.y;
     const segLen = Math.hypot(dx, dy);
@@ -1136,6 +1234,9 @@ export async function renderEditor(filePath, container) {
       lineToolState.constraint = null;
       lineToolState.axisDistanceBuffer = "";
       lineToolState.angleInputBuffer = "";
+      addLineToolSnapPoint(segmentStartRoot);
+      addLineToolSnapPoint(rootPoint);
+      addLineToolVertexMarker(rootPoint);
       updateLineToolPreview(rootPoint);
       setStatus("Line vertex placed");
     }
@@ -2107,66 +2208,88 @@ export async function renderEditor(filePath, container) {
     const tol = Number.isFinite(tolerance) ? Math.max(0, tolerance) : 0;
     if (!tol) return null;
     const ignorePoints = Array.isArray(options.ignorePoints) ? options.ignorePoints : [];
+    const useLineToolSnapCache = options.snapCache === "line-tool" && !options.ignoreElement;
+
+    const collectSnapPoints = () => {
+      const points = [];
+      const addPoint = (rootPt) => {
+        if (!rootPt) return;
+        const x = Number(rootPt.x);
+        const y = Number(rootPt.y);
+        if (Number.isFinite(x) && Number.isFinite(y)) points.push({ x, y });
+      };
+      const els = getSelectableElements();
+      for (const el of els) {
+        if (!el) continue;
+        if (options.ignoreElement && el === options.ignoreElement) continue;
+        const tag = el.tagName.toLowerCase();
+
+        if (tag === "line") {
+          const x1 = getAttrNumber(el, "x1", 0);
+          const y1 = getAttrNumber(el, "y1", 0);
+          const x2 = getAttrNumber(el, "x2", 0);
+          const y2 = getAttrNumber(el, "y2", 0);
+          addPoint(elementPointToRootPoint(el, x1, y1));
+          addPoint(elementPointToRootPoint(el, x2, y2));
+          continue;
+        }
+
+        if (tag === "polygon" || tag === "polyline") {
+          const pts = parsePoints(el.getAttribute("points") || "");
+          if (pts.length > 2000) continue;
+          for (const [x, y] of pts) addPoint(elementPointToRootPoint(el, x, y));
+          continue;
+        }
+
+        if (tag === "rect" || tag === "image" || tag === "use" || tag === "foreignobject") {
+          const x = getAttrNumber(el, "x", 0);
+          const y = getAttrNumber(el, "y", 0);
+          const w = getAttrNumber(el, "width", 0);
+          const h = getAttrNumber(el, "height", 0);
+          addPoint(elementPointToRootPoint(el, x, y));
+          addPoint(elementPointToRootPoint(el, x + w, y));
+          addPoint(elementPointToRootPoint(el, x, y + h));
+          addPoint(elementPointToRootPoint(el, x + w, y + h));
+          continue;
+        }
+
+        if (tag === "circle" || tag === "ellipse") {
+          const cx = getAttrNumber(el, "cx", 0);
+          const cy = getAttrNumber(el, "cy", 0);
+          addPoint(elementPointToRootPoint(el, cx, cy));
+        }
+      }
+      return points;
+    };
+
+    let snapPoints = useLineToolSnapCache ? lineToolState.snapPointsRoot : null;
+    if (!Array.isArray(snapPoints)) {
+      snapPoints = collectSnapPoints();
+      if (useLineToolSnapCache) lineToolState.snapPointsRoot = snapPoints;
+    }
 
     const tol2 = tol * tol;
     let best = null;
     let bestD2 = tol2 + 1e-12;
-    const els = getSelectableElements();
-    for (const el of els) {
-      if (!el) continue;
-      if (options.ignoreElement && el === options.ignoreElement) continue;
-      const tag = el.tagName.toLowerCase();
-
-      const considerPoint = (rootPt) => {
-        if (!rootPt) return;
-        for (const ip of ignorePoints) {
-          if (!ip) continue;
-          const ddx = rootPt.x - ip.x;
-          const ddy = rootPt.y - ip.y;
-          if ((ddx * ddx + ddy * ddy) <= 1e-12) return;
+    for (const rootPt of snapPoints) {
+      if (!rootPt) continue;
+      let ignored = false;
+      for (const ip of ignorePoints) {
+        if (!ip) continue;
+        const ddx = rootPt.x - ip.x;
+        const ddy = rootPt.y - ip.y;
+        if ((ddx * ddx + ddy * ddy) <= 1e-12) {
+          ignored = true;
+          break;
         }
-        const dx = rootPt.x - targetRootPoint.x;
-        const dy = rootPt.y - targetRootPoint.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 <= tol2 && d2 < bestD2) {
-          bestD2 = d2;
-          best = rootPt;
-        }
-      };
-
-      if (tag === "line") {
-        const x1 = getAttrNumber(el, "x1", 0);
-        const y1 = getAttrNumber(el, "y1", 0);
-        const x2 = getAttrNumber(el, "x2", 0);
-        const y2 = getAttrNumber(el, "y2", 0);
-        considerPoint(elementPointToRootPoint(el, x1, y1));
-        considerPoint(elementPointToRootPoint(el, x2, y2));
-        continue;
       }
-
-      if (tag === "polygon" || tag === "polyline") {
-        const pts = parsePoints(el.getAttribute("points") || "");
-        if (pts.length > 2000) continue;
-        for (const [x, y] of pts) considerPoint(elementPointToRootPoint(el, x, y));
-        continue;
-      }
-
-      if (tag === "rect" || tag === "image" || tag === "use" || tag === "foreignobject") {
-        const x = getAttrNumber(el, "x", 0);
-        const y = getAttrNumber(el, "y", 0);
-        const w = getAttrNumber(el, "width", 0);
-        const h = getAttrNumber(el, "height", 0);
-        considerPoint(elementPointToRootPoint(el, x, y));
-        considerPoint(elementPointToRootPoint(el, x + w, y));
-        considerPoint(elementPointToRootPoint(el, x, y + h));
-        considerPoint(elementPointToRootPoint(el, x + w, y + h));
-        continue;
-      }
-
-      if (tag === "circle" || tag === "ellipse") {
-        const cx = getAttrNumber(el, "cx", 0);
-        const cy = getAttrNumber(el, "cy", 0);
-        considerPoint(elementPointToRootPoint(el, cx, cy));
+      if (ignored) continue;
+      const dx = rootPt.x - targetRootPoint.x;
+      const dy = rootPt.y - targetRootPoint.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 <= tol2 && d2 < bestD2) {
+        bestD2 = d2;
+        best = rootPt;
       }
     }
     return best;
@@ -2643,7 +2766,7 @@ export async function renderEditor(filePath, container) {
     setResizeHandle(resizeHandles.sw, bbox.x, bbox.y + bbox.height);
   }
 
-  function refreshTransformHandles() {
+  function refreshTransformHandles(selectionBBox = null) {
     hideTransformHandles();
     if (toolState.drawing || !selectedElements.length) return;
     if (selectedElements.length === 1) {
@@ -2656,7 +2779,7 @@ export async function renderEditor(filePath, container) {
       }
     }
     try {
-      const bbox = getSelectedUnionBBox();
+      const bbox = selectionBBox || getSelectedUnionBBox();
       if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height)) return;
       updateResizeHandles(bbox);
     } catch {
@@ -2664,7 +2787,32 @@ export async function renderEditor(filePath, container) {
     }
   }
 
-  function refreshSelectionVisuals() {
+  function applySelectionBoxBounds(bbox) {
+    if (bbox && selectedElements.length > 0) {
+      selectionBox.setAttribute("x", String(bbox.x - 3));
+      selectionBox.setAttribute("y", String(bbox.y - 3));
+      selectionBox.setAttribute("width", String(bbox.width + 6));
+      selectionBox.setAttribute("height", String(bbox.height + 6));
+      selectionBox.setAttribute("display", "");
+    } else {
+      selectionBox.setAttribute("display", "none");
+    }
+  }
+
+  function refreshSelectionGeometryVisuals() {
+    recordLineProbe("selection-geometry-visuals:start", { selectedCount: selectedElements.length });
+    selectedElement = selectedElements[0] || null;
+    window.selectedSVGElement = selectedElement;
+
+    const bbox = getSelectedUnionBBox();
+    applySelectionBoxBounds(bbox);
+    refreshTransformHandles(bbox);
+    updateRotationOriginMarker();
+    recordLineProbe("selection-geometry-visuals:end", { hasBounds: Boolean(bbox), selectedCount: selectedElements.length });
+    return bbox;
+  }
+
+  function refreshSelectionStateVisuals() {
     const legacySelectionFilter = "drop-shadow(0 0 2px #ff2f2f)";
     const selectable = getSelectableElements();
     selectable.forEach((el) => {
@@ -2679,21 +2827,11 @@ export async function renderEditor(filePath, container) {
       if (el.style.filter === legacySelectionFilter) el.style.filter = "";
     });
 
-    selectedElement = selectedElements[0] || null;
-    window.selectedSVGElement = selectedElement;
+    refreshSelectionGeometryVisuals();
+  }
 
-    const bbox = getSelectedUnionBBox();
-    if (bbox && selectedElements.length > 0) {
-      selectionBox.setAttribute("x", String(bbox.x - 3));
-      selectionBox.setAttribute("y", String(bbox.y - 3));
-      selectionBox.setAttribute("width", String(bbox.width + 6));
-      selectionBox.setAttribute("height", String(bbox.height + 6));
-      selectionBox.setAttribute("display", "");
-    } else {
-      selectionBox.setAttribute("display", "none");
-    }
-    refreshTransformHandles();
-    updateRotationOriginMarker();
+  function refreshSelectionVisuals() {
+    refreshSelectionStateVisuals();
   }
 
   function isSvgImageElement(el) {
@@ -2764,16 +2902,23 @@ export async function renderEditor(filePath, container) {
 
   let selectionChangeRaf = 0;
   function notifySelectionChanged() {
+    recordLineProbe("notifySelectionChanged:start");
     reportSvgAttentionSelection(selectedElement);
+    recordLineProbe("notifySelectionChanged:after-attention");
     if (selectionChangeRaf) return;
     selectionChangeRaf = window.requestAnimationFrame(() => {
       selectionChangeRaf = 0;
+      recordLineProbe("notifySelectionChanged:raf-start");
       nodeEditor.onSelectionChanged?.(selectedElements);
+      recordLineProbe("notifySelectionChanged:after-nodeEditor");
       updateSelectedSvgImageState();
+      recordLineProbe("notifySelectionChanged:after-image-state");
       window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-changed", {
         detail: selectionEventDetail("selection")
       }));
+      recordLineProbe("notifySelectionChanged:raf-end");
     });
+    recordLineProbe("notifySelectionChanged:scheduled-raf");
   }
 
   let selectionMutationRaf = 0;
@@ -2781,18 +2926,25 @@ export async function renderEditor(filePath, container) {
     if (selectionMutationRaf) return;
     selectionMutationRaf = window.requestAnimationFrame(() => {
       selectionMutationRaf = 0;
+      recordLineProbe("selection-mutated:dispatch", { reason });
       window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-mutated", {
         detail: selectionEventDetail(reason)
       }));
     });
   }
 
+  function refreshSelectionGeometryAfterMutation(reason = "geometry") {
+    refreshSelectionGeometryVisuals();
+    notifySelectionMutated(reason);
+  }
+
   function refreshSelectionAfterMutation(reason = "geometry") {
-    refreshSelectionVisuals();
+    refreshSelectionStateVisuals();
     notifySelectionMutated(reason);
   }
 
   function clearSelection() {
+    recordLineProbe("clearSelection:start", { selectedCount: selectedElements.length });
     if (selectionGrabState) commitSelectionGrabCommand({ silent: true });
     if (pendingRotateCommand) commitPendingRotationCommand({ silent: true });
     clearMaskEditState({ silent: true });
@@ -2802,10 +2954,13 @@ export async function renderEditor(filePath, container) {
     resizeState = null;
     rotateState = null;
     refreshSelectionVisuals();
+    recordLineProbe("clearSelection:after-refreshSelectionVisuals");
     notifySelectionChanged();
+    recordLineProbe("clearSelection:end");
   }
 
   function setSelection(elements = [], options = {}) {
+    recordLineProbe("setSelection:start", { inputCount: elements.length, append: Boolean(options.append) });
     if (selectionGrabState) commitSelectionGrabCommand({ silent: true });
     if (pendingRotateCommand) commitPendingRotationCommand({ silent: true });
     const unique = [];
@@ -2830,6 +2985,7 @@ export async function renderEditor(filePath, container) {
     if (!isSelectedLineVertexValid()) clearSelectedLineVertex();
     refreshSelectionVisuals();
     notifySelectionChanged();
+    recordLineProbe("setSelection:end", { selectedCount: selectedElements.length });
   }
 
   function toggleSelection(el, options = {}) {
@@ -2903,7 +3059,7 @@ export async function renderEditor(filePath, container) {
   function moveSelectionBy(dx, dy) {
     if (!selectedElements.length) return false;
     selectedElements.forEach((el) => translateElement(el, dx, dy));
-    refreshSelectionAfterMutation("move");
+    refreshSelectionGeometryAfterMutation("move");
     return true;
   }
 
@@ -2959,7 +3115,7 @@ export async function renderEditor(filePath, container) {
         : targetRoot;
       applyDragDeltaToElement(item.element, item.base, targetSpace.x - anchorSpace.x, targetSpace.y - anchorSpace.y);
     });
-    refreshSelectionAfterMutation(reason);
+    refreshSelectionGeometryAfterMutation(reason);
     return true;
   }
 
@@ -3219,7 +3375,7 @@ export async function renderEditor(filePath, container) {
         "rotate(" + angleDeg + " " + center.x + " " + center.y + ")"
       );
     });
-    refreshSelectionAfterMutation(reason);
+    refreshSelectionGeometryAfterMutation(reason);
     return true;
   }
 
@@ -4627,7 +4783,7 @@ export async function renderEditor(filePath, container) {
       }
     }
 
-    if (moved) refreshSelectionAfterMutation("move");
+    if (moved) refreshSelectionGeometryAfterMutation("move");
     return moved;
   }
 
@@ -5027,13 +5183,30 @@ export async function renderEditor(filePath, container) {
     }
   });
 
+  const cleanupSvgClickTrace = installSvgClickTraceOnSvgRoot(svgRoot, () => ({
+    filePath,
+    activeEditorKind: "svg",
+    mode: window.NodevisionState?.currentMode || "SVG Editing",
+    tool: toolState.mode,
+    editorReady: Boolean(window.SVGEditorContext),
+    panels: { layersPanelConnected: Boolean(layersPanelHost?.isConnected) },
+  }));
+
   svgRoot.addEventListener("pointerdown", (e) => {
+    recordLineProbe("svg-handler:start", { mode: toolState.mode, isTrusted: Boolean(e.isTrusted) });
+    recordLineProbe("pointerdown:start", { mode: toolState.mode });
     syncModeFromToolbarState();
+    recordLineProbe("pointerdown:after-sync", { mode: toolState.mode });
+    recordLineProbe("coordinate:start");
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
+    recordLineProbe("coordinate:end", { x: p.x, y: p.y });
+    recordLineProbe("pointerdown:after-toSvgPoint", { x: p.x, y: p.y });
     lastPointerRoot = p;
     lastPointerClient = { x: e.clientX, y: e.clientY };
     quickMenu.cancelLongPress();
+    recordLineProbe("pointerdown:after-cancelLongPress");
     wrapper.focus();
+    recordLineProbe("pointerdown:after-focus");
     const barrelQuickMenu = e.pointerType === "pen" && drawingAssistSettings.gestureBarrelButtonQuickMenu && ((e.buttons & 32) || e.button === 5);
     const rightQuickMenu = e.button === 2 && drawingAssistSettings.gestureRightClickQuickMenu;
     if ((barrelQuickMenu || rightQuickMenu) && !toolState.drawing) {
@@ -5052,7 +5225,9 @@ export async function renderEditor(filePath, container) {
 
     if (toolState.mode === "select" || toolState.mode === "rotate") {
       let target = e.target instanceof SVGElement ? e.target : null;
+      recordLineProbe("hit-test:start", { targetTag: target?.tagName || null });
       const geometryHit = findNearestGeometryAtPoint(p, pointerToleranceInSvgUnits(10));
+      recordLineProbe("hit-test:end", { geometryHitTag: geometryHit?.tagName || null });
       if (geometryHit && (!target || !isSelectableElement(target) || shouldPreferGeometryHit(target))) {
         target = geometryHit;
       } else if (!target || !isSelectableElement(target)) {
@@ -5162,6 +5337,7 @@ export async function renderEditor(filePath, container) {
     }
 
     if (toolState.mode === "line") {
+      recordLineProbe("line-branch:start", { active: Boolean(lineToolState.active) });
       if (lineToolState.grab) {
         finishLineToolGrab();
         e.preventDefault();
@@ -5177,8 +5353,11 @@ export async function renderEditor(filePath, container) {
       }
 
       const layer = lineToolState.layer || getActiveLayer() || svgRoot;
+      recordLineProbe("line-branch:after-layer", { layerTag: layer?.tagName || null });
       const rootPoint = resolveLineToolPoint(p, e);
+      recordLineProbe("line-branch:after-resolve", { x: rootPoint.x, y: rootPoint.y });
       placeLineToolVertex(rootPoint, layer);
+      recordLineProbe("line-branch:after-place", { active: Boolean(lineToolState.active) });
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -5316,7 +5495,7 @@ export async function renderEditor(filePath, container) {
         line.setAttribute("x2", String(next.x));
         line.setAttribute("y2", String(next.y));
       }
-      refreshSelectionAfterMutation("line-handle");
+      refreshSelectionGeometryAfterMutation("line-handle");
       e.preventDefault();
       return;
     }
@@ -5350,7 +5529,7 @@ export async function renderEditor(filePath, container) {
           `translate(${anchor.x} ${anchor.y}) scale(${sx} ${sy}) translate(${-anchor.x} ${-anchor.y})`
         );
       }
-      refreshSelectionAfterMutation("resize");
+      refreshSelectionGeometryAfterMutation("resize");
       e.preventDefault();
       return;
     }
@@ -5379,7 +5558,7 @@ export async function renderEditor(filePath, container) {
           `rotate(${angleDeg} ${rotateState.cx} ${rotateState.cy})`
         );
       }
-      refreshSelectionAfterMutation("rotate");
+      refreshSelectionGeometryAfterMutation("rotate");
       e.preventDefault();
       return;
     }
@@ -5752,6 +5931,16 @@ export async function renderEditor(filePath, container) {
     getCurrentBrushPreset() {
       return currentBrushPreset();
     },
+    debugLineToolState() {
+      return {
+        active: Boolean(lineToolState.active),
+        pointCount: Array.isArray(lineToolState.pointsSpace) ? lineToolState.pointsSpace.length : 0,
+        placedLineCount: Array.isArray(lineToolState.placedLines) ? lineToolState.placedLines.length : 0,
+        vertexMarkerCount: Array.isArray(lineToolState.vertexMarkers) ? lineToolState.vertexMarkers.filter((marker) => marker?.isConnected).length : 0,
+        startRoot: lineToolState.startRoot ? { x: lineToolState.startRoot.x, y: lineToolState.startRoot.y } : null,
+        cursorRoot: lineToolState.cursorRoot ? { x: lineToolState.cursorRoot.x, y: lineToolState.cursorRoot.y } : null,
+      };
+    },
     showQuickMenu(clientX = null, clientY = null) {
       const rect = svgRoot.getBoundingClientRect();
       quickMenu.show(clientX ?? rect.left + 48, clientY ?? rect.top + 48, drawingAssistSettings);
@@ -6120,13 +6309,39 @@ export async function renderEditor(filePath, container) {
   });
 
 
-  try {
+  let svgModeLayoutRaf = 0;
+  let svgModeLayoutTimer = 0;
+  let svgModeLayoutCanceled = false;
+
+  function cancelDeferredSvgModeLayout() {
+    svgModeLayoutCanceled = true;
+    if (svgModeLayoutRaf) window.cancelAnimationFrame(svgModeLayoutRaf);
+    if (svgModeLayoutTimer) window.clearTimeout(svgModeLayoutTimer);
+    svgModeLayoutRaf = 0;
+    svgModeLayoutTimer = 0;
+  }
+
+  function scheduleSvgEditorModeLayout() {
     const editorCell = container?.closest?.(".panel-cell");
-    if (editorCell) {
-      await ensureSvgEditorModeLayout({ editorCell });
-    }
-  } catch (err) {
-    console.warn("SVG editor: failed to apply SVG editor mode layout:", err);
+    if (!editorCell) return;
+    const scheduledToken = renderToken;
+    svgModeLayoutRaf = window.requestAnimationFrame(() => {
+      svgModeLayoutRaf = 0;
+      svgModeLayoutTimer = window.setTimeout(async () => {
+        svgModeLayoutTimer = 0;
+        if (
+          svgModeLayoutCanceled ||
+          container.__nvEditorRenderToken !== scheduledToken ||
+          !wrapper.isConnected ||
+          !editorCell.isConnected
+        ) return;
+        try {
+          await ensureSvgEditorModeLayout({ editorCell });
+        } catch (err) {
+          console.warn("SVG editor: failed to apply SVG editor mode layout:", err);
+        }
+      }, 0);
+    });
   }
 
   const savedSvgAttention = getEditingContext(filePath);
@@ -6138,10 +6353,13 @@ export async function renderEditor(filePath, container) {
     }
   });
   window.dispatchEvent(new CustomEvent("nv-svg-editor-context-ready", { detail: { filePath, context: window.SVGEditorContext } }));
+  scheduleSvgEditorModeLayout();
   console.log("SVG editor loaded for:", filePath);
   const persistCurrentSvgAttention = () => persistSvgAttention(filePath, container, toolState.mode);
   container.addEventListener("scroll", persistCurrentSvgAttention, { passive: true });
   return () => {
+    cleanupSvgClickTrace?.();
+    cancelDeferredSvgModeLayout();
     container.removeEventListener("scroll", persistCurrentSvgAttention);
     persistCurrentSvgAttention();
     svgInsertMediaRegistration?.dispose?.();

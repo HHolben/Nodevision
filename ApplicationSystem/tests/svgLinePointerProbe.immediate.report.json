@@ -1,0 +1,2833 @@
+{
+  "generatedAt": "2026-09-17T16:57:54.452Z",
+  "environment": {
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97",
+    "node": "24.15.0",
+    "platform": "linux",
+    "release": "6.19.10-300.fc44.x86_64",
+    "arch": "x64",
+    "captureScreenshots": false,
+    "scenarioModes": [
+      "dispatched-pointer"
+    ],
+    "activationWaitMs": 0
+  },
+  "fixture": {
+    "id": "empty",
+    "objectCount": 0,
+    "relativePath": "__nv_svg_line_feedback_benchmark/empty.svg"
+  },
+  "scenarios": [
+    {
+      "mode": "dispatched-pointer",
+      "fixture": {
+        "id": "empty",
+        "objectCount": 0,
+        "relativePath": "__nv_svg_line_feedback_benchmark/empty.svg"
+      },
+      "setup": {
+        "activation": {
+          "steps": [
+            {
+              "label": "Draw",
+              "clicked": true
+            },
+            {
+              "label": "Vector Draw",
+              "clicked": true
+            },
+            {
+              "label": "Line",
+              "clicked": true
+            },
+            {
+              "label": "fallback-svgModeLine",
+              "clicked": true
+            }
+          ],
+          "mode": "line",
+          "timings": [
+            {
+              "label": "import:createToolbar",
+              "started": 529.6000000005588,
+              "ended": 540.7999999998137,
+              "duration": 11.199999999254942
+            },
+            {
+              "label": "createToolbar:SVG Editing",
+              "started": 540.7999999998137,
+              "ended": 1030,
+              "duration": 489.20000000018626
+            },
+            {
+              "label": "click:Draw",
+              "started": 1030.1000000005588,
+              "ended": 1034.4000000003725,
+              "duration": 4.2999999998137355
+            },
+            {
+              "label": "showToolbarSubToolbar:Vector Draw",
+              "started": 1034.5,
+              "ended": 1064.2999999998137,
+              "duration": 29.799999999813735
+            },
+            {
+              "label": "click:Vector Draw",
+              "started": 1081.1000000005588,
+              "ended": 1086.1000000005588,
+              "duration": 5
+            },
+            {
+              "label": "showToolbarSubToolbar:Vector Draw",
+              "started": 1086.1000000005588,
+              "ended": 1106.6000000005588,
+              "duration": 20.5
+            },
+            {
+              "label": "click:Line",
+              "started": 1146.4000000003725,
+              "ended": 1147.4000000003725,
+              "duration": 1
+            },
+            {
+              "label": "fallback-import:svgModeLine",
+              "started": 1147.4000000003725,
+              "ended": 2117.7000000001863,
+              "duration": 970.2999999998137
+            },
+            {
+              "label": "fallback-run:svgModeLine",
+              "started": 2117.7000000001863,
+              "ended": 2412.7999999998137,
+              "duration": 295.09999999962747
+            }
+          ]
+        },
+        "clientPoints": [
+          {
+            "x": 548,
+            "y": 1317
+          },
+          {
+            "x": 722,
+            "y": 1416
+          },
+          {
+            "x": 871,
+            "y": 1366
+          }
+        ]
+      },
+      "run": {
+        "label": "dispatched-pointer",
+        "fixture": {
+          "id": "empty",
+          "objectCount": 0,
+          "relativePath": "__nv_svg_line_feedback_benchmark/empty.svg"
+        },
+        "timeline": [
+          {
+            "kind": "input-requested",
+            "time": 2432.2000000001863,
+            "method": "dispatched-pointer",
+            "phase": "first"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 3315.2000000001863,
+            "tag": "circle",
+            "name": "data-nv-editor-ui",
+            "value": "line-tool-vertex-marker",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.2000000001863,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "cx",
+            "value": "219.75880432128906",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.2000000001863,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "cy",
+            "value": "180.330322265625",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.2000000001863,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "r",
+            "value": "3.825503241695817",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.2000000001863,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "fill",
+            "value": "#2f80ff",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.2000000001863,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "stroke",
+            "value": "#ffffff",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.2000000001863,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "stroke-width",
+            "value": "1.2080536552723633",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-inserted",
+            "time": 3315.4000000003725,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x1",
+            "value": "219.75880432128906",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y1",
+            "value": "180.330322265625",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x2",
+            "value": "219.75880432128906",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y2",
+            "value": "180.330322265625",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "display",
+            "value": "",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.7999999998137,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "r",
+            "value": "3.2214764140596355",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.9000000003725,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cx",
+            "value": "219.75880432128906",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.9000000003725,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cy",
+            "value": "180.330322265625",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.9000000003725,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "display",
+            "value": "",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3315.9000000003725,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "display",
+            "value": "none",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3316.100000000559,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "display",
+            "value": "none",
+            "phase": "first"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 3316.2000000001863,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "display",
+            "value": "none",
+            "phase": "first"
+          },
+          {
+            "kind": "input-returned",
+            "time": 3316.2000000001863,
+            "method": "dispatched-pointer",
+            "phase": "first"
+          },
+          {
+            "kind": "move-requested",
+            "time": 5324.100000000559,
+            "method": "dispatched-pointer",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.200000000186,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.200000000186,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x1",
+            "value": "219.75880432128906",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y1",
+            "value": "180.330322265625",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x2",
+            "value": "229.42323303222656",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y2",
+            "value": "184.35716247558594",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.299999999814,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "display",
+            "value": "",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "r",
+            "value": "3.2214764140596355",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cx",
+            "value": "229.42323303222656",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cy",
+            "value": "184.35716247558594",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "display",
+            "value": "",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.700000000186,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke-width",
+            "value": "1.006711379393636",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.700000000186,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke-dasharray",
+            "value": "0.4832214621089453 4.026845517574544",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.799999999814,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "d",
+            "value": "M 231.03397177049777 180.330322265625 A 11.275167449208723 11.275167449208723 0 0 1 230.1666531421607 184.66692046347282",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5325.799999999814,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "display",
+            "value": "",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5326.4000000003725,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "font-size",
+            "value": "12.885905656238542",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5326.4000000003725,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "stroke-width",
+            "value": "1.6107382070298177",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5326.4000000003725,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "x",
+            "value": "219.01539242238204",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5326.4000000003725,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "y",
+            "value": "195.7252622831547",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5326.4000000003725,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "display",
+            "value": "",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5332.299999999814,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "font-size",
+            "value": "12.885905656238542",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5332.299999999814,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "stroke-width",
+            "value": "1.6107382070298177",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5332.299999999814,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "x",
+            "value": "245.03014560510883",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5332.299999999814,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "y",
+            "value": "185.3845846294748",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5332.4000000003725,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "display",
+            "value": "",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "move-returned",
+            "time": 5332.5,
+            "method": "dispatched-pointer",
+            "phase": "first-small-move"
+          },
+          {
+            "kind": "input-requested",
+            "time": 5336.9000000003725,
+            "method": "dispatched-pointer",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 5927.100000000559,
+            "tag": "line",
+            "name": "x1",
+            "value": "219.75880432128912",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 5927.100000000559,
+            "tag": "line",
+            "name": "y1",
+            "value": "180.33032226562523",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 5927.100000000559,
+            "tag": "line",
+            "name": "x2",
+            "value": "359.89303588867193",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 5927.100000000559,
+            "tag": "line",
+            "name": "y2",
+            "value": "260.0618591308594",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 5927.100000000559,
+            "tag": "line",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 5927.100000000559,
+            "tag": "line",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-inserted",
+            "time": 5927.200000000186,
+            "tag": "line",
+            "phase": "second"
+          },
+          {
+            "kind": "committed-attribute",
+            "time": 5927.5,
+            "tag": "circle",
+            "name": "data-nv-editor-ui",
+            "value": "line-tool-vertex-marker",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.5,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "cx",
+            "value": "359.8930358886719",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.5,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "cy",
+            "value": "260.0618591308594",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.5,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "r",
+            "value": "3.825503241695817",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.5,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "fill",
+            "value": "#2f80ff",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.5,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "stroke",
+            "value": "#ffffff",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.5,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker",
+            "name": "stroke-width",
+            "value": "1.2080536552723633",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-inserted",
+            "time": 5927.5,
+            "tag": "circle",
+            "ui": "line-tool-vertex-marker"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x1",
+            "value": "359.8930358886719",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y1",
+            "value": "260.0618591308594",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x2",
+            "value": "359.8930358886719",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y2",
+            "value": "260.0618591308594",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "display",
+            "value": "",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "r",
+            "value": "3.2214764140596355",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.700000000186,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cx",
+            "value": "359.8930358886719",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.700000000186,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cy",
+            "value": "260.0618591308594",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.700000000186,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "display",
+            "value": "",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.700000000186,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "display",
+            "value": "none",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.700000000186,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "display",
+            "value": "none",
+            "phase": "second"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 5927.700000000186,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "display",
+            "value": "none",
+            "phase": "second"
+          },
+          {
+            "kind": "input-returned",
+            "time": 5927.799999999814,
+            "method": "dispatched-pointer",
+            "phase": "second"
+          },
+          {
+            "kind": "move-requested",
+            "time": 7935.200000000186,
+            "method": "dispatched-pointer",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.5,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.5,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "stroke-width",
+            "value": "0.1",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke",
+            "value": "#000000",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x1",
+            "value": "359.8930358886719",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y1",
+            "value": "260.0618591308594",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "x2",
+            "value": "369.5574645996094",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "y2",
+            "value": "264.0887145996094",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.600000000559,
+            "tag": "line",
+            "ui": "line-tool-preview-line",
+            "name": "display",
+            "value": "",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.9000000003725,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "r",
+            "value": "3.2214764140596355",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.9000000003725,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cx",
+            "value": "369.5574645996094",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.9000000003725,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "cy",
+            "value": "264.0887145996094",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7935.9000000003725,
+            "tag": "circle",
+            "ui": "line-tool-preview-end",
+            "name": "display",
+            "value": "",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.200000000186,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke-width",
+            "value": "1.006711379393636",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.200000000186,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "stroke-dasharray",
+            "value": "0.4832214621089453 4.026845517574544",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.200000000186,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "d",
+            "value": "M 371.1682033378806 260.0618591308594 A 11.275167449208723 11.275167449208723 0 0 1 370.3008788755025 264.3984713303967",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.299999999814,
+            "tag": "path",
+            "ui": "line-tool-angle-arc",
+            "name": "display",
+            "value": "",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.600000000559,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "font-size",
+            "value": "12.885905656238542",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.600000000559,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "stroke-width",
+            "value": "1.6107382070298177",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.600000000559,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "x",
+            "value": "359.1496059875926",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.600000000559,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "y",
+            "value": "275.45679927687377",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7936.600000000559,
+            "tag": "text",
+            "ui": "line-tool-length-label",
+            "name": "display",
+            "value": "",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7937.200000000186,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "font-size",
+            "value": "12.885905656238542",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7937.200000000186,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "stroke-width",
+            "value": "1.6107382070298177",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7937.200000000186,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "x",
+            "value": "385.16437377273286",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7937.200000000186,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "y",
+            "value": "265.1161384934932",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "overlay-attribute",
+            "time": 7937.299999999814,
+            "tag": "text",
+            "ui": "line-tool-angle-label",
+            "name": "display",
+            "value": "",
+            "phase": "second-small-move"
+          },
+          {
+            "kind": "move-returned",
+            "time": 7937.299999999814,
+            "method": "dispatched-pointer",
+            "phase": "second-small-move"
+          }
+        ],
+        "eventSpans": [
+          {
+            "type": "pointerdown",
+            "delivered": 3022.9000000003725,
+            "target": "svg",
+            "shiftKey": false,
+            "phase": "first",
+            "ended": 3316.2000000001863,
+            "duration": 293.29999999981374
+          },
+          {
+            "type": "pointermove",
+            "delivered": 5324.5,
+            "target": "svg",
+            "shiftKey": false,
+            "phase": "first-small-move",
+            "ended": 5332.4000000003725,
+            "duration": 7.900000000372529
+          },
+          {
+            "type": "pointerdown",
+            "delivered": 5925,
+            "target": "svg",
+            "shiftKey": false,
+            "phase": "second",
+            "ended": 5927.799999999814,
+            "duration": 2.7999999998137355
+          },
+          {
+            "type": "pointermove",
+            "delivered": 7935.4000000003725,
+            "target": "svg",
+            "shiftKey": false,
+            "phase": "second-small-move",
+            "ended": 7937.299999999814,
+            "duration": 1.8999999994412065
+          }
+        ],
+        "domSnapshots": [
+          {
+            "label": "initial",
+            "time": 2428,
+            "state": {
+              "active": false,
+              "pointCount": 0,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 0,
+              "startRoot": null,
+              "cursorRoot": null
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#2f80ff",
+              "stroke-width": "1.5",
+              "display": "none",
+              "style": "pointer-events: none;"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3",
+              "fill": "#ffffff",
+              "stroke": "#2f80ff",
+              "stroke-width": "1.5",
+              "display": "none",
+              "style": "pointer-events: none;"
+            },
+            "markers": []
+          },
+          {
+            "label": "first-before",
+            "time": 2432.100000000559,
+            "state": {
+              "active": false,
+              "pointCount": 0,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 0,
+              "startRoot": null,
+              "cursorRoot": null
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#2f80ff",
+              "stroke-width": "1.5",
+              "display": "none",
+              "style": "pointer-events: none;"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3",
+              "fill": "#ffffff",
+              "stroke": "#2f80ff",
+              "stroke-width": "1.5",
+              "display": "none",
+              "style": "pointer-events: none;"
+            },
+            "markers": []
+          },
+          {
+            "label": "first-after-handler",
+            "time": 3316.4000000003725,
+            "state": {
+              "active": true,
+              "pointCount": 1,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 1,
+              "startRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              "cursorRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              }
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "219.75880432128906",
+              "y1": "180.330322265625",
+              "x2": "219.75880432128906",
+              "y2": "180.330322265625"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "219.75880432128906",
+              "cy": "180.330322265625"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "first-after-raf",
+            "time": 3318.600000000559,
+            "state": {
+              "active": true,
+              "pointCount": 1,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 1,
+              "startRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              "cursorRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              }
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "219.75880432128906",
+              "y1": "180.330322265625",
+              "x2": "219.75880432128906",
+              "y2": "180.330322265625"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "219.75880432128906",
+              "cy": "180.330322265625"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "first-after-1s-still",
+            "time": 4319.100000000559,
+            "state": {
+              "active": true,
+              "pointCount": 1,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 1,
+              "startRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              "cursorRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              }
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "219.75880432128906",
+              "y1": "180.330322265625",
+              "x2": "219.75880432128906",
+              "y2": "180.330322265625"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "219.75880432128906",
+              "cy": "180.330322265625"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "first-small-move-after-move-handler",
+            "time": 5332.700000000186,
+            "state": {
+              "active": true,
+              "pointCount": 1,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 1,
+              "startRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              "cursorRoot": {
+                "x": 229.42323303222656,
+                "y": 184.35716247558594
+              }
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "219.75880432128906",
+              "y1": "180.330322265625",
+              "x2": "229.42323303222656",
+              "y2": "184.35716247558594"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "229.42323303222656",
+              "cy": "184.35716247558594"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "first-small-move-after-move-raf",
+            "time": 5333.5,
+            "state": {
+              "active": true,
+              "pointCount": 1,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 1,
+              "startRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              "cursorRoot": {
+                "x": 229.42323303222656,
+                "y": 184.35716247558594
+              }
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "219.75880432128906",
+              "y1": "180.330322265625",
+              "x2": "229.42323303222656",
+              "y2": "184.35716247558594"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "229.42323303222656",
+              "cy": "184.35716247558594"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "second-before",
+            "time": 5336.9000000003725,
+            "state": {
+              "active": true,
+              "pointCount": 1,
+              "placedLineCount": 0,
+              "vertexMarkerCount": 1,
+              "startRoot": {
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              "cursorRoot": {
+                "x": 229.42323303222656,
+                "y": 184.35716247558594
+              }
+            },
+            "committed": [],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "219.75880432128906",
+              "y1": "180.330322265625",
+              "x2": "229.42323303222656",
+              "y2": "184.35716247558594"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "229.42323303222656",
+              "cy": "184.35716247558594"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "second-after-handler",
+            "time": 5927.9000000003725,
+            "state": {
+              "active": true,
+              "pointCount": 2,
+              "placedLineCount": 1,
+              "vertexMarkerCount": 2,
+              "startRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              },
+              "cursorRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              }
+            },
+            "committed": [
+              {
+                "tag": "line",
+                "attrs": {
+                  "x1": "219.75880432128912",
+                  "y1": "180.33032226562523",
+                  "x2": "359.89303588867193",
+                  "y2": "260.0618591308594",
+                  "stroke": "#000000",
+                  "stroke-width": "0.1"
+                }
+              }
+            ],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "359.8930358886719",
+              "y1": "260.0618591308594",
+              "x2": "359.8930358886719",
+              "y2": "260.0618591308594"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "359.8930358886719",
+              "cy": "260.0618591308594"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              },
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "359.8930358886719",
+                  "cy": "260.0618591308594",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "second-after-raf",
+            "time": 5929,
+            "state": {
+              "active": true,
+              "pointCount": 2,
+              "placedLineCount": 1,
+              "vertexMarkerCount": 2,
+              "startRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              },
+              "cursorRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              }
+            },
+            "committed": [
+              {
+                "tag": "line",
+                "attrs": {
+                  "x1": "219.75880432128912",
+                  "y1": "180.33032226562523",
+                  "x2": "359.89303588867193",
+                  "y2": "260.0618591308594",
+                  "stroke": "#000000",
+                  "stroke-width": "0.1"
+                }
+              }
+            ],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "359.8930358886719",
+              "y1": "260.0618591308594",
+              "x2": "359.8930358886719",
+              "y2": "260.0618591308594"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "359.8930358886719",
+              "cy": "260.0618591308594"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              },
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "359.8930358886719",
+                  "cy": "260.0618591308594",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "second-after-1s-still",
+            "time": 6929.700000000186,
+            "state": {
+              "active": true,
+              "pointCount": 2,
+              "placedLineCount": 1,
+              "vertexMarkerCount": 2,
+              "startRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              },
+              "cursorRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              }
+            },
+            "committed": [
+              {
+                "tag": "line",
+                "attrs": {
+                  "x1": "219.75880432128912",
+                  "y1": "180.33032226562523",
+                  "x2": "359.89303588867193",
+                  "y2": "260.0618591308594",
+                  "stroke": "#000000",
+                  "stroke-width": "0.1"
+                }
+              }
+            ],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "359.8930358886719",
+              "y1": "260.0618591308594",
+              "x2": "359.8930358886719",
+              "y2": "260.0618591308594"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "359.8930358886719",
+              "cy": "260.0618591308594"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              },
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "359.8930358886719",
+                  "cy": "260.0618591308594",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "second-small-move-after-move-handler",
+            "time": 7937.5,
+            "state": {
+              "active": true,
+              "pointCount": 2,
+              "placedLineCount": 1,
+              "vertexMarkerCount": 2,
+              "startRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              },
+              "cursorRoot": {
+                "x": 369.5574645996094,
+                "y": 264.0887145996094
+              }
+            },
+            "committed": [
+              {
+                "tag": "line",
+                "attrs": {
+                  "x1": "219.75880432128912",
+                  "y1": "180.33032226562523",
+                  "x2": "359.89303588867193",
+                  "y2": "260.0618591308594",
+                  "stroke": "#000000",
+                  "stroke-width": "0.1"
+                }
+              }
+            ],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "359.8930358886719",
+              "y1": "260.0618591308594",
+              "x2": "369.5574645996094",
+              "y2": "264.0887145996094"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "369.5574645996094",
+              "cy": "264.0887145996094"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              },
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "359.8930358886719",
+                  "cy": "260.0618591308594",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          },
+          {
+            "label": "second-small-move-after-move-raf",
+            "time": 7938.700000000186,
+            "state": {
+              "active": true,
+              "pointCount": 2,
+              "placedLineCount": 1,
+              "vertexMarkerCount": 2,
+              "startRoot": {
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              },
+              "cursorRoot": {
+                "x": 369.5574645996094,
+                "y": 264.0887145996094
+              }
+            },
+            "committed": [
+              {
+                "tag": "line",
+                "attrs": {
+                  "x1": "219.75880432128912",
+                  "y1": "180.33032226562523",
+                  "x2": "359.89303588867193",
+                  "y2": "260.0618591308594",
+                  "stroke": "#000000",
+                  "stroke-width": "0.1"
+                }
+              }
+            ],
+            "previewLine": {
+              "data-nv-editor-ui": "line-tool-preview-line",
+              "fill": "none",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "x1": "359.8930358886719",
+              "y1": "260.0618591308594",
+              "x2": "369.5574645996094",
+              "y2": "264.0887145996094"
+            },
+            "previewEnd": {
+              "data-nv-editor-ui": "line-tool-preview-end",
+              "r": "3.2214764140596355",
+              "fill": "#ffffff",
+              "stroke": "#000000",
+              "stroke-width": "0.1",
+              "display": "",
+              "style": "pointer-events: none;",
+              "cx": "369.5574645996094",
+              "cy": "264.0887145996094"
+            },
+            "markers": [
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "219.75880432128906",
+                  "cy": "180.330322265625",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              },
+              {
+                "attrs": {
+                  "data-nv-editor-ui": "line-tool-vertex-marker",
+                  "cx": "359.8930358886719",
+                  "cy": "260.0618591308594",
+                  "r": "3.825503241695817",
+                  "fill": "#2f80ff",
+                  "stroke": "#ffffff",
+                  "stroke-width": "1.2080536552723633",
+                  "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+                },
+                "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+              }
+            ]
+          }
+        ],
+        "lineProbes": [
+          {
+            "phase": "first",
+            "entries": [
+              {
+                "label": "pointerdown:start",
+                "time": 3023.600000000559,
+                "mode": "line"
+              },
+              {
+                "label": "pointerdown:after-sync",
+                "time": 3023.7000000001863,
+                "mode": "line"
+              },
+              {
+                "label": "pointerdown:after-toSvgPoint",
+                "time": 3025.600000000559,
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              {
+                "label": "pointerdown:after-cancelLongPress",
+                "time": 3025.7999999998137
+              },
+              {
+                "label": "pointerdown:after-focus",
+                "time": 3025.7999999998137
+              },
+              {
+                "label": "line-branch:start",
+                "time": 3025.7999999998137,
+                "active": false
+              },
+              {
+                "label": "line-branch:after-layer",
+                "time": 3025.9000000003725,
+                "layerTag": "svg"
+              },
+              {
+                "label": "line-branch:after-resolve",
+                "time": 3025.9000000003725,
+                "x": 219.75880432128906,
+                "y": 180.330322265625
+              },
+              {
+                "label": "placeLineToolVertex:start",
+                "time": 3026.100000000559,
+                "active": false
+              },
+              {
+                "label": "placeLineToolVertex:after-target-layer",
+                "time": 3026.2000000001863,
+                "layerTag": "svg"
+              },
+              {
+                "label": "placeLineToolVertex:before-begin",
+                "time": 3026.2000000001863
+              },
+              {
+                "label": "beginLineToolAt:start",
+                "time": 3026.2999999998137
+              },
+              {
+                "label": "beginLineToolAt:after-target-layer",
+                "time": 3026.2999999998137,
+                "layerTag": "svg"
+              },
+              {
+                "label": "beginLineToolAt:after-rootPointToElementPoint",
+                "time": 3026.2999999998137,
+                "x": 219.75880432128912,
+                "y": 180.33032226562523
+              },
+              {
+                "label": "beginLineToolAt:after-clear-snap-cache",
+                "time": 3026.4000000003725
+              },
+              {
+                "label": "beginLineToolAt:after-clear-markers",
+                "time": 3026.4000000003725
+              },
+              {
+                "label": "clearSelection:start",
+                "time": 3026.4000000003725,
+                "selectedCount": 0
+              },
+              {
+                "label": "clearSelection:after-refreshSelectionVisuals",
+                "time": 3027.2000000001863
+              },
+              {
+                "label": "clearSelection:end",
+                "time": 3312.9000000003725
+              },
+              {
+                "label": "beginLineToolAt:after-clear-selection",
+                "time": 3312.9000000003725
+              },
+              {
+                "label": "beginLineToolAt:after-state",
+                "time": 3313
+              },
+              {
+                "label": "beginLineToolAt:after-add-marker",
+                "time": 3315.4000000003725
+              },
+              {
+                "label": "beginLineToolAt:after-update-preview",
+                "time": 3316.2000000001863
+              },
+              {
+                "label": "placeLineToolVertex:after-begin",
+                "time": 3316.2000000001863
+              },
+              {
+                "label": "line-branch:after-place",
+                "time": 3316.2000000001863,
+                "active": true
+              }
+            ]
+          },
+          {
+            "phase": "second",
+            "entries": [
+              {
+                "label": "pointerdown:start",
+                "time": 5925,
+                "mode": "line"
+              },
+              {
+                "label": "pointerdown:after-sync",
+                "time": 5925,
+                "mode": "line"
+              },
+              {
+                "label": "pointerdown:after-toSvgPoint",
+                "time": 5926.9000000003725,
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              },
+              {
+                "label": "pointerdown:after-cancelLongPress",
+                "time": 5926.9000000003725
+              },
+              {
+                "label": "pointerdown:after-focus",
+                "time": 5926.9000000003725
+              },
+              {
+                "label": "line-branch:start",
+                "time": 5926.9000000003725,
+                "active": true
+              },
+              {
+                "label": "line-branch:after-layer",
+                "time": 5926.9000000003725,
+                "layerTag": "svg"
+              },
+              {
+                "label": "line-branch:after-resolve",
+                "time": 5927,
+                "x": 359.8930358886719,
+                "y": 260.0618591308594
+              },
+              {
+                "label": "placeLineToolVertex:start",
+                "time": 5927,
+                "active": true
+              },
+              {
+                "label": "placeLineToolVertex:after-target-layer",
+                "time": 5927,
+                "layerTag": "svg"
+              },
+              {
+                "label": "line-branch:after-place",
+                "time": 5927.799999999814,
+                "active": true
+              }
+            ]
+          }
+        ]
+      },
+      "screenshots": [
+        {
+          "label": "dispatched-pointer-before-first",
+          "time": 1789664268932,
+          "rect": {
+            "x": 514,
+            "y": 1283,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-first-immediate",
+          "time": 1789664270823,
+          "rect": {
+            "x": 514,
+            "y": 1283,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-first-after-raf",
+          "time": 1789664270825,
+          "rect": {
+            "x": 514,
+            "y": 1283,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-first-after-1s",
+          "time": 1789664271826,
+          "rect": {
+            "x": 514,
+            "y": 1283,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-first-after-small-move",
+          "time": 1789664271837,
+          "rect": {
+            "x": 514,
+            "y": 1283,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-before-second",
+          "time": 1789664271837,
+          "rect": {
+            "x": 688,
+            "y": 1382,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-second-immediate",
+          "time": 1789664273434,
+          "rect": {
+            "x": 688,
+            "y": 1382,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-second-after-raf",
+          "time": 1789664273436,
+          "rect": {
+            "x": 688,
+            "y": 1382,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-second-after-1s",
+          "time": 1789664274437,
+          "rect": {
+            "x": 688,
+            "y": 1382,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        },
+        {
+          "label": "dispatched-pointer-second-after-small-move",
+          "time": 1789664274443,
+          "rect": {
+            "x": 688,
+            "y": 1382,
+            "width": 68,
+            "height": 68
+          },
+          "skipped": true,
+          "diffFromBase": null
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "mode": "dispatched-pointer",
+      "fixture": "empty",
+      "activation": {
+        "steps": [
+          {
+            "label": "Draw",
+            "clicked": true
+          },
+          {
+            "label": "Vector Draw",
+            "clicked": true
+          },
+          {
+            "label": "Line",
+            "clicked": true
+          },
+          {
+            "label": "fallback-svgModeLine",
+            "clicked": true
+          }
+        ],
+        "mode": "line",
+        "timings": [
+          {
+            "label": "import:createToolbar",
+            "started": 529.6000000005588,
+            "ended": 540.7999999998137,
+            "duration": 11.199999999254942
+          },
+          {
+            "label": "createToolbar:SVG Editing",
+            "started": 540.7999999998137,
+            "ended": 1030,
+            "duration": 489.20000000018626
+          },
+          {
+            "label": "click:Draw",
+            "started": 1030.1000000005588,
+            "ended": 1034.4000000003725,
+            "duration": 4.2999999998137355
+          },
+          {
+            "label": "showToolbarSubToolbar:Vector Draw",
+            "started": 1034.5,
+            "ended": 1064.2999999998137,
+            "duration": 29.799999999813735
+          },
+          {
+            "label": "click:Vector Draw",
+            "started": 1081.1000000005588,
+            "ended": 1086.1000000005588,
+            "duration": 5
+          },
+          {
+            "label": "showToolbarSubToolbar:Vector Draw",
+            "started": 1086.1000000005588,
+            "ended": 1106.6000000005588,
+            "duration": 20.5
+          },
+          {
+            "label": "click:Line",
+            "started": 1146.4000000003725,
+            "ended": 1147.4000000003725,
+            "duration": 1
+          },
+          {
+            "label": "fallback-import:svgModeLine",
+            "started": 1147.4000000003725,
+            "ended": 2117.7000000001863,
+            "duration": 970.2999999998137
+          },
+          {
+            "label": "fallback-run:svgModeLine",
+            "started": 2117.7000000001863,
+            "ended": 2412.7999999998137,
+            "duration": 295.09999999962747
+          }
+        ]
+      },
+      "firstAfterStill": {
+        "label": "first-after-1s-still",
+        "time": 4319.100000000559,
+        "state": {
+          "active": true,
+          "pointCount": 1,
+          "placedLineCount": 0,
+          "vertexMarkerCount": 1,
+          "startRoot": {
+            "x": 219.75880432128906,
+            "y": 180.330322265625
+          },
+          "cursorRoot": {
+            "x": 219.75880432128906,
+            "y": 180.330322265625
+          }
+        },
+        "committed": [],
+        "previewLine": {
+          "data-nv-editor-ui": "line-tool-preview-line",
+          "fill": "none",
+          "stroke": "#000000",
+          "stroke-width": "0.1",
+          "display": "",
+          "style": "pointer-events: none;",
+          "x1": "219.75880432128906",
+          "y1": "180.330322265625",
+          "x2": "219.75880432128906",
+          "y2": "180.330322265625"
+        },
+        "previewEnd": {
+          "data-nv-editor-ui": "line-tool-preview-end",
+          "r": "3.2214764140596355",
+          "fill": "#ffffff",
+          "stroke": "#000000",
+          "stroke-width": "0.1",
+          "display": "",
+          "style": "pointer-events: none;",
+          "cx": "219.75880432128906",
+          "cy": "180.330322265625"
+        },
+        "markers": [
+          {
+            "attrs": {
+              "data-nv-editor-ui": "line-tool-vertex-marker",
+              "cx": "219.75880432128906",
+              "cy": "180.330322265625",
+              "r": "3.825503241695817",
+              "fill": "#2f80ff",
+              "stroke": "#ffffff",
+              "stroke-width": "1.2080536552723633",
+              "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+            },
+            "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+          }
+        ]
+      },
+      "secondAfterStill": {
+        "label": "second-after-1s-still",
+        "time": 6929.700000000186,
+        "state": {
+          "active": true,
+          "pointCount": 2,
+          "placedLineCount": 1,
+          "vertexMarkerCount": 2,
+          "startRoot": {
+            "x": 359.8930358886719,
+            "y": 260.0618591308594
+          },
+          "cursorRoot": {
+            "x": 359.8930358886719,
+            "y": 260.0618591308594
+          }
+        },
+        "committed": [
+          {
+            "tag": "line",
+            "attrs": {
+              "x1": "219.75880432128912",
+              "y1": "180.33032226562523",
+              "x2": "359.89303588867193",
+              "y2": "260.0618591308594",
+              "stroke": "#000000",
+              "stroke-width": "0.1"
+            }
+          }
+        ],
+        "previewLine": {
+          "data-nv-editor-ui": "line-tool-preview-line",
+          "fill": "none",
+          "stroke": "#000000",
+          "stroke-width": "0.1",
+          "display": "",
+          "style": "pointer-events: none;",
+          "x1": "359.8930358886719",
+          "y1": "260.0618591308594",
+          "x2": "359.8930358886719",
+          "y2": "260.0618591308594"
+        },
+        "previewEnd": {
+          "data-nv-editor-ui": "line-tool-preview-end",
+          "r": "3.2214764140596355",
+          "fill": "#ffffff",
+          "stroke": "#000000",
+          "stroke-width": "0.1",
+          "display": "",
+          "style": "pointer-events: none;",
+          "cx": "359.8930358886719",
+          "cy": "260.0618591308594"
+        },
+        "markers": [
+          {
+            "attrs": {
+              "data-nv-editor-ui": "line-tool-vertex-marker",
+              "cx": "219.75880432128906",
+              "cy": "180.330322265625",
+              "r": "3.825503241695817",
+              "fill": "#2f80ff",
+              "stroke": "#ffffff",
+              "stroke-width": "1.2080536552723633",
+              "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+            },
+            "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+          },
+          {
+            "attrs": {
+              "data-nv-editor-ui": "line-tool-vertex-marker",
+              "cx": "359.8930358886719",
+              "cy": "260.0618591308594",
+              "r": "3.825503241695817",
+              "fill": "#2f80ff",
+              "stroke": "#ffffff",
+              "stroke-width": "1.2080536552723633",
+              "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+            },
+            "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+          }
+        ]
+      },
+      "firstMarkers": [
+        {
+          "attrs": {
+            "data-nv-editor-ui": "line-tool-vertex-marker",
+            "cx": "219.75880432128906",
+            "cy": "180.330322265625",
+            "r": "3.825503241695817",
+            "fill": "#2f80ff",
+            "stroke": "#ffffff",
+            "stroke-width": "1.2080536552723633",
+            "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+          },
+          "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+        }
+      ],
+      "secondMarkers": [
+        {
+          "attrs": {
+            "data-nv-editor-ui": "line-tool-vertex-marker",
+            "cx": "219.75880432128906",
+            "cy": "180.330322265625",
+            "r": "3.825503241695817",
+            "fill": "#2f80ff",
+            "stroke": "#ffffff",
+            "stroke-width": "1.2080536552723633",
+            "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+          },
+          "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+        },
+        {
+          "attrs": {
+            "data-nv-editor-ui": "line-tool-vertex-marker",
+            "cx": "359.8930358886719",
+            "cy": "260.0618591308594",
+            "r": "3.825503241695817",
+            "fill": "#2f80ff",
+            "stroke": "#ffffff",
+            "stroke-width": "1.2080536552723633",
+            "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+          },
+          "style": "pointer-events: none !important; fill: rgb(47, 128, 255) !important; stroke: rgb(255, 255, 255) !important; stroke-width: 1.20805 !important; display: inline !important; visibility: visible !important; opacity: 1 !important;"
+        }
+      ],
+      "screenshotDiffs": {
+        "firstImmediate": null,
+        "firstAfter1s": null,
+        "firstAfterMove": null,
+        "secondImmediate": null,
+        "secondAfter1s": null,
+        "secondAfterMove": null
+      },
+      "eventSpans": [
+        {
+          "type": "pointerdown",
+          "delivered": 3022.9000000003725,
+          "target": "svg",
+          "shiftKey": false,
+          "phase": "first",
+          "ended": 3316.2000000001863,
+          "duration": 293.29999999981374
+        },
+        {
+          "type": "pointermove",
+          "delivered": 5324.5,
+          "target": "svg",
+          "shiftKey": false,
+          "phase": "first-small-move",
+          "ended": 5332.4000000003725,
+          "duration": 7.900000000372529
+        },
+        {
+          "type": "pointerdown",
+          "delivered": 5925,
+          "target": "svg",
+          "shiftKey": false,
+          "phase": "second",
+          "ended": 5927.799999999814,
+          "duration": 2.7999999998137355
+        },
+        {
+          "type": "pointermove",
+          "delivered": 7935.4000000003725,
+          "target": "svg",
+          "shiftKey": false,
+          "phase": "second-small-move",
+          "ended": 7937.299999999814,
+          "duration": 1.8999999994412065
+        }
+      ],
+      "lineProbes": [
+        {
+          "phase": "first",
+          "entries": [
+            {
+              "label": "pointerdown:start",
+              "time": 3023.600000000559,
+              "mode": "line"
+            },
+            {
+              "label": "pointerdown:after-sync",
+              "time": 3023.7000000001863,
+              "mode": "line"
+            },
+            {
+              "label": "pointerdown:after-toSvgPoint",
+              "time": 3025.600000000559,
+              "x": 219.75880432128906,
+              "y": 180.330322265625
+            },
+            {
+              "label": "pointerdown:after-cancelLongPress",
+              "time": 3025.7999999998137
+            },
+            {
+              "label": "pointerdown:after-focus",
+              "time": 3025.7999999998137
+            },
+            {
+              "label": "line-branch:start",
+              "time": 3025.7999999998137,
+              "active": false
+            },
+            {
+              "label": "line-branch:after-layer",
+              "time": 3025.9000000003725,
+              "layerTag": "svg"
+            },
+            {
+              "label": "line-branch:after-resolve",
+              "time": 3025.9000000003725,
+              "x": 219.75880432128906,
+              "y": 180.330322265625
+            },
+            {
+              "label": "placeLineToolVertex:start",
+              "time": 3026.100000000559,
+              "active": false
+            },
+            {
+              "label": "placeLineToolVertex:after-target-layer",
+              "time": 3026.2000000001863,
+              "layerTag": "svg"
+            },
+            {
+              "label": "placeLineToolVertex:before-begin",
+              "time": 3026.2000000001863
+            },
+            {
+              "label": "beginLineToolAt:start",
+              "time": 3026.2999999998137
+            },
+            {
+              "label": "beginLineToolAt:after-target-layer",
+              "time": 3026.2999999998137,
+              "layerTag": "svg"
+            },
+            {
+              "label": "beginLineToolAt:after-rootPointToElementPoint",
+              "time": 3026.2999999998137,
+              "x": 219.75880432128912,
+              "y": 180.33032226562523
+            },
+            {
+              "label": "beginLineToolAt:after-clear-snap-cache",
+              "time": 3026.4000000003725
+            },
+            {
+              "label": "beginLineToolAt:after-clear-markers",
+              "time": 3026.4000000003725
+            },
+            {
+              "label": "clearSelection:start",
+              "time": 3026.4000000003725,
+              "selectedCount": 0
+            },
+            {
+              "label": "clearSelection:after-refreshSelectionVisuals",
+              "time": 3027.2000000001863
+            },
+            {
+              "label": "clearSelection:end",
+              "time": 3312.9000000003725
+            },
+            {
+              "label": "beginLineToolAt:after-clear-selection",
+              "time": 3312.9000000003725
+            },
+            {
+              "label": "beginLineToolAt:after-state",
+              "time": 3313
+            },
+            {
+              "label": "beginLineToolAt:after-add-marker",
+              "time": 3315.4000000003725
+            },
+            {
+              "label": "beginLineToolAt:after-update-preview",
+              "time": 3316.2000000001863
+            },
+            {
+              "label": "placeLineToolVertex:after-begin",
+              "time": 3316.2000000001863
+            },
+            {
+              "label": "line-branch:after-place",
+              "time": 3316.2000000001863,
+              "active": true
+            }
+          ]
+        },
+        {
+          "phase": "second",
+          "entries": [
+            {
+              "label": "pointerdown:start",
+              "time": 5925,
+              "mode": "line"
+            },
+            {
+              "label": "pointerdown:after-sync",
+              "time": 5925,
+              "mode": "line"
+            },
+            {
+              "label": "pointerdown:after-toSvgPoint",
+              "time": 5926.9000000003725,
+              "x": 359.8930358886719,
+              "y": 260.0618591308594
+            },
+            {
+              "label": "pointerdown:after-cancelLongPress",
+              "time": 5926.9000000003725
+            },
+            {
+              "label": "pointerdown:after-focus",
+              "time": 5926.9000000003725
+            },
+            {
+              "label": "line-branch:start",
+              "time": 5926.9000000003725,
+              "active": true
+            },
+            {
+              "label": "line-branch:after-layer",
+              "time": 5926.9000000003725,
+              "layerTag": "svg"
+            },
+            {
+              "label": "line-branch:after-resolve",
+              "time": 5927,
+              "x": 359.8930358886719,
+              "y": 260.0618591308594
+            },
+            {
+              "label": "placeLineToolVertex:start",
+              "time": 5927,
+              "active": true
+            },
+            {
+              "label": "placeLineToolVertex:after-target-layer",
+              "time": 5927,
+              "layerTag": "svg"
+            },
+            {
+              "label": "line-branch:after-place",
+              "time": 5927.799999999814,
+              "active": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

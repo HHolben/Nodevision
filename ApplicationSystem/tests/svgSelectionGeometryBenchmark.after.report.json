@@ -1,0 +1,4683 @@
+{
+  "generatedAt": "2026-09-16T11:24:56.945Z",
+  "note": "Synthetic benchmark. SVG fixtures are generated under Notebook/__nv_svg_selection_geometry_benchmark during the run and then removed.",
+  "command": "/home/henry/CodexPlayground/Nodevision/node_modules/electron/dist/electron --no-sandbox ApplicationSystem/tests/svgSelectionGeometryBenchmark.electron.cjs",
+  "configuration": {
+    "warmups": 1,
+    "repetitions": 3,
+    "pointerUpdates": 60,
+    "dragClientDelta": {
+      "x": 120,
+      "y": 72
+    },
+    "objectCounts": [
+      0,
+      1,
+      10,
+      100,
+      1000
+    ],
+    "expectOptimized": true
+  },
+  "environment": {
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97",
+    "node": "24.15.0",
+    "v8": "14.8.178.14-electron.0",
+    "platform": "linux",
+    "release": "6.19.10-300.fc44.x86_64",
+    "arch": "x64",
+    "cpus": 8,
+    "totalMemoryBytes": 16468287488
+  },
+  "fixtures": [
+    {
+      "id": "empty",
+      "objectCount": 0,
+      "relativePath": "__nv_svg_selection_geometry_benchmark/empty.svg",
+      "label": "Empty SVG control"
+    },
+    {
+      "id": "1-objects",
+      "objectCount": 1,
+      "relativePath": "__nv_svg_selection_geometry_benchmark/1-objects.svg",
+      "label": "1 rectangle object"
+    },
+    {
+      "id": "10-objects",
+      "objectCount": 10,
+      "relativePath": "__nv_svg_selection_geometry_benchmark/10-objects.svg",
+      "label": "10 rectangle objects"
+    },
+    {
+      "id": "100-objects",
+      "objectCount": 100,
+      "relativePath": "__nv_svg_selection_geometry_benchmark/100-objects.svg",
+      "label": "100 rectangle objects"
+    },
+    {
+      "id": "1000-objects",
+      "objectCount": 1000,
+      "relativePath": "__nv_svg_selection_geometry_benchmark/1000-objects.svg",
+      "label": "1000 rectangle objects"
+    }
+  ],
+  "passes": [
+    {
+      "fixtureId": "empty",
+      "objectCount": 0,
+      "kind": "warmup",
+      "repetition": 0,
+      "skipped": true,
+      "reason": "empty SVG control",
+      "before": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {}
+    },
+    {
+      "fixtureId": "empty",
+      "objectCount": 0,
+      "kind": "measured",
+      "repetition": 0,
+      "skipped": true,
+      "reason": "empty SVG control",
+      "before": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {}
+    },
+    {
+      "fixtureId": "empty",
+      "objectCount": 0,
+      "kind": "measured",
+      "repetition": 1,
+      "skipped": true,
+      "reason": "empty SVG control",
+      "before": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {}
+    },
+    {
+      "fixtureId": "empty",
+      "objectCount": 0,
+      "kind": "measured",
+      "repetition": 2,
+      "skipped": true,
+      "reason": "empty SVG control",
+      "before": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": false,
+        "selected": [],
+        "unrelatedSelected": [],
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {}
+    },
+    {
+      "fixtureId": "1-objects",
+      "objectCount": 1,
+      "kind": "warmup",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 67.5,
+        "pointerUpdateDurations": [
+          2.6999999997206032,
+          1.2999999998137355,
+          1.1000000000931323,
+          1.1000000000931323,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          1.1000000000931323,
+          1.3000000002793968,
+          1.2999999998137355,
+          1,
+          1.1000000000931323,
+          1,
+          1.3000000002793968,
+          1.1999999997206032,
+          1.2000000001862645,
+          1.1999999997206032,
+          1.3000000002793968,
+          1.3999999999068677,
+          2.5,
+          1.3999999999068677,
+          1.099999999627471,
+          1,
+          1,
+          0.900000000372529,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          1.1000000000931323,
+          1,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          1.1000000000931323,
+          0.8999999999068677,
+          1.1000000000931323,
+          0.8999999999068677,
+          1.1000000000931323,
+          1,
+          1,
+          1.599999999627471,
+          1,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.900000000372529,
+          0.8999999999068677,
+          0.8999999999068677,
+          1
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 61,
+        "selectionVisualizationGetBBoxCalls": 61,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 5,
+        "propertiesPanelRefreshMs": 1.900000000372529,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 680.5
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "1-objects",
+      "objectCount": 1,
+      "kind": "measured",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 66.29999999981374,
+        "pointerUpdateDurations": [
+          1.7999999998137355,
+          1.5,
+          1.8999999999068677,
+          1.8999999999068677,
+          1.5,
+          1.1999999997206032,
+          1.3000000002793968,
+          1.1999999997206032,
+          1.3000000002793968,
+          1.1999999997206032,
+          1.6000000000931323,
+          1.3000000002793968,
+          1.599999999627471,
+          1.2000000001862645,
+          1,
+          1.1000000000931323,
+          1,
+          1.1999999997206032,
+          1.2000000001862645,
+          1,
+          1.1000000000931323,
+          1,
+          1.1999999997206032,
+          0.8999999999068677,
+          1,
+          0.900000000372529,
+          0.7000000001862645,
+          1.1000000000931323,
+          1.1999999997206032,
+          1,
+          0.8999999999068677,
+          0.7999999998137355,
+          1,
+          0.900000000372529,
+          0.900000000372529,
+          0.7999999998137355,
+          0.8999999999068677,
+          1.3999999999068677,
+          1.1000000000931323,
+          0.8999999999068677,
+          1,
+          1,
+          1.2000000001862645,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.900000000372529,
+          1,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.900000000372529,
+          0.8999999999068677
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 62,
+        "selectionVisualizationGetBBoxCalls": 62,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 6,
+        "propertiesPanelRefreshMs": 2.1000000000931323,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 828
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "1-objects",
+      "objectCount": 1,
+      "kind": "measured",
+      "repetition": 1,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 63.200000000186265,
+        "pointerUpdateDurations": [
+          1.5,
+          1.3000000002793968,
+          1.099999999627471,
+          1,
+          1.1000000000931323,
+          1.2999999998137355,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          1,
+          1,
+          1.099999999627471,
+          1,
+          1.1000000000931323,
+          1.1000000000931323,
+          1,
+          1,
+          1.1000000000931323,
+          1.1000000000931323,
+          1,
+          1,
+          1,
+          1.1999999997206032,
+          1,
+          1,
+          0.8999999999068677,
+          1.8000000002793968,
+          1.1999999997206032,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8999999999068677,
+          1.3000000002793968,
+          1,
+          0.7999999998137355,
+          0.8999999999068677,
+          1,
+          1,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.7000000001862645,
+          1,
+          1,
+          0.8999999999068677,
+          0.7999999998137355,
+          1,
+          0.8000000002793968,
+          0.8999999999068677,
+          1,
+          1.2999999998137355,
+          1.3999999999068677,
+          1,
+          0.8999999999068677,
+          0.7000000001862645,
+          1,
+          0.900000000372529,
+          0.8999999999068677,
+          0.7999999998137355
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 63,
+        "selectionVisualizationGetBBoxCalls": 63,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 7,
+        "propertiesPanelRefreshMs": 2.6999999997206032,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 977.2999999998137
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "1-objects",
+      "objectCount": 1,
+      "kind": "measured",
+      "repetition": 2,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 65.5,
+        "pointerUpdateDurations": [
+          2,
+          1.5,
+          1.3999999999068677,
+          1.2999999998137355,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.1999999997206032,
+          1.2000000001862645,
+          1,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.6000000000931323,
+          1.900000000372529,
+          1.3000000002793968,
+          1.1999999997206032,
+          1.1000000000931323,
+          1,
+          1.2000000001862645,
+          1,
+          1,
+          0.8999999999068677,
+          1.1000000000931323,
+          1.099999999627471,
+          0.8999999999068677,
+          0.8000000002793968,
+          2.1999999997206032,
+          1.1000000000931323,
+          0.8999999999068677,
+          0.8000000002793968,
+          1.099999999627471,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.900000000372529,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8999999999068677,
+          1.1000000000931323,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          1.5,
+          1.1999999997206032,
+          0.900000000372529,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          0.8999999999068677
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 64,
+        "selectionVisualizationGetBBoxCalls": 64,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 8,
+        "propertiesPanelRefreshMs": 3.1000000005587935,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 1128.1000000000931
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "10-objects",
+      "objectCount": 10,
+      "kind": "warmup",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 63.799999999813735,
+        "pointerUpdateDurations": [
+          1.599999999627471,
+          1.400000000372529,
+          1.2999999998137355,
+          1.6000000000931323,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.1999999997206032,
+          1.1000000000931323,
+          1,
+          1,
+          1.1000000000931323,
+          1.1999999997206032,
+          1.1000000000931323,
+          1,
+          1.7999999998137355,
+          1.2000000001862645,
+          1,
+          1.3999999999068677,
+          1.3999999999068677,
+          1.2000000001862645,
+          1,
+          1,
+          1,
+          0.900000000372529,
+          1,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.900000000372529,
+          1.3999999999068677,
+          1.1000000000931323,
+          1,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          1.3999999999068677,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.7999999998137355,
+          1.1000000000931323,
+          0.8999999999068677,
+          1,
+          0.8999999999068677
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 65,
+        "selectionVisualizationGetBBoxCalls": 65,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 9,
+        "propertiesPanelRefreshMs": 2.8999999999068677,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 1278.6000000000931
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "10-objects",
+      "objectCount": 10,
+      "kind": "measured",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 64.89999999990687,
+        "pointerUpdateDurations": [
+          1.3999999999068677,
+          1.2999999998137355,
+          1.2000000001862645,
+          1.2000000001862645,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.7000000001862645,
+          1.6000000000931323,
+          1.1000000000931323,
+          1.3999999999068677,
+          2.1000000000931323,
+          1.2000000001862645,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.099999999627471,
+          1.1000000000931323,
+          1.1000000000931323,
+          1,
+          1,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.3999999999068677,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          0.8999999999068677,
+          1,
+          1.1000000000931323,
+          1,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.900000000372529,
+          0.8999999999068677,
+          0.8999999999068677,
+          1.5,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          1.2999999998137355,
+          1.2000000001862645,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.900000000372529,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.900000000372529,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 66,
+        "selectionVisualizationGetBBoxCalls": 66,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 10,
+        "propertiesPanelRefreshMs": 4,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 1428.1000000000931
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "10-objects",
+      "objectCount": 10,
+      "kind": "measured",
+      "repetition": 1,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 63.200000000186265,
+        "pointerUpdateDurations": [
+          1.7000000001862645,
+          1.5,
+          1.2000000001862645,
+          1.1000000000931323,
+          1.2000000001862645,
+          1.099999999627471,
+          1.1000000000931323,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          1,
+          1.099999999627471,
+          1,
+          1,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.2000000001862645,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          1.8000000002793968,
+          1.2999999998137355,
+          1,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.900000000372529,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          1,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          1.1000000000931323,
+          1,
+          0.8999999999068677,
+          1.5,
+          1,
+          0.7999999998137355,
+          1.1000000000931323,
+          0.8999999999068677,
+          0.900000000372529,
+          0.7999999998137355,
+          0.8999999999068677
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 67,
+        "selectionVisualizationGetBBoxCalls": 67,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 11,
+        "propertiesPanelRefreshMs": 3.7000000001862645,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 1579.2999999998137
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "10-objects",
+      "objectCount": 10,
+      "kind": "measured",
+      "repetition": 2,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 77.60000000009313,
+        "pointerUpdateDurations": [
+          2.3000000002793968,
+          2,
+          1.2999999998137355,
+          1,
+          1,
+          1.1000000000931323,
+          1.099999999627471,
+          1,
+          1.1000000000931323,
+          1.5,
+          1.7999999998137355,
+          1.8999999999068677,
+          2,
+          1.7000000001862645,
+          1.5,
+          1.5,
+          1.5,
+          2.3000000002793968,
+          1.3999999999068677,
+          1,
+          1.1000000000931323,
+          1,
+          1.6000000000931323,
+          1.2999999998137355,
+          1.1000000000931323,
+          1.099999999627471,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          1,
+          1,
+          1,
+          0.8999999999068677,
+          1.2000000001862645,
+          1,
+          1,
+          1.2999999998137355,
+          1.2999999998137355,
+          1.1000000000931323,
+          1,
+          1.099999999627471,
+          1,
+          1,
+          1.1000000000931323,
+          1.8999999999068677,
+          1.2000000001862645,
+          1.1000000000931323,
+          1.099999999627471,
+          1,
+          1.2000000001862645,
+          1.1000000000931323,
+          1.7999999998137355,
+          1.2999999998137355,
+          1.2000000001862645,
+          1.1000000000931323,
+          1,
+          1.1000000000931323,
+          1.1999999997206032,
+          1,
+          1
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 68,
+        "selectionVisualizationGetBBoxCalls": 68,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 12,
+        "propertiesPanelRefreshMs": 5.099999999627471,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 1728.7999999998137
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "100-objects",
+      "objectCount": 100,
+      "kind": "warmup",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 76.89999999990687,
+        "pointerUpdateDurations": [
+          1.6000000000931323,
+          1.2999999998137355,
+          1.1000000000931323,
+          1.099999999627471,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.2000000001862645,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.2999999998137355,
+          1.2000000001862645,
+          1.3999999999068677,
+          1.1999999997206032,
+          1.6000000000931323,
+          1.2000000001862645,
+          1.2999999998137355,
+          1.2000000001862645,
+          1.2999999998137355,
+          1.2000000001862645,
+          1.1999999997206032,
+          1.2000000001862645,
+          2,
+          11.899999999906868,
+          1.8000000002793968,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.099999999627471,
+          1.400000000372529,
+          1.7999999998137355,
+          0.8999999999068677,
+          0.7999999998137355,
+          1.2000000001862645,
+          0.6999999997206032,
+          0.900000000372529,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.900000000372529,
+          0.900000000372529,
+          0.7999999998137355,
+          0.7999999998137355,
+          1,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8000000002793968,
+          1.1999999997206032,
+          0.900000000372529,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.900000000372529,
+          0.6999999997206032,
+          0.8000000002793968,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 69,
+        "selectionVisualizationGetBBoxCalls": 69,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 13,
+        "propertiesPanelRefreshMs": 4.900000000372529,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 1911.5
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "100-objects",
+      "objectCount": 100,
+      "kind": "measured",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 56.90000000037253,
+        "pointerUpdateDurations": [
+          1.8000000002793968,
+          1.3999999999068677,
+          1.1999999997206032,
+          1.1000000000931323,
+          1,
+          1.2999999998137355,
+          1.1000000000931323,
+          1,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          1.8999999999068677,
+          1.2000000001862645,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.900000000372529,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.7000000001862645,
+          0.900000000372529,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          1.6000000000931323,
+          1,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.7000000001862645,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.6999999997206032,
+          0.7000000001862645,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.6999999997206032,
+          0.900000000372529,
+          0.6999999997206032,
+          0.7999999998137355,
+          0.8000000002793968
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 70,
+        "selectionVisualizationGetBBoxCalls": 70,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 14,
+        "propertiesPanelRefreshMs": 4.800000000279397,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 2090.2999999998137
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "100-objects",
+      "objectCount": 100,
+      "kind": "measured",
+      "repetition": 1,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 58.10000000009313,
+        "pointerUpdateDurations": [
+          1.6000000000931323,
+          1.2000000001862645,
+          1.1000000000931323,
+          1,
+          1,
+          1,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          1.2000000001862645,
+          1,
+          1,
+          0.8999999999068677,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1.1000000000931323,
+          1,
+          2.1000000000931323,
+          1.2000000001862645,
+          1.099999999627471,
+          1,
+          1,
+          0.900000000372529,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.900000000372529,
+          1,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.6999999997206032,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.6999999997206032,
+          1.400000000372529,
+          1,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.6999999997206032,
+          0.8000000002793968,
+          0.7999999998137355
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 71,
+        "selectionVisualizationGetBBoxCalls": 71,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 15,
+        "propertiesPanelRefreshMs": 5.399999999906868,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 2240.7999999998137
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "100-objects",
+      "objectCount": 100,
+      "kind": "measured",
+      "repetition": 2,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 58,
+        "pointerUpdateDurations": [
+          1.3999999999068677,
+          1.1999999997206032,
+          1,
+          1.1000000000931323,
+          1.1000000000931323,
+          1,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          1.2000000001862645,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.6999999997206032,
+          0.8999999999068677,
+          0.900000000372529,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.900000000372529,
+          0.7999999998137355,
+          0.7000000001862645,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          2.1000000000931323,
+          1.2000000001862645,
+          1,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          1,
+          1,
+          1,
+          1.1000000000931323,
+          0.8999999999068677,
+          1.1000000000931323,
+          1.1000000000931323,
+          1,
+          1,
+          1
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 72,
+        "selectionVisualizationGetBBoxCalls": 72,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 16,
+        "propertiesPanelRefreshMs": 6.699999999720603,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 2389.7000000001863
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "1000-objects",
+      "objectCount": 1000,
+      "kind": "warmup",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 66.90000000037253,
+        "pointerUpdateDurations": [
+          1.6000000000931323,
+          1.5,
+          1.2000000001862645,
+          1.1000000000931323,
+          1.3000000002793968,
+          1.8999999999068677,
+          1.8999999999068677,
+          1.1999999997206032,
+          1.2000000001862645,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.1000000000931323,
+          1.099999999627471,
+          1.1000000000931323,
+          1,
+          1,
+          1.2000000001862645,
+          1,
+          1.099999999627471,
+          1,
+          0.900000000372529,
+          0.8999999999068677,
+          1,
+          0.7999999998137355,
+          1,
+          0.8999999999068677,
+          1,
+          1,
+          1,
+          0.8999999999068677,
+          0.8000000002793968,
+          1,
+          1,
+          1,
+          1,
+          0.7999999998137355,
+          0.8999999999068677,
+          1,
+          1.1000000000931323,
+          1,
+          1,
+          1,
+          1,
+          2.8000000002793968,
+          1.1999999997206032,
+          1.1000000000931323,
+          1.1000000000931323,
+          0.8999999999068677,
+          1,
+          1,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.900000000372529,
+          1.099999999627471,
+          1,
+          1,
+          0.900000000372529,
+          0.8000000002793968
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 73,
+        "selectionVisualizationGetBBoxCalls": 73,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 17,
+        "propertiesPanelRefreshMs": 6.100000000093132,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 2699.7999999998137
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "1000-objects",
+      "objectCount": 1000,
+      "kind": "measured",
+      "repetition": 0,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 62.60000000009313,
+        "pointerUpdateDurations": [
+          1.3999999999068677,
+          1.2999999998137355,
+          0.900000000372529,
+          0.900000000372529,
+          0.8999999999068677,
+          1.1000000000931323,
+          1,
+          0.900000000372529,
+          1,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8999999999068677,
+          1,
+          1,
+          1,
+          0.8999999999068677,
+          0.900000000372529,
+          1.099999999627471,
+          0.900000000372529,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          3.5,
+          1.2999999998137355,
+          0.8999999999068677,
+          1.2000000001862645,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.900000000372529,
+          1.099999999627471,
+          0.900000000372529,
+          0.8999999999068677,
+          1,
+          0.7999999998137355,
+          0.8999999999068677,
+          1,
+          1,
+          0.900000000372529,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          1.1000000000931323,
+          1,
+          1,
+          1,
+          1.099999999627471,
+          1.1000000000931323,
+          1.1000000000931323,
+          1,
+          1,
+          1,
+          0.8999999999068677
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 74,
+        "selectionVisualizationGetBBoxCalls": 74,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 18,
+        "propertiesPanelRefreshMs": 6.400000000372529,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 2979
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "1000-objects",
+      "objectCount": 1000,
+      "kind": "measured",
+      "repetition": 1,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 59.700000000186265,
+        "pointerUpdateDurations": [
+          1.3000000002793968,
+          1.1999999997206032,
+          0.8999999999068677,
+          1.1000000000931323,
+          1.2000000001862645,
+          1,
+          1.1000000000931323,
+          0.8999999999068677,
+          1,
+          0.900000000372529,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          1,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.900000000372529,
+          1,
+          1.1999999997206032,
+          1,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          0.900000000372529,
+          1,
+          1,
+          1.099999999627471,
+          1,
+          0.8000000002793968,
+          0.7999999998137355,
+          3,
+          1.6000000000931323,
+          1,
+          0.8999999999068677,
+          1,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7000000001862645,
+          0.8999999999068677,
+          0.6999999997206032,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.900000000372529,
+          1,
+          0.900000000372529,
+          0.7999999998137355,
+          0.7999999998137355
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 75,
+        "selectionVisualizationGetBBoxCalls": 75,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 19,
+        "propertiesPanelRefreshMs": 6.699999999720603,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 3236.7999999998137
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "fixtureId": "1000-objects",
+      "objectCount": 1000,
+      "kind": "measured",
+      "repetition": 2,
+      "skipped": false,
+      "before": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 40,
+        "y": 40,
+        "transform": "",
+        "bbox": {
+          "x": 40,
+          "y": 40,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 36.999999999999986,
+          "y": 36.999999999999986,
+          "width": 26.000000000000014,
+          "height": 20.00000095367433
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "35.999999999999986",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "56",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "35.999999999999986",
+            "y": "50.000000953674316",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "after": {
+        "hasRect": true,
+        "id": "bench-rect-0",
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": "",
+        "bbox": {
+          "x": 157.0041046142578,
+          "y": 110.20246887207031,
+          "width": 20,
+          "height": 14.000000953674316
+        },
+        "selected": [
+          "bench-rect-0"
+        ],
+        "unrelatedSelected": [],
+        "dataSelected": "true",
+        "selectionBox": {
+          "display": "",
+          "x": 154.0041046142578,
+          "y": 107.20246887207034,
+          "width": 26,
+          "height": 20.000000953674288
+        },
+        "handles": [
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "circle",
+            "display": "none",
+            "x": null,
+            "y": null,
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "106.20246887207034",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "173.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          },
+          {
+            "tag": "rect",
+            "display": "",
+            "x": "153.0041046142578",
+            "y": "120.20246982574463",
+            "cx": null,
+            "cy": null
+          }
+        ]
+      },
+      "metrics": {
+        "activeMs": 54.3000000002794,
+        "pointerUpdateDurations": [
+          1.3000000002793968,
+          0.900000000372529,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.7000000001862645,
+          0.8999999999068677,
+          0.7999999998137355,
+          1,
+          0.900000000372529,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.7000000001862645,
+          0.6999999997206032,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.6999999997206032,
+          0.7000000001862645,
+          0.8999999999068677,
+          0.8999999999068677,
+          1,
+          1.1000000000931323,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7000000001862645,
+          3.1999999997206032,
+          1.2000000001862645,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.6999999997206032,
+          0.8000000002793968,
+          0.8999999999068677,
+          1,
+          0.8999999999068677,
+          0.8999999999068677,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.7999999998137355,
+          0.7999999998137355,
+          0.8000000002793968,
+          0.8999999999068677,
+          0.7999999998137355,
+          0.8000000002793968
+        ],
+        "pointerMoveListenerCalls": 60,
+        "getSelectableElementsCalls": 0,
+        "querySelectorAllStar": 0,
+        "selectionRefreshQuerySelectorAllStar": 0,
+        "selectionBoundsCalculations": 76,
+        "selectionVisualizationGetBBoxCalls": 76,
+        "refreshSelectionVisualsGetBBoxCalls": 0,
+        "refreshTransformHandlesGetBBoxCalls": 0,
+        "transformHandleRefreshes": 60,
+        "transformHandleAttributeWrites": 1080,
+        "transformHandleHideWrites": 360,
+        "selectionMutatedDispatches": 1,
+        "selectionChangedDispatches": 0,
+        "dataSelectedWrites": 0,
+        "unrelatedDataSelectedWrites": 0,
+        "layersRefreshes": 0,
+        "propertiesPanelRefreshes": 20,
+        "propertiesPanelRefreshMs": 8,
+        "mutationObserverCallbacks": 0,
+        "childListMutationRecords": 0,
+        "startedAt": 3516.399999999907
+      },
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    }
+  ],
+  "aggregates": [
+    {
+      "objectCount": 0,
+      "fixtureId": "empty",
+      "skipped": true,
+      "reason": "empty SVG control"
+    },
+    {
+      "objectCount": 1,
+      "fixtureId": "1-objects",
+      "skipped": false,
+      "repetitions": 3,
+      "totalDragMs": {
+        "count": 3,
+        "mean": 65,
+        "median": 65.5,
+        "p95": 66.3,
+        "max": 66.3,
+        "stdev": 1.61
+      },
+      "pointerUpdateMs": {
+        "count": 180,
+        "mean": 1.05,
+        "median": 1,
+        "p95": 1.6,
+        "max": 2.2,
+        "stdev": 0.26
+      },
+      "avgGetSelectableElementsCalls": 0,
+      "avgSelectionRefreshQuerySelectorAllStar": 0,
+      "avgSelectionBoundsCalculations": 63,
+      "avgSelectionVisualizationGetBBoxCalls": 63,
+      "avgRefreshSelectionVisualsGetBBoxCalls": 0,
+      "avgRefreshTransformHandlesGetBBoxCalls": 0,
+      "avgTransformHandleRefreshes": 60,
+      "avgSelectionMutatedDispatches": 1,
+      "avgSelectionChangedDispatches": 0,
+      "avgDataSelectedWrites": 0,
+      "avgUnrelatedDataSelectedWrites": 0,
+      "avgLayersRefreshes": 0,
+      "avgPropertiesPanelRefreshes": 7,
+      "avgPropertiesPanelRefreshMs": 2.63,
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "objectCount": 10,
+      "fixtureId": "10-objects",
+      "skipped": false,
+      "repetitions": 3,
+      "totalDragMs": {
+        "count": 3,
+        "mean": 68.57,
+        "median": 64.9,
+        "p95": 77.6,
+        "max": 77.6,
+        "stdev": 7.87
+      },
+      "pointerUpdateMs": {
+        "count": 180,
+        "mean": 1.12,
+        "median": 1.1,
+        "p95": 1.8,
+        "max": 2.3,
+        "stdev": 0.29
+      },
+      "avgGetSelectableElementsCalls": 0,
+      "avgSelectionRefreshQuerySelectorAllStar": 0,
+      "avgSelectionBoundsCalculations": 67,
+      "avgSelectionVisualizationGetBBoxCalls": 67,
+      "avgRefreshSelectionVisualsGetBBoxCalls": 0,
+      "avgRefreshTransformHandlesGetBBoxCalls": 0,
+      "avgTransformHandleRefreshes": 60,
+      "avgSelectionMutatedDispatches": 1,
+      "avgSelectionChangedDispatches": 0,
+      "avgDataSelectedWrites": 0,
+      "avgUnrelatedDataSelectedWrites": 0,
+      "avgLayersRefreshes": 0,
+      "avgPropertiesPanelRefreshes": 11,
+      "avgPropertiesPanelRefreshMs": 4.27,
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "objectCount": 100,
+      "fixtureId": "100-objects",
+      "skipped": false,
+      "repetitions": 3,
+      "totalDragMs": {
+        "count": 3,
+        "mean": 57.67,
+        "median": 58,
+        "p95": 58.1,
+        "max": 58.1,
+        "stdev": 0.67
+      },
+      "pointerUpdateMs": {
+        "count": 180,
+        "mean": 0.93,
+        "median": 0.9,
+        "p95": 1.4,
+        "max": 2.1,
+        "stdev": 0.22
+      },
+      "avgGetSelectableElementsCalls": 0,
+      "avgSelectionRefreshQuerySelectorAllStar": 0,
+      "avgSelectionBoundsCalculations": 71,
+      "avgSelectionVisualizationGetBBoxCalls": 71,
+      "avgRefreshSelectionVisualsGetBBoxCalls": 0,
+      "avgRefreshTransformHandlesGetBBoxCalls": 0,
+      "avgTransformHandleRefreshes": 60,
+      "avgSelectionMutatedDispatches": 1,
+      "avgSelectionChangedDispatches": 0,
+      "avgDataSelectedWrites": 0,
+      "avgUnrelatedDataSelectedWrites": 0,
+      "avgLayersRefreshes": 0,
+      "avgPropertiesPanelRefreshes": 15,
+      "avgPropertiesPanelRefreshMs": 5.63,
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    },
+    {
+      "objectCount": 1000,
+      "fixtureId": "1000-objects",
+      "skipped": false,
+      "repetitions": 3,
+      "totalDragMs": {
+        "count": 3,
+        "mean": 58.87,
+        "median": 59.7,
+        "p95": 62.6,
+        "max": 62.6,
+        "stdev": 4.21
+      },
+      "pointerUpdateMs": {
+        "count": 180,
+        "mean": 0.96,
+        "median": 0.9,
+        "p95": 1.3,
+        "max": 3.5,
+        "stdev": 0.33
+      },
+      "avgGetSelectableElementsCalls": 0,
+      "avgSelectionRefreshQuerySelectorAllStar": 0,
+      "avgSelectionBoundsCalculations": 75,
+      "avgSelectionVisualizationGetBBoxCalls": 75,
+      "avgRefreshSelectionVisualsGetBBoxCalls": 0,
+      "avgRefreshTransformHandlesGetBBoxCalls": 0,
+      "avgTransformHandleRefreshes": 60,
+      "avgSelectionMutatedDispatches": 1,
+      "avgSelectionChangedDispatches": 0,
+      "avgDataSelectedWrites": 0,
+      "avgUnrelatedDataSelectedWrites": 0,
+      "avgLayersRefreshes": 0,
+      "avgPropertiesPanelRefreshes": 19,
+      "avgPropertiesPanelRefreshMs": 7.03,
+      "finalObjectPosition": {
+        "x": 157.00410715189673,
+        "y": 110.20246429113801,
+        "transform": ""
+      }
+    }
+  ]
+}

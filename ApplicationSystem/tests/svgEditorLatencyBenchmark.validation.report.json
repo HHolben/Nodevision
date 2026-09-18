@@ -1,0 +1,1167 @@
+{
+  "generatedAt": "2026-09-16T20:16:47.934Z",
+  "configuration": {
+    "expectDeferredLayout": true
+  },
+  "environment": {
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97",
+    "node": "24.15.0",
+    "v8": "14.8.178.14-electron.0",
+    "platform": "linux",
+    "release": "6.19.10-300.fc44.x86_64",
+    "arch": "x64",
+    "cpus": 8,
+    "totalMemoryBytes": 16468287488
+  },
+  "fixtures": [
+    {
+      "id": "empty",
+      "objectCount": 0,
+      "relativePath": "__nv_svg_editor_latency_benchmark/empty.svg",
+      "label": "Empty SVG"
+    },
+    {
+      "id": "1-objects",
+      "objectCount": 1,
+      "relativePath": "__nv_svg_editor_latency_benchmark/1-objects.svg",
+      "label": "1 simple objects"
+    },
+    {
+      "id": "10-objects",
+      "objectCount": 10,
+      "relativePath": "__nv_svg_editor_latency_benchmark/10-objects.svg",
+      "label": "10 simple objects"
+    },
+    {
+      "id": "100-objects",
+      "objectCount": 100,
+      "relativePath": "__nv_svg_editor_latency_benchmark/100-objects.svg",
+      "label": "100 simple objects"
+    },
+    {
+      "id": "1000-objects",
+      "objectCount": 1000,
+      "relativePath": "__nv_svg_editor_latency_benchmark/1000-objects.svg",
+      "label": "1000 simple objects"
+    },
+    {
+      "id": "mixed",
+      "objectCount": "mixed",
+      "relativePath": "__nv_svg_editor_latency_benchmark/mixed.svg",
+      "label": "Mixed layers paths text image"
+    }
+  ],
+  "rows": [
+    {
+      "label": "current",
+      "fixture": {
+        "id": "empty",
+        "objectCount": 0,
+        "relativePath": "__nv_svg_editor_latency_benchmark/empty.svg",
+        "label": "Empty SVG"
+      },
+      "marks": {
+        "openCommand": 483.40000000037253,
+        "svgDomInsertion": 643.0999999996275,
+        "svgFetchStart": 643.7000000001863,
+        "svgFetchResponse": 654.2999999998137,
+        "svgParseStart": 655.5999999996275,
+        "svgParseEnd": 656.0999999996275,
+        "contextReady": 679,
+        "setupResolved": 682.2000000001863,
+        "firstPostOpenFrame": 690.2999999998137
+      },
+      "zeroDelayTimerDelayMs": 8.399999999441206,
+      "rafDelayMs": 7,
+      "eventLoopProbeDelays": [
+        5.7999999998137355,
+        0.39999999944120646,
+        3.1000000005587935,
+        0,
+        0.39999999944120646,
+        0.10000000055879354,
+        0.20000000018626451,
+        0.2999999998137355,
+        0.599999999627471,
+        1.6000000005587935,
+        0.19999999925494194,
+        0.5,
+        0.30000000074505806,
+        0.19999999925494194,
+        0.20000000018626451,
+        0.10000000055879354,
+        0.19999999925494194,
+        0.10000000055879354,
+        0.20000000018626451,
+        0.19999999925494194,
+        0.20000000018626451,
+        0.10000000055879354,
+        0.19999999925494194,
+        0.20000000018626451,
+        0.20000000018626451,
+        0.20000000018626451,
+        0.09999999962747097,
+        10.100000000558794
+      ],
+      "eventLoopProbeMaxDelayMs": 10.100000000558794,
+      "unrelatedControl": {
+        "intendedDispatch": 483.40000000037253,
+        "actualDispatch": 491.79999999981374,
+        "handlerStart": 493.09999999962747,
+        "visualResult": 694.7999999998137
+      },
+      "unrelatedControlAttempts": [
+        {
+          "delayMs": 0,
+          "intended": 483.40000000037253,
+          "actualDispatch": 493.59999999962747,
+          "handlerStart": 493.79999999981374,
+          "visualResult": 511.90000000037253
+        },
+        {
+          "delayMs": 20,
+          "intended": 503.40000000037253,
+          "actualDispatch": 507.09999999962747,
+          "handlerStart": 507.59999999962747,
+          "visualResult": 512
+        },
+        {
+          "delayMs": 50,
+          "intended": 533.4000000003725,
+          "actualDispatch": 533.7999999998137,
+          "handlerStart": 534.0999999996275,
+          "visualResult": 545.5999999996275
+        },
+        {
+          "delayMs": 100,
+          "intended": 583.4000000003725,
+          "actualDispatch": 587.7999999998137,
+          "handlerStart": 588,
+          "visualResult": 611.2999999998137
+        },
+        {
+          "delayMs": 180,
+          "intended": 663.4000000003725,
+          "actualDispatch": 688.7999999998137,
+          "handlerStart": 689.0999999996275,
+          "visualResult": 694.7999999998137
+        }
+      ],
+      "longTasks": [],
+      "totalBlockingTimeMs": 0,
+      "longestTaskMs": 0,
+      "domNodesBefore": 8,
+      "domNodesAfterOpen": 480,
+      "domNodesAfterLine": 482,
+      "appendChildCalls": 492,
+      "panelCellInsertions": 4,
+      "querySelectorAllCalls": 24,
+      "querySelectorAllStar": 1,
+      "panelCellQueries": 0,
+      "layerQueries": 10,
+      "getBBoxCalls": 0,
+      "mutationObserversCreated": 3,
+      "mutationObserverObserveCalls": 3,
+      "mutationObserverCallbacks": 24,
+      "mutationObserverDisconnects": 0,
+      "mutationRecordCount": 252,
+      "selectionChangedDispatches": 1,
+      "selectionMutatedDispatches": 0,
+      "pointerdownHandlerCalls": 15,
+      "pointerdownHandlerDurations": [
+        0.2999999998137355,
+        1.2000000001862645,
+        0,
+        0.20000000018626451,
+        8.799999999813735,
+        0,
+        0.6999999992549419,
+        0,
+        0.10000000055879354,
+        1.2999999998137355,
+        0,
+        0.8000000007450581,
+        0,
+        0,
+        1
+      ],
+      "clickHandlerDurations": [
+        0.599999999627471,
+        0.20000000018626451,
+        0.2999999998137355,
+        0.20000000018626451,
+        0,
+        0,
+        0.10000000055879354,
+        0,
+        0,
+        0.09999999962747097,
+        0,
+        0.10000000055879354,
+        0.20000000018626451,
+        0,
+        0.09999999962747097,
+        0.19999999925494194,
+        0,
+        0.20000000018626451
+      ],
+      "lineClicks": [
+        {
+          "phase": "first",
+          "latencyMs": 40,
+          "newLines": 0,
+          "handlerMs": 8.799999999813735,
+          "objectCount": 0
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 21,
+          "newLines": 1,
+          "handlerMs": 1.2999999998137355,
+          "objectCount": 0
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 29.40000000037253,
+          "newLines": 1,
+          "handlerMs": 1,
+          "objectCount": 0
+        },
+        {
+          "phase": "final",
+          "latencyMs": 33.09999999962747,
+          "newLines": 0,
+          "handlerMs": 0,
+          "objectCount": 0
+        }
+      ],
+      "__pendingControlAttempt": null,
+      "panelCellsAfterOpen": 4,
+      "editorAcceptsInputAt": 679,
+      "workspaceResponsiveAt": 493.09999999962747
+    },
+    {
+      "label": "current",
+      "fixture": {
+        "id": "1-objects",
+        "objectCount": 1,
+        "relativePath": "__nv_svg_editor_latency_benchmark/1-objects.svg",
+        "label": "1 simple objects"
+      },
+      "marks": {
+        "openCommand": 1140.9000000003725,
+        "svgDomInsertion": 1150,
+        "svgFetchStart": 1150,
+        "svgFetchResponse": 1155.7999999998137,
+        "svgParseStart": 1156.5,
+        "svgParseEnd": 1156.7999999998137,
+        "contextReady": 1166.0999999996275,
+        "setupResolved": 1168.4000000003725,
+        "firstPostOpenFrame": 1180.7999999998137
+      },
+      "zeroDelayTimerDelayMs": 4.199999999254942,
+      "rafDelayMs": 5.199999999254942,
+      "eventLoopProbeDelays": [
+        1.7000000001862645,
+        0.20000000018626451
+      ],
+      "eventLoopProbeMaxDelayMs": 1.7000000001862645,
+      "unrelatedControl": {
+        "intendedDispatch": 1140.9000000003725,
+        "actualDispatch": 1145.2000000001863,
+        "handlerStart": 1145.5999999996275,
+        "visualResult": 1345.0999999996275
+      },
+      "unrelatedControlAttempts": [
+        {
+          "delayMs": 0,
+          "intended": 1140.9000000003725,
+          "actualDispatch": 1145.7000000001863,
+          "handlerStart": 1145.9000000003725,
+          "visualResult": 1169.7999999998137
+        },
+        {
+          "delayMs": 20,
+          "intended": 1160.9000000003725,
+          "actualDispatch": 1173.9000000003725,
+          "handlerStart": 1174.2999999998137,
+          "visualResult": 1194.5
+        },
+        {
+          "delayMs": 50,
+          "intended": 1190.9000000003725,
+          "actualDispatch": 1191.0999999996275,
+          "handlerStart": 1191.2999999998137,
+          "visualResult": 1216.7999999998137
+        },
+        {
+          "delayMs": 100,
+          "intended": 1240.9000000003725,
+          "actualDispatch": 1241.4000000003725,
+          "handlerStart": 1241.5,
+          "visualResult": 1244.5999999996275
+        },
+        {
+          "delayMs": 180,
+          "intended": 1320.9000000003725,
+          "actualDispatch": 1321.4000000003725,
+          "handlerStart": 1321.5,
+          "visualResult": 1345.0999999996275
+        }
+      ],
+      "longTasks": [],
+      "totalBlockingTimeMs": 0,
+      "longestTaskMs": 0,
+      "domNodesBefore": 482,
+      "domNodesAfterOpen": 528,
+      "domNodesAfterLine": 530,
+      "appendChildCalls": 51,
+      "panelCellInsertions": 4,
+      "querySelectorAllCalls": 15,
+      "querySelectorAllStar": 1,
+      "panelCellQueries": 0,
+      "layerQueries": 7,
+      "getBBoxCalls": 0,
+      "mutationObserversCreated": 2,
+      "mutationObserverObserveCalls": 2,
+      "mutationObserverCallbacks": 22,
+      "mutationObserverDisconnects": 1,
+      "mutationRecordCount": 161,
+      "selectionChangedDispatches": 1,
+      "selectionMutatedDispatches": 0,
+      "pointerdownHandlerCalls": 15,
+      "pointerdownHandlerDurations": [
+        0.09999999962747097,
+        1.5,
+        0,
+        0.10000000055879354,
+        2.5,
+        0.09999999962747097,
+        1,
+        0,
+        0.20000000018626451,
+        1.599999999627471,
+        0.10000000055879354,
+        3.199999999254942,
+        0,
+        0.20000000018626451,
+        1
+      ],
+      "clickHandlerDurations": [
+        0.20000000018626451,
+        0.09999999962747097,
+        0,
+        0.20000000018626451,
+        0,
+        0,
+        0.2999999998137355,
+        0,
+        0.10000000055879354,
+        0,
+        0.20000000018626451,
+        0.09999999962747097
+      ],
+      "lineClicks": [
+        {
+          "phase": "first",
+          "latencyMs": 33.40000000037253,
+          "newLines": 0,
+          "handlerMs": 2.5,
+          "objectCount": 1
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 30.40000000037253,
+          "newLines": 1,
+          "handlerMs": 1.599999999627471,
+          "objectCount": 1
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 33.39999999944121,
+          "newLines": 1,
+          "handlerMs": 1,
+          "objectCount": 1
+        },
+        {
+          "phase": "final",
+          "latencyMs": 33.200000000186265,
+          "newLines": 0,
+          "handlerMs": 0,
+          "objectCount": 1
+        }
+      ],
+      "__pendingControlAttempt": null,
+      "panelCellsAfterOpen": 5,
+      "editorAcceptsInputAt": 1166.0999999996275,
+      "workspaceResponsiveAt": 1145.5999999996275
+    },
+    {
+      "label": "current",
+      "fixture": {
+        "id": "10-objects",
+        "objectCount": 10,
+        "relativePath": "__nv_svg_editor_latency_benchmark/10-objects.svg",
+        "label": "10 simple objects"
+      },
+      "marks": {
+        "openCommand": 1590.5,
+        "svgDomInsertion": 1598.7000000001863,
+        "svgFetchStart": 1598.9000000003725,
+        "svgFetchResponse": 1605.9000000003725,
+        "svgParseStart": 1606.4000000003725,
+        "svgParseEnd": 1606.7999999998137,
+        "contextReady": 1614.7000000001863,
+        "setupResolved": 1616.7000000001863,
+        "firstPostOpenFrame": 1627.7000000001863
+      },
+      "zeroDelayTimerDelayMs": 3.599999999627471,
+      "rafDelayMs": 4.2999999998137355,
+      "eventLoopProbeDelays": [
+        0.8000000007450581,
+        0.2999999998137355
+      ],
+      "eventLoopProbeMaxDelayMs": 0.8000000007450581,
+      "unrelatedControl": {
+        "intendedDispatch": 1590.5,
+        "actualDispatch": 1594.0999999996275,
+        "handlerStart": 1594.4000000003725,
+        "visualResult": 1794.5
+      },
+      "unrelatedControlAttempts": [
+        {
+          "delayMs": 0,
+          "intended": 1590.5,
+          "actualDispatch": 1594.5,
+          "handlerStart": 1594.5999999996275,
+          "visualResult": 1617.9000000003725
+        },
+        {
+          "delayMs": 20,
+          "intended": 1610.5,
+          "actualDispatch": 1621.0999999996275,
+          "handlerStart": 1621.2999999998137,
+          "visualResult": 1644.5
+        },
+        {
+          "delayMs": 50,
+          "intended": 1640.5,
+          "actualDispatch": 1640.7999999998137,
+          "handlerStart": 1640.7999999998137,
+          "visualResult": 1664.5999999996275
+        },
+        {
+          "delayMs": 100,
+          "intended": 1690.5,
+          "actualDispatch": 1690.7999999998137,
+          "handlerStart": 1690.9000000003725,
+          "visualResult": 1694.5
+        },
+        {
+          "delayMs": 180,
+          "intended": 1770.5,
+          "actualDispatch": 1770.7999999998137,
+          "handlerStart": 1770.7999999998137,
+          "visualResult": 1794.5
+        }
+      ],
+      "longTasks": [],
+      "totalBlockingTimeMs": 0,
+      "longestTaskMs": 0,
+      "domNodesBefore": 530,
+      "domNodesAfterOpen": 585,
+      "domNodesAfterLine": 587,
+      "appendChildCalls": 51,
+      "panelCellInsertions": 4,
+      "querySelectorAllCalls": 15,
+      "querySelectorAllStar": 1,
+      "panelCellQueries": 0,
+      "layerQueries": 7,
+      "getBBoxCalls": 0,
+      "mutationObserversCreated": 2,
+      "mutationObserverObserveCalls": 2,
+      "mutationObserverCallbacks": 11,
+      "mutationObserverDisconnects": 0,
+      "mutationRecordCount": 138,
+      "selectionChangedDispatches": 1,
+      "selectionMutatedDispatches": 0,
+      "pointerdownHandlerCalls": 15,
+      "pointerdownHandlerDurations": [
+        0,
+        0.7999999998137355,
+        0,
+        0,
+        1.2999999998137355,
+        0.09999999962747097,
+        1,
+        0,
+        0,
+        1.400000000372529,
+        0,
+        0.900000000372529,
+        0,
+        0.20000000018626451,
+        1.2999999998137355
+      ],
+      "clickHandlerDurations": [
+        0.20000000018626451,
+        0,
+        0.09999999962747097,
+        0,
+        0,
+        0.10000000055879354,
+        0.20000000018626451,
+        0,
+        0,
+        0.10000000055879354,
+        0.09999999962747097,
+        0.20000000018626451
+      ],
+      "lineClicks": [
+        {
+          "phase": "first",
+          "latencyMs": 33.89999999944121,
+          "newLines": 0,
+          "handlerMs": 1.2999999998137355,
+          "objectCount": 10
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 30,
+          "newLines": 1,
+          "handlerMs": 1.400000000372529,
+          "objectCount": 10
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 34.89999999944121,
+          "newLines": 1,
+          "handlerMs": 1.2999999998137355,
+          "objectCount": 10
+        },
+        {
+          "phase": "final",
+          "latencyMs": 31.399999999441206,
+          "newLines": 0,
+          "handlerMs": 0,
+          "objectCount": 10
+        }
+      ],
+      "__pendingControlAttempt": null,
+      "panelCellsAfterOpen": 6,
+      "editorAcceptsInputAt": 1614.7000000001863,
+      "workspaceResponsiveAt": 1594.4000000003725
+    },
+    {
+      "label": "current",
+      "fixture": {
+        "id": "100-objects",
+        "objectCount": 100,
+        "relativePath": "__nv_svg_editor_latency_benchmark/100-objects.svg",
+        "label": "100 simple objects"
+      },
+      "marks": {
+        "openCommand": 2053,
+        "svgDomInsertion": 2062.0999999996275,
+        "svgFetchStart": 2062.4000000003725,
+        "svgFetchResponse": 2077.7999999998137,
+        "svgParseStart": 2081.0999999996275,
+        "svgParseEnd": 2083.2000000001863,
+        "contextReady": 2089.4000000003725,
+        "setupResolved": 2091.0999999996275,
+        "firstPostOpenFrame": 2114.7000000001863
+      },
+      "zeroDelayTimerDelayMs": 5,
+      "rafDelayMs": 10.799999999813735,
+      "eventLoopProbeDelays": [
+        0.900000000372529,
+        3.199999999254942,
+        0.30000000074505806,
+        0.599999999627471
+      ],
+      "eventLoopProbeMaxDelayMs": 3.199999999254942,
+      "unrelatedControl": {
+        "intendedDispatch": 2053,
+        "actualDispatch": 2058,
+        "handlerStart": 2058.2999999998137,
+        "visualResult": 2261.2000000001863
+      },
+      "unrelatedControlAttempts": [
+        {
+          "delayMs": 0,
+          "intended": 2053,
+          "actualDispatch": 2058.5999999996275,
+          "handlerStart": 2058.7000000001863,
+          "visualResult": 2078.2000000001863
+        },
+        {
+          "delayMs": 20,
+          "intended": 2073,
+          "actualDispatch": 2073.2000000001863,
+          "handlerStart": 2073.5,
+          "visualResult": 2094.5
+        },
+        {
+          "delayMs": 50,
+          "intended": 2103,
+          "actualDispatch": 2103.2999999998137,
+          "handlerStart": 2103.7000000001863,
+          "visualResult": 2157.7999999998137
+        },
+        {
+          "delayMs": 100,
+          "intended": 2153,
+          "actualDispatch": 2165,
+          "handlerStart": 2165,
+          "visualResult": 2178.2000000001863
+        },
+        {
+          "delayMs": 180,
+          "intended": 2233,
+          "actualDispatch": 2233.5,
+          "handlerStart": 2234.0999999996275,
+          "visualResult": 2261.2000000001863
+        }
+      ],
+      "longTasks": [],
+      "totalBlockingTimeMs": 0,
+      "longestTaskMs": 0,
+      "domNodesBefore": 587,
+      "domNodesAfterOpen": 732,
+      "domNodesAfterLine": 734,
+      "appendChildCalls": 51,
+      "panelCellInsertions": 4,
+      "querySelectorAllCalls": 15,
+      "querySelectorAllStar": 1,
+      "panelCellQueries": 0,
+      "layerQueries": 7,
+      "getBBoxCalls": 0,
+      "mutationObserversCreated": 2,
+      "mutationObserverObserveCalls": 2,
+      "mutationObserverCallbacks": 11,
+      "mutationObserverDisconnects": 0,
+      "mutationRecordCount": 136,
+      "selectionChangedDispatches": 1,
+      "selectionMutatedDispatches": 0,
+      "pointerdownHandlerCalls": 15,
+      "pointerdownHandlerDurations": [
+        0,
+        0.8999999994412065,
+        0,
+        0.20000000018626451,
+        1.7000000001862645,
+        0,
+        0.8999999994412065,
+        0,
+        0,
+        1.1000000005587935,
+        0,
+        1.599999999627471,
+        0,
+        0.09999999962747097,
+        1.599999999627471
+      ],
+      "clickHandlerDurations": [
+        0.20000000018626451,
+        0,
+        0.20000000018626451,
+        0.10000000055879354,
+        0,
+        0.09999999962747097,
+        0.20000000018626451,
+        0,
+        0.09999999962747097,
+        0.2999999998137355,
+        0,
+        0.09999999962747097,
+        0.20000000018626451,
+        0.40000000037252903
+      ],
+      "lineClicks": [
+        {
+          "phase": "first",
+          "latencyMs": 33.10000000055879,
+          "newLines": 0,
+          "handlerMs": 1.7000000001862645,
+          "objectCount": 100
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 30.200000000186265,
+          "newLines": 1,
+          "handlerMs": 1.1000000005587935,
+          "objectCount": 100
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 33.10000000055879,
+          "newLines": 1,
+          "handlerMs": 1.599999999627471,
+          "objectCount": 100
+        },
+        {
+          "phase": "final",
+          "latencyMs": 33.09999999962747,
+          "newLines": 0,
+          "handlerMs": 0,
+          "objectCount": 100
+        }
+      ],
+      "__pendingControlAttempt": null,
+      "panelCellsAfterOpen": 7,
+      "editorAcceptsInputAt": 2089.4000000003725,
+      "workspaceResponsiveAt": 2058.2999999998137
+    },
+    {
+      "label": "current",
+      "fixture": {
+        "id": "1000-objects",
+        "objectCount": 1000,
+        "relativePath": "__nv_svg_editor_latency_benchmark/1000-objects.svg",
+        "label": "1000 simple objects"
+      },
+      "marks": {
+        "openCommand": 2523.4000000003725,
+        "svgDomInsertion": 2528.0999999996275,
+        "svgFetchStart": 2528.2000000001863,
+        "svgFetchResponse": 2538.4000000003725,
+        "svgParseStart": 2539.9000000003725,
+        "svgParseEnd": 2553.2000000001863,
+        "contextReady": 2587.7999999998137,
+        "setupResolved": 2590.4000000003725,
+        "firstPostOpenFrame": 2598
+      },
+      "zeroDelayTimerDelayMs": 2.8999999994412065,
+      "rafDelayMs": 5.3999999994412065,
+      "eventLoopProbeDelays": [
+        3.599999999627471,
+        0.40000000037252903
+      ],
+      "eventLoopProbeMaxDelayMs": 3.599999999627471,
+      "unrelatedControl": {
+        "intendedDispatch": 2523.4000000003725,
+        "actualDispatch": 2526.2999999998137,
+        "handlerStart": 2526.5,
+        "visualResult": 2727.7999999998137
+      },
+      "unrelatedControlAttempts": [
+        {
+          "delayMs": 0,
+          "intended": 2523.4000000003725,
+          "actualDispatch": 2526.5999999996275,
+          "handlerStart": 2526.7000000001863,
+          "visualResult": 2591.7999999998137
+        },
+        {
+          "delayMs": 20,
+          "intended": 2543.4000000003725,
+          "actualDispatch": 2596.5999999996275,
+          "handlerStart": 2596.9000000003725,
+          "visualResult": 2612.5
+        },
+        {
+          "delayMs": 50,
+          "intended": 2573.4000000003725,
+          "actualDispatch": 2597,
+          "handlerStart": 2597.2000000001863,
+          "visualResult": 2612.5
+        },
+        {
+          "delayMs": 100,
+          "intended": 2623.4000000003725,
+          "actualDispatch": 2643.2000000001863,
+          "handlerStart": 2643.2000000001863,
+          "visualResult": 2661.0999999996275
+        },
+        {
+          "delayMs": 180,
+          "intended": 2703.4000000003725,
+          "actualDispatch": 2703.5999999996275,
+          "handlerStart": 2703.7000000001863,
+          "visualResult": 2727.7999999998137
+        }
+      ],
+      "longTasks": [
+        {
+          "startTime": 2539.9000000003725,
+          "duration": 50
+        }
+      ],
+      "totalBlockingTimeMs": 0,
+      "longestTaskMs": 50,
+      "domNodesBefore": 734,
+      "domNodesAfterOpen": 1779,
+      "domNodesAfterLine": 1781,
+      "appendChildCalls": 51,
+      "panelCellInsertions": 4,
+      "querySelectorAllCalls": 15,
+      "querySelectorAllStar": 1,
+      "panelCellQueries": 0,
+      "layerQueries": 7,
+      "getBBoxCalls": 0,
+      "mutationObserversCreated": 2,
+      "mutationObserverObserveCalls": 2,
+      "mutationObserverCallbacks": 11,
+      "mutationObserverDisconnects": 0,
+      "mutationRecordCount": 136,
+      "selectionChangedDispatches": 1,
+      "selectionMutatedDispatches": 0,
+      "pointerdownHandlerCalls": 15,
+      "pointerdownHandlerDurations": [
+        0,
+        1.400000000372529,
+        0.09999999962747097,
+        0.2999999998137355,
+        7,
+        0.10000000055879354,
+        1.2999999998137355,
+        0,
+        0.09999999962747097,
+        2,
+        0,
+        1.1000000005587935,
+        0,
+        0.19999999925494194,
+        2.400000000372529
+      ],
+      "clickHandlerDurations": [
+        0.20000000018626451,
+        0,
+        0.09999999962747097,
+        0.10000000055879354,
+        0,
+        0,
+        0.20000000018626451,
+        0,
+        0.09999999962747097,
+        0.20000000018626451,
+        0,
+        0,
+        0.20000000018626451,
+        0.09999999962747097
+      ],
+      "lineClicks": [
+        {
+          "phase": "first",
+          "latencyMs": 33.299999999813735,
+          "newLines": 0,
+          "handlerMs": 7,
+          "objectCount": 1000
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 27.299999999813735,
+          "newLines": 1,
+          "handlerMs": 2,
+          "objectCount": 1000
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 33.30000000074506,
+          "newLines": 1,
+          "handlerMs": 2.400000000372529,
+          "objectCount": 1000
+        },
+        {
+          "phase": "final",
+          "latencyMs": 33.09999999962747,
+          "newLines": 0,
+          "handlerMs": 0,
+          "objectCount": 1000
+        }
+      ],
+      "__pendingControlAttempt": null,
+      "panelCellsAfterOpen": 8,
+      "editorAcceptsInputAt": 2587.7999999998137,
+      "workspaceResponsiveAt": 2526.5
+    },
+    {
+      "label": "current",
+      "fixture": {
+        "id": "mixed",
+        "objectCount": "mixed",
+        "relativePath": "__nv_svg_editor_latency_benchmark/mixed.svg",
+        "label": "Mixed layers paths text image"
+      },
+      "marks": {
+        "openCommand": 3013,
+        "svgDomInsertion": 3022.7000000001863,
+        "svgFetchStart": 3022.7000000001863,
+        "svgFetchResponse": 3032.7000000001863,
+        "svgParseStart": 3034.7000000001863,
+        "svgParseEnd": 3035.2000000001863,
+        "contextReady": 3049.9000000003725,
+        "setupResolved": 3055.5999999996275,
+        "firstPostOpenFrame": 3061.0999999996275
+      },
+      "zeroDelayTimerDelayMs": 7.5,
+      "rafDelayMs": 14.700000000186265,
+      "eventLoopProbeDelays": [
+        3.1000000005587935,
+        0.09999999962747097,
+        1.7999999998137355
+      ],
+      "eventLoopProbeMaxDelayMs": 3.1000000005587935,
+      "unrelatedControl": {
+        "intendedDispatch": 3013,
+        "actualDispatch": 3020.5,
+        "handlerStart": 3020.9000000003725,
+        "visualResult": 3211.2000000001863
+      },
+      "unrelatedControlAttempts": [
+        {
+          "delayMs": 0,
+          "intended": 3013,
+          "actualDispatch": 3021,
+          "handlerStart": 3021.0999999996275,
+          "visualResult": 3056.7000000001863
+        },
+        {
+          "delayMs": 20,
+          "intended": 3033,
+          "actualDispatch": 3033.9000000003725,
+          "handlerStart": 3034.4000000003725,
+          "visualResult": 3060.9000000003725
+        },
+        {
+          "delayMs": 50,
+          "intended": 3063,
+          "actualDispatch": 3063.4000000003725,
+          "handlerStart": 3065.0999999996275,
+          "visualResult": 3110.5
+        },
+        {
+          "delayMs": 100,
+          "intended": 3113,
+          "actualDispatch": 3119,
+          "handlerStart": 3119.2000000001863,
+          "visualResult": 3127.7999999998137
+        },
+        {
+          "delayMs": 180,
+          "intended": 3193,
+          "actualDispatch": 3193.4000000003725,
+          "handlerStart": 3193.5,
+          "visualResult": 3211.2000000001863
+        }
+      ],
+      "longTasks": [],
+      "totalBlockingTimeMs": 0,
+      "longestTaskMs": 0,
+      "domNodesBefore": 1781,
+      "domNodesAfterOpen": 1837,
+      "domNodesAfterLine": 1839,
+      "appendChildCalls": 51,
+      "panelCellInsertions": 4,
+      "querySelectorAllCalls": 14,
+      "querySelectorAllStar": 1,
+      "panelCellQueries": 0,
+      "layerQueries": 6,
+      "getBBoxCalls": 0,
+      "mutationObserversCreated": 2,
+      "mutationObserverObserveCalls": 2,
+      "mutationObserverCallbacks": 11,
+      "mutationObserverDisconnects": 0,
+      "mutationRecordCount": 135,
+      "selectionChangedDispatches": 1,
+      "selectionMutatedDispatches": 0,
+      "pointerdownHandlerCalls": 15,
+      "pointerdownHandlerDurations": [
+        0,
+        1.7999999998137355,
+        0,
+        0.2999999998137355,
+        4.2000000001862645,
+        0,
+        2.1000000005587935,
+        0,
+        0,
+        2.2000000001862645,
+        0.10000000055879354,
+        1.099999999627471,
+        0,
+        0.09999999962747097,
+        1.2000000001862645
+      ],
+      "clickHandlerDurations": [
+        0.40000000037252903,
+        0,
+        0,
+        0.09999999962747097,
+        0,
+        0,
+        0.40000000037252903,
+        0,
+        0.09999999962747097,
+        1.5,
+        0,
+        0.5,
+        0,
+        0.09999999962747097
+      ],
+      "lineClicks": [
+        {
+          "phase": "first",
+          "latencyMs": 32.89999999944121,
+          "newLines": 0,
+          "handlerMs": 4.2000000001862645,
+          "objectCount": "mixed"
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 28.600000000558794,
+          "newLines": 1,
+          "handlerMs": 2.2000000001862645,
+          "objectCount": "mixed"
+        },
+        {
+          "phase": "intermediate",
+          "latencyMs": 33.299999999813735,
+          "newLines": 1,
+          "handlerMs": 1.2000000001862645,
+          "objectCount": "mixed"
+        },
+        {
+          "phase": "final",
+          "latencyMs": 33.200000000186265,
+          "newLines": 0,
+          "handlerMs": 0,
+          "objectCount": "mixed"
+        }
+      ],
+      "__pendingControlAttempt": null,
+      "panelCellsAfterOpen": 9,
+      "editorAcceptsInputAt": 3049.9000000003725,
+      "workspaceResponsiveAt": 3020.9000000003725
+    }
+  ],
+  "summary": [
+    {
+      "fixture": "empty",
+      "objectCount": 0,
+      "setupMs": 198.8,
+      "contextReadyMs": 195.6,
+      "firstFrameMs": 206.9,
+      "zeroDelayTimerDelayMs": 8.4,
+      "rafDelayMs": 7,
+      "unrelatedDispatchDelayMs": 8.4,
+      "unrelatedHandlerDelayMs": 25.7,
+      "eventLoopProbeMaxDelayMs": 10.1,
+      "panelCellsAfterOpen": 4,
+      "qsaStar": 1,
+      "getBBox": 0,
+      "longestTaskMs": 0,
+      "totalBlockingTimeMs": 0,
+      "lineFirstMs": 40,
+      "lineIntermediateMs": 21,
+      "lineFinalMs": 33.1,
+      "lineHandlerMedianMs": 1.3
+    },
+    {
+      "fixture": "1-objects",
+      "objectCount": 1,
+      "setupMs": 27.5,
+      "contextReadyMs": 25.2,
+      "firstFrameMs": 39.9,
+      "zeroDelayTimerDelayMs": 4.2,
+      "rafDelayMs": 5.2,
+      "unrelatedDispatchDelayMs": 4.3,
+      "unrelatedHandlerDelayMs": 13.4,
+      "eventLoopProbeMaxDelayMs": 1.7,
+      "panelCellsAfterOpen": 5,
+      "qsaStar": 1,
+      "getBBox": 0,
+      "longestTaskMs": 0,
+      "totalBlockingTimeMs": 0,
+      "lineFirstMs": 33.4,
+      "lineIntermediateMs": 30.4,
+      "lineFinalMs": 33.2,
+      "lineHandlerMedianMs": 1.6
+    },
+    {
+      "fixture": "10-objects",
+      "objectCount": 10,
+      "setupMs": 26.2,
+      "contextReadyMs": 24.2,
+      "firstFrameMs": 37.2,
+      "zeroDelayTimerDelayMs": 3.6,
+      "rafDelayMs": 4.3,
+      "unrelatedDispatchDelayMs": 3.6,
+      "unrelatedHandlerDelayMs": 10.8,
+      "eventLoopProbeMaxDelayMs": 0.8,
+      "panelCellsAfterOpen": 6,
+      "qsaStar": 1,
+      "getBBox": 0,
+      "longestTaskMs": 0,
+      "totalBlockingTimeMs": 0,
+      "lineFirstMs": 33.9,
+      "lineIntermediateMs": 30,
+      "lineFinalMs": 31.4,
+      "lineHandlerMedianMs": 1.3
+    },
+    {
+      "fixture": "100-objects",
+      "objectCount": 100,
+      "setupMs": 38.1,
+      "contextReadyMs": 36.4,
+      "firstFrameMs": 61.7,
+      "zeroDelayTimerDelayMs": 5,
+      "rafDelayMs": 10.8,
+      "unrelatedDispatchDelayMs": 5,
+      "unrelatedHandlerDelayMs": 12,
+      "eventLoopProbeMaxDelayMs": 3.2,
+      "panelCellsAfterOpen": 7,
+      "qsaStar": 1,
+      "getBBox": 0,
+      "longestTaskMs": 0,
+      "totalBlockingTimeMs": 0,
+      "lineFirstMs": 33.1,
+      "lineIntermediateMs": 30.2,
+      "lineFinalMs": 33.1,
+      "lineHandlerMedianMs": 1.6
+    },
+    {
+      "fixture": "1000-objects",
+      "objectCount": 1000,
+      "setupMs": 67,
+      "contextReadyMs": 64.4,
+      "firstFrameMs": 74.6,
+      "zeroDelayTimerDelayMs": 2.9,
+      "rafDelayMs": 5.4,
+      "unrelatedDispatchDelayMs": 2.9,
+      "unrelatedHandlerDelayMs": 53.5,
+      "eventLoopProbeMaxDelayMs": 3.6,
+      "panelCellsAfterOpen": 8,
+      "qsaStar": 1,
+      "getBBox": 0,
+      "longestTaskMs": 50,
+      "totalBlockingTimeMs": 0,
+      "lineFirstMs": 33.3,
+      "lineIntermediateMs": 27.3,
+      "lineFinalMs": 33.1,
+      "lineHandlerMedianMs": 2.4
+    },
+    {
+      "fixture": "mixed",
+      "objectCount": "mixed",
+      "setupMs": 42.6,
+      "contextReadyMs": 36.9,
+      "firstFrameMs": 48.1,
+      "zeroDelayTimerDelayMs": 7.5,
+      "rafDelayMs": 14.7,
+      "unrelatedDispatchDelayMs": 7.5,
+      "unrelatedHandlerDelayMs": 8.1,
+      "eventLoopProbeMaxDelayMs": 3.1,
+      "panelCellsAfterOpen": 9,
+      "qsaStar": 1,
+      "getBBox": 0,
+      "longestTaskMs": 0,
+      "totalBlockingTimeMs": 0,
+      "lineFirstMs": 32.9,
+      "lineIntermediateMs": 28.6,
+      "lineFinalMs": 33.2,
+      "lineHandlerMedianMs": 2.2
+    }
+  ]
+}

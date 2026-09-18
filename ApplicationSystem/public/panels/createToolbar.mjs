@@ -6,6 +6,7 @@ import { dockPanel } from '/panels/panelControls.mjs';
 import { loadCallback } from "/callbackLoader.mjs";
 import { setStatus } from "./../StatusBar.mjs";
 import { getSnapshot as getEditorAttentionSnapshot, subscribe as subscribeEditorAttention } from "../EditorAttentionState.mjs";
+import { svgClickTraceMark } from "../SvgClickFeedbackTrace.mjs";
 import { evaluateToolbarItemState } from "./toolbarConditions.mjs";
 import { ensureSingleContextualToolbarRender } from "./contextualToolbarRegistry.mjs";
 import { ensureToolbarRegionCollapseControl } from "./toolbarRegionCollapse.mjs";
@@ -21,6 +22,7 @@ const NAVIGATOR_SUBTOOLBAR_PANEL_BY_HEADING = Object.freeze({
 });
 const toolbarDataCache = {}; // Preloaded JSON
 const prebuiltDropdowns = {}; // Store prebuilt dropdown divs
+let prebuiltDropdownsDirty = false;
 const toolbarScriptModuleCache = new Map();
 const TOOLBAR_SEARCH_HEADING = "SearchBar";
 const TOOLBAR_USER_HEADING = "User";
@@ -38,6 +40,15 @@ let toolbarSessionIdentityLoaded = false;
 let toolbarSessionIdentityPromise = null;
 const toolbarDropdownCloseTimers = new WeakMap();
 const toolbarDropdownPointer = { x: 0, y: 0, hasPosition: false };
+
+function recordToolbarLineProbe(label, detail = {}) {
+  if (window.NodevisionSvgClickFeedbackTrace) svgClickTraceMark(label, detail);
+  const probe = window.__nvSvgLinePointerProbe;
+  if (!Array.isArray(probe)) return;
+  try {
+    probe.push({ label, time: performance.now(), ...detail });
+  } catch {}
+}
 
 if (typeof window !== "undefined" && typeof document !== "undefined" && !window.__nvToolbarDropdownPointerBound) {
   document.addEventListener("pointermove", (event) => {
@@ -498,7 +509,31 @@ function positionToolbarDropdown(dropdown, anchor = dropdown?.parentElement) {
   dropdown.style.left = Math.round(clampedViewportLeft - anchorRect.left) + "px";
 }
 
+function bindToolbarDropdownPanel(dropdown, anchor) {
+  if (!dropdown) return;
+  dropdown.__nvToolbarDropdownAnchor = anchor || dropdown.__nvToolbarDropdownAnchor || null;
+  if (dropdown.__nvToolbarDropdownPanelBound) return;
+  dropdown.__nvToolbarDropdownPanelBound = true;
+  dropdown.addEventListener("mouseenter", () => clearToolbarDropdownCloseTimer(dropdown));
+  dropdown.addEventListener("mouseleave", () => scheduleToolbarDropdownClose(dropdown, dropdown.__nvToolbarDropdownAnchor || anchor));
+}
+
+function refreshPrebuiltDropdownForAnchor(dropdown, anchor) {
+  if (!prebuiltDropdownsDirty) return dropdown;
+  const heading = String(anchor?.dataset?.heading || "").trim();
+  rebuildPrebuiltDropdowns();
+  const refreshed = heading ? prebuiltDropdowns[heading] : null;
+  if (refreshed && refreshed !== dropdown) {
+    dropdown?.remove?.();
+    anchor?.appendChild?.(refreshed);
+    bindToolbarDropdownPanel(refreshed, anchor);
+    return refreshed;
+  }
+  return refreshed || dropdown;
+}
+
 function showToolbarDropdown(dropdown, anchor) {
+  dropdown = refreshPrebuiltDropdownForAnchor(dropdown, anchor);
   if (!dropdown) return;
   clearToolbarDropdownCloseTimer(dropdown);
   hideUnrelatedDropdowns(dropdown);
@@ -809,7 +844,10 @@ function createToolbarIconElement(item, { allowFallback = true } = {}) {
 }
 
 function rebuildPrebuiltDropdowns() {
-  // Clear old cached dropdown DOM so conditions are reevaluated
+  for (const dropdown of Object.values(prebuiltDropdowns)) {
+    clearToolbarDropdownCloseTimer(dropdown);
+    dropdown?.remove?.();
+  }
   for (const key of Object.keys(prebuiltDropdowns)) {
     delete prebuiltDropdowns[key];
   }
@@ -824,6 +862,11 @@ function rebuildPrebuiltDropdowns() {
       }
     });
   }
+  prebuiltDropdownsDirty = false;
+}
+
+function invalidatePrebuiltDropdowns() {
+  prebuiltDropdownsDirty = true;
 }
 
 let globalToolbarResizeObserver = null;
@@ -918,10 +961,15 @@ export async function createToolbar(toolbarSelector = "#global-toolbar", current
   ensureGlobalToolbarHeightObserver();
   ensureToolbarRegionCollapseControl();
   if (!toolbarAttentionUnsubscribe) {
-    toolbarAttentionUnsubscribe = subscribeEditorAttention(() => {
-      updateToolbarState();
+    const onToolbarAttentionChange = () => {
+      recordToolbarLineProbe("toolbar:attention-listener:start", { currentSubToolbarHeading });
+      updateToolbarState({}, { rebuildDropdowns: false });
+      recordToolbarLineProbe("toolbar:attention-listener:after-updateToolbarState", { currentSubToolbarHeading });
       if (currentSubToolbarHeading) showSubToolbar(currentSubToolbarHeading, { force: true, toggle: false });
-    }, { immediate: false });
+      recordToolbarLineProbe("toolbar:attention-listener:end", { currentSubToolbarHeading });
+    };
+    onToolbarAttentionChange.__nvAttentionLabel = "global-toolbar-attention";
+    toolbarAttentionUnsubscribe = subscribeEditorAttention(onToolbarAttentionChange, { immediate: false });
   }
 
   setStatus("Toolbar ready", `Mode: ${effectiveMode}`);
@@ -980,18 +1028,18 @@ function buildToolbar(container, items, parentHeading = null) {
     // Dropdown handling
     const dropdown = prebuiltDropdowns[menuHeading];
     if (dropdown) {
+      const currentDropdown = () => prebuiltDropdowns[menuHeading] || dropdown;
       btn.setAttribute("aria-haspopup", "menu");
       btn.setAttribute("aria-expanded", "false");
       btnWrapper.appendChild(dropdown);
+      bindToolbarDropdownPanel(dropdown, btnWrapper);
       btnWrapper.addEventListener("mouseenter", () => {
         playToolbarHighlightSound();
-        showToolbarDropdown(dropdown, btnWrapper);
+        showToolbarDropdown(currentDropdown(), btnWrapper);
       });
       btnWrapper.addEventListener("mouseleave", () => {
-        scheduleToolbarDropdownClose(dropdown, btnWrapper);
+        scheduleToolbarDropdownClose(currentDropdown(), btnWrapper);
       });
-      dropdown.addEventListener("mouseenter", () => clearToolbarDropdownCloseTimer(dropdown));
-      dropdown.addEventListener("mouseleave", () => scheduleToolbarDropdownClose(dropdown, btnWrapper));
     }
 
     // Click
@@ -1229,7 +1277,9 @@ export function showToolbarSubToolbar(panelHeading, options = {}) {
 }
 
 // === Update toolbar state dynamically ===
-export function updateToolbarState(newState = {}) {
+export function updateToolbarState(newState = {}, options = {}) {
+  const { rebuildDropdowns = true } = options || {};
+  recordToolbarLineProbe("toolbar:updateToolbarState:start", { rebuildDropdowns });
   console.log("Updating Toolbar state")
   // Merge new state into the global NodevisionState
   Object.assign(window.NodevisionState, newState);
@@ -1237,7 +1287,7 @@ export function updateToolbarState(newState = {}) {
 
   // Determine the current mode (fallback to "default")
   const currentMode = window.NodevisionState?.currentMode || "default";
-setStatus("Mode", currentMode);
+  setStatus("Mode", currentMode);
 
 
   const toolbar = document.querySelector("#global-toolbar");
@@ -1249,16 +1299,25 @@ setStatus("Mode", currentMode);
     return;
   }
 
+  recordToolbarLineProbe("toolbar:updateToolbarState:before-clear");
   toolbar.innerHTML = "";
+  recordToolbarLineProbe("toolbar:updateToolbarState:after-clear");
 
-  rebuildPrebuiltDropdowns();
+  if (rebuildDropdowns) {
+    rebuildPrebuiltDropdowns();
+    recordToolbarLineProbe("toolbar:updateToolbarState:after-rebuildPrebuiltDropdowns");
+  } else {
+    invalidatePrebuiltDropdowns();
+    recordToolbarLineProbe("toolbar:updateToolbarState:skipped-rebuildPrebuiltDropdowns");
+  }
 
-  // Filter with legacy mode checks and contextual attention predicates.
   const filteredToolbar = defaultToolbar.filter(item => getToolbarItemState(item, { ...(window.NodevisionState || {}), currentMode }).visible);
+  recordToolbarLineProbe("toolbar:updateToolbarState:after-filter", { filteredCount: filteredToolbar.length });
 
-  // Rebuild toolbar using filtered items
   buildToolbar(toolbar, prepareMainToolbarItems(filteredToolbar));
+  recordToolbarLineProbe("toolbar:updateToolbarState:after-buildToolbar", { filteredCount: filteredToolbar.length });
   ensureGlobalToolbarHeightObserver();
 
-  console.log(`🔁 Toolbar updated for mode: ${currentMode}`);
+  recordToolbarLineProbe("toolbar:updateToolbarState:end");
+  console.log("Toolbar updated for mode: " + currentMode);
 }

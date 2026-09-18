@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/EditorAttentionState.mjs
 // This module stores editor attention state for the Nodevision browser client and exposes safe update, subscription, label, settings, and per-file persistence helpers for editor integrations.
 
+import { svgClickTraceMark, svgClickTraceSubscriberEnd, svgClickTraceSubscriberStart } from "./SvgClickFeedbackTrace.mjs";
+
 const BASE_STATE = Object.freeze({
   filePath: null,
   fileFamily: null,
@@ -85,6 +87,16 @@ function safeEventTarget(eventTarget) {
   const global = getGlobal();
   if (typeof global.addEventListener === "function" && typeof global.dispatchEvent === "function") return global;
   return null;
+}
+
+function recordAttentionProbe(label, detail = {}) {
+  const global = getGlobal();
+  if (global.NodevisionSvgClickFeedbackTrace) svgClickTraceMark(label, detail);
+  const probe = global.__nvSvgLinePointerProbe;
+  if (!Array.isArray(probe)) return;
+  try {
+    probe.push({ label, time: performance.now(), ...detail });
+  } catch {}
 }
 
 function clone(value) {
@@ -255,14 +267,28 @@ export function createEditorAttentionStore(options = {}) {
   let state = { ...BASE_STATE, ...(options.initialState || {}) };
 
   function publish(previousState = null) {
+    recordAttentionProbe("attention:publish:start", { listenerCount: listeners.size });
     const snapshot = getSnapshot();
+    recordAttentionProbe("attention:publish:after-snapshot");
     syncGlobal(snapshot);
+    recordAttentionProbe("attention:publish:after-sync-global");
+    let listenerIndex = 0;
     for (const listener of [...listeners]) {
+      const listenerLabel = listener.__nvAttentionLabel || listener.name || "attention-listener-" + listenerIndex;
+      const traceEnabled = Boolean(getGlobal().NodevisionSvgClickFeedbackTrace);
+      const token = traceEnabled ? svgClickTraceSubscriberStart("attention", { listenerIndex, label: listenerLabel }) : null;
+      recordAttentionProbe("attention:listener:start", { listenerIndex, label: listenerLabel });
       try { listener(snapshot, previousState ? clone(previousState) : null); } catch (error) { console.error("Editor attention listener failed", error); }
+      recordAttentionProbe("attention:listener:end", { listenerIndex, label: listenerLabel });
+      svgClickTraceSubscriberEnd(token, { listenerIndex, label: listenerLabel });
+      listenerIndex += 1;
     }
     if (eventTarget && typeof eventTarget.dispatchEvent === "function" && typeof CustomEvent !== "undefined") {
+      recordAttentionProbe("attention:event:start");
       try { eventTarget.dispatchEvent(new CustomEvent("nv-editor-attention-changed", { detail: snapshot })); } catch {}
+      recordAttentionProbe("attention:event:end");
     }
+    recordAttentionProbe("attention:publish:end");
   }
 
   function commit(patch = {}) {
