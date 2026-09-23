@@ -31,6 +31,10 @@ export async function openHtmlDraftFocusCommand(args, context = {}) {
   return (await import("/Sessions/HTMLDraftFocusSession.mjs")).startHTMLDraftFocus(context);
 }
 
+export async function openSketchFocusCommand(args, context = {}) {
+  return (await import("/Sessions/SketchFocusSession.mjs")).startSketchFocus(context);
+}
+
 export async function openImageStitcherCommand(args, context = {}) {
   return (await import("/Sessions/LandmarkImageStitchingSession.mjs")).startLandmarkImageStitchingSession(context);
 }

@@ -3,6 +3,7 @@
 import { ensureGifEditorModeLayout } from "/panels/workspace.mjs";
 import { renderRasterEditor } from "./PNGeditor.mjs";
 import { decodeGifFrames } from "./GIFFrameDecoder.mjs";
+import { bytesToBase64, createWebSafePalette, encodeGif } from "/Shared/GifEncoder.mjs";
 
 const GIF_MODE = "GIFediting";
 const TRANSPARENT_INDEX = 0;
@@ -262,7 +263,10 @@ function createGifEditorContext(filePath, rasterApi) {
     if (!cleanPath) throw new Error("GIF save path is missing.");
     saveCurrentFrame({ notify: false });
     const size = getExportSize();
-    const gifBytes = encodeGif(frames, size.width, size.height);
+    const gifBytes = encodeGif(frames, size.width, size.height, {
+      palette: createWebSafePalette(),
+      transparentIndex: TRANSPARENT_INDEX,
+    });
     const payload = {
       path: cleanPath,
       sourcePath: filePath || cleanPath,
@@ -395,157 +399,4 @@ function clampDelay(delayMs) {
   const numeric = Math.floor(Number(delayMs));
   if (!Number.isFinite(numeric)) return 100;
   return Math.max(10, Math.min(60000, numeric));
-}
-
-function encodeGif(frames, width, height) {
-  const writer = createByteWriter();
-  writer.ascii("GIF89a");
-  writer.short(width);
-  writer.short(height);
-  writer.byte(0xf7);
-  writer.byte(TRANSPARENT_INDEX);
-  writer.byte(0);
-  writer.bytes(createGlobalPalette());
-
-  writer.byte(0x21);
-  writer.byte(0xff);
-  writer.byte(0x0b);
-  writer.ascii("NETSCAPE2.0");
-  writer.byte(0x03);
-  writer.byte(0x01);
-  writer.short(0);
-  writer.byte(0x00);
-
-  frames.forEach((frame) => {
-    const indices = frameToPaletteIndices(frame, width, height);
-    const delayHundredths = Math.max(1, Math.round(clampDelay(frame.delayMs) / 10));
-
-    writer.byte(0x21);
-    writer.byte(0xf9);
-    writer.byte(0x04);
-    writer.byte(0x09);
-    writer.short(delayHundredths);
-    writer.byte(TRANSPARENT_INDEX);
-    writer.byte(0x00);
-
-    writer.byte(0x2c);
-    writer.short(0);
-    writer.short(0);
-    writer.short(width);
-    writer.short(height);
-    writer.byte(0x00);
-
-    writer.byte(8);
-    writer.subBlocks(lzwEncodeFlat(indices));
-  });
-
-  writer.byte(0x3b);
-  return new Uint8Array(writer.output);
-}
-
-function createGlobalPalette() {
-  const palette = [];
-  palette.push(0, 0, 0);
-  for (let r = 0; r < 6; r += 1) {
-    for (let g = 0; g < 6; g += 1) {
-      for (let b = 0; b < 6; b += 1) {
-        palette.push(r * 51, g * 51, b * 51);
-      }
-    }
-  }
-  for (let i = 0; palette.length < 256 * 3; i += 1) {
-    const value = Math.round((i / 38) * 255);
-    palette.push(value, value, value);
-  }
-  return palette.slice(0, 256 * 3);
-}
-
-function frameToPaletteIndices(frame, width, height) {
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext("2d", { alpha: true });
-  if (!ctx) return new Uint8Array(width * height);
-  ctx.clearRect(0, 0, width, height);
-  if (frame && frame.canvas) ctx.drawImage(frame.canvas, 0, 0);
-  const data = ctx.getImageData(0, 0, width, height).data;
-  const indices = new Uint8Array(width * height);
-  for (let offset = 0, pixel = 0; offset < data.length; offset += 4, pixel += 1) {
-    const alpha = data[offset + 3];
-    if (alpha < 128) {
-      indices[pixel] = TRANSPARENT_INDEX;
-      continue;
-    }
-    const r = Math.round(data[offset] / 51);
-    const g = Math.round(data[offset + 1] / 51);
-    const b = Math.round(data[offset + 2] / 51);
-    indices[pixel] = 1 + r * 36 + g * 6 + b;
-  }
-  return indices;
-}
-
-function lzwEncodeFlat(indices) {
-  const clearCode = 256;
-  const endCode = 257;
-  const codeSize = 9;
-  const codes = [clearCode];
-  let sinceClear = 0;
-  for (const value of indices) {
-    if (sinceClear >= 250) {
-      codes.push(clearCode);
-      sinceClear = 0;
-    }
-    codes.push(value & 255);
-    sinceClear += 1;
-  }
-  codes.push(endCode);
-  return packFixedCodes(codes, codeSize);
-}
-
-function packFixedCodes(codes, codeSize) {
-  const output = [];
-  let buffer = 0;
-  let bitCount = 0;
-  codes.forEach((code) => {
-    buffer |= code << bitCount;
-    bitCount += codeSize;
-    while (bitCount >= 8) {
-      output.push(buffer & 0xff);
-      buffer >>= 8;
-      bitCount -= 8;
-    }
-  });
-  if (bitCount > 0) output.push(buffer & 0xff);
-  return output;
-}
-
-function createByteWriter() {
-  return {
-    output: [],
-    byte(value) { this.output.push(value & 0xff); },
-    bytes(values) { values.forEach((value) => this.byte(value)); },
-    short(value) {
-      this.byte(value & 0xff);
-      this.byte((value >> 8) & 0xff);
-    },
-    ascii(text) {
-      for (let i = 0; i < text.length; i += 1) this.byte(text.charCodeAt(i));
-    },
-    subBlocks(values) {
-      for (let offset = 0; offset < values.length; offset += 255) {
-        const block = values.slice(offset, offset + 255);
-        this.byte(block.length);
-        this.bytes(block);
-      }
-      this.byte(0);
-    },
-  };
-}
-
-function bytesToBase64(bytes) {
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    const chunk = bytes.subarray(offset, offset + chunkSize);
-    binary += String.fromCharCode.apply(null, chunk);
-  }
-  return btoa(binary);
 }

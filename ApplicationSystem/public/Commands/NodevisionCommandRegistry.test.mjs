@@ -32,6 +32,8 @@ registerNodevisionCommand({ id: "test.unsafe", label: "Unsafe", sessionSafe: fal
 registerNodevisionCommand({ id: "test.fail", label: "Fail", sessionSafe: true, arguments: [] }, () => { throw new Error("boom"); });
 
 assert.equal(getNodevisionCommandDefinition("overlay.show")?.sessionSafe, true);
+assert.equal(getNodevisionCommandDefinition("sketchFocus.open")?.sessionSafe, true);
+assert.deepEqual(getNodevisionCommandDefinition("sketchFocus.open")?.events, ["sketchFocus.finished"]);
 assert.ok(getSessionSafeCommandDefinitions().some((entry) => entry.id === "test.echo"));
 assert.ok(searchNodevisionCommands("overlay").some((entry) => entry.id === "overlay.show"));
 assert.equal(await dispatchNodevisionCommand("test.echo", ["hello"], { requireSessionSafe: true }), "hello");

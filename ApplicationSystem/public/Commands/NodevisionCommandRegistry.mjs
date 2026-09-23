@@ -37,6 +37,7 @@ const BUILTIN_HANDLER_LOADERS = Object.freeze({
   "session.emit": load("./handlers/SystemCommands.mjs", "emitSessionEventCommand"),
   "session.quit": load("./handlers/SystemCommands.mjs", "quitSessionCommand"),
   "htmlDraftFocus.open": load("./handlers/SystemCommands.mjs", "openHtmlDraftFocusCommand"),
+  "sketchFocus.open": load("./handlers/SystemCommands.mjs", "openSketchFocusCommand"),
   "imageStitcher.open": load("./handlers/SystemCommands.mjs", "openImageStitcherCommand"),
   "sectionals.update": load("./handlers/SystemCommands.mjs", "updateSectionalsCommand"),
 });

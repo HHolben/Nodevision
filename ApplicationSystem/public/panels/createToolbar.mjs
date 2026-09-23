@@ -488,6 +488,7 @@ function scheduleToolbarDropdownClose(dropdown, anchor) {
 
 function hideUnrelatedDropdowns(activeDropdown) {
   Object.values(prebuiltDropdowns).forEach((dropdown) => {
+    if (!dropdown?.isConnected) return;
     if (!dropdownsAreRelated(dropdown, activeDropdown)) closeToolbarDropdown(dropdown);
   });
 }
@@ -530,6 +531,20 @@ function refreshPrebuiltDropdownForAnchor(dropdown, anchor) {
     return refreshed;
   }
   return refreshed || dropdown;
+}
+
+function toolbarDropdownForAnchor(anchor, heading, fallback = null) {
+  if (!anchor) return fallback;
+  const attached = anchor.querySelector?.(":scope > .toolbar-dropdown-panel");
+  if (attached) return attached;
+
+  const cached = heading ? prebuiltDropdowns[heading] : null;
+  const dropdown = cached || fallback;
+  if (!dropdown) return null;
+
+  anchor.appendChild(dropdown);
+  bindToolbarDropdownPanel(dropdown, anchor);
+  return dropdown;
 }
 
 function showToolbarDropdown(dropdown, anchor) {
@@ -1027,12 +1042,11 @@ function buildToolbar(container, items, parentHeading = null) {
 
     // Dropdown handling
     const dropdown = prebuiltDropdowns[menuHeading];
+    const currentDropdown = () => dropdown ? toolbarDropdownForAnchor(btnWrapper, menuHeading, dropdown) : null;
     if (dropdown) {
-      const currentDropdown = () => prebuiltDropdowns[menuHeading] || dropdown;
       btn.setAttribute("aria-haspopup", "menu");
       btn.setAttribute("aria-expanded", "false");
-      btnWrapper.appendChild(dropdown);
-      bindToolbarDropdownPanel(dropdown, btnWrapper);
+      toolbarDropdownForAnchor(btnWrapper, menuHeading, dropdown);
       btnWrapper.addEventListener("mouseenter", () => {
         playToolbarHighlightSound();
         showToolbarDropdown(currentDropdown(), btnWrapper);
@@ -1047,8 +1061,10 @@ function buildToolbar(container, items, parentHeading = null) {
       e.stopPropagation();
       if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
 
+      const activeDropdown = currentDropdown();
+
       // Close other dropdowns
-      hideUnrelatedDropdowns(dropdown);
+      hideUnrelatedDropdowns(activeDropdown);
 
 // === Panel handling ===
 if (item.panelTemplateId || item.panelTemplate) {
@@ -1076,8 +1092,8 @@ if (item.panelTemplateId || item.panelTemplate) {
       // Priority rule:
       // If this item HAS a dropdown, do NOT open a sub-toolbar.
       // Some actions (like Draw -> Color) render their own custom sub-toolbar.
-      if (dropdown) {
-        showToolbarDropdown(dropdown, btnWrapper);
+      if (activeDropdown) {
+        showToolbarDropdown(activeDropdown, btnWrapper);
       } else if (item.preventAutoSubToolbar !== true) {
         if (subToolbarContainer) showSubToolbar(menuHeading);
       }

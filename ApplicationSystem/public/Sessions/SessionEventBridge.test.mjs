@@ -37,6 +37,9 @@ assert.equal(bridge.listenerCount(), 1);
 bridge.clear();
 await assert.rejects(cancelled, (err) => err.code === "SESSION_WAIT_CANCELLED");
 assert.equal(bridge.listenerCount(), 0);
+const sketchDone = bridge.waitFor("sketchFocus.finished");
+target.dispatch("sketchFocus.finished", { saved: true, path: "a.png" });
+assert.deepEqual(await sketchDone, { saved: true, path: "a.png" });
 await assert.rejects(bridge.waitFor("unknown.application.event"), (err) => err.code === "UNKNOWN_EVENT");
 
 console.log("SessionEventBridge tests passed.");
