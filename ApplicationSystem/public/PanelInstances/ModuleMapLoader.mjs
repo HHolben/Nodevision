@@ -18,6 +18,7 @@ export function parseModuleMapCsv(text = "") {
     viewer: header.indexOf("ViewerModule"),
     editor: header.indexOf("GraphicalEditorModule"),
     family: header.indexOf("Family"),
+    cursorProvider: header.indexOf("CursorProviderModule"),
   };
 
   if (indexes.ext < 0) {
@@ -32,6 +33,7 @@ export function parseModuleMapCsv(text = "") {
       viewer: indexes.viewer >= 0 ? cols[indexes.viewer] || null : null,
       editor: indexes.editor >= 0 ? cols[indexes.editor] || null : null,
       family: indexes.family >= 0 ? cols[indexes.family] || null : null,
+      cursorProvider: indexes.cursorProvider >= 0 ? cols[indexes.cursorProvider] || null : null,
     };
   }
   return map;

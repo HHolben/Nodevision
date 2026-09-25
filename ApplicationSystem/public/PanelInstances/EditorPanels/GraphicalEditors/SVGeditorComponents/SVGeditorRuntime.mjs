@@ -7,6 +7,7 @@ import { installSvgClickTraceOnSvgRoot, svgClickTraceMark } from "../../../../Sv
 import { createElementLayers } from "../ElementLayers.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { createPanelDOM } from "/panels/panelFactory.mjs";
+import { openNodevisionOverlayPanel } from "/TemplateSystem/NodevisionOverlayPanel.mjs";
 import { registerSvgEditorContextForInsertMedia } from "/ToolbarJSONfiles/insertMediaPanel.mjs";
 import { ensureSvgEditorModeLayout } from "/panels/workspace.mjs";
 import {
@@ -38,6 +39,7 @@ import { createDrawingGuidesController } from "./DrawingGuides.mjs";
 import { createSymmetryOutputs, expandSymmetryClones } from "./SymmetryGenerator.mjs";
 import { cornerResizeScale } from "./SvgResizeGeometry.mjs";
 import { addClipPath, addMask, detachMaskOrClip, getReferencedSvgId, getSvgDefinitionByReference, invertMask, releaseClipPath, setMaskOrClipEnabled, useSelectedObjectAsClipPath, useSelectedObjectAsMask } from "./SvgMaskClipCommands.mjs";
+import { BACKGROUND_OWNER_ATTR, applySvgDocumentBackgroundAppearance, readSvgDocumentBackgroundAppearance, svgBackgroundCapabilities, syncSvgDocumentBackgroundGeometry } from "./SvgDocumentBackground.mjs";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG_UI_ATTR = "data-nv-editor-ui";
@@ -47,7 +49,7 @@ const SVG_RULER_SIDE = 34;
 const LINE_TOOL_AXIS_TYPES = new Set(["x", "y", "z"]);
 const SVG_ROTATION_ORIGIN_X_ATTR = "data-nv-rotation-origin-x";
 const SVG_ROTATION_ORIGIN_Y_ATTR = "data-nv-rotation-origin-y";
-const SVG_TOOL_MODES = new Set(["select", "rotate", "line", "freehand", "bezier", "sketch", "eyedropper", "eraser"]);
+const SVG_TOOL_MODES = new Set(["select", "rotate", "line", "circle", "arc", "freehand", "bezier", "sketch", "eyedropper", "eraser"]);
 const SVG_CANVAS_MIN_ZOOM = 0.1;
 const SVG_CANVAS_MAX_ZOOM = 8;
 const SVG_CANVAS_KEYBOARD_ZOOM_FACTOR = 1.1;
@@ -380,6 +382,7 @@ export async function renderEditor(filePath, container) {
   svgRoot.replaceWith(parsedSvg.root);
   svgRoot = parsedSvg.root;
   let rootRuntimeState = prepareSvgRootForEditor(svgRoot);
+  syncSvgDocumentBackgroundGeometry(svgRoot);
 
   const layersMgr = createElementLayers(svgRoot);
   let layersPanelHost = null;
@@ -576,6 +579,26 @@ export async function renderEditor(filePath, container) {
   lineToolAngleLabel.style.pointerEvents = "none";
   lineToolAngleLabel.style.mixBlendMode = "normal";
 
+  const shapeToolPreviewCircle = createSvgEl("circle", {
+    [SVG_UI_ATTR]: "shape-tool-preview-circle",
+    fill: "rgba(47,128,255,0.08)",
+    stroke: "#2f80ff",
+    "stroke-width": "1.5",
+    "stroke-dasharray": "5 4",
+    display: "none",
+  });
+  shapeToolPreviewCircle.style.pointerEvents = "none";
+
+  const shapeToolPreviewPath = createSvgEl("path", {
+    [SVG_UI_ATTR]: "shape-tool-preview-arc",
+    fill: "none",
+    stroke: "#2f80ff",
+    "stroke-width": "1.5",
+    "stroke-dasharray": "5 4",
+    display: "none",
+  });
+  shapeToolPreviewPath.style.pointerEvents = "none";
+
   const lineToolVertexMarkerLayer = createSvgEl("g", {
     [SVG_UI_ATTR]: "line-tool-vertex-markers",
   });
@@ -584,6 +607,8 @@ export async function renderEditor(filePath, container) {
   overlayLayer.appendChild(lineToolAngleArc);
   overlayLayer.appendChild(lineToolPreviewLine);
   overlayLayer.appendChild(lineToolPreviewEnd);
+  overlayLayer.appendChild(shapeToolPreviewCircle);
+  overlayLayer.appendChild(shapeToolPreviewPath);
   overlayLayer.appendChild(lineToolVertexMarkerLayer);
   overlayLayer.appendChild(lineToolLengthLabel);
   overlayLayer.appendChild(lineToolAngleLabel);
@@ -727,6 +752,14 @@ export async function renderEditor(filePath, container) {
     grab: null,
     snapPointsRoot: null,
     vertexMarkers: [],
+  };
+
+  const shapeToolState = {
+    kind: null,
+    active: false,
+    layer: null,
+    pointsRoot: [],
+    pointsSpace: [],
   };
 
   function recordLineProbe(label, detail = {}) {
@@ -904,6 +937,176 @@ export async function renderEditor(filePath, container) {
     });
     clearLineToolState();
     setStatus("Line tool canceled (cleared placed lines)");
+    return true;
+  }
+
+  function hideShapeToolPreview() {
+    shapeToolPreviewCircle.setAttribute("display", "none");
+    shapeToolPreviewPath.setAttribute("display", "none");
+  }
+
+  function clearShapeToolState() {
+    shapeToolState.kind = null;
+    shapeToolState.active = false;
+    shapeToolState.layer = null;
+    shapeToolState.pointsRoot = [];
+    shapeToolState.pointsSpace = [];
+    hideShapeToolPreview();
+  }
+
+  function rootPointDistance(a, b) {
+    if (!a || !b) return 0;
+    return Math.hypot(Number(b.x) - Number(a.x), Number(b.y) - Number(a.y));
+  }
+
+  function circleFromThreePoints(a, b, c) {
+    const ax = Number(a?.x), ay = Number(a?.y);
+    const bx = Number(b?.x), by = Number(b?.y);
+    const cx = Number(c?.x), cy = Number(c?.y);
+    if (![ax, ay, bx, by, cx, cy].every(Number.isFinite)) return null;
+    const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    if (Math.abs(d) < 1e-9) return null;
+    const a2 = ax * ax + ay * ay;
+    const b2 = bx * bx + by * by;
+    const c2 = cx * cx + cy * cy;
+    const ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d;
+    const uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d;
+    const r = Math.hypot(ax - ux, ay - uy);
+    if (!Number.isFinite(r) || r <= 1e-9) return null;
+    return { x: ux, y: uy, r };
+  }
+
+  function normalizePositiveAngle(value) {
+    const full = Math.PI * 2;
+    let next = value % full;
+    if (next < 0) next += full;
+    return next;
+  }
+
+  function svgArcPathFromThreePoints(start, through, end) {
+    const circle = circleFromThreePoints(start, through, end);
+    if (!circle) {
+      return `M ${formatSvgNumber(start.x)} ${formatSvgNumber(start.y)} L ${formatSvgNumber(end.x)} ${formatSvgNumber(end.y)}`;
+    }
+    const startAngle = Math.atan2(start.y - circle.y, start.x - circle.x);
+    const throughAngle = Math.atan2(through.y - circle.y, through.x - circle.x);
+    const endAngle = Math.atan2(end.y - circle.y, end.x - circle.x);
+    const positiveDelta = normalizePositiveAngle(endAngle - startAngle);
+    const throughDelta = normalizePositiveAngle(throughAngle - startAngle);
+    const usePositiveSweep = throughDelta <= positiveDelta;
+    const arcDelta = usePositiveSweep ? positiveDelta : (Math.PI * 2) - positiveDelta;
+    const largeArc = arcDelta > Math.PI ? 1 : 0;
+    const sweep = usePositiveSweep ? 1 : 0;
+    const r = formatSvgNumber(circle.r);
+    return `M ${formatSvgNumber(start.x)} ${formatSvgNumber(start.y)} A ${r} ${r} 0 ${largeArc} ${sweep} ${formatSvgNumber(end.x)} ${formatSvgNumber(end.y)}`;
+  }
+
+  function beginShapeTool(kind, rootPoint, layer) {
+    const targetLayer = layer || getActiveLayer() || svgRoot;
+    shapeToolState.kind = kind;
+    shapeToolState.active = true;
+    shapeToolState.layer = targetLayer;
+    shapeToolState.pointsRoot = [{ x: rootPoint.x, y: rootPoint.y }];
+    shapeToolState.pointsSpace = [rootPointToElementPoint(targetLayer, rootPoint)];
+    if (kind === "circle") {
+      shapeToolPreviewCircle.setAttribute("cx", String(rootPoint.x));
+      shapeToolPreviewCircle.setAttribute("cy", String(rootPoint.y));
+      shapeToolPreviewCircle.setAttribute("r", "0");
+      shapeToolPreviewCircle.setAttribute("display", "");
+      shapeToolPreviewPath.setAttribute("display", "none");
+      setStatus("Circle: click a second point to set the radius");
+    } else {
+      shapeToolPreviewPath.setAttribute("d", `M ${rootPoint.x} ${rootPoint.y}`);
+      shapeToolPreviewPath.setAttribute("display", "");
+      shapeToolPreviewCircle.setAttribute("display", "none");
+      setStatus("Arc: click a point on the arc, then click the end point");
+    }
+  }
+
+  function updateShapeToolPreview(rootPoint) {
+    if (!shapeToolState.active || !rootPoint) return false;
+    const points = shapeToolState.pointsRoot || [];
+    if (shapeToolState.kind === "circle" && points[0]) {
+      shapeToolPreviewCircle.setAttribute("cx", String(points[0].x));
+      shapeToolPreviewCircle.setAttribute("cy", String(points[0].y));
+      shapeToolPreviewCircle.setAttribute("r", String(rootPointDistance(points[0], rootPoint)));
+      shapeToolPreviewCircle.setAttribute("display", "");
+      return true;
+    }
+    if (shapeToolState.kind === "arc" && points[0]) {
+      const d = points.length >= 2
+        ? svgArcPathFromThreePoints(points[0], points[1], rootPoint)
+        : `M ${formatSvgNumber(points[0].x)} ${formatSvgNumber(points[0].y)} L ${formatSvgNumber(rootPoint.x)} ${formatSvgNumber(rootPoint.y)}`;
+      shapeToolPreviewPath.setAttribute("d", d);
+      shapeToolPreviewPath.setAttribute("display", "");
+      return true;
+    }
+    return false;
+  }
+
+  function placeShapeToolPoint(kind, rootPoint) {
+    const layer = shapeToolState.layer || getActiveLayer() || svgRoot;
+    if (!shapeToolState.active || shapeToolState.kind !== kind) {
+      beginShapeTool(kind, rootPoint, layer);
+      return true;
+    }
+    shapeToolState.pointsRoot.push({ x: rootPoint.x, y: rootPoint.y });
+    shapeToolState.pointsSpace.push(rootPointToElementPoint(layer, rootPoint));
+    if (kind === "circle" && shapeToolState.pointsSpace.length >= 2) {
+      const [center, edge] = shapeToolState.pointsSpace;
+      const radius = Math.hypot(edge.x - center.x, edge.y - center.y);
+      if (Number.isFinite(radius) && radius > 0) {
+        const style = currentStyleDefaults();
+        runSvgSnapshotOperation("draw-circle", () => {
+          const circle = createSvgEl("circle", {
+            cx: formatSvgNumber(center.x),
+            cy: formatSvgNumber(center.y),
+            r: formatSvgNumber(radius),
+            fill: style.fill,
+            stroke: style.stroke,
+            "stroke-width": style.strokeWidth,
+          });
+          appendElement(circle);
+          return circle;
+        });
+        setStatus("Circle drawn");
+      }
+      clearShapeToolState();
+      return true;
+    }
+    if (kind === "arc") {
+      if (shapeToolState.pointsSpace.length === 2) {
+        setStatus("Arc: click the end point");
+        updateShapeToolPreview(rootPoint);
+        return true;
+      }
+      if (shapeToolState.pointsSpace.length >= 3) {
+        const [start, through, end] = shapeToolState.pointsSpace;
+        const d = svgArcPathFromThreePoints(start, through, end);
+        const style = currentStyleDefaults();
+        runSvgSnapshotOperation("draw-arc", () => {
+          const arc = createSvgEl("path", {
+            d,
+            fill: "none",
+            stroke: style.stroke,
+            "stroke-width": style.strokeWidth,
+            "stroke-linecap": "round",
+          });
+          appendElement(arc);
+          return arc;
+        });
+        setStatus("Arc drawn");
+        clearShapeToolState();
+        return true;
+      }
+    }
+    return true;
+  }
+
+  function cancelShapeTool() {
+    if (!shapeToolState.active) return false;
+    clearShapeToolState();
+    setStatus("Shape drawing canceled");
     return true;
   }
 
@@ -2082,14 +2285,14 @@ export async function renderEditor(filePath, container) {
       fileIsDirty: svgDocumentDirty,
       svgImageSelected: Boolean(imageContext?.element),
       svgImagePath: imageContext?.linkedNotebookPath || null,
-    });
+    }, { rebuildDropdowns: false });
     return true;
   }
 
   function markDocumentDirty(dirty = true) {
     svgDocumentDirty = Boolean(dirty);
     if (svgEditorContext) svgEditorContext.dirty = svgDocumentDirty;
-    if (isActiveSvgEditorRuntime()) updateToolbarState({ fileIsDirty: svgDocumentDirty });
+    if (isActiveSvgEditorRuntime()) updateToolbarState({ fileIsDirty: svgDocumentDirty }, { rebuildDropdowns: false });
   }
 
   window.NodevisionMetadataTools = {
@@ -2142,6 +2345,7 @@ export async function renderEditor(filePath, container) {
       svgRoot.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
       svgRoot.setAttribute("width", String(w));
       svgRoot.setAttribute("height", String(h));
+      syncSvgDocumentBackgroundGeometry(svgRoot);
       setStatus(`Cropped to selection (${Math.round(w)}x${Math.round(h)})`);
       window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
       updateSvgRulers();
@@ -2157,6 +2361,7 @@ export async function renderEditor(filePath, container) {
     if (!(el instanceof SVGElement)) return false;
     if (el === svgRoot || el === overlayLayer || el === selectionBox || el === marqueeBox) return false;
     if (el.closest(`[${SVG_UI_ATTR}]`)) return false;
+    if (el.closest(`[${BACKGROUND_OWNER_ATTR}="document"]`)) return false;
     if (!options.allowLocked && el.closest("[data-nv-locked='true']")) return false;
     const tag = el.tagName.toLowerCase();
     if (["defs", "desc", "metadata", "title"].includes(tag)) return false;
@@ -2889,7 +3094,7 @@ export async function renderEditor(filePath, container) {
     updateToolbarState({
       svgImageSelected: Boolean(context?.element),
       svgImagePath: context?.linkedNotebookPath || null,
-    });
+    }, { rebuildDropdowns: false });
   }
 
   function selectionEventDetail(reason = "selection") {
@@ -4315,6 +4520,7 @@ export async function renderEditor(filePath, container) {
     svgRoot.setAttribute("viewBox", `${Number(x) || 0} ${Number(y) || 0} ${w} ${h}`);
     svgRoot.setAttribute("width", String(w));
     svgRoot.setAttribute("height", String(h));
+    syncSvgDocumentBackgroundGeometry(svgRoot);
     window.dispatchEvent(new CustomEvent("nv-svg-editor-layout-changed", { detail: { width: w, height: h } }));
     updateSvgRulers();
   }
@@ -4574,6 +4780,9 @@ export async function renderEditor(filePath, container) {
       if (lineToolState.active) finishLineTool();
       else clearLineToolState();
     }
+    if ((toolState.mode === "circle" || toolState.mode === "arc") && mode !== toolState.mode) {
+      clearShapeToolState();
+    }
     if (toolState.mode === "bezier" && mode !== "bezier") {
       // Only tear down the live bezier session when a path is mid-draw; if the user
       // already finished (Enter), leave the completed path in place.
@@ -4590,6 +4799,11 @@ export async function renderEditor(filePath, container) {
     }
     toolState.mode = mode;
     setActiveTool(mode, `${String(mode).replace(/[-_]+/g, " ").replace(/\b\w/g, char => char.toUpperCase())} Tool`);
+    try {
+      window.dispatchEvent(new CustomEvent("nv-contextual-cursor-family-changed", { detail: { providerId: "svg-cursor-tools", mode } }));
+    } catch {
+      // Toolbar cursor-family updates are best-effort; editor mode changes should still succeed.
+    }
     toolState.drawing = false;
     toolState.tempShape = null;
     toolState.startPoint = null;
@@ -5061,9 +5275,8 @@ export async function renderEditor(filePath, container) {
       return;
     }
     if (meta && key.toLowerCase() === "z") {
-      const res = e.shiftKey ? history.redo() : history.undo();
-      if (res?.element) setSelection([res.element], { primary: res.element });
-      else if (res?.removed) clearSelection();
+      if (e.shiftKey) redoSvgHistory();
+      else undoSvgHistory();
       e.preventDefault();
       return;
     }
@@ -5144,6 +5357,13 @@ export async function renderEditor(filePath, container) {
           return;
         }
         finishLineTool();
+        e.preventDefault();
+        return;
+      }
+    }
+    if (toolState.mode === "circle" || toolState.mode === "arc") {
+      if (key === "Escape") {
+        if (!cancelShapeTool()) setMode("select");
         e.preventDefault();
         return;
       }
@@ -5358,6 +5578,14 @@ export async function renderEditor(filePath, container) {
       recordLineProbe("line-branch:after-resolve", { x: rootPoint.x, y: rootPoint.y });
       placeLineToolVertex(rootPoint, layer);
       recordLineProbe("line-branch:after-place", { active: Boolean(lineToolState.active) });
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    if (toolState.mode === "circle" || toolState.mode === "arc") {
+      clearSelection();
+      placeShapeToolPoint(toolState.mode, p);
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -5599,6 +5827,12 @@ export async function renderEditor(filePath, container) {
       return;
     }
 
+    if ((toolState.mode === "circle" || toolState.mode === "arc") && shapeToolState.active) {
+      updateShapeToolPreview(p);
+      e.preventDefault();
+      return;
+    }
+
     if (toolState.mode === "bezier" && bezierController.isActive()) {
       let target = p;
       const model = bezierController.state?.model;
@@ -5750,6 +5984,10 @@ export async function renderEditor(filePath, container) {
       }
       return;
     }
+    if ((toolState.mode === "circle" || toolState.mode === "arc") && shapeToolState.active) {
+      cancelShapeTool();
+      return;
+    }
     if (rotateState && rotateState.pointerId === e.pointerId) {
       const wasPendingRotateDrag = Boolean(rotateState.command);
       rotateState = null;
@@ -5810,6 +6048,7 @@ export async function renderEditor(filePath, container) {
 
     applyEditableSvgRootDefaults(svgRoot);
     rootRuntimeState = prepareSvgRootForEditor(svgRoot);
+    syncSvgDocumentBackgroundGeometry(svgRoot);
     if (parsed.warning) setStatus(parsed.warning);
     drawingAssistSettings = setDrawingAssistSettings({
       ...getDrawingAssistSettings(window),
@@ -5874,6 +6113,28 @@ export async function renderEditor(filePath, container) {
     }
   }
 
+
+  function applySvgHistoryResult(result, direction = "undo") {
+    if (!result) {
+      setStatus(direction === "redo" ? "Nothing to redo" : "Nothing to undo");
+      return false;
+    }
+    if (result.element) setSelection([result.element], { primary: result.element });
+    else if (result.removed) clearSelection();
+    else refreshSelectionAfterMutation("history-" + direction);
+    markDocumentDirty(true);
+    setStatus(direction === "redo" ? "Redid SVG action" : "Undid SVG action");
+    return true;
+  }
+
+  function undoSvgHistory() {
+    return applySvgHistoryResult(history.undo(), "undo");
+  }
+
+  function redoSvgHistory() {
+    return applySvgHistoryResult(history.redo(), "redo");
+  }
+
   async function runSvgSnapshotOperationAsync(label, operation) {
     if (svgSnapshotDepth > 0) return await operation?.();
     svgSnapshotDepth += 1;
@@ -5901,6 +6162,104 @@ export async function renderEditor(filePath, container) {
     }
   }
 
+
+  function createSvgBackgroundAppearanceAdapter() {
+    const beforeSvgText = serializeSvgForSave();
+    const wasDirty = svgDocumentDirty;
+    let disposed = false;
+    let validationError = "";
+
+    function restoreOpeningSnapshot() {
+      setSvgFromString(beforeSvgText);
+      markDocumentDirty(wasDirty);
+    }
+
+    function applyBackground(value) {
+      if (disposed) return false;
+      validationError = "";
+      try {
+        const changed = applySvgDocumentBackgroundAppearance(svgRoot, value);
+        syncSvgDocumentBackgroundGeometry(svgRoot);
+        window.dispatchEvent(new CustomEvent("nv-svg-background-appearance-changed", { detail: { appearance: readSvgDocumentBackgroundAppearance(svgRoot) } }));
+        return changed;
+      } catch (err) {
+        validationError = err?.message || "Background appearance could not be applied.";
+        return false;
+      }
+    }
+
+    return {
+      getCapabilities() {
+        return svgBackgroundCapabilities();
+      },
+      readAppearance() {
+        return readSvgDocumentBackgroundAppearance(svgRoot);
+      },
+      previewAppearance(value) {
+        const changed = applyBackground(value);
+        if (changed) setStatus("Previewing SVG background");
+        return changed;
+      },
+      commitAppearance(value) {
+        applyBackground(value);
+        const afterSvgText = serializeSvgForSave();
+        if (beforeSvgText !== afterSvgText) {
+          history.pushCustom({
+            kind: "svg-background-appearance",
+            undo: () => { setSvgFromString(beforeSvgText); markDocumentDirty(wasDirty); return { label: "svg-background-appearance" }; },
+            redo: () => { setSvgFromString(afterSvgText); markDocumentDirty(true); return { label: "svg-background-appearance" }; },
+          });
+          markDocumentDirty(true);
+          setStatus("Applied SVG background");
+        } else {
+          markDocumentDirty(wasDirty);
+          setStatus("SVG background unchanged");
+        }
+        return readSvgDocumentBackgroundAppearance(svgRoot);
+      },
+      cancelAppearance() {
+        restoreOpeningSnapshot();
+        setStatus("Canceled SVG background changes");
+      },
+      getValidationError() {
+        return validationError;
+      },
+      async requestPaintSample(target = "fill") {
+        const sampled = selectedElement ? sampleSvgPaint(selectedElement) : null;
+        const existing = target === "outline" ? sampled?.stroke : sampled?.fill;
+        if (existing && existing !== "none" && !/^url\(/.test(existing)) return existing;
+        if (typeof window.EyeDropper === "function") {
+          const result = await new window.EyeDropper().open();
+          return result?.sRGBHex || null;
+        }
+        validationError = "Eyedropper is unavailable on this platform; select an SVG object with a color or use the color input.";
+        setStatus(validationError);
+        return null;
+      },
+      subscribe(callback) {
+        const handler = () => callback?.(readSvgDocumentBackgroundAppearance(svgRoot));
+        window.addEventListener("nv-svg-editor-layout-changed", handler);
+        window.addEventListener("nv-svg-background-appearance-changed", handler);
+        return () => {
+          window.removeEventListener("nv-svg-editor-layout-changed", handler);
+          window.removeEventListener("nv-svg-background-appearance-changed", handler);
+        };
+      },
+      dispose() {
+        disposed = true;
+      },
+    };
+  }
+
+  function openSvgBackgroundAppearanceOverlay() {
+    const adapter = createSvgBackgroundAppearanceAdapter();
+    return openNodevisionOverlayPanel("SvgBackgroundAppearanceOverlay", {
+      title: "SVG Background",
+      displayName: "SVG Background",
+      adapter,
+    }, { panelClass: "InfoPanel" });
+  }
+
   window.selectSVGElement = selectElement;
   window.toggleSVGElementSelection = toggleSelection;
   window.SVGEditorContext = {
@@ -5916,6 +6275,13 @@ export async function renderEditor(filePath, container) {
     },
     layers: layersMgr,
     setMode,
+    getMode() {
+      return toolState.mode;
+    },
+    undo: undoSvgHistory,
+    redo: redoSvgHistory,
+    createBackgroundAppearanceAdapter: createSvgBackgroundAppearanceAdapter,
+    openBackgroundAppearance: openSvgBackgroundAppearanceOverlay,
     recordSvgSnapshot(label, operation) {
       return runSvgSnapshotOperation(label, operation);
     },

@@ -1,5 +1,24 @@
 [
   {
+    "heading": "Cursor",
+    "hotkeyText": "",
+    "ToolbarCategory": "cursor-family",
+    "content": "<div class=\"nv-contextual-cursor-family-host\"></div>",
+    "script": "contextualCursorFamilyWidget.mjs",
+    "modes": [
+      "GraphicalEditing",
+      "HTMLediting",
+      "CSVediting",
+      "SVG Editing",
+      "PNGediting",
+      "JPGediting",
+      "JPEGediting"
+    ],
+    "preventDropdown": true,
+    "preventAutoSubToolbar": true,
+    "tooltipText": "Contextual cursor tool"
+  },
+  {
     "heading": "File",
     "hotkeyText": "",
     "icon": "icons/FileIcon.png",
@@ -15,14 +34,34 @@
     "heading": "Styles",
     "hotkeyText": "",
     "icon": "icons/EditIcon.png",
-    "modes": ["HTMLediting"]
+    "modes": [
+      "HTMLediting"
+    ]
   },
   {
     "heading": "Insert",
     "hotkeyText": "",
     "icon": "icons/InsertSensitiveIcon.png",
     "callbackKey": "fileMenu",
-    "modes": ["CodeEditing", "GraphicalEditing", "MDediting", "HTMLediting", "HTMLviewing", "EPUBediting", "MIDIediting", "STLediting", "SVG Editing", "SCADediting", "CIRediting", "EquationEditing", "ICSCalendarEditing", "3D World Viewing", "VR World Editing", "Virtual World Editing", "ArduinoBlockEditing"]
+    "modes": [
+      "CodeEditing",
+      "GraphicalEditing",
+      "MDediting",
+      "HTMLediting",
+      "HTMLviewing",
+      "EPUBediting",
+      "MIDIediting",
+      "STLediting",
+      "SVG Editing",
+      "SCADediting",
+      "CIRediting",
+      "EquationEditing",
+      "ICSCalendarEditing",
+      "3D World Viewing",
+      "VR World Editing",
+      "Virtual World Editing",
+      "ArduinoBlockEditing"
+    ]
   },
   {
     "heading": "Table",
@@ -30,16 +69,51 @@
     "icon": "icons/SpreadsheetIcon.png",
     "ToolbarCategory": "Insert",
     "callbackKey": "openTableToolbar",
-    "modes": ["HTMLediting", "CSVediting"],
-    "conditions": { "htmlTableSelected": true },
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    },
     "preventDropdown": true,
-    "preventAutoSubToolbar": true
+    "preventAutoSubToolbar": true,
+    "tooltipText": "HTML table tools"
+  },
+  {
+    "heading": "Table",
+    "hotkeyText": "",
+    "icon": "icons/SpreadsheetIcon.png",
+    "ToolbarCategory": "Insert",
+    "callbackKey": "openTableToolbar",
+    "modes": [
+      "CSVediting",
+      "GraphicalEditing"
+    ],
+    "preventDropdown": true,
+    "preventAutoSubToolbar": true,
+    "tooltipText": "CSV table tools",
+    "conditions": {
+      "activeFileIsCsv": true
+    }
   },
   {
     "heading": "Draw",
     "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["GraphicalEditing", "PNGediting", "JPGediting", "JPEGediting", "GIFediting", "BMPediting", "WEBPediting", "SVG Editing", "FontEditing", "NBTediting", "STLediting", "OBJediting"]
+    "modes": [
+      "GraphicalEditing",
+      "PNGediting",
+      "JPGediting",
+      "JPEGediting",
+      "GIFediting",
+      "BMPediting",
+      "WEBPediting",
+      "SVG Editing",
+      "FontEditing",
+      "NBTediting",
+      "STLediting",
+      "OBJediting"
+    ]
   },
   {
     "heading": "Draw",
@@ -55,7 +129,10 @@
     "heading": "KML",
     "hotkeyText": "",
     "icon": "icons/CanvasIcon.png",
-    "modes": ["KMLviewerMode", "KMLeditorMode"],
+    "modes": [
+      "KMLviewerMode",
+      "KMLeditorMode"
+    ],
     "preventDropdown": true
   },
   {

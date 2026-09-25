@@ -10,17 +10,20 @@ import {
 } from "./ModuleMapLoader.mjs";
 
 const csv = [
-  "Extension,ViewerModule,GraphicalEditorModule,Family",
-  "html,ViewHTML.mjs,HTMLeditor.mjs,document",
-  "svg,ViewSVG.mjs,SVGeditor.mjs,image",
-  ",ViewText.mjs,EditorFallback.mjs,text",
+  "Extension,ViewerModule,GraphicalEditorModule,Family,CursorProviderModule",
+  "html,ViewHTML.mjs,HTMLeditor.mjs,document,HTMLCursorProvider.mjs",
+  "svg,ViewSVG.mjs,SVGeditor.mjs,image,SVGCursorProvider.mjs",
+  ",ViewText.mjs,EditorFallback.mjs,text,",
 ].join("\n");
 
 const parsed = parseModuleMapCsv(csv);
 assert.equal(parsed.html.viewer, "ViewHTML.mjs");
 assert.equal(parsed.html.editor, "HTMLeditor.mjs");
 assert.equal(parsed.svg.family, "image");
+assert.equal(parsed.svg.cursorProvider, "SVGCursorProvider.mjs");
+assert.equal(parsed.html.cursorProvider, "HTMLCursorProvider.mjs");
 assert.equal(parsed[""].viewer, "ViewText.mjs");
+assert.equal(parsed[""].cursorProvider, null);
 
 invalidateModuleMapCache();
 let fetchCount = 0;

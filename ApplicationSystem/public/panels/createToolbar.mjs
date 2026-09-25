@@ -175,6 +175,10 @@ function isToolbarActiveFilePdf(state = window.NodevisionState || {}) {
   return (resolveToolbarActiveFilePath(state).split(".").pop() || "").toLowerCase() === "pdf";
 }
 
+function isToolbarActiveFileCsv(state = window.NodevisionState || {}) {
+  return new Set(["csv", "tsv"]).has((resolveToolbarActiveFilePath(state).split(".").pop() || "").toLowerCase());
+}
+
 function isToolbarActiveFileDirectory(state = window.NodevisionState || {}) {
   const activePath = normalizeToolbarFilePath(resolveToolbarActiveFilePath(state));
   if (!activePath) return false;
@@ -323,6 +327,7 @@ function getToolbarItemState(item, state = window.NodevisionState || {}) {
     activeFileIsIno: isToolbarActiveFileIno(state),
     activeFileIsHtml: isToolbarActiveFileHtml(state),
     activeFileIsPdf: isToolbarActiveFilePdf(state),
+    activeFileIsCsv: isToolbarActiveFileCsv(state),
     activeFileIsReadablePage: isToolbarActiveFileHtml(state) || isToolbarActiveFilePdf(state),
     activeFileCanConvertToEpub: canToolbarActiveFileConvertToEpub(state),
     modelCanExport2DPattern: Boolean(

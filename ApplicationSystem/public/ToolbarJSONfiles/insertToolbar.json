@@ -1,2113 +1,2649 @@
 [
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Text",
-      "hotkeyText": ""
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Insert Template",
-      "hotkeyText": "",
-      "callbackKey": "InsertTemplate",
-      "modes": ["CodeEditing", "GraphicalEditing", "HTMLediting", "HTMLviewing", "EPUBediting"],
-      "icon": "icons/FileIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Directory Contents",
-      "hotkeyText": "",
-      "callbackKey": "insertDirectoryContents",
-      "modes": ["CodeEditing", "HTMLediting", "PHPediting"],
-      "icon": "icons/FileIcon.png",
-      "shortLabel": "Dir",
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Citation",
-      "hotkeyText": "",
-      "callbackKey": "openCitationToolbar",
-      "modes": ["HTMLediting", "HTMLviewing", "EPUBediting"],
-      "shortLabel": "Cit",
-      "preventDropdown": true,
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Citation",
-      "heading": "Insert web source",
-      "hotkeyText": "",
-      "content": "<div id=\"nv-citation-toolbar\"></div>",
-      "script": "citationToolbar.mjs",
-      "modes": ["HTMLediting", "HTMLviewing", "EPUBediting"],
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Import Asset",
-      "hotkeyText": "",
-      "script": "importAssetWidget.mjs",
-      "modes": ["HTMLediting", "HTMLviewing", "3D World Viewing", "VR World Editing", "Virtual World Editing"],
-      "preventDropdown": true,
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "3D Scene Panel",
-      "hotkeyText": "",
-      "callbackKey": "insert3DScenePanel",
-      "modes": ["HTMLediting", "HTMLviewing", "EPUBediting"],
-      "icon": "icons/3Dmodel.png",
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Structure",
-      "hotkeyText": "",
-      "modes": ["HTMLediting", "EPUBediting"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Form Element",
-      "hotkeyText": "",
-      "modes": ["HTMLediting"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Structure",
-      "heading": "Map",
-      "hotkeyText": "",
-      "callbackKey": "insertImageMap",
-      "modes": ["HTMLediting", "EPUBediting"],
-      "icon": "icons/DefaultNodeImage.png",
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Structure",
-      "heading": "Cartoon Panel",
-      "hotkeyText": "",
-      "callbackKey": "insertCartoonPanel",
-      "modes": ["HTMLediting", "EPUBediting"],
-      "icon": "icons/DefaultNodeImage.png",
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Cartoon Panel",
-      "heading": "Insert Panel",
-      "hotkeyText": "",
-      "shortLabel": "+P",
-      "callbackKey": "cartoonInsertPanel",
-      "modes": ["HTMLediting", "EPUBediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Cartoon Panel",
-      "heading": "Delete Selected Panel",
-      "hotkeyText": "",
-      "shortLabel": "P-",
-      "callbackKey": "cartoonDeleteSelectedPanel",
-      "modes": ["HTMLediting", "EPUBediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Cartoon Panel",
-      "heading": "Split Vertically",
-      "hotkeyText": "",
-      "shortLabel": "V|",
-      "callbackKey": "cartoonSplitVertical",
-      "modes": ["HTMLediting", "EPUBediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Cartoon Panel",
-      "heading": "Split Horizontally",
-      "hotkeyText": "",
-      "shortLabel": "H-",
-      "callbackKey": "cartoonSplitHorizontal",
-      "modes": ["HTMLediting", "EPUBediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Cartoon Panel",
-      "heading": "Panel Gap",
-      "hotkeyText": "",
-      "content": "<div id=\"nv-cartoon-gap-toolbar\"></div>",
-      "script": "cartoonPanelGapWidget.mjs",
-      "modes": ["HTMLediting", "EPUBediting"],
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Waypoint",
-      "hotkeyText": "",
-      "callbackKey": "insertWaypoint",
-      "routeToActivePanel": true,
-      "modes": ["KMLeditorMode"],
-      "icon": "icons/DefaultNodeImage.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Aviation Chart",
-      "hotkeyText": "",
-      "callbackKey": "showAviationChartImportPlaceholder",
-      "routeToActivePanel": true,
-      "modes": ["KMLviewerMode", "KMLeditorMode"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Bone",
-      "hotkeyText": "",
-      "callbackKey": "glbInsertBone",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertBone": true
-      },
-      "icon": "icons/3Dmodel.png",
-      "shortLabel": "Bone"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "GLB Primitive",
-      "hotkeyText": "",
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      },
-      "icon": "icons/3Dmodel.png",
-      "shortLabel": "3D"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Circle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertCircle",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Rectangle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertRectangle",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Square",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertSquare",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Triangle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertTriangle",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Polygon",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertPolygon",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Line",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertLine",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Sphere",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertSphere",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Cube",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertCube",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Cylinder",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertCylinder",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "GLB Primitive",
-      "heading": "Polyhedron",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertPolyhedron",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanInsertPrimitive": true
-      }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Mesh Edit",
-      "hotkeyText": "",
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanEditMesh": true
-      },
-      "icon": "icons/3Dmodel.png",
-      "shortLabel": "Mesh"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Mesh Edit",
-      "heading": "Vertex",
-      "hotkeyText": "",
-      "callbackKey": "stlAddVertex",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanEditMesh": true
-      },
-      "shortLabel": "Vtx"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Mesh Edit",
-      "heading": "Extrude",
-      "hotkeyText": "E",
-      "callbackKey": "stlExtrude",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanEditMesh": true
-      },
-      "shortLabel": "Ext"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Mesh Edit",
-      "heading": "Fill or Edge",
-      "hotkeyText": "F",
-      "callbackKey": "stlFillOrConnect",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanEditMesh": true
-      },
-      "shortLabel": "F"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Mesh Edit",
-      "heading": "Grab",
-      "hotkeyText": "G",
-      "callbackKey": "stlGrab",
-      "routeToActivePanel": true,
-      "modes": ["GraphicalEditing"],
-      "conditions": {
-        "glbCanEditMesh": true
-      },
-      "shortLabel": "G"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "SCAD Primitive",
-      "hotkeyText": "",
-      "modes": ["SCADediting"],
-      "preventDropdown": true,
-      "icon": "icons/3Dmodel.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "SCAD Primitive",
-      "heading": "Select",
-      "hotkeyText": "",
-      "callbackKey": "scadSelectTool",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "SCAD Primitive",
-      "heading": "Vertex",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertVertex",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "SCAD Primitive",
-      "heading": "Circle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertCircle",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "SCAD Primitive",
-      "heading": "Rectangle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertRectangle",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "SCAD Primitive",
-      "heading": "Triangle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertTriangle",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "SCAD Primitive",
-      "heading": "Polygon",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertPolygon",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Circle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertCircle",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Rectangle",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertRectangle",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Square",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertSquare",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Polygon",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertPolygon",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "SCAD Text",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertText",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Sphere",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertSphere",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Cube",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertCube",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Cylinder",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertCylinder",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Polyhedron",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertPolyhedron",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Line",
-      "hotkeyText": "",
-      "callbackKey": "scadInsertLine",
-      "routeToActivePanel": true,
-      "modes": ["SCADediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Terrain",
-      "hotkeyText": "",
-      "modes": ["Virtual World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Shape",
-      "hotkeyText": "",
-      "modes": ["Virtual World Editing", "VR World Editing"],
-      "preventDropdown": true,
-      "icon": "icons/3Dmodel.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Character",
-      "hotkeyText": "",
-      "modes": ["Virtual World Editing", "VR World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Game Object",
-      "hotkeyText": "",
-      "modes": ["Virtual World Editing", "VR World Editing"],
-      "preventDropdown": true,
-      "icon": "icons/3Dmodel.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Game Object",
-      "heading": "Game Object Controls",
-      "hotkeyText": "",
-      "script": "worldShapeWidget.mjs",
-      "widgetKind": "gameObject",
-      "modes": ["Virtual World Editing", "VR World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Character",
-      "heading": "Character Controls",
-      "hotkeyText": "",
-      "script": "worldCharacterWidget.mjs",
-      "modes": ["Virtual World Editing", "VR World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Shape",
-      "heading": "3D Shape Controls",
-      "hotkeyText": "",
-      "script": "worldShapeWidget.mjs",
-      "modes": ["Virtual World Editing", "VR World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Terrain",
-      "heading": "Insert Terrain Controls",
-      "hotkeyText": "",
-      "script": "terrainToolWidget.mjs",
-      "modes": ["Virtual World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Equation / Inequality Object",
-      "hotkeyText": "",
-      "script": "equationColliderWidget.mjs",
-      "modes": ["Virtual World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Equation / Inequality Object",
-      "heading": "Equation / Inequality Controls",
-      "hotkeyText": "",
-      "script": "equationColliderWidget.mjs",
-      "modes": ["Virtual World Editing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Equation Element",
-      "hotkeyText": "",
-      "modes": ["EquationEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Equation Element",
-      "heading": "Equation Elements",
-      "hotkeyText": "",
-      "content": "<div></div>",
-      "script": "equationElementsWidget.mjs",
-      "modes": ["EquationEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Symbol",
-      "hotkeyText": "",
-      "modes": ["EquationEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Symbol",
-      "heading": "Equation Symbols",
-      "hotkeyText": "",
-      "content": "<div></div>",
-      "script": "equationSymbolsWidget.mjs",
-      "modes": ["EquationEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Source",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertSource",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Circuit Element",
-      "hotkeyText": "",
-      "callbackKey": "cirShowCircuitElements",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Wire",
-      "hotkeyText": "",
-      "callbackKey": "cirWireTool",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Add Event",
-      "hotkeyText": "",
-      "callbackKey": "icsAddEvent",
-      "routeToActivePanel": true,
-      "modes": ["ICSCalendarEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Loop",
-      "hotkeyText": "",
-      "callbackKey": "arduinoShowLoopBlocks",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Pins",
-      "hotkeyText": "",
-      "callbackKey": "arduinoShowPinBlocks",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Timing",
-      "hotkeyText": "",
-      "callbackKey": "arduinoShowTimingBlocks",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Logic",
-      "hotkeyText": "",
-      "callbackKey": "arduinoShowLogicBlocks",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Serial",
-      "hotkeyText": "",
-      "callbackKey": "arduinoShowSerialBlocks",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Variables",
-      "hotkeyText": "",
-      "callbackKey": "arduinoShowVariableBlocks",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Math",
-      "hotkeyText": "",
-      "callbackKey": "arduinoShowMathBlocks",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"],
-      "preventDropdown": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Loop",
-      "heading": "Comment",
-      "hotkeyText": "",
-      "shortLabel": "//",
-      "callbackKey": "arduinoInsertComment",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Loop",
-      "heading": "Delay",
-      "hotkeyText": "",
-      "shortLabel": "DL",
-      "callbackKey": "arduinoInsertDelay",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Loop",
-      "heading": "If",
-      "hotkeyText": "",
-      "shortLabel": "IF",
-      "callbackKey": "arduinoInsertIf",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Loop",
-      "heading": "If Else",
-      "hotkeyText": "",
-      "shortLabel": "IE",
-      "callbackKey": "arduinoInsertIfElse",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Pins",
-      "heading": "Pin Mode",
-      "hotkeyText": "",
-      "shortLabel": "PM",
-      "callbackKey": "arduinoInsertPinMode",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Pins",
-      "heading": "Digital Write",
-      "hotkeyText": "",
-      "shortLabel": "DW",
-      "callbackKey": "arduinoInsertDigitalWrite",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Pins",
-      "heading": "Analog Write",
-      "hotkeyText": "",
-      "shortLabel": "AW",
-      "callbackKey": "arduinoInsertAnalogWrite",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Pins",
-      "heading": "Digital Read",
-      "hotkeyText": "",
-      "shortLabel": "DR",
-      "callbackKey": "arduinoInsertDigitalRead",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Pins",
-      "heading": "Analog Read",
-      "hotkeyText": "",
-      "shortLabel": "AR",
-      "callbackKey": "arduinoInsertAnalogRead",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Timing",
-      "heading": "Delay",
-      "hotkeyText": "",
-      "shortLabel": "DL",
-      "callbackKey": "arduinoInsertDelay",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Timing",
-      "heading": "Millis",
-      "hotkeyText": "",
-      "shortLabel": "MS",
-      "callbackKey": "arduinoInsertMillis",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Logic",
-      "heading": "If",
-      "hotkeyText": "",
-      "shortLabel": "IF",
-      "callbackKey": "arduinoInsertIf",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Logic",
-      "heading": "If Else",
-      "hotkeyText": "",
-      "shortLabel": "IE",
-      "callbackKey": "arduinoInsertIfElse",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Logic",
-      "heading": "Compare",
-      "hotkeyText": "",
-      "shortLabel": "==",
-      "callbackKey": "arduinoInsertCompare",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Logic",
-      "heading": "And Or",
-      "hotkeyText": "",
-      "shortLabel": "&&",
-      "callbackKey": "arduinoInsertLogicOp",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Logic",
-      "heading": "Not",
-      "hotkeyText": "",
-      "shortLabel": "!",
-      "callbackKey": "arduinoInsertNot",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Serial",
-      "heading": "Serial Begin",
-      "hotkeyText": "",
-      "shortLabel": "SB",
-      "callbackKey": "arduinoInsertSerialBegin",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Serial",
-      "heading": "Serial Print",
-      "hotkeyText": "",
-      "shortLabel": "SP",
-      "callbackKey": "arduinoInsertSerialPrint",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Serial",
-      "heading": "Serial Println",
-      "hotkeyText": "",
-      "shortLabel": "SL",
-      "callbackKey": "arduinoInsertSerialPrintln",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Variables",
-      "heading": "Define Variable",
-      "hotkeyText": "",
-      "shortLabel": "DV",
-      "callbackKey": "arduinoInsertDefineVariable",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Variables",
-      "heading": "Set Variable",
-      "hotkeyText": "",
-      "shortLabel": "SV",
-      "callbackKey": "arduinoInsertSetVariable",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Variables",
-      "heading": "Change Variable",
-      "hotkeyText": "",
-      "shortLabel": "CV",
-      "callbackKey": "arduinoInsertChangeVariable",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Variables",
-      "heading": "Get Variable",
-      "hotkeyText": "",
-      "shortLabel": "GV",
-      "callbackKey": "arduinoInsertGetVariable",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Math",
-      "heading": "Number",
-      "hotkeyText": "",
-      "shortLabel": "#",
-      "callbackKey": "arduinoInsertNumber",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Math",
-      "heading": "Text",
-      "hotkeyText": "",
-      "shortLabel": "TXT",
-      "callbackKey": "arduinoInsertText",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Math",
-      "heading": "Arithmetic",
-      "hotkeyText": "",
-      "shortLabel": "+-",
-      "callbackKey": "arduinoInsertArithmetic",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Math",
-      "heading": "Map",
-      "hotkeyText": "",
-      "shortLabel": "MAP",
-      "callbackKey": "arduinoInsertMap",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Math",
-      "heading": "Constrain",
-      "hotkeyText": "",
-      "shortLabel": "CON",
-      "callbackKey": "arduinoInsertConstrain",
-      "routeToActivePanel": true,
-      "modes": ["ArduinoBlockEditing"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Circuit Element",
-      "heading": "Resistor",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertResistor",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Circuit Element",
-      "heading": "Inductor",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertInductor",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Circuit Element",
-      "heading": "Capacitor",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertCapacitor",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Circuit Element",
-      "heading": "Diode",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertDiode",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Circuit Element",
-      "heading": "Op-Amp",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertOpAmp",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Circuit Element",
-      "heading": "Transistor",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertTransistor",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Circuit Element",
-      "heading": "Other",
-      "hotkeyText": "",
-      "callbackKey": "cirInsertOther",
-      "routeToActivePanel": true,
-      "modes": ["CIRediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "PHP Runtime Tools",
-      "hotkeyText": "",
-      "modes": ["PHPediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "PHP Runtime Tools",
-      "heading": "Device Management Panel",
-      "hotkeyText": "",
-      "callbackKey": "phpOpenDeviceManager",
-      "modes": ["PHPediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "PHP Runtime Tools",
-      "heading": "Logic Block Editor Panel",
-      "hotkeyText": "",
-      "callbackKey": "phpOpenLogicEditor",
-      "modes": ["PHPediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "PHP Runtime Tools",
-      "heading": "Dashboard Configuration Panel",
-      "hotkeyText": "",
-      "callbackKey": "phpOpenDashboardConfig",
-      "modes": ["PHPediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "PHP Runtime Tools",
-      "heading": "Data Logging Panel",
-      "hotkeyText": "",
-      "callbackKey": "phpOpenDataLogging",
-      "modes": ["PHPediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "PHP Runtime Tools",
-      "heading": "Live Preview / Execution",
-      "hotkeyText": "",
-      "callbackKey": "phpToggleLivePreview",
-      "modes": ["PHPediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "h1",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertH1",
-      "icon": "icons/h1Icon.png",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "h2",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertH2",
-      "icon": "icons/h2Icon.png",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "h3",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertH3",
-      "icon": "icons/h3Icon.png",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "h4",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertH4",
-      "icon": "icons/h4Icon.png",
-      "parentHeading": "Insert Text"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "h5",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertH5",
-      "icon": "icons/h5Icon.png",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "h6",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertH6",
-      "icon": "icons/h6Icon.png",
-      "parentHeading": "Insert Text"
-    },
-
-
-
-       {
-      "ToolbarCategory": "Insert",
-      "heading": "paragraph",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertParagraph",
-      "parentHeading": "Insert Text"
-
-    },
-
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Handwriting",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "handwritingToText",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Take Dictation",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "takeDictation",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Unicode Symbol",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertSymbol",
-      "parentHeading": "Insert Text",
-      "shortLabel": "Ω"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Line Numbered Poetry",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertLineNumberedPoetry",
-      "parentHeading": "Insert Text",
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Poetry",
-      "heading": "Poetry Controls",
-      "hotkeyText": "",
-      "content": "<div id=\"nv-poetry-toolbar\"></div>",
-      "script": "poetryToolbar.mjs",
-      "modes": ["HTMLediting"],
-      "preventDropdown": true
-    },
-
-
-       {
-      "ToolbarCategory": "Insert",
-      "heading": "Footer",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertFooter",
-      "icon": "icons/InsertSensitiveIcon.png",
-       "parentHeading": "Insert Text"
-    },
-           {
-      "ToolbarCategory": "Insert",
-      "heading": "Superscript",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertSuperscript",
-      "icon": "icons/InsertSensitiveIcon.png",
-      "parentHeading": "Insert Text"
-    },
-
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Tab",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertTab",
-      "icon": "icons/TabIcon.png",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Equation Element",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertMathMLEquation",
-      "preventDropdown": true,
-      "preventAutoSubToolbar": true,
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "MathML Equation",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertMathMLEquation",
-      "parentHeading": "Insert Text",
-      "preventAutoSubToolbar": true,
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Equation Element",
-      "heading": "Equation Structure Tools",
-      "hotkeyText": "",
-      "content": "<div></div>",
-      "script": "mathmlEquationStructureWidget.mjs",
-      "modes": ["HTMLediting"],
-      "preventDropdown": true
-    },
-
-
-
-
-
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Button",
-      "hotkeyText": "",
-      "callbackKey": "insertFormButton",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Btn"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Text Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormTextField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Txt"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Number Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormNumberField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "123"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Email Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormEmailField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "@"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Password Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormPasswordField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "***"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Search Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormSearchField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Sea"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Telephone Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormTelephoneField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Tel"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "URL Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormUrlField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "URL"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Date Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormDateField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Day"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Time Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormTimeField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Time"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Date/Time Field",
-      "hotkeyText": "",
-      "callbackKey": "insertFormDateTimeField",
-      "modes": ["HTMLediting"],
-      "shortLabel": "DT"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Checkbox",
-      "hotkeyText": "",
-      "callbackKey": "insertFormCheckbox",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Chk"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Radio Button",
-      "hotkeyText": "",
-      "callbackKey": "insertFormRadioButton",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Rad"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Range Slider",
-      "hotkeyText": "",
-      "callbackKey": "insertFormRangeSlider",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Rng"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Color Picker",
-      "hotkeyText": "",
-      "callbackKey": "insertFormColorPicker",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Clr"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "File Input",
-      "hotkeyText": "",
-      "callbackKey": "insertFormFileInput",
-      "modes": ["HTMLediting"],
-      "shortLabel": "File"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Text Area",
-      "hotkeyText": "",
-      "callbackKey": "insertFormTextArea",
-      "modes": ["HTMLediting"],
-      "shortLabel": "TA"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Select / Dropdown",
-      "hotkeyText": "",
-      "callbackKey": "insertFormSelectDropdown",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Sel"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Label",
-      "hotkeyText": "",
-      "callbackKey": "insertFormLabel",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Lbl"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Fieldset",
-      "hotkeyText": "",
-      "callbackKey": "insertFormFieldset",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Fld"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Form Element",
-      "heading": "Form",
-      "hotkeyText": "",
-      "callbackKey": "insertFormForm",
-      "modes": ["HTMLediting"],
-      "shortLabel": "Form"
-    },
-
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Insert",
-      "heading": "Insert Table",
-      "hotkeyText": "",
-      "insertGroup": "table",
-      "callbackKey": "insertTable",
-      "icon": "icons/SpreadsheetIcon.png",
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Insert Row Above",
-      "hotkeyText": "",
-      "shortLabel": "R+",
-      "callbackKey": "tableInsertRowAbove",
-      "modes": ["HTMLediting", "CSVediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Insert Row Below",
-      "hotkeyText": "",
-      "shortLabel": "+R",
-      "callbackKey": "tableInsertRowBelow",
-      "modes": ["HTMLediting", "CSVediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Insert Column Left",
-      "hotkeyText": "",
-      "shortLabel": "C+",
-      "callbackKey": "tableInsertColumnLeft",
-      "modes": ["HTMLediting", "CSVediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Insert Column Right",
-      "hotkeyText": "",
-      "shortLabel": "+C",
-      "callbackKey": "tableInsertColumnRight",
-      "modes": ["HTMLediting", "CSVediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Delete Row",
-      "hotkeyText": "",
-      "shortLabel": "R-",
-      "callbackKey": "tableDeleteRow",
-      "modes": ["HTMLediting", "CSVediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Delete Column",
-      "hotkeyText": "",
-      "shortLabel": "C-",
-      "callbackKey": "tableDeleteColumn",
-      "modes": ["HTMLediting", "CSVediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Merge Cells",
-      "hotkeyText": "",
-      "shortLabel": "Merge",
-      "temporaryIcon": "M",
-      "callbackKey": "tableMergeCells",
-      "modes": ["HTMLediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Merge Cell Right",
-      "hotkeyText": "",
-      "shortLabel": "M+R",
-      "temporaryIcon": "MR",
-      "callbackKey": "tableMergeCellRight",
-      "modes": ["HTMLediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Merge Cell Down",
-      "hotkeyText": "",
-      "shortLabel": "M+D",
-      "temporaryIcon": "MD",
-      "callbackKey": "tableMergeCellDown",
-      "modes": ["HTMLediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Table",
-      "heading": "Split Cell",
-      "hotkeyText": "",
-      "shortLabel": "Split",
-      "temporaryIcon": "/",
-      "callbackKey": "tableSplitCell",
-      "modes": ["HTMLediting"],
-      "conditions": { "htmlTableSelected": true }
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "OrderedList",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertOrderedList",
-      "icon": "icons/NumberedList.png",
-      "parentHeading": "Insert Text"
-
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "UnorderedList",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertUnorderedList",
-      "icon": "icons/BulletPoints.png",
-      "parentHeading": "Insert Text"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Italics",
-      "hotkeyText": "Ctrl/Cmd+I",
-      "insertGroup": "text",
-      "callbackKey": "insertItalics",
-      "icon": "icons/ItalicsIcon.png",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Bold",
-      "hotkeyText": "Ctrl/Cmd+B",
-      "insertGroup": "text",
-      "callbackKey": "insertBold",
-      "icon": "icons/BoldIcon.png",
-      "parentHeading": "Insert Text"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Underline",
-      "hotkeyText": "Ctrl/Cmd+U",
-      "insertGroup": "text",
-      "callbackKey": "insertUnderline",
-      "icon": "icons/UnderlineIcon.png",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Strikethrough",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertStrikethrough",
-      "icon": "icons/StrikethroughIcon.png",
-      "parentHeading": "Insert Text"
-    },
-       {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Hyperlink",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertLink",
-      "icon": "icons/LinkIcon.png",
-      "parentHeading": "Insert Text"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Abbreviation",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertAbbreviation",
-      "parentHeading": "Insert Text"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Address",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertAddress",
-      "icon": "icons/AddressIcon.png",
-      "parentHeading": "Insert Text"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Blockquote",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertBlockquote",
-      "icon": "icons/BlockquoteIcon.png",
-      "parentHeading": "Insert Text"
-    },
-        {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Quote",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertQuote",
-      "icon": "icons/QuotationIcon.png",
-      "parentHeading": "Insert Text"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Code Element",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "InsertCodeElement",
-      "modes": ["HTMLediting"],
-      "icon": "icons/CodeEditor.png"
-    },
-            {
-      "ToolbarCategory": "Insert",
-      "heading": "DIV",
-      "hotkeyText": "",
-      "insertGroup": "Layout",
-      "callbackKey": "insertDIV",
-      "modes": ["HTMLediting"],
-      "icon": "icons/InsertSensitiveIcon.png"
-    },
-        {
-      "ToolbarCategory": "Insert",
-      "heading": "Footnote",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertFootnote",
-      "modes": ["HTMLediting"],
-      "icon": "icons/InsertSensitiveIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Structure",
-      "heading": "Sensitive Elements",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertSensitive",
-      "modes": ["HTMLediting"],
-      "icon": "icons/InsertSensitiveIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Image",
-      "hotkeyText": "",
-      "insertGroup": "image",
-      "callbackKey": "insertImage",
-      "modes": ["EPUBediting"],
-      "icon": "icons/ImageIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Layout Canvas",
-      "hotkeyText": "",
-      "insertGroup": "Layout",
-      "callbackKey": "insertLayoutCanvas",
-      "modes": ["HTMLediting", "EPUBediting"],
-      "icon": "icons/InsertSensitiveIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Serial Monitor",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertSerialMonitor",
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert QRcode",
-      "hotkeyText": "",
-      "insertGroup": "image",
-      "callbackKey": "insertQRcode",
-      "modes": ["HTMLediting"],
-      "icon": "icons/QRcodeIcon.png"
-
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Media",
-      "hotkeyText": "",
-      "insertGroup": "media",
-      "callbackKey": "insertMedia",
-      "modes": ["HTMLediting", "GraphicalEditing", "SVG Editing", "Virtual World Editing", "VR World Editing"],
-      "icon": "icons/ImageIcon.png"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Media Widget",
-      "hotkeyText": "",
-      "parentHeading": "Media",
-      "modes": ["HTMLediting", "GraphicalEditing", "SVG Editing", "Virtual World Editing", "VR World Editing"],
-      "content": "<div id=\"nv-insert-media-widget\" style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap;\"></div>",
-      "script": "insertMediaWidget.mjs",
-      "preventAutoSubToolbar": true
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "parentHeading": "Media",
-      "heading": "Replace Selected Text with Image",
-      "hotkeyText": "",
-      "insertGroup": "image",
-      "callbackKey": "replaceSelectedTextWithImage",
-      "modes": ["HTMLediting", "EPUBediting"],
-      "conditions": {
-        "htmlTextSelectionActive": true
-      },
-      "icon": "icons/ImageIcon.png",
-      "preventAutoSubToolbar": true
-    },
-
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert IFRAME",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "insertIFRAME",
-      "modes": ["HTMLediting"]
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Insert Collapsible",
-      "hotkeyText": "",
-      "insertGroup": "text",
-      "callbackKey": "InsertCollapsible",
-      "modes": ["HTMLediting"]
-    },
-
-
-    {
-  "ToolbarCategory": "Insert",
-  "heading": "Insert Prism",
-  "hotkeyText": "",
-  "insertGroup": "3D Objects",
-  "callbackKey": "insertPrism",
-  "modes": ["VR World Editing"],
-  "icon": "icons/3Dmodel.png"
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Insert STL",
-  "hotkeyText": "",
-  "insertGroup": "3D Objects",
-  "callbackKey": "insertSTL",
-  "modes": ["VR World Editing"],
-  "icon": "icons/3Dmodel.png"
-},
-	{
-      "ToolbarCategory": "Insert",
-      "heading": "Vertex",
-      "hotkeyText": "",
-      "callbackKey": "stlAddVertex",
-      "routeToActivePanel": true,
-      "modes": ["STLediting"],
-      "parentHeading": "Insert",
-      "shortLabel": "Vtx"
-    },
-    {
-      "ToolbarCategory": "Insert",
-      "heading": "Image",
-      "hotkeyText": "",
-      "parentHeading": "Insert",
-      "callbackKey": "insertImage",
-      "modes": ["SVG Editing"],
-      "icon": "icons/ImageIcon.png"
-    },
-	{
-	  "ToolbarCategory": "Insert",
-	  "heading": "Insert Shape",
-	  "hotkeyText": "",
-	  "parentHeading": "Insert",
-	  "modes": ["SVG Editing"],
-	  "icon": "icons/DefaultNodeImage.png"
-	},
-	{
-	  "ToolbarCategory": "Insert",
-	  "heading": "Insert Text Box",
-	  "hotkeyText": "",
-	  "parentHeading": "Insert",
-	  "modes": ["SVG Editing"],
-	  "icon": "icons/DefaultNodeImage.png"
-	},
-	{
-	  "ToolbarCategory": "Insert",
-	  "heading": "SVG Insert Shapes",
-	  "hotkeyText": "",
-	  "parentHeading": "Insert Shape",
-	  "modes": ["SVG Editing"],
-	  "content": "<div id=\"nv-svg-insert-shape-widget\" style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap;\"></div>",
-	  "script": "svgInsertShapeWidget.mjs",
-	  "preventAutoSubToolbar": true
-	},
-	{
-	  "ToolbarCategory": "Insert",
-	  "heading": "SVG Insert Text Box",
-	  "hotkeyText": "",
-	  "parentHeading": "Insert Text Box",
-	  "modes": ["SVG Editing"],
-	  "content": "<div id=\"nv-svg-insert-textbox-widget\" style=\"display:flex;align-items:center;gap:10px;flex-wrap:wrap;\"></div>",
-	  "script": "svgTextBoxWidget.mjs",
-	  "preventAutoSubToolbar": true
-	},
-	{
-	  "ToolbarCategory": "Insert",
-	  "heading": "Record Melody",
-	  "hotkeyText": "",
-	  "callbackKey": "midiRecordMelody",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Insert"
-},
-	{
-	  "ToolbarCategory": "Insert",
-	  "heading": "Insert Note",
-	  "hotkeyText": "",
-	  "callbackKey": "midiInsertNote",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Insert"
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Insert Rest",
-  "hotkeyText": "",
-  "callbackKey": "midiInsertRest",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Insert"
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Note Selected",
-  "hotkeyText": "",
-  "modes": ["MIDIediting"],
-  "parentHeading": "Insert",
-  "conditions": { "midiSelectedType": "note" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Whole",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationWhole",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Note Selected",
-  "conditions": { "midiSelectedType": "note" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Half",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationHalf",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Note Selected",
-  "conditions": { "midiSelectedType": "note" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Quarter",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationQuarter",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Note Selected",
-  "conditions": { "midiSelectedType": "note" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Eighth",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationEighth",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Note Selected",
-  "conditions": { "midiSelectedType": "note" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Rest Selected",
-  "hotkeyText": "",
-  "modes": ["MIDIediting"],
-  "parentHeading": "Insert",
-  "conditions": { "midiSelectedType": "rest" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Whole",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationWhole",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Rest Selected",
-  "conditions": { "midiSelectedType": "rest" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Half",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationHalf",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Rest Selected",
-  "conditions": { "midiSelectedType": "rest" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Quarter",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationQuarter",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Rest Selected",
-  "conditions": { "midiSelectedType": "rest" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Eighth",
-  "hotkeyText": "",
-  "callbackKey": "midiDurationEighth",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Rest Selected",
-  "conditions": { "midiSelectedType": "rest" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Cleff Selected",
-  "hotkeyText": "",
-  "modes": ["MIDIediting"],
-  "parentHeading": "Insert",
-  "conditions": { "midiSelectedType": "cleff" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Treble",
-  "hotkeyText": "",
-  "callbackKey": "midiCleffTreble",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Cleff Selected",
-  "conditions": { "midiSelectedType": "cleff" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Bass",
-  "hotkeyText": "",
-  "callbackKey": "midiCleffBass",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Cleff Selected",
-  "conditions": { "midiSelectedType": "cleff" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Alto",
-  "hotkeyText": "",
-  "callbackKey": "midiCleffAlto",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Cleff Selected",
-  "conditions": { "midiSelectedType": "cleff" }
-},
-{
-  "ToolbarCategory": "Insert",
-  "heading": "Tenor",
-  "hotkeyText": "",
-  "callbackKey": "midiCleffTenor",
-  "routeToActivePanel": true,
-  "modes": ["MIDIediting"],
-  "parentHeading": "Cleff Selected",
-  "conditions": { "midiSelectedType": "cleff" }
-}
-
-  ]
-
-
-
-
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Text",
+    "hotkeyText": ""
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Insert Template",
+    "hotkeyText": "",
+    "callbackKey": "InsertTemplate",
+    "modes": [
+      "CodeEditing",
+      "GraphicalEditing",
+      "HTMLediting",
+      "HTMLviewing",
+      "EPUBediting"
+    ],
+    "icon": "icons/FileIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Directory Contents",
+    "hotkeyText": "",
+    "callbackKey": "insertDirectoryContents",
+    "modes": [
+      "CodeEditing",
+      "HTMLediting",
+      "PHPediting"
+    ],
+    "icon": "icons/FileIcon.png",
+    "shortLabel": "Dir",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Citation",
+    "hotkeyText": "",
+    "callbackKey": "openCitationToolbar",
+    "modes": [
+      "HTMLediting",
+      "HTMLviewing",
+      "EPUBediting"
+    ],
+    "shortLabel": "Cit",
+    "preventDropdown": true,
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Citation",
+    "heading": "Insert web source",
+    "hotkeyText": "",
+    "content": "<div id=\"nv-citation-toolbar\"></div>",
+    "script": "citationToolbar.mjs",
+    "modes": [
+      "HTMLediting",
+      "HTMLviewing",
+      "EPUBediting"
+    ],
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Import Asset",
+    "hotkeyText": "",
+    "script": "importAssetWidget.mjs",
+    "modes": [
+      "HTMLediting",
+      "HTMLviewing",
+      "3D World Viewing",
+      "VR World Editing",
+      "Virtual World Editing"
+    ],
+    "preventDropdown": true,
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "3D Scene Panel",
+    "hotkeyText": "",
+    "callbackKey": "insert3DScenePanel",
+    "modes": [
+      "HTMLediting",
+      "HTMLviewing",
+      "EPUBediting"
+    ],
+    "icon": "icons/3Dmodel.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Structure",
+    "hotkeyText": "",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Form Element",
+    "hotkeyText": "",
+    "modes": [
+      "HTMLediting"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Structure",
+    "heading": "Map",
+    "hotkeyText": "",
+    "callbackKey": "insertImageMap",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ],
+    "icon": "icons/DefaultNodeImage.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Structure",
+    "heading": "Cartoon Panel",
+    "hotkeyText": "",
+    "callbackKey": "insertCartoonPanel",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ],
+    "icon": "icons/DefaultNodeImage.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Cartoon Panel",
+    "heading": "Insert Panel",
+    "hotkeyText": "",
+    "shortLabel": "+P",
+    "callbackKey": "cartoonInsertPanel",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Cartoon Panel",
+    "heading": "Delete Selected Panel",
+    "hotkeyText": "",
+    "shortLabel": "P-",
+    "callbackKey": "cartoonDeleteSelectedPanel",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Cartoon Panel",
+    "heading": "Split Vertically",
+    "hotkeyText": "",
+    "shortLabel": "V|",
+    "callbackKey": "cartoonSplitVertical",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Cartoon Panel",
+    "heading": "Split Horizontally",
+    "hotkeyText": "",
+    "shortLabel": "H-",
+    "callbackKey": "cartoonSplitHorizontal",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Cartoon Panel",
+    "heading": "Panel Gap",
+    "hotkeyText": "",
+    "content": "<div id=\"nv-cartoon-gap-toolbar\"></div>",
+    "script": "cartoonPanelGapWidget.mjs",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ],
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Waypoint",
+    "hotkeyText": "",
+    "callbackKey": "insertWaypoint",
+    "routeToActivePanel": true,
+    "modes": [
+      "KMLeditorMode"
+    ],
+    "icon": "icons/DefaultNodeImage.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Aviation Chart",
+    "hotkeyText": "",
+    "callbackKey": "showAviationChartImportPlaceholder",
+    "routeToActivePanel": true,
+    "modes": [
+      "KMLviewerMode",
+      "KMLeditorMode"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Bone",
+    "hotkeyText": "",
+    "callbackKey": "glbInsertBone",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertBone": true
+    },
+    "icon": "icons/3Dmodel.png",
+    "shortLabel": "Bone"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "GLB Primitive",
+    "hotkeyText": "",
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    },
+    "icon": "icons/3Dmodel.png",
+    "shortLabel": "3D"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Circle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertCircle",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Rectangle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertRectangle",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Square",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertSquare",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Triangle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertTriangle",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Polygon",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertPolygon",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Line",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertLine",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Sphere",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertSphere",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Cube",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertCube",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Cylinder",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertCylinder",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "GLB Primitive",
+    "heading": "Polyhedron",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertPolyhedron",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanInsertPrimitive": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Mesh Edit",
+    "hotkeyText": "",
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanEditMesh": true
+    },
+    "icon": "icons/3Dmodel.png",
+    "shortLabel": "Mesh"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Mesh Edit",
+    "heading": "Vertex",
+    "hotkeyText": "",
+    "callbackKey": "stlAddVertex",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanEditMesh": true
+    },
+    "shortLabel": "Vtx"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Mesh Edit",
+    "heading": "Extrude",
+    "hotkeyText": "E",
+    "callbackKey": "stlExtrude",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanEditMesh": true
+    },
+    "shortLabel": "Ext"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Mesh Edit",
+    "heading": "Fill or Edge",
+    "hotkeyText": "F",
+    "callbackKey": "stlFillOrConnect",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanEditMesh": true
+    },
+    "shortLabel": "F"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Mesh Edit",
+    "heading": "Grab",
+    "hotkeyText": "G",
+    "callbackKey": "stlGrab",
+    "routeToActivePanel": true,
+    "modes": [
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "glbCanEditMesh": true
+    },
+    "shortLabel": "G"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "SCAD Primitive",
+    "hotkeyText": "",
+    "modes": [
+      "SCADediting"
+    ],
+    "preventDropdown": true,
+    "icon": "icons/3Dmodel.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "SCAD Primitive",
+    "heading": "Select",
+    "hotkeyText": "",
+    "callbackKey": "scadSelectTool",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "SCAD Primitive",
+    "heading": "Vertex",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertVertex",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "SCAD Primitive",
+    "heading": "Circle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertCircle",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "SCAD Primitive",
+    "heading": "Rectangle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertRectangle",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "SCAD Primitive",
+    "heading": "Triangle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertTriangle",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "SCAD Primitive",
+    "heading": "Polygon",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertPolygon",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Circle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertCircle",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Rectangle",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertRectangle",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Square",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertSquare",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Polygon",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertPolygon",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "SCAD Text",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertText",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Sphere",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertSphere",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Cube",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertCube",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Cylinder",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertCylinder",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Polyhedron",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertPolyhedron",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Line",
+    "hotkeyText": "",
+    "callbackKey": "scadInsertLine",
+    "routeToActivePanel": true,
+    "modes": [
+      "SCADediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Terrain",
+    "hotkeyText": "",
+    "modes": [
+      "Virtual World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Shape",
+    "hotkeyText": "",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true,
+    "icon": "icons/3Dmodel.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Character",
+    "hotkeyText": "",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Game Object",
+    "hotkeyText": "",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true,
+    "icon": "icons/3Dmodel.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Game Object",
+    "heading": "Game Object Controls",
+    "hotkeyText": "",
+    "script": "worldShapeWidget.mjs",
+    "widgetKind": "gameObject",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Character",
+    "heading": "Character Controls",
+    "hotkeyText": "",
+    "script": "worldCharacterWidget.mjs",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Shape",
+    "heading": "3D Shape Controls",
+    "hotkeyText": "",
+    "script": "worldShapeWidget.mjs",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Terrain",
+    "heading": "Insert Terrain Controls",
+    "hotkeyText": "",
+    "script": "terrainToolWidget.mjs",
+    "modes": [
+      "Virtual World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Equation / Inequality Object",
+    "hotkeyText": "",
+    "script": "equationColliderWidget.mjs",
+    "modes": [
+      "Virtual World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Equation / Inequality Object",
+    "heading": "Equation / Inequality Controls",
+    "hotkeyText": "",
+    "script": "equationColliderWidget.mjs",
+    "modes": [
+      "Virtual World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Equation Element",
+    "hotkeyText": "",
+    "modes": [
+      "EquationEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Equation Element",
+    "heading": "Equation Elements",
+    "hotkeyText": "",
+    "content": "<div></div>",
+    "script": "equationElementsWidget.mjs",
+    "modes": [
+      "EquationEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Symbol",
+    "hotkeyText": "",
+    "modes": [
+      "EquationEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Symbol",
+    "heading": "Equation Symbols",
+    "hotkeyText": "",
+    "content": "<div></div>",
+    "script": "equationSymbolsWidget.mjs",
+    "modes": [
+      "EquationEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Source",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertSource",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Circuit Element",
+    "hotkeyText": "",
+    "callbackKey": "cirShowCircuitElements",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Wire",
+    "hotkeyText": "",
+    "callbackKey": "cirWireTool",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Add Event",
+    "hotkeyText": "",
+    "callbackKey": "icsAddEvent",
+    "routeToActivePanel": true,
+    "modes": [
+      "ICSCalendarEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Loop",
+    "hotkeyText": "",
+    "callbackKey": "arduinoShowLoopBlocks",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Pins",
+    "hotkeyText": "",
+    "callbackKey": "arduinoShowPinBlocks",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Timing",
+    "hotkeyText": "",
+    "callbackKey": "arduinoShowTimingBlocks",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Logic",
+    "hotkeyText": "",
+    "callbackKey": "arduinoShowLogicBlocks",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Serial",
+    "hotkeyText": "",
+    "callbackKey": "arduinoShowSerialBlocks",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Variables",
+    "hotkeyText": "",
+    "callbackKey": "arduinoShowVariableBlocks",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Math",
+    "hotkeyText": "",
+    "callbackKey": "arduinoShowMathBlocks",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Loop",
+    "heading": "Comment",
+    "hotkeyText": "",
+    "shortLabel": "//",
+    "callbackKey": "arduinoInsertComment",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Loop",
+    "heading": "Delay",
+    "hotkeyText": "",
+    "shortLabel": "DL",
+    "callbackKey": "arduinoInsertDelay",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Loop",
+    "heading": "If",
+    "hotkeyText": "",
+    "shortLabel": "IF",
+    "callbackKey": "arduinoInsertIf",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Loop",
+    "heading": "If Else",
+    "hotkeyText": "",
+    "shortLabel": "IE",
+    "callbackKey": "arduinoInsertIfElse",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Pins",
+    "heading": "Pin Mode",
+    "hotkeyText": "",
+    "shortLabel": "PM",
+    "callbackKey": "arduinoInsertPinMode",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Pins",
+    "heading": "Digital Write",
+    "hotkeyText": "",
+    "shortLabel": "DW",
+    "callbackKey": "arduinoInsertDigitalWrite",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Pins",
+    "heading": "Analog Write",
+    "hotkeyText": "",
+    "shortLabel": "AW",
+    "callbackKey": "arduinoInsertAnalogWrite",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Pins",
+    "heading": "Digital Read",
+    "hotkeyText": "",
+    "shortLabel": "DR",
+    "callbackKey": "arduinoInsertDigitalRead",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Pins",
+    "heading": "Analog Read",
+    "hotkeyText": "",
+    "shortLabel": "AR",
+    "callbackKey": "arduinoInsertAnalogRead",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Timing",
+    "heading": "Delay",
+    "hotkeyText": "",
+    "shortLabel": "DL",
+    "callbackKey": "arduinoInsertDelay",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Timing",
+    "heading": "Millis",
+    "hotkeyText": "",
+    "shortLabel": "MS",
+    "callbackKey": "arduinoInsertMillis",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Logic",
+    "heading": "If",
+    "hotkeyText": "",
+    "shortLabel": "IF",
+    "callbackKey": "arduinoInsertIf",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Logic",
+    "heading": "If Else",
+    "hotkeyText": "",
+    "shortLabel": "IE",
+    "callbackKey": "arduinoInsertIfElse",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Logic",
+    "heading": "Compare",
+    "hotkeyText": "",
+    "shortLabel": "==",
+    "callbackKey": "arduinoInsertCompare",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Logic",
+    "heading": "And Or",
+    "hotkeyText": "",
+    "shortLabel": "&&",
+    "callbackKey": "arduinoInsertLogicOp",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Logic",
+    "heading": "Not",
+    "hotkeyText": "",
+    "shortLabel": "!",
+    "callbackKey": "arduinoInsertNot",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Serial",
+    "heading": "Serial Begin",
+    "hotkeyText": "",
+    "shortLabel": "SB",
+    "callbackKey": "arduinoInsertSerialBegin",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Serial",
+    "heading": "Serial Print",
+    "hotkeyText": "",
+    "shortLabel": "SP",
+    "callbackKey": "arduinoInsertSerialPrint",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Serial",
+    "heading": "Serial Println",
+    "hotkeyText": "",
+    "shortLabel": "SL",
+    "callbackKey": "arduinoInsertSerialPrintln",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Variables",
+    "heading": "Define Variable",
+    "hotkeyText": "",
+    "shortLabel": "DV",
+    "callbackKey": "arduinoInsertDefineVariable",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Variables",
+    "heading": "Set Variable",
+    "hotkeyText": "",
+    "shortLabel": "SV",
+    "callbackKey": "arduinoInsertSetVariable",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Variables",
+    "heading": "Change Variable",
+    "hotkeyText": "",
+    "shortLabel": "CV",
+    "callbackKey": "arduinoInsertChangeVariable",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Variables",
+    "heading": "Get Variable",
+    "hotkeyText": "",
+    "shortLabel": "GV",
+    "callbackKey": "arduinoInsertGetVariable",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Math",
+    "heading": "Number",
+    "hotkeyText": "",
+    "shortLabel": "#",
+    "callbackKey": "arduinoInsertNumber",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Math",
+    "heading": "Text",
+    "hotkeyText": "",
+    "shortLabel": "TXT",
+    "callbackKey": "arduinoInsertText",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Math",
+    "heading": "Arithmetic",
+    "hotkeyText": "",
+    "shortLabel": "+-",
+    "callbackKey": "arduinoInsertArithmetic",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Math",
+    "heading": "Map",
+    "hotkeyText": "",
+    "shortLabel": "MAP",
+    "callbackKey": "arduinoInsertMap",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Math",
+    "heading": "Constrain",
+    "hotkeyText": "",
+    "shortLabel": "CON",
+    "callbackKey": "arduinoInsertConstrain",
+    "routeToActivePanel": true,
+    "modes": [
+      "ArduinoBlockEditing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Circuit Element",
+    "heading": "Resistor",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertResistor",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Circuit Element",
+    "heading": "Inductor",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertInductor",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Circuit Element",
+    "heading": "Capacitor",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertCapacitor",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Circuit Element",
+    "heading": "Diode",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertDiode",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Circuit Element",
+    "heading": "Op-Amp",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertOpAmp",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Circuit Element",
+    "heading": "Transistor",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertTransistor",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Circuit Element",
+    "heading": "Other",
+    "hotkeyText": "",
+    "callbackKey": "cirInsertOther",
+    "routeToActivePanel": true,
+    "modes": [
+      "CIRediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "PHP Runtime Tools",
+    "hotkeyText": "",
+    "modes": [
+      "PHPediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "PHP Runtime Tools",
+    "heading": "Device Management Panel",
+    "hotkeyText": "",
+    "callbackKey": "phpOpenDeviceManager",
+    "modes": [
+      "PHPediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "PHP Runtime Tools",
+    "heading": "Logic Block Editor Panel",
+    "hotkeyText": "",
+    "callbackKey": "phpOpenLogicEditor",
+    "modes": [
+      "PHPediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "PHP Runtime Tools",
+    "heading": "Dashboard Configuration Panel",
+    "hotkeyText": "",
+    "callbackKey": "phpOpenDashboardConfig",
+    "modes": [
+      "PHPediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "PHP Runtime Tools",
+    "heading": "Data Logging Panel",
+    "hotkeyText": "",
+    "callbackKey": "phpOpenDataLogging",
+    "modes": [
+      "PHPediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "PHP Runtime Tools",
+    "heading": "Live Preview / Execution",
+    "hotkeyText": "",
+    "callbackKey": "phpToggleLivePreview",
+    "modes": [
+      "PHPediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "h1",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertH1",
+    "icon": "icons/h1Icon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "h2",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertH2",
+    "icon": "icons/h2Icon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "h3",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertH3",
+    "icon": "icons/h3Icon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "h4",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertH4",
+    "icon": "icons/h4Icon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "h5",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertH5",
+    "icon": "icons/h5Icon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "h6",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertH6",
+    "icon": "icons/h6Icon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "paragraph",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertParagraph",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Handwriting",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "handwritingToText",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Take Dictation",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "takeDictation",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Unicode Symbol",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertSymbol",
+    "parentHeading": "Insert Text",
+    "shortLabel": "Ω"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Line Numbered Poetry",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertLineNumberedPoetry",
+    "parentHeading": "Insert Text",
+    "modes": [
+      "HTMLediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Poetry",
+    "heading": "Poetry Controls",
+    "hotkeyText": "",
+    "content": "<div id=\"nv-poetry-toolbar\"></div>",
+    "script": "poetryToolbar.mjs",
+    "modes": [
+      "HTMLediting"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Footer",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertFooter",
+    "icon": "icons/InsertSensitiveIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Superscript",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertSuperscript",
+    "icon": "icons/InsertSensitiveIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Tab",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertTab",
+    "icon": "icons/TabIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Equation Element",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertMathMLEquation",
+    "preventDropdown": true,
+    "preventAutoSubToolbar": true,
+    "modes": [
+      "HTMLediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "MathML Equation",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertMathMLEquation",
+    "parentHeading": "Insert Text",
+    "preventAutoSubToolbar": true,
+    "modes": [
+      "HTMLediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Equation Element",
+    "heading": "Equation Structure Tools",
+    "hotkeyText": "",
+    "content": "<div></div>",
+    "script": "mathmlEquationStructureWidget.mjs",
+    "modes": [
+      "HTMLediting"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Button",
+    "hotkeyText": "",
+    "callbackKey": "insertFormButton",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Btn"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Text Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormTextField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Txt"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Number Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormNumberField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "123"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Email Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormEmailField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "@"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Password Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormPasswordField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "***"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Search Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormSearchField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Sea"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Telephone Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormTelephoneField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Tel"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "URL Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormUrlField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "URL"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Date Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormDateField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Day"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Time Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormTimeField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Time"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Date/Time Field",
+    "hotkeyText": "",
+    "callbackKey": "insertFormDateTimeField",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "DT"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Checkbox",
+    "hotkeyText": "",
+    "callbackKey": "insertFormCheckbox",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Chk"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Radio Button",
+    "hotkeyText": "",
+    "callbackKey": "insertFormRadioButton",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Rad"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Range Slider",
+    "hotkeyText": "",
+    "callbackKey": "insertFormRangeSlider",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Rng"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Color Picker",
+    "hotkeyText": "",
+    "callbackKey": "insertFormColorPicker",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Clr"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "File Input",
+    "hotkeyText": "",
+    "callbackKey": "insertFormFileInput",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "File"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Text Area",
+    "hotkeyText": "",
+    "callbackKey": "insertFormTextArea",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "TA"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Select / Dropdown",
+    "hotkeyText": "",
+    "callbackKey": "insertFormSelectDropdown",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Sel"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Label",
+    "hotkeyText": "",
+    "callbackKey": "insertFormLabel",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Lbl"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Fieldset",
+    "hotkeyText": "",
+    "callbackKey": "insertFormFieldset",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Fld"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Form Element",
+    "heading": "Form",
+    "hotkeyText": "",
+    "callbackKey": "insertFormForm",
+    "modes": [
+      "HTMLediting"
+    ],
+    "shortLabel": "Form"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Insert Table",
+    "hotkeyText": "",
+    "insertGroup": "table",
+    "callbackKey": "insertTable",
+    "icon": "icons/SpreadsheetIcon.png",
+    "modes": [
+      "HTMLediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Row Above",
+    "hotkeyText": "",
+    "shortLabel": "R+",
+    "callbackKey": "tableInsertRowAbove",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Row Below",
+    "hotkeyText": "",
+    "shortLabel": "+R",
+    "callbackKey": "tableInsertRowBelow",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Column Left",
+    "hotkeyText": "",
+    "shortLabel": "C+",
+    "callbackKey": "tableInsertColumnLeft",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Column Right",
+    "hotkeyText": "",
+    "shortLabel": "+C",
+    "callbackKey": "tableInsertColumnRight",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Delete Row",
+    "hotkeyText": "",
+    "shortLabel": "R-",
+    "callbackKey": "tableDeleteRow",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Delete Column",
+    "hotkeyText": "",
+    "shortLabel": "C-",
+    "callbackKey": "tableDeleteColumn",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Row Above",
+    "hotkeyText": "",
+    "shortLabel": "R+",
+    "callbackKey": "tableInsertRowAbove",
+    "modes": [
+      "CSVediting",
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "activeFileIsCsv": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Row Below",
+    "hotkeyText": "",
+    "shortLabel": "+R",
+    "callbackKey": "tableInsertRowBelow",
+    "modes": [
+      "CSVediting",
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "activeFileIsCsv": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Column Left",
+    "hotkeyText": "",
+    "shortLabel": "C+",
+    "callbackKey": "tableInsertColumnLeft",
+    "modes": [
+      "CSVediting",
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "activeFileIsCsv": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Insert Column Right",
+    "hotkeyText": "",
+    "shortLabel": "+C",
+    "callbackKey": "tableInsertColumnRight",
+    "modes": [
+      "CSVediting",
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "activeFileIsCsv": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Delete Row",
+    "hotkeyText": "",
+    "shortLabel": "R-",
+    "callbackKey": "tableDeleteRow",
+    "modes": [
+      "CSVediting",
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "activeFileIsCsv": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Delete Column",
+    "hotkeyText": "",
+    "shortLabel": "C-",
+    "callbackKey": "tableDeleteColumn",
+    "modes": [
+      "CSVediting",
+      "GraphicalEditing"
+    ],
+    "conditions": {
+      "activeFileIsCsv": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Merge Cells",
+    "hotkeyText": "",
+    "shortLabel": "Merge",
+    "temporaryIcon": "M",
+    "callbackKey": "tableMergeCells",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Merge Cell Right",
+    "hotkeyText": "",
+    "shortLabel": "M+R",
+    "temporaryIcon": "MR",
+    "callbackKey": "tableMergeCellRight",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Merge Cell Down",
+    "hotkeyText": "",
+    "shortLabel": "M+D",
+    "temporaryIcon": "MD",
+    "callbackKey": "tableMergeCellDown",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
+    "heading": "Split Cell",
+    "hotkeyText": "",
+    "shortLabel": "Split",
+    "temporaryIcon": "/",
+    "callbackKey": "tableSplitCell",
+    "modes": [
+      "HTMLediting"
+    ],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "OrderedList",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertOrderedList",
+    "icon": "icons/NumberedList.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "UnorderedList",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertUnorderedList",
+    "icon": "icons/BulletPoints.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Italics",
+    "hotkeyText": "Ctrl/Cmd+I",
+    "insertGroup": "text",
+    "callbackKey": "insertItalics",
+    "icon": "icons/ItalicsIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Bold",
+    "hotkeyText": "Ctrl/Cmd+B",
+    "insertGroup": "text",
+    "callbackKey": "insertBold",
+    "icon": "icons/BoldIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Underline",
+    "hotkeyText": "Ctrl/Cmd+U",
+    "insertGroup": "text",
+    "callbackKey": "insertUnderline",
+    "icon": "icons/UnderlineIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Strikethrough",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertStrikethrough",
+    "icon": "icons/StrikethroughIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Hyperlink",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertLink",
+    "icon": "icons/LinkIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Abbreviation",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertAbbreviation",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Address",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertAddress",
+    "icon": "icons/AddressIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Blockquote",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertBlockquote",
+    "icon": "icons/BlockquoteIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Quote",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertQuote",
+    "icon": "icons/QuotationIcon.png",
+    "parentHeading": "Insert Text"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Code Element",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "InsertCodeElement",
+    "modes": [
+      "HTMLediting"
+    ],
+    "icon": "icons/CodeEditor.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "DIV",
+    "hotkeyText": "",
+    "insertGroup": "Layout",
+    "callbackKey": "insertDIV",
+    "modes": [
+      "HTMLediting"
+    ],
+    "icon": "icons/InsertSensitiveIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Footnote",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertFootnote",
+    "modes": [
+      "HTMLediting"
+    ],
+    "icon": "icons/InsertSensitiveIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Structure",
+    "heading": "Sensitive Elements",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertSensitive",
+    "modes": [
+      "HTMLediting"
+    ],
+    "icon": "icons/InsertSensitiveIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Image",
+    "hotkeyText": "",
+    "insertGroup": "image",
+    "callbackKey": "insertImage",
+    "modes": [
+      "EPUBediting"
+    ],
+    "icon": "icons/ImageIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Layout Canvas",
+    "hotkeyText": "",
+    "insertGroup": "Layout",
+    "callbackKey": "insertLayoutCanvas",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ],
+    "icon": "icons/InsertSensitiveIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Serial Monitor",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertSerialMonitor",
+    "modes": [
+      "HTMLediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert QRcode",
+    "hotkeyText": "",
+    "insertGroup": "image",
+    "callbackKey": "insertQRcode",
+    "modes": [
+      "HTMLediting"
+    ],
+    "icon": "icons/QRcodeIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Media",
+    "hotkeyText": "",
+    "insertGroup": "media",
+    "callbackKey": "insertMedia",
+    "modes": [
+      "HTMLediting",
+      "GraphicalEditing",
+      "SVG Editing",
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "icon": "icons/ImageIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Media Widget",
+    "hotkeyText": "",
+    "parentHeading": "Media",
+    "modes": [
+      "HTMLediting",
+      "GraphicalEditing",
+      "SVG Editing",
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "content": "<div id=\"nv-insert-media-widget\" style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap;\"></div>",
+    "script": "insertMediaWidget.mjs",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Media",
+    "heading": "Replace Selected Text with Image",
+    "hotkeyText": "",
+    "insertGroup": "image",
+    "callbackKey": "replaceSelectedTextWithImage",
+    "modes": [
+      "HTMLediting",
+      "EPUBediting"
+    ],
+    "conditions": {
+      "htmlTextSelectionActive": true
+    },
+    "icon": "icons/ImageIcon.png",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert IFRAME",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "insertIFRAME",
+    "modes": [
+      "HTMLediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Collapsible",
+    "hotkeyText": "",
+    "insertGroup": "text",
+    "callbackKey": "InsertCollapsible",
+    "modes": [
+      "HTMLediting"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Prism",
+    "hotkeyText": "",
+    "insertGroup": "3D Objects",
+    "callbackKey": "insertPrism",
+    "modes": [
+      "VR World Editing"
+    ],
+    "icon": "icons/3Dmodel.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert STL",
+    "hotkeyText": "",
+    "insertGroup": "3D Objects",
+    "callbackKey": "insertSTL",
+    "modes": [
+      "VR World Editing"
+    ],
+    "icon": "icons/3Dmodel.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Vertex",
+    "hotkeyText": "",
+    "callbackKey": "stlAddVertex",
+    "routeToActivePanel": true,
+    "modes": [
+      "STLediting"
+    ],
+    "parentHeading": "Insert",
+    "shortLabel": "Vtx"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Image",
+    "hotkeyText": "",
+    "parentHeading": "Insert",
+    "callbackKey": "insertImage",
+    "modes": [
+      "SVG Editing"
+    ],
+    "icon": "icons/ImageIcon.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Shape",
+    "hotkeyText": "",
+    "parentHeading": "Insert",
+    "modes": [
+      "SVG Editing"
+    ],
+    "icon": "icons/DefaultNodeImage.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Text Box",
+    "hotkeyText": "",
+    "parentHeading": "Insert",
+    "modes": [
+      "SVG Editing"
+    ],
+    "icon": "icons/DefaultNodeImage.png"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "SVG Insert Shapes",
+    "hotkeyText": "",
+    "parentHeading": "Insert Shape",
+    "modes": [
+      "SVG Editing"
+    ],
+    "content": "<div id=\"nv-svg-insert-shape-widget\" style=\"display:flex;align-items:center;gap:8px;flex-wrap:wrap;\"></div>",
+    "script": "svgInsertShapeWidget.mjs",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "SVG Insert Text Box",
+    "hotkeyText": "",
+    "parentHeading": "Insert Text Box",
+    "modes": [
+      "SVG Editing"
+    ],
+    "content": "<div id=\"nv-svg-insert-textbox-widget\" style=\"display:flex;align-items:center;gap:10px;flex-wrap:wrap;\"></div>",
+    "script": "svgTextBoxWidget.mjs",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Record Melody",
+    "hotkeyText": "",
+    "callbackKey": "midiRecordMelody",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Insert"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Note",
+    "hotkeyText": "",
+    "callbackKey": "midiInsertNote",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Insert"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Insert Rest",
+    "hotkeyText": "",
+    "callbackKey": "midiInsertRest",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Insert"
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Note Selected",
+    "hotkeyText": "",
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Insert",
+    "conditions": {
+      "midiSelectedType": "note"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Whole",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationWhole",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Note Selected",
+    "conditions": {
+      "midiSelectedType": "note"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Half",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationHalf",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Note Selected",
+    "conditions": {
+      "midiSelectedType": "note"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Quarter",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationQuarter",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Note Selected",
+    "conditions": {
+      "midiSelectedType": "note"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Eighth",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationEighth",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Note Selected",
+    "conditions": {
+      "midiSelectedType": "note"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Rest Selected",
+    "hotkeyText": "",
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Insert",
+    "conditions": {
+      "midiSelectedType": "rest"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Whole",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationWhole",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Rest Selected",
+    "conditions": {
+      "midiSelectedType": "rest"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Half",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationHalf",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Rest Selected",
+    "conditions": {
+      "midiSelectedType": "rest"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Quarter",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationQuarter",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Rest Selected",
+    "conditions": {
+      "midiSelectedType": "rest"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Eighth",
+    "hotkeyText": "",
+    "callbackKey": "midiDurationEighth",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Rest Selected",
+    "conditions": {
+      "midiSelectedType": "rest"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Cleff Selected",
+    "hotkeyText": "",
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Insert",
+    "conditions": {
+      "midiSelectedType": "cleff"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Treble",
+    "hotkeyText": "",
+    "callbackKey": "midiCleffTreble",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Cleff Selected",
+    "conditions": {
+      "midiSelectedType": "cleff"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Bass",
+    "hotkeyText": "",
+    "callbackKey": "midiCleffBass",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Cleff Selected",
+    "conditions": {
+      "midiSelectedType": "cleff"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Alto",
+    "hotkeyText": "",
+    "callbackKey": "midiCleffAlto",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Cleff Selected",
+    "conditions": {
+      "midiSelectedType": "cleff"
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Tenor",
+    "hotkeyText": "",
+    "callbackKey": "midiCleffTenor",
+    "routeToActivePanel": true,
+    "modes": [
+      "MIDIediting"
+    ],
+    "parentHeading": "Cleff Selected",
+    "conditions": {
+      "midiSelectedType": "cleff"
+    }
+  }
+]

@@ -5,91 +5,25 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 import {
   clearTableCellSelection,
   getSelectedTableCells,
-  handleTableArrowKeyNavigation,
-  moveActiveTableCell,
   selectTableCellRange,
   setActiveTableCell,
+  setSelectedTableCells,
 } from "/ToolbarCallbacks/insert/tableTools.mjs";
-
-function normalizeSpreadsheetDelimiter(delimiter) {
-  return delimiter === "\t" ? "\t" : ",";
-}
-
-function spreadsheetDelimiterForPath(path = "") {
-  const cleanPath = String(path || "").split(/[?#]/)[0].toLowerCase();
-  return cleanPath.endsWith(".tsv") ? "\t" : ",";
-}
-
-function parseDelimitedText(text = "", delimiter = ",") {
-  const source = String(text ?? "").replace(/\u0000/g, "");
-  const separator = normalizeSpreadsheetDelimiter(delimiter);
-  const rows = [];
-  let row = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let index = 0; index < source.length; index += 1) {
-    const char = source[index];
-
-    if (inQuotes) {
-      if (char === '"') {
-        if (source[index + 1] === '"') {
-          cell += '"';
-          index += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        cell += char;
-      }
-      continue;
-    }
-
-    if (char === '"') {
-      inQuotes = true;
-      continue;
-    }
-
-    if (char === separator) {
-      row.push(cell);
-      cell = "";
-      continue;
-    }
-
-    if (char === "\r" || char === "\n") {
-      if (char === "\r" && source[index + 1] === "\n") {
-        index += 1;
-      }
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-      continue;
-    }
-
-    cell += char;
-  }
-
-  if (cell || row.length || source.endsWith(separator)) {
-    row.push(cell);
-    rows.push(row);
-  }
-
-  return rows.length ? rows : [[""]];
-}
-
-function serializeDelimitedRows(rows = [], delimiter = ",") {
-  const separator = normalizeSpreadsheetDelimiter(delimiter);
-  const serializeCell = (value) => {
-    const text = String(value ?? "");
-    if (text.includes(separator) || /["\r\n]/.test(text)) {
-      return `"${text.replace(/"/g, '""')}"`;
-    }
-    return text;
-  };
-
-  return rows.map((row) => row.map(serializeCell).join(separator)).join("\n");
-}
+import {
+  cloneCsvRows,
+  csvRenderDimensions,
+  declaredColumnCount,
+  deleteCsvColumn,
+  deleteCsvRow,
+  insertCsvColumn,
+  insertCsvRow,
+  isDeclaredCsvCell,
+  normalizeSpreadsheetDelimiter,
+  parseDelimitedText,
+  serializeDelimitedRows,
+  setCsvCellValue,
+  spreadsheetDelimiterForPath,
+} from "./CSVGridModel.mjs";
 
 const CSV_TABLE_SELECTION_EDGE_PX = 14;
 const CSV_TABLE_SELECTION_DRAG_THRESHOLD_PX = 4;
@@ -121,6 +55,13 @@ function ensureCsvTableSelectionStyles() {
     .nv-csv-table-wrap th.nv-html-table-selection-focus {
       outline: 2px solid rgba(18, 101, 220, 0.82);
       outline-offset: -2px;
+    }
+    .nv-csv-table-wrap td.nv-csv-virtual-cell,
+    .nv-csv-table-wrap th.nv-csv-virtual-cell {
+      border-color: #d7dce3 !important;
+      outline: 1px dashed #c7ced8;
+      outline-offset: -3px;
+      background-image: linear-gradient(135deg, rgba(148, 163, 184, 0.07), rgba(255, 255, 255, 0));
     }
   `;
   document.head.appendChild(style);
@@ -415,22 +356,52 @@ export async function renderEditor(filePath, container) {
   window.__nvTableEditorRoot = tableWrapper;
 
   const activeDelimiter = spreadsheetDelimiterForPath(filePath);
+  let csvRows = [[""]];
+  let activePosition = { row: 0, col: 0 };
+  let renderedRowCount = 0;
+  let renderedColCount = 0;
+  let lastPublishedTableSelected = null;
+
+  tableWrapper.setAttribute("data-nv-table-editor-root", "true");
+
+  function publishToolbarSelection(selected) {
+    const next = Boolean(selected);
+    if (lastPublishedTableSelected === next) return;
+    lastPublishedTableSelected = next;
+    updateToolbarState({ htmlTableSelected: next });
+  }
+
+  function cellPosition(cell) {
+    return {
+      row: Number.parseInt(cell?.dataset?.row || "0", 10) || 0,
+      col: Number.parseInt(cell?.dataset?.col || "0", 10) || 0,
+    };
+  }
+
   const findTableCellFromNode = (node) => findCsvTableCellFromNode(tableWrapper, node);
   const publishTableSelection = (cell) => {
-    const activeCell = setActiveTableCell(cell);
-    const selected = Boolean(activeCell);
-    updateToolbarState({ htmlTableSelected: selected });
+    const activeCell = cell && tableWrapper.contains(cell) ? cell : null;
+    if (activeCell) {
+      activePosition = cellPosition(activeCell);
+      setSelectedTableCells([activeCell], { activeCell, anchorCell: activeCell, mode: "cells" });
+      activeCell.dataset.nvCsvSelectedOnly = "true";
+    } else {
+      clearTableCellSelection({ keepActive: false });
+    }
+    setActiveTableCell(activeCell);
+    publishToolbarSelection(Boolean(activeCell));
   };
   const clearCsvTableSelection = (options = {}) => {
     clearTableCellSelection(options);
+    if (options.keepActive === false) publishToolbarSelection(false);
   };
   const updateTableSelectionFromSelection = () => {
     if (window.__nvCsvTableDragSelecting) return;
     const selection = window.getSelection?.();
     const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
     if (!range || !tableWrapper.contains(range.commonAncestorContainer)) return;
-    clearTableCellSelection({ keepActive: true });
-    publishTableSelection(findTableCellFromNode(range.startContainer));
+    const cell = findTableCellFromNode(range.startContainer);
+    if (cell) publishTableSelection(cell);
   };
   const updateTableSelectionFromEvent = (event) => {
     if (tableWrapper.__nvSuppressNextTableClickSelection) {
@@ -438,29 +409,161 @@ export async function renderEditor(filePath, container) {
       return;
     }
     const cell = findTableCellFromNode(event.target);
-    if (cell) clearTableCellSelection({ keepActive: true });
-    else clearCsvTableSelection({ keepActive: false });
+    if (!cell) {
+      clearCsvTableSelection({ keepActive: false });
+      publishTableSelection(null);
+      return;
+    }
     publishTableSelection(cell);
   };
+
+  function declaredCellClass(cell, declared) {
+    cell.dataset.declared = declared ? "true" : "false";
+    cell.classList.toggle("nv-csv-virtual-cell", !declared);
+  }
+
+  function refreshCellDeclarationState() {
+    for (const cell of Array.from(table.querySelectorAll("td, th"))) {
+      const position = cellPosition(cell);
+      declaredCellClass(cell, isDeclaredCsvCell(csvRows, position.row, position.col));
+    }
+  }
+
+  function createCell(rowIndex, colIndex) {
+    const declared = isDeclaredCsvCell(csvRows, rowIndex, colIndex);
+    const td = document.createElement(rowIndex === 0 ? "th" : "td");
+    td.contentEditable = "true";
+    td.dataset.row = String(rowIndex);
+    td.dataset.col = String(colIndex);
+    td.style.border = "1px solid #aeb7c2";
+    td.style.padding = "4px";
+    td.style.minWidth = "80px";
+    td.style.outlineOffset = "-2px";
+    td.textContent = declared ? csvRows[rowIndex][colIndex] : "";
+    declaredCellClass(td, declared);
+    return td;
+  }
+
+  function renderRows(rows = csvRows, options = {}) {
+    if (options.preserveSelection !== true) clearCsvTableSelection({ keepActive: false });
+    csvRows = cloneCsvRows(rows);
+    const dims = csvRenderDimensions(csvRows, activePosition, 1);
+    renderedRowCount = dims.rows;
+    renderedColCount = dims.cols;
+    table.innerHTML = "";
+    for (let rowIndex = 0; rowIndex < renderedRowCount; rowIndex += 1) {
+      const tr = document.createElement("tr");
+      for (let colIndex = 0; colIndex < renderedColCount; colIndex += 1) {
+        tr.appendChild(createCell(rowIndex, colIndex));
+      }
+      table.appendChild(tr);
+    }
+  }
+
+  function ensureRenderedForPosition(rowIndex, colIndex) {
+    const dims = csvRenderDimensions(csvRows, { row: rowIndex, col: colIndex }, 1);
+    if (dims.rows === renderedRowCount && dims.cols === renderedColCount) return false;
+    renderRows(csvRows, { preserveSelection: true });
+    return true;
+  }
+
+  function getCellAt(rowIndex, colIndex) {
+    return table.querySelector(`[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+  }
+
+  function focusCsvCell(rowIndex, colIndex, options = {}) {
+    const row = Math.max(0, Number.parseInt(rowIndex, 10) || 0);
+    const col = Math.max(0, Number.parseInt(colIndex, 10) || 0);
+    activePosition = { row, col };
+    ensureRenderedForPosition(row, col);
+    const cell = getCellAt(row, col);
+    if (!cell) return false;
+    try {
+      cell.focus?.({ preventScroll: true });
+    } catch {
+      cell.focus?.();
+    }
+    if (options.selectText) {
+      const selection = window.getSelection?.();
+      const range = document.createRange?.();
+      if (selection && range) {
+        range.selectNodeContents(cell);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    cell.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    publishTableSelection(cell);
+    return true;
+  }
+
+  function caretOffsetInCell(cell) {
+    const selection = window.getSelection?.();
+    if (!selection || !selection.rangeCount) return null;
+    const range = selection.getRangeAt(0);
+    if (!selection.isCollapsed || !cell.contains(range.startContainer)) return null;
+    const before = range.cloneRange();
+    before.selectNodeContents(cell);
+    before.setEnd(range.startContainer, range.startOffset);
+    return before.toString().length;
+  }
+
+  function shouldNavigateFromCell(event, cell) {
+    if (cell?.dataset?.nvCsvSelectedOnly === "true") return true;
+    if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "Enter" || event.key === "Tab") return true;
+    const offset = caretOffsetInCell(cell);
+    if (offset === null) return true;
+    const textLength = (cell.textContent || "").length;
+    if (event.key === "ArrowLeft") return offset <= 0;
+    if (event.key === "ArrowRight") return offset >= textLength;
+    return false;
+  }
+
+  function moveCsvCell(direction, options = {}) {
+    const sourceCell = options.cell || findTableCellFromNode(document.activeElement) || getCellAt(activePosition.row, activePosition.col);
+    const source = sourceCell ? cellPosition(sourceCell) : activePosition;
+    const delta = {
+      left: [0, -1],
+      right: [0, 1],
+      up: [-1, 0],
+      down: [1, 0],
+    }[direction];
+    if (!delta) return false;
+    return focusCsvCell(Math.max(0, source.row + delta[0]), Math.max(0, source.col + delta[1]));
+  }
+
   const handleCsvTableKeyNavigation = (event) => {
-    if (handleTableArrowKeyNavigation(event)) return true;
-    const direction = event?.key === "Enter" ? "down" : event?.key === "Tab" ? "right" : "";
+    const keyToDirection = {
+      ArrowLeft: "left",
+      ArrowRight: "right",
+      ArrowUp: "up",
+      ArrowDown: "down",
+      Enter: "down",
+      Tab: "right",
+    };
+    const direction = keyToDirection[event?.key];
     if (!direction) return false;
     if (event.defaultPrevented || event.isComposing) return false;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
-    const eventCell = findTableCellFromNode(event.target);
-    const activeCell = window.__nvHtmlTableActiveCell;
-    const cell = eventCell
-      ? setActiveTableCell(eventCell)
-      : (activeCell && tableWrapper.contains(activeCell) ? activeCell : null);
-    if (!cell) return false;
-    moveActiveTableCell(direction, { cell });
+    const cell = findTableCellFromNode(event.target) || getCellAt(activePosition.row, activePosition.col);
+    if (!cell || !shouldNavigateFromCell(event, cell)) return false;
+    if (!moveCsvCell(direction, { cell })) return false;
     event.preventDefault();
     return true;
   };
   const markCsvDirty = () => {
     if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
     updateToolbarState({ currentMode: "CSVediting", fileIsDirty: true });
+  };
+  const handleCsvCellInput = (event) => {
+    const cell = findTableCellFromNode(event.target);
+    if (!cell) return;
+    delete cell.dataset.nvCsvSelectedOnly;
+    const { row, col } = cellPosition(cell);
+    activePosition = { row, col };
+    csvRows = setCsvCellValue(csvRows, row, col, cell.textContent || "");
+    refreshCellDeclarationState();
+    markCsvDirty();
   };
   const handleCsvTableCopy = (event) => {
     const rawTarget = event?.target?.nodeType === Node.TEXT_NODE ? event.target.parentElement : event?.target;
@@ -483,14 +586,80 @@ export async function renderEditor(filePath, container) {
 
     return copyCsvTableSelection(event, table, activeDelimiter, selectedCells);
   };
+
+  function syncActivePositionFromDom() {
+    const activeCell = window.__nvHtmlTableActiveCell;
+    if (activeCell && tableWrapper.contains(activeCell)) {
+      activePosition = cellPosition(activeCell);
+    }
+    return activePosition;
+  }
+
+  function logicalGridWidth() {
+    syncActivePositionFromDom();
+    return Math.max(declaredColumnCount(csvRows), activePosition.col + 1, 1);
+  }
+
+  function structuralEdit(nextRows, nextPosition) {
+    csvRows = cloneCsvRows(nextRows);
+    activePosition = {
+      row: Math.max(0, nextPosition?.row ?? activePosition.row),
+      col: Math.max(0, nextPosition?.col ?? activePosition.col),
+    };
+    renderRows(csvRows, { preserveSelection: true });
+    focusCsvCell(activePosition.row, activePosition.col);
+    markCsvDirty();
+    return true;
+  }
+
+  const csvTableContext = {
+    isActive() {
+      return Boolean(tableWrapper.isConnected && window.__nvCsvTableContext === csvTableContext);
+    },
+    getEditorRoot() {
+      return tableWrapper;
+    },
+    moveActiveCell(direction, options = {}) {
+      return moveCsvCell(direction, options);
+    },
+    insertRow(direction = "below") {
+      syncActivePositionFromDom();
+      const insertAt = activePosition.row + (direction === "below" ? 1 : 0);
+      return structuralEdit(insertCsvRow(csvRows, insertAt, logicalGridWidth()), { row: insertAt, col: activePosition.col });
+    },
+    deleteRow() {
+      syncActivePositionFromDom();
+      const nextRows = deleteCsvRow(csvRows, activePosition.row);
+      return structuralEdit(nextRows, { row: Math.min(activePosition.row, nextRows.length - 1), col: activePosition.col });
+    },
+    insertColumn(direction = "right") {
+      syncActivePositionFromDom();
+      const insertAt = activePosition.col + (direction === "right" ? 1 : 0);
+      return structuralEdit(insertCsvColumn(csvRows, insertAt), { row: activePosition.row, col: insertAt });
+    },
+    deleteColumn() {
+      syncActivePositionFromDom();
+      const nextRows = deleteCsvColumn(csvRows, activePosition.col);
+      return structuralEdit(nextRows, { row: activePosition.row, col: Math.min(activePosition.col, declaredColumnCount(nextRows) - 1) });
+    },
+    getRows() {
+      return cloneCsvRows(csvRows);
+    },
+    getActivePosition() {
+      return { ...activePosition };
+    },
+  };
+
   table.addEventListener("pointerdown", updateTableSelectionFromEvent);
   table.addEventListener("click", updateTableSelectionFromEvent);
   table.addEventListener("keyup", updateTableSelectionFromSelection);
   table.addEventListener("focusin", updateTableSelectionFromSelection);
   table.addEventListener("keydown", handleCsvTableKeyNavigation);
-  table.addEventListener("input", markCsvDirty);
+  table.addEventListener("input", handleCsvCellInput);
   document.addEventListener("selectionchange", updateTableSelectionFromSelection);
   document.addEventListener("copy", handleCsvTableCopy);
+  window.__nvCsvTableContext = csvTableContext;
+  window.__nvActiveGridTableContext = csvTableContext;
   container.__cleanupCSVTableDragSelection = registerCsvTableDragSelection(tableWrapper, table);
   container.__cleanupCSVTableToolbar = () => {
     table.removeEventListener("pointerdown", updateTableSelectionFromEvent);
@@ -498,7 +667,7 @@ export async function renderEditor(filePath, container) {
     table.removeEventListener("keyup", updateTableSelectionFromSelection);
     table.removeEventListener("focusin", updateTableSelectionFromSelection);
     table.removeEventListener("keydown", handleCsvTableKeyNavigation);
-    table.removeEventListener("input", markCsvDirty);
+    table.removeEventListener("input", handleCsvCellInput);
     document.removeEventListener("selectionchange", updateTableSelectionFromSelection);
     document.removeEventListener("copy", handleCsvTableCopy);
     if (typeof container.__cleanupCSVTableDragSelection === "function") {
@@ -507,46 +676,26 @@ export async function renderEditor(filePath, container) {
     }
     if (window.__nvTableEditorRoot === tableWrapper) window.__nvTableEditorRoot = null;
     if (window.__nvCsvEditor?.table === table) window.__nvCsvEditor = null;
+    if (window.__nvCsvTableContext === csvTableContext) window.__nvCsvTableContext = null;
+    if (window.__nvActiveGridTableContext === csvTableContext) window.__nvActiveGridTableContext = null;
     if (window.__nvHtmlTableActiveCell && tableWrapper.contains(window.__nvHtmlTableActiveCell)) {
       window.__nvHtmlTableActiveCell = null;
       window.__nvHtmlTableActiveTable = null;
     }
+    lastPublishedTableSelected = false;
     updateToolbarState({ htmlTableSelected: false });
   };
 
-  // Helper to create a cell
-  function createCell(value = "") {
-    const td = document.createElement("td");
-    td.contentEditable = "true";
-    td.style.border = "1px solid #ccc";
-    td.style.padding = "4px";
-    td.style.minWidth = "80px";
-    td.textContent = value;
-    return td;
-  }
-
-  function renderRows(rows = [[""]]) {
-    clearCsvTableSelection({ keepActive: false });
-    table.innerHTML = "";
-    const safeRows = Array.isArray(rows) && rows.length ? rows : [[""]];
-    safeRows.forEach(rowCells => {
-      const tr = document.createElement("tr");
-      const cells = Array.isArray(rowCells) && rowCells.length ? rowCells : [""];
-      cells.forEach(cell => tr.appendChild(createCell(cell)));
-      table.appendChild(tr);
-    });
-  }
-
   function getRows() {
-    return Array.from(table.rows).map(tr =>
-      Array.from(tr.cells).map(td => td.textContent)
-    );
+    return cloneCsvRows(csvRows);
   }
 
   function setSpreadsheetText(text, options = {}) {
     const delimiter = normalizeSpreadsheetDelimiter(options.delimiter || activeDelimiter);
     const rows = parseDelimitedText(text, delimiter);
+    activePosition = { row: 0, col: 0 };
     renderRows(rows);
+    focusCsvCell(0, 0);
     if (options.markDirty !== false) markCsvDirty();
     return rows;
   }

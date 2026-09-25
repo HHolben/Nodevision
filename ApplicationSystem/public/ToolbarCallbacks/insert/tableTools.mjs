@@ -8,10 +8,25 @@ const TABLE_SELECTION_ANCHOR_CLASS = "nv-html-table-selection-anchor";
 const TABLE_SELECTION_FOCUS_CLASS = "nv-html-table-selection-focus";
 
 function isEditableTableRoot(root) {
-  return Boolean(root && root.isConnected && (root.isContentEditable || root.getAttribute?.("contenteditable") === "true"));
+  return Boolean(root && root.isConnected && (
+    root.isContentEditable ||
+    root.getAttribute?.("contenteditable") === "true" ||
+    root.getAttribute?.("data-nv-table-editor-root") === "true"
+  ));
+}
+
+function getActiveGridTableContext() {
+  const context = window.__nvActiveGridTableContext || window.__nvCsvTableContext || null;
+  if (!context?.isActive?.()) return null;
+  return context;
 }
 
 function getTableEditorRoot() {
+  try {
+    const gridRoot = getActiveGridTableContext()?.getEditorRoot?.();
+    if (isEditableTableRoot(gridRoot)) return gridRoot;
+  } catch {}
+
   try {
     const toolsRoot = window.HTMLWysiwygTools?.getEditorElement?.();
     if (isEditableTableRoot(toolsRoot)) return toolsRoot;
@@ -600,6 +615,9 @@ function adjacentCell(cell, direction) {
 }
 
 export function moveActiveTableCell(direction, options = {}) {
+  const gridContext = getActiveGridTableContext();
+  if (gridContext?.moveActiveCell?.(direction, options)) return true;
+
   const cell = options.cell || getActiveTableCell();
   const target = adjacentCell(cell, direction);
   if (!target) return false;
@@ -678,6 +696,9 @@ export function insertTableAtCaret(rows = 3, cols = 3) {
 }
 
 export function insertTableRow(direction) {
+  const gridContext = getActiveGridTableContext();
+  if (gridContext?.insertRow?.(direction)) return true;
+
   const cell = getActiveTableCell();
   const row = cell?.parentElement;
   if (!cell || !row) return false;
@@ -705,6 +726,9 @@ export function insertTableRow(direction) {
 }
 
 export function deleteCurrentTableRow() {
+  const gridContext = getActiveGridTableContext();
+  if (gridContext?.deleteRow?.()) return true;
+
   const cell = getActiveTableCell();
   const row = cell?.parentElement;
   const table = cell?.closest("table");
@@ -726,6 +750,9 @@ export function deleteCurrentTableRow() {
 }
 
 export function deleteCurrentTableColumn() {
+  const gridContext = getActiveGridTableContext();
+  if (gridContext?.deleteColumn?.()) return true;
+
   const cell = getActiveTableCell();
   const table = cell?.closest("table");
   if (!cell || !table) return false;
@@ -756,6 +783,9 @@ export function deleteCurrentTableColumn() {
 }
 
 export function insertTableColumn(direction) {
+  const gridContext = getActiveGridTableContext();
+  if (gridContext?.insertColumn?.(direction)) return true;
+
   const cell = getActiveTableCell();
   const table = cell?.closest("table");
   if (!cell || !table) return false;
