@@ -4,6 +4,7 @@
 import { clearEditorContext, getEditingContext, saveEditingContext, setActiveTool, setEditorContext, setSelectionContext } from "../../../../EditorAttentionState.mjs";
 import { installSvgClickTraceOnSvgRoot, svgClickTraceMark } from "../../../../SvgClickFeedbackTrace.mjs";
 
+import { reparentSvgElement } from "../ElementLayers/reparent.mjs";
 import { createElementLayers } from "../ElementLayers.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { createPanelDOM } from "/panels/panelFactory.mjs";
@@ -384,7 +385,7 @@ export async function renderEditor(filePath, container) {
   let rootRuntimeState = prepareSvgRootForEditor(svgRoot);
   syncSvgDocumentBackgroundGeometry(svgRoot);
 
-  const layersMgr = createElementLayers(svgRoot);
+  const layersMgr = createElementLayers(svgRoot, null, { getContext: () => svgEditorContext });
   let layersPanelHost = null;
   const originalLayersAttachHost =
     typeof layersMgr?.attachHost === "function"
@@ -6274,6 +6275,14 @@ export async function renderEditor(filePath, container) {
       return svgDocumentDirty;
     },
     layers: layersMgr,
+    reparentLayerElement(element, target, before = null) {
+      const action = reparentSvgElement(svgRoot, element, target, before);
+      if (!action) return false;
+      history.pushCustom({ kind: "layer-reparent", undo: action.undo, redo: action.redo });
+      markDocumentDirty(true);
+      setSelection([element], { primary: element });
+      return true;
+    },
     setMode,
     getMode() {
       return toolState.mode;
@@ -6724,6 +6733,7 @@ export async function renderEditor(filePath, container) {
   const persistCurrentSvgAttention = () => persistSvgAttention(filePath, container, toolState.mode);
   container.addEventListener("scroll", persistCurrentSvgAttention, { passive: true });
   return () => {
+    layersMgr.dispose();
     cleanupSvgClickTrace?.();
     cancelDeferredSvgModeLayout();
     container.removeEventListener("scroll", persistCurrentSvgAttention);

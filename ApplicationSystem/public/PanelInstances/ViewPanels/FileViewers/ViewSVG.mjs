@@ -1,6 +1,9 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewSVG.mjs
 // This file defines browser-side View SVG logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { createElementLayers } from "../../EditorPanels/GraphicalEditors/ElementLayers.mjs";
+import { promoteSvgLayerMove, svgContextPath } from "../../Common/Layers/svgLayersContext.mjs";
+
 export const wantsIframe = true;
 
 function cleanBase(base = "/Notebook") {
@@ -34,6 +37,36 @@ export async function renderFile(filename, viewPanel, iframe, serverBase = "/Not
   iframe.style.background = "white";
   iframe.style.display = "block";
 
+  let context = null, disposed = false;
+  function loaded() {
+    if (disposed) return;
+    context?.layers?.dispose();
+    let root;
+    try { root = iframe.contentDocument?.documentElement; } catch { return; }
+    if (root?.localName !== "svg") return;
+    context = { kind: "svg-view", filePath: filename, svgRoot: root, readOnly: true };
+    context.layers = createElementLayers(root, null, { readOnly: true, getContext: () => context,
+      onMove: (element, target, before) => promoteSvgLayerMove(context, element, target, before) });
+    viewPanel.__nvSvgViewLayersContext = context;
+    if (!window.SVGViewLayersContext || svgContextPath(window.NodevisionState?.activeFileViewPath) === svgContextPath(filename)) window.SVGViewLayersContext = context;
+    window.dispatchEvent(new CustomEvent("nv-svg-layers-provider-changed"));
+  }
+  const activate = event => {
+    const activeHost = window.__nvActivePanelElement || event.detail?.cell;
+    if (event.detail?.panel === "FileView" && context && activeHost?.contains(viewPanel)) {
+      window.SVGViewLayersContext = context;
+      queueMicrotask(() => window.dispatchEvent(new CustomEvent("nv-svg-layers-provider-changed")));
+    }
+  };
+  window.addEventListener("activePanelChanged", activate);
+  iframe.addEventListener("load", loaded);
+  viewPanel._dispose = () => {
+    window.removeEventListener("activePanelChanged", activate);
+    delete viewPanel.__nvSvgViewLayersContext;
+    disposed = true; iframe.removeEventListener("load", loaded); context?.layers?.dispose();
+    if (window.SVGViewLayersContext === context) window.SVGViewLayersContext = null;
+    window.dispatchEvent(new CustomEvent("nv-svg-layers-provider-changed"));
+  };
   iframe.src = cleanBase(serverBase) + "/" + String(filename || "").replace(/^\/+/, "");
 }
 

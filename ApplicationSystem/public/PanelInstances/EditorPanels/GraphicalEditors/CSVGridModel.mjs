@@ -76,7 +76,11 @@ export function serializeDelimitedRows(rows = [], delimiter = ",") {
     return text;
   };
 
-  return rows.map((row) => (Array.isArray(row) ? row : []).map(serializeCell).join(separator)).join("\n");
+  const records = rows.map((row) => (Array.isArray(row) ? row : []).map(serializeCell).join(separator));
+  const text = records.join("\n");
+  // A final blank record needs its own terminator; otherwise parsing treats the
+  // preceding newline only as the end of the previous record.
+  return records.length > 1 && records.at(-1) === "" ? `${text}\n` : text;
 }
 
 export function cloneCsvRows(rows = [[""]]) {

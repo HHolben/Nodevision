@@ -1,9 +1,11 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/ViewLayers.mjs
 // This file defines browser-side View Layers logic for the Nodevision UI. The callback routes available layer providers through the shared panel.
 
+import { getActiveSvgLayersContext, getActiveSvgDocumentPath } from "/PanelInstances/Common/Layers/svgLayersContext.mjs";
+
 export default function ViewLayers() {
   const hasContext =
-    window.SVGEditorContext?.layers ||
+    getActiveSvgDocumentPath() ||
     window.HTMLLayersContext?.attachHost ||
     window.HTMLViewLayersContext?.attachHost ||
     window.KMLLayersContext?.attachHost ||
@@ -20,6 +22,7 @@ export default function ViewLayers() {
     id: "SVGLayersPanel",
     type: "InfoPanel",
     replaceActive: true,
+    panelVars: getActiveSvgDocumentPath() ? { preferredContext: "svg" } : {},
   };
   window.dispatchEvent(new CustomEvent("toolbarAction", { detail }));
 }

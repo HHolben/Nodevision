@@ -53,15 +53,17 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
     ? Math.max(1, options.maxEntries)
     : DEFAULT_MAX_ENTRIES;
   const onRestore = typeof options.onRestore === "function" ? options.onRestore : null;
+  // Model editors can supply snapshots without serializing their rendered DOM.
+  const readSnapshot = options.readSnapshot || (() => readHtml(root));
+  const writeSnapshot = options.writeSnapshot || ((value) => { root.innerHTML = value; });
   const undoStack = [];
   const redoStack = [];
 
   const restore = (html, direction) => {
     if (!root) return false;
-    root.innerHTML = String(html || "");
-    onRestore?.({ direction, html: readHtml(root) });
-    dispatchEditorInput(root);
-    root.focus?.();
+    writeSnapshot(String(html || ""));
+    onRestore?.({ direction, html: readSnapshot() });
+    if (!options.writeSnapshot) { dispatchEditorInput(root); root.focus?.(); }
     return true;
   };
 
@@ -69,7 +71,7 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
     record(beforeHtml) {
       if (!root) return false;
       const before = String(beforeHtml || "");
-      if (before === readHtml(root)) return false;
+      if (before === readSnapshot()) return false;
       pushDistinct(undoStack, before, maxEntries);
       redoStack.length = 0;
       return true;
@@ -77,7 +79,7 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
 
     undo() {
       if (!undoStack.length) return false;
-      const current = readHtml(root);
+      const current = readSnapshot();
       const previous = undoStack.pop();
       pushDistinct(redoStack, current, maxEntries);
       return restore(previous, "undo");
@@ -85,14 +87,14 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
 
     redo() {
       if (!redoStack.length) return false;
-      const current = readHtml(root);
+      const current = readSnapshot();
       const next = redoStack.pop();
       pushDistinct(undoStack, current, maxEntries);
       return restore(next, "redo");
     },
 
     noteNativeUndo(beforeHtml) {
-      const current = readHtml(root);
+      const current = readSnapshot();
       if (current === beforeHtml) return false;
       if (undoStack[undoStack.length - 1] === current) {
         undoStack.pop();
@@ -102,7 +104,7 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
     },
 
     noteNativeRedo(beforeHtml) {
-      const current = readHtml(root);
+      const current = readSnapshot();
       if (current === beforeHtml) return false;
       if (redoStack[redoStack.length - 1] === current) {
         redoStack.pop();

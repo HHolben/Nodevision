@@ -136,7 +136,7 @@ function normalizeToolbarFilePath(value) {
 
 function resolveToolbarActiveFilePath(state = window.NodevisionState || {}) {
   const mode = String(state.currentMode || "");
-  const viewerModeActive = mode === "HTMLviewing" || mode === "PDF Viewing" || mode.endsWith("viewing") || mode.endsWith("Viewing");
+  const viewerModeActive = mode === "Default" || mode === "HTMLviewing" || mode === "PDF Viewing" || mode.endsWith("viewing") || mode.endsWith("Viewing");
   const candidates = viewerModeActive ? [
     state.activeFileViewPath,
     window.currentActiveFilePath,
@@ -328,6 +328,7 @@ function getToolbarItemState(item, state = window.NodevisionState || {}) {
     activeFileIsHtml: isToolbarActiveFileHtml(state),
     activeFileIsPdf: isToolbarActiveFilePdf(state),
     activeFileIsCsv: isToolbarActiveFileCsv(state),
+    activeFileIsSvg: resolveToolbarActiveFilePath(state).toLowerCase().endsWith(".svg"),
     activeFileIsReadablePage: isToolbarActiveFileHtml(state) || isToolbarActiveFilePdf(state),
     activeFileCanConvertToEpub: canToolbarActiveFileConvertToEpub(state),
     modelCanExport2DPattern: Boolean(

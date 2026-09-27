@@ -30,7 +30,19 @@
     "panelType": "InfoPanel",
     "panelPath": "/PanelInstances/InfoPanels/SVGLayersPanel.mjs",
     "replaceActive": true,
-    "modes": ["SVG Editing", "HTMLediting", "HTMLviewing", "Virtual World Editing", "KMLviewerMode", "KMLeditorMode", "SCADediting"]
+    "conditions": { "activeFileIsSvg": true }
+  },
+  {
+    "ToolbarCategory": "View",
+    "heading": "View Layers",
+    "hotkeyText": "",
+    "icon": "icons/CanvasIcon.png",
+    "callbackKey": "ViewLayers",
+    "panelTemplate": "SVGLayersPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/SVGLayersPanel.mjs",
+    "replaceActive": true,
+    "modes": ["HTMLediting", "HTMLviewing", "Virtual World Editing", "KMLviewerMode", "KMLeditorMode", "SCADediting"]
   },
   {
     "ToolbarCategory": "View",

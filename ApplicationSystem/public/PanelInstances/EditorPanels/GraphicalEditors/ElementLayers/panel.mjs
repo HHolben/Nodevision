@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/panel.mjs
 // This file defines UI helpers for the ElementLayers module in Nodevision. It builds the layers panel DOM and renders layer rows with controls for visibility, ordering, and renaming.
 
+import { bindLayerDrag, markLayerDragRow } from "./drag.mjs";
 import { createLayerPanelElement, createLayerPanelHeader, createLayerListElement, createLayerRow, createLayerWrapper } from "/PanelInstances/Common/Layers/LayerPanelSurface.mjs";
 
 function ensurePanelState(panelEl) {
@@ -52,8 +53,7 @@ function setSvgElementVisible(el, visible) {
 }
 
 
-function withSvgSnapshot(label, operation) {
-  const ctx = window.SVGEditorContext;
+function recordWithContext(ctx, label, operation) {
   const run = () => {
     const result = operation?.();
     return result === undefined ? true : result;
@@ -139,46 +139,6 @@ function describeSvgElement(el) {
   return `${kind}: ${tag}${idToken}${classToken}${extra}`;
 }
 
-function getDropHalf(event, targetEl) {
-  const rect = targetEl?.getBoundingClientRect?.();
-  if (!rect || !Number.isFinite(rect.top) || !Number.isFinite(rect.height)) {
-    return "upper";
-  }
-  const mid = rect.top + (rect.height / 2);
-  return event.clientY < mid ? "upper" : "lower";
-}
-
-function getElementDropZone(event, targetEl) {
-  const rect = targetEl?.getBoundingClientRect?.();
-  if (!rect || !Number.isFinite(rect.top) || !Number.isFinite(rect.height)) {
-    return "before";
-  }
-  const y = event.clientY;
-  const upper = rect.top + (rect.height / 3);
-  const lower = rect.bottom - (rect.height / 3);
-  if (y <= upper) return "before";
-  if (y >= lower) return "after";
-  return "inside";
-}
-
-function isValidSvgContainer(el) {
-  if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
-  const tag = String(el.tagName || "").toLowerCase();
-  return [
-    "g",
-    "svg",
-    "a",
-    "switch",
-    "symbol",
-    "defs",
-    "marker",
-    "mask",
-    "pattern",
-    "clippath",
-    "foreignobject",
-  ].includes(tag);
-}
-
 function isLayerGroupElement(el) {
   return Boolean(el?.getAttribute?.("data-layer") === "true");
 }
@@ -189,22 +149,6 @@ function isLayerPanelHiddenElement(el) {
   if (el.getAttribute?.("data-nv-sketch-session") === "true") return true;
   if (el.getAttribute?.("data-nv-sketch-construction") === "true") return true;
   return false;
-}
-
-function setDropIndicator(targetEl, zone) {
-  if (!targetEl?.style) return;
-  if (zone === "inside") {
-    targetEl.style.boxShadow = "inset 0 0 0 2px #2f80ff";
-    return;
-  }
-  targetEl.style.boxShadow = zone === "before"
-    ? "inset 0 2px 0 #2f80ff"
-    : "inset 0 -2px 0 #2f80ff";
-}
-
-function clearDropIndicator(targetEl) {
-  if (!targetEl?.style) return;
-  targetEl.style.boxShadow = "";
 }
 
 function renderLayerContents({
@@ -218,9 +162,10 @@ function renderLayerContents({
   setActiveLayer,
   moveElementToLayer,
 } = {}) {
+  const withSvgSnapshot = (label, operation) => state.readOnly ? false : recordWithContext(state.context, label, operation);
   // Render topmost element first so panel order matches SVG z-order.
   const children = Array.from(layer?.children || [])
-    .filter((child) => !isLayerPanelHiddenElement(child))
+    .filter((child) => !isLayerPanelHiddenElement(child) && !(layer === state.root && isLayerGroupElement(child)))
     .reverse();
   if (children.length === 0) {
     const empty = document.createElement("div");
@@ -246,7 +191,7 @@ function renderLayerContents({
       borderRadius: "4px",
       cursor: "pointer",
     });
-    item.draggable = true;
+    markLayerDragRow(item, child, rootLayerId);
 
     const visible = isSvgElementVisible(child);
     const visBtn = document.createElement("button");
@@ -254,6 +199,7 @@ function renderLayerContents({
     visBtn.textContent = visible ? "Unsee" : "See";
     visBtn.title = visible ? "Hide element" : "Show element";
     visBtn.setAttribute("aria-pressed", String(visible));
+    visBtn.disabled = state.readOnly;
     visBtn.onclick = () => {
       withSvgSnapshot("element-visibility", () => setSvgElementVisible(child, !visible));
       rerender?.();
@@ -266,6 +212,7 @@ function renderLayerContents({
     lockBtn.textContent = locked ? "Unlock" : "Lock";
     lockBtn.title = locked ? "Unlock element" : "Lock element";
     lockBtn.setAttribute("aria-pressed", String(locked));
+    lockBtn.disabled = state.readOnly;
     lockBtn.onclick = () => {
       withSvgSnapshot("element-lock", () => setSvgElementLocked(child, !locked));
       rerender?.();
@@ -276,6 +223,7 @@ function renderLayerContents({
     soloBtn.type = "button";
     soloBtn.textContent = "Solo";
     soloBtn.title = "Solo this element; click any Solo again to clear";
+    soloBtn.disabled = state.readOnly;
     soloBtn.onclick = () => {
       withSvgSnapshot("element-solo", () => soloSvgElement(child));
       rerender?.();
@@ -289,7 +237,7 @@ function renderLayerContents({
         "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
       fontSize: "12px",
       color: "#222",
-      userSelect: "text",
+      userSelect: "none",
       overflow: "hidden",
       textOverflow: "ellipsis",
       whiteSpace: "nowrap",
@@ -304,7 +252,7 @@ function renderLayerContents({
     contentsBtn.onclick = (event) => {
       event.stopPropagation();
       const contents = Array.from(child.querySelectorAll?.("*") || []).filter((el) => !isLayerPanelHiddenElement(el));
-      window.SVGEditorContext?.setSelection?.(contents, { primary: contents[0] || null, allowLocked: true });
+      state.context?.setSelection?.(contents, { primary: contents[0] || null, allowLocked: true });
       setActiveLayer?.(rootLayerId);
       rerender?.();
     };
@@ -320,6 +268,7 @@ function renderLayerContents({
     }
 
     label.ondblclick = () => {
+      if (state.readOnly) return;
       const current = child.getAttribute("data-element-name") ||
         describeSvgElement(child);
       const next = prompt("Rename element", current);
@@ -329,73 +278,11 @@ function renderLayerContents({
       }
     };
 
-    item.addEventListener("dragstart", (e) => {
-      state.dragData = {
-        type: "element",
-        element: child,
-        layerId: rootLayerId,
-      };
-      e.dataTransfer?.setData("text/plain", "element");
-      e.dataTransfer?.setDragImage?.(item, 0, 0);
-    });
-    item.addEventListener("dragend", () => {
-      state.dragData = null;
-      item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
-      clearDropIndicator(item);
-    });
-    item.addEventListener("dragover", (e) => {
-      if (state.dragData?.type === "element") {
-        e.preventDefault();
-        e.stopPropagation();
-        item.style.backgroundColor = "rgba(90,169,255,0.18)";
-        const zone = getElementDropZone(e, item);
-        const indicatorZone = zone === "inside" && !isValidSvgContainer(child)
-          ? getDropHalf(e, item) === "upper" ? "before" : "after"
-          : zone;
-        setDropIndicator(item, indicatorZone);
-      }
-    });
-    item.addEventListener("dragleave", (e) => {
-      e.stopPropagation();
-      item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
-      clearDropIndicator(item);
-    });
-    item.addEventListener("drop", (e) => {
-      if (state.dragData?.type !== "element") return;
-      e.preventDefault();
-      e.stopPropagation();
-      const dragging = state.dragData.element;
-      if (!dragging || dragging === child) return;
-      const targetLayerId = rootLayerId;
-      const rawZone = getElementDropZone(e, item);
-      const zone = rawZone === "inside" && !isValidSvgContainer(child)
-        ? getDropHalf(e, item) === "upper" ? "before" : "after"
-        : rawZone;
-      // Top third places dragged item above target in panel (after in DOM),
-      // middle third nests inside target (for container elements),
-      // bottom third places it below target in panel (before in DOM).
-      const canNest = zone === "inside";
-      const beforeEl = canNest
-        ? null
-        : zone === "before"
-        ? child.nextSibling
-        : child;
-      const targetParent = canNest
-        ? child
-        : child.parentNode instanceof SVGElement
-        ? child.parentNode
-        : null;
-      withSvgSnapshot("element-reorder", () => moveElementToLayer?.(dragging, targetLayerId, beforeEl, targetParent));
-      state.dragData = null;
-      item.style.backgroundColor = isSelected ? "rgba(255, 183, 77, 0.22)" : "";
-      clearDropIndicator(item);
-    });
-
     item.addEventListener("click", (e) => {
       if (e.target instanceof HTMLElement && e.target.tagName === "BUTTON") {
         return;
       }
-      const ctx = window.SVGEditorContext;
+      const ctx = state.context;
       const mod = e.ctrlKey || e.metaKey;
       let nextSelected = [child];
       if (ctx?.toggleSelection && mod) {
@@ -455,7 +342,8 @@ export function createPanelElement() {
 
 
 function renderSketchPreviewSection({ panelEl, state, rerender } = {}) {
-  const ctx = window.SVGEditorContext;
+  if (state.readOnly) return;
+  const ctx = state.context;
   if (!ctx?.getSketchPreviews || !ctx?.createSketchPreview) return;
 
   const previews = Array.isArray(ctx.getSketchPreviews())
@@ -695,6 +583,7 @@ function renderSketchPreviewSection({ panelEl, state, rerender } = {}) {
 
 export function renderLayersPanel({
   panelEl,
+  context = null, readOnly = false, svgRoot, getLayerKey = layer => layer.id,
   getLayers,
   activeLayerId,
   createLayer,
@@ -709,7 +598,12 @@ export function renderLayersPanel({
   if (!panelEl || typeof getLayers !== "function") return;
   const state = ensurePanelState(panelEl);
   state.rerender = rerender || null;
-  const ctx = window.SVGEditorContext;
+  state.context = context; state.readOnly = readOnly; state.root = svgRoot;
+  const withSvgSnapshot = (label, operation) => readOnly ? false : recordWithContext(context, label, operation);
+  state.dragActions = { root: svgRoot, move: (element, target) => moveElementToLayer(element, null, null, target),
+    reorder: (id, target, position) => withSvgSnapshot("layer-order", () => moveLayerTo(id, target, position)) };
+  bindLayerDrag(panelEl, state);
+  const ctx = state.context;
 
   if (ctx?.getSelectedElements) {
     state.selectedElements = ctx.getSelectedElements().filter((el) =>
@@ -743,6 +637,7 @@ export function renderLayersPanel({
 
   if (!state.selectionListenerInstalled) {
     const onSelectionChanged = (event) => {
+      if (state.readOnly || (event.detail?.selectedElements || []).some(el => !state.root.contains(el))) return;
       const selected = Array.isArray(event?.detail?.selectedElements)
         ? event.detail.selectedElements.filter((el) => el?.isConnected)
         : [];
@@ -772,6 +667,7 @@ export function renderLayersPanel({
       "nv-svg-editor-selection-changed",
       onSelectionChanged,
     );
+    state.selectionCleanup = () => window.removeEventListener("nv-svg-editor-selection-changed", onSelectionChanged);
     state.selectionListenerInstalled = true;
   }
 
@@ -780,13 +676,14 @@ export function renderLayersPanel({
       state.rerender?.();
     };
     window.addEventListener("nv-sketch-previews-changed", onSketchChange);
+    state.sketchCleanup = () => window.removeEventListener("nv-sketch-previews-changed", onSketchChange);
     state.sketchListenerInstalled = true;
   }
 
   if (!state.keyHandlerInstalled) {
     const handler = (e) => {
-      const ctx = window.SVGEditorContext;
-      if (!ctx) return;
+      const ctx = state.context;
+      if (!ctx || state.readOnly) return;
       const key = String(e.key || "").toLowerCase();
       const mod = e.ctrlKey || e.metaKey;
 
@@ -919,13 +816,13 @@ export function renderLayersPanel({
 
   panelEl.innerHTML = "";
 
-  const { header } = createLayerPanelHeader({ onAddLayer: () => withSvgSnapshot("create-layer", () => createLayer?.()) });
+  const { header } = createLayerPanelHeader({ addDisabled: readOnly, onAddLayer: () => withSvgSnapshot("create-layer", () => createLayer?.()) });
   panelEl.appendChild(header);
 
   const list = createLayerListElement();
 
   const domOrderedLayers = getLayers();
-  const currentLayerIds = new Set(domOrderedLayers.map((l) => l.id));
+  const currentLayerIds = new Set(domOrderedLayers.map(getLayerKey));
   [...state.expandedLayers.keys()].forEach((id) => {
     if (!currentLayerIds.has(id)) state.expandedLayers.delete(id);
   });
@@ -938,121 +835,65 @@ export function renderLayersPanel({
 
   // Render topmost layer first so top row corresponds to top on canvas.
   [...domOrderedLayers].reverse().forEach((layer) => {
-    if (!state.expandedLayers.has(layer.id)) {
-      state.expandedLayers.set(layer.id, layer.id === activeLayerId);
+    const layerId = getLayerKey(layer);
+    if (!state.expandedLayers.has(layerId)) {
+      state.expandedLayers.set(layerId, layerId === activeLayerId);
     }
-    const isExpanded = !!state.expandedLayers.get(layer.id);
+    const isExpanded = !!state.expandedLayers.get(layerId);
     const isSelectedLayer = state.selected?.type === "layer" &&
-      state.selected.layerId === layer.id;
+      state.selected.layerId === layerId;
 
     const isVisible = layer.style.display !== "none";
     const wrapper = createLayerWrapper({
-      active: layer.id === activeLayerId,
+      active: layerId === activeLayerId,
       selected: isSelectedLayer,
       draggable: true,
     });
     const { row } = createLayerRow({
       expanded: isExpanded,
       visible: isVisible,
-      name: layer.getAttribute("data-layer-name") || layer.id,
+      name: layer === svgRoot ? "SVG document" : layer.getAttribute("data-layer-name") || layer.id || "Layer",
       onToggleExpanded: () => {
-        state.expandedLayers.set(layer.id, !isExpanded);
+        state.expandedLayers.set(layerId, !isExpanded);
         rerender?.();
       },
       onToggleVisible: () => {
         const nextVisible = layer.style.display === "none";
-        withSvgSnapshot("layer-visibility", () => setLayerVisible?.(layer.id, nextVisible));
+        withSvgSnapshot("layer-visibility", () => setLayerVisible?.(layerId, nextVisible));
         rerender?.();
       },
       onSelect: () => {
         state.selected.type = "layer";
-        state.selected.layerId = layer.id;
+        state.selected.layerId = layerId;
         state.selected.element = null;
         state.selectedElements = [];
-        const ctx = window.SVGEditorContext;
+        const ctx = state.context;
         if (ctx?.setSelection) ctx.setSelection([layer], { primary: layer });
         panelEl?.focus?.({ preventScroll: true });
-        setActiveLayer?.(layer.id);
+        setActiveLayer?.(layerId);
         rerender?.();
       },
-      onMoveUp: () => withSvgSnapshot("layer-order", () => moveLayer?.(layer.id, -1)),
-      onMoveDown: () => withSvgSnapshot("layer-order", () => moveLayer?.(layer.id, 1)),
+      onMoveUp: () => withSvgSnapshot("layer-order", () => moveLayer?.(layerId, -1)),
+      onMoveDown: () => withSvgSnapshot("layer-order", () => moveLayer?.(layerId, 1)),
       onRename: () => {
-        const oldName = layer.getAttribute("data-layer-name") || layer.id;
+        const oldName = layer.getAttribute("data-layer-name") || layerId;
         const next = prompt("Layer name:", oldName);
         if (!next) return;
         withSvgSnapshot("layer-rename", () => layer.setAttribute("data-layer-name", next.trim() || oldName));
         rerender?.();
       },
-      onDelete: () => withSvgSnapshot("delete-layer", () => removeLayer?.(layer.id)),
+      onDelete: () => withSvgSnapshot("delete-layer", () => removeLayer?.(layerId)),
     });
 
     wrapper.appendChild(row);
 
-    wrapper.addEventListener("dragstart", (e) => {
-      state.dragData = { type: "layer", layerId: layer.id };
-      e.dataTransfer?.setData("text/plain", layer.id);
-      e.dataTransfer?.setDragImage?.(wrapper, 0, 0);
-    });
-    wrapper.addEventListener("dragend", () => {
-      state.dragData = null;
-      wrapper.style.background = layer.id === activeLayerId
-        ? "#eef6ff"
-        : "#fff";
-      clearDropIndicator(row);
-    });
-    wrapper.addEventListener("dragover", (e) => {
-      if (state.dragData?.type === "layer") {
-        e.preventDefault();
-        setDropIndicator(
-          row,
-          getDropHalf(e, row) === "upper" ? "before" : "after",
-        );
-        wrapper.style.background = "rgba(90,169,255,0.18)";
-      } else if (state.dragData?.type === "element") {
-        e.preventDefault();
-        setDropIndicator(
-          row,
-          getDropHalf(e, row) === "upper" ? "before" : "after",
-        );
-        wrapper.style.background = "rgba(90,169,255,0.12)";
-      }
-    });
-    wrapper.addEventListener("dragleave", () => {
-      wrapper.style.background = layer.id === activeLayerId
-        ? "#eef6ff"
-        : "#fff";
-      clearDropIndicator(row);
-    });
-    wrapper.addEventListener("drop", (e) => {
-      const half = getDropHalf(e, row);
-      if (state.dragData?.type === "layer") {
-        e.preventDefault();
-        const draggingId = state.dragData.layerId;
-        if (draggingId && draggingId !== layer.id) {
-          // Top half = place above target in panel (after in DOM for top-first view).
-          // Bottom half = place below target in panel (before in DOM for top-first view).
-          withSvgSnapshot("layer-order", () => moveLayerTo?.(
-            draggingId,
-            layer.id,
-            half === "upper" ? "after" : "before",
-          ));
-        }
-      } else if (state.dragData?.type === "element") {
-        e.preventDefault();
-        const draggingEl = state.dragData.element;
-        if (draggingEl) {
-          // Top half puts element at front/top of layer, bottom half at back/bottom.
-          const beforeEl = half === "upper" ? null : layer.firstChild;
-          withSvgSnapshot("element-reorder", () => moveElementToLayer?.(draggingEl, layer.id, beforeEl, layer));
-        }
-      }
-      state.dragData = null;
-      wrapper.style.background = layer.id === activeLayerId
-        ? "#eef6ff"
-        : "#fff";
-      clearDropIndicator(row);
-    });
+    markLayerDragRow(row, layer, layerId, "layer");
+    row.children[2].draggable = layer !== svgRoot;
+    wrapper.draggable = false;
+    if (layer === svgRoot || readOnly) {
+      [...row.children].forEach((button, index) => { if (![0,2].includes(index)) button.disabled = true; });
+    }
+    if (layer === svgRoot) row.draggable = false;
 
     if (isExpanded) {
       const contents = document.createElement("div");
@@ -1063,7 +904,7 @@ export function renderLayersPanel({
       });
       renderLayerContents({
         layer,
-        rootLayerId: layer.id,
+        rootLayerId: layerId,
         containerEl: contents,
         rerender,
         state,
@@ -1078,5 +919,9 @@ export function renderLayersPanel({
   });
 
   panelEl.appendChild(list);
+  state.dragMessage = document.createElement("div");
+  state.dragMessage.setAttribute("role", "status");
+  state.dragMessage.textContent = state.lastDragError || "";
+  state.dragMessage.style.color = "#a22"; panelEl.appendChild(state.dragMessage);
   renderSketchPreviewSection({ panelEl, state, rerender });
 }

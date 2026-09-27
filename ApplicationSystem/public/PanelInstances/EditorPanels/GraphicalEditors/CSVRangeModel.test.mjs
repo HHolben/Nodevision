@@ -1,0 +1,44 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVRangeModel.test.mjs
+// These tests verify CSV rectangle semantics, clipboard fidelity, overlap safety, and model snapshot history without requiring a browser.
+import assert from 'node:assert/strict';
+import { csvRange, captureCsvRange, copyCsvRange, clearCsvRange, moveCsvRange, parseCsvClipboard, writeCsvBlock } from './CSVRangeModel.mjs';
+import { parseDelimitedText, serializeDelimitedRows } from './CSVGridModel.mjs';
+import { createWysiwygProgrammaticHistory } from './HTMLeditorComponents/WysiwygProgrammaticHistory.mjs';
+const origin = { row: 0, col: 0 };
+const rows = [['A','B','C'],['D','E','F']];
+const range = { top: 0, left: 0, bottom: 1, right: 1 };
+for (const [a,b] of [[origin,{row:1,col:1}],[{row:1,col:1},origin],[{row:0,col:1},{row:1,col:0}],[{row:1,col:0},{row:0,col:1}]]) assert.deepEqual(csvRange(a,b),range);
+assert.deepEqual(csvRange(origin), {top:0,left:0,bottom:0,right:0});
+assert.equal(copyCsvRange(rows,csvRange(origin)), 'A');
+assert.equal(copyCsvRange(rows,range), 'A\tB\nD\tE');
+assert.deepEqual(clearCsvRange(rows,range), [['','','C'],['','','F']]);
+assert.deepEqual(rows, [['A','B','C'],['D','E','F']]);
+const virtual = csvRange({row:1,col:1},{row:4,col:4});
+assert.deepEqual(clearCsvRange([['A']],virtual), [['A']]);
+assert.deepEqual(captureCsvRange([['A']],virtual), Array.from({length:4},()=>Array(4).fill(undefined)));
+assert.deepEqual(writeCsvBlock([['']],origin,parseCsvClipboard('X')), [['X']]);
+assert.deepEqual(writeCsvBlock([['']],origin,parseCsvClipboard('A\tB\nC\tD')), [['A','B'],['C','D']]);
+assert.deepEqual(writeCsvBlock([['A']],{row:2,col:2},parseCsvClipboard('B\t\nC\tD')), [['A'],[],['','','B',''],['','','C','D']]);
+assert.deepEqual(parseCsvClipboard('A\tB\r\nC\tD\r\n'), [['A','B'],['C','D']]);
+const quoted = [['a\tb','line\nbreak','say "hi"','']];
+assert.deepEqual(parseCsvClipboard(copyCsvRange(quoted,csvRange(origin,{row:0,col:3}))),quoted);
+assert.deepEqual(parseDelimitedText('A,\n\n'), [['A',''],['']]);
+assert.equal(serializeDelimitedRows([['A',''],['']]), 'A,\n\n');
+assert.deepEqual(parseDelimitedText(serializeDelimitedRows([['A'],[''],['']])), [['A'],[''],['']]);
+assert.deepEqual(moveCsvRange(rows,range,{row:0,col:1}), [['','A','B'],['','D','E']]);
+assert.deepEqual(moveCsvRange(rows,csvRange({row:0,col:1},{row:1,col:2}),origin), [['B','C',''],['E','F','']]);
+assert.deepEqual(moveCsvRange([['A',''],['B']],range,{row:2,col:2}), [['',''],[''],['','','A',''],['','','B']]);
+assert.deepEqual(moveCsvRange([['A']],virtual,{row:0,col:0}), [['']]);
+let state = JSON.stringify(rows), restored = 0;
+const history = createWysiwygProgrammaticHistory({}, {readSnapshot:()=>state,writeSnapshot:value=>{state=value;restored++;}});
+const before = state;
+state = JSON.stringify(moveCsvRange(rows,range,{row:0,col:1}));
+assert.equal(history.record(before),true);
+assert.equal(history.undo(),true); assert.equal(state,before); assert.equal(history.undo(),false);
+assert.equal(history.redo(),true); assert.equal(restored,2);
+// The default HTML history adapter retains its original behavior.
+const root = {innerHTML:'before',dispatchEvent(){},focus(){}};
+const htmlHistory = createWysiwygProgrammaticHistory(root);
+root.innerHTML='after'; htmlHistory.record('before'); htmlHistory.undo(); assert.equal(root.innerHTML,'before');
+htmlHistory.redo(); assert.equal(root.innerHTML,'after');
+console.log('CSV range model and shared history tests passed');

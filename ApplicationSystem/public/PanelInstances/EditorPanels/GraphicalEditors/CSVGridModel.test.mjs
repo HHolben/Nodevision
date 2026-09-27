@@ -19,7 +19,7 @@ import {
 } from "./CSVGridModel.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const csvEditorSource = readFileSync(join(here, "CSVeditor.mjs"), "utf8");
+const csvEditorSource = ["CSVeditor.mjs", "CSVGridView.mjs", "CSVRangeInteraction.mjs"].map(name => readFileSync(join(here, name), "utf8")).join("\n");
 const tableToolsSource = readFileSync(join(here, "../../../ToolbarCallbacks/insert/tableTools.mjs"), "utf8");
 const defaultToolbar = JSON.parse(readFileSync(join(here, "../../../ToolbarJSONfiles/defaultToolbar.json"), "utf8"));
 const insertToolbar = JSON.parse(readFileSync(join(here, "../../../ToolbarJSONfiles/insertToolbar.json"), "utf8"));
@@ -66,11 +66,11 @@ assert.match(tableToolsSource, /insertTableColumn[\s\S]*gridContext\?\.insertCol
 assert.match(tableToolsSource, /deleteCurrentTableRow[\s\S]*gridContext\?\.deleteRow/, "row delete callback routes to grid adapter before DOM table fallback");
 assert.match(tableToolsSource, /deleteCurrentTableColumn[\s\S]*gridContext\?\.deleteColumn/, "column delete callback routes to grid adapter before DOM table fallback");
 
-const tableButton = defaultToolbar.find((item) => item.heading === "Table" && item.callbackKey === "openTableToolbar");
+const tableButton = defaultToolbar.find((item) => item.heading === "Table" && item.callbackKey === "openTableToolbar" && item.modes?.includes("CSVediting"));
 assert.ok(tableButton?.modes?.includes("CSVediting"), "contextual Table button is available in CSVediting mode");
-assert.deepEqual(tableButton.conditions, { htmlTableSelected: true }, "CSV reuses the existing HTML table-selected toolbar condition");
+assert.deepEqual(tableButton.conditions, { activeFileIsCsv: true }, "CSV table tools are scoped to the active CSV file");
 for (const callbackKey of ["tableInsertRowAbove", "tableInsertRowBelow", "tableDeleteRow", "tableInsertColumnLeft", "tableInsertColumnRight", "tableDeleteColumn"]) {
-  const item = insertToolbar.find((candidate) => candidate.callbackKey === callbackKey);
+  const item = insertToolbar.find((candidate) => candidate.callbackKey === callbackKey && candidate.modes?.includes("CSVediting"));
   assert.ok(item?.modes?.includes("CSVediting"), `${callbackKey} is available for CSVediting`);
 }
 

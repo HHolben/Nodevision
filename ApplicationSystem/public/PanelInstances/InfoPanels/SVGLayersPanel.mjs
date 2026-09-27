@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/SVGLayersPanel.mjs
 // This module renders a reusable Layers panel. The panel supports SVG and any editor or viewer that exposes an attachHost(host) API.
 
+import { getActiveSvgLayersContext } from "../Common/Layers/svgLayersContext.mjs";
+
 function collectProviders(instanceVars = {}) {
   const providers = [];
   const preferredContext = String(instanceVars.preferredContext || instanceVars.providerId || "").trim().toLowerCase();
@@ -67,13 +69,13 @@ function collectProviders(instanceVars = {}) {
   }
 
   // SVG editing context (original behavior)
-  const svgCtx = window.SVGEditorContext;
+  const svgCtx = getActiveSvgLayersContext();
   if (svgCtx?.layers?.attachHost) {
     providers.push({
       id: "svg",
-      title: "SVG Layers",
+      title: svgCtx.readOnly ? "SVG Layers (View)" : "SVG Layers",
       attachHost: svgCtx.layers.attachHost,
-      actions: [
+      actions: svgCtx.readOnly ? [] : [
         {
           label: "Properties",
           handler() {
@@ -95,6 +97,8 @@ function collectProviders(instanceVars = {}) {
 
 export async function setupPanel(panel, instanceVars = {}) {
   if (!panel) throw new Error("Panel container required.");
+  panel.__nvCleanupLayersPanel?.();
+  panel.cleanup = () => panel.__nvCleanupLayersPanel?.();
   panel.innerHTML = "";
   Object.assign(panel.style, {
     display: "flex",
@@ -110,6 +114,10 @@ export async function setupPanel(panel, instanceVars = {}) {
     message.style.padding = "12px";
     message.style.color = "#b00020";
     panel.appendChild(message);
+    const ready = () => { if (panel.isConnected) setupPanel(panel, instanceVars); };
+    window.addEventListener("nv-svg-layers-provider-changed", ready);
+    window.addEventListener("nv-svg-editor-context-ready", ready);
+    panel.__nvCleanupLayersPanel = () => { window.removeEventListener("nv-svg-layers-provider-changed", ready); window.removeEventListener("nv-svg-editor-context-ready", ready); };
     return;
   }
 
@@ -119,7 +127,7 @@ export async function setupPanel(panel, instanceVars = {}) {
   const preferredContext = typeof instanceVars.preferredContext === "string"
     ? instanceVars.preferredContext.trim().toLowerCase()
     : "";
-  let activeProvider = providers.find((provider) => provider.id === preferredProviderId)
+  let activeProvider = (getActiveSvgLayersContext() && providers.find(provider => provider.id === "svg")) || providers.find((provider) => provider.id === preferredProviderId)
     || providers.find((provider) => provider.id === preferredContext)
     || providers[0];
   let teardown = null;
@@ -205,7 +213,16 @@ export async function setupPanel(panel, instanceVars = {}) {
 
   mountProvider(activeProvider);
 
+  const boundSvgContext = getActiveSvgLayersContext();
+  const onProviderChanged = () => { if (panel.isConnected && getActiveSvgLayersContext() !== boundSvgContext) setupPanel(panel, instanceVars); };
+  const onActivation = () => queueMicrotask(onProviderChanged);
+  window.addEventListener("activePanelChanged", onActivation);
+  window.addEventListener("nv-svg-layers-provider-changed", onProviderChanged);
+  window.addEventListener("nv-svg-editor-context-ready", onProviderChanged);
   panel.__nvCleanupLayersPanel = () => {
+    window.removeEventListener("activePanelChanged", onActivation);
+    window.removeEventListener("nv-svg-layers-provider-changed", onProviderChanged);
+    window.removeEventListener("nv-svg-editor-context-ready", onProviderChanged);
     if (typeof teardown === "function") teardown();
   };
 }
