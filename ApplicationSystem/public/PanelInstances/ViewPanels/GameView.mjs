@@ -6,6 +6,7 @@ import { PointerLockControls } from "/lib/three/PointerLockControls.js";
 import { defaultBindings, normalizeKeyName, loadControlScheme } from "./GameViewDependencies/controlBindings.mjs";
 import { detectWorldKind, disposeMetaWorldRuntime, loadWorldFromFile } from "./GameViewDependencies/worldLoading.mjs";
 import { initScene } from "./GameViewDependencies/initScene.mjs";
+import { showWorldStartupError } from "./GameViewDependencies/worldStartupError.mjs";
 import { ensureSvgEditingSplit, loadPanelIntoCell } from "/panels/workspace.mjs";
 import { clearActiveMetaWorldLayerBridge } from "/MetaWorld/MetaWorldLayerState.mjs";
 
@@ -36,6 +37,8 @@ async function ensureMetaWorldLayersPanelVisible(panel) {
 }
 
 function cleanupLegacyGameView(panel, state = {}) {
+  panel._vrPause?.dispose();
+  panel._vrPause = null;
   if (typeof panel._vrDisposeInputHandlers === "function") {
     panel._vrDisposeInputHandlers();
     panel._vrDisposeInputHandlers = null;
@@ -90,13 +93,17 @@ function cleanupLegacyGameView(panel, state = {}) {
   panel._vrEquationObjectsPanel = null;
   if (panel._vrEquationColliderController?.dispose) panel._vrEquationColliderController.dispose();
   panel._vrEquationColliderController = null;
+  panel._vrTemporalManipulatorPanel?.dispose();
+  panel._vrTemporalManipulatorPanel = null;
+  panel._vrTemporalController?.dispose?.();
+  panel._vrTemporalController = null;
   if (panel._vrTextWorldConsole?.dispose) panel._vrTextWorldConsole.dispose();
   panel._vrTextWorldConsole = null;
   if (panel._vrConsolePanels?.dispose) panel._vrConsolePanels.dispose();
   panel._vrConsolePanels = null;
   if (panel._vrMetaWorldMultiplayerClient?.dispose) panel._vrMetaWorldMultiplayerClient.dispose();
   panel._vrMetaWorldMultiplayerClient = null;
-  if (Array.isArray(window.VRWorldContext?.objects)) {
+  if (window.VRWorldContext?.panel === panel && Array.isArray(window.VRWorldContext.objects)) {
     window.VRWorldContext.objects.forEach((object) => {
       try {
         object?.userData?.soundRuntime?.audio?.pause?.();
@@ -178,6 +185,7 @@ export async function setupPanel(panel, instanceVars = {}) {
     metaWorldRuntime: null,
     mode: null,
     loadToken: 0,
+    disposed: false,
   };
 
   const getBindings = () => state.controlBindings || defaultBindings;
@@ -203,52 +211,60 @@ export async function setupPanel(panel, instanceVars = {}) {
   };
 
   const loadSelectedWorld = async (filePath) => {
+    if (state.disposed) return false;
+    const token = ++state.loadToken;
     if (!filePath) {
       console.warn("GameView: no file selected. Select a world HTML under /Notebook.");
-      return;
+      return false;
     }
-    const token = ++state.loadToken;
     state.currentWorldPath = filePath;
-    const detected = await detectWorldKind(filePath);
-    if (token !== state.loadToken) return;
-
-    if (detected.kind === "metaworld") {
-      console.log("GameView mode: MetaWorld via legacy 3D world loader");
+    try {
+      const detected = await detectWorldKind(filePath);
+      if (token !== state.loadToken) return false;
+      if (detected.kind === "unknown") {
+        console.warn("GameView: world kind detection failed; falling back to legacy world loading.", detected.reason || detected.error || "unknown error");
+      }
+      state.mode = detected.kind === "metaworld" ? "metaworld" : "legacy";
       await ensureLegacyEngine();
-      if (token !== state.loadToken) return;
-      state.mode = "metaworld";
+      if (token !== state.loadToken) return false;
       await loadWorldFromFile(filePath, state, THREE);
-      return;
+      return token === state.loadToken;
+    } catch (error) {
+      if (token !== state.loadToken) return false;
+      console.error("Virtual World startup failed:", error);
+      cleanupMetaWorld(panel, state);
+      cleanupLegacyGameView(panel, state);
+      showWorldStartupError(panel, error, () => openWorld(filePath));
+      return false;
     }
-
-    if (detected.kind === "unknown") {
-      console.warn("GameView: world kind detection failed; falling back to legacy world loading.", detected.reason || detected.error || "unknown error");
-    }
-    console.log("GameView mode: Legacy World");
-    await ensureLegacyEngine();
-    if (token !== state.loadToken) return;
-    state.mode = "legacy";
-    await loadWorldFromFile(filePath, state, THREE);
   };
 
   const showLayersIfEditing = async () => {
+    if (state.disposed || !state.legacyInitialized) return;
     if (window.NodevisionState?.currentMode !== "Virtual World Editing") return;
     await ensureMetaWorldLayersPanelVisible(panel);
   };
 
+  const openWorld = (filePath) => {
+    void loadSelectedWorld(filePath)
+      .then((loaded) => loaded && showLayersIfEditing())
+      .catch((error) => console.error("Virtual World panel update failed:", error));
+  };
+
   const listener = (e) => {
-    const filePath = e.detail.filePath;
-    void loadSelectedWorld(filePath).then(() => showLayersIfEditing());
+    openWorld(e.detail?.filePath);
   };
 
   const editingModeListener = () => {
-    void showLayersIfEditing();
+    void showLayersIfEditing().catch((error) => console.error("Virtual World Layers failed:", error));
   };
 
   document.addEventListener("fileSelected", listener);
   window.addEventListener("nodevision:metaworld-editing-enabled", editingModeListener);
 
   panel.cleanup = () => {
+    if (state.disposed) return;
+    state.disposed = true;
     document.removeEventListener("fileSelected", listener);
     window.removeEventListener("nodevision:metaworld-editing-enabled", editingModeListener);
     state.loadToken += 1;
@@ -262,5 +278,5 @@ export async function setupPanel(panel, instanceVars = {}) {
   window.__nodevisionGameViewCleanup = panel.cleanup;
 
   const initialPath = instanceVars.filePath || window.selectedFilePath;
-  void loadSelectedWorld(initialPath).then(() => showLayersIfEditing());
+  openWorld(initialPath);
 }

@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgPreservation.mjs
-// Focused helpers for preserving user-authored SVG structure while the graphical SVG editor adds runtime affordances.
+// This module preserves user-authored SVG structure while the graphical editor adds runtime controls. It removes editor-owned elements from serialized document copies.
 
 import { ensureSvgSizeAttrs } from "./svgDom.mjs";
 
@@ -29,6 +29,7 @@ export function cleanupSvgCloneForSave(clone, { generatedRootId = false, runtime
   if (generatedRootId && clone.getAttribute?.("id") === runtimeRootId) clone.removeAttribute("id");
 
   removeAll(clone, `[${uiAttr}]`, (el) => el.remove());
+  clone.removeAttribute?.("data-selected");
   removeAll(clone, "[data-selected]", (el) => el.removeAttribute("data-selected"));
   removeAll(clone, "[data-nv-solo-hidden]", (el) => el.removeAttribute("data-nv-solo-hidden"));
   removeAll(clone, "[data-nv-solo-prev-display]", (el) => el.removeAttribute("data-nv-solo-prev-display"));

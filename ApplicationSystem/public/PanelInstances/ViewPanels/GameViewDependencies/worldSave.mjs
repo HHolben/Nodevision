@@ -536,7 +536,7 @@ function compactVoxelDefinitions(defs = []) {
   return passthrough.concat(compactedVoxels);
 }
 
-function serializeMesh(mesh) {
+export function serializeMesh(mesh) {
   if (!mesh?.isMesh) return null;
   const type = getMeshType(mesh);
   if (!type) return null;
@@ -554,8 +554,10 @@ function serializeMesh(mesh) {
   }
 
   const def = {
+    id: mesh.userData?.metaWorldLayerId || undefined,
     type,
     position: vec3(mesh.position),
+    rotation: [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z],
     color: materialColorHex(mesh),
     isSolid: mesh.userData?.isSolid === true
   };
@@ -608,7 +610,9 @@ function serializeMesh(mesh) {
     const temporal = mesh.userData?.equationTemporal === true || props.equationTemporal === true || expressionUsesTimeVariable(expression);
     const operator = mesh.userData?.equationInequalityOperator || props.operator || "";
     const inequalitySide = mesh.userData?.equationInequalitySide || props.inequalitySide || "negative";
+    if (props.infinite) def.scale = vec3(mesh.scale);
     def.equationCollider = {
+      infinite: props.infinite || undefined,
       kind: inequality ? "plane-inequality" : "plane",
       a: round3(props.a),
       b: round3(props.b),

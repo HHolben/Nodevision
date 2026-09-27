@@ -617,6 +617,7 @@ function selectFileManagerItem(item, options = {}) {
   const selectedIsDirectory = item.dataset.isDirectory === "true";
 
   requestNodevisionFileSelection(item.dataset.fullPath, {
+    switchGraphicalEditor: true,
     isDirectory: selectedIsDirectory,
     beforeSelected: () => {
       markSelectedFileItemVisualOnly(item);
@@ -1226,6 +1227,7 @@ window.revealPathInFileManager = async function revealPathInFileManager(path = "
   }
 
   requestNodevisionFileSelection(cleanPath, {
+    switchGraphicalEditor: true,
     beforeSelected: () => {
       const fileItem = findFileManagerItemByPath(cleanPath);
       if (fileItem) {

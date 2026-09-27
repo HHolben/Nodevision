@@ -7,6 +7,7 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { normalizePlaneEquationConfig, resizeEquationColliderPlaneMesh, syncPlaneColliderRef, makePlaneColliderRef } from "./equationColliderTool.mjs";
 import { resolveLinkedWorldResource } from "./embeddedResourceEditor.mjs";
 import { syncHyperlinkForPortal } from "/LinkPortalParity.mjs";
+import { createWorldRenderer } from "./createWorldRenderer.mjs";
 
 const IFRAME_HOST_PAGE_SOURCE = "nodevision://host-page";
 const IFRAME_HOST_PAGE_KIND = "host-page";
@@ -165,7 +166,10 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   const floatingPanel = createFloatingInventoryPanel({
     title: "Inspect / Modify",
     closeBehavior: "hide",
-    onRequestClose: () => floatingPanel.setVisible(false)
+    onRequestClose: () => {
+      stopPreviewLoop();
+      floatingPanel.setVisible(false);
+    }
   });
   floatingPanel.setVisible(false);
 
@@ -497,10 +501,24 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   keyLight.position.set(2.6, 3.2, 2.2);
   const fillLight = new THREE.AmbientLight(0x7ea0c8, 0.45);
   previewScene.add(keyLight, fillLight);
-  const previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  previewRenderer.setSize(previewHost.clientWidth || 320, previewHost.clientHeight || 220, false);
-  previewHost.appendChild(previewRenderer.domElement);
+  let previewRenderer = null;
+
+  function ensurePreviewRenderer() {
+    if (previewRenderer) return true;
+    try {
+      previewRenderer = createWorldRenderer({ THREE });
+      previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      previewHost.replaceChildren(previewRenderer.domElement);
+      return true;
+    } catch (error) {
+      previewRenderer?.dispose();
+      previewRenderer?.forceContextLoss();
+      previewRenderer = null;
+      previewHost.textContent = "3D preview unavailable. Object properties can still be edited.";
+      console.warn("Object preview could not start:", error);
+      return false;
+    }
+  }
 
   let rafId = 0;
   let previewMesh = null;
@@ -526,6 +544,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   }
 
   function updatePreviewSize() {
+    if (!previewRenderer) return;
     const width = Math.max(220, previewHost.clientWidth || 220);
     const height = Math.max(180, previewHost.clientHeight || 180);
     previewCamera.aspect = width / height;
@@ -534,6 +553,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   }
 
   function loadPreviewFromTarget(target) {
+    if (!ensurePreviewRenderer()) return;
     if (previewMesh) {
       previewScene.remove(previewMesh);
       previewMesh = null;
@@ -562,6 +582,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   function readPlaneInputs(target) {
     const current = normalizePlaneEquationConfig(target?.userData?.equationCollider || {});
     return normalizePlaneEquationConfig({
+      ...current,
       a: parseNumber(planeAInput.value, current.a),
       b: parseNumber(planeBInput.value, current.b),
       c: parseNumber(planeCInput.value, current.c),
@@ -1116,6 +1137,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   function applyFormToTarget() {
     if (!activeTarget) return;
+    window.VRWorldContext?.recordObjectTransform?.(activeTarget);
     if (isEquationColliderPlane(activeTarget)) {
       resizeEquationColliderPlaneMesh(THREE, activeTarget, readPlaneInputs(activeTarget));
       activeTarget.userData.nvType = activeTarget.userData?.nvType === "equation-inequality" ? "equation-inequality" : "equation-collider-plane";
@@ -1130,7 +1152,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     }
 
     applyColorToTarget(activeTarget, colorInput.value);
-    applyMaterialType(THREE, activeTarget, materialSelect.value, colorInput.value);
+    if (!activeTarget.userData?.equationCollider?.infinite) applyMaterialType(THREE, activeTarget, materialSelect.value, colorInput.value);
     applyAlphaToTarget(activeTarget, alphaInput.value);
 
     if (isEquationColliderPlane(activeTarget)) {
@@ -1225,6 +1247,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     },
     hide() {
       activeTarget = null;
+      stopPreviewLoop();
       floatingPanel.setVisible(false);
       syncLinkedResourceSelection(null);
     },
@@ -1246,7 +1269,9 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       activeTarget = null;
       stopPreviewLoop();
       resizeObserver.disconnect();
-      previewRenderer.dispose();
+      previewRenderer?.dispose();
+      previewRenderer?.forceContextLoss();
+      previewRenderer = null;
       floatingPanel.dispose();
       syncLinkedResourceSelection(null);
     }

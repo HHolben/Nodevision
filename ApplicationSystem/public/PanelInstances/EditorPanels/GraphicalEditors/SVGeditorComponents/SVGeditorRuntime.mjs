@@ -21,6 +21,7 @@ import {
   distancePointToSegment,
 } from "./svgDom.mjs";
 import { applyEditableSvgRootDefaults, cleanupSvgCloneForSave, prepareSvgRootForEditor } from "./SvgPreservation.mjs";
+import { createSvgChrome } from "./SvgChrome.mjs";
 import { fetchSvgText } from "./svgFetch.mjs";
 import { createBezierToolController } from "./BezierToolController.mjs";
 import { createPathNodeEditor } from "./PathNodeEditor.mjs";
@@ -228,8 +229,9 @@ export async function renderEditor(filePath, container) {
   });
   wrapper.tabIndex = 0;
   container.appendChild(wrapper);
+  let disposed = false;
   const isCurrentRender = () =>
-    container.__nvEditorRenderToken === renderToken && wrapper.isConnected;
+    !disposed && container.__nvEditorRenderToken === renderToken && wrapper.isConnected;
 
   window.NodevisionState = window.NodevisionState || {};
   window.__nvHtmlEditorActivePath = null;
@@ -382,6 +384,7 @@ export async function renderEditor(filePath, container) {
   }
   svgRoot.replaceWith(parsedSvg.root);
   svgRoot = parsedSvg.root;
+  cleanupSvgCloneForSave(svgRoot);
   let rootRuntimeState = prepareSvgRootForEditor(svgRoot);
   syncSvgDocumentBackgroundGeometry(svgRoot);
 
@@ -635,7 +638,7 @@ export async function renderEditor(filePath, container) {
   });
   bezierToolPreviewPath.style.pointerEvents = "none";
   overlayLayer.appendChild(bezierToolPreviewPath);
-  svgRoot.appendChild(overlayLayer);
+  const chrome = createSvgChrome(svgRoot, svgViewportHost, overlayLayer);
 
   const history = createSvgUndoStack(120);
 
@@ -2220,10 +2223,12 @@ export async function renderEditor(filePath, container) {
   }
 
   function updateSvgRulers() {
+    if (!isCurrentRender()) return;
     svgTopRuler.style.transform = "";
     updateSvgSizeToFitWidth();
     drawSvgTopRuler();
     drawSvgLeftRuler();
+    chrome.sync();
   }
 
   const svgRulerObserver = new ResizeObserver(updateSvgRulers);
@@ -2359,7 +2364,7 @@ export async function renderEditor(filePath, container) {
   }
 
   function isSelectableElement(el, options = {}) {
-    if (!(el instanceof SVGElement)) return false;
+    if (!(el instanceof SVGElement) || !svgRoot.contains(el)) return false;
     if (el === svgRoot || el === overlayLayer || el === selectionBox || el === marqueeBox) return false;
     if (el.closest(`[${SVG_UI_ATTR}]`)) return false;
     if (el.closest(`[${BACKGROUND_OWNER_ATTR}="document"]`)) return false;
@@ -3006,6 +3011,9 @@ export async function renderEditor(filePath, container) {
   }
 
   function refreshSelectionGeometryVisuals() {
+    if (!isCurrentRender()) return null;
+    selectedElements = selectedElements.filter(el => svgRoot.contains(el));
+    chrome.sync();
     recordLineProbe("selection-geometry-visuals:start", { selectedCount: selectedElements.length });
     selectedElement = selectedElements[0] || null;
     window.selectedSVGElement = selectedElement;
@@ -3114,6 +3122,7 @@ export async function renderEditor(filePath, container) {
     if (selectionChangeRaf) return;
     selectionChangeRaf = window.requestAnimationFrame(() => {
       selectionChangeRaf = 0;
+      if (!isCurrentRender()) return;
       recordLineProbe("notifySelectionChanged:raf-start");
       nodeEditor.onSelectionChanged?.(selectedElements);
       recordLineProbe("notifySelectionChanged:after-nodeEditor");
@@ -3132,6 +3141,7 @@ export async function renderEditor(filePath, container) {
     if (selectionMutationRaf) return;
     selectionMutationRaf = window.requestAnimationFrame(() => {
       selectionMutationRaf = 0;
+      if (!isCurrentRender()) return;
       recordLineProbe("selection-mutated:dispatch", { reason });
       window.dispatchEvent(new CustomEvent("nv-svg-editor-selection-mutated", {
         detail: selectionEventDetail(reason)
@@ -3820,7 +3830,7 @@ export async function renderEditor(filePath, container) {
   function duplicateSelection(offsetX = 20, offsetY = 20) {
     if (!selectedElements.length) return [];
     const clones = selectedElements.map((el) => {
-      const clone = el.cloneNode(true);
+      const clone = cleanupSvgCloneForSave(el.cloneNode(true));
       el.parentNode?.appendChild(clone);
       translateElement(clone, offsetX, offsetY);
       return clone;
@@ -3832,7 +3842,7 @@ export async function renderEditor(filePath, container) {
 
   function copySelection() {
     if (!selectedElements.length) return false;
-    svgClipboard = selectedElements.map((el) => el.cloneNode(true));
+    svgClipboard = selectedElements.map((el) => cleanupSvgCloneForSave(el.cloneNode(true)));
     setStatus("Selection copied");
     return true;
   }
@@ -3888,7 +3898,7 @@ export async function renderEditor(filePath, container) {
   }
 
   function isLayerOrderableElement(el) {
-    if (!(el instanceof SVGElement)) return false;
+    if (!(el instanceof SVGElement) || !svgRoot.contains(el)) return false;
     if (el === overlayLayer || el.closest?.("[" + SVG_UI_ATTR + "]")) return false;
     if (el.getAttribute?.("data-nv-sketch-session") === "true") return false;
     if (el.getAttribute?.("data-nv-sketch-construction") === "true") return false;
@@ -5413,7 +5423,7 @@ export async function renderEditor(filePath, container) {
     panels: { layersPanelConnected: Boolean(layersPanelHost?.isConnected) },
   }));
 
-  svgRoot.addEventListener("pointerdown", (e) => {
+  svgViewportHost.addEventListener("pointerdown", (e) => {
     recordLineProbe("svg-handler:start", { mode: toolState.mode, isTrusted: Boolean(e.isTrusted) });
     recordLineProbe("pointerdown:start", { mode: toolState.mode });
     syncModeFromToolbarState();
@@ -5672,7 +5682,7 @@ export async function renderEditor(filePath, container) {
 
   });
 
-  svgRoot.addEventListener("pointermove", (e) => {
+  svgViewportHost.addEventListener("pointermove", (e) => {
     const p = toSvgPoint(svgRoot, e.clientX, e.clientY);
     lastPointerRoot = p;
     lastPointerClient = { x: e.clientX, y: e.clientY };
@@ -5863,7 +5873,7 @@ export async function renderEditor(filePath, container) {
     e.preventDefault();
   });
 
-  svgRoot.addEventListener("pointerup", (e) => {
+  svgViewportHost.addEventListener("pointerup", (e) => {
     quickMenu.cancelLongPress();
     cancelEyedropperHold();
     if (toolState.mode !== "sketch" && nodeEditor.onPointerUp?.(e)) return;
@@ -5962,7 +5972,7 @@ export async function renderEditor(filePath, container) {
     }
   });
 
-  svgRoot.addEventListener("pointercancel", (e) => {
+  svgViewportHost.addEventListener("pointercancel", (e) => {
     quickMenu.cancelLongPress();
     cancelEyedropperHold();
     if (toolState.mode === "freehand" && freehandStrokeState?.pointerId === e.pointerId) {
@@ -6030,7 +6040,10 @@ export async function renderEditor(filePath, container) {
 
   function setSvgFromString(svgString) {
     const parsed = parseEditableSvgRoot(svgString);
-    const fresh = parsed.root;
+    const fresh = cleanupSvgCloneForSave(parsed.root);
+    window.cancelAnimationFrame(selectionChangeRaf);
+    window.cancelAnimationFrame(selectionMutationRaf);
+    selectionChangeRaf = selectionMutationRaf = 0;
 
     Array.from(svgRoot.attributes).forEach((attr) => {
       svgRoot.removeAttribute(attr.name);
@@ -6045,7 +6058,7 @@ export async function renderEditor(filePath, container) {
     Array.from(fresh.childNodes).forEach((node) => {
       svgRoot.appendChild(node.cloneNode(true));
     });
-    svgRoot.appendChild(overlayLayer);
+    chrome.sync();
 
     applyEditableSvgRootDefaults(svgRoot);
     rootRuntimeState = prepareSvgRootForEditor(svgRoot);
@@ -6722,6 +6735,7 @@ export async function renderEditor(filePath, container) {
   const savedSvgAttention = getEditingContext(filePath);
   setMode(savedSvgAttention?.activeTool || window.NodevisionState?.svgDrawTool || "select");
   requestAnimationFrame(() => {
+    if (!isCurrentRender()) return;
     if (savedSvgAttention?.scroll) {
       container.scrollTop = savedSvgAttention.scroll.top || 0;
       container.scrollLeft = savedSvgAttention.scroll.left || 0;
@@ -6730,9 +6744,29 @@ export async function renderEditor(filePath, container) {
   window.dispatchEvent(new CustomEvent("nv-svg-editor-context-ready", { detail: { filePath, context: window.SVGEditorContext } }));
   scheduleSvgEditorModeLayout();
   console.log("SVG editor loaded for:", filePath);
+  const selectionObserver = new MutationObserver(() => {
+    if (!isCurrentRender() || !selectedElements.some(el => !svgRoot.contains(el))) return;
+    setSelection(selectedElements.filter(el => svgRoot.contains(el)));
+  });
+  selectionObserver.observe(svgRoot, { childList: true, subtree: true });
   const persistCurrentSvgAttention = () => persistSvgAttention(filePath, container, toolState.mode);
   container.addEventListener("scroll", persistCurrentSvgAttention, { passive: true });
   return () => {
+    disposed = true;
+    window.cancelAnimationFrame(selectionChangeRaf);
+    window.cancelAnimationFrame(selectionMutationRaf);
+    window.cancelAnimationFrame(freehandRenderRaf);
+    window.clearTimeout(freehandStrokeState?.holdTimer);
+    window.clearTimeout(eyedropperHoldState?.timer);
+    clearLineToolPendingCommand();
+    selectionObserver.disconnect();
+    svgRulerObserver.disconnect();
+    window.removeEventListener("resize", updateSvgRulers);
+    svgViewport.removeEventListener("scroll", updateSvgRulers);
+    drawingGuidesController.destroy();
+    chrome.dispose();
+    selectedElements = [];
+    if (window.selectedSVGElement === selectedElement) window.selectedSVGElement = null;
     layersMgr.dispose();
     cleanupSvgClickTrace?.();
     cancelDeferredSvgModeLayout();
@@ -6745,6 +6779,9 @@ export async function renderEditor(filePath, container) {
     if (container.__nvSvgEditorContext === svgEditorContext) container.__nvSvgEditorContext = null;
     if (svgEditorCell?.__nvSvgEditorContext === svgEditorContext) svgEditorCell.__nvSvgEditorContext = null;
     clearEditorContext(filePath);
+    quickMenu.destroy?.();
+    eyedropperIndicator.destroy?.();
+    wrapper.remove();
   };
 }
 

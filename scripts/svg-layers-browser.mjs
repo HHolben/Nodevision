@@ -6,6 +6,7 @@ import { setupPanel } from '/PanelInstances/InfoPanels/SVGLayersPanel.mjs';
 import { renderEditor } from '/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntime.mjs';
 import { reparentSvgElement, svgDropRejection } from '/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/reparent.mjs';
 import { getActiveSvgLayersContext, promoteSvgLayerMove } from '/PanelInstances/Common/Layers/svgLayersContext.mjs';
+import { checkSvgChrome } from './svg-chrome-browser.mjs';
 import ViewLayers from '/ToolbarCallbacks/view/ViewLayers.mjs';
 const ok=(v,m)=>{if(!v)throw Error(m);};
 const equal=(a,b,m)=>ok(a===b,`${m}: ${a} !== ${b}`);
@@ -18,6 +19,7 @@ function svg(markup) {
  const root=new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">${markup}</svg>`,'image/svg+xml').documentElement;
  document.body.appendChild(root);return root;
 }
+window.addEventListener("unhandledrejection", e => { document.getElementById("result").textContent=`FAIL: ${e.reason?.stack || e.reason}`; });
 try {
  window.NodevisionState={currentMode:'Default',activeFileViewPath:'fixture.svg'};
  let opened=false;const openedHandler=e=>{if(e.detail.id==='SVGLayersPanel')opened=true;};window.addEventListener('toolbarAction',openedHandler);
@@ -121,6 +123,8 @@ try {
  equal(controlled.parentElement,authoredB,'objects drag between authored Nodevision layers');
  const reorder=new DataTransfer();drag('dragstart',rowFor(authoredA).children[2],reorder);drag('drop',rowFor(authoredB),reorder);await tick();
  equal(root.querySelectorAll(':scope > g[data-layer]')[1],authoredA,'existing layer reorder from name button');
+ document.getElementById("result").textContent="RUNNING: chrome";
+ await checkSvgChrome(context,edit,cleanupEditor);cleanupEditor=null;
  window.NodevisionState={currentMode:'Default',activeFileViewPath:'other.png'};equal(getActiveSvgLayersContext(),null,'non-SVG context does not reuse stale SVG provider');
  window.removeEventListener('toolbarAction',openEditor);panel.__nvCleanupLayersPanel?.();view._dispose();cleanupEditor?.();
  document.getElementById('result').textContent='PASS: SVG viewer/editor Layers, editor promotion, delegated drag, identity, attributes, transform/style preservation, invalid drops, actual runtime undo/redo/save, and 300 dragover events with 1,200 extra objects without scans/rebuilds/geometry/toolbar/selection churn.';

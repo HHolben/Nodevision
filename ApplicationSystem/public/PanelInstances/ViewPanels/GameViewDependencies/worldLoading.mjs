@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
+import { projectIframe } from "./iframeProjection.mjs";
+import { serializeMesh } from "./worldSave.mjs";
 import { createEquationColliderPlaneMesh, makePlaneColliderRef, syncPlaneWaterVolumeRef } from "./equationColliderTool.mjs";
 import { readWorldGravityModel } from "./gravityModel.mjs";
 import { createTerrainSurfaceColliderRef, createTerrainSurfaceMesh } from "./TerrainTool/terrainSurfaceMesh.mjs";
@@ -1020,7 +1022,11 @@ function syncIframeObjectOverlay(target, { panel, THREE, camera }) {
   const title = data.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page";
   const sandbox = String(data.iframeSandbox || iframe.sandbox || "").trim();
   const allow = String(data.iframeAllow || iframe.allow || "").trim();
-  const sourceKey = resolveIframeObjectDomSource(src, sourceKind);
+  if (overlay.rawSource !== src || overlay.sourceKind !== sourceKind) {
+    overlay.resolvedSource = resolveIframeObjectDomSource(src, sourceKind);
+    overlay.rawSource = src; overlay.sourceKind = sourceKind;
+  }
+  const sourceKey = overlay.resolvedSource;
   if (overlay.sourceKey !== sourceKey) {
     overlay.frame.setAttribute("src", sourceKey);
     overlay.sourceKey = sourceKey;
@@ -1046,47 +1052,8 @@ function syncIframeObjectOverlay(target, { panel, THREE, camera }) {
   }
   target.updateMatrixWorld?.(true);
   camera.updateMatrixWorld?.();
-  const params = target.geometry?.parameters || {};
-  const halfW = Math.max(0.01, Number(params.width) || 1.6) * 0.5;
-  const halfH = Math.max(0.01, Number(params.height) || 0.9) * 0.5;
-  const halfD = Math.max(0.001, Number(params.depth) || 0.04) * 0.5 + 0.002;
-  const corners = [
-    new THREE.Vector3(-halfW, halfH, halfD),
-    new THREE.Vector3(halfW, halfH, halfD),
-    new THREE.Vector3(halfW, -halfH, halfD),
-    new THREE.Vector3(-halfW, -halfH, halfD)
-  ].map((point) => point.applyMatrix4(target.matrixWorld).project(camera));
-  const center = new THREE.Vector3().setFromMatrixPosition(target.matrixWorld).project(camera);
-  if (!Number.isFinite(center.x) || !Number.isFinite(center.y) || center.z < -1 || center.z > 1) {
-    overlay.element.style.display = "none";
-    return;
-  }
-  const viewportW = panel.clientWidth || 1;
-  const viewportH = panel.clientHeight || 1;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  corners.forEach((point) => {
-    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
-    const x = (point.x * 0.5 + 0.5) * viewportW;
-    const y = (-point.y * 0.5 + 0.5) * viewportH;
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x);
-    maxY = Math.max(maxY, y);
-  });
-  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
-    overlay.element.style.display = "none";
-    return;
-  }
-  const width = Math.max(24, maxX - minX);
-  const height = Math.max(16, maxY - minY);
-  overlay.element.style.display = "block";
-  overlay.element.style.width = Math.round(width) + "px";
-  overlay.element.style.height = Math.round(height) + "px";
-  overlay.element.style.transform = "translate(" + Math.round(minX) + "px, " + Math.round(minY) + "px)";
-  overlay.element.style.zIndex = String(1000 + Math.round((1 - center.z) * 1000));
+  projectIframe(THREE, overlay, target, camera, panel.clientWidth || 1, panel.clientHeight || 1);
+
 }
 
 export function updateIframeObjectOverlays({ panel, THREE, objects, camera }) {
@@ -1189,7 +1156,14 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const snapshotWorldObjects = () => JSON.stringify(Array.isArray(worldData?.objects) ? worldData.objects : []);
+  const managedObject = def => def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const snapshotWorldObjects = () => {
+    const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
+    return JSON.stringify((worldData.objects || []).map(def => {
+      const mesh = meshes.get(def);
+      return managedObject(def) && mesh ? { ...def, ...serializeMesh(mesh) } : def;
+    }));
+  };
   const recordHistorySnapshot = () => {
     if (history.isRestoring) return;
     history.undoStack.push(snapshotWorldObjects());
@@ -1260,6 +1234,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     }
     if (!Array.isArray(restoredDefs)) restoredDefs = [];
 
+    const inspector = window.VRWorldContext?.objectInspector;
+    const selectedId = inspector?.getActiveTarget?.()?.userData?.metaWorldLayerId;
     const previousEntries = layerEntries.slice();
     const previousById = new Map(previousEntries.map((entry) => [entry.id, entry]));
     const restoredIds = new Set();
@@ -1275,7 +1251,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
 
     previousEntries.forEach((entry) => {
       if (restoredIds.has(entry.id)) return;
-      if (entry.object3d && isExpressionLayerType(entry.def?.type)) {
+      if (entry.object3d && (isExpressionLayerType(entry.def?.type) || managedObject(entry.def))) {
         removeColliderRef(entry.object3d);
         removeGameObjectRuntimeRefs(entry.object3d);
         scene?.remove?.(entry.object3d);
@@ -1291,11 +1267,40 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         bridge.regenerateExpressionLayer(entry.id);
         return;
       }
+      if (managedObject(entry.def)) {
+        if (entry.object3d) {
+          removeColliderRef(entry.object3d); removeGameObjectRuntimeRefs(entry.object3d);
+          scene.remove(entry.object3d); removeObjectFromArray(objects, entry.object3d);
+          disposeExpressionObject(entry.object3d);
+        }
+        const def = entry.def;
+        const mesh = def.type === "iframe" ? createIframeObjectMesh(THREE, def)
+          : createEquationColliderPlaneMesh(THREE, def.equationCollider, { color: def.color, opacity: def.opacity });
+        mesh.position.fromArray(def.position || [0, 0, 0]);
+        if (Array.isArray(def.rotation)) mesh.rotation.set(...def.rotation);
+        if (def.equationCollider?.infinite && Array.isArray(def.scale)) mesh.scale.fromArray(def.scale);
+        Object.assign(mesh.userData, { metaWorldLayerId: entry.id, nvType: def.type, tag: def.tag,
+          isSolid: def.isSolid === true, breakable: true, placedByPlayer: true });
+        applyPhysicsMaterialToMesh(mesh, ensureWorldObjectPhysicsMaterial(def));
+        if (def.collider !== false && def.equationCollider?.infinite) {
+          mesh.userData.colliderRef = makePlaneColliderRef(THREE, mesh);
+          colliders.push(mesh.userData.colliderRef);
+        } else if (def.type === "iframe" && def.collider !== false) {
+          const collider = makeObjectColliderRef(THREE, mesh, def, "box");
+          if (collider) { mesh.userData.colliderRef = collider; colliders.push(collider); }
+        }
+        scene.add(mesh); objects.push(mesh); entry.object3d = mesh; attachLayerBreakHandler(entry);
+      }
       const visible = entry.def?.visible !== false && entry.def?.hidden !== true;
       if (entry.object3d) entry.object3d.visible = visible;
     });
     markMetaWorldLayersDirty(worldData);
     syncBridgeWorldState(state, worldData);
+    if (selectedId) {
+      const selected = layerEntries.find(entry => entry.id === selectedId)?.object3d;
+      if (selected) inspector.inspectTarget(selected);
+      else inspector.hide?.();
+    }
     notifyMetaWorldLayersChanged({ reason: "historyRestored" });
     return true;
   };
@@ -1303,6 +1308,12 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const bridge = {
     sourceId,
     recordHistory: recordHistorySnapshot,
+    recordObjectTransform(mesh) {
+      const entry = layerEntries.find(item => item.object3d === mesh);
+      if (!entry || !managedObject(entry.def)) return;
+      recordHistorySnapshot();
+      markMetaWorldLayersDirty(worldData);
+    },
     undo() {
       if (!history.undoStack.length) return false;
       const previous = history.undoStack.pop();
@@ -1836,6 +1847,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     },
   };
 
+  if (window.VRWorldContext) window.VRWorldContext.recordObjectTransform = mesh => bridge.recordObjectTransform(mesh);
   layerEntries.forEach(attachLayerBreakHandler);
   setActiveMetaWorldLayerBridge(bridge);
 }
@@ -1847,7 +1859,7 @@ function convertMetaWorldToLegacyWorld(world) {
   const viewHint = String(world.viewMode || world.metadata?.viewMode || "").toLowerCase();
   const movementHint = String(world.movementMode || world.metadata?.movementMode || viewHint || "").toLowerCase();
   const directObjects = Array.isArray(world.objects) ? world.objects : [];
-  if (directObjects.length > 0) {
+  if (directObjects.length > 0 || world.metadata?.objectGroundOnly === true) {
     const spawn = world.spawnPosition || { x: 0, y: 1.75, z: 0 };
     const objects = directObjects.map((object, index) => ({
       id: object.id || object.tag || `metaworld-object-${index}`,
@@ -2307,6 +2319,9 @@ async function loadStlWorld(filePath, state, THREE) {
   if (ctx.metaWorldHost?.parentNode) ctx.metaWorldHost.parentNode.removeChild(ctx.metaWorldHost);
   ctx.metaWorldHost = null;
   if (!scene || !movementState || !ground) return;
+  ground.visible = true;
+  movementState.objectGroundOnly = false;
+  if (!ground.parent) scene.add(ground);
 
   objects?.forEach((obj) => {
     disposeSoundObjectRuntime(obj);
@@ -2464,6 +2479,13 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       clearActiveMetaWorldLayerBridge();
       console.warn("World has no definition.");
       return;
+    }
+    const runtime = window.VRWorldContext;
+    runtime.movementState.objectGroundOnly = worldData.metadata?.objectGroundOnly === true;
+    if (runtime.ground) {
+      runtime.ground.visible = !runtime.movementState.objectGroundOnly;
+      if (runtime.movementState.objectGroundOnly) runtime.scene.remove(runtime.ground);
+      else if (!runtime.ground.parent) runtime.scene.add(runtime.ground);
     }
     let objectDefs = Array.isArray(worldData.objects) ? worldData.objects : [];
     worldData.objects = objectDefs;
@@ -3051,7 +3073,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           equationBaseExpression: def.equationBaseExpression || planeProps.equationBaseExpression || def.equationExpression || def.expression || planeProps.expression || "",
           timeSeconds: window.VRWorldContext?.temporalController?.getTimeSeconds?.() ?? 0
         };
-        mesh = createEquationColliderPlaneMesh(THREE, equationProps, materialOpts);
+        mesh = createEquationColliderPlaneMesh(THREE, equationProps, { ...materialOpts, opacity: def.opacity });
       } else if (def.type === "asset") {
         const assetType = String(def.assetType || "").toLowerCase();
         const src = typeof def.src === "string" ? def.src : "";
@@ -3297,9 +3319,11 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
 
       if (mesh) {
-        if (!isEquationObjectDefinition(def) || !(def.equationCollider && typeof def.equationCollider === "object")) {
+        if (!isEquationObjectDefinition(def) || def.equationCollider?.infinite || !(def.equationCollider && typeof def.equationCollider === "object")) {
           mesh.position.set(...def.position);
         }
+        if (Array.isArray(def.rotation)) mesh.rotation.set(...def.rotation);
+        if (def.equationCollider?.infinite && Array.isArray(def.scale)) mesh.scale.set(...def.scale);
         mesh.userData.nvType = isEquationObjectDefinition(def)
           ? (isEquationInequalityDefinition ? "equation-inequality" : "equation-collider-plane")
           : (def.type || portalShape || null);
@@ -3626,9 +3650,13 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         ? options.spawnYaw
         : Number.isFinite(chosen?.yaw)
           ? chosen.yaw
-          : null;
+          : Number.isFinite(worldData.spawnYaw) ? worldData.spawnYaw : null;
       if (Number.isFinite(yaw)) {
         controls.getObject().rotation.y = yaw;
+        if (worldData.metadata?.objectGroundOnly && !chosen && !portalTargetObject) {
+          controls.getObject().rotation.x = 0;
+          controls.getObject().rotation.z = 0;
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/server/routes/worldRoutes.mjs
 // This file registers endpoints that extract virtual world definitions from notebook HTML so that the client can load and render saved worlds.
 
+import { createDefaultHtmlWorld } from "../../public/MetaWorld/DefaultHtmlWorld.mjs";
 import fsPromises from "node:fs/promises";
 import * as cheerio from "cheerio";
 
@@ -27,7 +28,8 @@ export function registerWorldRoutes(app, ctx) {
       const $ = cheerio.load(fileContent);
       const worldScript = $('script[data-nodevision-meta-world], script#nodevision-metaworld, script[type="application/json"]').first().html();
       if (!worldScript) {
-        return res.status(400).json({ error: "No world definition found in file" });
+        if (!/\.html?$/i.test(worldPath)) return res.status(400).json({ error: "No world definition found in file" });
+        return res.json({ worldDefinition: createDefaultHtmlWorld(worldPath) });
       }
 
       const cleaned = String(worldScript)

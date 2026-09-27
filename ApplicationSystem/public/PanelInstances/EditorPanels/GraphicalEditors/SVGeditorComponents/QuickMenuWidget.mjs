@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/QuickMenuWidget.mjs
-// Configurable compact radial/near-pointer menu for SVG editor actions.
+// This module creates a configurable compact menu for SVG editor actions. It manages menu placement, pointer activation, and cleanup independently of document geometry.
 
 const DEFAULT_LABELS = {
   brush: "Brush",
@@ -138,6 +138,7 @@ export function createQuickMenuWidget(options = {}) {
   }
 
   return {
+    destroy() { cancelLongPress(); hide(); menu?.remove(); menu = null; },
     show,
     hide,
     scheduleLongPress,

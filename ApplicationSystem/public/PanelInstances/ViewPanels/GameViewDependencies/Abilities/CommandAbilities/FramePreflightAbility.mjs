@@ -26,7 +26,7 @@ export function installFramePreflightAbility(ctx) {
         movementState.lastInspectMs = performance.now();
         if (ctx.api.handleInspectAction()) return { stop: true };
       } else if (!unlockedInspecting) movementState.inspectLatch = false;
-      return { stop: true };
+      // Pointer-free worlds continue physics; input ownership is handled at the event boundary.
     }
     refreshStlMarkersForFrame();
     ctx.api.ensureWheelHandler();

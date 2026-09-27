@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/server/routes/metaWorldAssetRoutes.mjs
 // This file registers secure asset discovery and hidden Meta World import endpoints for Notebook assets.
 
+import { createDefaultHtmlWorld } from "../../public/MetaWorld/DefaultHtmlWorld.mjs";
 import path from "node:path";
 import fs from "node:fs/promises";
 import * as cheerio from "cheerio";
@@ -252,7 +253,7 @@ async function readWorldDefinition(worldFsPath, worldRelPath) {
   const html = await fs.readFile(worldFsPath, "utf8");
   const $ = cheerio.load(html, { decodeEntities: false });
   const script = findWorldScript($);
-  let world = defaultWorld(worldRelPath);
+  let world = createDefaultHtmlWorld(worldRelPath);
 
   if (script.length) {
     const parsed = JSON.parse(stripJsonComments(script.html()));

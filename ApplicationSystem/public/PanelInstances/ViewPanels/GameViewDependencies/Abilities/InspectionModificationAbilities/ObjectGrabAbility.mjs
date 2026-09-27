@@ -9,6 +9,7 @@ export function installObjectGrabAbility(ctx) {
   function startGrabFromHit(hit) {
     const target = hit?.object;
     if (!target?.isMesh) return false;
+    window.VRWorldContext?.recordObjectTransform?.(target);
     const distance = Math.max(ctx.grabbedDistanceMin, Math.min(hit.distance || 2, ctx.grabbedDistanceMax));
     ctx.grabbedState = {
       object: target,

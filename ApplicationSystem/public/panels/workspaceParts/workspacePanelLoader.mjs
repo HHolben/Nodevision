@@ -40,7 +40,7 @@ export async function replacePanelInCell(cell, panelId, panelClass = "InfoPanel"
 }
 
 function panelModuleSearchPaths(panelType, panelClassValue = "") {
-  const panelClass = String(panelClassValue || "").toLowerCase();
+  const panelClass = String(panelClassValue || "").toLowerCase().replace(/panels$/, "panel");
   const preferredFolder = { editorpanel: "EditorPanels", infopanel: "InfoPanels", viewpanel: "ViewPanels", controlpanel: "ControlPanels" }[panelClass];
   return [...new Set([
     preferredFolder ? "/PanelInstances/" + preferredFolder + "/" + panelType + ".mjs" : null,

@@ -70,7 +70,7 @@ export function installEditorModeFrameAbility(ctx) {
       ctx.cycleCameraLatch = true;
     } else if (!inputState.cycleCamera) ctx.cycleCameraLatch = false;
     if (inputState.pause && !ctx.pauseLatch) {
-      controls.unlock();
+      window.VRWorldContext?.pause?.();
       ctx.pauseLatch = true;
     } else if (!inputState.pause) ctx.pauseLatch = false;
     handleStandUpCommand(inputState);

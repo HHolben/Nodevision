@@ -11,6 +11,8 @@ import {
 } from "/LiveFileContent.mjs";
 import { loadModuleMap as loadSharedModuleMap } from "/PanelInstances/ModuleMapLoader.mjs";
 import { incrementPerformanceCounter } from "/PerformanceDiagnostics.mjs";
+import { refreshPanelTabMetadata } from "/panels/panelTabMetadata.mjs";
+import { renderPanelTabs } from "/panels/panelTabs.mjs";
 
 let lastEditedPath = null;
 let graphicalEditorHostRef = null;
@@ -435,7 +437,7 @@ export async function setupPanel(cell, instanceVars = {}) {
  * --------------------------------------------------------- */
 export async function updateGraphicalEditor(
   filePath,
-  { force = false, host = null } = {}
+  { force = false, host = null, selectFile = true } = {}
 ) {
   const editorDiv = getGraphicalEditorHost(host);
   if (!editorDiv) {
@@ -484,7 +486,7 @@ export async function updateGraphicalEditor(
   // Keep global "active file" state aligned with the file shown in the graphical editor.
   window.currentActiveFilePath = filePath;
   window.filePath = filePath;
-  window.selectedFilePath = filePath;
+  if (selectFile) window.selectedFilePath = filePath;
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activePanelType = "GraphicalEditor";
   window.NodevisionState.currentMode = "GraphicalEditing";
@@ -492,6 +494,7 @@ export async function updateGraphicalEditor(
   window.NodevisionState.selectedFile = filePath;
   window.NodevisionState.selectedFileIsDirectory = false;
   window.NodevisionState.activeEditorFilePath = filePath;
+  window.NodevisionState.fileIsDirty = false;
   updateToolbarState({
     currentMode: "GraphicalEditing",
     activeActionHandler: null,
@@ -538,6 +541,7 @@ export async function updateGraphicalEditor(
         editorDiv.__nvActiveEditorCleanup = currentGraphicalEditorCleanup;
       }
       registerGraphicalEditorLiveProvider(filePath, editorDiv);
+      editorDiv.__nvGraphicalEditorMode = window.NodevisionState?.currentMode || "GraphicalEditing";
       setBusyOperation(null);
       console.log("✅ Editor rendered:", modulePath);
     } else {
@@ -566,6 +570,36 @@ export async function updateGraphicalEditor(
 // Expose globally
 window.updateGraphicalEditor = updateGraphicalEditor;
 window.__nvActivateGraphicalEditorHost = activateGraphicalEditorHost;
+
+// File Manager captures this target before its selection changes any global paths.
+window.__nvGetGraphicalEditorFileSwitchTarget = () => {
+  const host = getGraphicalEditorHost();
+  const filePath = host?.dataset.nvGraphicalEditorPath;
+  if (!filePath || window.NodevisionState?.activeEditorFilePath !== filePath) return null;
+  const isCurrent = () => host.isConnected && host.dataset.nvGraphicalEditorPath === filePath
+    && (!window.__nvPanelTabContentIsActive || window.__nvPanelTabContentIsActive(host));
+  return {
+    filePath,
+    isCurrent,
+    activate() {
+      if (!isCurrent()) throw new Error("The original editor is no longer available.");
+      activateGraphicalEditorHost(host);
+      updateToolbarState({ currentMode: host.__nvGraphicalEditorMode || "GraphicalEditing" });
+    },
+    async switchTo(nextPath) {
+      if (!isCurrent()) throw new Error("The original editor is no longer available.");
+      await updateGraphicalEditor(nextPath, { force: true, host, selectFile: false });
+      const cell = host.closest(".panel-cell");
+      const content = host.closest(".nv-panel-tab-content");
+      const tab = cell?.__nvPanelTabs?.tabs?.find(candidate => candidate.contentElement === content);
+      if (tab) {
+        tab.panelVars = { ...tab.panelVars, filePath: nextPath, isDirectory: false };
+        refreshPanelTabMetadata(tab, cell);
+        renderPanelTabs(cell);
+      }
+    },
+  };
+};
 
 
 function cleanupGraphicalEditorAttention(filePath) {

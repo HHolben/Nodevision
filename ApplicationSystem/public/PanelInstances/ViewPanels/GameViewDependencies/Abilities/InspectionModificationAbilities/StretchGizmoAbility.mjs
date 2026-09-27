@@ -61,6 +61,7 @@ export function installStretchGizmoAbility(ctx) {
     if (e.button !== 0 || !ctx.stretchState) return;
     const handle = pickStretchHandle(e);
     if (!handle) return;
+    window.VRWorldContext?.recordObjectTransform?.(ctx.stretchState.target);
     Object.assign(ctx.stretchState, {
       dragging: true,
       activeHandle: handle,

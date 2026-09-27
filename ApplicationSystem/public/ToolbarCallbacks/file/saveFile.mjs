@@ -28,12 +28,13 @@ function markdownEditorPath() {
   return firstSavePath(window.__nvMarkdownActivePath, window.__nvCodeEditorActivePath);
 }
 
-function activeHtmlEditorContext() {
+function activeHtmlEditorContext(preferredPath = "") {
   const activeCellContext = window.activeCell?.__nvHtmlEditorContext || null;
   const focusedCellContext = document.activeElement?.closest?.(".panel-cell")?.__nvHtmlEditorContext || null;
   const globalContext = window.__nvActiveHtmlEditorContext || null;
   for (const context of [activeCellContext, focusedCellContext, globalContext]) {
     if (context?.kind !== "html" || !context.filePath) continue;
+    if (preferredPath && !sameSavePath(preferredPath, context.filePath)) continue;
     if (typeof context.activate === "function") context.activate();
     return context;
   }
@@ -59,7 +60,7 @@ function pdfEditorPath() {
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
-  const activeHtmlContext = activeHtmlEditorContext();
+  const activeHtmlContext = activeHtmlEditorContext(requestedPath);
   const filePath = resolveFilePath(requestedPath || activeHtmlContext?.filePath);
   if (!filePath) {
     console.error("[saveFile] Cannot save: file path is missing.");
@@ -157,7 +158,7 @@ export default async function saveFile(options = {}) {
       await window.saveCodeFile(filePath);
       return notifyFileSaved(filePath);
     }
-    if (window.monacoEditor && typeof window.monacoEditor.getValue === "function") {
+    if (!options?.graphicalEditor && window.monacoEditor && typeof window.monacoEditor.getValue === "function") {
       const monacoPath = window.__nvCodeEditorActivePath || window.currentActiveFilePath;
       if (monacoPath && !sameSavePath(monacoPath, filePath)) {
         console.error("[saveFile] Refusing to save Monaco buffer into a different path.", {
@@ -176,7 +177,14 @@ export default async function saveFile(options = {}) {
       });
       return notifyFileSaved(filePath);
     }
-    if (typeof window.getEditorMarkdown === "function") {
+    if (mode === "CSVediting" && window.__nvCsvEditor) {
+      const editor = window.__nvCsvEditor;
+      if (refuseMismatchedEditorSave("CSV Editor", editor.filePath, filePath)) return false;
+      const content = editor.serializeDelimitedRows(editor.getRows(), editor.delimiter);
+      await saveViaApi({ path: filePath, sourcePath: editor.filePath, content });
+      return notifyFileSaved(filePath);
+    }
+    if (typeof window.getEditorMarkdown === "function" && (!options?.graphicalEditor || mode === "MDediting" || sameSavePath(markdownEditorPath(), filePath))) {
       const editorPath = markdownEditorPath();
       if (refuseMismatchedEditorSave("Markdown Editor", editorPath, filePath)) return false;
       const content = window.getEditorMarkdown();
@@ -190,7 +198,7 @@ export default async function saveFile(options = {}) {
         console.error("[saveFile] Refusing to save SVG Editor buffer into a non-SVG path.", { savePath: filePath });
         return false;
       }
-      await window.currentSaveSVG(filePath);
+      if (await window.currentSaveSVG(filePath) === false) return false;
       return notifyFileSaved(filePath);
     }
     if (inSvgEditor) {

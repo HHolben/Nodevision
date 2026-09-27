@@ -8,12 +8,13 @@ import sys
 import re
 import html
 
+suite = 'editor-switch' if '--editor-switch' in sys.argv else 'world-startup' if '--world-startup' in sys.argv else 'world' if '--world' in sys.argv else 'svg-layers'
 root = pathlib.Path(__file__).resolve().parents[1]
 public = root / 'ApplicationSystem/public'
 
 stubs = {
     '/panels/panelFactory.mjs': 'export function createPanelDOM() { return document.createElement("div"); }',
-    '/panels/workspace.mjs': 'export async function ensureSvgEditorModeLayout() {}',
+    '/panels/workspace.mjs': 'export async function ensureSvgEditorModeLayout() {} export function ensureSvgEditingSplit() { window.layersOpened = (window.layersOpened || 0) + 1; return {}; } export async function loadPanelIntoCell() {}',
     '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel() {}',
     '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia() {return {dispose(){}};}',
 }
@@ -24,8 +25,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/':
-            content = '<html><body><div id="viewer" style="height:300px;width:500px"></div><div id="editor" style="height:500px;width:800px"></div><div id="layers"></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/svg-layers-browser.mjs"></script></body></html>'
+            content = '<html><body><div id="viewer" style="height:300px;width:500px"></div><div id="editor" style="height:500px;width:800px"></div><div id="layers"></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/' + suite + '-browser.mjs"></script></body></html>'
             mime = 'text/html'
+        elif self.path == '/Notebook/page.html':
+            content, mime = '<!doctype html><title>My page</title><h1>My page</h1>', 'text/html'
         elif self.path == '/favicon.ico':
             self.send_error(404)
             return
@@ -51,10 +54,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 try:
-    result = subprocess.run([sys.argv[1] if len(sys.argv)>1 else 'chromium', '--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--dump-dom', '--virtual-time-budget=15000', f'http://127.0.0.1:{server.server_port}/'], capture_output=True, text=True, timeout=90)
+    result = subprocess.run([next((arg for arg in sys.argv[1:] if not arg.startswith('--')), 'chromium'), '--headless', '--enable-logging=stderr', '--no-sandbox', '--disable-gpu', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage', '--dump-dom', '--virtual-time-budget=15000', f'http://127.0.0.1:{server.server_port}/'], capture_output=True, text=True, timeout=90)
     match = re.search(r'<pre id="result">(.*?)</pre>', result.stdout, re.S)
     report = html.unescape(match.group(1)) if match else result.stderr
     print(report)
+    if not report.startswith('PASS:'): print(result.stderr[-12000:])
     sys.exit(0 if report.startswith('PASS:') else 1)
 finally:
     server.shutdown()

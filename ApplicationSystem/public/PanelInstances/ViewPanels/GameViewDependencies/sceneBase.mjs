@@ -1,10 +1,13 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/sceneBase.mjs
 // This file creates the Three.js scene, renderer, camera, and static ground lighting.
 
+import { createWorldRenderer } from "./createWorldRenderer.mjs";
+
 export function createSceneBase({ THREE, panel, canvas }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#ffffff");
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = createWorldRenderer({ THREE, canvas });
+  panel._vrRenderer = renderer;
   renderer.setPixelRatio(window.devicePixelRatio || 1);
   renderer.setSize(panel.clientWidth, panel.clientHeight, false);
 

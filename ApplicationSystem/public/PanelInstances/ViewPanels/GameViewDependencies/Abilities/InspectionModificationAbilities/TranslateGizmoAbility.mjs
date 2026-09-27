@@ -53,6 +53,7 @@ export function installTranslateGizmoAbility(ctx) {
     if (event.button !== 0 || !ctx.translateState) return;
     const handle = pickTranslateHandle(event);
     if (!handle) return;
+    window.VRWorldContext?.recordObjectTransform?.(ctx.translateState.target);
     Object.assign(ctx.translateState, {
       dragging: true,
       activeHandle: handle,

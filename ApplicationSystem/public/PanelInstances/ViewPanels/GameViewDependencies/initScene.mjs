@@ -4,6 +4,7 @@
 import { createSceneBase } from "./sceneBase.mjs";
 import { addCrosshair } from "./crosshair.mjs";
 import { createCameraModeController } from "./cameraModes.mjs";
+import { installWorldPause } from "./worldPause.mjs";
 import { createInputHandlers } from "./inputHandlers.mjs";
 import { createMovementUpdater } from "./movementUpdate.mjs";
 import { startRenderLoop } from "./renderLoop.mjs";
@@ -147,6 +148,7 @@ function createTemporalController({ THREE, objects, waterVolumes, movementState 
     const currentNow = now();
     const deltaSeconds = Math.max(0, (currentNow - state.lastRealNowMs) / 1000);
     state.lastRealNowMs = currentNow;
+    if (movementState.paused) return;
     if (state.staticTimeEnabled !== true) {
       state.elapsedSeconds += deltaSeconds * state.timeScale;
     }
@@ -328,6 +330,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     spawnPoints,
     waterVolumes,
     measurementVisuals,
+    ground,
     currentWorldPath: state.currentWorldPath || null,
     currentWorldDefinition: state.currentWorldDefinition || null,
     loadWorldFromFile: (filePath, options) => loadWorldFromFile(filePath, state, THREE, options)
@@ -336,7 +339,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const controls = new PointerLockControls(camera, renderer.domElement);
   panel._vrControls = controls;
   panel._vrRenderer = renderer;
-  const onCanvasClick = () => controls.lock();
+  const onCanvasClick = () => panel._vrPause?.capture();
   const onCanvasContextMenu = (event) => event.preventDefault();
   canvas.addEventListener("click", onCanvasClick);
   canvas.addEventListener("contextmenu", onCanvasContextMenu);
@@ -543,7 +546,14 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   panel._vrTextWorldConsole = textWorldConsole;
   window.VRWorldContext.textWorldConsole = textWorldConsole;
 
-  const { heldKeys, dispose: disposeInputHandlers } = createInputHandlers({ getBindings, normalizeKeyName, movementState });
+  const pause = installWorldPause({ panel, canvas, controls, movementState, objects,
+    isActive: () => window.VRWorldContext?.panel === panel && panel.isConnected
+      && /^Virtual World (Viewing|Editing)$/.test(window.NodevisionState?.currentMode || "")
+  });
+  panel._vrPause = pause;
+  window.VRWorldContext.pause = () => pause.state.pause();
+  window.VRWorldContext.resume = () => pause.state.resume();
+  const { heldKeys, dispose: disposeInputHandlers } = createInputHandlers({ getBindings, normalizeKeyName, movementState, acceptsInput: pause.acceptsInput });
   movementState.heldKeys = heldKeys;
   panel._vrDisposeInputHandlers = disposeInputHandlers;
   const movementUpdate = createMovementUpdater({
@@ -583,6 +593,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   window.VRWorldContext.saveVirtualWorldFile = saveVirtualWorldFile;
   const update = () => {
     temporalController.update();
+    if (movementState.paused) return;
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
     viewController.update();

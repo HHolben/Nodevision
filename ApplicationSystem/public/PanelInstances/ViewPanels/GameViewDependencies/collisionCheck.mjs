@@ -255,6 +255,15 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
         if (compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       } else if (collider.type === "equation-plane") {
         if (collider.target?.visible === false) continue;
+        // Horizontal infinite ground is handled by the ordinary ground sampler; a player's
+        // feet touching its surface must not block every horizontal movement step.
+        if (collider.target?.userData?.equationCollider?.infinite) {
+          const eq = collider.equation;
+          if (Math.abs(eq.b) > 0.000001) {
+            const groundY = -(eq.a * nextPosition.x + eq.c * nextPosition.z + eq.d) / eq.b;
+            if (groundY <= playerMinY + 0.05) continue;
+          }
+        }
         const threshold = playerRadius + Math.max(0.02, Number(collider.thickness) || 0.2) / 2;
         const samples = [
           nextPosition,

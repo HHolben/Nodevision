@@ -7,7 +7,7 @@ export function installTerrainGroundAbility(ctx) {
   const { colliders, movementState } = ctx;
 
   function sampleExpressionTerrainGroundLevel(position, fallbackGroundLevel = ctx.groundLevel) {
-    let best = fallbackGroundLevel;
+    let best = movementState.objectGroundOnly ? -Infinity : fallbackGroundLevel;
     let bestColliderId = null;
     let bestCollider = null;
     if (!Array.isArray(colliders) || !position) {
@@ -21,6 +21,14 @@ export function installTerrainGroundAbility(ctx) {
     const activeColliderId = movementState.isGrounded === true ? movementState.activeExpressionTerrainColliderId : null;
     const offsets = [[0, 0], [ctx.playerRadius * 0.65, 0], [-ctx.playerRadius * 0.65, 0], [0, ctx.playerRadius * 0.65], [0, -ctx.playerRadius * 0.65]];
     for (const collider of colliders) {
+      if (collider?.type === "equation-plane" && collider.target?.visible !== false && collider.target?.userData?.equationCollider?.infinite) {
+        const eq = collider.equation;
+        const y = Math.abs(eq.b) > 0.000001 ? -(eq.a * position.x + eq.c * position.z + eq.d) / eq.b : NaN;
+        if (Number.isFinite(y) && y <= footY + maxStepUp && y > best) {
+          best = y; bestColliderId = collider.target.uuid; bestCollider = collider;
+        }
+        continue;
+      }
       if (collider?.type !== "expression-heightfield" || typeof collider.sampleGroundY !== "function") continue;
       const colliderId = collider.layerId || collider.target?.uuid || "expression-heightfield";
       const isActiveSurface = activeColliderId && activeColliderId === colliderId;

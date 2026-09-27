@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/equationColliderTool.mjs
-// Shared helpers and insertion controller for mathematical collider objects.
+// This module provides shared mathematical collider helpers and an insertion controller. It parses equation definitions and synchronizes rendered meshes with their collision and liquid-volume representations.
 
+import { installInfinitePlane, transformedPlaneEquation } from "./infinitePlane.mjs";
 import {
   DEFAULT_WORLD_OBJECT_MATERIAL_ID,
   materialFileForWorldObjectMaterial,
@@ -214,6 +215,7 @@ export function normalizePlaneEquationConfig(raw = {}) {
     c = 0;
   }
   return {
+    infinite: raw.infinite === true && !inequality,
     kind: inequality ? "plane-inequality" : "plane",
     a,
     b,
@@ -462,7 +464,9 @@ export function makePlaneColliderRef(THREE, mesh, rawConfig = mesh?.userData?.eq
     type: "equation-plane",
     target: mesh || null,
     materialId: readWorldObjectPhysicsMaterialId(mesh?.userData || rawConfig, DEFAULT_WORLD_OBJECT_MATERIAL_ID),
-    equation: config,
+    get equation() { return mesh?.userData?.equationCollider?.infinite ? transformedPlaneEquation(THREE, mesh) : this._equation; },
+    set equation(value) { this._equation = value; },
+    _equation: config,
     thickness: config.thickness,
     normal: THREE ? new THREE.Vector3(config.a, config.b, config.c).normalize() : null
   };
@@ -541,7 +545,9 @@ export function syncPlaneColliderRef(THREE, mesh) {
 
 export function getPlaneRayIntersection(THREE, mesh, ray, minDistance = 0.05) {
   if (!THREE || !mesh || !ray) return null;
-  const config = resolveTemporalPlaneEquationConfig(mesh.userData?.equationCollider || {}, mesh.userData?.equationTimeSeconds || 0);
+  const config = mesh.userData?.equationCollider?.infinite
+    ? transformedPlaneEquation(THREE, mesh)
+    : resolveTemporalPlaneEquationConfig(mesh.userData?.equationCollider || {}, mesh.userData?.equationTimeSeconds || 0);
   const normal = new THREE.Vector3(config.a, config.b, config.c);
   const normalLength = normal.length();
   if (normalLength < 0.000001) return null;
@@ -596,12 +602,21 @@ export function createEquationColliderPlaneMesh(THREE, rawConfig = {}, materialO
   mesh.userData.physicsEnabled = true;
   mesh.userData.breakable = false;
   applyPlaneEquationToMesh(THREE, mesh, config);
+  if (config.infinite) installInfinitePlane(THREE, mesh, materialOptions);
   return mesh;
 }
 
 export function resizeEquationColliderPlaneMesh(THREE, mesh, rawConfig = {}) {
   if (!THREE || !mesh) return null;
   const config = resolveTemporalPlaneEquationConfig(rawConfig, rawConfig?.timeSeconds);
+  if (config.infinite) {
+    const previous = mesh.userData.equationCollider;
+    if (["a", "b", "c", "d"].every(key => previous?.[key] === config[key])) {
+      mesh.userData.equationCollider = config;
+      return config;
+    }
+    return applyPlaneEquationToMesh(THREE, mesh, config);
+  }
   if (mesh.geometry?.dispose) mesh.geometry.dispose();
   mesh.geometry = new THREE.BoxGeometry(getPlaneConstraintExtent(config), config.thickness, getPlaneConstraintExtent(config));
   return applyPlaneEquationToMesh(THREE, mesh, config);

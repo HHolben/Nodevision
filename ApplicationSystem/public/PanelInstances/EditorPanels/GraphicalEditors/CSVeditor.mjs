@@ -151,4 +151,5 @@ export async function renderEditor(filePath, container) {
       updateToolbarState({ fileIsDirty: false });
     };
   } catch (error) { wrapper.textContent = `Failed to load file: ${error.message}`; console.error(error); }
+  return container.__cleanupCSVTableToolbar;
 }

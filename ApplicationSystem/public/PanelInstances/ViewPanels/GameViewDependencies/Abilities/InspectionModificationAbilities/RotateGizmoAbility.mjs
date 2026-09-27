@@ -56,6 +56,7 @@ export function installRotateGizmoAbility(ctx) {
     if (!ctx.rotateState) return;
     const handle = pickRotateHandle(event);
     if (!handle) return;
+    window.VRWorldContext?.recordObjectTransform?.(ctx.rotateState.target);
     Object.assign(ctx.rotateState, {
       activeHandle: handle,
       selectedHandle: handle,

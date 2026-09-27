@@ -3,7 +3,7 @@
 
 import { setStatus } from "/StatusBar.mjs";
 
-export function createInputHandlers({ getBindings, normalizeKeyName, movementState }) {
+export function createInputHandlers({ getBindings, normalizeKeyName, movementState, acceptsInput = () => true }) {
   const heldKeys = {};
   function syncMouseButtons(buttonMask) {
     if (!Number.isFinite(buttonMask)) return;
@@ -41,6 +41,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   }
 
   const onKeyDown = (e) => {
+    if (e.key === "Escape" || e.defaultPrevented || !acceptsInput(e)) return;
     const keyName = normalizeKeyName(e.key);
     const shortcutModifier = e.ctrlKey === true || e.metaKey === true;
     const isSaveShortcut = shortcutModifier && keyName === "s";
@@ -88,6 +89,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
     }
   };
   const onMouseDown = (e) => {
+    if (!acceptsInput(e)) return;
     if (e.button === 0) heldKeys.mouse0 = true;
     else if (e.button === 1) heldKeys.mouse1 = true;
     else if (e.button === 2) heldKeys.mouse2 = true;
@@ -97,9 +99,10 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
     else if (e.button === 1) heldKeys.mouse1 = false;
     else if (e.button === 2) heldKeys.mouse2 = false;
   };
-  const onMouseMove = (e) => syncMouseButtons(e.buttons);
-  const onPointerMove = (e) => syncMouseButtons(e.buttons);
-  const onPointerUp = (e) => syncMouseButtons(e.buttons);
+  const onMouseMove = (e) => syncMouseButtons(acceptsInput(e) ? e.buttons : 0);
+  const onPointerMove = (e) => syncMouseButtons(acceptsInput(e) ? e.buttons : 0);
+  const onPointerUp = (e) => syncMouseButtons(acceptsInput(e) ? e.buttons : 0);
+  const onFocusIn = e => { if (!acceptsInput(e)) clearTransientInputs(); };
   const onWindowBlur = () => clearTransientInputs();
   const onVisibilityChange = () => {
     if (document.visibilityState !== "visible") clearTransientInputs();
@@ -108,6 +111,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
     if (!document.pointerLockElement) clearTransientInputs();
   };
 
+  document.addEventListener("focusin", onFocusIn);
   document.addEventListener("keydown", onKeyDown);
   document.addEventListener("keyup", onKeyUp);
   document.addEventListener("mousedown", onMouseDown);
@@ -120,6 +124,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   window.addEventListener("blur", onWindowBlur);
 
   function dispose() {
+    document.removeEventListener("focusin", onFocusIn);
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("keyup", onKeyUp);
     document.removeEventListener("mousedown", onMouseDown);
