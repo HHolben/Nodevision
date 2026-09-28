@@ -26,6 +26,7 @@ export async function renderEditor(filePath, container) {
   const activeDelimiter = spreadsheetDelimiterForPath(filePath);
   let csvRows = [[""]], anchor = { row: 0, col: 0 }, activePosition = { ...anchor }, disposed = false;
   let lastPublishedTableSelected = false, lastAttentionSelection = null;
+  let interaction = null;
   setEditorContext({ filePath, fileFamily: "csv", fileFamilyLabel: "Spreadsheet", editorMode: "CSVediting", editorModeLabel: "CSV Editing" });
   const getSelection = () => ({ anchor: { ...anchor }, active: { ...activePosition }, range: csvRange(anchor, activePosition) });
   const snapshot = () => JSON.stringify({ rows: csvRows, anchor, active: activePosition });
@@ -33,7 +34,7 @@ export async function renderEditor(filePath, container) {
     if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
     updateToolbarState({ currentMode: "CSVediting", fileIsDirty: true });
   };
-  function publish() {
+  function publish({ focus = true } = {}) {
     const cell = view.cellAt(activePosition.row, activePosition.col);
     setActiveTableCell(cell);
     const range = csvRange(anchor, activePosition), selectionKey = JSON.stringify(getSelection());
@@ -43,15 +44,22 @@ export async function renderEditor(filePath, container) {
         selectedObjectLabel: "CSV Cell Range", hasSelection: true, hasEditableSelection: true });
     }
     if (!lastPublishedTableSelected) { lastPublishedTableSelected = true; updateToolbarState({ htmlTableSelected: true }); }
-    cell?.focus({ preventScroll: true });
+    if (focus) cell?.focus({ preventScroll: true });
     view.paint(csvRange(anchor, activePosition));
+    interaction?.selectionChanged();
   }
-  function render() { view.render(csvRows, { row: Math.max(anchor.row, activePosition.row), col: Math.max(anchor.col, activePosition.col) }); view.paint(csvRange(anchor, activePosition)); }
+  function render() {
+    view.render(csvRows, { row: Math.max(anchor.row, activePosition.row), col: Math.max(anchor.col, activePosition.col) });
+    view.paint(csvRange(anchor, activePosition));
+    interaction?.invalidate();
+    interaction?.selectionChanged();
+  }
   function select(point, extend = false, notify = true) {
     activePosition = { row: Math.max(0, point.row), col: Math.max(0, point.col) };
     if (!extend) anchor = { ...activePosition };
     if (notify && !view.cellAt(activePosition.row + 1, activePosition.col + 1)) render();
     view.paint(csvRange(anchor, activePosition));
+    interaction?.selectionChanged();
     if (notify) publish();
   }
   const history = createWysiwygProgrammaticHistory(tableWrapper, {
@@ -111,11 +119,13 @@ export async function renderEditor(filePath, container) {
   };
   window.__nvTableEditorRoot = tableWrapper;
   window.__nvCsvTableContext = window.__nvActiveGridTableContext = csvTableContext;
-  const cleanup = bindCsvRangeInteraction(tableWrapper, table, editor, view);
-  const resize = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => view.paint(getSelection().range)) : null;
+  interaction = bindCsvRangeInteraction(tableWrapper, table, editor, view);
+  const resize = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => {
+    view.paint(getSelection().range); interaction.layoutChanged();
+  }) : null;
   resize?.observe(table);
   container.__cleanupCSVTableToolbar = () => {
-    disposed = true; cleanup(); resize?.disconnect(); clearEditorContext(filePath);
+    disposed = true; interaction.dispose(); resize?.disconnect(); clearEditorContext(filePath);
     if (window.__nvTableEditorRoot === tableWrapper) window.__nvTableEditorRoot = null;
     if (window.__nvCsvEditor?.table === table) window.__nvCsvEditor = null;
     if (window.__nvCsvTableContext === csvTableContext) window.__nvCsvTableContext = null;

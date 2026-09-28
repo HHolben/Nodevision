@@ -18,9 +18,13 @@ import {
   normalizeFallbackReferencesForSource
 } from "/utils/referenceFallbacks.mjs";
 import { attachFallbackReferenceList } from "/ToolbarJSONfiles/referenceFallbackRows.mjs";
+import { createHtmlEditorSelection } from "./HtmlEditorSelection.mjs";
+import { createHtmlEditorTransactions } from "./HtmlEditorTransactions.mjs";
+import { createHtmlSourceDocument } from "./HtmlSourceDocument.mjs";
+import { cloneHtmlBodyForSave } from "./HtmlBodySerialization.mjs";
 import { validateGraphicalHtmlSave } from "./HtmlSaveSafety.mjs";
 import { createWysiwygProgrammaticHistory, insertHtmlFragmentAtRange } from "./WysiwygProgrammaticHistory.mjs";
-import { buildInlineEquationBrowserSupportHeadHtml, INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR, renderInlineEquations, serializeInlineEquationsForSave } from "/Equation/HtmlInlineEquation.mjs";
+import { buildInlineEquationBrowserSupportHeadHtml, INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR, renderInlineEquations } from "/Equation/HtmlInlineEquation.mjs";
 import {
   clearTableCellSelection,
   getSelectedTableCells,
@@ -69,7 +73,6 @@ const NEW_IMAGE_MIME_BY_EXTENSION = {
 };
 const NEW_IMAGE_DEFAULT_DISPLAY_WIDTH = 320;
 const NEW_IMAGE_DEFAULT_DISPLAY_HEIGHT = 240;
-const lastSelectionRangeByEditor = new WeakMap();
 const HTML_TEXT_STYLE_TARGET_CLASS = "nv-html-text-style-target";
 const HTML_DOCUMENT_BACKGROUND_PROPERTIES = [
   "backgroundColor",
@@ -486,17 +489,11 @@ function getCurrentSelectionRangeInEditor(wysiwyg) {
 }
 
 function rememberCurrentSelectionRange(wysiwyg) {
-  const range = getCurrentSelectionRangeInEditor(wysiwyg);
-  if (range) {
-    lastSelectionRangeByEditor.set(wysiwyg, range);
-  }
+  wysiwyg.__nvHtmlSelection?.capture();
 }
 
 function getRememberedSelectionRange(wysiwyg) {
-  const saved = lastSelectionRangeByEditor.get(wysiwyg);
-  if (!saved) return null;
-  if (!isRangeInsideEditor(wysiwyg, saved)) return null;
-  return saved.cloneRange();
+  return wysiwyg.__nvHtmlSelection?.getRange() || null;
 }
 
 function applySelectionRange(range) {
@@ -546,39 +543,12 @@ function createRangeAtEditorEnd(wysiwyg) {
   return range;
 }
 
-function registerCaretTracking(wysiwyg) {
-  if (!wysiwyg) return () => {};
-
-  const capture = () => {
-    rememberCurrentSelectionRange(wysiwyg);
-  };
-
-  const onSelectionChange = () => {
-    capture();
-  };
-
-  document.addEventListener("selectionchange", onSelectionChange);
-  wysiwyg.addEventListener("mouseup", capture);
-  wysiwyg.addEventListener("keyup", capture);
-  wysiwyg.addEventListener("input", capture);
-  wysiwyg.addEventListener("focus", capture);
-  capture();
-
-  return () => {
-    document.removeEventListener("selectionchange", onSelectionChange);
-    wysiwyg.removeEventListener("mouseup", capture);
-    wysiwyg.removeEventListener("keyup", capture);
-    wysiwyg.removeEventListener("input", capture);
-    wysiwyg.removeEventListener("focus", capture);
-    lastSelectionRangeByEditor.delete(wysiwyg);
-  };
-}
-
-
 function markHtmlEditorDirty(wysiwyg, filePath = "") {
   window.NodevisionState = window.NodevisionState || {};
-  window.NodevisionState.fileIsDirty = true;
-  if (filePath) {
+  wysiwyg.__nvHtmlDirty = true;
+  const ownsActive = window.__nvActiveHtmlEditorContext?.editorElement === wysiwyg;
+  if (ownsActive) window.NodevisionState.fileIsDirty = true;
+  if (filePath && ownsActive) {
     window.NodevisionState.selectedFile = filePath;
     window.NodevisionState.activeEditorFilePath = filePath;
   }
@@ -596,7 +566,9 @@ function markHtmlEditorDirty(wysiwyg, filePath = "") {
   }
 }
 
-function markHtmlEditorNativeInputDirty(filePath = "") {
+function markHtmlEditorNativeInputDirty(filePath = "", wysiwyg) {
+  wysiwyg.__nvHtmlDirty = true;
+  if (window.__nvActiveHtmlEditorContext?.editorElement !== wysiwyg) return;
   window.NodevisionState = window.NodevisionState || {};
   const wasDirty = Boolean(window.NodevisionState.fileIsDirty);
   window.NodevisionState.fileIsDirty = true;
@@ -1325,21 +1297,16 @@ function applyDocumentBackgroundPreview(wysiwyg, styleSource) {
   }
 }
 
-function documentBackgroundStyleTextFromEditor(wysiwyg) {
-  const style = document.createElement("div").style;
-  for (const property of HTML_DOCUMENT_BACKGROUND_PROPERTIES) {
-    style[property] = wysiwyg?.style?.[property] || "";
-  }
-  return style.cssText || "";
-}
-
 function updateStoredDocumentBackgroundStyle(wysiwyg) {
   if (!wysiwyg) return;
-  const cssText = documentBackgroundStyleTextFromEditor(wysiwyg);
+  const stored = document.createElement("div").style;
+  stored.cssText = wysiwyg.dataset.nvDocumentBodyStyle || "";
+  for (const property of HTML_DOCUMENT_BACKGROUND_PROPERTIES) stored[property] = wysiwyg.style[property] || "";
+  const cssText = stored.cssText;
   if (cssText) {
     wysiwyg.dataset.nvDocumentBodyStyle = cssText;
   } else {
-    delete wysiwyg.dataset.nvDocumentBodyStyle;
+    wysiwyg.dataset.nvDocumentBodyStyle = "";
   }
 }
 
@@ -1363,7 +1330,7 @@ function applyInitialDocumentBodyBackground(wysiwyg, body) {
   }
 
   applyDocumentBackgroundPreview(wysiwyg, style);
-  updateStoredDocumentBackgroundStyle(wysiwyg);
+  wysiwyg.dataset.nvDocumentBodyStyle = body.getAttribute("style") || "";
 }
 
 function applyDocumentBackgroundToWysiwyg(wysiwyg, options = {}) {
@@ -1775,6 +1742,7 @@ function clearTextStyleTarget(wysiwyg) {
   if (!wysiwyg) return;
   wysiwyg.querySelectorAll(`.${HTML_TEXT_STYLE_TARGET_CLASS}`).forEach((el) => {
     el.classList.remove(HTML_TEXT_STYLE_TARGET_CLASS);
+    if (!el.getAttribute("class")) el.removeAttribute("class");
   });
 }
 
@@ -2477,26 +2445,6 @@ async function hydrateEditorImages(root, editorFilePath) {
       console.warn("Failed to hydrate editor image:", err);
     }
   }
-}
-
-function restoreSavedImageSources(root) {
-  if (!root) return;
-  root.querySelectorAll("img[data-nv-saved-src]").forEach((img) => {
-    const saved = img.dataset.nvSavedSrc;
-    if (saved) {
-      img.setAttribute("src", saved);
-    }
-    const blobUrl = img.dataset.nvBlobUrl;
-    if (blobUrl) {
-      try {
-        URL.revokeObjectURL(blobUrl);
-      } catch (_) {
-        // best effort
-      }
-    }
-    img.removeAttribute("data-nv-saved-src");
-    img.removeAttribute("data-nv-blob-url");
-  });
 }
 
 async function pickLocalImageFile() {
@@ -4723,7 +4671,7 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
     onPresentationChange: () => markHtmlEditorDirty(wysiwyg, editorFilePath),
   });
   const programmaticHistory = createWysiwygProgrammaticHistory(wysiwyg, {
-    onRestore: () => {
+    onRestore: ({ direction }) => {
       rehydrateLayoutCanvases(wysiwyg, editorFilePath);
       hydrateEditorImages(wysiwyg, editorFilePath).catch((err) => {
         console.warn("Failed to rehydrate images after undo/redo:", err);
@@ -4739,9 +4687,9 @@ function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
       markSelectedCircuit(wysiwyg, null);
       updateSelectedCircuitState(null);
       clearTableCellSelection({ keepActive: false });
-      ensureWrappingForEditableText(wysiwyg);
       renderInlineEquationsForEditor(wysiwyg);
-      markHtmlEditorDirty(wysiwyg, editorFilePath);
+      wysiwyg.__nvHtmlSelection?.clear();
+      if (direction !== "cancel") markHtmlEditorDirty(wysiwyg, editorFilePath);
       rememberCurrentSelectionRange(wysiwyg);
     },
   });
@@ -5168,152 +5116,6 @@ const HTML_VOID_TAGS = new Set([
 ]);
 
 const HTML_RAW_TEXT_TAGS = new Set(["script", "style", "pre", "textarea"]);
-const HTML_TEXT_BLOCK_SELECTOR = [
-  "p",
-  "div",
-  "li",
-  "blockquote",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "td",
-  "th",
-  "section",
-  "article",
-  "header",
-  "footer",
-  "aside",
-  ".nv-item-content",
-].join(",");
-
-function isPreformattedEditingElement(el) {
-  return Boolean(el?.closest?.("script, style, pre, code, textarea"));
-}
-
-function removeFormattingWhitespaceTextNodes(root) {
-  if (!root) return;
-  const doc = root.ownerDocument || document;
-  const nodesToRemove = [];
-  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      const value = node.nodeValue || "";
-      if (!/[\r\n]/.test(value) || /\S/.test(value)) return NodeFilter.FILTER_REJECT;
-      const parent = node.parentElement;
-      if (!parent || isPreformattedEditingElement(parent)) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    },
-  });
-
-  while (walker.nextNode()) {
-    nodesToRemove.push(walker.currentNode);
-  }
-  nodesToRemove.forEach((node) => node.remove());
-}
-
-function normalizeWhiteSpaceForEditableElement(el, { normalizeComputed = false } = {}) {
-  if (!(el instanceof HTMLElement) || isPreformattedEditingElement(el)) return false;
-  const inlineWhiteSpace = (el.style.whiteSpace || "").toLowerCase();
-  const computedWhiteSpace = normalizeComputed
-    ? (window.getComputedStyle(el).whiteSpace || "").toLowerCase()
-    : "";
-  if (inlineWhiteSpace === "pre" || inlineWhiteSpace === "nowrap" || computedWhiteSpace === "nowrap") {
-    el.style.whiteSpace = "normal";
-    return true;
-  }
-  return false;
-}
-
-function closestEditableTextWrapTarget(root, target) {
-  const element = target?.nodeType === Node.TEXT_NODE ? target.parentElement : target;
-  if (!(element instanceof HTMLElement) || !root?.contains?.(element)) return root;
-  return element.closest?.(HTML_TEXT_BLOCK_SELECTOR) || root;
-}
-
-function ensureWrappingForEditableTextTarget(root, target, options = {}) {
-  if (!root) return;
-  const normalizedTarget = target instanceof HTMLElement && root.contains(target) ? target : root;
-  const changed = normalizeWhiteSpaceForEditableElement(normalizedTarget, options);
-  recordHtmlTypingOperation("wrapping-target", { changed: changed ? 1 : 0 });
-}
-
-function ensureWrappingForEditableText(root, options = {}) {
-  if (!root) return;
-  let visited = 0;
-  let changed = 0;
-  const targets = [root, ...root.querySelectorAll(HTML_TEXT_BLOCK_SELECTOR)];
-  for (const el of targets) {
-    visited += 1;
-    if (normalizeWhiteSpaceForEditableElement(el, options)) changed += 1;
-  }
-  recordHtmlTypingOperation("wrapping-full-scan", {
-    targets: visited,
-    changed,
-    normalizeComputed: Boolean(options.normalizeComputed),
-  });
-}
-
-function isInlineTextInput(event) {
-  const inputType = String(event?.inputType || "");
-  return inputType === "insertText" ||
-    inputType === "insertCompositionText" ||
-    inputType === "deleteContentBackward" ||
-    inputType === "deleteContentForward" ||
-    inputType === "deleteByCut";
-}
-
-function registerEditableTextWrapping(wysiwyg) {
-  if (!wysiwyg) return () => {};
-  let pendingFrame = 0;
-  let pendingTarget = null;
-  let needsFullScan = false;
-  let legacyFullScan = false;
-
-  const flush = () => {
-    pendingFrame = 0;
-    if (needsFullScan) {
-      const normalizeComputed = legacyFullScan;
-      needsFullScan = false;
-      legacyFullScan = false;
-      pendingTarget = null;
-      ensureWrappingForEditableText(wysiwyg, { normalizeComputed });
-      return;
-    }
-    const target = pendingTarget || closestEditableTextWrapTarget(wysiwyg, document.getSelection?.()?.anchorNode || null);
-    pendingTarget = null;
-    ensureWrappingForEditableTextTarget(wysiwyg, target, { normalizeComputed: false });
-  };
-
-  const schedule = (event = null, options = {}) => {
-    if (window.__nvHtmlTypingLegacyInputWork === true) {
-      needsFullScan = true;
-      legacyFullScan = true;
-    } else if (options.fullScan || !isInlineTextInput(event)) {
-      needsFullScan = true;
-    } else if (!needsFullScan) {
-      pendingTarget = closestEditableTextWrapTarget(wysiwyg, event?.target || document.getSelection?.()?.anchorNode || null);
-    }
-    if (pendingFrame) return;
-    pendingFrame = requestAnimationFrame(flush);
-  };
-
-  const onKeyDown = (evt) => {
-    if (evt.key === "Enter") schedule(evt, { fullScan: true });
-  };
-
-  wysiwyg.addEventListener("input", schedule);
-  wysiwyg.addEventListener("keydown", onKeyDown);
-  ensureWrappingForEditableText(wysiwyg);
-
-  return () => {
-    if (pendingFrame) cancelAnimationFrame(pendingFrame);
-    wysiwyg.removeEventListener("input", schedule);
-    wysiwyg.removeEventListener("keydown", onKeyDown);
-  };
-}
-
 async function installLineNumberedPoetryTools(wysiwyg) {
   if (!wysiwyg) return () => {};
   try {
@@ -5332,121 +5134,6 @@ function renderInlineEquationsForEditor(wysiwyg) {
   renderInlineEquations(wysiwyg).catch((err) => {
     console.warn("Failed to render inline equations in HTML editor:", err);
   });
-}
-
-function buildHtmlHeadContentForSave(headContainer, bodyClone) {
-  const headParts = Array.from(headContainer?.children || [])
-    .filter((el) => !el.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR))
-    .map((el) => el.outerHTML);
-  if (bodyClone?.querySelector?.(".nv-inline-equation[data-nv-inline-equation]")) {
-    headParts.push(buildInlineEquationBrowserSupportHeadHtml());
-  }
-  return headParts.join("\n");
-}
-
-function appendHtmlBodyNodesForEditing(body, wysiwyg, hidden) {
-  if (!body || !wysiwyg || !hidden) return;
-  for (const child of body.childNodes) {
-    if (child.nodeType === Node.ELEMENT_NODE) {
-      if (child.tagName === "SCRIPT") {
-        if (child.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR)) continue;
-        const placeholder = document.createElement("div");
-        placeholder.dataset.script = child.textContent;
-        hidden.appendChild(placeholder);
-      } else {
-        const clone = child.cloneNode(true);
-        removeFormattingWhitespaceTextNodes(clone);
-        wysiwyg.appendChild(clone);
-      }
-      continue;
-    }
-    if (child.nodeType === Node.TEXT_NODE) {
-      if (!child.textContent || !child.textContent.trim()) continue;
-      wysiwyg.appendChild(child.cloneNode(true));
-    }
-  }
-}
-
-function formatHtmlMarkup(html = "") {
-  const source = String(html || "");
-  if (!source.trim()) return "";
-
-  const tokens = source.split(/(<[^>]+>)/g).filter((token) => token.length > 0);
-  const lines = [];
-  let indentLevel = 0;
-  let rawTextTag = null;
-
-  function pushLine(value, level = indentLevel) {
-    const trimmed = String(value || "").trim();
-    if (!trimmed) return;
-    lines.push(`${"  ".repeat(Math.max(level, 0))}${trimmed}`);
-  }
-
-  for (const token of tokens) {
-    const isTag = token.startsWith("<") && token.endsWith(">");
-    if (!isTag) {
-      if (rawTextTag) {
-        const rawLines = token.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-        rawLines.forEach((line) => pushLine(line, indentLevel));
-      } else {
-        token
-          .split(/\r?\n/)
-          .map((line) => line.replace(/\s+/g, " ").trim())
-          .filter(Boolean)
-          .forEach((line) => pushLine(line, indentLevel));
-      }
-      continue;
-    }
-
-    if (token.startsWith("</")) {
-      const closingMatch = token.match(/^<\/\s*([a-zA-Z0-9:-]+)/);
-      const closingTag = closingMatch ? closingMatch[1].toLowerCase() : "";
-      indentLevel = Math.max(indentLevel - 1, 0);
-      pushLine(token, indentLevel);
-      if (rawTextTag && closingTag === rawTextTag) {
-        rawTextTag = null;
-      }
-      continue;
-    }
-
-    if (token.startsWith("<!")) {
-      pushLine(token, 0);
-      continue;
-    }
-
-    const openingMatch = token.match(/^<\s*([a-zA-Z0-9:-]+)/);
-    const openingTag = openingMatch ? openingMatch[1].toLowerCase() : "";
-    const selfClosing = token.endsWith("/>") || HTML_VOID_TAGS.has(openingTag);
-
-    pushLine(token, indentLevel);
-    if (!selfClosing) {
-      indentLevel += 1;
-      if (HTML_RAW_TEXT_TAGS.has(openingTag)) {
-        rawTextTag = openingTag;
-      }
-    }
-  }
-
-  return lines.join("\n");
-}
-
-function serializeHtmlDocumentForSave(headContent = "", bodyContent = "", scripts = "", bodyAttributes = "") {
-  const head = String(headContent || "").trim();
-  const body = String(bodyContent || "");
-  const scriptContent = String(scripts || "").trim();
-  const fullBody = scriptContent ? body + "\n" + scriptContent : body;
-  const bodyOpen = `body${bodyAttributes ? ` ${bodyAttributes}` : ""}`;
-  return [
-    "<!DOCTYPE html>",
-    "<html>",
-    "<head>",
-    head,
-    "</head>",
-    `<${bodyOpen}>`,
-    fullBody,
-    "</body>",
-    "</html>",
-  ].filter((line) => line !== "").join("\n");
 }
 
 function normalizeEditorSavePath(pathValue) {
@@ -5647,7 +5334,7 @@ export async function renderEditor(filePath, container, options = {}) {
     pendingRecentEditTimer = window.setTimeout(flushRecentHtmlEdit, 600);
   };
   const handleNativeHtmlInput = () => {
-    markHtmlEditorNativeInputDirty(filePath);
+    markHtmlEditorNativeInputDirty(filePath, wysiwyg);
     if (window.__nvHtmlTypingLegacyInputWork === true) {
       updateWordCountLegacy();
       recordEditedFile(filePath);
@@ -5880,29 +5567,12 @@ export async function renderEditor(filePath, container, options = {}) {
     const htmlText = await res.text();
     if (!isCurrentRender()) return;
 
-    // Parse HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlText, "text/html");
-
-    // Clone <head>
     const headClone = document.createElement("div");
-    for (const el of doc.head.children) {
-      if (el.tagName === "SCRIPT") {
-        if (el.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR)) continue;
-        const placeholder = document.createElement("div");
-        placeholder.dataset.script = el.textContent;
-        hidden.appendChild(placeholder);
-      } else {
-        headClone.appendChild(el.cloneNode(true));
-      }
-    }
+    const sourceDocument = createHtmlSourceDocument({ head: headClone, body: wysiwyg, hidden });
+    const doc = sourceDocument.load(htmlText);
     wrapper.prepend(headClone);
-
-    // Clone <body> nodes without wrapping inline text around <br> elements.
     applyInitialDocumentBodyBackground(wysiwyg, doc.body);
-    appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
     window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
-    ensureWrappingForEditableText(wysiwyg);
     renderInlineEquationsForEditor(wysiwyg);
     syncEditorImageTextPresentation(wysiwyg, filePath);
     updateWordCount();
@@ -6006,75 +5676,16 @@ export async function renderEditor(filePath, container, options = {}) {
       if (htmlEditorDisposed || !container.isConnected || !wysiwyg.isConnected) {
         throw new Error("HTML/WYSIWYG editor is no longer active; refusing to save stale editor content.");
       }
-      restoreSavedImageSources(wysiwyg);
-      syncEditorImageTextPresentation(wysiwyg, filePath);
-      try {
-        const bodyClone = wysiwyg.cloneNode(true);
-        syncEditorImageTextPresentation(bodyClone, filePath);
-        bodyClone.querySelectorAll("[data-nv-listen-highlight]").forEach((el) => {
-          const parent = el.parentNode;
-          if (!parent) return;
-          while (el.firstChild) parent.insertBefore(el.firstChild, el);
-          parent.removeChild(el);
-          parent.normalize?.();
-        });
-        window.NodevisionPoetry?.normalizeAllPoemBlocks?.(bodyClone);
-        bodyClone.querySelectorAll(".nv-poem-controls").forEach((el) => el.remove());
-        bodyClone.querySelectorAll(".nv-editor-only").forEach((el) => el.remove());
-        bodyClone.querySelectorAll(".nv-selected-circuit").forEach((el) => {
-          el.classList.remove("nv-selected-circuit");
-          if (!el.getAttribute("class")) el.removeAttribute("class");
-        });
-        bodyClone.querySelectorAll(`.${IMAGE_TEXT_SELECTED_CLASS}`).forEach((el) => {
-          el.classList.remove(IMAGE_TEXT_SELECTED_CLASS);
-          if (!el.getAttribute("class")) el.removeAttribute("class");
-        });
-        bodyClone.querySelectorAll(`canvas.${CIRCUIT_CANVAS_CLASS}`).forEach((canvas) => {
-          canvas.removeAttribute("width");
-          canvas.removeAttribute("height");
-          canvas.textContent = "";
-        });
-        bodyClone.querySelectorAll("[data-nv-interactive]").forEach((el) => {
-          el.removeAttribute("data-nv-interactive");
-        });
-        bodyClone.querySelectorAll("[data-nv-resizable]").forEach((el) => {
-          el.removeAttribute("data-nv-resizable");
-        });
-        bodyClone.querySelectorAll("[data-nv-cartoon-resize-handle]").forEach((el) => el.remove());
-        bodyClone.querySelectorAll("[data-nv-cartoon-selected]").forEach((el) => {
-          el.removeAttribute("data-nv-cartoon-selected");
-        });
-        bodyClone.querySelectorAll("[data-nv-cartoon-panel], [data-nv-cartoon-layout], [data-nv-cartoon-split], [data-nv-cartoon-frame]").forEach((el) => {
-          el.removeAttribute("contenteditable");
-        });
-        bodyClone.querySelectorAll(".nv-html-table-selected-cell, .nv-html-table-selection-anchor, .nv-html-table-selection-focus, [data-nv-html-table-selected]").forEach((el) => {
-          el.classList.remove("nv-html-table-selected-cell", "nv-html-table-selection-anchor", "nv-html-table-selection-focus");
-          el.removeAttribute("data-nv-html-table-selected");
-          if (!el.getAttribute("class")) el.removeAttribute("class");
-        });
-        serializeInlineEquationsForSave(bodyClone);
-        const headContent = buildHtmlHeadContentForSave(headClone, bodyClone);
-        removeFormattingWhitespaceTextNodes(bodyClone);
-        const bodyContent = bodyClone.innerHTML;
-        const bodyStyle = wysiwyg.dataset.nvDocumentBodyStyle || documentBackgroundStyleTextFromEditor(wysiwyg);
-        const bodyAttributes = bodyStyle ? `style="${escapeHtmlAttribute(bodyStyle)}"` : "";
-
-        const scripts = Array.from(hidden.children)
-          .map(el => `<script>${el.dataset.script}</script>`)
-          .join("\n");
-
-        const serialized = serializeHtmlDocumentForSave(headContent, bodyContent, scripts, bodyAttributes);
-        const validation = validateGraphicalHtmlSave({ path: filePath, content: serialized, originalContent: htmlText });
-        if (!validation.ok) {
-          throw new Error(validation.error || "Refusing to save unsafe graphical HTML output.");
-        }
-        return serialized;
-      } finally {
-        hydrateEditorImages(wysiwyg, filePath).catch((err) => {
-          console.warn("Failed to rehydrate images after generating HTML:", err);
-        });
-        refreshCircuitReferences();
-      }
+      htmlEditorContext.transactions.assertSettled();
+      const bodyClone = cloneHtmlBodyForSave(wysiwyg);
+      const needsEquationSupport = bodyClone.querySelector(".nv-inline-equation[data-nv-inline-equation]") &&
+        !sourceDocument.has(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR);
+      const serialized = sourceDocument.serialize(bodyClone, {
+        supportHeadHtml: needsEquationSupport ? buildInlineEquationBrowserSupportHeadHtml() : "",
+      });
+      const validation = validateGraphicalHtmlSave({ path: filePath, content: serialized, originalContent: sourceDocument.originalContent });
+      if (!validation.ok) throw new Error(validation.error || "Refusing to save unsafe graphical HTML output.");
+      return serialized;
     };
 
     const saveHtmlForPath = async (path) => {
@@ -6103,17 +5714,37 @@ export async function renderEditor(filePath, container, options = {}) {
         const detail = data?.error || response.statusText || `HTTP ${response.status}`;
         throw new Error(detail);
       }
-      window.NodevisionState.fileIsDirty = false;
-      updateToolbarState({ fileIsDirty: false });
+      wysiwyg.__nvHtmlDirty = false;
+      if (window.__nvActiveHtmlEditorContext === htmlEditorContext) {
+        window.NodevisionState.fileIsDirty = false;
+        updateToolbarState({ fileIsDirty: false });
+      }
       console.log("Saved WYSIWYG file:", targetPath);
     };
 
     let htmlEditorContext = null;
     let htmlEditorDisposed = false;
     let setEditorHtmlForPath = null;
+    const selection = createHtmlEditorSelection(wysiwyg);
+    wysiwyg.__nvHtmlSelection = selection;
+    const transactions = createHtmlEditorTransactions({
+      root: wysiwyg, selection, history: wysiwyg.__nvProgrammaticHistory,
+      onCommit: () => markHtmlEditorDirty(wysiwyg, filePath),
+    });
+    wysiwyg.__nvHtmlTransactions = transactions;
+    const ownedTools = { ...window.HTMLWysiwygTools,
+      getEditorElement: () => wysiwyg,
+      markDirty: () => markHtmlEditorDirty(wysiwyg, filePath),
+      recordProgrammaticChange: before => transactions.record(before),
+      insertTextAtSelection: text => transactions.run("Insert text", () => {
+        insertNodeAtCaret(wysiwyg, document.createTextNode(String(text ?? "")));
+      }),
+    };
+    const layersContext = window.HTMLLayersContext;
     const activateHtmlEditorContext = () => {
       if (htmlEditorDisposed || !isCurrentRender() || !container.isConnected || !wysiwyg.isConnected) return false;
       window.NodevisionState = window.NodevisionState || {};
+      window.NodevisionState.fileIsDirty = Boolean(wysiwyg.__nvHtmlDirty);
       window.NodevisionState.currentMode = editorMode;
       window.NodevisionState.selectedFile = filePath;
       window.NodevisionState.activeEditorFilePath = filePath;
@@ -6124,15 +5755,9 @@ export async function renderEditor(filePath, container, options = {}) {
       window.__nvHtmlEditorActivePath = filePath;
       window.__nvActiveHtmlEditorContext = htmlEditorContext;
       window.__nvTableEditorRoot = wysiwyg;
-      window.HTMLWysiwygTools = Object.assign(window.HTMLWysiwygTools || {}, {
-        getEditorElement: () => wysiwyg,
-        markDirty: () => markHtmlEditorDirty(wysiwyg, filePath),
-        recordProgrammaticChange: (beforeHtml) => {
-          const recorded = wysiwyg.__nvProgrammaticHistory?.record?.(beforeHtml);
-          if (recorded) markHtmlEditorDirty(wysiwyg, filePath);
-          return Boolean(recorded);
-        },
-      });
+      window.HTMLWysiwygTools = ownedTools;
+      window.HTMLLayersContext = layersContext;
+      if (setEditorHtmlForPath) window.setEditorHTML = setEditorHtmlForPath;
       window.getEditorHTML = getHtmlForSave;
       window.saveWYSIWYGFile = saveHtmlForPath;
       updateToolbarState({
@@ -6147,6 +5772,16 @@ export async function renderEditor(filePath, container, options = {}) {
       kind: "html",
       saveKind: "html-wysiwyg",
       filePath,
+      selection, transactions,
+      get revision() { return transactions.revision; },
+      get isDirty() { return Boolean(wysiwyg.__nvHtmlDirty); },
+      setInlineStyle(element, property, value, priority = "") {
+        if (!wysiwyg.contains(element) || element === wysiwyg) throw new Error("Style target is outside this HTML body.");
+        return transactions.run("Inline style", () => {
+          if (value === null) element.style.removeProperty(property);
+          else element.style.setProperty(property, String(value), priority);
+        });
+      },
       getHTML: getHtmlForSave,
       save: saveHtmlForPath,
       getEditorElement: () => wysiwyg,
@@ -6160,6 +5795,10 @@ export async function renderEditor(filePath, container, options = {}) {
     wrapper.addEventListener("focusin", activateHtmlEditorContext, true);
     container.__cleanupHTMLActiveContext = () => {
       htmlEditorDisposed = true;
+      transactions.dispose();
+      selection.dispose();
+      wysiwyg.__nvHtmlTransactions = null;
+      wysiwyg.__nvHtmlSelection = null;
       wrapper.removeEventListener("pointerdown", activateHtmlEditorContext, true);
       wrapper.removeEventListener("focusin", activateHtmlEditorContext, true);
       const ownsGlobalHooks =
@@ -6190,25 +5829,9 @@ export async function renderEditor(filePath, container, options = {}) {
       if (htmlEditorDisposed || !container.isConnected || !wysiwyg.isConnected) {
         throw new Error("HTML/WYSIWYG editor is no longer active; refusing to edit stale editor content.");
       }
-      const doc = parser.parseFromString(html, "text/html");
-      wysiwyg.innerHTML = "";
-      hidden.innerHTML = "";
-      headClone.innerHTML = "";
-      for (const el of doc.head.children) {
-        if (el.tagName === "SCRIPT") {
-          if (el.matches?.(INLINE_EQUATION_BROWSER_SUPPORT_SELECTOR)) continue;
-          const placeholder = document.createElement("div");
-          placeholder.dataset.script = el.textContent;
-          hidden.appendChild(placeholder);
-        } else {
-          headClone.appendChild(el.cloneNode(true));
-        }
-      }
-
+      const doc = sourceDocument.load(html);
       applyInitialDocumentBodyBackground(wysiwyg, doc.body);
-      appendHtmlBodyNodesForEditing(doc.body, wysiwyg, hidden);
       window.NodevisionPoetry?.normalizeAllPoemBlocks?.(wysiwyg);
-      ensureWrappingForEditableText(wysiwyg);
       renderInlineEquationsForEditor(wysiwyg);
 
       rehydrateLayoutCanvases(wysiwyg, filePath);
@@ -6226,8 +5849,9 @@ export async function renderEditor(filePath, container, options = {}) {
       updateSelectedCircuitState(null);
       refreshCircuitReferences();
       updateWordCount();
-      wysiwyg.__nvProgrammaticHistory?.clear?.();
+      transactions.reset();
     };
+    htmlEditorContext.setHTML = setEditorHtmlForPath;
     window.setEditorHTML = setEditorHtmlForPath;
 
     window.saveWYSIWYGFile = saveHtmlForPath;
@@ -6255,8 +5879,6 @@ export async function renderEditor(filePath, container, options = {}) {
   container.__cleanupHTMLCanvasDeletion = registerCanvasDeletionHotkeys(wysiwyg);
   container.__cleanupHTMLImageTools = imageTools.destroy;
   container.__cleanupHTMLImageTextTools = registerImageTextInteractionTools(wysiwyg, filePath);
-  container.__cleanupHTMLCaretTracking = registerCaretTracking(wysiwyg);
-  container.__cleanupHTMLTextWrapping = registerEditableTextWrapping(wysiwyg);
   container.__cleanupHTMLPoetry = await installLineNumberedPoetryTools(wysiwyg);
   const updateTextTargetFromSelection = () => {
     const range = getCurrentSelectionRangeInEditor(wysiwyg) || getRememberedSelectionRange(wysiwyg);

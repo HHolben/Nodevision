@@ -68,6 +68,11 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
   };
 
   return {
+    // Cancel a preview without adding history, dispatching input, or marking the file dirty.
+    restorePreview(value) {
+      writeSnapshot(String(value ?? ""));
+      onRestore?.({ direction: "cancel", html: readSnapshot() });
+    },
     record(beforeHtml) {
       if (!root) return false;
       const before = String(beforeHtml || "");

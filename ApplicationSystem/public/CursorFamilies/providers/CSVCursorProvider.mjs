@@ -1,9 +1,28 @@
 // Nodevision/ApplicationSystem/public/CursorFamilies/providers/CSVCursorProvider.mjs
-// CSV contextual grid-selection tool provider. Geometric drawing tools intentionally stay absent.
+// This module supplies CSV selection tools and the shared cursor vocabulary for live grid interactions. Pointer gestures reuse these states without resolving toolbar providers during movement.
 import { notifyContextualCursorFamilyChanged } from "../ContextualCursorFamilyRegistry.mjs";
 
 const VALID = new Set(["cell-select", "rectangle-select"]);
 
+// The effective cursor follows operations, independently of toolbar tool labels.
+export const CSV_CURSOR_STYLES = Object.freeze({
+  default: "default",
+  "cell-select": "cell",
+  "range-selecting": "crosshair",
+  "text-edit": "text",
+  "selection-movable": "grab",
+  "selection-dragging": "grabbing",
+});
+
+export function resolveCsvCursorState({ dragMode, overCell, editing, movable }) {
+  if (dragMode === "move") return "selection-dragging";
+  if (dragMode === "select") return "range-selecting";
+  if (!overCell) return "default";
+  if (editing) return "text-edit";
+  return movable ? "selection-movable" : "cell-select";
+}
+
+// ModuleMap continues to discover and activate the existing selection tools.
 export function createCursorFamilyProvider() {
   return {
     id: "csv-cursor-tools",

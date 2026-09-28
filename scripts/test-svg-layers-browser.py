@@ -8,13 +8,13 @@ import sys
 import re
 import html
 
-suite = 'editor-switch' if '--editor-switch' in sys.argv else 'world-startup' if '--world-startup' in sys.argv else 'world' if '--world' in sys.argv else 'svg-layers'
+suite = 'html-source' if '--html-source' in sys.argv else 'editor-switch' if '--editor-switch' in sys.argv else 'world-startup' if '--world-startup' in sys.argv else 'world' if '--world' in sys.argv else 'svg-layers'
 root = pathlib.Path(__file__).resolve().parents[1]
 public = root / 'ApplicationSystem/public'
 
 stubs = {
     '/panels/panelFactory.mjs': 'export function createPanelDOM() { return document.createElement("div"); }',
-    '/panels/workspace.mjs': 'export async function ensureSvgEditorModeLayout() {} export function ensureSvgEditingSplit() { window.layersOpened = (window.layersOpened || 0) + 1; return {}; } export async function loadPanelIntoCell() {}',
+    '/panels/workspace.mjs': 'export function rebuildLayoutDividersForContainer() {} export async function ensureSvgEditorModeLayout() {} export function ensureSvgEditingSplit() { window.layersOpened = (window.layersOpened || 0) + 1; return {}; } export async function loadPanelIntoCell() {}',
     '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel() {}',
     '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia() {return {dispose(){}};}',
 }

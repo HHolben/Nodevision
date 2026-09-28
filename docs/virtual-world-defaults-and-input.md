@@ -22,6 +22,10 @@ The old standalone `VirtualWorld.html` / `VirtualWorldGame.js` has a pause menu,
 
 Only the applicable active GameView context handles Escape. Repeat keydown is ignored, keyup releases the latch, and pointer-lock loss merely changes capture state. This also accommodates browsers that consume the first Escape keydown to exit pointer lock. Toolbar clicks neither capture nor pause. Input handlers reject toolbar/text-field gameplay input, clear stale inputs on focus changes, and retain canvas recapture. Pause gates simulation updates, suspends active world audio, and holds temporal time without accumulating elapsed wall time. Rendering remains available for the menu. Resume restores activity and requests native capture; denial leaves a running pointer-free world that can be recaptured with a canvas click. Panel disposal removes listeners and the menu; context changes release stale capture.
 
+The follow-up Escape audit found two gaps in that adapter: its context check relied on the global mode even when another cell or a preserved tab was active, and a pending capture request could complete after pausing or leaving the world. `worldPause.mjs` now also checks active-cell ownership, hidden ancestors, and the existing tab lifecycle. Other dialogs and menus retain their own Escape handling. Toolbar focus keeps the world context; activating another panel relinquishes it without pausing simulation. Deactivation hides an existing pause menu and reactivation restores it without creating another menu or automatically capturing.
+
+Capture permission is revoked on release, blur, hidden-document notification, deactivation, and disposal. Native lock notifications and promise completion release stale capture without treating it as an Escape press or unlocking another canvas. These checks run on existing input/lifecycle events, with no new frame work, timer, or toolbar publication. The pure transition controller, simulation pause gates, and explicit pause/resume entry points remain shared by Viewing and Editing.
+
 ## Validation and limits
 
 ### GameView startup recovery
@@ -39,8 +43,11 @@ Run:
 ```sh
 node --test ApplicationSystem/server/routes/worldRoutes.test.mjs ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldPauseState.test.mjs
 python3 scripts/test-svg-layers-browser.py --world
+python3 scripts/test-svg-layers-browser.py --world-startup
 ```
 
 The Node tests exercise the real loading endpoint with temporary HTML files, preserve existing and empty definitions, and test pause transitions without pointer-event timing assumptions. The Chromium suite uses real Three.js r128, world loading, Layers selection/history, save injection, plane picking/collision, shader compilation and rendered pixels, and reload after object transforms/deletion. It tests the real DOM input adapter and PointerLockControls with deterministic native-lock notifications, including rapid presses, repeat, explicit resume, toolbar input, text fields, and inactive contexts.
+
+`scripts/world-pause-browser.mjs` additionally covers repeated full cycles, audio continuity and pause/resume, other dialogs/cells/tabs, late capture after pause/blur/deactivation/disposal, rejected capture and canvas retry, and preservation of another canvas's lock. `scripts/world-runtime-pause-browser.mjs`, called by the startup suite, exercises the initialized GameView in both modes, its actual public pause/resume controls, and advancing/frozen/resumed temporal time. This separates deterministic transition coverage from runtime integration without depending on arbitrary delays between Escape presses.
 
 Native OS Escape delivery and browser user-gesture rules cannot be certified by synthetic events. Pointer-lock notifications are simulated in the integration test; native capture still requires browser permission/user activation. The infinite-plane shader needs WebGL2 or fragment-depth support. The DOM iframe shares the existing overlay renderer's limitation that ordinary 3D meshes cannot fully occlude HTML content. Page-authored animation inside iframe content is controlled by that webpage, independently of world simulation pause. Complex equation inequalities and temporal/bounded equation objects retain their existing behavior and are not converted into infinite objects.

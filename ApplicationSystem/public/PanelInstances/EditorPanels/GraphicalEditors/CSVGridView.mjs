@@ -9,13 +9,14 @@ export function createCsvGridView(wrapper, table) {
     const style = document.createElement("style");
     style.id = "nv-csv-table-selection-style";
     style.textContent = `
-      .nv-csv-table-wrap td,.nv-csv-table-wrap th {border:1px solid #aeb7c2;padding:4px;min-width:80px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:none;font-weight:normal}
+      .nv-csv-table-wrap td,.nv-csv-table-wrap th {border:var(--nv-csv-cell-border,1px solid #aeb7c2);padding:var(--nv-csv-cell-padding,4px);min-width:var(--nv-csv-cell-min-width,80px);white-space:pre-wrap;overflow-wrap:anywhere;user-select:none;font-weight:normal}
       .nv-csv-table-wrap [contenteditable=true] {user-select:text}
-      .nv-csv-virtual-cell {outline:1px dashed #c7ced8;outline-offset:-3px;background:rgba(148,163,184,.05)}
-      .nv-csv-range {position:absolute;pointer-events:none;box-sizing:border-box;border:2px solid #287bdd;background:rgba(47,128,255,.12);z-index:1}
-      .nv-csv-destination {border:3px dashed #16834b;background:rgba(22,131,75,.12);z-index:2}
-      .nv-csv-moving {cursor:grabbing}
-      .nv-csv-table-wrap :focus {outline:2px solid #1456b3;outline-offset:-2px}
+      .nv-csv-virtual-cell {outline:var(--nv-csv-virtual-outline,1px dashed #c7ced8);outline-offset:-3px;background:var(--nv-csv-virtual-background,rgba(148,163,184,.05))}
+      .nv-csv-range {position:absolute;pointer-events:none;box-sizing:border-box;border:var(--nv-csv-selection-border,2px solid #287bdd);background:var(--nv-csv-selection-background,rgba(47,128,255,.12));z-index:1}
+      .nv-csv-destination {border:var(--nv-csv-destination-border,3px dashed #16834b);background:var(--nv-csv-destination-background,rgba(22,131,75,.12));z-index:2}
+      .nv-csv-table-wrap,.nv-csv-table-wrap * {cursor:var(--nv-csv-cursor,default)}
+      html.nv-csv-pointer-operation,html.nv-csv-pointer-operation * {cursor:var(--nv-csv-active-cursor)!important}
+      .nv-csv-table-wrap :focus {outline:var(--nv-csv-focus-outline,2px solid #1456b3);outline-offset:-2px}
     `;
     document.head.appendChild(style);
   }

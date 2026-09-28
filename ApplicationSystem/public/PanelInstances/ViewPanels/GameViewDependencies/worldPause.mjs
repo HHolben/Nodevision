@@ -21,24 +21,43 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
   menu.append(heading, resume); panel.appendChild(menu);
   const pausedAudio = new Set();
   let disposed = false;
+  let captureAllowed = controls.isLocked;
+  // Toolbar focus retains the world's context; other cells and preserved hidden tabs do not.
+  const active = () => {
+    const cell = panel.closest('.panel-cell');
+    const tab = panel.closest('.nv-panel-tab-content');
+    return !disposed && isActive() && !panel.closest('[hidden], [aria-hidden="true"]')
+      && tab?.__nvPanelContentLifecycle?.state !== 'inactive'
+      && (!cell || !window.activeCell || window.activeCell === cell);
+  };
+  const releaseCapture = () => {
+    captureAllowed = false;
+    if (document.pointerLockElement === canvas) controls.unlock();
+  };
+  const rejectStaleCapture = () => {
+    if (!captureAllowed || !active() || state.paused) releaseCapture();
+  };
   const requestCapture = () => {
-    if (disposed || !isActive()) return;
+    if (!active() || state.paused) return;
+    captureAllowed = true;
     canvas.focus();
-    try { Promise.resolve(canvas.requestPointerLock()).catch(() => {}); } catch { /* Browser may require a fresh canvas click. */ }
+    // A pending native request may finish after pause, deactivation, or disposal.
+    try { Promise.resolve(canvas.requestPointerLock()).then(rejectStaleCapture, () => {}); }
+    catch { /* Browser may require a fresh canvas click. */ }
   };
   const state = createWorldPauseState({
     captured: controls.isLocked,
     lock: requestCapture,
-    unlock: () => controls.unlock(),
+    unlock: releaseCapture,
     onPause(paused) {
       movementState.paused = paused;
-      menu.style.display = paused ? 'block' : 'none';
+      menu.style.display = paused && active() ? 'block' : 'none';
       if (paused) {
         for (const object of objects) {
           const audio = object?.userData?.soundRuntime?.audio;
           if (audio && !audio.paused) { pausedAudio.add(audio); audio.pause(); }
         }
-        resume.focus();
+        if (active()) resume.focus();
       } else {
         for (const audio of pausedAudio) Promise.resolve(audio.play()).catch(() => {});
         pausedAudio.clear();
@@ -47,7 +66,12 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
   });
   canvas.tabIndex = 0;
   const typing = target => target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName);
-  const applicable = event => !disposed && isActive() && !event.defaultPrevented && !typing(event.target);
+  const applicable = event => {
+    const overlay = event.target?.closest?.('dialog, [role="dialog"], [role="menu"]');
+    const cell = event.target?.closest?.('.panel-cell');
+    return active() && !event.defaultPrevented && !typing(event.target)
+      && (!overlay || overlay === menu) && (!cell || cell === panel.closest('.panel-cell'));
+  };
   let escapeDown = false;
   const keydown = event => {
     if (event.key !== 'Escape' || !applicable(event)) return;
@@ -62,33 +86,44 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
     // its keyup must not advance the pause cycle a second time.
     escapeDown = false;
   };
-  const pointerlockchange = () => state.pointerLockChanged(document.pointerLockElement === canvas);
-  const blur = () => { escapeDown = false; };
+  const pointerlockchange = () => {
+    const captured = document.pointerLockElement === canvas;
+    if (captured) rejectStaleCapture();
+    else captureAllowed = false;
+    state.pointerLockChanged(captured && captureAllowed);
+  };
+  const blur = () => { escapeDown = false; releaseCapture(); state.pointerLockChanged(false); };
+  const visibilityChanged = () => { if (document.hidden) blur(); };
   const contextChanged = () => {
-    if (!isActive()) {
-      escapeDown = false;
-      if (controls.isLocked) controls.unlock();
-    }
-    menu.style.display = isActive() && state.paused ? 'block' : 'none';
+    if (!active()) blur();
+    menu.style.display = active() && state.paused ? 'block' : 'none';
   };
   const onResume = () => state.resume();
   resume.addEventListener('click', onResume);
   document.addEventListener('keydown', keydown);
   document.addEventListener('keyup', keyup);
   document.addEventListener('pointerlockchange', pointerlockchange);
+  document.addEventListener('visibilitychange', visibilityChanged);
   window.addEventListener('blur', blur);
   window.addEventListener('activePanelChanged', contextChanged);
+  window.addEventListener('nv-panel-content-deactivated', contextChanged);
+  window.addEventListener('nv-panel-content-activated', contextChanged);
   return {
     state, menu,
-    acceptsInput(event) { return !state.paused && isActive() && !typing(event?.target) && (controls.isLocked || panel.contains(event?.target)); },
+    acceptsInput(event) { return !state.paused && active() && !typing(event?.target) && (state.captured || panel.contains(event?.target)); },
     capture() { if (!state.paused) requestCapture(); },
     dispose() {
       disposed = true;
+      releaseCapture();
+      state.pointerLockChanged(false);
       document.removeEventListener('keydown', keydown);
       document.removeEventListener('keyup', keyup);
       document.removeEventListener('pointerlockchange', pointerlockchange);
+      document.removeEventListener('visibilitychange', visibilityChanged);
       window.removeEventListener('blur', blur);
       window.removeEventListener('activePanelChanged', contextChanged);
+      window.removeEventListener('nv-panel-content-deactivated', contextChanged);
+      window.removeEventListener('nv-panel-content-activated', contextChanged);
       pausedAudio.clear(); menu.remove();
     }
   };

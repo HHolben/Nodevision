@@ -10,6 +10,8 @@ export function recordTableEditorMutation(root, beforeHtml) {
   const before = String(beforeHtml || "");
   if (readEditorHtml(root) === before) return false;
 
+  if (root.__nvHtmlTransactions) return root.__nvHtmlTransactions.record(before, 'Table edit');
+
   const tools = window.HTMLWysiwygTools || {};
   let toolsOwnRoot = false;
   try {

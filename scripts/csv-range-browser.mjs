@@ -3,6 +3,7 @@
 import { renderEditor } from '/PanelInstances/EditorPanels/GraphicalEditors/CSVeditor.mjs';
 import { subscribe, getSnapshot } from '/EditorAttentionState.mjs';
 import * as tableTools from '/ToolbarCallbacks/insert/tableTools.mjs';
+import { checkCsvCursors } from './csv-cursor-browser.mjs';
 const equal = (actual, expected, message) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${message}: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);
 };
@@ -15,7 +16,7 @@ const reset = data => { window.__nvCsvEditor.setRows(data,{markDirty:false}); wi
 let hitCell;
 const realHitTest = document.elementFromPoint.bind(document);
 // Deterministic hit testing lets the large-grid benchmark include offscreen cells.
-document.elementFromPoint = (x,y) => hitCell || realHitTest(x,y);
+document.elementFromPoint = (x,y) => (hitCell?.isConnected ? hitCell : hitCell && window.__nvCsvEditor.table.rows[Number(hitCell.dataset.row)]?.cells[Number(hitCell.dataset.col)]) || realHitTest(x,y);
 function pointer(type,r,c,options={}) {
   const target = cell(r,c); hitCell=target;
   const rect=target.getBoundingClientRect();
@@ -118,6 +119,7 @@ try {
   ok(geometry<=800,'constant geometry reads per move pointermove');
   Element.prototype.querySelectorAll=originalQuery; Element.prototype.getBoundingClientRect=originalRect; Object.defineProperty(Element.prototype,'innerHTML',innerHTML);
   pointer('pointerup',201,2); equal(records,recordsBefore+1,'large move commits once');
-  container.__cleanupCSVTableToolbar(); unsubscribe(); ok(!window.__nvCsvTableContext,'cleanup releases context');
-  document.getElementById('result').textContent=`PASS: CSV browser regressions; 36,000 declared cells, 200 selection previews and 200 move previews; zero pointer scans/rebuilds/publications/mutations.`;
+  checkCsvCursors({cell,pointer,click,key,reset,container,equal,ok});
+  unsubscribe(); ok(!window.__nvCsvTableContext,'cleanup releases context');
+  document.getElementById('result').textContent=`PASS: CSV selection/editing/clipboard/drag and cursor transitions; 36,000 declared cells, 200 selection previews and 200 move previews; zero pointer scans/rebuilds/publications/mutations; stable hover has zero layout reads/style writes.`;
 } catch(error) { document.getElementById('result').textContent=`FAIL: ${error.stack}`; }

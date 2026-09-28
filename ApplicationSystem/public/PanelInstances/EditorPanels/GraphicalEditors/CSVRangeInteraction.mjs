@@ -1,17 +1,19 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVRangeInteraction.mjs
 // This module delegates CSV pointer, keyboard, and clipboard gestures to the editor context and keeps drag previews separate from document mutations.
-import { csvRange, rangeContains } from "./CSVRangeModel.mjs";
+import { canMoveCsvSelection, createCsvInteractionCursor } from "./CSVInteractionCursor.mjs";
 export function bindCsvRangeInteraction(wrapper, table, editor, view) {
   const win = wrapper.ownerDocument.defaultView, doc = wrapper.ownerDocument;
   const listeners = [];
   let drag = null, editing = null;
-  const on = (target, type, callback) => { target.addEventListener(type, callback); listeners.push(() => target.removeEventListener(type, callback)); };
+  const on = (target, type, callback, options) => { target.addEventListener(type, callback, options); listeners.push(() => target.removeEventListener(type, callback, options)); };
   const cellFor = node => { const cell = node?.closest?.("td,th"); return cell?.closest("table") === table ? cell : null; };
   const position = cell => ({ row: Number(cell.dataset.row), col: Number(cell.dataset.col) });
+  const cursor = createCsvInteractionCursor({ wrapper, cellFor, getState: () => ({ drag, editing }), getSelection: editor.getSelection });
   function finishEditing() {
     if (!editing) return;
     editing.contentEditable = "false";
     editing = null;
+    cursor.refresh();
   }
   function edit(cell, replace = false) {
     finishEditing(); editing = cell; cell.contentEditable = "true"; cell.focus();
@@ -19,14 +21,18 @@ export function bindCsvRangeInteraction(wrapper, table, editor, view) {
     const range = doc.createRange(); range.selectNodeContents(cell);
     if (!replace) range.collapse(false);
     const selection = win.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+    cursor.refresh();
   }
-  function stop(event) {
+  function stop(event, focus = true) {
     if (!drag || (event.pointerId != null && event.pointerId !== drag.id)) return;
     const completed = drag; drag = null;
-    wrapper.classList.remove("nv-csv-moving"); view.paint(null, true);
+    try { if (wrapper.hasPointerCapture(completed.id)) wrapper.releasePointerCapture(completed.id); } catch {}
+    view.paint(null, true);
     if (event.type === "pointerup" && completed.moved && completed.mode === "move") editor.move(completed.source, completed.destination);
     else if (event.type === "pointerup" && !completed.moved && completed.mode === "move") editor.select(completed.start);
-    else editor.publish();
+    else editor.publish({ focus });
+    if (Number.isFinite(event.clientX)) cursor.hoverAt(event, true);
+    else cursor.selectionChanged();
   }
   on(wrapper, "pointerdown", event => {
     const cell = cellFor(event.target);
@@ -34,18 +40,22 @@ export function bindCsvRangeInteraction(wrapper, table, editor, view) {
     if (editing === cell && !event.shiftKey) return;
     finishEditing(); event.preventDefault(); win.getSelection()?.removeAllRanges();
     const start = position(cell), selection = editor.getSelection();
-    const multi = selection.range.top !== selection.range.bottom || selection.range.left !== selection.range.right;
     const bounds = cell.getBoundingClientRect();
     const edge = Math.min(event.clientX - bounds.left, bounds.right - event.clientX, event.clientY - bounds.top, bounds.bottom - event.clientY) <= 6;
-    const move = !event.shiftKey && rangeContains(selection.range, start) && (multi || edge);
+    const move = canMoveCsvSelection(selection.range, start, edge, event.shiftKey);
     drag = { id: event.pointerId, start, x: event.clientX, y: event.clientY, mode: move ? "move" : "select",
       source: selection.range, destination: { row: selection.range.top, col: selection.range.left }, moved: false };
     if (!move) editor.select(start, event.shiftKey);
+    try { wrapper.setPointerCapture(event.pointerId); } catch { /* Synthetic events and older hosts may not capture. */ }
+    cursor.hoverAt(event);
   });
   on(win, "pointermove", event => {
-    if (!drag || event.pointerId !== drag.id) return;
+    if (!drag) { if (wrapper.contains(event.target)) cursor.hoverAt(event); return; }
+    if (event.pointerId !== drag.id) return;
+    if (event.isTrusted && event.buttons === 0) { stop({ type: "pointercancel" }); cursor.leave(); return; }
     if (!drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return;
     const cell = cellFor(doc.elementFromPoint(event.clientX, event.clientY));
+    cursor.hoverAt({ target: cell, clientX: event.clientX, clientY: event.clientY, shiftKey: event.shiftKey });
     if (!cell) return;
     const point = position(cell);
     if (drag.last?.row === point.row && drag.last?.col === point.col) return;
@@ -53,13 +63,26 @@ export function bindCsvRangeInteraction(wrapper, table, editor, view) {
     if (drag.mode === "select") editor.select(point, true, false);
     else {
       drag.destination = { row: Math.max(0, drag.source.top + point.row - drag.start.row), col: Math.max(0, drag.source.left + point.col - drag.start.col) };
-      wrapper.classList.add("nv-csv-moving");
       view.paint({ top: drag.destination.row, left: drag.destination.col,
         bottom: drag.destination.row + drag.source.bottom - drag.source.top, right: drag.destination.col + drag.source.right - drag.source.left }, true);
     }
   });
   on(win, "pointerup", stop); on(win, "pointercancel", stop);
-  on(win, "blur", () => { if (drag) stop({ type: "pointercancel" }); });
+  on(wrapper, "lostpointercapture", stop);
+  on(wrapper, "pointerover", event => { if (!drag) cursor.hoverAt(event); });
+  on(wrapper, "pointerleave", () => cursor.leave());
+  const deactivate = () => { if (drag) stop({ type: "pointercancel" }, false); finishEditing(); cursor.leave(); };
+  on(win, "blur", deactivate);
+  on(doc, "visibilitychange", () => { if (doc.hidden) deactivate(); });
+  on(win, "scroll", cursor.layoutChanged, true);
+  on(win, "resize", cursor.layoutChanged);
+  on(win, "activePanelChanged", event => { if (event.detail?.cell && !event.detail.cell.contains(wrapper)) deactivate(); });
+  on(win, "nv-panel-tab-activated", () => { if (wrapper.closest(".nv-panel-tab-content")?.hidden) deactivate(); });
+  on(win, "keydown", event => {
+    if (event.key === "Escape" && drag) { event.preventDefault(); stop({ type: "pointercancel" }); }
+    if (event.key === "Shift") cursor.shiftChanged(event);
+  });
+  on(win, "keyup", event => { if (event.key === "Shift") cursor.shiftChanged(event); });
   on(wrapper, "dblclick", event => { const cell = cellFor(event.target); if (cell) { editor.select(position(cell)); edit(cell); } });
   on(wrapper, "focusout", () => finishEditing());
   on(wrapper, "input", event => { const cell = cellFor(event.target); if (cell) editor.input(position(cell), cell.textContent || ""); });
@@ -110,5 +133,11 @@ export function bindCsvRangeInteraction(wrapper, table, editor, view) {
       event.preventDefault(); finishEditing(); editor.history[event.inputType === "historyUndo" ? "undo" : "redo"]();
     }
   });
-  return () => { finishEditing(); if (drag) stop({ type: "pointercancel" }); listeners.forEach(remove => remove()); };
+  return {
+    selectionChanged: cursor.selectionChanged,
+    invalidate: cursor.invalidate,
+    layoutChanged: cursor.layoutChanged,
+    deactivate,
+    dispose() { deactivate(); cursor.dispose(); listeners.forEach(remove => remove()); },
+  };
 }

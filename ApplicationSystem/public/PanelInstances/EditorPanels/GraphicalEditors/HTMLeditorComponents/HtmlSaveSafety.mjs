@@ -54,7 +54,7 @@ export function htmlEditableBodyHasMeaningfulContent(content = "") {
 }
 
 export function serializedHtmlLooksUsable(content = "") {
-  const clean = String(content || "").replace(/^\uFEFF/, "").trimStart();
+  const clean = String(content || "").replace(/^\uFEFF/, "").replace(/^(?:\s|<!--[\s\S]*?-->)+/, "");
   return /^<!doctype\s+html\b/i.test(clean) || /^<html(?:\s|>)/i.test(clean);
 }
 

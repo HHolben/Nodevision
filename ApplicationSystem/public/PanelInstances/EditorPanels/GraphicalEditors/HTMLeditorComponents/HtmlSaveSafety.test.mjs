@@ -17,6 +17,10 @@ const original = `<!doctype html>
 <body><p>Keep this content.</p></body>
 </html>`;
 
+assert.equal(validateGraphicalHtmlSave({ path: 'page.html', content: '<!--before-->\n' + original }).ok, true);
+assert.equal(validateGraphicalHtmlSave({ path: 'page.html', content: '<!--before--><p>fragment</p>' }).ok, false);
+assert.equal(validateGraphicalHtmlSave({ path: 'page.html', content: '<!--unterminated<html>' }).ok, false);
+
 assert.equal(htmlEditableBodyHasMeaningfulContent(original), true);
 assert.equal(
   htmlEditableBodyHasMeaningfulContent(`<!doctype html>

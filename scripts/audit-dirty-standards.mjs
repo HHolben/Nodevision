@@ -9,9 +9,10 @@ import { fileURLToPath } from "node:url";
 // Acorn token locations exclude comments without misclassifying URL or shader strings.
 const { tokenizer } = createRequire(import.meta.url)("acorn");
 const root = fileURLToPath(new URL("../", import.meta.url));
+const baselineRevision = process.argv.find(arg => arg.startsWith("--base="))?.slice(7) || "HEAD";
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 const paths = [...new Set([
-  ...git("diff", "--name-only", "-z", "HEAD").split("\0"),
+  ...git("diff", "--name-only", "-z", baselineRevision).split("\0"),
   ...git("ls-files", "--others", "--exclude-standard", "-z").split("\0"),
 ])].filter(path => path.startsWith("ApplicationSystem/") && existsSync(root + path)).sort();
 
@@ -31,7 +32,7 @@ function audit(path) {
   const source = readFileSync(root + path, "utf8");
   const lines = source.split(/\r?\n/);
   let baseline = null;
-  try { baseline = codeLineCount(git("show", "HEAD:" + path)); } catch {}
+  try { baseline = codeLineCount(git("show", baselineRevision + ":" + path)); } catch {}
   const violations = [];
   let codeLines = null;
   try { codeLines = codeLineCount(source); } catch (error) { violations.push("Parse error: " + error.message); }
@@ -51,7 +52,7 @@ if (process.argv.includes("--json")) console.log(JSON.stringify(report, null, 2)
 else {
   for (const file of files) {
     const status = file.violations.length ? "FAIL" : "PASS";
-    console.log(`${status} ${String(file.codeLines).padStart(5)} lines (HEAD: ${file.baselineCodeLines ?? "new"}) ${file.path}`);
+    console.log(`${status} ${String(file.codeLines).padStart(5)} lines (${baselineRevision}: ${file.baselineCodeLines ?? "new"}) ${file.path}`);
     for (const violation of file.violations) console.log("       " + violation);
   }
   console.log(`\n${files.length} files checked; ${failed.length} fail mechanical checks. ${manualReview.length} non-JavaScript files need manual review.`);

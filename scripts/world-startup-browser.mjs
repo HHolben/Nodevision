@@ -54,6 +54,10 @@ try {
   ok(!panel.querySelector('.gameview-startup-error'), 'successful retry clears error');
   ok(acquired.size === 1, 'startup allocates only the main context');
   ok(panel._vrRenderer.getContext().getContextAttributes().antialias === false, 'real context works without antialiasing');
+  const { checkEquationPanel } = await import('./equation-panel-browser.mjs');
+  await checkEquationPanel(panel);
+  const { checkRuntimePause } = await import('./world-runtime-pause-browser.mjs');
+  await checkRuntimePause(panel);
   const target = window.VRWorldContext.objects.find(o => o.userData.nvType === 'iframe');
   deny = true;
   ok(panel._vrObjectInspector.inspectTarget(target), 'inspector works when preview context fails');
@@ -91,7 +95,7 @@ try {
   HTMLCanvasElement.prototype.getContext = nativeGetContext;
   await tick();
   ok(unhandled.length === 0, 'no uncaught errors: ' + unhandled.map(String).join('; '));
-  result.textContent = 'PASS: GameView startup failure, retry, antialias fallback, lazy preview, and cleanup';
+  result.textContent = 'PASS: GameView startup failure, retry, antialias fallback, lazy preview, equation tools, shared viewer/editor Escape and temporal pause, and cleanup';
 } catch (error) {
   result.textContent = 'FAIL: ' + (error.stack || error);
   console.error(error);
