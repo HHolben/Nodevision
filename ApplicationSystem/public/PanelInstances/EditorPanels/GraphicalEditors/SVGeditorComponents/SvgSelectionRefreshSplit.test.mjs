@@ -1,13 +1,14 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgSelectionRefreshSplit.test.mjs
-// Static guardrails for separating full selection-state refresh from geometry-only overlay refresh.
+// This module verifies that geometry-only SVG refreshes remain separate from full selection-state updates.
 
+import { readEditorFeatureSource } from '../../../../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const source = readFileSync(join(here, "SVGeditorRuntime.mjs"), "utf8");
+const source = await readEditorFeatureSource(new URL("./SVGeditorRuntime.mjs", import.meta.url));
 
 function functionBody(name) {
   const start = source.indexOf(`function ${name}`);
@@ -32,7 +33,8 @@ assert.ok(!geometryVisuals.includes("getSelectableElements("), "geometry visuals
 assert.ok(!geometryVisuals.includes('querySelectorAll("*")'), "geometry visuals do not query every SVG descendant");
 
 const stateVisuals = functionBody("refreshSelectionStateVisuals");
-assert.ok(stateVisuals.includes("getSelectableElements()"), "state visuals still reconcile selectable elements");
+assert.ok(stateVisuals.includes("selectionMarkers.update(selectedElements)"), "state visuals reconcile only selection markers after initial cleanup");
+assert.ok(!stateVisuals.includes("getSelectableElements()"), "selection changes do not rescan every SVG descendant");
 assert.ok(stateVisuals.includes("refreshSelectionGeometryVisuals()"), "state visuals still refresh overlays after state reconciliation");
 
 const geometryAfterMutation = functionBody("refreshSelectionGeometryAfterMutation");

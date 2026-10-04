@@ -7,17 +7,23 @@ export function createHtmlEditorSelection(root) {
   let element = null;
   let range = null;
   let endpoints = null;
-  let disposed = false;
+  let disposed = false, pathRevision = 0;
+  const pathCache = new WeakMap();
   const owns = node => !disposed && Boolean(node && root.contains(node));
   const notify = () => listeners.forEach(listener => listener());
 
   // Paths are used only for an explicit snapshot restoration, never for stale live targets.
   function path(node) {
+    const original = node, cached = pathCache.get(node);
+    if (root.__nvProgrammaticHistory?.owned && cached?.revision === pathRevision) return cached.path;
     const result = [];
     while (node && node !== root) {
-      result.unshift([...node.parentNode.childNodes].indexOf(node));
+      let index = 0;
+      for (let sibling = node.previousSibling; sibling; sibling = sibling.previousSibling) index++;
+      result.unshift(index);
       node = node.parentNode;
     }
+    pathCache.set(original, { revision: pathRevision, path: result });
     return result;
   }
   const resolve = indices => indices?.reduce((node, index) => node?.childNodes[index], root);
@@ -35,9 +41,13 @@ export function createHtmlEditorSelection(root) {
     const native = doc.defaultView.getSelection();
     const next = native?.rangeCount ? native.getRangeAt(0) : null;
     if (!next || !owns(next.startContainer) || !owns(next.endContainer)) return false;
+    const changed = !range || range.startContainer !== next.startContainer || range.endContainer !== next.endContainer ||
+      range.startOffset !== next.startOffset || range.endOffset !== next.endOffset;
+    const previousElement = element;
     range = next.cloneRange();
     endpoints = [next.startContainer, next.endContainer];
     selectElement(next.startContainer.nodeType === 1 ? next.startContainer : next.startContainer.parentElement);
+    if (changed && previousElement === element) notify();
     return true;
   }
   function bookmark() {
@@ -50,7 +60,7 @@ export function createHtmlEditorSelection(root) {
       } : null,
     };
   }
-  function restore(saved = null) {
+  function restore(saved = null, { focus = true } = {}) {
     if (disposed || (saved && saved.owner !== root)) return false;
     if (saved) {
       element = saved.element ? resolve(saved.element) : null;
@@ -70,6 +80,7 @@ export function createHtmlEditorSelection(root) {
       notify();
     }
     if (!validRange()) return false;
+    if (!focus) return true;
     root.focus();
     const native = doc.defaultView.getSelection();
     native.removeAllRanges();
@@ -83,9 +94,10 @@ export function createHtmlEditorSelection(root) {
   root.addEventListener('keyup', capture);
   return {
     capture, selectElement, bookmark, restore,
+    invalidatePaths() { pathRevision++; },
     getElement: () => owns(element) ? element : null,
     getRange: () => validRange() ? range.cloneRange() : null,
-    clear() { element = range = endpoints = null; notify(); },
+    clear() { pathRevision++; element = range = endpoints = null; notify(); },
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     dispose() {
       disposed = true;

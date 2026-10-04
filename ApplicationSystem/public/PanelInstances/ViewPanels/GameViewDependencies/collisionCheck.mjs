@@ -280,6 +280,7 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
         else if (collider.center.y > playerMaxY) dy = collider.center.y - playerMaxY;
         if (dx * dx + dy * dy + dz * dz <= totalRadius * totalRadius) return hit(collider);
       } else if (collider.type === "expression-heightfield") {
+        if (collider.target?.visible !== false && collider.containsPlayer && !collider.containsPlayer(nextPosition, playerRadius)) return hit(collider);
         if (expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       }
     }

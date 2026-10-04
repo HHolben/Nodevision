@@ -537,6 +537,8 @@ function compactVoxelDefinitions(defs = []) {
 }
 
 export function serializeMesh(mesh) {
+  if (mesh?.userData?.runtimeGenerated) return null;
+  if (mesh?.userData?.proceduralVoxelRuntime) return mesh.userData.proceduralVoxelRuntime.serialize();
   if (!mesh?.isMesh) return null;
   const type = getMeshType(mesh);
   if (!type) return null;

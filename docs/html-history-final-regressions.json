@@ -1,0 +1,57 @@
+{
+  "node": {
+    "files": [
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlHistoryRestore.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlEditorTransactions.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlHistoryPatches.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLTypingLatencyDiagnostics.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlDomHistory.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlAttentionReporting.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlSaveSafety.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlToolbarPublishing.test.mjs",
+      "ApplicationSystem/public/PanelInstances/Common/HtmlProperties/CssSourceIndex.test.mjs",
+      "ApplicationSystem/Desktop/ElectronHtmlHistory.test.mjs",
+      "ApplicationSystem/public/EditorAttentionState.test.mjs",
+      "ApplicationSystem/public/PanelInstances/Common/Layers/HtmlLayerInvalidation.test.mjs",
+      "ApplicationSystem/public/PanelInstances/Common/Layers/htmlLayersContext.test.mjs",
+      "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditorLiveMutation.test.mjs",
+      "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewIframeActivation.test.mjs",
+      "ApplicationSystem/public/PanelInstances/ViewPanels/FileView.selection.test.mjs",
+      "ApplicationSystem/public/PanelInstances/ViewPanels/FileView.performance.test.mjs",
+      "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewLiveRefresh.test.mjs"
+    ],
+    "exitCode": 0,
+    "output": "\u2714 ApplicationSystem/Desktop/ElectronHtmlHistory.test.mjs (321.456975ms)\n\u2714 ApplicationSystem/public/EditorAttentionState.test.mjs (384.640298ms)\n\u2714 ApplicationSystem/public/PanelInstances/Common/HtmlProperties/CssSourceIndex.test.mjs (345.014915ms)\n\u2714 ApplicationSystem/public/PanelInstances/Common/Layers/HtmlLayerInvalidation.test.mjs (309.428354ms)\n\u2714 ApplicationSystem/public/PanelInstances/Common/Layers/htmlLayersContext.test.mjs (389.755545ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditorLiveMutation.test.mjs (306.609129ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLTypingLatencyDiagnostics.test.mjs (339.294391ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlAttentionReporting.test.mjs (303.888654ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlDomHistory.test.mjs (410.261699ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlEditorTransactions.test.mjs (359.9124ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlHistoryPatches.test.mjs (239.387676ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlHistoryRestore.test.mjs (324.777657ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlSaveSafety.test.mjs (323.461297ms)\n\u2714 ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlToolbarPublishing.test.mjs (242.512968ms)\n\u2714 ApplicationSystem/public/PanelInstances/ViewPanels/FileView.performance.test.mjs (304.861052ms)\n\u2714 ApplicationSystem/public/PanelInstances/ViewPanels/FileView.selection.test.mjs (1497.922703ms)\n\u2714 ApplicationSystem/public/PanelInstances/ViewPanels/FileViewIframeActivation.test.mjs (282.952343ms)\n\u2714 ApplicationSystem/public/PanelInstances/ViewPanels/FileViewLiveRefresh.test.mjs (235.073101ms)\n\u2139 tests 18\n\u2139 suites 0\n\u2139 pass 18\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 2164.166918\n"
+  },
+  "foundation": {
+    "exitCode": 0,
+    "log": "PASS: Electron workspace and native input experiment; chronological states recorded in docs/html-foundation-electron-results.json\n"
+  },
+  "properties": {
+    "exitCode": 0,
+    "log": "PASS: Properties source, ownership, preview, native undo containment and lifecycle\n"
+  },
+  "journal": {
+    "exitCode": 0,
+    "log": "(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.\n%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged.\n[LiveFileContent] Provider read failed: html-editor-2 Error: HTML/WYSIWYG editor is no longer active; refusing to save stale editor content.\nPASS: mixed-history experiments recorded\n"
+  },
+  "journalWidgetSupplement": {
+    "exitCode": 0,
+    "log": "(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.\n%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged.\n[LiveFileContent] Provider read failed: html-editor-2 Error: HTML/WYSIWYG editor is no longer active; refusing to save stale editor content.\nPASS: mixed-history experiments recorded\n"
+  },
+  "index": {
+    "output": "html-history-performance-index.json",
+    "fixtures": 8,
+    "status": "passed"
+  },
+  "normalPanelIndex": {
+    "output": "html-history-performance-index-normal.json",
+    "fixtures": 2,
+    "status": "passed"
+  },
+  "structural": {
+    "output": "html-history-performance-structural.json",
+    "samples": 32,
+    "status": "passed"
+  }
+}

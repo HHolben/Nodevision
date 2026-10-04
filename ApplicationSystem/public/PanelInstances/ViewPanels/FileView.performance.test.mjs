@@ -1,10 +1,11 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileView.performance.test.mjs
 // Source-level regression checks for FileView low-risk performance repairs.
 
+import { readModularSource } from '../../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("./FileView.mjs", import.meta.url), "utf8");
+const source = await readModularSource(new URL("./FileView.mjs", import.meta.url));
 
 assert.match(source, /loadSharedModuleMap/, "FileView should use the shared ModuleMap loader");
 assert.doesNotMatch(source, /nvViewer=.+Date\.now\(\)/, "FileView should not force viewer module reloads with per-render Date.now cache busting");

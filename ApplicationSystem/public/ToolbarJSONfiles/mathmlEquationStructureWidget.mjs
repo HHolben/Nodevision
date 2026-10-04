@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/mathmlEquationStructureWidget.mjs
 // This widget renders HTML inline equation structure tools. The toolbar reuses shared equation action metadata for snippet insertion.
+import { presentHtmlAttribute } from "/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlPresentation.mjs";
 
 import { getEquationActionSnippet, renderEquationToolbarGroup } from "/Equation/EquationExpressionEditor.mjs";
 
@@ -15,7 +16,7 @@ function getWysiwygRoot() {
 function clearActiveEquation(root) {
   if (!root) return;
   root.querySelectorAll(`${INLINE_EQ_SELECTOR}[${ACTIVE_ATTR}="true"]`).forEach((el) => {
-    el.removeAttribute(ACTIVE_ATTR);
+    presentHtmlAttribute(el, ACTIVE_ATTR, null);
   });
 }
 
@@ -80,7 +81,7 @@ function createInlineEquationAtCaret(root) {
   const all = root.querySelectorAll(INLINE_EQ_SELECTOR);
   if (!all.length) return null;
   const latest = all[all.length - 1];
-  latest.setAttribute(ACTIVE_ATTR, "true");
+  presentHtmlAttribute(latest, ACTIVE_ATTR, "true");
   focusEquationEnd(latest);
   return latest;
 }
@@ -100,7 +101,7 @@ function appendSnippet(snippet = "") {
   }
 
   clearActiveEquation(root);
-  target.setAttribute(ACTIVE_ATTR, "true");
+  presentHtmlAttribute(target, ACTIVE_ATTR, "true");
 
   const current = readEquationText(target);
   const space = current && !/\s$/.test(current) ? " " : "";

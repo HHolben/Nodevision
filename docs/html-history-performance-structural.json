@@ -1,0 +1,5811 @@
+{
+  "results": [
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 199,
+        "elements": 100,
+        "actualWords": 1000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 4.400000000372529,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            2
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0.2000000011175871,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mutationObservers": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 51,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.6999999992549419
+        ],
+        "restoreSubscribers": [
+          0.5
+        ],
+        "restoreCaret": [
+          2
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.599999999627471
+        ],
+        "undo": [
+          4.300000000745058
+        ],
+        "layersCollect": [
+          0.19999999925494194
+        ],
+        "layersVisibility": [
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 3.4610000000000003,
+        "firstMs": 15.169
+      }
+    },
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 199,
+        "elements": 100,
+        "actualWords": 1000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 1.8999999985098839,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.10000000149011612
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 6,
+          "computedStyle": 51,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.19999999925494194
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          1.1000000014901161
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.2999999988824129
+        ],
+        "redo": [
+          1.799999998882413
+        ],
+        "layersCollect": [
+          0.40000000037252903
+        ],
+        "layersVisibility": [
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 2.574,
+        "firstMs": 13.502
+      }
+    },
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 199,
+        "elements": 100,
+        "actualWords": 1000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 1.5,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            0.599999999627471
+          ],
+          "all-input": [
+            0.09999999962747097,
+            0.09999999962747097,
+            0.10000000149011612,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mutationObservers": [
+            0,
+            0,
+            0,
+            0.09999999962747097
+          ],
+          "computedStyle": [
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 51,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.30000000074505806
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          0.599999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.40000000037252903
+        ],
+        "undo": [
+          1.5
+        ],
+        "layersCollect": [
+          0.2999999988824129
+        ],
+        "layersVisibility": [
+          0,
+          0.2000000011175871,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0.10000000149011612,
+          0,
+          0.09999999962747097,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.6799999999999997,
+        "firstMs": 21.71
+      }
+    },
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 199,
+        "elements": 100,
+        "actualWords": 1000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 5.699999999254942,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            4.699999999254942
+          ],
+          "all-input": [
+            0,
+            0.19999999925494194,
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "mutationObservers": [
+            0,
+            0.09999999962747097,
+            0.19999999925494194,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 6,
+          "computedStyle": 65,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0.09999999962747097
+        ],
+        "replayDom": [
+          0.2000000011175871
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          4.699999999254942
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.599999999627471
+        ],
+        "redo": [
+          5.699999999254942
+        ],
+        "layersCollect": [
+          0.599999999627471
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 5.130000000000001,
+        "firstMs": 21.001
+      }
+    },
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 2399,
+        "elements": 850,
+        "actualWords": 1000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 2.800000000745058,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.3999999985098839
+          ],
+          "all-input": [
+            0,
+            0.19999999925494194,
+            0.10000000149011612,
+            0.09999999962747097,
+            0,
+            0.09999999962747097
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0.2000000011175871,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 51,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0.10000000149011612
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.2999999988824129
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          1.5
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.8000000007450581
+        ],
+        "undo": [
+          2.800000000745058
+        ],
+        "layersCollect": [
+          2
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 4.947,
+        "firstMs": 22.365
+      }
+    },
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 2399,
+        "elements": 850,
+        "actualWords": 1000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 1.599999999627471,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            0.900000000372529
+          ],
+          "all-input": [
+            0.10000000149011612,
+            0.09999999962747097,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0.10000000149011612,
+            0.09999999962747097,
+            0
+          ],
+          "mutationObservers": [
+            0,
+            0.10000000149011612,
+            0.09999999962747097,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 6,
+          "computedStyle": 51,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          0.900000000372529
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.5
+        ],
+        "redo": [
+          1.599999999627471
+        ],
+        "layersCollect": [
+          3.300000000745058
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.10000000149011612,
+          0.2999999988824129,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 3.259,
+        "firstMs": 23.001
+      }
+    },
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 2399,
+        "elements": 850,
+        "actualWords": 1000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 2.399999998509884,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.199999999254942
+          ],
+          "all-input": [
+            0.09999999962747097,
+            0.09999999962747097,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0.2000000011175871,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0,
+            0.09999999962747097,
+            0,
+            0.09999999962747097
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 51,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.599999999627471
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          1.300000000745058
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.3999999985098839
+        ],
+        "undo": [
+          2.399999998509884
+        ],
+        "layersCollect": [
+          4.400000000372529
+        ],
+        "layersVisibility": [
+          0.10000000149011612,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 8.071,
+        "firstMs": 30.133
+      }
+    },
+    {
+      "fixture": {
+        "words": 1000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 2399,
+        "elements": 850,
+        "actualWords": 1000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 3.699999999254942,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            3
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0.19999999925494194,
+            0
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 6,
+          "computedStyle": 65,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.2000000011175871
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          3
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.3999999985098839
+        ],
+        "redo": [
+          3.699999999254942
+        ],
+        "layersCollect": [
+          3.5
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0.19999999925494194,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 5.581,
+        "firstMs": 23.218
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 1999,
+        "elements": 1000,
+        "actualWords": 10000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 1.799999998882413,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.099999999627471
+          ],
+          "all-input": [
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0.19999999925494194,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0.10000000149011612
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.19999999925494194
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          1.099999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.40000000037252903
+        ],
+        "undo": [
+          1.699999999254942
+        ],
+        "layersCollect": [
+          1.800000000745058
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          3.400000000372529
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 1.629,
+        "firstMs": 13.649
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 1999,
+        "elements": 1000,
+        "actualWords": 10000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 1.800000000745058,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.199999999254942
+          ],
+          "all-input": [
+            0,
+            0,
+            0.19999999925494194,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "mutationObservers": [
+            0,
+            0,
+            0.10000000149011612,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          1.199999999254942
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.30000000074505806
+        ],
+        "redo": [
+          1.699999999254942
+        ],
+        "layersCollect": [
+          3.5
+        ],
+        "layersVisibility": [
+          0.10000000149011612,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0.09999999962747097
+        ],
+        "layersRows": [
+          3.299999998882413
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 1.6640000000000001,
+        "firstMs": 17.418
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 1999,
+        "elements": 1000,
+        "actualWords": 10000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 1.900000000372529,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.5
+        ],
+        "restoreSubscribers": [
+          0.10000000149011612
+        ],
+        "restoreCaret": [
+          1
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.19999999925494194
+        ],
+        "undo": [
+          1.800000000745058
+        ],
+        "layersCollect": [
+          2
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          3.5
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 2.2089999999999996,
+        "firstMs": 14.12
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 1999,
+        "elements": 1000,
+        "actualWords": 10000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 4.800000000745058,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            3.900000000372529
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0.10000000149011612
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "mutationObservers": [
+            0,
+            0,
+            0.19999999925494194,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0.09999999962747097
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0.2000000011175871
+        ],
+        "restoreCaret": [
+          3.900000000372529
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.5
+        ],
+        "redo": [
+          4.800000000745058
+        ],
+        "layersCollect": [
+          1.700000001117587
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          2.200000001117587
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 2.971,
+        "firstMs": 16.031
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 23999,
+        "elements": 8500,
+        "actualWords": 10000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 2.900000000372529,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            2.099999999627471
+          ],
+          "all-input": [
+            0.09999999962747097,
+            0.10000000149011612,
+            0,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            1,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0.10000000149011612,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.30000000074505806
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          2.099999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.40000000037252903
+        ],
+        "undo": [
+          2.900000000372529
+        ],
+        "layersCollect": [
+          14.5
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0.10000000149011612,
+          0
+        ],
+        "layersRows": [
+          10
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 3.403,
+        "firstMs": 39.656
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 23999,
+        "elements": 8500,
+        "actualWords": 10000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 2.200000001117587,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.599999999627471
+          ],
+          "all-input": [
+            0,
+            0.19999999925494194,
+            0.09999999962747097,
+            0,
+            0,
+            0.10000000149011612
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            1.099999999627471,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0.10000000149011612
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.10000000149011612
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          1.599999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.5
+        ],
+        "redo": [
+          2.200000001117587
+        ],
+        "layersCollect": [
+          14.099999999627471
+        ],
+        "layersVisibility": [
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          9.5
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 1.861,
+        "firstMs": 33.531
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 23999,
+        "elements": 8500,
+        "actualWords": 10000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 3,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.599999999627471
+          ],
+          "all-input": [
+            0,
+            0,
+            0.09999999962747097,
+            0.10000000149011612,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            1.099999999627471,
+            0.10000000149011612
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0.09999999962747097
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.6999999992549419
+        ],
+        "restoreSubscribers": [
+          0.10000000149011612
+        ],
+        "restoreCaret": [
+          1.699999999254942
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.40000000037252903
+        ],
+        "undo": [
+          3
+        ],
+        "layersCollect": [
+          13.900000000372529
+        ],
+        "layersVisibility": [
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          12.300000000745058
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.127,
+        "firstMs": 36.57
+      }
+    },
+    {
+      "fixture": {
+        "words": 10000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 23999,
+        "elements": 8500,
+        "actualWords": 10000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 4.400000000372529,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            3.599999999627471
+          ],
+          "all-input": [
+            0,
+            0.10000000149011612,
+            0,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "mutationObservers": [
+            0,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.19999999925494194
+        ],
+        "restoreSubscribers": [
+          0.2000000011175871
+        ],
+        "restoreCaret": [
+          3.599999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.40000000037252903
+        ],
+        "redo": [
+          4.400000000372529
+        ],
+        "layersCollect": [
+          13.300000000745058
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097
+        ],
+        "layersRows": [
+          5.900000000372529
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 2.704,
+        "firstMs": 31.904
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 3999,
+        "elements": 2000,
+        "actualWords": 20000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 2.800000000745058,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            2.099999999627471
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.2000000011175871,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0.30000000074505806,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0.10000000149011612
+        ],
+        "restoreCaret": [
+          2.099999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.40000000037252903
+        ],
+        "undo": [
+          2.800000000745058
+        ],
+        "layersCollect": [
+          3.5
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          3.700000001117587
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 2.7870000000000004,
+        "firstMs": 21.869
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 3999,
+        "elements": 2000,
+        "actualWords": 20000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 2.099999999627471,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.6000000014901161
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0,
+            0.09999999962747097
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0,
+            0.5,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0.10000000149011612,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          1.6000000014901161
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.2999999988824129
+        ],
+        "redo": [
+          2.099999999627471
+        ],
+        "layersCollect": [
+          2.800000000745058
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          3.599999999627471
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 3.264,
+        "firstMs": 21.714
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 3999,
+        "elements": 2000,
+        "actualWords": 20000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 3.399999998509884,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            2.199999999254942
+          ],
+          "all-input": [
+            0.10000000149011612,
+            0.19999999925494194,
+            0.19999999925494194,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0.2000000011175871,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.10000000149011612,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.5
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          2.199999999254942
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.599999999627471
+        ],
+        "undo": [
+          3.399999998509884
+        ],
+        "layersCollect": [
+          5.299999998882413
+        ],
+        "layersVisibility": [
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          4.199999999254942
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.3779999999999997,
+        "firstMs": 26.761
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 3999,
+        "elements": 2000,
+        "actualWords": 20000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 3.799999998882413,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            3.200000001117587
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0.10000000149011612,
+            0,
+            0,
+            0.2999999988824129,
+            0
+          ],
+          "mutationObservers": [
+            0.10000000149011612,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.10000000149011612,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          3.200000001117587
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.2999999988824129
+        ],
+        "redo": [
+          3.799999998882413
+        ],
+        "layersCollect": [
+          3.599999999627471
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097
+        ],
+        "layersRows": [
+          3
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.223,
+        "firstMs": 20.563
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 47999,
+        "elements": 17000,
+        "actualWords": 20000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 2.300000000745058,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.699999999254942
+          ],
+          "all-input": [
+            0,
+            0.2000000011175871,
+            0,
+            0,
+            0,
+            0.09999999962747097
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            1.900000000372529,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 29046.60000000149,
+            "duration": 59
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.30000000074505806
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          1.699999999254942
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.30000000074505806
+        ],
+        "undo": [
+          2.300000000745058
+        ],
+        "layersCollect": [
+          28.300000000745058
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0.19999999925494194,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0.09999999962747097
+        ],
+        "layersRows": [
+          18.199999999254942
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 2.2880000000000003,
+        "firstMs": 58.14
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 47999,
+        "elements": 17000,
+        "actualWords": 20000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 2.099999999627471,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.5
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0,
+            1.900000000372529,
+            0.10000000149011612
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0.19999999925494194,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 29786.60000000149,
+            "duration": 61
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.10000000149011612
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          1.599999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.2999999988824129
+        ],
+        "redo": [
+          2.099999999627471
+        ],
+        "layersCollect": [
+          26.300000000745058
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0.09999999962747097
+        ],
+        "layersRows": [
+          19.699999999254942
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 2.081,
+        "firstMs": 59.034
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 47999,
+        "elements": 17000,
+        "actualWords": 20000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 2.799999998882413,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            1.800000000745058
+          ],
+          "all-input": [
+            0,
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            2.5,
+            0.2000000011175871
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0.09999999962747097
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 31342.800000000745,
+            "duration": 58
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.5
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          1.800000000745058
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.2999999988824129
+        ],
+        "undo": [
+          2.799999998882413
+        ],
+        "layersCollect": [
+          26.59999999962747
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          19.699999999254942
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 2.8649999999999998,
+        "firstMs": 58.189
+      }
+    },
+    {
+      "fixture": {
+        "words": 20000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 47999,
+        "elements": 17000,
+        "actualWords": 20000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 3.099999999627471,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            2.599999999627471
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.10000000149011612,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0,
+            1.6000000014901161,
+            0.19999999925494194
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 32081.5,
+            "duration": 59
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          2.599999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.2000000011175871
+        ],
+        "redo": [
+          3.099999999627471
+        ],
+        "layersCollect": [
+          24
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0.19999999925494194,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          15.099999999627471
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.372,
+        "firstMs": 54.377
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 7999,
+        "elements": 4000,
+        "actualWords": 40000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 3.900000000372529,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            3.200000001117587
+          ],
+          "all-input": [
+            0,
+            0,
+            0.19999999925494194,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0.3999999985098839,
+            0
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          3.200000001117587
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.2999999988824129
+        ],
+        "undo": [
+          3.900000000372529
+        ],
+        "layersCollect": [
+          7
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          5.599999999627471
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 3.5530000000000004,
+        "firstMs": 33.131
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 7999,
+        "elements": 4000,
+        "actualWords": 40000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 3.199999999254942,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            2.400000000372529
+          ],
+          "all-input": [
+            0,
+            0.2000000011175871,
+            0.19999999925494194,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0,
+            0.40000000037252903,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          2.400000000372529
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.599999999627471
+        ],
+        "redo": [
+          3.199999999254942
+        ],
+        "layersCollect": [
+          6.099999999627471
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0.09999999962747097,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          5
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 2.981,
+        "firstMs": 31.35
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 7999,
+        "elements": 4000,
+        "actualWords": 40000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 3.199999999254942,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            2.700000001117587
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0,
+            0,
+            0.5,
+            0.19999999925494194
+          ],
+          "mutationObservers": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.19999999925494194
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          2.700000001117587
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.19999999925494194
+        ],
+        "undo": [
+          3.199999999254942
+        ],
+        "layersCollect": [
+          6.100000001490116
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          4.799999998882413
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.5789999999999997,
+        "firstMs": 31.032
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": false,
+        "config": "layers",
+        "nodes": 7999,
+        "elements": 4000,
+        "actualWords": 40000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 5.099999999627471,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            4.5
+          ],
+          "all-input": [
+            0,
+            0.10000000149011612,
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "qsa": [
+            0.19999999925494194,
+            0.10000000149011612,
+            0,
+            0.7000000011175871,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.19999999925494194,
+            0.10000000149011612,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": []
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          4.5
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.30000000074505806
+        ],
+        "redo": [
+          5.099999999627471
+        ],
+        "layersCollect": [
+          6.5
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0.19999999925494194,
+          0,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.2000000011175871,
+          0,
+          0.09999999962747097,
+          0,
+          0.19999999925494194,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          10.099999999627471
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.9389999999999996,
+        "firstMs": 41.853
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 95999,
+        "elements": 34000,
+        "actualWords": 40000
+      },
+      "kind": "insertion",
+      "direction": "undo",
+      "syncMs": 4.800000000745058,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            3.900000000372529
+          ],
+          "all-input": [
+            0,
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0.10000000149011612,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            2.599999999627471,
+            0.09999999962747097
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 40347.10000000149,
+            "duration": 121
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.2000000011175871
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          4
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.10000000149011612
+        ],
+        "notifyInput": [
+          0.40000000037252903
+        ],
+        "undo": [
+          4.800000000745058
+        ],
+        "layersCollect": [
+          58.30000000074506
+        ],
+        "layersVisibility": [
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097
+        ],
+        "layersRows": [
+          39.100000001490116
+        ]
+      },
+      "history": {
+        "undoEntries": 0,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 3.176,
+        "firstMs": 120.989
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 95999,
+        "elements": 34000,
+        "actualWords": 40000
+      },
+      "kind": "insertion",
+      "direction": "redo",
+      "syncMs": 5.099999999627471,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            4.5
+          ],
+          "all-input": [
+            0,
+            0.19999999925494194,
+            0,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "qsa": [
+            0.09999999962747097,
+            0,
+            0,
+            5,
+            0.3999999985098839
+          ],
+          "mutationObservers": [
+            0.09999999962747097,
+            0,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.09999999962747097,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 41093.60000000149,
+            "duration": 123
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.2000000011175871
+        ],
+        "restoreSubscribers": [
+          0
+        ],
+        "restoreCaret": [
+          4.599999999627471
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0
+        ],
+        "notifyInput": [
+          0.2999999988824129
+        ],
+        "redo": [
+          5.099999999627471
+        ],
+        "layersCollect": [
+          53.59999999962747
+        ],
+        "layersVisibility": [
+          0.10000000149011612,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          41.40000000037253
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 336
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 4,
+        "cpuMs": 3.6140000000000003,
+        "firstMs": 123.124
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 95999,
+        "elements": 34000,
+        "actualWords": 40000
+      },
+      "kind": "structure",
+      "direction": "undo",
+      "syncMs": 4.5,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            3.199999999254942
+          ],
+          "all-input": [
+            0,
+            0,
+            0.10000000149011612,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0.19999999925494194,
+            0.09999999962747097,
+            4.900000000372529,
+            0.599999999627471
+          ],
+          "mutationObservers": [
+            0.19999999925494194,
+            0.09999999962747097,
+            0,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 4,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 42703.70000000112,
+            "duration": 106
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.7999999988824129
+        ],
+        "restoreSubscribers": [
+          0.10000000149011612
+        ],
+        "restoreCaret": [
+          3.199999999254942
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.30000000074505806
+        ],
+        "undo": [
+          4.5
+        ],
+        "layersCollect": [
+          48.80000000074506
+        ],
+        "layersVisibility": [
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          33.5
+        ]
+      },
+      "history": {
+        "undoEntries": 1,
+        "redoEntries": 1,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 2.825,
+        "firstMs": 103.835
+      }
+    },
+    {
+      "fixture": {
+        "words": 40000,
+        "fragmented": true,
+        "config": "layers",
+        "nodes": 95999,
+        "elements": 34000,
+        "actualWords": 40000
+      },
+      "kind": "structure",
+      "direction": "redo",
+      "syncMs": 6.599999999627471,
+      "samples": [],
+      "probes": {
+        "values": {
+          "selectionRestore": [
+            6
+          ],
+          "all-input": [
+            0,
+            0.2000000011175871,
+            0,
+            0,
+            0.09999999962747097,
+            0
+          ],
+          "qsa": [
+            0.40000000037252903,
+            0.09999999962747097,
+            0.09999999962747097,
+            4.599999999627471,
+            0.2000000011175871
+          ],
+          "mutationObservers": [
+            0.40000000037252903,
+            0.19999999925494194,
+            0.10000000149011612,
+            0
+          ],
+          "computedStyle": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "counts": {
+          "revisions": 1,
+          "qsa": 5,
+          "computedStyle": 26,
+          "livePublications": 1
+        },
+        "longTasks": [
+          {
+            "start": 43449.300000000745,
+            "duration": 89
+          }
+        ]
+      },
+      "journal": {
+        "capture": [
+          0.09999999962747097
+        ],
+        "typingCommit": [
+          0
+        ],
+        "replayDom": [
+          0.09999999962747097
+        ],
+        "restoreSubscribers": [
+          0.09999999962747097
+        ],
+        "restoreCaret": [
+          6
+        ],
+        "input": [
+          0
+        ],
+        "transactionNotifications": [
+          0.09999999962747097
+        ],
+        "notifyInput": [
+          0.30000000074505806
+        ],
+        "redo": [
+          6.599999999627471
+        ],
+        "layersCollect": [
+          50.19999999925494
+        ],
+        "layersVisibility": [
+          0.09999999962747097,
+          0,
+          0.09999999962747097,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.09999999962747097,
+          0,
+          0.10000000149011612,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "layersRows": [
+          19.199999999254942
+        ]
+      },
+      "history": {
+        "undoEntries": 2,
+        "redoEntries": 0,
+        "maxEntries": 100,
+        "maxBytes": 8388608,
+        "retainedBytes": 21008
+      },
+      "refresh": {
+        "layersMutationBatches": 1,
+        "viewerRefreshMutations": 0,
+        "viewerFramesMounted": 0
+      },
+      "toolbarCalls": 0,
+      "lifecycle": {
+        "globalListeners": 13,
+        "observingMutationObservers": 5,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 0
+      },
+      "focused": true,
+      "paint": {
+        "count": 7,
+        "cpuMs": 3.0860000000000003,
+        "firstMs": 92.07
+      }
+    }
+  ],
+  "environment": {
+    "node": "24.15.0",
+    "acorn": "8.16.0",
+    "ada": "3.4.4",
+    "amaro": "1.1.8",
+    "ares": "1.34.6",
+    "brotli": "1.2.0",
+    "cldr": "48.0",
+    "icu": "78.2",
+    "llhttp": "9.3.1",
+    "merve": "1.2.2",
+    "modules": "146",
+    "napi": "10",
+    "nbytes": "0.1.3",
+    "ncrypto": "0.0.1",
+    "nghttp2": "1.68.0",
+    "openssl": "0.0.0",
+    "simdjson": "4.5.0",
+    "simdutf": "7.7.0",
+    "sqlite": "3.51.3",
+    "tz": "2025c",
+    "undici": "7.24.4",
+    "unicode": "17.0",
+    "uv": "1.51.0",
+    "uvwasi": "0.0.23",
+    "v8": "14.8.178.14-electron.0",
+    "zlib": "1.3.2.1-motley",
+    "zstd": "1.6.0",
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97"
+  }
+}

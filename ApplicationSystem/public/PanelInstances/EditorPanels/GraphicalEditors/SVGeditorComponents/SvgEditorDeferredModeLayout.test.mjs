@@ -1,10 +1,11 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgEditorDeferredModeLayout.test.mjs
-// Source-level regression guard for deferring SVG editor mode-layout work until after core editor readiness.
+// This module verifies that SVG mode-layout changes are deferred until editor readiness and canceled during teardown.
 
+import { readEditorFeatureSource } from '../../../../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile(new URL("./SVGeditorRuntime.mjs", import.meta.url), "utf8");
+const source = await readEditorFeatureSource(new URL("./SVGeditorRuntime.mjs", import.meta.url));
 
 assert.match(source, /function scheduleSvgEditorModeLayout\(\)/, "SVG editor schedules mode layout through a named helper");
 assert.match(source, /function cancelDeferredSvgModeLayout\(\)/, "SVG editor owns cancellation for deferred mode layout");
@@ -19,11 +20,11 @@ const scheduleIndex = source.indexOf("scheduleSvgEditorModeLayout();");
 assert.ok(contextReadyIndex > 0 && scheduleIndex > contextReadyIndex, "context-ready dispatch happens before deferred side-panel layout scheduling");
 
 const scheduleFunctionIndex = source.indexOf("function scheduleSvgEditorModeLayout()");
-const savedAttentionIndex = source.indexOf("const savedSvgAttention = getEditingContext(filePath);", scheduleFunctionIndex);
+const savedAttentionIndex = source.indexOf("savedSvgAttention = getEditingContext(filePath);", scheduleFunctionIndex);
 assert.ok(scheduleFunctionIndex > 0 && savedAttentionIndex > scheduleFunctionIndex, "test can isolate the deferred mode-layout helper");
 
 const scheduleFunctionSource = source.slice(scheduleFunctionIndex, savedAttentionIndex);
-assert.match(scheduleFunctionSource, /window\.requestAnimationFrame\(\(\) => \{[\s\S]*window\.setTimeout\(async \(\) => \{[\s\S]*await ensureSvgEditorModeLayout\(\{ editorCell \}\)/,
+assert.match(scheduleFunctionSource, /window\.requestAnimationFrame\(\(\) => \{[\s\S]*window\.setTimeout\(async \(\) => \{[\s\S]*await ensureSvgEditorModeLayout\(\{\s*editorCell\s*\}\)/,
   "the mode-layout await in this region is inside the deferred helper callback");
 
 const linearInitializationSource = source.slice(savedAttentionIndex, contextReadyIndex);

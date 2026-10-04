@@ -1,0 +1,181 @@
+/* Nodevision/ApplicationSystem/public/Stylesheets/LayoutStyles/LayoutWorkspaceTabs.css */
+/* This stylesheet defines workspacetabs presentation while preserving the shared workspace cascade and user theme overrides. */
+
+
+.nv-panel-tab {
+  flex: 0 0 auto;
+  min-width: 42px;
+  max-width: 190px;
+  min-height: 21px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 4px 1px 6px;
+  color: #222;
+  background: #ececec;
+  border: 0;
+  border-right: 1px solid #c0c0c0;
+  font: 11px/1.3 var(--nv-ui-font-family, system-ui, sans-serif);
+  letter-spacing: 0;
+  cursor: default;
+  user-select: none;
+}
+
+.nv-panel-tab[aria-selected="true"] {
+  background: #fff;
+  color: #111;
+  box-shadow: inset 0 -2px 0 #d4af37;
+}
+
+.nv-panel-tab:hover,
+.nv-panel-tab:focus-visible {
+  background: #f7f7f7;
+  outline: 1px solid #8aa7d6;
+  outline-offset: -1px;
+}
+
+.nv-panel-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nv-panel-tab-close {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #666;
+  font: 10px/16px var(--nv-ui-font-family, system-ui, sans-serif);
+  cursor: pointer;
+  opacity: 0.72;
+}
+
+.nv-panel-tab-close:hover,
+.nv-panel-tab-close:focus-visible {
+  color: #111;
+  opacity: 1;
+  outline: 1px solid #8aa7d6;
+}
+
+.nv-panel-tab-content-stack,
+.nv-panel-tab-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.nv-panel-tab-content {
+  width: 100%;
+  height: 100%;
+}
+
+.nv-panel-tab-drop-indicator {
+  flex: 0 0 3px;
+  align-self: stretch;
+  background: #0a84ff;
+  opacity: 0.8;
+}
+
+.nv-panel-tab-shell[data-orientation="left"] .nv-panel-tab-drop-indicator,
+.nv-panel-tab-shell[data-orientation="right"] .nv-panel-tab-drop-indicator {
+  flex-basis: 3px;
+  min-height: 3px;
+}
+
+.nv-panel-tab-list--drop-target {
+  box-shadow: inset 0 0 0 1px rgba(10, 132, 255, 0.55);
+}
+
+.nv-panel-tab-drag-preview {
+  position: fixed;
+  z-index: 30000;
+  max-width: 220px;
+  padding: 2px 6px;
+  color: #111;
+  background: #fff;
+  border: 1px solid #888;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+  font: 11px/1.35 var(--nv-ui-font-family, system-ui, sans-serif);
+  pointer-events: none;
+}
+.panel.docked { /* fills cell by inline styles set by JS */ }
+.panel.floating { position:absolute; pointer-events:auto; z-index: 22000; }
+.panel.overlay {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 1200;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.35);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.panel-resizer {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.panel-resizer-touch-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  height: 32px;
+  cursor: nwse-resize;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.panel.floating .panel-resizer {
+  opacity: 1;
+}
+
+/* Header buttons small styling (if you prefer CSS instead of inline) */
+.panel-header button { font-size: 12px; }
+
+/* Layout controls are routed via the View -> Layout Controls sub-toolbar */
+.panel-header .panel-controls {
+  display: none !important;
+}
+.panel.overlay .panel-header .panel-controls {
+  display: flex !important;
+  gap: 6px;
+}
+
+/* Resize handle is positioned by JS but you can tweak */
+.resize-handle { background:#777; border-radius:2px; }
+
+
+.layout-cell.active {
+  outline: 2px solid #007acc;
+  background-color: #e6f0ff;
+}
+
+.panel-cell-undocked-origin {
+  border-style: dashed !important;
+  border-color: #888 !important;
+}
+
+.panel-cell-undocked-origin::after {
+  content: "Undocked";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 12px;
+  font-family: var(--nv-ui-mono-font-family, monospace);
+  pointer-events: none;
+}

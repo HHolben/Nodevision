@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/panels/panelResize.mjs
-// Handles edge-aware resizing for floating panels.
+// This module handles edge-aware resizing for floating panels and returns a cleanup function that releases its observers and global pointer listeners.
 
 const EDGE_THRESHOLD = 12;
 const TOUCH_HANDLE_SIZE = 32;
@@ -155,4 +155,14 @@ export function attachResizeEvents(panel, resizer) {
   updateResizerVisibility();
   const observer = new MutationObserver(updateResizerVisibility);
   observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
+  return () => {
+    onWindowPointerUp();
+    observer.disconnect();
+    panel.removeEventListener("pointerdown", onPointerDown, true);
+    touchHandle.removeEventListener("pointerdown", onTouchHandlePointerDown);
+    window.removeEventListener("pointermove", onWindowPointerMove);
+    window.removeEventListener("pointerup", onWindowPointerUp);
+    window.removeEventListener("pointercancel", onWindowPointerUp);
+    window.removeEventListener("pointermove", updateCursor);
+  };
 }

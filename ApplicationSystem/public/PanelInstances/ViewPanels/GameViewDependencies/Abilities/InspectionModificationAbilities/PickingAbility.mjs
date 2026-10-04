@@ -73,7 +73,7 @@ export function installPickingAbility(ctx) {
 
   function getPlacementHit({ maxDistance = ctx.useRangeMax } = {}) {
     ctx.raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const objectCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const objectCandidates = (objects || []).filter((obj) => (obj?.isMesh || obj?.userData?.proceduralVoxelRuntime) && obj?.visible);
     const split = splitBoundsPickCandidates(objectCandidates);
     const candidates = [];
     if (ground?.visible) candidates.push(ground);
@@ -92,7 +92,7 @@ export function installPickingAbility(ctx) {
     if (ctx.zeroGravityKickDirection.lengthSq() < 1e-8) ctx.zeroGravityKickDirection.set(0, 0, -1);
     ctx.zeroGravityKickDirection.normalize();
     ctx.raycaster.set(origin, ctx.zeroGravityKickDirection.clone().negate(), 0, maxDistance);
-    const objectCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const objectCandidates = (objects || []).filter((obj) => (obj?.isMesh || obj?.userData?.proceduralVoxelRuntime) && obj?.visible);
     const split = splitBoundsPickCandidates(objectCandidates);
     const candidates = [];
     if (ground?.visible) candidates.push(ground);

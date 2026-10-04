@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/Common/ImageMap/HtmlImageMapAdapter.mjs
 // This module adapts the reusable image-map editor to the active graphical HTML/WYSIWYG editor surface.
+import { presentHtmlClass } from "/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlPresentation.mjs";
 
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { openNodevisionOverlayPanel } from "/TemplateSystem/NodevisionOverlayPanel.mjs";
@@ -70,8 +71,8 @@ function ensureUniqueMapName(model, names = []) {
 }
 
 function markSelected(root, imageEl, model = {}) {
-  root.querySelectorAll("img.nv-selected-image").forEach((img) => img.classList.remove("nv-selected-image"));
-  imageEl?.classList?.add("nv-selected-image");
+  root.querySelectorAll("img.nv-selected-image").forEach((img) => presentHtmlClass(img, "nv-selected-image", false));
+  presentHtmlClass(imageEl, "nv-selected-image", true);
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activeHtmlImageContext = { element: imageEl, src: imageEl?.getAttribute("src") || "" };
   updateToolbarState({

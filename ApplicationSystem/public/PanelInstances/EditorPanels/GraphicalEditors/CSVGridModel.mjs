@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridModel.mjs
-// Pure CSV grid helpers used by the graphical CSV editor and its regression tests.
+// This module provides pure CSV grid operations shared by the graphical editor and its regression tests.
 
 export function normalizeSpreadsheetDelimiter(delimiter) {
   return delimiter === "\t" ? "\t" : ",";
@@ -89,16 +89,17 @@ export function cloneCsvRows(rows = [[""]]) {
 }
 
 export function declaredColumnCount(rows = []) {
-  return Math.max(1, ...cloneCsvRows(rows).map((row) => row.length));
+  let width = 1;
+  for (const row of rows) if (Array.isArray(row)) width = Math.max(width, row.length);
+  return width;
 }
 
 export function csvRenderDimensions(rows = [], activePosition = { row: 0, col: 0 }, extra = 1) {
-  const safeRows = cloneCsvRows(rows);
   const activeRow = Math.max(0, Number.parseInt(activePosition?.row ?? 0, 10) || 0);
   const activeCol = Math.max(0, Number.parseInt(activePosition?.col ?? 0, 10) || 0);
   return {
-    rows: Math.max(1, safeRows.length + extra, activeRow + extra + 1),
-    cols: Math.max(1, declaredColumnCount(safeRows) + extra, activeCol + extra + 1),
+    rows: Math.max(1, (rows.length || 1) + extra, activeRow + extra + 1),
+    cols: Math.max(1, declaredColumnCount(rows) + extra, activeCol + extra + 1),
   };
 }
 
@@ -117,8 +118,16 @@ export function ensureCsvCellMaterialized(rows = [], rowIndex = 0, colIndex = 0)
 }
 
 export function setCsvCellValue(rows = [], rowIndex = 0, colIndex = 0, value = "") {
-  const nextRows = ensureCsvCellMaterialized(rows, rowIndex, colIndex);
-  nextRows[Math.max(0, rowIndex)][Math.max(0, colIndex)] = String(value ?? "");
+  const row = Math.max(0, Number.parseInt(rowIndex, 10) || 0);
+  const col = Math.max(0, Number.parseInt(colIndex, 10) || 0);
+  const text = String(value ?? "");
+  if (isDeclaredCsvCell(rows, row, col) && rows[row][col] === text) return rows;
+  // Copy only the changed row; unchanged rows are shared immutable history state.
+  const nextRows = rows.slice();
+  while (nextRows.length <= row) nextRows.push([]);
+  nextRows[row] = Array.isArray(nextRows[row]) ? nextRows[row].slice() : [];
+  while (nextRows[row].length <= col) nextRows[row].push("");
+  nextRows[row][col] = text;
   return nextRows;
 }
 

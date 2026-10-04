@@ -6,6 +6,7 @@
 (function() {
     // Global shortcut handler
     document.addEventListener("keydown", function(e) {
+        if (e.defaultPrevented) return;
         const isMac = window.navigator.platform.toUpperCase().indexOf('MAC') >= 0;
         const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
 

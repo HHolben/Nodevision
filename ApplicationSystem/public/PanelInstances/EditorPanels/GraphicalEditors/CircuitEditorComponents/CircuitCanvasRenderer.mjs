@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CircuitEditorComponents/CircuitCanvasRenderer.mjs
 // This module renders circuit documents into HTML canvas elements for read-only embedded viewers.
+import { presentHtmlAttribute } from "/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlPresentation.mjs";
 
 import { getSymbol } from "./SymbolLibrary.mjs";
 import { rotatePoint, translatePoint } from "./CircuitGeometry.mjs";
@@ -82,8 +83,8 @@ function prepareCanvas(canvas, options = {}) {
   if (!context) return null;
   const { width, height } = cssSize(canvas, options);
   const ratio = Math.max(1, Math.min(3, options.devicePixelRatio || globalThis.devicePixelRatio || 1));
-  if (canvas.width !== Math.round(width * ratio)) canvas.width = Math.round(width * ratio);
-  if (canvas.height !== Math.round(height * ratio)) canvas.height = Math.round(height * ratio);
+  if (canvas.width !== Math.round(width * ratio)) presentHtmlAttribute(canvas, "width", Math.round(width * ratio));
+  if (canvas.height !== Math.round(height * ratio)) presentHtmlAttribute(canvas, "height", Math.round(height * ratio));
   canvas.style.width = "100%";
   canvas.style.height = "100%";
   context.setTransform(ratio, 0, 0, ratio, 0, 0);

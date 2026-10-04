@@ -1,0 +1,16 @@
+{
+  "loaded": 1156,
+  "queued": 0,
+  "generated": 1156,
+  "voxels": 22281767,
+  "faces": 654640,
+  "generationMs": 580.8000000026077,
+  "meshingMs": 3940.400000002235,
+  "maxBuildMs": 53.39999999990687,
+  "totalLoadMs": 4531.199999999721,
+  "meshes": 642,
+  "objects": 2,
+  "colliders": 2,
+  "geometryBytes": 102123840,
+  "renderTriangles": 536798
+}

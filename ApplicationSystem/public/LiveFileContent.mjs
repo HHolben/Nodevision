@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/LiveFileContent.mjs
-// Shared client-side registry for editor buffers that can be previewed before saving.
+// This module registers editor-owned buffers and resolves matching live content for file previews without requiring a save.
 
 const LIVE_PROVIDERS_KEY = "__nvLiveFileContentProviders";
 
@@ -128,7 +128,7 @@ export function getLiveFileContentForPath(filePath, options = {}) {
 
   const textOnly = options.textOnly !== false;
   const matches = [...providers().values()]
-    .filter((provider) => normalizeLiveFilePath(provider.filePath).toLowerCase() === targetPath.toLowerCase())
+    .filter((provider) => normalizeLiveFilePath(provider.filePath) === targetPath)
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
   for (const provider of matches) {

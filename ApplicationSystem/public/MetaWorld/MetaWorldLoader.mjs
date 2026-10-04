@@ -3,6 +3,8 @@
 
 import { readWorldGravityModel } from "../PanelInstances/ViewPanels/GameViewDependencies/gravityModel.mjs";
 
+import { validateVoxelWorld } from "./ProceduralVoxelWorld/VoxelWorldDefinition.mjs";
+
 const WORLD_SCRIPT_ID = "nodevision-metaworld";
 
 function fail(message) {
@@ -139,6 +141,7 @@ function inheritPatternField(clone, def, key) {
 }
 
 function expandVoxelPatternDefinition(def, index) {
+  if (def?.type === "procedural-voxel-world") return [validateVoxelWorld(def)];
   if (!isVoxelPatternDefinition(def)) return [def];
   const pattern = def.pattern && typeof def.pattern === "object" ? def.pattern : (def.voxelPattern || {});
   const rawTemplate = def.voxel && typeof def.voxel === "object"

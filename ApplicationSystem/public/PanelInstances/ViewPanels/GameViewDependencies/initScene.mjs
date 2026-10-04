@@ -596,6 +596,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     if (movementState.paused) return;
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
+    objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update(controls.getObject().position));
     viewController.update();
     textWorldConsole.update();
     updateIframeObjectOverlays({

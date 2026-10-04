@@ -1,5 +1,6 @@
 // Regression coverage for Graphical Editor live-buffer mutation boundaries.
 
+import { readModularSource } from '../../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
@@ -60,7 +61,7 @@ globalThis.document = {
   body: { contains: () => false },
 };
 
-const graphicalSource = await readFile(new URL("./GraphicalEditor.mjs", import.meta.url), "utf8");
+const graphicalSource = await readModularSource(new URL("./GraphicalEditor.mjs", import.meta.url));
 const makeGraphical = loadGraphicalLiveHelper(graphicalSource);
 const { graphicalLiveMutationRecordsContainDocumentChange } = makeGraphical(
   () => () => {},

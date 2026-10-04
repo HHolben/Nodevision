@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileView.selection.test.mjs
-// Source-level regression coverage for FileView canonical selection following and directory index resolution.
+// This module verifies canonical selection following and directory index resolution in the file viewer.
 
+import { readEditorFeatureSource } from '../../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -8,15 +9,15 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const publicRoot = path.resolve(here, "../..");
-const fileViewSource = await readFile(path.join(here, "FileView.mjs"), "utf8");
+const fileViewSource = await readEditorFeatureSource(new URL("./FileView.mjs", import.meta.url));
 const fileManagerSource = await readFile(path.join(publicRoot, "PanelInstances/InfoPanels/FileManagerCore.mjs"), "utf8");
 const codeEditorSource = await readFile(path.join(publicRoot, "PanelInstances/EditorPanels/CodeEditor.mjs"), "utf8");
-const graphicalEditorSource = await readFile(path.join(publicRoot, "PanelInstances/EditorPanels/GraphicalEditor.mjs"), "utf8");
+const graphicalEditorSource = await readEditorFeatureSource(new URL("../EditorPanels/GraphicalEditor.mjs", import.meta.url));
 
 assert.match(fileViewSource, /nodevision-selection-changed/, "FileView subscribes to canonical workspace selection changes");
 assert.match(fileViewSource, /function handleNodevisionSelectionChanged[\s\S]*getSelectionFollowingFileViewRoot\(\)/, "FileView selection changes target the remembered visible follow-selection FileView, not the focused panel");
 assert.match(fileViewSource, /function activateFileViewHost[\s\S]*rememberSelectionFollowingFileView\(viewDiv\)/, "Activating a FileView establishes it as the selection-following viewer");
-assert.match(fileViewSource, /updateViewPanel\(path, \{ force: true, selectionReference, viewPanel \}\)/, "FileView passes canonical selection references into the explicitly targeted active viewer");
+assert.match(fileViewSource, /updateViewPanel\(path, \{\s*force: true,\s*selectionReference,\s*viewPanel\s*\}\)/, "FileView passes canonical selection references into the explicitly targeted active viewer");
 assert.match(fileViewSource, /function syncFileViewTabReference[\s\S]*candidate\.contentElement === tabContent/, "FileView updates the active tab reference by content element instead of retargeting every FileView");
 assert.match(fileViewSource, /resolveDirectoryIndexReference/, "FileView resolves directory indexes through NodevisionReference helpers");
 assert.doesNotMatch(fileViewSource, /cleanDirectory \? cleanDirectory \+ "\/index\.html"/, "FileView should not duplicate directory index path concatenation");

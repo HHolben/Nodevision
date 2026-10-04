@@ -1,6 +1,8 @@
 // Exercise the real graphical HTML entry point and save hook against semantic fixtures.
 import { sourceFixture, documentSignature } from './html-source-fixtures.mjs';
 import { checkHtmlTransactions } from './html-transactions-browser.mjs';
+import { auditPreservation } from './html-preservation-audit.mjs';
+import { auditResources } from './html-resource-audit.mjs';
 const output = document.getElementById('result');
 const ok = (value, message) => { if (!value) throw new Error(message); };
 const errors = [];
@@ -35,6 +37,8 @@ try {
   await context.save();
   ok(saves.length === 1 && saves[0].path === 'source.html' && saves[0].sourcePath === 'source.html', 'save uses owning file');
   ok(documentSignature(saves[0].content) === documentSignature(expected), 'save request retains source semantics');
+  await auditPreservation(context, ok);
+  await auditResources(context, renderEditor, ok);
   await checkHtmlTransactions({ context, container, renderEditor, ok });
   cleanup?.();
   ok(!errors.length, errors.join('\n'));

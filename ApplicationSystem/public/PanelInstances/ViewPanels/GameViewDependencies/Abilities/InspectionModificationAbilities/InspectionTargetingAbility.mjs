@@ -94,7 +94,7 @@ export function installInspectionTargetingAbility(ctx) {
   function getInspectHit(options = {}) {
     ctx.raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const includeMeasurements = options.includeMeasurements === true;
-    const worldCandidates = (objects || []).filter((obj) => obj?.isMesh && obj?.visible);
+    const worldCandidates = (objects || []).filter((obj) => (obj?.isMesh || obj?.userData?.proceduralVoxelRuntime) && obj?.visible);
     const measureCandidates = includeMeasurements ? ctx.api.getMeasurementVisualsStore().filter((obj) => obj?.isMesh && obj?.visible) : [];
     const split = ctx.api.splitBoundsPickCandidates(worldCandidates);
     const meshHits = ctx.raycaster.intersectObjects(split.raycast.concat(measureCandidates), false)
@@ -102,7 +102,9 @@ export function installInspectionTargetingAbility(ctx) {
     const boundsHits = split.bounds.map(ctx.api.boundsPickHit).filter(Boolean);
     const planeHits = options.allowInfinitePlanes === false ? [] : getEquationPlaneRayHits();
     const portalRefHit = getPortalRefInspectHit();
-    return meshHits.concat(boundsHits, planeHits, portalRefHit ? [portalRefHit] : []).sort((a, b) => a.distance - b.distance)[0] || null;
+    const hit = meshHits.concat(boundsHits, planeHits, portalRefHit ? [portalRefHit] : []).sort((a, b) => a.distance - b.distance)[0] || null;
+    // Generated chunks occlude editing targets but remain read-only until delta editing exists.
+    return hit?.object?.userData?.proceduralTerrainId && options.includeProceduralTerrain !== true ? null : hit;
   }
 
   return installMovementApi(ctx, {

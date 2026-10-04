@@ -47,15 +47,17 @@ export function createCsvGridView(wrapper, table) {
     const maxRow = table.rows.length - 1, maxCol = table.rows[0]?.cells.length - 1;
     const first = range && cellAt(Math.min(range.top, maxRow), Math.min(range.left, maxCol));
     const last = range && cellAt(Math.min(range.bottom, maxRow), Math.min(range.right, maxCol));
-    overlay.hidden = !first || !last;
-    if (overlay.hidden) return;
-    const a = first.getBoundingClientRect(), b = last.getBoundingClientRect(), root = wrapper.getBoundingClientRect();
+    if (!first || !last) { overlay.hidden = true; return; }
+    // Read geometry before changing overlay visibility or style.
+    const a = first.getBoundingClientRect(), b = first === last ? a : last.getBoundingClientRect();
+    const root = wrapper.getBoundingClientRect();
     const left = a.left + Math.max(0, range.left - maxCol) * a.width;
     const top = a.top + Math.max(0, range.top - maxRow) * a.height;
     const right = b.right + Math.max(0, range.right - maxCol) * b.width;
     const bottom = b.bottom + Math.max(0, range.bottom - maxRow) * b.height;
     Object.assign(overlay.style, { left: `${left - root.left + wrapper.scrollLeft - wrapper.clientLeft}px`,
       top: `${top - root.top + wrapper.scrollTop - wrapper.clientTop}px`, width: `${right - left}px`, height: `${bottom - top}px` });
+    if (overlay.hidden) overlay.hidden = false;
   }
   return { render, cellAt, paint };
 }

@@ -20,7 +20,7 @@ function trimStack(stack, maxEntries) {
 }
 
 function pushDistinct(stack, html, maxEntries) {
-  if (!stack.length || stack[stack.length - 1] !== html) {
+  if (!stack.length || stack[stack.length - 1].html !== html.html) {
     stack.push(html);
     trimStack(stack, maxEntries);
   }
@@ -59,25 +59,32 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
   const undoStack = [];
   const redoStack = [];
 
-  const restore = (html, direction) => {
+  const entry = (html = readSnapshot(), bookmark = options.readBookmark?.()) => ({ html, bookmark });
+  const restore = (state, direction) => {
+    const html = state.html;
     if (!root) return false;
     writeSnapshot(String(html || ""));
     onRestore?.({ direction, html: readSnapshot() });
     if (!options.writeSnapshot) { dispatchEditorInput(root); root.focus?.(); }
+    if (state.bookmark) options.restoreBookmark?.(state.bookmark);
     return true;
   };
 
   return {
+    inspect() {
+      return { undoEntries: undoStack.length, redoEntries: redoStack.length, maxEntries,
+        retainedCodeUnits: [...undoStack, ...redoStack].reduce((total, state) => total + state.html.length, 0) };
+    },
     // Cancel a preview without adding history, dispatching input, or marking the file dirty.
     restorePreview(value) {
       writeSnapshot(String(value ?? ""));
       onRestore?.({ direction: "cancel", html: readSnapshot() });
     },
-    record(beforeHtml) {
+    record(beforeHtml, bookmark = null) {
       if (!root) return false;
       const before = String(beforeHtml || "");
       if (before === readSnapshot()) return false;
-      pushDistinct(undoStack, before, maxEntries);
+      pushDistinct(undoStack, entry(before, bookmark), maxEntries);
       redoStack.length = 0;
       return true;
     },
@@ -86,7 +93,7 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
       if (!undoStack.length) return false;
       const current = readSnapshot();
       const previous = undoStack.pop();
-      pushDistinct(redoStack, current, maxEntries);
+      pushDistinct(redoStack, entry(current), maxEntries);
       return restore(previous, "undo");
     },
 
@@ -94,16 +101,16 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
       if (!redoStack.length) return false;
       const current = readSnapshot();
       const next = redoStack.pop();
-      pushDistinct(undoStack, current, maxEntries);
+      pushDistinct(undoStack, entry(current), maxEntries);
       return restore(next, "redo");
     },
 
     noteNativeUndo(beforeHtml) {
       const current = readSnapshot();
       if (current === beforeHtml) return false;
-      if (undoStack[undoStack.length - 1] === current) {
+      if (undoStack.at(-1)?.html === current) {
         undoStack.pop();
-        pushDistinct(redoStack, beforeHtml, maxEntries);
+        pushDistinct(redoStack, entry(beforeHtml), maxEntries);
       }
       return true;
     },
@@ -111,9 +118,9 @@ export function createWysiwygProgrammaticHistory(root, options = {}) {
     noteNativeRedo(beforeHtml) {
       const current = readSnapshot();
       if (current === beforeHtml) return false;
-      if (redoStack[redoStack.length - 1] === current) {
+      if (redoStack.at(-1)?.html === current) {
         redoStack.pop();
-        pushDistinct(undoStack, beforeHtml, maxEntries);
+        pushDistinct(undoStack, entry(beforeHtml), maxEntries);
       }
       return true;
     },

@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridModel.test.mjs
-// Regression coverage for the graphical CSV editor's model-backed grid behavior.
+// This module verifies the graphical CSV editor model and its immutable grid updates.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -47,7 +47,7 @@ const editedQuoted = setCsvCellValue(quoted, 1, 1, "line\nbreak");
 assert.equal(serializeDelimitedRows(editedQuoted), '"A,B","said ""hi"""\nC,"line\nbreak"', "quoted fields survive editing and serialization");
 
 assert.match(csvEditorSource, /nv-csv-virtual-cell/, "virtual cells receive a distinct CSS class");
-assert.match(csvEditorSource, /outline:\s*1px dashed #c7ced8/, "virtual cells use a subtle light-gray outline");
+assert.match(csvEditorSource, /outline:var\(--nv-csv-virtual-outline,1px dashed #c7ced8\)/, "virtual cells retain the customizable outline and its default");
 assert.match(csvEditorSource, /data-nv-table-editor-root/, "CSV registers a table editor root for the shared table toolbar state");
 assert.match(csvEditorSource, /__nvActiveGridTableContext/, "CSV publishes a grid table context for shared toolbar commands");
 assert.match(csvEditorSource, /function caretOffsetInCell/, "CSV keyboard handling checks caret position before horizontal cell navigation");

@@ -1,11 +1,19 @@
 // Nodevision/ApplicationSystem/public/Listen/ListenHighlights.mjs
 // This module manages temporary gold read-position highlights for rendered HTML and PDF text without saving those highlights into user documents.
 
+import { markHtmlEditorChrome, isHtmlEditorChrome } from "/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlSourceProvenance.mjs";
+
 export const LISTEN_HIGHLIGHT_COLOR = "#d4af37";
 
 const LISTEN_HIGHLIGHT_NAME = "nv-listen-current";
 const LISTEN_HIGHLIGHT_ATTR = "data-nv-listen-highlight";
 const LISTEN_STYLE_ID = "nv-listen-highlight-style";
+const pdfHighlights = new Map();
+function clearPdfHighlight(element) {
+  if (!pdfHighlights.has(element)) return;
+  if (!pdfHighlights.get(element)) element.classList.remove("nv-listen-highlight");
+  pdfHighlights.delete(element);
+}
 
 function ownerWindow(doc) {
   return doc?.defaultView || globalThis.window || globalThis;
@@ -47,10 +55,10 @@ function clearDocumentHighlights(doc = document) {
   } catch {
     // Highlight cleanup is best-effort.
   }
-  doc.querySelectorAll?.(`[${LISTEN_HIGHLIGHT_ATTR}]`).forEach(unwrapElement);
-  doc.querySelectorAll?.(".nv-pdf-text-chunk.nv-listen-highlight").forEach((el) => {
-    el.classList.remove("nv-listen-highlight");
+  doc.querySelectorAll?.(`[${LISTEN_HIGHLIGHT_ATTR}]`).forEach(el => {
+    if (isHtmlEditorChrome(el)) unwrapElement(el);
   });
+  for (const el of pdfHighlights.keys()) if (el.ownerDocument === doc) clearPdfHighlight(el);
 }
 
 function clearIframeHighlights(root = document) {
@@ -79,7 +87,7 @@ export function clearHighlightRecord(record) {
       // Highlight cleanup is best-effort.
     }
   }
-  (record?.elements || []).forEach((el) => el?.classList?.remove("nv-listen-highlight"));
+  (record?.elements || []).forEach(clearPdfHighlight);
   (record?.wrappers || []).forEach(unwrapElement);
   return { hadWrappers };
 }
@@ -106,6 +114,7 @@ function applyFallbackRangeHighlight(doc, ranges) {
     try {
       const span = doc.createElement("span");
       span.className = "nv-listen-highlight";
+      markHtmlEditorChrome(span, "unwrap");
       span.setAttribute(LISTEN_HIGHLIGHT_ATTR, "true");
       range.surroundContents(span);
       wrappers.push(span);
@@ -149,6 +158,7 @@ export function highlightRenderedRange(source, start, end, previousRecord = null
   const elements = [];
   for (const segment of rangeSegments(source, start, end)) {
     if (segment.element?.classList?.contains("nv-pdf-text-chunk")) {
+      if (!pdfHighlights.has(segment.element)) pdfHighlights.set(segment.element, segment.element.classList.contains("nv-listen-highlight"));
       segment.element.classList.add("nv-listen-highlight");
       elements.push(segment.element);
       continue;

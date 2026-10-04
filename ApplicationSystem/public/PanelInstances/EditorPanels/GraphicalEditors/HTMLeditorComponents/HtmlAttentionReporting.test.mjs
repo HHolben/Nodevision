@@ -1,0 +1,34 @@
+// Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlAttentionReporting.test.mjs
+// These tests preserve semantic caret changes and inactive-editor isolation while preventing repeated equivalent attention publications.
+import assert from 'node:assert/strict';
+globalThis.window = new EventTarget();
+globalThis.document = { body: {} };
+globalThis.Node = { TEXT_NODE: 3 };
+globalThis.requestAnimationFrame = callback => callback();
+const { installHtmlAttentionReporting } = await import('./HtmlAttentionReporting.mjs');
+const { getSnapshot, subscribe } = await import('/EditorAttentionState.mjs');
+const paragraph = { nodeType: 1, tagName: 'P', id: 'paragraph', closest: () => null };
+const cell = { nodeType: 1, tagName: 'TD', id: 'cell', closest: selector => selector === 'td, th' ? cell : null };
+let anchor = paragraph;
+const root = new EventTarget();
+root.ownerDocument = { getSelection: () => ({ anchorNode: anchor }) };
+root.contains = node => node === paragraph || node === cell;
+window.__nvActiveHtmlEditorContext = { editorElement: root };
+const dispose = installHtmlAttentionReporting('attention.html', root);
+let commits = 0;
+const unsubscribe = subscribe(() => commits++);
+root.dispatchEvent(new Event('input'));
+const afterFirst = commits;
+for (let i = 0; i < 20; i++) root.dispatchEvent(new Event('keyup'));
+assert.equal(commits, afterFirst, 'same caret context does not republish');
+assert.equal(getSnapshot().selectedObjectId, 'paragraph');
+anchor = cell;
+root.dispatchEvent(new Event('input'));
+assert.equal(getSnapshot().selectedObjectType, 'table-cell', 'restored caret updates semantic context');
+assert.equal(commits, afterFirst + 1);
+window.__nvActiveHtmlEditorContext = { editorElement: {} };
+anchor = paragraph;
+root.dispatchEvent(new Event('input'));
+assert.equal(commits, afterFirst + 1, 'inactive editor cannot publish');
+unsubscribe();
+dispose();

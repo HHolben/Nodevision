@@ -14,6 +14,7 @@ export async function checkHtmlTransactions({ context, container, renderEditor, 
   selection.capture();
   const beforeRevision = context.revision;
   const beforeSource = context.getHTML();
+  const beforeDirty = context.isDirty;
   const control = document.createElement('button');
   document.body.append(control);
   control.focus();
@@ -28,10 +29,29 @@ export async function checkHtmlTransactions({ context, container, renderEditor, 
   transaction.cancel();
   ok(context.getHTML() === beforeSource && !history.canUndo() && !events.length, 'cancel restores exact body without history or commit: ' + JSON.stringify({beforeSource, after: context.getHTML(), undo: history.canUndo(), events}));
   ok(selection.getRange().startOffset === 2, 'cancel restores caret after replacing the body');
+  ok(context.isDirty === beforeDirty, 'cancel preserves dirty state');
   ok(!context.transactions.run('No change', () => {}) && !events.length, 'no-op transaction is silent');
+  const beforeCompound = context.getHTML();
+  let failed = false;
+  try {
+    context.transactions.run('Failed compound', () => {
+      root.querySelector('#text').setAttribute('title', 'partial');
+      context.transactions.run('Nested failure', () => { throw new Error('deliberate'); });
+    });
+  } catch { failed = true; }
+  ok(failed && context.getHTML() === beforeCompound && !history.canUndo(), 'failed nested operation rolls back without history');
+  context.transactions.run('Compound', () => {
+    root.querySelector('#text').setAttribute('title', 'complete');
+    context.transactions.run('Joined operation', () => root.querySelector('#text').setAttribute('lang', 'en'));
+  });
+  ok(events.length === 1, 'nested operation joins one commit');
+  history.undo();
+  ok(context.getHTML() === beforeCompound, 'one undo reverses compound');
+  history.clear(); events.length = 0;
+  const styleRevision = context.revision;
 
   context.setInlineStyle(root.querySelector('#text'), 'color', 'red');
-  ok(events.length === 1 && context.revision === beforeRevision + 1, 'one style edit commits one revision');
+  ok(events.length === 1 && context.revision === styleRevision + 1, 'one style edit commits one revision');
   ok(context.isDirty && history.canUndo(), 'style uses existing programmatic history');
   history.undo();
   ok(context.getHTML() === beforeSource, 'style undo restores authored source');
@@ -39,7 +59,9 @@ export async function checkHtmlTransactions({ context, container, renderEditor, 
   ok(root.querySelector('#text').style.color === 'red', 'style redo works');
 
   transaction = context.transactions.begin('Gesture');
+  const beforePreviewEvents = events.length;
   for (let i = 1; i <= 20; i++) transaction.preview(() => root.querySelector('#text').style.marginLeft = i + 'px');
+  ok(events.length === beforePreviewEvents, 'gesture previews publish no authored-change notifications');
   const eventCount = events.length;
   transaction.commit();
   ok(events.length === eventCount + 1, 'many previews publish one commit');
@@ -85,7 +107,11 @@ export async function checkHtmlTransactions({ context, container, renderEditor, 
   second.activate();
   await context.save();
   ok(window.__nvActiveHtmlEditorContext === second && !second.isDirty, 'saving inactive editor retains active owner');
+  context.activate();
+  const { setActiveTableCell } = await import('/ToolbarCallbacks/insert/tableTools.mjs');
+  const activeCell = setActiveTableCell(root.querySelector('td'));
   cleanupSecond();
+  ok(window.__nvHtmlTableActiveCell === activeCell, 'closing inactive editor preserves active editor table context');
   refused = false;
   try { second.transactions.begin(); } catch { refused = true; }
   ok(refused && !second.selection.getRange(), 'disposed context rejects new edits and stale selection');

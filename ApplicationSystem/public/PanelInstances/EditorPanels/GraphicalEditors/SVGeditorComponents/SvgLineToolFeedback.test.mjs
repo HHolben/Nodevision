@@ -1,13 +1,14 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgLineToolFeedback.test.mjs
-// Source-level guardrails for immediate stationary Line-tool vertex feedback.
+// This module verifies immediate feedback for accepted SVG line vertices and cleanup of transient editor markers.
 
+import { readEditorFeatureSource } from '../../../../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const source = readFileSync(join(here, "SVGeditorRuntime.mjs"), "utf8");
+const source = await readEditorFeatureSource(new URL("./SVGeditorRuntime.mjs", import.meta.url));
 const preservationSource = readFileSync(join(here, "SvgPreservation.mjs"), "utf8");
 
 function functionBody(name) {

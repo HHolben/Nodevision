@@ -1,5 +1,7 @@
-// Regression coverage for FileView live refresh lifecycle gating.
+// Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewLiveRefresh.test.mjs
+// This module verifies that live FileView refreshes respect document identity and visible panel lifecycle boundaries.
 
+import { readModularSource } from '../../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
@@ -54,7 +56,7 @@ function loadFileViewHelper(source) {
     "updateToolbarState",
     "setStatus",
     "getLiveFileContentForPath",
-    transformed + "\nreturn { activeFileViewCanRefreshPath };"
+    transformed + "\nreturn { activeFileViewCanRefreshPath, retainRoot: root => { FileViewModuleState.viewDivRef = root; } };"
   );
 }
 
@@ -78,9 +80,9 @@ globalThis.document = {
 };
 globalThis.CustomEvent = class CustomEvent { constructor(type, options = {}) { this.type = type; this.detail = options.detail; } };
 
-const source = await readFile(new URL("./FileView.mjs", import.meta.url), "utf8");
+const source = await readModularSource(new URL("./FileView.mjs", import.meta.url));
 const makeModule = loadFileViewHelper(source);
-const { activeFileViewCanRefreshPath } = makeModule(
+const { activeFileViewCanRefreshPath, retainRoot } = makeModule(
   () => {},
   () => ({}),
   () => "",
@@ -119,6 +121,15 @@ const { activeFileViewCanRefreshPath } = makeModule(
   assert.equal(activeFileViewCanRefreshPath("A.html"), true, "active matching FileView should accept live refreshes");
   assert.equal(activeFileViewCanRefreshPath("Notebook/A.html"), true, "Notebook-prefixed paths should match the same active FileView");
   assert.equal(activeFileViewCanRefreshPath("B.html"), false, "different files should not refresh the active FileView");
+  assert.equal(activeFileViewCanRefreshPath("a.html"), false, "case-distinct Linux files cannot trigger another preview");
+  retainRoot(root);
+  root.isConnected = true;
+  activeContent = null;
+  assert.equal(activeFileViewCanRefreshPath("A.html"), true, "visible neighboring FileView refreshes while the editor has focus");
+  content.hidden = true;
+  assert.equal(activeFileViewCanRefreshPath("A.html"), false, "retained hidden tabs do not refresh");
+  content.hidden = false;
+  root.isConnected = false;
 }
 
 {

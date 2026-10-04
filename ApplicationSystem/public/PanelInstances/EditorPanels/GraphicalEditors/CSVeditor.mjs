@@ -8,7 +8,7 @@ import { cloneCsvRows, declaredColumnCount, deleteCsvColumn, deleteCsvRow, inser
 import { csvRange, copyCsvRange, clearCsvRange, moveCsvRange, parseCsvClipboard, writeCsvBlock } from "./CSVRangeModel.mjs";
 import { createCsvGridView } from "./CSVGridView.mjs";
 import { bindCsvRangeInteraction } from "./CSVRangeInteraction.mjs";
-import { createWysiwygProgrammaticHistory } from "./HTMLeditorComponents/WysiwygProgrammaticHistory.mjs";
+import { createCsvHistory } from "./CSVHistory.mjs";
 
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
@@ -29,10 +29,11 @@ export async function renderEditor(filePath, container) {
   let interaction = null;
   setEditorContext({ filePath, fileFamily: "csv", fileFamilyLabel: "Spreadsheet", editorMode: "CSVediting", editorModeLabel: "CSV Editing" });
   const getSelection = () => ({ anchor: { ...anchor }, active: { ...activePosition }, range: csvRange(anchor, activePosition) });
-  const snapshot = () => JSON.stringify({ rows: csvRows, anchor, active: activePosition });
+  const snapshot = () => ({ rows: csvRows, anchor: { ...anchor }, active: { ...activePosition } });
   const markCsvDirty = () => {
+    const wasDirty = window.NodevisionState?.fileIsDirty;
     if (window.NodevisionState) window.NodevisionState.fileIsDirty = true;
-    updateToolbarState({ currentMode: "CSVediting", fileIsDirty: true });
+    if (!wasDirty) updateToolbarState({ currentMode: "CSVediting", fileIsDirty: true });
   };
   function publish({ focus = true } = {}) {
     const cell = view.cellAt(activePosition.row, activePosition.col);
@@ -48,39 +49,39 @@ export async function renderEditor(filePath, container) {
     view.paint(csvRange(anchor, activePosition));
     interaction?.selectionChanged();
   }
-  function render() {
+  function render(paint = true) {
     view.render(csvRows, { row: Math.max(anchor.row, activePosition.row), col: Math.max(anchor.col, activePosition.col) });
-    view.paint(csvRange(anchor, activePosition));
+    if (paint) view.paint(csvRange(anchor, activePosition));
     interaction?.invalidate();
     interaction?.selectionChanged();
   }
   function select(point, extend = false, notify = true) {
     activePosition = { row: Math.max(0, point.row), col: Math.max(0, point.col) };
     if (!extend) anchor = { ...activePosition };
-    if (notify && !view.cellAt(activePosition.row + 1, activePosition.col + 1)) render();
-    view.paint(csvRange(anchor, activePosition));
-    interaction?.selectionChanged();
+    if (notify && !view.cellAt(activePosition.row + 1, activePosition.col + 1)) render(false);
     if (notify) publish();
+    else { view.paint(csvRange(anchor, activePosition)); interaction?.selectionChanged(); }
   }
-  const history = createWysiwygProgrammaticHistory(tableWrapper, {
+  const history = createCsvHistory({
     readSnapshot: snapshot,
-    writeSnapshot(value) {
-      const state = JSON.parse(value); csvRows = state.rows; anchor = state.anchor; activePosition = state.active;
-      render(); publish(); markCsvDirty();
+    writeSnapshot(state) {
+      csvRows = state.rows; anchor = { ...state.anchor }; activePosition = { ...state.active };
+      render(false); publish(); markCsvDirty();
     },
   });
   tableWrapper.__nvProgrammaticHistory = history;
   function commit(rows, origin = activePosition, end = origin) {
     if (JSON.stringify(rows) === JSON.stringify(csvRows)) { anchor = { ...origin }; select(end, true); return false; }
     const before = snapshot(); csvRows = cloneCsvRows(rows); anchor = { ...origin }; activePosition = { ...end };
-    render(); publish(); history.record(before); markCsvDirty(); return true;
+    render(false); publish(); history.record(before); markCsvDirty(); return true;
   }
   const editor = {
     getSelection, publish, history, select,
     navigate(delta, extend = false) { select({ row: activePosition.row + delta[0], col: activePosition.col + delta[1] }, extend); view.cellAt(activePosition.row, activePosition.col)?.scrollIntoView?.({ block: "nearest", inline: "nearest" }); },
     input({ row, col }, value) {
       const before = snapshot(); csvRows = setCsvCellValue(csvRows, row, col, value);
-      for (let c = 0; c <= col; c++) {
+      if (csvRows === before.rows) return;
+      for (let c = before.rows[row]?.length || 0; c <= col; c++) {
         const cell = view.cellAt(row, c); cell.classList.remove("nv-csv-virtual-cell"); cell.dataset.declared = "true";
       }
       view.paint(getSelection().range);

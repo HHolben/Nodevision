@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
+import { createProceduralVoxelWorld } from "../../../MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs";
+import { validateVoxelWorld } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs";
 import { projectIframe } from "./iframeProjection.mjs";
 import { serializeMesh } from "./worldSave.mjs";
 import { createEquationColliderPlaneMesh, makePlaneColliderRef, syncPlaneWaterVolumeRef } from "./equationColliderTool.mjs";
@@ -349,6 +351,7 @@ function inheritVoxelPatternField(clone, def, key) {
 }
 
 function expandVoxelPatternDefinition(def, index) {
+  if (def?.type === "procedural-voxel-world") return [validateVoxelWorld(def)];
   if (!isVoxelPatternDefinition(def)) return [def];
   const pattern = def.pattern && typeof def.pattern === "object" ? def.pattern : (def.voxelPattern || {});
   const rawTemplate = def.voxel && typeof def.voxel === "object"
@@ -1156,7 +1159,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const managedObject = def => def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const managedObject = def => def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
     return JSON.stringify((worldData.objects || []).map(def => {
@@ -1191,6 +1194,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     delete object3d.userData.colliderRef;
   };
   const removeGameObjectRuntimeRefs = (object3d) => {
+    object3d?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(object3d);
     disposeIframeObjectRuntime(object3d);
     const portalRef = object3d?.userData?.portalRef;
@@ -1274,13 +1278,14 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
           disposeExpressionObject(entry.object3d);
         }
         const def = entry.def;
-        const mesh = def.type === "iframe" ? createIframeObjectMesh(THREE, def)
+        const mesh = def.type === "procedural-voxel-world" ? createProceduralVoxelWorld(THREE, def, colliders)
+          : def.type === "iframe" ? createIframeObjectMesh(THREE, def)
           : createEquationColliderPlaneMesh(THREE, def.equationCollider, { color: def.color, opacity: def.opacity });
         mesh.position.fromArray(def.position || [0, 0, 0]);
         if (Array.isArray(def.rotation)) mesh.rotation.set(...def.rotation);
         if (def.equationCollider?.infinite && Array.isArray(def.scale)) mesh.scale.fromArray(def.scale);
         Object.assign(mesh.userData, { metaWorldLayerId: entry.id, nvType: def.type, tag: def.tag,
-          isSolid: def.isSolid === true, breakable: true, placedByPlayer: true });
+          isSolid: def.isSolid === true, breakable: def.type !== "procedural-voxel-world", placedByPlayer: true });
         applyPhysicsMaterialToMesh(mesh, ensureWorldObjectPhysicsMaterial(def));
         if (def.collider !== false && def.equationCollider?.infinite) {
           mesh.userData.colliderRef = makePlaneColliderRef(THREE, mesh);
@@ -2198,6 +2203,7 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
   if (ctx.metaWorldHost?.parentNode) ctx.metaWorldHost.parentNode.removeChild(ctx.metaWorldHost);
   ctx.metaWorldHost = null;
   objects?.forEach((obj) => {
+    obj?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(obj);
     disposeIframeObjectRuntime(obj);
     scene.remove(obj);
@@ -2324,6 +2330,7 @@ async function loadStlWorld(filePath, state, THREE) {
   if (!ground.parent) scene.add(ground);
 
   objects?.forEach((obj) => {
+    obj?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(obj);
     disposeIframeObjectRuntime(obj);
     scene.remove(obj);
@@ -2597,6 +2604,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       worldData.metadata.multiplayer = multiplayerDef;
     }
     objects.forEach((obj) => {
+      obj?.userData?.proceduralVoxelRuntime?.dispose();
       disposeSoundObjectRuntime(obj);
       disposeIframeObjectRuntime(obj);
       scene.remove(obj);
@@ -3233,6 +3241,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             }
           })();
         }
+      } else if (def.type === "procedural-voxel-world") {
+        mesh = createProceduralVoxelWorld(THREE, def, colliders);
       } else if (def.type === "terrain-surface") {
         const terrain = def.terrain && typeof def.terrain === "object" ? def.terrain : {};
         mesh = createTerrainSurfaceMesh(THREE, {
@@ -3638,6 +3648,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
       if (!position) position = fallbackSpawn.position;
       controls.getObject().position.set(position[0], position[1], position[2]);
+      objects.forEach(object => object.userData?.proceduralVoxelRuntime?.prepareSpawn(controls.getObject().position, movementState?.playerHeight || 1.75));
       if (movementState?.worldMode === "2d" && movementState?.movementMode !== "topdown") {
         movementState.planeZ = Number.isFinite(position[2]) ? position[2] : 0;
         controls.getObject().position.z = movementState.planeZ;

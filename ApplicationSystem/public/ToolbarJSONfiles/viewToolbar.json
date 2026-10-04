@@ -1,6 +1,12 @@
 [
   {
     "ToolbarCategory": "View",
+    "heading": "HTML Properties",
+    "script": "htmlPropertiesButton.mjs",
+    "modes": ["HTMLediting"]
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "NBT Block Properties",
     "hotkeyText": "",
     "panelTemplate": "NBTPropertiesPanel",

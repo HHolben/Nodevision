@@ -1,15 +1,16 @@
 // Nodevision/ApplicationSystem/public/panels/panelTabContextRegression.test.mjs
-// Regression coverage for active tab/content toolbar context after FileView -> GraphicalEditor switches.
+// This module verifies that switching from a file viewer to a graphical editor restores the active toolbar context.
 
+import { readEditorFeatureSource } from '../../../scripts/read-modular-source.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { evaluateToolbarItemState } from "./toolbarConditions.mjs";
 
 const contextSource = await readFile(new URL("./panelTabContext.mjs", import.meta.url), "utf8");
-const graphicalEditorSource = await readFile(new URL("../PanelInstances/EditorPanels/GraphicalEditor.mjs", import.meta.url), "utf8");
-const htmlEditorSource = await readFile(new URL("../PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImpl.mjs", import.meta.url), "utf8");
-const svgEditorSource = await readFile(new URL("../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntime.mjs", import.meta.url), "utf8");
-const tableToolsSource = await readFile(new URL("../ToolbarCallbacks/insert/tableTools.mjs", import.meta.url), "utf8");
+const graphicalEditorSource = await readEditorFeatureSource(new URL("../PanelInstances/EditorPanels/GraphicalEditor.mjs", import.meta.url));
+const htmlEditorSource = await readEditorFeatureSource(new URL("../PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImpl.mjs", import.meta.url));
+const svgEditorSource = await readEditorFeatureSource(new URL("../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntime.mjs", import.meta.url));
+const tableToolsSource = await readEditorFeatureSource(new URL("../ToolbarCallbacks/insert/tableTools.mjs", import.meta.url));
 const drawToolbar = JSON.parse(await readFile(new URL("../ToolbarJSONfiles/drawToolbar.json", import.meta.url), "utf8"));
 const insertToolbar = JSON.parse(await readFile(new URL("../ToolbarJSONfiles/insertToolbar.json", import.meta.url), "utf8"));
 
@@ -66,7 +67,7 @@ assert.match(graphicalEditorSource, /activePanelChanged/, "GraphicalEditor activ
 assert.match(graphicalEditorSource, /__nvPanelTabContentIsActive/, "GraphicalEditor activation should ignore inactive hidden tab content");
 assert.match(graphicalEditorSource, /__nvHtmlEditorContext/, "GraphicalEditor activation should detect embedded HTML editor context");
 assert.match(graphicalEditorSource, /htmlContext\.activate\(\)/, "GraphicalEditor activation should restore HTMLediting toolbar context when present");
-assert.match(graphicalEditorSource, /await updateGraphicalEditor\(initialPath, \{ force: true, host: container \}\);\s*activateGraphicalEditorHost\(container\);/, "GraphicalEditor setup should reapply editor context after initial render");
+assert.match(graphicalEditorSource, /await updateGraphicalEditor\(initialPath, \{\s*force: true,\s*host: container\s*\}\);\s*activateGraphicalEditorHost\(container\);/, "GraphicalEditor setup should reapply editor context after initial render");
 assert.match(htmlEditorSource, /currentMode:\s*editorMode/, "HTML editor activation should refresh toolbar state with HTMLediting mode");
 assert.match(htmlEditorSource, /window.__nvTableEditorRoot = wysiwyg/, "HTML editor activation should publish the active table editor root");
 assert.match(htmlEditorSource, /getEditorElement:\s*\(\) => wysiwyg/, "HTML editor context should expose its WYSIWYG element");

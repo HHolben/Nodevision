@@ -106,6 +106,7 @@ function cleanupLegacyGameView(panel, state = {}) {
   if (window.VRWorldContext?.panel === panel && Array.isArray(window.VRWorldContext.objects)) {
     window.VRWorldContext.objects.forEach((object) => {
       try {
+        object?.userData?.proceduralVoxelRuntime?.dispose();
         object?.userData?.soundRuntime?.audio?.pause?.();
         if (object?.userData?.soundRuntime?.audio) object.userData.soundRuntime.audio.src = "";
         if (object?.userData) delete object.userData.soundRuntime;

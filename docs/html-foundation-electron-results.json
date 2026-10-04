@@ -1,0 +1,1375 @@
+{
+  "environment": {
+    "node": "24.15.0",
+    "acorn": "8.16.0",
+    "ada": "3.4.4",
+    "amaro": "1.1.8",
+    "ares": "1.34.6",
+    "brotli": "1.2.0",
+    "cldr": "48.0",
+    "icu": "78.2",
+    "llhttp": "9.3.1",
+    "merve": "1.2.2",
+    "modules": "146",
+    "napi": "10",
+    "nbytes": "0.1.3",
+    "ncrypto": "0.0.1",
+    "nghttp2": "1.68.0",
+    "openssl": "0.0.0",
+    "simdjson": "4.5.0",
+    "simdutf": "7.7.0",
+    "sqlite": "3.51.3",
+    "tz": "2025c",
+    "undici": "7.24.4",
+    "unicode": "17.0",
+    "uv": "1.51.0",
+    "uvwasi": "0.0.23",
+    "v8": "14.8.178.14-electron.0",
+    "zlib": "1.3.2.1-motley",
+    "zstd": "1.6.0",
+    "electron": "42.2.0",
+    "chrome": "148.0.7778.97"
+  },
+  "workspace": "PASS: retained HTML tabs, Layers ownership, scoped saves, live sources, and FileView",
+  "states": [
+    {
+      "step": "initial",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">A</p></body></html>",
+          "text": "A",
+          "caret": 1,
+          "revision": 25
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "type one",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">Aone</p></body></html>",
+          "text": "Aone",
+          "caret": 4,
+          "revision": 28
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "style red",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aone</p></body></html>",
+          "text": "Aone",
+          "caret": 4,
+          "revision": 29
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "type two",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aonetwo</p></body></html>",
+          "text": "Aonetwo",
+          "caret": 7,
+          "revision": 32
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "undo 1",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aone</p></body></html>",
+          "text": "Aone",
+          "caret": 4,
+          "revision": 33
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "undo 2",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">Aone</p></body></html>",
+          "text": "Aone",
+          "caret": 4,
+          "revision": 34
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "undo 3",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">A</p></body></html>",
+          "text": "A",
+          "caret": 1,
+          "revision": 35
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "undo 4",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">A</p></body></html>",
+          "text": "A",
+          "caret": 1,
+          "revision": 35
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "undo 5",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">A</p></body></html>",
+          "text": "A",
+          "caret": 1,
+          "revision": 35
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "undo 6",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">A</p></body></html>",
+          "text": "A",
+          "caret": 1,
+          "revision": 35
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "redo 1",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\">Aone</p></body></html>",
+          "text": "Aone",
+          "caret": 4,
+          "revision": 36
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "redo 2",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aone</p></body></html>",
+          "text": "Aone",
+          "caret": 4,
+          "revision": 37
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "redo 3",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aonetwo</p></body></html>",
+          "text": "Aonetwo",
+          "caret": 7,
+          "revision": 38
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "redo 4",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aonetwo</p></body></html>",
+          "text": "Aonetwo",
+          "caret": 7,
+          "revision": 38
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "redo 5",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aonetwo</p></body></html>",
+          "text": "Aonetwo",
+          "caret": 7,
+          "revision": 38
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "step": "redo 6",
+      "value": [
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aonetwo</p></body></html>",
+          "text": "Aonetwo",
+          "caret": 7,
+          "revision": 38
+        },
+        {
+          "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">B</p></body></html>",
+          "text": "B",
+          "revision": 5
+        }
+      ]
+    }
+  ],
+  "previewFocusReturn": {
+    "text": "Afirst",
+    "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">Afirst</p></body></html>",
+    "frames": 7,
+    "focusedEditor": true,
+    "caret": 6,
+    "owner": "A.html"
+  },
+  "preview": [
+    {
+      "text": "A",
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">A</p></body></html>",
+      "frames": 5,
+      "focusedEditor": true,
+      "caret": 1,
+      "owner": "A.html"
+    },
+    {
+      "text": "Afirst",
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">Afirst</p></body></html>",
+      "frames": 6,
+      "focusedEditor": true,
+      "caret": 6,
+      "owner": "A.html"
+    },
+    {
+      "text": "Afirstsecond",
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">Afirstsecond</p></body></html>",
+      "frames": 8,
+      "focusedEditor": true,
+      "caret": 12,
+      "owner": "A.html"
+    },
+    {
+      "text": "Afirstsecond",
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">Afirstsecond</p></body></html>",
+      "frames": 8,
+      "focusedEditor": true,
+      "caret": 12,
+      "owner": "A.html"
+    },
+    {
+      "text": "Afirstsecond",
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">Afirstsecond</p></body></html>",
+      "frames": 8,
+      "focusedEditor": true,
+      "caret": 18,
+      "owner": "A.html"
+    },
+    {
+      "text": "Afirstsecondhidden",
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">Afirstsecondhidden</p></body></html>",
+      "frames": 9,
+      "focusedEditor": true,
+      "caret": 18,
+      "owner": "A.html"
+    },
+    {
+      "text": "Afirstsecondhidden",
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><base href=\"http://127.0.0.1:38537/Notebook/\"><title>A.html</title></head><body><p id=\"text\">Afirstsecondhidden</p></body></html>",
+      "frames": 9,
+      "focusedEditor": true,
+      "caret": 18,
+      "owner": "A.html"
+    }
+  ],
+  "baselineShortcutRequests": 2,
+  "shortcut": {
+    "requests": [
+      {
+        "path": "A.html",
+        "sourcePath": "A.html",
+        "content": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: red;\">Aonetwo</p></body></html>",
+        "editorKind": "html-wysiwyg"
+      }
+    ],
+    "active": "A.html"
+  },
+  "interactions": [
+    {
+      "action": "caret",
+      "synchronousMs": 0.6000000000931323,
+      "secondRafMs": 16.399999999906868,
+      "toolbarCalls": 0,
+      "layersMutationBatches": 0,
+      "viewerRefreshMutations": 0,
+      "viewerFramesMounted": 0,
+      "liveEvents": 0
+    },
+    {
+      "action": "element selection",
+      "synchronousMs": 0.20000000018626451,
+      "secondRafMs": 16.100000000093132,
+      "toolbarCalls": 0,
+      "layersMutationBatches": 0,
+      "viewerRefreshMutations": 0,
+      "viewerFramesMounted": 0,
+      "liveEvents": 0
+    },
+    {
+      "action": "style transaction",
+      "synchronousMs": 1.5,
+      "secondRafMs": 17.899999999906868,
+      "toolbarCalls": 2,
+      "layersMutationBatches": 1,
+      "viewerRefreshMutations": 3,
+      "viewerFramesMounted": 1,
+      "liveEvents": 1
+    },
+    {
+      "action": "transaction rollback",
+      "synchronousMs": 1.6999999997206032,
+      "secondRafMs": 15.699999999720603,
+      "toolbarCalls": 0,
+      "layersMutationBatches": 1,
+      "viewerRefreshMutations": 0,
+      "viewerFramesMounted": 0,
+      "liveEvents": 0
+    },
+    {
+      "action": "programmatic undo",
+      "synchronousMs": 1.3000000002793968,
+      "secondRafMs": 16.40000000037253,
+      "toolbarCalls": 2,
+      "layersMutationBatches": 1,
+      "viewerRefreshMutations": 3,
+      "viewerFramesMounted": 1,
+      "liveEvents": 1
+    },
+    {
+      "action": "programmatic redo",
+      "synchronousMs": 1.1000000000931323,
+      "secondRafMs": 15.799999999813735,
+      "toolbarCalls": 2,
+      "layersMutationBatches": 1,
+      "viewerRefreshMutations": 3,
+      "viewerFramesMounted": 1,
+      "liveEvents": 1
+    }
+  ],
+  "inputs": [
+    {
+      "inputType": "insertText",
+      "firstRafMs": 11.299999999813735,
+      "secondRafMs": 14.299999999813735
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 3.3999999999068677,
+      "secondRafMs": 10.5
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 3.3999999999068677,
+      "secondRafMs": 14.800000000279397
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 2.5,
+      "secondRafMs": 15.100000000093132
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 5.100000000093132,
+      "secondRafMs": 18.300000000279397
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 2,
+      "secondRafMs": 5.900000000372529
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 1.6999999997206032,
+      "secondRafMs": 9.099999999627471
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 1.900000000372529,
+      "secondRafMs": 11
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 2,
+      "secondRafMs": 15.100000000093132
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 2.6000000000931323,
+      "secondRafMs": 16.899999999906868
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 4.399999999906868,
+      "secondRafMs": 20.700000000186265
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 13.599999999627471,
+      "secondRafMs": 29.199999999720603
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 15.700000000186265,
+      "secondRafMs": 33.40000000037253
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 3,
+      "secondRafMs": 22.90000000037253
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 4,
+      "secondRafMs": 20.799999999813735
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 7.699999999720603,
+      "secondRafMs": 23
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 10.700000000186265,
+      "secondRafMs": 27.5
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 2.599999999627471,
+      "secondRafMs": 11.099999999627471
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 2.6000000000931323,
+      "secondRafMs": 15.5
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 14.400000000372529,
+      "secondRafMs": 30.90000000037253
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 11.799999999813735,
+      "secondRafMs": 27.899999999906868
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 13.899999999906868,
+      "secondRafMs": 29.600000000093132
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 16,
+      "secondRafMs": 32.3000000002794
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 6.899999999906868,
+      "secondRafMs": 20.100000000093132
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 7.100000000093132,
+      "secondRafMs": 30.5
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 3.1000000000931323,
+      "secondRafMs": 18.200000000186265
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 7.399999999906868,
+      "secondRafMs": 22.5
+    },
+    {
+      "inputType": "insertText",
+      "firstRafMs": 12.200000000186265,
+      "secondRafMs": 27.800000000279397
+    }
+  ],
+  "lifecycle": {
+    "beforeMount": {
+      "globalListeners": 4,
+      "observingMutationObservers": 0,
+      "pendingTimeouts": 0,
+      "activeIntervals": 0,
+      "toolbarCalls": 26
+    },
+    "beforeSwitches": {
+      "globalListeners": 32,
+      "observingMutationObservers": 10,
+      "pendingTimeouts": 0,
+      "activeIntervals": 0,
+      "toolbarCalls": 72
+    },
+    "afterSwitches": {
+      "globalListeners": 32,
+      "observingMutationObservers": 10,
+      "pendingTimeouts": 1,
+      "activeIntervals": 0,
+      "toolbarCalls": 152
+    },
+    "remountCycles": [
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 239
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 259
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 279
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 299
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 319
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 339
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 359
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 379
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 399
+      },
+      {
+        "globalListeners": 11,
+        "observingMutationObservers": 0,
+        "pendingTimeouts": 0,
+        "activeIntervals": 0,
+        "toolbarCalls": 419
+      }
+    ],
+    "afterDispose": {
+      "globalListeners": 11,
+      "observingMutationObservers": 0,
+      "pendingTimeouts": 0,
+      "activeIntervals": 0,
+      "toolbarCalls": 419
+    }
+  },
+  "timings": [
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.900000000372529
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 3.5
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 3.099999999627471
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.7000000001862645
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 3.6000000000931323
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.5
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.3999999999068677
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.1999999997206032
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 1.8000000002793968
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.1000000000931323
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.2999999998137355
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.7000000001862645
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.5
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 3.6000000000931323
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 3.3999999999068677
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 3.2999999998137355
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 3.6000000000931323
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 2.1000000000931323
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 1.5
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 1.6999999997206032
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 1.3000000002793968
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 1.1000000000931323
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 100,
+      "fragmented": false,
+      "bytes": 3641,
+      "ms": 1.3999999999068677
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 31.800000000279397
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 10.699999999720603
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 17
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 26
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 25.399999999906868
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 27
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 28.200000000186265
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 22.399999999906868
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 23.399999999906868
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 30.899999999906868
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 30.59999999962747
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 25.200000000186265
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 21.799999999813735
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 28.100000000093132
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 22.700000000186265
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 34.299999999813735
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 46.1999999997206
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 16.800000000279397
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 17.899999999906868
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 16.100000000093132
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 15.099999999627471
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 14.100000000093132
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 17.299999999813735
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": false,
+      "bytes": 36041,
+      "ms": 18.300000000279397
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 75.60000000009313
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 69.29999999981374
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 75.70000000018626
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 125.39999999990687
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 105.60000000009313
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 133.79999999981374
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 96.10000000009313
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 88.5
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 83.60000000009313
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 77.20000000018626
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 83.70000000018626
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 71.70000000018626
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 89.60000000009313
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 45.8000000002794
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 49.59999999962747
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 57.10000000009313
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 71.3000000002794
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 82.39999999990687
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 62.299999999813735
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 139.79999999981374
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 74.5
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 43.89999999990687
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 44.10000000009313
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 5000,
+      "fragmented": false,
+      "bytes": 180041,
+      "ms": 57.89999999990687
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 16.100000000093132
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 20.100000000093132
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 21.799999999813735
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 70.20000000018626
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 40.299999999813735
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 36.10000000009313
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 40.60000000009313
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 41.60000000009313
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 47.5
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 43.3000000002794
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 23
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 32.5
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 32.3000000002794
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 50.39999999990687
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 38.89999999990687
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 32.3000000002794
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 31.799999999813735
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 40
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 39.10000000009313
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 18.90000000037253
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 21.899999999906868
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 44.60000000009313
+    },
+    {
+      "action": "save serialization",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 39.89999999990687
+    },
+    {
+      "action": "baseline detached serializer",
+      "paragraphs": 1000,
+      "fragmented": true,
+      "bytes": 115041,
+      "ms": 51.59999999962747
+    }
+  ],
+  "toolbarCalls": 212,
+  "refreshes": {
+    "layersMutationBatches": 28,
+    "viewerRefreshMutations": 51,
+    "viewerFramesMounted": 17,
+    "liveEvents": 18
+  },
+  "liveProviderCount": 2,
+  "final": [
+    {
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><title>A.html</title></head><body><p id=\"text\" style=\"color: purple;\">Aonetwo</p></body></html>",
+      "text": "Aonetwo",
+      "caret": 1,
+      "revision": 41
+    },
+    {
+      "source": "<!DOCTYPE html><html lang=\"en\"><head><title>B.html</title></head><body><p id=\"text\">Bother</p></body></html>",
+      "text": "Bother",
+      "caret": 6,
+      "revision": 10
+    }
+  ],
+  "chronologicalUndoCoherent": true,
+  "composition": "Not simulated: sendInputEvent does not establish an OS IME composition session.",
+  "providersAfterDispose": 0
+}

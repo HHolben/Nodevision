@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlSourceDocument.mjs
 // This module preserves the parsed HTML document shell and inert source nodes while projecting editable head and body content into the graphical editor and serializing ordinary HTML again.
 
+import { createHtmlSourceProvenance } from './HtmlSourceProvenance.mjs';
 // Script records retain the existing hidden-script editing contract; comments keep position.
 export function createHtmlSourceDocument({ head, body, hidden }) {
   const owner = body.ownerDocument;
@@ -10,6 +11,8 @@ export function createHtmlSourceDocument({ head, body, hidden }) {
   let originalContent = '';
   let nextId = 0;
   const retained = new Map();
+  const provenance = createHtmlSourceProvenance(body);
+  body.__nvSourceProvenance = provenance;
 
   function projectChildren(source, target) {
     for (const child of source.childNodes) {
@@ -71,17 +74,37 @@ export function createHtmlSourceDocument({ head, body, hidden }) {
     head.replaceChildren();
     body.replaceChildren();
     hidden.replaceChildren();
-    projectChildren(parsed.head, head);
-    projectChildren(parsed.body, body);
+    const headStage = owner.createElement('div'), bodyStage = owner.createElement('div');
+    projectChildren(parsed.head, headStage);
+    projectChildren(parsed.body, bodyStage);
+    provenance.capture(headStage, bodyStage);
+    for (const element of [...headStage.querySelectorAll('*'), ...bodyStage.querySelectorAll('*')]) {
+      for (const attribute of [...element.attributes]) {
+        if (/^on/i.test(attribute.name)) provenance.resolveAttribute(element, attribute.name, null);
+        if (['href', 'src'].includes(attribute.name) && /^javascript:/i.test(attribute.value.trim())) {
+          provenance.resolveAttribute(element, attribute.name, 'about:blank');
+        }
+      }
+      if (element.localName === 'iframe') provenance.resolveAttribute(element, 'sandbox', '');
+    }
+    head.append(...headStage.childNodes);
+    body.append(...bodyStage.childNodes);
     body.dataset.nvDocumentBodyStyle = parsed.body.getAttribute('style') || '';
     return parsed;
   }
 
   // Serialize detached clones only; author scripts never enter the live application document.
   function serialize(bodyClone, { supportHeadHtml = '' } = {}) {
-    const result = sourceDocument.cloneNode(true);
-    result.head.replaceChildren(...[...head.childNodes].map(node => node.cloneNode(true)));
-    result.body.replaceChildren(...[...bodyClone.childNodes].map(node => node.cloneNode(true)));
+    // Copy the shell without cloning the entire original body just to discard it.
+    const result = sourceDocument.cloneNode(false);
+    for (const node of sourceDocument.childNodes) {
+      if (node !== sourceDocument.documentElement) { result.append(node.cloneNode(true)); continue; }
+      const shell = node.cloneNode(false);
+      for (const child of node.childNodes) shell.append(child.cloneNode(child !== sourceDocument.head && child !== sourceDocument.body));
+      result.append(shell);
+    }
+    result.head.replaceChildren(...provenance.clean(head.cloneNode(true)).childNodes);
+    result.body.replaceChildren(...bodyClone.childNodes);
     const records = new Map([...hidden.children].map(record => [record.dataset.sourceId, record]));
     restore(result.head, records);
     restore(result.body, records);
@@ -107,7 +130,9 @@ export function createHtmlSourceDocument({ head, body, hidden }) {
   }
 
   return {
-    load, serialize,
+    load, serialize, provenance,
+    styleSources: () => ({ base: sourceDocument.querySelector('base[href]')?.getAttribute('href') || '',
+      elements: [...head.querySelectorAll('style, link[rel~="stylesheet"]'), ...body.querySelectorAll('style, link[rel~="stylesheet"]')] }),
     has: selector => Boolean(sourceDocument.querySelector(selector)),
     get originalContent() { return originalContent; },
   };

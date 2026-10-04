@@ -1235,6 +1235,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   return {
     inspectTarget(target, distance = null) {
+      if (target?.userData?.proceduralVoxelRuntime || target?.userData?.proceduralTerrainId) return false;
       const resolvedTarget = resolveInspectableTarget(target);
       if (!resolvedTarget) return false;
       activeTarget = resolvedTarget;
