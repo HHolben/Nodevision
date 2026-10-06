@@ -9,6 +9,7 @@ import * as C from './VoxelCoordinates.mjs';
 import { createVoxelGenerator } from './VoxelTerrainGenerator.mjs';
 import { meshVoxelChunk } from './VoxelChunkMesher.mjs';
 import { createProceduralVoxelWorld } from './ProceduralVoxelWorldRuntime.mjs';
+import { voxelMaterialOptions } from './VoxelMaterialTestFixtures.mjs';
 const def = { id:'terrain', type:'procedural-voxel-world', position:[-500,0,-500], size:[1000,128,1000], voxelSize:0.25,
   generator:{id:'nodevision-terrain-v1',version:1,seed:123456}, chunks:{voxelsPerAxis:32,loadRadius:1} };
 const world = objects => ({name:'Test',type:'world',objects});
@@ -43,8 +44,9 @@ test('meshing suppresses adjacent and cross-chunk internal faces',()=>{
   assert.equal(meshVoxelChunk(data,[0,0,0],()=>0).faceCount,10);
   assert.equal(meshVoxelChunk(data,[0,0,0],(x,y,z)=>x===-1&&y===0&&z===0?1:0).faceCount,9);
 });
-test('residency unloads, reproduces geometry and releases resources',()=>{
-  const colliders=[], root=createProceduralVoxelWorld(THREE,def,colliders), runtime=root.userData.proceduralVoxelRuntime;
+test('residency unloads, reproduces geometry and releases resources',async()=>{
+  const colliders=[], root=createProceduralVoxelWorld(THREE,def,colliders,voxelMaterialOptions), runtime=root.userData.proceduralVoxelRuntime;
+  assert.equal(await runtime.ready,true);
   const position=new THREE.Vector3(0,30,0);
   for(let i=0;i<36;i++) runtime.update(position);
   assert.equal(runtime.stats.loaded,36);assert.equal(colliders.length,1); assert.ok(root.children.length<=36);

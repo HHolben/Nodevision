@@ -45,7 +45,7 @@ export function collectLayers(root) {
   const layers = [];
   const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
     acceptNode: node => {
-      if (!(node instanceof Element)) return NodeFilter.FILTER_REJECT;
+      if (node.nodeType !== Node.ELEMENT_NODE) return NodeFilter.FILTER_REJECT;
       if (node === root) return NodeFilter.FILTER_SKIP;
       return isHtmlLayerElement(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
     }
@@ -97,6 +97,7 @@ export function createLayerRow({
   active,
   win,
   attachHandlers = true,
+  readOnly = false,
   onSelect
 }) {
   const row = document.createElement("div");
@@ -111,9 +112,10 @@ export function createLayerRow({
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = measureHtmlWork(el.closest("#wysiwyg"), "layersVisibility", () => isVisible(el, win));
-  checkbox.title = checkbox.checked ? "Hide layer" : "Show layer";
+  checkbox.disabled = readOnly;
+  checkbox.title = readOnly ? "Layer visibility (read only)" : checkbox.checked ? "Hide layer" : "Show layer";
   checkbox.dataset.layerIndex = String(index);
-  if (attachHandlers) {
+  if (attachHandlers && !readOnly) {
     checkbox.addEventListener("click", event => event.stopPropagation());
     checkbox.addEventListener("change", () => setVisible(el, checkbox.checked));
   }

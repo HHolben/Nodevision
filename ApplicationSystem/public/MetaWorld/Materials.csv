@@ -3,6 +3,7 @@ Physics Solid,Materials/Solids/PhysicsSolid.json
 Physics Frictionless,Materials/Solids/PhysicsFrictionless.json
 Grass,Materials/Solids/grass.json
 Soil,Materials/Solids/soil.json
+Stone,Materials/Solids/stone.json
 Limestone,Materials/Solids/limestone.json
 Sand,Materials/Solids/sand.json
 Snow,Materials/Solids/snow.json
@@ -35,3 +36,7 @@ Earth Troposphere,Materials/Gasses/EarthTroposphere.json
 Hydrogen,Materials/Gasses/hydrogen.json
 Helium,Materials/Gasses/helium.json
 Vacuum,Materials/Gasses/vacuum.json
+Pine Wood,Materials/Solids/PineWood.json
+Pine Bark,Materials/Solids/PineBark.json
+Pine Foliage,Materials/Solids/PineFoliage.json
+Limestone Gravel,Materials/Solids/LimestoneGravel.json

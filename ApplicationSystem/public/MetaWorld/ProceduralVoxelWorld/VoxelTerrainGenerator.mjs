@@ -1,45 +1,41 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelTerrainGenerator.mjs
-// This module produces deterministic finite heightfield terrain without depending on rendering or scene state.
-
-import { CHUNK_SIZE, chunkToVoxel, containsVoxel, voxelDimensions, voxelIndex } from "./VoxelCoordinates.mjs";
-export const VOXEL_MATERIALS = [null,
-  { color: "#568c38", physicsMaterialId: "grass" },
-  { color: "#795438", physicsMaterialId: "soil" },
-  { color: "#858583", physicsMaterialId: "limestone" }];
-function hash(x, z, seed) {
-  let n = Math.imul(x, 374761393) ^ Math.imul(z, 668265263) ^ seed;
-  n = Math.imul(n ^ (n >>> 13), 1274126177);
-  return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
-}
-function noise(x, z, seed) {
-  const ix = Math.floor(x), iz = Math.floor(z);
-  const smooth = t => t * t * (3 - 2 * t);
-  const a = smooth(x - ix), b = smooth(z - iz);
-  const mix = (p, q, t) => p + (q - p) * t;
-  return mix(mix(hash(ix, iz, seed), hash(ix + 1, iz, seed), a),
-    mix(hash(ix, iz + 1, seed), hash(ix + 1, iz + 1, seed), a), b);
-}
+// This module composes base terrain and bounded procedural features into a deterministic final voxel field shared by rendering, collision, and future overrides.
+import { createBaseTerrain } from './VoxelBaseTerrain.mjs';
+import { createFeatureField } from './Features/FeatureField.mjs';
+import { createPinePlacement } from './Features/PinePlacement.mjs';
+import { PINE_WOOD, PINE_BARK, PINE_FOLIAGE, voxelMaterialId } from './VoxelMaterialIds.mjs';
+import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs';
+const priority=id=>id===PINE_WOOD||id===PINE_BARK?2:id===PINE_FOLIAGE?1:0;
 export function createVoxelGenerator(def) {
-  const dimensions = voxelDimensions(def.size), seed = def.generator.seed;
-  function getTerrainHeight(x, z) {
-    if (x < 0 || z < 0 || x >= dimensions[0] || z >= dimensions[2]) return 0;
-    return Math.min(dimensions[1], Math.max(1, Math.floor(48 + 48 * noise(x / 256, z / 256, seed) + 12 * noise(x / 64, z / 64, seed ^ 7919))));
+  const base=createBaseTerrain(def),provider=createPinePlacement(base,def.generator.seed);
+  const features=createFeatureField([provider],priority);
+  const featureStats={lookupMs:0,samplingMs:0,candidates:0};
+  function getFeatureVoxel(x,y,z,list) {
+    if(!containsVoxel([x,y,z],base.dimensions)||base.getVoxel(x,y,z))return 0;
+    return list?features.sample(list,x,y,z):features.at(x,y,z);
   }
-  function getVoxel(x, y, z) {
-    if (!containsVoxel([x, y, z], dimensions)) return 0;
-    const height = getTerrainHeight(x, z);
-    return y >= height ? 0 : y === height - 1 ? 1 : y >= height - 5 ? 2 : 3;
+  function getVoxel(x,y,z){
+    if(!containsVoxel([x,y,z],base.dimensions))return 0;
+    return base.getVoxel(x,y,z)||features.at(x,y,z);
   }
-  function generateChunk(cx, cy, cz) {
-    const origin = chunkToVoxel([cx, cy, cz]), data = new Uint8Array(CHUNK_SIZE ** 3);
-    for (let z = 0; z < CHUNK_SIZE; z++) for (let x = 0; x < CHUNK_SIZE; x++) {
-      const h = getTerrainHeight(origin[0] + x, origin[2] + z);
-      for (let y = 0; y < CHUNK_SIZE; y++) {
-        const gy = origin[1] + y;
-        data[voxelIndex(x, y, z)] = gy < 0 || gy >= h ? 0 : gy === h - 1 ? 1 : gy >= h - 5 ? 2 : 3;
+  function generateChunk(cx,cy,cz){
+    const data=base.generateChunk(cx,cy,cz),min=chunkToVoxel([cx,cy,cz]),max=min.map(v=>v+32);
+    const start=performance.now(),list=features.query(min,max),sampleStart=performance.now();
+    featureStats.lookupMs+=sampleStart-start;featureStats.candidates+=list.length;
+    // Only visit feature boxes intersecting this chunk, preserving terrain and structural priority.
+    for(const f of list){
+      const lo=min.map((v,a)=>Math.max(v,f.min[a])),hi=max.map((v,a)=>Math.min(v,f.max[a]));
+      for(let z=lo[2];z<hi[2];z++)for(let x=lo[0];x<hi[0];x++)for(let y=lo[1];y<hi[1];y++){
+        const index=voxelIndex(x-min[0],y-min[1],z-min[2]),old=data[index];
+        if(old&&!priority(old))continue;
+        const value=f.sample(x,y,z);
+        if(priority(value)>priority(old))data[index]=value;
       }
     }
+    featureStats.samplingMs+=performance.now()-sampleStart;
     return data;
   }
-  return { dimensions, maxSolidHeight: Math.min(108, dimensions[1]), getTerrainHeight, getVoxel, generateChunk };
+  return { ...base,features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
+    maxSolidHeight:Math.min(base.dimensions[1],base.maxSolidHeight+provider.maxHeight),
+    getVoxelMaterialId:(x,y,z)=>voxelMaterialId(getVoxel(x,y,z)) };
 }

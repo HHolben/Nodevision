@@ -5,8 +5,7 @@ import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 export const wantsIframe = true;
 
-import { installContentPresentationZoom } from '/panels/contentPresentationZoom.mjs';
-import { installPanelZoomIframe } from '/panels/panelZoomIframe.mjs';
+import { installHtmlViewerZoom } from './HtmlViewerZoom.mjs';
 
 function escapeAttr(value = "") {
   return String(value || "").replaceAll("&", "&amp;").replaceAll("\"", "&quot;");
@@ -66,12 +65,9 @@ export async function renderFile(path, viewPanel, iframe, serverBase, options = 
   };
 
   iframe.onload = () => {
+    iframe.__nvHtmlViewerZoomCleanup?.();
     try {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframe.__nvHtmlViewerZoomCleanup?.();
-      const unregister = installContentPresentationZoom(iframe, iframe);
-      const bridge = installPanelZoomIframe(iframe);
-      iframe.__nvHtmlViewerZoomCleanup = () => { unregister(); bridge(); };
       const styleEl = iframeDoc.createElement("style");
       styleEl.dataset.nvHtmlViewerFrame = "true";
       styleEl.textContent = `
@@ -88,7 +84,15 @@ export async function renderFile(path, viewPanel, iframe, serverBase, options = 
       // Expose a layer context for the Layers panel (view mode)
       const body = iframeDoc.body;
       if (body) {
-        window.HTMLViewLayersContext = createHtmlLayersContext(body, { title: "HTML Layers (View)" });
+        const context = createHtmlLayersContext(body, { title: "HTML Layers (View)", readOnly: true });
+        window.HTMLViewLayersContext = context;
+        const unregister = installHtmlViewerZoom(viewPanel, iframe);
+        const cleanup = () => {
+          unregister();
+          if (window.HTMLViewLayersContext === context) window.HTMLViewLayersContext = null;
+          if (iframe.__nvHtmlViewerZoomCleanup === cleanup) iframe.__nvHtmlViewerZoomCleanup = null;
+        };
+        iframe.__nvHtmlViewerZoomCleanup = cleanup;
       }
     } catch (err) {
       console.warn("⚠️ Could not inject scaling style:", err);

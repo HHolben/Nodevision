@@ -9,17 +9,18 @@ import { measureHtmlWork } from "../../../EditorPanels/GraphicalEditors/HTMLedit
 
 // Create Html Layers Context operations.
 export function createHtmlLayersContext(root, {
-  title = "HTML Layers"
+  title = "HTML Layers", readOnly = false, onReveal = null
 } = {}) {
-  const layerState = {};
+  const layerState = { readOnly };
   layerState.win = root?.ownerDocument?.defaultView || window;
   layerState.selectedElement = null;
   layerState.render = () => {};
   layerState.selectElement = el => {
     const next = el && root?.contains?.(el) ? el : null;
-    if (next === layerState.selectedElement) return;
+    if (next === layerState.selectedElement && !(readOnly && onReveal)) return;
     layerState.selectedElement = next;
-    root.__nvHtmlSelection?.selectElement(layerState.selectedElement);
+    if (!readOnly) root.__nvHtmlSelection?.selectElement(layerState.selectedElement);
+    if (readOnly && next) onReveal?.(next);
     layerState.selectedElement?.scrollIntoView?.({
       block: "nearest",
       inline: "nearest"
@@ -110,7 +111,7 @@ export function createHtmlLayersContext(root, {
       hostState.onListChange = event => {
         const checkbox = event.target?.closest?.("input[type=\"checkbox\"][data-layer-index]");
         const index = hostState.layerIndexFromControl(checkbox);
-        if (index < 0) return;
+        if (readOnly || index < 0) return;
         setVisible(hostState.latestLayers[index], checkbox.checked);
       };
       hostState.scheduleVirtualWindowRender = () => {
@@ -127,7 +128,7 @@ export function createHtmlLayersContext(root, {
         passive: true
       });
       layerState.render();
-      ["mousedown", "click", "submit"].forEach(type => root.addEventListener(type, hostState.onFormInteraction, true));
+      if (!readOnly) ["mousedown", "click", "submit"].forEach(type => root.addEventListener(type, hostState.onFormInteraction, true));
       root.addEventListener("click", hostState.onRootSelect, true);
       root.addEventListener("focusin", hostState.onRootSelect, true);
       layerState.win.addEventListener("nodevision-html-layer-selected", hostState.onExternalSelect);

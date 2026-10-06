@@ -1,0 +1,56 @@
+{
+  "fixture": "seed 123456; same 100 representative chunks after 10 warmups; voxel-material-benchmark.mjs",
+  "nodeBefore": {
+    "generationMs": {
+      "p50": 0.4912439999999947,
+      "p95": 1.0478600000000142
+    },
+    "meshingMs": {
+      "p50": 3.5429220000000328,
+      "p95": 16.866827000000058
+    }
+  },
+  "nodeAfter": {
+    "generationMs": {
+      "p50": 0.5697880000000168,
+      "p95": 1.152659999999969
+    },
+    "meshingMs": {
+      "p50": 4.921224000000052,
+      "p95": 12.489578999999992
+    }
+  },
+  "browserBefore": {
+    "loaded": 1156,
+    "queued": 0,
+    "generated": 1156,
+    "voxels": 22281767,
+    "faces": 654640,
+    "generationMs": 363.5,
+    "meshingMs": 2185.900000001071,
+    "maxBuildMs": 32.699999999953434,
+    "totalLoadMs": 2554.8000000000466,
+    "meshes": 642,
+    "objects": 2,
+    "colliders": 2,
+    "geometryBytes": 70701120,
+    "renderTriangles": 536798
+  },
+  "browserAfter": {
+    "loaded": 1156,
+    "queued": 0,
+    "generated": 1156,
+    "voxels": 22281767,
+    "faces": 777467,
+    "generationMs": 721.2000000067055,
+    "meshingMs": 4127.499999988824,
+    "maxBuildMs": 50.099999997764826,
+    "totalLoadMs": 4855.699999999255,
+    "meshes": 681,
+    "objects": 2,
+    "colliders": 2,
+    "geometryBytes": 83966436,
+    "renderTriangles": 632258
+  },
+  "caveat": "Browser baseline is the previous material milestone, not a controlled same-session timing comparison. SwiftShader software rendering; synchronous streaming can still hitch."
+}

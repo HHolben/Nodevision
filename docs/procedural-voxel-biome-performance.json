@@ -1,0 +1,99 @@
+{
+  "fixture": "seed 123456; 100 measured chunks after 10 warmups; scripts/voxel-material-benchmark.mjs",
+  "before": {
+    "summary": {
+      "generationMs": {
+        "p50": 0.7398759999998674,
+        "p95": 4.011963999999921
+      },
+      "meshingMs": {
+        "p50": 7.360502999999881,
+        "p95": 21.099599000000012
+      }
+    },
+    "featureStats": {
+      "lookupMs": 4.418515999999329,
+      "samplingMs": 51.40886500000056,
+      "candidates": 44
+    },
+    "worstGenerationMs": 6.16858000000002
+  },
+  "after": {
+    "summary": {
+      "generationMs": {
+        "p50": 0.6618429999999762,
+        "p95": 2.3360549999999876
+      },
+      "meshingMs": {
+        "p50": 5.590313000000037,
+        "p95": 13.569289999999967
+      }
+    },
+    "featureStats": {
+      "lookupMs": 4.777845000000227,
+      "samplingMs": 17.962669999999648,
+      "candidates": 28
+    },
+    "worstGenerationMs": 8.680451000000005
+  },
+  "pointSampling": {
+    "samples": 10000,
+    "biomeSamplingMs": 4.057753999999996,
+    "surfaceMaterialSamplingMs": 11.99298499999999,
+    "repeatSurfaceSamplingMs": 8.845479999999995
+  },
+  "browserBefore": {
+    "loaded": 1445,
+    "queued": 0,
+    "generated": 1445,
+    "voxels": 22398552,
+    "faces": 889887,
+    "generationMs": 1122.899999987334,
+    "meshingMs": 4619.89999999851,
+    "maxBuildMs": 54,
+    "totalLoadMs": 5751,
+    "meshes": 768,
+    "objects": 2,
+    "colliders": 2,
+    "geometryBytes": 96107796,
+    "renderTriangles": 686670
+  },
+  "browserAfter": {
+    "loaded": 1445,
+    "queued": 0,
+    "generated": 1445,
+    "voxels": 22417214,
+    "faces": 1004908,
+    "generationMs": 1757.9999999998836,
+    "meshingMs": 6478.7999999983,
+    "maxBuildMs": 128.89999999990687,
+    "totalLoadMs": 8272.199999999953,
+    "meshes": 802,
+    "objects": 2,
+    "colliders": 2,
+    "materialGroups": 1501,
+    "maxChunkGroups": 8,
+    "pooledMaterials": 12,
+    "geometryBytes": 108530064,
+    "renderTriangles": 718086
+  },
+  "caveat": "Browser runs are separate software-WebGL measurements, not a controlled production frame-rate comparison. Before/after geometry differs intentionally.",
+  "snowyRegionAfter": {
+    "summary": {
+      "generationMs": {
+        "p50": 0.9988519999999426,
+        "p95": 3.9808350000000132
+      },
+      "meshingMs": {
+        "p50": 5.652192000000014,
+        "p95": 17.48423200000002
+      }
+    },
+    "featureStats": {
+      "lookupMs": 5.489617999998998,
+      "samplingMs": 61.60981300000044,
+      "candidates": 85
+    },
+    "worstGenerationMs": 7.205015000000003
+  }
+}

@@ -28,9 +28,10 @@ export function createRenderLayerWrapperHandler(owner) {
       active,
       win: owner.layerState.win,
       attachHandlers: false,
+      readOnly: owner.layerState.readOnly,
       onSelect: owner.layerState.selectElement
     }));
-    if (active && !virtualized) renderHtmlLayerScriptDetails(wrapper, {
+    if (active && !virtualized && !owner.layerState.readOnly) renderHtmlLayerScriptDetails(wrapper, {
       root: owner.root,
       element: el,
       requestRender: owner.layerState.render

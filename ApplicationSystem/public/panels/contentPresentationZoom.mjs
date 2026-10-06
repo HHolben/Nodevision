@@ -1,13 +1,13 @@
 // Nodevision/ApplicationSystem/public/panels/contentPresentationZoom.mjs
-// This module registers content-only geometric scale on a runtime shell outside authored content, keeping document chrome and serialization independent.
+// This module registers content-only geometric scale on a runtime shell outside authored content and optionally composes panel-owned semantic behavior in the same registration. It keeps document chrome and serialization independent of either presentation mode.
 import { registerPanelZoomCapabilities } from './panelZoomCapabilities.mjs';
-export function installContentPresentationZoom(owner, surface, { onZoom = () => {}, fit = null } = {}) {
+export function installContentPresentationZoom(owner, surface, { onZoom = () => {}, fit = null, semantic = false, semanticMetadata = null, semanticState = () => null } = {}) {
   let zoom = 1;
   const previous = surface.style.zoom;
   const unregister = registerPanelZoomCapabilities(owner, {
-    metadata: { geometric: { actions: ['zoom', 'set', 'reset', ...(fit ? ['fit'] : [])], unit: 'presentation scale' } },
-    getState: mode => mode === 'geometric' ? { zoom } : null,
-    semantic: false, fisheye: false,
+    metadata: { geometric: { actions: ['zoom', 'set', 'reset', ...(fit ? ['fit'] : [])], unit: 'presentation scale' }, semantic: semanticMetadata },
+    getState: mode => mode === 'geometric' ? { zoom } : mode === 'semantic' ? semanticState() : null,
+    semantic, fisheye: false,
     geometric(command) {
       const next = command.action === 'reset' ? 1 : command.action === 'fit' ? fit?.() : command.zoom ?? zoom * (command.factor || 1);
       if (!Number.isFinite(next) || next <= 0) return false;

@@ -1,0 +1,75 @@
+{
+  "fixture": "seed 123456; 100 measured chunks after 10 warmup chunks; scripts/voxel-material-benchmark.mjs",
+  "before": {
+    "generationMs": {
+      "p50": 0.5312270000000581,
+      "p95": 0.9066190000000347
+    },
+    "meshingMs": {
+      "p50": 4.851499999999987,
+      "p95": 12.663170999999977
+    }
+  },
+  "after": {
+    "generationMs": {
+      "p50": 0.6459359999998924,
+      "p95": 3.0140969999999925
+    },
+    "meshingMs": {
+      "p50": 6.696664000000055,
+      "p95": 19.143523999999957
+    }
+  },
+  "featureProfile": {
+    "summary": {
+      "generationMs": {
+        "p50": 0.641198999999915,
+        "p95": 3.695184999999924
+      },
+      "meshingMs": {
+        "p50": 6.2474019999999655,
+        "p95": 20.473365999999942
+      }
+    },
+    "featureStats": {
+      "lookupMs": 5.528595999999027,
+      "samplingMs": 51.814304000000305,
+      "candidates": 44
+    },
+    "worstGenerationMs": 15.458473000000026
+  },
+  "featureProfileChunks": 110,
+  "browserBefore": {
+    "loaded": 1156,
+    "queued": 0,
+    "generated": 1156,
+    "voxels": 22281767,
+    "faces": 777467,
+    "generationMs": 721.2000000067055,
+    "meshingMs": 4127.499999988824,
+    "maxBuildMs": 50.099999997764826,
+    "totalLoadMs": 4855.699999999255,
+    "meshes": 681,
+    "objects": 2,
+    "colliders": 2,
+    "geometryBytes": 83966436,
+    "renderTriangles": 632258
+  },
+  "browserAfter": {
+    "loaded": 1445,
+    "queued": 0,
+    "generated": 1445,
+    "voxels": 22398552,
+    "faces": 889887,
+    "generationMs": 1122.899999987334,
+    "meshingMs": 4619.89999999851,
+    "maxBuildMs": 54,
+    "totalLoadMs": 5751,
+    "meshes": 768,
+    "objects": 2,
+    "colliders": 2,
+    "geometryBytes": 96107796,
+    "renderTriangles": 686670
+  },
+  "timingCaveat": "Short local measurements; separate browser runs using software WebGL, not a controlled frame-rate benchmark."
+}

@@ -1,8 +1,12 @@
 // Nodevision/scripts/sandbox-session-browser.mjs
 // This fixture launches the actual Session runtime and Game View in a minimal tabbed shell, checking world planning, persistence, permissions, movement, and teardown.
+import { checkSandboxBiomes } from './voxel-biome-session-browser.mjs';
+import { checkSandboxPines } from './voxel-pine-session-browser.mjs';
+import { checkSandboxWater } from './voxel-water-session-browser.mjs';
 import { startSession,quitActiveSession,getActiveSession } from '/Sessions/SessionController.mjs';
 import { openPanelTabInCell,getActivePanelTab } from '/panels/panelTabs.mjs';
 import { getActiveMetaWorldLayerBridge } from '/MetaWorld/MetaWorldLayerState.mjs';
+import { planSandboxWorld } from '/MetaWorld/SandboxWorldPlanner.mjs';
 import { createDefaultHtmlWorld } from '/MetaWorld/DefaultHtmlWorld.mjs';
 import { readWorldDraft } from '/MetaWorld/WorldDocumentDrafts.mjs';
 import { createSandboxWorldStartup } from '/Sessions/SandboxWorldStartup.mjs';
@@ -20,7 +24,8 @@ try{
  const cell=document.getElementById('editor').closest('.panel-cell');cell.replaceChildren();window.activeCell=cell;
  const originalTab=await openPanelTabInCell(cell,{panelType:'FileView',panelClass:'ViewPanel',panelVars:{filePath:'sandbox-test.html'}},host=>{host.textContent='Original HTML panel';});
  let pageReads=0,holdAt=Infinity,releaseRead=null;
- let html='<!doctype html><html><body><h1>Preserve my page</h1></body></html>', saves=0;
+ const seededWorld=planSandboxWorld(null,'sandbox-test.html',()=>123456).definition;
+ let html='<!doctype html><html><body><h1>Preserve my page</h1><script id="nodevision-metaworld" type="application/json">'+JSON.stringify(seededWorld)+'</script></body></html>', saves=0;
  const nativeFetch=window.fetch.bind(window);
  const scripts={};for(const mode of ['Build','Play'])scripts[mode]=await(await nativeFetch('/sandbox-builtins/Sandbox'+mode+'.NodevisionSession.js')).text();
  window.fetch=async(url,options)=>{
@@ -50,6 +55,9 @@ try{
  ok(window.NodevisionState.currentMode==='Virtual World Editing','Build exposes editing');
  let ctx=window.VRWorldContext,root=terrain(),seed=root.userData.proceduralVoxelRuntime.definition.generator.seed;
  ok(ctx.camera.position.y>10,'spawn above generated ground');walk();
+ const shoreline=await checkSandboxWater(ctx,root,'Build');
+ const pineSignature=await checkSandboxPines(ctx,root,'Build');
+ const biomeSignature=await checkSandboxBiomes(ctx,root,'Build');
  ctx.panel._vrRenderer.render(ctx.scene,ctx.camera);ok(ctx.panel._vrRenderer.info.render.triangles>0,'normal renderer draws terrain');
  let bridge=getActiveMetaWorldLayerBridge();const authored=bridge.addObjectLayer({id:'sandbox-authored',type:'box',position:[4,28,-3],size:[1,1,1],color:'#cc7733',isSolid:true});
  ok(authored,'Build creates ordinary objects');
@@ -62,6 +70,9 @@ try{
  ok(root.userData.proceduralVoxelRuntime.definition.generator.seed===seed,'Play reuses persisted seed');
  ok(ctx.objects.filter(o=>o.userData.proceduralVoxelRuntime).length===1,'reentry does not duplicate terrain');
  ok(ctx.movementState.playerMode==='survival','Play uses navigation mode');ok(ctx.objects.some(o=>o.userData.metaWorldLayerId==='after-save-box'),'post-save unsaved edit retained');walk();
+ ok(await checkSandboxWater(ctx,root,'Play')===shoreline,'saved shoreline identical in Play');
+ ok(await checkSandboxPines(ctx,root,'Play')===pineSignature,'saved pines identical in Play');
+ ok(await checkSandboxBiomes(ctx,root,'Play')===biomeSignature,'saved biome and shore materials identical in Play');
  const count=ctx.objects.length;
  const abilityContext={api:{},movementState:ctx.movementState};
  (await import('/PanelInstances/ViewPanels/GameViewDependencies/Abilities/ConstructAbilities/VoxelPlacementAbility.mjs')).installVoxelPlacementAbility(abilityContext);

@@ -11,6 +11,7 @@ import { mountHtmlEditorShell } from '/PanelInstances/EditorPanels/GraphicalEdit
 import { installGraphSemanticZoom } from '/PanelInstances/InfoPanels/GraphManagerDependencies/GraphSemanticZoom.mjs';
 import { initToolbarWidget } from '/ToolbarJSONfiles/zoomPanControlsWidget.mjs';
 import { checkNativeZoomAdapters } from './panel-zoom-native-browser.mjs';
+import { checkHtmlViewerZoom } from './html-viewer-zoom-browser.mjs';
 export const ok = (value, message) => { if (!value) throw Error(message); };
 export const tick = () => new Promise(resolve => requestAnimationFrame(resolve));
 export function panel() { const el = document.createElement('div'); el.className = 'panel'; el.style.cssText = 'position:relative;width:700px;height:450px;overflow:auto'; document.body.append(el); return el; }
@@ -80,6 +81,7 @@ try {
   for(let i=0;i<50;i++)wheel(a); ok(scans===0,'no owner DOM scan per wheel'); a.querySelectorAll=query; ok(window.toolbarUpdates===toolbarUpdates,'zoom does not rebuild application toolbars');
   graphRelease(); cy.destroy(); a.remove(); b.remove(); toolbar.remove();
   await checkNativeZoomAdapters(timings);
+  await checkHtmlViewerZoom({ panel, wheel, tick, ok }, timings);
   ok(writes===0,"zoom performs no file saves or Notebook writes");
   document.querySelector('#result').textContent='PASS: native zoom, ownership, iframe, state isolation, source safety; '+JSON.stringify(timings);
 } catch(error) { document.querySelector('#result').textContent='FAIL: '+error.stack; }

@@ -1,0 +1,52 @@
+{
+  "fixture": {
+    "seed": 123456,
+    "generator": "nodevision-terrain-v1",
+    "version": 1,
+    "size": [
+      1000,
+      128,
+      1000
+    ],
+    "warmupChunks": 10,
+    "measuredChunks": 100,
+    "chunkCoordinates": "[i % 11, 2, floor(i / 11)] for i=10..109",
+    "timing": "Node performance.now; generation then meshing; no catalog IO in timed loop"
+  },
+  "before": {
+    "generationMs": {
+      "p50": 0.1907110000000216,
+      "p95": 0.2866480000000138
+    },
+    "meshingMs": {
+      "p50": 1.2436439999999607,
+      "p95": 6.186499999999967
+    }
+  },
+  "after": {
+    "generationMs": {
+      "p50": 0.2428589999999815,
+      "p95": 0.666136999999992
+    },
+    "meshingMs": {
+      "p50": 1.6903210000000115,
+      "p95": 5.115027999999995
+    }
+  },
+  "browser": {
+    "loaded": 1156,
+    "queued": 0,
+    "generated": 1156,
+    "voxels": 22281767,
+    "faces": 654640,
+    "generationMs": 363.5,
+    "meshingMs": 2185.900000001071,
+    "maxBuildMs": 32.699999999953434,
+    "totalLoadMs": 2554.8000000000466,
+    "meshes": 642,
+    "objects": 2,
+    "colliders": 2,
+    "geometryBytes": 70701120,
+    "renderTriangles": 536798
+  }
+}

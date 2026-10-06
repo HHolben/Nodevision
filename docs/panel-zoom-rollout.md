@@ -15,7 +15,7 @@ Status: implementation and validation, 2026-10-06. This report supersedes the im
 | SVG editor | Implemented: existing canvas scale; SVG session | Unsupported: canvas layer/object projection pending | Baseline 1 / unsupported through registry | Unsupported, reserved |
 | SVG viewer | Implemented: runtime iframe presentation scale; frame instance | Unsupported: viewer Layers inspection is separate | 1 / unsupported | Unsupported, reserved |
 | HTML graphical editor | Implemented: runtime presentation shell around editable page; shell instance | Unsupported: region/element projection pending | 1 / unsupported | Unsupported, reserved |
-| HTML viewer | Implemented: same-origin iframe presentation scale; frame instance | Unsupported | 1 / unsupported | Unsupported, reserved |
+| HTML viewer | Implemented: same-origin iframe presentation scale; viewer instance | Implemented: Outline / Page | Scale 1; semantic Page / unsupported | Unsupported, reserved |
 | CSV graphical editor | Implemented: native grid surface and overlays; view instance | Unsupported: table overview projection pending | 1 / unsupported | Unsupported, reserved |
 | Image viewer | Implemented: decoded pixels, rotation and inverse-transform pan; viewport instance | Unsupported: no semantic bitmap representation | 1 pixel per CSS pixel / existing fit | Unsupported, reserved |
 | Raster/image editor | Implemented: existing display scale without changing canvas backing size; editor state | Unsupported | Baseline decoded-pixel scale / no explicit registry fit | Unsupported, reserved |
@@ -51,11 +51,11 @@ Graph, SVG, CSV, HTML, images, Monaco and PDF now dispatch through `panelZoomCap
 
 ## 6. Semantic adapters
 
-Graph retains its source-preserving opacity-based Structure / Annotations levels. File Manager reuses existing row names and icons: Compact hides only the icon presentation; Detailed restores it. Neither transition navigates directories, fetches metadata, rebuilds canonical rows or changes the selected anchor. Defaults are Annotations and Detailed. Commands at the level boundaries are claimed no-ops.
+Graph retains its source-preserving opacity-based Structure / Annotations levels. File Manager reuses existing row names and icons: Compact hides only the icon presentation; Detailed restores it. Neither transition navigates directories, fetches metadata, rebuilds canonical rows or changes the selected anchor. HTML Viewer additionally provides independent read-only Outline / Page levels using the existing virtualized HTML Layers renderer; see [HTML viewer zoom](html-viewer-zoom.md). Defaults are Annotations, Detailed and Page respectively. Commands at the level boundaries are claimed no-ops.
 
 ## 7. Unsupported modes
 
-Adapters declare unsupported semantic/fisheye modes with false, or omit handlers; both yield explicit false capability results. Missing adapters also report false. SVG and HTML Layers trees are separate inspection providers, not existing alternate canvas/page projections. CSV has no existing table-overview projection. PDF has no installed thumbnail overview. Those semantic modes remain unsupported rather than introducing another renderer or modifying authored content. Plain images and CodeEditor do not invent semantic meanings.
+Adapters declare unsupported semantic/fisheye modes with false, or omit handlers; both yield explicit false capability results. Missing adapters also report false. SVG and HTML editor Layers trees remain separate inspection providers. HTML Viewer reuses its read-only Layers projection for Outline; it does not change the authored page. CSV has no existing table-overview projection. PDF has no installed thumbnail overview. Those semantic modes remain unsupported rather than introducing another renderer or modifying authored content. Plain images and CodeEditor do not invent semantic meanings.
 
 ## 8. Graph geometric cleanup
 
@@ -83,7 +83,7 @@ Image 100% remains one decoded pixel per CSS pixel; rotation and inverse-transfo
 
 ## 13. Iframe ownership
 
-`panelZoomIframe.mjs` installs one same-origin bridge per frame document, cleans up old listeners, maps child client coordinates to parent client coordinates, and routes the original event through the same gate. It does not synthesize a second wheel event. Inactive owners are refused. Cross-origin documents cannot be intercepted; native browser behavior remains intact and those frames do not acquire a same-origin adapter.
+`panelZoomIframe.mjs` installs one same-origin bridge per frame document, cleans up old listeners, maps child client coordinates to parent client coordinates, and routes the original event through the same gate. It does not synthesize a second wheel event. Inactive owners are refused. HTML Viewer registers its owning view container so routing remains available while Outline temporarily hides the iframe. Cross-origin documents cannot be intercepted; native browser behavior remains intact and those frames do not acquire a same-origin adapter.
 
 ## 14. Ownership and state isolation
 
@@ -123,16 +123,16 @@ The rule is **fewer than 200 nonblank, noncomment lines**, so 200 itself fails. 
 
 ## 18. Remaining panels
 
-Layers, Properties, Game View and other unregistered InfoPanels intentionally report unsupported content zoom. Audio time-axis adapters and structural SVG/HTML/CSV/PDF semantic projections are future work. Cross-origin input, physical Fn detection and installed PDF.js canvas validation require their respective real environments. Dense graph repaint and large HTML page reflow remain performance limits.
+Layers, Properties, Game View and other unregistered InfoPanels intentionally report unsupported content zoom. Audio time-axis adapters and structural SVG/HTML-editor/CSV/PDF semantic projections are future work. HTML Viewer Outline is now implemented as documented in its follow-up report. Cross-origin input, physical Fn detection and installed PDF.js canvas validation require their respective real environments. Dense graph repaint and large HTML page reflow remain performance limits.
 
 ## 19. Explicit answers and fisheye blockers
 
 - **Does Ctrl zoom use the active native coordinate system?** Yes for the registered families in the matrix; unsupported families do not fall back to outer CSS scaling.
-- **Can semantic intent route independently app-wide?** Yes. Graph and File Manager implement it; other families report unsupported.
+- **Can semantic intent route independently app-wide?** Yes. Graph, File Manager and HTML Viewer implement it; other families report unsupported.
 - **Is the Fn fallback centralized and configurable?** Yes, in `panelZoomInput.mjs`; actual physical Fn behavior remains unverified.
 - **Can unsupported semantic/fisheye become geometric?** No through the shared router. There is no ancestor or generic fallback, and migrated local listeners cannot reinterpret reserved modes.
 - **Are states independent across panel types?** Yes; state lives in each adapter/session, with browser isolation checks.
 - **Is authored content unchanged?** The implemented zoom paths perform no source writes, dirty changes or history entries; the tested source, model-version and mutation invariants pass. Optional PDF.js rendering remains unverified in this checkout.
-- **Which major families support both modes?** Graph Manager and File Manager.
+- **Which major families support both modes?** Graph Manager, File Manager and HTML Viewer.
 
 Fisheye remains a reserved unsupported intent. Before implementation it needs family-specific forward/inverse mappings, interaction and accessibility policy, focus ownership, lifecycle cleanup and performance measurements. No lens, nonlinear renderer, directory aggregation or expanded layout persistence was added.

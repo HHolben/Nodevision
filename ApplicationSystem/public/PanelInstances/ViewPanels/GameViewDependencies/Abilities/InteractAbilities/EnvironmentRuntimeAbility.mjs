@@ -14,10 +14,15 @@ export function installEnvironmentRuntimeAbility(ctx) {
   }
 
   function getWaterVolumeAtPosition(position) {
-    if (!Array.isArray(waterVolumes) || waterVolumes.length === 0) return null;
-    for (const water of waterVolumes) {
+    for (const water of waterVolumes || []) {
       if (typeof water?.containsPoint === "function" && water.containsPoint(position)) return water;
       if (water?.box && typeof water.box.containsPoint === "function" && water.box.containsPoint(position)) return water;
+    }
+    // Procedural worlds expose one analytic volume, independent of chunk residency.
+    for (const object of objects || []) {
+      const volume = object?.userData?.waterVolumeRef;
+      if (typeof volume?.sampleAt === "function") { const liquid=volume.sampleAt(position); if(liquid)return liquid; continue; }
+      if (typeof volume?.containsPoint === "function" && volume.containsPoint(position)) return volume;
     }
     return null;
   }

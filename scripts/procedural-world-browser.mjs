@@ -7,6 +7,7 @@ import { getActiveMetaWorldLayerBridge } from '/MetaWorld/MetaWorldLayerState.mj
 import { installTerrainGroundAbility } from '/PanelInstances/ViewPanels/GameViewDependencies/Abilities/MovementAbilities/TerrainGroundAbility.mjs';
 import { applyDirectionalMovement, applyGroundMovement } from '/PanelInstances/ViewPanels/GameViewDependencies/movementSteps.mjs';
 import { createCollisionChecker } from '/PanelInstances/ViewPanels/GameViewDependencies/collisionCheck.mjs';
+import { checkVoxelMaterialRendering } from './voxel-material-render-browser.mjs';
 const ok=(v,m)=>{if(!v)throw Error(m);};
 try {
   window.NodevisionState={currentMode:'Virtual World Editing'};
@@ -28,12 +29,15 @@ try {
   let root=context.objects.find(o=>o.userData.proceduralVoxelRuntime);
   ok(root,'loader creates procedural terrain');
   let runtime=root.userData.proceduralVoxelRuntime;
+  ok(await runtime.ready,"canonical terrain materials loaded");
   ok(camera.position.y>10,'spawn lifted onto terrain');
   const start=performance.now();
   while(runtime.stats.queued)runtime.update(camera.position);
   const report={...runtime.stats,totalLoadMs:performance.now()-start,meshes:root.children.length,objects:context.objects.length,colliders:context.colliders.length};
+  report.materialGroups=root.children.reduce((sum,m)=>sum+m.geometry.groups.length,0);
+  report.maxChunkGroups=Math.max(...root.children.map(m=>m.geometry.groups.length));report.pooledMaterials=runtime.materials.length;
   report.geometryBytes=root.children.reduce((sum,mesh)=>sum+Object.values(mesh.geometry.attributes).reduce((n,a)=>n+a.array.byteLength,0)+(mesh.geometry.index?.array.byteLength||0),0);
-  ok(runtime.stats.loaded===1156,'radius 8 has bounded 17 by 17 by 4 resident chunks');
+  ok(runtime.stats.loaded===1445,'radius 8 has bounded 17 by 17 by 5 resident chunks');
   ok(context.objects.some(o=>o.userData.metaWorldLayerId==='authored-box'),'ordinary object coexists');
   const collider=root.userData.colliderRef;
   const groundCtx={api:{},colliders:context.colliders,movementState,groundLevel:0,playerRadius:0.35,stepHeight:0.5};
@@ -42,7 +46,12 @@ try {
   movementState.activeExpressionTerrainColliderId='terrain';
   context.controls.getDirection=direction=>direction.set(1,0,0);
   movementState.velocityY=0;
-  for(let i=0;i<600;i++){
+  let detourSign=1;
+  for(let i=0;i<1800&&camera.position.x<150;i++){
+    // Walk around solid trunks instead of assuming the seeded landscape is an empty corridor.
+    const blocked=collision(camera.position.clone().add(new THREE.Vector3(.25,0,0)));
+    if(blocked&&collision(camera.position.clone().add(new THREE.Vector3(0,0,.25*detourSign))))detourSign=-detourSign;
+    context.controls.getDirection=direction=>direction.set(blocked?0:1,0,blocked?detourSign:0);
     applyDirectionalMovement({THREE,controls:context.controls,movementState,inputState:{moveForward:true},
       forward:new THREE.Vector3(),right:new THREE.Vector3(),up:new THREE.Vector3(0,1,0),speed:0.25,
       crawling:false,crouching:false,wouldCollide:collision,stepHeight:0.5});
@@ -51,11 +60,11 @@ try {
       crouching:false,groundLevel,wouldCollide:collision});
     ok(Number.isFinite(camera.position.y)&&movementState.isGrounded,'movement stays grounded');runtime.update(camera.position);
   }
-  ok(Math.abs(camera.position.x-150)<0.01,'actual movement traverses 150 meters');
+  ok(Math.abs(camera.position.x-150)<0.01,'actual movement traverses 150 meters: '+camera.position.toArray().join(','));
   ok(!runtime.manager.loaded.has('62,2,62'),'distant original chunk unloaded');
   ok(collision(new THREE.Vector3(501,30,0)),'finite boundary blocks escape');
   const fingerprint=Array.from(runtime.generator.generateChunk(62,2,62)).join('');
-  camera.position.x=0;runtime.update(camera.position);while(runtime.stats.queued)runtime.update(camera.position);
+  camera.position.x=0;camera.position.z=0;runtime.update(camera.position);while(runtime.stats.queued)runtime.update(camera.position);
   ok(Array.from(runtime.generator.generateChunk(62,2,62)).join('')===fingerprint,'return reproduces terrain');
   scene.add(new THREE.HemisphereLight(0xffffff,0x666666,2));
   const renderer=new THREE.WebGLRenderer();renderer.setSize(640,400);panel.appendChild(renderer.domElement);
@@ -83,6 +92,7 @@ try {
   const ordinary=JSON.parse(new DOMParser().parseFromString(savedHtml,'text/html').querySelector('script').textContent);
   ok(ordinary.objects.some(o=>o.type==='voxel-pattern'),'authored voxels still compact');
   ok(!ordinary.objects.some(o=>o.type==='procedural-voxel-world'),'ordinary save has no procedural state');
+  await checkVoxelMaterialRendering(THREE,renderer);
   renderer.dispose();window.proceduralReport=report;
   document.getElementById('result').textContent='PASS: procedural loader, render, ground movement, boundaries, streaming, raycasting, save, history, disposal, ordinary worlds and voxel patterns\n'+JSON.stringify(report,null,2);
 }catch(error){document.getElementById('result').textContent='FAIL: '+error.stack;}

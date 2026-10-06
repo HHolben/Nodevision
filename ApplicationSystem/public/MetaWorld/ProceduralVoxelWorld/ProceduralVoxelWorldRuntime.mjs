@@ -1,27 +1,30 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs
 // This module owns one logical terrain object, its streamed chunk resources, and its analytic movement collider.
 
+import { createFeatureCollision } from "./VoxelFeatureCollision.mjs";
 import { validateVoxelWorld } from "./VoxelWorldDefinition.mjs";
 import { VOXEL_SIZE, chunkToVoxel, voxelToWorld, worldToVoxel } from "./VoxelCoordinates.mjs";
-import { createVoxelGenerator, VOXEL_MATERIALS } from "./VoxelTerrainGenerator.mjs";
+import { createVoxelGenerator } from "./VoxelTerrainGenerator.mjs";
 import { meshVoxelChunk } from "./VoxelChunkMesher.mjs";
+import { createVoxelMaterialPalette } from "./VoxelMaterialPalette.mjs";
+import { createVoxelLiquidVolume } from "./VoxelLiquidVolume.mjs";
 import { VoxelChunkManager } from "./VoxelChunkManager.mjs";
-export function createProceduralVoxelWorld(THREE, source, colliders) {
+export function createProceduralVoxelWorld(THREE, source, colliders, materialOptions = {}) {
   const definition = validateVoxelWorld(source), generator = createVoxelGenerator(definition);
   const root = new THREE.Group();
   root.position.fromArray(definition.position);
   root.visible = definition.visible !== false && definition.hidden !== true;
   Object.assign(root.userData, { nvType: definition.type, metaWorldLayerId: definition.id, breakable: false });
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
-  const colors = VOXEL_MATERIALS.map(item => item ? new THREE.Color(item.color) : null);
-  let disposed = false;
+  let palette = null, disposed = false, lastPosition = null;
   const origin = () => root.position.toArray();
   const collider = { type: "expression-heightfield", target: root, layerId: definition.id,
     materialId: "grass", physicsMaterialId: "grass",
     sampleGroundY(x, z) {
       if (disposed || !root.visible) return NaN;
       const [vx,,vz] = worldToVoxel([x, root.position.y, z], origin());
-      const h = generator.getTerrainHeight(vx,vz);
+      const h = generator.getSolidHeight(vx,vz);
+      const entry = palette?.entries[generator.getVoxel(vx,h-1,vz)];
+      if(entry)Object.assign(collider,{materialId:entry.materialId,physicsMaterialId:entry.physicsMaterialId,materialFile:entry.materialFile,MatterState:entry.matterState,materialDefinition:entry.materialDefinition});
       return h ? root.position.y + h * VOXEL_SIZE : NaN;
     },
     containsPlayer(point, radius) {
@@ -36,16 +39,15 @@ export function createProceduralVoxelWorld(THREE, source, colliders) {
     const result = meshVoxelChunk(data, cell, generator.getVoxel);
     let mesh = null;
     if (result.faceCount) {
-      const geometry = new THREE.BufferGeometry(), rgb = [];
-      for (const id of result.materials) { const c = colors[id]; rgb.push(c.r,c.g,c.b); }
+      const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.Float32BufferAttribute(result.positions,3));
       geometry.setAttribute("normal", new THREE.Float32BufferAttribute(result.normals,3));
-      geometry.setAttribute("color", new THREE.Float32BufferAttribute(rgb,3));
+      for (const group of result.groups) geometry.addGroup(group.start, group.count, group.materialIndex);
       geometry.setIndex(result.indices); geometry.computeBoundingSphere();
-      mesh = new THREE.Mesh(geometry, material);
+      mesh = new THREE.Mesh(geometry, palette.materials);
       mesh.position.fromArray(voxelToWorld(chunkToVoxel(cell), [0,0,0]));
       Object.assign(mesh.userData, { proceduralTerrainId: definition.id, proceduralChunk: cell.slice(),
-        runtimeGenerated: true, breakable: false, physicsMaterialId: "grass" });
+        runtimeGenerated: true, breakable: false });
       root.add(mesh);
     }
     return { mesh, faceCount: result.faceCount, solidVoxels: result.solidVoxels,
@@ -53,8 +55,13 @@ export function createProceduralVoxelWorld(THREE, source, colliders) {
   }, entry => { entry.mesh?.geometry.dispose(); entry.mesh?.removeFromParent(); });
   const runtime = {
     generator, manager, definition, stats: manager.stats,
+    getVoxelMaterialId: generator.getVoxelMaterialId,
+    getBiome: generator.getBiome,
+    getVoxelMaterial(x, y, z) { return palette?.entries[generator.getVoxel(x,y,z)] || null; },
+    get materials() { return palette?.materials || []; },
     update(position) {
-      if (!disposed && root.visible) manager.update(worldToVoxel([position.x,position.y,position.z], origin()));
+      lastPosition = { x: position.x, y: position.y, z: position.z };
+      if (!disposed && palette && root.visible) manager.update(worldToVoxel([position.x,position.y,position.z], origin()));
     },
     prepareSpawn(position, playerHeight) {
       if (!root.visible) return;
@@ -69,11 +76,25 @@ export function createProceduralVoxelWorld(THREE, source, colliders) {
     },
     dispose() {
       if (disposed) return;
-      disposed = true; manager.dispose(); material.dispose();
+      disposed = true; generator.features.clear(); generator.clearColumns(); manager.dispose(); palette?.dispose();
       const index = colliders.indexOf(collider); if (index >= 0) colliders.splice(index,1);
       root.removeFromParent();
     }
   };
+  collider.sampleMaterial = (x,y,z) => runtime.getVoxelMaterial(...worldToVoxel([x,y,z], origin()));
+  runtime.ready = createVoxelMaterialPalette(THREE, materialOptions).then(resolved => {
+    if (disposed) { resolved.dispose(); return false; }
+    palette = resolved;
+    collider.intersectsPlayer = createFeatureCollision(root, generator, palette.entries, () => disposed);
+    root.userData.waterVolumeRef = createVoxelLiquidVolume(root, runtime, palette.entries, () => disposed);
+    const surface = palette.entries[1];
+    Object.assign(collider, { materialId: surface.materialId, physicsMaterialId: surface.physicsMaterialId,
+      materialFile: surface.materialFile, MatterState: surface.matterState, materialDefinition: surface.materialDefinition });
+    Object.assign(root.userData, { physicsMaterialId: surface.physicsMaterialId,
+      physicsMaterialFile: surface.materialFile, MatterState: surface.matterState, matterState: surface.matterState });
+    if (lastPosition) runtime.update(lastPosition);
+    return true;
+  }).catch(error => { runtime.materialError = error; console.error('Procedural terrain material loading failed:', error); return false; });
   // Existing picking uses nonrecursive raycasts; forward terrain hits to child chunks.
   root.raycast = (raycaster, hits) => {
     if (!root.visible || disposed) return;

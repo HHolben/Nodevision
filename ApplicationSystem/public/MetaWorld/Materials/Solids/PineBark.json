@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "PineBark",
+  "displayName": "Pine Bark",
+  "description": "Pine Bark material shared by ordinary objects, equations, authored voxels and procedural features.",
+  "defaultColor": "#594434",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 450,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "color": "#594434",
+    "roughness": 0.95,
+    "opacity": 1
+  },
+  "chemicalFormulaMol": null
+}
