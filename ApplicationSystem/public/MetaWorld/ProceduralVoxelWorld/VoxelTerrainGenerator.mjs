@@ -2,12 +2,12 @@
 // This module composes base terrain and bounded procedural features into a deterministic final voxel field shared by rendering, collision, and future overrides.
 import { createBaseTerrain } from './VoxelBaseTerrain.mjs';
 import { createFeatureField } from './Features/FeatureField.mjs';
-import { createPinePlacement } from './Features/PinePlacement.mjs';
-import { PINE_WOOD, PINE_BARK, PINE_FOLIAGE, voxelMaterialId } from './VoxelMaterialIds.mjs';
+import { createTreePlacement } from './Features/TreePlacement.mjs';
+import { featureMaterialPriority, voxelMaterialId } from './VoxelMaterialIds.mjs';
 import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs';
-const priority=id=>id===PINE_WOOD||id===PINE_BARK?2:id===PINE_FOLIAGE?1:0;
+const priority=featureMaterialPriority;
 export function createVoxelGenerator(def) {
-  const base=createBaseTerrain(def),provider=createPinePlacement(base,def.generator.seed);
+  const base=createBaseTerrain(def),provider=createTreePlacement(base,def.generator.seed);
   const features=createFeatureField([provider],priority);
   const featureStats={lookupMs:0,samplingMs:0,candidates:0};
   function getFeatureVoxel(x,y,z,list) {

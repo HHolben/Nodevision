@@ -16,6 +16,12 @@ export const DEFAULT_WORLD_GAS_MATERIAL_ID = "WhiteOxygenatedAir";
 export const DEFAULT_WORLD_GAS_MATERIAL_FILE = WORLD_OBJECT_MATERIAL_LIBRARY_PATH + "/Gasses/WhiteOxygenatedAir.json";
 
 export const DEFAULT_WORLD_OBJECT_MATERIAL_ROWS = [
+  { MaterialName: "Oak Foliage", MaterialJSONfile: "Materials/Solids/OakFoliage.json" },
+  { MaterialName: "Oak Bark", MaterialJSONfile: "Materials/Solids/OakBark.json" },
+  { MaterialName: "Oak Wood", MaterialJSONfile: "Materials/Solids/OakWood.json" },
+  { MaterialName: "Maple Foliage", MaterialJSONfile: "Materials/Solids/MapleFoliage.json" },
+  { MaterialName: "Maple Bark", MaterialJSONfile: "Materials/Solids/MapleBark.json" },
+  { MaterialName: "Maple Wood", MaterialJSONfile: "Materials/Solids/MapleWood.json" },
   { MaterialName: "Limestone Gravel", MaterialJSONfile: "Materials/Solids/LimestoneGravel.json" },
   { MaterialName: "Pine Foliage", MaterialJSONfile: "Materials/Solids/PineFoliage.json" },
   { MaterialName: "Pine Bark", MaterialJSONfile: "Materials/Solids/PineBark.json" },
@@ -60,6 +66,12 @@ export const DEFAULT_WORLD_OBJECT_MATERIAL_ROWS = [
 ];
 
 export const CANONICAL_MATERIAL_IDS = new Map([
+  ["oakfoliage", "OakFoliage"], ["oak foliage", "OakFoliage"],
+  ["oakbark", "OakBark"], ["oak bark", "OakBark"],
+  ["oakwood", "OakWood"], ["oak wood", "OakWood"],
+  ["maplefoliage", "MapleFoliage"], ["maple foliage", "MapleFoliage"],
+  ["maplebark", "MapleBark"], ["maple bark", "MapleBark"],
+  ["maplewood", "MapleWood"], ["maple wood", "MapleWood"],
   ["limestonegravel", "LimestoneGravel"], ["limestone gravel", "LimestoneGravel"],
   ["pinewood", "PineWood"], ["pine wood", "PineWood"],
   ["pinebark", "PineBark"], ["pine bark", "PineBark"],
