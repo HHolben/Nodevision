@@ -131,6 +131,7 @@ function objectNameForPanel(panelType, panelVars = {}) {
 }
 
 function referenceForPanel(panelVars = {}, panelType = "") {
+  if (panelVars.layoutEmpty) return null;
   if (panelVars.reference) return createNotebookReference(panelVars.reference);
   const resourcePath = firstResourcePath(panelVars, panelType);
   if (!resourcePath) return null;
@@ -175,6 +176,8 @@ export function buildPanelTabMetadata({ panelType, panelClass = "", panelVars = 
 export function refreshPanelTabMetadata(tab, cell = null) {
   if (!tab) return tab;
   const contentPath = normalizeNotebookPath(tab.contentElement?.dataset?.currentFilePath || "");
+  if (tab.panelVars?.layoutEmpty && !contentPath) return tab;
+  if (contentPath && tab.panelVars?.layoutEmpty) tab.panelVars.layoutEmpty = false;
   const cellPath = normalizeNotebookPath(cell?.dataset?.currentFilePath || "");
   const resourcePath = contentPath || cellPath || tab.resourcePath || "";
   if (!resourcePath) return tab;

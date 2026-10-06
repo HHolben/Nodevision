@@ -31,6 +31,10 @@ export async function openHtmlDraftFocusCommand(args, context = {}) {
   return (await import("/Sessions/HTMLDraftFocusSession.mjs")).startHTMLDraftFocus(context);
 }
 
+export async function openSandboxCommand([mode], context = {}) {
+  return (await import("/Sessions/SandboxFocusSession.mjs")).startSandboxFocus(context, mode);
+}
+
 export async function openSketchFocusCommand(args, context = {}) {
   return (await import("/Sessions/SketchFocusSession.mjs")).startSketchFocus(context);
 }

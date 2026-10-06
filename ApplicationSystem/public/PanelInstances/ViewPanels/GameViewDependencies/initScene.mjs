@@ -7,6 +7,7 @@ import { createCameraModeController } from "./cameraModes.mjs";
 import { installWorldPause } from "./worldPause.mjs";
 import { createInputHandlers } from "./inputHandlers.mjs";
 import { createMovementUpdater } from "./movementUpdate.mjs";
+import { worldAuthoringAllowed, guardWorldControllers } from "/MetaWorld/WorldAuthoringPermissions.mjs";
 import { startRenderLoop } from "./renderLoop.mjs";
 import { setupResizeObserver } from "./resizeObserver.mjs";
 import { createPlayerInventory } from "./playerInventory.mjs";
@@ -411,9 +412,10 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     }
   };
   window.VRWorldContext.controls = controls;
+  movementState.viewPermissions = state.viewPermissions;
   window.VRWorldContext.movementState = movementState;
   window.VRWorldContext.setPlayerMode = (nextMode) => {
-    const normalized = normalizePlayerMode(nextMode);
+    const normalized = worldAuthoringAllowed(movementState) ? normalizePlayerMode(nextMode) : "survival";
     movementState.playerMode = normalized;
     if (window.NodevisionState) {
       window.NodevisionState.virtualWorldMode = normalized;
@@ -580,6 +582,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     ground
   });
 
+  guardWorldControllers(window.VRWorldContext);
   const saveVirtualWorldFile = async () => {
     return saveCurrentWorldFile({
       state,

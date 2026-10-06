@@ -66,7 +66,7 @@ export function renderLayout(node, parent, options = {}) {
     container.className = "panel-row";
     const direction = node.direction === "column" || node.type === "vertical" ? "column" : "row";
     const isVertical = direction === "column";
-    Object.assign(container.style, { display: "flex", flexDirection: direction, overflow: "hidden", flex: node.flex ? `${node.flex} 1 0` : "1 1 auto", alignItems: "stretch", minHeight: "0", minWidth: "0" });
+    Object.assign(container.style, { display: "flex", flexDirection: direction, overflow: "hidden", flex: toFlexValue(node.flex) || "1 1 auto", alignItems: "stretch", minHeight: "0", minWidth: "0" });
     container.dataset.direction = direction;
     container.dataset.isVertical = isVertical ? "1" : "0";
     parent.appendChild(container);

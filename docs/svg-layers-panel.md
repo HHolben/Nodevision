@@ -18,7 +18,7 @@ A document-based `activeFileIsSvg` toolbar condition exposes Layers in viewer, g
 
 Both modes render the same tree. A synthetic **SVG document** row exposes ordinary groups, drawable root children, and resources without inserting anything into the SVG. Authored layers retain their existing controls. In viewer mode, expansion and inspection selection work locally in the panel; mutation buttons are disabled. The viewer does not impersonate the graphical editor's selection owner. In editor mode, selection still uses `SVGEditorContext` and its existing selection event.
 
-A viewer drop opens or reuses the ordinary graphical editor, waits for its ready event, resolves authored-node addresses, checks that the source still matches, then invokes the editor's reparent operation. A mismatch is rejected instead of applying the gesture to a different object. The panel follows the promoted editor; the iframe document is not modified or saved.
+Viewer rows and layer labels are not draggable. Delegated drag handlers and the manager reject read-only moves, so inspection cannot open an editor. Users open graphical editing explicitly to move objects.
 
 ## Dragging and preservation
 
@@ -45,7 +45,7 @@ node --test ApplicationSystem/public/PanelInstances/Common/Layers/svgLayersConte
 python3 scripts/test-svg-layers-browser.py
 ```
 
-The browser runner uses installed Chromium (or a path passed as its first argument), a local fixture server, the real SVG editor runtime, the real Layers panel/manager, and lightweight workspace/toolbar host stubs. It covers viewer availability and non-mutating inspection; viewer-to-editor promotion; actual drag events; authored and ordinary groups; node/attribute/content integrity; transform and inherited paint preservation; rejected drops; visibility/locking and layer-order controls; real editor history including snapshot replacement; and the normal save hook.
+The browser runner uses installed Chromium (or a path passed as its first argument), a local fixture server, the real SVG editor runtime, the real Layers panel/manager, and lightweight workspace/toolbar host stubs. It covers viewer availability and non-mutating inspection; read-only viewer drag rejection; actual drag events; authored and ordinary groups; node/attribute/content integrity; transform and inherited paint preservation; rejected drops; visibility/locking and layer-order controls; real editor history including snapshot replacement; and the normal save hook.
 
 The structural performance regression adds 1,200 objects and sends 300 dragover events, asserting zero document queries, tree rebuilds, geometry reads, toolbar publications, or selection broadcasts during that interval. It uses operation counts rather than machine-dependent timing thresholds.
 
@@ -64,3 +64,12 @@ The previous normal save path already cloned the document and stripped `[data-nv
 `SvgPreservation.mjs` remains the centralized defensive save filter and now also handles a cloned selection root's transient attribute. Initial load and snapshot reload strip marked incoming chrome; copy/duplicate use the same cleanup. A child-list observer checks only the current selection for disconnected nodes. Teardown cancels pending selection/freehand work and tool timers, disconnects observers, destroys chrome and auxiliary menus, and removes the editor wrapper. Deferred selection work checks runtime ownership before publishing.
 
 `scripts/svg-chrome-browser.mjs`, run by the existing browser suite, covers select A → B → clear, dirty/save stability, independent document bounds, zero document mutation records for overlay movement, deletion, undo/redo, clipboard, contaminated reload, viewBox alignment, pointer resizing through the external handles, and closing with pending selection callbacks. It complements the existing layer reparent selection/history coverage. Browser checks pass in Chromium; the focused SVG Node tests pass. A broader run also encountered three failures in untouched sketch recognition tests (`PencilSketchAngleFit`, `PencilSketchTriangleFit`, `ShapeRecognition`).
+
+
+## Follow-up regression: cancelled marquee
+
+A real pointer-event regression reproduced a remaining stuck blue rectangle: pointerdown on empty canvas, pointermove, then pointercancel. The cancellation handler returned without clearing `marqueeState` or hiding `marquee-box`, because marquee selection is not a drawing-tool operation. Tool changes and snapshot/document replacement also retained this state. `ClearSvgMarquee.mjs` now clears the state, hides the rectangle, cancels long-press work, and releases capture at those three boundaries. The regression failed before the fix and passes afterward. Repeated select/deselect cycles are also exercised.
+
+The persistent-source invariant continues to rely on the existing external `SvgChrome` viewport and defensive `SvgPreservation` serialization filter. No new save path, Layers implementation, or ModuleMap override was introduced. This follow-up does not claim that cancelled marquees explain historical persisted rectangles; marked overlays remain absent from serialized SVG in the browser tests.
+
+Files changed in this follow-up: `svgLayersContext.mjs`, `ViewSVG.mjs`, `ElementLayers/drag.mjs`, `ElementLayers/panel.mjs`, runtime parts `ClearSvgMarquee.mjs`, `CreateAddEventListenerPointercancelHandler.mjs`, `CreateSetModeHandler.mjs`, `CreateStartResizeInteractionHandler.mjs`, and browser suites `svg-layers-browser.mjs` / `svg-chrome-browser.mjs`. The existing large Layers panel file remains in place; its read-only changes reuse existing row construction.

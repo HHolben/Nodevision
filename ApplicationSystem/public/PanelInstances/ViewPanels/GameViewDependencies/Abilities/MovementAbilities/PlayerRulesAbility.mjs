@@ -1,17 +1,20 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/MovementAbilities/PlayerRulesAbility.mjs
 // This file defines player-mode and character-skill rules for Game View movement abilities. It centralizes survival versus creative permissions, run speed, and jump strength so character abilities are not hard-coded inside the update loop.
 
+import { worldAuthoringAllowed, viewAllowsAbility } from "/MetaWorld/WorldAuthoringPermissions.mjs";
 import { installMovementApi } from "../movementContext.mjs";
 
 export function installPlayerRulesAbility(ctx) {
   const { movementState } = ctx;
 
   function playerMode() {
+    if (!worldAuthoringAllowed(movementState)) return "survival";
     const mode = String(movementState?.playerMode || "survival").toLowerCase();
     return mode === "creative" ? "creative" : "survival";
   }
 
   function canUseAbility(abilityKey) {
+    if (!viewAllowsAbility(movementState, abilityKey)) return false;
     if (playerMode() === "creative") return true;
     return movementState?.worldRules?.[abilityKey] === true;
   }

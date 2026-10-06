@@ -1,0 +1,1412 @@
+{
+  "rule": "Fewer than 200 nonblank, noncomment lines; ApplicationSystem native files; JSON/YAML/CSV exempt",
+  "date": "2026-10-06",
+  "zoomRollout": {
+    "checked": 59,
+    "maximumCodeLines": 187,
+    "failed": [],
+    "files": [
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs",
+        "codeLines": 15,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ApplyNbtTagEditorPatch.mjs",
+        "codeLines": 149,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/DetectLanguage.mjs",
+        "codeLines": 146,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/InitializeMonaco.mjs",
+        "codeLines": 187,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/IsCodeEditorActive.mjs",
+        "codeLines": 107,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ModuleState.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/OpenCodeEditor.mjs",
+        "codeLines": 145,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/RegisterCodeEditorLiveProvider.mjs",
+        "codeLines": 115,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ResolveEditableNbtTag.mjs",
+        "codeLines": 107,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/SaveNbtCodeFile.mjs",
+        "codeLines": 136,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/SetPreviewOutput.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ShowCommonVarOverlay.mjs",
+        "codeLines": 147,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/TagIdFromName.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorZoom.mjs",
+        "codeLines": 21,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridView.mjs",
+        "codeLines": 64,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridZoom.mjs",
+        "codeLines": 34,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVeditor.mjs",
+        "codeLines": 166,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/CreateSetEditorHtmlForPathHandler.mjs",
+        "codeLines": 86,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/MountHtmlEditorShell.mjs",
+        "codeLines": 123,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/ConnectSvgPointerEvents.mjs",
+        "codeLines": 106,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/PublishSvgEditorContext.mjs",
+        "codeLines": 118,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/FileManager.mjs",
+        "codeLines": 62,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerZoom.mjs",
+        "codeLines": 30,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GraphGeometricZoom.mjs",
+        "codeLines": 12,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GraphSemanticZoom.mjs",
+        "codeLines": 70,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewParts/UpdateViewPanel.mjs",
+        "codeLines": 151,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ImageViewport.mjs",
+        "codeLines": 65,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditor.mjs",
+        "codeLines": 2,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/CreatePageShell.mjs",
+        "codeLines": 142,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/CreateToolbar.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/DuplicateSelection.mjs",
+        "codeLines": 98,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/FetchAnnotationText.mjs",
+        "codeLines": 147,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/HandleOverlayPointerMove.mjs",
+        "codeLines": 131,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/InstallSvgContext.mjs",
+        "codeLines": 79,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/LoadAnnotations.mjs",
+        "codeLines": 131,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/SVG_NS.mjs",
+        "codeLines": 140,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFZoom.mjs",
+        "codeLines": 30,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewHTML.mjs",
+        "codeLines": 86,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewSVG.mjs",
+        "codeLines": 60,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/panelZoomModesWidget.mjs",
+        "codeLines": 36,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidget.mjs",
+        "codeLines": 1,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidgetParts/bindings.mjs",
+        "codeLines": 125,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidgetParts/lifecycle.mjs",
+        "codeLines": 27,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidgetParts/presentation.mjs",
+        "codeLines": 110,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/contentPresentationZoom.mjs",
+        "codeLines": 19,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomCapabilities.mjs",
+        "codeLines": 62,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomCapabilities.test.mjs",
+        "codeLines": 31,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomIframe.mjs",
+        "codeLines": 19,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomInput.mjs",
+        "codeLines": 27,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomInput.test.mjs",
+        "codeLines": 18,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPan.mjs",
+        "codeLines": 22,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/commands.mjs",
+        "codeLines": 107,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/constants.mjs",
+        "codeLines": 35,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/geometry.mjs",
+        "codeLines": 118,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/layers.mjs",
+        "codeLines": 120,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/ownership.mjs",
+        "codeLines": 125,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/shortcuts.mjs",
+        "codeLines": 44,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/state.mjs",
+        "codeLines": 100,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/viewport.mjs",
+        "codeLines": 91,
+        "header": true,
+        "description": true,
+        "pass": true
+      }
+    ]
+  },
+  "dirtyWorkingTree": {
+    "checked": 126,
+    "maximumCodeLines": 3484,
+    "failed": [
+      {
+        "file": "ApplicationSystem/public/Commands/CommandDefinitions.mjs",
+        "codeLines": 208,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/ModelExport/STLExport.mjs",
+        "codeLines": 794,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/panel.mjs",
+        "codeLines": 846,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs",
+        "codeLines": 1771,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerCore.mjs",
+        "codeLines": 1157,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerCore.mjs",
+        "codeLines": 3144,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameView.mjs",
+        "codeLines": 265,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs",
+        "codeLines": 588,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs",
+        "codeLines": 3484,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs",
+        "codeLines": 986,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/Stylesheets/style.css",
+        "codeLines": 217,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/SwitchToSVGediting/initSVGEditor.js",
+        "codeLines": 1604,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarCallbacks/file/saveFile.mjs",
+        "codeLines": 271,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarCallbacks/fileCallbacks.js",
+        "codeLines": 456,
+        "header": true,
+        "description": true,
+        "pass": false
+      }
+    ],
+    "files": [
+      {
+        "file": "ApplicationSystem/public/Commands/CommandDefinitions.mjs",
+        "codeLines": 208,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/Commands/NodevisionCommandRegistry.mjs",
+        "codeLines": 100,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/Commands/NodevisionEventRegistry.mjs",
+        "codeLines": 79,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/Commands/handlers/SystemCommands.mjs",
+        "codeLines": 37,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ModelExport/STLExport.mjs",
+        "codeLines": 794,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/NodevisionSelection.mjs",
+        "codeLines": 126,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/Common/Layers/svgLayersContext.mjs",
+        "codeLines": 15,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/Common/Layers/svgLayersContext.test.mjs",
+        "codeLines": 29,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditor.mjs",
+        "codeLines": 15,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridModel.test.mjs",
+        "codeLines": 66,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridView.mjs",
+        "codeLines": 64,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVeditor.mjs",
+        "codeLines": 166,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/drag.mjs",
+        "codeLines": 60,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/panel.mjs",
+        "codeLines": 846,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/CreateSetEditorHtmlForPathHandler.mjs",
+        "codeLines": 86,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/MountHtmlEditorShell.mjs",
+        "codeLines": 123,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs",
+        "codeLines": 1771,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/ConnectSvgPointerEvents.mjs",
+        "codeLines": 106,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateAddEventListenerPointercancelHandler.mjs",
+        "codeLines": 67,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateSetModeHandler.mjs",
+        "codeLines": 132,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateStartResizeInteractionHandler.mjs",
+        "codeLines": 126,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateSvgSelectionContext.mjs",
+        "codeLines": 73,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/PublishSvgEditorContext.mjs",
+        "codeLines": 118,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/FileManager.mjs",
+        "codeLines": 62,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerCore.mjs",
+        "codeLines": 1157,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManager.mjs",
+        "codeLines": 63,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerCore.mjs",
+        "codeLines": 3144,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewParts/CancelScheduledSelectedFileViewRender.mjs",
+        "codeLines": 132,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewParts/UpdateViewPanel.mjs",
+        "codeLines": 151,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditor.mjs",
+        "codeLines": 2,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewHTML.mjs",
+        "codeLines": 86,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewImage.mjs",
+        "codeLines": 25,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewJPG.mjs",
+        "codeLines": 34,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPNG.mjs",
+        "codeLines": 58,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewSVG.mjs",
+        "codeLines": 60,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameView.mjs",
+        "codeLines": 265,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/MovementAbilities/PlayerRulesAbility.mjs",
+        "codeLines": 136,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/movementContext.mjs",
+        "codeLines": 117,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs",
+        "codeLines": 588,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs",
+        "codeLines": 3484,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs",
+        "codeLines": 986,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/Sessions/SessionUiOwnership.mjs",
+        "codeLines": 118,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/Stylesheets/style.css",
+        "codeLines": 217,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/SwitchToSVGediting/initSVGEditor.js",
+        "codeLines": 1604,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarCallbacks/file/saveFile.mjs",
+        "codeLines": 271,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarCallbacks/fileCallbacks.js",
+        "codeLines": 456,
+        "header": true,
+        "description": true,
+        "pass": false
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarCallbacks/view/SaveCurrentLayout.mjs",
+        "codeLines": 8,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarCallbacks/view/VirtualWorldEditing.mjs",
+        "codeLines": 18,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidget.mjs",
+        "codeLines": 1,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelTabMetadata.mjs",
+        "codeLines": 191,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPan.mjs",
+        "codeLines": 22,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/workspaceParts/workspaceActiveTracking.mjs",
+        "codeLines": 57,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/workspaceParts/workspaceLayoutRender.mjs",
+        "codeLines": 93,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/workspaceParts/workspacePanelLoader.mjs",
+        "codeLines": 143,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/server.mjs",
+        "codeLines": 151,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/Sessions/BuiltIn/SandboxBuild.NodevisionSession.js",
+        "codeLines": 2,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/Sessions/BuiltIn/SandboxPlay.NodevisionSession.js",
+        "codeLines": 2,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/Sessions/SandboxSessions.test.mjs",
+        "codeLines": 23,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/FileInterop/DownloadBlob.mjs",
+        "codeLines": 7,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/FileInterop/SvgSaveRecovery.mjs",
+        "codeLines": 27,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/FileInterop/SvgSaveRecovery.test.mjs",
+        "codeLines": 16,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/MetaWorld/SandboxWorldPlanner.mjs",
+        "codeLines": 28,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/MetaWorld/SandboxWorldPlanner.test.mjs",
+        "codeLines": 60,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/MetaWorld/WorldAuthoringPermissions.mjs",
+        "codeLines": 42,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/MetaWorld/WorldDocumentDrafts.mjs",
+        "codeLines": 38,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ApplyNbtTagEditorPatch.mjs",
+        "codeLines": 149,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/DetectLanguage.mjs",
+        "codeLines": 146,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/InitializeMonaco.mjs",
+        "codeLines": 187,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/IsCodeEditorActive.mjs",
+        "codeLines": 107,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ModuleState.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/OpenCodeEditor.mjs",
+        "codeLines": 145,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/RegisterCodeEditorLiveProvider.mjs",
+        "codeLines": 115,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ResolveEditableNbtTag.mjs",
+        "codeLines": 107,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/SaveNbtCodeFile.mjs",
+        "codeLines": 136,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/SetPreviewOutput.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/ShowCommonVarOverlay.mjs",
+        "codeLines": 147,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorParts/TagIdFromName.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/CodeEditorZoom.mjs",
+        "codeLines": 21,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridZoom.mjs",
+        "codeLines": 34,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/ClearSvgMarquee.mjs",
+        "codeLines": 12,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerFollowSelection.mjs",
+        "codeLines": 27,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerZoom.mjs",
+        "codeLines": 30,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GraphGeometricZoom.mjs",
+        "codeLines": 12,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GraphSemanticZoom.mjs",
+        "codeLines": 70,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerDependencies/GraphSemanticZoom.test.mjs",
+        "codeLines": 64,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ImageViewport.mjs",
+        "codeLines": 65,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ImageViewportGeometry.mjs",
+        "codeLines": 13,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ImageViewportGeometry.test.mjs",
+        "codeLines": 9,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/CreatePageShell.mjs",
+        "codeLines": 142,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/CreateToolbar.mjs",
+        "codeLines": 144,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/DuplicateSelection.mjs",
+        "codeLines": 98,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/FetchAnnotationText.mjs",
+        "codeLines": 147,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/HandleOverlayPointerMove.mjs",
+        "codeLines": 131,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/InstallSvgContext.mjs",
+        "codeLines": 79,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/LoadAnnotations.mjs",
+        "codeLines": 131,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditorParts/SVG_NS.mjs",
+        "codeLines": 140,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/PDF/PDFZoom.mjs",
+        "codeLines": 30,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/Sessions/SandboxFocusSession.mjs",
+        "codeLines": 48,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/Sessions/SandboxWorkspace.mjs",
+        "codeLines": 42,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/Sessions/SandboxWorldStartup.mjs",
+        "codeLines": 36,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarCallbacks/view/LoadSavedLayout.mjs",
+        "codeLines": 1,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/panelZoomModesWidget.mjs",
+        "codeLines": 36,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidgetParts/bindings.mjs",
+        "codeLines": 125,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidgetParts/lifecycle.mjs",
+        "codeLines": 27,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidgetParts/presentation.mjs",
+        "codeLines": 110,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/activePanelFileSelection.mjs",
+        "codeLines": 34,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/contentPresentationZoom.mjs",
+        "codeLines": 19,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/neutralLayoutPanel.mjs",
+        "codeLines": 16,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomCapabilities.mjs",
+        "codeLines": 62,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomCapabilities.test.mjs",
+        "codeLines": 31,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomIframe.mjs",
+        "codeLines": 19,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomInput.mjs",
+        "codeLines": 27,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomInput.test.mjs",
+        "codeLines": 18,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/commands.mjs",
+        "codeLines": 107,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/constants.mjs",
+        "codeLines": 35,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/geometry.mjs",
+        "codeLines": 118,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/layers.mjs",
+        "codeLines": 120,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/ownership.mjs",
+        "codeLines": 125,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/shortcuts.mjs",
+        "codeLines": 44,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/state.mjs",
+        "codeLines": 100,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/panelZoomPanParts/viewport.mjs",
+        "codeLines": 91,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/savedLayoutModel.mjs",
+        "codeLines": 36,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/savedLayoutModel.test.mjs",
+        "codeLines": 25,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/public/panels/savedLayouts.mjs",
+        "codeLines": 43,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/server/middleware/requestSizeError.mjs",
+        "codeLines": 5,
+        "header": true,
+        "description": true,
+        "pass": true
+      },
+      {
+        "file": "ApplicationSystem/server/middleware/requestSizeError.test.mjs",
+        "codeLines": 16,
+        "header": true,
+        "description": true,
+        "pass": true
+      }
+    ]
+  }
+}

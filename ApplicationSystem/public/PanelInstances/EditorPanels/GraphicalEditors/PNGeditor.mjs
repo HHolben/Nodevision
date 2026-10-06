@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs
 // This file defines browser-side PNGeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { registerPanelZoomCapabilities } from "../../../panels/panelZoomCapabilities.mjs";
 import { History } from "./PNGeditorComponents/history.mjs";
 import {
   bresenhamLine,
@@ -95,6 +96,8 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   canvas.height = state.logicalHeight;
   canvas.style.cssText =
     "image-rendering:pixelated; image-rendering:crisp-edges; cursor:crosshair; background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50% / 20px 20px; display:block;";
+  if (/\.jpe?g(?:[?#]|$)/i.test(filePath || "")) canvas.style.imageRendering = "auto";
+  let displayZoom = null;
   const ctx = canvas.getContext("2d", { alpha: true });
   const history = new History(ctx);
   const canvasArea = document.createElement("div");
@@ -269,8 +272,8 @@ export async function renderRasterEditor(filePath, container, options = {}) {
         Math.min(boundsW / state.logicalWidth, boundsH / state.logicalHeight),
       ),
     );
-    const displayW = Math.max(1, state.logicalWidth * fitScale);
-    const displayH = Math.max(1, state.logicalHeight * fitScale);
+    const displayW = Math.max(1, state.logicalWidth * (displayZoom ?? fitScale));
+    const displayH = Math.max(1, state.logicalHeight * (displayZoom ?? fitScale));
     canvas.style.width = `${displayW}px`;
     canvas.style.height = `${displayH}px`;
     state.displayWidth = displayW;
@@ -832,8 +835,8 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     if (!(sourceCanvas instanceof HTMLCanvasElement) && !(sourceCanvas instanceof HTMLImageElement)) {
       return false;
     }
-    const nextWidth = Math.max(1, sourceCanvas.width || sourceCanvas.naturalWidth || 1);
-    const nextHeight = Math.max(1, sourceCanvas.height || sourceCanvas.naturalHeight || 1);
+    const nextWidth = Math.max(1, sourceCanvas.naturalWidth || sourceCanvas.width || 1);
+    const nextHeight = Math.max(1, sourceCanvas.naturalHeight || sourceCanvas.height || 1);
     if (pushHistory) history.push(canvas);
     canvas.width = nextWidth;
     canvas.height = nextHeight;
@@ -1580,6 +1583,11 @@ export async function renderRasterEditor(filePath, container, options = {}) {
 
   // Global Integration
   window.rasterCanvas = canvas;
+  const unregisterZoom = registerPanelZoomCapabilities(container, { getState: () => ({ zoom: state.displayWidth / state.logicalWidth }), geometric(command) {
+    displayZoom = command.action === "reset" ? 1 : Math.max(.05, Math.min(32, (command.zoom ?? (displayZoom ?? state.displayWidth / state.logicalWidth) * (command.factor || 1))));
+    if (command.action === "fit") displayZoom = null;
+    updateDisplayScale(); return true;
+  } });
   const editorApi = {
     mode: editorMode,
     filePath,
@@ -1608,6 +1616,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   return {
     api: editorApi,
     destroy: () => {
+      unregisterZoom();
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("nv-draw-tool-changed", handleToolChange);

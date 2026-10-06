@@ -203,5 +203,11 @@ export const NODEVISION_SHARED_COMMANDS = Object.freeze([
     description: "Run the configured FAA Sectional GeoTIFF update job.", sessionSafe: true,
     arguments: [], returns: "object",
   },
+  {
+    id: "sandbox.open", category: "Session", label: "Open Sandbox", sessionSafe: true,
+    description: "Open the current HTML world in Sandbox Build or Play.",
+    arguments: [arg("mode", "enum", { required: true, values: ["build", "play"] })],
+    returns: "status", events: ["sandbox.finished"],
+  },
   ...HTML_FORM_INSERT_COMMANDS,
 ]);

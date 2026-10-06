@@ -9,19 +9,6 @@ import { createAddEventListenerPointercancelHandler } from "./CreateAddEventList
 
 // Connect Svg Pointer Events operations.
 export function connectSvgPointerEvents(scope) {
-  scope.svgSession.svgViewport.addEventListener("wheel", e => {
-    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const deltaY = Number.isFinite(Number(e.deltaY)) ? Number(e.deltaY) : 0;
-    const boundedDelta = Math.max(-600, Math.min(600, deltaY));
-    scope.svgSession.zoomSvgCanvasBy(Math.exp(-boundedDelta * 0.0015), {
-      clientX: e.clientX,
-      clientY: e.clientY
-    });
-  }, {
-    passive: false
-  });
   scope.svgSession.updateSvgRulers();
   scope.svgSession.svgDocumentDirty = false;
   scope.svgSession.svgEditorContext = null;

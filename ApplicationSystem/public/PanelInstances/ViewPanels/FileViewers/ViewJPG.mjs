@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewJPG.mjs
 // This file renders a viewing area for JPG/JPEG images.
+import { mountImageViewport } from "./ImageViewport.mjs";
 
 /**
  * Renders a JPG/JPEG file in the given view panel.
@@ -43,7 +44,7 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
         '<p style="color:red;">Error loading JPG file.</p>';
     };
 
-    viewPanel.appendChild(img);
+    mountImageViewport(viewPanel, img);
   } catch (err) {
     console.error('Error loading JPG:', err);
     viewPanel.innerHTML =

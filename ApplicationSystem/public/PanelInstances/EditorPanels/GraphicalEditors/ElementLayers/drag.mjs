@@ -10,7 +10,7 @@ export function bindLayerDrag(panel, state) {
   const clear=()=>{if(highlighted){highlighted.style.boxShadow='';delete highlighted.dataset.dropState;} highlighted=null;};
   function plan(row,event) {
     const data=row?.__nvLayerNode;
-    if(!source || !data) return null;
+    if(state.readOnly || !source || !data) return null;
     const actions=state.dragActions;
     if(source.type==='layer' && !state.readOnly) {
       if(data.type!=='layer' || source.element===data.element || data.element===actions.root) return null;
@@ -22,6 +22,7 @@ export function bindLayerDrag(panel, state) {
     return {target,reason};
   }
   on('dragstart',event=>{
+    if(state.readOnly) {event.preventDefault();return;}
     const row=rowFor(event), data=row?.__nvLayerNode;
     const control=event.target.closest?.('button,input');
     if(!data || data.element===state.dragActions.root || (control && !(data.type==='layer' && control===row.children[2]))) {event.preventDefault();return;}

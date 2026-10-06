@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateStartResizeInteractionHandler.mjs
 // This module implements create Start Resize Interaction Handler behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { clearSvgMarquee } from "./ClearSvgMarquee.mjs";
+
 import { getAttrNumber } from "../svgDom.mjs";
 import { parseEditableSvgRoot } from "./ParseEditableSvgRoot.mjs";
 import { cleanupSvgCloneForSave, applyEditableSvgRootDefaults, prepareSvgRootForEditor } from "../SvgPreservation.mjs";
@@ -96,6 +98,7 @@ export function createStartRotateInteractionHandler(owner) {
 
 export function createSetSvgFromStringHandler(owner) {
   return function (svgString) {
+    clearSvgMarquee(owner.svgSession);
     const parsed = parseEditableSvgRoot(svgString);
     const fresh = cleanupSvgCloneForSave(parsed.root);
     window.cancelAnimationFrame(owner.svgSession.selectionChangeRaf);

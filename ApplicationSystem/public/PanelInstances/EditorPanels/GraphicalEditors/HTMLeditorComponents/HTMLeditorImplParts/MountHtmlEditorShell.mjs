@@ -5,6 +5,8 @@ import { ensureHTMLLayoutStyles } from "./EnsureHTMLLayoutStyles.mjs";
 import { updateToolbarState } from "../../../../../panels/createToolbar.mjs";
 import { installNodevisionMediaFallbackRuntime } from "/utils/mediaFallbackRuntime.mjs";
 
+import { installContentPresentationZoom } from "/panels/contentPresentationZoom.mjs";
+
 // Mount Html Editor Shell operations.
 export function mountHtmlEditorShell(scope) {
   if (!scope.container) throw new Error("Container required");
@@ -70,6 +72,7 @@ export function mountHtmlEditorShell(scope) {
   }
   scope.htmlSession.renderToken = Symbol("html-editor:" + scope.filePath);
   scope.container.__nvEditorRenderToken = scope.htmlSession.renderToken;
+  scope.container.__nvHtmlZoomCleanup?.();
   scope.container.innerHTML = "";
   ensureHTMLLayoutStyles();
 
@@ -122,5 +125,10 @@ export function mountHtmlEditorShell(scope) {
   scope.htmlSession.wysiwyg.style.overflowWrap = "anywhere";
   scope.htmlSession.wysiwyg.style.wordBreak = "break-word";
   scope.htmlSession.wrapper.appendChild(scope.htmlSession.wysiwyg);
+  const presentation = document.createElement("div");
+  presentation.style.cssText = "flex:1;min-height:0;overflow:auto";
+  scope.htmlSession.wysiwyg.replaceWith(presentation);
+  presentation.append(scope.htmlSession.wysiwyg);
+  scope.container.__nvHtmlZoomCleanup = installContentPresentationZoom(scope.htmlSession.wrapper, presentation);
   installNodevisionMediaFallbackRuntime(scope.htmlSession.wysiwyg);
 }

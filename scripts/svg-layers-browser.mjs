@@ -1,11 +1,12 @@
 // Nodevision/scripts/svg-layers-browser.mjs
-// This browser suite verifies shared SVG layer inspection, real editor reparent history, safe appearance preservation, viewer promotion, and bounded drag feedback work.
+// This browser suite verifies shared SVG layer inspection, real editor reparent history, safe appearance preservation, read-only viewer inspection, and bounded drag feedback work.
 import { createElementLayers } from '/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers.mjs';
 import { renderFile } from '/PanelInstances/ViewPanels/FileViewers/ViewSVG.mjs';
 import { setupPanel } from '/PanelInstances/InfoPanels/SVGLayersPanel.mjs';
 import { renderEditor } from '/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntime.mjs';
 import { reparentSvgElement, svgDropRejection } from '/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/reparent.mjs';
-import { getActiveSvgLayersContext, promoteSvgLayerMove } from '/PanelInstances/Common/Layers/svgLayersContext.mjs';
+import { getActiveSvgLayersContext } from '/PanelInstances/Common/Layers/svgLayersContext.mjs';
+import { checkSvgSaveRecovery } from './svg-save-recovery-browser.mjs';
 import { checkSvgChrome } from './svg-chrome-browser.mjs';
 import ViewLayers from '/ToolbarCallbacks/view/ViewLayers.mjs';
 const ok=(v,m)=>{if(!v)throw Error(m);};
@@ -32,13 +33,14 @@ try {
  ok(rowFor(source) && rowFor(target),'ordinary groups and objects appear in viewer');
  rowFor(source).click();equal(viewing.svgRoot.outerHTML,original,'inspection never mutates SVG');
  ok(!window.SVGEditorContext,'inspection does not initialize graphical editing');
- // Exercise the normal editor-ready promotion route with the real SVG runtime.
- let cleanupEditor, promotionCount=0;
- const openEditor=async event=>{if(event.detail.id==='GraphicalEditor'){promotionCount++;cleanupEditor=await renderEditor(event.detail.panelVars.filePath,edit);}};
- window.addEventListener('toolbarAction',openEditor);
- await promoteSvgLayerMove(viewing,source,target);await tick();
+ const viewerDrag = new DataTransfer();
+ drag('dragstart',rowFor(source),viewerDrag);drag('drop',rowFor(target),viewerDrag);await tick();
+ ok(!window.SVGEditorContext && !rowFor(source).draggable,'viewer drag cannot enable editing');
+ equal(viewing.layers.moveElementToLayer(source,null,null,target),false,'viewer manager rejects mutation');
+ let cleanupEditor = await renderEditor('fixture.svg',edit);
+ window.SVGEditorContext.activate();
+ window.SVGEditorContext.reparentLayerElement(window.SVGEditorContext.svgRoot.querySelector('#object-a'),window.SVGEditorContext.svgRoot.querySelector('#layer-b'));
  const context=window.SVGEditorContext, root=context.svgRoot, moved=root.querySelector('#object-a');
- equal(promotionCount,1,'viewer editing uses GraphicalEditor opening route');
  equal(moved.parentElement.id,'layer-b','viewer drop moves object in editor document');
  equal(viewing.svgRoot.outerHTML,original,'viewer document remains untouched');
  ok(context.isDirty(),'real runtime marks dirty');equal(context.getSelectedElement(),moved,'move selects original editor node');
@@ -124,8 +126,12 @@ try {
  const reorder=new DataTransfer();drag('dragstart',rowFor(authoredA).children[2],reorder);drag('drop',rowFor(authoredB),reorder);await tick();
  equal(root.querySelectorAll(':scope > g[data-layer]')[1],authoredA,'existing layer reorder from name button');
  document.getElementById("result").textContent="RUNNING: chrome";
+ await checkSvgSaveRecovery(context);
  await checkSvgChrome(context,edit,cleanupEditor);cleanupEditor=null;
+ cleanupEditor=await renderEditor('second.svg',edit);await tick();
+ ok(!edit.querySelector('[data-nv-editor-ui="selection-box"]:not([display="none"])'),'new file has no previous selection overlay');
+ cleanupEditor();cleanupEditor=null;
  window.NodevisionState={currentMode:'Default',activeFileViewPath:'other.png'};equal(getActiveSvgLayersContext(),null,'non-SVG context does not reuse stale SVG provider');
- window.removeEventListener('toolbarAction',openEditor);panel.__nvCleanupLayersPanel?.();view._dispose();cleanupEditor?.();
- document.getElementById('result').textContent='PASS: SVG viewer/editor Layers, editor promotion, delegated drag, identity, attributes, transform/style preservation, invalid drops, actual runtime undo/redo/save, and 300 dragover events with 1,200 extra objects without scans/rebuilds/geometry/toolbar/selection churn.';
+ panel.__nvCleanupLayersPanel?.();view._dispose();cleanupEditor?.();
+ document.getElementById('result').textContent='PASS: SVG viewer/editor Layers, read-only inspection, delegated drag, identity, attributes, transform/style preservation, invalid drops, actual runtime undo/redo/save, and 300 dragover events with 1,200 extra objects without scans/rebuilds/geometry/toolbar/selection churn.';
 } catch(error) {document.getElementById('result').textContent=`FAIL: ${error.stack}`;}

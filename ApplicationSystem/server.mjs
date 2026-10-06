@@ -8,6 +8,7 @@ import path from 'node:path';
 import favicon from 'serve-favicon';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import cookieParser from 'cookie-parser';
+import { requestSizeError } from './server/middleware/requestSizeError.mjs';
 
 import * as AuthService from './Auth/AuthService.mjs';
 import { ensureDefaultAdminAccount } from './Auth/userStore.mjs';
@@ -85,6 +86,7 @@ export default async function createApp(runtimeConfig = {}) {
   app.use('/api/handwriting/native', express.json({ limit: '2mb' }));
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(requestSizeError);
   app.use(cookieParser());
   app.use((err, req, res, next) => {
     if (err?.type === "entity.parse.failed") {

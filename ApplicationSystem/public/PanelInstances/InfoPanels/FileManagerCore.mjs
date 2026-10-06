@@ -499,7 +499,7 @@ function markSelectedFileItems(entries = []) {
   });
 }
 
-function markSelectedFileItemVisualOnly(selectedLink) {
+export function markSelectedFileItemVisualOnly(selectedLink) {
   const hasEntry = Boolean(fileSelectionEntryFromItem(selectedLink));
   document.querySelectorAll("#file-list a.file.selected, #file-list a.folder.selected").forEach((item) => {
     if (item !== selectedLink) setFileItemSelected(item, false);
@@ -675,7 +675,7 @@ export function OpenDirectoryOrFileInfo(listElem,link, li)
 // ------------------------------
 // Fetch directory contents
 // ------------------------------
-export async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
+export async function fetchDirectoryContents(path, callback, errorElem, loadingElem, options = {}) {
   const perf = createPerformanceOperation("FileManager directory open", { path: path || "" });
   try {
     if (loadingElem) loadingElem.style.display = "block";
@@ -686,6 +686,7 @@ export async function fetchDirectoryContents(path, callback, errorElem, loadingE
     if (!response.ok) throw new Error("Failed to fetch directory: " + path);
 
     const data = await response.json();
+    if (options.isCurrent && !options.isCurrent()) return;
     const children = Array.isArray(data) ? data : [];
     perf.count("children", children.length);
     perf.count("directories", children.filter((entry) => entry?.isDirectory).length);
@@ -1138,7 +1139,7 @@ export function initFileView(initialPath = '') {
   const errorElem = document.getElementById("error");
 
   window.currentDirectoryPath = initialPath ?? "";
-  fetchDirectoryContents(window.currentDirectoryPath, displayFiles, errorElem, loadingElem);
+  return fetchDirectoryContents(window.currentDirectoryPath, displayFiles, errorElem, loadingElem);
 }
 
 // ------------------------------

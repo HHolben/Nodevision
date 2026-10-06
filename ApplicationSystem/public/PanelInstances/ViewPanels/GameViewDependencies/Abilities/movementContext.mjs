@@ -1,11 +1,12 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/movementContext.mjs
 // This file builds the shared runtime context used by the browser-side Game View movement ability modules. It keeps mutable frame state in one transparent object so the movement updater can be composed from small modules without hiding user-owned world behavior inside a monolithic closure.
 
+import { guardMovementAuthoring } from "/MetaWorld/WorldAuthoringPermissions.mjs";
 import { createCollisionChecker } from "../collisionCheck.mjs";
 import { DEFAULT_WORLD_OBJECT_MATERIAL_ID, materialFileForWorldObjectMaterial } from "/MetaWorld/Materials/WorldObjectMaterialDefaults.mjs";
 
 export function installMovementApi(ctx, methods) {
-  Object.assign(ctx.api, methods);
+  Object.assign(ctx.api, guardMovementAuthoring(methods, ctx.movementState));
   return methods;
 }
 

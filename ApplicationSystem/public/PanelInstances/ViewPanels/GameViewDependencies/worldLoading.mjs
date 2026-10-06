@@ -3,6 +3,7 @@
 
 import { createProceduralVoxelWorld } from "../../../MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs";
 import { validateVoxelWorld } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs";
+import { guardWorldLayerBridge } from "/MetaWorld/WorldAuthoringPermissions.mjs";
 import { projectIframe } from "./iframeProjection.mjs";
 import { serializeMesh } from "./worldSave.mjs";
 import { createEquationColliderPlaneMesh, makePlaneColliderRef, syncPlaneWaterVolumeRef } from "./equationColliderTool.mjs";
@@ -1854,7 +1855,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
 
   if (window.VRWorldContext) window.VRWorldContext.recordObjectTransform = mesh => bridge.recordObjectTransform(mesh);
   layerEntries.forEach(attachLayerBreakHandler);
-  setActiveMetaWorldLayerBridge(bridge);
+  setActiveMetaWorldLayerBridge(guardWorldLayerBridge(bridge, window.VRWorldContext?.movementState));
 }
 
 function convertMetaWorldToLegacyWorld(world) {
@@ -2435,6 +2436,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     const ctx = window.VRWorldContext;
     if (ctx) {
       ctx.currentWorldPath = filePath;
+      ctx.worldLoadComplete = false;
       if (ctx.scene?.__nvGridHelper) ctx.scene.__nvGridHelper.visible = false;
       if (ctx.movementState) {
         ctx.movementState.stlEdit = false;
@@ -2457,7 +2459,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     }
 
     const worldPath = normalizeWorldPath(filePath);
-    const res = await fetch("/api/load-world", {
+    const res = options.worldDefinition ? { ok: true, json: async () => ({ worldDefinition: structuredClone(options.worldDefinition) }) } : await fetch("/api/load-world", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ worldPath })
@@ -2472,6 +2474,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       } catch (_) {
         // ignore parse errors
       }
+      if (options.throwOnError) throw new Error(errorMessage);
       console.warn("World load failed:", res.status, errorMessage);
       return;
     }
@@ -3675,7 +3678,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       worldPath,
       settings: movementState?.multiplayer || {}
     });
+    if (window.VRWorldContext) window.VRWorldContext.worldLoadComplete = true;
   } catch (err) {
     console.error("Failed to load world:", err);
+    if (options.throwOnError) throw err;
   }
 }

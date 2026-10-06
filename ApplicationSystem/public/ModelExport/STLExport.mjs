@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/ModelExport/STLExport.mjs
 // Shared STL download helpers for browser-side 3D editors and viewers.
 
+import { downloadBlob } from "../FileInterop/DownloadBlob.mjs";
 import * as THREE from "/lib/three/three.module.js";
 import { STLLoader } from "/lib/three/STLLoader.js";
 
@@ -20,16 +21,7 @@ function stlFileName(pathValue = "", fallback = "model.stl") {
   return safe.toLowerCase().endsWith(".stl") ? safe : `${safe}.stl`;
 }
 
-function downloadBlob(blob, fileName) {
-  const href = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = href;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(href);
-}
+
 
 
 const PATTERN_2D_DEFAULTS = Object.freeze({

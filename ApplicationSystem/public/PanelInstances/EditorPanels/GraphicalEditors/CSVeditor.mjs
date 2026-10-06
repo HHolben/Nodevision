@@ -10,6 +10,8 @@ import { createCsvGridView } from "./CSVGridView.mjs";
 import { bindCsvRangeInteraction } from "./CSVRangeInteraction.mjs";
 import { createCsvHistory } from "./CSVHistory.mjs";
 
+import { installCsvGridZoom } from "./CSVGridZoom.mjs";
+
 export async function renderEditor(filePath, container) {
   if (!container) throw new Error("Container required");
   container.__cleanupCSVTableToolbar?.();
@@ -125,7 +127,9 @@ export async function renderEditor(filePath, container) {
     view.paint(getSelection().range); interaction.layoutChanged();
   }) : null;
   resize?.observe(table);
+  const unregisterZoom = installCsvGridZoom(wrapper, tableWrapper, () => { view.paint(getSelection().range); interaction.layoutChanged(); });
   container.__cleanupCSVTableToolbar = () => {
+    unregisterZoom();
     disposed = true; interaction.dispose(); resize?.disconnect(); clearEditorContext(filePath);
     if (window.__nvTableEditorRoot === tableWrapper) window.__nvTableEditorRoot = null;
     if (window.__nvCsvEditor?.table === table) window.__nvCsvEditor = null;

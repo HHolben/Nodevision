@@ -1,9 +1,11 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/VirtualWorldEditing.mjs
 // This file defines browser-side Virtual World Editing logic for the Nodevision UI. The callback updates mode state and notifies MetaWorld editing panels.
 
+import { worldAuthoringAllowed } from "/MetaWorld/WorldAuthoringPermissions.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 
 export default function VirtualWorldEditing() {
+  if (!worldAuthoringAllowed(window.VRWorldContext?.movementState)) return false;
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.virtualWorldMode = "creative";
   window.NodevisionState.currentMode = "Virtual World Editing";

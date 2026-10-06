@@ -1,8 +1,11 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManager.mjs
 // This module initializes the File Manager panel, loads the FileManagerCore implementation, and exposes toolbar integration through panel capabilities.
 
+import { bindFileManagerFollowSelection } from './FileManagerFollowSelection.mjs';
 import { updateToolbarState } from '/panels/createToolbar.mjs';
 import { getNodevisionNavigationState } from '/NodevisionNavigationState.mjs';
+
+import { installFileManagerZoom } from './FileManagerZoom.mjs';
 
 const navigationState = getNodevisionNavigationState();
 
@@ -19,6 +22,8 @@ export function getActionHandler() {
 }
 
 export function setupPanel(panelElem, panelVars = {}) {
+  panelElem.cleanup?.();
+  let disposed = false, cleanupFollow = null;
   console.log("Initializing FileManager panel...", panelVars);
 
   panelElem.style.height = "100%";
@@ -38,6 +43,7 @@ export function setupPanel(panelElem, panelVars = {}) {
     </div>
   `;
 
+  const cleanupZoom = installFileManagerZoom(panelElem);
   const handleFocus = () => {
     updateToolbarState({ activePanelType: 'FileManager' });
     window.NodevisionState.activeActionHandler = window.handleFileManagerAction;
@@ -50,9 +56,16 @@ export function setupPanel(panelElem, panelVars = {}) {
   panelElem.addEventListener('focus', handleFocus, true);
   panelElem.addEventListener('click', handleFocus);
 
+  panelElem.cleanup = () => {
+    disposed = true; cleanupFollow?.(); cleanupZoom();
+    panelElem.removeEventListener('focus', handleFocus, true);
+    panelElem.removeEventListener('click', handleFocus);
+  };
   import("/PanelInstances/InfoPanels/FileManagerCore.mjs")
-    .then(mod => {
-      mod.initFileView(panelVars.currentDirectory || '');
+    .then(async mod => {
+      if (disposed) return;
+      await mod.initFileView(panelVars.currentDirectory || '');
+      if (!disposed) cleanupFollow = bindFileManagerFollowSelection(panelElem, { ...mod, highlight: mod.markSelectedFileItemVisualOnly });
     })
     .catch(err => {
       console.error("Failed to load FileManagerCore.mjs:", err);

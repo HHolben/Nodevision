@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/panels/workspaceParts/workspaceActiveTracking.mjs
 // This module installs global pointer and click tracking for active panels and modifier-key panel splitting.
 
+import { installActivePanelFileSelection } from "../activePanelFileSelection.mjs";
 import { activatePanelCell, clearActivePanelSelection } from "./workspaceActivePanels.mjs";
 import {
   PANEL_EDGE_SPLIT_HANDLE_CLASS,
@@ -17,6 +18,7 @@ export function setupActivePanelTracking() {
   if (window._activePanelTrackingSetup) return;
   window._activePanelTrackingSetup = true;
   installPanelSplitModifierTracking();
+  installActivePanelFileSelection();
   const activateHandler = (event) => {
     const target = event?.target?.nodeType === 1 ? event.target : null;
     const cell = target?.closest?.(".panel-cell");

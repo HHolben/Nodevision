@@ -48,7 +48,7 @@ export function setNodevisionSelection(referenceInput = null, options = {}) {
     if (globalThis.window) window.NodevisionState.selectedFiles = currentSelection ? [selectionEventDetail()] : [];
   }
   if (globalThis.window && options.silent !== true) {
-    window.dispatchEvent(new CustomEvent("nodevision-selection-changed", { detail: selectionEventDetail() }));
+    window.dispatchEvent(new CustomEvent("nodevision-selection-changed", { detail: { ...selectionEventDetail(), source: options.source } }));
   }
   return currentSelection;
 }

@@ -34,6 +34,7 @@ export const NODEVISION_EVENT_DEFINITIONS = Object.freeze([
   { id: "session.resumed", description: "A paused Session resumed." },
   { id: "session.quit", description: "A Session quit command was requested." },
   { id: "htmlDraftFocus.finished", description: "The HTML Draft Focus Session completed." },
+  { id: "sandbox.finished", description: "The Sandbox Session exited." },
   { id: "sketchFocus.finished", description: "The Sketch Focus Session completed." },
 ]);
 

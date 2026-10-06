@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/panels/workspaceParts/workspacePanelLoader.mjs
 // This module resolves, mounts, replaces, and cleans up Nodevision workspace panel modules and panel tabs.
 
+import { mountNeutralLayoutPanel } from "../neutralLayoutPanel.mjs";
 import { findPanelTabMatch, openPanelTabInCell, closePanelTabsInCell } from "../panelTabs.mjs";
 import { ensurePanelEdgeSplitHandles, ensureWorkspaceEdgeSplitHandles } from "./workspaceEdgeHandles.mjs";
 import { activatePanelCell, highlightActiveCell } from "./workspaceActivePanels.mjs";
@@ -72,6 +73,10 @@ async function resolvePanelModule(panelType, panelClassValue = "") {
 }
 
 async function mountPanelModuleIntoElement(host, panelType, panelVars = {}, panelClassValue = "InfoPanel") {
+  if (panelVars.layoutEmpty && (/^(View|Editor)Panel$/i.test(panelClassValue) || /Editor|FileView/.test(panelType))) {
+    delete host.dataset.currentFilePath;
+    return mountNeutralLayoutPanel(host, panelType, () => mountPanelModuleIntoElement(host, panelType, { ...panelVars, layoutEmpty: false }, panelClassValue));
+  }
   const module = await resolvePanelModule(panelType, panelClassValue);
   if (!module) {
     host.innerHTML = "<div class=\"panel-loading\">Panel module unavailable.</div>";

@@ -150,7 +150,6 @@ export async function updateViewPanel(element, {
     selectionPath: toolbarSelectedPath,
     selectionIsDirectory: preserveSelectedFolder
   });
-  window.NodevisionPanelViewportTools?.applyPanelViewport?.(viewPanel.closest?.(".panel") || viewPanel.closest?.(".nv-panel-tab-content") || viewPanel.closest?.(".panel-cell") || viewPanel);
   if (success) {
     setFileViewStatus(liveContent ? "Live File Viewer" : "File Viewer", (liveContent ? "Live: " : "Loaded: ") + filename);
     tryScrollToPendingFileViewAnchor(filename);

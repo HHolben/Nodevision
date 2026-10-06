@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs
 // This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { worldAuthoringAllowed } from "/MetaWorld/WorldAuthoringPermissions.mjs";
+import { readWorldHtml, clearWorldDraft } from "/MetaWorld/WorldDocumentDrafts.mjs";
 import { expressionUsesTimeVariable, normalizePlaneEquationConfig } from "./equationColliderTool.mjs";
 import { normalizeGravityModel } from "./gravityModel.mjs";
 import { normalizeMetaWorldMultiplayer } from "/MetaWorld/MetaWorldMultiplayerConfig.mjs";
@@ -887,7 +889,7 @@ function serializeLight(light) {
   };
 }
 
-function buildWorldDefinition({
+export function buildWorldDefinition({
   existingWorldDefinition,
   objects,
   lights,
@@ -992,6 +994,7 @@ export async function saveCurrentWorldFile({
   objects,
   lights
 }) {
+  if (!worldAuthoringAllowed(movementState)) return false;
   const currentMode = String(movementState?.playerMode || "survival").toLowerCase();
   if (currentMode !== "creative") {
     alert("World saving is only available in Creative mode.");
@@ -1037,7 +1040,7 @@ export async function saveCurrentWorldFile({
   try {
     const res = await fetch(`/Notebook/${encodeURI(worldPath)}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    existingHtml = await res.text();
+    existingHtml = state?.useLiveWorldHtml ? await readWorldHtml(worldPath) : await res.text();
   } catch (err) {
     console.error("Failed to load current world HTML before save:", err);
     alert(`Failed to read world file before save: ${err.message}`);
@@ -1056,6 +1059,8 @@ export async function saveCurrentWorldFile({
     if (!saveRes.ok || !payload?.success) {
       throw new Error(payload?.error || `${saveRes.status} ${saveRes.statusText}`);
     }
+    clearWorldDraft(worldPath);
+    state?.onWorldSaved?.(worldPath, updatedHtml);
     if (state) state.currentWorldDefinition = JSON.parse(JSON.stringify(worldDefinition));
     if (window.VRWorldContext) window.VRWorldContext.currentWorldDefinition = JSON.parse(JSON.stringify(worldDefinition));
     return true;

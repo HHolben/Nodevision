@@ -11,9 +11,29 @@ const stubs = {
   '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel(){}',
   '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia(){return {dispose(){}}}',
 };
+if (browserModule === 'sandbox-session-browser.mjs') {
+  stubs['/panels/workspace.mjs'] = `
+    export { ensureSvgEditingSplit } from '/panels/workspaceParts/workspaceSvgSplit.mjs';
+    export function ensureSvgEditorModeLayout(){}
+    export function rebuildLayoutDividersForContainer(){}
+    export async function loadPanelIntoCell(type,vars){
+      const {openPanelTabInCell}=await import('/panels/panelTabs.mjs');
+      const cell=window.activeCell.closest('.panel-cell');
+      return openPanelTabInCell(cell,{panelType:type,panelClass:vars.panelClass||'InfoPanel',panelVars:vars,allowDuplicate:vars.allowDuplicateTab},async(host)=>{
+        if(type==='GameView')await(await import('/PanelInstances/ViewPanels/GameView.mjs')).setupPanel(host,vars);
+        else host.textContent='MetaWorld Layers';
+      });
+    }`;
+  stubs['/TemplateSystem/NodevisionOverlayPanel.mjs'] = 'export async function openNodevisionOverlayPanel(type,options){window.fixtureSessionError=options.message; console.error(options.message);return "quit";}';
+}
 const server = http.createServer((req,res)=>{
   const url = new URL(req.url,'http://localhost').pathname;
   if(url==='/'){res.setHeader('Content-Type','text/html');res.end(('<div class="panel-cell"><div id="editor" style="width:800px;height:600px"></div></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/procedural-world-browser.mjs"></script>').replace('procedural-world-browser.mjs',browserModule));return;}
+  if (url.startsWith('/sandbox-builtins/')) {
+    const name=path.basename(url);
+    if (!['SandboxBuild.NodevisionSession.js','SandboxPlay.NodevisionSession.js'].includes(name)) {res.writeHead(404);res.end();return;}
+    res.end(fs.readFileSync(path.join(root,'ApplicationSystem/Sessions/BuiltIn',name)));return;
+  }
   if(stubs[url]){res.setHeader('Content-Type','text/javascript');res.end(stubs[url]);return;}
   const file=path.resolve(url.startsWith('/scripts/')?root:path.join(root,'ApplicationSystem/public'),'.'+url);
   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}

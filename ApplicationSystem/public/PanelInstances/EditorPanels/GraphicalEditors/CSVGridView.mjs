@@ -1,9 +1,14 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridView.mjs
 // This module renders declared and virtual CSV cells and constant-size range overlays without scanning the grid during pointer movement.
 import { csvRenderDimensions, isDeclaredCsvCell } from "./CSVGridModel.mjs";
+import { csvOverlayGeometry } from "./CSVGridZoom.mjs";
 export function createCsvGridView(wrapper, table) {
   wrapper.classList.add("nv-csv-table-wrap");
   wrapper.style.cssText = "flex:1;overflow:auto;position:relative;isolation:isolate";
+  const surface = document.createElement("div");
+  surface.className = "nv-csv-grid-surface";
+  surface.style.cssText = "position:relative;width:100%;transform-origin:0 0";
+  table.replaceWith(surface); surface.append(table);
   table.style.cssText = "border-collapse:collapse;width:100%;table-layout:fixed";
   if (!document.getElementById("nv-csv-table-selection-style")) {
     const style = document.createElement("style");
@@ -23,7 +28,7 @@ export function createCsvGridView(wrapper, table) {
   const selection = document.createElement("div"), destination = document.createElement("div");
   selection.className = "nv-csv-range";
   destination.className = "nv-csv-range nv-csv-destination";
-  for (const overlay of [selection, destination]) { overlay.hidden = true; wrapper.appendChild(overlay); }
+  for (const overlay of [selection, destination]) { overlay.hidden = true; surface.appendChild(overlay); }
   const cellAt = (r, c) => table.rows[r]?.cells[c];
   function render(rows, active) {
     const dims = csvRenderDimensions(rows, active);
@@ -50,14 +55,13 @@ export function createCsvGridView(wrapper, table) {
     if (!first || !last) { overlay.hidden = true; return; }
     // Read geometry before changing overlay visibility or style.
     const a = first.getBoundingClientRect(), b = first === last ? a : last.getBoundingClientRect();
-    const root = wrapper.getBoundingClientRect();
     const left = a.left + Math.max(0, range.left - maxCol) * a.width;
     const top = a.top + Math.max(0, range.top - maxRow) * a.height;
     const right = b.right + Math.max(0, range.right - maxCol) * b.width;
     const bottom = b.bottom + Math.max(0, range.bottom - maxRow) * b.height;
-    Object.assign(overlay.style, { left: `${left - root.left + wrapper.scrollLeft - wrapper.clientLeft}px`,
-      top: `${top - root.top + wrapper.scrollTop - wrapper.clientTop}px`, width: `${right - left}px`, height: `${bottom - top}px` });
+    const geometry = csvOverlayGeometry(surface, { left, top }, { right, bottom });
+    Object.assign(overlay.style, Object.fromEntries(Object.entries(geometry).map(([key, value]) => [key, `${value}px`])));
     if (overlay.hidden) overlay.hidden = false;
   }
-  return { render, cellAt, paint };
+  return { render, cellAt, paint, surface };
 }

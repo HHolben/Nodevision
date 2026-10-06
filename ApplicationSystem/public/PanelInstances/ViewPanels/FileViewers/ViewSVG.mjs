@@ -2,7 +2,10 @@
 // This file defines browser-side View SVG logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createElementLayers } from "../../EditorPanels/GraphicalEditors/ElementLayers.mjs";
-import { promoteSvgLayerMove, svgContextPath } from "../../Common/Layers/svgLayersContext.mjs";
+import { svgContextPath } from "../../Common/Layers/svgLayersContext.mjs";
+
+import { installContentPresentationZoom } from '/panels/contentPresentationZoom.mjs';
+import { installPanelZoomIframe } from '/panels/panelZoomIframe.mjs';
 
 export const wantsIframe = true;
 
@@ -41,12 +44,15 @@ export async function renderFile(filename, viewPanel, iframe, serverBase = "/Not
   function loaded() {
     if (disposed) return;
     context?.layers?.dispose();
+    iframe.__nvSvgZoomCleanup?.();
     let root;
     try { root = iframe.contentDocument?.documentElement; } catch { return; }
     if (root?.localName !== "svg") return;
+    const unregister = installContentPresentationZoom(iframe, iframe);
+    const bridge = installPanelZoomIframe(iframe);
+    iframe.__nvSvgZoomCleanup = () => { unregister(); bridge(); };
     context = { kind: "svg-view", filePath: filename, svgRoot: root, readOnly: true };
-    context.layers = createElementLayers(root, null, { readOnly: true, getContext: () => context,
-      onMove: (element, target, before) => promoteSvgLayerMove(context, element, target, before) });
+    context.layers = createElementLayers(root, null, { readOnly: true, getContext: () => context });
     viewPanel.__nvSvgViewLayersContext = context;
     if (!window.SVGViewLayersContext || svgContextPath(window.NodevisionState?.activeFileViewPath) === svgContextPath(filename)) window.SVGViewLayersContext = context;
     window.dispatchEvent(new CustomEvent("nv-svg-layers-provider-changed"));
@@ -63,7 +69,7 @@ export async function renderFile(filename, viewPanel, iframe, serverBase = "/Not
   viewPanel._dispose = () => {
     window.removeEventListener("activePanelChanged", activate);
     delete viewPanel.__nvSvgViewLayersContext;
-    disposed = true; iframe.removeEventListener("load", loaded); context?.layers?.dispose();
+    disposed = true; iframe.__nvSvgZoomCleanup?.(); iframe.removeEventListener("load", loaded); context?.layers?.dispose();
     if (window.SVGViewLayersContext === context) window.SVGViewLayersContext = null;
     window.dispatchEvent(new CustomEvent("nv-svg-layers-provider-changed"));
   };

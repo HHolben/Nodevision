@@ -192,6 +192,7 @@ function renderLayerContents({
       cursor: "pointer",
     });
     markLayerDragRow(item, child, rootLayerId);
+    item.draggable = !state.readOnly;
 
     const visible = isSvgElementVisible(child);
     const visBtn = document.createElement("button");
@@ -888,7 +889,8 @@ export function renderLayersPanel({
     wrapper.appendChild(row);
 
     markLayerDragRow(row, layer, layerId, "layer");
-    row.children[2].draggable = layer !== svgRoot;
+    row.draggable = !readOnly && layer !== svgRoot;
+    row.children[2].draggable = !readOnly && layer !== svgRoot;
     wrapper.draggable = false;
     if (layer === svgRoot || readOnly) {
       [...row.children].forEach((button, index) => { if (![0,2].includes(index)) button.disabled = true; });

@@ -37,6 +37,8 @@ async function ensureMetaWorldLayersPanelVisible(panel) {
 }
 
 function cleanupLegacyGameView(panel, state = {}) {
+  try { if (window.VRWorldContext?.panel === panel) state.beforeWorldDispose?.(window.VRWorldContext); }
+  catch (error) { console.warn("World draft capture failed during cleanup:", error); }
   panel._vrPause?.dispose();
   panel._vrPause = null;
   if (typeof panel._vrDisposeInputHandlers === "function") {
@@ -187,6 +189,10 @@ export async function setupPanel(panel, instanceVars = {}) {
     mode: null,
     loadToken: 0,
     disposed: false,
+    viewPermissions: instanceVars.viewPermissions,
+    beforeWorldDispose: instanceVars.beforeWorldDispose,
+    onWorldSaved: instanceVars.onWorldSaved,
+    useLiveWorldHtml: Boolean(instanceVars.resolveWorldDefinition),
   };
 
   const getBindings = () => state.controlBindings || defaultBindings;
@@ -228,7 +234,9 @@ export async function setupPanel(panel, instanceVars = {}) {
       state.mode = detected.kind === "metaworld" ? "metaworld" : "legacy";
       await ensureLegacyEngine();
       if (token !== state.loadToken) return false;
-      await loadWorldFromFile(filePath, state, THREE);
+      const worldDefinition = await instanceVars.resolveWorldDefinition?.(filePath);
+      if (state.disposed || token !== state.loadToken) return false;
+      await loadWorldFromFile(filePath, state, THREE, { worldDefinition, throwOnError: true });
       return token === state.loadToken;
     } catch (error) {
       if (token !== state.loadToken) return false;
@@ -247,8 +255,8 @@ export async function setupPanel(panel, instanceVars = {}) {
   };
 
   const openWorld = (filePath) => {
-    void loadSelectedWorld(filePath)
-      .then((loaded) => loaded && showLayersIfEditing())
+    panel.worldReady = loadSelectedWorld(filePath)
+      .then(async (loaded) => { if (loaded) await showLayersIfEditing(); return loaded; })
       .catch((error) => console.error("Virtual World panel update failed:", error));
   };
 

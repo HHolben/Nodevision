@@ -90,4 +90,10 @@ export async function setupPanel(panelElem, panelVars = {}) {
     const errElem = panelElem.querySelector("#graph-error");
     if (errElem) errElem.textContent = "Failed to initialize Graph Engine.";
   }
+  return { destroy() {
+    panelElem.querySelector('#cy')?.__nvGraphSemanticZoom?.();
+    panelElem.removeEventListener('focus', handleFocus, true);
+    panelElem.removeEventListener('click', handleFocus);
+  } };
+
 }

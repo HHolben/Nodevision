@@ -227,29 +227,15 @@ saveFile: async () => {
       console.error("Cannot save SVG: SVG editor root is missing an SVG element.");
       return;
     }
-    const svgContent = new XMLSerializer().serializeToString(svgSource);
-    
-    fetch('/api/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, sourcePath: editorPath || filePath, content: svgContent })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        console.log('SVG file saved successfully:', filePath);
-        const messageEl = document.getElementById('svg-message');
-        if (messageEl) {
-          messageEl.textContent = 'SVG saved successfully!';
-          messageEl.style.color = 'green';
-        }
-      } else {
-        console.error('Error saving SVG:', data.error);
-      }
-    })
-    .catch(err => {
-      console.error('Error saving SVG file:', err);
-    });
+    try {
+      const { saveSvgRequest } = await import('/FileInterop/SvgSaveRecovery.mjs');
+      const { cleanupSvgCloneForSave } = await import('/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgPreservation.mjs');
+      const content = new XMLSerializer().serializeToString(cleanupSvgCloneForSave(svgSource.cloneNode(true)));
+      if (!await saveSvgRequest({ path: filePath, sourcePath: editorPath || filePath, content })) return false;
+      const messageEl = document.getElementById('svg-message');
+      if (messageEl) messageEl.textContent = 'SVG saved successfully!';
+    } catch (error) { console.error('Error saving SVG file:', error); }
+
     return;
   }
 

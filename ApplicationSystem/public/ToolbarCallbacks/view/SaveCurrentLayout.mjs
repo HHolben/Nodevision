@@ -1,35 +1,10 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/view/SaveCurrentLayout.mjs
-// This file defines browser-side Save Current Layout logic for the Nodevision UI. It renders interface components and handles user interactions.
-
-import { serializeWorkspace } from "/panels/workspace.mjs";
-import { serializeWorkspaceCollapseState } from "/panels/workspaceLayoutCollapseIntegration.mjs";
-
-export async function onToolbarClick() {
-  try {
-    if (!window.workspace) {
-      window.workspace = document.getElementById("workspace");
-    }
-    if (!window.workspace) {
-      alert("No workspace found to save.");
-      return;
-    }
-
-    // Serialize current layout
-    const layout = serializeWorkspaceCollapseState(serializeWorkspace(window.workspace), window.workspace);
-    console.log("Saving current layout:", layout);
-
-    // Send to server
-    const res = await fetch("/api/saveLayout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ layout }),
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    alert("✅ Layout saved successfully!");
-  } catch (err) {
-    console.error("Failed to save layout:", err);
-    alert("❌ Failed to save layout. See console for details.");
-  }
+// This callback saves a named structural workspace through the common layout serializer while rejecting duplicate names and excluding document state.
+import { saveCurrentNamedLayout } from "/panels/savedLayouts.mjs";
+export function onToolbarClick() {
+  const name = prompt("Name this workspace layout:");
+  if (name === null) return;
+  try { saveCurrentNamedLayout(name); alert("Layout saved."); }
+  catch (error) { alert(error.message); }
 }
+export default onToolbarClick;

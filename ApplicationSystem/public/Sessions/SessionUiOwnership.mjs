@@ -70,6 +70,13 @@ export class SessionUiOwnership {
     window.addEventListener("keydown", this.keyHandler, true);
   }
 
+  useWorkspace() {
+    window.removeEventListener("keydown", this.keyHandler, true);
+    this.root?.remove();
+    this.root = null;
+    document.body.classList.remove("nv-session-mode");
+  }
+
   release() {
     window.removeEventListener("keydown", this.keyHandler, true);
     this.messagePanel?.remove();

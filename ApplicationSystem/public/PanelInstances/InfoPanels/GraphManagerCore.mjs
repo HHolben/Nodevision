@@ -32,6 +32,8 @@ import {
     resolveNotebookReference,
 } from '../../utils/notebookPath.mjs';
 
+import { installGraphSemanticZoom } from './GraphManagerDependencies/GraphSemanticZoom.mjs';
+
 let cy;
 let mqttGraphLayer = null;
 let tdGraphLayer = null;
@@ -2703,6 +2705,7 @@ function bindGraphViewportSizing(container) {
         scheduleGraphViewportResize(container);
     };
     const handleZoomPanUpdated = (event) => {
+        if (event?.detail?.mode === "semantic") return;
         if (!isGraphViewportEvent(container, event)) return;
         scheduleGraphViewportResize(container);
     };
@@ -2751,6 +2754,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     perf.mark("edge-styles");
     bindDirectoryAppearanceEvents();
 
+    cy?.container()?.__nvGraphSemanticZoom?.();
+    container?.__nvGraphSemanticZoom?.();
     cy = cytoscape({
         container: container,
         boxSelectionEnabled: false,
@@ -3064,6 +3069,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     });
 
     window.cy = cy;
+    installGraphSemanticZoom(container, cy);
     bindGraphViewportSizing(container);
     bindExternalFileDropOnGraphContainer(container);
 

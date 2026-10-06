@@ -138,6 +138,7 @@ export function syncFileViewTabReference(viewPanel, reference) {
 }
 
 export function handleNodevisionSelectionChanged(event) {
+  if (event?.detail?.source === "active-panel") return;
   const selectionReference = nodevisionReferenceFromSelectionDetail(event?.detail);
   const selectedPath = referenceToApiPath(selectionReference);
   if (!selectedPath) return;

@@ -17,6 +17,9 @@ const viewer={filePath:'drawing.svg',svgRoot:{isConnected:true},layers:{attachHo
 const editor={...viewer};
 globalThis.window={NodevisionState:{currentMode:'Default',activeFileViewPath:'drawing.svg',activeEditorFilePath:'other.svg'},SVGViewLayersContext:viewer,SVGEditorContext:editor};
 assert.equal(getActiveSvgLayersContext(),viewer,'viewer wins over stale editor');
+window.SVGViewLayersContext=null;
+assert.equal(getActiveSvgLayersContext(),null,'loading viewer never falls back to editable provider');
+window.SVGViewLayersContext=viewer;
 window.NodevisionState={currentMode:'SVG Editing',activeEditorFilePath:'drawing.svg'};
 assert.equal(getActiveSvgLayersContext(),editor,'editor wins over retained viewer');
 window.NodevisionState={currentMode:'Default',activeFileViewPath:'drawing.png'};

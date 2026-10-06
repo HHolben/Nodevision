@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/saveFile.mjs
 // This file defines browser-side save File logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { saveSvgRequest } from "../../FileInterop/SvgSaveRecovery.mjs";
+import { cleanupSvgCloneForSave } from "../../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgPreservation.mjs";
 import {
   getFileExtension,
   isRasterContext,
@@ -191,6 +193,10 @@ export default async function saveFile(options = {}) {
       await saveViaApi({ path: filePath, sourcePath: editorPath || filePath, content });
       return notifyFileSaved(filePath);
     }
+    if (inSvgEditor && window.SVGEditorContext?.save && sameSavePath(window.SVGEditorContext.filePath, filePath)) {
+      if (await window.SVGEditorContext.save(filePath) === false) return false;
+      return notifyFileSaved(filePath);
+    }
     if (inSvgEditor && typeof window.currentSaveSVG === "function") {
       const editorPath = svgEditorPath();
       if (refuseMismatchedEditorSave("SVG Editor", editorPath, filePath)) return false;
@@ -213,8 +219,8 @@ export default async function saveFile(options = {}) {
           ? svgEditorElement
           : svgEditorElement?.querySelector?.("svg");
       if (!svgSource) throw new Error("SVG editor root is missing an SVG element.");
-      const svgContent = new XMLSerializer().serializeToString(svgSource);
-      await saveViaApi({ path: filePath, sourcePath: editorPath || filePath, content: svgContent });
+      const svgContent = new XMLSerializer().serializeToString(cleanupSvgCloneForSave(svgSource.cloneNode(true)));
+      if (!await saveSvgRequest({ path: filePath, sourcePath: editorPath || filePath, content: svgContent })) return false;
       return notifyFileSaved(filePath);
     }
     if (inWysiwygEditor && (activeHtmlContext?.getHTML || typeof window.getEditorHTML === "function")) {

@@ -1,0 +1,85 @@
+// Nodevision/scripts/panel-zoom-browser.mjs
+// This fixture verifies shared ownership, native adapters, coordinate alignment, source invariants, and bounded routing work in Chromium.
+import { registerPanelZoomCapabilities, executePanelZoom, getPanelZoomState, getPanelZoomCapabilities } from '/panels/panelZoomCapabilities.mjs';
+import { installPanelZoomShortcuts } from '/panels/panelZoomPan.mjs';
+import { installPanelZoomIframe } from '/panels/panelZoomIframe.mjs';
+import { configurePanelZoomInput } from '/panels/panelZoomInput.mjs';
+import { installContentPresentationZoom } from '/panels/contentPresentationZoom.mjs';
+import { createCsvGridView } from '/PanelInstances/EditorPanels/GraphicalEditors/CSVGridView.mjs';
+import { installCsvGridZoom } from '/PanelInstances/EditorPanels/GraphicalEditors/CSVGridZoom.mjs';
+import { mountHtmlEditorShell } from '/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/MountHtmlEditorShell.mjs';
+import { installGraphSemanticZoom } from '/PanelInstances/InfoPanels/GraphManagerDependencies/GraphSemanticZoom.mjs';
+import { initToolbarWidget } from '/ToolbarJSONfiles/zoomPanControlsWidget.mjs';
+import { checkNativeZoomAdapters } from './panel-zoom-native-browser.mjs';
+export const ok = (value, message) => { if (!value) throw Error(message); };
+export const tick = () => new Promise(resolve => requestAnimationFrame(resolve));
+export function panel() { const el = document.createElement('div'); el.className = 'panel'; el.style.cssText = 'position:relative;width:700px;height:450px;overflow:auto'; document.body.append(el); return el; }
+export function wheel(target, options = {}) { const event = new (target.ownerDocument.defaultView.WheelEvent)('wheel', { bubbles: true, cancelable: true, ctrlKey: true, deltaY: -100, ...options }); target.dispatchEvent(event); return event; }
+const timings = {};
+function benchmark(name, callback) { const samples = []; for (let i=0;i<20;i++) { const t=performance.now(); callback(i); samples.push(performance.now()-t); } samples.sort((a,b)=>a-b); timings[name] = { medianMs: samples[10], p95Ms: samples[19] }; }
+window.addEventListener('unhandledrejection', event => { document.querySelector('#result').textContent = 'FAIL: ' + event.reason?.stack; });
+try {
+  window.NodevisionState = {};
+  let writes=0; const fetchOriginal=window.fetch;
+  window.fetch=(url,options={})=>{if(options.method && !['GET','HEAD'].includes(options.method.toUpperCase()))writes++;return fetchOriginal(url,options);};
+  installPanelZoomShortcuts();
+  const a=panel(), b=panel(); window.activeCell=a;
+  let ac=0, bc=0, sc=0;
+  const release=registerPanelZoomCapabilities(a,{geometric(){ac++;},semantic(){sc++;}});
+  registerPanelZoomCapabilities(b,{geometric(){bc++;}});
+  wheel(a); ok(ac===1 && bc===0,'one active owner'); wheel(b); ok(bc===0,'inactive refused');
+  wheel(a,{altKey:true}); ok(sc===1 && ac===1,'semantic independent');
+  wheel(a,{shiftKey:true}); ok(sc===1 && ac===1,'fisheye cannot fall through');
+  configurePanelZoomInput({semanticModifier:'None'}); wheel(a,{altKey:true}); ok(ac===2,'central fallback configurable'); configurePanelZoomInput();
+  const child=document.createElement('div'); a.append(child); child.style.height='20px';
+  let nested=0; const releaseChild=registerPanelZoomCapabilities(child,{geometric(){nested++;}});
+  wheel(child); wheel(child,{altKey:true}); ok(nested===1 && ac===2 && sc===1,'embedded owner prevents ancestor fallback');
+  releaseChild(); child.remove(); a.hidden=true; wheel(a); ok(ac===2,'hidden retained owner refused'); a.hidden=false;
+  const toolbar=document.createElement('div'); document.body.append(toolbar); initToolbarWidget(toolbar);
+  toolbar.querySelector('[data-nv-zp-action="zoom-in"]').click(); ok(ac===3,'toolbar command once');
+  toolbar.dispatchEvent(new KeyboardEvent('keydown',{bubbles:true,cancelable:true,ctrlKey:true,key:'+'})); ok(ac===4,'toolbar focus uses active owner');
+  release(); wheel(a); ok(ac===4 && !a.querySelector('.nv-panel-zoom-viewport'),'destroyed owner has no CSS fallback');
+  ok(!getPanelZoomCapabilities(a).geometric,'unknown panel explicitly reports unsupported');
+  let unsupportedScans=0; const originalQuery=a.querySelectorAll;
+  a.querySelectorAll=function(...args){unsupportedScans++;return originalQuery.apply(this,args);};
+  for(let i=0;i<20;i++)wheel(a); ok(unsupportedScans===0,'unsupported owner lookup is cached'); a.querySelectorAll=originalQuery;
+  const nestedCell=document.createElement('div'), nestedPanel=document.createElement('div');
+  nestedCell.className='panel-cell'; nestedPanel.className='panel'; nestedPanel.style.height='20px'; nestedCell.append(nestedPanel); a.append(nestedCell);
+  let nestedPanelCalls=0; const releaseNested=registerPanelZoomCapabilities(nestedPanel,{geometric(){nestedPanelCalls++;}});
+  window.activeCell=nestedCell;wheel(nestedPanel);ok(nestedPanelCalls===1,'nested active cell resolves its own panel');releaseNested();nestedCell.remove();window.activeCell=a;
+  const frame=document.createElement('iframe'); a.append(frame); frame.srcdoc='<p>hello</p>'; await new Promise(resolve=>frame.onload=resolve);
+  let frameCount=0; const frameRelease=registerPanelZoomCapabilities(frame,{geometric(){frameCount++;}}); const bridge=installPanelZoomIframe(frame);
+  wheel(frame.contentDocument.body); ok(frameCount===1,'same-origin frame bridged once'); window.activeCell=b;
+  wheel(frame.contentDocument.body); ok(frameCount===1,'inactive frame refused'); bridge(); frameRelease(); frame.remove(); window.activeCell=a;
+  const wrapper=document.createElement('div'), table=document.createElement('table'); wrapper.append(table); a.append(wrapper);
+  const grid=createCsvGridView(wrapper,table), range={top:1,left:1,bottom:3,right:3};
+  wrapper.style.height="400px"; wrapper.style.flex="none";
+  grid.render(Array.from({length:1000},(_,r)=>Array.from({length:20},(_,c)=>`${r}:${c}`)),{row:1,col:1});
+  const csvRelease=installCsvGridZoom(a,wrapper,()=>grid.paint(range)); const csvBefore=table.textContent;
+  executePanelZoom(a,'geometric',{action:'set',zoom:2}); grid.paint(range); await tick();
+  table.rows[1].cells[1].scrollIntoView({block:'start'}); await tick();
+  const cell=table.rows[1].cells[1].getBoundingClientRect(), overlay=wrapper.querySelector('.nv-csv-range').getBoundingClientRect();
+  ok(Math.abs(cell.left-overlay.left)<2 && Math.abs(cell.top-overlay.top)<2,'scaled CSV overlay starts at cell');
+  const end=table.rows[3].cells[3].getBoundingClientRect(); ok(Math.abs(end.right-overlay.right)<2,'CSV overlay avoids double scale');
+  ok(document.elementFromPoint(cell.left+3,cell.top+3)?.closest('td,th')===table.rows[1].cells[1],'CSV hit test aligned: '+JSON.stringify({cell:{x:cell.left,y:cell.top,w:cell.width,h:cell.height},target:document.elementFromPoint(cell.left+3,cell.top+3)?.outerHTML?.slice(0,200)}));
+  benchmark('csv20000Cells',i=>executePanelZoom(a,'geometric',{action:'set',zoom:i%2?1:1.2}));
+  ok(table.textContent===csvBefore,'CSV values unchanged'); csvRelease(); wrapper.remove();
+  const scope={container:a,filePath:'fixture.html',htmlSession:{},options:{}}; mountHtmlEditorShell(scope);
+  scope.htmlSession.wysiwyg.innerHTML=Array.from({length:2000},(_,i)=>`<p>Region ${i}</p>`).join('');
+  const htmlBefore=scope.htmlSession.wysiwyg.outerHTML; let mutations=0;
+  const observer=new MutationObserver(records=>mutations+=records.length); observer.observe(scope.htmlSession.wysiwyg,{attributes:true,childList:true,subtree:true,characterData:true});
+  benchmark('html2000Regions',i=>executePanelZoom(a,'geometric',{action:'set',zoom:i%2?1:1.2})); await tick(); observer.disconnect();
+  ok(mutations===0 && scope.htmlSession.wysiwyg.outerHTML===htmlBefore,'HTML authored DOM unchanged'); scope.container.__nvHtmlZoomCleanup(); a.replaceChildren();
+  const cy=cytoscape({container:a,layout:{name:'preset'},elements:[{data:{id:'a'},position:{x:10,y:10}},{data:{id:'b'},position:{x:200,y:200}},{data:{id:'e',source:'a',target:'b',edgeLabel:'link'}}]});
+  const graphRelease=installGraphSemanticZoom(a,cy), positions=JSON.stringify(cy.nodes().map(n=>n.position()));
+  benchmark('graphGeometric',i=>executePanelZoom(a,'geometric',{action:'set',zoom:i%2?1:1.2}));
+  benchmark('graphSemantic',i=>executePanelZoom(a,'semantic',{action:'set',level:i%2?'annotations':'structure'}));
+  ok(positions===JSON.stringify(cy.nodes().map(n=>n.position())),'graph camera never layouts');
+  const toolbarUpdates=window.toolbarUpdates;
+  let scans=0; const query=a.querySelectorAll; a.querySelectorAll=function(...args){scans++;return query.apply(this,args);};
+  for(let i=0;i<50;i++)wheel(a); ok(scans===0,'no owner DOM scan per wheel'); a.querySelectorAll=query; ok(window.toolbarUpdates===toolbarUpdates,'zoom does not rebuild application toolbars');
+  graphRelease(); cy.destroy(); a.remove(); b.remove(); toolbar.remove();
+  await checkNativeZoomAdapters(timings);
+  ok(writes===0,"zoom performs no file saves or Notebook writes");
+  document.querySelector('#result').textContent='PASS: native zoom, ownership, iframe, state isolation, source safety; '+JSON.stringify(timings);
+} catch(error) { document.querySelector('#result').textContent='FAIL: '+error.stack; }

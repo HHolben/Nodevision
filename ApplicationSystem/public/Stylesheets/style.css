@@ -81,6 +81,13 @@ background-color: #ffffff;
   color: var(--nv-file-manager-text);
 }
 
+/* Explicit tracks keep hidden loading/error rows from shifting the scroll list into an auto-sized track. */
+.file-manager > h3 { grid-row: 1; }
+.file-manager > #loading { grid-row: 2; }
+.file-manager > #error { grid-row: 3; }
+.file-manager > .file-list { grid-row: 4; }
+.file-manager > #fm-path { grid-row: 5; }
+
 .file-manager h3,
 .file-manager #loading,
 .file-manager #error {

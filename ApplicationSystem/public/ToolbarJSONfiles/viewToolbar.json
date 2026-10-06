@@ -509,5 +509,13 @@
     "hotkeyText": "",
     "icon": "icons/SaveIcon.png",
     "callbackKey": "SaveCurrentLayout"
+  },
+  {
+    "ToolbarCategory": "View",
+    "parentHeading": "Layout Controls",
+    "heading": "Load Saved Layout",
+    "hotkeyText": "",
+    "icon": "icons/CanvasIcon.png",
+    "callbackKey": "LoadSavedLayout"
   }
 ]

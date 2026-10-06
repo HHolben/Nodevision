@@ -1815,44 +1815,25 @@
   }
 
   // Enhanced save function that actually saves to server
-  function saveSVGToServer() {
-    const svgContent = svgEditor.outerHTML;
-    console.log('Attempting to save SVG to:', filePath);
-    console.log('SVG content length:', svgContent.length);
-    
-    fetch('/api/save', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        path: filePath,
-        sourcePath: filePath,
-        content: svgContent
-      })
-    })
-    .then(response => {
-      console.log('Save response status:', response.status);
-      console.log('Save response headers:', response.headers);
-      return response.json().catch(err => {
-        console.error('Failed to parse JSON response:', err);
-        return { error: 'Invalid response format' };
-      });
-    })
-    .then(data => {
-      console.log('Save response data:', data);
-      if (data.success) {
-        document.getElementById('svg-message').textContent = 'SVG saved successfully!';
-      } else {
-        document.getElementById('svg-error').textContent = 'Error saving SVG: ' + (data.error || 'Unknown error');
+  async function saveSVGToServer() {
+    try {
+      const { saveSvgRequest } = await import('/FileInterop/SvgSaveRecovery.mjs');
+      const { cleanupSvgCloneForSave } = await import('/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgPreservation.mjs');
+      const content = new XMLSerializer().serializeToString(cleanupSvgCloneForSave(svgEditor.cloneNode(true)));
+      const saved = await saveSvgRequest({ path: filePath, sourcePath: filePath, content });
+      if (!saved) {
+        window.NodevisionState = window.NodevisionState || {};
+        window.NodevisionState.fileIsDirty = true;
+        document.getElementById('svg-error').textContent = 'SVG is too large for the save request limit. Your work remains unsaved; download a backup.';
+        return false;
       }
-    })
-    .catch(error => {
-      console.error('Save error:', error);
-      console.error('Full error details:', JSON.stringify(error));
-      console.error('Error stack:', error.stack);
-      document.getElementById('svg-error').textContent = 'Network error while saving: ' + error.message;
-    });
+      document.getElementById('svg-error').textContent = '';
+      document.getElementById('svg-message').textContent = 'SVG saved successfully!';
+      return true;
+    } catch (error) {
+      document.getElementById('svg-error').textContent = 'Error saving SVG: ' + error.message;
+      return false;
+    }
   }
 
   // Initialize toolbar and insert callbacks for SVG

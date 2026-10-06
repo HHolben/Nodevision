@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateSetModeHandler.mjs
 // This module implements create Set Mode Handler behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { clearSvgMarquee } from "./ClearSvgMarquee.mjs";
+
 import { SVG_TOOL_MODES } from "./CreateBlankSvgRoot.mjs";
 import { setActiveTool } from "../../../../../EditorAttentionState.mjs";
 import { getAttrNumber, parsePoints } from "../svgDom.mjs";
@@ -8,6 +10,7 @@ import { getAttrNumber, parsePoints } from "../svgDom.mjs";
 // Create Set Mode Handler operations.
 export function createSetModeHandler(owner) {
   return function (mode) {
+    if (mode !== owner.svgSession.toolState.mode) clearSvgMarquee(owner.svgSession);
     if (owner.svgSession.selectionGrabState && mode !== "select") owner.svgSession.commitSelectionGrabCommand({
       silent: true
     });

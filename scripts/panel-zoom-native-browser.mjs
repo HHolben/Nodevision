@@ -1,0 +1,57 @@
+// Nodevision/scripts/panel-zoom-native-browser.mjs
+// This fixture checks real SVG and Monaco scale, decoded image pixels, PDF render coalescing, and independent native adapter state.
+import { ok, panel, tick, wheel } from './panel-zoom-browser.mjs';
+import { executePanelZoom, getPanelZoomState } from '/panels/panelZoomCapabilities.mjs';
+import { mountImageViewport } from '/PanelInstances/ViewPanels/FileViewers/ImageViewport.mjs';
+import { installCodeEditorZoom } from '/PanelInstances/EditorPanels/CodeEditorZoom.mjs';
+import { installPdfZoom } from '/PanelInstances/ViewPanels/FileViewers/PDF/PDFZoom.mjs';
+import { renderPdfWorkspace } from '/PanelInstances/ViewPanels/FileViewers/PDF/PDFOverlayEditor.mjs';
+import { renderEditor } from '/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntime.mjs';
+import { installFileManagerZoom } from '/PanelInstances/InfoPanels/FileManagerZoom.mjs';
+import { checkCodeZoomLifecycle } from './panel-zoom-code-lifecycle.mjs';
+export async function checkNativeZoomAdapters(timings) {
+  const imageHost=panel(), img=new Image(); img.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"/>'); await img.decode();
+  const image=mountImageViewport(imageHost,img); window.activeCell=imageHost;
+  executePanelZoom(imageHost,'geometric',{action:'reset'}); ok(img.getBoundingClientRect().width===80,'image decoded pixels at 100%');
+  image.state.angle=90; image.render(); const before=JSON.stringify(image.state);
+  wheel(imageHost,{altKey:true}); wheel(imageHost,{shiftKey:true}); ok(JSON.stringify(image.state)===before,'unsupported image modes do not change geometry');
+  const svgHost=panel(); window.activeCell=svgHost;
+  const cleanup=await renderEditor('fixture.svg',svgHost); const context=window.SVGEditorContext;
+  const source='<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="800">'+Array.from({length:2000},(_,i)=>`<rect x="${i%100*10}" y="${Math.floor(i/100)*10}" width="5" height="5"/>`).join('')+'</svg>';
+  context.setEditorHTML(source); const original=context.getEditorHTML(), dirty=context.isDirty();
+  const samples=[]; for(let i=0;i<20;i++){const t=performance.now();executePanelZoom(svgHost,'geometric',{action:'set',zoom:i%2?1:1.2});samples.push(performance.now()-t);}
+  samples.sort((a,b)=>a-b);timings.svg2000Objects={medianMs:samples[10],p95Ms:samples[19]};
+  ok(context.getEditorHTML()===original && context.isDirty()===dirty,'SVG geometric scale preserves serialized source and dirty state');
+  ok(JSON.stringify(image.state)===before,'SVG scale cannot affect image state');
+  ok(!svgHost.querySelector('.nv-panel-zoom-viewport'),'SVG never uses generic wrapper'); cleanup?.(); svgHost.remove();
+  const codeHost=panel(); window.activeCell=codeHost;
+  const loader=document.createElement('script');loader.src='/lib/monaco/vs/loader.js';document.head.append(loader);await new Promise(resolve=>loader.onload=resolve);
+  window.require.config({paths:{vs:'/lib/monaco/vs'}}); await new Promise(resolve=>window.require(['vs/editor/editor.main'],resolve));
+  const editor=monaco.editor.create(codeHost,{value:'const answer = 42;',language:'plaintext',fontSize:14,automaticLayout:true});
+  codeHost.__nvCodeEditorSession={editor,defaultFontSize:14,fontSize:14};
+  const release=installCodeEditorZoom(codeHost,(ed)=>ed.getOption(monaco.editor.EditorOption.fontSize),(ed,size,session)=>{ed.updateOptions({fontSize:size});session.fontSize=size;return true;});
+  const version=editor.getModel().getAlternativeVersionId(); wheel(codeHost);
+  ok(editor.getOption(monaco.editor.EditorOption.fontSize)===15,'real Monaco text size uses shared route');
+  wheel(codeHost,{altKey:true});ok(editor.getOption(monaco.editor.EditorOption.fontSize)===15,'Code semantic unsupported');
+  executePanelZoom(codeHost,'geometric',{action:'reset'});ok(editor.getOption(monaco.editor.EditorOption.fontSize)===14,'Code native reset');
+  ok(editor.getModel().getAlternativeVersionId()===version && editor.getValue()==='const answer = 42;','Code view changes create no undo entries'); release();editor.dispose();codeHost.remove();
+  await checkCodeZoomLifecycle();
+  const pdfHost=panel(); const workspace={root:pdfHost,scale:1.15,statusEl:document.createElement('div')}; let concurrent=0,maxConcurrent=0,renders=0;
+  const releasePdf=installPdfZoom(workspace,async()=>{renders++;maxConcurrent=Math.max(maxConcurrent,++concurrent);await new Promise(resolve=>setTimeout(resolve,20));concurrent--;});
+  for(let i=0;i<50;i++)executePanelZoom(pdfHost,'geometric',{action:'set',zoom:i%2?1.2:1.3});
+  await new Promise(resolve=>setTimeout(resolve,80));ok(maxConcurrent===1&&renders===1&&workspace.scale===1.2,'PDF gestures coalesce without canvas races');
+  executePanelZoom(pdfHost,'geometric',{action:'reset'});await new Promise(resolve=>setTimeout(resolve,60));ok(workspace.scale===1.15,'PDF reset restores native default');releasePdf();
+  const fallback=await renderPdfWorkspace('fixture.pdf',pdfHost,{editable:false});
+  executePanelZoom(fallback.root,'geometric',{action:'set',zoom:1.5});await new Promise(resolve=>setTimeout(resolve,60));
+  ok(fallback.pages[0].overlaySvg.style.width==='1500px','real PDF fallback page and annotation scale stay aligned');pdfHost.__nvActiveEditorCleanup();pdfHost.remove();
+  const files=panel();files.innerHTML='<ul class="file-list"><li><a class="file selected"><span>Icon</span><span>file.txt</span></a></li></ul>';
+  const fileCleanup=installFileManagerZoom(files), selected=files.querySelector('.selected'), originalName=selected.textContent;
+  executePanelZoom(files,'semantic',{action:'out',factor:.5});
+  ok(getComputedStyle(selected.firstChild).display==='none' && selected===files.querySelector('.selected'),'File Manager compact preserves selected entity');
+  executePanelZoom(files,'geometric',{action:'set',zoom:1.5});
+  ok(getPanelZoomState(files,'semantic').level==='compact','File Manager geometric and semantic are independent');
+  executePanelZoom(files,'semantic',{action:'reset'});
+  ok(getComputedStyle(selected.firstChild).display!=='none' && selected.textContent===originalName,'File Manager detail restored without content replacement');
+  fileCleanup();files.remove();
+  imageHost._dispose();imageHost.remove();
+}

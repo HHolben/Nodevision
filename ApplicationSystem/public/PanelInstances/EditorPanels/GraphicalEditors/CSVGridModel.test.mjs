@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVGridModel.test.mjs
 // This module verifies the graphical CSV editor model and its immutable grid updates.
 
+import { readModularSource } from "../../../../../scripts/read-modular-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -20,7 +21,7 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const csvEditorSource = ["CSVeditor.mjs", "CSVGridView.mjs", "CSVRangeInteraction.mjs"].map(name => readFileSync(join(here, name), "utf8")).join("\n");
-const tableToolsSource = readFileSync(join(here, "../../../ToolbarCallbacks/insert/tableTools.mjs"), "utf8");
+const tableToolsSource = await readModularSource(new URL("../../../ToolbarCallbacks/insert/tableTools.mjs", import.meta.url));
 const defaultToolbar = JSON.parse(readFileSync(join(here, "../../../ToolbarJSONfiles/defaultToolbar.json"), "utf8"));
 const insertToolbar = JSON.parse(readFileSync(join(here, "../../../ToolbarJSONfiles/insertToolbar.json"), "utf8"));
 

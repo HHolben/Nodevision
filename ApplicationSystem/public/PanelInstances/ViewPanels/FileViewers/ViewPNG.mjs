@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPNG.mjs
 // This file renders PNG images in the File Viewer and exposes viewer-only commands for deriving new files from the displayed raster. The vectorization command leaves the PNG unchanged and delegates conversion work to reusable raster vectorization modules.
 
+import { mountImageViewport } from "./ImageViewport.mjs";
 import { openPngVectorizationOverlay } from "/RasterVectorization/RasterVectorizationLauncher.mjs";
 
 function viewerUrl(serverBase, filename) {
@@ -53,7 +54,10 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     styleImage(img);
     img.onload = () => { img.title = (img.naturalWidth || 0) + " x " + (img.naturalHeight || 0); };
     img.onerror = () => { viewPanel.innerHTML = '<p style="color:red;">Error loading PNG file.</p>'; };
-    viewPanel.append(img, createToolbar(filename, serverBase));
+    const viewport = mountImageViewport(viewPanel, img);
+    const toolbar = createToolbar(filename, serverBase);
+    toolbar.style.position = "static";
+    viewport.controls.appendChild(toolbar);
   } catch (err) {
     console.error("Error loading PNG:", err);
     viewPanel.innerHTML = '<p style="color:red;">Error loading PNG file.</p>';
