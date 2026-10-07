@@ -1,0 +1,557 @@
+{
+  "description": "Final local development measurements after waterway column-query optimization; separate runs are not controlled performance comparisons.",
+  "nodeChunks": {
+    "summary": {
+      "generationMs": {
+        "p50": 1.2145819999999503,
+        "p95": 6.428482000000031
+      },
+      "meshingMs": {
+        "p50": 4.151733999999919,
+        "p95": 8.633130999999992
+      }
+    },
+    "featureStats": {
+      "lookupMs": 7.482500000000343,
+      "samplingMs": 65.29331799999984,
+      "candidates": 33
+    },
+    "worstGenerationMs": 18.408949999999976,
+    "samples": [
+      {
+        "generationMs": 18.408949999999976,
+        "meshingMs": 12.001698000000005,
+        "faces": 1802
+      },
+      {
+        "generationMs": 1.8235270000000128,
+        "meshingMs": 7.906806999999986,
+        "faces": 1465
+      },
+      {
+        "generationMs": 5.238663999999972,
+        "meshingMs": 8.633130999999992,
+        "faces": 1220
+      },
+      {
+        "generationMs": 5.771400999999969,
+        "meshingMs": 8.36665099999999,
+        "faces": 1849
+      },
+      {
+        "generationMs": 1.1605799999999817,
+        "meshingMs": 8.681062999999995,
+        "faces": 2207
+      },
+      {
+        "generationMs": 1.3878740000000107,
+        "meshingMs": 3.8050569999999766,
+        "faces": 2162
+      },
+      {
+        "generationMs": 1.0729639999999563,
+        "meshingMs": 5.121573000000012,
+        "faces": 2474
+      },
+      {
+        "generationMs": 1.1306320000000483,
+        "meshingMs": 3.9892099999999573,
+        "faces": 1865
+      },
+      {
+        "generationMs": 1.0653319999999553,
+        "meshingMs": 2.5768680000000472,
+        "faces": 1038
+      },
+      {
+        "generationMs": 1.2980499999999893,
+        "meshingMs": 2.9796360000000277,
+        "faces": 1094
+      },
+      {
+        "generationMs": 1.1613199999999892,
+        "meshingMs": 3.6730309999999804,
+        "faces": 2214
+      },
+      {
+        "generationMs": 3.4675250000000233,
+        "meshingMs": 3.2272759999999607,
+        "faces": 1701
+      },
+      {
+        "generationMs": 1.8525949999999511,
+        "meshingMs": 3.8991320000000087,
+        "faces": 1375
+      },
+      {
+        "generationMs": 3.63622799999996,
+        "meshingMs": 3.8033400000000483,
+        "faces": 1208
+      },
+      {
+        "generationMs": 8.805938000000026,
+        "meshingMs": 5.811099000000013,
+        "faces": 2253
+      },
+      {
+        "generationMs": 1.211437999999987,
+        "meshingMs": 4.282489999999996,
+        "faces": 2228
+      },
+      {
+        "generationMs": 1.1182390000000169,
+        "meshingMs": 3.312870999999973,
+        "faces": 2383
+      },
+      {
+        "generationMs": 1.0503759999999716,
+        "meshingMs": 6.951017000000036,
+        "faces": 2102
+      },
+      {
+        "generationMs": 1.1155929999999898,
+        "meshingMs": 4.884221000000025,
+        "faces": 1324
+      },
+      {
+        "generationMs": 1.310145000000034,
+        "meshingMs": 6.287477999999965,
+        "faces": 1324
+      },
+      {
+        "generationMs": 1.6202430000000163,
+        "meshingMs": 5.402599000000009,
+        "faces": 1556
+      },
+      {
+        "generationMs": 1.355782999999974,
+        "meshingMs": 3.8433180000000107,
+        "faces": 2229
+      },
+      {
+        "generationMs": 6.684791000000018,
+        "meshingMs": 8.345586000000026,
+        "faces": 1719
+      },
+      {
+        "generationMs": 1.4699420000000032,
+        "meshingMs": 4.867326999999989,
+        "faces": 1377
+      },
+      {
+        "generationMs": 1.656424999999956,
+        "meshingMs": 2.927786000000026,
+        "faces": 1106
+      },
+      {
+        "generationMs": 1.1265510000000063,
+        "meshingMs": 3.27443599999998,
+        "faces": 1659
+      },
+      {
+        "generationMs": 1.0729359999999701,
+        "meshingMs": 3.9320620000000304,
+        "faces": 2169
+      },
+      {
+        "generationMs": 1.0703700000000254,
+        "meshingMs": 3.7663239999999973,
+        "faces": 2114
+      },
+      {
+        "generationMs": 1.057245000000023,
+        "meshingMs": 3.3811450000000036,
+        "faces": 2135
+      },
+      {
+        "generationMs": 1.240083000000027,
+        "meshingMs": 4.325180999999986,
+        "faces": 2182
+      },
+      {
+        "generationMs": 1.065636999999981,
+        "meshingMs": 3.602501000000018,
+        "faces": 2298
+      },
+      {
+        "generationMs": 1.2103109999999901,
+        "meshingMs": 3.2681949999999915,
+        "faces": 2157
+      },
+      {
+        "generationMs": 1.249719999999968,
+        "meshingMs": 4.399836999999991,
+        "faces": 2188
+      },
+      {
+        "generationMs": 1.1984300000000303,
+        "meshingMs": 2.4668539999999552,
+        "faces": 1278
+      },
+      {
+        "generationMs": 1.6428600000000415,
+        "meshingMs": 3.9529999999999745,
+        "faces": 1791
+      },
+      {
+        "generationMs": 1.0755550000000085,
+        "meshingMs": 4.260876999999994,
+        "faces": 1261
+      },
+      {
+        "generationMs": 1.1947700000000054,
+        "meshingMs": 2.927234999999996,
+        "faces": 1416
+      },
+      {
+        "generationMs": 1.0957199999999716,
+        "meshingMs": 4.263182000000029,
+        "faces": 2090
+      },
+      {
+        "generationMs": 1.0703589999999963,
+        "meshingMs": 10.18421699999999,
+        "faces": 2141
+      },
+      {
+        "generationMs": 0.9780230000000074,
+        "meshingMs": 3.358793999999989,
+        "faces": 2093
+      },
+      {
+        "generationMs": 0.9706120000000169,
+        "meshingMs": 3.3018000000000143,
+        "faces": 2145
+      },
+      {
+        "generationMs": 1.0232369999999946,
+        "meshingMs": 4.923900000000003,
+        "faces": 2163
+      },
+      {
+        "generationMs": 1.372700000000009,
+        "meshingMs": 3.8980779999999413,
+        "faces": 2113
+      },
+      {
+        "generationMs": 1.3240639999999075,
+        "meshingMs": 3.7940170000000535,
+        "faces": 2171
+      },
+      {
+        "generationMs": 1.3259740000000875,
+        "meshingMs": 4.429167000000007,
+        "faces": 1537
+      },
+      {
+        "generationMs": 1.3549509999999145,
+        "meshingMs": 6.198011000000065,
+        "faces": 1940
+      },
+      {
+        "generationMs": 1.2112399999999752,
+        "meshingMs": 5.720887000000062,
+        "faces": 1289
+      },
+      {
+        "generationMs": 1.551242000000002,
+        "meshingMs": 4.886602999999923,
+        "faces": 1531
+      },
+      {
+        "generationMs": 1.2390280000000757,
+        "meshingMs": 4.160182999999961,
+        "faces": 1504
+      },
+      {
+        "generationMs": 1.0142060000000583,
+        "meshingMs": 3.3739879999999403,
+        "faces": 2152
+      },
+      {
+        "generationMs": 0.9937790000000177,
+        "meshingMs": 2.8012670000000526,
+        "faces": 1931
+      },
+      {
+        "generationMs": 0.9735120000000279,
+        "meshingMs": 3.261714999999981,
+        "faces": 1223
+      },
+      {
+        "generationMs": 0.9547069999999849,
+        "meshingMs": 3.302802999999926,
+        "faces": 2032
+      },
+      {
+        "generationMs": 1.045325000000048,
+        "meshingMs": 3.2032029999999168,
+        "faces": 2087
+      },
+      {
+        "generationMs": 1.1319929999999658,
+        "meshingMs": 4.129458999999997,
+        "faces": 2157
+      },
+      {
+        "generationMs": 1.1151969999999665,
+        "meshingMs": 3.437922999999955,
+        "faces": 2162
+      },
+      {
+        "generationMs": 1.1620130000000017,
+        "meshingMs": 7.366506999999956,
+        "faces": 1856
+      },
+      {
+        "generationMs": 1.0626489999999649,
+        "meshingMs": 7.103562000000011,
+        "faces": 1157
+      },
+      {
+        "generationMs": 1.3474879999999985,
+        "meshingMs": 6.185629000000063,
+        "faces": 1667
+      },
+      {
+        "generationMs": 1.9032300000000077,
+        "meshingMs": 4.13660399999992,
+        "faces": 1585
+      },
+      {
+        "generationMs": 1.8386699999999792,
+        "meshingMs": 4.908091000000013,
+        "faces": 1810
+      },
+      {
+        "generationMs": 1.2145819999999503,
+        "meshingMs": 3.560314000000062,
+        "faces": 2014
+      },
+      {
+        "generationMs": 1.1600000000000819,
+        "meshingMs": 2.6728839999999536,
+        "faces": 1036
+      },
+      {
+        "generationMs": 1.165599000000043,
+        "meshingMs": 4.502607000000012,
+        "faces": 1848
+      },
+      {
+        "generationMs": 2.374772000000007,
+        "meshingMs": 4.102721999999972,
+        "faces": 2095
+      },
+      {
+        "generationMs": 1.4973810000000185,
+        "meshingMs": 3.866388000000029,
+        "faces": 2114
+      },
+      {
+        "generationMs": 1.5997310000000198,
+        "meshingMs": 5.329343999999992,
+        "faces": 2245
+      },
+      {
+        "generationMs": 1.2756050000000414,
+        "meshingMs": 6.659680999999978,
+        "faces": 1826
+      },
+      {
+        "generationMs": 1.2378009999999904,
+        "meshingMs": 6.590922000000091,
+        "faces": 1086
+      },
+      {
+        "generationMs": 1.3256240000000616,
+        "meshingMs": 5.922565999999961,
+        "faces": 1314
+      },
+      {
+        "generationMs": 3.0613400000000865,
+        "meshingMs": 4.585316999999918,
+        "faces": 1373
+      },
+      {
+        "generationMs": 2.2968740000000025,
+        "meshingMs": 3.9312139999999545,
+        "faces": 1374
+      },
+      {
+        "generationMs": 1.1826520000000755,
+        "meshingMs": 3.4635139999999183,
+        "faces": 2265
+      },
+      {
+        "generationMs": 1.205033999999955,
+        "meshingMs": 3.1395599999999604,
+        "faces": 1941
+      },
+      {
+        "generationMs": 0.9982060000000956,
+        "meshingMs": 4.151733999999919,
+        "faces": 2054
+      },
+      {
+        "generationMs": 1.123081999999954,
+        "meshingMs": 3.2813409999999976,
+        "faces": 1992
+      },
+      {
+        "generationMs": 1.1969209999999748,
+        "meshingMs": 2.3458990000000313,
+        "faces": 1271
+      },
+      {
+        "generationMs": 1.1447359999999662,
+        "meshingMs": 4.704205999999999,
+        "faces": 2167
+      },
+      {
+        "generationMs": 1.0636809999999741,
+        "meshingMs": 6.147585000000049,
+        "faces": 1802
+      },
+      {
+        "generationMs": 1.1606500000000324,
+        "meshingMs": 6.06541500000003,
+        "faces": 1107
+      },
+      {
+        "generationMs": 1.151514999999904,
+        "meshingMs": 5.285991000000081,
+        "faces": 1186
+      },
+      {
+        "generationMs": 6.428482000000031,
+        "meshingMs": 6.122742000000017,
+        "faces": 2294
+      },
+      {
+        "generationMs": 3.6444580000000997,
+        "meshingMs": 4.696525999999949,
+        "faces": 1710
+      },
+      {
+        "generationMs": 0.9805880000000116,
+        "meshingMs": 3.2514710000000377,
+        "faces": 2232
+      },
+      {
+        "generationMs": 0.8871239999999716,
+        "meshingMs": 3.470411000000013,
+        "faces": 2108
+      },
+      {
+        "generationMs": 0.8814830000000029,
+        "meshingMs": 4.061826999999994,
+        "faces": 2140
+      },
+      {
+        "generationMs": 0.9954679999999598,
+        "meshingMs": 3.240278999999987,
+        "faces": 2118
+      },
+      {
+        "generationMs": 0.9406030000000101,
+        "meshingMs": 2.783113999999955,
+        "faces": 1618
+      },
+      {
+        "generationMs": 1.0961580000000595,
+        "meshingMs": 4.05794800000001,
+        "faces": 2214
+      },
+      {
+        "generationMs": 1.215237000000002,
+        "meshingMs": 7.5601970000000165,
+        "faces": 1877
+      },
+      {
+        "generationMs": 1.755313000000001,
+        "meshingMs": 6.627091999999948,
+        "faces": 1126
+      },
+      {
+        "generationMs": 3.5504379999999855,
+        "meshingMs": 6.594598000000019,
+        "faces": 1447
+      },
+      {
+        "generationMs": 7.602125000000001,
+        "meshingMs": 9.737026000000014,
+        "faces": 2267
+      },
+      {
+        "generationMs": 4.893117999999959,
+        "meshingMs": 4.73920499999997,
+        "faces": 1417
+      },
+      {
+        "generationMs": 1.8521970000000465,
+        "meshingMs": 5.473875000000021,
+        "faces": 2211
+      },
+      {
+        "generationMs": 2.033685999999989,
+        "meshingMs": 6.204633000000058,
+        "faces": 2140
+      },
+      {
+        "generationMs": 1.4207199999999602,
+        "meshingMs": 3.810842999999977,
+        "faces": 2218
+      },
+      {
+        "generationMs": 1.3470800000000054,
+        "meshingMs": 3.9379450000000134,
+        "faces": 2175
+      },
+      {
+        "generationMs": 1.3164430000000493,
+        "meshingMs": 4.823444999999992,
+        "faces": 2188
+      },
+      {
+        "generationMs": 1.3062929999999824,
+        "meshingMs": 3.7712660000000824,
+        "faces": 2191
+      }
+    ]
+  },
+  "shapeAndHeightSampling": {
+    "heightQueries10000Ms": 76.107089,
+    "Maple": {
+      "samples": 96040,
+      "occupied": 7096,
+      "samplingMs": 71.592433
+    },
+    "Oak": {
+      "samples": 112847,
+      "occupied": 13719,
+      "samplingMs": 38.164939000000004
+    }
+  },
+  "browser": {
+    "loaded": 893,
+    "queued": 0,
+    "generated": 893,
+    "voxels": 16393038,
+    "faces": 855363,
+    "generationMs": 3441.900000000256,
+    "meshingMs": 4405.000000000116,
+    "maxBuildMs": 49.40000000002328,
+    "initialReadyMs": 513.5,
+    "completeLoadMs": 8332,
+    "totalLoadMs": 7818.5,
+    "meshes": 794,
+    "objects": 2,
+    "colliders": 2,
+    "materialGroups": 1296,
+    "maxChunkGroups": 9,
+    "pooledMaterials": 26,
+    "geometryBytes": 92379204,
+    "renderTriangles": 478212
+  }
+}

@@ -9,7 +9,7 @@ assert.equal(executePanelZoom(a, 'geometric', { factor: 2 }), true);
 executePanelZoom(b, 'geometric', { factor: 3 }); executePanelZoom(a, 'semantic', { level: 4 });
 assert.equal(aState.zoom, 2); assert.equal(bState.zoom, 3); assert.notEqual(aState, semanticState);
 assert.equal(executePanelZoom(a, 'fisheye'), false); assert.equal(getPanelZoomCapabilities(a).fisheye, false);
-assert.equal(panelZoomModeForEvent({ altKey: true }), 'semantic'); assert.equal(panelZoomModeForEvent({ shiftKey: true }), 'fisheye');
+assert.equal(panelZoomModeForEvent({ altKey: true }), 'geometric'); assert.equal(panelZoomModeForEvent({ shiftKey: true }), 'fisheye');
 release(); assert.equal(executePanelZoom(a, 'geometric', { factor: 2 }), false);
 
 const { getPanelZoomMode, setPanelZoomMode, getPanelZoomMetadata, setPanelGeometricFallback } = await import('./panelZoomCapabilities.mjs');
@@ -23,7 +23,7 @@ const unregister = registerPanelZoomCapabilities(owner, {
 assert.equal(setPanelZoomMode(owner, 'semantic'), true);
 assert.equal(getPanelZoomMode(owner), 'semantic');
 assert.equal(panelZoomModeForEvent({ shiftKey:true }, owner), 'fisheye');
-assert.equal(panelZoomModeForEvent({}, owner), 'geometric');
+assert.equal(panelZoomModeForEvent({}, owner), 'semantic');
 assert.equal(setPanelZoomMode(owner, 'fisheye'), false);
 assert.equal(getPanelZoomMetadata(owner,'semantic').levels.length, 2);
 assert.equal(executePanelZoom(owner,'semantic',{ action:'fit' }),false);

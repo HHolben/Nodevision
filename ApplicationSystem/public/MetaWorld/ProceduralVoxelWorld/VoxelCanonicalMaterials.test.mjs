@@ -41,17 +41,17 @@ test('fixed V1 seed and coordinates pin grass, soil, stone and coherent limeston
   const chunk=generator.generateChunk(0,1,0);
   for(let z=0;z<32;z++)for(let y=0;y<32;y++)for(let x=0;x<32;x++)assert.equal(chunk[voxelIndex(x,y,z)],generator.getVoxel(x,y+32,z));
 });
-test('mixed chunks group faces by canonical material with twelve shared runtime materials', async () => {
+test('mixed chunks group faces by canonical material with twenty-six shared runtime materials', async () => {
   const data=new Uint8Array(32**3);for(const [x,id] of [[0,1],[2,2],[4,3],[6,4]])data[voxelIndex(x,0,0)]=id;
   const result=meshVoxelChunk(data,[0,0,0],()=>0), palette=await createVoxelMaterialPalette(THREE,voxelMaterialOptions);
-  assert.equal(result.faceCount,24);assert.equal(result.groups.length,4);assert.equal(palette.materials.length,12);
+  assert.equal(result.faceCount,24);assert.equal(result.groups.length,4);assert.equal(palette.materials.length,26);
   for(const group of result.groups){
     const material=palette.materials[group.materialIndex], id=group.materialIndex+1;
     assert.equal(group.count,36);assert.equal(material.userData.materialId,palette.entries[id].materialId);
     assert.equal('#'+material.color.getHexString(),palette.entries[id].rendering.color);
     for(const index of result.indices.slice(group.start,group.start+group.count))assert.equal(result.materials[index],id);
   }
-  let disposals=0;palette.materials.forEach(m=>m.addEventListener('dispose',()=>disposals++));palette.dispose();assert.equal(disposals,12);
+  let disposals=0;palette.materials.forEach(m=>m.addEventListener('dispose',()=>disposals++));palette.dispose();assert.equal(disposals,26);
 });
 test('runtime material inspection, ground bounce and compact save use canonical identity', async () => {
   const colliders=[],root=createProceduralVoxelWorld(THREE,def,colliders,voxelMaterialOptions),runtime=root.userData.proceduralVoxelRuntime;
@@ -61,7 +61,7 @@ test('runtime material inspection, ground bounce and compact save use canonical 
   assert.equal(colliders[0].materialDefinition.id,'grass');assert.equal(colliders[0].MatterState,'solid');
   const ctx={api:{},movementState:{},bounceMaterialsByKey:new Map()};const bounce=installBounceMaterialAbility(ctx);
   bounce.refreshBounceMaterialCatalog(canonicalCatalog);assert.equal(bounce.bounceConfigForCollider(colliders[0]).restitution,.06);
-  assert.ok(root.children.length);for(const mesh of root.children){assert.strictEqual(mesh.material,runtime.materials);assert.ok(mesh.geometry.groups.length<=12);assert.equal(mesh.userData.physicsMaterialId,undefined);}
+  assert.ok(root.children.length);for(const mesh of root.children){assert.strictEqual(mesh.material,runtime.materials);assert.ok(mesh.geometry.groups.length<=18);assert.equal(mesh.userData.physicsMaterialId,undefined);}
   const saved=runtime.serialize();assert.deepEqual(saved.generator,def.generator);
   assert.equal(saved.type,'procedural-voxel-world');assert.ok(JSON.stringify(saved).length<600);
   for(const key of ['chunksData','materials','children','voxels','palette'])assert.equal(saved[key],undefined);
@@ -70,7 +70,7 @@ test('runtime material inspection, ground bounce and compact save use canonical 
 test('authored voxel configuration and ordinary/equation material identities remain compatible', async () => {
   const ctx={api:{},movementState:{},DEFAULT_VOXEL_PLACER_CONFIG:{size:.25,color:'#ffffff',opacity:1,materialId:'PhysicsSolid'}};
   const api=installVoxelMaterialConfigAbility(ctx);
-  for(const id of ['limestone','stone','water','PineWood','PineBark','PineFoliage','sand','mud','LimestoneGravel','snow']){
+  for(const id of ['limestone','stone','water','PineWood','PineBark','PineFoliage','sand','mud','LimestoneGravel','snow','MapleWood','MapleBark','MapleFoliage','OakWood','OakBark','OakFoliage']){
     const entry=canonicalCatalog.find(e=>e.materialId===id),config=api.ensureVoxelPlacerConfig();
     api.applyVoxelMaterialEntry(config,entry,{updateColor:true});assert.equal(config.materialId,id);assert.equal(config.color,entry.color);
     const saved=JSON.parse(JSON.stringify(config));assert.deepEqual(saved,config);assert.equal(saved.materialFile,entry.materialFile);

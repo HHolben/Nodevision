@@ -16,6 +16,15 @@ export const DEFAULT_WORLD_GAS_MATERIAL_ID = "WhiteOxygenatedAir";
 export const DEFAULT_WORLD_GAS_MATERIAL_FILE = WORLD_OBJECT_MATERIAL_LIBRARY_PATH + "/Gasses/WhiteOxygenatedAir.json";
 
 export const DEFAULT_WORLD_OBJECT_MATERIAL_ROWS = [
+  { MaterialName: "Magnolia Wood", MaterialJSONfile: "Materials/Solids/MagnoliaWood.json" },
+  { MaterialName: "Magnolia Bark", MaterialJSONfile: "Materials/Solids/MagnoliaBark.json" },
+  { MaterialName: "Magnolia Foliage", MaterialJSONfile: "Materials/Solids/MagnoliaFoliage.json" },
+  { MaterialName: "Magnolia Blossom", MaterialJSONfile: "Materials/Solids/MagnoliaBlossom.json" },
+  { MaterialName: "Sunflower Stem", MaterialJSONfile: "Materials/Solids/SunflowerStem.json" },
+  { MaterialName: "Sunflower Petal", MaterialJSONfile: "Materials/Solids/SunflowerPetal.json" },
+  { MaterialName: "Sunflower Seed", MaterialJSONfile: "Materials/Solids/SunflowerSeed.json" },
+  { MaterialName: "Moss", MaterialJSONfile: "Materials/Solids/moss.json" },
+
   { MaterialName: "Oak Foliage", MaterialJSONfile: "Materials/Solids/OakFoliage.json" },
   { MaterialName: "Oak Bark", MaterialJSONfile: "Materials/Solids/OakBark.json" },
   { MaterialName: "Oak Wood", MaterialJSONfile: "Materials/Solids/OakWood.json" },
@@ -66,6 +75,15 @@ export const DEFAULT_WORLD_OBJECT_MATERIAL_ROWS = [
 ];
 
 export const CANONICAL_MATERIAL_IDS = new Map([
+  ["magnoliawood", "MagnoliaWood"], ["magnolia wood", "MagnoliaWood"],
+  ["magnoliabark", "MagnoliaBark"], ["magnolia bark", "MagnoliaBark"],
+  ["magnoliafoliage", "MagnoliaFoliage"], ["magnolia foliage", "MagnoliaFoliage"],
+  ["magnoliablossom", "MagnoliaBlossom"], ["magnolia blossom", "MagnoliaBlossom"],
+  ["sunflowerstem", "SunflowerStem"], ["sunflower stem", "SunflowerStem"],
+  ["sunflowerpetal", "SunflowerPetal"], ["sunflower petal", "SunflowerPetal"],
+  ["sunflowerseed", "SunflowerSeed"], ["sunflower seed", "SunflowerSeed"],
+  ["moss", "moss"], ["moss", "moss"],
+
   ["oakfoliage", "OakFoliage"], ["oak foliage", "OakFoliage"],
   ["oakbark", "OakBark"], ["oak bark", "OakBark"],
   ["oakwood", "OakWood"], ["oak wood", "OakWood"],

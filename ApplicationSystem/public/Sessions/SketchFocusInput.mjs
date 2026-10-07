@@ -17,11 +17,12 @@ export function installSketchPointerInput(surface, model, renderer, getSettings 
   function samplesFor(event) {
     const rect = surface.getBoundingClientRect();
     const events = typeof event.getCoalescedEvents === "function" ? event.getCoalescedEvents() : [event];
-    return events.map((entry) => sampleFromPointerEvent(entry, rect));
+    return (events.length ? events : [event]).map((entry) => sampleFromPointerEvent(entry, rect));
   }
 
   function onPointerDown(event) {
     if (!shouldAcceptPointer(event, state)) return;
+    if (event.button !== undefined && event.button !== 0) return;
     if (state.drawing) return;
     event.preventDefault();
     state.activePointerId = event.pointerId;
@@ -44,8 +45,13 @@ export function installSketchPointerInput(surface, model, renderer, getSettings 
   function onPointerEnd(event) {
     if (event.pointerId !== state.activePointerId) return;
     event.preventDefault();
+    if (event.type === "pointerup") {
+      for (const sample of samplesFor(event)) model.addSample(sample);
+      model.finishStroke();
+    } else {
+      model.cancelActiveStroke();
+    }
     surface.releasePointerCapture?.(event.pointerId);
-    model.finishStroke();
     state.drawing = false;
     state.activePointerId = null;
     if (event.pointerId === state.activePenPointerId) state.activePenPointerId = null;
@@ -56,11 +62,17 @@ export function installSketchPointerInput(surface, model, renderer, getSettings 
   surface.addEventListener("pointermove", onPointerMove);
   surface.addEventListener("pointerup", onPointerEnd);
   surface.addEventListener("pointercancel", onPointerEnd);
+  surface.addEventListener("lostpointercapture", onPointerEnd);
 
   return () => {
+    if (state.activePointerId !== null) {
+      surface.releasePointerCapture?.(state.activePointerId);
+      model.cancelActiveStroke();
+    }
     surface.removeEventListener("pointerdown", onPointerDown);
     surface.removeEventListener("pointermove", onPointerMove);
     surface.removeEventListener("pointerup", onPointerEnd);
     surface.removeEventListener("pointercancel", onPointerEnd);
+    surface.removeEventListener("lostpointercapture", onPointerEnd);
   };
 }

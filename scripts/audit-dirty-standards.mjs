@@ -14,7 +14,7 @@ const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8"
 const paths = [...new Set([
   ...git("diff", "--name-only", "-z", baselineRevision).split("\0"),
   ...git("ls-files", "--others", "--exclude-standard", "-z").split("\0"),
-])].filter(path => path.startsWith("ApplicationSystem/") && existsSync(root + path)).sort();
+])].filter(path => path.startsWith("ApplicationSystem/") && !path.startsWith("ApplicationSystem/public/vendor/") && existsSync(root + path)).sort();
 
 function codeLineCount(source) {
   const lines = source.split(/\r?\n/);

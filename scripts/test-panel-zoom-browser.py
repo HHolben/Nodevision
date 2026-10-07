@@ -29,6 +29,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif resource == '/api/fileCodeContent':
             content = '{"content":"const answer = 42;","encoding":"utf8"}'
             mime = 'application/json'
+        elif resource.endswith('.csv') and resource.startswith('/Notebook/'):
+            content, mime = 'Name,Value\nFirst,42', 'text/csv'
+        elif resource.endswith('.php') and resource.startswith('/Notebook/'):
+            content, mime = '<main id="php-content">PHP output</main>', 'text/html'
         elif resource.startswith('/Notebook/'):
             content = '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="800"><rect id="shape" width="200" height="100"/></svg>' if resource.endswith('.svg') else '<p>Frame content</p>'
             mime = 'image/svg+xml' if resource.endswith('.svg') else 'text/html'

@@ -13,8 +13,8 @@
     "state": "gas",
     "solid": false,
     "densityKgPerCubicMeter": 1.225,
-    "dynamicViscosityPascalSeconds": 0.0000181,
-    "kinematicViscositySquareMetersPerSecond": 0.0000148,
+    "dynamicViscosityPascalSeconds": 1.81e-05,
+    "kinematicViscositySquareMetersPerSecond": 1.48e-05,
     "coefficientOfStaticFriction": 0,
     "coefficientOfKineticFriction": 0,
     "springConstantNewtonsPerMeter": 0,
@@ -26,5 +26,9 @@
     "color": "#7fb7e8",
     "opacity": 0.16
   },
-  "chemicalFormulaMol": null
+  "chemicalFormulaMol": null,
+  "atmosphere": {
+    "supportsWeather": true,
+    "weatherProfile": "earth-like"
+  }
 }

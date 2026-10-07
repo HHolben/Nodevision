@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/movementSteps.mjs
 // This file defines browser-side movement Steps logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { cappedJumpImpulse } from "./playerJump.mjs";
 import { clearFlexibleSurfaceContact, continueFlexibleSurfaceContact, depressedPlayerY, startFlexibleSurfaceContact } from "./surfaceSpringResponse.mjs";
 
 export function applyDirectionalMovement({ THREE, controls, movementState, inputState, forward, right, up, speed, crawling, crouching, wouldCollide, stepHeight, allowVerticalMovement = false }) {
@@ -122,7 +123,7 @@ function jumpMultiplierForInput(inputState, crouching, crouchJumpMultiplier) {
 
 export function applyGroundMovement({ controls, inputState, movementState, gravity, jumpSpeed, crouching, crouchJumpMultiplier = 1.5, groundLevel, wouldCollide, resolveGroundBounce = null }) {
   const jumpMultiplier = jumpMultiplierForInput(inputState, crouching, crouchJumpMultiplier);
-  const jumpImpulse = jumpSpeed * jumpMultiplier;
+  const jumpImpulse = cappedJumpImpulse(jumpSpeed * jumpMultiplier, gravity);
   if (continueFlexibleSurfaceContact({ controls, inputState, movementState, jumpImpulse })) {
     if (!inputState.jump) movementState.jumpLatch = false;
     return;

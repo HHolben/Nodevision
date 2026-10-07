@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs
 // This module owns one logical terrain object, its streamed chunk resources, and its analytic movement collider.
 
+import { findVoxelSpawn } from "./VoxelSpawn.mjs";
 import { createFeatureCollision } from "./VoxelFeatureCollision.mjs";
 import { validateVoxelWorld } from "./VoxelWorldDefinition.mjs";
 import { VOXEL_SIZE, chunkToVoxel, voxelToWorld, worldToVoxel } from "./VoxelCoordinates.mjs";
@@ -55,6 +56,16 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   }, entry => { entry.mesh?.geometry.dispose(); entry.mesh?.removeFromParent(); });
   const runtime = {
     generator, manager, definition, stats: manager.stats,
+    get renderDistance() { return manager.radius * 32 * VOXEL_SIZE; },
+    setRenderDistance(metres) {
+      if (disposed || !Number.isFinite(metres)) return;
+      const radius = Math.max(1, Math.min(8, Math.round(metres / (32 * VOXEL_SIZE))));
+      if (radius === manager.radius) return;
+      manager.radius = radius;
+      manager.center = "";
+      manager.queue.length = 0;
+      if (lastPosition) runtime.update(lastPosition);
+    },
     getVoxelMaterialId: generator.getVoxelMaterialId,
     getBiome: generator.getBiome,
     getVoxelMaterial(x, y, z) { return palette?.entries[generator.getVoxel(x,y,z)] || null; },
@@ -65,10 +76,10 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     },
     prepareSpawn(position, playerHeight) {
       if (!root.visible) return;
-      position.x = Math.max(root.position.x + 0.5, Math.min(root.position.x + definition.size[0] - 0.5, position.x));
-      position.z = Math.max(root.position.z + 0.5, Math.min(root.position.z + definition.size[2] - 0.5, position.z));
-      const y = collider.sampleGroundY(position.x, position.z);
-      if (Number.isFinite(y)) position.y = Math.max(position.y, y + playerHeight);
+      const requested=worldToVoxel([position.x,position.y,position.z],origin());
+      const [x,y,z]=findVoxelSpawn(generator,requested[0],requested[2],playerHeight);
+      position.x=root.position.x+(x+.5)*VOXEL_SIZE;position.z=root.position.z+(z+.5)*VOXEL_SIZE;
+      position.y=Math.max(position.y,root.position.y+y*VOXEL_SIZE+playerHeight);
       runtime.update(position);
     },
     serialize() {

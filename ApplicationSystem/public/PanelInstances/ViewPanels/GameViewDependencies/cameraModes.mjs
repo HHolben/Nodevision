@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/cameraModes.mjs
-// Manages view modes, player avatar visibility, and camera switching.
+// This module manages canonical view transitions and frames a foot-aligned player avatar using the physical player height.
+
+import { createPlayerAvatarVisual, STANDING_AVATAR_HEIGHT } from "./playerAvatarVisual.mjs";
 
 export function createCameraModeController({ THREE, panel, scene, playerCamera, controls, movementState, crosshair }) {
   const followCamera = new THREE.PerspectiveCamera(
@@ -11,58 +13,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
   followCamera.position.copy(playerCamera.position);
   scene.add(followCamera);
 
-  const fallbackAvatar = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.3, 0.75, 6, 10),
-    new THREE.MeshStandardMaterial({ color: 0x2e6da4, roughness: 0.65, metalness: 0.1 })
-  );
-  body.position.y = 0.85;
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.24, 20, 20),
-    new THREE.MeshStandardMaterial({ color: 0xf0c8a0, roughness: 0.7, metalness: 0.05 })
-  );
-  head.position.y = 1.55;
-  fallbackAvatar.add(body);
-  fallbackAvatar.add(head);
-  fallbackAvatar.visible = false;
-  scene.add(fallbackAvatar);
-
-  let loadedAvatar = null;
-  const gltfLoaderModulePath = "/lib/three/examples/jsm/loaders/GLTFLoader.js";
-  import(gltfLoaderModulePath)
-    .then((mod) => {
-      if (typeof mod?.GLTFLoader !== "function") {
-        throw new Error("GLTFLoader export missing.");
-      }
-      const loader = new mod.GLTFLoader();
-      loader.load(
-        "/UserSettings/PlayerAvatar.glTF",
-        (gltf) => {
-          if (!gltf?.scene) return;
-          loadedAvatar = gltf.scene;
-          loadedAvatar.visible = false;
-          loadedAvatar.scale.set(1, 1, 1);
-          loadedAvatar.traverse((node) => {
-            if (node.isMesh) {
-              node.castShadow = false;
-              node.receiveShadow = false;
-            }
-          });
-          scene.add(loadedAvatar);
-          scene.remove(fallbackAvatar);
-        },
-        undefined,
-        (err) => {
-          const status = err?.target?.status || err?.status || 0;
-          if (status !== 404) {
-            console.warn("PlayerAvatar.glTF load failed. Using fallback avatar.", err);
-          }
-        }
-      );
-    })
-    .catch((err) => {
-      console.warn("GLTFLoader unavailable. Using fallback avatar.", err);
-    });
+  const avatarVisual=createPlayerAvatarVisual(THREE,scene);
 
   const modes = [
     { id: "first", label: "First Person" },
@@ -149,7 +100,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
       cycleMode();
     }
 
-    const avatar = loadedAvatar || fallbackAvatar;
+    const avatar = avatarVisual.root;
     const player = controls.getObject();
     controls.getDirection(forward);
     forward.y = 0;
@@ -159,10 +110,9 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     side.set(-forward.z, 0, forward.x).normalize();
 
     const headY = player.position.y;
-    const bodyY = headY - Math.max((movementState?.playerHeight || 1.75) * 0.5, 0.6);
+    const height=movementState?.playerHeight || STANDING_AVATAR_HEIGHT;
 
-    avatar.position.set(player.position.x, bodyY, player.position.z);
-    avatar.rotation.y = Math.atan2(forward.x, forward.z);
+    avatarVisual.update(player,height,Math.atan2(forward.x,forward.z));
 
     const mode = currentMode().id;
     publishCameraMode();
@@ -172,7 +122,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
     }
 
     avatar.visible = true;
-    target.set(player.position.x, headY - 0.1, player.position.z);
+    target.set(player.position.x, headY - height*.25, player.position.z);
 
     if (mode === "second") {
       const distance = 2.4;
@@ -185,7 +135,7 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
       const horizontal = Math.cos(orbitPitch) * distance;
       const vertical = Math.sin(orbitPitch) * distance;
       cameraPos.copy(player.position).addScaledVector(forward, -horizontal);
-      cameraPos.y = headY + 1.2 + vertical;
+      cameraPos.y = headY + height*.65 + vertical;
     } else if (mode === "topdown") {
       cameraPos.copy(player.position);
       cameraPos.y = headY + 16;
@@ -210,10 +160,9 @@ export function createCameraModeController({ THREE, panel, scene, playerCamera, 
 
   function dispose() {
     document.removeEventListener("mousemove", onMouseMove);
-    if (loadedAvatar) scene.remove(loadedAvatar);
-    scene.remove(fallbackAvatar);
+    avatarVisual.dispose();
     scene.remove(followCamera);
   }
 
-  return { update, getActiveCamera, dispose, followCamera };
+  return { update, getActiveCamera, dispose, followCamera, cycleMode, getAvatar:()=>avatarVisual.root };
 }

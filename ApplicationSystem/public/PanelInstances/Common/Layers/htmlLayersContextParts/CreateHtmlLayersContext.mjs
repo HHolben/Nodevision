@@ -173,7 +173,12 @@ export function createHtmlLayersContext(root, {
         ["mousedown", "click", "submit"].forEach(type => root.removeEventListener(type, hostState.onFormInteraction, true));
         root.removeEventListener("click", hostState.onRootSelect, true);
         root.removeEventListener("focusin", hostState.onRootSelect, true);
-        layerState.win.removeEventListener("nodevision-html-layer-selected", hostState.onExternalSelect);
+        try {
+          layerState.win.removeEventListener("nodevision-html-layer-selected", hostState.onExternalSelect);
+        } catch (error) {
+          // A navigated iframe's WindowProxy may now belong to another origin.
+          if (error.name !== "SecurityError") throw error;
+        }
       };
     }
   };

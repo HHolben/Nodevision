@@ -1,0 +1,28 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "moss",
+  "displayName": "Moss",
+  "description": "Moss provides a shared canonical material for authored and procedural worlds.",
+  "defaultColor": "#587342",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 1200,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.86,
+    "coefficientOfKineticFriction": 0.58,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.06
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "terrainKind": "grass",
+    "color": "#587342"
+  },
+  "chemicalFormulaMol": null
+}

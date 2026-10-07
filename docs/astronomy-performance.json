@@ -1,0 +1,12 @@
+{
+  "stars": 5070,
+  "catalogBytes": 214248,
+  "parseMs": 5.399045000000001,
+  "initializationMs": 79.22044199999999,
+  "ephemerisMs": 0.006988758999999988,
+  "transformMs": 0.0014266729999999938,
+  "updateMs": 0.007655974000000015,
+  "starBufferBytes": 141960,
+  "starBatches": 1,
+  "bodyMeshes": 2
+}

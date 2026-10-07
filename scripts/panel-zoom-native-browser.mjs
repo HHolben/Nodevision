@@ -13,12 +13,15 @@ export async function checkNativeZoomAdapters(timings) {
   const imageHost=panel(), img=new Image(); img.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"/>'); await img.decode();
   const image=mountImageViewport(imageHost,img); window.activeCell=imageHost;
   executePanelZoom(imageHost,'geometric',{action:'reset'}); ok(img.getBoundingClientRect().width===80,'image decoded pixels at 100%');
+  wheel(imageHost,{altKey:false,fn:true}); ok(image.state.zoom>1,'image exposed Fn scales decoded pixels'); executePanelZoom(imageHost,'geometric',{action:'reset'});
   image.state.angle=90; image.render(); const before=JSON.stringify(image.state);
-  wheel(imageHost,{altKey:true}); wheel(imageHost,{shiftKey:true}); ok(JSON.stringify(image.state)===before,'unsupported image modes do not change geometry');
+  wheel(imageHost,{altKey:false}); wheel(imageHost,{shiftKey:true}); ok(JSON.stringify(image.state)===before,'unsupported image modes do not change geometry');
   const svgHost=panel(); window.activeCell=svgHost;
   const cleanup=await renderEditor('fixture.svg',svgHost); const context=window.SVGEditorContext;
   const source='<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="800">'+Array.from({length:2000},(_,i)=>`<rect x="${i%100*10}" y="${Math.floor(i/100)*10}" width="5" height="5"/>`).join('')+'</svg>';
   context.setEditorHTML(source); const original=context.getEditorHTML(), dirty=context.isDirty();
+  const canvasZoom=getPanelZoomState(svgHost).zoom; wheel(svgHost,{altKey:false}); ok(getPanelZoomState(svgHost).zoom===canvasZoom,'SVG editor Ctrl does not scale artwork');
+  wheel(svgHost,{altKey:false,fn:true}); ok(getPanelZoomState(svgHost).zoom>canvasZoom,'SVG editor exposed Fn scales canvas');
   const samples=[]; for(let i=0;i<20;i++){const t=performance.now();executePanelZoom(svgHost,'geometric',{action:'set',zoom:i%2?1:1.2});samples.push(performance.now()-t);}
   samples.sort((a,b)=>a-b);timings.svg2000Objects={medianMs:samples[10],p95Ms:samples[19]};
   ok(context.getEditorHTML()===original && context.isDirty()===dirty,'SVG geometric scale preserves serialized source and dirty state');
@@ -30,9 +33,9 @@ export async function checkNativeZoomAdapters(timings) {
   const editor=monaco.editor.create(codeHost,{value:'const answer = 42;',language:'plaintext',fontSize:14,automaticLayout:true});
   codeHost.__nvCodeEditorSession={editor,defaultFontSize:14,fontSize:14};
   const release=installCodeEditorZoom(codeHost,(ed)=>ed.getOption(monaco.editor.EditorOption.fontSize),(ed,size,session)=>{ed.updateOptions({fontSize:size});session.fontSize=size;return true;});
-  const version=editor.getModel().getAlternativeVersionId(); wheel(codeHost);
+  const version=editor.getModel().getAlternativeVersionId(); wheel(codeHost,{altKey:false,fn:true});
   ok(editor.getOption(monaco.editor.EditorOption.fontSize)===15,'real Monaco text size uses shared route');
-  wheel(codeHost,{altKey:true});ok(editor.getOption(monaco.editor.EditorOption.fontSize)===15,'Code semantic unsupported');
+  wheel(codeHost,{altKey:false});ok(editor.getOption(monaco.editor.EditorOption.fontSize)===15,'Code semantic unsupported');
   executePanelZoom(codeHost,'geometric',{action:'reset'});ok(editor.getOption(monaco.editor.EditorOption.fontSize)===14,'Code native reset');
   ok(editor.getModel().getAlternativeVersionId()===version && editor.getValue()==='const answer = 42;','Code view changes create no undo entries'); release();editor.dispose();codeHost.remove();
   await checkCodeZoomLifecycle();

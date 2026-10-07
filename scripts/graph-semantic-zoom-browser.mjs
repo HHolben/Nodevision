@@ -69,7 +69,7 @@ try {
   ok(a.cy.$('#n1').style('label') === 'Node 1', 'node labels unchanged');
   ok(!executePanelZoom(a.panel, 'semantic', { action: 'fit' }), 'unsupported semantic fit refused');
   ok(!executePanelZoom(a.panel, 'semantic', { action: 'set', level: 'invented' }), 'invalid level refused');
-  const wheel = (host, deltaY, semantic = true) => { const event = new WheelEvent('wheel', { ctrlKey: true, altKey: semantic, deltaY, bubbles: true, cancelable: true }); host.dispatchEvent(event); return event; };
+  const wheel = (host, deltaY, semantic = true) => { const event = new WheelEvent('wheel', { ctrlKey: true, altKey: !semantic, deltaY, bubbles: true, cancelable: true }); host.dispatchEvent(event); return event; };
   const stateB = snapshot(b.cy);
   let dispatches = 0;
   const countDispatch = event => { if (event.detail.mode === 'semantic') dispatches++; };
@@ -89,7 +89,7 @@ try {
   executePanelZoom(b.host, 'semantic', { action: 'reset' }); window.activeCell = a.panel;
 
   for (const [key, expected] of [['-', 'structure'], ['+', 'annotations'], ['-', 'structure'], ['0', 'annotations']]) {
-    const e = new KeyboardEvent('keydown', { ctrlKey: true, altKey: true, key, bubbles: true, cancelable: true }); a.host.dispatchEvent(e);
+    const e = new KeyboardEvent('keydown', { ctrlKey: true, altKey: false, key, bubbles: true, cancelable: true }); a.host.dispatchEvent(e);
     ok(e.defaultPrevented && getPanelZoomState(a.panel, 'semantic').level === expected, `semantic key ${key}`);
   }
   same({ zoom: a.cy.zoom(), pan: a.cy.pan() }, camera, 'semantic gestures preserve native camera');

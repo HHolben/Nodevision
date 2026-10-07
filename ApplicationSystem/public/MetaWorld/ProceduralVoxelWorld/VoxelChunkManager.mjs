@@ -18,7 +18,8 @@ export class VoxelChunkManager {
         for (let x = Math.max(0, cx-this.radius); x <= Math.min(Math.ceil(width/CHUNK_SIZE)-1, cx+this.radius); x++) {
           // The generator supplies its vertical occupancy bound; world height is never enumerated.
           const top = Math.ceil(this.generator.maxSolidHeight/CHUNK_SIZE);
-          for (let y=0;y<top;y++) wanted.push([x,y,z]);
+          const levels=this.generator.getChunkLevels?.(x,z)||Array.from({length:top},(_,y)=>y);
+          for (const y of levels) wanted.push([x,y,z]);
         }
       }
       for (const [key, entry] of this.loaded) {

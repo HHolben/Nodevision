@@ -4,8 +4,7 @@
 import { createElementLayers } from "../../EditorPanels/GraphicalEditors/ElementLayers.mjs";
 import { svgContextPath } from "../../Common/Layers/svgLayersContext.mjs";
 
-import { installContentPresentationZoom } from '/panels/contentPresentationZoom.mjs';
-import { installPanelZoomIframe } from '/panels/panelZoomIframe.mjs';
+import { installDocumentFrameZoom } from '/panels/documentFrameZoom.mjs';
 
 export const wantsIframe = true;
 
@@ -48,9 +47,7 @@ export async function renderFile(filename, viewPanel, iframe, serverBase = "/Not
     let root;
     try { root = iframe.contentDocument?.documentElement; } catch { return; }
     if (root?.localName !== "svg") return;
-    const unregister = installContentPresentationZoom(iframe, iframe);
-    const bridge = installPanelZoomIframe(iframe);
-    iframe.__nvSvgZoomCleanup = () => { unregister(); bridge(); };
+    iframe.__nvSvgZoomCleanup = installDocumentFrameZoom(viewPanel, iframe, { reflow: false });
     context = { kind: "svg-view", filePath: filename, svgRoot: root, readOnly: true };
     context.layers = createElementLayers(root, null, { readOnly: true, getContext: () => context });
     viewPanel.__nvSvgViewLayersContext = context;

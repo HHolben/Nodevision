@@ -11,11 +11,12 @@ import { mountHtmlEditorShell } from '/PanelInstances/EditorPanels/GraphicalEdit
 import { installGraphSemanticZoom } from '/PanelInstances/InfoPanels/GraphManagerDependencies/GraphSemanticZoom.mjs';
 import { initToolbarWidget } from '/ToolbarJSONfiles/zoomPanControlsWidget.mjs';
 import { checkNativeZoomAdapters } from './panel-zoom-native-browser.mjs';
+import { checkAdditionalZoomPanels } from './panel-zoom-additional-browser.mjs';
 import { checkHtmlViewerZoom } from './html-viewer-zoom-browser.mjs';
 export const ok = (value, message) => { if (!value) throw Error(message); };
 export const tick = () => new Promise(resolve => requestAnimationFrame(resolve));
 export function panel() { const el = document.createElement('div'); el.className = 'panel'; el.style.cssText = 'position:relative;width:700px;height:450px;overflow:auto'; document.body.append(el); return el; }
-export function wheel(target, options = {}) { const event = new (target.ownerDocument.defaultView.WheelEvent)('wheel', { bubbles: true, cancelable: true, ctrlKey: true, deltaY: -100, ...options }); target.dispatchEvent(event); return event; }
+export function wheel(target, options = {}) { const event = new (target.ownerDocument.defaultView.WheelEvent)('wheel', { bubbles: true, cancelable: true, ctrlKey: true, altKey: true, deltaY: -100, ...options }); if (options.fn) Object.defineProperty(event, 'getModifierState', { value: key => key === 'Fn' }); target.dispatchEvent(event); return event; }
 const timings = {};
 function benchmark(name, callback) { const samples = []; for (let i=0;i<20;i++) { const t=performance.now(); callback(i); samples.push(performance.now()-t); } samples.sort((a,b)=>a-b); timings[name] = { medianMs: samples[10], p95Ms: samples[19] }; }
 window.addEventListener('unhandledrejection', event => { document.querySelector('#result').textContent = 'FAIL: ' + event.reason?.stack; });
@@ -29,16 +30,16 @@ try {
   const release=registerPanelZoomCapabilities(a,{geometric(){ac++;},semantic(){sc++;}});
   registerPanelZoomCapabilities(b,{geometric(){bc++;}});
   wheel(a); ok(ac===1 && bc===0,'one active owner'); wheel(b); ok(bc===0,'inactive refused');
-  wheel(a,{altKey:true}); ok(sc===1 && ac===1,'semantic independent');
+  wheel(a,{altKey:false}); ok(sc===1 && ac===1,'semantic independent');
   wheel(a,{shiftKey:true}); ok(sc===1 && ac===1,'fisheye cannot fall through');
-  configurePanelZoomInput({semanticModifier:'None'}); wheel(a,{altKey:true}); ok(ac===2,'central fallback configurable'); configurePanelZoomInput();
+  configurePanelZoomInput({geometricModifier:'None'}); wheel(a,{altKey:true}); ok(sc===2 && ac===1,'central fallback configurable'); configurePanelZoomInput(); wheel(a);
   const child=document.createElement('div'); a.append(child); child.style.height='20px';
   let nested=0; const releaseChild=registerPanelZoomCapabilities(child,{geometric(){nested++;}});
-  wheel(child); wheel(child,{altKey:true}); ok(nested===1 && ac===2 && sc===1,'embedded owner prevents ancestor fallback');
+  wheel(child); wheel(child,{altKey:false}); ok(nested===1 && ac===2 && sc===2,'embedded owner prevents ancestor fallback');
   releaseChild(); child.remove(); a.hidden=true; wheel(a); ok(ac===2,'hidden retained owner refused'); a.hidden=false;
   const toolbar=document.createElement('div'); document.body.append(toolbar); initToolbarWidget(toolbar);
   toolbar.querySelector('[data-nv-zp-action="zoom-in"]').click(); ok(ac===3,'toolbar command once');
-  toolbar.dispatchEvent(new KeyboardEvent('keydown',{bubbles:true,cancelable:true,ctrlKey:true,key:'+'})); ok(ac===4,'toolbar focus uses active owner');
+  toolbar.dispatchEvent(new KeyboardEvent('keydown',{bubbles:true,cancelable:true,ctrlKey:true,altKey:true,key:'+'})); ok(ac===4,'toolbar focus uses active owner');
   release(); wheel(a); ok(ac===4 && !a.querySelector('.nv-panel-zoom-viewport'),'destroyed owner has no CSS fallback');
   ok(!getPanelZoomCapabilities(a).geometric,'unknown panel explicitly reports unsupported');
   let unsupportedScans=0; const originalQuery=a.querySelectorAll;
@@ -57,6 +58,8 @@ try {
   wrapper.style.height="400px"; wrapper.style.flex="none";
   grid.render(Array.from({length:1000},(_,r)=>Array.from({length:20},(_,c)=>`${r}:${c}`)),{row:1,col:1});
   const csvRelease=installCsvGridZoom(a,wrapper,()=>grid.paint(range)); const csvBefore=table.textContent;
+  wheel(a,{altKey:false}); ok(getPanelZoomState(a).zoom===1,'CSV editor Ctrl cannot resize cells');
+  wheel(a,{altKey:false,fn:true}); ok(getPanelZoomState(a).zoom>1,'CSV editor exposed Fn scales cells');
   executePanelZoom(a,'geometric',{action:'set',zoom:2}); grid.paint(range); await tick();
   table.rows[1].cells[1].scrollIntoView({block:'start'}); await tick();
   const cell=table.rows[1].cells[1].getBoundingClientRect(), overlay=wrapper.querySelector('.nv-csv-range').getBoundingClientRect();
@@ -67,6 +70,8 @@ try {
   ok(table.textContent===csvBefore,'CSV values unchanged'); csvRelease(); wrapper.remove();
   const scope={container:a,filePath:'fixture.html',htmlSession:{},options:{}}; mountHtmlEditorShell(scope);
   scope.htmlSession.wysiwyg.innerHTML=Array.from({length:2000},(_,i)=>`<p>Region ${i}</p>`).join('');
+  wheel(scope.htmlSession.wysiwyg,{altKey:false}); ok(getPanelZoomState(a).zoom===1,'HTML editor Ctrl does not scale page');
+  wheel(scope.htmlSession.wysiwyg,{altKey:false,fn:true}); ok(getPanelZoomState(a).zoom>1,'HTML editor exposed Fn scales page');
   const htmlBefore=scope.htmlSession.wysiwyg.outerHTML; let mutations=0;
   const observer=new MutationObserver(records=>mutations+=records.length); observer.observe(scope.htmlSession.wysiwyg,{attributes:true,childList:true,subtree:true,characterData:true});
   benchmark('html2000Regions',i=>executePanelZoom(a,'geometric',{action:'set',zoom:i%2?1:1.2})); await tick(); observer.disconnect();
@@ -82,6 +87,7 @@ try {
   graphRelease(); cy.destroy(); a.remove(); b.remove(); toolbar.remove();
   await checkNativeZoomAdapters(timings);
   await checkHtmlViewerZoom({ panel, wheel, tick, ok }, timings);
+  await checkAdditionalZoomPanels({ panel, wheel, tick, ok });
   ok(writes===0,"zoom performs no file saves or Notebook writes");
   document.querySelector('#result').textContent='PASS: native zoom, ownership, iframe, state isolation, source safety; '+JSON.stringify(timings);
 } catch(error) { document.querySelector('#result').textContent='FAIL: '+error.stack; }

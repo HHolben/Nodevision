@@ -1,0 +1,23 @@
+{
+  "dependencies": [
+    {
+      "name": "SunCalc",
+      "version": "1.9.0",
+      "source": "https://github.com/mourner/suncalc/tree/v1.9.0",
+      "license": "BSD-2-Clause",
+      "file": "suncalc/suncalc.mjs",
+      "modifications": "UMD export wrapper replaced by an ES module default export; astronomical formulas unchanged.",
+      "sha256": "96fed889229c4860627265d5a668465b635789c8cdfbca6b6779f5086e670362"
+    },
+    {
+      "name": "HYG",
+      "version": "4.1",
+      "source": "https://raw.githubusercontent.com/astronexus/HYG-Database/main/hyg/CURRENT/hygdata_v41.csv",
+      "license": "CC-BY-SA-4.0",
+      "file": "hyg/bright-stars.json",
+      "sourceSha256": "d9f69fd86bbf90a4e4d52b4c5c53eacfa6dfc0bfdef85bfd94f095e0bebe4ebd",
+      "modifications": "Magnitude <= 6, excluding Sol; retained ID, proper name, RA hours, declination degrees, visual magnitude and color index. Built with scripts/build-bright-star-catalog.py.",
+      "sha256": "e7040b81dc868335dfbcc0a989df6c2723bc451697eb9e25ecca1a75869063ae"
+    }
+  ]
+}

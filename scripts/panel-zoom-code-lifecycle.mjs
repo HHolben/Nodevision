@@ -8,7 +8,7 @@ export async function checkCodeZoomLifecycle() {
   const a=panel(), b=panel(); workspace.append(a,b);
   const waitForEditor=async host=>{for(let i=0;i<100;i++){if(host.__nvCodeEditorSession?.editor)return host.__nvCodeEditorSession;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('CodeEditor session did not mount');};
   const first=await setupPanel(a,{filePath:'first.txt'}), sessionA=await waitForEditor(a);
-  window.activeCell=a; wheel(sessionA.editorContainer);
+  window.activeCell=a; wheel(sessionA.editorContainer,{altKey:false,fn:true});
   const size=sessionA.fontSize; ok(size===sessionA.defaultFontSize+1,'actual CodeEditor mount registers native zoom');
   const second=await setupPanel(b,{filePath:'second.txt'}), sessionB=await waitForEditor(b);
   ok(sessionB.fontSize===sessionB.defaultFontSize && sessionA.fontSize===size,'retained CodeEditor sizes are independent');

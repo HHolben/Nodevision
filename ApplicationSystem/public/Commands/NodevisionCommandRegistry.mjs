@@ -38,6 +38,7 @@ const BUILTIN_HANDLER_LOADERS = Object.freeze({
   "session.quit": load("./handlers/SystemCommands.mjs", "quitSessionCommand"),
   "htmlDraftFocus.open": load("./handlers/SystemCommands.mjs", "openHtmlDraftFocusCommand"),
   "sandbox.open": load("./handlers/SystemCommands.mjs", "openSandboxCommand"),
+  "uppercaseHandwriting.open": load("./handlers/SystemCommands.mjs", "openUppercaseHandwritingCommand"),
   "sketchFocus.open": load("./handlers/SystemCommands.mjs", "openSketchFocusCommand"),
   "imageStitcher.open": load("./handlers/SystemCommands.mjs", "openImageStitcherCommand"),
   "sectionals.update": load("./handlers/SystemCommands.mjs", "updateSectionalsCommand"),

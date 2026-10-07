@@ -15,7 +15,10 @@ Status: implementation and validation, 2026-10-06. This report supersedes the im
 | SVG editor | Implemented: existing canvas scale; SVG session | Unsupported: canvas layer/object projection pending | Baseline 1 / unsupported through registry | Unsupported, reserved |
 | SVG viewer | Implemented: runtime iframe presentation scale; frame instance | Unsupported: viewer Layers inspection is separate | 1 / unsupported | Unsupported, reserved |
 | HTML graphical editor | Implemented: runtime presentation shell around editable page; shell instance | Unsupported: region/element projection pending | 1 / unsupported | Unsupported, reserved |
-| HTML viewer | Implemented: same-origin iframe presentation scale; viewer instance | Implemented: Outline / Page | Scale 1; semantic Page / unsupported | Unsupported, reserved |
+| HTML viewer | Implemented: same-origin iframe presentation scale; viewer instance | Implemented: reading resize/reflow | Both scales 1 / unsupported | Unsupported, reserved |
+| CSV viewer | Implemented: table-only presentation scale | Unsupported | Scale 1 / unsupported | Unsupported, reserved |
+| PHP viewer / editor preview | Implemented: iframe page scale | Implemented: reading resize/reflow for same-origin HTML output; unsupported cross-origin | Both scales 1 / unsupported | Unsupported, reserved |
+| PHP source editor | Implemented: native text size, input and highlight together | Unsupported | Initial font size / unsupported | Unsupported, reserved |
 | CSV graphical editor | Implemented: native grid surface and overlays; view instance | Unsupported: table overview projection pending | 1 / unsupported | Unsupported, reserved |
 | Image viewer | Implemented: decoded pixels, rotation and inverse-transform pan; viewport instance | Unsupported: no semantic bitmap representation | 1 pixel per CSS pixel / existing fit | Unsupported, reserved |
 | Raster/image editor | Implemented: existing display scale without changing canvas backing size; editor state | Unsupported | Baseline decoded-pixel scale / no explicit registry fit | Unsupported, reserved |
@@ -31,7 +34,7 @@ The pre-rollout inventory, local listeners, state owners and coordinate defects 
 
 ## 2. Intent and modifier routing
 
-`panels/panelZoomInput.mjs` exports `ZoomIntent.Geometric`, `.Semantic` and `.Fisheye`. Ctrl (and retained Meta compatibility) routes geometric input. Detectable Fn requests semantic input; the default fallback is Alt. Shift requests reserved fisheye input. Shift used to type keyboard `+` retains ordinary geometric behavior. Semantic Ctrl+Alt+Plus/Minus/0 follows the same parser as wheel input. Wheel pixel, line and page units are normalized centrally. Unmodified wheel is unchanged.
+`panels/panelZoomInput.mjs` exports `ZoomIntent.Geometric`, `.Semantic` and `.Fisheye`. Ctrl (and retained Meta compatibility) routes semantic input. Detectable Fn requests geometric input; the default geometric fallback is Alt. This mapping was reversed at the user’s explicit request after the initial rollout. Shift requests reserved fisheye input. Shift used to type keyboard `+` retains the otherwise selected mode. Geometric Ctrl+Alt+Plus/Minus/0 follows the same parser as wheel input. Wheel pixel, line and page units are normalized centrally. Unmodified wheel is unchanged.
 
 The mode selector controls its own explicit toolbar buttons; it does not override physical modifier intent. Zero resets the requested mode. Fit is a separate advertised action. No panel interprets its own semantic modifiers.
 
@@ -39,11 +42,11 @@ The mode selector controls its own explicit toolbar buttons; it does not overrid
 
 Executed `scripts/zoom-fn-probe.cjs` in Linux Electron **42.2.0**, Chromium **148.0.7778.97**. Electron accepted `sendInputEvent({keyCode:'Fn', ...})`, but the DOM event had empty `key` and `code`, and `getModifierState('Fn')` was false. Injected A and F1 produced normal key/code values and also reported Fn false. Ctrl/Alt were observable.
 
-This is an Electron input-API probe, **not a physical keyboard measurement**. No physical Fn press was available to the automated session. It cannot establish how this machine's keyboard firmware handles Fn. The preferred Fn binding is honored if a real event exposes it; actual physical detectability remains unverified. No fabricated Fn event support is claimed.
+This is an Electron input-API probe, **not a physical keyboard measurement**. No physical Fn press was available to the automated session. It cannot establish how this machine's keyboard firmware handles Fn. The preferred Fn binding (now geometric) is honored if a real event exposes it; actual physical detectability remains unverified. No fabricated Fn event support is claimed.
 
 ## 4. Central fallback configuration
 
-`configurePanelZoomInput({ semanticModifier: 'Alt' })` enables the default Ctrl+Alt fallback. `'None'` disables the fallback while retaining detectable Fn support. `getPanelZoomInputConfiguration()` reports the current mapping. Configuration is session-local and can be changed without modifying any adapter. The semantic toolbar also remains available without a modifier chord.
+`configurePanelZoomInput({ geometricModifier: 'Alt' })` enables the default Ctrl+Alt fallback. `'None'` disables the fallback while retaining detectable Fn support. `getPanelZoomInputConfiguration()` reports the current mapping. Configuration is session-local and can be changed without modifying any adapter. Both toolbar modes remain available without a modifier chord. Fn cannot be distinguished from ordinary Ctrl when the keyboard/browser supplies no Fn signal; use the geometric Ctrl+Alt fallback in that case.
 
 ## 5. Geometric adapters
 
@@ -51,11 +54,11 @@ Graph, SVG, CSV, HTML, images, Monaco and PDF now dispatch through `panelZoomCap
 
 ## 6. Semantic adapters
 
-Graph retains its source-preserving opacity-based Structure / Annotations levels. File Manager reuses existing row names and icons: Compact hides only the icon presentation; Detailed restores it. Neither transition navigates directories, fetches metadata, rebuilds canonical rows or changes the selected anchor. HTML Viewer additionally provides independent read-only Outline / Page levels using the existing virtualized HTML Layers renderer; see [HTML viewer zoom](html-viewer-zoom.md). Defaults are Annotations, Detailed and Page respectively. Commands at the level boundaries are claimed no-ops.
+Graph retains its source-preserving opacity-based Structure / Annotations levels. File Manager reuses existing row names and icons: Compact hides only the icon presentation; Detailed restores it. Neither transition navigates directories, fetches metadata, rebuilds canonical rows or changes the selected anchor. HTML Viewer additionally provides independent reading resize/reflow as requested by the user; see [HTML viewer zoom](html-viewer-zoom.md). Its former Outline/Page representation was removed because it hid the page during zoom. Defaults are Annotations, Detailed and reading scale 1 respectively. Commands at the level boundaries are claimed no-ops.
 
 ## 7. Unsupported modes
 
-Adapters declare unsupported semantic/fisheye modes with false, or omit handlers; both yield explicit false capability results. Missing adapters also report false. SVG and HTML editor Layers trees remain separate inspection providers. HTML Viewer reuses its read-only Layers projection for Outline; it does not change the authored page. CSV has no existing table-overview projection. PDF has no installed thumbnail overview. Those semantic modes remain unsupported rather than introducing another renderer or modifying authored content. Plain images and CodeEditor do not invent semantic meanings.
+Adapters declare unsupported semantic/fisheye modes with false, or omit handlers; both yield explicit false capability results. Missing adapters also report false. SVG and HTML editor Layers trees remain separate inspection providers. HTML Viewer reflows the page through outer-frame dimensions and presentation scale; it does not change the authored DOM. CSV has no existing table-overview projection. PDF has no installed thumbnail overview. Those semantic modes remain unsupported rather than introducing another renderer or modifying authored content. Plain images and CodeEditor do not invent semantic meanings.
 
 ## 8. Graph geometric cleanup
 
@@ -83,7 +86,7 @@ Image 100% remains one decoded pixel per CSS pixel; rotation and inverse-transfo
 
 ## 13. Iframe ownership
 
-`panelZoomIframe.mjs` installs one same-origin bridge per frame document, cleans up old listeners, maps child client coordinates to parent client coordinates, and routes the original event through the same gate. It does not synthesize a second wheel event. Inactive owners are refused. HTML Viewer registers its owning view container so routing remains available while Outline temporarily hides the iframe. Cross-origin documents cannot be intercepted; native browser behavior remains intact and those frames do not acquire a same-origin adapter.
+`panelZoomIframe.mjs` installs one same-origin bridge per frame document, cleans up old listeners, maps child client coordinates to parent client coordinates, and routes the original event through the same gate. It does not synthesize a second wheel event. Inactive owners are refused. HTML Viewer registers its owning view container and keeps the document visible under both reading and geometric zoom. Cross-origin documents cannot be intercepted; native browser behavior remains intact and those frames do not acquire a same-origin adapter.
 
 ## 14. Ownership and state isolation
 
@@ -123,16 +126,22 @@ The rule is **fewer than 200 nonblank, noncomment lines**, so 200 itself fails. 
 
 ## 18. Remaining panels
 
-Layers, Properties, Game View and other unregistered InfoPanels intentionally report unsupported content zoom. Audio time-axis adapters and structural SVG/HTML-editor/CSV/PDF semantic projections are future work. HTML Viewer Outline is now implemented as documented in its follow-up report. Cross-origin input, physical Fn detection and installed PDF.js canvas validation require their respective real environments. Dense graph repaint and large HTML page reflow remain performance limits.
+Layers, Properties, Game View and other unregistered InfoPanels intentionally report unsupported content zoom. Audio time-axis adapters and structural SVG/HTML-editor/CSV/PDF semantic projections are future work. HTML Viewer reading reflow is implemented as documented in its follow-up report. Cross-origin input, physical Fn detection and installed PDF.js canvas validation require their respective real environments. Dense graph repaint and large HTML page reflow remain performance limits.
 
 ## 19. Explicit answers and fisheye blockers
 
-- **Does Ctrl zoom use the active native coordinate system?** Yes for the registered families in the matrix; unsupported families do not fall back to outer CSS scaling.
-- **Can semantic intent route independently app-wide?** Yes. Graph, File Manager and HTML Viewer implement it; other families report unsupported.
+- **Does geometric zoom use the active native coordinate system?** Yes via exposed Ctrl+Fn, fallback Ctrl+Alt, or the toolbar for the registered families. Plain Ctrl now requests semantic zoom. This applies to the families in the matrix; unsupported families do not fall back to outer CSS scaling.
+- **Can semantic intent route independently app-wide?** Yes. Graph, File Manager, HTML Viewer and same-origin PHP output/preview implement it; other families report unsupported.
 - **Is the Fn fallback centralized and configurable?** Yes, in `panelZoomInput.mjs`; actual physical Fn behavior remains unverified.
 - **Can unsupported semantic/fisheye become geometric?** No through the shared router. There is no ancestor or generic fallback, and migrated local listeners cannot reinterpret reserved modes.
 - **Are states independent across panel types?** Yes; state lives in each adapter/session, with browser isolation checks.
 - **Is authored content unchanged?** The implemented zoom paths perform no source writes, dirty changes or history entries; the tested source, model-version and mutation invariants pass. Optional PDF.js rendering remains unverified in this checkout.
-- **Which major families support both modes?** Graph Manager, File Manager and HTML Viewer.
+- **Which major families support both modes?** Graph Manager, File Manager, HTML Viewer and same-origin PHP output/preview.
 
 Fisheye remains a reserved unsupported intent. Before implementation it needs family-specific forward/inverse mappings, interaction and accessibility policy, focus ownership, lifecycle cleanup and performance measurements. No lens, nonlinear renderer, directory aggregation or expanded layout persistence was added.
+
+## Modifier follow-up
+
+See [Ctrl semantic / Fn geometric coverage](zoom-modifier-followup.md) for the user-requested mapping reversal, PHP/CSV adapter additions, CodeEditor and image coverage, and physical Fn limitations.
+
+Reading-zoom correction, 2026-10-07: HTML/PHP document frames now use reading reflow and geometric magnification, not Outline/Page. SVG viewer magnification retains its internal viewport. The earlier outline implementation and its timings are superseded by [the current viewer report](html-viewer-zoom.md).

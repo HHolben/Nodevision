@@ -7,7 +7,7 @@ import { terrainDefinition as def, voxelMaterialOptions } from './VoxelMaterialT
 import { createVoxelGenerator } from './VoxelTerrainGenerator.mjs';
 import { createProceduralVoxelWorld } from './ProceduralVoxelWorldRuntime.mjs';
 import { resolveWorldObjectMaterial } from '../Materials/WorldObjectMaterialResolver.mjs';
-import { createPinePlacement } from './Features/PinePlacement.mjs';
+import { createTreePlacement } from './Features/TreePlacement.mjs';
 import { surfaceMaterial } from './VoxelSurfaceComposition.mjs';
 import { meshVoxelChunk } from './VoxelChunkMesher.mjs';
 import { voxelIndex } from './VoxelCoordinates.mjs';
@@ -45,8 +45,8 @@ test('biomes form coherent regions and neighboring chunks agree across surfaces'
   }
 });
 test('shared pine engine is denser in snowy habitat and requires appropriate dry surfaces',()=>{
-  const base={dimensions:[4000,512,4000],getTerrainHeight:()=>80,getVoxel:()=>1,getBiome:()=> 'temperate'};
-  const warm=createPinePlacement(base,123456),cold=createPinePlacement({...base,getVoxel:()=>12,getBiome:()=> 'snowy-pine-forest'},123456);
+  const base={dimensions:[4000,512,4000],getTerrainHeight:()=>80,getVoxel:()=>1,getSlope:()=>0,getBiome:()=> 'temperate'};
+  const warm=createTreePlacement(base,123456),cold=createTreePlacement({...base,getVoxel:()=>12,getBiome:()=> 'snowy-pine-forest'},123456);
   let a=0,b=0;
   for(let z=1;z<25;z++)for(let x=1;x<25;x++){if(warm.candidate(x,z))a++;if(cold.candidate(x,z))b++;}
   assert.ok(a>0);assert.ok(b>a*2);assert.ok(b<24*24);

@@ -2,6 +2,7 @@
 // This file defines browser-side View PHP logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { normalizeServedNotebookPath, toNotebookAssetUrl } from "/utils/notebookPath.mjs";
+import { installHtmlFrameZoom } from './HtmlFrameZoom.mjs';
 
 export const wantsIframe = true;
 
@@ -25,11 +26,11 @@ export async function renderFile(path, viewPanel, iframe, serverBase) {
     iframe.srcdoc = `<p style="color:red;">Error loading PHP file: ${path}</p>`;
   };
 
-  // IMPORTANT:
-  // ❌ DO NOT ACCESS iframe.contentDocument
-  // ❌ DO NOT INJECT ANY STYLES OR SCRIPTS
-  // Cross-origin = no access allowed.
+  // Runtime view controls never inject authored styles or intercept inaccessible frames.
+  const release = installHtmlFrameZoom(viewPanel, iframe);
+  viewPanel._dispose = () => { release(); iframe.onerror = null; };
 
   // Load the PHP file
+  iframe.removeAttribute('srcdoc');
   iframe.src = toNotebookAssetUrl(normalizeServedNotebookPath(path), { base: serverBase });
 }

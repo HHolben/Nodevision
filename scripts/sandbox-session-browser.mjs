@@ -1,7 +1,10 @@
 // Nodevision/scripts/sandbox-session-browser.mjs
 // This fixture launches the actual Session runtime and Game View in a minimal tabbed shell, checking world planning, persistence, permissions, movement, and teardown.
+import { checkSessionAstronomy } from './astronomy-session-browser.mjs';
+import { checkSessionWeather } from './weather-session-browser.mjs';
+import { checkPlayerViews } from './player-view-browser.mjs';
+import { checkMountainLandscape } from './voxel-mountain-session-browser.mjs';
 import { checkSandboxBiomes } from './voxel-biome-session-browser.mjs';
-import { checkSandboxPines } from './voxel-pine-session-browser.mjs';
 import { checkSandboxWater } from './voxel-water-session-browser.mjs';
 import { startSession,quitActiveSession,getActiveSession } from '/Sessions/SessionController.mjs';
 import { openPanelTabInCell,getActivePanelTab } from '/panels/panelTabs.mjs';
@@ -25,6 +28,10 @@ try{
  const originalTab=await openPanelTabInCell(cell,{panelType:'FileView',panelClass:'ViewPanel',panelVars:{filePath:'sandbox-test.html'}},host=>{host.textContent='Original HTML panel';});
  let pageReads=0,holdAt=Infinity,releaseRead=null;
  const seededWorld=planSandboxWorld(null,'sandbox-test.html',()=>123456).definition;
+ if(window.nvTestAstronomy)seededWorld.metadata.astronomy.clock.timezone='America/Chicago';
+ else delete seededWorld.metadata.astronomy;
+ seededWorld.environment={gasMaterialId:'EarthTroposphere',gasMaterialFile:'/MetaWorld/Materials/Gasses/EarthTroposphere.json'};
+ seededWorld.metadata.weather={seed:773,cloudCoverage:1,cloudBaseAltitude:80,cloudTopAltitude:115,wind:[2,.5]};
  let html='<!doctype html><html><body><h1>Preserve my page</h1><script id="nodevision-metaworld" type="application/json">'+JSON.stringify(seededWorld)+'</script></body></html>', saves=0;
  const nativeFetch=window.fetch.bind(window);
  const scripts={};for(const mode of ['Build','Play'])scripts[mode]=await(await nativeFetch('/sandbox-builtins/Sandbox'+mode+'.NodevisionSession.js')).text();
@@ -56,22 +63,30 @@ try{
  let ctx=window.VRWorldContext,root=terrain(),seed=root.userData.proceduralVoxelRuntime.definition.generator.seed;
  ok(ctx.camera.position.y>10,'spawn above generated ground');walk();
  const shoreline=await checkSandboxWater(ctx,root,'Build');
- const pineSignature=await checkSandboxPines(ctx,root,'Build');
+ const mountainSignature=checkMountainLandscape(ctx,root,'Build');
+ checkPlayerViews(ctx,'Build');
+ const weatherSignature=await checkSessionWeather(ctx,'Build');
+ if(window.nvTestAstronomy)await checkSessionAstronomy(ctx,'Build');
  const biomeSignature=await checkSandboxBiomes(ctx,root,'Build');
  ctx.panel._vrRenderer.render(ctx.scene,ctx.camera);ok(ctx.panel._vrRenderer.info.render.triangles>0,'normal renderer draws terrain');
  let bridge=getActiveMetaWorldLayerBridge();const authored=bridge.addObjectLayer({id:'sandbox-authored',type:'box',position:[4,28,-3],size:[1,1,1],color:'#cc7733',isSolid:true});
  ok(authored,'Build creates ordinary objects');
  ok(await ctx.saveVirtualWorldFile(),'normal world save succeeds');ok(saves===1,'save wrote one HTML document');
  const saved=JSON.parse(new DOMParser().parseFromString(html,'text/html').querySelector('#nodevision-metaworld').textContent);
+ ok(JSON.stringify(saved.metadata.weather)===JSON.stringify(seededWorld.metadata.weather),'declarative weather persists');
  ok(saved.objects.filter(o=>o.type==='procedural-voxel-world').length===1,'save has one procedural definition');ok(saved.objects.length<5,'no runtime chunks serialized');bridge.addObjectLayer({id:'after-save-box',type:'box',position:[2,29,2],size:[1,1,1]});ok(html.includes('Preserve my page'),'page preserved');
- await quitActiveSession();ok(!window.VRWorldContext,'engine disposed on exit');ok(root.children.length===0,'chunk geometry removed');
+ const weatherRoot=ctx.weatherController.runtime.renderer.root;
+ await quitActiveSession();ok(!weatherRoot.parent,'weather root removed on exit');ok(!window.VRWorldContext,'engine disposed on exit');ok(root.children.length===0,'chunk geometry removed');
  ok(!document.querySelector('.nv-sandbox-exit'),'exit handler removed');ok(getActivePanelTab(cell)?.tabId===originalTab.tabId,'original tab restored');
  await launch('Play');ctx=window.VRWorldContext;root=terrain();bridge=getActiveMetaWorldLayerBridge();
  ok(root.userData.proceduralVoxelRuntime.definition.generator.seed===seed,'Play reuses persisted seed');
  ok(ctx.objects.filter(o=>o.userData.proceduralVoxelRuntime).length===1,'reentry does not duplicate terrain');
  ok(ctx.movementState.playerMode==='survival','Play uses navigation mode');ok(ctx.objects.some(o=>o.userData.metaWorldLayerId==='after-save-box'),'post-save unsaved edit retained');walk();
  ok(await checkSandboxWater(ctx,root,'Play')===shoreline,'saved shoreline identical in Play');
- ok(await checkSandboxPines(ctx,root,'Play')===pineSignature,'saved pines identical in Play');
+ ok(checkMountainLandscape(ctx,root,'Play')===mountainSignature,'saved mountains and species identical in Play');
+ checkPlayerViews(ctx,'Play');
+ ok(await checkSessionWeather(ctx,'Play')===weatherSignature,'weather survives Build save and Play reload');
+ if(window.nvTestAstronomy)await checkSessionAstronomy(ctx,'Play');
  ok(await checkSandboxBiomes(ctx,root,'Play')===biomeSignature,'saved biome and shore materials identical in Play');
  const count=ctx.objects.length;
  const abilityContext={api:{},movementState:ctx.movementState};

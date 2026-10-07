@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/SandboxWorldPlanner.mjs
 // This planner conservatively creates declarative terrain worlds and reuses all authored definitions without allocating rendering or collision resources.
 
+import { earthSandboxAstronomy } from './Astronomy/AstronomyConfig.mjs';
 import { createDefaultHtmlWorld } from "./DefaultHtmlWorld.mjs";
 import { validateVoxelWorld } from "./ProceduralVoxelWorld/VoxelWorldDefinition.mjs";
 function canonical(value) {
@@ -26,7 +27,8 @@ export function planSandboxWorld(definition, filePath, seedFactory = createSandb
   return { kind, created: true, definition: {
     name: String(filePath).split("/").pop() || "Sandbox", type: "world", worldType: "NodevisionMetaWorld",
     spawnPosition: { x: 0, y: 1.75, z: 0 }, spawnYaw: 0,
-    metadata: { objectGroundOnly: true }, objects: [terrain]
+    environment: { gasMaterialId: 'EarthTroposphere', gasMaterialFile: '/MetaWorld/Materials/Gasses/EarthTroposphere.json' },
+    metadata: { objectGroundOnly: true, astronomy: earthSandboxAstronomy() }, objects: [terrain]
   } };
   // Future HTML-link planning belongs here, producing ordinary portal definitions through a shared planner.
 }

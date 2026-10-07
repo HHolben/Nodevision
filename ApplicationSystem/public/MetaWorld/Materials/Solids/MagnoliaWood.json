@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "MagnoliaWood",
+  "displayName": "Magnolia Wood",
+  "description": "Magnolia Wood provides a shared canonical material for authored and procedural worlds.",
+  "defaultColor": "#cdb58c",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 650,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "color": "#cdb58c",
+    "roughness": 0.65,
+    "opacity": 1
+  },
+  "chemicalFormulaMol": null
+}

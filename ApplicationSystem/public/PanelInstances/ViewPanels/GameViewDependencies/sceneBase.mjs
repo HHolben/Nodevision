@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/sceneBase.mjs
-// This file creates the Three.js scene, renderer, camera, and static ground lighting.
+// This file creates the Three.js scene, renderer, camera, and default ground without inventing illumination.
 
 import { createWorldRenderer } from "./createWorldRenderer.mjs";
 
@@ -18,10 +18,6 @@ export function createSceneBase({ THREE, panel, canvas }) {
     1000
   );
   camera.position.set(0, 1.75, 10);
-
-  const baseLight = new THREE.DirectionalLight(0xffffff, 1);
-  baseLight.position.set(5, 10, 7);
-  scene.add(baseLight);
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(50, 50),

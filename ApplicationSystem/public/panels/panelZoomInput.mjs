@@ -1,17 +1,17 @@
 // Nodevision/ApplicationSystem/public/panels/panelZoomInput.mjs
 // This module translates physical gestures into independent zoom intents with a configurable fallback for keyboards that do not expose Fn.
 export const ZoomIntent = Object.freeze({ Geometric: 'geometric', Semantic: 'semantic', Fisheye: 'fisheye' });
-let semanticFallback = 'Alt';
-export function configurePanelZoomInput({ semanticModifier = 'Alt' } = {}) {
-  if (!['Alt', 'None'].includes(semanticModifier)) throw new TypeError('Semantic modifier must be Alt or None');
-  semanticFallback = semanticModifier;
+let geometricFallback = 'Alt';
+export function configurePanelZoomInput({ geometricModifier = 'Alt' } = {}) {
+  if (!['Alt', 'None'].includes(geometricModifier)) throw new TypeError('Geometric modifier must be Alt or None');
+  geometricFallback = geometricModifier;
 }
-export function getPanelZoomInputConfiguration() { return { preferredSemanticModifier: 'Fn', semanticModifier: semanticFallback }; }
+export function getPanelZoomInputConfiguration() { return { preferredGeometricModifier: 'Fn', geometricModifier: geometricFallback }; }
 export function panelZoomModeForEvent(event) {
   const typingPlus = event.type === 'keydown' && event.key === '+';
   if (event.shiftKey && !typingPlus) return ZoomIntent.Fisheye;
-  if (event.getModifierState?.('Fn') || (semanticFallback === 'Alt' && event.altKey)) return ZoomIntent.Semantic;
-  return ZoomIntent.Geometric;
+  if (event.getModifierState?.('Fn') || (geometricFallback === 'Alt' && event.altKey)) return ZoomIntent.Geometric;
+  return ZoomIntent.Semantic;
 }
 export function panelZoomCommandForEvent(event, height = 800) {
   if (!(event.ctrlKey || event.metaKey)) return null;

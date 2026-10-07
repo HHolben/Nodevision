@@ -1,12 +1,13 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/textWorldConsole.mjs
 // This file renders the text-based MetaWorld view mode and dispatches typed instructions into the existing movement system.
 
+import { installConsoleClose } from "./textConsoleClose.mjs";
 import { runTextWorldCommand } from "./textWorldCommandParser.mjs";
 
 function isTextViewMode(movementState) {
   const viewMode = String(movementState?.viewMode || "").toLowerCase();
   const cameraMode = String(movementState?.cameraMode || "").toLowerCase();
-  return viewMode === "text" || viewMode === "console" || cameraMode === "text";
+  return cameraMode ? cameraMode === "text" : viewMode === "text" || viewMode === "console";
 }
 
 function styleElement(element, styles) {
@@ -27,7 +28,9 @@ function appendLine(log, text, className) {
 
 export function createTextWorldConsole({ panel, canvas, movementState, getCommandContext, onInputAction }) {
   const previousCanvasDisplay = canvas?.style?.display || "";
-  let active = false;
+  const previousTabIndex=canvas?.getAttribute?.("tabindex");
+  if(canvas&&previousTabIndex===null)canvas.setAttribute("tabindex","-1");
+  let active = false, disposed = false, focusFrame = null;
 
   const root = styleElement(document.createElement("div"), {
     position: "absolute",
@@ -38,7 +41,7 @@ export function createTextWorldConsole({ panel, canvas, movementState, getComman
     color: "#f3f0dc",
     font: "14px/1.45 monospace",
     boxSizing: "border-box",
-    padding: "14px",
+    padding: "36px 14px 14px",
     gridTemplateRows: "minmax(0, 1fr) auto",
     gap: "10px"
   });
@@ -93,6 +96,10 @@ export function createTextWorldConsole({ panel, canvas, movementState, getComman
   form.append(prompt, input, button);
   root.append(log, form);
   panel.appendChild(root);
+  const closeControl=installConsoleClose(root,input,()=>{
+    panel._vrViewController?.cycleMode();
+    setActive(isTextViewMode(movementState));
+  });
 
   function submit(command) {
     const text = String(command || "").trim();
@@ -128,7 +135,10 @@ export function createTextWorldConsole({ panel, canvas, movementState, getComman
         Object.keys(heldKeys).forEach((key) => { heldKeys[key] = false; });
       }
       getCommandContext()?.controls?.unlock?.();
-      window.requestAnimationFrame(() => input.focus());
+      focusFrame=window.requestAnimationFrame(() => {if(active&&!disposed)input.focus();});
+    } else {
+      if(focusFrame!==null)window.cancelAnimationFrame(focusFrame);
+      if(root.contains(document.activeElement)){document.activeElement.blur();canvas?.focus?.({preventScroll:true});}
     }
   }
 
@@ -138,8 +148,9 @@ export function createTextWorldConsole({ panel, canvas, movementState, getComman
     },
     submit,
     dispose() {
-      setActive(false);
+      disposed=true;setActive(false);closeControl.dispose();
       root.remove();
+      if(canvas&&previousTabIndex===null)canvas.removeAttribute("tabindex");
     }
   };
 }

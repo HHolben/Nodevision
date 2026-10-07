@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/panels/panelZoomPanParts/shortcuts.mjs
 // This module routes modified gestures to one visible active capability owner and reserves unsupported modes against local fallthrough.
 import { bindPanelActivationMemory, getActivePanelElement, getPanelElementFromElement } from './ownership.mjs';
-import { executePanelZoom, getPanelZoomOwner, getPanelZoomCapabilities } from '../panelZoomCapabilities.mjs';
+import { executePanelZoom, getPanelZoomOwner, getPanelZoomCapabilities, getPanelZoomMetadata } from '../panelZoomCapabilities.mjs';
 import { panelZoomModeForEvent, panelZoomCommandForEvent } from '../panelZoomInput.mjs';
 const semanticWheel = new WeakMap();
 export function routePanelZoomEvent(event, { target = event.target, clientX, clientY, resolveMode = panelZoomModeForEvent } = {}) {
@@ -21,7 +21,7 @@ export function routePanelZoomEvent(event, { target = event.target, clientX, cli
   if (clientX !== undefined) command.clientX = clientX;
   if (clientY !== undefined) command.clientY = clientY;
   let accumulated = false;
-  if (mode === 'semantic' && event.type === 'wheel' && getPanelZoomCapabilities(owner).semantic) {
+  if (mode === 'semantic' && event.type === 'wheel' && getPanelZoomCapabilities(owner).semantic && !getPanelZoomMetadata(owner, 'semantic')?.continuous) {
     const now = performance.now(), prior = semanticWheel.get(owner), delta = command.delta;
     const total = prior && now - prior.time < 250 && Math.sign(prior.delta) === Math.sign(delta) ? prior.delta + delta : delta;
     accumulated = Math.abs(total) < 60;

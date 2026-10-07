@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewCSV.mjs
 // This file defines browser-side View CSV logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { installContentPresentationZoom } from '/panels/contentPresentationZoom.mjs';
 
 export async function renderFile(filename, viewPanel, iframe, serverBase) {
   try {
@@ -25,6 +26,7 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
 
     html += '</tbody></table>';
     viewPanel.innerHTML = html;
+    viewPanel._dispose = installContentPresentationZoom(viewPanel, viewPanel.querySelector('table'));
   } catch (err) {
     console.error('Error loading CSV:', err);
     viewPanel.innerHTML = '<p style="color:red;">Error loading CSV file.</p>';

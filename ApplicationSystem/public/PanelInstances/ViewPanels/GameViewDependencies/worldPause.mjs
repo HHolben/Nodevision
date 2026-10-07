@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldPause.mjs
 // This adapter owns the shared GameView pause menu, scoped Escape events, and pointer-lock lifecycle while leaving simulation updates independent of pointer capture.
+import { installWorldSleepControls } from './worldSleepControls.mjs';
+import { installRenderDistanceControl } from './worldRenderDistance.mjs';
 import { createWorldPauseState } from './worldPauseState.mjs';
 import { applyOverlayButtonAppearance } from '/OverlayAppearance.mjs';
 
@@ -19,6 +21,8 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
   const resume = document.createElement('button'); resume.textContent = 'Resume';
   applyOverlayButtonAppearance(resume);
   menu.append(heading, resume); panel.appendChild(menu);
+  const sleepControls = installWorldSleepControls(menu, panel);
+  const renderDistance = installRenderDistanceControl(menu, objects);
   const pausedAudio = new Set();
   let disposed = false;
   let captureAllowed = controls.isLocked;
@@ -53,6 +57,8 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
       movementState.paused = paused;
       menu.style.display = paused && active() ? 'block' : 'none';
       if (paused) {
+        renderDistance.refresh();
+        sleepControls.refresh();
         for (const object of objects) {
           const audio = object?.userData?.soundRuntime?.audio;
           if (audio && !audio.paused) { pausedAudio.add(audio); audio.pause(); }
@@ -69,7 +75,7 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
   const applicable = event => {
     const overlay = event.target?.closest?.('dialog, [role="dialog"], [role="menu"]');
     const cell = event.target?.closest?.('.panel-cell');
-    return active() && !event.defaultPrevented && !typing(event.target)
+    return active() && !event.defaultPrevented && (!typing(event.target) || event.target === renderDistance.input)
       && (!overlay || overlay === menu) && (!cell || cell === panel.closest('.panel-cell'));
   };
   let escapeDown = false;
@@ -124,6 +130,8 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
       window.removeEventListener('activePanelChanged', contextChanged);
       window.removeEventListener('nv-panel-content-deactivated', contextChanged);
       window.removeEventListener('nv-panel-content-activated', contextChanged);
+      sleepControls.dispose();
+      renderDistance.dispose();
       pausedAudio.clear(); menu.remove();
     }
   };

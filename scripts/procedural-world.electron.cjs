@@ -11,7 +11,7 @@ const stubs = {
   '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel(){}',
   '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia(){return {dispose(){}}}',
 };
-if (browserModule === 'sandbox-session-browser.mjs') {
+if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs'].includes(browserModule)) {
   stubs['/panels/workspace.mjs'] = `
     export { ensureSvgEditingSplit } from '/panels/workspaceParts/workspaceSvgSplit.mjs';
     export function ensureSvgEditorModeLayout(){}
@@ -50,7 +50,7 @@ app.whenReady().then(async()=>{
     await win.loadURL('http://127.0.0.1:'+server.address().port);
     for(let i=0;i<600;i++){
       const result=await win.webContents.executeJavaScript('document.getElementById("result").textContent');
-      if(result!=='RUNNING'){console.log(result); if (result.startsWith('PASS:') && browserModule === 'procedural-world-browser.mjs') fs.writeFileSync(path.join(root,'docs/procedural-voxel-performance.json'),JSON.stringify(await win.webContents.executeJavaScript('window.proceduralReport'),null,2)+'\n');app.exit(result.startsWith('PASS:')?0:1);return;}
+      if(result!=='RUNNING'){console.log(result); if(result.startsWith('PASS:') && browserModule === 'astronomy-render-browser.mjs') fs.writeFileSync(path.join(root,'docs/astronomy-render-performance.json'),JSON.stringify(await win.webContents.executeJavaScript('window.astronomyRenderReport'),null,2)+'\n'); if (result.startsWith('PASS:') && browserModule === 'procedural-world-browser.mjs') fs.writeFileSync(path.join(root,'docs/procedural-voxel-performance.json'),JSON.stringify(await win.webContents.executeJavaScript('window.proceduralReport'),null,2)+'\n');app.exit(result.startsWith('PASS:')?0:1);return;}
       await new Promise(r=>setTimeout(r,100));
     }
     throw new Error('World runtime timed out');

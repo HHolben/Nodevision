@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "MagnoliaBark",
+  "displayName": "Magnolia Bark",
+  "description": "Magnolia Bark provides a shared canonical material for authored and procedural worlds.",
+  "defaultColor": "#82786a",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 650,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "color": "#82786a",
+    "roughness": 0.95,
+    "opacity": 1
+  },
+  "chemicalFormulaMol": null
+}

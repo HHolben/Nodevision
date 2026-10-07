@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "MagnoliaFoliage",
+  "displayName": "Magnolia Foliage",
+  "description": "Magnolia Foliage provides a shared canonical material for authored and procedural worlds.",
+  "defaultColor": "#31583d",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": false,
+    "densityKgPerCubicMeter": 180,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "color": "#31583d",
+    "roughness": 0.85,
+    "opacity": 1
+  },
+  "chemicalFormulaMol": null
+}

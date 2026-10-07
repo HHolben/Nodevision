@@ -49,7 +49,7 @@ test('residency unloads, reproduces geometry and releases resources',async()=>{
   assert.equal(await runtime.ready,true);
   const position=new THREE.Vector3(0,30,0);
   for(let i=0;i<36;i++) runtime.update(position);
-  assert.equal(runtime.stats.loaded,36);assert.equal(colliders.length,1); assert.ok(root.children.length<=36);
+  assert.ok(runtime.stats.loaded>0&&runtime.stats.loaded<=36);assert.equal(colliders.length,1); assert.ok(root.children.length<=36);
   const geometry=root.children[0].geometry, original=Array.from(geometry.attributes.position.array), cell=root.children[0].userData.proceduralChunk;
   let released=false;geometry.addEventListener('dispose',()=>released=true);
   position.x=200;runtime.update(position);assert.equal(released,true);

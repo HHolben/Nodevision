@@ -46,3 +46,7 @@ export async function openImageStitcherCommand(args, context = {}) {
 export async function updateSectionalsCommand() {
   return (await import("/Settings/SectionalMapsCommands.mjs")).updateSectionalMapsFromBrowser();
 }
+
+export async function openUppercaseHandwritingCommand(args, context = {}) {
+  return (await import("/Sessions/UppercaseHandwritingSession.mjs")).startUppercaseHandwriting(context);
+}

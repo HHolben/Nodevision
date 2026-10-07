@@ -29,7 +29,7 @@ export function appendPanelZoomModeControls(host, getPanel) {
     if (key !== levelKey) { levels.replaceChildren(...choices.map(item => new Option(item.label, item.value))); levelKey = key; }
     levels.hidden = !choices.length;
     levels.value = getPanelZoomState(panel, select.value)?.level || '';
-    select.title = 'Choose the mode for these buttons. Ctrl gestures are geometric; Ctrl+Fn or configured Ctrl+Alt gestures are semantic.';
+    select.title = 'Choose the mode for these buttons. Ctrl gestures are semantic; Ctrl+Fn or configured Ctrl+Alt gestures are geometric.';
   };
   select.onchange = () => { setPanelZoomMode(getPanel(), select.value); sync(); };
   levels.onchange = () => { executePanelZoom(getPanel(), select.value, { action: 'set', level: levels.value }); sync(); };
