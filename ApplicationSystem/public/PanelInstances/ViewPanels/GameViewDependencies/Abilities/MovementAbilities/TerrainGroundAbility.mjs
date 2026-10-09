@@ -33,9 +33,9 @@ export function installTerrainGroundAbility(ctx) {
       const colliderId = collider.layerId || collider.target?.uuid || "expression-heightfield";
       const isActiveSurface = activeColliderId && activeColliderId === colliderId;
       for (const [dx, dz] of offsets) {
-        const y = collider.sampleGroundY(position.x + dx, position.z + dz);
+        const y = collider.sampleGroundY(position.x + dx, position.z + dz, footY + maxStepUp);
         const canStepOnto = Number.isFinite(y) && y <= footY + maxStepUp;
-        if ((canStepOnto || isActiveSurface) && Number.isFinite(y) && y > best) {
+        if ((canStepOnto || (isActiveSurface && !collider.voxelTerrain)) && Number.isFinite(y) && y > best) {
           best = y;
           bestColliderId = colliderId;
           bestCollider = collider;

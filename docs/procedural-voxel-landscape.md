@@ -14,7 +14,7 @@ The terrain implementation is in `ApplicationSystem/public/MetaWorld/ProceduralV
 - `VoxelMountains.mjs`, `VoxelMountainSurface.mjs`, `VoxelBaseTerrain.mjs`: regional relief, exposed surfaces, waterway carving and moss banks.
 - `VoxelWaterways.mjs`: bounded drainage paths and water columns.
 - `Features/BroadleafShape.mjs`, `MapleShape.mjs`, `OakShape.mjs`, `MagnoliaShape.mjs`: shared branch/lobe sampler and species configurations.
-- `Features/TreeEcology.mjs`, `TreePlacement.mjs`, `SunflowerPlacement.mjs`: habitat, placement and plant geometry. The mixed tree provider replaces `PinePlacement.mjs`.
+- `Features/TreeEcology.mjs`, `TreePlacement.mjs`: habitat, placement and plant geometry. The mixed tree provider replaces `PinePlacement.mjs`.
 - `VoxelMaterialIds.mjs`, `VoxelTerrainGenerator.mjs`: canonical palette and feature composition.
 - `VoxelChunkLevels.mjs`, `VoxelChunkManager.mjs`, `VoxelSpawn.mjs`, `ProceduralVoxelWorldRuntime.mjs`: local vertical streaming and dry supported spawn selection.
 - Terrain regression suites, including `VoxelMountains.test.mjs` and `VoxelWaterways.test.mjs`.
@@ -39,33 +39,71 @@ Local chunk-level queries retain visible terrain/water/feature ranges, bottom fa
 | Oak | 8–13 m | Warm wood core, dark bark, deep green foliage; thicker crooked trunk, six heavier branches, wider lobes. |
 | Magnolia | 6–9 m | Magnolia wood, bark, dark foliage and pale pink-white blossoms; low spreading branches and broad crown. |
 
-Wood and bark are solid; foliage, blossoms and sunflower parts are non-solid canonical materials. Moss is a solid surface material. All are available through the ordinary material catalog, including authored worlds and voxels. The procedural palette now pools 26 non-air materials per world.
+Wood and bark are solid; foliage, blossoms and sunflower parts are non-solid canonical materials. Moss is a solid surface material. All are available through the ordinary material catalog, including authored worlds and voxels. The procedural palette now pools 36 non-air materials per world, including Pine Needles and the apple, pear and cherry materials.
 
 Tree species follow coherent habitat noise, elevation and temperature. Cold regions favor pine; temperate regions contain pine, maple, oak and magnolia. Broadleaf trees stop at 45 m, pine at 60 m (54 m in cold regions). Maximum sampled slope is .5 for broadleaf and .75 for pine. A 12 m ownership grid with bounded jitter provides at least 10 m between tree centers. Tree placement rejects wet ground and unsuitable surfaces.
 
-Sunflowers form seeded patches on gentle dry temperate grass, with green stems/leaves, yellow petals and dark seed heads. Their 0.25 m voxel resolution produces deliberately blocky flowers. Moss replaces suitable low bank surfaces near generated waterways.
+Sunflower generation has been removed. Existing canonical sunflower materials remain available for authored content and stable palette IDs. Moss replaces suitable low bank surfaces near generated waterways.
 
 Feature bounds determine neighboring chunk queries. Only intersecting portions are sampled. Ground/water is preserved; structural tree voxels outrank foliage and flowers. Candidate caches are bounded and generation order does not affect results.
+
+## Apple, pear and cherry trees
+
+`Features/OrchardTreeShapes.mjs` uses the shared broadleaf sampler for low spreading apples (5–7 m), narrower upright pears (7–9.5 m), and raised branching cherry crowns (6.25–9 m). Each species has canonical Wood, Bark and Foliage materials in the catalog. Wood and bark are solid; leaves are non-blocking. No fruit materials or fruit geometry are generated.
+
+Coherent temperate habitat patches select these species below the existing broadleaf tree line. Cold regions remain pine habitat. Dry ground, slope limits, deterministic spacing, chunk boundaries and compact procedural saves follow the existing tree provider. The same provider also supplies standing-dead and fallen variants, using the new species' wood and bark.
+
+Seed `123456` living-tree origins (voxel coordinates) are apple `(1130,91,981)`, pear `(933,79,24)` and cherry `(987,81,71)`. `VoxelOrchardTrees.test.mjs` checks material resolution and solidity, fruitless bounded shapes, living/dead/fallen placement, rendered material groups and point/chunk agreement after regeneration.
+
+## Pine needles and tree variants
+
+`PineNeedles.json` registers the brown Pine Needles material in the shared catalog, with a stable appended voxel palette ID. `Features/PineNeedleBed.mjs` adds irregular beds approximately 1.25–1.75 m in radius around pine roots, following dry grass, soil and moss. Beds skip water and snow-covered ground. They occupy one 0.25 m voxel layer but are loose, non-blocking litter; underlying terrain retains its ground support and roots take priority.
+
+`Features/TreeVariants.mjs` gives pine, maple, oak and magnolia living, standing-dead and fallen forms. Seeded selection requests 10% fallen and another 12% standing dead; unsuitable fallen placements become standing dead. Dead trees retain the species' bare trunk and branches without foliage or blossoms. Fallen trunks retain species-specific wood and bark, tapered bodies, exposed ends and short bare branch stubs. They are static solid features, not simulated falling objects. Ground slope, support and world-bound checks reject unsuitable logs. The bounded feature query reach includes their horizontal extent, including neighboring chunks.
+
+Living magnolias remain in warm broadleaf habitat with their existing spreading crowns and pale blossoms. No duplicate magnolia provider or per-tree scene objects were added. Trees and litter regenerate from the existing seed and are not expanded into saved world data.
+
+Seed `123456` tree origins, in voxel coordinates:
+
+| Species | Standing dead | Fallen |
+| --- | --- | --- |
+| Pine | `(2276,77,27)` | `(1609,94,71)` |
+| Maple | `(357,76,26)` | `(2903,83,68)` |
+| Oak | `(2805,90,73)` | `(1177,77,24)` |
+| Magnolia | `(2617,78,70)` | `(2762,90,308)` |
+
+Living magnolia remains at `(697,79,21)`; a pine with a needle bed is at `(1415,84,75)`. `VoxelTreeVariants.test.mjs` covers canonical material resolution, supported beds, magnolia blossoms, all eight dead/fallen combinations, log collision, non-blocking needles, neighboring-chunk discovery, meshing and deterministic regeneration.
 
 ## Ponds, streams, creeks and waterfalls
 
 Each eligible 64 m drainage region starts from a deterministic source and follows strictly descending terrain samples in bounded 2 m steps. Narrow early segments form creeks; longer downstream paths widen into streams. Source and terminal basins form ponds. Steep drops include vertical water curtains joining upper channels to lower channels. Carved beds, liquid queries, rendering and swimming all use the same canonical water cells.
 
-Water is static generated geometry, not a fluid simulation. Paths are regional and may end in ponds; they do not yet form a connected watershed across region boundaries. There is no erosion, seasonal flow, splash effect, current force or waterfall audio. Banks and falls remain voxel-stepped. This is the main next hydrology milestone: connect regional drainage into continuous catchments while preserving bounded local queries.
+Water is static generated geometry, not a fluid simulation. Paths are regional and may end in ponds; they do not yet form a connected watershed across region boundaries. There is no simulated erosion, seasonal flow, splash effect, current force or waterfall audio. Banks and falls remain voxel-stepped. This is the main next hydrology milestone: connect regional drainage into continuous catchments while preserving bounded local queries.
 
 Seed `123456` inspection fixtures (voxel coordinates):
 
 | Feature | Coordinate |
 | --- | --- |
 | Magnolia trunk | `(697,79,21)` |
-| Sunflower stem | `(570,99,6)` |
 | Moss surface | `(1472,84,56)` |
 | Pond water | `(1484,83,52)` |
 | Creek water | `(3876,115,116)` |
 | Waterfall water | `(3882,120,116)` |
 | Stream water | `(3002,73,332)` |
 
+## Caverns, ravines, canyons and cliffs
+
+`VoxelLandforms.mjs` adds seeded erosion regions in higher terrain, leaving low rolling hills and the original mountain field intact. Narrow ravines, wider canyons and asymmetric cliffs occur selectively in 128 m regions. Edges blend back into their surroundings; exposed faces use canonical stone or limestone. These are bounded procedural shapes, not a geological erosion simulation.
+
+`VoxelCaverns.mjs` carves chambers beside ravines and canyons with open side passages. Limestone stalactites descend from their ceilings and stalagmites rise from their floors. Formation placement is seeded, solid, and shared by point queries, chunk generation and collision. Caverns remain above the global water plane. This first version uses separate chambers rather than an interconnected underground network.
+
+Chunk level queries include underground floors and ceilings. Player ground queries select the accessible surface below the feet rather than snapping to the mountain above. The existing terrain collider now also checks nearby solid voxels for walls, ceilings and formations; no persistent per-voxel colliders are created.
+
+Seed `123456` inspection coordinates (voxels): ravine center `(256,768)`, canyon center `(256,1280)`, cliff center `(2816,768)`, and a clear cavern passage at `(156,175,1280)`. World metre coordinates are voxel coordinates multiplied by .25, plus terrain origin. Four landform regressions cover preserved relief, connected entrances, anchored formations, streaming/regeneration, underground ground selection and ceiling collision.
+
 ## Validation and performance
+
+Current landform/sleep revision: all 14 terrain, astronomy, weather, Sandbox planner and pause regression files pass. All 17 dirty native JavaScript files pass the standards audit. The Electron fixtures now include underground rendering/collision and the single seven-choice sleep control, but their latest run could not initialize Chromium shared memory in this environment (`/dev/shm` and temporary-directory fallback both failed). The successful browser runs and performance numbers below describe the earlier landscape revision, not this latest visual verification.
 
 Eight Node test files pass (37 individual cases), covering canonical identities, shape structure, bounds, determinism, downhill routes, water columns, chunk regeneration, ecology, collision, residency, save behavior, avatar feet and jump height. Command:
 
@@ -75,9 +113,9 @@ The Electron Sandbox harness passed actual Build and Play startup, canonical ren
 
 Detailed final measurements are recorded in `procedural-voxel-landscape-performance.json`; the normal browser snapshot is also in `procedural-voxel-performance.json`. These are local development measurements, not a frame-time guarantee. The prior biome-only browser snapshot is archived in `procedural-voxel-biome-performance.json`; comparisons span separate runs and changed feature density. No startup pass inventories the entire 1 km world.
 
-All terrain/player modules touched by this work conform to fewer than 200 nonblank, noncomment lines. The complete dirty-file audit separately identifies the unrelated `PHPeditor.mjs` at 913 code lines (910 in HEAD); that concurrent editor work was left intact.
+Native files touched by this work conform to fewer than 200 nonblank, noncomment lines. Run `node scripts/audit-dirty-standards.mjs` to check the current working tree.
 
-Final normal-browser measurements: 893 loaded chunks, 794 meshes, 1,296 material groups (maximum nine per chunk), 26 pooled materials, 92,379,204 geometry bytes and two collider objects. Initial readiness was 513.5 ms; complete radius-eight load was 8,332 ms. Accumulated generation was 3,441.9 ms and meshing 4,405.0 ms; maximum synchronous chunk build was 49.4 ms. This remains a potential frame hitch on slower hardware.
+Historical measurements before the cavern addition (not a new cavern benchmark): 893 loaded chunks, 794 meshes, 1,296 material groups (maximum nine per chunk), 26 pooled materials, 92,379,204 geometry bytes and two collider objects. Initial readiness was 513.5 ms; complete radius-eight load was 8,332 ms. Accumulated generation was 3,441.9 ms and meshing 4,405.0 ms; maximum synchronous chunk build was 49.4 ms. This remains a potential frame hitch on slower hardware.
 
 The 100-chunk Node sample measured generation p50/p95 1.21/6.43 ms and meshing 4.15/8.63 ms, with worst generation 18.41 ms. Feature lookup totaled 7.48 ms and sampling 65.29 ms across 33 candidate references. Ten thousand final terrain-height queries took 76.11 ms. Isolated maple sampling took 71.59 ms for 96,040 bounding-box samples; oak took 38.16 ms for 112,847 samples. These one-run shape numbers include JIT/order effects and do not imply oak is intrinsically cheaper.
 

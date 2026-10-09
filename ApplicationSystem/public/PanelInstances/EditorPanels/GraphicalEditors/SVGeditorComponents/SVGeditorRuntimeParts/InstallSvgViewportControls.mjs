@@ -21,8 +21,14 @@ export function installSvgViewportControls(scope) {
     const vb = scope.svgSession.getSvgViewBox();
     const viewportWidthPx = scope.svgSession.svgViewport.clientWidth || Math.round(scope.svgSession.svgViewportHost.getBoundingClientRect().width) || 0;
     if (!viewportWidthPx || !vb.width || !vb.height) return;
-    const widthPx = Math.max(1, Math.round(viewportWidthPx * scope.svgSession.svgCanvasZoom));
+    const widthPx = Math.max(1, Math.round(viewportWidthPx));
     const heightPx = Math.max(1, Math.round(widthPx * (vb.height / vb.width)));
+    const zoom = scope.svgSession.svgCanvasZoom;
+    scope.svgSession.svgCanvasSpacer.style.width = `${widthPx * zoom}px`;
+    scope.svgSession.svgCanvasSpacer.style.height = `${heightPx * zoom}px`;
+    scope.svgSession.svgCanvasLayer.style.width = `${widthPx}px`;
+    scope.svgSession.svgCanvasLayer.style.height = `${heightPx}px`;
+    scope.svgSession.svgCanvasLayer.style.transform = `scale(${zoom})`;
     scope.svgSession.svgRoot.style.width = `${widthPx}px`;
     scope.svgSession.svgRoot.style.height = `${heightPx}px`;
     scope.svgSession.svgRoot.style.minWidth = "0";

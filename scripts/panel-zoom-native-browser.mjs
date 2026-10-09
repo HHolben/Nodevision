@@ -1,5 +1,7 @@
 // Nodevision/scripts/panel-zoom-native-browser.mjs
 // This fixture checks real SVG and Monaco scale, decoded image pixels, PDF render coalescing, and independent native adapter state.
+import { tabbedEditor, checkSvgGeometricZoom } from './editor-geometric-zoom-browser.mjs';
+import { checkEditorHorizontalScroll } from './editor-horizontal-scroll-browser.mjs';
 import { ok, panel, tick, wheel } from './panel-zoom-browser.mjs';
 import { executePanelZoom, getPanelZoomState } from '/panels/panelZoomCapabilities.mjs';
 import { mountImageViewport } from '/PanelInstances/ViewPanels/FileViewers/ImageViewport.mjs';
@@ -16,17 +18,22 @@ export async function checkNativeZoomAdapters(timings) {
   wheel(imageHost,{altKey:false,fn:true}); ok(image.state.zoom>1,'image exposed Fn scales decoded pixels'); executePanelZoom(imageHost,'geometric',{action:'reset'});
   image.state.angle=90; image.render(); const before=JSON.stringify(image.state);
   wheel(imageHost,{altKey:false}); wheel(imageHost,{shiftKey:true}); ok(JSON.stringify(image.state)===before,'unsupported image modes do not change geometry');
-  const svgHost=panel(); window.activeCell=svgHost;
+  const svgPanel=panel(), svgTab=tabbedEditor(svgPanel), svgHost=svgTab.tab;
   const cleanup=await renderEditor('fixture.svg',svgHost); const context=window.SVGEditorContext;
   const source='<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="800">'+Array.from({length:2000},(_,i)=>`<rect x="${i%100*10}" y="${Math.floor(i/100)*10}" width="5" height="5"/>`).join('')+'</svg>';
   context.setEditorHTML(source); const original=context.getEditorHTML(), dirty=context.isDirty();
+  checkSvgGeometricZoom({owner:svgHost,svg:svgHost.querySelector('#svg-editor'),wheel,ok});
   const canvasZoom=getPanelZoomState(svgHost).zoom; wheel(svgHost,{altKey:false}); ok(getPanelZoomState(svgHost).zoom===canvasZoom,'SVG editor Ctrl does not scale artwork');
   wheel(svgHost,{altKey:false,fn:true}); ok(getPanelZoomState(svgHost).zoom>canvasZoom,'SVG editor exposed Fn scales canvas');
+  executePanelZoom(svgHost,'geometric',{action:'set',zoom:2});
+  const svg=context.svgRoot || svgHost.querySelector('svg');
+  const viewport=svg.closest('[data-nv-svg-viewport]');
+  checkEditorHorizontalScroll({target:svg,viewport,wheel,ok,label:'SVG editor'});
   const samples=[]; for(let i=0;i<20;i++){const t=performance.now();executePanelZoom(svgHost,'geometric',{action:'set',zoom:i%2?1:1.2});samples.push(performance.now()-t);}
   samples.sort((a,b)=>a-b);timings.svg2000Objects={medianMs:samples[10],p95Ms:samples[19]};
   ok(context.getEditorHTML()===original && context.isDirty()===dirty,'SVG geometric scale preserves serialized source and dirty state');
   ok(JSON.stringify(image.state)===before,'SVG scale cannot affect image state');
-  ok(!svgHost.querySelector('.nv-panel-zoom-viewport'),'SVG never uses generic wrapper'); cleanup?.(); svgHost.remove();
+  ok(!svgHost.querySelector('.nv-panel-zoom-viewport'),'SVG never uses generic wrapper'); cleanup?.(); svgTab.cell.remove();
   const codeHost=panel(); window.activeCell=codeHost;
   const loader=document.createElement('script');loader.src='/lib/monaco/vs/loader.js';document.head.append(loader);await new Promise(resolve=>loader.onload=resolve);
   window.require.config({paths:{vs:'/lib/monaco/vs'}}); await new Promise(resolve=>window.require(['vs/editor/editor.main'],resolve));

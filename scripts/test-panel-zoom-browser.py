@@ -23,6 +23,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         mime = 'text/javascript'
         if resource == '/':
             content = '<!doctype html><pre id="result">RUNNING</pre><script src="/vendor/cytoscape/cytoscape.min.js"></script><script type="module" src="/scripts/panel-zoom-browser.mjs"></script>'
+            if '--application-zoom' in sys.argv:
+                content = content.replace('/scripts/panel-zoom-browser.mjs', '/scripts/application-zoom-browser.mjs')
             mime = 'text/html'
         elif resource in stubs:
             content = stubs[resource]
@@ -50,7 +52,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 try:
-    result = subprocess.run(['node', str(root / 'scripts/run-browser-regression.mjs'), f'http://127.0.0.1:{server.server_port}/', 'chromium', '180000', '/tmp/nodevision-panel-zoom-results.txt'], timeout=200)
+    result = subprocess.run(['node', str(root / 'scripts/run-browser-regression.mjs'), f'http://127.0.0.1:{server.server_port}/' + ('?editor-scroll-only=1' if '--editor-scroll-only' in sys.argv else ''), 'chromium', '180000', '/tmp/nodevision-panel-zoom-results.txt'], timeout=200)
     sys.exit(result.returncode)
 finally:
     server.shutdown()

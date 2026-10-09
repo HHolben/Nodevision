@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/zoomPanControlsWidgetParts/presentation.mjs
 // This module renders the zoom and pan controls and synchronizes their values with the active panel.
 
-import { getActivePanelElement } from "/panels/panelZoomPan.mjs";
+import { getActiveZoomTarget as getActivePanelElement } from "/panels/applicationZoom.mjs";
 import { getPanelZoomState, executePanelZoom, getPanelZoomCapabilities, getPanelZoomMetadata } from "../../panels/panelZoomCapabilities.mjs";
 
 export const PAN_MIN = -4000;
@@ -85,9 +85,9 @@ export function syncInputs(hostElement) {
     activePanel.dataset?.instanceName ||
     activePanel.dataset?.instanceId ||
     activePanel.dataset?.panelClass ||
-    "Panel";
+    (activePanel.id === "app-shell" ? "Entire editor" : "Panel");
   if (panelLabel) {
-    panelLabel.textContent = `Panel: ${name}`;
+    panelLabel.textContent = activePanel.id === "app-shell" ? "Entire editor" : `Panel: ${name}`;
     panelLabel.title = name;
   }
 

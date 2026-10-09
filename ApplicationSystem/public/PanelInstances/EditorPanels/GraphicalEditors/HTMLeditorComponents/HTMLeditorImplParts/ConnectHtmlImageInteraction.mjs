@@ -80,6 +80,7 @@ export function connectHtmlImageInteraction(scope) {
         });
         scope.wysiwyg.removeEventListener("click", scope.imageToolsState.onClick);
         window.removeEventListener("resize", scope.imageToolsState.onGlobalGeometryChange);
+        window.removeEventListener("nv-panel-zoom-pan-updated", scope.imageToolsState.onGlobalGeometryChange);
         window.removeEventListener("scroll", scope.imageToolsState.onGlobalGeometryChange, true);
         scope.wysiwyg.removeEventListener("scroll", scope.imageToolsState.onGlobalGeometryChange, true);
         scope.wysiwyg.removeEventListener("input", scope.imageToolsState.onGlobalGeometryChange);

@@ -41,6 +41,7 @@ export function clearActivePanelSelection({ announce = true } = {}) {
   window.activePanel = "";
   window.activePanelClass = "";
   window.__nvActivePanelElement = null;
+  window.__nvActiveLegacyUndockedPanel = null;
   window.__nvLastActiveZoomPanPanel = null;
   window.NodevisionState = window.NodevisionState || {};
   window.NodevisionState.activePanelType = "";

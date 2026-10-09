@@ -44,14 +44,14 @@ test('fixed V1 seed and coordinates pin grass, soil, stone and coherent limeston
 test('mixed chunks group faces by canonical material with twenty-six shared runtime materials', async () => {
   const data=new Uint8Array(32**3);for(const [x,id] of [[0,1],[2,2],[4,3],[6,4]])data[voxelIndex(x,0,0)]=id;
   const result=meshVoxelChunk(data,[0,0,0],()=>0), palette=await createVoxelMaterialPalette(THREE,voxelMaterialOptions);
-  assert.equal(result.faceCount,24);assert.equal(result.groups.length,4);assert.equal(palette.materials.length,26);
+  assert.equal(result.faceCount,24);assert.equal(result.groups.length,4);assert.equal(palette.materials.length,36);
   for(const group of result.groups){
     const material=palette.materials[group.materialIndex], id=group.materialIndex+1;
     assert.equal(group.count,36);assert.equal(material.userData.materialId,palette.entries[id].materialId);
     assert.equal('#'+material.color.getHexString(),palette.entries[id].rendering.color);
     for(const index of result.indices.slice(group.start,group.start+group.count))assert.equal(result.materials[index],id);
   }
-  let disposals=0;palette.materials.forEach(m=>m.addEventListener('dispose',()=>disposals++));palette.dispose();assert.equal(disposals,26);
+  let disposals=0;palette.materials.forEach(m=>m.addEventListener('dispose',()=>disposals++));palette.dispose();assert.equal(disposals,36);
 });
 test('runtime material inspection, ground bounce and compact save use canonical identity', async () => {
   const colliders=[],root=createProceduralVoxelWorld(THREE,def,colliders,voxelMaterialOptions),runtime=root.userData.proceduralVoxelRuntime;

@@ -8,6 +8,7 @@ export function mountImageViewport(host, img) {
   host.innerHTML = ''; host.tabIndex = 0;
   host.dataset.nvPanelZoomScope = 'local';
   Object.assign(host.style, { position: 'relative', overflow: 'hidden', display: 'block' });
+  const listeners = new Set();
   const state = { angle: 0, zoom: 1, x: 0, y: 0, fit: true };
   Object.assign(img.style, { position: 'absolute', left: '50%', top: '50%', maxWidth: 'none', maxHeight: 'none',
     width: 'auto', height: 'auto', transformOrigin: 'center', imageRendering: img.style.imageRendering || 'auto', userSelect: 'none' });
@@ -23,6 +24,7 @@ export function mountImageViewport(host, img) {
     // Translation is image-local, so all input paths use the inverse view matrix.
     img.style.width = `${img.naturalWidth}px`; img.style.height = `${img.naturalHeight}px`;
     img.style.transform = `translate(-50%, -50%) rotate(${state.angle}deg) scale(${state.zoom}) translate(${state.x}px, ${state.y}px)`;
+    for (const listener of listeners) listener();
     img.title = `${img.naturalWidth} × ${img.naturalHeight}; ${Math.round(state.zoom * 100)}% (image pixels per CSS pixel)`;
   }
   function command({ action, factor = 1, zoom, panX, panY, dx = 0, dy = 0 }) {
@@ -55,9 +57,9 @@ export function mountImageViewport(host, img) {
     const m = imageViewMatrix(state.angle, state.zoom);
     return { zoom: state.zoom, panX: m.a * state.x + m.c * state.y, panY: m.b * state.x + m.d * state.y };
   } });
-  host.__nvImageViewport = { state, render, command, image: img, controls };
+  host.__nvImageViewport = { state, render, command, image: img, controls, subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); } };
   host._dispose = () => {
-    resize.disconnect(); unregister(); host.removeEventListener('keydown', keydown); img.removeEventListener('load', render);
+    listeners.clear(); resize.disconnect(); unregister(); host.removeEventListener('keydown', keydown); img.removeEventListener('load', render);
     if (host.__nvImageViewport?.image !== img) return;
     delete host.__nvImageViewport;
     if (priorScope === null) host.removeAttribute('data-nv-panel-zoom-scope'); else host.setAttribute('data-nv-panel-zoom-scope', priorScope);

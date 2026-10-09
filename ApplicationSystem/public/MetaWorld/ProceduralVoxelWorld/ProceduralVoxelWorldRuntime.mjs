@@ -19,11 +19,11 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   let palette = null, disposed = false, lastPosition = null;
   const origin = () => root.position.toArray();
   const collider = { type: "expression-heightfield", target: root, layerId: definition.id,
-    materialId: "grass", physicsMaterialId: "grass",
-    sampleGroundY(x, z) {
+    materialId: "grass", physicsMaterialId: "grass", voxelTerrain: true,
+    sampleGroundY(x, z, maxY = Infinity) {
       if (disposed || !root.visible) return NaN;
       const [vx,,vz] = worldToVoxel([x, root.position.y, z], origin());
-      const h = generator.getSolidHeight(vx,vz);
+      const h = generator.getSolidHeight(vx,vz,(maxY-root.position.y)/VOXEL_SIZE);
       const entry = palette?.entries[generator.getVoxel(vx,h-1,vz)];
       if(entry)Object.assign(collider,{materialId:entry.materialId,physicsMaterialId:entry.physicsMaterialId,materialFile:entry.materialFile,MatterState:entry.matterState,materialDefinition:entry.materialDefinition});
       return h ? root.position.y + h * VOXEL_SIZE : NaN;

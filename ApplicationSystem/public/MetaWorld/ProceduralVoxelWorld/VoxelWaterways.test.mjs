@@ -12,7 +12,7 @@ import { magnoliaParameters,sampleMagnoliaVoxel } from './Features/MagnoliaShape
 test('new vegetation resolves canonical physical properties and magnolia blossoms',async()=>{
   for(const id of VOXEL_MATERIAL_IDS.slice(19)){
     const material=await resolveWorldObjectMaterial(id,voxelMaterialOptions);
-    assert.equal(material.materialId,id);assert.equal(material.collider.solid,['MagnoliaWood','MagnoliaBark','moss'].includes(id));
+    assert.equal(material.materialId,id);assert.equal(material.collider.solid,/(Wood|Bark)$/.test(id)||id==='moss');
   }
   const p=magnoliaParameters(123456),seen=new Set();
   for(let y=0;y<p.height;y++)for(let z=-24;z<=24;z++)for(let x=-24;x<=24;x++)seen.add(sampleMagnoliaVoxel(x,y,z,123456,p));
@@ -37,8 +37,6 @@ test('regional paths descend and stay bounded while vegetation regenerates',()=>
   for(let z=0;z<4;z++)for(let x=0;x<4;x++)for(const s of drainage.region(x,z).segments){assert.ok(s.end.top<s.top);segments++;}
   assert.ok(segments>0);
   const g=createVoxelGenerator(def),features=g.features.query([0,0,0],[1024,512,1024]);
-  for(const species of ['Magnolia','Sunflower'])assert.ok(features.some(f=>f.species===species));
-  const flower=features.find(f=>f.species==='Sunflower'),ids=new Set();
-  for(let y=flower.min[1];y<flower.max[1];y++)for(let z=flower.min[2];z<flower.max[2];z++)for(let x=flower.min[0];x<flower.max[0];x++)ids.add(flower.sample(x,y,z));
-  for(const id of [23,24,25])assert.ok(ids.has(id));
+  assert.ok(features.some(f=>f.species==='Magnolia'));
+  assert.ok(features.every(f=>f.species!=='Sunflower'));
 });

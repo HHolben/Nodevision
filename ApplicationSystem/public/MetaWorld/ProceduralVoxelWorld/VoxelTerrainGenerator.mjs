@@ -6,11 +6,10 @@ import { createFeatureField } from './Features/FeatureField.mjs';
 import { createTreePlacement } from './Features/TreePlacement.mjs';
 import { featureMaterialPriority, voxelMaterialId } from './VoxelMaterialIds.mjs';
 import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs';
-import { createSunflowerPlacement } from './Features/SunflowerPlacement.mjs';
 const priority=featureMaterialPriority;
 export function createVoxelGenerator(def) {
   const base=createBaseTerrain(def),provider=createTreePlacement(base,def.generator.seed);
-  const features=createFeatureField([provider,createSunflowerPlacement(base,def.generator.seed)],priority);
+  const features=createFeatureField([provider],priority);
   const featureStats={lookupMs:0,samplingMs:0,candidates:0};
   function getFeatureVoxel(x,y,z,list) {
     if(!containsVoxel([x,y,z],base.dimensions)||base.getVoxel(x,y,z))return 0;

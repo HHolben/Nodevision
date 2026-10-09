@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "CherryWood",
+  "displayName": "Cherry Wood",
+  "description": "Cherry wood shared by authored worlds and procedural trees.",
+  "defaultColor": "#b77852",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 650,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "color": "#b77852",
+    "roughness": 0.65,
+    "opacity": 1
+  },
+  "chemicalFormulaMol": null
+}

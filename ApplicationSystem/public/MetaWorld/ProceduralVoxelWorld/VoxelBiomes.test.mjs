@@ -52,7 +52,7 @@ test('shared pine engine is denser in snowy habitat and requires appropriate dry
   assert.ok(a>0);assert.ok(b>a*2);assert.ok(b<24*24);
   const g=createVoxelGenerator(def),trees=g.features.query([2200,0,16],[2456,160,272]);
   assert.ok(trees.some(f=>g.getBiome(f.origin[0],f.origin[2])==='snowy-pine-forest'));
-  for(const f of trees){const [x,y,z]=f.origin;assert.ok(y>71);assert.ok(['grass','snow'].includes(g.getVoxelMaterialId(x,y-1,z)));assert.equal(g.getVoxelMaterialId(x,y,z),'PineWood');}
+  for(const f of trees){const [x,y,z]=f.origin;assert.ok(y>71);assert.ok(['grass','snow'].includes(g.getVoxelMaterialId(x,y-1,z)));if(f.variant!=='fallen')assert.equal(g.getVoxelMaterialId(x,y,z),'PineWood');}
 });
 test('mud retains liquid buoyancy and transparency while collision finds the solid bed',async()=>{
   const colliders=[],root=createProceduralVoxelWorld(THREE,def,colliders,voxelMaterialOptions),r=root.userData.proceduralVoxelRuntime;await r.ready;

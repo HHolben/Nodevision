@@ -16,6 +16,16 @@ export const DEFAULT_WORLD_GAS_MATERIAL_ID = "WhiteOxygenatedAir";
 export const DEFAULT_WORLD_GAS_MATERIAL_FILE = WORLD_OBJECT_MATERIAL_LIBRARY_PATH + "/Gasses/WhiteOxygenatedAir.json";
 
 export const DEFAULT_WORLD_OBJECT_MATERIAL_ROWS = [
+  { MaterialName: "Apple Wood", MaterialJSONfile: "Materials/Solids/AppleWood.json" },
+  { MaterialName: "Apple Bark", MaterialJSONfile: "Materials/Solids/AppleBark.json" },
+  { MaterialName: "Apple Foliage", MaterialJSONfile: "Materials/Solids/AppleFoliage.json" },
+  { MaterialName: "Pear Wood", MaterialJSONfile: "Materials/Solids/PearWood.json" },
+  { MaterialName: "Pear Bark", MaterialJSONfile: "Materials/Solids/PearBark.json" },
+  { MaterialName: "Pear Foliage", MaterialJSONfile: "Materials/Solids/PearFoliage.json" },
+  { MaterialName: "Cherry Wood", MaterialJSONfile: "Materials/Solids/CherryWood.json" },
+  { MaterialName: "Cherry Bark", MaterialJSONfile: "Materials/Solids/CherryBark.json" },
+  { MaterialName: "Cherry Foliage", MaterialJSONfile: "Materials/Solids/CherryFoliage.json" },
+  { MaterialName: "Pine Needles", MaterialJSONfile: "Materials/Solids/PineNeedles.json" },
   { MaterialName: "Magnolia Wood", MaterialJSONfile: "Materials/Solids/MagnoliaWood.json" },
   { MaterialName: "Magnolia Bark", MaterialJSONfile: "Materials/Solids/MagnoliaBark.json" },
   { MaterialName: "Magnolia Foliage", MaterialJSONfile: "Materials/Solids/MagnoliaFoliage.json" },
@@ -75,6 +85,16 @@ export const DEFAULT_WORLD_OBJECT_MATERIAL_ROWS = [
 ];
 
 export const CANONICAL_MATERIAL_IDS = new Map([
+  ["applewood", "AppleWood"], ["apple wood", "AppleWood"],
+  ["applebark", "AppleBark"], ["apple bark", "AppleBark"],
+  ["applefoliage", "AppleFoliage"], ["apple foliage", "AppleFoliage"],
+  ["pearwood", "PearWood"], ["pear wood", "PearWood"],
+  ["pearbark", "PearBark"], ["pear bark", "PearBark"],
+  ["pearfoliage", "PearFoliage"], ["pear foliage", "PearFoliage"],
+  ["cherrywood", "CherryWood"], ["cherry wood", "CherryWood"],
+  ["cherrybark", "CherryBark"], ["cherry bark", "CherryBark"],
+  ["cherryfoliage", "CherryFoliage"], ["cherry foliage", "CherryFoliage"],
+  ["pineneedles", "PineNeedles"], ["pine needles", "PineNeedles"],
   ["magnoliawood", "MagnoliaWood"], ["magnolia wood", "MagnoliaWood"],
   ["magnoliabark", "MagnoliaBark"], ["magnolia bark", "MagnoliaBark"],
   ["magnoliafoliage", "MagnoliaFoliage"], ["magnolia foliage", "MagnoliaFoliage"],

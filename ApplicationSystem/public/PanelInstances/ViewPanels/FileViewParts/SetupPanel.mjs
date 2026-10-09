@@ -48,6 +48,8 @@ export async function setupPanel(panel, instanceVars = {}) {
   };
   const cleanupFileViewPanel = () => {
     quietFileViewPanel();
+    viewDiv._dispose?.();
+    viewDiv._dispose = null;
     clearSelectionFollowingFileView(viewDiv);
     releaseFileViewSelectionFollower();
     cleanupViewIframeActivation(viewDiv, {

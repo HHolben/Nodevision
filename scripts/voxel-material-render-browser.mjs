@@ -9,14 +9,14 @@ export async function checkVoxelMaterialRendering(THREE, renderer) {
   ok(await runtime.ready,'cutaway canonical materials ready');runtime.update({x:4,y:20,z:4});while(runtime.stats.queued)runtime.update({x:4,y:20,z:4});
   const scene=new THREE.Scene();scene.add(root,new THREE.AmbientLight(0xffffff,2));
   const camera=new THREE.PerspectiveCamera(60,1.5,.1,100);camera.position.set(-14,20,18);camera.lookAt(4,10,4);
-  renderer.render(scene,camera);ok(renderer.info.render.calls<=root.children.length*26,'at most twenty-six draws per mixed chunk');
+  renderer.render(scene,camera);ok(renderer.info.render.calls<=root.children.length*36,'at most thirty-six draws per mixed chunk');
   const ray=new THREE.Raycaster();
   for(const [y,id] of [[.125,'stone'],[8.125,'limestone'],[18.625,'soil'],[18.875,'grass']]){
     ray.set(new THREE.Vector3(-1,y,.125),new THREE.Vector3(1,0,0));
     const hit=ray.intersectObject(root,false)[0];ok(hit,'cutaway ray hits '+id);
     ok(hit.object.material[hit.face.materialIndex].userData.materialId===id,'rendered face resolves '+id);
   }
-  const materials=new Set(root.children.flatMap(mesh=>mesh.material));ok(materials.size===26,'twenty-six pooled materials for entire terrain');
+  const materials=new Set(root.children.flatMap(mesh=>mesh.material));ok(materials.size===36,'thirty-six pooled materials for entire terrain');
   let releases=0;for(const material of materials)material.addEventListener('dispose',()=>releases++);
-  runtime.dispose();ok(releases===26,'pooled resources released once');
+  runtime.dispose();ok(releases===36,'pooled resources released once');
 }

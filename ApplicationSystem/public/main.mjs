@@ -8,6 +8,7 @@ import { clearActivePanelSelection, ensureWorkspace, loadDefaultLayout, renderLa
 import { applySerializedWorkspaceCollapseState, installWorkspaceLayoutCollapse } from "./panels/workspaceLayoutCollapseIntegration.mjs";
 import { initStatusBar } from "./StatusBar.mjs";
 import { handleDesktopOpenStartup } from "./DesktopOpenClient.mjs";
+import { installToolbarPanelDeselection } from "./panels/toolbarPanelDeselection.mjs";
 import { installPanelZoomShortcuts } from "./panels/panelZoomPan.mjs";
 import { installHyperlinkSelectionTracking } from "./ToolbarCallbacks/edit/hyperlinkSelection.mjs";
 import { installNodevisionMediaFallbackRuntime } from "./utils/mediaFallbackRuntime.mjs";
@@ -27,6 +28,7 @@ async function initNodevision() {
     installHyperlinkSelectionTracking();
     installNodevisionMediaFallbackRuntime(document);
     installPanelZoomShortcuts();
+    installToolbarPanelDeselection(clearActivePanelSelection);
 
     const workspace = ensureWorkspace();
     installWorkspaceLayoutCollapse(workspace);

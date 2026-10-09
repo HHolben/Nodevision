@@ -1,5 +1,7 @@
 // Nodevision/scripts/panel-zoom-browser.mjs
 // This fixture verifies shared ownership, native adapters, coordinate alignment, source invariants, and bounded routing work in Chromium.
+import { tabbedEditor, checkHtmlGeometricZoom } from './editor-geometric-zoom-browser.mjs';
+import { checkEditorHorizontalScroll } from './editor-horizontal-scroll-browser.mjs';
 import { registerPanelZoomCapabilities, executePanelZoom, getPanelZoomState, getPanelZoomCapabilities } from '/panels/panelZoomCapabilities.mjs';
 import { installPanelZoomShortcuts } from '/panels/panelZoomPan.mjs';
 import { installPanelZoomIframe } from '/panels/panelZoomIframe.mjs';
@@ -68,14 +70,21 @@ try {
   ok(document.elementFromPoint(cell.left+3,cell.top+3)?.closest('td,th')===table.rows[1].cells[1],'CSV hit test aligned: '+JSON.stringify({cell:{x:cell.left,y:cell.top,w:cell.width,h:cell.height},target:document.elementFromPoint(cell.left+3,cell.top+3)?.outerHTML?.slice(0,200)}));
   benchmark('csv20000Cells',i=>executePanelZoom(a,'geometric',{action:'set',zoom:i%2?1:1.2}));
   ok(table.textContent===csvBefore,'CSV values unchanged'); csvRelease(); wrapper.remove();
-  const scope={container:a,filePath:'fixture.html',htmlSession:{},options:{}}; mountHtmlEditorShell(scope);
+  const htmlTab=tabbedEditor(a);
+  const scope={container:htmlTab.tab,filePath:'fixture.html',htmlSession:{},options:{}}; mountHtmlEditorShell(scope);
   scope.htmlSession.wysiwyg.innerHTML=Array.from({length:2000},(_,i)=>`<p>Region ${i}</p>`).join('');
-  wheel(scope.htmlSession.wysiwyg,{altKey:false}); ok(getPanelZoomState(a).zoom===1,'HTML editor Ctrl does not scale page');
-  wheel(scope.htmlSession.wysiwyg,{altKey:false,fn:true}); ok(getPanelZoomState(a).zoom>1,'HTML editor exposed Fn scales page');
+  checkHtmlGeometricZoom({owner:htmlTab.tab,content:scope.htmlSession.wysiwyg,wheel,ok});
+  wheel(scope.htmlSession.wysiwyg,{altKey:false}); ok(getPanelZoomState(htmlTab.tab).zoom===1,'HTML editor Ctrl does not scale page');
+  wheel(scope.htmlSession.wysiwyg,{altKey:false,fn:true}); ok(getPanelZoomState(htmlTab.tab).zoom>1,'HTML editor exposed Fn scales page');
+  executePanelZoom(htmlTab.tab,'geometric',{action:'reset'});
+  executePanelZoom(htmlTab.tab,'semantic',{action:'reset'});
+  const wide=document.createElement('div');wide.style.width='1800px';wide.style.minWidth='1800px';wide.style.height='30px';wide.style.contentVisibility='visible';scope.htmlSession.wysiwyg.prepend(wide);
+  await tick();
+  checkEditorHorizontalScroll({target:wide,viewport:scope.htmlSession.wysiwyg,wheel,ok,label:'HTML editor'});
   const htmlBefore=scope.htmlSession.wysiwyg.outerHTML; let mutations=0;
   const observer=new MutationObserver(records=>mutations+=records.length); observer.observe(scope.htmlSession.wysiwyg,{attributes:true,childList:true,subtree:true,characterData:true});
-  benchmark('html2000Regions',i=>executePanelZoom(a,'geometric',{action:'set',zoom:i%2?1:1.2})); await tick(); observer.disconnect();
-  ok(mutations===0 && scope.htmlSession.wysiwyg.outerHTML===htmlBefore,'HTML authored DOM unchanged'); scope.container.__nvHtmlZoomCleanup(); a.replaceChildren();
+  benchmark('html2000Regions',i=>executePanelZoom(htmlTab.tab,'geometric',{action:'set',zoom:i%2?1:1.2})); await tick(); observer.disconnect();
+  ok(mutations===0 && scope.htmlSession.wysiwyg.outerHTML===htmlBefore,'HTML authored DOM unchanged'); scope.container.__nvHtmlZoomCleanup(); htmlTab.cell.replaceWith(a); a.replaceChildren(); window.activeCell=a;
   const cy=cytoscape({container:a,layout:{name:'preset'},elements:[{data:{id:'a'},position:{x:10,y:10}},{data:{id:'b'},position:{x:200,y:200}},{data:{id:'e',source:'a',target:'b',edgeLabel:'link'}}]});
   const graphRelease=installGraphSemanticZoom(a,cy), positions=JSON.stringify(cy.nodes().map(n=>n.position()));
   benchmark('graphGeometric',i=>executePanelZoom(a,'geometric',{action:'set',zoom:i%2?1:1.2}));
@@ -86,8 +95,10 @@ try {
   for(let i=0;i<50;i++)wheel(a); ok(scans===0,'no owner DOM scan per wheel'); a.querySelectorAll=query; ok(window.toolbarUpdates===toolbarUpdates,'zoom does not rebuild application toolbars');
   graphRelease(); cy.destroy(); a.remove(); b.remove(); toolbar.remove();
   await checkNativeZoomAdapters(timings);
-  await checkHtmlViewerZoom({ panel, wheel, tick, ok }, timings);
-  await checkAdditionalZoomPanels({ panel, wheel, tick, ok });
+  if (!new URLSearchParams(location.search).has("editor-scroll-only")) {
+    await checkHtmlViewerZoom({ panel, wheel, tick, ok }, timings);
+    await checkAdditionalZoomPanels({ panel, wheel, tick, ok });
+  }
   ok(writes===0,"zoom performs no file saves or Notebook writes");
-  document.querySelector('#result').textContent='PASS: native zoom, ownership, iframe, state isolation, source safety; '+JSON.stringify(timings);
+  document.querySelector('#result').textContent='PASS: HTML/SVG horizontal scrolling, native zoom, ownership, state isolation, source safety; '+JSON.stringify(timings);
 } catch(error) { document.querySelector('#result').textContent='FAIL: '+error.stack; }

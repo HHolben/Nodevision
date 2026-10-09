@@ -86,6 +86,7 @@ export function initializeHtmlImageHandles(scope) {
   });
   scope.imageToolsState.onGlobalGeometryChange = () => scope.imageToolsState.scheduleImageHandleSync();
   window.addEventListener("resize", scope.imageToolsState.onGlobalGeometryChange);
+  window.addEventListener("nv-panel-zoom-pan-updated", scope.imageToolsState.onGlobalGeometryChange);
   window.addEventListener("scroll", scope.imageToolsState.onGlobalGeometryChange, true);
   scope.wysiwyg.addEventListener("scroll", scope.imageToolsState.onGlobalGeometryChange, true);
   scope.wysiwyg.addEventListener("input", scope.imageToolsState.onGlobalGeometryChange);

@@ -1,6 +1,13 @@
 [
   {
     "ToolbarCategory": "View",
+    "heading": "Analysis Tools",
+    "callbackKey": "AnalysisTools",
+    "preventAutoSubToolbar": true,
+    "conditions": { "activeAnalysisToolsAvailable": true }
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "HTML Properties",
     "script": "htmlPropertiesButton.mjs",
     "modes": ["HTMLediting"]

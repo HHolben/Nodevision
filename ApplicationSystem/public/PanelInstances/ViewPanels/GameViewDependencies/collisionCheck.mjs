@@ -44,7 +44,7 @@ function expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, 
   ];
 
   for (const [dx, dz] of offsets) {
-    const surfaceY = collider.sampleGroundY(nextPosition.x + dx, nextPosition.z + dz);
+    const surfaceY = collider.sampleGroundY(nextPosition.x + dx, nextPosition.z + dz, playerMinY + stepAllowance);
     if (!Number.isFinite(surfaceY)) continue;
     if (surfaceY <= playerMinY + stepAllowance) continue;
     if (surfaceY < playerMaxY - headPadding) return true;
@@ -98,7 +98,7 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
         if (dx * dx + dy * dy + dz * dz <= totalRadius * totalRadius) return hit(collider);
       } else if (collider.type === "expression-heightfield") {
         if (collider.target?.visible !== false && collider.containsPlayer && !collider.containsPlayer(nextPosition, playerRadius)) return hit(collider);
-        if (collider.target?.visible !== false && collider.intersectsPlayer?.(nextPosition, playerRadius, playerMinY, playerMaxY)) return hit(collider);
+        if (collider.target?.visible !== false && collider.intersectsPlayer?.(nextPosition, playerRadius, playerMinY, playerMaxY, movementState?.isGrounded ? Math.max(0, movementState.groundSnapDistance ?? .55) : 0)) return hit(collider);
         if (expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       }
     }

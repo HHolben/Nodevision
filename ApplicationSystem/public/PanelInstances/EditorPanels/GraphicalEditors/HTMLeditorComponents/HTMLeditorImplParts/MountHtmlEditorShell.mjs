@@ -5,7 +5,8 @@ import { ensureHTMLLayoutStyles } from "./EnsureHTMLLayoutStyles.mjs";
 import { updateToolbarState } from "../../../../../panels/createToolbar.mjs";
 import { installNodevisionMediaFallbackRuntime } from "/utils/mediaFallbackRuntime.mjs";
 
-import { installContentPresentationZoom } from "/panels/contentPresentationZoom.mjs";
+import { installEditorHorizontalScroll } from "../../../../../panels/editorHorizontalScroll.mjs";
+import { installHtmlEditorZoom } from "../HtmlEditorZoom.mjs";
 
 // Mount Html Editor Shell operations.
 export function mountHtmlEditorShell(scope) {
@@ -126,9 +127,11 @@ export function mountHtmlEditorShell(scope) {
   scope.htmlSession.wysiwyg.style.wordBreak = "break-word";
   scope.htmlSession.wrapper.appendChild(scope.htmlSession.wysiwyg);
   const presentation = document.createElement("div");
-  presentation.style.cssText = "flex:1;min-height:0;overflow:auto";
+  presentation.style.cssText = "flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable";
   scope.htmlSession.wysiwyg.replaceWith(presentation);
   presentation.append(scope.htmlSession.wysiwyg);
-  scope.container.__nvHtmlZoomCleanup = installContentPresentationZoom(scope.htmlSession.wrapper, presentation);
+  const releaseZoom = installHtmlEditorZoom(scope.htmlSession.wrapper, presentation, scope.htmlSession.wysiwyg);
+  const releaseScroll = installEditorHorizontalScroll(scope.htmlSession.wrapper);
+  scope.container.__nvHtmlZoomCleanup = () => { releaseScroll(); releaseZoom(); };
   installNodevisionMediaFallbackRuntime(scope.htmlSession.wysiwyg);
 }

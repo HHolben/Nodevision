@@ -88,7 +88,9 @@ Weather retains its own seed, field and configuration. Astronomy never modifies 
 
 ## Sleep controls
 
-`worldSleepControls.mjs` adds “Sleep until nightfall” and “Sleep until daybreak” to the existing pause menu. It contains no solar formulas; it calls the runtime service. Buttons are disabled without a supported declared Sun. Errors appear in a status region.
+`worldSleepControls.mjs` provides one “Sleep Until” action beside a selector for Daybreak, Mid morning, Noon, Mid afternoon, Evening, Nightfall and Midnight. Available choices are sorted by their next occurrence relative to world time; the nearest upcoming choice is selected when the menu opens or sleep completes. It contains no solar formulas; it calls the runtime service. Controls are disabled without a supported declared Sun. Errors appear in a status region.
+
+`SleepTargets.mjs` derives noon from solar transit, mid morning and mid afternoon from the midpoint between sunrise/noon and noon/sunset, evening from sunset, and midnight from solar noon plus twelve hours. Thus these are observer-relative solar phases, not fixed host-clock hours. Unavailable polar sunrise/sunset choices are omitted; solar noon and midnight remain available. Every choice advances strictly forward, including a choice whose event has already passed today.
 
 `nextSolarEvent` scans forward in ten-minute brackets for at most three days, then bisects the next crossing. Daybreak uses rising solar center altitude -0.833° (standard apparent sunrise approximation); nightfall uses falling altitude -6° (end of civil twilight). These are deliberately different events, not fixed 06:00/18:00 times. Already-daytime/nighttime requests find the next future crossing. Polar no-crossing conditions return a bounded, understandable failure. The world stays paused after a sleep click; the sky refreshes to the selected instant, and Resume continues from it without host-time resynchronization.
 
@@ -96,7 +98,7 @@ Weather retains its own seed, field and configuration. Astronomy never modifies 
 
 New native modules are under `MetaWorld/Astronomy/`: configuration, calendar/season, celestial coordinates/events, body renderer, star renderer, runtime and tests. Shared Game View integration is in `worldAstronomy.mjs`, `worldSleepControls.mjs`, `renderLoop.mjs` and `worldPause.mjs`. `SandboxWorldPlanner.mjs` owns the explicit default declaration.
 
-Ten focused astronomy tests cover configuration separation, default/custom observer, mocked host clock/timezone, pause/scaling, forward jumps, static/fixed/saved policies, hemisphere seasons, deterministic Sun/Moon positions, lunar phase bounds, real solar events/polar failure, catalog identity/known Sirius and Polaris coordinates, shared star transforms/buffer residency, solar light/visual agreement, night fading, no-Sun behavior, actual saved-world serialization/resume, restoration of legacy lighting ownership and resource disposal. The combined astronomy, weather, terrain, Sandbox planner and pause regression run passed all 12 files.
+Ten focused astronomy tests cover configuration separation, default/custom observer, mocked host clock/timezone, pause/scaling, forward jumps, static/fixed/saved policies, hemisphere seasons, deterministic Sun/Moon positions, lunar phase bounds, real solar events/polar failure, catalog identity/known Sirius and Polaris coordinates, shared star transforms/buffer residency, solar light/visual agreement, night fading, no-Sun behavior, saved metadata validation/resume, restoration of legacy lighting ownership and resource disposal. The combined astronomy, weather, terrain, Sandbox planner and pause regression run passed all 12 files.
 
 Browser validation passed:
 

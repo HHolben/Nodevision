@@ -1,9 +1,10 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Astronomy/AstronomyRuntime.mjs
 // This runtime combines an explicitly configured observer and calendar with independent body rendering, batched stars and solar-event commands.
 import { createWorldCalendar, seasonAt } from './WorldCalendar.mjs';
-import { skyAt, nextSolarEvent, RAD } from './CelestialCoordinates.mjs';
+import { skyAt, RAD } from './CelestialCoordinates.mjs';
 import { createBodyRenderer } from './BodyRenderer.mjs';
 import { loadStarCatalog, createStarRenderer } from './StarRenderer.mjs';
+import { nextSleepTarget, upcomingSleepTargets, SLEEP_TARGETS } from './SleepTargets.mjs';
 export function createAstronomyRuntime(THREE,scene,temporal,configuration,options={}) {
   const config=structuredClone(configuration),clock=createWorldCalendar(temporal,config.clock,options);
   const bodies=createBodyRenderer(THREE,scene,config.bodies);
@@ -14,9 +15,10 @@ export function createAstronomyRuntime(THREE,scene,temporal,configuration,option
   }):Promise.resolve();
   return {clock,config,bodies,ready,get stars(){return stars;},get sky(){return sky;},hasSun,
     get season(){return seasonAt(clock.instant,config.observer.latitude,clock.timezone);},
+    sleepOptions(){return hasSun?upcomingSleepTargets(clock.instant,config.observer):[];},
     sleep(kind){
-      if(!hasSun||!['daybreak','nightfall'].includes(kind))return {ok:false,message:'This world has no supported Sun.'};
-      const event=nextSolarEvent(clock.instant,config.observer,kind);
+      if(!hasSun||!SLEEP_TARGETS.some(([id])=>id===kind))return {ok:false,message:'This world has no supported Sun.'};
+      const event=nextSleepTarget(clock.instant,config.observer,kind);
       if(event===null)return {ok:false,message:'No matching solar event occurs within the next three days.'};
       clock.jumpTo(event);lastInstant=NaN;return {ok:true,instant:event,message:`Advanced to ${clock.localDateTime} (${clock.timezone})`};
     },

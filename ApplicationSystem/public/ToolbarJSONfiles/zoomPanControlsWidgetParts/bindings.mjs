@@ -2,7 +2,7 @@
 // This module binds zoom and pan toolbar controls to the existing viewport and capability commands.
 
 import { applyFromInputs, clamp, PAN_MIN, PAN_MAX, readStep, syncInputs } from "./presentation.mjs";
-import { getActivePanelElement } from "/panels/panelZoomPan.mjs";
+import { getActiveZoomTarget as getActivePanelElement } from "/panels/applicationZoom.mjs";
 import { executePanelZoom } from "../../panels/panelZoomCapabilities.mjs";
 
 export function bind(hostElement) {

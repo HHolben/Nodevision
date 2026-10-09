@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewers/ViewPNG.mjs
-// This file renders PNG images in the File Viewer and exposes viewer-only commands for deriving new files from the displayed raster. The vectorization command leaves the PNG unchanged and delegates conversion work to reusable raster vectorization modules.
+// This file renders PNG images in the File Viewer and exposes viewer-only vectorization and polygon analysis tools. Both workflows leave the source image unchanged and delegate their work to reusable raster modules.
 
+import { installPngAnalysisTools } from "/RasterAnalysis/PngAnalysisTools.mjs";
 import { mountImageViewport } from "./ImageViewport.mjs";
 import { openPngVectorizationOverlay } from "/RasterVectorization/RasterVectorizationLauncher.mjs";
 
@@ -45,6 +46,7 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
   viewPanel.dataset.nvZoomInlineFit = "scale-content";
   try {
     const url = viewerUrl(serverBase, filename);
+    viewPanel._dispose?.();
     viewPanel.innerHTML = "";
     viewPanel.style.background = "repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50% / 20px 20px";
     Object.assign(viewPanel.style, { display: "flex", alignItems: "center", justifyContent: "center", position: "relative" });
@@ -53,11 +55,14 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     img.src = url + "?t=" + Date.now();
     styleImage(img);
     img.onload = () => { img.title = (img.naturalWidth || 0) + " x " + (img.naturalHeight || 0); };
-    img.onerror = () => { viewPanel.innerHTML = '<p style="color:red;">Error loading PNG file.</p>'; };
+    img.onerror = () => { viewPanel._dispose?.(); viewPanel.innerHTML = '<p style="color:red;">Error loading PNG file.</p>'; };
     const viewport = mountImageViewport(viewPanel, img);
     const toolbar = createToolbar(filename, serverBase);
     toolbar.style.position = "static";
     viewport.controls.appendChild(toolbar);
+    const disposeAnalysis = installPngAnalysisTools(viewPanel, viewport, filename);
+    const disposeViewport = viewPanel._dispose;
+    viewPanel._dispose = () => { img.onload = img.onerror = null; disposeAnalysis(); disposeViewport(); };
   } catch (err) {
     console.error("Error loading PNG:", err);
     viewPanel.innerHTML = '<p style="color:red;">Error loading PNG file.</p>';

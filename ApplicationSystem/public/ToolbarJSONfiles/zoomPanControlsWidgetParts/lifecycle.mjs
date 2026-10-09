@@ -4,7 +4,7 @@
 import { render, syncInputs } from "./presentation.mjs";
 import { bind } from "./bindings.mjs";
 import { appendPanelZoomModeControls } from "../panelZoomModesWidget.mjs";
-import { getActivePanelElement } from "/panels/panelZoomPan.mjs";
+import { getActiveZoomTarget as getActivePanelElement } from "/panels/applicationZoom.mjs";
 
 export const WIDGET_KEY = "__nvZoomPanWidget";
 

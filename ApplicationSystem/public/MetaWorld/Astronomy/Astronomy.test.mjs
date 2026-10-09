@@ -99,7 +99,7 @@ test('saved calendar persists in validated metadata and legacy lighting ownershi
  globalThis.window={VRWorldContext:ctx};const adapter=installWorldAstronomy(scene);
  try{
   adapter.prepare();assert.notEqual(ctx.consolePanels.updateEnvironmentLighting,legacy);
-  const runtime=ctx.astronomy;t.advance(120);adapter.update(new THREE.PerspectiveCamera());adapter.prepare();assert.equal(ctx.astronomy,runtime);
+  const runtime=ctx.astronomy;t.advance(120);adapter.update(new THREE.PerspectiveCamera());adapter.prepare();assert.ok(ctx.astronomy===runtime);
   const saved=validateMetaWorldDefinition(ctx.state.currentWorldDefinition);
   assert.equal(saved.metadata.astronomy.clock.savedTime,'2026-10-07T18:02:00.000Z');assert.equal(saved.objects.length,0);
   const resumed=createWorldCalendar(temporal(),saved.metadata.astronomy.clock);assert.equal(resumed.instant,noon+120000);

@@ -35,8 +35,10 @@ export async function loadSvgEditorDocument(scope) {
     position: "absolute",
     inset: "0",
     overflow: "auto",
+    scrollbarGutter: "stable",
     background: "#fff"
   });
+  scope.svgSession.svgViewport.dataset.nvSvgViewport = "true";
   scope.svgSession.svgViewportHost.appendChild(scope.svgSession.svgViewport);
   scope.svgSession.rulerLayout.append(scope.svgSession.rulerCorner, scope.svgSession.svgTopRuler, scope.svgSession.svgLeftRuler, scope.svgSession.svgViewportHost);
   scope.svgSession.svgRoot = createSvgEl("svg");
@@ -47,7 +49,13 @@ export async function loadSvgEditorDocument(scope) {
     minHeight: "400px",
     display: "block"
   });
-  scope.svgSession.svgViewport.appendChild(scope.svgSession.svgRoot);
+  scope.svgSession.svgCanvasSpacer = document.createElement("div");
+  scope.svgSession.svgCanvasSpacer.style.position = "relative";
+  scope.svgSession.svgCanvasLayer = document.createElement("div");
+  scope.svgSession.svgCanvasLayer.style.cssText = "position:absolute;left:0;top:0;transform-origin:0 0";
+  scope.svgSession.svgCanvasLayer.appendChild(scope.svgSession.svgRoot);
+  scope.svgSession.svgCanvasSpacer.appendChild(scope.svgSession.svgCanvasLayer);
+  scope.svgSession.svgViewport.appendChild(scope.svgSession.svgCanvasSpacer);
   scope.svgSession.svgText = "";
   scope.svgSession.loadError = null;
   if (scope.filePath) {

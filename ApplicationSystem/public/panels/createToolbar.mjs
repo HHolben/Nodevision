@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/panels/createToolbar.mjs
 // This file defines browser-side create Toolbar logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { getActiveAnalysisTools } from '../RasterAnalysis/AnalysisToolsContext.mjs';
 import { createPanel } from '/panels/panelManager.mjs';
 import { dockPanel } from '/panels/panelControls.mjs';
 import { loadCallback } from "/callbackLoader.mjs";
@@ -328,6 +329,7 @@ function getToolbarItemState(item, state = window.NodevisionState || {}) {
     activeFileIsHtml: isToolbarActiveFileHtml(state),
     activeFileIsPdf: isToolbarActiveFilePdf(state),
     activeFileIsCsv: isToolbarActiveFileCsv(state),
+    activeAnalysisToolsAvailable: Boolean(getActiveAnalysisTools()),
     activeFileIsSvg: resolveToolbarActiveFilePath(state).toLowerCase().endsWith(".svg"),
     activeFileIsReadablePage: isToolbarActiveFileHtml(state) || isToolbarActiveFilePdf(state),
     activeFileCanConvertToEpub: canToolbarActiveFileConvertToEpub(state),

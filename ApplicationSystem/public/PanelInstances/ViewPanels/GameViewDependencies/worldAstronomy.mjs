@@ -15,7 +15,7 @@ export function installWorldAstronomy(scene) {
     owner=ctx;
     const world=ctx.currentWorldDefinition??ctx.state?.currentWorldDefinition;
     const config=normalizeAstronomy(world?.metadata?.astronomy);
-    const identity=config?{...config,clock:{...config.clock,savedTime:undefined}}:null;
+    const identity=config?{...config,clock:{...config.clock,timezone:config.clock.timezone??runtime?.clock.timezone??Intl.DateTimeFormat().resolvedOptions().timeZone,savedTime:undefined}}:null;
     const next=JSON.stringify([ctx.currentWorldPath,identity]);
     if(next===key)return;release();key=next;
     if(!config||!ctx.temporalController)return;

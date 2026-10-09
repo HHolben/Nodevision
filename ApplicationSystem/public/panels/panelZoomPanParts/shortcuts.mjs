@@ -2,11 +2,23 @@
 // This module routes modified gestures to one visible active capability owner and reserves unsupported modes against local fallthrough.
 import { bindPanelActivationMemory, getActivePanelElement, getPanelElementFromElement } from './ownership.mjs';
 import { executePanelZoom, getPanelZoomOwner, getPanelZoomCapabilities, getPanelZoomMetadata } from '../panelZoomCapabilities.mjs';
+import { getApplicationZoomOwner, disposeApplicationZoom } from '../applicationZoom.mjs';
 import { panelZoomModeForEvent, panelZoomCommandForEvent } from '../panelZoomInput.mjs';
 const semanticWheel = new WeakMap();
 export function routePanelZoomEvent(event, { target = event.target, clientX, clientY, resolveMode = panelZoomModeForEvent } = {}) {
   if (event.defaultPrevented) return false;
   const active = getActivePanelElement();
+  if (!active) {
+    const command = panelZoomCommandForEvent(event, window.innerHeight);
+    if (!command) return false;
+    const owner = getApplicationZoomOwner();
+    if (!owner) return false;
+    if (clientX !== undefined) command.clientX = clientX;
+    if (clientY !== undefined) command.clientY = clientY;
+    const handled = executePanelZoom(owner, resolveMode(event, owner), command);
+    event.preventDefault(); event.stopImmediatePropagation();
+    return handled;
+  }
   if (!active?.isConnected || active.closest('[hidden], [aria-hidden="true"]') || !active.getClientRects().length) return false;
   let panel = getPanelElementFromElement(target);
   if (!panel && target?.closest?.('[data-nv-zoom-toolbar]')) panel = active;
@@ -43,6 +55,7 @@ export function installPanelZoomShortcuts({ resolveMode = panelZoomModeForEvent 
   return window.__nvPanelZoomShortcutsInstalled = { dispose() {
     window.removeEventListener('wheel', route, true);
     window.removeEventListener('keydown', route, true);
+    disposeApplicationZoom();
     window.__nvPanelZoomShortcutsInstalled = null;
   } };
 }

@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs
 // This file defines browser-side PNGeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { registerPanelZoomCapabilities } from "../../../panels/panelZoomCapabilities.mjs";
+import { installRasterEditorAnalysis } from "./PNGeditorComponents/analysisTools.mjs";
 import { History } from "./PNGeditorComponents/history.mjs";
 import {
   bresenhamLine,
@@ -98,6 +99,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     "image-rendering:pixelated; image-rendering:crisp-edges; cursor:crosshair; background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50% / 20px 20px; display:block;";
   if (/\.jpe?g(?:[?#]|$)/i.test(filePath || "")) canvas.style.imageRendering = "auto";
   let displayZoom = null;
+  let analysisTools = null;
   const ctx = canvas.getContext("2d", { alpha: true });
   const history = new History(ctx);
   const canvasArea = document.createElement("div");
@@ -784,6 +786,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   }
 
   function handleSelectionPointerUp() {
+    if (state.selectionAction) analysisTools?.refresh();
     const action = state.selectionAction;
     if (state.selectionPhase === "committed") {
       if (action === "resize" && state.selectionRect) {
@@ -799,6 +802,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   }
 
   function syncAfterHistoryChange() {
+    analysisTools?.refresh();
     state.logicalWidth = canvas.width;
     state.logicalHeight = canvas.height;
     ctx.imageSmoothingEnabled = false;
@@ -850,6 +854,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     resetSelectionState();
     updateDisplayScale();
     notifyLayoutChanged();
+    analysisTools?.refresh();
     if (statusMessage) updateRasterStatus(statusMessage);
     return true;
   }
@@ -998,6 +1003,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     resetSelectionState();
     updateDisplayScale();
     notifyLayoutChanged();
+    analysisTools?.refresh();
     updateRasterStatus(`Canvas resized to ${nextWidth}×${nextHeight}`);
   }
 
@@ -1042,6 +1048,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     resetSelectionState();
     updateDisplayScale();
     notifyLayoutChanged();
+    analysisTools?.refresh();
     updateRasterStatus(`Cropped to ${width}×${height}`);
   }
 
@@ -1096,6 +1103,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     resetSelectionState();
     updateDisplayScale();
     notifyLayoutChanged();
+    analysisTools?.refresh();
     updateRasterStatus(`Cropped edges to ${nextW}×${nextH}`);
   }
 
@@ -1138,6 +1146,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     resetSelectionState();
     updateDisplayScale();
     notifyLayoutChanged();
+    analysisTools?.refresh();
     updateRasterStatus(`Rotated ${direction === "ccw" ? "90° CCW" : "90° CW"}`);
   }
 
@@ -1171,6 +1180,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     clearShapePreview();
     resetSelectionState();
     notifyLayoutChanged();
+    analysisTools?.refresh();
     updateRasterStatus(axis === "v" ? "Flipped vertically" : "Flipped horizontally");
   }
 
@@ -1221,6 +1231,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     state.baseSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
     setSelectionRect({ x, y, width, height });
     drawSelectionTexture();
+    analysisTools?.refresh();
     updateRasterStatus(statusMessage);
   }
 
@@ -1333,10 +1344,12 @@ export async function renderRasterEditor(filePath, container, options = {}) {
       ctx.clearRect(x, y, width, height);
     }
     resetSelectionState();
+    analysisTools?.refresh();
     updateRasterStatus("Selection deleted");
   }
 
   function clearSelection() {
+    analysisTools?.refresh();
     if (state.baseSnapshot) {
       ctx.putImageData(state.baseSnapshot, 0, 0);
     }
@@ -1507,6 +1520,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     history.push(canvas);
     if (selectedTool === "fill") {
       fillAt(startPos.x, startPos.y);
+      analysisTools?.refresh();
       state.drawing = false;
       state.lastPos = null;
       return;
@@ -1541,6 +1555,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
       return;
     }
     if (!state.drawing) return;
+    analysisTools?.refresh();
     if (
       selectedTool === "line" || selectedTool === "rectangle" ||
       selectedTool === "circle"
@@ -1581,6 +1596,8 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   };
   window.addEventListener("mouseup", onMouseUp);
 
+  analysisTools = installRasterEditorAnalysis({ wrapper, canvasContainer, canvas, filePath });
+
   // Global Integration
   window.rasterCanvas = canvas;
   const unregisterZoom = registerPanelZoomCapabilities(container, { getState: () => ({ zoom: state.displayWidth / state.logicalWidth }), geometric(command) {
@@ -1616,6 +1633,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   return {
     api: editorApi,
     destroy: () => {
+      analysisTools?.dispose();
       unregisterZoom();
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onMouseUp);
