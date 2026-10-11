@@ -62,6 +62,7 @@ export function createSvgEditorCleanup(owner) {
     if (window.selectedSVGElement === owner.svgSession.selectedElement) window.selectedSVGElement = null;
     owner.svgSession.layersMgr.dispose();
     owner.svgSession.cleanupSvgClickTrace?.();
+    owner.svgSession.sharedVectorTools?.dispose();
     owner.svgSession.cancelDeferredSvgModeLayout();
     owner.container.removeEventListener("scroll", owner.svgSession.persistCurrentSvgAttention);
     owner.svgSession.persistCurrentSvgAttention();

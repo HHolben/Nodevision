@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateBlankSvgRoot.mjs
 // This module implements create Blank Svg Root behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { vectorTools } from "../../../../../VectorDrawing/VectorGeometry.mjs";
 import { createSvgEl } from "../svgDom.mjs";
 import { applyEditableSvgRootDefaults } from "../SvgPreservation.mjs";
 
@@ -21,7 +22,7 @@ export const SVG_ROTATION_ORIGIN_X_ATTR = "data-nv-rotation-origin-x";
 
 export const SVG_ROTATION_ORIGIN_Y_ATTR = "data-nv-rotation-origin-y";
 
-export const SVG_TOOL_MODES = new Set(["select", "rotate", "line", "circle", "arc", "freehand", "bezier", "sketch", "eyedropper", "eraser"]);
+export const SVG_TOOL_MODES = new Set(["select", "rotate", ...vectorTools, "freehand", "bezier", "sketch", "eyedropper", "eraser"]);
 
 export const SVG_CANVAS_MIN_ZOOM = 0.1;
 

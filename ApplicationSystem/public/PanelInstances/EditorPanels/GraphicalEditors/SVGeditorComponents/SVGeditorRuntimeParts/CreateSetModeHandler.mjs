@@ -10,7 +10,10 @@ import { getAttrNumber, parsePoints } from "../svgDom.mjs";
 // Create Set Mode Handler operations.
 export function createSetModeHandler(owner) {
   return function (mode) {
-    if (mode !== owner.svgSession.toolState.mode) clearSvgMarquee(owner.svgSession);
+    if (mode !== owner.svgSession.toolState.mode) {
+      owner.svgSession.sharedVectorTools?.cancel();
+      clearSvgMarquee(owner.svgSession);
+    }
     if (owner.svgSession.selectionGrabState && mode !== "select") owner.svgSession.commitSelectionGrabCommand({
       silent: true
     });

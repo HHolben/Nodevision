@@ -34,3 +34,15 @@ test('concave and self-intersecting polygons use even-odd pixel centers', () => 
   assert.equal(polygonStatistics(pixels,[{points:[[0,0],[4,0],[4,1],[1,1],[1,2],[0,2]]}]).selected,5);
   assert.equal(polygonStatistics(pixels,[{points:[[0,0],[4,2],[0,2],[4,0]]}]).selected,4);
 });
+test('vector rectangles and polygons reuse exact region coverage', () => {
+  const expected = polygonStatistics(pixels, [box(0,0,2,2)]);
+  assert.deepEqual(polygonStatistics(pixels, [{ geometry: { kind:'rectangle',x:0,y:0,width:2,height:2 } }]), expected);
+  assert.deepEqual(polygonStatistics(pixels, [{ geometry: { kind:'polygon',points:[{x:0,y:0},{x:2,y:0},{x:2,y:2},{x:0,y:2}] } }]), expected);
+});
+test('analytic circle and ellipse ROIs work with ordered subtraction and clipping', () => {
+  const circle = { operation: 'base', geometry: {kind:'circle',cx:1,cy:1,r:1} };
+  assert.equal(polygonStatistics(pixels,[circle]).selected,4);
+  assert.equal(polygonStatistics(pixels,[circle,box(0,0,1,2,'subtract')]).selected,2);
+  assert.equal(polygonStatistics(pixels,[{geometry:{kind:'ellipse',cx:2,cy:1,rx:2,ry:1}}]).selected,8);
+  assert.equal(polygonStatistics(pixels,[{geometry:{kind:'circle',cx:-10,cy:1,r:1}}]).selected,0);
+});

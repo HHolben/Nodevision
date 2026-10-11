@@ -303,6 +303,66 @@
     "modes": ["SVG Editing", "FontEditing"]
   },
   {
+    "heading": "Circle",
+    "hotkeyText": "",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeCircle",
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": [
+      "SVG Editing",
+      "FontEditing"
+    ]
+  },
+  {
+    "heading": "Ellipse",
+    "hotkeyText": "",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeEllipse",
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": [
+      "SVG Editing",
+      "FontEditing"
+    ]
+  },
+  {
+    "heading": "Arc",
+    "hotkeyText": "",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeArc",
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": [
+      "SVG Editing",
+      "FontEditing"
+    ]
+  },
+  {
+    "heading": "Rectangle",
+    "hotkeyText": "",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModeRectangle",
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": [
+      "SVG Editing",
+      "FontEditing"
+    ]
+  },
+  {
+    "heading": "Polygon",
+    "hotkeyText": "",
+    "parentHeading": "Vector Draw",
+    "ToolbarCategory": "draw",
+    "callbackKey": "svgModePolygon",
+    "icon": "icons/DefaultNodeImage.png",
+    "modes": [
+      "SVG Editing",
+      "FontEditing"
+    ]
+  },
+  {
     "heading": "Bezier",
     "hotkeyText": "",
     "parentHeading": "Vector Draw",

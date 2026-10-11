@@ -1,14 +1,13 @@
 // Nodevision/ApplicationSystem/public/CursorFamilies/providers/SVGCursorProvider.mjs
 // SVG contextual selection/drawing tool provider.
+import { vectorTools } from "../../VectorDrawing/VectorGeometry.mjs";
 import { notifyContextualCursorFamilyChanged } from "../ContextualCursorFamilyRegistry.mjs";
 
 const TOOL_TO_MODE = {
   "object-select": "select",
   "rectangle-select": "select",
   "freehand-draw": "freehand",
-  "line-draw": "line",
-  "circle-draw": "circle",
-  "arc-draw": "arc",
+  ...Object.fromEntries(vectorTools.map(kind => [`${kind}-draw`, kind])),
   "bezier-draw": "bezier",
   "sketch-draw": "sketch",
   "eyedropper": "eyedropper",
@@ -26,9 +25,7 @@ export function createCursorFamilyProvider() {
       return [
         { id: "object-select", label: "Object Select", glyph: "P", description: "Select and transform SVG objects." },
         { id: "rectangle-select", label: "Rectangle Select", glyph: "RECT", description: "Use the SVG editor's existing marquee selection." },
-        { id: "line-draw", label: "Line", glyph: "LINE", kind: "drawing" },
-        { id: "circle-draw", label: "Circle", glyph: "CIRC", kind: "drawing" },
-        { id: "arc-draw", label: "Arc", glyph: "ARC", kind: "drawing" },
+        ...vectorTools.map(kind => ({ id: `${kind}-draw`, label: kind[0].toUpperCase() + kind.slice(1), glyph: kind.slice(0, 4).toUpperCase(), kind: "drawing" })),
         { id: "freehand-draw", label: "Freehand Draw", glyph: "DRAW", kind: "drawing" },
         { id: "bezier-draw", label: "Bezier Path", glyph: "PATH", kind: "drawing" },
         { id: "sketch-draw", label: "Pencil Sketch", glyph: "PEN", kind: "drawing" },

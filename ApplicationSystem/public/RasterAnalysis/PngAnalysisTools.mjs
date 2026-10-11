@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/RasterAnalysis/PngAnalysisTools.mjs
 // This module attaches transient polygon analysis to a PNG viewport and opens results through the existing floating panel factory. Image-local SVG coordinates preserve region alignment under native pan, rotation, and zoom; source pixels remain unchanged.
+import { installVectorAnalysisTools } from './VectorAnalysisTools.mjs';
 import { registerAnalysisTools } from './AnalysisToolsContext.mjs';
 import { updateToolbarState } from '../panels/createToolbar.mjs';
 import { paintAnalysisRegions } from './AnalysisRegionOverlay.mjs';
@@ -75,19 +76,28 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
   function button(label, action) { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = action; bar.append(b); return b; }
   function start(mode) {
     if (!width()) { status.textContent = 'Wait for the image to load.'; return; }
-    operation = mode; tool.cancel(); setDrawing(true); host.focus({ preventScroll: true }); status.textContent = 'Click vertices; Enter or click the first vertex to close. Esc cancels.';
+    vectors.cancel(); operation = mode; tool.cancel(); setDrawing(true); host.focus({ preventScroll: true }); status.textContent = 'Click vertices; Enter or click the first vertex to close. Esc cancels.';
   }
   button('Region', () => start('base'));
   const secondaryButtons = [button('Add polygon', () => start('add')), button('Subtract polygon', () => start('subtract'))];
   button('Finish path', () => { if (drawing) tool.finish(); });
-  button('Undo region', () => { tool.cancel(); setDrawing(false); regions.pop(); paint(); calculate(); });
-  button('Clear', () => { tool.cancel(); setDrawing(false); regions.length = 0; paint(); calculate(); worker?.terminate(); worker = null; });
+  button('Undo region', () => { vectors.cancel(); tool.cancel(); setDrawing(false); regions.pop(); paint(); calculate(); });
+  button('Clear', () => { vectors.cancel(); tool.cancel(); setDrawing(false); regions.length = 0; paint(); calculate(); worker?.terminate(); worker = null; });
   button('Show results', showPanel); paint();
+  const vectors = installVectorAnalysisTools({ host, svg, bar, status, analysis, isVisible: () => !menu.hidden,
+    size: () => ({ width: width(), height: height() }),
+    beforeStart() { tool.cancel(); setDrawing(false); },
+    useRegion(geometry) {
+      tool.cancel(); setDrawing(false); regions.length = 0;
+      regions.push({ operation: 'base', geometry }); paint(); calculate();
+    }
+  });
   const unwatchPixels = viewport.subscribePixels?.(() => {
     if (disposed) return;
     revision++; worker?.terminate(); worker = null;
     if (width() !== sourceWidth || height() !== sourceHeight) {
       tool.cancel(); setDrawing(false); regions.length = 0;
+      vectors.clear();
       sourceWidth = width(); sourceHeight = height(); paint();
       status.textContent = 'Canvas dimensions changed. Draw a new reference region.';
     }
@@ -114,18 +124,24 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
   const key = event => {
     if (!drawing || event.ctrlKey || event.metaKey || event.altKey || event.target.closest?.('button,input,textarea')) return;
     if (event.key === 'Enter') tool.finish();
+    else if (event.key === 'Backspace') tool.key('Backspace');
     else if (event.key === 'Escape') { tool.cancel(); setDrawing(false); status.textContent = 'Path cancelled.'; }
     else return;
     event.preventDefault(); event.stopPropagation();
   };
+  const deactivate = () => { if (drawing) { tool.cancel(); setDrawing(false); } };
+  const doubleClick = event => { if (drawing) { tool.finish(); event.preventDefault(); } };
+  window.addEventListener('activePanelChanged', deactivate);
+  svg.addEventListener('dblclick', doubleClick);
   const unregisterTools = registerAnalysisTools(host, {
     id: menu.id, get visible() { return !menu.hidden; },
-    toggle() { menu.hidden = !menu.hidden; if (menu.hidden) { tool.cancel(); setDrawing(false); } }
+    toggle() { menu.hidden = !menu.hidden; if (menu.hidden) { vectors.cancel(); tool.cancel(); setDrawing(false); } }
   });
   updateToolbarState({});
   svg.addEventListener('pointerdown', down); svg.addEventListener('pointermove', move); host.addEventListener('keydown', key, true);
   return () => {
-    if (disposed) return; disposed = true; unregisterTools(); revision++; worker?.terminate(); unwatch(); unwatchPixels?.(); tool.dispose();
+    if (disposed) return; disposed = true; unregisterTools(); revision++; worker?.terminate(); unwatch(); unwatchPixels?.(); vectors.dispose(); tool.dispose();
+    window.removeEventListener('activePanelChanged', deactivate);
     host.removeEventListener('keydown', key, true); svg.remove(); menu.remove(); panel?.remove(); analysis.render = null;
   };
 }

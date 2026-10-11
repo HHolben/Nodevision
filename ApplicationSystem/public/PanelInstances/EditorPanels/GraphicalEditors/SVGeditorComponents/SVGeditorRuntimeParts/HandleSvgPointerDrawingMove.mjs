@@ -75,13 +75,6 @@ export function handleSvgPointerDrawingMove(scope) {
       value: void 0
     };
   }
-  if ((scope.owner.svgSession.toolState.mode === "circle" || scope.owner.svgSession.toolState.mode === "arc") && scope.owner.svgSession.shapeToolState.active) {
-    scope.owner.svgSession.updateShapeToolPreview(scope.pointerMoveState.p);
-    scope.e.preventDefault();
-    return {
-      value: void 0
-    };
-  }
   if (scope.owner.svgSession.toolState.mode === "bezier" && scope.owner.svgSession.bezierController.isActive()) {
     scope.pointerMoveState.target = scope.pointerMoveState.p;
     scope.pointerMoveState.model = scope.owner.svgSession.bezierController.state?.model;

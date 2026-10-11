@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/CreateBeginLineToolAtHandler.mjs
 // This module implements create Begin Line Tool At Handler behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { createGeometry, svgGeometry } from "../../../../../VectorDrawing/VectorGeometry.mjs";
 import { createSvgEl } from "../svgDom.mjs";
 
 // Create Begin Line Tool At Handler operations.
@@ -68,12 +69,11 @@ export function createPlaceLineToolVertexHandler(owner) {
     const dy = spacePoint.y - owner.svgSession.lineToolState.startSpace.y;
     const segLen = Math.hypot(dx, dy);
     if (Number.isFinite(segLen) && segLen > 1e-6) {
+      const geometry = createGeometry("line", [owner.svgSession.lineToolState.startSpace, spacePoint]);
+      if (!geometry) return false;
       const style = owner.svgSession.currentStyleDefaults();
       const seg = createSvgEl("line", {
-        x1: owner.svgSession.lineToolState.startSpace.x,
-        y1: owner.svgSession.lineToolState.startSpace.y,
-        x2: spacePoint.x,
-        y2: spacePoint.y,
+        ...svgGeometry(geometry).attributes,
         stroke: style.stroke,
         "stroke-width": style.strokeWidth
       });

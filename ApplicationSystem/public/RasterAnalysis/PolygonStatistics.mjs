@@ -12,15 +12,34 @@ function rasterRow(points, y, width) {
   }
   return row;
 }
+// Closed vector ROIs share the same pixel-center coverage and Boolean accumulation.
+function regionRow(region, y, width) {
+  const g = region.geometry;
+  if (!g) return rasterRow(region.points, y, width);
+  if (g.kind === 'polygon') return rasterRow(g.points.map(p => [p.x, p.y]), y, width);
+  const row = new Uint8Array(width);
+  let left, right;
+  if (g.kind === 'rectangle') {
+    if (y < g.y || y >= g.y + g.height) return row;
+    left = g.x; right = g.x + g.width;
+  } else if (g.kind === 'circle' || g.kind === 'ellipse') {
+    const rx = g.r ?? g.rx, ry = g.r ?? g.ry, normalized = (y - g.cy) / ry;
+    if (Math.abs(normalized) >= 1) return row;
+    const half = rx * Math.sqrt(1 - normalized * normalized);
+    left = g.cx - half; right = g.cx + half;
+  } else return row;
+  row.fill(1, Math.min(width, Math.max(0, Math.ceil(left - .5))), Math.min(width, Math.max(0, Math.ceil(right - .5))));
+  return row;
+}
 export function polygonStatistics({ width, height, data }, regions) {
   const overlaps = regions.slice(1).map(() => 0), affected = [...overlaps];
   let original = 0, selected = 0, secondary = 0, retained = 0, alpha = 0;
   const rgb = [0, 0, 0];
   if (!regions.length) return null;
   for (let y = 0; y < height; y++) {
-    const base = rasterRow(regions[0].points, y + .5, width), result = base.slice(), covered = new Uint8Array(width);
+    const base = regionRow(regions[0], y + .5, width), result = base.slice(), covered = new Uint8Array(width);
     for (let r = 1; r < regions.length; r++) {
-      const row = rasterRow(regions[r].points, y + .5, width), add = regions[r].operation === 'add';
+      const row = regionRow(regions[r], y + .5, width), add = regions[r].operation === 'add';
       for (let x = 0; x < width; x++) if (row[x]) {
         if (base[x]) { overlaps[r - 1]++; covered[x] = 1; }
         if (result[x] !== Number(add)) affected[r - 1]++;

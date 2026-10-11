@@ -7,6 +7,8 @@ import { installSvgClickTraceOnSvgRoot } from "../../../../../SvgClickFeedbackTr
 import { createAddEventListenerPointerupHandler } from "./CreateAddEventListenerPointerupHandler.mjs";
 import { createAddEventListenerPointercancelHandler } from "./CreateAddEventListenerPointercancelHandler.mjs";
 
+import { installSharedVectorTools } from "./InstallSharedVectorTools.mjs";
+
 // Connect Svg Pointer Events operations.
 export function connectSvgPointerEvents(scope) {
   scope.svgSession.updateSvgRulers();
@@ -100,6 +102,8 @@ export function connectSvgPointerEvents(scope) {
       return scope.svgSession;
     }
   }));
+
+  installSharedVectorTools(scope.svgSession);
 
   // Nodevision hooks
   if (!scope.svgSession.isCurrentRender()) return {

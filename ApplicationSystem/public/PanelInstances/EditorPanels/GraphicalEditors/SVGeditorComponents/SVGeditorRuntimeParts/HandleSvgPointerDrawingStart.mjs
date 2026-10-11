@@ -44,15 +44,6 @@ export function handleSvgPointerDrawingStart(scope) {
       value: void 0
     };
   }
-  if (scope.owner.svgSession.toolState.mode === "circle" || scope.owner.svgSession.toolState.mode === "arc") {
-    scope.owner.svgSession.clearSelection();
-    scope.owner.svgSession.placeShapeToolPoint(scope.owner.svgSession.toolState.mode, scope.pointerStartState.p);
-    scope.e.preventDefault();
-    scope.e.stopPropagation();
-    return {
-      value: void 0
-    };
-  }
   if (scope.owner.svgSession.toolState.mode === "bezier") {
     scope.pointerStartState.rootPointLocal = scope.pointerStartState.p;
     if (scope.owner.svgSession.bezierController.isActive() && scope.e.detail >= 2) {

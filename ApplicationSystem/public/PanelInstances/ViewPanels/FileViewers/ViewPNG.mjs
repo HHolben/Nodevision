@@ -42,7 +42,7 @@ function createToolbar(filename, serverBase) {
   return bar;
 }
 
-export async function renderFile(filename, viewPanel, iframe, serverBase) {
+export async function renderRasterFile(filename, viewPanel, iframe, serverBase, { png = false } = {}) {
   viewPanel.dataset.nvZoomInlineFit = "scale-content";
   try {
     const url = viewerUrl(serverBase, filename);
@@ -54,17 +54,25 @@ export async function renderFile(filename, viewPanel, iframe, serverBase) {
     img.alt = filename;
     img.src = url + "?t=" + Date.now();
     styleImage(img);
+    img.style.imageOrientation = "from-image";
+    if (!png) img.style.imageRendering = "auto";
     img.onload = () => { img.title = (img.naturalWidth || 0) + " x " + (img.naturalHeight || 0); };
-    img.onerror = () => { viewPanel._dispose?.(); viewPanel.innerHTML = '<p style="color:red;">Error loading PNG file.</p>'; };
+    img.onerror = () => { viewPanel._dispose?.(); viewPanel.innerHTML = '<p style="color:red;">Error loading image file.</p>'; };
     const viewport = mountImageViewport(viewPanel, img);
-    const toolbar = createToolbar(filename, serverBase);
-    toolbar.style.position = "static";
-    viewport.controls.appendChild(toolbar);
+    if (png) {
+      const toolbar = createToolbar(filename, serverBase);
+      toolbar.style.position = "static";
+      viewport.controls.appendChild(toolbar);
+    }
     const disposeAnalysis = installPngAnalysisTools(viewPanel, viewport, filename);
     const disposeViewport = viewPanel._dispose;
     viewPanel._dispose = () => { img.onload = img.onerror = null; disposeAnalysis(); disposeViewport(); };
   } catch (err) {
-    console.error("Error loading PNG:", err);
-    viewPanel.innerHTML = '<p style="color:red;">Error loading PNG file.</p>';
+    console.error("Error loading image:", err);
+    viewPanel.innerHTML = '<p style="color:red;">Error loading image file.</p>';
   }
+}
+
+export function renderFile(filename, viewPanel, iframe, serverBase) {
+  return renderRasterFile(filename, viewPanel, iframe, serverBase, { png: true });
 }

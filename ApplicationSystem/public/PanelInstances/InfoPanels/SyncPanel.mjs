@@ -8,8 +8,8 @@ import { getActivePeerUrl, getActivePeerUrls, normalizeSyncTransport, withActive
 const navigationState = getNodevisionNavigationState();
 
 const TEMPLATE = `
-  <div data-sync-panel-root style="display:flex;flex-direction:column;gap:10px;">
-    <div style="display:flex;flex-direction:column;gap:10px;">
+  <div data-sync-panel-root style="display:flex;flex-direction:column;gap:10px;height:100%;min-height:0;overflow:auto;box-sizing:border-box;">
+    <div style="display:flex;flex-direction:column;gap:10px;flex:0 0 auto;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
       <div>
         <h3 style="margin:0;font-size:1.1em;">Sync</h3>

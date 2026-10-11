@@ -98,6 +98,7 @@ export function createStartRotateInteractionHandler(owner) {
 
 export function createSetSvgFromStringHandler(owner) {
   return function (svgString) {
+    owner.svgSession.sharedVectorTools?.cancel();
     clearSvgMarquee(owner.svgSession);
     const parsed = parseEditableSvgRoot(svgString);
     const fresh = cleanupSvgCloneForSave(parsed.root);

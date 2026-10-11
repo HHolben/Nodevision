@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/RasterAnalysis/AnalysisRegionOverlay.mjs
 // This module shades the ordered Boolean selection with an SVG mask while retaining polygon outlines for inspection. The mask belongs only to the viewer overlay and never becomes image content.
+import { createVectorElement } from '../VectorDrawing/VectorSvgRenderer.mjs';
 const ns = 'http://www.w3.org/2000/svg';
 function element(name, attributes) {
   const node = document.createElementNS(ns, name);
@@ -12,9 +13,9 @@ export function paintAnalysisRegions(host, regions, width, height, id) {
   const defs = element('defs', {}), mask = element('mask', { id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width, height, 'mask-type': 'luminance' });
   const outlines = element('g', { fill: 'none', stroke: 'currentColor' });
   for (const region of regions) {
-    const points = region.points.map(p => p.join(',')).join(' ');
-    mask.append(element('polygon', { points, fill: region.operation === 'subtract' ? 'black' : 'white', 'fill-rule': 'evenodd' }));
-    const outline = element('polygon', { points, 'vector-effect': 'non-scaling-stroke', 'stroke-width': 1.5 });
+    const geometry = region.geometry || { kind: 'polygon', points: region.points.map(([x, y]) => ({ x, y })) };
+    mask.append(createVectorElement(geometry, { stroke: 'none', fill: region.operation === 'subtract' ? 'black' : 'white', 'fill-rule': 'evenodd' }));
+    const outline = createVectorElement(geometry, { 'vector-effect': 'non-scaling-stroke', 'stroke-width': 1.5 });
     if (region.operation === 'subtract') outline.setAttribute('stroke-dasharray', '5 3');
     outlines.append(outline);
   }
